@@ -1,6 +1,3 @@
-Here’s the corrected version with typos fixed:
-
----
 
 # Atlas - The Public Think Tank  
 
@@ -17,7 +14,7 @@ It is built with ASP.NET Core MVC for the backend and utilizes Entity Framework 
 
 ## Features  
 
-Atlas boasts a wide range of features to enhance user experience and facilitate collaboration. Here’s a comprehensive list of the planned features.  
+Atlas boasts a wide range of features to enhance user experience and facilitate collaboration. Hereâ€™s a comprehensive list of the planned features.  
 
 ### Core Features  
 
