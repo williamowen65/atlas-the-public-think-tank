@@ -86,7 +86,6 @@ Atlas boasts a wide range of features to enhance user experience and facilitate 
 ### Collaboration
 
 This project seeks contributions from the community. The system for facilitating this is not implemented
-yet. But if you are interested in contributing, please feel free to reach out via this Discussion Board (Link to GitHub discussion)
-
+yet. But if you are interested in contributing, please feel free to reach out via this [Discussion Board (Link to GitHub discussion)](https://github.com/williamowen65/atlas-the-public-think-tank/discussions/2)
 
 
