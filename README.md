@@ -6,6 +6,9 @@
 
 Atlas is a social media platform designed to connect innovative thinkers with problem-solvers. It provides a space for users to share ideas, collaborate on projects, and engage in meaningful discussions. The platform aims to foster a community of forward-thinkers who can collectively address complex challenges.
 
+It is build with ASP.NET Core MVC for the backend, utilizing Entity Framework Core for data access, and a modern front-end framework for the user interface. 
+The platform is designed to be scalable, secure, and user-friendly, ensuring a seamless experience for all users.
+
 ## Features
 
 Atlas boasts a wide range of features to enhance user experience and facilitate collaboration. Here’s a comprehensive list of the planned features.
