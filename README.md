@@ -1,5 +1,4 @@
 
-
 [![GitHub milestone details](https://img.shields.io/github/milestones/progress/williamowen65/atlas-the-public-think-tank/2)](https://github.com/williamowen65/atlas-the-public-think-tank/milestone/2)
 
 # Atlas - The Public Think Tank  
@@ -14,6 +13,8 @@ It is built with ASP.NET Core MVC for the backend and utilizes Entity Framework 
 
 > Note: This version is intended for a CPTC Spring Quarter release and is a multi-page app.  
 > A potential future version of this project (CPTC Summer Quarter) may see this project ported over to Blazor for a Single Page App user experience.
+
+### [Check out the Wiki](https://github.com/williamowen65/atlas-the-public-think-tank/wiki)
 
 ## Features  
 
