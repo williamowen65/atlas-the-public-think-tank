@@ -1,5 +1,6 @@
-![GitHub milestone details](https://img.shields.io/github/milestones/progress/williamowen65/atlas-the-public-think-tank/2)
 
+
+[![GitHub milestone details](https://img.shields.io/github/milestones/progress/williamowen65/atlas-the-public-think-tank/2)](https://github.com/williamowen65/atlas-the-public-think-tank/milestone/2)
 
 # Atlas - The Public Think Tank  
 
