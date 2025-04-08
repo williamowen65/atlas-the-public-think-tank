@@ -5,6 +5,8 @@ VisualStudioVersion = 17.13.35828.75
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "atlas-the-public-think-tank", "atlas-the-public-think-tank\atlas-the-public-think-tank.csproj", "{D0587ED8-7D90-4C4F-A6C1-52CFD875CF46}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CloudTests", "CloudTests\CloudTests\CloudTests.csproj", "{F58050E7-20DE-4654-8B09-79AF5739EEE8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{D0587ED8-7D90-4C4F-A6C1-52CFD875CF46}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D0587ED8-7D90-4C4F-A6C1-52CFD875CF46}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D0587ED8-7D90-4C4F-A6C1-52CFD875CF46}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F58050E7-20DE-4654-8B09-79AF5739EEE8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F58050E7-20DE-4654-8B09-79AF5739EEE8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F58050E7-20DE-4654-8B09-79AF5739EEE8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F58050E7-20DE-4654-8B09-79AF5739EEE8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
