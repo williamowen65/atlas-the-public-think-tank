@@ -1,8 +1,40 @@
-﻿@{
+﻿@using Microsoft.AspNetCore.Identity
+@inject SignInManager<IdentityUser> SignInManager
+@inject UserManager<IdentityUser> UserManager
+
+@{
     ViewData["Title"] = "Home Page";
 }
 
 <div class="text-center">
     <h1 class="display-4">Welcome</h1>
+
+    @if (!SignInManager.IsSignedIn(User))
+    {
+        <div>Register for a new account. Hero section for new users, or a pop up?</div>
+    }
+    else
+    {
+    <span>Hello @User.Identity?.Name!</span>
+
+       <div>Here is some of your recent activity</div>
+
+    }
     <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div>
+
+
+<div>
+    NOTE: This page is a dashboard. A Left side panel will have forums. 
+
+    The initial forums can be atlas specific. 
+
+    The right side will also have a column. Not sure what goes there. But Maybe details on whatever you may be loooking at.
+    Or little tips. or etc.
+
+    The middle can be reserved for content. Reading editing/ comments. etc.
+
+    The Design should be mobile friendly.
+
+    
 </div>

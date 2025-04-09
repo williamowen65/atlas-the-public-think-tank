@@ -5,39 +5,33 @@
 
 @if (!SignInManager.IsSignedIn(User))
 {
-    <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Register">Register</a>
+    <a class="nav-link" asp-area="Identity" asp-page="/Account/Register">Register</a>
+    <span>/</span>
+    <a class="nav-link" asp-area="Identity" asp-page="/Account/Login">Login</a>
+
 }
 
 else
 {
 
-    <span>Hello @User.Identity?.Name!</span>
-}
-
 <div class="flex-shrink-0 dropdown">
     <a href="#" class="d-block link-body-emphasis text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
         <img src="https://github.com/mdo.png" alt="mdo" width="32" height="32" class="rounded-circle">
     </a>
+
     <ul class="dropdown-menu text-small shadow" style="">
-        @if (SignInManager.IsSignedIn(User))
-        {
         <li><a class="dropdown-item" href="#">New project...</a></li>
-        <li><a class="dropdown-item" href="#">Settings</a></li>
+        <li><a class="dropdown-item" href="#">Profile</a></li>
         <li>
-            <a class="dropdown-item text-dark" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage">Profile</a>
+            <a class="dropdown-item" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage">Settings</a>
         </li>
         <li><hr class="dropdown-divider"></li>
         <li class="dropdown-item">
             <form class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
-                <button type="submit" class="nav-link btn btn-link text-dark">Logout</button>
+                <button type="submit" class="nav-link btn btn-link">Logout</button>
             </form>
         </li>   
-        }
-        else
-        {
-            <li class="dropdown-item">
-                <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Login">Login</a>
-            </li>
-        }
+        
     </ul>
 </div>
+        } 
