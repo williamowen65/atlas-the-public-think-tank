@@ -1,5 +1,5 @@
 
-[![GitHub milestone details](https://img.shields.io/github/milestones/progress/williamowen65/atlas-the-public-think-tank/2)](https://github.com/williamowen65/atlas-the-public-think-tank/milestone/2?closed=1)
+[![GitHub milestone details](https://img.shields.io/github/milestones/progress/williamowen65/atlas-the-public-think-tank/2)](https://github.com/williamowen65/atlas-the-public-think-tank/milestone/1?closed=1)
 <br>
 [![GitHub milestone details](https://img.shields.io/github/milestones/progress/williamowen65/atlas-the-public-think-tank/3)](https://github.com/williamowen65/atlas-the-public-think-tank/milestone/3)
 
