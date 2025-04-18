@@ -1,9 +1,11 @@
 
-[![GitHub milestone details](https://img.shields.io/github/milestones/progress/williamowen65/atlas-the-public-think-tank/2)](https://github.com/williamowen65/atlas-the-public-think-tank/milestone/2)
+[![GitHub milestone details](https://img.shields.io/github/milestones/progress/williamowen65/atlas-the-public-think-tank/2)](https://github.com/williamowen65/atlas-the-public-think-tank/milestone/2?closed=1)
+<br>
+[![GitHub milestone details](https://img.shields.io/github/milestones/progress/williamowen65/atlas-the-public-think-tank/3)](https://github.com/williamowen65/atlas-the-public-think-tank/milestone/3)
 
 # Atlas - The Public Think Tank  
 
-> A social media platform connecting innovative thinkers with keen problem-solvers.  
+> A social media platform connecting innovative thinkers with keen problem-solvers.  [(Live Site)](https://atlas-the-public-think-tank20250407110655-bndca6ecbbfbekgc.canadacentral-01.azurewebsites.net/)
 
 ## Overview  
 
