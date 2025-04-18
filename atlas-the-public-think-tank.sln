@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.13.35828.75
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebClient", "WebClient\WebClient.csproj", "{D0587ED8-7D90-4C4F-A6C1-52CFD875CF46}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebClient", "Deployments\WebClient\WebClient.csproj", "{D0587ED8-7D90-4C4F-A6C1-52CFD875CF46}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CloudTests", "CloudTests\CloudTests.csproj", "{F58050E7-20DE-4654-8B09-79AF5739EEE8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdminDashboard", "AdminDashboard\AdminDashboard.csproj", "{C639DE08-773B-4AC6-BDEF-1EF1F5DDE037}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdminDashboard", "Deployments\AdminDashboard\AdminDashboard.csproj", "{C639DE08-773B-4AC6-BDEF-1EF1F5DDE037}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared.UI", "Shared.UI\Shared.UI.csproj", "{B49B85FA-4450-485A-8A4D-737A0EEE6FDD}"
 EndProject
