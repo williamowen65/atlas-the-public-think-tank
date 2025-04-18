@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Shared.Data\Shared.Data.csproj" />
+    <ProjectReference Include="..\Shared.Data\Shared.DbContext.csproj" />
   </ItemGroup>
 
 </Project>

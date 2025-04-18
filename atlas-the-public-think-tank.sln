@@ -13,7 +13,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared.UI", "Shared.UI\Shar
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared.Identity", "Shared.Identity\Shared.Identity.csproj", "{B76EAD8A-F761-42AA-AD94-05CCC0C1FF19}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared.Data", "Shared.Data\Shared.Data.csproj", "{A46F5261-4625-440B-ACFE-39A59BDA1575}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared.DbContext", "Shared.Data\Shared.DbContext.csproj", "{A46F5261-4625-440B-ACFE-39A59BDA1575}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
