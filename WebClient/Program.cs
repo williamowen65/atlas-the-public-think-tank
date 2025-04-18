@@ -1,30 +1,33 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using atlas_the_public_think_tank.Data;
+using Shared.Data;
+using Shared.Identity;
+using Shared.UI;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Add services to the container - using shared components
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
-builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
-    .AddEntityFrameworkStores<ApplicationDbContext>();
+// Add shared identity database
+builder.Services.AddSharedIdentityDatabase(builder.Configuration);
+
+// Add shared identity UI
+builder.Services.AddSharedIdentityUI(builder.Configuration, options => {
+    options.SignIn.RequireConfirmedAccount = true;
+});
+
+// Add controllers and views
 builder.Services.AddControllersWithViews();
 
-
+// Add shared UI components
+builder.Services.AddSharedUI();
 
 var app = builder.Build();
 
 // Log to console   
-
 app.Logger.LogInformation("Application starting up...");
 app.Logger.LogInformation($"Is Development Environment: {app.Environment.IsDevelopment()}");
-
-
-
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -39,11 +42,15 @@ else
     app.UseHsts();
 }
 
-
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseRouting();
 
-app.UseAuthorization();
+// Use shared identity UI (authentication/authorization)
+app.UseSharedIdentityUI();
+
+// Use shared UI components
+app.UseSharedUI();
 
 app.MapStaticAssets();
 

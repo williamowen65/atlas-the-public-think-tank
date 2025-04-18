@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace atlas_the_public_think_tank.Data.Migrations
+namespace Shared.Data.Migrations
 {
     public partial class CreateIdentitySchema : Migration
     {

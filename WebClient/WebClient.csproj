@@ -19,4 +19,10 @@
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Shared.Data\Shared.Data.csproj" />
+    <ProjectReference Include="..\Shared.Identity\Shared.Identity.csproj" />
+    <ProjectReference Include="..\Shared.UI\Shared.UI.csproj" />
+  </ItemGroup>
+
 </Project>

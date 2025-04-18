@@ -1,0 +1,5 @@
+@{
+    // Using a relative path allows client applications to override with their own layout
+    // Client applications can set ViewData["IdentityLayout"] to override this default
+    Layout = ViewData.ContainsKey("IdentityLayout") ? ViewData["IdentityLayout"]?.ToString() : "/Views/Shared/_Layout.cshtml";
+}
