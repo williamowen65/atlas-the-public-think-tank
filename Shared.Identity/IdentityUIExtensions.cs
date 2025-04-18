@@ -4,6 +4,7 @@ using Shared.Data;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Mvc.Razor;
 
 namespace Shared.Identity
 {
@@ -26,7 +27,21 @@ namespace Shared.Identity
                     // Apply caller's configuration if provided
                     configureIdentity?.Invoke(options);
                 })
-                .AddEntityFrameworkStores<ApplicationDbContext>();
+                .AddEntityFrameworkStores<ApplicationDbContext>()
+                .AddDefaultUI(); // Explicitly add default UI components
+
+            // Configure RazorViewEngine to find views in this library
+            services.Configure<RazorViewEngineOptions>(options =>
+            {
+                // Add view locations for Identity areas
+                options.AreaViewLocationFormats.Add("/Areas/{2}/Views/{1}/{0}.cshtml");
+                options.AreaViewLocationFormats.Add("/Areas/{2}/Views/Shared/{0}.cshtml");
+                
+                // Add view locations for partials in the Identity area
+                options.AreaViewLocationFormats.Add("/Areas/Identity/Pages/{1}/{0}.cshtml");
+                options.AreaViewLocationFormats.Add("/Areas/Identity/Pages/Shared/{0}.cshtml");
+                options.AreaViewLocationFormats.Add("/Areas/Identity/Pages/Account/Shared/{0}.cshtml");
+            });
 
             return services;
         }
@@ -54,6 +69,15 @@ namespace Shared.Identity
         {
             app.UseAuthentication();
             app.UseAuthorization();
+            
+            // Ensure Identity area routes are registered
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapAreaControllerRoute(
+                    name: "Identity",
+                    areaName: "Identity",
+                    pattern: "Identity/{controller=Home}/{action=Index}/{id?}");
+            });
             
             return app;
         }
