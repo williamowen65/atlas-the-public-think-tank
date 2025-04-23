@@ -1,7 +1,7 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace AdminDashboard.Data
+namespace Shared.DbContext
 {
     public class ApplicationDbContext : IdentityDbContext
     {

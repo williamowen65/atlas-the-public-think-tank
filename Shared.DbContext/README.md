@@ -1,10 +1,10 @@
-# Shared.Data
+# Shared.DbContext
 
 This project contains the shared database context and Entity Framework Core migrations for Atlas: The Public Think Tank.
 
 ## Overview
 
-The `Shared.Data` project provides a centralized database access layer using Entity Framework Core that can be used across multiple applications in the mono repo. This includes:
+The `Shared.DbContext` project provides a centralized database access layer using Entity Framework Core that can be used across multiple applications in the mono repo. This includes:
 
 - ApplicationDbContext for database access
 - Entity Framework Core migrations
@@ -14,9 +14,9 @@ The `Shared.Data` project provides a centralized database access layer using Ent
 
 To use this shared data layer in a client application:
 
-1. Add a reference to the Shared.Data project:
+1. Add a reference to the Shared.DbContext project:
 ```xml
-<ProjectReference Include="..\Shared.Data\Shared.Data.csproj" />
+<ProjectReference Include="..\Shared.DbContext\Shared.DbContext.csproj" />
 ```
 
 2. Configure the database in your Program.cs or Startup.cs:
@@ -29,14 +29,14 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 3. To create a new migration:
 ```
-dotnet ef migrations add MyMigration --project Shared.Data --startup-project WebClient
+dotnet ef migrations add MyMigration --project Shared.DbContext --startup-project WebClient
 ```
 
 4. To update the database:
 ```
-dotnet ef database update --project Shared.Data --startup-project WebClient
+dotnet ef database update --project Shared.DbContext --startup-project WebClient
 ```
 
 ## Entity Framework Core Migrations
 
-Migrations are version-controlled database schema changes. For consistency, manage migrations using WebClient as the startup project, but store them in this Shared.Data project.
+Migrations are version-controlled database schema changes. For consistency, manage migrations using WebClient as the startup project, but store them in this Shared.DbContext project.

@@ -21,7 +21,7 @@ To use the shared identity components in a client application:
 
 2. Configure Identity in your Program.cs:
 ```csharp
-// Add shared identity database (also requires reference to Shared.Data)
+// Add shared identity database (also requires reference to Shared.DbContext)
 builder.Services.AddSharedIdentityDatabase(builder.Configuration);
 
 // Add shared identity UI

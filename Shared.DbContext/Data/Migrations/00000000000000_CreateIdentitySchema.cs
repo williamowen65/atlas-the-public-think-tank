@@ -1,8 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Migrations;
 using System;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace AdminDashboard.Data.Migrations
+namespace Shared.DbContext.Migrations
 {
     public partial class CreateIdentitySchema : Migration
     {

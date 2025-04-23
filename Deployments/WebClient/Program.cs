@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Shared.Data;
+using Shared.DbContext;
 using Shared.Identity;
 using Shared.UI;
 
@@ -8,6 +8,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container - using shared components
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
+// Add shared database context
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(connectionString));
+builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 // Add shared identity database
 builder.Services.AddSharedIdentityDatabase(builder.Configuration);
