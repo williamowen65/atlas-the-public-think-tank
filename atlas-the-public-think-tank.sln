@@ -7,8 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "atlas-the-public-think-tank
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CloudTests", "CloudTests\CloudTests.csproj", "{F58050E7-20DE-4654-8B09-79AF5739EEE8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocalTests", "LocalTests\LocalTests.csproj", "{892001FA-D456-4F0C-BD0B-2C9AC0ED28E0}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,10 +21,6 @@ Global
 		{F58050E7-20DE-4654-8B09-79AF5739EEE8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F58050E7-20DE-4654-8B09-79AF5739EEE8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F58050E7-20DE-4654-8B09-79AF5739EEE8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{892001FA-D456-4F0C-BD0B-2C9AC0ED28E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{892001FA-D456-4F0C-BD0B-2C9AC0ED28E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{892001FA-D456-4F0C-BD0B-2C9AC0ED28E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{892001FA-D456-4F0C-BD0B-2C9AC0ED28E0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
