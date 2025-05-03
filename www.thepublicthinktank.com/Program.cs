@@ -81,8 +81,8 @@ app.MapControllerRoute(
     .WithStaticAssets();
 
 // Map Razor Pages endpoints (for Razor Page files like .cshtml)
-app.MapRazorPages()
-   .WithStaticAssets();
+//app.MapRazorPages()
+//   .WithStaticAssets();
 
 // Start the application and begin listening for incoming HTTP requests
 app.Run();
