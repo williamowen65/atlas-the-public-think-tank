@@ -24,7 +24,8 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 // Register Identity services for authentication and user management
 // Configure Identity to require confirmed accounts before signing in
 // and store Identity data using the ApplicationDbContext
-builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
+builder.Services.AddIdentity<IdentityUser, IdentityRole>(options => 
+    options.SignIn.RequireConfirmedAccount = true)
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
 // Add MVC support (controllers with views) to the service container
