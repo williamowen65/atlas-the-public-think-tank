@@ -3,6 +3,13 @@
 @inject UserManager<AppUser> UserManager
 
 
+@* 
+
+Show either the Register/Login or the User Actions
+    
+*@
+
+
 @if (!SignInManager.IsSignedIn(User))
 {
     <a class="nav-link" asp-area="Identity" asp-page="/Account/Register">Register</a>
@@ -14,8 +21,15 @@
 else
 {
 
+ <a class="text-decoration-none" href="@Url.Action("Create", "CRUDForum")">
+    <button class="transparent-btn general-btn hoverable">
+        <i class="fa fa-plus"></i>
+            Create
+    </button>
+</a>
+
 <div class="flex-shrink-0 dropdown">
-    <a href="#" class="d-block link-body-emphasis text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+    <a href="#" class="d-block link-body-emphasis text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false">
         <img src="https://github.com/mdo.png" alt="mdo" width="32" height="32" class="rounded-circle">
     </a>
 

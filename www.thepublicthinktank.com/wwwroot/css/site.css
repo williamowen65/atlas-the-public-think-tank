@@ -55,3 +55,24 @@ header.main-header {
     margin-left: 0;
     margin-right: 0;
 }
+
+.general-btn {
+    display: flex;
+    align-items: center;
+    margin-inline: .5rem !important;
+    border-radius: 19px;
+    height: 40px;
+    --background-hover-color: rgb(52, 61, 66);
+}
+
+.general-btn i {
+    margin-right: .5rem !important;
+}
+
+.hoverable {
+    transition: background 0.3s;
+}
+
+.hoverable:hover {
+  background-color: var(--background-hover-color);
+}
