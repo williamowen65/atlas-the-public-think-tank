@@ -1,0 +1,86 @@
+﻿
+
+#left-sidebar-container {
+    width: var(--left-sidebar-container-width);
+    position: fixed; /* Ensures it stays in place */
+    top: calc(var(--header-height, 60px)); /* Adjust based on your header height */
+    bottom: 0;
+    height: calc(100vh - var(--header-height, 60px)); /* Full viewport height minus header height */
+    overflow-y: auto; /* Add scrolling if content overflows */
+    background-color: var(--bs-body-bg, #f8f9fa); /* Fallback to light gray if variable is not defined */
+    overflow-x: auto;
+    transition: transform 0.3s ease-in-out;
+    z-index: 1030;
+}
+
+main, footer {
+    margin-left: calc(var(--left-sidebar-container-width) + 0px);
+    transition: margin-left 0.3s ease-in-out;
+}
+
+
+
+
+
+.left-sidebar-toggle {
+    margin-left: var(--left-sidebar-container-width);
+    position: fixed; /* Ensures it stays in place */
+    top: calc(var(--header-height, 60px) + 50px); /* Adjust based on your header height */
+    transform: translate(-50%);
+    z-index: 3;
+    border-radius: 50%; /* Ensures the element is a perfect circle */
+    height: 35px;
+    width: 35px;
+    border: 1px solid var(--bs-gray-600);
+    display: flex; /* Enables flexbox for centering */
+    justify-content: center; /* Horizontally centers the content */
+    align-items: center;
+    background-color: var(--bs-body-bg, #f8f9fa);
+    transition: margin-left 0.3s ease-in-out;
+    z-index: 1040;
+}
+
+
+/* For when sidebar is closed - desktop */
+main.sidebar-closed, footer.sidebar-closed {
+    margin-left: 0;
+}
+/* Desktop sidebar closed styles */
+#left-sidebar-container.sidebar-closed {
+    transform: translateX(-100%);
+}
+
+.left-sidebar-toggle.sidebar-closed {
+    margin-left: 0;
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+    #left-sidebar-container {
+        transform: translateX(-100%);
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    }
+
+        #left-sidebar-container.sidebar-open {
+            transform: translateX(0);
+        }
+
+    .left-sidebar-toggle {
+        margin-left: 0;
+    }
+
+    main, footer {
+        margin-left: 0;
+    }
+
+    body.sidebar-open::after {
+        content: '';
+        position: fixed;
+        top: var(--header-height, 60px);
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1029;
+    }
+}

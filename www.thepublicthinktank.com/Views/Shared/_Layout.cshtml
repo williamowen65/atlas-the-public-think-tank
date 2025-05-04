@@ -7,7 +7,8 @@
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/atlas_the_public_think_tank.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/left-sidebar-container.css" asp-append-version="true" />
+    @* <link rel="stylesheet" href="~/atlas_the_public_think_tank.styles.css" asp-append-version="true" /> *@
 
     <script src="https://kit.fontawesome.com/16aebb51db.js" crossorigin="anonymous"></script>
     <script src="~/js/ajax_crud.js"></script>
@@ -17,26 +18,13 @@
     <partial name="_ColorMode" />
 
     
-    <header class="py-3  border-bottom sticky-top bg-body">
-        <div class="container-fluid d-grid gap-3 align-items-center" style="grid-template-columns: 1fr 2fr;">
-            @* <a asp-area="" asp-controller="Home" asp-action="Index" class="d-flex align-items-center col-lg-4 mb-2 mb-lg-0 link-body-emphasis text-decoration-none text-nowrap fw-bold"> *@
-            @*     Will's Development Storefront *@
-            @* </a> *@
-            <div class="dropdown">
-                <a asp-area="" asp-controller="Home" asp-action="Index" class="ff-consolas d-flex align-items-center col-lg-4 mb-2 mb-lg-0 link-body-emphasis text-decoration-none dropdown-toggle fw-bold" data-bs-toggle="dropdown" aria-expanded="false">
-                    Atlas - The Public Think Tank
-                </a>
-                <ul class="dropdown-menu text-small shadow" style="">
-                    <li><i class="dropdown-item text-center" style="pointer-events: none; font-style:italic">@ViewData["DropdownText"] </i></li>
-
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item @(ViewData["Page"]?.ToString() == "home" ? "active" : "")" asp-area="" asp-controller="home" asp-action="index">Landing Page</a></li>
-                    <li><a class="dropdown-item @(ViewData["Page"]?.ToString() == "projects" ? "active" : "")" asp-area="" asp-controller="projects" asp-action="index">Projects</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    @* <li><a class="dropdown-item" href="#">Analytics</a></li> *@
-                    <li><i class="dropdown-item" style="pointer-events: none; font-style:italic">Thanks for checking out my work! </i></li>
-                </ul>
-            </div>
+    <header class="py-3 main-header border-bottom sticky-top bg-body">
+        <div class="container-fluid d-grid gap-3 align-items-center" style="grid-template-columns: calc(var(--left-sidebar-container-width) - 36px) 1fr;">
+          
+            <a asp-area="" asp-controller="Home" asp-action="Index" class="ff-consolas d-flex align-items-center col-lg-4 mb-2 mb-lg-0 link-body-emphasis text-decoration-none fw-bold w-100" >
+                Atlas - The Public Think Tank
+            </a>
+          
 
             <div class="d-flex align-items-center">
                 <form class="w-100 me-3" role="search">
@@ -55,12 +43,11 @@
 
     </header>
 
+    @Html.Partial("~/Views/Forum/_left-sidebar-container.cshtml")
 
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
+    <main role="main" class="pb-3">
+        @RenderBody()
+    </main>
 
     <footer class="border-top footer text-muted">
         <div class="container">
@@ -70,6 +57,9 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/left-sidebar-container.js" asp-append-version="true"></script>
+
+
 
     <script src="~/js/color-modes.js" asp-append-version="true"></script>
     <script src="https://cdn.jsdelivr.net/npm/masonry-layout@4.2.2/dist/masonry.pkgd.min.js" integrity="sha384-GNFwBvfVxBkLMJpYMOABq3c+d3KnQxudP/mGPkzpZSTYykLBNsZEnG2D9G/X/+7D" crossorigin="anonymous" async></script>
