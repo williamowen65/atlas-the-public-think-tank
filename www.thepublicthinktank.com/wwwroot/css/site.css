@@ -56,13 +56,15 @@ header.main-header {
     margin-right: 0;
 }
 
-.general-btn {
+.general-btn, .general-btn .anchor-btn-wrapper {
     display: flex;
     align-items: center;
     margin-inline: .5rem !important;
     border-radius: 19px;
     height: 40px;
     --background-hover-color: rgb(52, 61, 66);
+    overflow: hidden; /* prevent anchor tags for bleeding outside of container */
+    width: 121px;
 }
 
 .general-btn i {
@@ -75,4 +77,9 @@ header.main-header {
 
 .hoverable:hover {
   background-color: var(--background-hover-color);
+}
+
+.anchor-btn-wrapper {
+    text-decoration:none;
+/*    cursor:default;*/
 }
