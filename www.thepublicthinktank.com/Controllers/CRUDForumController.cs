@@ -19,6 +19,7 @@ namespace atlas_the_public_think_tank.Controllers
             _userManager = userManager;
         }
 
+
         [Route("/create")]
         public IActionResult Create()
         {
@@ -31,29 +32,61 @@ namespace atlas_the_public_think_tank.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ForumPost_CreateVM model)
         {
-           if (ModelState.IsValid)
-           {
-               var user = await _userManager.GetUserAsync(User);
+            if (ModelState.IsValid)
+            {
+                var user = await _userManager.GetUserAsync(User);
 
-               var forumPost = new ForumPost
-               {
-                   Title = model.Title,
-                   Content = model.Content,
-                   CategoryID = model.CategoryID,
-                   ParentPostID = model.ParentPostID,
-                   Status = model.Status,
-                   UserID = user.Id,
-                   CreatedAt = DateTime.UtcNow
-               };
+                var forumPost = new ForumPost
+                {
+                    Title = model.Title,
+                    Content = model.Content,
+                    CategoryID = model.CategoryID,
+                    ParentPostID = model.ParentPostID,
+                    Status = model.Status,
+                    UserID = user.Id,
+                    CreatedAt = DateTime.UtcNow
+                };
 
-               _context.ForumPosts.Add(forumPost);
-               await _context.SaveChangesAsync();
+                _context.ForumPosts.Add(forumPost);
+                await _context.SaveChangesAsync();
 
-               return RedirectToAction("Index", "Home");
-           }
+                return RedirectToAction("Index", "Home");
+            }
 
-           ViewBag.Categories = _context.Categories.ToList();
-           return View(model);
+            ViewBag.Categories = _context.Categories.ToList();
+            return View(model);
+        }
+
+        [HttpGet]
+        [Route("/api/posts")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetAllPosts()
+        {
+            var posts = await _context.ForumPosts
+                .Include(p => p.Category)
+                .Include(p => p.User)
+                    .Select(p => new ForumPost_ReadVM
+                    {
+                        PostID = p.PostID,
+                        Title = p.Title,
+                        Content = p.Content,
+                        Status = p.Status,
+                        CreatedAt = p.CreatedAt,
+                        UpdatedAt = p.UpdatedAt,
+                        Category = new Category_ReadVM
+                        {
+                            CategoryID = p.Category.CategoryID,
+                            Name = p.Category.Name
+                        },
+                        User = new User_ReadVM
+                        {
+                            Id = p.User.Id,
+                            UserName = p.User.UserName
+                        }
+                    })
+                .ToListAsync();
+
+            return Ok(posts);
         }
 
     }
