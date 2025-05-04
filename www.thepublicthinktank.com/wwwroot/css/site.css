@@ -1,6 +1,16 @@
+
+/* Global CSS Variables */
+:root {
+    --header-height: 70.4px;
+    --left-sidebar-container-width: 300px;
+}
+
+
+
 html {
   font-size: 14px;
 }
+
 
 @media (min-width: 768px) {
   html {
@@ -29,3 +39,16 @@ body {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
+
+
+
+/* CSS Above this was auto generated */
+
+header.main-header {
+    height: var(--header-height);
+}
+.transparent-btn {
+    border: none;
+    background: transparent;
+}
+

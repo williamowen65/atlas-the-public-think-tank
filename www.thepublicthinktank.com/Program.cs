@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using atlas_the_public_think_tank.Data;
+using atlas_the_public_think_tank.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,20 +18,20 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
+builder.Services.AddDefaultIdentity<AppUser>(options => options.SignIn.RequireConfirmedAccount = true).AddEntityFrameworkStores<ApplicationDbContext>();
+
+
+
+
 // Add a developer-friendly exception filter for database-related errors
 // (helps provide detailed error information during development)
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-
-// Register Identity services for authentication and user management
-// Configure Identity to require confirmed accounts before signing in
-// and store Identity data using the ApplicationDbContext
-builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
-    .AddEntityFrameworkStores<ApplicationDbContext>();
 
 // Add MVC support (controllers with views) to the service container
 // This enables routing HTTP requests to controller actions
 builder.Services.AddControllersWithViews();
 
+builder.Services.AddRazorPages();
 
 var app = builder.Build();
 

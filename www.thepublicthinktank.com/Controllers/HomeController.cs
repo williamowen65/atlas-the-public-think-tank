@@ -15,15 +15,10 @@ public class HomeController : Controller
 
     public IActionResult Index()
     {
-        //_logger.LogInformation("Loading home page");
-        //_logger.LogDebug("Testing a log with debug level");
-        //_logger.LogWarning("Testing a log with warning level");
-        //_logger.LogError("Testing a log with error level");
-
-        //Console.WriteLine("Testing regular write line");
         return View();
     }
 
+    [Route("test")]
     public IActionResult Privacy()
     {
         return View();
