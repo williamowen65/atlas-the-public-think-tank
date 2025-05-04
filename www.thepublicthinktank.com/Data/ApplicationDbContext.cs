@@ -10,4 +10,7 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
         : base(options)
     {
     }
+
+    public DbSet<ForumPost> ForumPosts { get; set; }
+    public DbSet<Category> Categories { get; set; }
 }
