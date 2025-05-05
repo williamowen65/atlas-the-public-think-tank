@@ -1,4 +1,6 @@
-﻿document.addEventListener('DOMContentLoaded', function () {
+﻿document.addEventListener('DOMContentLoaded', async function () {
+    // Load sidebar content via AJAX
+    await loadSidebarContent();
 
     document.documentElement.classList.remove('sidebar-initial-closed');
     // Get the sidebar toggle button and sidebar
@@ -121,3 +123,34 @@
         });
     }
 });
+
+
+
+// Function to load sidebar content via AJAX
+// Function to load sidebar content via AJAX
+async function loadSidebarContent() {
+    const sidebarContainer = document.getElementById('left-sidebar-container');
+
+    if (!sidebarContainer) {
+        console.log("Left-sidebar-container not found");
+        return Promise.resolve(); // Return a resolved promise if container not found
+    }
+
+    try {
+        console.log("About to fetch sidebar")
+        const response = await fetch('/api/sidebar');
+
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+
+        const html = await response.text();
+        sidebarContainer.innerHTML = html;
+
+        return Promise.resolve(); // Explicitly return a resolved promise
+    } catch (error) {
+        console.error('Error loading sidebar:', error);
+        sidebarContainer.innerHTML = '<div class="alert alert-danger">Failed to load sidebar content</div>';
+        return Promise.reject(error); // Return a rejected promise on error
+    }
+}
