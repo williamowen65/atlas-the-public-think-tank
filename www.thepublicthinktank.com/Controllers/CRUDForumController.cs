@@ -89,5 +89,22 @@ namespace atlas_the_public_think_tank.Controllers
             return Ok(posts);
         }
 
+
+        [HttpGet]
+        [Route("/api/categories")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetAllCategories()
+        {
+            var posts = await _context.Categories
+                    .Select(p => new Category_ReadVM
+                        {
+                            CategoryID = p.CategoryID,
+                            Name = p.Name
+                        })
+                .ToListAsync();
+
+            return Ok(posts);
+        }
+
     }
 }

@@ -4,17 +4,7 @@
 @{
 }
 
-@* 
 
-width 267px 
-
-Height 100%
-Scroll Y
-
-Collapse button
-    Menu or side of container
-
-*@
 
 
 @Html.Partial("~/Views/Forum/_left-sidebar-toggle.cshtml")
@@ -25,10 +15,20 @@ Collapse button
   
 
     <header class="d-flex justify-content-between pt-2">
-        <h3>Forums</h3>
-        <button class="transparent-btn">
-            <i>filter</i>
-        </button>
+        <h3>Forum Categories</h3>
+        <div class="dropdown">
+         <button class="transparent-btn"> 
+            <a href="#" class="d-flex align-items-center col-lg-4 mb-2 mb-lg-0 link-body-emphasis text-decoration-none " data-bs-toggle="dropdown" aria-expanded="false" aria-label="Bootstrap menu">
+         </button> 
+                
+            <i class="fa fa-filter"></i>
+            </a>
+            <ul class="dropdown-menu text-small shadow" style="">
+                <li><a class="dropdown-item" href="#">Filter by Date</a></li>
+                <li><a class="dropdown-item" href="#">Filter by Tags</a></li>
+                <li><a class="dropdown-item" href="#">Filter by Author</a></li>
+            </ul>
+        </div>
     </header>
 
     <hr />

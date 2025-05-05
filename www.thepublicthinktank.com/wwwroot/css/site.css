@@ -83,3 +83,7 @@ header.main-header {
     text-decoration:none;
 /*    cursor:default;*/
 }
+
+.accordion-button:focus {
+    box-shadow: none;
+}
