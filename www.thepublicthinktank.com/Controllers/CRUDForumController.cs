@@ -103,8 +103,27 @@ namespace atlas_the_public_think_tank.Controllers
                         })
                 .ToListAsync();
 
+
             return Ok(posts);
         }
+
+        // Add this to CRUDForumController.cs
+        [HttpGet]
+        [Route("/api/sidebar")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetSidebar()
+        {
+            var categories = await _context.Categories
+                .Select(p => new Category_ReadVM
+                {
+                    CategoryID = p.CategoryID,
+                    Name = p.Name
+                })
+                .ToListAsync();
+
+            return PartialView("~/Views/Forum/_left-sidebar-container.cshtml", categories);
+        }
+
 
     }
 }

@@ -57,7 +57,15 @@
 
     </header>
 
-    @Html.Partial("~/Views/Forum/_left-sidebar-container.cshtml")
+        <!-- Add this after the header section -->
+        <button class="transparent-btn left-sidebar-toggle" aria-label="Toggle sidebar">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+        <div id="left-sidebar-container" class="px-3">
+            <!-- Sidebar content will be loaded here via AJAX -->
+        </div>
+
+    @* @Html.Partial("~/Views/Forum/_left-sidebar-container.cshtml") *@
 
     <main role="main" class="pb-3 px-3">
         @RenderBody()

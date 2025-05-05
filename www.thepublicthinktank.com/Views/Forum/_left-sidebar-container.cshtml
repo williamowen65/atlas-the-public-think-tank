@@ -1,4 +1,6 @@
-﻿@*
+﻿@model List<Category_ReadVM>
+
+@*
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
 @{
@@ -7,9 +9,7 @@
 
 
 
-@Html.Partial("~/Views/Forum/_left-sidebar-toggle.cshtml")
 
-<div id="left-sidebar-container" class="px-3">
 
 
   
@@ -33,19 +33,46 @@
 
     <hr />
 
-    <div class="accordion">
-        <div class="accordion-item">
-            <h2 class="accordion-header " >
-                <button style="--background-hover-color: #191c1f" class="accordion-button collapsed hoverable" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseTwo" aria-expanded="false" aria-controls="flush-collapseTwo">
-                    Accordion Item #2
-                </button>
-            </h2>
-            <div id="flush-collapseTwo" class="accordion-collapse collapse" data-bs-parent="#accordionFlushExample">
-                <div class="accordion-body">Placeholder content for this accordion, which is intended to demonstrate the <code>.accordion-flush</code> class. This is the second item's accordion body. Let's imagine this being filled with some actual content.</div>
+
+    <div class="accordion" id="categoriesAccordion">
+        @if (@Model.Any())
+        {
+            @foreach (var category in Model)
+            {
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button style="--background-hover-color: #191c1f"
+                                class="accordion-button collapsed hoverable"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#category-@category.CategoryID"
+                                aria-expanded="false"
+                                aria-controls="category-@category.CategoryID">
+                            @category.Name
+                        </button>
+                    </h2>
+                    <div id="category-@category.CategoryID"
+                         class="accordion-collapse collapse"
+                         data-bs-parent="#categoriesAccordion">
+                        <div class="accordion-body">
+                            <a href="/category/@category.CategoryID" class="d-block mb-2">View all posts</a>
+                            <!-- You can add subcategories or related links here -->
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="alert alert-info">
+                No categories available.
             </div>
-        </div>
+        }
     </div>
+
+
 </div>
+
 
 
 
