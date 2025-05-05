@@ -80,7 +80,6 @@ namespace atlas_the_public_think_tank.Data
             {
                 await roleManager.CreateAsync(new IdentityRole("Admin"));
             }
-
         }
 
         public static async Task SeedDefaultUsers(UserManager<AppUser> userManager)

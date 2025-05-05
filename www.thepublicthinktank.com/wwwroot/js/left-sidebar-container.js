@@ -1,4 +1,6 @@
 ﻿document.addEventListener('DOMContentLoaded', function () {
+
+    document.documentElement.classList.remove('sidebar-initial-closed');
     // Get the sidebar toggle button and sidebar
     const sidebarToggle = document.querySelector('.left-sidebar-toggle');
     const sidebar = document.getElementById('left-sidebar-container');

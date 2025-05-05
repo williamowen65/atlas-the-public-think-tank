@@ -42,10 +42,15 @@ main, footer {
 
 
 /* For when sidebar is closed - desktop */
+.sidebar-initial-closed #left-sidebar-container,
+.sidebar-initial-closed .left-sidebar-toggle,
+.sidebar-initial-closed main,
+.sidebar-initial-closed footer,
 main.sidebar-closed, footer.sidebar-closed {
     margin-left: 0;
 }
 /* Desktop sidebar closed styles */
+.sidebar-initial-closed #left-sidebar-container ,
 #left-sidebar-container.sidebar-closed {
     transform: translateX(-100%);
 }
