@@ -89,3 +89,60 @@ main.sidebar-closed, footer.sidebar-closed {
         z-index: 1029;
     }
 }
+
+
+
+/* Container for the toggle */
+.toggle-container {
+    width: 100px;
+    height: 50px;
+    position: relative;
+}
+
+/* Lens element */
+#view-mode-toggle-lens.lens {
+    top: 0;
+    height: 100%;
+    width: 50%;
+    position: absolute;
+    transition: transform 0.3s ease; /* Smooth transition for movement */
+
+}
+
+/* Outline element */
+#view-toggle-outline.outline {
+    width: 100px;
+    height: 50px;
+    border: 1px solid var(--bs-info);
+    border-radius: 0.25rem;
+    position: absolute;
+}
+
+
+/* Left toggle button */
+.toggle-option.left-option {
+    left: 0;
+    top: 50%;
+    width: 50px;
+    transform: translateY(-50%);
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    padding: 0.5rem;
+}
+
+/* Right toggle button */
+.toggle-option.right-option {
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 50px;
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    padding: 0.5rem;
+}

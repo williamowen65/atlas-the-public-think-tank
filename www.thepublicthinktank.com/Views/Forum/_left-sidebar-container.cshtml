@@ -12,63 +12,69 @@
 
 
 
-  
 
-    <header class="d-flex justify-content-between pt-2">
-        <h3>Forum Categories</h3>
-        <div class="dropdown">
-         <button class="transparent-btn"> 
-            <a href="#" class="d-flex align-items-center col-lg-4 mb-2 mb-lg-0 link-body-emphasis text-decoration-none " data-bs-toggle="dropdown" aria-expanded="false" aria-label="Bootstrap menu">
-         </button> 
-                
-            <i class="fa fa-filter"></i>
-            </a>
-            <ul class="dropdown-menu text-small shadow" style="">
-                <li><a class="dropdown-item" href="#">Filter by Date</a></li>
-                <li><a class="dropdown-item" href="#">Filter by Tags</a></li>
-                <li><a class="dropdown-item" href="#">Filter by Author</a></li>
-            </ul>
+
+<header class="d-flex justify-content-between pt-2 align-items-center">
+    <h3 class="" style="width: min-content">Forum Categories</h3>
+    <div class="view-mode-toggle position-relative">
+        <div class="toggle-container overflow-hidden">
+            <input class="d-none" id="tree" type="radio" name="view-mode" checked />
+            <input class="d-none" id="info" type="radio" name="view-mode" />
+
+            <div id="view-mode-toggle-lens" class="bg-body-secondary lens"></div>
+
+            <div id="view-toggle-outline" class="outline"></div>
+
+            <label role="button" for="tree" class="fs-3 toggle-option left-option">
+                <i class="fa-solid fa-sitemap"></i>
+            </label>
+            <label role="button" for="info" class="fs-3 toggle-option right-option">
+                <i class="fa-solid fa-info-circle"></i>
+            </label>
         </div>
-    </header>
+    </div>
+</header>
 
-    <hr />
+<hr />
 
 
-    <div class="accordion" id="categoriesAccordion">
-        @if (@Model.Any())
+<div class="accordion" id="categoriesAccordion">
+    @if (@Model.Any())
+    {
+        @foreach (var category in Model)
         {
-            @foreach (var category in Model)
-            {
-                <div class="accordion-item">
-                    <h2 class="accordion-header">
-                        <button style="--background-hover-color: #191c1f"
-                                class="accordion-button collapsed hoverable"
-                                type="button"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#category-@category.CategoryID"
-                                aria-expanded="false"
-                                aria-controls="category-@category.CategoryID">
-                            @category.Name
-                        </button>
-                    </h2>
-                    <div id="category-@category.CategoryID"
-                         class="accordion-collapse collapse"
-                         data-bs-parent="#categoriesAccordion">
-                        <div class="accordion-body">
-                            <a href="/category/@category.CategoryID" class="d-block mb-2">View all posts</a>
-                            <!-- You can add subcategories or related links here -->
-                        </div>
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button style="--background-hover-color: #191c1f"
+                            class="accordion-button collapsed hoverable"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#category-@category.CategoryID"
+                            aria-expanded="false"
+                            aria-controls="category-@category.CategoryID">
+                        @category.Name
+                    </button>
+                </h2>
+                <div id="category-@category.CategoryID"
+                     class="accordion-collapse collapse"
+                     data-bs-parent="#categoriesAccordion">
+                    <div class="accordion-body">
+                        <a href="/category/@category.CategoryID" class="d-block mb-2">View all posts</a>
+
+                        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Enim molestias officiis vitae placeat voluptatibus ipsam aspernatur error quia laborum quod quae, quisquam, qui recusandae iure cum fugit numquam dolorem adipisci omnis eos porro. Labore nemo exercitationem doloremque error magnam vel, dolorum architecto, tempore iusto alias, molestias deleniti. Iusto, eaque adipisci.
+                        <!-- You can add subcategories or related links here -->
                     </div>
                 </div>
-            }
-        }
-        else
-        {
-            <div class="alert alert-info">
-                No categories available.
             </div>
         }
-    </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            No categories available.
+        </div>
+    }
+</div>
 
 
 </div>

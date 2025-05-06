@@ -2,6 +2,8 @@
     // Load sidebar content via AJAX
     await loadSidebarContent();
 
+    setupViewToggle()
+
     document.documentElement.classList.remove('sidebar-initial-closed');
     // Get the sidebar toggle button and sidebar
     const sidebarToggle = document.querySelector('.left-sidebar-toggle');
@@ -153,4 +155,28 @@ async function loadSidebarContent() {
         sidebarContainer.innerHTML = '<div class="alert alert-danger">Failed to load sidebar content</div>';
         return Promise.reject(error); // Return a rejected promise on error
     }
+}
+
+
+function setupViewToggle() {
+
+    const lens = document.getElementById("view-mode-toggle-lens");
+    const treeToggle = document.getElementById("tree");
+    const infoToggle = document.getElementById("info");
+
+    // Function to move the lens
+    function moveLens() {
+        if (treeToggle.checked) {
+            lens.style.transform = "translateX(0)"; // Move to the left
+        } else if (infoToggle.checked) {
+            lens.style.transform = "translateX(100%)"; // Move to the right
+        }
+    }
+
+    // Attach event listeners to the radio buttons
+    treeToggle.addEventListener("change", moveLens);
+    infoToggle.addEventListener("change", moveLens);
+
+    // Initialize lens position on page load
+    moveLens();
 }
