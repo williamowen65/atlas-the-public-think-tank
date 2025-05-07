@@ -1,8 +1,8 @@
 ﻿document.addEventListener('DOMContentLoaded', async function () {
     // Load sidebar content via AJAX
-    //await loadSidebarContent();
+    await loadSidebarContent();
 
-    //setupViewToggle()
+    setupViewToggle()
 
     document.documentElement.classList.remove('sidebar-initial-closed');
     // Get the sidebar toggle button and sidebar
