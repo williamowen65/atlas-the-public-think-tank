@@ -22,7 +22,7 @@ namespace atlas_the_public_think_tank.Data
             await SeedScopes(context);
             
             // Add seed data using stored procedures
-            await SeedDataWithStoredProcedures(context, userManager);
+            // await SeedDataWithStoredProcedures(context, userManager);
 
             Console.WriteLine("Seeding complete!");
         }
@@ -152,77 +152,7 @@ namespace atlas_the_public_think_tank.Data
                     @"EXEC @forumID_INSERT = spForums_INSERT
                         @ForumID = 2,
                         @Title = 'The Public Think Tank: What features would improve it?',
-                        @Description = 'Social media can play a significant role in helping \
-humanity reach goals for a cohesive and thriving global society, provided it \
-is used effectively and responsibly. \
-Here's how social media can contribute:\
-\
-1. **Raising Awareness:**  \
-   Social media platforms can spread awareness about important \
-   issues such as climate change, inequality, and health \
-   crises. Campaigns and informational content can reach large \
-   audiences quickly and mobilize action.\
-\
-2. **Facilitating Communication:**  \
-   Social media enables global communication and collaboration, \
-   allowing people from different regions and backgrounds to \
-   connect, share ideas, and work together on common goals.\
-\
-3. **Supporting Activism:**  \
-   Social media has been a powerful tool for grassroots \
-   movements and activism. It can help organize events, rally \
-   support, and drive social and political change.\
-\
-4. **Crowdsourcing Solutions:**  \
-   Platforms can be used to gather input and ideas from diverse \
-   populations, leveraging collective intelligence to solve \
-   problems and innovate.\
-\
-5. **Educational Outreach:**  \
-   Social media can provide access to educational resources, \
-   expert knowledge, and learning opportunities. It can also \
-   support digital literacy and critical thinking.\
-\
-6. **Community Building:**  \
-   Social media helps build and strengthen communities around \
-   shared interests and causes. Online communities can offer \
-   support, share resources, and amplify voices.\
-\
-7. **Promoting Transparency and Accountability:**  \
-   Social media can be used to monitor and report on issues \
-   such as corruption, environmental damage, and human rights \
-   abuses. It provides a platform for holding individuals and \
-   institutions accountable.\
-\
-8. **Disseminating Critical Information:**  \
-   In times of crisis, social media can quickly disseminate \
-   important information, provide updates, and coordinate \
-   responses.\
-\
-However, there are challenges and risks associated with social \
-media use:\
-\
-- **Misinformation and Fake News:**  \
-  The spread of misinformation can undermine efforts and create \
-  confusion. It's crucial to verify information and promote \
-  media literacy.\
-\
-- **Privacy and Security:**  \
-  Ensuring user privacy and data security is essential to \
-  maintaining trust and protecting individuals from harm.\
-  \
-- **Echo Chambers:**  \
-  Social media can create echo chambers where users are exposed \
-  only to information that reinforces their existing beliefs. \
-  This can hinder constructive dialogue and understanding.\
-\
-- **Digital Divide:**  \
-  Access to social media and digital technologies is uneven \
-  across the globe, which can exacerbate inequalities.\
-\
-By addressing these challenges and using social media \
-strategically, it can be a valuable tool in promoting positive \
-change and helping humanity achieve its goals.',
+                        @Description = 'placeholder',
                         @AuthorID = @user3Id,
                         @ScopeID = 2,
                         @ParentForumID = NULL,
