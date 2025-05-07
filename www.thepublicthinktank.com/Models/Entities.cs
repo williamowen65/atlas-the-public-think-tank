@@ -77,20 +77,7 @@ namespace atlas_the_public_think_tank.Models
         public virtual ICollection<ForumCategory> ForumCategories { get; set; }
     }
 
-    public class Forum_CreateVM
-    {
-        public int ForumID { get; set; }
-        public string Title { get; set; }
-        public string Description { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? ModifiedAt { get; set; }
-        public string AuthorID { get; set; }
-        public int ScopeID { get; set; }
-        public int? ParentForumID { get; set; }
-        public int? BlockedContentID { get; set; }
 
-      
-    }
 
 
     public class Solution
