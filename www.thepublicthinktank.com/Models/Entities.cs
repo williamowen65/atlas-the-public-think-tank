@@ -60,7 +60,7 @@ namespace atlas_the_public_think_tank.Models
         public ContentStatus ContentStatus { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? ModifiedAt { get; set; }
-        public int AuthorID { get; set; }
+        public string AuthorID { get; set; }
         public int ScopeID { get; set; }
         public int? ParentForumID { get; set; }
         public int? BlockedContentID { get; set; }
@@ -84,7 +84,7 @@ namespace atlas_the_public_think_tank.Models
         public string Description { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? ModifiedAt { get; set; }
-        public int AuthorID { get; set; }
+        public string AuthorID { get; set; }
         public int ScopeID { get; set; }
         public int? ParentForumID { get; set; }
         public int? BlockedContentID { get; set; }
@@ -99,7 +99,7 @@ namespace atlas_the_public_think_tank.Models
         public int ForumID { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
-        public int AuthorID { get; set; }
+        public string AuthorID { get; set; }
         public DateTime? CreatedAt { get; set; }
         public DateTime? ModifiedAt { get; set; }
         public int? BlockedContentID { get; set; }
@@ -124,7 +124,7 @@ namespace atlas_the_public_think_tank.Models
         public int? ForumID { get; set; }
         public int? ForumSolutionID { get; set; }
         public string Comment_ { get; set; }
-        public int AuthorID { get; set; }
+        public string AuthorID { get; set; }
         public DateTime? CreatedAt { get; set; }
         public DateTime? ModifiedAt { get; set; }
         public int? ParentCommentID { get; set; }
@@ -145,7 +145,7 @@ namespace atlas_the_public_think_tank.Models
         public int ForumID { get; set; }
         public int ForumSolutionID { get; set; }
         public int CommentID { get; set; }
-        public int UserID { get; set; }
+        public string UserID { get; set; }
         public int Vote { get; set; }
 
         // Navigation properties
@@ -167,7 +167,7 @@ namespace atlas_the_public_think_tank.Models
     public class UserHistory
     {
         public int UserHistoryID { get; set; }
-        public int UserID { get; set; }
+        public string UserID { get; set; }
         public string Action { get; set; }
         public string Link { get; set; }
         public int? ForumID { get; set; }
