@@ -9,12 +9,14 @@ namespace atlas_the_public_think_tank.Data
     UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager)
         {
 
-            await SeedDefaultRoles(roleManager);
-         
-            // Seed default users
-            await SeedDefaultUsers(userManager);
+            Console.WriteLine("TODO: Seed data");
 
-            await SeedCategories(context);
+            //await SeedDefaultRoles(roleManager);
+         
+            //// Seed default users
+            //await SeedDefaultUsers(userManager);
+
+            //await SeedCategories(context);
         }
 
         public static async Task SeedCategories(ApplicationDbContext context)
@@ -25,51 +27,51 @@ namespace atlas_the_public_think_tank.Data
                 return;   // DB has already been seeded with categories
             }
 
-            var categories = new List<Category>
-            {
-                new Category { 
-                    Name = "Global Cooperation" ,
-                    Description = "",
-                     CreatedAt = DateTime.UtcNow
-                },
-                new Category { 
-                    Name = "Sustainable Development" ,
-                    Description = "",
-                     CreatedAt = DateTime.UtcNow
-                },
-                new Category { 
-                    Name = "Equitable Access" ,
-                    Description = "",
-                     CreatedAt = DateTime.UtcNow
-                },
-                new Category { 
-                    Name = "Innovation and Technology" ,
-                    Description = "",
-                     CreatedAt = DateTime.UtcNow
-                },
-                new Category { 
-                    Name = "Effective Governance" ,
-                    Description = "",
-                     CreatedAt = DateTime.UtcNow
-                },
-                new Category { 
-                    Name = "Education and Awareness" ,
-                    Description = "",
-                     CreatedAt = DateTime.UtcNow
-                },
-                new Category { 
-                    Name = "Cultural Understanding" ,
-                    Description = "",
-                     CreatedAt = DateTime.UtcNow
-                },
-                new Category { 
-                    Name = "Resilience and Adaptability",
-                    Description = "",
-                     CreatedAt = DateTime.UtcNow
-                 }
-            };
+            //var categories = new List<Category>
+            //{
+            //    new Category { 
+            //        Name = "Global Cooperation" ,
+            //        Description = "",
+            //         CreatedAt = DateTime.UtcNow
+            //    },
+            //    new Category { 
+            //        Name = "Sustainable Development" ,
+            //        Description = "",
+            //         CreatedAt = DateTime.UtcNow
+            //    },
+            //    new Category { 
+            //        Name = "Equitable Access" ,
+            //        Description = "",
+            //         CreatedAt = DateTime.UtcNow
+            //    },
+            //    new Category { 
+            //        Name = "Innovation and Technology" ,
+            //        Description = "",
+            //         CreatedAt = DateTime.UtcNow
+            //    },
+            //    new Category { 
+            //        Name = "Effective Governance" ,
+            //        Description = "",
+            //         CreatedAt = DateTime.UtcNow
+            //    },
+            //    new Category { 
+            //        Name = "Education and Awareness" ,
+            //        Description = "",
+            //         CreatedAt = DateTime.UtcNow
+            //    },
+            //    new Category { 
+            //        Name = "Cultural Understanding" ,
+            //        Description = "",
+            //         CreatedAt = DateTime.UtcNow
+            //    },
+            //    new Category { 
+            //        Name = "Resilience and Adaptability",
+            //        Description = "",
+            //         CreatedAt = DateTime.UtcNow
+            //     }
+            //};
 
-            context.Categories.AddRange(categories);
+            //context.Categories.AddRange(categories);
             await context.SaveChangesAsync();
         }   
 

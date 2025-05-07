@@ -1,4 +1,4 @@
-﻿@model List<Category_ReadVM>
+﻿@model List<Category>
 
 @*
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -52,7 +52,7 @@
                             data-bs-target="#category-@category.CategoryID"
                             aria-expanded="false"
                             aria-controls="category-@category.CategoryID">
-                        @category.Name
+                        @category.CategoryName
                     </button>
                 </h2>
                 <div id="category-@category.CategoryID"

@@ -1,4 +1,4 @@
-﻿@model List<atlas_the_public_think_tank.Models.ForumPost_ReadVM>
+﻿@model List<atlas_the_public_think_tank.Models.Forum>
 
 @using Microsoft.AspNetCore.Identity
 @inject SignInManager<AppUser> SignInManager
@@ -18,9 +18,9 @@
             <li>
                 <strong>@post.Title</strong> - @post.Content
                 <br />
-                <em>Category: @post.Category?.Name</em>
+                @* <em>Category: @post.Category?.Name</em> *@
                 <br />
-                <em>Posted by: @post.User?.UserName</em>
+                <em>Posted by: @post.Author?.UserName</em>
             </li>
         }
     </ul>
