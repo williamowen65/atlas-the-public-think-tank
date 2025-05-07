@@ -329,7 +329,7 @@ namespace atlas_the_public_think_tank.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     ForumID = table.Column<int>(type: "int", nullable: true),
                     ForumSolutionID = table.Column<int>(type: "int", nullable: true),
-                    Comment_ = table.Column<string>(type: "nvarchar(3000)", maxLength: 3000, nullable: false),
+                    Comment = table.Column<string>(type: "nvarchar(3000)", maxLength: 3000, nullable: false),
                     AuthorID = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     ModifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true),

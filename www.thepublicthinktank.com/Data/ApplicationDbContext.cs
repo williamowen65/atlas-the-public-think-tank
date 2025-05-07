@@ -14,7 +14,7 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
 
     public DbSet<Forum> Forums { get; set; }
     public DbSet<Solution> Solutions { get; set; }
-    public DbSet<Comment> Comments { get; set; }
+    public DbSet<UserComment> Comments { get; set; }
     public DbSet<Category> Categories { get; set; }
     public DbSet<Scope> Scopes { get; set; }
     public DbSet<BlockedContent> BlockedContents { get; set; }
@@ -30,7 +30,7 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
         // Configure schemas
         modelBuilder.Entity<Forum>().ToTable("Forums", "forums");
         modelBuilder.Entity<Solution>().ToTable("Solutions", "forums");
-        modelBuilder.Entity<Comment>().ToTable("Comments", "forums");
+        modelBuilder.Entity<UserComment>().ToTable("Comments", "forums");
         modelBuilder.Entity<Category>().ToTable("Categories", "forums");
         modelBuilder.Entity<Scope>().ToTable("Scopes", "forums");
         modelBuilder.Entity<BlockedContent>().ToTable("BlockedContent", "forums");
@@ -99,10 +99,10 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
         });
 
         // Configure Comment entity
-        modelBuilder.Entity<Comment>(entity =>
+        modelBuilder.Entity<UserComment>(entity =>
         {
             entity.HasKey(e => e.CommentID);
-            entity.Property(e => e.Comment_).HasMaxLength(3000).IsRequired();
+            entity.Property(e => e.Comment).HasMaxLength(3000).IsRequired();
 
             // Self-referencing relationship
             entity.HasOne(e => e.ParentComment)

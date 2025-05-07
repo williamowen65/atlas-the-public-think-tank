@@ -16,7 +16,7 @@ namespace atlas_the_public_think_tank.Models
         // Navigation properties
         public virtual ICollection<Forum> Forums { get; set; }
         public virtual ICollection<Solution> Solutions { get; set; }
-        public virtual ICollection<Comment> Comments { get; set; }
+        public virtual ICollection<UserComment> Comments { get; set; }
         public virtual ICollection<UserVote> UserVotes { get; set; }
         public virtual ICollection<UserHistory> UserHistory { get; set; }
     }
@@ -39,7 +39,7 @@ namespace atlas_the_public_think_tank.Models
         // Navigation properties
         public virtual ICollection<Forum> Forums { get; set; }
         public virtual ICollection<Solution> Solutions { get; set; }
-        public virtual ICollection<Comment> Comments { get; set; }
+        public virtual ICollection<UserComment> Comments { get; set; }
     }
 
     public class Category
@@ -72,7 +72,7 @@ namespace atlas_the_public_think_tank.Models
         public virtual ICollection<Forum> ChildForums { get; set; }
         public virtual BlockedContent BlockedContent { get; set; }
         public virtual ICollection<Solution> Solutions { get; set; }
-        public virtual ICollection<Comment> Comments { get; set; }
+        public virtual ICollection<UserComment> Comments { get; set; }
         public virtual ICollection<UserVote> UserVotes { get; set; }
         public virtual ICollection<ForumCategory> ForumCategories { get; set; }
     }
@@ -108,7 +108,7 @@ namespace atlas_the_public_think_tank.Models
         public virtual Forum Forum { get; set; }
         public virtual AppUser Author { get; set; }
         public virtual BlockedContent BlockedContent { get; set; }
-        public virtual ICollection<Comment> Comments { get; set; }
+        public virtual ICollection<UserComment> Comments { get; set; }
         public virtual ICollection<UserVote> UserVotes { get; set; }
     }
 
@@ -118,12 +118,12 @@ namespace atlas_the_public_think_tank.Models
         Published,
         Archived
     }
-    public class Comment
+    public class UserComment
     {
         public int CommentID { get; set; }
         public int? ForumID { get; set; }
         public int? ForumSolutionID { get; set; }
-        public string Comment_ { get; set; }
+        public string Comment { get; set; }
         public string AuthorID { get; set; }
         public DateTime? CreatedAt { get; set; }
         public DateTime? ModifiedAt { get; set; }
@@ -134,8 +134,8 @@ namespace atlas_the_public_think_tank.Models
         public virtual Forum Forum { get; set; }
         public virtual Solution Solution { get; set; }
         public virtual AppUser Author { get; set; }
-        public virtual Comment ParentComment { get; set; }
-        public virtual ICollection<Comment> ChildComments { get; set; }
+        public virtual UserComment ParentComment { get; set; }
+        public virtual ICollection<UserComment> ChildComments { get; set; }
         public virtual BlockedContent BlockedContent { get; set; }
         public virtual ICollection<UserVote> UserVotes { get; set; }
     }
@@ -151,7 +151,7 @@ namespace atlas_the_public_think_tank.Models
         // Navigation properties
         public virtual Forum Forum { get; set; }
         public virtual Solution Solution { get; set; }
-        public virtual Comment Comment { get; set; }
+        public virtual UserComment Comment { get; set; }
         public virtual AppUser User { get; set; }
     }
 
@@ -180,6 +180,6 @@ namespace atlas_the_public_think_tank.Models
         public virtual AppUser User { get; set; }
         public virtual Forum Forum { get; set; }
         public virtual Solution Solution { get; set; }
-        public virtual Comment Comment { get; set; }
+        public virtual UserComment Comment { get; set; }
     }
 }

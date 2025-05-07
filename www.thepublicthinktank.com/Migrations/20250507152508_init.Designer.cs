@@ -12,7 +12,7 @@ using atlas_the_public_think_tank.Data;
 namespace atlas_the_public_think_tank.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250507142951_init")]
+    [Migration("20250507152508_init")]
     partial class init
     {
         /// <inheritdoc />
@@ -260,56 +260,6 @@ namespace atlas_the_public_think_tank.Migrations
                     b.ToTable("Categories", "forums");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Comment", b =>
-                {
-                    b.Property<int>("CommentID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CommentID"));
-
-                    b.Property<string>("AuthorID")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int?>("BlockedContentID")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Comment_")
-                        .IsRequired()
-                        .HasMaxLength(3000)
-                        .HasColumnType("nvarchar(3000)");
-
-                    b.Property<DateTime?>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("ForumID")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ForumSolutionID")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("ParentCommentID")
-                        .HasColumnType("int");
-
-                    b.HasKey("CommentID");
-
-                    b.HasIndex("AuthorID");
-
-                    b.HasIndex("BlockedContentID");
-
-                    b.HasIndex("ForumID");
-
-                    b.HasIndex("ForumSolutionID");
-
-                    b.HasIndex("ParentCommentID");
-
-                    b.ToTable("Comments", "forums");
-                });
-
             modelBuilder.Entity("atlas_the_public_think_tank.Models.Forum", b =>
                 {
                     b.Property<int>("ForumID")
@@ -438,6 +388,56 @@ namespace atlas_the_public_think_tank.Migrations
                     b.HasIndex("ForumID");
 
                     b.ToTable("Solutions", "forums");
+                });
+
+            modelBuilder.Entity("atlas_the_public_think_tank.Models.UserComment", b =>
+                {
+                    b.Property<int>("CommentID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CommentID"));
+
+                    b.Property<string>("AuthorID")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int?>("BlockedContentID")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .HasMaxLength(3000)
+                        .HasColumnType("nvarchar(3000)");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("ForumID")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ForumSolutionID")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("ParentCommentID")
+                        .HasColumnType("int");
+
+                    b.HasKey("CommentID");
+
+                    b.HasIndex("AuthorID");
+
+                    b.HasIndex("BlockedContentID");
+
+                    b.HasIndex("ForumID");
+
+                    b.HasIndex("ForumSolutionID");
+
+                    b.HasIndex("ParentCommentID");
+
+                    b.ToTable("Comments", "forums");
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.UserHistory", b =>
@@ -571,45 +571,6 @@ namespace atlas_the_public_think_tank.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Comment", b =>
-                {
-                    b.HasOne("atlas_the_public_think_tank.Models.AppUser", "Author")
-                        .WithMany("Comments")
-                        .HasForeignKey("AuthorID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("atlas_the_public_think_tank.Models.BlockedContent", "BlockedContent")
-                        .WithMany("Comments")
-                        .HasForeignKey("BlockedContentID")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("atlas_the_public_think_tank.Models.Forum", "Forum")
-                        .WithMany("Comments")
-                        .HasForeignKey("ForumID")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("atlas_the_public_think_tank.Models.Solution", "Solution")
-                        .WithMany("Comments")
-                        .HasForeignKey("ForumSolutionID")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("atlas_the_public_think_tank.Models.Comment", "ParentComment")
-                        .WithMany("ChildComments")
-                        .HasForeignKey("ParentCommentID")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Author");
-
-                    b.Navigation("BlockedContent");
-
-                    b.Navigation("Forum");
-
-                    b.Navigation("ParentComment");
-
-                    b.Navigation("Solution");
-                });
-
             modelBuilder.Entity("atlas_the_public_think_tank.Models.Forum", b =>
                 {
                     b.HasOne("atlas_the_public_think_tank.Models.AppUser", "Author")
@@ -688,9 +649,48 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("Forum");
                 });
 
+            modelBuilder.Entity("atlas_the_public_think_tank.Models.UserComment", b =>
+                {
+                    b.HasOne("atlas_the_public_think_tank.Models.AppUser", "Author")
+                        .WithMany("Comments")
+                        .HasForeignKey("AuthorID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("atlas_the_public_think_tank.Models.BlockedContent", "BlockedContent")
+                        .WithMany("Comments")
+                        .HasForeignKey("BlockedContentID")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("atlas_the_public_think_tank.Models.Forum", "Forum")
+                        .WithMany("Comments")
+                        .HasForeignKey("ForumID")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("atlas_the_public_think_tank.Models.Solution", "Solution")
+                        .WithMany("Comments")
+                        .HasForeignKey("ForumSolutionID")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("atlas_the_public_think_tank.Models.UserComment", "ParentComment")
+                        .WithMany("ChildComments")
+                        .HasForeignKey("ParentCommentID")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Author");
+
+                    b.Navigation("BlockedContent");
+
+                    b.Navigation("Forum");
+
+                    b.Navigation("ParentComment");
+
+                    b.Navigation("Solution");
+                });
+
             modelBuilder.Entity("atlas_the_public_think_tank.Models.UserHistory", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.Comment", "Comment")
+                    b.HasOne("atlas_the_public_think_tank.Models.UserComment", "Comment")
                         .WithMany()
                         .HasForeignKey("CommentID")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -722,7 +722,7 @@ namespace atlas_the_public_think_tank.Migrations
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.UserVote", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.Comment", "Comment")
+                    b.HasOne("atlas_the_public_think_tank.Models.UserComment", "Comment")
                         .WithMany("UserVotes")
                         .HasForeignKey("CommentID")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -782,13 +782,6 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("ForumCategories");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Comment", b =>
-                {
-                    b.Navigation("ChildComments");
-
-                    b.Navigation("UserVotes");
-                });
-
             modelBuilder.Entity("atlas_the_public_think_tank.Models.Forum", b =>
                 {
                     b.Navigation("ChildForums");
@@ -810,6 +803,13 @@ namespace atlas_the_public_think_tank.Migrations
             modelBuilder.Entity("atlas_the_public_think_tank.Models.Solution", b =>
                 {
                     b.Navigation("Comments");
+
+                    b.Navigation("UserVotes");
+                });
+
+            modelBuilder.Entity("atlas_the_public_think_tank.Models.UserComment", b =>
+                {
+                    b.Navigation("ChildComments");
 
                     b.Navigation("UserVotes");
                 });
