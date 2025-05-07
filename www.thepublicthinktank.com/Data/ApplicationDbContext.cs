@@ -24,6 +24,9 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+
+        base.OnModelCreating(modelBuilder); // Ensure this is called
+
         // Configure schemas
         modelBuilder.Entity<Forum>().ToTable("Forums", "forums");
         modelBuilder.Entity<Solution>().ToTable("Solutions", "forums");
