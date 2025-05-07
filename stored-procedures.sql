@@ -48,7 +48,7 @@ CREATE PROC spForums_INSERT
     @Title VARCHAR(200),
     @Content VARCHAR(max),  
     @ContentStatus INT,
-    @AuthorID INT,
+    @AuthorID VARCHAR(50),
     @ScopeID INT,
     @ParentForumID INT,
     @BlockedContentID INT
@@ -88,7 +88,7 @@ INSERT users.UserHistory (
 ) VALUES (
     @AuthorID,
     'Created a forum',
-    NULL,
+    'link-to-content',
     @ForumID
     )
 Print 'Added a user history entry';
@@ -115,7 +115,7 @@ CREATE PROC spForums_UPDATE
     @Title VARCHAR(200),
     @Content VARCHAR(max),  
     @ContentStatus INT,
-    @AuthorID INT,
+    @AuthorID VARCHAR(50),
     @ScopeID INT,
     @ParentForumID INT,
     @BlockedContentID INT
@@ -157,7 +157,7 @@ CREATE PROC spComments_INSERT
     @Comment VARCHAR(3000),
     @ForumID INT,
     @SolutionID INT,
-    @AuthorID INT,
+    @AuthorID VARCHAR(50),
     @ParentCommentID INT,
     @BlockedContentID INT
 AS 
@@ -208,7 +208,7 @@ CREATE PROC spComments_UPDATE
     @Comment VARCHAR(3000),
     @ForumID INT,
     @SolutionID INT,
-    @AuthorID INT,
+    @AuthorID VARCHAR(50),
     @ParentCommentID INT,
     @BlockedContentID INT
 AS 
@@ -251,7 +251,7 @@ CREATE PROC spSolutions_INSERT
     @ForumID INT,
     @Title VARCHAR(400),
     @Description VARCHAR(max),
-    @AuthorID INT,
+    @AuthorID VARCHAR(50),
     @BlockedContentID INT
 AS 
 SET IDENTITY_INSERT forums.Solutions ON;
@@ -303,7 +303,7 @@ CREATE PROC spSolutions_UPDATE
     @ForumID INT,
     @Title VARCHAR(400),
     @Description VARCHAR(max),
-    @AuthorID INT,
+    @AuthorID VARCHAR(50),
     @BlockedContentID INT
 AS 
 SET IDENTITY_INSERT forums.Solutions ON;

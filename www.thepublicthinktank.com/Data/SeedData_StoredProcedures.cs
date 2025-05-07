@@ -3,6 +3,7 @@
 using atlas_the_public_think_tank.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
+using System.Data;
 
 namespace atlas_the_public_think_tank.Data
 {
@@ -42,58 +43,64 @@ namespace atlas_the_public_think_tank.Data
             // Execute stored procedure calls
             using (var connection = new SqlConnection(connectionString))
             {
-                //        await connection.OpenAsync();
+                await connection.OpenAsync();
 
-                //        // Declare variable for tracking inserted ForumID
-                //        using (var command = new SqlCommand("DECLARE @forumID_INSERT int;", connection))
-                //        {
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                // Declare variable for tracking inserted ForumID
+                using (var command = new SqlCommand("DECLARE @forumID_INSERT int;", connection))
+                {
+                    await command.ExecuteNonQueryAsync();
+                }
 
-                //        // Forum 2 - The Public Think Tank
-                //        using (var command = new SqlCommand(
-                //            @"EXEC @forumID_INSERT = spForums_INSERT
-                //                @ForumID = 2,
-                //                @Title = 'The Public Think Tank: What features would improve it?',
-                //                @Description = 'placeholder',
-                //                @AuthorID = @user3Id,
-                //                @ScopeID = 2,
-                //                @ParentForumID = NULL,
-                //                @BlockedContentID = NULL", connection))
-                //        {
-                //            command.Parameters.AddWithValue("@user3Id", user3.Id);
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                // Forum 2 - The Public Think Tank
+                using (var command = new SqlCommand(
+                    @"EXEC @forumID_INSERT = spForums_INSERT
+                                @ForumID = 2,
+                                @Title = 'The Public Think Tank: What features would improve it?',
+                                @Content = 'placeholder',
+                                @ContentStatus = 1,
+                                @AuthorID = @user3Id,
+                                @ScopeID = 2,
+                                @ParentForumID = NULL,
+                                @BlockedContentID = NULL", connection))
+                {
+                    command.Parameters.AddWithValue("@user3Id", user3.Id);
+                    var forumIdParam = new SqlParameter("@forumID_INSERT", SqlDbType.Int)
+                    {
+                        Direction = ParameterDirection.Output
+                    };
+                    command.Parameters.Add(forumIdParam);
+                    await command.ExecuteNonQueryAsync();
+                }
 
-                //        // Add categories to Forum 2
-                //        using (var command = new SqlCommand(
-                //            "EXEC spForumsCategories_INSERT @CategoryName = 'Global Cooperation', @ForumID = 2;", connection))
-                //        {
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                //// Add categories to Forum 2
+                //using (var command = new SqlCommand(
+                //    "EXEC spForumsCategories_INSERT @CategoryName = 'Global Cooperation', @ForumID = 2;", connection))
+                //{
+                //    await command.ExecuteNonQueryAsync();
+                //}
 
-                //        using (var command = new SqlCommand(
-                //            "EXEC spForumsCategories_INSERT @CategoryName = 'Innovation and Technology', @ForumID = 2;", connection))
-                //        {
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                //using (var command = new SqlCommand(
+                //    "EXEC spForumsCategories_INSERT @CategoryName = 'Innovation and Technology', @ForumID = 2;", connection))
+                //{
+                //    await command.ExecuteNonQueryAsync();
+                //}
 
-                //        // Add solutions to Forum 2
-                //        using (var command = new SqlCommand(
-                //            @"EXEC spSolutions_INSERT
+                //// Add solutions to Forum 2
+                //using (var command = new SqlCommand(
+                //    @"EXEC spSolutions_INSERT
                 //                @SolutionID = 3,
                 //                @ForumID = 2,
                 //                @Title = 'Make sure to handle multiple languages',
                 //                @Description = 'If the site is meant to be a global public think tank, then it should handle other language characters and be able to translate languages for different clients. (use nvarchar)',
                 //                @AuthorID = @user1Id,
                 //                @BlockedContentID = NULL", connection))
-                //        {
-                //            command.Parameters.AddWithValue("@user1Id", user1.Id);
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                //{
+                //    command.Parameters.AddWithValue("@user1Id", user1.Id);
+                //    await command.ExecuteNonQueryAsync();
+                //}
 
-                //        using (var command = new SqlCommand(
-                //            @"EXEC spSolutions_INSERT
+                //using (var command = new SqlCommand(
+                //    @"EXEC spSolutions_INSERT
                 //                @SolutionID = 2,
                 //                @ForumID = 2,
                 //                @Title = 'Add a more expressive way to explain problems and solutions',
@@ -101,39 +108,39 @@ namespace atlas_the_public_think_tank.Data
                 //The only problems I can forsee are that the content of them might not be searchable from the Public Think Tank.',
                 //                @AuthorID = @user1Id,
                 //                @BlockedContentID = NULL", connection))
-                //        {
-                //            command.Parameters.AddWithValue("@user1Id", user1.Id);
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                //{
+                //    command.Parameters.AddWithValue("@user1Id", user1.Id);
+                //    await command.ExecuteNonQueryAsync();
+                //}
 
-                //        // Add votes to Forum 2's solution
-                //        using (var command = new SqlCommand(
-                //            @"EXEC spUserVotes_INSERT
+                //// Add votes to Forum 2's solution
+                //using (var command = new SqlCommand(
+                //    @"EXEC spUserVotes_INSERT
                 //                @ForumID = 2,
                 //                @ForumSolutionID = 2,
                 //                @CommentID = 0,
                 //                @UserID = @user3Id,
                 //                @Vote = 10", connection))
-                //        {
-                //            command.Parameters.AddWithValue("@user3Id", user3.Id);
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                //{
+                //    command.Parameters.AddWithValue("@user3Id", user3.Id);
+                //    await command.ExecuteNonQueryAsync();
+                //}
 
-                //        using (var command = new SqlCommand(
-                //            @"EXEC spUserVotes_INSERT
+                //using (var command = new SqlCommand(
+                //    @"EXEC spUserVotes_INSERT
                 //                @ForumID = 2,
                 //                @ForumSolutionID = 2,
                 //                @CommentID = 0,
                 //                @UserID = @user4Id,
                 //                @Vote = 2", connection))
-                //        {
-                //            command.Parameters.AddWithValue("@user4Id", user4.Id);
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                //{
+                //    command.Parameters.AddWithValue("@user4Id", user4.Id);
+                //    await command.ExecuteNonQueryAsync();
+                //}
 
-                //        // Forum 3 - Endangered Species
-                //        using (var command = new SqlCommand(
-                //            @"EXEC @forumID_INSERT = spForums_INSERT
+                //// Forum 3 - Endangered Species
+                //using (var command = new SqlCommand(
+                //    @"EXEC @forumID_INSERT = spForums_INSERT
                 //                @ForumID = 3,
                 //                @Title = 'How can we restore populations of endangered species?',
                 //                @Description = 'For example, the Southern Resident Orcas of the San Juan Islands',
@@ -141,21 +148,21 @@ namespace atlas_the_public_think_tank.Data
                 //                @ScopeID = 3,
                 //                @ParentForumID = NULL,
                 //                @BlockedContentID = NULL", connection))
-                //        {
-                //            command.Parameters.AddWithValue("@user3Id", user3.Id);
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                //{
+                //    command.Parameters.AddWithValue("@user3Id", user3.Id);
+                //    await command.ExecuteNonQueryAsync();
+                //}
 
-                //        // Add category to Forum 3
-                //        using (var command = new SqlCommand(
-                //            "EXEC spForumsCategories_INSERT @CategoryName = 'Biodiversity and Wildlife', @ForumID = 3;", connection))
-                //        {
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                //// Add category to Forum 3
+                //using (var command = new SqlCommand(
+                //    "EXEC spForumsCategories_INSERT @CategoryName = 'Biodiversity and Wildlife', @ForumID = 3;", connection))
+                //{
+                //    await command.ExecuteNonQueryAsync();
+                //}
 
-                //        // Forum 4 - Sub-problem of Forum 3
-                //        using (var command = new SqlCommand(
-                //            @"EXEC @forumID_INSERT = spForums_INSERT
+                //// Forum 4 - Sub-problem of Forum 3
+                //using (var command = new SqlCommand(
+                //    @"EXEC @forumID_INSERT = spForums_INSERT
                 //                @ForumID = 4,
                 //                @Title = 'How can we improve public education around endangered species?',
                 //                @Description = 'This seems like the way to generate public investment in biodiversity and wildlife.',
@@ -163,21 +170,21 @@ namespace atlas_the_public_think_tank.Data
                 //                @ScopeID = 2,
                 //                @ParentForumID = 3,
                 //                @BlockedContentID = NULL", connection))
-                //        {
-                //            command.Parameters.AddWithValue("@user4Id", user4.Id);
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                //{
+                //    command.Parameters.AddWithValue("@user4Id", user4.Id);
+                //    await command.ExecuteNonQueryAsync();
+                //}
 
-                //        // Add category to Forum 4
-                //        using (var command = new SqlCommand(
-                //            "EXEC spForumsCategories_INSERT @CategoryName = 'Biodiversity and Wildlife', @ForumID = 4;", connection))
-                //        {
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                //// Add category to Forum 4
+                //using (var command = new SqlCommand(
+                //    "EXEC spForumsCategories_INSERT @CategoryName = 'Biodiversity and Wildlife', @ForumID = 4;", connection))
+                //{
+                //    await command.ExecuteNonQueryAsync();
+                //}
 
-                //        // Forum 1 - Driving safety
-                //        using (var command = new SqlCommand(
-                //            @"EXEC @forumID_INSERT = spForums_INSERT
+                //// Forum 1 - Driving safety
+                //using (var command = new SqlCommand(
+                //    @"EXEC @forumID_INSERT = spForums_INSERT
                 //                @ForumID = 1,
                 //                @Title = 'How can we reduce the risk and danger associated with driving on the road?',
                 //                @Description = 'Every time I am on the road I see people driving with out regard to safety. I know there are stats on driving accidents and that they can be reduced. What are some ways we can make that happpen?',
@@ -185,21 +192,21 @@ namespace atlas_the_public_think_tank.Data
                 //                @ScopeID = 2,
                 //                @ParentForumID = NULL,
                 //                @BlockedContentID = NULL", connection))
-                //        {
-                //            command.Parameters.AddWithValue("@user3Id", user3.Id);
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                //{
+                //    command.Parameters.AddWithValue("@user3Id", user3.Id);
+                //    await command.ExecuteNonQueryAsync();
+                //}
 
-                //        // Add category to Forum 1
-                //        using (var command = new SqlCommand(
-                //            "EXEC spForumsCategories_INSERT @CategoryName = 'Resilience and Adaptability', @ForumID = 1;", connection))
-                //        {
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                //// Add category to Forum 1
+                //using (var command = new SqlCommand(
+                //    "EXEC spForumsCategories_INSERT @CategoryName = 'Resilience and Adaptability', @ForumID = 1;", connection))
+                //{
+                //    await command.ExecuteNonQueryAsync();
+                //}
 
-                //        // Update Forum 1 title
-                //        using (var command = new SqlCommand(
-                //            @"EXEC spForums_UPDATE 
+                //// Update Forum 1 title
+                //using (var command = new SqlCommand(
+                //    @"EXEC spForums_UPDATE 
                 //                @ForumID = 1,
                 //                @Title = 'How can we reduce the risk and danger associated with driving on the freeway?',
                 //                @Description = 'Every time I am on the road I see people driving with out regard to safety. I know there are stats on driving accidents and that they can be reduced. What are some ways we can make that happpen?',
@@ -207,14 +214,14 @@ namespace atlas_the_public_think_tank.Data
                 //                @ScopeID = 2,
                 //                @ParentForumID = NULL,
                 //                @BlockedContentID = NULL", connection))
-                //        {
-                //            command.Parameters.AddWithValue("@user3Id", user3.Id);
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                //{
+                //    command.Parameters.AddWithValue("@user3Id", user3.Id);
+                //    await command.ExecuteNonQueryAsync();
+                //}
 
-                //        // Add comment to Forum 1
-                //        using (var command = new SqlCommand(
-                //            @"EXEC spComments_INSERT
+                //// Add comment to Forum 1
+                //using (var command = new SqlCommand(
+                //    @"EXEC spComments_INSERT
                 //                @CommentID = 1,
                 //                @Comment = 'Sounds like an idea the Mechatronics people could help build ',
                 //                @ForumID = 1,
@@ -222,14 +229,14 @@ namespace atlas_the_public_think_tank.Data
                 //                @AuthorID = @user2Id,
                 //                @ParentCommentID = NULL,
                 //                @BlockedContentID = NULL", connection))
-                //        {
-                //            command.Parameters.AddWithValue("@user2Id", user2.Id);
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                //{
+                //    command.Parameters.AddWithValue("@user2Id", user2.Id);
+                //    await command.ExecuteNonQueryAsync();
+                //}
 
-                //        // Update comment
-                //        using (var command = new SqlCommand(
-                //            @"EXEC spComments_UPDATE
+                //// Update comment
+                //using (var command = new SqlCommand(
+                //    @"EXEC spComments_UPDATE
                 //                @CommentID = 1,
                 //                @Comment = 'Sounds like an idea the Mechatronics people could help build. Maybe we should inquire about that.',
                 //                @ForumID = 1,
@@ -237,145 +244,145 @@ namespace atlas_the_public_think_tank.Data
                 //                @AuthorID = @user2Id,
                 //                @ParentCommentID = NULL,
                 //                @BlockedContentID = NULL", connection))
-                //        {
-                //            command.Parameters.AddWithValue("@user2Id", user2.Id);
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                //{
+                //    command.Parameters.AddWithValue("@user2Id", user2.Id);
+                //    await command.ExecuteNonQueryAsync();
+                //}
 
-                //        // Add vote to comment
-                //        using (var command = new SqlCommand(
-                //            @"EXEC spUserVotes_INSERT
+                //// Add vote to comment
+                //using (var command = new SqlCommand(
+                //    @"EXEC spUserVotes_INSERT
                 //                @ForumID = 1,
                 //                @ForumSolutionID = 0,
                 //                @CommentID = 1,
                 //                @UserID = @user3Id,
                 //                @Vote = 10", connection))
-                //        {
-                //            command.Parameters.AddWithValue("@user3Id", user3.Id);
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                //{
+                //    command.Parameters.AddWithValue("@user3Id", user3.Id);
+                //    await command.ExecuteNonQueryAsync();
+                //}
 
-                //        // Add solution to Forum 1
-                //        using (var command = new SqlCommand(
-                //            @"EXEC spSolutions_INSERT
+                //// Add solution to Forum 1
+                //using (var command = new SqlCommand(
+                //    @"EXEC spSolutions_INSERT
                 //                @SolutionID = 1,
                 //                @ForumID = 1,
                 //                @Title = 'Add a device to cars which reports tail-gaters',
                 //                @Description = 'The pieces of tech already exist, they just need to be assembled in the right way. We already have back up cams. Why can''t those also be used to take pictures of license plates tail gating you on the freeway, with automated reporting? If something like this was mainstream and people knew about it, there would be less tail gaters.',
                 //                @AuthorID = @user3Id,
                 //                @BlockedContentID = NULL", connection))
-                //        {
-                //            command.Parameters.AddWithValue("@user3Id", user3.Id);
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                //{
+                //    command.Parameters.AddWithValue("@user3Id", user3.Id);
+                //    await command.ExecuteNonQueryAsync();
+                //}
 
-                //        // Update solution
-                //        using (var command = new SqlCommand(
-                //            @"EXEC spSolutions_UPDATE
+                //// Update solution
+                //using (var command = new SqlCommand(
+                //    @"EXEC spSolutions_UPDATE
                 //                @SolutionID = 1,
                 //                @ForumID = 1,
                 //                @Title = 'Add a device to cars which automatically reports tail-gaters when on the freeway',
                 //                @Description = 'The pieces of tech already exist, they just need to be assembled in the right way. We already have back up cams. Why can''t those also be used to take pictures of license plates tail gating you on the freeway, with automated reporting? If something like this was mainstream and people knew about it, there would be less tail gaters.',
                 //                @AuthorID = @user3Id,
                 //                @BlockedContentID = NULL", connection))
-                //        {
-                //            command.Parameters.AddWithValue("@user3Id", user3.Id);
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                //{
+                //    command.Parameters.AddWithValue("@user3Id", user3.Id);
+                //    await command.ExecuteNonQueryAsync();
+                //}
 
-                //        // Add forum votes
-                //        using (var command = new SqlCommand(
-                //            @"EXEC spUserVotes_INSERT
+                //// Add forum votes
+                //using (var command = new SqlCommand(
+                //    @"EXEC spUserVotes_INSERT
                 //                @ForumID = 1,
                 //                @ForumSolutionID = 0,
                 //                @CommentID = 0,
                 //                @UserID = @user2Id,
                 //                @Vote = 10", connection))
-                //        {
-                //            command.Parameters.AddWithValue("@user2Id", user2.Id);
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                //{
+                //    command.Parameters.AddWithValue("@user2Id", user2.Id);
+                //    await command.ExecuteNonQueryAsync();
+                //}
 
-                //        using (var command = new SqlCommand(
-                //            @"EXEC spUserVotes_INSERT
+                //using (var command = new SqlCommand(
+                //    @"EXEC spUserVotes_INSERT
                 //                @ForumID = 1,
                 //                @ForumSolutionID = 0,
                 //                @CommentID = 0,
                 //                @UserID = @user1Id,
                 //                @Vote = 7", connection))
-                //        {
-                //            command.Parameters.AddWithValue("@user1Id", user1.Id);
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                //{
+                //    command.Parameters.AddWithValue("@user1Id", user1.Id);
+                //    await command.ExecuteNonQueryAsync();
+                //}
 
-                //        using (var command = new SqlCommand(
-                //            @"EXEC spUserVotes_INSERT
+                //using (var command = new SqlCommand(
+                //    @"EXEC spUserVotes_INSERT
                 //                @ForumID = 1,
                 //                @ForumSolutionID = 0,
                 //                @CommentID = 0,
                 //                @UserID = @user4Id,
                 //                @Vote = 6", connection))
-                //        {
-                //            command.Parameters.AddWithValue("@user4Id", user4.Id);
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                //{
+                //    command.Parameters.AddWithValue("@user4Id", user4.Id);
+                //    await command.ExecuteNonQueryAsync();
+                //}
 
-                //        using (var command = new SqlCommand(
-                //            @"EXEC spUserVotes_INSERT
+                //using (var command = new SqlCommand(
+                //    @"EXEC spUserVotes_INSERT
                 //                @ForumID = 2,
                 //                @ForumSolutionID = 0,
                 //                @CommentID = 0,
                 //                @UserID = @user4Id,
                 //                @Vote = 9", connection))
-                //        {
-                //            command.Parameters.AddWithValue("@user4Id", user4.Id);
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                //{
+                //    command.Parameters.AddWithValue("@user4Id", user4.Id);
+                //    await command.ExecuteNonQueryAsync();
+                //}
 
-                //        // Add solution votes
-                //        using (var command = new SqlCommand(
-                //            @"EXEC spUserVotes_INSERT
+                //// Add solution votes
+                //using (var command = new SqlCommand(
+                //    @"EXEC spUserVotes_INSERT
                 //                @ForumID = 1,
                 //                @ForumSolutionID = 1,
                 //                @CommentID = 0,
                 //                @UserID = @user2Id,
                 //                @Vote = 8", connection))
-                //        {
-                //            command.Parameters.AddWithValue("@user2Id", user2.Id);
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                //{
+                //    command.Parameters.AddWithValue("@user2Id", user2.Id);
+                //    await command.ExecuteNonQueryAsync();
+                //}
 
-                //        using (var command = new SqlCommand(
-                //            @"EXEC spUserVotes_INSERT
+                //using (var command = new SqlCommand(
+                //    @"EXEC spUserVotes_INSERT
                 //                @ForumID = 1,
                 //                @ForumSolutionID = 1,
                 //                @CommentID = 0,
                 //                @UserID = @user1Id,
                 //                @Vote = 7", connection))
-                //        {
-                //            command.Parameters.AddWithValue("@user1Id", user1.Id);
-                //            await command.ExecuteNonQueryAsync();
-                //        }
+                //{
+                //    command.Parameters.AddWithValue("@user1Id", user1.Id);
+                //    await command.ExecuteNonQueryAsync();
+                //}
 
-                //        // This duplicate vote is expected to fail as per the comment in the SQL script
-                //        try
-                //        {
-                //            using (var command = new SqlCommand(
-                //                @"EXEC spUserVotes_INSERT
+                //// This duplicate vote is expected to fail as per the comment in the SQL script
+                //try
+                //{
+                //    using (var command = new SqlCommand(
+                //        @"EXEC spUserVotes_INSERT
                 //                    @ForumID = 1,
                 //                    @ForumSolutionID = 1,
                 //                    @CommentID = 0,
                 //                    @UserID = @user1Id,
                 //                    @Vote = 7", connection))
-                //            {
-                //                command.Parameters.AddWithValue("@user1Id", user1.Id);
-                //                await command.ExecuteNonQueryAsync();
-                //            }
-                //        }
-                //        catch (Exception ex)
-                //        {
-                //            Console.WriteLine($"Expected duplicate vote failure: {ex.Message}");
-                //        }
+                //    {
+                //        command.Parameters.AddWithValue("@user1Id", user1.Id);
+                //        await command.ExecuteNonQueryAsync();
+                //    }
+                //}
+                //catch (Exception ex)
+                //{
+                //    Console.WriteLine($"Expected duplicate vote failure: {ex.Message}");
+                //}
             }
 
             Console.WriteLine("Stored procedure seed data added successfully");
