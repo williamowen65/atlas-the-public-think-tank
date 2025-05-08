@@ -20,70 +20,96 @@ namespace atlas_the_public_think_tank.Controllers
         }
 
 
-        [Route("/create")]
-        public IActionResult Create()
+        [Route("/create-forum")]
+        public IActionResult CreateForum()
         {
-            ViewBag.Categories = _context.Categories.ToList();
-            return View();
+
+            Forum_CreateVM newForum = new() { 
+                Categories = _context.Categories.ToList(),
+                Scopes = _context.Scopes.ToList(),
+            };
+            
+            return View(newForum);
         }
 
         [HttpPost]
-        [Route("/create")]
+        [Route("/create-forum")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(ForumPost_CreateVM model)
+        public async Task<IActionResult> CreateForum(Forum_CreateVM model)
         {
             if (ModelState.IsValid)
             {
                 var user = await _userManager.GetUserAsync(User);
 
-                var forumPost = new ForumPost
+                var forumPost = new Forum
                 {
                     Title = model.Title,
                     Content = model.Content,
-                    CategoryID = model.CategoryID,
-                    ParentPostID = model.ParentPostID,
-                    Status = model.Status,
-                    UserID = user.Id,
+                    ScopeID = model.ScopeID,
+                    ParentForumID = model.ParentForumID,
+                    ContentStatus = model.ContentStatus,
+                    AuthorID = user.Id,
                     CreatedAt = DateTime.UtcNow
                 };
 
-                _context.ForumPosts.Add(forumPost);
-                await _context.SaveChangesAsync();
+                var entry = _context.Forums.Add(forumPost);
+                await _context.SaveChangesAsync(); // Save to generate the ForumID
+
+                // Now add the category relationships
+                if (model.SelectedCategoryIds != null && model.SelectedCategoryIds.Any())
+                {
+                    foreach (int categoryId in model.SelectedCategoryIds)
+                    {
+                        var forumCategory = new ForumCategory
+                        {
+                            ForumID = entry.Entity.ForumID,
+                            CategoryID = categoryId
+                        };
+                        _context.ForumCategories.Add(forumCategory);
+                    }
+
+                    await _context.SaveChangesAsync();
+                }
 
                 return RedirectToAction("Index", "Home");
             }
 
-            ViewBag.Categories = _context.Categories.ToList();
+            // If we got this far, something failed, redisplay form
+            // Repopulate the dropdown data
+            model.Categories = _context.Categories.ToList();
+            model.Scopes = _context.Scopes.ToList();
             return View(model);
         }
 
         [HttpGet]
         [Route("/api/posts")]
         [AllowAnonymous]
-        public async Task<IActionResult> GetAllPosts()
+        public async Task<IActionResult> GetAllForums()
         {
-            var posts = await _context.ForumPosts
-                .Include(p => p.Category)
-                .Include(p => p.User)
-                    .Select(p => new ForumPost_ReadVM
+            var posts = await _context.Forums
+                .Include(p => p.Scope)
+                .Include(p => p.Author)
+                .Include(p => p.ForumCategories)
+                    .ThenInclude(fc => fc.Category)
+                .Select(p => new Forum_ReadVM
+                {
+                    ForumID = p.ForumID,
+                    Title = p.Title,
+                    Content = p.Content,
+                    CreatedAt = p.CreatedAt,
+                    ModifiedAt = p.ModifiedAt,
+                    AuthorID = p.AuthorID,
+                    ScopeID = p.ScopeID,
+                    ParentForumID = p.ParentForumID,
+                    BlockedContentID = p.BlockedContentID,
+                    Author = p.Author,
+                    Scope = p.Scope,
+                    Categories = p.ForumCategories.Select(fc => new Category_ReadVM
                     {
-                        PostID = p.PostID,
-                        Title = p.Title,
-                        Content = p.Content,
-                        Status = p.Status,
-                        CreatedAt = p.CreatedAt,
-                        UpdatedAt = p.UpdatedAt,
-                        Category = new Category_ReadVM
-                        {
-                            CategoryID = p.Category.CategoryID,
-                            Name = p.Category.Name
-                        },
-                        User = new User_ReadVM
-                        {
-                            Id = p.User.Id,
-                            UserName = p.User.UserName
-                        }
-                    })
+                        CategoryID = fc.Category.CategoryID,
+                        CategoryName = fc.Category.CategoryName
+                    }).ToList()
+                })
                 .ToListAsync();
 
             return Ok(posts);
@@ -97,10 +123,10 @@ namespace atlas_the_public_think_tank.Controllers
         {
             var posts = await _context.Categories
                     .Select(p => new Category_ReadVM
-                        {
-                            CategoryID = p.CategoryID,
-                            Name = p.Name
-                        })
+                    {
+                        CategoryID = p.CategoryID,
+                        CategoryName = p.CategoryName
+                    })
                 .ToListAsync();
 
 
@@ -117,12 +143,23 @@ namespace atlas_the_public_think_tank.Controllers
                 .Select(p => new Category_ReadVM
                 {
                     CategoryID = p.CategoryID,
-                    Name = p.Name
+                    CategoryName = p.CategoryName
                 })
                 .ToListAsync();
 
             return PartialView("~/Views/Forum/_left-sidebar-container.cshtml", categories);
         }
+
+        /*
+         
+         TODO: Convert all of the Stored Procedures to C# code as routes.
+        This will be more maintainable than splitting logic. 
+        Stored procedures can be done in future if there are performance reasons. 
+         
+         */
+
+
+
 
 
     }

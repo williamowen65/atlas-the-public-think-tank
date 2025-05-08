@@ -20,21 +20,42 @@ public class HomeController : Controller
         using var client = new HttpClient();
         client.BaseAddress = new Uri($"{Request.Scheme}://{Request.Host}");
 
-        var response = await client.GetAsync("/api/posts");
-        if (response.IsSuccessStatusCode)
+        // Create a view model to hold both forums and categories
+        var viewModel = new HomeIndexViewModel();
+        
+        // Fetch forums
+        var forumResponse = await client.GetAsync("/api/posts");
+        if (forumResponse.IsSuccessStatusCode)
         {
-            var jsonString = await response.Content.ReadAsStringAsync();
-            var posts = JsonSerializer.Deserialize<List<ForumPost_ReadVM>>(jsonString, new JsonSerializerOptions
+            var jsonString = await forumResponse.Content.ReadAsStringAsync();
+            viewModel.Forums = JsonSerializer.Deserialize<List<Forum_ReadVM>>(jsonString, new JsonSerializerOptions
             {
-                PropertyNameCaseInsensitive = true // Handles case-insensitive property names
+                PropertyNameCaseInsensitive = true
             });
-
-            return View(posts); // Pass the posts to the view
+        }
+        else
+        {
+            _logger.LogError($"Failed to fetch posts. Status Code: {forumResponse.StatusCode}");
+            viewModel.Forums = new List<Forum_ReadVM>();
+        }
+        
+        // Fetch categories
+        var categoryResponse = await client.GetAsync("/api/categories");
+        if (categoryResponse.IsSuccessStatusCode)
+        {
+            var jsonString = await categoryResponse.Content.ReadAsStringAsync();
+            viewModel.Categories = JsonSerializer.Deserialize<List<Category_ReadVM>>(jsonString, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+        }
+        else
+        {
+            _logger.LogError($"Failed to fetch categories. Status Code: {categoryResponse.StatusCode}");
+            viewModel.Categories = new List<Category_ReadVM>();
         }
 
-        // Handle error (e.g., log it or show an error message)
-        _logger.LogError($"Failed to fetch posts. Status Code: {response.StatusCode}");
-        return View(new List<ForumPost_ReadVM>()); // Return an empty list if the API call fails
+        return View(viewModel);
     }
 
 

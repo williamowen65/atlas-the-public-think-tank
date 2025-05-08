@@ -1,18 +1,4 @@
-﻿@model List<Category_ReadVM>
-
-@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
-@{
-}
-
-
-
-
-
-
-
-
+﻿@model List<Category_ReadVM> 
 
 <header class="d-flex justify-content-between pt-2 align-items-center">
     <h3 class="" style="width: min-content">Forum Categories</h3>
@@ -37,7 +23,6 @@
 
 <hr />
 
-
 <div class="accordion" id="categoriesAccordion">
     @if (@Model.Any())
     {
@@ -52,7 +37,7 @@
                             data-bs-target="#category-@category.CategoryID"
                             aria-expanded="false"
                             aria-controls="category-@category.CategoryID">
-                        @category.Name
+                        @category.CategoryName
                     </button>
                 </h2>
                 <div id="category-@category.CategoryID"
@@ -60,26 +45,9 @@
                      data-bs-parent="#categoriesAccordion">
                     <div class="accordion-body">
                         <a href="/category/@category.CategoryID" class="d-block mb-2">View all posts</a>
-
-                        Lorem, ipsum dolor sit amet consectetur adipisicing elit. Enim molestias officiis vitae placeat voluptatibus ipsam aspernatur error quia laborum quod quae, quisquam, qui recusandae iure cum fugit numquam dolorem adipisci omnis eos porro. Labore nemo exercitationem doloremque error magnam vel, dolorum architecto, tempore iusto alias, molestias deleniti. Iusto, eaque adipisci.
-                        <!-- You can add subcategories or related links here -->
                     </div>
                 </div>
             </div>
         }
     }
-    else
-    {
-        <div class="alert alert-info">
-            No categories available.
-        </div>
-    }
 </div>
-
-
-
-
-
-
-
-

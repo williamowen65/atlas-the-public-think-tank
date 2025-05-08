@@ -100,7 +100,7 @@ if (app.Environment.IsDevelopment())
         var userManager = services.GetRequiredService<UserManager<AppUser>>();
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         // Adds default users if they don't already exist
-        await SeedData.InitializeAsync(context, userManager, roleManager);
+        await SeedData.InitializeAsync(context, userManager, roleManager, app.Configuration);
     }
 }
 

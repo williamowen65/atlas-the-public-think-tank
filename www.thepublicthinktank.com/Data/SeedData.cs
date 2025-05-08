@@ -1,13 +1,16 @@
 ﻿using atlas_the_public_think_tank.Models;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 
 namespace atlas_the_public_think_tank.Data
 {
-    public static class SeedData
+    public static partial class SeedData
     {
         public static async Task InitializeAsync(ApplicationDbContext context,
-    UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager)
+    UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager, IConfiguration config)
         {
+            Console.WriteLine("Seeding data...");
 
             await SeedDefaultRoles(roleManager);
          
@@ -15,63 +18,56 @@ namespace atlas_the_public_think_tank.Data
             await SeedDefaultUsers(userManager);
 
             await SeedCategories(context);
+            
+            await SeedScopes(context);
+            
+            // Add seed data using stored procedures
+             await SeedDataMiscData(context, userManager, config);
+
+            Console.WriteLine("Seeding complete!");
         }
 
         public static async Task SeedCategories(ApplicationDbContext context)
         {
-            // Check if categories already exist
             if (context.Categories.Any())
             {
-                return;   // DB has already been seeded with categories
+                return; // DB has already been seeded with categories
             }
 
             var categories = new List<Category>
             {
-                new Category { 
-                    Name = "Global Cooperation" ,
-                    Description = "",
-                     CreatedAt = DateTime.UtcNow
-                },
-                new Category { 
-                    Name = "Sustainable Development" ,
-                    Description = "",
-                     CreatedAt = DateTime.UtcNow
-                },
-                new Category { 
-                    Name = "Equitable Access" ,
-                    Description = "",
-                     CreatedAt = DateTime.UtcNow
-                },
-                new Category { 
-                    Name = "Innovation and Technology" ,
-                    Description = "",
-                     CreatedAt = DateTime.UtcNow
-                },
-                new Category { 
-                    Name = "Effective Governance" ,
-                    Description = "",
-                     CreatedAt = DateTime.UtcNow
-                },
-                new Category { 
-                    Name = "Education and Awareness" ,
-                    Description = "",
-                     CreatedAt = DateTime.UtcNow
-                },
-                new Category { 
-                    Name = "Cultural Understanding" ,
-                    Description = "",
-                     CreatedAt = DateTime.UtcNow
-                },
-                new Category { 
-                    Name = "Resilience and Adaptability",
-                    Description = "",
-                     CreatedAt = DateTime.UtcNow
-                 }
+            new Category { CategoryName = "Global Cooperation" },
+            new Category { CategoryName = "Sustainable Development" },
+            new Category { CategoryName = "Equitable Access" },
+            new Category { CategoryName = "Innovation and Technology" },
+            new Category { CategoryName = "Effective Governance" },
+            new Category { CategoryName = "Education and Awareness" },
+            new Category { CategoryName = "Cultural Understanding" },
+            new Category { CategoryName = "Resilience and Adaptability" }
             };
 
             context.Categories.AddRange(categories);
             await context.SaveChangesAsync();
-        }   
+        }
+
+        public static async Task SeedScopes(ApplicationDbContext context)
+        {
+            if (context.Scopes.Any())
+            {
+                return; // DB has already been seeded with scopes
+            }
+
+            var scopes = new List<Scope>
+        {
+            new Scope { ScopeName = "Global" },
+            new Scope { ScopeName = "National" },
+            new Scope { ScopeName = "Local" },
+            new Scope { ScopeName = "Individual" }
+        };
+
+            context.Scopes.AddRange(scopes);
+            await context.SaveChangesAsync();
+        }
 
         public static async Task SeedDefaultRoles(RoleManager<IdentityRole> roleManager)
         {
@@ -84,35 +80,35 @@ namespace atlas_the_public_think_tank.Data
 
         public static async Task SeedDefaultUsers(UserManager<AppUser> userManager)
         {
-            // Create admin user if it doesn't exist
-            if (await userManager.FindByEmailAsync("admin@example.com") == null)
+            // Create users specified in SQL script and existing ones
+            var users = new List<(string Email, string Password, bool IsAdmin)>
             {
-                var adminUser = new AppUser
-                {
-                    UserName = "admin@example.com",
-                    Email = "admin@example.com",
-                    EmailConfirmed = true
-                };
+                ("admin@example.com", "Admin123!", true),     // Original admin (ID 1 in SQL)
+                ("user@example.com", "User123!", false),      // Original user (ID 2 in SQL)
+                ("user3@example.com", "User123!", false),     // ID 3 in SQL
+                ("user4@example.com", "User123!", false)      // ID 4 in SQL
+            };
 
-                var result = await userManager.CreateAsync(adminUser, "Admin123!");
-                if (result.Succeeded)
+            foreach (var (email, password, isAdmin) in users)
+            {
+                if (await userManager.FindByEmailAsync(email) == null)
                 {
-                    await userManager.AddToRoleAsync(adminUser, "Admin");
+                    var user = new AppUser
+                    {
+                        UserName = email,
+                        Email = email,
+                        EmailConfirmed = true
+                    };
+
+                    var result = await userManager.CreateAsync(user, password);
+                    if (result.Succeeded && isAdmin)
+                    {
+                        await userManager.AddToRoleAsync(user, "Admin");
+                    }
                 }
             }
-
-            // Create regular user if it doesn't exist
-            if (await userManager.FindByEmailAsync("user@example.com") == null)
-            {
-                var regularUser = new AppUser
-                {
-                    UserName = "user@example.com",
-                    Email = "user@example.com",
-                    EmailConfirmed = true
-                };
-
-                await userManager.CreateAsync(regularUser, "User123!");
-            }
         }
+
+    
     }
 }
