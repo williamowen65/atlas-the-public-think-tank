@@ -3,19 +3,15 @@ namespace atlas_the_public_think_tank.Models
 
     public class Forum_CreateVM
     {
-        public int ForumID { get; set; }
         public string Title { get; set; }
         public string Content { get; set; }
         public ContentStatus ContentStatus { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? ModifiedAt { get; set; }
-        public string AuthorID { get; set; }
+
+        public List<Category> Categories { get; set; } = new List<Category>();
         public int ScopeID { get; set; }
         public int? ParentForumID { get; set; }
-        public int? BlockedContentID { get; set; }
 
-        public int CategoryID { get; set; }
-
+        public List<Scope> Scopes { get; set; } = new List<Scope>();
     }
 
     public class Forum_ReadVM

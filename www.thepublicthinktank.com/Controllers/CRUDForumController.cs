@@ -23,8 +23,13 @@ namespace atlas_the_public_think_tank.Controllers
         [Route("/create-forum")]
         public IActionResult CreateForum()
         {
-            ViewBag.Categories = _context.Categories.ToList();
-            return View();
+
+            Forum_CreateVM newForum = new() { 
+                Categories = _context.Categories.ToList(),
+                Scopes = _context.Scopes.ToList(),
+            };
+            
+            return View(newForum);
         }
 
         [HttpPost]
@@ -43,7 +48,6 @@ namespace atlas_the_public_think_tank.Controllers
                     ScopeID = model.ScopeID,
                     ParentForumID = model.ParentForumID,
                     ContentStatus = model.ContentStatus,
-                    BlockedContentID = model.BlockedContentID,
                     AuthorID = user.Id,
                     CreatedAt = DateTime.UtcNow
                 };
@@ -54,7 +58,7 @@ namespace atlas_the_public_think_tank.Controllers
                 return RedirectToAction("Index", "Home");
             }
 
-            ViewBag.Categories = _context.Categories.ToList();
+
             return View(model);
         }
 

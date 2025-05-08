@@ -12,7 +12,7 @@
                      <h4>Create New Post</h4> 
                  </div> 
                  <div class="card-body"> 
-                     <form asp-action="Create" method="post"> 
+                     <form asp-action="CreateForum" method="post"> 
                          <div asp-validation-summary="ModelOnly" class="text-danger"></div> 
 
                          <div class="mb-3"> 
@@ -27,14 +27,22 @@
                              <span asp-validation-for="Content" class="text-danger"></span> 
                          </div> 
 
-                         @* <div class="mb-3">  *@
-                         @*     <label asp-for="CategoryID" class="form-label">Category</label>  *@
-                         @*     <select asp-for="CategoryID" class="form-select"  *@
-                         @*             asp-items="@(new SelectList(ViewBag.Categories, "CategoryID", "Name"))">  *@
-                         @*         <option value="">-- Select a Category --</option>  *@
-                         @*     </select>  *@
-                         @*     <span asp-validation-for="CategoryID" class="text-danger"></span>  *@
-                         @* </div>  *@
+                          <div class="mb-3"> 
+                              <label asp-for="Categories" class="form-label">Category</label> 
+                              <select multiple asp-for="Categories" class="form-select" 
+                                      asp-items="@(new SelectList(Model.Categories, "CategoryID", "CategoryName"))"> 
+                                  <option value="">-- Select a Category --</option> 
+                              </select> 
+                              <span asp-validation-for="Categories" class="text-danger"></span> 
+                          </div>     
+                          <div class="mb-3"> 
+                              <label asp-for="ScopeID" class="form-label">Scope</label> 
+                              <select asp-for="ScopeID" class="form-select" 
+                                      asp-items="@(new SelectList(Model.Scopes, "ScopeID", "ScopeName"))"> 
+                                  <option value="">-- Select a Scope --</option> 
+                              </select> 
+                              <span asp-validation-for="ScopeID" class="text-danger"></span> 
+                          </div> 
 
                          <div class="mb-3"> 
                              <label asp-for="ParentForumID" class="form-label">Parent Post (Optional)</label> 
