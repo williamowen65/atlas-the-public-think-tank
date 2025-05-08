@@ -12,7 +12,7 @@ using atlas_the_public_think_tank.Data;
 namespace atlas_the_public_think_tank.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250507152508_init")]
+    [Migration("20250507203653_init")]
     partial class init
     {
         /// <inheritdoc />
@@ -361,12 +361,15 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Property<int?>("BlockedContentID")
                         .HasColumnType("int");
 
-                    b.Property<DateTime?>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
+                    b.Property<string>("Content")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ContentStatus")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("ForumID")
                         .HasColumnType("int");
@@ -409,6 +412,9 @@ namespace atlas_the_public_think_tank.Migrations
                         .IsRequired()
                         .HasMaxLength(3000)
                         .HasColumnType("nvarchar(3000)");
+
+                    b.Property<int>("ContentStatus")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -463,7 +469,6 @@ namespace atlas_the_public_think_tank.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Link")
-                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 

@@ -22,7 +22,7 @@ namespace atlas_the_public_think_tank.Data
             await SeedScopes(context);
             
             // Add seed data using stored procedures
-             await SeedDataWithStoredProcedures(context, userManager, config);
+             await SeedDataMiscData(context, userManager, config);
 
             Console.WriteLine("Seeding complete!");
         }

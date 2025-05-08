@@ -6,6 +6,7 @@ namespace atlas_the_public_think_tank.Models
         public int ForumID { get; set; }
         public string Title { get; set; }
         public string Content { get; set; }
+        public ContentStatus ContentStatus { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? ModifiedAt { get; set; }
         public string AuthorID { get; set; }
@@ -13,6 +14,7 @@ namespace atlas_the_public_think_tank.Models
         public int? ParentForumID { get; set; }
         public int? BlockedContentID { get; set; }
 
+        public int CategoryID { get; set; }
 
     }
 

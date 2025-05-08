@@ -7,7 +7,6 @@ namespace atlas_the_public_think_tank.Models
 
     /*
      Don't use Data Annotations for EF - Use Fluent API only
-     
      */
 
     public class AppUser : IdentityUser
@@ -85,7 +84,8 @@ namespace atlas_the_public_think_tank.Models
         public int SolutionID { get; set; }
         public int ForumID { get; set; }
         public string Title { get; set; }
-        public string Description { get; set; }
+        public string Content { get; set; }
+        public ContentStatus ContentStatus { get; set; }
         public string AuthorID { get; set; }
         public DateTime? CreatedAt { get; set; }
         public DateTime? ModifiedAt { get; set; }
@@ -111,6 +111,7 @@ namespace atlas_the_public_think_tank.Models
         public int? ForumID { get; set; }
         public int? ForumSolutionID { get; set; }
         public string Comment { get; set; }
+        public ContentStatus ContentStatus { get; set; }
         public string AuthorID { get; set; }
         public DateTime? CreatedAt { get; set; }
         public DateTime? ModifiedAt { get; set; }

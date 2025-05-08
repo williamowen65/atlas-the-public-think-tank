@@ -20,17 +20,17 @@ namespace atlas_the_public_think_tank.Controllers
         }
 
 
-        [Route("/create")]
-        public IActionResult Create()
+        [Route("/create-forum")]
+        public IActionResult CreateForum()
         {
             ViewBag.Categories = _context.Categories.ToList();
             return View();
         }
 
         [HttpPost]
-        [Route("/create")]
+        [Route("/create-forum")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Forum_CreateVM model) // Updated type
+        public async Task<IActionResult> CreateForum(Forum_CreateVM model) // Updated type
         {
             if (ModelState.IsValid)
             {
@@ -42,6 +42,7 @@ namespace atlas_the_public_think_tank.Controllers
                     Content = model.Content,
                     ScopeID = model.ScopeID,
                     ParentForumID = model.ParentForumID,
+                    ContentStatus = model.ContentStatus,
                     BlockedContentID = model.BlockedContentID,
                     AuthorID = user.Id,
                     CreatedAt = DateTime.UtcNow
@@ -60,7 +61,7 @@ namespace atlas_the_public_think_tank.Controllers
         [HttpGet]
         [Route("/api/posts")]
         [AllowAnonymous]
-        public async Task<IActionResult> GetAllPosts()
+        public async Task<IActionResult> GetAllForums()
         {
             var posts = await _context.Forums
                 .Include(p => p.Scope)
@@ -118,6 +119,17 @@ namespace atlas_the_public_think_tank.Controllers
 
             return PartialView("~/Views/Forum/_left-sidebar-container.cshtml", categories);
         }
+
+        /*
+         
+         TODO: Convert all of the Stored Procedures to C# code as routes.
+        This will be more maintainable than splitting logic. 
+        Stored procedures can be done in future if there are performance reasons. 
+         
+         */
+
+
+
 
 
     }

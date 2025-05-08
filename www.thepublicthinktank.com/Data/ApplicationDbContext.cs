@@ -79,7 +79,8 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
         {
             entity.HasKey(e => e.SolutionID);
             entity.Property(e => e.Title).HasMaxLength(300).IsRequired();
-            entity.Property(e => e.Description).IsRequired();
+            entity.Property(e => e.Content).IsRequired();
+            entity.Property(e => e.ContentStatus).IsRequired();
 
             // Relationships
             entity.HasOne(e => e.Forum)
@@ -182,7 +183,7 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
         {
             entity.HasKey(e => e.UserHistoryID);
             entity.Property(e => e.Action).HasMaxLength(200).IsRequired();
-            entity.Property(e => e.Link).HasMaxLength(200);
+            entity.Property(e => e.Link).HasMaxLength(200).IsRequired(false);
             entity.Property(e => e.Timestamp).HasDefaultValueSql("GETDATE()");
 
             // Relationships

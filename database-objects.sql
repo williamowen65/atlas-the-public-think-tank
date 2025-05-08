@@ -1,3 +1,176 @@
+-- This file will create the Stored Procedures and Functions related to the DB
+
+
+-- Database Functions for The Public Think Tank
+
+-- Function to get category name by ID
+CREATE FUNCTION fnGetCategoryNameByID (
+    @CategoryID INT
+) 
+RETURNS VARCHAR(255)
+AS
+BEGIN
+    DECLARE @CategoryName VARCHAR(255);
+    
+    SELECT @CategoryName = CategoryName 
+    FROM forums.Categories
+    WHERE CategoryID = @CategoryID;
+
+    RETURN @CategoryName;
+END;
+GO
+
+-- Function to get forums with filtering options
+CREATE FUNCTION fnGetForums(
+    @ForumID int,
+    @UserID int,
+    @CategoryID int,
+    @ParentForumID int
+)
+RETURNS table
+RETURN
+    -- CTE to prevent duplication when combining with votes
+    WITH ForumCategories AS (
+        SELECT 
+            f.ForumID,
+            STRING_AGG(c.CategoryName, ', ') AS Categories
+        FROM forums.Forums f
+        LEFT JOIN forums.ForumsCategories fc ON f.ForumID = fc.ForumID
+        LEFT JOIN forums.Categories c ON fc.CategoryID = c.CategoryID
+        GROUP BY f.ForumID
+    )
+    SELECT 
+        f.*,
+        fc.Categories,
+        COUNT(uv.Vote) AS TotalVotes,
+        AVG(CAST(uv.Vote AS FLOAT)) AS AverageVote
+    FROM forums.Forums f
+    LEFT JOIN ForumCategories fc ON f.ForumID = fc.ForumID
+    LEFT JOIN forums.UserVotes uv ON f.ForumID = uv.ForumID
+    WHERE 
+        (@ForumID IS NULL OR f.ForumID = @ForumID) 
+        AND (@ParentForumID IS NULL OR f.ParentForumID = @ParentForumID)
+    GROUP BY
+        f.ForumID,
+        f.Title,
+        f.Description,
+        f.CreatedAt,
+        f.ModifiedAt,
+        f.AuthorID,
+        f.ScopeID,
+        f.ParentForumID,
+        f.BlockedContentID,
+        fc.Categories
+    HAVING (@CategoryID IS NULL OR fc.Categories LIKE '%' + dbo.fnGetCategoryNameByID(@CategoryID) +'%');
+GO
+
+-- Function to get comments with optional filtering
+CREATE FUNCTION fnGetComments()
+RETURNS table
+RETURN
+    SELECT 
+        c.*,
+        COUNT(uv.Vote) AS TotalVotes,
+        AVG(CAST(uv.Vote AS FLOAT)) AS AverageVote
+    FROM forums.Comments c
+    LEFT JOIN forums.UserVotes uv ON c.CommentID = uv.CommentID
+    WHERE (c.CommentID != 0)
+    GROUP BY
+        c.CommentID,
+        c.ForumID,
+        c.ForumSolutionID,
+        c.Comment,
+        c.AuthorID,
+        c.CreatedAt,
+        c.ModifiedAt,
+        c.ParentCommentID,
+        c.BlockedContentID;
+GO
+
+-- Function to get solutions with filtering options
+CREATE FUNCTION fnGetSolutions(
+    @ForumID INT,
+    @SolutionID INT,
+    @AuthorID INT
+)
+RETURNS table
+RETURN 
+    SELECT 
+        s.*,
+        COUNT(uv.Vote) AS TotalVotes,
+        AVG(CAST(uv.Vote AS FLOAT)) AS AverageVote
+    FROM forums.Solutions s
+    LEFT JOIN forums.UserVotes uv ON s.SolutionID = uv.ForumSolutionID
+    WHERE 
+        (@ForumID IS NULL OR s.ForumID = @ForumID)
+        AND (@SolutionID IS NULL OR s.SolutionID = @SolutionID)
+        AND (@AuthorID IS NULL OR s.AuthorID = @AuthorID)
+    GROUP BY
+        s.SolutionID,
+        s.ForumID,
+        s.Title,
+        s.Description,
+        s.AuthorID,
+        s.CreatedAt,
+        s.ModifiedAt,
+        s.BlockedContentID;
+GO
+
+-- Function to get a user's votes
+CREATE FUNCTION fnGetUsersVotes(
+    @UserID int
+)
+RETURNS table
+RETURN
+    SELECT * FROM forums.UserVotes
+    WHERE UserID = @UserID;
+GO
+
+-- Function to get user history with optional filtering
+CREATE FUNCTION fnGetUserHistory(
+    @UserID int
+)
+RETURNS table
+RETURN
+    SELECT *
+    FROM users.UserHistory
+    WHERE (@UserID IS NULL OR UserID = @UserID);
+GO
+
+-- Helper function for database statistics to get primary key columns
+CREATE FUNCTION dbo.GetPrimaryKeyColumns(
+    @TableIdentifier VARCHAR(255) -- Format: SchemaName.TableName
+)
+RETURNS VARCHAR(MAX)
+AS
+BEGIN
+    DECLARE @PrimaryKeys VARCHAR(MAX) = '';
+    DECLARE @SchemaName VARCHAR(128);
+    DECLARE @TableName VARCHAR(128);
+    
+    -- Split the table identifier into schema and table name
+    SELECT 
+        @SchemaName = PARSENAME(@TableIdentifier, 2),
+        @TableName = PARSENAME(@TableIdentifier, 1);
+    
+    -- Get primary key columns
+    SELECT @PrimaryKeys = STRING_AGG(c.name, ', ')
+    FROM sys.indexes i
+    JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+    JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+    JOIN sys.tables t ON i.object_id = t.object_id
+    JOIN sys.schemas s ON t.schema_id = s.schema_id
+    WHERE i.is_primary_key = 1
+        AND s.name = @SchemaName
+        AND t.name = @TableName;
+    
+    RETURN @PrimaryKeys;
+END;
+GO
+
+
+
+
 -- spUserVotes_INSERT is at beginning of the file, before spForums_INSERT
 CREATE PROC spUserVotes_INSERT
     @ForumID INT,
@@ -42,7 +215,7 @@ Print 'Added a user history entry';
 
 GO
 
--- spForums_INSERT - Update parameter name from @Description to @Content
+-- spForums_INSERT - 
 CREATE PROC spForums_INSERT 
     @ForumID INT,
     @Title VARCHAR(200),
@@ -88,7 +261,7 @@ INSERT users.UserHistory (
 ) VALUES (
     @AuthorID,
     'Created a forum',
-    'link-to-content',
+    NULL,
     @ForumID
     )
 Print 'Added a user history entry';
@@ -250,7 +423,8 @@ CREATE PROC spSolutions_INSERT
     @SolutionID INT,
     @ForumID INT,
     @Title VARCHAR(400),
-    @Description VARCHAR(max),
+    @Content VARCHAR(max),
+    @ContentStatus INT,
     @AuthorID VARCHAR(50),
     @BlockedContentID INT
 AS 
@@ -260,7 +434,8 @@ INSERT forums.Solutions
     SolutionID,
     ForumID,
     Title,
-    Description,
+    Content,
+    ContentStatus,
     AuthorID,
     BlockedContentID,
     CreatedAt
@@ -270,7 +445,8 @@ VALUES
     @SolutionID,
     @ForumID,
     @Title,
-    @Description,
+    @Content,
+    @ContentStatus,
     @AuthorID,
     @BlockedContentID,
     GETDATE()
@@ -340,7 +516,7 @@ GO
 -- spUserVotes_UPDATE
 CREATE PROC spUserVotes_UPDATE 
     @vote int,
-    @UserID int, 
+    @UserID VARCHAR(50), 
     @ForumID int, 
     @ForumSolutionID int, 
     @CommentID int
@@ -407,68 +583,3 @@ DECLARE @ThisCategory VARCHAR(100);
 SELECT @ThisCategory = CategoryName FROM forums.Categories WHERE CategoryID = @CategoryID
 Print 'Assigned ForumID: ' + CONVERT(varchar, @ForumID) + ' to CategoryID: ' + CONVERT(varchar, @CategoryID) + ' ('+ @ThisCategory +')'
 -- END spForumsCategories_INSERT
-
-GO
-
--- sp_GetDatabaseStats
-CREATE PROCEDURE dbo.sp_GetDatabaseStats
-AS
-BEGIN
-
-    PRINT 'Running Audit: sp_GetDatabaseStats';
-    -- Create a temporary table to store the results
-    CREATE TABLE #Results (
-        TableName VARCHAR(255) NOT NULL,
-        "RowCount" INT NOT NULL,
-        ColumnCount INT NOT NULL
-    );
-
-    -- Construct the dynamic SQL query
-    DECLARE @SQLQuery NVARCHAR(MAX) = N'';
-
-    -- Generate the dynamic SQL to gather statistics from all tables
-    SELECT @SQLQuery = STRING_AGG(
-        N'INSERT INTO #Results (TableName, "RowCount", ColumnCount) ' +
-        N'SELECT ''' + s.name + '.' + t.name + ''', ' +
-        N'(SELECT COUNT(*) FROM ' + QUOTENAME(s.name) + '.' + QUOTENAME(t.name) + ') AS "RowCount", ' +
-        N'(SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ''' + s.name + ''' AND TABLE_NAME = ''' + t.name + ''') AS ColumnCount ' +
-        N'FROM ' + QUOTENAME(s.name) + '.' + QUOTENAME(t.name) + ';'
-    , ' ')
-    FROM sys.tables t
-    JOIN sys.schemas s ON t.schema_id = s.schema_id;
-
-    -- Execute the generated SQL
-    EXEC sp_executesql @SQLQuery;
-
-    -- Create the final results table to store extended data
-    DROP TABLE IF EXISTS DatabaseStats;
-    CREATE TABLE DatabaseStats (
-        TableName VARCHAR(255), 
-        "RowCount" INT, 
-        ColumnCount INT, 
-        DatumCount INT,
-        PrimaryKey VARCHAR(MAX),
-        ForeignKey VARCHAR(MAX)
-    );
-
-    -- Insert data into the final table with calculated columns and foreign/primary keys
-    INSERT INTO DatabaseStats (TableName, "RowCount", ColumnCount, DatumCount, PrimaryKey, ForeignKey)
-    SELECT DISTINCT 
-        TableName, 
-        "RowCount", 
-        ColumnCount, 
-        DatumCount = "RowCount" * ColumnCount,
-        PrimaryKey = dbo.GetPrimaryKeyColumns(TableName),
-        ForeignKey = dbo.GetForeignKeyColumns(TableName)
-    FROM #Results;
-
-    -- Select the final results
-    SELECT * FROM DatabaseStats;
-
-    -- Clean up the temporary table
-    DROP TABLE #Results;
-
-    -- Optionally, print the dynamic SQL for debugging purposes
-    -- PRINT @SQLQuery;
-END;
--- END sp_GetDatabaseStats
