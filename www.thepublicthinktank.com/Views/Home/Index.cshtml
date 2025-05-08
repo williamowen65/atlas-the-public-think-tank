@@ -1,31 +1,65 @@
-﻿@model List<atlas_the_public_think_tank.Models.Forum_ReadVM>
-
-@using Microsoft.AspNetCore.Identity
-@inject SignInManager<AppUser> SignInManager
-@inject UserManager<AppUser> UserManager
-
+﻿@model HomeIndexViewModel
 @{
     ViewData["Title"] = "Home Page";
 }
 
-<h1>All Posts</h1>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Main content with forums -->
+        <div class="col-md-9">
+            <div class="mb-3">
+                <a href="/create-forum" class="btn btn-primary">Create New Post</a>
+            </div>
 
-@if (Model.Any())
-{
-    <ul>
-        @foreach (var post in Model)
-        {
-            <li>
-                <strong>@post.Title</strong> - @post.Content
-                <br />
-                @* <em>Category: @post.Category?.Name</em> *@
-                <br />
-                <em>Posted by: @post.Author?.UserName</em>
-            </li>
-        }
-    </ul>
-}
-else
-{
-    <p>No posts available.</p>
+            @if (Model.Forums != null && Model.Forums.Any())
+            {
+                @foreach (var forum in Model.Forums)
+                {
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h5 class="mb-0">@forum.Title</h5>
+                            <small class="text-muted">Posted by @forum.Author?.UserName on @forum.CreatedAt.ToString("MMM dd, yyyy")</small>
+                        </div>
+                        <div class="card-body">
+                            <p>@forum.Content</p>
+                            
+                            @if (forum.Categories != null && forum.Categories.Any())
+                            {
+                                <div class="mt-2">
+                                    @foreach (var category in forum.Categories)
+                                    {
+                                        <span class="badge bg-secondary me-1">@category.CategoryName</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                        <div class="card-footer">
+                            <a href="#" class="btn btn-sm btn-outline-primary">Reply</a>
+                            <a href="#" class="btn btn-sm btn-outline-secondary">Share</a>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    No posts available. Be the first to create a post!
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Optional JavaScript to filter posts by category
+        $(document).ready(function() {
+            $('.category-link').click(function(e) {
+                e.preventDefault();
+                var categoryId = $(this).data('category-id');
+                // You can implement filtering logic here
+                console.log('Filter by category ID:', categoryId);
+            });
+        });
+    </script>
 }

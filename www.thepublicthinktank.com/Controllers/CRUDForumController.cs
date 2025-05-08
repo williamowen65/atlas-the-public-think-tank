@@ -35,7 +35,7 @@ namespace atlas_the_public_think_tank.Controllers
         [HttpPost]
         [Route("/create-forum")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateForum(Forum_CreateVM model) // Updated type
+        public async Task<IActionResult> CreateForum(Forum_CreateVM model)
         {
             if (ModelState.IsValid)
             {
@@ -52,13 +52,32 @@ namespace atlas_the_public_think_tank.Controllers
                     CreatedAt = DateTime.UtcNow
                 };
 
-                _context.Forums.Add(forumPost);
-                await _context.SaveChangesAsync();
+                var entry = _context.Forums.Add(forumPost);
+                await _context.SaveChangesAsync(); // Save to generate the ForumID
+
+                // Now add the category relationships
+                if (model.SelectedCategoryIds != null && model.SelectedCategoryIds.Any())
+                {
+                    foreach (int categoryId in model.SelectedCategoryIds)
+                    {
+                        var forumCategory = new ForumCategory
+                        {
+                            ForumID = entry.Entity.ForumID,
+                            CategoryID = categoryId
+                        };
+                        _context.ForumCategories.Add(forumCategory);
+                    }
+
+                    await _context.SaveChangesAsync();
+                }
 
                 return RedirectToAction("Index", "Home");
             }
 
-
+            // If we got this far, something failed, redisplay form
+            // Repopulate the dropdown data
+            model.Categories = _context.Categories.ToList();
+            model.Scopes = _context.Scopes.ToList();
             return View(model);
         }
 
@@ -70,6 +89,8 @@ namespace atlas_the_public_think_tank.Controllers
             var posts = await _context.Forums
                 .Include(p => p.Scope)
                 .Include(p => p.Author)
+                .Include(p => p.ForumCategories)
+                    .ThenInclude(fc => fc.Category)
                 .Select(p => new Forum_ReadVM
                 {
                     ForumID = p.ForumID,
@@ -82,7 +103,12 @@ namespace atlas_the_public_think_tank.Controllers
                     ParentForumID = p.ParentForumID,
                     BlockedContentID = p.BlockedContentID,
                     Author = p.Author,
-                    Scope = p.Scope
+                    Scope = p.Scope,
+                    Categories = p.ForumCategories.Select(fc => new Category_ReadVM
+                    {
+                        CategoryID = fc.Category.CategoryID,
+                        CategoryName = fc.Category.CategoryName
+                    }).ToList()
                 })
                 .ToListAsync();
 

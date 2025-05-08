@@ -1,6 +1,12 @@
 namespace atlas_the_public_think_tank.Models
 {
 
+      public class HomeIndexViewModel
+    {
+        public List<Forum_ReadVM> Forums { get; set; } = new List<Forum_ReadVM>();
+        public List<Category_ReadVM> Categories { get; set; } = new List<Category_ReadVM>();
+    }
+
     public class Forum_CreateVM
     {
         public string Title { get; set; }
@@ -8,6 +14,8 @@ namespace atlas_the_public_think_tank.Models
         public ContentStatus ContentStatus { get; set; }
 
         public List<Category> Categories { get; set; } = new List<Category>();
+
+        public List<int> SelectedCategoryIds { get; set; } = new List<int>();
         public int ScopeID { get; set; }
         public int? ParentForumID { get; set; }
 
@@ -25,6 +33,7 @@ namespace atlas_the_public_think_tank.Models
         public int ScopeID { get; set; }
         public int? ParentForumID { get; set; }
         public int? BlockedContentID { get; set; }
+        public List<Category_ReadVM> Categories { get; set; } = new List<Category_ReadVM>();
 
         // Navigation properties
         public AppUser Author { get; set; }

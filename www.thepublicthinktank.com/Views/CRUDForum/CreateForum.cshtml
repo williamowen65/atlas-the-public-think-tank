@@ -25,16 +25,15 @@
                              <label asp-for="Content" class="form-label">Content</label> 
                              <textarea asp-for="Content" class="form-control" rows="6"></textarea> 
                              <span asp-validation-for="Content" class="text-danger"></span> 
-                         </div> 
+                         </div>
 
-                          <div class="mb-3"> 
-                              <label asp-for="Categories" class="form-label">Category</label> 
-                              <select multiple asp-for="Categories" class="form-select" 
-                                      asp-items="@(new SelectList(Model.Categories, "CategoryID", "CategoryName"))"> 
-                                  <option value="">-- Select a Category --</option> 
-                              </select> 
-                              <span asp-validation-for="Categories" class="text-danger"></span> 
-                          </div>     
+                        <div class="mb-3">
+                            <label class="form-label">Categories</label>
+                            <select multiple name="SelectedCategoryIds" class="form-select"
+                                    asp-items="@(new SelectList(Model.Categories, "CategoryID", "CategoryName"))">
+                            </select>
+                            <span asp-validation-for="SelectedCategoryIds" class="text-danger"></span>
+                        </div>
                           <div class="mb-3"> 
                               <label asp-for="ScopeID" class="form-label">Scope</label> 
                               <select asp-for="ScopeID" class="form-select" 

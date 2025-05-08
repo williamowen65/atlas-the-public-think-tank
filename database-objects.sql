@@ -109,7 +109,7 @@ RETURN
         s.SolutionID,
         s.ForumID,
         s.Title,
-        s.Description,
+        s.Content,
         s.AuthorID,
         s.CreatedAt,
         s.ModifiedAt,

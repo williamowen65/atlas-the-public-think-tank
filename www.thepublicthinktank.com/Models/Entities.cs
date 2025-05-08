@@ -152,6 +152,7 @@ namespace atlas_the_public_think_tank.Models
         public virtual Category Category { get; set; }
         public virtual Forum Forum { get; set; }
     }
+
     public class UserHistory
     {
         public int UserHistoryID { get; set; }
