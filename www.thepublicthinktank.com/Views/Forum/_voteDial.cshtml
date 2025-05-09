@@ -5,6 +5,92 @@
 }
 
 <div class="d-flex justify-content-center align-items-center h-100" style="width: 100px">
-Vote Dial
+    <div class="vote-dial-toggle position-relative">
+        <div class="vote-toggle-container overflow-hidden">
+            @for (int i = 10; i >= 0; i--)
+            {
+                <input class="d-none" id="vote@(i)" type="radio" name="vote-dial" value="@i" @(i == 5 ? "checked" : "") />
+            }
 
+            <div id="vote-dial-lens" class="bg-body-secondary lens"></div>
+
+            <div id="vote-dial-outline" class="outline"></div>
+
+            @for (int i = 10; i >= 0; i--)
+            {
+                <label role="button" for="vote@(i)" class="toggle-option vote-option-@i">
+                    <span>@i</span>
+                </label>
+            }
+        </div>
+    </div>
+
+    <style>
+        .vote-dial-toggle {
+            width: 80px;
+            height: 400px;
+        }
+
+        .vote-toggle-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+            background-color: #f8f9fa;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .lens {
+            position: absolute;
+            width: 100%;
+            height: 36px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .outline {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            box-sizing: border-box;
+            pointer-events: none;
+        }
+
+        .toggle-option {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 36px;
+            z-index: 2;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Position the lens based on which radio is selected */
+        @for (int i = 10; i >= 0; i--)
+        {
+            <text>
+            #vote@(i):checked ~ .lens {
+                transform: translateY(@(36 * (10 - i))px);
+            }
+            </text>
+        }
+
+        /* Style for the labels */
+        @for (int i = 10; i >= 0; i--)
+        {
+            <text>
+            .vote-option-@i {
+                position: absolute;
+                width: 100%;
+                top: @(36 * (10 - i))px;
+            }
+            </text>
+        }
+    </style>
 </div>

@@ -2,23 +2,7 @@
 
 <header class="d-flex justify-content-between pt-2 align-items-center">
     <h3 class="" style="width: min-content">Forum Categories</h3>
-    <div class="view-mode-toggle position-relative">
-        <div class="toggle-container overflow-hidden">
-            <input class="d-none" id="tree" type="radio" name="view-mode" checked />
-            <input class="d-none" id="info" type="radio" name="view-mode" />
-
-            <div id="view-mode-toggle-lens" class="bg-body-secondary lens"></div>
-
-            <div id="view-toggle-outline" class="outline"></div>
-
-            <label role="button" for="tree" class="fs-3 toggle-option left-option">
-                <i class="fa-solid fa-sitemap"></i>
-            </label>
-            <label role="button" for="info" class="fs-3 toggle-option right-option">
-                <i class="fa-solid fa-info-circle"></i>
-            </label>
-        </div>
-    </div>
+    @Html.Partial("_view-mode-toggle.cshtml")
 </header>
 
 <hr />
