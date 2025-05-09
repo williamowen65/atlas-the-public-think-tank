@@ -23,12 +23,12 @@
 
             <div id="@outlineId" class="outline"></div>
           
-            @for (int i = 10; i >= 0; i--)
+            @for (int i = 11; i >= -1; i--)
             {
                 var radioId = $"vote-{Model.ForumID}-{i}";
                 var optionClass = $"vote-option-{Model.ForumID}-{i}";
                 <label role="button" for="@radioId" class="toggle-option @optionClass">
-                    <span>@i</span>
+                    <span>@(i == 11 || i == -1 ? "" : i.ToString())</span>
                 </label>
             }
         </div>
@@ -79,26 +79,29 @@
             cursor: pointer;
             font-weight: bold;
         }        /* Position the lens based on which radio is selected */
-        @for (int i = 10; i >= 0; i--)
+      @for (int i = 10; i >= 0; i--)
         {
             var radioId = $"vote-{Model.ForumID}-{i}";
             <text>
             #@radioId:checked ~ .lens {
-                transform: translateY(@(36 * (10 - i))px);
+                transform: translateY(@(36 * (11 - i))px);
                 z-index: 1;
             }
             </text>
         }
 
         /* Style for the labels */
-        @for (int i = 10; i >= 0; i--)
+        @for (int i = 11; i >= -1; i--)
         {
             var optionClass = $"vote-option-{Model.ForumID}-{i}";
             <text>
             .@optionClass {
                 position: absolute;
                 width: 100%;
-                top: @(36 * (10 - i))px;
+                top: @(36 * (11 - i))px;
+                @if(i == 11 || i == -1) {
+                    <text>opacity: 0.5; /* Make buffer options semi-transparent */</text>
+                }
             }
             </text>
         }
@@ -166,8 +169,9 @@
                     const radioId = label.getAttribute('for');
                     const radio = document.getElementById(radioId);
                     
-                    // Check the radio if it's not already checked
-                    if (radio && !radio.checked) {
+                    // Only select values between 0-10 (skip the buffer values)
+                    const value = parseInt(radio.value);
+                    if (radio && !radio.checked && value >= 0 && value <= 10) {
                         radio.checked = true;
                         
                         // Trigger a change event
