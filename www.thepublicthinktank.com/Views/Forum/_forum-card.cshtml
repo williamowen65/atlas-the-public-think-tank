@@ -6,7 +6,12 @@
 @{
 }
 
-<div class="card mb-3">
+<div class="card mb-3 d-flex flex-row">
+    <div>
+        vote
+    </div>
+    <div class="flex-fill">
+
     <div class="card-header">
         <h5 class="mb-0">@Model.Title</h5>
         <small class="text-muted">Posted by @Model.Author?.UserName on @Model.CreatedAt.ToString("MMM dd, yyyy")</small>
@@ -28,4 +33,6 @@
         <a href="#" class="btn btn-sm btn-outline-primary">Reply</a>
         <a href="#" class="btn btn-sm btn-outline-secondary">Share</a>
     </div>
+    </div>
+
 </div>
