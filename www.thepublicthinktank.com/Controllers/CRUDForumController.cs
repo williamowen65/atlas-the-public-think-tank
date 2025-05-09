@@ -24,11 +24,12 @@ namespace atlas_the_public_think_tank.Controllers
         public IActionResult CreateForum()
         {
 
-            Forum_CreateVM newForum = new() { 
+            Forum_CreateVM newForum = new()
+            {
                 Categories = _context.Categories.ToList(),
                 Scopes = _context.Scopes.ToList(),
             };
-            
+
             return View(newForum);
         }
 
@@ -67,6 +68,9 @@ namespace atlas_the_public_think_tank.Controllers
                         };
                         _context.ForumCategories.Add(forumCategory);
                     }
+
+
+                    // Save the User History (todo)
 
                     await _context.SaveChangesAsync();
                 }
@@ -158,7 +162,45 @@ namespace atlas_the_public_think_tank.Controllers
          
          */
 
+        [HttpPost]
+        [Route("/vote/savevote")]
+        public async Task<IActionResult> SaveVote(UserVote_Forum_CreateVM model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return Json(new { success = false, message = "Invalid vote data" });
+            }
 
+            try
+            {
+                UserVote vote = new UserVote
+                {
+                    ForumID = model.ForumID,
+                    Vote = model.VoteValue
+                };
+
+                // Cast the vote and create a user history entry
+                _context.UserVotes.Add(vote);
+
+
+                await _context.SaveChangesAsync();
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+    [Route("/Forum/GetVoteDial")]
+        public IActionResult GetVoteDial(int forumId)
+        {
+            // Get vote data for the forum
+            var voteData = _context.Forums.Include(p => p.UserVotes);
+
+            // Return the partial view with the vote data model
+            return PartialView("_voteDial", voteData);
+        }
 
 
 

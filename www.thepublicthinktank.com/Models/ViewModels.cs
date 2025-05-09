@@ -1,7 +1,7 @@
 namespace atlas_the_public_think_tank.Models
 {
 
-      public class HomeIndexViewModel
+    public class HomeIndexViewModel
     {
         public List<Forum_ReadVM> Forums { get; set; } = new List<Forum_ReadVM>();
         public List<Category_ReadVM> Categories { get; set; } = new List<Category_ReadVM>();
@@ -51,6 +51,14 @@ namespace atlas_the_public_think_tank.Models
     {
         public int CategoryID { get; set; }
         public string CategoryName { get; set; }
+    }
+    
+    public class UserVote_Forum_CreateVM
+    {
+        public int ForumID { get; set; }
+        public int VoteValue { get; set; }
+
+        public string UserId { get; set; }
     }
 
 }
