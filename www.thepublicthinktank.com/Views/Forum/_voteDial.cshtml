@@ -12,7 +12,7 @@
 
 <div class="d-flex justify-content-center align-items-center h-100" style="width: 100px">
     <div class="vote-dial-toggle position-relative">
-        <div class="vote-toggle-container">
+        <div id="vote-toggle-container-@Model.ForumID" class="vote-toggle-container">
             @for (int i = 10; i >= 0; i--)
             {
                 var radioId = $"vote-{Model.ForumID}-{i}";
@@ -121,5 +121,50 @@
         .vote-toggle-container::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
-    </style>
+    </style>    <script>
+        // Function to scroll to the checked radio value
+        document.addEventListener('DOMContentLoaded', function() {
+            const containerId = 'vote-toggle-container-@Model.ForumID';
+            const container = document.getElementById(containerId);
+            
+            // Find the checked radio button
+            const checkedRadio = document.querySelector('input[name="@dialId"]:checked');
+            if (checkedRadio && container) {
+                // Get the corresponding label
+                const radioId = checkedRadio.id;
+                const label = document.querySelector(`label[for="${radioId}"]`);
+                
+                if (label) {
+                    // Calculate the scroll position to center the selected value in the viewport
+                    const labelTop = label.offsetTop;
+                    const containerHeight = container.clientHeight;
+                    const labelHeight = label.clientHeight;
+                    
+                    // Scroll to center the label in the viewport
+                    container.scrollTop = labelTop - (containerHeight / 2) + (labelHeight / 2);
+                }
+            }
+            
+            // Add event listeners to update scroll position when a radio button is clicked
+            const radios = document.querySelectorAll('input[name="@dialId"]');
+            radios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.checked && container) {
+                        const label = document.querySelector(`label[for="${this.id}"]`);
+                        if (label) {
+                            // Smooth scroll to the selected value
+                            const labelTop = label.offsetTop;
+                            const containerHeight = container.clientHeight;
+                            const labelHeight = label.clientHeight;
+                            
+                            container.scrollTo({
+                                top: labelTop - (containerHeight / 2) + (labelHeight / 2),
+                                behavior: 'smooth'
+                            });
+                        }
+                    }
+                });
+            });
+        });
+    </script>
 </div>
