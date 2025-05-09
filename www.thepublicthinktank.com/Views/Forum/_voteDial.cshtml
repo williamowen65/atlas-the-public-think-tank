@@ -22,7 +22,7 @@
             <div id="@lensId" class="bg-body-secondary lens"></div>
 
             <div id="@outlineId" class="outline"></div>
-
+          
             @for (int i = 10; i >= 0; i--)
             {
                 var radioId = $"vote-{Model.ForumID}-{i}";
@@ -120,22 +120,79 @@
 
         .vote-toggle-container::-webkit-scrollbar-thumb:hover {
             background: #555;
-        }
-    </style>    <script>
-        // Function to scroll to the checked radio value
+        }    </style>    
+        
+        
+        <script>
         document.addEventListener('DOMContentLoaded', function() {
             const containerId = 'vote-toggle-container-@Model.ForumID';
             const container = document.getElementById(containerId);
+            const dialId = "@dialId";
             
             // Find the checked radio button
-            const checkedRadio = document.querySelector('input[name="@dialId"]:checked');
-            if (checkedRadio && container) {
-                // Get the corresponding label
+            const checkedRadio = document.querySelector(`input[name="${dialId}"]:checked`);
+            
+            if (!container) return;
+            
+            // Store all option elements and radios
+            const options = Array.from(container.querySelectorAll('.toggle-option'));
+            const radios = Array.from(document.querySelectorAll(`input[name="${dialId}"]`));
+            
+            // Set up intersection observer to detect which option is most visible
+            let isScrolling = false;
+            let scrollTimeout;
+            
+            const observer = new IntersectionObserver((entries) => {
+                // Only process if user is actively scrolling
+                if (!isScrolling) return;
+                
+                // Find the most visible entry
+                let maxVisibility = 0;
+                let mostVisibleEntry = null;
+                
+                entries.forEach(entry => {
+                    // Calculate how much of the element is visible
+                    const visibleRatio = entry.intersectionRatio;
+                    if (visibleRatio > maxVisibility) {
+                        maxVisibility = visibleRatio;
+                        mostVisibleEntry = entry;
+                    }
+                });
+                
+                // If we found a most visible entry and it's significantly visible
+                if (mostVisibleEntry && maxVisibility > 0.99) {
+                    // Find the corresponding radio
+                    const label = mostVisibleEntry.target;
+                    const radioId = label.getAttribute('for');
+                    const radio = document.getElementById(radioId);
+                    
+                    // Check the radio if it's not already checked
+                    if (radio && !radio.checked) {
+                        radio.checked = true;
+                        
+                        // Trigger a change event
+                        const event = new Event('change');
+                        radio.dispatchEvent(event);
+                    }
+                }
+            }, { 
+                root: container, 
+                threshold: [0, 0.25, 0.5, 0.75, 1],
+                rootMargin: '-10% 0px -10% 0px' // Focus on center area
+            });
+            
+            // Observe all option elements
+            options.forEach(option => {
+                observer.observe(option);
+            });
+            
+            // Initial scroll to checked radio
+            if (checkedRadio) {
                 const radioId = checkedRadio.id;
                 const label = document.querySelector(`label[for="${radioId}"]`);
                 
                 if (label) {
-                    // Calculate the scroll position to center the selected value in the viewport
+                    // Calculate the scroll position to center the selected value
                     const labelTop = label.offsetTop;
                     const containerHeight = container.clientHeight;
                     const labelHeight = label.clientHeight;
@@ -145,17 +202,49 @@
                 }
             }
             
-            // Add event listeners to update scroll position when a radio button is clicked
-            const radios = document.querySelectorAll('input[name="@dialId"]');
+            // Handle scroll events to set the isScrolling flag
+            container.addEventListener('scroll', () => {
+                isScrolling = true;
+                
+                // Clear any existing timeout
+                clearTimeout(scrollTimeout);
+                
+                // Set a timeout to reset the flag
+                scrollTimeout = setTimeout(() => {
+                    isScrolling = false;
+                    
+                    // After scrolling stops, find which radio is checked
+                    const checkedRadio = document.querySelector(`input[name="${dialId}"]:checked`);
+                    if (checkedRadio) {
+                        const label = document.querySelector(`label[for="${checkedRadio.id}"]`);
+                        if (label) {
+                            // Snap to the checked value
+                            const labelTop = label.offsetTop;
+                            const containerHeight = container.clientHeight;
+                            const labelHeight = label.clientHeight;
+                            
+                            container.scrollTo({
+                                top: labelTop - (containerHeight / 2) + (labelHeight / 2),
+                                behavior: 'smooth'
+                            });
+                        }
+                    }
+                }, 150); // Adjust this timeout to balance responsiveness
+            });
+            
+            // Add event listeners for radio button changes
             radios.forEach(radio => {
                 radio.addEventListener('change', function() {
-                    if (this.checked && container) {
+                    if (this.checked) {
                         const label = document.querySelector(`label[for="${this.id}"]`);
                         if (label) {
                             // Smooth scroll to the selected value
                             const labelTop = label.offsetTop;
                             const containerHeight = container.clientHeight;
                             const labelHeight = label.clientHeight;
+                            
+                            // Don't trigger the scroll observer during programmatic scrolling
+                            isScrolling = false;
                             
                             container.scrollTo({
                                 top: labelTop - (containerHeight / 2) + (labelHeight / 2),
