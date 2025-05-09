@@ -10,7 +10,10 @@
     var outlineId = $"vote-outline-{Model.ForumID}";
 }
 
-<div class="d-flex justify-content-center align-items-center h-100" style="width: 100px">
+<div class="d-flex justify-content-center align-items-center h-100 flex-column" style="width: 100px">
+    
+    @Html.Partial("_voteAverage.cshtml")
+    
     <div class="vote-dial-toggle position-relative">
         <div id="vote-toggle-container-@Model.ForumID" class="vote-toggle-container">
             @for (int i = 10; i >= 0; i--)
@@ -32,7 +35,13 @@
                 </label>
             }
         </div>
-    </div>    <style>
+    </div>    
+    
+    @Html.Partial("_voteCount.cshtml")
+  
+</div>
+
+ <style>
         .vote-dial-toggle {
             width: 80px;
             height: 100px; /* Fixed height */
@@ -120,10 +129,11 @@
 
         .vote-toggle-container::-webkit-scrollbar-thumb:hover {
         }   
-        </style>    
+ </style>    
         
-        
-        <script>
+       
+
+ <script>
         document.addEventListener('DOMContentLoaded', function() {
             const containerId = 'vote-toggle-container-@Model.ForumID';
             const container = document.getElementById(containerId);
@@ -257,4 +267,4 @@
             });
         });
     </script>
-</div>
+
