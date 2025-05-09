@@ -1,0 +1,31 @@
+﻿
+@model Forum_ReadVM
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+
+<div class="card mb-3">
+    <div class="card-header">
+        <h5 class="mb-0">@Model.Title</h5>
+        <small class="text-muted">Posted by @Model.Author?.UserName on @Model.CreatedAt.ToString("MMM dd, yyyy")</small>
+    </div>
+    <div class="card-body">
+        <p>@Model.Content</p>
+
+        @if (Model.Categories != null && Model.Categories.Any())
+        {
+            <div class="mt-2">
+                @foreach (var category in Model.Categories)
+                {
+                    <span class="badge bg-secondary me-1">@category.CategoryName</span>
+                }
+            </div>
+        }
+    </div>
+    <div class="card-footer">
+        <a href="#" class="btn btn-sm btn-outline-primary">Reply</a>
+        <a href="#" class="btn btn-sm btn-outline-secondary">Share</a>
+    </div>
+</div>
