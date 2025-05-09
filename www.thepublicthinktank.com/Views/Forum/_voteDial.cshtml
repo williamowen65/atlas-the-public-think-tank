@@ -1,7 +1,13 @@
-﻿@*
+﻿@model Forum_ReadVM
+
+@*
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
 @{
+    // Generate unique IDs using the forum ID
+    var dialId = $"vote-dial-{Model.ForumID}";
+    var lensId = $"vote-lens-{Model.ForumID}";
+    var outlineId = $"vote-outline-{Model.ForumID}";
 }
 
 <div class="d-flex justify-content-center align-items-center h-100" style="width: 100px">
@@ -9,26 +15,27 @@
         <div class="vote-toggle-container overflow-hidden">
             @for (int i = 10; i >= 0; i--)
             {
-                <input class="d-none" id="vote@(i)" type="radio" name="vote-dial" value="@i" @(i == 5 ? "checked" : "") />
+                var radioId = $"vote-{Model.ForumID}-{i}";
+                <input class="d-none" id="@radioId" type="radio" name="@dialId" value="@i" @(i == 5 ? "checked" : "") />
             }
 
-            <div id="vote-dial-lens" class="bg-body-secondary lens"></div>
+            <div id="@lensId" class="bg-body-secondary lens"></div>
 
-            <div id="vote-dial-outline" class="outline"></div>
+            <div id="@outlineId" class="outline"></div>
 
             @for (int i = 10; i >= 0; i--)
             {
-                <label role="button" for="vote@(i)" class="toggle-option vote-option-@i">
+                var radioId = $"vote-{Model.ForumID}-{i}";
+                var optionClass = $"vote-option-{Model.ForumID}-{i}";
+                <label role="button" for="@radioId" class="toggle-option @optionClass">
                     <span>@i</span>
                 </label>
             }
         </div>
-    </div>
-
-    <style>
+    </div>    <style>
         .vote-dial-toggle {
             width: 80px;
-            height: 400px;
+            height: 100px; /* Fixed height */
         }
 
         .vote-toggle-container {
@@ -40,6 +47,8 @@
             border-radius: 10px;
             background-color: #f8f9fa;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            overflow-y: auto; /* Add vertical scrolling */
+            scrollbar-width: thin; /* For Firefox */
         }
 
         .lens {
@@ -69,14 +78,14 @@
             z-index: 2;
             cursor: pointer;
             font-weight: bold;
-        }
-
-        /* Position the lens based on which radio is selected */
+        }        /* Position the lens based on which radio is selected */
         @for (int i = 10; i >= 0; i--)
         {
+            var radioId = $"vote-{Model.ForumID}-{i}";
             <text>
-            #vote@(i):checked ~ .lens {
+            #@radioId:checked ~ .lens {
                 transform: translateY(@(36 * (10 - i))px);
+                z-index: 1;
             }
             </text>
         }
@@ -84,13 +93,33 @@
         /* Style for the labels */
         @for (int i = 10; i >= 0; i--)
         {
+            var optionClass = $"vote-option-{Model.ForumID}-{i}";
             <text>
-            .vote-option-@i {
+            .@optionClass {
                 position: absolute;
                 width: 100%;
                 top: @(36 * (10 - i))px;
             }
             </text>
+        }
+
+        /* Custom scrollbar styling */
+        .vote-toggle-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .vote-toggle-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .vote-toggle-container::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+
+        .vote-toggle-container::-webkit-scrollbar-thumb:hover {
+            background: #555;
         }
     </style>
 </div>
