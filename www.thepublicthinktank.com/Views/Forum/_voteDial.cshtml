@@ -10,7 +10,7 @@
     var outlineId = $"vote-outline-{Model.ForumID}";
 }
 
-<div class="d-flex justify-content-around align-items-center flex-column" style="width: 100px; height: 190px">
+<div class="d-flex justify-content-around align-items-center flex-column" style="width: 100px; height: 190px; user-select:none;">
     
     @Html.Partial("_voteAverage.cshtml")
     
@@ -77,9 +77,7 @@
             border: 2px solid transparent;
             box-sizing: border-box;
             pointer-events: none;
-        }
-
-        .toggle-option {
+        }        .toggle-option {
             display: flex;
             align-items: center;
             justify-content: center;
@@ -87,14 +85,18 @@
             z-index: 2;
             cursor: pointer;
             font-weight: bold;
-        }        /* Position the lens based on which radio is selected */
-      @for (int i = 10; i >= 0; i--)
+            color: #000000; /* Default text color is black */
+        }        /* Position the lens based on which radio is selected */      @for (int i = 10; i >= 0; i--)
         {
             var radioId = $"vote-{Model.ForumID}-{i}";
+            var optionClass = $"vote-option-{Model.ForumID}-{i}";
             <text>
             #@radioId:checked ~ .lens {
                 transform: translateY(@(36 * (11 - i))px);
                 z-index: 1;
+            }
+            #@radioId:checked ~ .@optionClass {
+                color: #ffffff; /* Make text white when selected */
             }
             </text>
         }
