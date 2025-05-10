@@ -1,5 +1,4 @@
-﻿
-@model Forum_ReadVM
+﻿@model Forum_ReadVM
 @*
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
@@ -37,6 +36,18 @@
 </div>
 
 <script>
-
-
+    document.addEventListener("DOMContentLoaded", () => {
+        fetch("/Forum/GetVoteDial")
+            .then(data => data.text())
+            .then(data => {
+                console.log({data})
+                // Assuming data contains the vote dial information
+                const dialContainer = document.querySelector('.dial-container');
+                if (dialContainer) {
+                    dialContainer.innerHTML = data; 
+                    initializeVoteDial(@Model.ForumID);
+                }
+            })
+            .catch(error => console.error('Error fetching vote dial:', error));
+    });
 </script>

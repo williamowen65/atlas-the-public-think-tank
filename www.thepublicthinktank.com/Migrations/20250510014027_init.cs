@@ -209,8 +209,7 @@ namespace atlas_the_public_think_tank.Migrations
                 schema: "forums",
                 columns: table => new
                 {
-                    ForumID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ForumID = table.Column<int>(type: "int", nullable: false),
                     Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ContentStatus = table.Column<int>(type: "int", nullable: false),
@@ -285,8 +284,7 @@ namespace atlas_the_public_think_tank.Migrations
                 schema: "forums",
                 columns: table => new
                 {
-                    SolutionID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    SolutionID = table.Column<int>(type: "int", nullable: false),
                     ForumID = table.Column<int>(type: "int", nullable: false),
                     Title = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: false),
                     Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
@@ -326,8 +324,7 @@ namespace atlas_the_public_think_tank.Migrations
                 schema: "forums",
                 columns: table => new
                 {
-                    CommentID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    CommentID = table.Column<int>(type: "int", nullable: false),
                     ForumID = table.Column<int>(type: "int", nullable: true),
                     ForumSolutionID = table.Column<int>(type: "int", nullable: true),
                     Comment = table.Column<string>(type: "nvarchar(3000)", maxLength: 3000, nullable: false),

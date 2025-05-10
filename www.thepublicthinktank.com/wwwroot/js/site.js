@@ -1,6 +1,110 @@
-﻿
-// Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
-// for details on configuring this project to bundle and minify static web assets.
+﻿function initializeVoteDial(forumId) {
+    console.log("Vote dial initialized for forum ID:", forumId);
+    const containerId = `vote-toggle-container-${forumId}`;
+    const container = document.getElementById(containerId);
+    const dialId = `vote-dial-${forumId}`;
 
-// Write your JavaScript code.
+    // Find the checked radio button
+    const checkedRadio = document.querySelector(`input[name="${dialId}"]:checked`);
 
+    if (!container) return;
+
+    // Store all option elements and radios
+    const options = Array.from(container.querySelectorAll('.toggle-option'));
+    const radios = Array.from(document.querySelectorAll(`input[name="${dialId}"]`));
+
+    // Set up intersection observer to detect which option is most visible
+    let isScrolling = false;
+    let scrollTimeout;
+
+    const observer = new IntersectionObserver((entries) => {
+        if (!isScrolling) return;
+
+        let maxVisibility = 0;
+        let mostVisibleEntry = null;
+
+        entries.forEach(entry => {
+            const visibleRatio = entry.intersectionRatio;
+            if (visibleRatio > maxVisibility) {
+                maxVisibility = visibleRatio;
+                mostVisibleEntry = entry;
+            }
+        });
+
+        if (mostVisibleEntry && maxVisibility > 0.99) {
+            const label = mostVisibleEntry.target;
+            const radioId = label.getAttribute('for');
+            const radio = document.getElementById(radioId);
+
+            const value = parseInt(radio.value);
+            if (radio && !radio.checked && value >= 0 && value <= 10) {
+                radio.checked = true;
+                const event = new Event('change');
+                radio.dispatchEvent(event);
+            }
+        }
+    }, {
+        root: container,
+        threshold: [0, 0.25, 0.5, 0.75, 1],
+        rootMargin: '-10% 0px -10% 0px'
+    });
+
+    options.forEach(option => {
+        observer.observe(option);
+    });
+
+    if (checkedRadio) {
+        const radioId = checkedRadio.id;
+        const label = document.querySelector(`label[for="${radioId}"]`);
+
+        if (label) {
+            const labelTop = label.offsetTop;
+            const containerHeight = container.clientHeight;
+            const labelHeight = label.clientHeight;
+
+            container.scrollTop = labelTop - (containerHeight / 2) + (labelHeight / 2);
+        }
+    }
+
+    container.addEventListener('scroll', () => {
+        isScrolling = true;
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+            isScrolling = false;
+            const checkedRadio = document.querySelector(`input[name="${dialId}"]:checked`);
+            if (checkedRadio) {
+                const label = document.querySelector(`label[for="${checkedRadio.id}"]`);
+                if (label) {
+                    const labelTop = label.offsetTop;
+                    const containerHeight = container.clientHeight;
+                    const labelHeight = label.clientHeight;
+
+                    container.scrollTo({
+                        top: labelTop - (containerHeight / 2) + (labelHeight / 2),
+                        behavior: 'smooth'
+                    });
+                }
+            }
+        }, 150);
+    });
+
+    radios.forEach(radio => {
+        radio.addEventListener('change', function () {
+            if (this.checked) {
+                const label = document.querySelector(`label[for="${this.id}"]`);
+                if (label) {
+                    const labelTop = label.offsetTop;
+                    const containerHeight = container.clientHeight;
+                    const labelHeight = label.clientHeight;
+
+                    isScrolling = false;
+
+                    container.scrollTo({
+                        top: labelTop - (containerHeight / 2) + (labelHeight / 2),
+                        behavior: 'smooth'
+                    });
+                }
+            }
+        });
+    });
+} // <-- Missing closing brace added here

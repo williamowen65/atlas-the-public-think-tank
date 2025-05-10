@@ -12,7 +12,7 @@ using atlas_the_public_think_tank.Data;
 namespace atlas_the_public_think_tank.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250507203653_init")]
+    [Migration("20250510014027_init")]
     partial class init
     {
         /// <inheritdoc />
@@ -263,10 +263,7 @@ namespace atlas_the_public_think_tank.Migrations
             modelBuilder.Entity("atlas_the_public_think_tank.Models.Forum", b =>
                 {
                     b.Property<int>("ForumID")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ForumID"));
 
                     b.Property<string>("AuthorID")
                         .IsRequired()
@@ -349,10 +346,7 @@ namespace atlas_the_public_think_tank.Migrations
             modelBuilder.Entity("atlas_the_public_think_tank.Models.Solution", b =>
                 {
                     b.Property<int>("SolutionID")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SolutionID"));
 
                     b.Property<string>("AuthorID")
                         .IsRequired()
@@ -396,10 +390,7 @@ namespace atlas_the_public_think_tank.Migrations
             modelBuilder.Entity("atlas_the_public_think_tank.Models.UserComment", b =>
                 {
                     b.Property<int>("CommentID")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CommentID"));
 
                     b.Property<string>("AuthorID")
                         .IsRequired()

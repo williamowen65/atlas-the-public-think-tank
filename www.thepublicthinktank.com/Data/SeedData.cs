@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography.X509Certificates;
 
 namespace atlas_the_public_think_tank.Data
 {
@@ -23,6 +24,8 @@ namespace atlas_the_public_think_tank.Data
             
             // Add seed data using stored procedures
              await SeedDataMiscData(context, userManager, config);
+
+            await SeedDefaultEntriesForVoteTable(context, userManager);
 
             Console.WriteLine("Seeding complete!");
         }
@@ -109,6 +112,93 @@ namespace atlas_the_public_think_tank.Data
             }
         }
 
-    
+
+        // There need to be an entry in related tables for a "system" entry.
+        // This entry is needed because UserVotes has a composite primary key,
+        // and primary keys cannot be null
+        // So this method creates system enrty (ID = 0)
+        // For:
+        // Forums, Solutions, Comments,
+        //
+        // when votes are added to the table, 0 can be placed instead of null
+        // when the vote applies to another type.
+        public static async Task SeedDefaultEntriesForVoteTable(ApplicationDbContext context, UserManager<AppUser> userManager)
+        {
+            // Retrieve the admin user
+            var adminUser = await userManager.FindByEmailAsync("admin@example.com");
+            if (adminUser == null)
+            {
+                throw new Exception("Admin user not found. Ensure the admin user is seeded before calling this method.");
+            }
+            var adminId = adminUser.Id;
+
+            var scope = await context.Scopes.FirstOrDefaultAsync();
+
+
+            // Check if the "system" entry already exists in Forums
+            if (!context.Forums.Any(f => f.ForumID == 0))
+            {
+                context.Forums.Add(new Forum
+                {
+                    ForumID = 0,
+                    Title = "System Entry",
+                    Content = "This is a system entry for votes.",
+                    CreatedAt = DateTime.UtcNow,
+                    ContentStatus = ContentStatus.Archived,
+                    AuthorID = adminId,
+                    ScopeID = scope.ScopeID
+                });
+                // Save changes to the database
+                await context.SaveChangesAsync();
+            }
+
+            //// Check if the "system" entry already exists in Solutions
+            if (!context.Solutions.Any(s => s.SolutionID == 0))
+            {
+                context.Solutions.Add(new Solution
+                {
+                    SolutionID = 0,
+                    Title = "System Entry",
+                    Content = "This is a system entry for votes.",
+                    CreatedAt = DateTime.UtcNow,
+                    ContentStatus = ContentStatus.Archived,
+                    AuthorID = adminId,
+                    ForumID = 0
+                });
+                // Save changes to the database
+                await context.SaveChangesAsync();
+            }
+
+            //// Check if the "system" entry already exists in Comments
+            if (!context.Comments.Any(c => c.CommentID == 0))
+            {
+                context.Comments.Add(new UserComment
+                {
+                    CommentID = 0,
+                    Comment = "This is a system entry for votes.",
+                    CreatedAt = DateTime.UtcNow,
+                    ContentStatus = ContentStatus.Archived,
+                    AuthorID = adminId
+                });
+                // Save changes to the database
+                await context.SaveChangesAsync();
+            }
+
+            if (!context.UserVotes.Any()) {
+                context.UserVotes.Add(new UserVote
+                {
+                    CommentID = 0,
+                    ForumID = 0,
+                    UserID = adminId,
+                    ForumSolutionID = 0
+                });
+                await context.SaveChangesAsync();
+            }
+
+
+        }
+
+
+
     }
 }

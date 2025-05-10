@@ -50,6 +50,7 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
             entity.Property(e => e.Title).HasMaxLength(200).IsRequired();
             entity.Property(e => e.Content).IsRequired();
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+            entity.Property(f => f.ForumID).ValueGeneratedNever();
 
             // Self-referencing relationship
             entity.HasOne(e => e.ParentForum)
@@ -81,6 +82,7 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
             entity.Property(e => e.Title).HasMaxLength(300).IsRequired();
             entity.Property(e => e.Content).IsRequired();
             entity.Property(e => e.ContentStatus).IsRequired();
+            entity.Property(f => f.SolutionID).ValueGeneratedNever();
 
             // Relationships
             entity.HasOne(e => e.Forum)
@@ -104,6 +106,7 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
         {
             entity.HasKey(e => e.CommentID);
             entity.Property(e => e.Comment).HasMaxLength(3000).IsRequired();
+            entity.Property(f => f.CommentID).ValueGeneratedNever();
 
             // Self-referencing relationship
             entity.HasOne(e => e.ParentComment)
