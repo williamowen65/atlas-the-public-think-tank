@@ -210,7 +210,24 @@ namespace atlas_the_public_think_tank.Controllers
                 }
 
                 await _context.SaveChangesAsync();
-                return Json(new { success = true, message = "Vote saved successfully" });
+
+                // get updated stats
+                double average = await _context.UserVotes
+                     .OfType<ForumVote>()
+                     .Where(v => v.ForumID == model.ForumID)
+                     .AverageAsync(v => v.VoteValue);
+                int count = await _context.UserVotes
+                     .OfType<ForumVote>()
+                     .Where(v => v.ForumID == model.ForumID)
+                     .CountAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Vote saved successfully",
+                    average,
+                    count
+                });
             }
             catch (Exception ex)
             {
