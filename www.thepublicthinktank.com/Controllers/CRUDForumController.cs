@@ -163,8 +163,8 @@ namespace atlas_the_public_think_tank.Controllers
          */
 
         [HttpPost]
-        [Route("/vote/savevote")]
-        public async Task<IActionResult> SaveVote(UserVote_Forum model)
+        [Route("/forum/vote")]
+        public async Task<IActionResult> ForumVote(UserVote_Forum model)
         {
             if (!ModelState.IsValid)
             {

@@ -12,7 +12,7 @@ using atlas_the_public_think_tank.Data;
 namespace atlas_the_public_think_tank.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250510014027_init")]
+    [Migration("20250510141405_init")]
     partial class init
     {
         /// <inheritdoc />
@@ -263,7 +263,10 @@ namespace atlas_the_public_think_tank.Migrations
             modelBuilder.Entity("atlas_the_public_think_tank.Models.Forum", b =>
                 {
                     b.Property<int>("ForumID")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ForumID"));
 
                     b.Property<string>("AuthorID")
                         .IsRequired()
@@ -346,7 +349,10 @@ namespace atlas_the_public_think_tank.Migrations
             modelBuilder.Entity("atlas_the_public_think_tank.Models.Solution", b =>
                 {
                     b.Property<int>("SolutionID")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SolutionID"));
 
                     b.Property<string>("AuthorID")
                         .IsRequired()
@@ -390,7 +396,10 @@ namespace atlas_the_public_think_tank.Migrations
             modelBuilder.Entity("atlas_the_public_think_tank.Models.UserComment", b =>
                 {
                     b.Property<int>("CommentID")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CommentID"));
 
                     b.Property<string>("AuthorID")
                         .IsRequired()
@@ -490,28 +499,52 @@ namespace atlas_the_public_think_tank.Migrations
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.UserVote", b =>
                 {
+                    b.Property<int>("VoteId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("VoteId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("VoteId"));
+
+                    b.Property<int?>("CommentID")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ForumID")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ForumSolutionID")
+                        .HasColumnType("int");
+
                     b.Property<string>("UserID")
+                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int>("ForumID")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ForumSolutionID")
-                        .HasColumnType("int");
-
-                    b.Property<int>("CommentID")
-                        .HasColumnType("int");
-
                     b.Property<int>("Vote")
-                        .HasColumnType("int");
+                        .HasColumnType("int")
+                        .HasColumnName("VoteValue");
 
-                    b.HasKey("UserID", "ForumID", "ForumSolutionID", "CommentID");
+                    b.HasKey("VoteId");
 
                     b.HasIndex("CommentID");
 
                     b.HasIndex("ForumID");
 
                     b.HasIndex("ForumSolutionID");
+
+                    b.HasIndex("UserID", "CommentID")
+                        .IsUnique()
+                        .HasDatabaseName("IX_UserVotes_UserID_CommentID")
+                        .HasFilter("([ForumID] IS NULL AND [ForumSolutionID] IS NULL AND [CommentID] IS NOT NULL)");
+
+                    b.HasIndex("UserID", "ForumID")
+                        .IsUnique()
+                        .HasDatabaseName("IX_UserVotes_UserID_ForumID")
+                        .HasFilter("([ForumID] IS NOT NULL AND [ForumSolutionID] IS NULL AND [CommentID] IS NULL)");
+
+                    b.HasIndex("UserID", "ForumSolutionID")
+                        .IsUnique()
+                        .HasDatabaseName("IX_UserVotes_UserID_ForumSolutionID")
+                        .HasFilter("([ForumID] IS NULL AND [ForumSolutionID] IS NOT NULL AND [CommentID] IS NULL)");
 
                     b.ToTable("UserVotes", "forums");
                 });
@@ -721,20 +754,17 @@ namespace atlas_the_public_think_tank.Migrations
                     b.HasOne("atlas_the_public_think_tank.Models.UserComment", "Comment")
                         .WithMany("UserVotes")
                         .HasForeignKey("CommentID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("atlas_the_public_think_tank.Models.Forum", "Forum")
                         .WithMany("UserVotes")
                         .HasForeignKey("ForumID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("atlas_the_public_think_tank.Models.Solution", "Solution")
                         .WithMany("UserVotes")
                         .HasForeignKey("ForumSolutionID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("atlas_the_public_think_tank.Models.AppUser", "User")
                         .WithMany("UserVotes")

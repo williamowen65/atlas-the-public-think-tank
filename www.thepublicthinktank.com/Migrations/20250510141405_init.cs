@@ -209,7 +209,8 @@ namespace atlas_the_public_think_tank.Migrations
                 schema: "forums",
                 columns: table => new
                 {
-                    ForumID = table.Column<int>(type: "int", nullable: false),
+                    ForumID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ContentStatus = table.Column<int>(type: "int", nullable: false),
@@ -284,7 +285,8 @@ namespace atlas_the_public_think_tank.Migrations
                 schema: "forums",
                 columns: table => new
                 {
-                    SolutionID = table.Column<int>(type: "int", nullable: false),
+                    SolutionID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     ForumID = table.Column<int>(type: "int", nullable: false),
                     Title = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: false),
                     Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
@@ -324,7 +326,8 @@ namespace atlas_the_public_think_tank.Migrations
                 schema: "forums",
                 columns: table => new
                 {
-                    CommentID = table.Column<int>(type: "int", nullable: false),
+                    CommentID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     ForumID = table.Column<int>(type: "int", nullable: true),
                     ForumSolutionID = table.Column<int>(type: "int", nullable: true),
                     Comment = table.Column<string>(type: "nvarchar(3000)", maxLength: 3000, nullable: false),
@@ -427,15 +430,17 @@ namespace atlas_the_public_think_tank.Migrations
                 schema: "forums",
                 columns: table => new
                 {
-                    ForumID = table.Column<int>(type: "int", nullable: false),
-                    ForumSolutionID = table.Column<int>(type: "int", nullable: false),
-                    CommentID = table.Column<int>(type: "int", nullable: false),
+                    VoteId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     UserID = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    Vote = table.Column<int>(type: "int", nullable: false)
+                    ForumID = table.Column<int>(type: "int", nullable: true),
+                    ForumSolutionID = table.Column<int>(type: "int", nullable: true),
+                    CommentID = table.Column<int>(type: "int", nullable: true),
+                    VoteValue = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_UserVotes", x => new { x.UserID, x.ForumID, x.ForumSolutionID, x.CommentID });
+                    table.PrimaryKey("PK_UserVotes", x => x.VoteId);
                     table.ForeignKey(
                         name: "FK_UserVotes_AspNetUsers_UserID",
                         column: x => x.UserID,
@@ -623,6 +628,30 @@ namespace atlas_the_public_think_tank.Migrations
                 schema: "forums",
                 table: "UserVotes",
                 column: "ForumSolutionID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserVotes_UserID_CommentID",
+                schema: "forums",
+                table: "UserVotes",
+                columns: new[] { "UserID", "CommentID" },
+                unique: true,
+                filter: "([ForumID] IS NULL AND [ForumSolutionID] IS NULL AND [CommentID] IS NOT NULL)");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserVotes_UserID_ForumID",
+                schema: "forums",
+                table: "UserVotes",
+                columns: new[] { "UserID", "ForumID" },
+                unique: true,
+                filter: "([ForumID] IS NOT NULL AND [ForumSolutionID] IS NULL AND [CommentID] IS NULL)");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserVotes_UserID_ForumSolutionID",
+                schema: "forums",
+                table: "UserVotes",
+                columns: new[] { "UserID", "ForumSolutionID" },
+                unique: true,
+                filter: "([ForumID] IS NULL AND [ForumSolutionID] IS NOT NULL AND [CommentID] IS NULL)");
         }
 
         /// <inheritdoc />

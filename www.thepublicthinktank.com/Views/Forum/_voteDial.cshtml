@@ -11,7 +11,7 @@
 }
 
 forum @Model.ForumID
-<div class="dial" style="width: 100px; height: 190px; user-select:none;">
+<form method="post" action="/forum/vote"  class="dial" style="width: 100px; height: 190px; user-select:none;">
     
     @Html.Partial("_voteAverage.cshtml")
     
@@ -40,7 +40,7 @@ forum @Model.ForumID
     
     @Html.Partial("_voteCount.cshtml")
   
-</div>
+</form>
 
  <style>
 

@@ -13,6 +13,49 @@
     const options = Array.from(container.querySelectorAll('.toggle-option'));
     const radios = Array.from(document.querySelectorAll(`input[name="${dialId}"]`));
 
+    // Debounce function to limit how often the vote is saved
+    function debounce(func, wait) {
+        let timeout;
+        return function() {
+            const context = this;
+            const args = arguments;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                func.apply(context, args);
+            }, wait);
+        };
+    }
+    
+    // Function to save vote to server with debouncing
+    const saveVote = debounce(function(voteValue) {
+        console.log(`Saving vote ${voteValue} for forum ${forumId}`);
+        
+        const formData = new FormData();
+        formData.append('ForumID', forumId);
+        formData.append('VoteValue', voteValue);
+        
+        fetch('/Forum/Vote', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Vote saved successfully:', data);
+            // Optionally update the UI based on response
+        })
+        .catch(error => {
+            console.error('Error saving vote:', error);
+        });
+    }, 800); // 800ms debounce delay
+
     // Set up intersection observer to detect which option is most visible
     let isScrolling = false;
     let scrollTimeout;
@@ -91,6 +134,13 @@
     radios.forEach(radio => {
         radio.addEventListener('change', function () {
             if (this.checked) {
+                const value = parseInt(this.value);
+                
+                // Only save valid vote values (0-10)
+                if (value >= 0 && value <= 10) {
+                    saveVote(value);
+                }
+                
                 const label = document.querySelector(`label[for="${this.id}"]`);
                 if (label) {
                     const labelTop = label.offsetTop;
@@ -107,4 +157,4 @@
             }
         });
     });
-} // <-- Missing closing brace added here
+}

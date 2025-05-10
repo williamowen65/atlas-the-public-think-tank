@@ -128,20 +128,21 @@ namespace atlas_the_public_think_tank.Models
         public virtual ICollection<UserVote> UserVotes { get; set; }
     }
 
-    public class UserVote
-    {
-        public int ForumID { get; set; }
-        public int ForumSolutionID { get; set; }
-        public int CommentID { get; set; }
-        public string UserID { get; set; }
-        public int Vote { get; set; }
+public class UserVote
+{
+    public int VoteId { get; set; }
+    public string UserID { get; set; }
+    public int? ForumID { get; set; }
+    public int? ForumSolutionID { get; set; }
+    public int? CommentID { get; set; }
+    public int Vote { get; set; }
 
-        // Navigation properties
-        public virtual Forum Forum { get; set; }
-        public virtual Solution Solution { get; set; }
-        public virtual UserComment Comment { get; set; }
-        public virtual AppUser User { get; set; }
-    }
+    // Navigation properties
+    public virtual AppUser User { get; set; }
+    public virtual Forum Forum { get; set; }
+    public virtual Solution Solution { get; set; }
+    public virtual UserComment Comment { get; set; }
+}
 
     public class ForumCategory
     {
