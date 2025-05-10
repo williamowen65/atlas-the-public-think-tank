@@ -50,6 +50,22 @@
         .then(data => {
             console.log('Vote saved successfully:', data);
             // Optionally update the UI based on response
+
+              // Add the user-voted class
+            container.classList.add('user-voted');
+
+            // update the vote average and the count
+            const averageElement = document.querySelector(`#vote-average-${forumId}`);
+            const countElement = document.querySelector(`#vote-count-${forumId}`);
+
+            if (averageElement && data.average !== undefined) {
+                averageElement.textContent = Number.isInteger(data.average) ? data.average.toString() : data.average.toFixed(1);
+            }
+
+            if (countElement && data.count !== undefined) {
+                countElement.textContent = data.count;
+            }
+
         })
         .catch(error => {
             console.error('Error saving vote:', error);
