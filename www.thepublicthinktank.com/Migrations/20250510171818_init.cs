@@ -427,47 +427,45 @@ namespace atlas_the_public_think_tank.Migrations
 
             migrationBuilder.CreateTable(
                 name: "UserVotes",
-                schema: "forums",
                 columns: table => new
                 {
-                    VoteId = table.Column<int>(type: "int", nullable: false)
+                    VoteID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     UserID = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    VoteValue = table.Column<int>(type: "int", nullable: false),
+                    VoteType = table.Column<int>(type: "int", nullable: false),
+                    Discriminator = table.Column<string>(type: "nvarchar(13)", maxLength: 13, nullable: false),
                     ForumID = table.Column<int>(type: "int", nullable: true),
-                    ForumSolutionID = table.Column<int>(type: "int", nullable: true),
-                    CommentID = table.Column<int>(type: "int", nullable: true),
-                    VoteValue = table.Column<int>(type: "int", nullable: false)
+                    SolutionID = table.Column<int>(type: "int", nullable: true),
+                    UserCommentCommentID = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_UserVotes", x => x.VoteId);
+                    table.PrimaryKey("PK_UserVotes", x => x.VoteID);
                     table.ForeignKey(
                         name: "FK_UserVotes_AspNetUsers_UserID",
                         column: x => x.UserID,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_UserVotes_Comments_CommentID",
-                        column: x => x.CommentID,
+                        name: "FK_UserVotes_Comments_UserCommentCommentID",
+                        column: x => x.UserCommentCommentID,
                         principalSchema: "forums",
                         principalTable: "Comments",
-                        principalColumn: "CommentID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "CommentID");
                     table.ForeignKey(
                         name: "FK_UserVotes_Forums_ForumID",
                         column: x => x.ForumID,
                         principalSchema: "forums",
                         principalTable: "Forums",
-                        principalColumn: "ForumID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ForumID");
                     table.ForeignKey(
-                        name: "FK_UserVotes_Solutions_ForumSolutionID",
-                        column: x => x.ForumSolutionID,
+                        name: "FK_UserVotes_Solutions_SolutionID",
+                        column: x => x.SolutionID,
                         principalSchema: "forums",
                         principalTable: "Solutions",
-                        principalColumn: "SolutionID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "SolutionID");
                 });
 
             migrationBuilder.CreateIndex(
@@ -612,46 +610,24 @@ namespace atlas_the_public_think_tank.Migrations
                 column: "UserID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserVotes_CommentID",
-                schema: "forums",
-                table: "UserVotes",
-                column: "CommentID");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_UserVotes_ForumID",
-                schema: "forums",
                 table: "UserVotes",
                 column: "ForumID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserVotes_ForumSolutionID",
-                schema: "forums",
+                name: "IX_UserVotes_SolutionID",
                 table: "UserVotes",
-                column: "ForumSolutionID");
+                column: "SolutionID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserVotes_UserID_CommentID",
-                schema: "forums",
+                name: "IX_UserVotes_UserCommentCommentID",
                 table: "UserVotes",
-                columns: new[] { "UserID", "CommentID" },
-                unique: true,
-                filter: "([ForumID] IS NULL AND [ForumSolutionID] IS NULL AND [CommentID] IS NOT NULL)");
+                column: "UserCommentCommentID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserVotes_UserID_ForumID",
-                schema: "forums",
+                name: "IX_UserVotes_UserID",
                 table: "UserVotes",
-                columns: new[] { "UserID", "ForumID" },
-                unique: true,
-                filter: "([ForumID] IS NOT NULL AND [ForumSolutionID] IS NULL AND [CommentID] IS NULL)");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_UserVotes_UserID_ForumSolutionID",
-                schema: "forums",
-                table: "UserVotes",
-                columns: new[] { "UserID", "ForumSolutionID" },
-                unique: true,
-                filter: "([ForumID] IS NULL AND [ForumSolutionID] IS NOT NULL AND [CommentID] IS NULL)");
+                column: "UserID");
         }
 
         /// <inheritdoc />
@@ -681,8 +657,7 @@ namespace atlas_the_public_think_tank.Migrations
                 schema: "users");
 
             migrationBuilder.DropTable(
-                name: "UserVotes",
-                schema: "forums");
+                name: "UserVotes");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");

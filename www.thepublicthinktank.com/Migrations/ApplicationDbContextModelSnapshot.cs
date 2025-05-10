@@ -496,54 +496,72 @@ namespace atlas_the_public_think_tank.Migrations
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.UserVote", b =>
                 {
-                    b.Property<int>("VoteId")
+                    b.Property<int>("VoteID")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("VoteId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("VoteId"));
-
-                    b.Property<int?>("CommentID")
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("VoteID"));
+
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(13)
+                        .HasColumnType("nvarchar(13)");
 
                     b.Property<int?>("ForumID")
                         .HasColumnType("int");
 
-                    b.Property<int?>("ForumSolutionID")
+                    b.Property<int?>("SolutionID")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UserCommentCommentID")
                         .HasColumnType("int");
 
                     b.Property<string>("UserID")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int>("Vote")
-                        .HasColumnType("int")
-                        .HasColumnName("VoteValue");
+                    b.Property<int>("VoteType")
+                        .HasColumnType("int");
 
-                    b.HasKey("VoteId");
+                    b.Property<int>("VoteValue")
+                        .HasColumnType("int");
 
-                    b.HasIndex("CommentID");
+                    b.HasKey("VoteID");
 
                     b.HasIndex("ForumID");
 
-                    b.HasIndex("ForumSolutionID");
+                    b.HasIndex("SolutionID");
 
-                    b.HasIndex("UserID", "CommentID")
-                        .IsUnique()
-                        .HasDatabaseName("IX_UserVotes_UserID_CommentID")
-                        .HasFilter("([ForumID] IS NULL AND [ForumSolutionID] IS NULL AND [CommentID] IS NOT NULL)");
+                    b.HasIndex("UserCommentCommentID");
 
-                    b.HasIndex("UserID", "ForumID")
-                        .IsUnique()
-                        .HasDatabaseName("IX_UserVotes_UserID_ForumID")
-                        .HasFilter("([ForumID] IS NOT NULL AND [ForumSolutionID] IS NULL AND [CommentID] IS NULL)");
+                    b.HasIndex("UserID");
 
-                    b.HasIndex("UserID", "ForumSolutionID")
-                        .IsUnique()
-                        .HasDatabaseName("IX_UserVotes_UserID_ForumSolutionID")
-                        .HasFilter("([ForumID] IS NULL AND [ForumSolutionID] IS NOT NULL AND [CommentID] IS NULL)");
+                    b.ToTable("UserVotes");
 
-                    b.ToTable("UserVotes", "forums");
+                    b.HasDiscriminator().HasValue("UserVote");
+
+                    b.UseTphMappingStrategy();
+                });
+
+            modelBuilder.Entity("atlas_the_public_think_tank.Models.CommentVote", b =>
+                {
+                    b.HasBaseType("atlas_the_public_think_tank.Models.UserVote");
+
+                    b.HasDiscriminator().HasValue("CommentVote");
+                });
+
+            modelBuilder.Entity("atlas_the_public_think_tank.Models.ForumVote", b =>
+                {
+                    b.HasBaseType("atlas_the_public_think_tank.Models.UserVote");
+
+                    b.HasDiscriminator().HasValue("ForumVote");
+                });
+
+            modelBuilder.Entity("atlas_the_public_think_tank.Models.SolutionVote", b =>
+                {
+                    b.HasBaseType("atlas_the_public_think_tank.Models.UserVote");
+
+                    b.HasDiscriminator().HasValue("SolutionVote");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -748,32 +766,23 @@ namespace atlas_the_public_think_tank.Migrations
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.UserVote", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.UserComment", "Comment")
+                    b.HasOne("atlas_the_public_think_tank.Models.Forum", null)
                         .WithMany("UserVotes")
-                        .HasForeignKey("CommentID")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .HasForeignKey("ForumID");
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Forum", "Forum")
+                    b.HasOne("atlas_the_public_think_tank.Models.Solution", null)
                         .WithMany("UserVotes")
-                        .HasForeignKey("ForumID")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .HasForeignKey("SolutionID");
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Solution", "Solution")
+                    b.HasOne("atlas_the_public_think_tank.Models.UserComment", null)
                         .WithMany("UserVotes")
-                        .HasForeignKey("ForumSolutionID")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .HasForeignKey("UserCommentCommentID");
 
                     b.HasOne("atlas_the_public_think_tank.Models.AppUser", "User")
                         .WithMany("UserVotes")
                         .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Comment");
-
-                    b.Navigation("Forum");
-
-                    b.Navigation("Solution");
 
                     b.Navigation("User");
                 });

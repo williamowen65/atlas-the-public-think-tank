@@ -173,14 +173,14 @@ namespace atlas_the_public_think_tank.Controllers
 
             try
             {
-                UserVote vote = new UserVote
-                {
-                    ForumID = model.ForumID,
-                    Vote = (int) model.UserVote
-                };
+                //UserVote vote = new UserVote
+                //{
+                //    ForumID = model.ForumID,
+                //    Vote = (int) model.UserVote
+                //};
 
-                // Cast the vote and create a user history entry
-                _context.UserVotes.Add(vote);
+                //// Cast the vote and create a user history entry
+                //_context.UserVotes.Add(vote);
 
 
                 await _context.SaveChangesAsync();
@@ -206,11 +206,11 @@ namespace atlas_the_public_think_tank.Controllers
 
             // Retrieve all user votes for the specified forum
             var userVotes = await _context.UserVotes
-                .Where(v => v.ForumID == forumId)
+                .OfType<ForumVote>()
                 .Select(v => new
                 {
                     v.UserID,
-                    v.Vote
+                    v.VoteValue
                 })
                 .ToListAsync();
 
@@ -219,7 +219,7 @@ namespace atlas_the_public_think_tank.Controllers
             UserVote_Forum m = new UserVote_Forum
             {
                 ForumID = forumId,
-                AverageVote = userVotes.Any() ? userVotes.Average(p => p.Vote) : 0,
+                AverageVote = userVotes.Any() ? userVotes.Average(p => p.VoteValue) : 0,
                 TotalVotes = userVotes.Count,
                 UserVote = userVote,
 

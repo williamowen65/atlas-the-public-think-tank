@@ -19,6 +19,9 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
     public DbSet<Scope> Scopes { get; set; }
     public DbSet<BlockedContent> BlockedContents { get; set; }
     public DbSet<UserVote> UserVotes { get; set; }
+    public DbSet<ForumVote> ForumVotes { get; set; }
+    public DbSet<SolutionVote> SolutionVotes { get; set; }
+    public DbSet<CommentVote> CommentVotes { get; set; }
     public DbSet<ForumCategory> ForumCategories { get; set; }
     public DbSet<UserHistory> UserHistory { get; set; }
 
@@ -34,7 +37,7 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
         modelBuilder.Entity<Category>().ToTable("Categories", "forums");
         modelBuilder.Entity<Scope>().ToTable("Scopes", "forums");
         modelBuilder.Entity<BlockedContent>().ToTable("BlockedContent", "forums");
-        modelBuilder.Entity<UserVote>().ToTable("UserVotes", "forums");
+        //modelBuilder.Entity<UserVote>().ToTable("UserVotes", "forums");
         modelBuilder.Entity<ForumCategory>().ToTable("ForumsCategories", "forums");
         modelBuilder.Entity<UserHistory>().ToTable("UserHistory", "users");
 
@@ -134,53 +137,77 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
         });
 
         // Configure UserVote entity (composite key)
-        modelBuilder.Entity<UserVote>(entity =>
-        {
-            entity.HasKey(e => e.VoteId);
-            entity.Property(e => e.VoteId).HasColumnName("VoteId").UseIdentityColumn();
-            entity.Property(e => e.Vote).HasColumnName("VoteValue").IsRequired();
-            
-            // Relationships
-            entity.HasOne(e => e.User)
-                .WithMany(e => e.UserVotes)
-                .HasForeignKey(e => e.UserID)
-                .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasOne(e => e.Forum)
-                .WithMany(e => e.UserVotes)
-                .HasForeignKey(e => e.ForumID)
-                .OnDelete(DeleteBehavior.Restrict)
-                .IsRequired(false);
+                
+            // Tell EF Core that these are separate classes but map to the same table
+            //modelBuilder.Entity<ForumVote>().ToTable("UserVotes", "forums");
+            //modelBuilder.Entity<SolutionVote>().ToTable("UserVotes", "forums");
+            //modelBuilder.Entity<CommentVote>().ToTable("UserVotes", "forums");
 
-            entity.HasOne(e => e.Solution)
-                .WithMany(e => e.UserVotes)
-                .HasForeignKey(e => e.ForumSolutionID)
-                .OnDelete(DeleteBehavior.Restrict)
-                .IsRequired(false);
 
-            entity.HasOne(e => e.Comment)
-                .WithMany(e => e.UserVotes)
-                .HasForeignKey(e => e.CommentID)
-                .OnDelete(DeleteBehavior.Restrict)
-                .IsRequired(false);
+            // Configure the Vote hierarchy
+            modelBuilder.Entity<UserVote>(entity =>
+            {
+                entity.HasKey(e => e.VoteID);
 
-            // Add a unique constraint to ensure a user can only vote once per item
-            // But allow nulls for some foreign keys
-            entity.HasIndex(e => new { e.UserID, e.ForumID })
-                .IsUnique()
-                .HasFilter("([ForumID] IS NOT NULL AND [ForumSolutionID] IS NULL AND [CommentID] IS NULL)")
-                .HasDatabaseName("IX_UserVotes_UserID_ForumID");
+                // Set up the discriminator
+                //entity.HasDiscriminator(b => b.VoteType)
+                //    .HasValue<ForumVote>(VoteType.Forum);
+                //.HasValue<SolutionVote>(VoteType.Solution)
+                //.HasValue<CommentVote>(VoteType.Comment);
 
-            entity.HasIndex(e => new { e.UserID, e.ForumSolutionID })
-                .IsUnique()
-                .HasFilter("([ForumID] IS NULL AND [ForumSolutionID] IS NOT NULL AND [CommentID] IS NULL)")
-                .HasDatabaseName("IX_UserVotes_UserID_ForumSolutionID");
+                // Map base class properties - should be common to all vote types
+                //entity.Property(e => e.UserID).IsRequired();
+                //entity.Property(e => e.VoteValue).IsRequired();
 
-            entity.HasIndex(e => new { e.UserID, e.CommentID })
-                .IsUnique()
-                .HasFilter("([ForumID] IS NULL AND [ForumSolutionID] IS NULL AND [CommentID] IS NOT NULL)")
-                .HasDatabaseName("IX_UserVotes_UserID_CommentID");
-        });
+                //// Relationships common to all vote types
+                //entity.HasOne(e => e.User)
+                //    .WithMany(u => u.UserVotes)
+                //    .HasForeignKey(e => e.UserID)
+                //    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+        
+            //// Configure ForumVote relationships only
+            //modelBuilder.Entity<ForumVote>(entity =>
+            //{
+            //    // Explicit property mapping
+            //    entity.Property(e => e.ForumID).IsRequired();
+                
+            //    // Relationship
+            //    entity.HasOne(fv => fv.Forum)
+            //        .WithMany(f => f.UserVotes.OfType<ForumVote>())
+            //        .HasForeignKey(fv => fv.ForumID)
+            //        .OnDelete(DeleteBehavior.Restrict);
+            //});
+
+            //// Configure SolutionVote relationships only
+            //modelBuilder.Entity<SolutionVote>(entity =>
+            //{
+            //    // Explicit property mapping
+            //    entity.Property(e => e.SolutionID).IsRequired();
+                
+            //    // Relationship
+            //    entity.HasOne(sv => sv.Solution)
+            //        .WithMany(s => s.UserVotes.OfType<SolutionVote>())
+            //        .HasForeignKey(sv => sv.SolutionID)
+            //        .OnDelete(DeleteBehavior.Restrict);
+            //});
+
+            //// Configure CommentVote relationships only
+            //modelBuilder.Entity<CommentVote>(entity =>
+            //{
+            //    // Explicit property mapping
+            //    entity.Property(e => e.CommentID).IsRequired();
+                
+            //    // Relationship
+            //    entity.HasOne(cv => cv.Comment)
+            //        .WithMany(c => c.UserVotes.OfType<CommentVote>())
+            //        .HasForeignKey(cv => cv.CommentID)
+            //        .OnDelete(DeleteBehavior.Restrict);
+            //});
+
+        
 
         // Configure ForumCategory junction entity (composite key)
         modelBuilder.Entity<ForumCategory>(entity =>
@@ -198,6 +225,7 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
                 .HasForeignKey(e => e.ForumID)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
 
         // Configure UserHistory entity
         modelBuilder.Entity<UserHistory>(entity =>
