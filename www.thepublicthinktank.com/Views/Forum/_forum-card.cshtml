@@ -3,6 +3,7 @@
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
 @{
+    Console.WriteLine();
 }
 
 <div class="card mb-3 d-flex flex-row">
@@ -37,7 +38,7 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        fetch("/Forum/GetVoteDial")
+        fetch("/Forum/GetVoteDial?userVote=3&forumId=@Model.ForumID")
             .then(data => data.text())
             .then(data => {
                 console.log({data})

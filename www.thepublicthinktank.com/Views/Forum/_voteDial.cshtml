@@ -10,6 +10,7 @@
     var outlineId = $"vote-outline-{Model.ForumID}";
 }
 
+forum @Model.ForumID
 <div class="dial" style="width: 100px; height: 190px; user-select:none;">
     
     @Html.Partial("_voteAverage.cshtml")
