@@ -164,7 +164,7 @@ namespace atlas_the_public_think_tank.Controllers
 
         [HttpPost]
         [Route("/forum/vote")]
-        public async Task<IActionResult> ForumVote(UserVote_Forum model)
+        public async Task<IActionResult> ForumVote(UserVote_Forum_CreateVM model)
         {
             if (!ModelState.IsValid)
             {
@@ -173,15 +173,34 @@ namespace atlas_the_public_think_tank.Controllers
 
             try
             {
-                //UserVote vote = new UserVote
-                //{
-                //    ForumID = model.ForumID,
-                //    Vote = (int) model.UserVote
-                //};
-
-                //// Cast the vote and create a user history entry
-                //_context.UserVotes.Add(vote);
-
+                var user = await _userManager.GetUserAsync(User);
+                
+                // Check if the user has already voted on this forum
+                var existingVote = await _context.UserVotes
+                    .OfType<ForumVote>()
+                    .FirstOrDefaultAsync(v => v.UserID == user.Id && v.ForumID == model.ForumID);
+                    
+                if (existingVote != null)
+                {
+                    // Update existing vote
+                    existingVote.VoteValue = (int)model.UserVote;
+                    existingVote.ModifiedAt = DateTime.UtcNow;
+                    _context.UserVotes.Update(existingVote);
+                }
+                else
+                {
+                    // Create new vote
+                    ForumVote vote = new ForumVote
+                    { 
+                        User = user,
+                        UserID = user.Id,
+                        ForumID = model.ForumID,
+                        VoteValue = (int)model.UserVote,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    
+                    _context.UserVotes.Add(vote);
+                }
 
                 await _context.SaveChangesAsync();
                 return Json(new { success = true });
@@ -216,7 +235,7 @@ namespace atlas_the_public_think_tank.Controllers
 
 
             // Get vote data for the forum
-            UserVote_Forum m = new UserVote_Forum
+            UserVote_Forum_ReadVM m = new UserVote_Forum_ReadVM
             {
                 ForumID = forumId,
                 AverageVote = userVotes.Any() ? userVotes.Average(p => p.VoteValue) : 0,

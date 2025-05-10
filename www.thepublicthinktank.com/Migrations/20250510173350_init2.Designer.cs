@@ -12,7 +12,7 @@ using atlas_the_public_think_tank.Data;
 namespace atlas_the_public_think_tank.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250510172022_init2")]
+    [Migration("20250510173350_init2")]
     partial class init2
     {
         /// <inheritdoc />
@@ -505,6 +505,12 @@ namespace atlas_the_public_think_tank.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("VoteID"));
 
+                    b.Property<int?>("CommentID")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Discriminator")
                         .IsRequired()
                         .HasMaxLength(13)
@@ -512,6 +518,12 @@ namespace atlas_the_public_think_tank.Migrations
 
                     b.Property<int?>("ForumID")
                         .HasColumnType("int");
+
+                    b.Property<int?>("ForumSolutionID")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<int?>("SolutionID")
                         .HasColumnType("int");

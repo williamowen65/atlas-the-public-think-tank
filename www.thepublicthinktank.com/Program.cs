@@ -16,15 +16,13 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 // Register the application's database context (ApplicationDbContext) with the DI container
 // and configure it to use SQL Server with the retrieved connection string
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlServer(connectionString)
+           .EnableSensitiveDataLogging()); 
 
 builder.Services.AddDefaultIdentity<AppUser>(options =>
     options.SignIn.RequireConfirmedAccount = true)
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
-
-
-
 
 // Add a developer-friendly exception filter for database-related errors
 // (helps provide detailed error information during development)
@@ -92,7 +90,7 @@ app.MapRazorPages()
    .WithStaticAssets();
 
 if (app.Environment.IsDevelopment())
-{ 
+{
     using (var scope = app.Services.CreateScope())
     {
         var services = scope.ServiceProvider;
@@ -106,4 +104,3 @@ if (app.Environment.IsDevelopment())
 
 // Start the application and begin listening for incoming HTTP requests
 app.Run();
-

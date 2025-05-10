@@ -134,8 +134,14 @@ namespace atlas_the_public_think_tank.Models
         public string UserID { get; set; }
         public int VoteValue { get; set; }
 
+        public DateTime CreatedAt { get; set; }
+        public DateTime? ModifiedAt { get; set; }
+
         public VoteType VoteType { get; set; }
 
+        public int? ForumID { get; set; }
+        public int? ForumSolutionID { get; set; }
+        public int? CommentID { get; set; }
 
         // Navigation property
         public virtual AppUser User { get; set; }

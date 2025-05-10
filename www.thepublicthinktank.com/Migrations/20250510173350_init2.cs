@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace atlas_the_public_think_tank.Migrations
 {
     /// <inheritdoc />
-    public partial class init : Migration
+    public partial class init2 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -427,15 +427,20 @@ namespace atlas_the_public_think_tank.Migrations
 
             migrationBuilder.CreateTable(
                 name: "UserVotes",
+                schema: "forums",
                 columns: table => new
                 {
                     VoteID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     UserID = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     VoteValue = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ModifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     VoteType = table.Column<int>(type: "int", nullable: false),
-                    Discriminator = table.Column<string>(type: "nvarchar(13)", maxLength: 13, nullable: false),
                     ForumID = table.Column<int>(type: "int", nullable: true),
+                    ForumSolutionID = table.Column<int>(type: "int", nullable: true),
+                    CommentID = table.Column<int>(type: "int", nullable: true),
+                    Discriminator = table.Column<string>(type: "nvarchar(13)", maxLength: 13, nullable: false),
                     SolutionID = table.Column<int>(type: "int", nullable: true),
                     UserCommentCommentID = table.Column<int>(type: "int", nullable: true)
                 },
@@ -611,21 +616,25 @@ namespace atlas_the_public_think_tank.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserVotes_ForumID",
+                schema: "forums",
                 table: "UserVotes",
                 column: "ForumID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserVotes_SolutionID",
+                schema: "forums",
                 table: "UserVotes",
                 column: "SolutionID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserVotes_UserCommentCommentID",
+                schema: "forums",
                 table: "UserVotes",
                 column: "UserCommentCommentID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserVotes_UserID",
+                schema: "forums",
                 table: "UserVotes",
                 column: "UserID");
         }
@@ -657,7 +666,8 @@ namespace atlas_the_public_think_tank.Migrations
                 schema: "users");
 
             migrationBuilder.DropTable(
-                name: "UserVotes");
+                name: "UserVotes",
+                schema: "forums");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");

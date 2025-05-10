@@ -53,10 +53,13 @@ namespace atlas_the_public_think_tank.Models
         public string CategoryName { get; set; }
     }
     
-    public class UserVote_Forum
+
+
+    public class UserVote_Forum_ReadVM
     {
         public int ForumID { get; set; }
         
+        // A user may have voted and if so, when loading the dial, their vote should be cast
         public int? UserVote { get; set; }
 
         //public string UserId { get; set; } // This is provided by ASP.NET Identity
@@ -66,8 +69,14 @@ namespace atlas_the_public_think_tank.Models
         public ICollection<UserVote> UserVotes { get; set; } = new List<UserVote>();
 
         public double AverageVote { get; set;  } = 0;
+    }
 
+    public class UserVote_Forum_CreateVM
+    {
+        public int ForumID { get; set; }
+        public int UserVote { get; set; }
 
+        //public AppUser User { get; set; } // The user is captured via injection
     }
 
 }
