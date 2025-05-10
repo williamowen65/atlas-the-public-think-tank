@@ -72,7 +72,7 @@ namespace atlas_the_public_think_tank.Models
         public virtual BlockedContent BlockedContent { get; set; }
         public virtual ICollection<Solution> Solutions { get; set; }
         public virtual ICollection<UserComment> Comments { get; set; }
-        public virtual ICollection<UserVote> UserVotes { get; set; }
+        public virtual ICollection<UserVote> UserVotes { get; set; } = new List<UserVote>();
         public virtual ICollection<ForumCategory> ForumCategories { get; set; }
     }
 
@@ -128,20 +128,48 @@ namespace atlas_the_public_think_tank.Models
         public virtual ICollection<UserVote> UserVotes { get; set; }
     }
 
-    public class UserVote
+    public abstract class UserVote
     {
-        public int ForumID { get; set; }
-        public int ForumSolutionID { get; set; }
-        public int CommentID { get; set; }
+        public int VoteID { get; set; }
         public string UserID { get; set; }
-        public int Vote { get; set; }
+        public int VoteValue { get; set; }
 
-        // Navigation properties
-        public virtual Forum Forum { get; set; }
-        public virtual Solution Solution { get; set; }
-        public virtual UserComment Comment { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? ModifiedAt { get; set; }
+
+        public int? ForumID { get; set; }
+        public int? ForumSolutionID { get; set; }
+        public int? CommentID { get; set; }
+
+        // Navigation property
         public virtual AppUser User { get; set; }
     }
+
+    public enum VoteType
+    {
+        Forum,
+        Solution,
+        Comment
+    }
+
+    public class ForumVote : UserVote
+    {
+
+        // Navigation property
+    }
+
+    public class SolutionVote : UserVote
+    {
+
+        // Navigation property
+    }
+
+    public class CommentVote : UserVote
+    {
+
+        // Navigation property
+    }
+
 
     public class ForumCategory
     {

@@ -24,11 +24,12 @@ namespace atlas_the_public_think_tank.Controllers
         public IActionResult CreateForum()
         {
 
-            Forum_CreateVM newForum = new() { 
+            Forum_CreateVM newForum = new()
+            {
                 Categories = _context.Categories.ToList(),
                 Scopes = _context.Scopes.ToList(),
             };
-            
+
             return View(newForum);
         }
 
@@ -41,6 +42,7 @@ namespace atlas_the_public_think_tank.Controllers
             {
                 var user = await _userManager.GetUserAsync(User);
 
+           
                 var forumPost = new Forum
                 {
                     Title = model.Title,
@@ -67,6 +69,9 @@ namespace atlas_the_public_think_tank.Controllers
                         };
                         _context.ForumCategories.Add(forumCategory);
                     }
+
+
+                    // Save the User History (todo)
 
                     await _context.SaveChangesAsync();
                 }
@@ -108,7 +113,8 @@ namespace atlas_the_public_think_tank.Controllers
                     {
                         CategoryID = fc.Category.CategoryID,
                         CategoryName = fc.Category.CategoryName
-                    }).ToList()
+                    })
+                    .ToList()
                 })
                 .ToListAsync();
 
@@ -158,7 +164,116 @@ namespace atlas_the_public_think_tank.Controllers
          
          */
 
+        [HttpPost]
+        [Route("/forum/vote")]
+        public async Task<IActionResult> ForumVote(UserVote_Forum_CreateVM model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return Json(new { success = false, message = "Invalid vote data" });
+            }
 
+            try
+            {
+                var user = await _userManager.GetUserAsync(User);
+
+                if (user == null)
+                {
+                    return Json(new { success = false, message = "You must login in order to vote" });
+                }
+
+                // Check if the user has already voted on this forum
+                var existingVote = await _context.UserVotes
+                    .OfType<ForumVote>()
+                    .FirstOrDefaultAsync(v => v.UserID == user.Id && v.ForumID == model.ForumID);
+
+                if (existingVote != null)
+                {
+                    // Update existing vote
+                    existingVote.VoteValue = (int)model.VoteValue;
+                    existingVote.ModifiedAt = DateTime.UtcNow;
+                    _context.UserVotes.Update(existingVote);
+                }
+                else
+                {
+                    // Create new vote
+                    ForumVote vote = new ForumVote
+                    {
+                        User = user,
+                        UserID = user.Id,
+                        ForumID = model.ForumID,
+                        VoteValue = (int)model.VoteValue,
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    _context.UserVotes.Add(vote);
+                }
+
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, message = "Vote saved successfully" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+
+        [AllowAnonymous]
+        [Route("/Forum/GetVoteDial")]
+        public async Task<IActionResult> GetVoteDial(int forumId)
+        {
+
+            int? userVote = null;
+            // Check if the forumId exists in the database
+            var forumExists = _context.Forums.Any(f => f.ForumID == forumId);
+            if (!forumExists)
+            {
+                return NotFound(new { message = "Forum not found" });
+            }
+
+            var user = await _userManager.GetUserAsync(User);
+           
+            if (user != null)
+            {
+                // Get a possible vote value from the db
+                var existingVote = await _context.UserVotes
+                    .OfType<ForumVote>()
+                    .FirstOrDefaultAsync(v => v.UserID == user.Id && v.ForumID == forumId);
+
+                if (existingVote != null)
+                {
+                    userVote = existingVote.VoteValue;
+                }
+            }
+
+
+            // Retrieve all user votes for the specified forum
+            var userVotes = await _context.UserVotes
+                .OfType<ForumVote>()
+                   .Where(v => v.ForumID == forumId)
+                .Select(v => new
+                {
+                    v.UserID,
+                    v.VoteValue
+                })
+                .ToListAsync();
+
+
+            // Get vote data for the forum
+            UserVote_Forum_ReadVM m = new UserVote_Forum_ReadVM
+            {
+                ForumID = forumId,
+                AverageVote = userVotes.Any() ? userVotes.Average(p => p.VoteValue) : 0,
+                TotalVotes = userVotes.Count,
+                UserVote = userVote,
+
+            };
+
+            // Return the partial view with the vote data model
+            return PartialView("~/Views/Forum/_voteDial.cshtml", m);
+        }
+       
 
 
 

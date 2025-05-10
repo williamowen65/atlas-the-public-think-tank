@@ -1,4 +1,4 @@
-﻿@model Forum_ReadVM
+﻿@model UserVote_Forum_ReadVM
 
 @*
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -10,19 +10,20 @@
     var outlineId = $"vote-outline-{Model.ForumID}";
 }
 
-<div class="d-flex justify-content-around align-items-center h-100 flex-column" style="width: 100px">
+forum @Model.ForumID
+<form method="post" action="/forum/vote"  class="dial" style="width: 100px; height: 190px; user-select:none;">
     
     @Html.Partial("_voteAverage.cshtml")
     
-    <div class="vote-dial-toggle position-relative">
+    <div class="vote-dial-toggle @(Model.UserVote.HasValue ? "user-voted" : "") ">
         <div id="vote-toggle-container-@Model.ForumID" class="vote-toggle-container">
             @for (int i = 10; i >= 0; i--)
             {
                 var radioId = $"vote-{Model.ForumID}-{i}";
-                <input class="d-none" id="@radioId" type="radio" name="@dialId" value="@i" @(i == 5 ? "checked" : "") />
+                <input class="" id="@radioId" type="radio" name="@dialId" value="@i" @(i == (Model.UserVote ?? 5) ? "checked" : "") />
             }
 
-            <div id="@lensId" class="bg-body-secondary lens"></div>
+            <div id="@lensId" class="lens"></div>
 
             <div id="@outlineId" class="outline"></div>
           
@@ -39,12 +40,25 @@
     
     @Html.Partial("_voteCount.cshtml")
   
-</div>
+</form>
 
  <style>
+
+     .dial{
+         display: flex; 
+         justify-content: space-around;
+         align-items: center;
+         flex-direction: column;
+     }
+
+     .dial input[type=radio]{
+         display: none;
+     }
+
         .vote-dial-toggle {
             width: 53px;
             height: 100px; /* Fixed height */
+            position: relative;
         }
 
         .vote-toggle-container {
@@ -66,6 +80,7 @@
             border-radius: 6px;
             transition: all 0.3s ease;
             pointer-events: none;
+            background: #31353b;
         }
 
         .outline {
@@ -76,9 +91,7 @@
             border: 2px solid transparent;
             box-sizing: border-box;
             pointer-events: none;
-        }
-
-        .toggle-option {
+        }        .toggle-option {
             display: flex;
             align-items: center;
             justify-content: center;
@@ -86,14 +99,18 @@
             z-index: 2;
             cursor: pointer;
             font-weight: bold;
-        }        /* Position the lens based on which radio is selected */
-      @for (int i = 10; i >= 0; i--)
+            color: #000000; /* Default text color is black */
+        }        /* Position the lens based on which radio is selected */      @for (int i = 10; i >= 0; i--)
         {
             var radioId = $"vote-{Model.ForumID}-{i}";
+            var optionClass = $"vote-option-{Model.ForumID}-{i}";
             <text>
             #@radioId:checked ~ .lens {
                 transform: translateY(@(36 * (11 - i))px);
                 z-index: 1;
+            }
+            #@radioId:checked ~ .@optionClass {
+                color: #ffffff; /* Make text white when selected */
             }
             </text>
         }
@@ -134,137 +151,9 @@
        
 
  <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const containerId = 'vote-toggle-container-@Model.ForumID';
-            const container = document.getElementById(containerId);
-            const dialId = "@dialId";
-            
-            // Find the checked radio button
-            const checkedRadio = document.querySelector(`input[name="${dialId}"]:checked`);
-            
-            if (!container) return;
-            
-            // Store all option elements and radios
-            const options = Array.from(container.querySelectorAll('.toggle-option'));
-            const radios = Array.from(document.querySelectorAll(`input[name="${dialId}"]`));
-            
-            // Set up intersection observer to detect which option is most visible
-            let isScrolling = false;
-            let scrollTimeout;
-            
-            const observer = new IntersectionObserver((entries) => {
-                // Only process if user is actively scrolling
-                if (!isScrolling) return;
-                
-                // Find the most visible entry
-                let maxVisibility = 0;
-                let mostVisibleEntry = null;
-                
-                entries.forEach(entry => {
-                    // Calculate how much of the element is visible
-                    const visibleRatio = entry.intersectionRatio;
-                    if (visibleRatio > maxVisibility) {
-                        maxVisibility = visibleRatio;
-                        mostVisibleEntry = entry;
-                    }
-                });
-                
-                // If we found a most visible entry and it's significantly visible
-                if (mostVisibleEntry && maxVisibility > 0.99) {
-                    // Find the corresponding radio
-                    const label = mostVisibleEntry.target;
-                    const radioId = label.getAttribute('for');
-                    const radio = document.getElementById(radioId);
-                    
-                    // Only select values between 0-10 (skip the buffer values)
-                    const value = parseInt(radio.value);
-                    if (radio && !radio.checked && value >= 0 && value <= 10) {
-                        radio.checked = true;
-                        
-                        // Trigger a change event
-                        const event = new Event('change');
-                        radio.dispatchEvent(event);
-                    }
-                }
-            }, { 
-                root: container, 
-                threshold: [0, 0.25, 0.5, 0.75, 1],
-                rootMargin: '-10% 0px -10% 0px' // Focus on center area
-            });
-            
-            // Observe all option elements
-            options.forEach(option => {
-                observer.observe(option);
-            });
-            
-            // Initial scroll to checked radio
-            if (checkedRadio) {
-                const radioId = checkedRadio.id;
-                const label = document.querySelector(`label[for="${radioId}"]`);
-                
-                if (label) {
-                    // Calculate the scroll position to center the selected value
-                    const labelTop = label.offsetTop;
-                    const containerHeight = container.clientHeight;
-                    const labelHeight = label.clientHeight;
-                    
-                    // Scroll to center the label in the viewport
-                    container.scrollTop = labelTop - (containerHeight / 2) + (labelHeight / 2);
-                }
-            }
-            
-            // Handle scroll events to set the isScrolling flag
-            container.addEventListener('scroll', () => {
-                isScrolling = true;
-                
-                // Clear any existing timeout
-                clearTimeout(scrollTimeout);
-                
-                // Set a timeout to reset the flag
-                scrollTimeout = setTimeout(() => {
-                    isScrolling = false;
-                    
-                    // After scrolling stops, find which radio is checked
-                    const checkedRadio = document.querySelector(`input[name="${dialId}"]:checked`);
-                    if (checkedRadio) {
-                        const label = document.querySelector(`label[for="${checkedRadio.id}"]`);
-                        if (label) {
-                            // Snap to the checked value
-                            const labelTop = label.offsetTop;
-                            const containerHeight = container.clientHeight;
-                            const labelHeight = label.clientHeight;
-                            
-                            container.scrollTo({
-                                top: labelTop - (containerHeight / 2) + (labelHeight / 2),
-                                behavior: 'smooth'
-                            });
-                        }
-                    }
-                }, 150); // Adjust this timeout to balance responsiveness
-            });
-            
-            // Add event listeners for radio button changes
-            radios.forEach(radio => {
-                radio.addEventListener('change', function() {
-                    if (this.checked) {
-                        const label = document.querySelector(`label[for="${this.id}"]`);
-                        if (label) {
-                            // Smooth scroll to the selected value
-                            const labelTop = label.offsetTop;
-                            const containerHeight = container.clientHeight;
-                            const labelHeight = label.clientHeight;
-                            
-                            // Don't trigger the scroll observer during programmatic scrolling
-                            isScrolling = false;
-                            
-                            container.scrollTo({
-                                top: labelTop - (containerHeight / 2) + (labelHeight / 2),
-                                behavior: 'smooth'
-                            });
-                        }
-                    }
-                });
-            });
-        });
+
+     
+
+
     </script>
 

@@ -19,6 +19,9 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
     public DbSet<Scope> Scopes { get; set; }
     public DbSet<BlockedContent> BlockedContents { get; set; }
     public DbSet<UserVote> UserVotes { get; set; }
+    public DbSet<ForumVote> ForumVotes { get; set; }
+    public DbSet<SolutionVote> SolutionVotes { get; set; }
+    public DbSet<CommentVote> CommentVotes { get; set; }
     public DbSet<ForumCategory> ForumCategories { get; set; }
     public DbSet<UserHistory> UserHistory { get; set; }
 
@@ -133,33 +136,21 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // Configure UserVote entity (composite key)
-        modelBuilder.Entity<UserVote>(entity =>
-        {
-            entity.HasKey(e => new { e.UserID, e.ForumID, e.ForumSolutionID, e.CommentID });
-            entity.Property(e => e.Vote).IsRequired();
+      
 
-            // Relationships
-            entity.HasOne(e => e.User)
-                .WithMany(e => e.UserVotes)
-                .HasForeignKey(e => e.UserID)
-                .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasOne(e => e.Forum)
-                .WithMany(e => e.UserVotes)
-                .HasForeignKey(e => e.ForumID)
-                .OnDelete(DeleteBehavior.Restrict);
+            // Configure the Vote hierarchy
+            modelBuilder.Entity<UserVote>(entity =>
+            {
+                entity.HasKey(e => e.VoteID);
 
-            entity.HasOne(e => e.Solution)
-                .WithMany(e => e.UserVotes)
-                .HasForeignKey(e => e.ForumSolutionID)
-                .OnDelete(DeleteBehavior.Restrict);
+              
+            });
 
-            entity.HasOne(e => e.Comment)
-                .WithMany(e => e.UserVotes)
-                .HasForeignKey(e => e.CommentID)
-                .OnDelete(DeleteBehavior.Restrict);
-        });
+        
+            
+
+        
 
         // Configure ForumCategory junction entity (composite key)
         modelBuilder.Entity<ForumCategory>(entity =>
@@ -177,6 +168,7 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
                 .HasForeignKey(e => e.ForumID)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
 
         // Configure UserHistory entity
         modelBuilder.Entity<UserHistory>(entity =>

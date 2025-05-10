@@ -1,7 +1,7 @@
 namespace atlas_the_public_think_tank.Models
 {
 
-      public class HomeIndexViewModel
+    public class HomeIndexViewModel
     {
         public List<Forum_ReadVM> Forums { get; set; } = new List<Forum_ReadVM>();
         public List<Category_ReadVM> Categories { get; set; } = new List<Category_ReadVM>();
@@ -51,6 +51,32 @@ namespace atlas_the_public_think_tank.Models
     {
         public int CategoryID { get; set; }
         public string CategoryName { get; set; }
+    }
+    
+
+
+    public class UserVote_Forum_ReadVM
+    {
+        public int ForumID { get; set; }
+        
+        // A user may have voted and if so, when loading the dial, their vote should be cast
+        public int? UserVote { get; set; }
+
+        //public string UserId { get; set; } // This is provided by ASP.NET Identity
+
+        public int TotalVotes { get; set; } = 0;
+
+        public ICollection<UserVote> UserVotes { get; set; } = new List<UserVote>();
+
+        public double AverageVote { get; set;  } = 0;
+    }
+
+    public class UserVote_Forum_CreateVM
+    {
+        public int ForumID { get; set; }
+        public int VoteValue { get; set; }
+
+        //public AppUser User { get; set; } // The user is captured via injection
     }
 
 }
