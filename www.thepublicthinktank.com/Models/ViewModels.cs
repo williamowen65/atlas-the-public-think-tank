@@ -59,13 +59,13 @@ namespace atlas_the_public_think_tank.Models
         
         public int? UserVote { get; set; }
 
-        public string UserId { get; set; }
+        //public string UserId { get; set; } // This is provided by ASP.NET Identity
 
-        public int TotalVotes { get; set; }
+        public int TotalVotes { get; set; } = 0;
 
-        public int[] UserVotes { get; set; }
+        public ICollection<UserVote> UserVotes { get; set; } = new List<UserVote>();
 
-        public double AverageVote { get; set;  }
+        public double AverageVote { get; set;  } = 0;
 
 
     }

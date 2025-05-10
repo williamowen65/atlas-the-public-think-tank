@@ -188,7 +188,8 @@ namespace atlas_the_public_think_tank.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = ex.Message });
+                // Status code 412 = Precondition failed
+                return StatusCode(412, new { success = false, message = ex.Message });
             }
         }
 
