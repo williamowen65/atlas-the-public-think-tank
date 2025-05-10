@@ -436,7 +436,6 @@ namespace atlas_the_public_think_tank.Migrations
                     VoteValue = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     ModifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    VoteType = table.Column<int>(type: "int", nullable: false),
                     ForumID = table.Column<int>(type: "int", nullable: true),
                     ForumSolutionID = table.Column<int>(type: "int", nullable: true),
                     CommentID = table.Column<int>(type: "int", nullable: true),

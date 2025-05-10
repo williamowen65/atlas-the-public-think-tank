@@ -12,7 +12,7 @@ using atlas_the_public_think_tank.Data;
 namespace atlas_the_public_think_tank.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250510173350_init2")]
+    [Migration("20250510175020_init2")]
     partial class init2
     {
         /// <inheritdoc />
@@ -534,9 +534,6 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Property<string>("UserID")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("VoteType")
-                        .HasColumnType("int");
 
                     b.Property<int>("VoteValue")
                         .HasColumnType("int");

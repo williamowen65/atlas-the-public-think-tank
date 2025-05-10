@@ -532,9 +532,6 @@ namespace atlas_the_public_think_tank.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int>("VoteType")
-                        .HasColumnType("int");
-
                     b.Property<int>("VoteValue")
                         .HasColumnType("int");
 

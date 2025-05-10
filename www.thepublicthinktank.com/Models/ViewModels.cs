@@ -74,7 +74,7 @@ namespace atlas_the_public_think_tank.Models
     public class UserVote_Forum_CreateVM
     {
         public int ForumID { get; set; }
-        public int UserVote { get; set; }
+        public int VoteValue { get; set; }
 
         //public AppUser User { get; set; } // The user is captured via injection
     }

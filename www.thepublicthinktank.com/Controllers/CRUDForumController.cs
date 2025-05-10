@@ -42,6 +42,7 @@ namespace atlas_the_public_think_tank.Controllers
             {
                 var user = await _userManager.GetUserAsync(User);
 
+           
                 var forumPost = new Forum
                 {
                     Title = model.Title,
@@ -174,16 +175,21 @@ namespace atlas_the_public_think_tank.Controllers
             try
             {
                 var user = await _userManager.GetUserAsync(User);
-                
+
+                if (user == null)
+                {
+                    return Json(new { success = false, message = "You must login in order to vote" });
+                }
+
                 // Check if the user has already voted on this forum
                 var existingVote = await _context.UserVotes
                     .OfType<ForumVote>()
                     .FirstOrDefaultAsync(v => v.UserID == user.Id && v.ForumID == model.ForumID);
-                    
+
                 if (existingVote != null)
                 {
                     // Update existing vote
-                    existingVote.VoteValue = (int)model.UserVote;
+                    existingVote.VoteValue = (int)model.VoteValue;
                     existingVote.ModifiedAt = DateTime.UtcNow;
                     _context.UserVotes.Update(existingVote);
                 }
@@ -191,26 +197,26 @@ namespace atlas_the_public_think_tank.Controllers
                 {
                     // Create new vote
                     ForumVote vote = new ForumVote
-                    { 
+                    {
                         User = user,
                         UserID = user.Id,
                         ForumID = model.ForumID,
-                        VoteValue = (int)model.UserVote,
+                        VoteValue = (int)model.VoteValue,
                         CreatedAt = DateTime.UtcNow
                     };
-                    
+
                     _context.UserVotes.Add(vote);
                 }
 
                 await _context.SaveChangesAsync();
-                return Json(new { success = true });
+                return Json(new { success = true, message = "Vote saved successfully" });
             }
             catch (Exception ex)
             {
-                // Status code 412 = Precondition failed
-                return StatusCode(412, new { success = false, message = ex.Message });
+                return Json(new { success = false, message = ex.Message });
             }
         }
+
 
         [AllowAnonymous]
         [Route("/Forum/GetVoteDial")]

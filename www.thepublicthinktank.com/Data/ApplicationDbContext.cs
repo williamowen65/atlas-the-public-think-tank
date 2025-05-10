@@ -136,13 +136,7 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // Configure UserVote entity (composite key)
-
-                
-            // Tell EF Core that these are separate classes but map to the same table
-            //modelBuilder.Entity<ForumVote>().ToTable("UserVotes", "forums");
-            //modelBuilder.Entity<SolutionVote>().ToTable("UserVotes", "forums");
-            //modelBuilder.Entity<CommentVote>().ToTable("UserVotes", "forums");
+      
 
 
             // Configure the Vote hierarchy
@@ -150,62 +144,11 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
             {
                 entity.HasKey(e => e.VoteID);
 
-                // Set up the discriminator
-                //entity.HasDiscriminator(b => b.VoteType)
-                //    .HasValue<ForumVote>(VoteType.Forum);
-                //.HasValue<SolutionVote>(VoteType.Solution)
-                //.HasValue<CommentVote>(VoteType.Comment);
-
-                // Map base class properties - should be common to all vote types
-                //entity.Property(e => e.UserID).IsRequired();
-                //entity.Property(e => e.VoteValue).IsRequired();
-
-                //// Relationships common to all vote types
-                //entity.HasOne(e => e.User)
-                //    .WithMany(u => u.UserVotes)
-                //    .HasForeignKey(e => e.UserID)
-                //    .OnDelete(DeleteBehavior.Restrict);
+              
             });
 
         
-            //// Configure ForumVote relationships only
-            //modelBuilder.Entity<ForumVote>(entity =>
-            //{
-            //    // Explicit property mapping
-            //    entity.Property(e => e.ForumID).IsRequired();
-                
-            //    // Relationship
-            //    entity.HasOne(fv => fv.Forum)
-            //        .WithMany(f => f.UserVotes.OfType<ForumVote>())
-            //        .HasForeignKey(fv => fv.ForumID)
-            //        .OnDelete(DeleteBehavior.Restrict);
-            //});
-
-            //// Configure SolutionVote relationships only
-            //modelBuilder.Entity<SolutionVote>(entity =>
-            //{
-            //    // Explicit property mapping
-            //    entity.Property(e => e.SolutionID).IsRequired();
-                
-            //    // Relationship
-            //    entity.HasOne(sv => sv.Solution)
-            //        .WithMany(s => s.UserVotes.OfType<SolutionVote>())
-            //        .HasForeignKey(sv => sv.SolutionID)
-            //        .OnDelete(DeleteBehavior.Restrict);
-            //});
-
-            //// Configure CommentVote relationships only
-            //modelBuilder.Entity<CommentVote>(entity =>
-            //{
-            //    // Explicit property mapping
-            //    entity.Property(e => e.CommentID).IsRequired();
-                
-            //    // Relationship
-            //    entity.HasOne(cv => cv.Comment)
-            //        .WithMany(c => c.UserVotes.OfType<CommentVote>())
-            //        .HasForeignKey(cv => cv.CommentID)
-            //        .OnDelete(DeleteBehavior.Restrict);
-            //});
+            
 
         
 

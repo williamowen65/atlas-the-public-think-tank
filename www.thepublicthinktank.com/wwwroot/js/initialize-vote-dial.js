@@ -42,14 +42,11 @@
             }
         })
             .then(async (response) => {
-                const body = await response.json();
-
-            if (!response.ok) {
-
-                throw new Error(body.message);
-            }
-            return body;
-        })
+                if (!response.ok) {
+                    throw new Error("Vote not casted");
+                }
+                return await response.json();
+            })
         .then(data => {
             console.log('Vote saved successfully:', data);
             // Optionally update the UI based on response
