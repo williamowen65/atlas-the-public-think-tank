@@ -53,12 +53,21 @@ namespace atlas_the_public_think_tank.Models
         public string CategoryName { get; set; }
     }
     
-    public class UserVote_Forum_CreateVM
+    public class UserVote_Forum
     {
         public int ForumID { get; set; }
-        public int VoteValue { get; set; }
+        
+        public int? UserVote { get; set; }
 
         public string UserId { get; set; }
+
+        public int TotalVotes { get; set; }
+
+        public int[] UserVotes { get; set; }
+
+        public double AverageVote { get; set;  }
+
+
     }
 
 }

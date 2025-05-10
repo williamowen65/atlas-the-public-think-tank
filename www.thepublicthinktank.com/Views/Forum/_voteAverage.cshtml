@@ -1,8 +1,23 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+﻿@model UserVote_Forum
+
+@*
+   For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
-@{
-}
-<div style="box-sizing:border-box;height: 40px; width: 60px" class="border m-2 border-3 d-flex justify-content-center align-items-center fw-bold">
-    0.0
+
+<div class="vote-average">
+   @Model.AverageVote
 </div>
+
+<style>
+   .vote-average {
+       box-sizing: border-box;
+       height: 40px;
+       width: 60px;
+       border: 3px solid;
+       margin: 8px;
+       display: flex;
+       justify-content: center;
+       align-items: center;
+       font-weight: bold;
+   }
+</style>
