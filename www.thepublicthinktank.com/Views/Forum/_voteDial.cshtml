@@ -10,7 +10,7 @@
     var outlineId = $"vote-outline-{Model.ForumID}";
 }
 
-forum @Model.ForumID
+@* forum @Model.ForumID *@
 <form method="post" action="/forum/vote"  class="dial" style="width: 100px; height: 190px; user-select:none;">
     
     @Html.Partial("_voteAverage.cshtml")
@@ -44,63 +44,8 @@ forum @Model.ForumID
 
  <style>
 
-     .dial{
-         display: flex; 
-         justify-content: space-around;
-         align-items: center;
-         flex-direction: column;
-     }
-
-     .dial input[type=radio]{
-         display: none;
-     }
-
-        .vote-dial-toggle {
-            width: 53px;
-            height: 100px; /* Fixed height */
-            position: relative;
-        }
-
-        .vote-toggle-container {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            height: 100%;
-            border-radius: 10px;
-            background-color: #f8f9fa;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            overflow-y: auto; /* Add vertical scrolling */
-        }
-
-        .lens {
-            position: absolute;
-            width: 100%;
-            height: 36px;
-            border-radius: 6px;
-            transition: all 0.3s ease;
-            pointer-events: none;
-            background: #31353b;
-        }
-
-        .outline {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border-radius: 10px;
-            border: 2px solid transparent;
-            box-sizing: border-box;
-            pointer-events: none;
-        }        .toggle-option {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 36px;
-            z-index: 2;
-            cursor: pointer;
-            font-weight: bold;
-            color: #000000; /* Default text color is black */
-        }        /* Position the lens based on which radio is selected */      @for (int i = 10; i >= 0; i--)
+        /* Position the lens based on which radio is selected */     
+        @for (int i = 10; i >= 0; i--)
         {
             var radioId = $"vote-{Model.ForumID}-{i}";
             var optionClass = $"vote-option-{Model.ForumID}-{i}";
@@ -131,21 +76,7 @@ forum @Model.ForumID
             </text>
         }
 
-        /* Custom scrollbar styling */
-        .vote-toggle-container::-webkit-scrollbar {
-            display: none;
-        }
-
-        .vote-toggle-container::-webkit-scrollbar-track {
-            display:none;
-        }
-
-        .vote-toggle-container::-webkit-scrollbar-thumb {
-            display:none;
-        }
-
-        .vote-toggle-container::-webkit-scrollbar-thumb:hover {
-        }   
+      
  </style>    
         
        
