@@ -87,3 +87,10 @@ header.main-header {
 .accordion-button:focus {
     box-shadow: none;
 }
+
+
+.user-voted .lens {
+    
+    background:lightblue;
+
+}

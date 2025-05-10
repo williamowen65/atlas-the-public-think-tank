@@ -224,7 +224,7 @@ namespace atlas_the_public_think_tank.Controllers
         public async Task<IActionResult> GetVoteDial(int forumId)
         {
 
-            int? userVote = 5; 
+            int? userVote = null;
             // Check if the forumId exists in the database
             var forumExists = _context.Forums.Any(f => f.ForumID == forumId);
             if (!forumExists)
@@ -251,6 +251,7 @@ namespace atlas_the_public_think_tank.Controllers
             // Retrieve all user votes for the specified forum
             var userVotes = await _context.UserVotes
                 .OfType<ForumVote>()
+                   .Where(v => v.ForumID == forumId)
                 .Select(v => new
                 {
                     v.UserID,

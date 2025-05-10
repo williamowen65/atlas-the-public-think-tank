@@ -15,7 +15,7 @@ forum @Model.ForumID
     
     @Html.Partial("_voteAverage.cshtml")
     
-    <div class="vote-dial-toggle ">
+    <div class="vote-dial-toggle @(Model.UserVote.HasValue ? "user-voted" : "") ">
         <div id="vote-toggle-container-@Model.ForumID" class="vote-toggle-container">
             @for (int i = 10; i >= 0; i--)
             {

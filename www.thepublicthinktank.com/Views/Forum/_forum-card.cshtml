@@ -9,7 +9,7 @@
    
 }
 
-<div class="card mb-3 d-flex flex-row">
+<div class="card mb-3 d-flex flex-row" id="forum-@Model.ForumID">
     <div class="dial-container">
     </div>
     <div class="flex-fill d-flex flex-column">
@@ -45,7 +45,8 @@
             .then(data => data.text())
             .then(data => {
                 console.log({data})
-                const dialContainer = document.querySelector('.dial-container');
+                const thisElement = document.querySelector('#forum-@Model.ForumID')
+                const dialContainer = thisElement.querySelector('.dial-container');
                 if (dialContainer) {
                     dialContainer.innerHTML = data; 
                     initializeVoteDial(@Model.ForumID);
