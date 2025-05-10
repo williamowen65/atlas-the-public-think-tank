@@ -41,11 +41,14 @@
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
-        .then(response => {
+            .then(async (response) => {
+                const body = await response.json();
+
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+
+                throw new Error(body.message);
             }
-            return response.json();
+            return body;
         })
         .then(data => {
             console.log('Vote saved successfully:', data);
