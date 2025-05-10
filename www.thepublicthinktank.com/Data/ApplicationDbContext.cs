@@ -37,7 +37,7 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
         modelBuilder.Entity<Category>().ToTable("Categories", "forums");
         modelBuilder.Entity<Scope>().ToTable("Scopes", "forums");
         modelBuilder.Entity<BlockedContent>().ToTable("BlockedContent", "forums");
-        //modelBuilder.Entity<UserVote>().ToTable("UserVotes", "forums");
+        modelBuilder.Entity<UserVote>().ToTable("UserVotes", "forums");
         modelBuilder.Entity<ForumCategory>().ToTable("ForumsCategories", "forums");
         modelBuilder.Entity<UserHistory>().ToTable("UserHistory", "users");
 
