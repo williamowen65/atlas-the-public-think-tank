@@ -4,6 +4,9 @@
 *@
 @{
     Console.WriteLine();
+
+
+   
 }
 
 <div class="card mb-3 d-flex flex-row">
@@ -38,11 +41,10 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        fetch("/Forum/GetVoteDial?userVote=3&forumId=@Model.ForumID")
+      fetch("/Forum/GetVoteDial?forumId=@Model.ForumID")
             .then(data => data.text())
             .then(data => {
                 console.log({data})
-                // Assuming data contains the vote dial information
                 const dialContainer = document.querySelector('.dial-container');
                 if (dialContainer) {
                     dialContainer.innerHTML = data; 

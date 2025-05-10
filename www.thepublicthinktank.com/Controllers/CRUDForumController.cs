@@ -113,7 +113,8 @@ namespace atlas_the_public_think_tank.Controllers
                     {
                         CategoryID = fc.Category.CategoryID,
                         CategoryName = fc.Category.CategoryName
-                    }).ToList()
+                    })
+                    .ToList()
                 })
                 .ToListAsync();
 
@@ -220,14 +221,32 @@ namespace atlas_the_public_think_tank.Controllers
 
         [AllowAnonymous]
         [Route("/Forum/GetVoteDial")]
-        public async Task<IActionResult> GetVoteDial(int forumId, int userVote = 5)
+        public async Task<IActionResult> GetVoteDial(int forumId)
         {
+
+            int? userVote = 5; 
             // Check if the forumId exists in the database
             var forumExists = _context.Forums.Any(f => f.ForumID == forumId);
             if (!forumExists)
             {
                 return NotFound(new { message = "Forum not found" });
             }
+
+            var user = await _userManager.GetUserAsync(User);
+           
+            if (user != null)
+            {
+                // Get a possible vote value from the db
+                var existingVote = await _context.UserVotes
+                    .OfType<ForumVote>()
+                    .FirstOrDefaultAsync(v => v.UserID == user.Id && v.ForumID == forumId);
+
+                if (existingVote != null)
+                {
+                    userVote = existingVote.VoteValue;
+                }
+            }
+
 
             // Retrieve all user votes for the specified forum
             var userVotes = await _context.UserVotes
