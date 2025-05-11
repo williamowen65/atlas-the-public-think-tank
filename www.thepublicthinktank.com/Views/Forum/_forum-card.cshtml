@@ -9,12 +9,14 @@
    
 }
 
-<div class="card mb-3 d-flex flex-row" id="forum-@Model.ForumID">
+<div class="card mb-3 " id="forum-@Model.ForumID">
+    <div class="d-flex flex-row">
+
     <div class="dial-container">
     </div>
     <div class="flex-fill d-flex flex-column">
 
-    <div class="card-header">
+            <div class="card-header" style="border-left:var(--bs-card-border-width) solid var(--bs-card-border-color); border-top-left-radius: 0;">
         <h5 class="mb-0">@Model.Title</h5>
         <small class="text-muted">Posted by @Model.Author?.UserName on @Model.CreatedAt.ToString("MMM dd, yyyy")</small>
     </div>
@@ -31,10 +33,12 @@
             </div>
         }
     </div>
+    </div>
+    
+    </div>
     <div class="card-footer">
         <a href="#" class="btn btn-sm btn-outline-primary">Reply</a>
         <a href="#" class="btn btn-sm btn-outline-secondary">Share</a>
-    </div>
     </div>
 
 </div>
