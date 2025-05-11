@@ -1,0 +1,37 @@
+﻿@model Alert_ReadVM
+
+<div id="alert-container" class="container d-flex flex-column align-items-center" style="transform: translateY(10px);">
+    @{
+        string alertClass = Model.Type switch
+        {
+            AlertType.Success => "bg-success text-white",
+            AlertType.Info => "bg-info text-dark",
+            AlertType.Warning => "bg-warning text-dark",
+            AlertType.Error => "bg-danger text-white",
+            _ => "bg-info text-dark"
+        };
+    }
+
+    <div class="alert @alertClass w-auto d-flex align-items-center" 
+         role="alert" 
+         id="topbar-alert"
+
+    @* This  use of Raw was because the parseInt in client_alert wasn't handling the extra quotes.... data-timeout="&quot;5000&quot;" *@
+
+
+        @(Model.Timeout > 0 ? Html.Raw($"data-timeout={Model.Timeout}") : "")>
+         
+        @*
+         I am considering the use of rendering text to html here because these alerts are
+         created by this application. But maybe this isn't a good idea 
+         *@
+
+        <div>@Html.Raw(Model.Message)</div>
+        @if (Model.Dismissible)
+        {
+            <button type="button" class="btn-close ms-3"
+                        onclick="dismissAlert('topbar-alert')"
+                    aria-label="Close"></button>
+        }
+    </div>
+</div>

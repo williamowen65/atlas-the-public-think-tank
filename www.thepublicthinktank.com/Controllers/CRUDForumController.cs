@@ -7,6 +7,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace atlas_the_public_think_tank.Controllers
 {
+
+    /// <summary>
+    /// This controller handles all CRUD operations for 
+    /// the Forum, Solutions, Comments, UserHistory, and Voting
+    /// </summary>
     [Authorize]
     public class CRUDForumController : Controller
     {
@@ -19,7 +24,9 @@ namespace atlas_the_public_think_tank.Controllers
             _userManager = userManager;
         }
 
-
+        /// <summary>
+        /// This method is used to return the create forum page.
+        /// </summary>
         [Route("/create-forum")]
         public IActionResult CreateForum()
         {
@@ -33,6 +40,11 @@ namespace atlas_the_public_think_tank.Controllers
             return View(newForum);
         }
 
+
+        /// <summary>
+        /// This method is used to create a new forum post.
+        /// </summary>
+        /// <param name="model"></param>
         [HttpPost]
         [Route("/create-forum")]
         [ValidateAntiForgeryToken]
@@ -86,6 +98,10 @@ namespace atlas_the_public_think_tank.Controllers
             return View(model);
         }
 
+
+        /// <summary>
+        /// This method is used to return all forum posts.
+        /// </summary>
         [HttpGet]
         [Route("/api/posts")]
         [AllowAnonymous]
@@ -122,6 +138,9 @@ namespace atlas_the_public_think_tank.Controllers
         }
 
 
+        /// <summary>
+        /// This method is used to return all categories.
+        /// </summary>
         [HttpGet]
         [Route("/api/categories")]
         [AllowAnonymous]
@@ -139,7 +158,11 @@ namespace atlas_the_public_think_tank.Controllers
             return Ok(posts);
         }
 
-        // Add this to CRUDForumController.cs
+
+        /// <summary>
+        /// This method is used to return the sidebar with all categories.
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
         [Route("/api/sidebar")]
         [AllowAnonymous]
@@ -156,14 +179,10 @@ namespace atlas_the_public_think_tank.Controllers
             return PartialView("~/Views/Forum/_left-sidebar-container.cshtml", categories);
         }
 
-        /*
-         
-         TODO: Convert all of the Stored Procedures to C# code as routes.
-        This will be more maintainable than splitting logic. 
-        Stored procedures can be done in future if there are performance reasons. 
-         
-         */
-
+        /// <summary>
+        /// This method is used to cast a vote on a forum post.
+        /// </summary>
+        /// <param name="model"></param>
         [HttpPost]
         [Route("/forum/vote")]
         public async Task<IActionResult> ForumVote(UserVote_Forum_CreateVM model)
@@ -236,6 +255,12 @@ namespace atlas_the_public_think_tank.Controllers
         }
 
 
+        /// <summary>
+        /// This method is used to get the vote dial for a specific forum.
+        /// </summary>
+        /// <param name="forumId"></param>
+        /// <returns>HTML</returns>
+        /// <throws>NotFound</throws> <--- Not sure if this is the right way to do this
         [AllowAnonymous]
         [Route("/Forum/GetVoteDial")]
         public async Task<IActionResult> GetVoteDial(int forumId)
@@ -290,9 +315,5 @@ namespace atlas_the_public_think_tank.Controllers
             // Return the partial view with the vote data model
             return PartialView("~/Views/Forum/_voteDial.cshtml", m);
         }
-       
-
-
-
     }
 }

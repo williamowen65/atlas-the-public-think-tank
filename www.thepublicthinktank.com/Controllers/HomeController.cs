@@ -3,9 +3,16 @@ using Microsoft.AspNetCore.Mvc;
 using atlas_the_public_think_tank.Models;
 using Azure.Core;
 using System.Text.Json;
+using System;
+using System.Text;
+using System.Web;
 
 namespace atlas_the_public_think_tank.Controllers;
 
+/// <summary>
+/// This controller handles ALL the main pages   
+/// and alert functionalities of the application.
+/// </summary>
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
@@ -15,6 +22,9 @@ public class HomeController : Controller
         _logger = logger;
     }
 
+    /// <summary>
+    /// This method is used to return the main page of the application.
+    /// </summary>
     public async Task<IActionResult> Index()
     {
         using var client = new HttpClient();
@@ -22,7 +32,7 @@ public class HomeController : Controller
 
         // Create a view model to hold both forums and categories
         var viewModel = new HomeIndexViewModel();
-        
+
         // Fetch forums
         var forumResponse = await client.GetAsync("/api/posts");
         if (forumResponse.IsSuccessStatusCode)
@@ -38,7 +48,7 @@ public class HomeController : Controller
             _logger.LogError($"Failed to fetch posts. Status Code: {forumResponse.StatusCode}");
             viewModel.Forums = new List<Forum_ReadVM>();
         }
-        
+
         // Fetch categories
         var categoryResponse = await client.GetAsync("/api/categories");
         if (categoryResponse.IsSuccessStatusCode)
@@ -55,9 +65,68 @@ public class HomeController : Controller
             viewModel.Categories = new List<Category_ReadVM>();
         }
 
+
         return View(viewModel);
     }
 
+    /// <summary>
+    /// This method is used to return a partial view for displaying alerts.
+    /// </summary>
+    /// <param name="alertType"></param>
+    /// <param name="message"></param>
+
+    [HttpGet]
+    [Route("Shared/_Alert")]
+    public IActionResult Alert(AlertType alertType, string message = null, bool? dismissible = null, int? timeout = null)
+    {
+        // Check if the message is in the header
+        if (string.IsNullOrEmpty(message) && Request.Headers.TryGetValue("X-Alert-Message", out var headerMessage))
+        {
+            // Decode the Base64 message
+            byte[] data = Convert.FromBase64String(headerMessage);
+            message = System.Web.HttpUtility.UrlDecode(System.Text.Encoding.UTF8.GetString(data));
+        }
+
+        // Check for dismissible in headers
+        bool isDismissible = true; // Default value
+        if (dismissible.HasValue)
+        {
+            isDismissible = dismissible.Value;
+        }
+        else if (Request.Headers.TryGetValue("X-Alert-Dismissible", out var dismissibleHeader))
+        {
+            if (bool.TryParse(dismissibleHeader, out var parsedValue))
+            {
+                isDismissible = parsedValue;
+            }
+        }
+
+        // Check for timeout in headers
+        int alertTimeout = 5000; // Default value
+        if (timeout.HasValue && timeout.Value >= 0)
+        {
+            alertTimeout = timeout.Value;
+        }
+        else if (Request.Headers.TryGetValue("X-Alert-Timeout", out var timeoutHeader))
+        {
+            if (int.TryParse(timeoutHeader, out var parsedValue) && parsedValue >= 0)
+            {
+                alertTimeout = parsedValue;
+            }
+        }
+
+        // Create an alert view model
+        var alert = new Alert_ReadVM
+        {
+            Message = message,
+            Type = alertType,
+            Dismissible = isDismissible,
+            Timeout = alertTimeout
+        };
+
+        // Return the alert partial view with the model
+        return PartialView("~/Views/Shared/_Alert.cshtml", alert);
+    }
 
     [Route("test")]
     public IActionResult Privacy()
@@ -70,4 +139,7 @@ public class HomeController : Controller
     {
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
+
+
+
 }
