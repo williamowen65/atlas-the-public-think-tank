@@ -33,12 +33,32 @@
 
     <partial name="_ColorMode" />
 
+    <style>  
+
+
+        #topbar-layout{
+            grid-template-columns: 126px 1fr;
+        }
+           @@media (min-width: 768px) {
+               #topbar-layout {
+                    grid-template-columns: calc(var(--left-sidebar-container-width) - 36px) 1fr;
+                }
+        }  
+     </style>
     
     <header class="py-3 main-header border-bottom sticky-top bg-body">
-        <div class="container-fluid d-grid gap-3 align-items-center" style="grid-template-columns: calc(var(--left-sidebar-container-width) - 36px) 1fr;">
+        <div id="topbar-layout" class="container-fluid d-grid gap-3 align-items-center" style="">
           
             <a asp-area="" asp-controller="Home" asp-action="Index" class="ff-consolas d-flex align-items-center col-lg-4 mb-2 mb-lg-0 link-body-emphasis text-decoration-none fw-bold w-100" >
-                Atlas - The Public Think Tank
+                <div id="large-logo" class="text-center mx-auto">
+                    <span class="site-name">
+                        Atlas<br>
+                        <small>The Public Think Tank</small>
+                    </span>
+                </div>
+                @* <div id="small-logo"> *@
+                @*     ATPTT *@
+                @* </div> *@
             </a>
           
 
