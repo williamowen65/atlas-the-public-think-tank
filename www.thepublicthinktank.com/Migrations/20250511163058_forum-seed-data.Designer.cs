@@ -12,8 +12,8 @@ using atlas_the_public_think_tank.Data;
 namespace atlas_the_public_think_tank.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250510175020_init2")]
-    partial class init2
+    [Migration("20250511163058_forum-seed-data")]
+    partial class forumseeddata
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -225,6 +225,40 @@ namespace atlas_the_public_think_tank.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "1a61454c-5b83-4aab-8661-96d6dffbee30",
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                            Email = "whoLetTheDogsOut@barker.com",
+                            EmailConfirmed = true,
+                            LockoutEnabled = true,
+                            NormalizedEmail = "WHOLETTHEDOGSOUT@BARKER.COM",
+                            NormalizedUserName = "COOPER.BARKER",
+                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
+                            TwoFactorEnabled = false,
+                            UserName = "Cooper.Barker"
+                        },
+                        new
+                        {
+                            Id = "1a61454c-5b83-4aab-8661-96d6dffbe31",
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "a1b2c3e4-e5f6-7890-acsd-ef1234567891",
+                            Email = "amelia.knight@example.org",
+                            EmailConfirmed = true,
+                            LockoutEnabled = true,
+                            NormalizedEmail = "AMELIA.KNIGHT@EXAMPLE.ORG",
+                            NormalizedUserName = "AMELIA.KNIGHT",
+                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e11",
+                            TwoFactorEnabled = false,
+                            UserName = "amelia.knight"
+                        });
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.BlockedContent", b =>
@@ -258,6 +292,48 @@ namespace atlas_the_public_think_tank.Migrations
                     b.HasKey("CategoryID");
 
                     b.ToTable("Categories", "forums");
+
+                    b.HasData(
+                        new
+                        {
+                            CategoryID = 1,
+                            CategoryName = "Global Cooperation"
+                        },
+                        new
+                        {
+                            CategoryID = 2,
+                            CategoryName = "Sustainable Development"
+                        },
+                        new
+                        {
+                            CategoryID = 3,
+                            CategoryName = "Equitable Access"
+                        },
+                        new
+                        {
+                            CategoryID = 4,
+                            CategoryName = "Innovation and Technology"
+                        },
+                        new
+                        {
+                            CategoryID = 5,
+                            CategoryName = "Effective Governance"
+                        },
+                        new
+                        {
+                            CategoryID = 6,
+                            CategoryName = "Education and Awareness"
+                        },
+                        new
+                        {
+                            CategoryID = 7,
+                            CategoryName = "Cultural Understanding"
+                        },
+                        new
+                        {
+                            CategoryID = 8,
+                            CategoryName = "Resilience and Adaptability"
+                        });
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.Forum", b =>
@@ -312,6 +388,40 @@ namespace atlas_the_public_think_tank.Migrations
                     b.HasIndex("ScopeID");
 
                     b.ToTable("Forums", "forums");
+
+                    b.HasData(
+                        new
+                        {
+                            ForumID = 1,
+                            AuthorID = "1a61454c-5b83-4aab-8661-96d6dffbee30",
+                            Content = "A forum to discuss practical solutions to climate change at individual and policy levels.",
+                            ContentStatus = 1,
+                            CreatedAt = new DateTime(2024, 1, 15, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            ScopeID = 1,
+                            Title = "Climate Change Solutions"
+                        },
+                        new
+                        {
+                            ForumID = 2,
+                            AuthorID = "1a61454c-5b83-4aab-8661-96d6dffbee30",
+                            Content = "Discussion on modern urban planning approaches for sustainable and livable cities.",
+                            ContentStatus = 1,
+                            CreatedAt = new DateTime(2024, 2, 10, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            ScopeID = 2,
+                            Title = "Urban Planning Innovations"
+                        },
+                        new
+                        {
+                            ForumID = 3,
+                            AuthorID = "1a61454c-5b83-4aab-8661-96d6dffbe31",
+                            Content = "Strategies for transitioning to renewable energy sources at community and national levels.",
+                            ContentStatus = 1,
+                            CreatedAt = new DateTime(2024, 3, 5, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            ModifiedAt = new DateTime(2024, 3, 10, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            ParentForumID = 1,
+                            ScopeID = 1,
+                            Title = "Renewable Energy Transition"
+                        });
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.ForumCategory", b =>
@@ -344,6 +454,28 @@ namespace atlas_the_public_think_tank.Migrations
                     b.HasKey("ScopeID");
 
                     b.ToTable("Scopes", "forums");
+
+                    b.HasData(
+                        new
+                        {
+                            ScopeID = 1,
+                            ScopeName = "Global"
+                        },
+                        new
+                        {
+                            ScopeID = 2,
+                            ScopeName = "National"
+                        },
+                        new
+                        {
+                            ScopeID = 3,
+                            ScopeName = "Local"
+                        },
+                        new
+                        {
+                            ScopeID = 4,
+                            ScopeName = "Individual"
+                        });
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.Solution", b =>

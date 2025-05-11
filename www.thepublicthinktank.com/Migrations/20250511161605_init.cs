@@ -3,10 +3,12 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
 namespace atlas_the_public_think_tank.Migrations
 {
     /// <inheritdoc />
-    public partial class init2 : Migration
+    public partial class init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -470,6 +472,43 @@ namespace atlas_the_public_think_tank.Migrations
                         principalSchema: "forums",
                         principalTable: "Solutions",
                         principalColumn: "SolutionID");
+                });
+
+            migrationBuilder.InsertData(
+                table: "AspNetUsers",
+                columns: new[] { "Id", "AccessFailedCount", "ConcurrencyStamp", "Email", "EmailConfirmed", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "SecurityStamp", "TwoFactorEnabled", "UserName" },
+                values: new object[,]
+                {
+                    { "1a61454c-5b83-4aab-8661-96d6dffbe31", 0, "a1b2c3e4-e5f6-7890-acsd-ef1234567891", "amelia.knight@example.org", true, true, null, "AMELIA.KNIGHT@EXAMPLE.ORG", "AMELIA.KNIGHT", "AQAAAAEAACcQAAAAEExamplePasswordHash==", null, false, "d12ef04d-5b83-4aab-8661-567ffb12e11", false, "amelia.knight" },
+                    { "1a61454c-5b83-4aab-8661-96d6dffbee30", 0, "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "whoLetTheDogsOut@barker.com", true, true, null, "WHOLETTHEDOGSOUT@BARKER.COM", "COOPER.BARKER", "AQAAAAEAACcQAAAAEExamplePasswordHash==", null, false, "d12ef04d-5b83-4aab-8661-567ffb12e15", false, "Cooper.Barker" }
+                });
+
+            migrationBuilder.InsertData(
+                schema: "forums",
+                table: "Categories",
+                columns: new[] { "CategoryID", "CategoryName" },
+                values: new object[,]
+                {
+                    { 1, "Global Cooperation" },
+                    { 2, "Sustainable Development" },
+                    { 3, "Equitable Access" },
+                    { 4, "Innovation and Technology" },
+                    { 5, "Effective Governance" },
+                    { 6, "Education and Awareness" },
+                    { 7, "Cultural Understanding" },
+                    { 8, "Resilience and Adaptability" }
+                });
+
+            migrationBuilder.InsertData(
+                schema: "forums",
+                table: "Scopes",
+                columns: new[] { "ScopeID", "ScopeName" },
+                values: new object[,]
+                {
+                    { 1, "Global" },
+                    { 2, "National" },
+                    { 3, "Local" },
+                    { 4, "Individual" }
                 });
 
             migrationBuilder.CreateIndex(

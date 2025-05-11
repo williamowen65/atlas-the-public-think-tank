@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Models;
+﻿using atlas_the_public_think_tank.Data.SeedData;
+using atlas_the_public_think_tank.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -41,10 +42,16 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
         modelBuilder.Entity<ForumCategory>().ToTable("ForumsCategories", "forums");
         modelBuilder.Entity<UserHistory>().ToTable("UserHistory", "users");
 
-        // Configure User entity
-        //modelBuilder.Entity<User>(entity =>
-        //{
-        //});
+
+        new SeedUsers(modelBuilder);
+
+        new SeedCategories(modelBuilder);
+
+        new SeedScopes(modelBuilder);
+
+        new SeedForums(modelBuilder);
+
+
 
         // Configure Forum entity
         modelBuilder.Entity<Forum>(entity =>
