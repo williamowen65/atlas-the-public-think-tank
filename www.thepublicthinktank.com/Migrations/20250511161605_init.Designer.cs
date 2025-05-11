@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using atlas_the_public_think_tank.Data;
 
@@ -11,9 +12,11 @@ using atlas_the_public_think_tank.Data;
 namespace atlas_the_public_think_tank.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250511161605_init")]
+    partial class init
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -385,40 +388,6 @@ namespace atlas_the_public_think_tank.Migrations
                     b.HasIndex("ScopeID");
 
                     b.ToTable("Forums", "forums");
-
-                    b.HasData(
-                        new
-                        {
-                            ForumID = 1,
-                            AuthorID = "1a61454c-5b83-4aab-8661-96d6dffbee30",
-                            Content = "A forum to discuss practical solutions to climate change at individual and policy levels.",
-                            ContentStatus = 1,
-                            CreatedAt = new DateTime(2024, 1, 15, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            ScopeID = 1,
-                            Title = "Climate Change Solutions"
-                        },
-                        new
-                        {
-                            ForumID = 2,
-                            AuthorID = "1a61454c-5b83-4aab-8661-96d6dffbee30",
-                            Content = "Discussion on modern urban planning approaches for sustainable and livable cities.",
-                            ContentStatus = 1,
-                            CreatedAt = new DateTime(2024, 2, 10, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            ScopeID = 2,
-                            Title = "Urban Planning Innovations"
-                        },
-                        new
-                        {
-                            ForumID = 3,
-                            AuthorID = "1a61454c-5b83-4aab-8661-96d6dffbe31",
-                            Content = "Strategies for transitioning to renewable energy sources at community and national levels.",
-                            ContentStatus = 1,
-                            CreatedAt = new DateTime(2024, 3, 5, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            ModifiedAt = new DateTime(2024, 3, 10, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            ParentForumID = 1,
-                            ScopeID = 1,
-                            Title = "Renewable Energy Transition"
-                        });
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.ForumCategory", b =>
