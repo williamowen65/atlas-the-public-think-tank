@@ -213,8 +213,7 @@ function createDebouncedSaveVote(forumId) {
                      //timeout: 10000,
                      //dismissible: false
                 });
-                
-            }, 1000);
+            }, 1000); // 1 second delay to allow scroll to finish
         }
     }
 });
