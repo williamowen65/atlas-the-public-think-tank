@@ -43,6 +43,7 @@
 
 </div>
 
+@* This script does load with cshtml because it is part of the initial page load *@
 <script>
     document.addEventListener("DOMContentLoaded", () => {
       fetch("/Forum/GetVoteDial?forumId=@Model.ForumID")

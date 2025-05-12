@@ -79,4 +79,26 @@ namespace atlas_the_public_think_tank.Models
         //public AppUser User { get; set; } // The user is captured via injection
     }
 
+    public enum AlertType
+    {
+        Success,
+        Info,
+        Warning,
+        Danger,
+        Error
+    }
+
+
+    public class Alert_ReadVM
+    { 
+        public string Message { get; set; }
+
+        public bool Dismissible { get; set; } = true;
+
+        public int Timeout { get; set; } 
+
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+
+        public AlertType Type { get; set; } = AlertType.Info;
+    }
 }

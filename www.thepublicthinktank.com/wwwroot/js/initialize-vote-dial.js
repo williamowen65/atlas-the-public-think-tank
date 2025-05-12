@@ -203,6 +203,17 @@ function createDebouncedSaveVote(forumId) {
             // Remove the class after a short delay
             setTimeout(() => {
                 container.classList.remove('temporarily-prevent-observer');
+
+                client_TopBar_Alert({
+                    type: 'warning',
+                    message: `
+                    <h1>Vote not casted</h1> 
+                    <p>You need to be logged in to cast a vote.</p>
+                    `,
+                     //timeout: 10000,
+                     //dismissible: false
+                });
+                
             }, 1000);
         }
     }
