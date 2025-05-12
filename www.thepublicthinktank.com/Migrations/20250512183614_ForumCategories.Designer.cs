@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using atlas_the_public_think_tank.Data;
 
@@ -11,9 +12,11 @@ using atlas_the_public_think_tank.Data;
 namespace atlas_the_public_think_tank.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250512183614_ForumCategories")]
+    partial class ForumCategories
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -434,53 +437,6 @@ namespace atlas_the_public_think_tank.Migrations
                     b.HasIndex("ForumID");
 
                     b.ToTable("ForumsCategories", "forums");
-
-                    b.HasData(
-                        new
-                        {
-                            CategoryID = 1,
-                            ForumID = 1
-                        },
-                        new
-                        {
-                            CategoryID = 2,
-                            ForumID = 1
-                        },
-                        new
-                        {
-                            CategoryID = 8,
-                            ForumID = 1
-                        },
-                        new
-                        {
-                            CategoryID = 2,
-                            ForumID = 2
-                        },
-                        new
-                        {
-                            CategoryID = 4,
-                            ForumID = 2
-                        },
-                        new
-                        {
-                            CategoryID = 5,
-                            ForumID = 2
-                        },
-                        new
-                        {
-                            CategoryID = 1,
-                            ForumID = 3
-                        },
-                        new
-                        {
-                            CategoryID = 2,
-                            ForumID = 3
-                        },
-                        new
-                        {
-                            CategoryID = 4,
-                            ForumID = 3
-                        });
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.Scope", b =>

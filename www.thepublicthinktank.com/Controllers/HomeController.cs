@@ -77,8 +77,14 @@ public class HomeController : Controller
 
     [HttpGet]
     [Route("Shared/_Alert")]
-    public IActionResult Alert(AlertType alertType, string message = null, bool? dismissible = null, int? timeout = null)
+    public IActionResult Alert(string type, string message = null, bool? dismissible = null, int? timeout = null)
     {
+
+        AlertType alertType;
+        if (!Enum.TryParse(type, ignoreCase: true, out alertType))
+        {
+            alertType = AlertType.success; // fallback
+        }
         // Check if the message is in the header
         if (string.IsNullOrEmpty(message) && Request.Headers.TryGetValue("X-Alert-Message", out var headerMessage))
         {

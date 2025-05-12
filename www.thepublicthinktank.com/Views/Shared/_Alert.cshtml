@@ -1,20 +1,19 @@
 ﻿@model Alert_ReadVM
 
-<div id="alert-container" class="container d-flex flex-column align-items-center" style="transform: translateY(10px);">
+<div id="alert-container" class="container alert-container d-flex flex-column align-items-center" style="">
     @{
         string alertClass = Model.Type switch
         {
-            AlertType.Success => "bg-success text-white",
-            AlertType.Info => "bg-info text-dark",
-            AlertType.Warning => "bg-warning text-dark",
-            AlertType.Error => "bg-danger text-white",
+            AlertType.success => "bg-success text-white",
+            AlertType.info => "bg-info text-dark",
+            AlertType.warning => "bg-warning text-dark",
+            AlertType.error => "bg-danger text-white",
+            AlertType.plaintext => "plain-text-alert", // No background class for plain-text
             _ => "bg-info text-dark"
         };
-    }
-
-    <div class="alert @alertClass w-auto d-flex align-items-center" 
+    }    <div class="alert @alertClass w-auto d-flex align-items-center" 
          role="alert" 
-         id="topbar-alert"
+         id="@Model.Id"
 
     @* This  use of Raw was because the parseInt in client_alert wasn't handling the extra quotes.... data-timeout="&quot;5000&quot;" *@
 
@@ -30,7 +29,7 @@
         @if (Model.Dismissible)
         {
             <button type="button" class="btn-close ms-3"
-                    onclick="dismissTopbarAlert('topbar-alert')"
+                    onclick="dismissAlert('@Model.Id')"
                     aria-label="Close"></button>
         }
     </div>

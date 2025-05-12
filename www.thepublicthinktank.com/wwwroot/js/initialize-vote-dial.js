@@ -202,7 +202,6 @@ function createDebouncedSaveVote(forumId) {
             
             // Remove the class after a short delay
             setTimeout(() => {
-                container.classList.remove('temporarily-prevent-observer');
 
                 client_TopBar_Alert({
                     type: 'warning',
@@ -210,10 +209,20 @@ function createDebouncedSaveVote(forumId) {
                     <h1>Vote not casted</h1> 
                     <p>You need to be logged in to cast a vote.</p>
                     `,
-                     //timeout: 10000,
-                     //dismissible: false
                 });
-            }, 1000); // 1 second delay to allow scroll to finish
+
+                client_CardFooter_Alert({
+                    cardId: forumId,
+                    type: 'plaintext',
+                    message: `
+                  Vote not cast - Login required
+                    `,
+                    dismissible: false
+                });
+            }, 500); 
+            setTimeout(() => {
+                container.classList.remove('temporarily-prevent-observer');
+            }, 1000) // 1 second delay to allow scroll to finish
         }
     }
 });

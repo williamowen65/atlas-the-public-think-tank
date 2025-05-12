@@ -51,6 +51,7 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
 
         new SeedForums(modelBuilder);
 
+        new SeedForumCategories(modelBuilder);
 
 
         // Configure Forum entity

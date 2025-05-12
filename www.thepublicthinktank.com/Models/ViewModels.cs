@@ -78,14 +78,14 @@ namespace atlas_the_public_think_tank.Models
 
         //public AppUser User { get; set; } // The user is captured via injection
     }
-
     public enum AlertType
     {
-        Success,
-        Info,
-        Warning,
-        Danger,
-        Error
+        success,
+        info,
+        warning,
+        danger,
+        error,
+        plaintext
     }
 
 
@@ -99,6 +99,6 @@ namespace atlas_the_public_think_tank.Models
 
         public string Id { get; set; } = Guid.NewGuid().ToString();
 
-        public AlertType Type { get; set; } = AlertType.Info;
+        public AlertType Type { get; set; } = AlertType.info;
     }
 }

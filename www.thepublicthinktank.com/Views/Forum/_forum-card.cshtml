@@ -20,7 +20,7 @@
         <h5 class="mb-0">@Model.Title</h5>
         <small class="text-muted">Posted by @Model.Author?.UserName on @Model.CreatedAt.ToString("MMM dd, yyyy")</small>
     </div>
-    <div class="card-body">
+            <div class="card-body d-flex flex-column justify-content-between">
         <p>@Model.Content</p>
 
         @if (Model.Categories != null && Model.Categories.Any())
@@ -36,9 +36,15 @@
     </div>
     
     </div>
-    <div class="card-footer">
-        <a href="#" class="btn btn-sm btn-outline-primary">Reply</a>
-        <a href="#" class="btn btn-sm btn-outline-secondary">Share</a>
+    <div class="card-footer d-flex justify-content-between">
+        <div class="" id="card-@Model.ForumID-footer-alert">
+            
+        </div>
+        <div class="">
+            <a href="#" class="btn btn-sm btn-outline-primary">View</a>
+            <a href="#" class="btn btn-sm btn-outline-secondary">Share</a>
+            <a href="#" class="btn btn-sm btn-outline-secondary">Follow</a>
+        </div>
     </div>
 
 </div>
