@@ -137,6 +137,48 @@ namespace atlas_the_public_think_tank.Controllers
             return Ok(posts);
         }
 
+        [HttpGet]
+        [Route("/forum/{id}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ForumView(int id)
+        {
+            var forum = await _context.Forums
+                .Include(f => f.Scope)
+                .Include(f => f.Author)
+                .Include(f => f.ForumCategories)
+                    .ThenInclude(fc => fc.Category)
+                .FirstOrDefaultAsync(f => f.ForumID == id);
+
+            if (forum == null)
+            {
+                return NotFound();
+            }
+
+            var model = new Forum_ReadVM
+            {
+                ForumID = forum.ForumID,
+                Title = forum.Title,
+                Content = forum.Content,
+                CreatedAt = forum.CreatedAt,
+                ModifiedAt = forum.ModifiedAt,
+                AuthorID = forum.AuthorID,
+                ScopeID = forum.ScopeID,
+                ParentForumID = forum.ParentForumID,
+                BlockedContentID = forum.BlockedContentID,
+                Author = forum.Author,
+                Scope = forum.Scope,
+                Categories = forum.ForumCategories.Select(fc => new Category_ReadVM
+                {
+                    CategoryID = fc.Category.CategoryID,
+                    CategoryName = fc.Category.CategoryName
+                }).ToList(),
+                // TODO: Map Threads, Users, LastActivity, etc. as needed
+            };
+
+            return View(model);
+        }
+
+
 
         /// <summary>
         /// This method is used to return all categories.

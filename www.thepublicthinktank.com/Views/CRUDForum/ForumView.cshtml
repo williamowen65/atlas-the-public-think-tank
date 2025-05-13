@@ -1,0 +1,30 @@
+﻿@model Forum_ReadVM;
+
+
+<div class="container mt-3  ">
+
+    @Html.Partial("~/Views/Forum/_forum-page-post.cshtml", Model)
+
+<ul class="nav nav-tabs">
+  <li class="nav-item">
+    <a class="nav-link active" aria-current="page" href="#">
+                <i class="fa-solid fa-puzzle-piece"></i>
+                Solutions
+            </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="#">
+                <i class="fas fa-comments text-muted"></i>
+        Comments
+    </a>
+  </li>
+ 
+
+    <li class="nav-item dropdown ms-auto">
+        <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">Filter</a>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#">Action</a></li>
+        </ul>
+    </li>
+</ul>              
+</div>

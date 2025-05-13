@@ -22,6 +22,34 @@ namespace atlas_the_public_think_tank.Models
         public List<Scope> Scopes { get; set; } = new List<Scope>();
     }
 
+    public class Thread_ReadVM
+    {
+        public int Id { get; set; }
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public bool IsPinned { get; set; }
+        public bool IsClosed { get; set; }
+        public DateTime CreatedDate { get; set; }
+        public DateTime LastActivityDate { get; set; }
+        public int ViewCount { get; set; }
+        public AppUser_ReadVM CreatedByUser { get; set; }
+        public List<Post_ReadVM> Posts { get; set; } = new();
+        public Post_ReadVM LastPost { get; set; }
+    }
+
+    public class AppUser_ReadVM
+    {
+        public string UserName { get; set; }
+        public string AvatarUrl { get; set; }
+    }
+
+    public class Post_ReadVM
+    {
+        public DateTime CreatedDate { get; set; }
+        public AppUser_ReadVM CreatedByUser { get; set; }
+    }
+
+
     public class Forum_ReadVM
     {
         public int ForumID { get; set; }
@@ -29,11 +57,16 @@ namespace atlas_the_public_think_tank.Models
         public string Content { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? ModifiedAt { get; set; }
+        public DateTime? LastActivity { get; set; }
         public string AuthorID { get; set; }
+        public List<Thread_ReadVM> Threads { get; set; } = new();
+        public List<AppUser_ReadVM> Users { get; set; } = new();
         public int ScopeID { get; set; }
         public int? ParentForumID { get; set; }
         public int? BlockedContentID { get; set; }
         public List<Category_ReadVM> Categories { get; set; } = new List<Category_ReadVM>();
+
+
 
         // Navigation properties
         public AppUser Author { get; set; }
