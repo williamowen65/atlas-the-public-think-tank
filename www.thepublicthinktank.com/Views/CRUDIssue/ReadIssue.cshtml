@@ -11,20 +11,21 @@
     <nav>
         <div class="nav nav-tabs" id="nav-tab" role="tablist">
             <button class="nav-link active" id="solutions-tab" data-bs-toggle="tab" data-bs-target="#solutions" type="button" role="tab" aria-controls="nav-home" aria-selected="true">
-                <i class="fa-solid fa-puzzle-piece"></i>
+                
+                @Html.Partial("~/Views/Shared/Icons/_Solutions.cshtml")
                 Solutions
             </button>
             <button class="nav-link" id="issue-comments-tab" data-bs-toggle="tab" data-bs-target="#issue-comments" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
-                <i class="fas fa-comments text-muted"></i>
+                @Html.Partial("~/Views/Shared/Icons/_Comments.cshtml")
                 Comments
             </button>
             <button class="nav-link" id="sub-issues-tab" data-bs-toggle="tab" data-bs-target="#sub-issues" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
-                <i class="fa-solid fa-thumbtack"></i>
+                @Html.Partial("~/Views/Shared/Icons/_SubIssues.cshtml")
                 Sub-Issues
             </button> 
             <button class="nav-link d-flex align-items-center" id="parent-issue-tab" data-bs-toggle="tab" data-bs-target="#parent-issue" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
                 <div class="me-2">
-                    @Html.Partial("~/Views/Shared/Icons/_Podium.cshtml")
+                    @Html.Partial("~/Views/Shared/Icons/_ParentIssue.cshtml")
                 </div>
 
                 Parent Issue

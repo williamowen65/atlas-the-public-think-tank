@@ -88,4 +88,12 @@ header.main-header {
     box-shadow: none;
 }
 
-
+svg.parent-issue-icon {
+    height: 17px;
+    width: 17px;
+}
+.card svg.parent-issue-icon {
+    height: 24px !important;
+    width: 24px;
+    transform: translateY(-4px);
+}
