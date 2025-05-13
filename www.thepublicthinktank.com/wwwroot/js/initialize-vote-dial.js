@@ -206,7 +206,7 @@ function createDebouncedSaveVote(forumId) {
                 client_TopBar_Alert({
                     type: 'warning',
                     message: `
-                    <h1>Vote not casted</h1> 
+                    <h4>Vote not cast</h4> 
                     <p>You need to be logged in to cast a vote.</p>
                     `,
                 });
