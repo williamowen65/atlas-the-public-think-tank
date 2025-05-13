@@ -16,19 +16,24 @@
         </div>
         <div class="flex-fill d-flex flex-column">
 
-            <div class="card-header d-flex justify-content-between" style="border-left:var(--bs-card-border-width) solid var(--bs-card-border-color); border-top-left-radius: 0;">
-                <div>
+            <div class="card-header d-flex justify-content-between flex-column flex-md-row "  style="border-left:var(--bs-card-border-width) solid var(--bs-card-border-color); border-top-left-radius: 0; ">
+               
+                
 
-                <h5 class="mb-0">@Model.Title</h5>
+                <h5 class="mb-0">
+                    @* Title and this float need to be next to each other for float styling to work. *@
+                    <div style="font-size:20px;" class="float-end">
+                        @Html.Partial("~/Views/Shared/Icons/_Solutions.cshtml")
+                        @Html.Partial("~/Views/Shared/Icons/_SubIssues.cshtml")
+                        @Html.Partial("~/Views/Shared/Icons/_Comments.cshtml")
+                        @Html.Partial("~/Views/Shared/Icons/_ParentIssue.cshtml")
+                    </div>
+                    @Model.Title
+                </h5>
                 <small class="text-muted">Posted by @Model.Author?.UserName on @Model.CreatedAt.ToString("MMM dd, yyyy")</small>
-                </div>
+             
 
-                <div style="font-size:20px;">
-                    @Html.Partial("~/Views/Shared/Icons/_Solutions.cshtml")
-                    @Html.Partial("~/Views/Shared/Icons/_SubIssues.cshtml")
-                    @Html.Partial("~/Views/Shared/Icons/_Comments.cshtml")
-                    @Html.Partial("~/Views/Shared/Icons/_ParentIssue.cshtml")
-                </div>
+
             </div>
             <div class="card-body d-flex flex-column justify-content-between">
                 <p>@Model.Content</p>
