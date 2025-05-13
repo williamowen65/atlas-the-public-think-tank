@@ -13,17 +13,17 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
     }
 
 
-    public DbSet<Forum> Forums { get; set; }
+    public DbSet<Issue> Issues { get; set; }
     public DbSet<Solution> Solutions { get; set; }
     public DbSet<UserComment> Comments { get; set; }
     public DbSet<Category> Categories { get; set; }
     public DbSet<Scope> Scopes { get; set; }
     public DbSet<BlockedContent> BlockedContents { get; set; }
     public DbSet<UserVote> UserVotes { get; set; }
-    public DbSet<ForumVote> ForumVotes { get; set; }
+    public DbSet<IssueVote> IssueVotes { get; set; }
     public DbSet<SolutionVote> SolutionVotes { get; set; }
     public DbSet<CommentVote> CommentVotes { get; set; }
-    public DbSet<ForumCategory> ForumCategories { get; set; }
+    public DbSet<IssueCategory> IssueCategories { get; set; }
     public DbSet<UserHistory> UserHistory { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -32,14 +32,14 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
         base.OnModelCreating(modelBuilder); // Ensure this is called
 
         // Configure schemas
-        modelBuilder.Entity<Forum>().ToTable("Forums", "forums");
-        modelBuilder.Entity<Solution>().ToTable("Solutions", "forums");
-        modelBuilder.Entity<UserComment>().ToTable("Comments", "forums");
-        modelBuilder.Entity<Category>().ToTable("Categories", "forums");
-        modelBuilder.Entity<Scope>().ToTable("Scopes", "forums");
-        modelBuilder.Entity<BlockedContent>().ToTable("BlockedContent", "forums");
-        modelBuilder.Entity<UserVote>().ToTable("UserVotes", "forums");
-        modelBuilder.Entity<ForumCategory>().ToTable("ForumsCategories", "forums");
+        modelBuilder.Entity<Issue>().ToTable("Issues", "issues");
+        modelBuilder.Entity<Solution>().ToTable("Solutions", "issues");
+        modelBuilder.Entity<UserComment>().ToTable("Comments", "issues");
+        modelBuilder.Entity<Category>().ToTable("Categories", "issues");
+        modelBuilder.Entity<Scope>().ToTable("Scopes", "issues");
+        modelBuilder.Entity<BlockedContent>().ToTable("BlockedContent", "issues");
+        modelBuilder.Entity<UserVote>().ToTable("UserVotes", "issues");
+        modelBuilder.Entity<IssueCategory>().ToTable("IssuesCategories", "issues");
         modelBuilder.Entity<UserHistory>().ToTable("UserHistory", "users");
 
 
@@ -49,38 +49,38 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
 
         new SeedScopes(modelBuilder);
 
-        new SeedForums(modelBuilder);
+        new SeedIssues(modelBuilder);
 
-        new SeedForumCategories(modelBuilder);
+        new SeedIssueCategories(modelBuilder);
 
 
-        // Configure Forum entity
-        modelBuilder.Entity<Forum>(entity =>
+        // Configure Issue entity
+        modelBuilder.Entity<Issue>(entity =>
         {
-            entity.HasKey(e => e.ForumID);
+            entity.HasKey(e => e.IssueID);
             entity.Property(e => e.Title).HasMaxLength(200).IsRequired();
             entity.Property(e => e.Content).IsRequired();
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
 
             // Self-referencing relationship
-            entity.HasOne(e => e.ParentForum)
-                .WithMany(e => e.ChildForums)
-                .HasForeignKey(e => e.ParentForumID)
+            entity.HasOne(e => e.ParentIssue)
+                .WithMany(e => e.ChildIssues)
+                .HasForeignKey(e => e.ParentIssueID)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Relationships
             entity.HasOne(e => e.Author)
-                .WithMany(e => e.Forums)
+                .WithMany(e => e.Issues)
                 .HasForeignKey(e => e.AuthorID)
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(e => e.Scope)
-                .WithMany(e => e.Forums)
+                .WithMany(e => e.Issues)
                 .HasForeignKey(e => e.ScopeID)
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(e => e.BlockedContent)
-                .WithMany(e => e.Forums)
+                .WithMany(e => e.Issues)
                 .HasForeignKey(e => e.BlockedContentID)
                 .OnDelete(DeleteBehavior.Restrict);
         });
@@ -94,9 +94,9 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
             entity.Property(e => e.ContentStatus).IsRequired();
 
             // Relationships
-            entity.HasOne(e => e.Forum)
+            entity.HasOne(e => e.Issue)
                 .WithMany(e => e.Solutions)
-                .HasForeignKey(e => e.ForumID)
+                .HasForeignKey(e => e.IssueID)
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(e => e.Author)
@@ -123,14 +123,14 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Relationships
-            entity.HasOne(e => e.Forum)
+            entity.HasOne(e => e.Issue)
                 .WithMany(e => e.Comments)
-                .HasForeignKey(e => e.ForumID)
+                .HasForeignKey(e => e.IssueID)
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(e => e.Solution)
                 .WithMany(e => e.Comments)
-                .HasForeignKey(e => e.ForumSolutionID)
+                .HasForeignKey(e => e.IssueSolutionID)
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(e => e.Author)
@@ -160,20 +160,20 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
 
         
 
-        // Configure ForumCategory junction entity (composite key)
-        modelBuilder.Entity<ForumCategory>(entity =>
+        // Configure IssueCategory junction entity (composite key)
+        modelBuilder.Entity<IssueCategory>(entity =>
         {
-            entity.HasKey(e => new { e.CategoryID, e.ForumID });
+            entity.HasKey(e => new { e.CategoryID, e.IssueID });
 
             // Relationships
             entity.HasOne(e => e.Category)
-                .WithMany(e => e.ForumCategories)
+                .WithMany(e => e.IssueCategories)
                 .HasForeignKey(e => e.CategoryID)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasOne(e => e.Forum)
-                .WithMany(e => e.ForumCategories)
-                .HasForeignKey(e => e.ForumID)
+            entity.HasOne(e => e.Issue)
+                .WithMany(e => e.IssueCategories)
+                .HasForeignKey(e => e.IssueID)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
@@ -192,14 +192,14 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
                 .HasForeignKey(e => e.UserID)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasOne(e => e.Forum)
+            entity.HasOne(e => e.Issue)
                 .WithMany()
-                .HasForeignKey(e => e.ForumID)
+                .HasForeignKey(e => e.IssueID)
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(e => e.Solution)
                 .WithMany()
-                .HasForeignKey(e => e.ForumSolutionID)
+                .HasForeignKey(e => e.IssueSolutionID)
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(e => e.Comment)

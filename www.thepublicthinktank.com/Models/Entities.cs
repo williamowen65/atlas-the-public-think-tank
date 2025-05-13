@@ -13,7 +13,7 @@ namespace atlas_the_public_think_tank.Models
     {
 
         // Navigation properties
-        public virtual ICollection<Forum> Forums { get; set; }
+        public virtual ICollection<Issue> Issues { get; set; }
         public virtual ICollection<Solution> Solutions { get; set; }
         public virtual ICollection<UserComment> Comments { get; set; }
         public virtual ICollection<UserVote> UserVotes { get; set; }
@@ -27,7 +27,7 @@ namespace atlas_the_public_think_tank.Models
         public string ScopeName { get; set; }
 
         // Navigation properties
-        public virtual ICollection<Forum> Forums { get; set; }
+        public virtual ICollection<Issue> Issues { get; set; }
     }
 
     public class BlockedContent
@@ -36,7 +36,7 @@ namespace atlas_the_public_think_tank.Models
         public short? ReasonID { get; set; }
 
         // Navigation properties
-        public virtual ICollection<Forum> Forums { get; set; }
+        public virtual ICollection<Issue> Issues { get; set; }
         public virtual ICollection<Solution> Solutions { get; set; }
         public virtual ICollection<UserComment> Comments { get; set; }
     }
@@ -47,12 +47,12 @@ namespace atlas_the_public_think_tank.Models
         public string CategoryName { get; set; }
 
         // Navigation properties
-        public virtual ICollection<ForumCategory> ForumCategories { get; set; }
+        public virtual ICollection<IssueCategory> IssueCategories { get; set; }
     }
 
-    public class Forum
+    public class Issue
     {
-        public int ForumID { get; set; }
+        public int IssueID { get; set; }
         public string Title { get; set; }
         public string Content { get; set; }
 
@@ -61,19 +61,19 @@ namespace atlas_the_public_think_tank.Models
         public DateTime? ModifiedAt { get; set; }
         public string AuthorID { get; set; }
         public int ScopeID { get; set; }
-        public int? ParentForumID { get; set; }
+        public int? ParentIssueID { get; set; }
         public int? BlockedContentID { get; set; }
 
         // Navigation properties
         public virtual AppUser Author { get; set; }
         public virtual Scope Scope { get; set; }
-        public virtual Forum ParentForum { get; set; }
-        public virtual ICollection<Forum> ChildForums { get; set; }
+        public virtual Issue ParentIssue { get; set; }
+        public virtual ICollection<Issue> ChildIssues { get; set; }
         public virtual BlockedContent BlockedContent { get; set; }
         public virtual ICollection<Solution> Solutions { get; set; }
         public virtual ICollection<UserComment> Comments { get; set; }
         public virtual ICollection<UserVote> UserVotes { get; set; } = new List<UserVote>();
-        public virtual ICollection<ForumCategory> ForumCategories { get; set; }
+        public virtual ICollection<IssueCategory> IssueCategories { get; set; }
     }
 
 
@@ -82,7 +82,7 @@ namespace atlas_the_public_think_tank.Models
     public class Solution
     {
         public int SolutionID { get; set; }
-        public int ForumID { get; set; }
+        public int IssueID { get; set; }
         public string Title { get; set; }
         public string Content { get; set; }
         public ContentStatus ContentStatus { get; set; }
@@ -92,7 +92,7 @@ namespace atlas_the_public_think_tank.Models
         public int? BlockedContentID { get; set; }
 
         // Navigation properties
-        public virtual Forum Forum { get; set; }
+        public virtual Issue Issue { get; set; }
         public virtual AppUser Author { get; set; }
         public virtual BlockedContent BlockedContent { get; set; }
         public virtual ICollection<UserComment> Comments { get; set; }
@@ -108,8 +108,8 @@ namespace atlas_the_public_think_tank.Models
     public class UserComment
     {
         public int CommentID { get; set; }
-        public int? ForumID { get; set; }
-        public int? ForumSolutionID { get; set; }
+        public int? IssueID { get; set; }
+        public int? IssueSolutionID { get; set; }
         public string Comment { get; set; }
         public ContentStatus ContentStatus { get; set; }
         public string AuthorID { get; set; }
@@ -119,7 +119,7 @@ namespace atlas_the_public_think_tank.Models
         public int? BlockedContentID { get; set; }
 
         // Navigation properties
-        public virtual Forum Forum { get; set; }
+        public virtual Issue Issue { get; set; }
         public virtual Solution Solution { get; set; }
         public virtual AppUser Author { get; set; }
         public virtual UserComment ParentComment { get; set; }
@@ -137,8 +137,8 @@ namespace atlas_the_public_think_tank.Models
         public DateTime CreatedAt { get; set; }
         public DateTime? ModifiedAt { get; set; }
 
-        public int? ForumID { get; set; }
-        public int? ForumSolutionID { get; set; }
+        public int? IssueID { get; set; }
+        public int? IssueSolutionID { get; set; }
         public int? CommentID { get; set; }
 
         // Navigation property
@@ -147,12 +147,12 @@ namespace atlas_the_public_think_tank.Models
 
     public enum VoteType
     {
-        Forum,
+        Issue,
         Solution,
         Comment
     }
 
-    public class ForumVote : UserVote
+    public class IssueVote : UserVote
     {
 
         // Navigation property
@@ -171,14 +171,14 @@ namespace atlas_the_public_think_tank.Models
     }
 
 
-    public class ForumCategory
+    public class IssueCategory
     {
         public int CategoryID { get; set; }
-        public int ForumID { get; set; }
+        public int IssueID { get; set; }
 
         // Navigation properties
         public virtual Category Category { get; set; }
-        public virtual Forum Forum { get; set; }
+        public virtual Issue Issue { get; set; }
     }
 
     public class UserHistory
@@ -187,15 +187,15 @@ namespace atlas_the_public_think_tank.Models
         public string UserID { get; set; }
         public string Action { get; set; }
         public string Link { get; set; }
-        public int? ForumID { get; set; }
-        public int? ForumSolutionID { get; set; }
+        public int? IssueID { get; set; }
+        public int? IssueSolutionID { get; set; }
         public int? CommentID { get; set; }
         public int? UserVote { get; set; }
         public DateTime Timestamp { get; set; }
 
         // Navigation properties
         public virtual AppUser User { get; set; }
-        public virtual Forum Forum { get; set; }
+        public virtual Issue Issue { get; set; }
         public virtual Solution Solution { get; set; }
         public virtual UserComment Comment { get; set; }
     }

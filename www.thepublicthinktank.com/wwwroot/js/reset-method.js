@@ -1,9 +1,9 @@
 /**
  * Adds a reset method to the container that resets the dial to the default position
  */
-function createDialResetMethod(container, forumId, observer, dialId, options, state) {
+function createDialResetMethod(container, issueId, observer, dialId, options, state) {
     container.reset = function (silent = false) {
-        console.log(`Resetting vote dial for forum ${forumId}`);
+        console.log(`Resetting vote dial for issue ${issueId}`);
 
         // Disable the observer temporarily
         const observerState = observer.takeRecords();
@@ -39,7 +39,7 @@ function createDialResetMethod(container, forumId, observer, dialId, options, st
                     setupScrollEvents(containerToReset, dialId, state);
                     
                     // Recreate the reset method on the new container (recursive but will only happen once)
-                    createDialResetMethod(containerToReset, forumId, observer, dialId, options, state);
+                    createDialResetMethod(containerToReset, issueId, observer, dialId, options, state);
                 }
                 
                 // Set scroll position with or without animation

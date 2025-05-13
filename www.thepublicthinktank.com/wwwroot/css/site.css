@@ -88,18 +88,12 @@ header.main-header {
     box-shadow: none;
 }
 
-
-
-.plain-text-alert {
-    margin: 0 !important;
-    padding: 0 !important;
-    background: none !important;
-    color: inherit !important;
-    box-shadow: none !important;
-    border: none !important;
-    font-weight:bold;
+svg.parent-issue-icon {
+    height: 17px;
+    width: 17px;
 }
-
-#header-alert-target .alert-container {
-    transform: translateY(10px);
+.card svg.parent-issue-icon {
+    height: 24px !important;
+    width: 24px;
+    transform: translateY(-4px);
 }

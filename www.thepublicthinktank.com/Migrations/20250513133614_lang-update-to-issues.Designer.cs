@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using atlas_the_public_think_tank.Data;
 
@@ -11,9 +12,11 @@ using atlas_the_public_think_tank.Data;
 namespace atlas_the_public_think_tank.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250513133614_lang-update-to-issues")]
+    partial class langupdatetoissues
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -271,7 +274,7 @@ namespace atlas_the_public_think_tank.Migrations
 
                     b.HasKey("BlockedContentID");
 
-                    b.ToTable("BlockedContent", "issues");
+                    b.ToTable("BlockedContent", "forums");
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.Category", b =>
@@ -288,7 +291,7 @@ namespace atlas_the_public_think_tank.Migrations
 
                     b.HasKey("CategoryID");
 
-                    b.ToTable("Categories", "issues");
+                    b.ToTable("Categories", "forums");
 
                     b.HasData(
                         new
@@ -384,14 +387,14 @@ namespace atlas_the_public_think_tank.Migrations
 
                     b.HasIndex("ScopeID");
 
-                    b.ToTable("Issues", "issues");
+                    b.ToTable("Issues", "forums");
 
                     b.HasData(
                         new
                         {
                             IssueID = 1,
                             AuthorID = "1a61454c-5b83-4aab-8661-96d6dffbee30",
-                            Content = "A issue to discuss practical solutions to climate change at individual and policy levels.",
+                            Content = "A forum to discuss practical solutions to climate change at individual and policy levels.",
                             ContentStatus = 1,
                             CreatedAt = new DateTime(2024, 1, 15, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             ScopeID = 1,
@@ -433,7 +436,7 @@ namespace atlas_the_public_think_tank.Migrations
 
                     b.HasIndex("IssueID");
 
-                    b.ToTable("IssuesCategories", "issues");
+                    b.ToTable("IssuesCategories", "forums");
 
                     b.HasData(
                         new
@@ -497,7 +500,7 @@ namespace atlas_the_public_think_tank.Migrations
 
                     b.HasKey("ScopeID");
 
-                    b.ToTable("Scopes", "issues");
+                    b.ToTable("Scopes", "forums");
 
                     b.HasData(
                         new
@@ -566,7 +569,7 @@ namespace atlas_the_public_think_tank.Migrations
 
                     b.HasIndex("IssueID");
 
-                    b.ToTable("Solutions", "issues");
+                    b.ToTable("Solutions", "forums");
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.UserComment", b =>
@@ -619,7 +622,7 @@ namespace atlas_the_public_think_tank.Migrations
 
                     b.HasIndex("ParentCommentID");
 
-                    b.ToTable("Comments", "issues");
+                    b.ToTable("Comments", "forums");
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.UserHistory", b =>
@@ -724,7 +727,7 @@ namespace atlas_the_public_think_tank.Migrations
 
                     b.HasIndex("UserID");
 
-                    b.ToTable("UserVotes", "issues");
+                    b.ToTable("UserVotes", "forums");
 
                     b.HasDiscriminator().HasValue("UserVote");
 
