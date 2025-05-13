@@ -1,0 +1,124 @@
+﻿@model Issue_ReadVM;
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<div class="container mt-3  ">
+
+    @Html.Partial("~/Views/Issue/_issue-page-post.cshtml", Model)
+
+
+    <nav>
+        <div class="nav nav-tabs" id="nav-tab" role="tablist">
+            <button class="nav-link active" id="solutions-tab" data-bs-toggle="tab" data-bs-target="#solutions" type="button" role="tab" aria-controls="nav-home" aria-selected="true">
+                <i class="fa-solid fa-puzzle-piece"></i>
+                Solutions
+            </button>
+            <button class="nav-link" id="issue-comments-tab" data-bs-toggle="tab" data-bs-target="#issue-comments" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
+                <i class="fas fa-comments text-muted"></i>
+                Comments
+            </button>
+            <button class="nav-link" id="sub-issues-tab" data-bs-toggle="tab" data-bs-target="#sub-issues" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
+                <i class="fa-solid fa-thumbtack"></i>
+                Sub-Issues
+            </button> 
+            <button class="nav-link d-flex align-items-center" id="parent-issue-tab" data-bs-toggle="tab" data-bs-target="#parent-issue" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
+                <div class="me-2">
+                    @Html.Partial("~/Views/Shared/Icons/_Podium.cshtml")
+                </div>
+
+                Parent Issue
+            </button>
+            <li class="nav-item dropdown ms-auto">
+                <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">
+                    <i class="fa-solid fa-filter"></i>  
+                    Filter</a>  
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#">Action</a></li>
+                </ul>
+            </li>
+        </div>
+    </nav>
+    <div class="tab-content" id="nav-tabContent">
+        <div class="tab-pane fade show active border border-1 border-top-0" id="solutions" role="tabpanel" aria-labelledby="solutions-tab" tabindex="0">
+
+            @if (Model.Solutions.Count() == 0)
+            {
+                <div id="empty-issueView-solution-feed" class="empty-feed">
+                    <div class="comment-feed">
+                        <div class="content">
+                            <h2>Empty Solution Feed</h2>
+                            <a href="@Url.Action("CreateSolution","CRUDIssue")">
+                                <button>Create a Solution</button>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+
+                <p>RENDER Solution feed for this issue</p>
+
+            }
+
+        </div>
+        <div class="tab-pane fade border border-1 border-top-0" id="issue-comments" role="tabpanel" aria-labelledby="issue-comments-tab" tabindex="0">
+
+            @if (Model.Comments.Count() == 0)
+            {
+                <div id="empty-issueView-comment-feed" class="empty-feed">
+                    <div class="comment-feed">
+                        <div class="content">
+                            <h2>Empty Comment Feed</h2>
+                            <button>Start a Discussion</button>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+
+                <p>Comment feed for this issue</p>
+            }
+        </div>
+        <div class="tab-pane fade border border-1 border-top-0" id="sub-issues" role="tabpanel" aria-labelledby="sub-issues-tab" tabindex="0">
+            @if (Model.SubIssues.Count() == 0)
+            {
+                <div id="empty-issueView-sub-issues-feed" class="empty-feed">
+
+                    <div class="comment-feed">
+                        <div class="content">
+                            <h2>Empty Sub Issues Feed</h2>
+                            <button>Create Sub-Issue</button>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                foreach (Issue_ReadVM model in Model.SubIssues)
+                {
+
+                    // Fetch the sub issue
+                    @Html.Partial("~/Views/Issue/_issue-card-mini.cshtml",model);
+                }
+
+                <p>Sub-Issue feed for this issue</p>
+            }
+        </div>
+        
+        <div class="tab-pane fade border border-1 border-top-0" id="parent-issue" role="tabpanel" aria-labelledby="parent-issue-tab" tabindex="0">
+            @if (Model.ParentIssueVM != null)
+            {
+                @Html.Partial("~/Views/Issue/_issue-card-mini.cshtml", Model.ParentIssueVM);
+            }
+            else
+            {
+                <p>There is no parent issue</p>
+            }
+        </div>
+
+
+       
+</div>  

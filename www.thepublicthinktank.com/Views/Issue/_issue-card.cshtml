@@ -1,0 +1,68 @@
+﻿@model Issue_ReadVM
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    Console.WriteLine();
+
+
+   
+}
+
+<div class="card mb-3 " id="issue-@Model.IssueID">
+    <div class="d-flex flex-row">
+
+    <div class="dial-container">
+    </div>
+    <div class="flex-fill d-flex flex-column">
+
+            <div class="card-header" style="border-left:var(--bs-card-border-width) solid var(--bs-card-border-color); border-top-left-radius: 0;">
+        <h5 class="mb-0">@Model.Title</h5>
+        <small class="text-muted">Posted by @Model.Author?.UserName on @Model.CreatedAt.ToString("MMM dd, yyyy")</small>
+    </div>
+            <div class="card-body d-flex flex-column justify-content-between">
+        <p>@Model.Content</p>
+
+        @if (Model.Categories != null && Model.Categories.Any())
+        {
+            <div class="mt-2">
+                @foreach (var category in Model.Categories)
+                {
+                    <span class="badge bg-secondary me-1">@category.CategoryName</span>
+                }
+            </div>
+        }
+    </div>
+    </div>
+    
+    </div>
+    <div class="card-footer d-flex justify-content-between">
+        <div class="" id="card-@Model.IssueID-footer-alert">
+            
+        </div>
+        <div class="">
+            <a href="@Url.Action("ReadIssue", "CRUDIssue", new { id = Model.IssueID })" class="btn btn-sm btn-outline-primary">View</a>
+            <a href="#" class="btn btn-sm btn-outline-secondary">Share</a>
+            <a href="#" class="btn btn-sm btn-outline-secondary">Follow</a>
+        </div>
+    </div>
+
+</div>
+
+@* This script does load with cshtml because it is part of the initial page load *@
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("/Issue/GetVoteDial?issueId=@Model.IssueID")
+            .then(data => data.text())
+            .then(data => {
+                console.log({data})
+                const thisElement = document.querySelector('#issue-@Model.IssueID')
+                const dialContainer = thisElement.querySelector('.dial-container');
+                if (dialContainer) {
+                    dialContainer.innerHTML = data; 
+                    initializeVoteDial(@Model.IssueID);
+                }
+            })
+            .catch(error => console.error('Error fetching vote dial:', error));
+    });
+</script>

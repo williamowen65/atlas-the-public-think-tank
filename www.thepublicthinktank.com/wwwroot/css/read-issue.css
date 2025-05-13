@@ -1,0 +1,68 @@
+﻿#empty-issueView-solution-feed {
+
+/*    background: blue;*/
+
+
+}
+
+.empty-feed {
+
+    height: 400px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+}
+
+.comment-feed {
+    position: relative;
+    padding: 2.4rem;
+    background-color: var(--bs-tertiary-bg);
+    border: 4px dashed var(--bs-secondary-color);
+    border-radius: 16px;
+    text-align: center;
+    overflow: hidden;
+}
+
+    /* Inner dashed box with pseudo-elements */
+    .comment-feed::before,
+    .comment-feed::after {
+        content: "";
+        position: absolute;
+        border-style: dashed;
+        border-color: var(--bs-secondary-color);
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    /* Horizontal upper line */
+    .comment-feed::before, .comment-feed::after {
+        top: 0.65rem;
+        left: 1.25rem;
+        right: 1.25rem;
+        height: 0;
+        border-width: 0 0 2px 0;
+    }
+    .comment-feed::after {
+        top: revert;
+        bottom: 0.65rem;
+    }
+        /* Optional: Responsive content */
+        .comment-feed .content {
+            position: relative;
+            z-index: 1;
+        }
+
+    .comment-feed button {
+        margin-top: 1rem;
+        padding: 0.75rem 1.5rem;
+        background-color: var(--bs-primary);
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        cursor: pointer;
+        font-weight: bold;
+        /*Hard coded color style for button text, not themed */
+        color: #53fc00; 
+    }
+

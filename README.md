@@ -26,7 +26,7 @@ Atlas boasts a wide range of features to enhance user experience and facilitate 
 
 - [x] **User Authentication**: Secure login and registration system.  
 - [x] **Profile Management**: Users can create and manage their profiles, showcasing their skills and interests.  
-- [x] **Discussion Forums**: Dedicated spaces for users to engage in discussions on various topics.  
+- [x] **Discussion Issues**: Dedicated spaces for users to engage in discussions on various topics.  
 - [x] **Idea Sharing**: Users can post ideas, articles, and projects for feedback and collaboration.  
 - [x] **Search Functionality**: Advanced search to find users, ideas, and projects based on keywords and tags.  
 - [x] **Feedback System**: Users can provide feedback on ideas and projects, fostering a culture of constructive criticism.  

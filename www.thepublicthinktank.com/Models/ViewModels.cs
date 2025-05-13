@@ -3,11 +3,11 @@ namespace atlas_the_public_think_tank.Models
 
     public class HomeIndexViewModel
     {
-        public List<Forum_ReadVM> Forums { get; set; } = new List<Forum_ReadVM>();
+        public List<Issue_ReadVM> Issues { get; set; } = new List<Issue_ReadVM>();
         public List<Category_ReadVM> Categories { get; set; } = new List<Category_ReadVM>();
     }
 
-    public class Forum_CreateVM
+    public class Issue_CreateVM
     {
         public string Title { get; set; }
         public string Content { get; set; }
@@ -17,67 +17,41 @@ namespace atlas_the_public_think_tank.Models
 
         public List<int> SelectedCategoryIds { get; set; } = new List<int>();
         public int ScopeID { get; set; }
-        public int? ParentForumID { get; set; }
+        public int? ParentIssueID { get; set; }
 
         public List<Scope> Scopes { get; set; } = new List<Scope>();
     }
 
-    public class Thread_ReadVM
-    {
-        public int Id { get; set; }
-        public string Title { get; set; }
-        public string Description { get; set; }
-        public bool IsPinned { get; set; }
-        public bool IsClosed { get; set; }
-        public DateTime CreatedDate { get; set; }
-        public DateTime LastActivityDate { get; set; }
-        public int ViewCount { get; set; }
-        public AppUser_ReadVM CreatedByUser { get; set; }
-        public List<Post_ReadVM> Posts { get; set; } = new();
-        public Post_ReadVM LastPost { get; set; }
-    }
-
-    public class AppUser_ReadVM
-    {
-        public string UserName { get; set; }
-        public string AvatarUrl { get; set; }
-    }
-
-    public class Post_ReadVM
-    {
-        public DateTime CreatedDate { get; set; }
-        public AppUser_ReadVM CreatedByUser { get; set; }
-    }
 
 
-    public class Forum_ReadVM
+    public class Issue_ReadVM
     {
-        public int ForumID { get; set; }
+        public int IssueID { get; set; }
         public string Title { get; set; }
         public string Content { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? ModifiedAt { get; set; }
         public DateTime? LastActivity { get; set; }
         public string AuthorID { get; set; }
-        public List<Thread_ReadVM> Threads { get; set; } = new();
-        public List<AppUser_ReadVM> Users { get; set; } = new();
         public int ScopeID { get; set; }
-        public int? ParentForumID { get; set; }
+        public int? ParentIssueID { get; set; }
         public int? BlockedContentID { get; set; }
         public List<Category_ReadVM> Categories { get; set; } = new List<Category_ReadVM>();
+        public List<Issue_ReadVM> SubIssues { get; set; } = new List<Issue_ReadVM>();
 
+        public Issue_ReadVM? ParentIssueVM { get; set; }
 
 
         // Navigation properties
         public AppUser Author { get; set; }
         public Scope Scope { get; set; }
-        public Forum ParentForum { get; set; }
-        public ICollection<Forum> ChildForums { get; set; }
+        public Issue ParentIssue { get; set; }
+        public ICollection<Issue> ChildIssues { get; set; }
         public BlockedContent BlockedContent { get; set; }
         public ICollection<Solution> Solutions { get; set; }
         public ICollection<UserComment> Comments { get; set; }
         public ICollection<UserVote> UserVotes { get; set; }
-        public ICollection<ForumCategory> ForumCategories { get; set; }
+        public ICollection<IssueCategory> IssueCategories { get; set; }
     }
 
     public class Category_ReadVM
@@ -88,9 +62,9 @@ namespace atlas_the_public_think_tank.Models
     
 
 
-    public class UserVote_Forum_ReadVM
+    public class UserVote_Issue_ReadVM
     {
-        public int ForumID { get; set; }
+        public int IssueID { get; set; }
         
         // A user may have voted and if so, when loading the dial, their vote should be cast
         public int? UserVote { get; set; }
@@ -104,9 +78,9 @@ namespace atlas_the_public_think_tank.Models
         public double AverageVote { get; set;  } = 0;
     }
 
-    public class UserVote_Forum_CreateVM
+    public class UserVote_Issue_CreateVM
     {
-        public int ForumID { get; set; }
+        public int IssueID { get; set; }
         public int VoteValue { get; set; }
 
         //public AppUser User { get; set; } // The user is captured via injection

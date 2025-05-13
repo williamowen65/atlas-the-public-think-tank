@@ -1,4 +1,4 @@
-﻿ @model Forum_CreateVM 
+﻿ @model Issue_CreateVM 
 
  @using atlas_the_public_think_tank.Models 
  @{ 
@@ -12,7 +12,7 @@
                      <h4>Create New Post</h4> 
                  </div> 
                  <div class="card-body"> 
-                     <form asp-action="CreateForum" method="post"> 
+                     <form asp-action="CreateIssue" method="post"> 
                          <div asp-validation-summary="ModelOnly" class="text-danger"></div> 
 
                          <div class="mb-3"> 
@@ -44,9 +44,9 @@
                           </div> 
 
                          <div class="mb-3"> 
-                             <label asp-for="ParentForumID" class="form-label">Parent Post (Optional)</label> 
-                             <input asp-for="ParentForumID" class="form-control" /> 
-                             <span asp-validation-for="ParentForumID" class="text-danger"></span> 
+                             <label asp-for="ParentIssueID" class="form-label">Parent Post (Optional)</label> 
+                             <input asp-for="ParentIssueID" class="form-control" /> 
+                             <span asp-validation-for="ParentIssueID" class="text-danger"></span> 
                          </div> 
 
                          <div class="mb-3">

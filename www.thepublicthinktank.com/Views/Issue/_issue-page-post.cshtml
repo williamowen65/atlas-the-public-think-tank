@@ -1,4 +1,4 @@
-﻿@model Forum_ReadVM
+﻿    @model Issue_ReadVM
 @*
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
@@ -9,7 +9,7 @@
 
 }
 
-<div class="card mb-3 " id="forum-@Model.ForumID">
+<div class="card mb-3 " id="issue-@Model.IssueID">
     <div class="d-flex flex-row">
 
         <div class="dial-container">
@@ -53,15 +53,15 @@
 @* This script does load with cshtml because it is part of the initial page load *@
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-      fetch("/Forum/GetVoteDial?forumId=@Model.ForumID")
+      fetch("/Issue/GetVoteDial?issueId=@Model.IssueID")
             .then(data => data.text())
             .then(data => {
                 console.log({data})
-                const thisElement = document.querySelector('#forum-@Model.ForumID')
+                const thisElement = document.querySelector('#issue-@Model.IssueID')
                 const dialContainer = thisElement.querySelector('.dial-container');
                 if (dialContainer) {
                     dialContainer.innerHTML = data;
-                    initializeVoteDial(@Model.ForumID);
+                    initializeVoteDial(@Model.IssueID);
                 }
             })
             .catch(error => console.error('Error fetching vote dial:', error));

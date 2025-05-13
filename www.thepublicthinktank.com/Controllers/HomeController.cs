@@ -30,23 +30,23 @@ public class HomeController : Controller
         using var client = new HttpClient();
         client.BaseAddress = new Uri($"{Request.Scheme}://{Request.Host}");
 
-        // Create a view model to hold both forums and categories
+        // Create a view model to hold both issues and categories
         var viewModel = new HomeIndexViewModel();
 
-        // Fetch forums
-        var forumResponse = await client.GetAsync("/api/posts");
-        if (forumResponse.IsSuccessStatusCode)
+        // Fetch issues
+        var issueResponse = await client.GetAsync("/api/posts");
+        if (issueResponse.IsSuccessStatusCode)
         {
-            var jsonString = await forumResponse.Content.ReadAsStringAsync();
-            viewModel.Forums = JsonSerializer.Deserialize<List<Forum_ReadVM>>(jsonString, new JsonSerializerOptions
+            var jsonString = await issueResponse.Content.ReadAsStringAsync();
+            viewModel.Issues = JsonSerializer.Deserialize<List<Issue_ReadVM>>(jsonString, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             });
         }
         else
         {
-            _logger.LogError($"Failed to fetch posts. Status Code: {forumResponse.StatusCode}");
-            viewModel.Forums = new List<Forum_ReadVM>();
+            _logger.LogError($"Failed to fetch posts. Status Code: {issueResponse.StatusCode}");
+            viewModel.Issues = new List<Issue_ReadVM>();
         }
 
         // Fetch categories

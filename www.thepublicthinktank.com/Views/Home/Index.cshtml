@@ -5,18 +5,18 @@
 
 <div class="container-fluid">
     <div class="row">
-        <!-- Main content with forums -->
+        <!-- Main content with issues -->
         <div class="col-md-9">
             <div class="my-3">
-                <a href="/create-forum" class="btn btn-primary">Create New Post</a>
+                <a href="/create-issue" class="btn btn-primary">Create New Post</a>
             </div>
 
-            @if (Model.Forums != null && Model.Forums.Any())
+            @if (Model.Issues != null && Model.Issues.Any())
             {
-                @foreach (var forum in Model.Forums)
+                @foreach (var issue in Model.Issues)
                 {
 
-                    @Html.Partial("~/Views/Forum/_forum-card.cshtml", forum)
+                    @Html.Partial("~/Views/Issue/_issue-card.cshtml", issue)
                 }
             }
             else

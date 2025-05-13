@@ -1,25 +1,25 @@
-﻿@model UserVote_Forum_ReadVM
+﻿@model UserVote_Issue_ReadVM
 
 @*
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
 @{
-    // Generate unique IDs using the forum ID
-    var dialId = $"vote-dial-{Model.ForumID}";
-    var lensId = $"vote-lens-{Model.ForumID}";
-    var outlineId = $"vote-outline-{Model.ForumID}";
+    // Generate unique IDs using the issue ID
+    var dialId = $"vote-dial-{Model.IssueID}";
+    var lensId = $"vote-lens-{Model.IssueID}";
+    var outlineId = $"vote-outline-{Model.IssueID}";
 }
 
-@* forum @Model.ForumID *@
-<form method="post" action="/forum/vote"  class="dial mb-2" style="width: 100px; height: 190px; user-select:none;">
+@* issue @Model.IssueID *@
+<form method="post" action="/issue/vote"  class="dial mb-2" style="width: 100px; height: 190px; user-select:none;">
     
     @Html.Partial("_voteAverage.cshtml")
     
     <div class="vote-dial-toggle @(Model.UserVote.HasValue ? "user-voted" : "") mb-1">
-        <div id="vote-toggle-container-@Model.ForumID" class="vote-toggle-container">
+        <div id="vote-toggle-container-@Model.IssueID" class="vote-toggle-container">
             @for (int i = 10; i >= 0; i--)
             {
-                var radioId = $"vote-{Model.ForumID}-{i}";
+                var radioId = $"vote-{Model.IssueID}-{i}";
                 <input class="" id="@radioId" type="radio" name="@dialId" value="@i" @(i == (Model.UserVote ?? 5) ? "checked" : "") />
             }
 
@@ -29,8 +29,8 @@
           
             @for (int i = 11; i >= -1; i--)
             {
-                var radioId = $"vote-{Model.ForumID}-{i}";
-                var optionClass = $"vote-option-{Model.ForumID}-{i}";
+                var radioId = $"vote-{Model.IssueID}-{i}";
+                var optionClass = $"vote-option-{Model.IssueID}-{i}";
                 <label role="button" for="@radioId" class="toggle-option @optionClass">
                     <span>@(i == 11 || i == -1 ? "" : i.ToString())</span>
                 </label>
@@ -47,8 +47,8 @@
         /* Position the lens based on which radio is selected */     
         @for (int i = 10; i >= 0; i--)
         {
-            var radioId = $"vote-{Model.ForumID}-{i}";
-            var optionClass = $"vote-option-{Model.ForumID}-{i}";
+            var radioId = $"vote-{Model.IssueID}-{i}";
+            var optionClass = $"vote-option-{Model.IssueID}-{i}";
             <text>
             #@radioId:checked ~ .lens {
                 transform: translateY(@(36 * (11 - i))px);
@@ -63,7 +63,7 @@
         /* Style for the labels */
         @for (int i = 11; i >= -1; i--)
         {
-            var optionClass = $"vote-option-{Model.ForumID}-{i}";
+            var optionClass = $"vote-option-{Model.IssueID}-{i}";
             <text>
             .@optionClass {
                 position: absolute;

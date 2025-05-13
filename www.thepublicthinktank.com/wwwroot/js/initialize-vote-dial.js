@@ -1,7 +1,7 @@
-﻿function getDialElements(forumId) {
-    const containerId = `vote-toggle-container-${forumId}`;
+﻿function getDialElements(issueId) {
+    const containerId = `vote-toggle-container-${issueId}`;
     const container = document.getElementById(containerId);
-    const dialId = `vote-dial-${forumId}`;
+    const dialId = `vote-dial-${issueId}`;
     const options = Array.from(container.querySelectorAll('.toggle-option'));
     const radios = Array.from(document.querySelectorAll(`input[name="${dialId}"]`));
 
@@ -13,18 +13,18 @@
 /**
  * This is called multiple times on the same page for multiple dials
  * It knows where to add the dial to the DOM and will set all related events
- * @param {int} forumId - used to fetch the correct dial data
+ * @param {int} issueId - used to fetch the correct dial data
  * @returns void. 
  */
-function initializeVoteDial(forumId) {
-    console.log("Vote dial initialized for forum ID:", forumId);
+function initializeVoteDial(issueId) {
+    console.log("Vote dial initialized for issue ID:", issueId);
     
     // Get essential elements
-    let {container, dialId} = getDialElements(forumId);
+    let {container, dialId} = getDialElements(issueId);
     if (!container) return;
     
     // Get options and radios
-    const { options, radios } = getDialElements(forumId);
+    const { options, radios } = getDialElements(issueId);
 
     
     
@@ -36,14 +36,14 @@ function initializeVoteDial(forumId) {
     };
     
     // Initialize components
-    const saveVoteDebounced = createDebouncedSaveVote(forumId);
+    const saveVoteDebounced = createDebouncedSaveVote(issueId);
     const observer = configureIntersectionObserver(container, options, state, dialId);
     
     // Set up UI and event handlers
     scrollToSelectedOption(container, dialId);
     setupScrollEvents(container, dialId, state);
     setupRadioChangeEvents(radios, saveVoteDebounced, container, state);
-    //createDialResetMethod(container, forumId, observer, dialId, options, state);
+    //createDialResetMethod(container, issueId, observer, dialId, options, state);
 }
 
 /**
@@ -128,19 +128,19 @@ function setupRadioChangeEvents(radios, saveVoteDebounced, container, state) {
 /**
  * Creates a debounced function for saving votes to the server
  */
-function createDebouncedSaveVote(forumId) {
-    const { container, dialId } = getDialElements(forumId);
+function createDebouncedSaveVote(issueId) {
+    const { container, dialId } = getDialElements(issueId);
     // Function to save vote to server with debouncing
     return debounce(function(voteValue) {
-        console.log(`Saving vote ${voteValue} for forum ${forumId}`);
+        console.log(`Saving vote ${voteValue} for issue ${issueId}`);
         
         const formData = new FormData();
-        formData.append('ForumID', forumId);
+        formData.append('IssueID', issueId);
         formData.append('VoteValue', voteValue);
         
         const voteNotCasted = "Vote not casted"
 
-        fetch('/Forum/Vote', {
+        fetch('/Issue/Vote', {
             method: 'POST',
             body: formData,
             headers: {
@@ -161,8 +161,8 @@ function createDebouncedSaveVote(forumId) {
             container.classList.add('user-voted');
 
             // update the vote average and the count
-            const averageElement = document.querySelector(`#vote-average-${forumId}`);
-            const countElement = document.querySelector(`#vote-count-${forumId}`);
+            const averageElement = document.querySelector(`#vote-average-${issueId}`);
+            const countElement = document.querySelector(`#vote-count-${issueId}`);
 
             if (averageElement && data.average !== undefined) {
                 averageElement.textContent = Number.isInteger(data.average) ? data.average.toString() : data.average.toFixed(1);
@@ -212,7 +212,7 @@ function createDebouncedSaveVote(forumId) {
                 });
 
                 client_CardFooter_Alert({
-                    cardId: forumId,
+                    cardId: issueId,
                     type: 'plaintext',
                     message: `
                   Vote not cast - Login required
@@ -276,9 +276,9 @@ function configureIntersectionObserver(container, options, state, dialId) {
 /**
  * Adds a reset method to the container that resets the dial to the default position
  */
-function createDialResetMethod(container, forumId, observer, dialId, options, state) {
+function createDialResetMethod(container, issueId, observer, dialId, options, state) {
     container.reset = function (silent = false) {
-        console.log(`Resetting vote dial for forum ${forumId}`);
+        console.log(`Resetting vote dial for issue ${issueId}`);
 
         // Disable the observer temporarily
         const observerState = observer.takeRecords();
@@ -311,14 +311,14 @@ function createDialResetMethod(container, forumId, observer, dialId, options, st
                     containerToReset = newContainer;
                     
                     // We need to recreate all event handlers and methods on the new container
-                    const saveVoteDebounced = createDebouncedSaveVote(forumId);
-                    const { options, radios } = getDialElements(forumId);
+                    const saveVoteDebounced = createDebouncedSaveVote(issueId);
+                    const { options, radios } = getDialElements(issueId);
                     // Recreate the reset method on the new container (recursive but will only happen once)
                     
                     scrollToSelectedOption(containerToReset, dialId);
                     setupScrollEvents(container, dialId, state);
                     setupRadioChangeEvents(radios, saveVoteDebounced, container, state);
-                    createDialResetMethod(containerToReset, forumId, observer, dialId, options, state);
+                    createDialResetMethod(containerToReset, issueId, observer, dialId, options, state);
                 }
                 
                 // Set scroll position with or without animation
