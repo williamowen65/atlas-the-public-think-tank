@@ -1,14 +1,25 @@
 ﻿function getDialElements(issueId) {
     const containerId = `vote-toggle-container-${issueId}`;
     const container = document.getElementById(containerId);
+
+    if (!container) {
+        console.error(`Container not found for issue ID: ${issueId}`);
+        return { container: null, dialId: null, options: [], radios: [] };
+    }
+
     const dialId = `vote-dial-${issueId}`;
+
+    // Scope these queries to within the container only
     const options = Array.from(container.querySelectorAll('.toggle-option'));
-    const radios = Array.from(document.querySelectorAll(`input[name="${dialId}"]`));
+
+    // Scope radio queries to within the container or to the specific name
+    const radios = Array.from(container.querySelectorAll(`input[name="${dialId}"]`));
 
     return {
         container, dialId, options, radios
     }
 }
+
 
 /**
  * This is called multiple times on the same page for multiple dials
@@ -20,11 +31,17 @@ function initializeVoteDial(issueId) {
     console.log("Vote dial initialized for issue ID:", issueId);
     
     // Get essential elements
-    let {container, dialId} = getDialElements(issueId);
-    if (!container) return;
-    
-    // Get options and radios
-    const { options, radios } = getDialElements(issueId);
+    const { container, dialId, options, radios } = getDialElements(issueId);
+
+    if (!container) {
+        console.error(`Cannot initialize dial for issue ${issueId}: container not found`);
+        return;
+    }
+
+    if (options.length === 0 || radios.length === 0) {
+        console.error(`Cannot initialize dial for issue ${issueId}: missing options or radios`);
+        return;
+    }
 
     
     
