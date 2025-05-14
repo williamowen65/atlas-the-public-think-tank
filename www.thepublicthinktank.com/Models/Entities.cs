@@ -1,6 +1,7 @@
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace atlas_the_public_think_tank.Models
 {
@@ -12,11 +13,15 @@ namespace atlas_the_public_think_tank.Models
     public class AppUser : IdentityUser
     {
 
-        // Navigation properties
+        [JsonIgnore]
         public virtual ICollection<Issue> Issues { get; set; }
+        [JsonIgnore]
         public virtual ICollection<Solution> Solutions { get; set; }
+        [JsonIgnore]
         public virtual ICollection<UserComment> Comments { get; set; }
+        [JsonIgnore]
         public virtual ICollection<UserVote> UserVotes { get; set; }
+        [JsonIgnore]
         public virtual ICollection<UserHistory> UserHistory { get; set; }
     }
 
@@ -27,6 +32,7 @@ namespace atlas_the_public_think_tank.Models
         public string ScopeName { get; set; }
 
         // Navigation properties
+        [JsonIgnore]
         public virtual ICollection<Issue> Issues { get; set; }
     }
 
@@ -87,11 +93,12 @@ namespace atlas_the_public_think_tank.Models
         public string Content { get; set; }
         public ContentStatus ContentStatus { get; set; }
         public string AuthorID { get; set; }
-        public DateTime? CreatedAt { get; set; }
+        public DateTime CreatedAt { get; set; }
         public DateTime? ModifiedAt { get; set; }
         public int? BlockedContentID { get; set; }
 
         // Navigation properties
+        [JsonIgnore]
         public virtual Issue Issue { get; set; }
         public virtual AppUser Author { get; set; }
         public virtual BlockedContent BlockedContent { get; set; }

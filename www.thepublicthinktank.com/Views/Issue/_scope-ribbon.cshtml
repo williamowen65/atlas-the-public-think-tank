@@ -1,0 +1,38 @@
+﻿@model Scope
+
+@{
+    // Handle the case where Model is null
+    string scopeName = Model?.ScopeName ?? "Unknown";
+}
+
+<div class="scope-ribbons">
+    @switch (scopeName)
+    {
+        case "Individual":
+            <div class="ribbon individual">
+                <text>👤</text>
+            </div>
+            break;
+        case "National":
+            <div class="ribbon national">
+                <text>🏛️</text>
+            </div>
+            break;
+        case "Local":
+            <div class="ribbon local">
+                <text>📍</text>
+            </div>
+            break;
+        case "Global":
+            <div class="ribbon global">
+                <text>🌍</text>
+            </div>
+            break;
+        default:
+            <div class="ribbon">
+                <text>❓</text>
+            </div>
+            break;
+    }
+</div>
+<div class="ribbon-spacer"></div>

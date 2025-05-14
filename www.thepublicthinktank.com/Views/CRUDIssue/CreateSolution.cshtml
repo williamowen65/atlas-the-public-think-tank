@@ -1,8 +1,118 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
-@{
+﻿@model Solution_CreateVM 
+
+@using atlas_the_public_think_tank.Models 
+@{ 
+    ViewData["Title"] = "Create New Solution"; 
+} 
+<form asp-action="CreateSolution" asp-controller="CRUDIssue"  method="post" class="mt-4"> 
+    @Html.AntiForgeryToken()
+    <div class="row"> 
+        <div class="col-12 col-md-8"> 
+            <div class="card"> 
+                <div class="card-header bg-success text-white"> 
+                    <h4>Create New Solution</h4> 
+                </div> 
+                <div class="card-body"> 
+                    <div> 
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div> 
+
+                        <div class="mb-3"> 
+                            <label asp-for="Title" class="form-label">Title</label> 
+                            <input asp-for="Title" class="form-control" /> 
+                            <span asp-validation-for="Title" class="text-danger"></span> 
+                        </div> 
+
+                        <div class="mb-3"> 
+                            <label asp-for="Content" class="form-label">Content</label> 
+                            <textarea asp-for="Content" class="form-control" rows="6"></textarea> 
+                            <span asp-validation-for="Content" class="text-danger"></span> 
+                        </div>
+
+                        <div class="d-flex justify-content-between"> 
+                            <button type="submit" class="btn btn-success">Submit Solution</button> 
+                            <a asp-action="Index" class="btn btn-secondary">Cancel</a> 
+                        </div> 
+                    </div> 
+                </div> 
+            </div> 
+        </div> 
+         <div class="col-12 col-md-4">
+            <div class="mb-3">
+                <label class="form-label">Categories (Tags)</label>
+                <select multiple name="SelectedCategoryIds" class="form-select select2"
+                        asp-items="@(new SelectList(Model.Categories, "CategoryID", "CategoryName"))">
+                </select>
+                <span asp-validation-for="SelectedCategoryIds" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="IssueID" class="form-label">Related Issue (Required)</label>                
+                <select asp-for="IssueID" class="form-control select2-issue" required>
+                    @if(Model.IssueID != null)
+                    {
+                        <option value="@Model.IssueID" selected>Current issue (ID: @Model.IssueID)</option>
+                    }
+                </select>
+                <span asp-validation-for="IssueID" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ContentStatus" class="form-label">Status</label>
+                <select asp-for="ContentStatus" class="form-select select2" asp-items="Html.GetEnumSelectList<ContentStatus>()">
+                </select>
+                <span asp-validation-for="ContentStatus" class="text-danger"></span>
+            </div>
+        </div>
+    </div> 
+</form> 
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        $(document).ready(function () {
+            // Initialize all select2 elements
+            $('.select2').select2({
+                width: '100%'
+            });
+
+            // IssueID select2 with AJAX and custom rendering
+            $('.select2-issue').select2({
+                width: '100%',
+                placeholder: 'Search for an issue...',
+                allowClear: false,
+                ajax: {
+                    url: '/api/issues/search',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return {
+                            q: params.term
+                        };
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: data.map(function (item) {
+                                return {
+                                    id: item.id,
+                                    text: item.title,
+                                    summary: item.summary
+                                };
+                            })
+                        };
+                    },
+                    cache: true
+                },
+                templateResult: function (item) {
+                    if (item.loading) return item.text;
+                    return $(
+                        '<div><strong>' + item.text + '</strong><br/><small>' + (item.summary || '') + '</small></div>'
+                    );
+                },
+                templateSelection: function (item) {
+                    return item.text || item.id;
+                }
+            });
+        });
+    </script>
 }
-
-
-Form for creating solution

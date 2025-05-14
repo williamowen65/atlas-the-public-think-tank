@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace atlas_the_public_think_tank.Controllers
 {
@@ -28,17 +29,20 @@ namespace atlas_the_public_think_tank.Controllers
         /// This method is used to return the create issue page.
         /// </summary>
         [Route("/create-issue")]
-        public IActionResult CreateIssue()
+        public IActionResult CreateIssue(int? parentIssueID)
         {
 
             Issue_CreateVM newIssue = new()
             {
                 Categories = _context.Categories.ToList(),
                 Scopes = _context.Scopes.ToList(),
+                ParentIssueID = parentIssueID
             };
 
             return View(newIssue);
         }
+
+
 
 
         /// <summary>
@@ -110,31 +114,56 @@ namespace atlas_the_public_think_tank.Controllers
             var posts = await _context.Issues
                 .Include(p => p.Scope)
                 .Include(p => p.Author)
+                .Include(f => f.ParentIssue)
+                .Include(f => f.ChildIssues)
+                .Include(f => f.BlockedContent)
+                .Include(f => f.Solutions)
+                .Include(f => f.Comments)
+                .Include(f => f.UserVotes)
                 .Include(p => p.IssueCategories)
                     .ThenInclude(fc => fc.Category)
-                .Select(p => new Issue_ReadVM
-                {
-                    IssueID = p.IssueID,
-                    Title = p.Title,
-                    Content = p.Content,
-                    CreatedAt = p.CreatedAt,
-                    ModifiedAt = p.ModifiedAt,
-                    AuthorID = p.AuthorID,
-                    ScopeID = p.ScopeID,
-                    ParentIssueID = p.ParentIssueID,
-                    BlockedContentID = p.BlockedContentID,
-                    Author = p.Author,
-                    Scope = p.Scope,
-                    Categories = p.IssueCategories.Select(fc => new Category_ReadVM
-                    {
-                        CategoryID = fc.Category.CategoryID,
-                        CategoryName = fc.Category.CategoryName
-                    })
-                    .ToList()
-                })
                 .ToListAsync();
 
-            return Ok(posts);
+            // Map the results to view models after retrieving from the database
+            var postsViewModel = posts.Select(p => new Issue_ReadVM
+            {
+                IssueID = p.IssueID,
+                Title = p.Title,
+                Content = p.Content,
+                CreatedAt = p.CreatedAt,
+                ModifiedAt = p.ModifiedAt,
+                AuthorID = p.AuthorID,
+                ScopeID = p.ScopeID,
+                ParentIssueID = p.ParentIssueID,
+                BlockedContentID = p.BlockedContentID,
+                Author = p.Author,
+                Scope = p.Scope,
+                Categories = p.IssueCategories.Select(fc => new Category_ReadVM
+                {
+                    CategoryID = fc.Category.CategoryID,
+                    CategoryName = fc.Category.CategoryName
+                })
+                    .ToList(),
+                SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == p.IssueID),
+                SubIssues = p.ChildIssues == null
+                        ? new List<Issue_ReadVM>()
+                        : p.ChildIssues.Select(child => new Issue_ReadVM
+                        {
+                            IssueID = child.IssueID,
+                            Title = child.Title,
+                            Content = child.Content,
+                            CreatedAt = child.CreatedAt,
+                            ModifiedAt = child.ModifiedAt,
+                            AuthorID = child.AuthorID,
+                            ScopeID = child.ScopeID,
+                            ParentIssueID = child.ParentIssueID,
+                            SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == child.IssueID),
+                        })
+                        .ToList(),
+                Solutions = p.Solutions
+            }).ToList();
+
+            return Ok(postsViewModel);
         }
 
 
@@ -161,6 +190,8 @@ namespace atlas_the_public_think_tank.Controllers
                 .ThenInclude(fc => fc.Category)
             .FirstOrDefaultAsync(f => f.IssueID == id);
 
+            Console.WriteLine("hi");
+
             if (issue == null)
             {
                 return NotFound();
@@ -179,6 +210,9 @@ namespace atlas_the_public_think_tank.Controllers
                     ScopeID = child.ScopeID,
                     ParentIssueID = child.ParentIssueID,
                     // Map other properties as needed
+                    Scope = child.Scope,
+                    SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == child.IssueID)
+
                 })
                 .ToList() ?? new List<Issue_ReadVM>(); // Ensure a non-null list is assigned
 
@@ -205,21 +239,37 @@ namespace atlas_the_public_think_tank.Controllers
                     ScopeID = issue.ParentIssue.ScopeID,
                     ParentIssueID = issue.ParentIssue.ParentIssueID,
                     // Map other properties as needed
+                    Scope = issue.Scope,
+                    SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == issue.ParentIssue.IssueID)
                 },
 
-                SubIssues = childIssueVMs, 
+                SubIssues = childIssueVMs,
+                SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == issue.IssueID),
                 BlockedContent = issue.BlockedContent,
-                Solutions = issue.Solutions,
+                //Solutions = issue.Solutions,
+                SolutionVM = issue.Solutions.Select(s => new Solution_ReadVM
+                {
+                    SolutionID = s.SolutionID,
+                    Title = s.Title,
+                    Content = s.Content,
+                    CreatedAt = s.CreatedAt,
+                    ModifiedAt = s.ModifiedAt,
+                    AuthorID = s.AuthorID,
+                    IssueID = s.IssueID,
+                    ContentStatus = s.ContentStatus,
+                    BlockedContentID = s.BlockedContentID
+                }).ToList() ?? new List<Solution_ReadVM>(),
                 Comments = issue.Comments,
                 UserVotes = issue.UserVotes,
                 IssueCategories = issue.IssueCategories,
 
                 // This is transformed from the many-to-many relationship
-                Categories = issue.IssueCategories.Select(fc => new Category_ReadVM
+                Categories = issue.IssueCategories?.Select(fc => new Category_ReadVM
                 {
                     CategoryID = fc.Category.CategoryID,
                     CategoryName = fc.Category.CategoryName
-                }).ToList()
+                }).ToList() ?? new List<Category_ReadVM>()
+
             };
 
             return View(issueVM);
@@ -344,77 +394,200 @@ namespace atlas_the_public_think_tank.Controllers
         }
 
 
-        /// <summary>
-        /// This method is used to get the vote dial for a specific issue.
-        /// </summary>
-        /// <param name="issueId"></param>
-        /// <returns>HTML</returns>
-        /// <throws>NotFound</throws> <--- Not sure if this is the right way to do this
-        [AllowAnonymous]
-        [Route("/Issue/GetVoteDial")]
-        public async Task<IActionResult> GetVoteDial(int issueId)
+       /// <summary>
+/// This method is used to get the vote dial for issues, solutions, or comments.
+/// At least one ID parameter must be provided.
+/// </summary>
+/// <param name="issueId">Optional issue ID</param>
+/// <param name="solutionId">Optional solution ID</param>
+/// <param name="commentId">Optional comment ID</param>
+/// <returns>HTML partial view of vote dial</returns>
+[AllowAnonymous]
+[Route("/api/GetVoteDial")]
+public async Task<IActionResult> GetVoteDial(int? issueId = null, int? solutionId = null, int? commentId = null)
+{
+    // Ensure at least one ID is provided
+    if (!issueId.HasValue && !solutionId.HasValue && !commentId.HasValue)
+    {
+        return BadRequest(new { message = "At least one ID must be provided" });
+    }
+
+    int? userVote = null;
+    int? contentId = null;
+    string contentType = null;
+    bool contentExists = false;
+    
+    // Determine which content type we're working with
+    if (issueId.HasValue)
+    {
+        contentId = issueId;
+        contentType = "Issue";
+        contentExists = _context.Issues.Any(i => i.IssueID == issueId);
+    }
+    else if (solutionId.HasValue)
+    {
+        contentId = solutionId;
+        contentType = "Solution";
+        contentExists = _context.Solutions.Any(s => s.SolutionID == solutionId);
+    }
+    else if (commentId.HasValue)
+    {
+        contentId = commentId;
+        contentType = "Comment";
+        contentExists = _context.Comments.Any(c => c.CommentID == commentId);
+    }
+
+    if (!contentExists)
+    {
+        return NotFound(new { message = $"{contentType} not found" });
+    }
+
+    var user = await _userManager.GetUserAsync(User);
+
+    if (user != null)
+    {
+        // Get a possible vote value from the db based on content type
+        if (contentType == "Issue")
         {
-
-            int? userVote = null;
-            // Check if the issueId exists in the database
-            var issueExists = _context.Issues.Any(f => f.IssueID == issueId);
-            if (!issueExists)
-            {
-                return NotFound(new { message = "Issue not found" });
-            }
-
-            var user = await _userManager.GetUserAsync(User);
-
-            if (user != null)
-            {
-                // Get a possible vote value from the db
-                var existingVote = await _context.UserVotes
-                    .OfType<IssueVote>()
-                    .FirstOrDefaultAsync(v => v.UserID == user.Id && v.IssueID == issueId);
-
-                if (existingVote != null)
-                {
-                    userVote = existingVote.VoteValue;
-                }
-            }
-
-
-            // Retrieve all user votes for the specified issue
-            var userVotes = await _context.UserVotes
+            var existingVote = await _context.UserVotes
                 .OfType<IssueVote>()
-                   .Where(v => v.IssueID == issueId)
-                .Select(v => new
-                {
-                    v.UserID,
-                    v.VoteValue
-                })
-                .ToListAsync();
+                .FirstOrDefaultAsync(v => v.UserID == user.Id && v.IssueID == contentId);
 
+            if (existingVote != null)
+            {
+                userVote = existingVote.VoteValue;
+            }
+        }
+        else if (contentType == "Solution")
+        {
+            var existingVote = await _context.UserVotes
+                .OfType<SolutionVote>()
+                .FirstOrDefaultAsync(v => v.UserID == user.Id && v.IssueSolutionID == contentId);
 
-            // Get vote data for the issue
-            UserVote_Issue_ReadVM m = new UserVote_Issue_ReadVM
+            if (existingVote != null)
+            {
+                userVote = existingVote.VoteValue;
+            }
+        }
+        else if (contentType == "Comment")
+        {
+            var existingVote = await _context.UserVotes
+                .OfType<CommentVote>()
+                .FirstOrDefaultAsync(v => v.UserID == user.Id && v.CommentID == contentId);
+
+            if (existingVote != null)
+            {
+                userVote = existingVote.VoteValue;
+            }
+        }
+    }
+
+    // Retrieve vote data based on content type
+    double averageVote = 0;
+    int totalVotes = 0;
+
+    if (contentType == "Issue")
+    {
+        var votes = await _context.UserVotes
+            .OfType<IssueVote>()
+            .Where(v => v.IssueID == contentId)
+            .ToListAsync();
+
+        averageVote = votes.Any() ? votes.Average(v => v.VoteValue) : 0;
+        totalVotes = votes.Count;
+    }
+    else if (contentType == "Solution")
+    {
+        var votes = await _context.UserVotes
+            .OfType<SolutionVote>()
+            .Where(v => v.IssueSolutionID == contentId)
+            .ToListAsync();
+
+        averageVote = votes.Any() ? votes.Average(v => v.VoteValue) : 0;
+        totalVotes = votes.Count;
+    }
+    else if (contentType == "Comment")
+    {
+        var votes = await _context.UserVotes
+            .OfType<CommentVote>()
+            .Where(v => v.CommentID == contentId)
+            .ToListAsync();
+
+        averageVote = votes.Any() ? votes.Average(v => v.VoteValue) : 0;
+        totalVotes = votes.Count;
+    }
+
+    // Create the appropriate view model based on content type
+    var model = new UserVote_Generic_ReadVM
+    {
+        ContentType = contentType,
+        ContentID = contentId.Value,
+        AverageVote = averageVote,
+        TotalVotes = totalVotes,
+        UserVote = userVote
+    };
+
+    // Return the partial view with the vote data model
+    return PartialView("~/Views/Issue/_voteDial.cshtml", model);
+}
+
+        [Route("/solution/create")]
+        public async Task<IActionResult> CreateSolution(int? issueId = null)
+        {
+            // Initialize the ViewModel
+            var viewModel = new Solution_CreateVM
             {
                 IssueID = issueId,
-                AverageVote = userVotes.Any() ? userVotes.Average(p => p.VoteValue) : 0,
-                TotalVotes = userVotes.Count,
-                UserVote = userVote,
-
+                ContentStatus = ContentStatus.Draft,
+                Categories = await _context.Categories.ToListAsync(),
             };
 
-            // Return the partial view with the vote data model
-            return PartialView("~/Views/Issue/_voteDial.cshtml", m);
+            return View(viewModel);
         }
 
-
-        [Route("/issue/create")]
-        public async Task<IActionResult> CreateSolution() 
+        [HttpPost]
+        [Route("/solution/create")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateSolution(Solution_CreateVM model)
         {
+            if (ModelState.IsValid)
+            {
+                // Get the current user ID
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            return View();
+                // Create the Solution entity
+                var solution = new Solution
+                {
+                    Title = model.Title,
+                    Content = model.Content,
+                    IssueID = model.IssueID.Value,
+                    ContentStatus = model.ContentStatus,
+                    AuthorID = userId,
+                    CreatedAt = DateTime.Now
+                };
+
+                // Add the solution to the context
+                _context.Solutions.Add(solution);
+                await _context.SaveChangesAsync();
+
+                // Process categories if any were selected
+                if (model.SelectedCategoryIds != null && model.SelectedCategoryIds.Any())
+                {
+                    // Add logic here to associate categories with the solution
+                    // This would depend on your data model for solution categories
+                    // If you have a SolutionCategory entity, you would create those relationships here
+                }
+
+                // Redirect to the details view of the issue this solution is for
+                return RedirectToAction("ReadIssue", new { id = model.IssueID });
+            }
+
+            // If we got to here, something failed, redisplay form
+            model.Categories = await _context.Categories.ToListAsync();
+            return View(model);
         }
-        
+
 
 
     }
-
 }

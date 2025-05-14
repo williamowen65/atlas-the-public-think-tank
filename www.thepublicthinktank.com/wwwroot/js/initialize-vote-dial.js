@@ -175,7 +175,7 @@ function createDebouncedSaveVote(issueId) {
             // Optionally update the UI based on response
 
             // Add the user-voted class
-            container.classList.add('user-voted');
+            container.closest(".vote-dial-toggle").classList.add('user-voted');
 
             // update the vote average and the count
             const averageElement = document.querySelector(`#vote-average-${issueId}`);

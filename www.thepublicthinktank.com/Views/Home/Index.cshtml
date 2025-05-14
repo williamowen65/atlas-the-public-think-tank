@@ -8,7 +8,8 @@
         <!-- Main content with issues -->
         <div class="col-md-9">
             <div class="my-3">
-                <a href="/create-issue" class="btn btn-primary">Create New Post</a>
+                <a href="@Url.Action("CreateIssue","CRUDIssue")" class="btn btn-primary fw-bold outlined-text fs-5 mb-1 mb-md-0" styfs-5" style="color:var(--call-to-action-theme-color)">Create New Issue</a>
+                <a href="@Url.Action("CreateSolution","CRUDIssue")" class="btn btn-primary fw-bold outlined-text fs-5 mb-1 mb-md-0" styfs-5" style="color:var(--call-to-action-theme-color)">Create New Solution</a>
             </div>
 
             @if (Model.Issues != null && Model.Issues.Any())

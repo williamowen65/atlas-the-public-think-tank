@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using atlas_the_public_think_tank.Data;
 
@@ -11,9 +12,11 @@ using atlas_the_public_think_tank.Data;
 namespace atlas_the_public_think_tank.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250515204501_ocra-seed-data-2")]
+    partial class ocraseeddata2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -433,12 +436,12 @@ namespace atlas_the_public_think_tank.Migrations
                         {
                             IssueID = 5,
                             AuthorID = "1a61454c-5b83-4aab-8661-96d6dffbe31",
-                            Content = "The Southern Resident orca population has dropped from 88 individuals in 2010 to just 74 as of late 2024. This decline is attributed to a combination of factors, including reduced prey availability, pollution, and vessel traffic.",
+                            Content = "This decline is attributed to a combination of factors, including reduced prey availability, pollution, and vessel traffic.",
                             ContentStatus = 1,
                             CreatedAt = new DateTime(2024, 5, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             ParentIssueID = 4,
                             ScopeID = 2,
-                            Title = "Decline of the Southern Resident orca population"
+                            Title = "The Southern Resident orca population has dropped from 88 individuals in 2010 to just 74 as of late 2024"
                         });
                 });
 

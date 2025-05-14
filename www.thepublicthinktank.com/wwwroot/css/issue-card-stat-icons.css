@@ -1,0 +1,93 @@
+/* Issue card stat icons container - Mobile first design */
+.issue-card-stat-icons {
+    font-size: 18px;
+    max-width: 100%;
+    padding-right: 37px;
+    height: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+/* Medium screens and up (≥768px) */
+@media (max-width: 604px) {
+    .issue-card-stat-icons {
+        font-size: 20px;
+        max-width: 40px;
+        padding-right: 80px;
+        height: 72px;
+        margin-bottom: 0;
+        
+    }
+    .issue-card-stat-icons div[role=button] {
+        padding-bottom: 3px;
+    }
+}
+
+/* Position adjustments for content count on mobile */
+.issue-card-stat-icons .position-relative {
+    margin: 0 8px;
+}
+
+.issue-card-stat-icons .content-count {
+    position: absolute;
+    right: -11px;
+    top: -9px;
+    scale: 0.6;
+}
+
+@media (min-width: 604px) {
+    .issue-card-stat-icons .position-relative {
+/*        margin: 0 12px;*/
+    }
+}
+
+
+
+.ribbon-spacer {
+    width: var(--ribbon-width);
+    height: calc(var(--ribbon-height) - 40px);
+}
+
+
+.ribbon text {
+    transform: translateY(-10px)
+}
+
+.ribbon {
+    position: absolute;
+    width: var(--ribbon-width);
+    height: var(--ribbon-height);
+    overflow: visible;
+    padding: 10px 0;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    top: 0;
+    right: 5px;
+    clip-path: polygon(0 0, 100% 0, 100% 80%, 50% 100%, 0 80%);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+    .ribbon.individual {
+        background: #e74c3c; /* red */
+    }
+
+    .ribbon.local {
+        background: #769aed; /* orange */
+    }
+
+    .ribbon.national {
+        background: #2980b9; /* blue */
+    }
+
+    .ribbon.global {
+        background: #27ae60; /* green */
+    }

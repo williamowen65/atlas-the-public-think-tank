@@ -3,6 +3,7 @@
 :root {
     --header-height: 70.4px;
     --left-sidebar-container-width: 300px;
+    --call-to-action-theme-color: #beff9e;
 }
 
 
@@ -96,4 +97,28 @@ svg.parent-issue-icon {
     height: 24px !important;
     width: 24px;
     transform: translateY(-4px);
+}
+
+.outlined-text {
+    -webkit-text-stroke: 0.5px black; /* outline width and color */
+    text-stroke: 0.5px black; /* optional non-prefixed */
+}
+
+.solution-card .card-header {
+    /* Hard coded color for now*/
+    background: #03ca03; 
+}
+
+.scope-ribbons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-top: 40px;
+}
+
+:root {
+
+    --ribbon-width: 40px;
+    --ribbon-height: 80px;
 }
