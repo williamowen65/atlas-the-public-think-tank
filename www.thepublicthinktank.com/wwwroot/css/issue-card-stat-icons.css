@@ -1,8 +1,13 @@
 /* Issue card stat icons container - Mobile first design */
+.card {
+    container-type: inline-size;
+    container-name: card;
+}
+
 .issue-card-stat-icons {
     font-size: 18px;
     max-width: 100%;
-    padding-right: 37px;
+    /*    padding-right: 37px;*/
     height: auto;
     display: flex;
     justify-content: space-between;
@@ -11,19 +16,19 @@
     margin-bottom: 10px;
 }
 
-/* Medium screens and up (≥768px) */
-@media (max-width: 604px) {
+/* Small containers (max-width: 604px) */
+@container card (max-width: 604px) {
     .issue-card-stat-icons {
         font-size: 20px;
         max-width: 40px;
         padding-right: 80px;
         height: 72px;
         margin-bottom: 0;
-        
     }
-    .issue-card-stat-icons div[role=button] {
-        padding-bottom: 3px;
-    }
+
+        .issue-card-stat-icons div[role=button] {
+            padding-bottom: 3px;
+        }
 }
 
 /* Position adjustments for content count on mobile */
@@ -38,12 +43,27 @@
     scale: 0.6;
 }
 
-@media (min-width: 604px) {
+/* Replace the media query with container query */
+@container card (min-width: 604px) {
     .issue-card-stat-icons .position-relative {
-/*        margin: 0 12px;*/
+        /*        margin: 0 12px;*/
     }
 }
 
+
+.scope-ribbons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-top: 40px;
+}
+
+:root {
+
+    --ribbon-width: 40px;
+    --ribbon-height: 80px;
+}
 
 
 .ribbon-spacer {
@@ -91,3 +111,21 @@
     .ribbon.global {
         background: #27ae60; /* green */
     }
+
+
+    /* Add this to your CSS file */
+.sidebar-heading {
+    display: none;
+}
+
+.sidebar-heading.active {
+    display: block;
+}
+
+.sidebar-content {
+    display: none;
+}
+
+.sidebar-content.active {
+    display: block;
+}

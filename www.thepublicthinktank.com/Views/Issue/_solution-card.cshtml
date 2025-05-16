@@ -51,19 +51,49 @@
 </div>
 
 @* Add voting functionality similar to the issue card if needed *@
+@* Add voting functionality similar to the issue card if needed *@
 <script>
+    console.log("DOMContentLoaded card for solution ID: @Model.SolutionID");
     document.addEventListener("DOMContentLoaded", () => {
-        fetch("/api/GetVoteDial?solutionId=@Model.SolutionID")
-            .then(data => data.text())
-            .then(data => {
-                console.log({data})
-                const thisElement = document.querySelector('#solution-@Model.SolutionID')
-                const dialContainer = thisElement.querySelector('.dial-container');
-                if (dialContainer) {
-                    dialContainer.innerHTML = data;
-                    initializeVoteDial(@Model.SolutionID);
-                }
-            })
-            .catch(error => console.error('Error fetching vote dial:', error));
+        try {
+            const solutionId = '@Model.SolutionID';
+            console.log("Fetching vote dial for solution:", solutionId);
+            
+            fetch(`/api/GetVoteDial?solutionId=${solutionId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    console.log("Vote dial data received:", {solutionId: solutionId, dataLength: data.length});
+                    const thisElement = document.querySelector(`#solution-${solutionId}`);
+                    if (!thisElement) {
+                        console.error(`Element #solution-${solutionId} not found`);
+                        return;
+                    }
+                    
+                    const dialContainer = thisElement.querySelector('.dial-container');
+                    if (dialContainer) {
+                        dialContainer.innerHTML = data;
+                        // Make sure this function exists and is defined before this script runs
+                        if (typeof initializeVoteDial === 'function') {
+                            try {
+                                initializeVoteDial(solutionId);
+                            } catch (initError) {
+                                console.error("Error in initializeVoteDial:", initError);
+                            }
+                        } else {
+                            console.error("initializeVoteDial function is not defined");
+                        }
+                    } else {
+                        console.error(`Dial container not found in #solution-${solutionId}`);
+                    }
+                })
+                .catch(error => console.error('Error fetching vote dial:', error));
+        } catch (outerError) {
+            console.error("Error in DOMContentLoaded handler:", outerError);
+        }
     });
 </script>

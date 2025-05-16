@@ -91,10 +91,9 @@ main.sidebar-closed, footer.sidebar-closed {
 }
 
 
-
 /* Container for the toggle */
 .toggle-container {
-    width: 100px;
+    width: 150px; /* Increased width to accommodate three sections */
     height: 50px;
     position: relative;
 }
@@ -103,21 +102,21 @@ main.sidebar-closed, footer.sidebar-closed {
 #view-mode-toggle-lens.lens {
     top: 0;
     height: 100%;
-    width: 50%;
+    width: 33.33%; /* Now one-third instead of half */
     position: absolute;
     transition: transform 0.3s ease; /* Smooth transition for movement */
-
+    transform: translateX(0); /* Default position (left) */
 }
+
 
 /* Outline element */
 #view-toggle-outline.outline {
-    width: 100px;
+    width: 150px; /* Match container width */
     height: 50px;
     border: 1px solid var(--bs-info);
     border-radius: 0.25rem;
     position: absolute;
 }
-
 
 /* Left toggle button */
 .toggle-option.left-option {
@@ -125,6 +124,20 @@ main.sidebar-closed, footer.sidebar-closed {
     top: 50%;
     width: 50px;
     transform: translateY(-50%);
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    padding: 0.5rem;
+}
+
+/* Middle toggle button */
+.toggle-option.middle-option {
+    left: 50px; /* Position in the middle section */
+    top: 50%;
+    transform: translateY(-50%);
+    width: 50px;
     height: 50px;
     display: flex;
     justify-content: center;

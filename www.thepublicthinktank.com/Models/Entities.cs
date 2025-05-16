@@ -1,6 +1,6 @@
-
 using Microsoft.AspNetCore.Identity;
 using Microsoft.CodeAnalysis;
+using System;
 using System.Text.Json.Serialization;
 
 namespace atlas_the_public_think_tank.Models
@@ -28,7 +28,7 @@ namespace atlas_the_public_think_tank.Models
 
     public class Scope
     {
-        public int ScopeID { get; set; }
+        public Guid ScopeID { get; set; }
         public string ScopeName { get; set; }
 
         // Navigation properties
@@ -38,7 +38,7 @@ namespace atlas_the_public_think_tank.Models
 
     public class BlockedContent
     {
-        public int BlockedContentID { get; set; }
+        public Guid BlockedContentID { get; set; }
         public short? ReasonID { get; set; }
 
         // Navigation properties
@@ -49,7 +49,7 @@ namespace atlas_the_public_think_tank.Models
 
     public class Category
     {
-        public int CategoryID { get; set; }
+        public Guid CategoryID { get; set; }
         public string CategoryName { get; set; }
 
         // Navigation properties
@@ -58,7 +58,7 @@ namespace atlas_the_public_think_tank.Models
 
     public class Issue
     {
-        public int IssueID { get; set; }
+        public Guid IssueID { get; set; }
         public string Title { get; set; }
         public string Content { get; set; }
 
@@ -66,9 +66,9 @@ namespace atlas_the_public_think_tank.Models
         public DateTime CreatedAt { get; set; }
         public DateTime? ModifiedAt { get; set; }
         public string AuthorID { get; set; }
-        public int ScopeID { get; set; }
-        public int? ParentIssueID { get; set; }
-        public int? BlockedContentID { get; set; }
+        public Guid ScopeID { get; set; }
+        public Guid? ParentIssueID { get; set; }
+        public Guid? BlockedContentID { get; set; }
 
         // Navigation properties
         public virtual AppUser Author { get; set; }
@@ -87,15 +87,15 @@ namespace atlas_the_public_think_tank.Models
 
     public class Solution
     {
-        public int SolutionID { get; set; }
-        public int IssueID { get; set; }
+        public Guid SolutionID { get; set; }
+        public Guid IssueID { get; set; }
         public string Title { get; set; }
         public string Content { get; set; }
         public ContentStatus ContentStatus { get; set; }
         public string AuthorID { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? ModifiedAt { get; set; }
-        public int? BlockedContentID { get; set; }
+        public Guid? BlockedContentID { get; set; }
 
         // Navigation properties
         [JsonIgnore]
@@ -114,16 +114,16 @@ namespace atlas_the_public_think_tank.Models
     }
     public class UserComment
     {
-        public int CommentID { get; set; }
-        public int? IssueID { get; set; }
-        public int? IssueSolutionID { get; set; }
+        public Guid CommentID { get; set; }
+        public Guid? IssueID { get; set; }
+        public Guid? IssueSolutionID { get; set; }
         public string Comment { get; set; }
         public ContentStatus ContentStatus { get; set; }
         public string AuthorID { get; set; }
         public DateTime? CreatedAt { get; set; }
         public DateTime? ModifiedAt { get; set; }
-        public int? ParentCommentID { get; set; }
-        public int? BlockedContentID { get; set; }
+        public Guid? ParentCommentID { get; set; }
+        public Guid? BlockedContentID { get; set; }
 
         // Navigation properties
         public virtual Issue Issue { get; set; }
@@ -137,16 +137,16 @@ namespace atlas_the_public_think_tank.Models
 
     public abstract class UserVote
     {
-        public int VoteID { get; set; }
+        public Guid VoteID { get; set; }
         public string UserID { get; set; }
         public int VoteValue { get; set; }
 
         public DateTime CreatedAt { get; set; }
         public DateTime? ModifiedAt { get; set; }
 
-        public int? IssueID { get; set; }
-        public int? IssueSolutionID { get; set; }
-        public int? CommentID { get; set; }
+        public Guid? IssueID { get; set; }
+        public Guid? IssueSolutionID { get; set; }
+        public Guid? CommentID { get; set; }
 
         // Navigation property
         public virtual AppUser User { get; set; }
@@ -180,8 +180,8 @@ namespace atlas_the_public_think_tank.Models
 
     public class IssueCategory
     {
-        public int CategoryID { get; set; }
-        public int IssueID { get; set; }
+        public Guid CategoryID { get; set; }
+        public Guid IssueID { get; set; }
 
         // Navigation properties
         public virtual Category Category { get; set; }
@@ -190,14 +190,14 @@ namespace atlas_the_public_think_tank.Models
 
     public class UserHistory
     {
-        public int UserHistoryID { get; set; }
+        public Guid UserHistoryID { get; set; }
         public string UserID { get; set; }
         public string Action { get; set; }
         public string Link { get; set; }
-        public int? IssueID { get; set; }
-        public int? IssueSolutionID { get; set; }
-        public int? CommentID { get; set; }
-        public int? UserVote { get; set; }
+        public Guid? IssueID { get; set; }
+        public Guid? IssueSolutionID { get; set; }
+        public Guid? CommentID { get; set; }
+        public Guid? UserVoteID { get; set; }
         public DateTime Timestamp { get; set; }
 
         // Navigation properties

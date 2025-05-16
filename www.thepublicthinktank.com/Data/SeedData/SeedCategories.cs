@@ -9,15 +9,15 @@ namespace atlas_the_public_think_tank.Data.SeedData
         {
             // Seed Categories
             modelBuilder.Entity<Category>().HasData(
-                new Category { CategoryID = 1, CategoryName = "Global Cooperation" },
-                new Category { CategoryID = 2, CategoryName = "Sustainable Development" },
-                new Category { CategoryID = 3, CategoryName = "Equitable Access" },
-                new Category { CategoryID = 4, CategoryName = "Innovation and Technology" },
-                new Category { CategoryID = 5, CategoryName = "Effective Governance" },
-                new Category { CategoryID = 6, CategoryName = "Education and Awareness" },
-                new Category { CategoryID = 7, CategoryName = "Cultural Understanding" },
-                new Category { CategoryID = 8, CategoryName = "Resilience and Adaptability" }
-            );
+                new Category { CategoryID = SeedIds.Categories.GlobalCooperation, CategoryName = "Global Cooperation" },
+                new Category { CategoryID = SeedIds.Categories.SustainableDevelopment, CategoryName = "Sustainable Development" },
+                new Category { CategoryID = SeedIds.Categories.EquitableAccess, CategoryName = "Equitable Access" },
+                new Category { CategoryID = SeedIds.Categories.InnovationAndTechnology, CategoryName = "Innovation and Technology" },
+                new Category { CategoryID = SeedIds.Categories.EffectiveGovernance, CategoryName = "Effective Governance" },
+                new Category { CategoryID = SeedIds.Categories.EducationAndAwareness, CategoryName = "Education and Awareness" },
+                new Category { CategoryID = SeedIds.Categories.CulturalUnderstanding, CategoryName = "Cultural Understanding" },
+                new Category { CategoryID = SeedIds.Categories.ResilienceAndAdaptability, CategoryName = "Resilience and Adaptability" }
+            ); 
         }
     }
 }

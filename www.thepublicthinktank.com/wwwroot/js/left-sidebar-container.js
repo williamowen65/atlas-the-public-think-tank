@@ -156,27 +156,89 @@ async function loadSidebarContent() {
         return Promise.reject(error); // Return a rejected promise on error
     }
 }
-
-
 function setupViewToggle() {
-
     const lens = document.getElementById("view-mode-toggle-lens");
     const treeToggle = document.getElementById("tree");
     const infoToggle = document.getElementById("info");
+    const filterToggle = document.getElementById("filter");
+    
+    // Get all headings and content sections
+    const treeHeading = document.getElementById("tree-heading");
+    const infoHeading = document.getElementById("info-heading");
+    const filterHeading = document.getElementById("filter-heading");
+    
+    const categoriesContent = document.getElementById("categoriesContainer");
+    const pageInfoContent = document.getElementById("page-info");
+    const contentFilterContent = document.getElementById("content-filter");
+    
+    // Function to update active content based on selected view mode
+    function updateActiveContent(viewMode) {
+        // Remove active class from all headings and content
+        [treeHeading, infoHeading, filterHeading].forEach(el => {
+            if (el) el.classList.remove('active');
+        });
+        
+        [categoriesContent, pageInfoContent, contentFilterContent].forEach(el => {
+            if (el) el.classList.remove('active');
+        });
+        
+        // Add active class to selected heading and content
+        switch (viewMode) {
+            case 'tree':
+                if (treeHeading) treeHeading.classList.add('active');
+                if (categoriesContent) categoriesContent.classList.add('active');
+                break;
+            case 'info':
+                if (infoHeading) infoHeading.classList.add('active');
+                if (pageInfoContent) pageInfoContent.classList.add('active');
+                break;
+            case 'filter':
+                if (filterHeading) filterHeading.classList.add('active');
+                if (contentFilterContent) contentFilterContent.classList.add('active');
+                break;
+        }
+    }
 
-    // Function to move the lens
+    // Function to move the lens and update active content
     function moveLens() {
         if (treeToggle.checked) {
-            lens.style.transform = "translateX(0)"; // Move to the left
+            lens.style.transform = "translateX(0)";
+            localStorage.setItem('sidebarViewMode', 'tree');
+            updateActiveContent('tree');
         } else if (infoToggle.checked) {
-            lens.style.transform = "translateX(100%)"; // Move to the right
+            lens.style.transform = "translateX(100%)";
+            localStorage.setItem('sidebarViewMode', 'info');
+            updateActiveContent('info');
+        } else if (filterToggle.checked) {
+            lens.style.transform = "translateX(200%)";
+            localStorage.setItem('sidebarViewMode', 'filter');
+            updateActiveContent('filter');
         }
     }
 
     // Attach event listeners to the radio buttons
-    treeToggle.addEventListener("change", moveLens);
-    infoToggle.addEventListener("change", moveLens);
+    if (treeToggle) treeToggle.addEventListener("change", moveLens);
+    if (infoToggle) infoToggle.addEventListener("change", moveLens);
+    if (filterToggle) filterToggle.addEventListener("change", moveLens);
 
-    // Initialize lens position on page load
+    // Load saved view mode from localStorage
+    const savedViewMode = localStorage.getItem('sidebarViewMode');
+    if (savedViewMode) {
+        switch (savedViewMode) {
+            case 'tree':
+                if (treeToggle) treeToggle.checked = true;
+                break;
+            case 'info':
+                if (infoToggle) infoToggle.checked = true;
+                break;
+            case 'filter':
+                if (filterToggle) filterToggle.checked = true;
+                break;
+            default:
+                if (treeToggle) treeToggle.checked = true;  // Default fallback
+        }
+    }
+
+    // Initialize lens position and content based on active toggle
     moveLens();
 }

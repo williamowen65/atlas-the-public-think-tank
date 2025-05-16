@@ -104,21 +104,17 @@ svg.parent-issue-icon {
     text-stroke: 0.5px black; /* optional non-prefixed */
 }
 
-.solution-card .card-header {
-    /* Hard coded color for now*/
-    background: #03ca03; 
-}
-
-.scope-ribbons {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    margin-top: 40px;
-}
-
 :root {
-
-    --ribbon-width: 40px;
-    --ribbon-height: 80px;
+    --solution-bg: #03ca03; /* Light mode green */
+    /* Add other light mode variables here */
 }
+
+[data-bs-theme="dark"] {
+    --solution-bg: #006600; /* Dark mode green */
+    /* Add other dark mode variables here */
+}
+
+.solution-card .card-header {
+    background: var(--solution-bg);
+}
+

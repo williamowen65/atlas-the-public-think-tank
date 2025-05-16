@@ -260,11 +260,9 @@ namespace atlas_the_public_think_tank.Migrations
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.BlockedContent", b =>
                 {
-                    b.Property<int>("BlockedContentID")
+                    b.Property<Guid>("BlockedContentID")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BlockedContentID"));
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<short?>("ReasonID")
                         .HasColumnType("smallint");
@@ -276,11 +274,9 @@ namespace atlas_the_public_think_tank.Migrations
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.Category", b =>
                 {
-                    b.Property<int>("CategoryID")
+                    b.Property<Guid>("CategoryID")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CategoryID"));
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CategoryName")
                         .IsRequired()
@@ -293,60 +289,58 @@ namespace atlas_the_public_think_tank.Migrations
                     b.HasData(
                         new
                         {
-                            CategoryID = 1,
+                            CategoryID = new Guid("81f910e0-39a4-4b44-88ca-fd3c30af4a25"),
                             CategoryName = "Global Cooperation"
                         },
                         new
                         {
-                            CategoryID = 2,
+                            CategoryID = new Guid("25487e1f-b167-4666-a20c-dec2e4b5f413"),
                             CategoryName = "Sustainable Development"
                         },
                         new
                         {
-                            CategoryID = 3,
+                            CategoryID = new Guid("a8fb4691-8c1f-4e7d-b315-b042097e6395"),
                             CategoryName = "Equitable Access"
                         },
                         new
                         {
-                            CategoryID = 4,
+                            CategoryID = new Guid("f5c35e6a-8c4f-4556-b6c1-4448b26d1bcb"),
                             CategoryName = "Innovation and Technology"
                         },
                         new
                         {
-                            CategoryID = 5,
+                            CategoryID = new Guid("26c867f2-48c6-4bd5-b36a-9f7325431ad3"),
                             CategoryName = "Effective Governance"
                         },
                         new
                         {
-                            CategoryID = 6,
+                            CategoryID = new Guid("d2c7a605-a621-4b14-8d51-e2df0cecae1a"),
                             CategoryName = "Education and Awareness"
                         },
                         new
                         {
-                            CategoryID = 7,
+                            CategoryID = new Guid("0950f1d0-5c03-4f3a-9015-c4bb3c0e7620"),
                             CategoryName = "Cultural Understanding"
                         },
                         new
                         {
-                            CategoryID = 8,
+                            CategoryID = new Guid("3ce7d7d2-176d-4b72-8d98-4b97b49ed0c1"),
                             CategoryName = "Resilience and Adaptability"
                         });
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.Issue", b =>
                 {
-                    b.Property<int>("IssueID")
+                    b.Property<Guid>("IssueID")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IssueID"));
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("AuthorID")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int?>("BlockedContentID")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("BlockedContentID")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Content")
                         .IsRequired()
@@ -363,11 +357,11 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Property<DateTime?>("ModifiedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("ParentIssueID")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("ParentIssueID")
+                        .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("ScopeID")
-                        .HasColumnType("int");
+                    b.Property<Guid>("ScopeID")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -389,66 +383,66 @@ namespace atlas_the_public_think_tank.Migrations
                     b.HasData(
                         new
                         {
-                            IssueID = 1,
+                            IssueID = new Guid("fd43657c-a0a8-4721-a6b5-3f23e35088fc"),
                             AuthorID = "1a61454c-5b83-4aab-8661-96d6dffbee30",
                             Content = "A issue to discuss practical solutions to climate change at individual and policy levels.",
                             ContentStatus = 1,
                             CreatedAt = new DateTime(2024, 1, 15, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            ScopeID = 1,
+                            ScopeID = new Guid("a1e7c6b3-d5e2-4f8a-9c3b-8d7e6f5d4c2b"),
                             Title = "Climate Change Solutions"
                         },
                         new
                         {
-                            IssueID = 2,
+                            IssueID = new Guid("4aebb16c-b474-4c14-9e5e-4548134cadc8"),
                             AuthorID = "1a61454c-5b83-4aab-8661-96d6dffbee30",
                             Content = "Discussion on modern urban planning approaches for sustainable and livable cities.",
                             ContentStatus = 1,
                             CreatedAt = new DateTime(2024, 2, 10, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            ScopeID = 2,
+                            ScopeID = new Guid("b2d8f1a7-e4c9-3b6a-8d5f-7e6c9d8b3a2f"),
                             Title = "Urban Planning Innovations"
                         },
                         new
                         {
-                            IssueID = 3,
+                            IssueID = new Guid("c246d67c-427c-40f9-8bb2-b0834e473f7b"),
                             AuthorID = "1a61454c-5b83-4aab-8661-96d6dffbe31",
                             Content = "Strategies for transitioning to renewable energy sources at community and national levels.",
                             ContentStatus = 1,
                             CreatedAt = new DateTime(2024, 3, 5, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             ModifiedAt = new DateTime(2024, 3, 10, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            ParentIssueID = 1,
-                            ScopeID = 1,
+                            ParentIssueID = new Guid("fd43657c-a0a8-4721-a6b5-3f23e35088fc"),
+                            ScopeID = new Guid("a1e7c6b3-d5e2-4f8a-9c3b-8d7e6f5d4c2b"),
                             Title = "Renewable Energy Transition"
                         },
                         new
                         {
-                            IssueID = 4,
+                            IssueID = new Guid("b3a72e5d-7c18-4e9f-8d24-67a2c6f35b1d"),
                             AuthorID = "1a61454c-5b83-4aab-8661-96d6dffbe31",
                             Content = "The world is experiencing a biodiversity crisis, with thousands of species teetering on the edge of extinction.",
                             ContentStatus = 1,
                             CreatedAt = new DateTime(2024, 4, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            ScopeID = 1,
+                            ScopeID = new Guid("a1e7c6b3-d5e2-4f8a-9c3b-8d7e6f5d4c2b"),
                             Title = "Critical Decline of Endangered Species"
                         },
                         new
                         {
-                            IssueID = 5,
+                            IssueID = new Guid("e5d8f6a9-3b7c-42e1-9d85-7f63a4b5c28d"),
                             AuthorID = "1a61454c-5b83-4aab-8661-96d6dffbe31",
                             Content = "The Southern Resident orca population has dropped from 88 individuals in 2010 to just 74 as of late 2024. This decline is attributed to a combination of factors, including reduced prey availability, pollution, and vessel traffic.",
                             ContentStatus = 1,
                             CreatedAt = new DateTime(2024, 5, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            ParentIssueID = 4,
-                            ScopeID = 2,
+                            ParentIssueID = new Guid("b3a72e5d-7c18-4e9f-8d24-67a2c6f35b1d"),
+                            ScopeID = new Guid("b2d8f1a7-e4c9-3b6a-8d5f-7e6c9d8b3a2f"),
                             Title = "Decline of the Southern Resident orca population"
                         });
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.IssueCategory", b =>
                 {
-                    b.Property<int>("CategoryID")
-                        .HasColumnType("int");
+                    b.Property<Guid>("CategoryID")
+                        .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("IssueID")
-                        .HasColumnType("int");
+                    b.Property<Guid>("IssueID")
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("CategoryID", "IssueID");
 
@@ -459,58 +453,56 @@ namespace atlas_the_public_think_tank.Migrations
                     b.HasData(
                         new
                         {
-                            CategoryID = 1,
-                            IssueID = 1
+                            CategoryID = new Guid("81f910e0-39a4-4b44-88ca-fd3c30af4a25"),
+                            IssueID = new Guid("fd43657c-a0a8-4721-a6b5-3f23e35088fc")
                         },
                         new
                         {
-                            CategoryID = 2,
-                            IssueID = 1
+                            CategoryID = new Guid("25487e1f-b167-4666-a20c-dec2e4b5f413"),
+                            IssueID = new Guid("fd43657c-a0a8-4721-a6b5-3f23e35088fc")
                         },
                         new
                         {
-                            CategoryID = 8,
-                            IssueID = 1
+                            CategoryID = new Guid("3ce7d7d2-176d-4b72-8d98-4b97b49ed0c1"),
+                            IssueID = new Guid("fd43657c-a0a8-4721-a6b5-3f23e35088fc")
                         },
                         new
                         {
-                            CategoryID = 2,
-                            IssueID = 2
+                            CategoryID = new Guid("25487e1f-b167-4666-a20c-dec2e4b5f413"),
+                            IssueID = new Guid("4aebb16c-b474-4c14-9e5e-4548134cadc8")
                         },
                         new
                         {
-                            CategoryID = 4,
-                            IssueID = 2
+                            CategoryID = new Guid("f5c35e6a-8c4f-4556-b6c1-4448b26d1bcb"),
+                            IssueID = new Guid("4aebb16c-b474-4c14-9e5e-4548134cadc8")
                         },
                         new
                         {
-                            CategoryID = 5,
-                            IssueID = 2
+                            CategoryID = new Guid("26c867f2-48c6-4bd5-b36a-9f7325431ad3"),
+                            IssueID = new Guid("4aebb16c-b474-4c14-9e5e-4548134cadc8")
                         },
                         new
                         {
-                            CategoryID = 1,
-                            IssueID = 3
+                            CategoryID = new Guid("81f910e0-39a4-4b44-88ca-fd3c30af4a25"),
+                            IssueID = new Guid("c246d67c-427c-40f9-8bb2-b0834e473f7b")
                         },
                         new
                         {
-                            CategoryID = 2,
-                            IssueID = 3
+                            CategoryID = new Guid("25487e1f-b167-4666-a20c-dec2e4b5f413"),
+                            IssueID = new Guid("c246d67c-427c-40f9-8bb2-b0834e473f7b")
                         },
                         new
                         {
-                            CategoryID = 4,
-                            IssueID = 3
+                            CategoryID = new Guid("f5c35e6a-8c4f-4556-b6c1-4448b26d1bcb"),
+                            IssueID = new Guid("c246d67c-427c-40f9-8bb2-b0834e473f7b")
                         });
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.Scope", b =>
                 {
-                    b.Property<int>("ScopeID")
+                    b.Property<Guid>("ScopeID")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ScopeID"));
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("ScopeName")
                         .IsRequired()
@@ -523,40 +515,38 @@ namespace atlas_the_public_think_tank.Migrations
                     b.HasData(
                         new
                         {
-                            ScopeID = 1,
+                            ScopeID = new Guid("a1e7c6b3-d5e2-4f8a-9c3b-8d7e6f5d4c2b"),
                             ScopeName = "Global"
                         },
                         new
                         {
-                            ScopeID = 2,
+                            ScopeID = new Guid("b2d8f1a7-e4c9-3b6a-8d5f-7e6c9d8b3a2f"),
                             ScopeName = "National"
                         },
                         new
                         {
-                            ScopeID = 3,
+                            ScopeID = new Guid("c3b9a2d8-f1e7-6c5b-4d3a-2f1e7d8c9b6a"),
                             ScopeName = "Local"
                         },
                         new
                         {
-                            ScopeID = 4,
+                            ScopeID = new Guid("d4c9b3a2-f8e7-1d6c-5b4a-3f2e1d9c8b7a"),
                             ScopeName = "Individual"
                         });
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.Solution", b =>
                 {
-                    b.Property<int>("SolutionID")
+                    b.Property<Guid>("SolutionID")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SolutionID"));
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("AuthorID")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int?>("BlockedContentID")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("BlockedContentID")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Content")
                         .IsRequired()
@@ -568,8 +558,8 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("IssueID")
-                        .HasColumnType("int");
+                    b.Property<Guid>("IssueID")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("ModifiedAt")
                         .HasColumnType("datetime2");
@@ -592,18 +582,16 @@ namespace atlas_the_public_think_tank.Migrations
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.UserComment", b =>
                 {
-                    b.Property<int>("CommentID")
+                    b.Property<Guid>("CommentID")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CommentID"));
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("AuthorID")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int?>("BlockedContentID")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("BlockedContentID")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Comment")
                         .IsRequired()
@@ -616,17 +604,17 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Property<DateTime?>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("IssueID")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("IssueID")
+                        .HasColumnType("uniqueidentifier");
 
-                    b.Property<int?>("IssueSolutionID")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("IssueSolutionID")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("ModifiedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("ParentCommentID")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("ParentCommentID")
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("CommentID");
 
@@ -645,25 +633,23 @@ namespace atlas_the_public_think_tank.Migrations
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.UserHistory", b =>
                 {
-                    b.Property<int>("UserHistoryID")
+                    b.Property<Guid>("UserHistoryID")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserHistoryID"));
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Action")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<int?>("CommentID")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("CommentID")
+                        .HasColumnType("uniqueidentifier");
 
-                    b.Property<int?>("IssueID")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("IssueID")
+                        .HasColumnType("uniqueidentifier");
 
-                    b.Property<int?>("IssueSolutionID")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("IssueSolutionID")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Link")
                         .HasMaxLength(200)
@@ -678,8 +664,8 @@ namespace atlas_the_public_think_tank.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int?>("UserVote")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("UserVoteID")
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("UserHistoryID");
 
@@ -696,14 +682,12 @@ namespace atlas_the_public_think_tank.Migrations
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.UserVote", b =>
                 {
-                    b.Property<int>("VoteID")
+                    b.Property<Guid>("VoteID")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("uniqueidentifier");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("VoteID"));
-
-                    b.Property<int?>("CommentID")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("CommentID")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -713,20 +697,20 @@ namespace atlas_the_public_think_tank.Migrations
                         .HasMaxLength(13)
                         .HasColumnType("nvarchar(13)");
 
-                    b.Property<int?>("IssueID")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("IssueID")
+                        .HasColumnType("uniqueidentifier");
 
-                    b.Property<int?>("IssueSolutionID")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("IssueSolutionID")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("ModifiedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("SolutionID")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("SolutionID")
+                        .HasColumnType("uniqueidentifier");
 
-                    b.Property<int?>("UserCommentCommentID")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("UserCommentCommentID")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("UserID")
                         .IsRequired()

@@ -24,9 +24,9 @@
                 setTimeout(() => reinitializeVoteDials(targetId), 100);
             }
 
-            // Update the actions dropdown if it exists
-            if (typeof dynamicDropdownContent === 'function') {
-                dynamicDropdownContent();
+            // Update the actions dropdown to match the restored tab
+            if (typeof updateDropdownContent === 'function') {
+                setTimeout(() => updateDropdownContent(lastActiveTabId), 50);
             }
         }
     }
