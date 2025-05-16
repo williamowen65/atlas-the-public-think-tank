@@ -6,11 +6,16 @@
     <title>@ViewData["Title"] - atlas_the_public_think_tank</title>
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    @* Select2 CSS *@
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/left-sidebar-container.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/left-sidebar-container.css" asp-append-version="true" />    
     <link rel="stylesheet" href="~/css/vote-dial.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/alert.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/read-issue.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/issue-card-stat-icons.css" asp-append-version="true" />
     @* <link rel="stylesheet" href="~/atlas_the_public_think_tank.styles.css" asp-append-version="true" /> *@
 
     <script src="https://kit.fontawesome.com/16aebb51db.js" crossorigin="anonymous"></script>
@@ -51,16 +56,15 @@
     <header class="py-3 main-header border-bottom sticky-top bg-body">
         <div id="topbar-layout" class="container-fluid d-grid gap-3 align-items-center" style="">
           
-            <a asp-area="" asp-controller="Home" asp-action="Index" class="ff-consolas d-flex align-items-center col-lg-4 mb-2 mb-lg-0 link-body-emphasis text-decoration-none fw-bold w-100" >
+            <a asp-area="" asp-controller="Home" asp-action="Index" class="ff-consolas d-flex align-items-center col-lg-4 mb-2 mb-lg-0 link-body-emphasis text-decoration-none fw-bold w-100" style="transform: translateY(-10px)">
                 <div id="large-logo" class="text-center mx-auto">
-                    <span class="site-name">
-                        Atlas<br>
-                        <small>The Public Think Tank</small>
+                    <span class="site-name position-relative">
+                        <span class="fs-2">Atlas</span>
+                        <br>
+                        <small class="position-absolute text-nowrap" style="top:15px; left:-36px">The Public Think Tank</small>
                     </span>
                 </div>
-                @* <div id="small-logo"> *@
-                @*     ATPTT *@
-                @* </div> *@
+               
             </a>
           
 
@@ -101,7 +105,8 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/js/client_alerts.js" asp-append-version="true"></script>
     <script src="~/js/left-sidebar-container.js" asp-append-version="true"></script>
-    
+    @* Select2 JS *@
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 
 

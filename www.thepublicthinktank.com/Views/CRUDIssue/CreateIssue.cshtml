@@ -4,15 +4,15 @@
  @{ 
      ViewData["Title"] = "Create New Post"; 
  } 
- <div class="container mt-4"> 
+ <form asp-action="CreateIssue" method="post" class=" mt-4" > 
      <div class="row"> 
-         <div class="col-md-8 offset-md-2"> 
+         <div class="col-12 col-md-8 "> 
              <div class="card"> 
                  <div class="card-header bg-primary text-white"> 
-                     <h4>Create New Post</h4> 
+                     <h4>Create New Issue</h4> 
                  </div> 
                  <div class="card-body"> 
-                     <form asp-action="CreateIssue" method="post"> 
+                     <div> 
                          <div asp-validation-summary="ModelOnly" class="text-danger"></div> 
 
                          <div class="mb-3"> 
@@ -27,47 +27,112 @@
                              <span asp-validation-for="Content" class="text-danger"></span> 
                          </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Categories</label>
-                            <select multiple name="SelectedCategoryIds" class="form-select"
-                                    asp-items="@(new SelectList(Model.Categories, "CategoryID", "CategoryName"))">
-                            </select>
-                            <span asp-validation-for="SelectedCategoryIds" class="text-danger"></span>
-                        </div>
-                          <div class="mb-3"> 
-                              <label asp-for="ScopeID" class="form-label">Scope</label> 
-                              <select asp-for="ScopeID" class="form-select" 
-                                      asp-items="@(new SelectList(Model.Scopes, "ScopeID", "ScopeName"))"> 
-                                  <option value="">-- Select a Scope --</option> 
-                              </select> 
-                              <span asp-validation-for="ScopeID" class="text-danger"></span> 
-                          </div> 
-
-                         <div class="mb-3"> 
-                             <label asp-for="ParentIssueID" class="form-label">Parent Post (Optional)</label> 
-                             <input asp-for="ParentIssueID" class="form-control" /> 
-                             <span asp-validation-for="ParentIssueID" class="text-danger"></span> 
-                         </div> 
-
-                         <div class="mb-3">
-                            <label asp-for="ContentStatus" class="form-label">Status</label>
-                            <select asp-for="ContentStatus" class="form-select" asp-items="Html.GetEnumSelectList<ContentStatus>()">
-                            </select> 
-                             <span asp-validation-for="ContentStatus" class="text-danger"></span> 
-                         </div> 
 
                          <div class="d-flex justify-content-between"> 
                              <button type="submit" class="btn btn-primary">Create Post</button> 
                              <a asp-action="Index" class="btn btn-secondary">Cancel</a> 
                          </div> 
-                     </form> 
+                     </div> 
                  </div> 
              </div> 
          </div> 
+          <div class="col-12 col-md-4">
+
+            <div class="mb-3">
+                <label class="form-label">Categories (Tags)</label>
+                <select multiple name="SelectedCategoryIds" class="form-select select2"
+                        asp-items="@(new SelectList(Model.Categories, "CategoryID", "CategoryName"))">
+                </select>
+                <span asp-validation-for="SelectedCategoryIds" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="ScopeID" class="form-label">Scope</label>
+                <select asp-for="ScopeID" class="form-select select2"
+                        asp-items="@(new SelectList(Model.Scopes, "ScopeID", "ScopeName"))">
+                    <option value="">-- Select a Scope --</option>
+                </select>
+                <span asp-validation-for="ScopeID" class="text-danger"></span>
+            </div>
+
+            @* I would like this to be a select2 as well. except I'd like to render the items specifically to have more content. But I want it to start out empty, because it will use ajax for fetching data and populating the select2. 
+
+           
+
+            *@
+
+
+
+            <div class="mb-3">
+                <label asp-for="ParentIssueID" class="form-label">Parent Post (Optional)</label>                
+                <select asp-for="ParentIssueID" class="form-control select2-parent">
+                    @if(Model.ParentIssueID != null)
+                    {
+                        <option value="@Model.ParentIssueID" selected>Current parent issue (ID: @Model.ParentIssueID)</option>
+                    }
+                </select>
+                <span asp-validation-for="ParentIssueID" class="text-danger"></span>
+            </div>
+
+
+            <div class="mb-3">
+                <label asp-for="ContentStatus" class="form-label">Status</label>
+                <select asp-for="ContentStatus" class="form-select select2" asp-items="Html.GetEnumSelectList<ContentStatus>()">
+                </select>
+                <span asp-validation-for="ContentStatus" class="text-danger"></span>
+            </div>
+        </div>
      </div> 
- </div> 
- @section Scripts { 
-     @{ 
-         await Html.RenderPartialAsync("_ValidationScriptsPartial"); 
-     } 
- } 
+ </form> 
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        $(document).ready(function () {
+            // Other select2 initializations...
+            $('.select2').select2({
+                width: '100%'
+            });
+
+            // ParentIssueID select2 with AJAX and custom rendering
+            $('.select2-parent').select2({
+                width: '100%',
+                placeholder: 'Search for a parent post...',
+                allowClear: true,
+                ajax: {
+                    url: '/api/issues/search', // <-- Change to your actual endpoint
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return {
+                            q: params.term // search term
+                        };
+                    },
+                    processResults: function (data) {
+                        // data should be an array of objects: [{id, title, summary, ...}]
+                        return {
+                            results: data.map(function (item) {
+                                return {
+                                    id: item.id,
+                                    text: item.title,
+                                    summary: item.summary // add more fields as needed
+                                };
+                            })
+                        };
+                    },
+                    cache: true
+                },
+                templateResult: function (item) {
+                    if (item.loading) return item.text;
+                    // Custom rendering for dropdown items
+                    return $(
+                        '<div><strong>' + item.text + '</strong><br/><small>' + (item.summary || '') + '</small></div>'
+                    );
+                },
+                templateSelection: function (item) {
+                    return item.text || item.id;
+                }
+            });
+        });
+    </script>
+}

@@ -3,6 +3,7 @@
 :root {
     --header-height: 70.4px;
     --left-sidebar-container-width: 300px;
+    --call-to-action-theme-color: #beff9e;
 }
 
 
@@ -97,3 +98,23 @@ svg.parent-issue-icon {
     width: 24px;
     transform: translateY(-4px);
 }
+
+.outlined-text {
+    -webkit-text-stroke: 0.5px black; /* outline width and color */
+    text-stroke: 0.5px black; /* optional non-prefixed */
+}
+
+:root {
+    --solution-bg: #03ca03; /* Light mode green */
+    /* Add other light mode variables here */
+}
+
+[data-bs-theme="dark"] {
+    --solution-bg: #006600; /* Dark mode green */
+    /* Add other dark mode variables here */
+}
+
+.solution-card .card-header {
+    background: var(--solution-bg);
+}
+

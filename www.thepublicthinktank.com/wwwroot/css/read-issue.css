@@ -63,6 +63,24 @@
         cursor: pointer;
         font-weight: bold;
         /*Hard coded color style for button text, not themed */
-        color: #53fc00; 
+        color: var(--call-to-action-theme-color);
     }
+
+.nav-link {
+    position: relative;
+}
+    .nav-link .content-count {
+    
+    position: absolute;
+    right:5px;
+    top:0;
+    scale: 0.6;
+    }
+
+.issue-card .content-count {
+    position: absolute;
+    right: -7px;
+    top: -9px;
+    scale: 0.6;
+}
 

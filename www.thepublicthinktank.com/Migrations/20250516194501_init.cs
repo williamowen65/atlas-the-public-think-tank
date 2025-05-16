@@ -14,7 +14,7 @@ namespace atlas_the_public_think_tank.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.EnsureSchema(
-                name: "forums");
+                name: "issues");
 
             migrationBuilder.EnsureSchema(
                 name: "users");
@@ -60,11 +60,10 @@ namespace atlas_the_public_think_tank.Migrations
 
             migrationBuilder.CreateTable(
                 name: "BlockedContent",
-                schema: "forums",
+                schema: "issues",
                 columns: table => new
                 {
-                    BlockedContentID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    BlockedContentID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ReasonID = table.Column<short>(type: "smallint", nullable: true)
                 },
                 constraints: table =>
@@ -74,11 +73,10 @@ namespace atlas_the_public_think_tank.Migrations
 
             migrationBuilder.CreateTable(
                 name: "Categories",
-                schema: "forums",
+                schema: "issues",
                 columns: table => new
                 {
-                    CategoryID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    CategoryID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CategoryName = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
@@ -88,11 +86,10 @@ namespace atlas_the_public_think_tank.Migrations
 
             migrationBuilder.CreateTable(
                 name: "Scopes",
-                schema: "forums",
+                schema: "issues",
                 columns: table => new
                 {
-                    ScopeID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ScopeID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ScopeName = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
@@ -207,96 +204,94 @@ namespace atlas_the_public_think_tank.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Forums",
-                schema: "forums",
+                name: "Issues",
+                schema: "issues",
                 columns: table => new
                 {
-                    ForumID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    IssueID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ContentStatus = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
                     ModifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     AuthorID = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    ScopeID = table.Column<int>(type: "int", nullable: false),
-                    ParentForumID = table.Column<int>(type: "int", nullable: true),
-                    BlockedContentID = table.Column<int>(type: "int", nullable: true)
+                    ScopeID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ParentIssueID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    BlockedContentID = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Forums", x => x.ForumID);
+                    table.PrimaryKey("PK_Issues", x => x.IssueID);
                     table.ForeignKey(
-                        name: "FK_Forums_AspNetUsers_AuthorID",
+                        name: "FK_Issues_AspNetUsers_AuthorID",
                         column: x => x.AuthorID,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_Forums_BlockedContent_BlockedContentID",
+                        name: "FK_Issues_BlockedContent_BlockedContentID",
                         column: x => x.BlockedContentID,
-                        principalSchema: "forums",
+                        principalSchema: "issues",
                         principalTable: "BlockedContent",
                         principalColumn: "BlockedContentID",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_Forums_Forums_ParentForumID",
-                        column: x => x.ParentForumID,
-                        principalSchema: "forums",
-                        principalTable: "Forums",
-                        principalColumn: "ForumID",
+                        name: "FK_Issues_Issues_ParentIssueID",
+                        column: x => x.ParentIssueID,
+                        principalSchema: "issues",
+                        principalTable: "Issues",
+                        principalColumn: "IssueID",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_Forums_Scopes_ScopeID",
+                        name: "FK_Issues_Scopes_ScopeID",
                         column: x => x.ScopeID,
-                        principalSchema: "forums",
+                        principalSchema: "issues",
                         principalTable: "Scopes",
                         principalColumn: "ScopeID",
                         onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
-                name: "ForumsCategories",
-                schema: "forums",
+                name: "IssuesCategories",
+                schema: "issues",
                 columns: table => new
                 {
-                    CategoryID = table.Column<int>(type: "int", nullable: false),
-                    ForumID = table.Column<int>(type: "int", nullable: false)
+                    CategoryID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    IssueID = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ForumsCategories", x => new { x.CategoryID, x.ForumID });
+                    table.PrimaryKey("PK_IssuesCategories", x => new { x.CategoryID, x.IssueID });
                     table.ForeignKey(
-                        name: "FK_ForumsCategories_Categories_CategoryID",
+                        name: "FK_IssuesCategories_Categories_CategoryID",
                         column: x => x.CategoryID,
-                        principalSchema: "forums",
+                        principalSchema: "issues",
                         principalTable: "Categories",
                         principalColumn: "CategoryID",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_ForumsCategories_Forums_ForumID",
-                        column: x => x.ForumID,
-                        principalSchema: "forums",
-                        principalTable: "Forums",
-                        principalColumn: "ForumID",
+                        name: "FK_IssuesCategories_Issues_IssueID",
+                        column: x => x.IssueID,
+                        principalSchema: "issues",
+                        principalTable: "Issues",
+                        principalColumn: "IssueID",
                         onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Solutions",
-                schema: "forums",
+                schema: "issues",
                 columns: table => new
                 {
-                    SolutionID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ForumID = table.Column<int>(type: "int", nullable: false),
+                    SolutionID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    IssueID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Title = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: false),
                     Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ContentStatus = table.Column<int>(type: "int", nullable: false),
                     AuthorID = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     ModifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    BlockedContentID = table.Column<int>(type: "int", nullable: true)
+                    BlockedContentID = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -310,35 +305,34 @@ namespace atlas_the_public_think_tank.Migrations
                     table.ForeignKey(
                         name: "FK_Solutions_BlockedContent_BlockedContentID",
                         column: x => x.BlockedContentID,
-                        principalSchema: "forums",
+                        principalSchema: "issues",
                         principalTable: "BlockedContent",
                         principalColumn: "BlockedContentID",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_Solutions_Forums_ForumID",
-                        column: x => x.ForumID,
-                        principalSchema: "forums",
-                        principalTable: "Forums",
-                        principalColumn: "ForumID",
+                        name: "FK_Solutions_Issues_IssueID",
+                        column: x => x.IssueID,
+                        principalSchema: "issues",
+                        principalTable: "Issues",
+                        principalColumn: "IssueID",
                         onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Comments",
-                schema: "forums",
+                schema: "issues",
                 columns: table => new
                 {
-                    CommentID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ForumID = table.Column<int>(type: "int", nullable: true),
-                    ForumSolutionID = table.Column<int>(type: "int", nullable: true),
+                    CommentID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    IssueID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    IssueSolutionID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     Comment = table.Column<string>(type: "nvarchar(3000)", maxLength: 3000, nullable: false),
                     ContentStatus = table.Column<int>(type: "int", nullable: false),
                     AuthorID = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     ModifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    ParentCommentID = table.Column<int>(type: "int", nullable: true),
-                    BlockedContentID = table.Column<int>(type: "int", nullable: true)
+                    ParentCommentID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    BlockedContentID = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -352,28 +346,28 @@ namespace atlas_the_public_think_tank.Migrations
                     table.ForeignKey(
                         name: "FK_Comments_BlockedContent_BlockedContentID",
                         column: x => x.BlockedContentID,
-                        principalSchema: "forums",
+                        principalSchema: "issues",
                         principalTable: "BlockedContent",
                         principalColumn: "BlockedContentID",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Comments_Comments_ParentCommentID",
                         column: x => x.ParentCommentID,
-                        principalSchema: "forums",
+                        principalSchema: "issues",
                         principalTable: "Comments",
                         principalColumn: "CommentID",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_Comments_Forums_ForumID",
-                        column: x => x.ForumID,
-                        principalSchema: "forums",
-                        principalTable: "Forums",
-                        principalColumn: "ForumID",
+                        name: "FK_Comments_Issues_IssueID",
+                        column: x => x.IssueID,
+                        principalSchema: "issues",
+                        principalTable: "Issues",
+                        principalColumn: "IssueID",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_Comments_Solutions_ForumSolutionID",
-                        column: x => x.ForumSolutionID,
-                        principalSchema: "forums",
+                        name: "FK_Comments_Solutions_IssueSolutionID",
+                        column: x => x.IssueSolutionID,
+                        principalSchema: "issues",
                         principalTable: "Solutions",
                         principalColumn: "SolutionID",
                         onDelete: ReferentialAction.Restrict);
@@ -384,15 +378,14 @@ namespace atlas_the_public_think_tank.Migrations
                 schema: "users",
                 columns: table => new
                 {
-                    UserHistoryID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserHistoryID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     UserID = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     Action = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Link = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    ForumID = table.Column<int>(type: "int", nullable: true),
-                    ForumSolutionID = table.Column<int>(type: "int", nullable: true),
-                    CommentID = table.Column<int>(type: "int", nullable: true),
-                    UserVote = table.Column<int>(type: "int", nullable: true),
+                    IssueID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    IssueSolutionID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    CommentID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UserVoteID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     Timestamp = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()")
                 },
                 constraints: table =>
@@ -407,21 +400,21 @@ namespace atlas_the_public_think_tank.Migrations
                     table.ForeignKey(
                         name: "FK_UserHistory_Comments_CommentID",
                         column: x => x.CommentID,
-                        principalSchema: "forums",
+                        principalSchema: "issues",
                         principalTable: "Comments",
                         principalColumn: "CommentID",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_UserHistory_Forums_ForumID",
-                        column: x => x.ForumID,
-                        principalSchema: "forums",
-                        principalTable: "Forums",
-                        principalColumn: "ForumID",
+                        name: "FK_UserHistory_Issues_IssueID",
+                        column: x => x.IssueID,
+                        principalSchema: "issues",
+                        principalTable: "Issues",
+                        principalColumn: "IssueID",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_UserHistory_Solutions_ForumSolutionID",
-                        column: x => x.ForumSolutionID,
-                        principalSchema: "forums",
+                        name: "FK_UserHistory_Solutions_IssueSolutionID",
+                        column: x => x.IssueSolutionID,
+                        principalSchema: "issues",
                         principalTable: "Solutions",
                         principalColumn: "SolutionID",
                         onDelete: ReferentialAction.Restrict);
@@ -429,21 +422,20 @@ namespace atlas_the_public_think_tank.Migrations
 
             migrationBuilder.CreateTable(
                 name: "UserVotes",
-                schema: "forums",
+                schema: "issues",
                 columns: table => new
                 {
-                    VoteID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    VoteID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     UserID = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     VoteValue = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     ModifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    ForumID = table.Column<int>(type: "int", nullable: true),
-                    ForumSolutionID = table.Column<int>(type: "int", nullable: true),
-                    CommentID = table.Column<int>(type: "int", nullable: true),
+                    IssueID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    IssueSolutionID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    CommentID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     Discriminator = table.Column<string>(type: "nvarchar(13)", maxLength: 13, nullable: false),
-                    SolutionID = table.Column<int>(type: "int", nullable: true),
-                    UserCommentCommentID = table.Column<int>(type: "int", nullable: true)
+                    SolutionID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UserCommentCommentID = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -457,19 +449,19 @@ namespace atlas_the_public_think_tank.Migrations
                     table.ForeignKey(
                         name: "FK_UserVotes_Comments_UserCommentCommentID",
                         column: x => x.UserCommentCommentID,
-                        principalSchema: "forums",
+                        principalSchema: "issues",
                         principalTable: "Comments",
                         principalColumn: "CommentID");
                     table.ForeignKey(
-                        name: "FK_UserVotes_Forums_ForumID",
-                        column: x => x.ForumID,
-                        principalSchema: "forums",
-                        principalTable: "Forums",
-                        principalColumn: "ForumID");
+                        name: "FK_UserVotes_Issues_IssueID",
+                        column: x => x.IssueID,
+                        principalSchema: "issues",
+                        principalTable: "Issues",
+                        principalColumn: "IssueID");
                     table.ForeignKey(
                         name: "FK_UserVotes_Solutions_SolutionID",
                         column: x => x.SolutionID,
-                        principalSchema: "forums",
+                        principalSchema: "issues",
                         principalTable: "Solutions",
                         principalColumn: "SolutionID");
                 });
@@ -484,31 +476,61 @@ namespace atlas_the_public_think_tank.Migrations
                 });
 
             migrationBuilder.InsertData(
-                schema: "forums",
+                schema: "issues",
                 table: "Categories",
                 columns: new[] { "CategoryID", "CategoryName" },
                 values: new object[,]
                 {
-                    { 1, "Global Cooperation" },
-                    { 2, "Sustainable Development" },
-                    { 3, "Equitable Access" },
-                    { 4, "Innovation and Technology" },
-                    { 5, "Effective Governance" },
-                    { 6, "Education and Awareness" },
-                    { 7, "Cultural Understanding" },
-                    { 8, "Resilience and Adaptability" }
+                    { new Guid("0950f1d0-5c03-4f3a-9015-c4bb3c0e7620"), "Cultural Understanding" },
+                    { new Guid("25487e1f-b167-4666-a20c-dec2e4b5f413"), "Sustainable Development" },
+                    { new Guid("26c867f2-48c6-4bd5-b36a-9f7325431ad3"), "Effective Governance" },
+                    { new Guid("3ce7d7d2-176d-4b72-8d98-4b97b49ed0c1"), "Resilience and Adaptability" },
+                    { new Guid("81f910e0-39a4-4b44-88ca-fd3c30af4a25"), "Global Cooperation" },
+                    { new Guid("a8fb4691-8c1f-4e7d-b315-b042097e6395"), "Equitable Access" },
+                    { new Guid("d2c7a605-a621-4b14-8d51-e2df0cecae1a"), "Education and Awareness" },
+                    { new Guid("f5c35e6a-8c4f-4556-b6c1-4448b26d1bcb"), "Innovation and Technology" }
                 });
 
             migrationBuilder.InsertData(
-                schema: "forums",
+                schema: "issues",
                 table: "Scopes",
                 columns: new[] { "ScopeID", "ScopeName" },
                 values: new object[,]
                 {
-                    { 1, "Global" },
-                    { 2, "National" },
-                    { 3, "Local" },
-                    { 4, "Individual" }
+                    { new Guid("a1e7c6b3-d5e2-4f8a-9c3b-8d7e6f5d4c2b"), "Global" },
+                    { new Guid("b2d8f1a7-e4c9-3b6a-8d5f-7e6c9d8b3a2f"), "National" },
+                    { new Guid("c3b9a2d8-f1e7-6c5b-4d3a-2f1e7d8c9b6a"), "Local" },
+                    { new Guid("d4c9b3a2-f8e7-1d6c-5b4a-3f2e1d9c8b7a"), "Individual" }
+                });
+
+            migrationBuilder.InsertData(
+                schema: "issues",
+                table: "Issues",
+                columns: new[] { "IssueID", "AuthorID", "BlockedContentID", "Content", "ContentStatus", "CreatedAt", "ModifiedAt", "ParentIssueID", "ScopeID", "Title" },
+                values: new object[,]
+                {
+                    { new Guid("4aebb16c-b474-4c14-9e5e-4548134cadc8"), "1a61454c-5b83-4aab-8661-96d6dffbee30", null, "Discussion on modern urban planning approaches for sustainable and livable cities.", 1, new DateTime(2024, 2, 10, 0, 0, 0, 0, DateTimeKind.Unspecified), null, null, new Guid("b2d8f1a7-e4c9-3b6a-8d5f-7e6c9d8b3a2f"), "Urban Planning Innovations" },
+                    { new Guid("b3a72e5d-7c18-4e9f-8d24-67a2c6f35b1d"), "1a61454c-5b83-4aab-8661-96d6dffbe31", null, "The world is experiencing a biodiversity crisis, with thousands of species teetering on the edge of extinction.", 1, new DateTime(2024, 4, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null, null, new Guid("a1e7c6b3-d5e2-4f8a-9c3b-8d7e6f5d4c2b"), "Critical Decline of Endangered Species" },
+                    { new Guid("fd43657c-a0a8-4721-a6b5-3f23e35088fc"), "1a61454c-5b83-4aab-8661-96d6dffbee30", null, "A issue to discuss practical solutions to climate change at individual and policy levels.", 1, new DateTime(2024, 1, 15, 0, 0, 0, 0, DateTimeKind.Unspecified), null, null, new Guid("a1e7c6b3-d5e2-4f8a-9c3b-8d7e6f5d4c2b"), "Climate Change Solutions" },
+                    { new Guid("c246d67c-427c-40f9-8bb2-b0834e473f7b"), "1a61454c-5b83-4aab-8661-96d6dffbe31", null, "Strategies for transitioning to renewable energy sources at community and national levels.", 1, new DateTime(2024, 3, 5, 0, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(2024, 3, 10, 0, 0, 0, 0, DateTimeKind.Unspecified), new Guid("fd43657c-a0a8-4721-a6b5-3f23e35088fc"), new Guid("a1e7c6b3-d5e2-4f8a-9c3b-8d7e6f5d4c2b"), "Renewable Energy Transition" },
+                    { new Guid("e5d8f6a9-3b7c-42e1-9d85-7f63a4b5c28d"), "1a61454c-5b83-4aab-8661-96d6dffbe31", null, "The Southern Resident orca population has dropped from 88 individuals in 2010 to just 74 as of late 2024. This decline is attributed to a combination of factors, including reduced prey availability, pollution, and vessel traffic.", 1, new DateTime(2024, 5, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null, new Guid("b3a72e5d-7c18-4e9f-8d24-67a2c6f35b1d"), new Guid("b2d8f1a7-e4c9-3b6a-8d5f-7e6c9d8b3a2f"), "Decline of the Southern Resident orca population" }
+                });
+
+            migrationBuilder.InsertData(
+                schema: "issues",
+                table: "IssuesCategories",
+                columns: new[] { "CategoryID", "IssueID" },
+                values: new object[,]
+                {
+                    { new Guid("25487e1f-b167-4666-a20c-dec2e4b5f413"), new Guid("4aebb16c-b474-4c14-9e5e-4548134cadc8") },
+                    { new Guid("25487e1f-b167-4666-a20c-dec2e4b5f413"), new Guid("fd43657c-a0a8-4721-a6b5-3f23e35088fc") },
+                    { new Guid("26c867f2-48c6-4bd5-b36a-9f7325431ad3"), new Guid("4aebb16c-b474-4c14-9e5e-4548134cadc8") },
+                    { new Guid("3ce7d7d2-176d-4b72-8d98-4b97b49ed0c1"), new Guid("fd43657c-a0a8-4721-a6b5-3f23e35088fc") },
+                    { new Guid("81f910e0-39a4-4b44-88ca-fd3c30af4a25"), new Guid("fd43657c-a0a8-4721-a6b5-3f23e35088fc") },
+                    { new Guid("f5c35e6a-8c4f-4556-b6c1-4448b26d1bcb"), new Guid("4aebb16c-b474-4c14-9e5e-4548134cadc8") },
+                    { new Guid("25487e1f-b167-4666-a20c-dec2e4b5f413"), new Guid("c246d67c-427c-40f9-8bb2-b0834e473f7b") },
+                    { new Guid("81f910e0-39a4-4b44-88ca-fd3c30af4a25"), new Guid("c246d67c-427c-40f9-8bb2-b0834e473f7b") },
+                    { new Guid("f5c35e6a-8c4f-4556-b6c1-4448b26d1bcb"), new Guid("c246d67c-427c-40f9-8bb2-b0834e473f7b") }
                 });
 
             migrationBuilder.CreateIndex(
@@ -552,81 +574,81 @@ namespace atlas_the_public_think_tank.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "IX_Comments_AuthorID",
-                schema: "forums",
+                schema: "issues",
                 table: "Comments",
                 column: "AuthorID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Comments_BlockedContentID",
-                schema: "forums",
+                schema: "issues",
                 table: "Comments",
                 column: "BlockedContentID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Comments_ForumID",
-                schema: "forums",
+                name: "IX_Comments_IssueID",
+                schema: "issues",
                 table: "Comments",
-                column: "ForumID");
+                column: "IssueID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Comments_ForumSolutionID",
-                schema: "forums",
+                name: "IX_Comments_IssueSolutionID",
+                schema: "issues",
                 table: "Comments",
-                column: "ForumSolutionID");
+                column: "IssueSolutionID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Comments_ParentCommentID",
-                schema: "forums",
+                schema: "issues",
                 table: "Comments",
                 column: "ParentCommentID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Forums_AuthorID",
-                schema: "forums",
-                table: "Forums",
+                name: "IX_Issues_AuthorID",
+                schema: "issues",
+                table: "Issues",
                 column: "AuthorID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Forums_BlockedContentID",
-                schema: "forums",
-                table: "Forums",
+                name: "IX_Issues_BlockedContentID",
+                schema: "issues",
+                table: "Issues",
                 column: "BlockedContentID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Forums_ParentForumID",
-                schema: "forums",
-                table: "Forums",
-                column: "ParentForumID");
+                name: "IX_Issues_ParentIssueID",
+                schema: "issues",
+                table: "Issues",
+                column: "ParentIssueID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Forums_ScopeID",
-                schema: "forums",
-                table: "Forums",
+                name: "IX_Issues_ScopeID",
+                schema: "issues",
+                table: "Issues",
                 column: "ScopeID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ForumsCategories_ForumID",
-                schema: "forums",
-                table: "ForumsCategories",
-                column: "ForumID");
+                name: "IX_IssuesCategories_IssueID",
+                schema: "issues",
+                table: "IssuesCategories",
+                column: "IssueID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Solutions_AuthorID",
-                schema: "forums",
+                schema: "issues",
                 table: "Solutions",
                 column: "AuthorID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Solutions_BlockedContentID",
-                schema: "forums",
+                schema: "issues",
                 table: "Solutions",
                 column: "BlockedContentID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Solutions_ForumID",
-                schema: "forums",
+                name: "IX_Solutions_IssueID",
+                schema: "issues",
                 table: "Solutions",
-                column: "ForumID");
+                column: "IssueID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserHistory_CommentID",
@@ -635,16 +657,16 @@ namespace atlas_the_public_think_tank.Migrations
                 column: "CommentID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserHistory_ForumID",
+                name: "IX_UserHistory_IssueID",
                 schema: "users",
                 table: "UserHistory",
-                column: "ForumID");
+                column: "IssueID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserHistory_ForumSolutionID",
+                name: "IX_UserHistory_IssueSolutionID",
                 schema: "users",
                 table: "UserHistory",
-                column: "ForumSolutionID");
+                column: "IssueSolutionID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserHistory_UserID",
@@ -653,26 +675,26 @@ namespace atlas_the_public_think_tank.Migrations
                 column: "UserID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserVotes_ForumID",
-                schema: "forums",
+                name: "IX_UserVotes_IssueID",
+                schema: "issues",
                 table: "UserVotes",
-                column: "ForumID");
+                column: "IssueID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserVotes_SolutionID",
-                schema: "forums",
+                schema: "issues",
                 table: "UserVotes",
                 column: "SolutionID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserVotes_UserCommentCommentID",
-                schema: "forums",
+                schema: "issues",
                 table: "UserVotes",
                 column: "UserCommentCommentID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserVotes_UserID",
-                schema: "forums",
+                schema: "issues",
                 table: "UserVotes",
                 column: "UserID");
         }
@@ -696,8 +718,8 @@ namespace atlas_the_public_think_tank.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
-                name: "ForumsCategories",
-                schema: "forums");
+                name: "IssuesCategories",
+                schema: "issues");
 
             migrationBuilder.DropTable(
                 name: "UserHistory",
@@ -705,37 +727,37 @@ namespace atlas_the_public_think_tank.Migrations
 
             migrationBuilder.DropTable(
                 name: "UserVotes",
-                schema: "forums");
+                schema: "issues");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
                 name: "Categories",
-                schema: "forums");
+                schema: "issues");
 
             migrationBuilder.DropTable(
                 name: "Comments",
-                schema: "forums");
+                schema: "issues");
 
             migrationBuilder.DropTable(
                 name: "Solutions",
-                schema: "forums");
+                schema: "issues");
 
             migrationBuilder.DropTable(
-                name: "Forums",
-                schema: "forums");
+                name: "Issues",
+                schema: "issues");
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");
 
             migrationBuilder.DropTable(
                 name: "BlockedContent",
-                schema: "forums");
+                schema: "issues");
 
             migrationBuilder.DropTable(
                 name: "Scopes",
-                schema: "forums");
+                schema: "issues");
         }
     }
 }
