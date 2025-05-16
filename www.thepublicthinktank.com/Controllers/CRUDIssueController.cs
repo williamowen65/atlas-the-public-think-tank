@@ -277,6 +277,19 @@ namespace atlas_the_public_think_tank.Controllers
         }
 
 
+        /// <summary>
+        /// Returns a HTML page for a specific solution
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("/solution/{id}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ReadSolution(Guid id)
+        {
+            return View();
+        }
+
 
         /// <summary>
         /// This method is used to return all categories.
