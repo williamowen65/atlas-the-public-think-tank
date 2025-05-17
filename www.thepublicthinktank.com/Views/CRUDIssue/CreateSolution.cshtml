@@ -57,6 +57,15 @@
             </div>
 
             <div class="mb-3">
+                <label asp-for="ScopeID" class="form-label">Scope</label>
+                <select asp-for="ScopeID" class="form-select select2"
+                        asp-items="@(new SelectList(Model.Scopes, "ScopeID", "ScopeName"))">
+                    <option value="">-- Select a Scope --</option>
+                </select>
+                <span asp-validation-for="ScopeID" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
                 <label asp-for="ContentStatus" class="form-label">Status</label>
                 <select asp-for="ContentStatus" class="form-select select2" asp-items="Html.GetEnumSelectList<ContentStatus>()">
                 </select>

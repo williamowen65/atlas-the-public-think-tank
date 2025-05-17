@@ -291,7 +291,8 @@ namespace atlas_the_public_think_tank.Migrations
                     AuthorID = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     ModifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    BlockedContentID = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                    BlockedContentID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    ScopeID = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -316,6 +317,13 @@ namespace atlas_the_public_think_tank.Migrations
                         principalTable: "Issues",
                         principalColumn: "IssueID",
                         onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Solutions_Scopes_ScopeID",
+                        column: x => x.ScopeID,
+                        principalSchema: "issues",
+                        principalTable: "Scopes",
+                        principalColumn: "ScopeID",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -649,6 +657,12 @@ namespace atlas_the_public_think_tank.Migrations
                 schema: "issues",
                 table: "Solutions",
                 column: "IssueID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Solutions_ScopeID",
+                schema: "issues",
+                table: "Solutions",
+                column: "ScopeID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserHistory_CommentID",

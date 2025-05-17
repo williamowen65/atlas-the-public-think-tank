@@ -12,7 +12,7 @@ using atlas_the_public_think_tank.Data;
 namespace atlas_the_public_think_tank.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250516194501_init")]
+    [Migration("20250516221720_init")]
     partial class init
     {
         /// <inheritdoc />
@@ -567,6 +567,9 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Property<DateTime?>("ModifiedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid>("ScopeID")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(300)
@@ -579,6 +582,8 @@ namespace atlas_the_public_think_tank.Migrations
                     b.HasIndex("BlockedContentID");
 
                     b.HasIndex("IssueID");
+
+                    b.HasIndex("ScopeID");
 
                     b.ToTable("Solutions", "issues");
                 });
@@ -882,11 +887,19 @@ namespace atlas_the_public_think_tank.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("atlas_the_public_think_tank.Models.Scope", "Scope")
+                        .WithMany()
+                        .HasForeignKey("ScopeID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Author");
 
                     b.Navigation("BlockedContent");
 
                     b.Navigation("Issue");
+
+                    b.Navigation("Scope");
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.UserComment", b =>

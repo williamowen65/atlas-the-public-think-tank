@@ -26,8 +26,17 @@ namespace atlas_the_public_think_tank.Models
     }
 
 
+    public interface ICardStatsViewModel
+    {
+        public List<Solution_ReadVM>? SolutionVM { get => null; }
+        public int SubIssueCount { get; }
+        
+        public ICollection<UserComment> Comments {get; set;}
+        public Scope Scope { get; }
+    }
 
-    public class Issue_ReadVM
+
+    public class Issue_ReadVM : ICardStatsViewModel
     {
         public Guid IssueID { get; set; }
         public string Title { get; set; }
@@ -60,7 +69,7 @@ namespace atlas_the_public_think_tank.Models
         public ICollection<IssueCategory> IssueCategories { get; set; }
     }
     
-    public class Solution_ReadVM
+    public class Solution_ReadVM : ICardStatsViewModel
     {
         public Guid SolutionID { get; set; }
         public string Title { get; set; }
@@ -71,14 +80,18 @@ namespace atlas_the_public_think_tank.Models
         public Guid IssueID { get; set; }
         public ContentStatus ContentStatus { get; set; }
         public Guid? BlockedContentID { get; set; }
+        public required int SubIssueCount { get; set; }
+
+        public Scope Scope { get; set; }
 
         // Navigation properties
         public AppUser Author { get; set; }
         public Issue Issue { get; set; }
         public BlockedContent BlockedContent { get; set; }
         public ICollection<UserComment> Comments { get; set; } = new List<UserComment>();
-        // public ICollection<UserVote> UserVotes { get; set; } = new List<UserVote>();
         public List<Category_ReadVM> Categories { get; set; } = new List<Category_ReadVM>();
+
+        public Issue_ReadVM ParentIssueVM { get; set; }
 
         // Statistics
         // public int TotalVotes { get; set; } = 0;
@@ -90,6 +103,7 @@ namespace atlas_the_public_think_tank.Models
         public Guid CategoryID { get; set; }
         public string CategoryName { get; set; }
     }
+
 
 
 
@@ -161,6 +175,9 @@ namespace atlas_the_public_think_tank.Models
         // For category selection
         public IEnumerable<Category> Categories { get; set; } = new List<Category>();
         public List<Guid> SelectedCategoryIds { get; set; } = new List<Guid>();
+
+        public List<Scope> Scopes { get; set; } = new List<Scope>();
+        public Guid ScopeID { get; set; }
 
     }
 

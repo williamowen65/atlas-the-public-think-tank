@@ -14,8 +14,9 @@
         <div class="flex-fill d-flex flex-column">
             <div class="card-header" style="border-left:var(--bs-card-border-width) solid var(--bs-card-border-color); border-top-left-radius: 0;">
                 <h5 class="mb-0">
+                  
                     <div style="font-size:20px;" class="float-end">
-                        @* You might want to add solution stat icons here *@
+                        @Html.Partial("~/Views/Issue/_issue-card-stat-icons.cshtml", Model)
                     </div>
                     @Model.Title
                 </h5>

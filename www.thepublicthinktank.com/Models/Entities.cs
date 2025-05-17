@@ -97,6 +97,8 @@ namespace atlas_the_public_think_tank.Models
         public DateTime? ModifiedAt { get; set; }
         public Guid? BlockedContentID { get; set; }
 
+        public Guid ScopeID { get; set; }
+
         // Navigation properties
         [JsonIgnore]
         public virtual Issue Issue { get; set; }
@@ -104,6 +106,8 @@ namespace atlas_the_public_think_tank.Models
         public virtual BlockedContent BlockedContent { get; set; }
         public virtual ICollection<UserComment> Comments { get; set; }
         public virtual ICollection<UserVote> UserVotes { get; set; }
+
+        public virtual Scope Scope { get; set; }
     }
 
     public enum ContentStatus
@@ -186,6 +190,16 @@ namespace atlas_the_public_think_tank.Models
         // Navigation properties
         public virtual Category Category { get; set; }
         public virtual Issue Issue { get; set; }
+    }
+
+    public class SolutionCategory
+    {
+        public Guid CategoryID { get; set; }
+        public Guid SolutionID { get; set; }
+
+        // Navigation properties
+        public virtual Category Category { get; set; }
+        public virtual Solution Solution { get; set; }
     }
 
     public class UserHistory

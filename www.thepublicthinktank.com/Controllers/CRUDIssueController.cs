@@ -186,6 +186,7 @@ namespace atlas_the_public_think_tank.Controllers
                  .ThenInclude(c => c.Scope) // include the Child issue's scope
             .Include(f => f.BlockedContent)
             .Include(f => f.Solutions)
+                .ThenInclude(s => s.Scope)
             .Include(f => f.Comments)
             .Include(f => f.UserVotes)
             .Include(f => f.IssueCategories)
@@ -257,8 +258,10 @@ namespace atlas_the_public_think_tank.Controllers
                     ModifiedAt = s.ModifiedAt,
                     AuthorID = s.AuthorID,
                     IssueID = s.IssueID,
+                    Scope = s.Scope,
                     ContentStatus = s.ContentStatus,
-                    BlockedContentID = s.BlockedContentID
+                    BlockedContentID = s.BlockedContentID,
+                    SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == s.SolutionID),
                 }).ToList() ?? new List<Solution_ReadVM>(),
                 Comments = issue.Comments,
                 UserVotes = issue.UserVotes,
@@ -554,6 +557,7 @@ namespace atlas_the_public_think_tank.Controllers
                 IssueID = parentIssueID,
                 ContentStatus = ContentStatus.Draft,
                 Categories = await _context.Categories.ToListAsync(),
+                Scopes = _context.Scopes.ToList(),
             };
 
             return View(viewModel);
@@ -577,7 +581,8 @@ namespace atlas_the_public_think_tank.Controllers
                     IssueID = model.IssueID.Value,
                     ContentStatus = model.ContentStatus,
                     AuthorID = userId,
-                    CreatedAt = DateTime.Now
+                    CreatedAt = DateTime.Now,
+                    ScopeID = model.ScopeID
                 };
 
                 // Add the solution to the context
