@@ -157,7 +157,7 @@ function createDebouncedSaveVote(issueId) {
         
         const voteNotCasted = "Vote not casted"
 
-        fetch('/Issue/Vote', {
+        fetch('/Content/Vote?contentType=Issue', {
             method: 'POST',
             body: formData,
             headers: {

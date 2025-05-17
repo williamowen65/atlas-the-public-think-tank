@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Diagnostics;
 
 namespace atlas_the_public_think_tank.Controllers
 {
@@ -354,9 +355,10 @@ namespace atlas_the_public_think_tank.Controllers
         /// </summary>
         /// <param name="model"></param>
         [HttpPost]
-        [Route("/issue/vote")]
-        public async Task<IActionResult> IssueVote(UserVote_Issue_CreateVM model)
+        [Route("/content/vote")]
+        public async Task<IActionResult> IssueVote(UserVote_Issue_CreateVM model, ContentType contentType)
         {
+
             if (!ModelState.IsValid)
             {
                 return Json(new { success = false, message = "Invalid vote data" });

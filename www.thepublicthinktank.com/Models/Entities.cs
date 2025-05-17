@@ -116,6 +116,13 @@ namespace atlas_the_public_think_tank.Models
         Published,
         Archived
     }
+
+    public enum ContentType
+    {
+        Solution,
+        Issue,
+        Comment
+    }
     public class UserComment
     {
         public Guid CommentID { get; set; }
