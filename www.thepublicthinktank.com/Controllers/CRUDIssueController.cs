@@ -160,7 +160,21 @@ namespace atlas_the_public_think_tank.Controllers
                             SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == child.IssueID),
                         })
                         .ToList(),
-                Solutions = p.Solutions
+                Solutions = p.Solutions,
+                 SolutionVM = p.Solutions.Select(s => new Solution_ReadVM
+                {
+                    SolutionID = s.SolutionID,
+                    Title = s.Title,
+                    Content = s.Content,
+                    CreatedAt = s.CreatedAt,
+                    ModifiedAt = s.ModifiedAt,
+                    AuthorID = s.AuthorID,
+                    IssueID = s.IssueID,
+                    Scope = s.Scope,
+                    ContentStatus = s.ContentStatus,
+                    BlockedContentID = s.BlockedContentID,
+                    SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == s.SolutionID),
+                }).ToList() ?? new List<Solution_ReadVM>(),
             }).ToList();
 
             return Ok(postsViewModel);
