@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Models;
+using atlas_the_public_think_tank.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +22,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddDefaultIdentity<AppUser>(options =>
     options.SignIn.RequireConfirmedAccount = true)
-    .AddRoles<IdentityRole>()
+    .AddRoles<IdentityRole<Guid>>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
 // Add a developer-friendly exception filter for database-related errors
@@ -37,6 +38,10 @@ builder.Services.AddControllersWithViews()
            });
 
 builder.Services.AddRazorPages();
+
+builder.Services.AddScoped<CRUD>(); // Register the CRUD service for dependency injection
+builder.Services.AddScoped<Issues>(); // Register the CRUD service for dependency injection
+builder.Services.AddScoped<Solutions>(); // Register the CRUD service for dependency injection
 
 var app = builder.Build();
 

@@ -10,7 +10,7 @@
     <nav class="d-flex">
         <div class="nav nav-tabs flex-grow-1 text-nowrap overflow-x-scroll overflow-y-hidden" style="flex-wrap: revert;" id="nav-tab" role="tablist">
             <button class="nav-link active" id="solutions-tab" data-bs-toggle="tab" data-bs-target="#solutions" type="button" role="tab" aria-controls="nav-home" aria-selected="true">
-                <div class="content-count">@Model.SolutionVM.Count()</div>
+                <div class="content-count">@Model.Solutions.Count()</div>
                 @Html.Partial("~/Views/Shared/Icons/_Solutions.cshtml")
                 Solutions
             </button>
@@ -53,13 +53,13 @@
     <div class="tab-content" id="nav-tabContent">
         <div class="tab-pane fade show active border border-1 border-top-0" id="solutions" role="tabpanel" aria-labelledby="solutions-tab" tabindex="0">
 
-            @if (Model.SolutionVM.Count() == 0)
+            @if (Model.Solutions.Count() == 0)
             {
                 <div id="empty-issueView-solution-feed" class="empty-feed ">
                     <div class="comment-feed">
                         <div class="content">
                             <h2>Empty Solution Feed</h2>
-                            <a href="@Url.Action("CreateSolution","CRUDIssue", new { parentIssueID = Model.IssueID })">
+                            <a href="@Url.Action("CreateSolution","Solution", new { parentIssueID = Model.IssueID })">
                                 <button class="outlined-text">Create a Solution</button>
                             </a>
                         </div>
@@ -68,10 +68,10 @@
             }
             else
             {
-                foreach (Solution_ReadVM model in Model.SolutionVM)
+                foreach (Solution_ReadVM model in Model.Solutions)
                 {
                     // Fetch the sub issue
-                    @Html.Partial("~/Views/Issue/_solution-card.cshtml", model);
+                    @Html.Partial("~/Views/Solution/_solution-card.cshtml", model);
                 }
 
             }
@@ -104,7 +104,7 @@
                     <div class="comment-feed">
                         <div class="content">
                             <h2>Empty Sub Issues Feed</h2>
-                            <a target="_blank" href="@Url.Action("CreateIssue", "CRUDIssue", new { parentIssueID = Model.IssueID })">
+                            <a target="_blank" href="@Url.Action("CreateIssue", "Issue", new { parentIssueID = Model.IssueID })">
                                 <button class="outlined-text">Create Sub-Issue</button>
                             </a>
 
@@ -143,6 +143,7 @@
         // Initialize vote dials on tab show event
         const subIssuesTab = document.getElementById('sub-issues-tab');
         const parentIssueTab = document.getElementById('parent-issue-tab');
+        const solutionsTab = document.getElementById('solutions-tab');
 
         if (subIssuesTab) {
             subIssuesTab.addEventListener('shown.bs.tab', function (e) {
@@ -157,17 +158,29 @@
                 reinitializeVoteDials('parent-issue');
             });
         }
+        if (solutionsTab) {
+            // console.log("setting listener on solution tab")
+            solutionsTab.addEventListener('shown.bs.tab', function (e) {
+                console.log('Solutions tab activated - reinitializing vote dials');
+                reinitializeVoteDials('solutions');
+            });
+        } else {
+            console.error("Solution tab not found")
+        }
+
+
+        
 
         // Function to find all issue cards in a tab and reinitialize vote dials
         function reinitializeVoteDials(tabId) {
             const tabPane = document.getElementById(tabId);
             if (!tabPane) return;
 
-            const issueCards = tabPane.querySelectorAll('[id^="issue-"]');
+            const issueCards = tabPane.querySelectorAll('[id^="issue-"], [id^="solution-"]');
 
             issueCards.forEach(card => {
                 // Extract the issue ID from the card's ID attribute
-                const issueId = card.id.replace('issue-', '');
+                const issueId = card.id.replace('issue-', '').replace("solution-", "");
                 console.log(`Reinitializing vote dial for issue ${issueId}`);
 
                 const dialContainer = card.querySelector('.dial-container');
@@ -183,19 +196,19 @@
                             }, 50);
                         } else {
                             // If vote container doesn't exist, need to fetch the dial
-                            fetchAndInitializeVoteDial(issueId, dialContainer);
+                            fetchAndInitializeIssueVoteDial(issueId, dialContainer);
                         }
                     } else {
                         // If no dial content, fetch it
-                        fetchAndInitializeVoteDial(issueId, dialContainer);
+                        fetchAndInitializeIssueVoteDial(issueId, dialContainer);
                     }
                 }
             });
         }
 
         // Helper function to fetch and initialize vote dials
-        function fetchAndInitializeVoteDial(issueId, dialContainer) {
-            fetch(`/api/GetVoteDial?issueId=${issueId}`)
+        function fetchAndInitializeIssueVoteDial(issueId, dialContainer) {
+            fetch(`/issue/GetVoteDial?issueId=${issueId}`)
                 .then(response => response.text())
                 .then(data => {
                     dialContainer.innerHTML = data;
@@ -205,6 +218,17 @@
                 })
                 .catch(error => console.error(`Error fetching vote dial for issue ${issueId}:`, error));
         }
+        function fetchAndInitializeSolutionVoteDial(solutionId, dialContainer) {
+            fetch(`/solution/GetVoteDial?solutionId=${solutionId}`)
+                .then(response => response.text())
+                .then(data => {
+                    dialContainer.innerHTML = data;
+                    setTimeout(() => {
+                        initializeVoteDial(solutionId);
+                    }, 50);
+                })
+                .catch(error => console.error(`Error fetching vote dial for solution ${solutionId}:`, error));
+        }
     });
 function dynamicDropdownContent(){
     const dropdownMenu = document.getElementById('dynamic-actions');
@@ -212,13 +236,13 @@ function dynamicDropdownContent(){
     // Menu content templates for each tab
     const menuTemplates = {
         'solutions-tab': `
-            <li><a class="dropdown-item" href="@Url.Action("CreateSolution","CRUDIssue", new { parentIssueID = Model.IssueID})">Create Solution</a></li>
+            <li><a class="dropdown-item" href="@Url.Action("CreateSolution","Solution", new { parentIssueID = Model.IssueID})">Create Solution</a></li>
         `,
         'issue-comments-tab': `
             <li><a class="dropdown-item" href="#">Create Discussion</a></li>
         `,
         'sub-issues-tab': `
-            <li><a class="dropdown-item" href="@Url.Action("CreateIssue", "CRUDIssue", new { parentIssueID = Model.IssueID })">Create Sub-Issue</a></li>
+            <li><a class="dropdown-item" href="@Url.Action("CreateIssue", "Issue", new { parentIssueID = Model.IssueID })">Create Sub-Issue</a></li>
         `,
         'parent-issue-tab': `
             <li><a class="dropdown-item" href="#">Go to Parent Issue</a></li>

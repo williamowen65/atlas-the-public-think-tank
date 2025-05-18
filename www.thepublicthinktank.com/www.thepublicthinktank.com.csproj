@@ -9,6 +9,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Views\CRUDIssue\**" />
+    <Compile Remove="Views\Solutions\**" />
+    <Content Remove="Views\CRUDIssue\**" />
+    <Content Remove="Views\Solutions\**" />
+    <EmbeddedResource Remove="Views\CRUDIssue\**" />
+    <EmbeddedResource Remove="Views\Solutions\**" />
+    <None Remove="Views\CRUDIssue\**" />
+    <None Remove="Views\Solutions\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="9.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="9.0.3" />

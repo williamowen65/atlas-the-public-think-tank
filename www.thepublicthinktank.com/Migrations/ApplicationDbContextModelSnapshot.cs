@@ -22,10 +22,11 @@ namespace atlas_the_public_think_tank.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
@@ -49,7 +50,7 @@ namespace atlas_the_public_think_tank.Migrations
                     b.ToTable("AspNetRoles", (string)null);
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -63,9 +64,8 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Property<string>("ClaimValue")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("RoleId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
@@ -74,7 +74,7 @@ namespace atlas_the_public_think_tank.Migrations
                     b.ToTable("AspNetRoleClaims", (string)null);
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -88,9 +88,8 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Property<string>("ClaimValue")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
@@ -99,7 +98,7 @@ namespace atlas_the_public_think_tank.Migrations
                     b.ToTable("AspNetUserClaims", (string)null);
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<System.Guid>", b =>
                 {
                     b.Property<string>("LoginProvider")
                         .HasMaxLength(128)
@@ -112,9 +111,8 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Property<string>("ProviderDisplayName")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("LoginProvider", "ProviderKey");
 
@@ -123,13 +121,13 @@ namespace atlas_the_public_think_tank.Migrations
                     b.ToTable("AspNetUserLogins", (string)null);
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<string>", b =>
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<System.Guid>", b =>
                 {
-                    b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("RoleId")
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("UserId", "RoleId");
 
@@ -138,10 +136,10 @@ namespace atlas_the_public_think_tank.Migrations
                     b.ToTable("AspNetUserRoles", (string)null);
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<System.Guid>", b =>
                 {
-                    b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("LoginProvider")
                         .HasMaxLength(128)
@@ -161,8 +159,9 @@ namespace atlas_the_public_think_tank.Migrations
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.AppUser", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
@@ -226,7 +225,7 @@ namespace atlas_the_public_think_tank.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "1a61454c-5b83-4aab-8661-96d6dffbee30",
+                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dffbee30"),
                             AccessFailedCount = 0,
                             ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
                             Email = "whoLetTheDogsOut@barker.com",
@@ -242,7 +241,7 @@ namespace atlas_the_public_think_tank.Migrations
                         },
                         new
                         {
-                            Id = "1a61454c-5b83-4aab-8661-96d6dffbe31",
+                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dffbee31"),
                             AccessFailedCount = 0,
                             ConcurrencyStamp = "a1b2c3e4-e5f6-7890-acsd-ef1234567891",
                             Email = "amelia.knight@example.org",
@@ -269,7 +268,7 @@ namespace atlas_the_public_think_tank.Migrations
 
                     b.HasKey("BlockedContentID");
 
-                    b.ToTable("BlockedContent", "issues");
+                    b.ToTable("BlockedContent", "app");
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.Category", b =>
@@ -284,7 +283,7 @@ namespace atlas_the_public_think_tank.Migrations
 
                     b.HasKey("CategoryID");
 
-                    b.ToTable("Categories", "issues");
+                    b.ToTable("Categories", "app");
 
                     b.HasData(
                         new
@@ -329,15 +328,44 @@ namespace atlas_the_public_think_tank.Migrations
                         });
                 });
 
+            modelBuilder.Entity("atlas_the_public_think_tank.Models.CommentVote", b =>
+                {
+                    b.Property<Guid>("VoteID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CommentID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("VoteValue")
+                        .HasColumnType("int");
+
+                    b.HasKey("VoteID");
+
+                    b.HasIndex("CommentID");
+
+                    b.HasIndex("UserID");
+
+                    b.ToTable("CommentVotes", "comments");
+                });
+
             modelBuilder.Entity("atlas_the_public_think_tank.Models.Issue", b =>
                 {
                     b.Property<Guid>("IssueID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("AuthorID")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<Guid>("AuthorID")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("BlockedContentID")
                         .HasColumnType("uniqueidentifier");
@@ -384,7 +412,7 @@ namespace atlas_the_public_think_tank.Migrations
                         new
                         {
                             IssueID = new Guid("fd43657c-a0a8-4721-a6b5-3f23e35088fc"),
-                            AuthorID = "1a61454c-5b83-4aab-8661-96d6dffbee30",
+                            AuthorID = new Guid("1a61454c-5b83-4aab-8661-96d6dffbee30"),
                             Content = "A issue to discuss practical solutions to climate change at individual and policy levels.",
                             ContentStatus = 1,
                             CreatedAt = new DateTime(2024, 1, 15, 0, 0, 0, 0, DateTimeKind.Unspecified),
@@ -394,17 +422,17 @@ namespace atlas_the_public_think_tank.Migrations
                         new
                         {
                             IssueID = new Guid("4aebb16c-b474-4c14-9e5e-4548134cadc8"),
-                            AuthorID = "1a61454c-5b83-4aab-8661-96d6dffbee30",
+                            AuthorID = new Guid("1a61454c-5b83-4aab-8661-96d6dffbee30"),
                             Content = "Discussion on modern urban planning approaches for sustainable and livable cities.",
                             ContentStatus = 1,
                             CreatedAt = new DateTime(2024, 2, 10, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            ScopeID = new Guid("b2d8f1a7-e4c9-3b6a-8d5f-7e6c9d8b3a2f"),
+                            ScopeID = new Guid("b2d8f1a7-e4c9-4f8a-8d5f-7e6c9d8b3a2f"),
                             Title = "Urban Planning Innovations"
                         },
                         new
                         {
                             IssueID = new Guid("c246d67c-427c-40f9-8bb2-b0834e473f7b"),
-                            AuthorID = "1a61454c-5b83-4aab-8661-96d6dffbe31",
+                            AuthorID = new Guid("1a61454c-5b83-4aab-8661-96d6dffbee31"),
                             Content = "Strategies for transitioning to renewable energy sources at community and national levels.",
                             ContentStatus = 1,
                             CreatedAt = new DateTime(2024, 3, 5, 0, 0, 0, 0, DateTimeKind.Unspecified),
@@ -416,7 +444,7 @@ namespace atlas_the_public_think_tank.Migrations
                         new
                         {
                             IssueID = new Guid("b3a72e5d-7c18-4e9f-8d24-67a2c6f35b1d"),
-                            AuthorID = "1a61454c-5b83-4aab-8661-96d6dffbe31",
+                            AuthorID = new Guid("1a61454c-5b83-4aab-8661-96d6dffbee31"),
                             Content = "The world is experiencing a biodiversity crisis, with thousands of species teetering on the edge of extinction.",
                             ContentStatus = 1,
                             CreatedAt = new DateTime(2024, 4, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
@@ -426,12 +454,12 @@ namespace atlas_the_public_think_tank.Migrations
                         new
                         {
                             IssueID = new Guid("e5d8f6a9-3b7c-42e1-9d85-7f63a4b5c28d"),
-                            AuthorID = "1a61454c-5b83-4aab-8661-96d6dffbe31",
+                            AuthorID = new Guid("1a61454c-5b83-4aab-8661-96d6dffbee31"),
                             Content = "The Southern Resident orca population has dropped from 88 individuals in 2010 to just 74 as of late 2024. This decline is attributed to a combination of factors, including reduced prey availability, pollution, and vessel traffic.",
                             ContentStatus = 1,
                             CreatedAt = new DateTime(2024, 5, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             ParentIssueID = new Guid("b3a72e5d-7c18-4e9f-8d24-67a2c6f35b1d"),
-                            ScopeID = new Guid("b2d8f1a7-e4c9-3b6a-8d5f-7e6c9d8b3a2f"),
+                            ScopeID = new Guid("b2d8f1a7-e4c9-4f8a-8d5f-7e6c9d8b3a2f"),
                             Title = "Decline of the Southern Resident orca population"
                         });
                 });
@@ -498,6 +526,36 @@ namespace atlas_the_public_think_tank.Migrations
                         });
                 });
 
+            modelBuilder.Entity("atlas_the_public_think_tank.Models.IssueVote", b =>
+                {
+                    b.Property<Guid>("VoteID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("IssueID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("VoteValue")
+                        .HasColumnType("int");
+
+                    b.HasKey("VoteID");
+
+                    b.HasIndex("IssueID");
+
+                    b.HasIndex("UserID");
+
+                    b.ToTable("IssueVotes", "issues");
+                });
+
             modelBuilder.Entity("atlas_the_public_think_tank.Models.Scope", b =>
                 {
                     b.Property<Guid>("ScopeID")
@@ -510,7 +568,7 @@ namespace atlas_the_public_think_tank.Migrations
 
                     b.HasKey("ScopeID");
 
-                    b.ToTable("Scopes", "issues");
+                    b.ToTable("Scopes", "app");
 
                     b.HasData(
                         new
@@ -520,17 +578,17 @@ namespace atlas_the_public_think_tank.Migrations
                         },
                         new
                         {
-                            ScopeID = new Guid("b2d8f1a7-e4c9-3b6a-8d5f-7e6c9d8b3a2f"),
+                            ScopeID = new Guid("b2d8f1a7-e4c9-4f8a-8d5f-7e6c9d8b3a2f"),
                             ScopeName = "National"
                         },
                         new
                         {
-                            ScopeID = new Guid("c3b9a2d8-f1e7-6c5b-4d3a-2f1e7d8c9b6a"),
+                            ScopeID = new Guid("c3b9a2d8-f1e7-4f8a-9c3b-8d7e6f5d4c2b"),
                             ScopeName = "Local"
                         },
                         new
                         {
-                            ScopeID = new Guid("d4c9b3a2-f8e7-1d6c-5b4a-3f2e1d9c8b7a"),
+                            ScopeID = new Guid("d4c9b3a2-f8e7-4f8a-9c3b-8d7e6f5d4c2b"),
                             ScopeName = "Individual"
                         });
                 });
@@ -541,9 +599,8 @@ namespace atlas_the_public_think_tank.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("AuthorID")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<Guid>("AuthorID")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("BlockedContentID")
                         .HasColumnType("uniqueidentifier");
@@ -564,6 +621,9 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Property<DateTime?>("ModifiedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid>("ScopeID")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(300)
@@ -577,7 +637,54 @@ namespace atlas_the_public_think_tank.Migrations
 
                     b.HasIndex("IssueID");
 
-                    b.ToTable("Solutions", "issues");
+                    b.HasIndex("ScopeID");
+
+                    b.ToTable("Solutions", "solutions");
+                });
+
+            modelBuilder.Entity("atlas_the_public_think_tank.Models.SolutionCategory", b =>
+                {
+                    b.Property<Guid>("CategoryID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SolutionID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("CategoryID", "SolutionID");
+
+                    b.HasIndex("SolutionID");
+
+                    b.ToTable("SolutionsCategories", "solutions");
+                });
+
+            modelBuilder.Entity("atlas_the_public_think_tank.Models.SolutionVote", b =>
+                {
+                    b.Property<Guid>("VoteID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("SolutionID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("VoteValue")
+                        .HasColumnType("int");
+
+                    b.HasKey("VoteID");
+
+                    b.HasIndex("SolutionID");
+
+                    b.HasIndex("UserID");
+
+                    b.ToTable("SolutionVotes", "solutions");
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.UserComment", b =>
@@ -586,9 +693,8 @@ namespace atlas_the_public_think_tank.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("AuthorID")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<Guid>("AuthorID")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("BlockedContentID")
                         .HasColumnType("uniqueidentifier");
@@ -607,13 +713,13 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Property<Guid?>("IssueID")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("IssueSolutionID")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime?>("ModifiedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<Guid?>("ParentCommentID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("SolutionID")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("CommentID");
@@ -624,11 +730,11 @@ namespace atlas_the_public_think_tank.Migrations
 
                     b.HasIndex("IssueID");
 
-                    b.HasIndex("IssueSolutionID");
-
                     b.HasIndex("ParentCommentID");
 
-                    b.ToTable("Comments", "issues");
+                    b.HasIndex("SolutionID");
+
+                    b.ToTable("Comments", "comments");
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.UserHistory", b =>
@@ -648,21 +754,20 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Property<Guid?>("IssueID")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("IssueSolutionID")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("Link")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid?>("SolutionID")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("Timestamp")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("GETDATE()");
 
-                    b.Property<string>("UserID")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<Guid>("UserID")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("UserVoteID")
                         .HasColumnType("uniqueidentifier");
@@ -673,139 +778,81 @@ namespace atlas_the_public_think_tank.Migrations
 
                     b.HasIndex("IssueID");
 
-                    b.HasIndex("IssueSolutionID");
+                    b.HasIndex("SolutionID");
 
                     b.HasIndex("UserID");
 
                     b.ToTable("UserHistory", "users");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.UserVote", b =>
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
                 {
-                    b.Property<Guid>("VoteID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
 
-                    b.Property<Guid?>("CommentID")
-                        .HasColumnType("uniqueidentifier");
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>", b =>
+                {
+                    b.HasOne("atlas_the_public_think_tank.Models.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<System.Guid>", b =>
+                {
+                    b.HasOne("atlas_the_public_think_tank.Models.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
 
-                    b.Property<string>("Discriminator")
-                        .IsRequired()
-                        .HasMaxLength(13)
-                        .HasColumnType("nvarchar(13)");
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<System.Guid>", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Property<Guid?>("IssueID")
-                        .HasColumnType("uniqueidentifier");
+                    b.HasOne("atlas_the_public_think_tank.Models.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
 
-                    b.Property<Guid?>("IssueSolutionID")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("SolutionID")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("UserCommentCommentID")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("UserID")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("VoteValue")
-                        .HasColumnType("int");
-
-                    b.HasKey("VoteID");
-
-                    b.HasIndex("IssueID");
-
-                    b.HasIndex("SolutionID");
-
-                    b.HasIndex("UserCommentCommentID");
-
-                    b.HasIndex("UserID");
-
-                    b.ToTable("UserVotes", "issues");
-
-                    b.HasDiscriminator().HasValue("UserVote");
-
-                    b.UseTphMappingStrategy();
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<System.Guid>", b =>
+                {
+                    b.HasOne("atlas_the_public_think_tank.Models.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.CommentVote", b =>
                 {
-                    b.HasBaseType("atlas_the_public_think_tank.Models.UserVote");
-
-                    b.HasDiscriminator().HasValue("CommentVote");
-                });
-
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.IssueVote", b =>
-                {
-                    b.HasBaseType("atlas_the_public_think_tank.Models.UserVote");
-
-                    b.HasDiscriminator().HasValue("IssueVote");
-                });
-
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.SolutionVote", b =>
-                {
-                    b.HasBaseType("atlas_the_public_think_tank.Models.UserVote");
-
-                    b.HasDiscriminator().HasValue("SolutionVote");
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
-                {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
-                {
-                    b.HasOne("atlas_the_public_think_tank.Models.AppUser", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
-                {
-                    b.HasOne("atlas_the_public_think_tank.Models.AppUser", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<string>", b =>
-                {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
-                        .WithMany()
-                        .HasForeignKey("RoleId")
+                    b.HasOne("atlas_the_public_think_tank.Models.UserComment", "Comment")
+                        .WithMany("CommentVotes")
+                        .HasForeignKey("CommentID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("atlas_the_public_think_tank.Models.AppUser", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
+                    b.HasOne("atlas_the_public_think_tank.Models.AppUser", "User")
+                        .WithMany("CommentVotes")
+                        .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
-                {
-                    b.HasOne("atlas_the_public_think_tank.Models.AppUser", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Navigation("Comment");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.Issue", b =>
@@ -860,6 +907,25 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("Issue");
                 });
 
+            modelBuilder.Entity("atlas_the_public_think_tank.Models.IssueVote", b =>
+                {
+                    b.HasOne("atlas_the_public_think_tank.Models.Issue", "Issue")
+                        .WithMany("IssueVotes")
+                        .HasForeignKey("IssueID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("atlas_the_public_think_tank.Models.AppUser", "User")
+                        .WithMany("IssueVotes")
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Issue");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("atlas_the_public_think_tank.Models.Solution", b =>
                 {
                     b.HasOne("atlas_the_public_think_tank.Models.AppUser", "Author")
@@ -879,11 +945,57 @@ namespace atlas_the_public_think_tank.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("atlas_the_public_think_tank.Models.Scope", "Scope")
+                        .WithMany()
+                        .HasForeignKey("ScopeID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Author");
 
                     b.Navigation("BlockedContent");
 
                     b.Navigation("Issue");
+
+                    b.Navigation("Scope");
+                });
+
+            modelBuilder.Entity("atlas_the_public_think_tank.Models.SolutionCategory", b =>
+                {
+                    b.HasOne("atlas_the_public_think_tank.Models.Category", "Category")
+                        .WithMany("SolutionCategories")
+                        .HasForeignKey("CategoryID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("atlas_the_public_think_tank.Models.Solution", "Solution")
+                        .WithMany("SolutionCategories")
+                        .HasForeignKey("SolutionID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+
+                    b.Navigation("Solution");
+                });
+
+            modelBuilder.Entity("atlas_the_public_think_tank.Models.SolutionVote", b =>
+                {
+                    b.HasOne("atlas_the_public_think_tank.Models.Solution", "Solution")
+                        .WithMany("SolutionVotes")
+                        .HasForeignKey("SolutionID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("atlas_the_public_think_tank.Models.AppUser", "User")
+                        .WithMany("SolutionVotes")
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Solution");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.UserComment", b =>
@@ -904,14 +1016,14 @@ namespace atlas_the_public_think_tank.Migrations
                         .HasForeignKey("IssueID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Solution", "Solution")
-                        .WithMany("Comments")
-                        .HasForeignKey("IssueSolutionID")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("atlas_the_public_think_tank.Models.UserComment", "ParentComment")
                         .WithMany("ChildComments")
                         .HasForeignKey("ParentCommentID")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("atlas_the_public_think_tank.Models.Solution", "Solution")
+                        .WithMany("Comments")
+                        .HasForeignKey("SolutionID")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Author");
@@ -939,7 +1051,7 @@ namespace atlas_the_public_think_tank.Migrations
 
                     b.HasOne("atlas_the_public_think_tank.Models.Solution", "Solution")
                         .WithMany()
-                        .HasForeignKey("IssueSolutionID")
+                        .HasForeignKey("SolutionID")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("atlas_the_public_think_tank.Models.AppUser", "User")
@@ -957,40 +1069,21 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.UserVote", b =>
-                {
-                    b.HasOne("atlas_the_public_think_tank.Models.Issue", null)
-                        .WithMany("UserVotes")
-                        .HasForeignKey("IssueID");
-
-                    b.HasOne("atlas_the_public_think_tank.Models.Solution", null)
-                        .WithMany("UserVotes")
-                        .HasForeignKey("SolutionID");
-
-                    b.HasOne("atlas_the_public_think_tank.Models.UserComment", null)
-                        .WithMany("UserVotes")
-                        .HasForeignKey("UserCommentCommentID");
-
-                    b.HasOne("atlas_the_public_think_tank.Models.AppUser", "User")
-                        .WithMany("UserVotes")
-                        .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("atlas_the_public_think_tank.Models.AppUser", b =>
                 {
+                    b.Navigation("CommentVotes");
+
                     b.Navigation("Comments");
 
+                    b.Navigation("IssueVotes");
+
                     b.Navigation("Issues");
+
+                    b.Navigation("SolutionVotes");
 
                     b.Navigation("Solutions");
 
                     b.Navigation("UserHistory");
-
-                    b.Navigation("UserVotes");
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.BlockedContent", b =>
@@ -1005,6 +1098,8 @@ namespace atlas_the_public_think_tank.Migrations
             modelBuilder.Entity("atlas_the_public_think_tank.Models.Category", b =>
                 {
                     b.Navigation("IssueCategories");
+
+                    b.Navigation("SolutionCategories");
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.Issue", b =>
@@ -1015,9 +1110,9 @@ namespace atlas_the_public_think_tank.Migrations
 
                     b.Navigation("IssueCategories");
 
-                    b.Navigation("Solutions");
+                    b.Navigation("IssueVotes");
 
-                    b.Navigation("UserVotes");
+                    b.Navigation("Solutions");
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.Scope", b =>
@@ -1029,14 +1124,16 @@ namespace atlas_the_public_think_tank.Migrations
                 {
                     b.Navigation("Comments");
 
-                    b.Navigation("UserVotes");
+                    b.Navigation("SolutionCategories");
+
+                    b.Navigation("SolutionVotes");
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.UserComment", b =>
                 {
                     b.Navigation("ChildComments");
 
-                    b.Navigation("UserVotes");
+                    b.Navigation("CommentVotes");
                 });
 #pragma warning restore 612, 618
         }

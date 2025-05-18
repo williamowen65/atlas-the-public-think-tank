@@ -145,19 +145,21 @@ function setupRadioChangeEvents(radios, saveVoteDebounced, container, state) {
 /**
  * Creates a debounced function for saving votes to the server
  */
-function createDebouncedSaveVote(issueId) {
-    const { container, dialId } = getDialElements(issueId);
+function createDebouncedSaveVote(contentId) {
+    const { container, dialId } = getDialElements(contentId);
     // Function to save vote to server with debouncing
     return debounce(function(voteValue) {
-        console.log(`Saving vote ${voteValue} for issue ${issueId}`);
-        
+        console.log(`Saving vote ${voteValue} for issue ${contentId}`);
+
+        const contentType = container.getAttribute("data-content-type")
+
         const formData = new FormData();
-        formData.append('IssueID', issueId);
+        formData.append(`${contentType}ID`, contentId);
         formData.append('VoteValue', voteValue);
         
         const voteNotCasted = "Vote not casted"
 
-        fetch('/Issue/Vote', {
+        fetch(`/${contentType}/Vote`, {
             method: 'POST',
             body: formData,
             headers: {
@@ -178,8 +180,8 @@ function createDebouncedSaveVote(issueId) {
             container.closest(".vote-dial-toggle").classList.add('user-voted');
 
             // update the vote average and the count
-            const averageElement = document.querySelector(`#vote-average-${issueId}`);
-            const countElement = document.querySelector(`#vote-count-${issueId}`);
+            const averageElement = document.querySelector(`#vote-average-${contentId}`);
+            const countElement = document.querySelector(`#vote-count-${contentId}`);
 
             if (averageElement && data.average !== undefined) {
                 averageElement.textContent = Number.isInteger(data.average) ? data.average.toString() : data.average.toFixed(1);
@@ -229,7 +231,7 @@ function createDebouncedSaveVote(issueId) {
                 });
 
                 client_CardFooter_Alert({
-                    cardId: issueId,
+                    cardId: contentId,
                     type: 'plaintext',
                     message: `
                   Vote not cast - Login required
