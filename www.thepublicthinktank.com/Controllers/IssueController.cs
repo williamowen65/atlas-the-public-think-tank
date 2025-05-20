@@ -139,12 +139,11 @@ namespace atlas_the_public_think_tank.Controllers
             .Include(f => f.ChildIssues)
                  .ThenInclude(c => c.Scope) // include the Child issue's scope
             .Include(f => f.BlockedContent)
-        
-                 .Include(f => f.Solutions)
-    .ThenInclude(s => s.Scope)
-.Include(f => f.Solutions)
-    .ThenInclude(s => s.SolutionCategories)
-        .ThenInclude(sc => sc.Category)
+            .Include(f => f.Solutions)
+                .ThenInclude(s => s.Scope)
+            .Include(f => f.Solutions)
+                .ThenInclude(s => s.SolutionCategories)
+                .ThenInclude(sc => sc.Category)
             .Include(f => f.Comments)
             .Include(f => f.IssueCategories)
                 .ThenInclude(fc => fc.Category)
