@@ -20,6 +20,7 @@ namespace atlas_the_public_think_tank.Models
 
         public List<Guid> SelectedCategoryIds { get; set; } = new List<Guid>();
         public Guid? ParentIssueID { get; set; }
+        public Guid? ParentSolutionID { get; set; }
 
         public Guid ScopeID { get; set; }
         public List<Scope> Scopes { get; set; } = new List<Scope>();
@@ -48,12 +49,14 @@ namespace atlas_the_public_think_tank.Models
         public Guid AuthorID { get; set; }
         public Guid ScopeID { get; set; }
         public Guid? ParentIssueID { get; set; }
+        public Guid? ParentSolutionID { get; set; }
         public Guid? BlockedContentID { get; set; }
         public List<Category_ReadVM> Categories { get; set; } = new List<Category_ReadVM>();
         public List<Issue_ReadVM> SubIssues { get; set; } = new List<Issue_ReadVM>();
         public List<Solution_ReadVM> Solutions { get; set; } = new List<Solution_ReadVM>();
 
-        public Issue_ReadVM? ParentIssueVM { get; set; }
+        public Issue_ReadVM? ParentIssue { get; set; }
+        public Solution_ReadVM? ParentSolution { get; set; }
 
         public required int SubIssueCount { get; set; }
 
@@ -61,10 +64,8 @@ namespace atlas_the_public_think_tank.Models
         // Navigation properties
         public AppUser Author { get; set; }
         public Scope Scope { get; set; }
-        public Issue ParentIssue { get; set; }
         public ICollection<Issue> ChildIssues { get; set; }
         public BlockedContent BlockedContent { get; set; }
-        //public ICollection<Solution> Solutions { get; set; }
         public ICollection<UserComment> Comments { get; set; }
         public ICollection<IssueVote> IssueVotes { get; set; }
         public ICollection<IssueCategory> IssueCategories { get; set; }

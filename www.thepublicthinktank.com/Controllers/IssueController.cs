@@ -33,14 +33,15 @@ namespace atlas_the_public_think_tank.Controllers
         /// This method is used to return the create issue page.
         /// </summary>
         [Route("/create-issue")]
-        public IActionResult CreateIssue(Guid? parentIssueID)
+        public IActionResult CreateIssue(Guid? parentIssueID, Guid? parentSolutionID)
         {
 
             Issue_CreateVM newIssue = new()
             {
                 Categories = _context.Categories.ToList(),
                 Scopes = _context.Scopes.ToList(),
-                ParentIssueID = parentIssueID
+                ParentIssueID = parentIssueID,
+                ParentSolutionID = parentSolutionID
             };
 
             return View(newIssue);
@@ -69,6 +70,7 @@ namespace atlas_the_public_think_tank.Controllers
                     Content = model.Content,
                     ScopeID = model.ScopeID,
                     ParentIssueID = model.ParentIssueID,
+                    ParentSolutionID = model.ParentSolutionID,
                     ContentStatus = model.ContentStatus,
                     AuthorID = user.Id,
                     CreatedAt = DateTime.UtcNow
@@ -136,11 +138,19 @@ namespace atlas_the_public_think_tank.Controllers
             .Include(f => f.Scope)
             .Include(f => f.ParentIssue)
                 .ThenInclude(p => p.Scope) // include the parent issue's scope
+            .Include(f => f.ParentIssue)
+                .ThenInclude(p => p.Solutions)
+            .Include(f => f.ParentSolution)
+                .ThenInclude(p => p.Scope) // include the parent issue's scope
+            //.Include(f => f.ParentSolution)
+                //.ThenInclude(p => p.Solutions)
             .Include(f => f.ChildIssues)
                  .ThenInclude(c => c.Scope) // include the Child issue's scope
             .Include(f => f.BlockedContent)
             .Include(f => f.Solutions)
                 .ThenInclude(s => s.Scope)
+            .Include(f => f.Solutions)
+                .ThenInclude(s => s.ChildIssues)
             .Include(f => f.Solutions)
                 .ThenInclude(s => s.SolutionCategories)
                 .ThenInclude(sc => sc.Category)

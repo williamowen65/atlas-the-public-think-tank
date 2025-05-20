@@ -81,12 +81,14 @@ namespace atlas_the_public_think_tank.Models
         public Guid AuthorID { get; set; }
         public Guid ScopeID { get; set; }
         public Guid? ParentIssueID { get; set; }
+        public Guid? ParentSolutionID { get; set; }
         public Guid? BlockedContentID { get; set; }
 
         // Navigation properties
         public virtual AppUser Author { get; set; }
         public virtual Scope Scope { get; set; }
-        public virtual Issue ParentIssue { get; set; }
+        public virtual Issue? ParentIssue { get; set; }
+        public virtual Solution? ParentSolution { get; set; }
         public virtual ICollection<Issue> ChildIssues { get; set; }
         public virtual BlockedContent BlockedContent { get; set; }
         public virtual ICollection<Solution> Solutions { get; set; }
@@ -119,6 +121,8 @@ namespace atlas_the_public_think_tank.Models
         public virtual BlockedContent BlockedContent { get; set; }
         public virtual ICollection<UserComment> Comments { get; set; } = new List<UserComment>();
         public virtual ICollection<SolutionVote> SolutionVotes { get; set; }
+
+        public virtual ICollection<Issue> ChildIssues { get; set; }
 
         public virtual Scope Scope { get; set; }
 

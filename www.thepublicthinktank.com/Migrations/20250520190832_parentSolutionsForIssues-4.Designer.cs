@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using atlas_the_public_think_tank.Data;
 
@@ -11,9 +12,11 @@ using atlas_the_public_think_tank.Data;
 namespace atlas_the_public_think_tank.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250520190832_parentSolutionsForIssues-4")]
+    partial class parentSolutionsForIssues4
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -399,6 +402,9 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Property<Guid>("ScopeID")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("SolutionID")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -415,6 +421,8 @@ namespace atlas_the_public_think_tank.Migrations
                     b.HasIndex("ParentSolutionID");
 
                     b.HasIndex("ScopeID");
+
+                    b.HasIndex("SolutionID");
 
                     b.ToTable("Issues", "issues");
 
@@ -898,7 +906,7 @@ namespace atlas_the_public_think_tank.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("atlas_the_public_think_tank.Models.Solution", "ParentSolution")
-                        .WithMany("ChildIssues")
+                        .WithMany()
                         .HasForeignKey("ParentSolutionID")
                         .OnDelete(DeleteBehavior.Restrict);
 
@@ -907,6 +915,10 @@ namespace atlas_the_public_think_tank.Migrations
                         .HasForeignKey("ScopeID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("atlas_the_public_think_tank.Models.Solution", null)
+                        .WithMany("ChildIssues")
+                        .HasForeignKey("SolutionID");
 
                     b.Navigation("Author");
 

@@ -63,7 +63,7 @@
 
 
             <div class="mb-3">
-                <label asp-for="ParentIssueID" class="form-label">Parent Post (Optional)</label>                
+                <label asp-for="ParentIssueID" class="form-label">Parent Issue (Optional)</label>                
                 <select asp-for="ParentIssueID" class="form-control select2-parent">
                     @if(Model.ParentIssueID != null)
                     {
@@ -71,6 +71,17 @@
                     }
                 </select>
                 <span asp-validation-for="ParentIssueID" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ParentSolutionID" class="form-label">Parent Solution (Optional)</label>                
+                <select asp-for="ParentSolutionID" class="form-control select2-parent">
+                    @if(Model.ParentSolutionID != null)
+                    {
+                        <option value="@Model.ParentSolutionID" selected>Current parent issue (ID: @Model.ParentSolutionID)</option>
+                    }
+                </select>
+                <span asp-validation-for="ParentSolutionID" class="text-danger"></span>
             </div>
 
 

@@ -72,6 +72,12 @@ public class ApplicationDbContext : IdentityDbContext<AppUser, IdentityRole<Guid
                 .HasForeignKey(e => e.ParentIssueID)
                 .OnDelete(DeleteBehavior.Restrict);
 
+
+            entity.HasOne(e => e.ParentSolution)
+                .WithMany()
+                .HasForeignKey(e => e.ParentSolutionID)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // Relationships
             entity.HasOne(e => e.Author)
                 .WithMany(e => e.Issues)
@@ -96,6 +102,11 @@ public class ApplicationDbContext : IdentityDbContext<AppUser, IdentityRole<Guid
             entity.Property(e => e.Title).HasMaxLength(300).IsRequired();
             entity.Property(e => e.Content).IsRequired();
             entity.Property(e => e.ContentStatus).IsRequired();
+
+            entity.HasMany(e => e.ChildIssues)
+              .WithOne(e => e.ParentSolution)
+              .HasForeignKey(e => e.ParentSolutionID)
+              .OnDelete(DeleteBehavior.Restrict);
 
             // Relationships
             entity.HasOne(e => e.Issue)
@@ -155,15 +166,15 @@ public class ApplicationDbContext : IdentityDbContext<AppUser, IdentityRole<Guid
         {
             entity.HasKey(e => e.VoteID);
 
-            //entity.HasOne(e => e.Issue)
-            //    .WithMany(i => i.IssueVotes)
-            //    .HasForeignKey(e => e.IssueID)
-            //    .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Issue)
+                .WithMany(i => i.IssueVotes)
+                .HasForeignKey(e => e.IssueID)
+                .OnDelete(DeleteBehavior.Restrict);
 
-            //entity.HasOne(e => e.User)
-            //    .WithMany()
-            //    .HasForeignKey(e => e.UserID)
-            //    .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserID)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Configure SolutionVote entity
@@ -171,15 +182,15 @@ public class ApplicationDbContext : IdentityDbContext<AppUser, IdentityRole<Guid
         {
             entity.HasKey(e => e.VoteID);
 
-            //entity.HasOne(e => e.Solution)
-            //    .WithMany(s => s.SolutionVotes)
-            //    .HasForeignKey(e => e.SolutionID)
-            //    .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Solution)
+                .WithMany(s => s.SolutionVotes)
+                .HasForeignKey(e => e.SolutionID)
+                .OnDelete(DeleteBehavior.Restrict);
 
-            //entity.HasOne(e => e.User)
-            //    .WithMany()
-            //    .HasForeignKey(e => e.UserID)
-            //    .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserID)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         //// Configure CommentVote entity
@@ -187,15 +198,15 @@ public class ApplicationDbContext : IdentityDbContext<AppUser, IdentityRole<Guid
         {
             entity.HasKey(e => e.VoteID);
 
-            //entity.HasOne(e => e.Comment)
-            //    .WithMany(c => c.CommentVotes)
-            //    .HasForeignKey(e => e.CommentID)
-            //    .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Comment)
+                .WithMany(c => c.CommentVotes)
+                .HasForeignKey(e => e.CommentID)
+                .OnDelete(DeleteBehavior.Restrict);
 
-            //entity.HasOne(e => e.User)
-            //    .WithMany()
-            //    .HasForeignKey(e => e.UserID)
-            //    .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserID)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
 

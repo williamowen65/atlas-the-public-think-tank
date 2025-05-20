@@ -73,7 +73,7 @@
                     <div class="comment-feed">
                         <div class="content">
                             <h2>Empty Sub Issues Feed</h2>
-                            <a target="_blank" href="@Url.Action("CreateIssue", "Issue", new { parentIssueID = Model.IssueID })">
+                            <a target="_blank" href="@Url.Action("CreateIssue", "Issue", new { parentSolutionID = Model.SolutionID })">
                                 <button class="outlined-text">Create Sub-Issue</button>
                             </a>
 
@@ -180,14 +180,11 @@ function dynamicDropdownContent(){
     
     // Menu content templates for each tab
     const menuTemplates = {
-        'solutions-tab': `
-            <li><a class="dropdown-item" href="@Url.Action("CreateSolution","Solution", new { parentIssueID = Model.IssueID})">Create Solution</a></li>
-        `,
         'issue-comments-tab': `
             <li><a class="dropdown-item" href="#">Create Discussion</a></li>
         `,
         'sub-issues-tab': `
-            <li><a class="dropdown-item" href="@Url.Action("CreateIssue", "Issue", new { parentIssueID = Model.IssueID })">Create Sub-Issue</a></li>
+                <li><a class="dropdown-item" href="@Url.Action("CreateIssue", "Issue", new { parentSolutionID = Model.SolutionID })">Create Sub-Issue</a></li>
         `,
         'parent-issue-tab': `
             <li><a class="dropdown-item" href="#">Go to Parent Issue</a></li>
