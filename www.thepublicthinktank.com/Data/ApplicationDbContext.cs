@@ -2,10 +2,11 @@
 using atlas_the_public_think_tank.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 
 namespace atlas_the_public_think_tank.Data;
 
-public class ApplicationDbContext : IdentityDbContext<AppUser>
+public class ApplicationDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
@@ -19,11 +20,11 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
     public DbSet<Category> Categories { get; set; }
     public DbSet<Scope> Scopes { get; set; }
     public DbSet<BlockedContent> BlockedContents { get; set; }
-    public DbSet<UserVote> UserVotes { get; set; }
     public DbSet<IssueVote> IssueVotes { get; set; }
     public DbSet<SolutionVote> SolutionVotes { get; set; }
     public DbSet<CommentVote> CommentVotes { get; set; }
     public DbSet<IssueCategory> IssueCategories { get; set; }
+    public DbSet<SolutionCategory> SolutionCategories { get; set; }
     public DbSet<UserHistory> UserHistory { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -33,13 +34,16 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
 
         // Configure schemas
         modelBuilder.Entity<Issue>().ToTable("Issues", "issues");
-        modelBuilder.Entity<Solution>().ToTable("Solutions", "issues");
-        modelBuilder.Entity<UserComment>().ToTable("Comments", "issues");
-        modelBuilder.Entity<Category>().ToTable("Categories", "issues");
-        modelBuilder.Entity<Scope>().ToTable("Scopes", "issues");
-        modelBuilder.Entity<BlockedContent>().ToTable("BlockedContent", "issues");
-        modelBuilder.Entity<UserVote>().ToTable("UserVotes", "issues");
+        modelBuilder.Entity<Solution>().ToTable("Solutions", "solutions");
+        modelBuilder.Entity<UserComment>().ToTable("Comments", "comments");
+        modelBuilder.Entity<Category>().ToTable("Categories", "app");
+        modelBuilder.Entity<Scope>().ToTable("Scopes", "app");
+        modelBuilder.Entity<BlockedContent>().ToTable("BlockedContent", "app");
+        modelBuilder.Entity<IssueVote>().ToTable("IssueVotes", "issues");
+        modelBuilder.Entity<SolutionVote>().ToTable("SolutionVotes", "solutions");
+        modelBuilder.Entity<CommentVote>().ToTable("CommentVotes", "comments");
         modelBuilder.Entity<IssueCategory>().ToTable("IssuesCategories", "issues");
+        modelBuilder.Entity<SolutionCategory>().ToTable("SolutionsCategories", "solutions");
         modelBuilder.Entity<UserHistory>().ToTable("UserHistory", "users");
 
 
@@ -130,7 +134,7 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
 
             entity.HasOne(e => e.Solution)
                 .WithMany(e => e.Comments)
-                .HasForeignKey(e => e.IssueSolutionID)
+                .HasForeignKey(e => e.SolutionID)
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(e => e.Author)
@@ -144,21 +148,57 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
-      
 
 
-            // Configure the Vote hierarchy
-            modelBuilder.Entity<UserVote>(entity =>
-            {
-                entity.HasKey(e => e.VoteID);
+        // Configure IssueVote entity
+        modelBuilder.Entity<IssueVote>(entity =>
+        {
+            entity.HasKey(e => e.VoteID);
 
-              
-            });
+            //entity.HasOne(e => e.Issue)
+            //    .WithMany(i => i.IssueVotes)
+            //    .HasForeignKey(e => e.IssueID)
+            //    .OnDelete(DeleteBehavior.Restrict);
 
-        
-            
+            //entity.HasOne(e => e.User)
+            //    .WithMany()
+            //    .HasForeignKey(e => e.UserID)
+            //    .OnDelete(DeleteBehavior.Restrict);
+        });
 
-        
+        // Configure SolutionVote entity
+        modelBuilder.Entity<SolutionVote>(entity =>
+        {
+            entity.HasKey(e => e.VoteID);
+
+            //entity.HasOne(e => e.Solution)
+            //    .WithMany(s => s.SolutionVotes)
+            //    .HasForeignKey(e => e.SolutionID)
+            //    .OnDelete(DeleteBehavior.Restrict);
+
+            //entity.HasOne(e => e.User)
+            //    .WithMany()
+            //    .HasForeignKey(e => e.UserID)
+            //    .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        //// Configure CommentVote entity
+        modelBuilder.Entity<CommentVote>(entity =>
+        {
+            entity.HasKey(e => e.VoteID);
+
+            //entity.HasOne(e => e.Comment)
+            //    .WithMany(c => c.CommentVotes)
+            //    .HasForeignKey(e => e.CommentID)
+            //    .OnDelete(DeleteBehavior.Restrict);
+
+            //entity.HasOne(e => e.User)
+            //    .WithMany()
+            //    .HasForeignKey(e => e.UserID)
+            //    .OnDelete(DeleteBehavior.Restrict);
+        });
+
+
 
         // Configure IssueCategory junction entity (composite key)
         modelBuilder.Entity<IssueCategory>(entity =>
@@ -174,6 +214,22 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
             entity.HasOne(e => e.Issue)
                 .WithMany(e => e.IssueCategories)
                 .HasForeignKey(e => e.IssueID)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<SolutionCategory>(entity =>
+        {
+            entity.HasKey(e => new { e.CategoryID, e.SolutionID });
+
+            // Relationships
+            entity.HasOne(e => e.Category)
+                .WithMany(e => e.SolutionCategories)
+                .HasForeignKey(e => e.CategoryID)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Solution)
+                .WithMany(e => e.SolutionCategories)
+                .HasForeignKey(e => e.SolutionID)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
@@ -199,7 +255,7 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
 
             entity.HasOne(e => e.Solution)
                 .WithMany()
-                .HasForeignKey(e => e.IssueSolutionID)
+                .HasForeignKey(e => e.SolutionID)
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(e => e.Comment)

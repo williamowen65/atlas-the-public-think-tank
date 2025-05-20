@@ -1,14 +1,9 @@
-﻿@model Issue_ReadVM
+﻿@model ICardStatsViewModel
 
 <div class="issue-card-stat-icons d-flex justify-content-between align-items-center flex-wrap">
-    <div role="button" tabindex="0" aria-label="Solutions: @(Model?.Solutions?.Count() ?? 0)" class="position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
-        <div class="position-absolute content-count" style="">
-            @(Model?.Solutions?.Count() ?? 0)
-        </div>
-        @Html.Partial("~/Views/Shared/Icons/_Solutions.cshtml")
-    </div>
+
     
-    <div role="button" tabindex="0" aria-label="Sub Issues: @(Model?.SubIssues?.Count() ?? 0)" class="position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
+    <div role="button" tabindex="0" aria-label="Sub Issues: @(Model.SubIssueCount)" class="position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
         <div class="position-absolute content-count" style="right: -11px">
             @(Model.SubIssueCount)
         </div>

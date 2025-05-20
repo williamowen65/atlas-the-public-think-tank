@@ -19,15 +19,25 @@ namespace atlas_the_public_think_tank.Models
         public List<Category> Categories { get; set; } = new List<Category>();
 
         public List<Guid> SelectedCategoryIds { get; set; } = new List<Guid>();
-        public Guid ScopeID { get; set; }
         public Guid? ParentIssueID { get; set; }
 
+        public Guid ScopeID { get; set; }
         public List<Scope> Scopes { get; set; } = new List<Scope>();
     }
 
 
 
-    public class Issue_ReadVM
+    public interface ICardStatsViewModel
+    {
+        public List<Solution_ReadVM>? SolutionVM { get => null; }
+        public int SubIssueCount { get; }
+
+        public ICollection<UserComment> Comments { get; set; }
+        public Scope Scope { get; }
+    }
+
+
+    public class Issue_ReadVM : ICardStatsViewModel
     {
         public Guid IssueID { get; set; }
         public string Title { get; set; }
@@ -35,13 +45,13 @@ namespace atlas_the_public_think_tank.Models
         public DateTime CreatedAt { get; set; }
         public DateTime? ModifiedAt { get; set; }
         public DateTime? LastActivity { get; set; }
-        public string AuthorID { get; set; }
+        public Guid AuthorID { get; set; }
         public Guid ScopeID { get; set; }
         public Guid? ParentIssueID { get; set; }
         public Guid? BlockedContentID { get; set; }
         public List<Category_ReadVM> Categories { get; set; } = new List<Category_ReadVM>();
         public List<Issue_ReadVM> SubIssues { get; set; } = new List<Issue_ReadVM>();
-        public List<Solution_ReadVM> SolutionVM { get; set; } = new List<Solution_ReadVM>();
+        public List<Solution_ReadVM> Solutions { get; set; } = new List<Solution_ReadVM>();
 
         public Issue_ReadVM? ParentIssueVM { get; set; }
 
@@ -54,31 +64,39 @@ namespace atlas_the_public_think_tank.Models
         public Issue ParentIssue { get; set; }
         public ICollection<Issue> ChildIssues { get; set; }
         public BlockedContent BlockedContent { get; set; }
-        public ICollection<Solution> Solutions { get; set; }
+        //public ICollection<Solution> Solutions { get; set; }
         public ICollection<UserComment> Comments { get; set; }
-        public ICollection<UserVote> UserVotes { get; set; }
+        public ICollection<IssueVote> IssueVotes { get; set; }
         public ICollection<IssueCategory> IssueCategories { get; set; }
     }
     
-    public class Solution_ReadVM
+    public class Solution_ReadVM : ICardStatsViewModel
     {
         public Guid SolutionID { get; set; }
         public string Title { get; set; }
         public string Content { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? ModifiedAt { get; set; }
-        public string AuthorID { get; set; }
+        public Guid AuthorID { get; set; }
         public Guid IssueID { get; set; }
         public ContentStatus ContentStatus { get; set; }
         public Guid? BlockedContentID { get; set; }
 
+        public required int SubIssueCount { get; set; }
+        public required Guid ScopeID { get; set; }
+        public required Scope Scope { get; set; }
+
+        public List<Issue_ReadVM> SubIssues { get; set; } = new List<Issue_ReadVM>();
+
         // Navigation properties
         public AppUser Author { get; set; }
-        public Issue Issue { get; set; }
+        public Issue_ReadVM Issue { get; set; }
         public BlockedContent BlockedContent { get; set; }
         public ICollection<UserComment> Comments { get; set; } = new List<UserComment>();
         // public ICollection<UserVote> UserVotes { get; set; } = new List<UserVote>();
         public List<Category_ReadVM> Categories { get; set; } = new List<Category_ReadVM>();
+
+        public ICollection<SolutionCategory> SolutionCategories { get; set; }
 
         // Statistics
         // public int TotalVotes { get; set; } = 0;
@@ -106,7 +124,7 @@ namespace atlas_the_public_think_tank.Models
 
         public int TotalVotes { get; set; } = 0;
 
-        public ICollection<UserVote> UserVotes { get; set; } = new List<UserVote>();
+        public ICollection<IssueVote> IssueVotes { get; set; } = new List<IssueVote>();
 
         public double AverageVote { get; set; } = 0;
     }
@@ -114,6 +132,13 @@ namespace atlas_the_public_think_tank.Models
     public class UserVote_Issue_CreateVM
     {
         public Guid IssueID { get; set; }
+        public int VoteValue { get; set; }
+
+        //public AppUser User { get; set; } // The user is captured via injection
+    }
+    public class UserVote_Solution_CreateVM
+    {
+        public Guid SolutionID { get; set; }
         public int VoteValue { get; set; }
 
         //public AppUser User { get; set; } // The user is captured via injection
@@ -157,10 +182,13 @@ namespace atlas_the_public_think_tank.Models
 
         [Required(ErrorMessage = "Status is required")]
         public ContentStatus ContentStatus { get; set; } = ContentStatus.Draft;
+        public Guid ScopeID { get; set; }
 
         // For category selection
         public IEnumerable<Category> Categories { get; set; } = new List<Category>();
         public List<Guid> SelectedCategoryIds { get; set; } = new List<Guid>();
+
+        public List<Scope> Scopes { get; set; } = new List<Scope>();
 
     }
 

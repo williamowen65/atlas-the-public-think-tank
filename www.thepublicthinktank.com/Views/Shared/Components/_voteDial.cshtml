@@ -11,12 +11,12 @@
 }
 
 @* issue @Model.IssueID *@
-<form method="post" action="/issue/vote"  class="dial mb-2" style="width: 100px; height: 190px; user-select:none;">
+<div class="dial mb-2" style="width: 100px; height: 190px; user-select:none;">
     
-    @Html.Partial("_voteAverage.cshtml")
+    @Html.Partial("~/Views/Shared/Components/_voteAverage.cshtml")
     
     <div class="vote-dial-toggle @(Model.UserVote.HasValue ? "user-voted" : "") mb-1">
-        <div id="vote-toggle-container-@Model.ContentID" class="vote-toggle-container">
+        <div id="vote-toggle-container-@Model.ContentID" class="vote-toggle-container" data-content-type="@Model.ContentType">
             @for (int i = 10; i >= 0; i--)
             {
                 var radioId = $"vote-{Model.ContentID}-{i}";
@@ -38,9 +38,9 @@
         </div>
     </div>    
     
-    @Html.Partial("_voteCount.cshtml")
+    @Html.Partial("~/Views/Shared/Components/_voteCount.cshtml")
   
-</form>
+</div>
 
  <style>
 

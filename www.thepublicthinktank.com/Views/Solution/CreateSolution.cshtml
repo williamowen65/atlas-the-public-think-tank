@@ -4,7 +4,7 @@
 @{ 
     ViewData["Title"] = "Create New Solution"; 
 } 
-<form asp-action="CreateSolution" asp-controller="CRUDIssue"  method="post" class="mt-4"> 
+<form asp-action="CreateSolution" asp-controller="Solution"  method="post" class="mt-4"> 
     @Html.AntiForgeryToken()
     <div class="row"> 
         <div class="col-12 col-md-8"> 
@@ -43,6 +43,15 @@
                         asp-items="@(new SelectList(Model.Categories, "CategoryID", "CategoryName"))">
                 </select>
                 <span asp-validation-for="SelectedCategoryIds" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ScopeID" class="form-label">Scope</label>
+                <select asp-for="ScopeID" class="form-select select2"
+                        asp-items="@(new SelectList(Model.Scopes, "ScopeID", "ScopeName"))">
+                    <option value="">-- Select a Scope --</option>
+                </select>
+                <span asp-validation-for="ScopeID" class="text-danger"></span>
             </div>
 
             <div class="mb-3">
