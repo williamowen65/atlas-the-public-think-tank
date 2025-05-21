@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using atlas_the_public_think_tank.Data;
 
@@ -11,9 +12,11 @@ using atlas_the_public_think_tank.Data;
 namespace atlas_the_public_think_tank.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250520165055_parentSolutionsForIssues-3")]
+    partial class parentSolutionsForIssues3
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -334,9 +337,6 @@ namespace atlas_the_public_think_tank.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("AppUserId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<Guid>("CommentID")
                         .HasColumnType("uniqueidentifier");
 
@@ -353,8 +353,6 @@ namespace atlas_the_public_think_tank.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("VoteID");
-
-                    b.HasIndex("AppUserId");
 
                     b.HasIndex("CommentID");
 
@@ -399,6 +397,9 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Property<Guid>("ScopeID")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("SolutionID")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -415,6 +416,8 @@ namespace atlas_the_public_think_tank.Migrations
                     b.HasIndex("ParentSolutionID");
 
                     b.HasIndex("ScopeID");
+
+                    b.HasIndex("SolutionID");
 
                     b.ToTable("Issues", "issues");
 
@@ -542,9 +545,6 @@ namespace atlas_the_public_think_tank.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("AppUserId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -561,8 +561,6 @@ namespace atlas_the_public_think_tank.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("VoteID");
-
-                    b.HasIndex("AppUserId");
 
                     b.HasIndex("IssueID");
 
@@ -678,9 +676,6 @@ namespace atlas_the_public_think_tank.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("AppUserId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -697,8 +692,6 @@ namespace atlas_the_public_think_tank.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("VoteID");
-
-                    b.HasIndex("AppUserId");
 
                     b.HasIndex("SolutionID");
 
@@ -858,20 +851,16 @@ namespace atlas_the_public_think_tank.Migrations
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.CommentVote", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.AppUser", null)
-                        .WithMany("CommentVotes")
-                        .HasForeignKey("AppUserId");
-
                     b.HasOne("atlas_the_public_think_tank.Models.UserComment", "Comment")
                         .WithMany("CommentVotes")
                         .HasForeignKey("CommentID")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("atlas_the_public_think_tank.Models.AppUser", "User")
-                        .WithMany()
+                        .WithMany("CommentVotes")
                         .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Comment");
@@ -898,7 +887,7 @@ namespace atlas_the_public_think_tank.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("atlas_the_public_think_tank.Models.Solution", "ParentSolution")
-                        .WithMany("ChildIssues")
+                        .WithMany()
                         .HasForeignKey("ParentSolutionID")
                         .OnDelete(DeleteBehavior.Restrict);
 
@@ -907,6 +896,10 @@ namespace atlas_the_public_think_tank.Migrations
                         .HasForeignKey("ScopeID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("atlas_the_public_think_tank.Models.Solution", null)
+                        .WithMany("ChildIssues")
+                        .HasForeignKey("SolutionID");
 
                     b.Navigation("Author");
 
@@ -940,20 +933,16 @@ namespace atlas_the_public_think_tank.Migrations
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.IssueVote", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.AppUser", null)
-                        .WithMany("IssueVotes")
-                        .HasForeignKey("AppUserId");
-
                     b.HasOne("atlas_the_public_think_tank.Models.Issue", "Issue")
                         .WithMany("IssueVotes")
                         .HasForeignKey("IssueID")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("atlas_the_public_think_tank.Models.AppUser", "User")
-                        .WithMany()
+                        .WithMany("IssueVotes")
                         .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Issue");
@@ -1016,20 +1005,16 @@ namespace atlas_the_public_think_tank.Migrations
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.SolutionVote", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.AppUser", null)
-                        .WithMany("SolutionVotes")
-                        .HasForeignKey("AppUserId");
-
                     b.HasOne("atlas_the_public_think_tank.Models.Solution", "Solution")
                         .WithMany("SolutionVotes")
                         .HasForeignKey("SolutionID")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("atlas_the_public_think_tank.Models.AppUser", "User")
-                        .WithMany()
+                        .WithMany("SolutionVotes")
                         .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Solution");

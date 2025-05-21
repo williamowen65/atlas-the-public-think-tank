@@ -96,7 +96,8 @@ namespace atlas_the_public_think_tank.Services
                 // These navigation properties come directly from the query results
                 Author = issue.Author,
                 Scope = issue.Scope,
-                ParentIssueVM = GetParentIssue(issue),
+                ParentIssue = GetParentIssue(issue),
+                ParentSolution = GetParentSolution(issue),
 
                 SubIssues = GetIssuesSubIssues(issue),
                 SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == issue.IssueID),
@@ -141,6 +142,26 @@ namespace atlas_the_public_think_tank.Services
                         .ToList();
         }
 
+        public List<Issue_ReadVM> GetSolutionSubIssues(Solution currentSolution)
+        {
+            return currentSolution.ChildIssues == null
+                        ? new List<Issue_ReadVM>()
+                        : currentSolution.ChildIssues.Select(child => new Issue_ReadVM
+                        {
+                            IssueID = child.IssueID,
+                            Title = child.Title,
+                            Content = child.Content,
+                            CreatedAt = child.CreatedAt,
+                            ModifiedAt = child.ModifiedAt,
+                            AuthorID = child.AuthorID,
+                            ScopeID = child.ScopeID,
+                            ParentIssueID = child.ParentIssueID,
+                            Scope = child.Scope,
+                            SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == child.IssueID),
+                        })
+                        .ToList();
+        }
+
 
         public  Issue_ReadVM? GetParentIssue(Issue currentIssue)
         {
@@ -154,14 +175,43 @@ namespace atlas_the_public_think_tank.Services
                 AuthorID = currentIssue.ParentIssue.AuthorID,
                 ScopeID = currentIssue.ParentIssue.ScopeID,
                 ParentIssueID = currentIssue.ParentIssue.ParentIssueID,
+                ParentSolutionID = currentIssue.ParentIssue.ParentSolutionID,
                 // Map other properties as needed
                 Scope = currentIssue.ParentIssue.Scope,
-                SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == currentIssue.ParentIssue.IssueID)
+                SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == currentIssue.ParentIssue.IssueID),
+                Solutions = _solutions.GetIssuesSolutions(currentIssue.ParentIssue)
+            };
+        }
+
+        public Solution_ReadVM? GetParentSolution(Issue currentIssue)
+        {
+            if (currentIssue.ParentSolution == null)
+                return null;
+
+            var parent = currentIssue.ParentSolution;
+            return new Solution_ReadVM
+            {
+                SolutionID = parent.SolutionID,
+                Title = parent.Title,
+                Content = parent.Content,
+                CreatedAt = parent.CreatedAt,
+                ModifiedAt = parent.ModifiedAt,
+                AuthorID = parent.AuthorID,
+                IssueID = parent.IssueID,
+                ScopeID = parent.ScopeID,
+                Scope = parent.Scope,
+                SubIssueCount = _context.Solutions.Count(s => s.IssueID == parent.SolutionID),
+                SubIssues = GetSolutionSubIssues(parent),
+                Categories = _solutions.GetSolutionCategories(parent),
+                Comments = parent.Comments,
+                SolutionCategories = parent.SolutionCategories
+                // Add other properties as needed
             };
         }
 
         public Issue_ReadVM? GetParentIssue(Solution currentIssue)
         {
+            // Issue == Parent Issue for solutions 
             return currentIssue.Issue == null ? null : new Issue_ReadVM
             {
                 IssueID = currentIssue.Issue.IssueID,
@@ -172,9 +222,11 @@ namespace atlas_the_public_think_tank.Services
                 AuthorID = currentIssue.Issue.AuthorID,
                 ScopeID = currentIssue.Issue.ScopeID,
                 ParentIssueID = currentIssue.Issue.ParentIssueID,
+                ParentSolutionID = currentIssue.Issue.ParentSolutionID,
                 // Map other properties as needed
                 Scope = currentIssue.Issue.Scope,
-                SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == currentIssue.Issue.IssueID)
+                Solutions = _solutions.GetIssuesSolutions(currentIssue.Issue),
+                SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == currentIssue.Issue.IssueID),
             };
         }
 
@@ -198,6 +250,10 @@ namespace atlas_the_public_think_tank.Services
 
         public List<Solution_ReadVM> GetIssuesSolutions(Issue currentIssue)
         {
+
+            if (currentIssue.Solutions == null)
+                return new List<Solution_ReadVM>();
+
             return currentIssue.Solutions.Select(s => new Solution_ReadVM
             {
                 SolutionID = s.SolutionID,
@@ -211,7 +267,7 @@ namespace atlas_the_public_think_tank.Services
                 BlockedContentID = s.BlockedContentID,
                 Scope = s.Scope,
                 ScopeID = s.ScopeID,
-                SubIssueCount = _context.Solutions.Count(i => i.IssueID == s.SolutionID),
+                SubIssueCount = _context.Issues.Count(i => i.ParentSolutionID == s.SolutionID),
                 SolutionCategories = s.SolutionCategories,
                 Categories = GetSolutionCategories(s)
 
@@ -241,7 +297,8 @@ namespace atlas_the_public_think_tank.Services
                 Comments = solution.Comments,
                 // You may want to include logic for categories if you have a many-to-many relationship
                 Categories = GetSolutionCategories(solution),
-                SubIssueCount = _context.Solutions.Count(s => s.IssueID == solution.SolutionID),
+                SubIssueCount = _context.Issues.Count(i => i.ParentSolutionID == solution.SolutionID),
+                SubIssues = Issues.GetSolutionSubIssues(solution)
                 // Add other properties as needed
             };
         }

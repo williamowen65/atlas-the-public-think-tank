@@ -173,10 +173,14 @@ namespace atlas_the_public_think_tank.Controllers
             var solution = await _context.Solutions
                 .Include(s => s.Author)
                 .Include(s => s.Scope)
-                .Include(s => s.Issue)
+                 .Include(f => f.ChildIssues)
+                .Include(s => s.Issue) // ParentIssue for a solution
                     .ThenInclude(i => i.Scope)
-                .Include(s => s.Issue)
+                .Include(s=> s.Issue) // ParentIssue for a solution
+                    .ThenInclude(i => i.Solutions)
+                .Include(s => s.Issue) // ParentIssue for a solution
                     .ThenInclude(i => i.Author)
+                .Include(s => s.Issue)
                 .Include(s => s.BlockedContent)
                 .Include(s => s.Comments)
                  .Include(s => s.SolutionCategories)
