@@ -1,59 +1,48 @@
-﻿    @model Issue_ReadVM
+﻿@model Issue_ReadVM
 @*
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
 @{
     Console.WriteLine();
-
-
-
 }
 
-<div class="d-flex justify-content-end gap-2 py-2">
-<a href="#" class="btn btn-sm btn-outline-secondary">Share</a>
-<a href="#" class="btn btn-sm btn-outline-secondary">Follow</a>
-</div>
-<div class="card mb-3 " id="issue-@Model.IssueID">
-    <div class="d-flex flex-row">
-
-        <div class="dial-container">
+<div class="card mb-3" id="issue-@Model.IssueID">
+    <div class="">
+        <div class="dial-container" style="float:left">
         </div>
-        <div class="flex-fill d-flex flex-column">
 
-            <div class="card-header d-flex justify-content-between align-items-center" style="border-left:var(--bs-card-border-width) solid var(--bs-card-border-color); border-top-left-radius: 0;">
-                <div>
-
-                <h5 class="mb-0">@Model.Title</h5>
-                <small class="text-muted">Posted by @Model.Author?.UserName on @Model.CreatedAt.ToString("MMM dd, yyyy")</small>
+        <div class="card-header" style="border-left:var(--bs-card-border-width) solid var(--bs-card-border-color); border-top-left-radius: 0; margin-left: var(--dial-width)">
+            <h5 class="mb-0">
+                <div style="font-size:20px;" class="float-end">
+                    @Html.Partial("~/Views/Shared/Components/_scope-ribbon.cshtml", Model.Scope)
                 </div>
+                @* Title and this float need to be next to each other for float styling to work. *@
+                @Model.Title
+            </h5>
+            <small class="text-muted">Posted by @Model.Author?.UserName on @Model.CreatedAt.ToString("MMM dd, yyyy")</small>
+        </div>
 
+        <p class="mx-2" style="white-space: pre-wrap">@Model.Content</p>
 
-                <div class="text-end d-flex align-items-center gap-1">
-
-                   
-                     @Html.Partial("~/Views/Shared/Components/_scope-ribbon.cshtml", Model.Scope)
-                </div>
-            </div>
-            <div class="card-body d-flex flex-column justify-content-between">
-                <p>@Model.Content</p>
-
-                @if (Model.Categories != null && Model.Categories.Any())
+        @if (Model.Categories != null && Model.Categories.Any())
+        {
+            <div class="mt-2">
+                @foreach (var category in Model.Categories)
                 {
-                    <div class="mt-2">
-                        @foreach (var category in Model.Categories)
-                        {
-                            <span class="badge bg-secondary me-1">@category.CategoryName</span>
-                        }
-                    </div>
+                    <span class="badge bg-secondary me-1">@category.CategoryName</span>
                 }
             </div>
-          
-        </div>
-       
-
+        }
     </div>
-    
 
+    <div class="card-footer d-flex justify-content-between">
+        <div class="" id="card-@Model.IssueID-footer-alert">
+        </div>
+        <div class="">
+            <a href="#" class="btn btn-sm btn-outline-secondary bg-success-subtle">Share</a>
+            <a href="#" class="btn btn-sm btn-outline-secondary bg-dark-subtle">Follow</a>
+        </div>
+    </div>
 </div>
 
 @* This script does load with cshtml because it is part of the initial page load *@
@@ -83,9 +72,9 @@
                     if (dialContainer) {
                         dialContainer.innerHTML = data;
                         // Make sure this function exists and is defined before this script runs
-                        if (typeof initializeVoteDial === 'function') {
+                        if (typeof initializeCard === 'function') {
                             try {
-                                initializeVoteDial(issueId);
+                                initializeCard(issueId);
                             } catch (initError) {
                                 console.error("Error in initializeVoteDial:", initError);
                             }

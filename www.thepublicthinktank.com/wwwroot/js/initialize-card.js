@@ -1,4 +1,37 @@
-﻿function getDialElements(issueId) {
+﻿
+function initializeCard(cardId) {
+    initializeVoteDial(cardId)
+
+
+
+
+}
+
+
+document.addEventListener("click", e => {
+    if (e.target.closest(".card-expand-toggle, .card-minimize-toggle")) {
+        const card = e.target.closest(".card")
+        const toggles = card.querySelectorAll(".card-expand-toggle, .card-minimize-toggle")
+        Array.from(toggles).forEach(t => {
+            t.classList.toggle("d-none")
+        })
+        card.classList.toggle("expanded")
+        const truncatedTextElement = card.querySelector(".text-collapsible-target")
+        if (truncatedTextElement.classList.contains("truncate-multiline")) {
+            truncatedTextElement.classList.remove("truncate-multiline");
+        } else {
+            truncatedTextElement.classList.add("truncate-multiline");
+        }
+    }
+})
+
+
+
+
+
+// DIAL JS
+
+function getDialElements(issueId) {
     const containerId = `vote-toggle-container-${issueId}`;
     const container = document.getElementById(containerId);
 
@@ -391,3 +424,5 @@ function debounce(func, wait) {
         timeout = setTimeout(() => func.apply(context, args), wait);
     };
 }
+
+

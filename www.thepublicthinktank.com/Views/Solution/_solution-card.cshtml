@@ -5,41 +5,61 @@
 *@
 @{
     Console.WriteLine();
+    
+    Boolean IsContentLong = true;
 }
 
 <div class="card mb-3 solution-card" id="solution-@Model.SolutionID">
-    <div class="d-flex flex-row">
-        <div class="dial-container">
+    <div class="card-content position-relative mb-2">
+        <div class="dial-container" style="float:left">
         </div>
-        <div class="flex-fill d-flex flex-column">
-            <div class="card-header" style="border-left:var(--bs-card-border-width) solid var(--bs-card-border-color); border-top-left-radius: 0;">
-                <h5 class="mb-0">
-                    <div style="font-size:20px;" class="float-end">
-                        @Html.Partial("~/Views/Solution/_solution-card-stat-icons.cshtml", Model)
-                    </div>
-                    @Model.Title
-                </h5>
-                <small class="text-muted">Posted by @Model.Author?.UserName on @Model.CreatedAt.ToString("MMM dd, yyyy")</small>
-            </div>
-            <div class="card-body d-flex flex-column justify-content-between">
-                <p>@Model.Content</p>
 
-                @if (Model.Categories != null && Model.Categories.Any())
+        <div class="card-header" style="border-left:var(--bs-card-border-width) solid var(--bs-card-border-color); border-top-left-radius: 0; margin-left: var(--dial-width)">
+            <h5 class="mb-0">
+                <div style="font-size:20px;" class="float-end">
+                    @Html.Partial("~/Views/Solution/_solution-card-stat-icons.cshtml", Model)
+                </div>
+                @* Title and this float need to be next to each other for float styling to work. *@
+                @Model.Title
+            </h5>
+            <small class="text-muted">Posted by @Model.Author?.UserName on @Model.CreatedAt.ToString("MMM dd, yyyy")</small>
+        </div>
+
+        <p class="mx-2 mb-2 truncate-multiline text-collapsible-target" style="white-space: pre-wrap">@Model.Content</p>
+
+        @if (Model.Categories != null && Model.Categories.Any())
+        {
+            <div class="mt-2">
+                @foreach (var category in Model.Categories)
                 {
-                    <div class="mt-2">
-                        @foreach (var category in Model.Categories)
-                        {
-                            <span class="badge bg-secondary me-1">@category.CategoryName</span>
-                        }
-                    </div>
+                    <span class="badge bg-secondary me-1">@category.CategoryName</span>
                 }
             </div>
-        </div>
+        }
+        
+        @if (IsContentLong)
+        {
+            <div class="expand-button-spacer" style="height: 30px;"></div>
+        }
     </div>
+
     <div class="card-footer d-flex justify-content-between">
         <div class="" id="card-@Model.SolutionID-footer-alert">
         </div>
+        @if (IsContentLong)
+        {
+            <div class="card-collapse-toggle-container position-absolute" style="
+                left: 50%;
+                transform: translate(-50%, -48px);
+            ">
+                <button class="card-expand-toggle btn btn-secondary btn-sm mx-auto">Expand</button>
+            </div>
+        }
         <div class="">
+            @if (IsContentLong)
+            {
+                <button class="card-minimize-toggle btn btn-secondary btn-sm mx-auto d-none">Minimize</button>
+            }
             <a href="@Url.Action("ReadSolution", "Solution", new { id = Model.SolutionID })" class="btn btn-sm btn-outline-primary bg-primary-subtle">View</a>
             <a href="#" class="btn btn-sm btn-outline-secondary bg-success-subtle">Share</a>
             <a href="#" class="btn btn-sm btn-outline-secondary bg-dark-subtle">Follow</a>
@@ -47,15 +67,13 @@
     </div>
 </div>
 
-@* Add voting functionality similar to the issue card if needed *@
-@* Add voting functionality similar to the issue card if needed *@
 <script>
     console.log("DOMContentLoaded card for solution ID: @Model.SolutionID");
     document.addEventListener("DOMContentLoaded", () => {
         try {
             const solutionId = '@Model.SolutionID';
             console.log("Fetching vote dial for solution:", solutionId);
-            
+
             fetch(`/solution/GetVoteDial?solutionId=${solutionId}`)
                 .then(response => {
                     if (!response.ok) {
@@ -70,14 +88,14 @@
                         console.error(`Element #solution-${solutionId} not found`);
                         return;
                     }
-                    
+
                     const dialContainer = thisElement.querySelector('.dial-container');
                     if (dialContainer) {
                         dialContainer.innerHTML = data;
                         // Make sure this function exists and is defined before this script runs
-                        if (typeof initializeVoteDial === 'function') {
+                        if (typeof initializeCard === 'function') {
                             try {
-                                initializeVoteDial(solutionId);
+                                initializeCard(solutionId);
                             } catch (initError) {
                                 console.error("Error in initializeVoteDial:", initError);
                             }

@@ -7,33 +7,34 @@
 .issue-card-stat-icons {
     font-size: 18px;
     max-width: 100%;
-    /*    padding-right: 37px;*/
-    height: auto;
-    display: flex;
+    margin-right: calc(var(--ribbon-width));
+/*    height: 50px;*/
+    direction: rtl;
+    /*    display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
-    margin-bottom: 10px;
+    flex-wrap: wrap;*/
 }
 
 /* Small containers (max-width: 604px) */
 @container card (max-width: 604px) {
     .issue-card-stat-icons {
         font-size: 20px;
-        max-width: 40px;
-        padding-right: 80px;
+        max-width: 100px;
+        min-width: 67px;
         height: 72px;
         margin-bottom: 0;
     }
 
-        .issue-card-stat-icons div[role=button] {
+        .issue-card-stat-icons span[role=button] {
             padding-bottom: 3px;
         }
 }
 
 /* Position adjustments for content count on mobile */
 .issue-card-stat-icons .position-relative {
-    margin: 0 8px;
+    margin: 2px 8px;
+    display: inline-block;
 }
 
 .issue-card-stat-icons .content-count {

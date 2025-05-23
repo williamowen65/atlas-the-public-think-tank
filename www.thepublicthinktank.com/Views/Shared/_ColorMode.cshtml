@@ -4,6 +4,19 @@
 @{
 }
 
+<script>
+    // Set initial theme based on stored preference or default to dark
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-bs-theme', savedTheme);
+
+
+    const sidebarState = localStorage.getItem('sidebarState');
+    const isMobile = window.innerWidth <= 768;
+
+    if (!isMobile && sidebarState === 'closed') {
+    document.documentElement.classList.add('sidebar-initial-closed');
+    }
+</script>
 
 
 @* Definition for svg graphics *@

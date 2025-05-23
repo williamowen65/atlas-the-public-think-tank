@@ -1,0 +1,33 @@
+﻿<footer class="border-top footer ">
+    <div class="container d-flex justify-content-between flex-column" style="width: 326px; transform: translateY(31px)">
+       
+        <div>
+            <div class="ff-consolas col-lg-4 mb-2 text-body-emphasis text-decoration-none fw-bold w-100" style="transform: translateY(-10px)">
+                <div id="large-logo" class="text-center mx-auto">
+                    <span class="site-name position-relative">
+                        <span class="fs-2">Atlas</span>
+                        <br>
+                        <small class="position-absolute text-nowrap" style="top:20px; left:-36px">The Public Think Tank</small>
+                    </span>
+                </div>
+
+            </div>
+        </div>
+        <div class="d-flex align-items-center  justify-content-between w-fit m-auto">
+
+        <div>
+            &copy; @DateTime.Now.Year 
+        </div>
+        <div class="mx-2">-</div>
+        <div>
+        <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+        <div class="mx-2">-</div>
+        <div>
+                <a target="_blank" href="https://github.com/williamowen65/atlas-the-public-think-tank">
+                    @Html.Partial("~/Views/Shared/Icons/_Github-logo.cshtml")
+                </a>
+        </div>
+        </div>
+    </div>
+</footer>
