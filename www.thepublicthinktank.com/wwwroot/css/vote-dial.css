@@ -1,4 +1,9 @@
 ﻿
+:root {
+
+    --dial-width: 100px;
+}
+
 .dial {
     display: flex;
     justify-content: space-around;

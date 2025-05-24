@@ -7,7 +7,7 @@
 
     @Html.Partial("~/Views/Issue/_issue-page-post.cshtml", Model)
 
-    <nav class="d-flex">
+    <nav class="d-flex position-sticky bg-body" style="top:var(--header-height); z-index:11">
         <div class="nav nav-tabs flex-grow-1 text-nowrap overflow-x-scroll overflow-y-hidden" style="flex-wrap: revert;" id="nav-tab" role="tablist">
             <button class="nav-link active" id="solutions-tab" data-bs-toggle="tab" data-bs-target="#solutions" type="button" role="tab" aria-controls="nav-home" aria-selected="true">
                 <div class="content-count">@Model.Solutions.Count()</div>
@@ -24,40 +24,45 @@
                 @Html.Partial("~/Views/Shared/Icons/_SubIssues.cshtml")
                 Sub-Issues
             </button>
-            <button class="nav-link d-flex align-items-center" id="parent-issue-tab" data-bs-toggle="tab" data-bs-target="#parent-issue" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
+            <button class="nav-link d-flex align-items-center" id="parent-post-tab" data-bs-toggle="tab" data-bs-target="#parent-post" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
                 <div class="content-count">
-                    <span>@(Model.ParentIssue != null ? 1 : 0)</span>
+                    <span>@((Model.ParentIssue != null || Model.ParentSolution != null) ? 1 : 0)</span>
                 </div>
                 <div class="me-2">
                     @Html.Partial("~/Views/Shared/Icons/_ParentIssue.cshtml")
                 </div>
 
-                Parent Issue
+                @if (Model.ParentIssue != null && Model.ParentSolution != null)
+                {
+                    <span>Parent Post</span>
+                }
+                else if (Model.ParentIssue != null)
+                {
+                    <span>Parent Issue</span>
+                }
+                else if (Model.ParentSolution != null)
+                {
+                    <span>Parent Solution</span>
+                }
+                else
+                {
+                    <span>Parent Post</span>
+                }
             </button>
-            <button class="nav-link d-flex align-items-center" id="parent-solution-tab" data-bs-toggle="tab" data-bs-target="#parent-solution" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
-                <div class="content-count">
-                    <span>@(Model.ParentSolution != null ? 1 : 0)</span>
-                </div>
-                <div class="me-2">
-                    @Html.Partial("~/Views/Shared/Icons/_ParentIssue.cshtml")
-                </div>
+            <li class="nav-item dropdown ms-auto">
 
-                Parent Solution
-            </button>
-       <li class="nav-item dropdown ms-auto">
-  
-</li>
-          
+            </li>
+
         </div>
         <div class="ms-2 pt-2">
 
-        <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false" id="actionDropdown">
-            @Html.Partial("~/Views/Shared/Icons/_ActionsIcon.cshtml")
-            Actions
-        </a>
-        <ul class="dropdown-menu" id="dynamic-actions">
-            <!-- Content will be dynamically populated -->
-        </ul>
+            <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false" id="actionDropdown">
+                @Html.Partial("~/Views/Shared/Icons/_ActionsIcon.cshtml")
+                Actions
+            </a>
+            <ul class="dropdown-menu" id="dynamic-actions">
+                <!-- Content will be dynamically populated -->
+            </ul>
         </div>
     </nav>
     <div class="tab-content" id="nav-tabContent">
@@ -69,7 +74,7 @@
                     <div class="comment-feed">
                         <div class="content">
                             <h2>Empty Solution Feed</h2>
-                            <a href="@Url.Action("CreateSolution","Solution", new { parentIssueID = Model.IssueID })">
+                            <a href="@Url.Action("CreateSolution", "Solution", new { parentIssueID = Model.IssueID })">
                                 <button class="outlined-text">Create a Solution</button>
                             </a>
                         </div>
@@ -81,7 +86,8 @@
                 foreach (Solution_ReadVM model in Model.Solutions)
                 {
                     // Fetch the sub issue
-                    @Html.Partial("~/Views/Solution/_solution-card.cshtml", model);
+                    @Html.Partial("~/Views/Solution/_solution-card.cshtml", model)
+                    ;
                 }
 
             }
@@ -128,30 +134,36 @@
                 {
 
                     // Fetch the sub issue
-                    @Html.Partial("~/Views/Issue/_issue-card.cshtml", model);
+                    @Html.Partial("~/Views/Issue/_issue-card.cshtml", model)
+                    ;
                 }
 
             }
         </div>
+        <div class="tab-pane fade border border-1 border-top-0" id="parent-post" role="tabpanel" aria-labelledby="parent-post-tab" tabindex="0">
+            @if (Model.ParentIssue != null && Model.ParentSolution != null)
+            {
+                <h5 class="mt-3 mb-3">Parent Issue</h5>
+                @Html.Partial("~/Views/Issue/_issue-card.cshtml", Model.ParentIssue)
+                ;
 
-        <div class="tab-pane fade border border-1 border-top-0" id="parent-issue" role="tabpanel" aria-labelledby="parent-issue-tab" tabindex="0">
-            @if (Model.ParentIssue != null)
+                <h5 class="mt-4 mb-3">Parent Solution</h5>
+                @Html.Partial("~/Views/Solution/_solution-card.cshtml", Model.ParentSolution)
+                ;
+            }
+            else if (Model.ParentIssue != null)
             {
-                @Html.Partial("~/Views/Issue/_issue-card.cshtml", Model.ParentIssue);
+                @Html.Partial("~/Views/Issue/_issue-card.cshtml", Model.ParentIssue)
+                ;
+            }
+            else if (Model.ParentSolution != null)
+            {
+                @Html.Partial("~/Views/Solution/_solution-card.cshtml", Model.ParentSolution)
+                ;
             }
             else
             {
-                <p class="empty-feed">There is no parent issue</p>
-            }
-        </div>
-        <div class="tab-pane fade border border-1 border-top-0" id="parent-solution" role="tabpanel" aria-labelledby="parent-solution-tab" tabindex="0">
-            @if (Model.ParentSolution != null)
-            {
-                @Html.Partial("~/Views/Solution/_solution-card.cshtml", Model.ParentSolution);
-            }
-            else
-            {
-                <p class="empty-feed">There is no parent solution</p>
+                <p class="empty-feed">There is no parent post</p>
             }
         </div>
     </div>
@@ -160,9 +172,13 @@
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         dynamicDropdownContent();
+        initializeDialsForTabbedLayout();
+    });
+
+    function initializeDialsForTabbedLayout() {
         // Initialize vote dials on tab show event
         const subIssuesTab = document.getElementById('sub-issues-tab');
-        const parentIssueTab = document.getElementById('parent-issue-tab');
+        const parentPostTab = document.getElementById('parent-post-tab');
         const solutionsTab = document.getElementById('solutions-tab');
 
         if (subIssuesTab) {
@@ -172,14 +188,15 @@
             });
         }
 
-        if (parentIssueTab) {
-            parentIssueTab.addEventListener('shown.bs.tab', function (e) {
-                console.log('Parent issue tab activated - reinitializing vote dials');
-                reinitializeVoteDials('parent-issue');
+        if (parentPostTab) {
+            parentPostTab.addEventListener('shown.bs.tab', function (e) {
+                const tabText = parentPostTab.textContent.trim();
+                console.log(`${tabText} tab activated - reinitializing vote dials`);
+                reinitializeVoteDials('parent-post');
             });
         }
+
         if (solutionsTab) {
-            // console.log("setting listener on solution tab")
             solutionsTab.addEventListener('shown.bs.tab', function (e) {
                 console.log('Solutions tab activated - reinitializing vote dials');
                 reinitializeVoteDials('solutions');
@@ -187,9 +204,6 @@
         } else {
             console.error("Solution tab not found")
         }
-
-
-        
 
         // Function to find all issue cards in a tab and reinitialize vote dials
         function reinitializeVoteDials(tabId) {
@@ -212,11 +226,11 @@
                         if (voteContainer) {
                             setTimeout(() => {
                                 // Reinitialize with a slight delay to ensure proper rendering
-                                initializeVoteDial(issueId);
+                                initializeCard(issueId);
                             }, 50);
                         } else {
                             // If vote container doesn't exist, need to fetch the dial
-                            fetchAndInitializeIssueVoteDial(issueId, dialContainer);
+                            fetchAndInitializeCard(issueId, dialContainer);
                         }
                     } else {
                         // If no dial content, fetch it
@@ -233,62 +247,70 @@
                 .then(data => {
                     dialContainer.innerHTML = data;
                     setTimeout(() => {
-                        initializeVoteDial(issueId);
+                        initializeCard(issueId);
                     }, 50);
                 })
                 .catch(error => console.error(`Error fetching vote dial for issue ${issueId}:`, error));
         }
+
         function fetchAndInitializeSolutionVoteDial(solutionId, dialContainer) {
             fetch(`/solution/GetVoteDial?solutionId=${solutionId}`)
                 .then(response => response.text())
                 .then(data => {
                     dialContainer.innerHTML = data;
                     setTimeout(() => {
-                        initializeVoteDial(solutionId);
+                        initializeCard(solutionId);
                     }, 50);
                 })
                 .catch(error => console.error(`Error fetching vote dial for solution ${solutionId}:`, error));
         }
-    });
-function dynamicDropdownContent(){
-    const dropdownMenu = document.getElementById('dynamic-actions');
-    
-    // Menu content templates for each tab
-    const menuTemplates = {
-        'solutions-tab': `
-            <li><a class="dropdown-item" href="@Url.Action("CreateSolution","Solution", new { parentIssueID = Model.IssueID})">Create Solution</a></li>
-        `,
-        'issue-comments-tab': `
-            <li><a class="dropdown-item" href="#">Create Discussion</a></li>
-        `,
-        'sub-issues-tab': `
-            <li><a class="dropdown-item" href="@Url.Action("CreateIssue", "Issue", new { parentIssueID = Model.IssueID })">Create Sub-Issue</a></li>
-        `,
-        'parent-issue-tab': `
-            <li><a class="dropdown-item" href="#">Go to Parent Issue</a></li>
-        `
-    };
-    
-    // Function to update dropdown content based on active tab
-    // Make this function available globally
-    window.updateDropdownContent = function(activeTabId) {
-        if (dropdownMenu && menuTemplates[activeTabId]) {
-            dropdownMenu.innerHTML = menuTemplates[activeTabId];
-        }
     }
-    
-    // Initialize with default tab content
-    updateDropdownContent('solutions-tab');
-    
-    // Add event listeners to all tabs
-    const tabs = document.querySelectorAll('[data-bs-toggle="tab"]');
-    tabs.forEach(tab => {
-        tab.addEventListener('shown.bs.tab', function(event) {
-            updateDropdownContent(event.target.id);
-        });
-    });
-}
-</script>
 
+    function dynamicDropdownContent(){
+        const dropdownMenu = document.getElementById('dynamic-actions');
+
+        // Menu content templates for each tab
+        const menuTemplates = {
+            'solutions-tab': `
+                <li><a class="dropdown-item" href="@Url.Action("CreateSolution", "Solution", new { parentIssueID = Model.IssueID })">Create Solution</a></li>
+            `,
+            'issue-comments-tab': `
+                <li><a class="dropdown-item" href="#">Create Discussion</a></li>
+            `,
+            'sub-issues-tab': `
+                <li><a class="dropdown-item" href="@Url.Action("CreateIssue", "Issue", new { parentIssueID = Model.IssueID })">Create Sub-Issue</a></li>
+            `,
+            'parent-post-tab': `
+                @if (Model.ParentIssue != null)
+                {
+                        <li><a class="dropdown-item" href="@Url.Action("ReadIssue", "Issue", new { id = Model.ParentIssue.IssueID })">Go to Parent Issue</a></li>
+                }
+                @if (Model.ParentSolution != null)
+                {
+                        <li><a class="dropdown-item" href="@Url.Action("ReadSolution", "Solution", new { id = Model.ParentSolution.SolutionID })">Go to Parent Solution</a></li>
+                }
+            `
+        };
+
+        // Function to update dropdown content based on active tab
+        // Make this function available globally
+        window.updateDropdownContent = function(activeTabId) {
+            if (dropdownMenu && menuTemplates[activeTabId]) {
+                dropdownMenu.innerHTML = menuTemplates[activeTabId];
+            }
+        }
+
+        // Initialize with default tab content
+        updateDropdownContent('solutions-tab');
+
+        // Add event listeners to all tabs
+        const tabs = document.querySelectorAll('[data-bs-toggle="tab"]');
+        tabs.forEach(tab => {
+            tab.addEventListener('shown.bs.tab', function(event) {
+                updateDropdownContent(event.target.id);
+            });
+        });
+    }
+</script>
 
 <script src="~/js/remember-tab.js"></script>

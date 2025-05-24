@@ -84,3 +84,15 @@
     scale: 0.6;
 }
 
+
+.truncate-multiline {
+    display: -webkit-box; 
+    -webkit-box-orient: vertical; 
+    -webkit-line-clamp: 4; 
+    overflow: hidden; 
+}
+
+.expanded 
+.expand-button-spacer {
+    display: none;
+}
