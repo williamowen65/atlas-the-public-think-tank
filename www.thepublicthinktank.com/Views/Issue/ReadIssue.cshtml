@@ -7,7 +7,12 @@
 
     @Html.Partial("~/Views/Issue/_issue-page-post.cshtml", Model)
 
-    <nav class="d-flex position-sticky bg-body" style="top:var(--header-height); z-index:11">
+
+   
+
+    <nav class=" position-sticky bg-body" style="top:var(--header-height); z-index:11">
+        <div class="d-flex">
+
         <div class="nav nav-tabs flex-grow-1 text-nowrap overflow-x-scroll overflow-y-hidden" style="flex-wrap: revert;" id="nav-tab" role="tablist">
             <button class="nav-link active" id="solutions-tab" data-bs-toggle="tab" data-bs-target="#solutions" type="button" role="tab" aria-controls="nav-home" aria-selected="true">
                 <div class="content-count">@Model.Solutions.Count()</div>
@@ -64,6 +69,9 @@
                 <!-- Content will be dynamically populated -->
             </ul>
         </div>
+
+        </div>
+
     </nav>
     <div class="tab-content" id="nav-tabContent">
         <div class="tab-pane fade show active border border-1 border-top-0" id="solutions" role="tabpanel" aria-labelledby="solutions-tab" tabindex="0">

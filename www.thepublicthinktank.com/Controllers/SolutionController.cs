@@ -30,16 +30,23 @@ namespace atlas_the_public_think_tank.Controllers
         [Route("/solution/create")]
         public async Task<IActionResult> CreateSolution(Guid? parentIssueID = null)
         {
+
+
             // Initialize the ViewModel
             var viewModel = new Solution_CreateVM
             {
                 IssueID = parentIssueID,
                 Scopes = _context.Scopes.ToList(),
                 Categories = await _context.Categories.ToListAsync(),
+                BreadcrumbTags = await _crud.Issues.GetContentBreadcrumb(parentIssueID ?? Guid.Empty)
             };
 
             return View(viewModel);
         }
+
+
+      
+
 
         [HttpPost]
         [Route("/solution/create")]
@@ -192,8 +199,9 @@ namespace atlas_the_public_think_tank.Controllers
                 return NotFound();
             }
 
-            // Map to the view model (adjust as needed for your project)
-            var solutionVM = _crud.Solutions.ConvertSolutionEntityToVM(solution);
+            // Map to the view model (adjust as needed for your project)            var solutionVM = _crud.Solutions.ConvertSolutionEntityToVM(solution);
+            var solutionVM = await _crud.Solutions.ConvertSolutionEntityToVM(solution);
+
 
             return View(solutionVM);
         }
