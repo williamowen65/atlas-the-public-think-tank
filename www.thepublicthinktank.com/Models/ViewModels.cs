@@ -24,6 +24,8 @@ namespace atlas_the_public_think_tank.Models
 
         public Guid ScopeID { get; set; }
         public List<Scope> Scopes { get; set; } = new List<Scope>();
+
+
     }
 
 
@@ -60,6 +62,8 @@ namespace atlas_the_public_think_tank.Models
 
         public required int SubIssueCount { get; set; }
 
+        public required List<Breadcrumb_ReadVM> BreadcrumbTags { get; set; }
+
 
         // Navigation properties
         public AppUser Author { get; set; }
@@ -69,6 +73,29 @@ namespace atlas_the_public_think_tank.Models
         public ICollection<UserComment> Comments { get; set; }
         public ICollection<IssueVote> IssueVotes { get; set; }
         public ICollection<IssueCategory> IssueCategories { get; set; }
+    }
+
+    public class Breadcrumb_ReadVM
+    {
+        public string Title { get; set; }
+
+        public Guid ContentID { get; set; }
+
+        public ContentType ContentType { get; set; }
+
+        public string Url
+        {
+            get
+            {
+                // Adjust base paths as needed for your Razor Pages routes
+                return ContentType switch
+                {
+                    ContentType.Issue => $"/issue/{ContentID}",
+                    ContentType.Solution => $"/solution/{ContentID}",
+                    _ => "#"
+                };
+            }
+        }
     }
     
     public class Solution_ReadVM : ICardStatsViewModel
@@ -86,6 +113,8 @@ namespace atlas_the_public_think_tank.Models
         public required int SubIssueCount { get; set; }
         public required Guid ScopeID { get; set; }
         public required Scope Scope { get; set; }
+
+        public required List<Breadcrumb_ReadVM> BreadcrumbTags { get; set; }
 
         public List<Issue_ReadVM> SubIssues { get; set; } = new List<Issue_ReadVM>();
 
@@ -190,6 +219,9 @@ namespace atlas_the_public_think_tank.Models
         public List<Guid> SelectedCategoryIds { get; set; } = new List<Guid>();
 
         public List<Scope> Scopes { get; set; } = new List<Scope>();
+
+        public string BreadcrumbTag { get; set; }
+        public required List<Breadcrumb_ReadVM> BreadcrumbTags { get; set; }
 
     }
 

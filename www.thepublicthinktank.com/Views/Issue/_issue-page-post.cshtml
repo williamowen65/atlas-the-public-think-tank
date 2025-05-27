@@ -34,13 +34,21 @@
             </div>
         } *@
     </div>
+    @Html.Partial("~/Views/Shared/_Breadcrumb.cshtml", Model.BreadcrumbTags)
 
-    <div class="card-footer d-flex justify-content-between">
-        <div class="" id="card-@Model.IssueID-footer-alert">
+    <div class="card-footer">
+
+     
+        <div class="d-flex justify-content-between">
+
+        <div class="text-nowrap" id="card-@Model.IssueID-footer-alert">
         </div>
+     
+
         <div class="">
             <a href="#" class="btn btn-sm btn-outline-secondary bg-success-subtle">Share</a>
             <a href="#" class="btn btn-sm btn-outline-secondary bg-dark-subtle">Follow</a>
+        </div>
         </div>
     </div>
 </div>

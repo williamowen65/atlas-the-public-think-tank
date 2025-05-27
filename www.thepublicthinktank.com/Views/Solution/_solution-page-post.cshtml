@@ -32,8 +32,10 @@
                     <span class="badge bg-secondary me-1">@category.CategoryName</span>
                 }
             </div>
-        } *@
+        } *@    
     </div>
+    @Html.Partial("~/Views/Shared/_Breadcrumb.cshtml", Model.BreadcrumbTags)
+    
     <div class="card-footer d-flex justify-content-between">
         <div class="" id="card-@Model.SolutionID-footer-alert">
         </div>

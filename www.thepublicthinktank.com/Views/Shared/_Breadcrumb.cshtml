@@ -1,0 +1,48 @@
+﻿@model List<Breadcrumb_ReadVM>
+
+@*
+    The breadcrumb should be printed in reverse order
+*@
+@{
+        Guid randomId = Guid.NewGuid(); 
+}
+
+@if (Model.Any())
+{
+    <nav aria-label="breadcrumb" class="flex-grow-1 mb-1">
+        <div class="d-flex flex-nowrap breadcrumb breadcrumb-ribbon-custom overflow-y-hidden overflow-x-scroll" id="@randomId">
+            @* @for (int i = 0; i <= Model.Count - 1; i++) *@
+            @for (int i = Model.Count - 1; i >= 0; i--)
+            {
+                var breadcrumb = Model[i];
+                <div class="breadcrumb-item-custom text-nowrap">
+                    @if (!string.IsNullOrEmpty(breadcrumb.Url))
+                    {
+                        <a href="@breadcrumb.Url">@breadcrumb.Title</a>
+                    }
+                    else
+                    {
+                        <span>@breadcrumb.Title</span>
+                    }
+                </div>
+            }
+        </div>
+    </nav>
+}
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+         // Scroll this nav bar to the right; use @randomId
+
+
+         // this needs to be updated to work when switching tabs 
+
+
+         console.log("Scrolling over breadcrumb for @randomId")
+        const nav = document.getElementById("@randomId");
+        if (nav) {
+            nav.scrollLeft = nav.scrollWidth;
+        }
+    })
+</script>

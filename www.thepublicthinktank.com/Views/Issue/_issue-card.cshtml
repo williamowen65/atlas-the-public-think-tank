@@ -50,8 +50,8 @@
 
     </div>
 
- 
 
+    @Html.Partial("~/Views/Shared/_Breadcrumb.cshtml", Model.BreadcrumbTags)
 
     <div class="card-footer d-flex justify-content-between">
         <div class="" id="card-@Model.IssueID-footer-alert">
@@ -60,7 +60,7 @@
         {
             <div class="card-collapse-toggle-container position-absolute" style="
         left: 50%;
-            transform: translate(-50%, -48px);
+        transform: translate(-50%, @(Model.BreadcrumbTags.Count > 0 ? "-77px" : "-48px"));
     ">
                 <button class="card-expand-toggle btn btn-secondary btn-sm  mx-auto">Expand</button>
             </div>
@@ -82,6 +82,10 @@
 <script>
     console.log("DOMContentLoaded card for issue ID: @Model.IssueID");
     document.addEventListener("DOMContentLoaded", () => {
+
+
+
+
         try {
             const issueId = '@Model.IssueID';
             console.log("Fetching vote dial for issue:", issueId);
@@ -123,4 +127,7 @@
             console.error("Error in DOMContentLoaded handler:", outerError);
         }
     });
+
+
+    
 </script>

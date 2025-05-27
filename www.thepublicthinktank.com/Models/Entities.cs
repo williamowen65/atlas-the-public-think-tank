@@ -84,6 +84,8 @@ namespace atlas_the_public_think_tank.Models
         public Guid? ParentSolutionID { get; set; }
         public Guid? BlockedContentID { get; set; }
 
+        public string BreadcrumbTag { get; set; }
+
         // Navigation properties
         public virtual AppUser Author { get; set; }
         public virtual Scope Scope { get; set; }
@@ -113,6 +115,8 @@ namespace atlas_the_public_think_tank.Models
         public Guid? BlockedContentID { get; set; }
 
         public Guid ScopeID { get; set; }
+
+        public string BreadcrumbTag { get; set; }
 
         // Navigation properties
         [JsonIgnore]

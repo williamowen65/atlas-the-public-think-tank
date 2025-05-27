@@ -33,16 +33,20 @@ namespace atlas_the_public_think_tank.Controllers
         /// This method is used to return the create issue page.
         /// </summary>
         [Route("/create-issue")]
-        public IActionResult CreateIssue(Guid? parentIssueID, Guid? parentSolutionID)
+        public async Task<IActionResult> CreateIssue(Guid? parentIssueID, Guid? parentSolutionID)
         {
+            Guid contentId = parentIssueID ?? parentSolutionID ?? Guid.Empty;
 
             Issue_CreateVM newIssue = new()
             {
                 Categories = _context.Categories.ToList(),
                 Scopes = _context.Scopes.ToList(),
                 ParentIssueID = parentIssueID,
-                ParentSolutionID = parentSolutionID
+                ParentSolutionID = parentSolutionID,
             };
+
+            ViewBag.BreadcrumbTags = await _crud.Issues.GetContentBreadcrumb(contentId); 
+            
 
             return View(newIssue);
         }
@@ -59,6 +63,14 @@ namespace atlas_the_public_think_tank.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateIssue(Issue_CreateVM model)
         {
+
+            // Custom validation: Only one of ParentIssueID or ParentSolutionID can be set
+            if ((model.ParentIssueID.HasValue && model.ParentSolutionID.HasValue) ||
+                (!model.ParentIssueID.HasValue && !model.ParentSolutionID.HasValue))
+            {
+                ModelState.AddModelError(string.Empty, "You must specify either a parent issue or a parent solution, but not both.");
+            }
+
             if (ModelState.IsValid)
             {
                 var user = await _userManager.GetUserAsync(User);
@@ -166,9 +178,8 @@ namespace atlas_the_public_think_tank.Controllers
             }
 
 
-
             // Then map to the view model
-            var issueVM = _crud.Issues.ConvertIssueEntityToVM(issue);
+            var issueVM = await _crud.Issues.ConvertIssueEntityToVM(issue);
 
 
             return View(issueVM);

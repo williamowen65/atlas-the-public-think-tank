@@ -13,15 +13,10 @@
     z-index: 1030;
 }
 
-/*main, footer {*/
 main {
     margin-left: calc(var(--left-sidebar-container-width) + 0px);
     transition: margin-left 0.3s ease-in-out;
 }
-
-
-
-
 
 .left-sidebar-toggle {
     margin-left: var(--left-sidebar-container-width);
