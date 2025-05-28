@@ -138,11 +138,7 @@ public class ApplicationDbContext : IdentityDbContext<AppUser, IdentityRole<Guid
                 .HasForeignKey(e => e.BlockedContentID)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // BreadcrumbTag: required, 3-30 chars
-            entity.Property(e => e.BreadcrumbTag)
-                .IsRequired()
-                .HasMaxLength(30)
-                 .HasDefaultValue("defaulttag");
+           
 
         });
 

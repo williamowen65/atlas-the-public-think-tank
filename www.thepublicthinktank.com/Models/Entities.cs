@@ -116,8 +116,6 @@ namespace atlas_the_public_think_tank.Models
 
         public Guid ScopeID { get; set; }
 
-        public string BreadcrumbTag { get; set; }
-
         // Navigation properties
         [JsonIgnore]
         public virtual Issue Issue { get; set; }

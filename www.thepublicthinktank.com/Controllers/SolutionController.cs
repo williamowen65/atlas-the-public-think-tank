@@ -38,7 +38,7 @@ namespace atlas_the_public_think_tank.Controllers
                 IssueID = parentIssueID,
                 Scopes = _context.Scopes.ToList(),
                 Categories = await _context.Categories.ToListAsync(),
-                BreadcrumbTags = await _crud.BreadcrumbAccessor.GetContentBreadcrumb(parentIssueID ?? Guid.Empty)
+                //BreadcrumbTags = await _crud.BreadcrumbAccessor.GetContentBreadcrumb(parentIssueID ?? Guid.Empty)
             };
 
             return View(viewModel);

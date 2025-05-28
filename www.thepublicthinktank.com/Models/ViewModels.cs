@@ -220,8 +220,6 @@ namespace atlas_the_public_think_tank.Models
 
         public List<Scope> Scopes { get; set; } = new List<Scope>();
 
-        public string BreadcrumbTag { get; set; }
-        public required List<Breadcrumb_ReadVM> BreadcrumbTags { get; set; }
 
     }
 
