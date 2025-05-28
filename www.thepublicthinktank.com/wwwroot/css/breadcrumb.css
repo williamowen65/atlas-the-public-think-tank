@@ -70,34 +70,40 @@
     width: 100%;
     height: 100%;
 }
+:root {
+    --charcoal: #264653ff;
+    --persian-green: #06584e;
+    --gunmetal: #2d3142ff;
+    --paynes-gray: #4f5d75ff;
+    /* --coral: #ef8354ff; Removed coral */
+}
 
+/* Alternate between all five colors (now four) */
+.breadcrumb-ribbon-custom .breadcrumb-item-custom:nth-child(4n+1) {
+    background: var(--charcoal);
+}
+.breadcrumb-ribbon-custom .breadcrumb-item-custom:nth-child(4n+1)::before {
+    border-left-color: var(--charcoal);
+}
 
+.breadcrumb-ribbon-custom .breadcrumb-item-custom:nth-child(4n+2) {
+    background: var(--persian-green);
+}
+.breadcrumb-ribbon-custom .breadcrumb-item-custom:nth-child(4n+2)::before {
+    border-left-color: var(--persian-green);
+}
 
-/* Alternativing colors */
-    .breadcrumb-ribbon-custom .breadcrumb-item-custom:nth-child(4n+1) {
-        background: #e74c3c; 
-    }
-    .breadcrumb-ribbon-custom .breadcrumb-item-custom:nth-child(4n+1)::before {
-        border-left-color: #e74c3c;
-    }
+.breadcrumb-ribbon-custom .breadcrumb-item-custom:nth-child(4n+3) {
+    background: var(--gunmetal);
+}
+.breadcrumb-ribbon-custom .breadcrumb-item-custom:nth-child(4n+3)::before {
+    border-left-color: var(--gunmetal);
+}
 
-    .breadcrumb-ribbon-custom .breadcrumb-item-custom:nth-child(4n+2) {
-        background: #769aed;
-    }
-    .breadcrumb-ribbon-custom .breadcrumb-item-custom:nth-child(4n+2)::before {
-        border-left-color: #769aed;
-    }
-
-    .breadcrumb-ribbon-custom .breadcrumb-item-custom:nth-child(4n+3) {
-        background: #2980b9; 
-    }
-    .breadcrumb-ribbon-custom .breadcrumb-item-custom:nth-child(4n+3)::before {
-        border-left-color: #2980b9;
-    }
-
-    .breadcrumb-ribbon-custom .breadcrumb-item-custom:nth-child(4n+4) {
-        background: #27ae60;
-    }
-    .breadcrumb-ribbon-custom .breadcrumb-item-custom:nth-child(4n+4)::before {
-        border-left-color: #27ae60;
-    }
+.breadcrumb-ribbon-custom .breadcrumb-item-custom:nth-child(4n) {
+    background: var(--paynes-gray);
+}
+.breadcrumb-ribbon-custom .breadcrumb-item-custom:nth-child(4n)::before {
+    border-left-color: var(--paynes-gray);
+}
+    

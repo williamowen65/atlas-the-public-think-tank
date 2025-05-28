@@ -1,7 +1,10 @@
 ﻿using atlas_the_public_think_tank.Data;
+using atlas_the_public_think_tank.Migrations;
 using atlas_the_public_think_tank.Models;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace atlas_the_public_think_tank.Services
@@ -11,262 +14,45 @@ namespace atlas_the_public_think_tank.Services
     {
         public Issues Issues { get; }
         public Solutions Solutions { get; }
+        public BreadcrumbAccessor BreadcrumbAccessor{ get; }
 
         private readonly ApplicationDbContext _context;
 
-        public CRUD(Issues issues, Solutions solutions, ApplicationDbContext context)
+        public CRUD(Issues issues, Solutions solutions, ApplicationDbContext context, BreadcrumbAccessor breadcrumbAccessor)
         {
             Issues = issues;
             Solutions = solutions;
             _context = context;
+            BreadcrumbAccessor = breadcrumbAccessor;
         }
-
-
-      
     }
 
-
-    public class Issues
+    public class BreadcrumbAccessor
     {
-
         private readonly ApplicationDbContext _context;
-        private readonly UserManager<AppUser> _userManager;
-        private readonly Solutions _solutions;
+      
 
-        public Issues(ApplicationDbContext context, UserManager<AppUser> userManager, Solutions solutions)
+        public BreadcrumbAccessor(ApplicationDbContext context )
         {
             _context = context;
-            _userManager = userManager;
-            _solutions = solutions;
         }
 
-
-        public async Task<List<Issue_ReadVM>> GetEveryIssue()
+        public async Task<List<Breadcrumb_ReadVM>> GetIssueBreadcrumbTags(Issue issue)
         {
-            List<Issue> posts = await _context.Issues
-               .Include(p => p.Scope)
-               .Include(p => p.Author)
-               .Include(f => f.ParentIssue)
-               .Include(f => f.ChildIssues)
-               .Include(f => f.BlockedContent)
-               .Include(f => f.Solutions)
-                    .ThenInclude(s => s.Scope)
-               .Include(f => f.Comments)
-               .Include(f => f.IssueVotes)
-               .Include(p => p.IssueCategories)
-                   .ThenInclude(fc => fc.Category)
-               .ToListAsync();
-
-            // Map the results to view models after retrieving from the database
-            List<Issue_ReadVM> postsViewModel = await ConvertIssueEntitiesToVM(posts);
-
-            return postsViewModel;
+            return (issue.ParentIssueID.HasValue || issue.ParentSolutionID.HasValue)
+                ? await GetContentBreadcrumb(issue.ParentSolutionID ?? issue.ParentIssueID ?? issue.IssueID)
+                : new List<Breadcrumb_ReadVM>();
         }
-
-        /// <summary>
-        /// Converts a list of issues to a list of issueVMs
-        /// </summary>
-        public async Task<List<Issue_ReadVM>> ConvertIssueEntitiesToVM(List<Issue> posts)
+        public async Task<List<Breadcrumb_ReadVM>> GetSolutionBreadcrumbTags(Models.Solution solution)
         {
-            var issueReadVMs = new List<Issue_ReadVM>();
-            foreach (var p in posts)
-            {
-                var vm = new Issue_ReadVM
-                {
-                    IssueID = p.IssueID,
-                    Title = p.Title,
-                    Content = p.Content,
-                    CreatedAt = p.CreatedAt,
-                    ModifiedAt = p.ModifiedAt,
-                    AuthorID = p.AuthorID,
-                    ScopeID = p.ScopeID,
-                    ParentIssueID = p.ParentIssueID,
-                    BlockedContentID = p.BlockedContentID,
-                    Author = p.Author,
-                    Scope = p.Scope,
-                    Categories = GetIssuesCategories(p),
-                    SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == p.IssueID),
-                    SubIssues = await GetIssuesSubIssuesAsync(p),
-                    Solutions = await _solutions.GetIssuesSolutions(p),
-                    BreadcrumbTags = (p.ParentIssueID.HasValue || p.ParentSolutionID.HasValue)
-                        ? await GetContentBreadcrumb(p.ParentSolutionID ?? p.ParentIssueID ?? p.IssueID)
-                        : new List<Breadcrumb_ReadVM>()
-                };
-                issueReadVMs.Add(vm);
-            }
-            return issueReadVMs;
-        }
-
-        /// <summary>
-        /// Converts a single issue to a single issueVM 
-        /// </summary>
-        public async Task<Issue_ReadVM> ConvertIssueEntityToVM(Issue issue)
-        {
-            bool hasParent = issue.ParentIssueID.HasValue || issue.ParentSolutionID.HasValue;
-
-            return new Issue_ReadVM
-            {
-                IssueID = issue.IssueID,
-                Title = issue.Title,
-                Content = issue.Content,
-                CreatedAt = issue.CreatedAt,
-                Author = issue.Author,
-                Scope = issue.Scope,
-                ParentIssue = await GetParentIssue(issue),
-                ParentSolution = await GetParentSolution(issue),
-                SubIssues = await GetIssuesSubIssuesAsync(issue),
-                SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == issue.IssueID),
-                BlockedContent = issue.BlockedContent,
-                Solutions = await _solutions.GetIssuesSolutions(issue),
-                Comments = issue.Comments,
-                IssueVotes = issue.IssueVotes,
-                IssueCategories = issue.IssueCategories,
-                BreadcrumbTags = hasParent
-                    ? await GetContentBreadcrumb(issue.ParentSolutionID ?? issue.ParentIssueID ?? issue.IssueID)
-                    : new List<Breadcrumb_ReadVM>(),
-                Categories = GetIssuesCategories(issue)
-            };
-        }
-
-        public  List<Category_ReadVM> GetIssuesCategories(Issue currentIssue)
-        {
-            return currentIssue.IssueCategories.Select(fc => new Category_ReadVM
-            {
-                CategoryID = fc.Category.CategoryID,
-                CategoryName = fc.Category.CategoryName
-            }).ToList() ?? new List<Category_ReadVM>();
-        }
-
-        public async Task<List<Issue_ReadVM>> GetIssuesSubIssuesAsync(Issue currentIssue)
-        {
-            if (currentIssue.ChildIssues == null)
-                return new List<Issue_ReadVM>();
-
-            var subIssues = new List<Issue_ReadVM>();
-            foreach (var child in currentIssue.ChildIssues)
-            {
-                var breadcrumbTags = (child.ParentIssueID.HasValue || child.ParentSolutionID.HasValue)
-                    ? await GetContentBreadcrumb(child.ParentSolutionID ?? child.ParentIssueID ?? child.IssueID)
-                    : new List<Breadcrumb_ReadVM>();
-
-                subIssues.Add(new Issue_ReadVM
-                {
-                    IssueID = child.IssueID,
-                    Title = child.Title,
-                    Content = child.Content,
-                    CreatedAt = child.CreatedAt,
-                    ModifiedAt = child.ModifiedAt,
-                    AuthorID = child.AuthorID,
-                    ScopeID = child.ScopeID,
-                    ParentIssueID = child.ParentIssueID,
-                    Scope = child.Scope,
-                    SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == child.IssueID),
-                    BreadcrumbTags = breadcrumbTags
-                });
-            }
-            return subIssues;
-        }
-
-        public async Task<List<Issue_ReadVM>> GetSolutionSubIssues(Solution currentSolution)
-        {
-            if (currentSolution.ChildIssues == null)
-                return new List<Issue_ReadVM>();
-
-            var subIssues = new List<Issue_ReadVM>();
-            foreach (var child in currentSolution.ChildIssues)
-            {
-                var breadcrumbTags = await GetContentBreadcrumb(child.IssueID);
-                subIssues.Add(new Issue_ReadVM
-                {
-                    IssueID = child.IssueID,
-                    Title = child.Title,
-                    Content = child.Content,
-                    CreatedAt = child.CreatedAt,
-                    ModifiedAt = child.ModifiedAt,
-                    AuthorID = child.AuthorID,
-                    ScopeID = child.ScopeID,
-                    ParentIssueID = child.ParentIssueID,
-                    Scope = child.Scope,
-                    SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == child.IssueID),
-                    BreadcrumbTags = breadcrumbTags
-                });
-            }
-            return subIssues;
+            return solution.IssueID != Guid.Empty
+             ? await GetContentBreadcrumb(
+                 solution.IssueID
+               )
+             : new List<Breadcrumb_ReadVM>();
         }
 
 
-        public  async Task<Issue_ReadVM?> GetParentIssue(Issue currentIssue)
-        {
-            return currentIssue.ParentIssue == null ? null : new Issue_ReadVM
-            {
-                IssueID = currentIssue.ParentIssue.IssueID,
-                Title = currentIssue.ParentIssue.Title,
-                Content = currentIssue.ParentIssue.Content,
-                CreatedAt = currentIssue.ParentIssue.CreatedAt,
-                ModifiedAt = currentIssue.ParentIssue.ModifiedAt,
-                AuthorID = currentIssue.ParentIssue.AuthorID,
-                ScopeID = currentIssue.ParentIssue.ScopeID,
-                ParentIssueID = currentIssue.ParentIssue.ParentIssueID,
-                ParentSolutionID = currentIssue.ParentIssue.ParentSolutionID,
-                // Map other properties as needed
-                Scope = currentIssue.ParentIssue.Scope,
-                SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == currentIssue.ParentIssue.IssueID),
-                Solutions = await _solutions.GetIssuesSolutions(currentIssue.ParentIssue),
-                BreadcrumbTags = await GetContentBreadcrumb(currentIssue.ParentIssue.IssueID),
-            };
-        }
-
-        public async Task<Solution_ReadVM?> GetParentSolution(Issue currentIssue)
-        {
-            if (currentIssue.ParentSolution == null)
-                return null;
-
-            var parent = currentIssue.ParentSolution;
-            return new Solution_ReadVM
-            {
-                SolutionID = parent.SolutionID,
-                Title = parent.Title,
-                Content = parent.Content,
-                CreatedAt = parent.CreatedAt,
-                ModifiedAt = parent.ModifiedAt,
-                AuthorID = parent.AuthorID,
-                IssueID = parent.IssueID,
-                ScopeID = parent.ScopeID,
-                Scope = parent.Scope,
-                SubIssueCount = _context.Solutions.Count(s => s.IssueID == parent.SolutionID),
-                SubIssues = await GetSolutionSubIssues(parent),
-                Categories = _solutions.GetSolutionCategories(parent),
-                Comments = parent.Comments,
-                SolutionCategories = parent.SolutionCategories,
-                BreadcrumbTags = await GetContentBreadcrumb(parent.SolutionID),
-                // Add other properties as needed
-            };
-        }
-
-        public async Task<Issue_ReadVM?> GetParentIssue(Solution currentIssue)
-        {
-            // Issue == Parent Issue for solutions 
-            return currentIssue.Issue == null ? null : new Issue_ReadVM
-            {
-                IssueID = currentIssue.Issue.IssueID,
-                Title = currentIssue.Issue.Title,
-                Content = currentIssue.Issue.Content,
-                CreatedAt = currentIssue.Issue.CreatedAt,
-                ModifiedAt = currentIssue.Issue.ModifiedAt,
-                AuthorID = currentIssue.Issue.AuthorID,
-                ScopeID = currentIssue.Issue.ScopeID,
-                ParentIssueID = currentIssue.Issue.ParentIssueID,
-                ParentSolutionID = currentIssue.Issue.ParentSolutionID,
-                // Map other properties as needed
-                Scope = currentIssue.Issue.Scope,
-                Solutions = await _solutions.GetIssuesSolutions(currentIssue.Issue),
-                SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == currentIssue.Issue.IssueID),
-                BreadcrumbTags = await GetContentBreadcrumb(
-                    // Use ParentSolutionID or ParentIssueID if available, otherwise fallback to currentIssue.Issue.IssueID:
-                    currentIssue.Issue.ParentSolutionID ?? currentIssue.Issue.ParentIssueID ?? currentIssue.Issue.IssueID
-                )
-            };
-        }
 
 
         /// <summary>
@@ -336,7 +122,257 @@ namespace atlas_the_public_think_tank.Services
             // If we get here, no content was found with the given ID
             return breadcrumbs;
         }
+    }
 
+
+    public class Issues
+    {
+
+        private readonly ApplicationDbContext _context;
+        private readonly UserManager<AppUser> _userManager;
+        private readonly Solutions _solutions;
+        private readonly BreadcrumbAccessor _breadcrumbAccessor;
+
+        public Issues(ApplicationDbContext context, UserManager<AppUser> userManager, Solutions solutions, BreadcrumbAccessor breadcrumbAccessor)
+        {
+            _context = context;
+            _userManager = userManager;
+            _solutions = solutions;
+            _breadcrumbAccessor = breadcrumbAccessor;
+        }
+
+
+        public async Task<List<Issue_ReadVM>> GetEveryIssue()
+        {
+            List<Issue> posts = await _context.Issues
+               .Include(p => p.Scope)
+               .Include(p => p.Author)
+               .Include(f => f.ParentIssue)
+               .Include(f => f.ChildIssues)
+               .Include(f => f.BlockedContent)
+               .Include(f => f.Solutions)
+                    .ThenInclude(s => s.Scope)
+               .Include(f => f.Comments)
+               .Include(f => f.IssueVotes)
+               .Include(p => p.IssueCategories)
+                   .ThenInclude(fc => fc.Category)
+               .ToListAsync();
+
+            // Map the results to view models after retrieving from the database
+            List<Issue_ReadVM> postsViewModel = await ConvertIssueEntitiesToVM(posts);
+
+            return postsViewModel;
+        }
+
+        /// <summary>
+        /// Converts a list of issues to a list of issueVMs
+        /// </summary>
+        public async Task<List<Issue_ReadVM>> ConvertIssueEntitiesToVM(List<Issue> posts)
+        {
+            var issueReadVMs = new List<Issue_ReadVM>();
+            foreach (var p in posts)
+            {
+                var vm = new Issue_ReadVM
+                {
+                    IssueID = p.IssueID,
+                    Title = p.Title,
+                    Content = p.Content,
+                    CreatedAt = p.CreatedAt,
+                    ModifiedAt = p.ModifiedAt,
+                    AuthorID = p.AuthorID,
+                    ScopeID = p.ScopeID,
+                    ParentIssueID = p.ParentIssueID,
+                    BlockedContentID = p.BlockedContentID,
+                    Author = p.Author,
+                    Scope = p.Scope,
+                    Categories = GetIssuesCategories(p),
+                    SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == p.IssueID),
+                    SubIssues = await GetIssuesSubIssuesAsync(p),
+                    Solutions = await _solutions.GetIssuesSolutions(p),
+                    BreadcrumbTags = await _breadcrumbAccessor.GetIssueBreadcrumbTags(p)
+                };
+                issueReadVMs.Add(vm);
+            }
+            return issueReadVMs;
+        }
+
+        /// <summary>
+        /// Converts a single issue to a single issueVM 
+        /// </summary>
+        public async Task<Issue_ReadVM> ConvertIssueEntityToVM(Issue issue)
+        {
+            List<Breadcrumb_ReadVM> breadcrumbTags = await _breadcrumbAccessor.GetIssueBreadcrumbTags(issue);
+
+            return new Issue_ReadVM
+            {
+                IssueID = issue.IssueID,
+                Title = issue.Title,
+                Content = issue.Content,
+                CreatedAt = issue.CreatedAt,
+                Author = issue.Author,
+                Scope = issue.Scope,
+                ParentIssue = await GetParentIssue(issue),
+                ParentSolution = await GetParentSolution(issue),
+                SubIssues = await GetIssuesSubIssuesAsync(issue),
+                SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == issue.IssueID),
+                BlockedContent = issue.BlockedContent,
+                Solutions = await _solutions.GetIssuesSolutions(issue),
+                Comments = issue.Comments,
+                IssueVotes = issue.IssueVotes,
+                IssueCategories = issue.IssueCategories,
+                BreadcrumbTags = breadcrumbTags,
+                Categories = GetIssuesCategories(issue)
+            };
+        }
+
+        public  List<Category_ReadVM> GetIssuesCategories(Issue currentIssue)
+        {
+            return currentIssue.IssueCategories.Select(fc => new Category_ReadVM
+            {
+                CategoryID = fc.Category.CategoryID,
+                CategoryName = fc.Category.CategoryName
+            }).ToList() ?? new List<Category_ReadVM>();
+        }
+
+        public async Task<List<Issue_ReadVM>> GetIssuesSubIssuesAsync(Issue currentIssue)
+        {
+            if (currentIssue.ChildIssues == null)
+                return new List<Issue_ReadVM>();
+
+            var subIssues = new List<Issue_ReadVM>();
+            foreach (var child in currentIssue.ChildIssues)
+            {
+                var breadcrumbTags = await _breadcrumbAccessor.GetIssueBreadcrumbTags(child );
+
+                subIssues.Add(new Issue_ReadVM
+                {
+                    IssueID = child.IssueID,
+                    Title = child.Title,
+                    Content = child.Content,
+                    CreatedAt = child.CreatedAt,
+                    ModifiedAt = child.ModifiedAt,
+                    AuthorID = child.AuthorID,
+                    ScopeID = child.ScopeID,
+                    ParentIssueID = child.ParentIssueID,
+                    Scope = child.Scope,
+                    SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == child.IssueID),
+                    BreadcrumbTags = breadcrumbTags
+                });
+            }
+            return subIssues;
+        }
+
+        public async Task<List<Issue_ReadVM>> GetSolutionSubIssues(Models.Solution currentSolution)
+        {
+            if (currentSolution.ChildIssues == null)
+                return new List<Issue_ReadVM>();
+
+            var subIssues = new List<Issue_ReadVM>();
+            foreach (var child in currentSolution.ChildIssues)
+            {
+                var breadcrumbTags = await _breadcrumbAccessor.GetIssueBreadcrumbTags(child);
+                subIssues.Add(new Issue_ReadVM
+                {
+                    IssueID = child.IssueID,
+                    Title = child.Title,
+                    Content = child.Content,
+                    CreatedAt = child.CreatedAt,
+                    ModifiedAt = child.ModifiedAt,
+                    AuthorID = child.AuthorID,
+                    ScopeID = child.ScopeID,
+                    ParentIssueID = child.ParentIssueID,
+                    Scope = child.Scope,
+                    SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == child.IssueID),
+                    BreadcrumbTags = breadcrumbTags
+                });
+            }
+            return subIssues;
+        }
+
+
+        public  async Task<Issue_ReadVM?> GetParentIssue(Issue currentIssue)
+        {
+            if (currentIssue.ParentIssue == null)
+                return null;
+
+            var parentIssue = currentIssue.ParentIssue;
+
+            List<Breadcrumb_ReadVM> breadcrumbTags = await _breadcrumbAccessor.GetIssueBreadcrumbTags(parentIssue);
+
+            return currentIssue.ParentIssue == null ? null : new Issue_ReadVM
+            {
+                IssueID = currentIssue.ParentIssue.IssueID,
+                Title = currentIssue.ParentIssue.Title,
+                Content = currentIssue.ParentIssue.Content,
+                CreatedAt = currentIssue.ParentIssue.CreatedAt,
+                ModifiedAt = currentIssue.ParentIssue.ModifiedAt,
+                AuthorID = currentIssue.ParentIssue.AuthorID,
+                ScopeID = currentIssue.ParentIssue.ScopeID,
+                ParentIssueID = currentIssue.ParentIssue.ParentIssueID,
+                ParentSolutionID = currentIssue.ParentIssue.ParentSolutionID,
+                // Map other properties as needed
+                Scope = currentIssue.ParentIssue.Scope,
+                SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == currentIssue.ParentIssue.IssueID),
+                Solutions = await _solutions.GetIssuesSolutions(currentIssue.ParentIssue),
+                BreadcrumbTags = breadcrumbTags
+            };
+        }
+
+        public async Task<Solution_ReadVM?> GetParentSolution(Issue currentIssue)
+        {
+            if (currentIssue.ParentSolution == null)
+                return null;
+
+            var parent = currentIssue.ParentSolution;
+
+            var breadcrumbTags = await _breadcrumbAccessor.GetSolutionBreadcrumbTags(parent);
+
+
+            return new Solution_ReadVM
+            {
+                SolutionID = parent.SolutionID,
+                Title = parent.Title,
+                Content = parent.Content,
+                CreatedAt = parent.CreatedAt,
+                ModifiedAt = parent.ModifiedAt,
+                AuthorID = parent.AuthorID,
+                IssueID = parent.IssueID,
+                ScopeID = parent.ScopeID,
+                Scope = parent.Scope,
+                SubIssueCount = _context.Solutions.Count(s => s.IssueID == parent.SolutionID),
+                SubIssues = await GetSolutionSubIssues(parent),
+                Categories = _solutions.GetSolutionCategories(parent),
+                Comments = parent.Comments,
+                SolutionCategories = parent.SolutionCategories,
+                BreadcrumbTags = breadcrumbTags
+                // Add other properties as needed
+            };
+        }
+
+        public async Task<Issue_ReadVM?> GetParentIssue(Models.Solution currentSolution)
+        {
+
+            var breadcrumbTags = await _breadcrumbAccessor.GetIssueBreadcrumbTags(currentSolution.Issue);
+
+            // Issue == Parent Issue for solutions 
+            return currentSolution.Issue == null ? null : new Issue_ReadVM
+            {
+                IssueID = currentSolution.Issue.IssueID,
+                Title = currentSolution.Issue.Title,
+                Content = currentSolution.Issue.Content,
+                CreatedAt = currentSolution.Issue.CreatedAt,
+                ModifiedAt = currentSolution.Issue.ModifiedAt,
+                AuthorID = currentSolution.Issue.AuthorID,
+                ScopeID = currentSolution.Issue.ScopeID,
+                ParentIssueID = currentSolution.Issue.ParentIssueID,
+                ParentSolutionID = currentSolution.Issue.ParentSolutionID,
+                // Map other properties as needed
+                Scope = currentSolution.Issue.Scope,
+                Solutions = await _solutions.GetIssuesSolutions(currentSolution.Issue),
+                SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == currentSolution.Issue.IssueID),
+                BreadcrumbTags = breadcrumbTags
+            };
+        }
     }
     public class Solutions
     {
@@ -344,12 +380,14 @@ namespace atlas_the_public_think_tank.Services
         private readonly ApplicationDbContext _context;
         private readonly UserManager<AppUser> _userManager;
         private readonly IServiceProvider _serviceProvider;
+        private readonly BreadcrumbAccessor _breadcrumbAccessor;
 
-        public Solutions(ApplicationDbContext context, UserManager<AppUser> userManager, IServiceProvider serviceProvider)
+        public Solutions(ApplicationDbContext context, UserManager<AppUser> userManager, IServiceProvider serviceProvider, BreadcrumbAccessor breadcrumbAccessor)
         {
             _context = context;
             _userManager = userManager;
             _serviceProvider = serviceProvider;
+            _breadcrumbAccessor = breadcrumbAccessor;
         }
 
         private Issues? _issues;
@@ -365,11 +403,7 @@ namespace atlas_the_public_think_tank.Services
             {
                 // Fix: Correctly check if the IssueID is not null or empty
                 // Note: IssueID == ParentIssueID for solutions....
-                var breadcrumbTags = s.IssueID != Guid.Empty
-                    ? await Issues.GetContentBreadcrumb(
-                        s.IssueID
-                      )
-                    : new List<Breadcrumb_ReadVM>();
+                var breadcrumbTags = await _breadcrumbAccessor.GetSolutionBreadcrumbTags(s);
 
                     solutionVMs.Add(new Solution_ReadVM
                 {
@@ -396,8 +430,12 @@ namespace atlas_the_public_think_tank.Services
         /// <summary>
         /// Converts a single solution to a single Solution_ReadVM
         /// </summary>
-        public async Task<Solution_ReadVM> ConvertSolutionEntityToVM(Solution solution)
+        public async Task<Solution_ReadVM> ConvertSolutionEntityToVM(Models.Solution solution)
         {
+            // Fix: Correctly check if the IssueID is not null or empty
+            // Note: IssueID == ParentIssueID for solutions....
+            var breadcrumbTags = await _breadcrumbAccessor.GetSolutionBreadcrumbTags(solution);
+
             return new Solution_ReadVM
             {
                 SolutionID = solution.SolutionID,
@@ -418,11 +456,7 @@ namespace atlas_the_public_think_tank.Services
                 Categories = GetSolutionCategories(solution),
                 SubIssueCount = _context.Issues.Count(i => i.ParentSolutionID == solution.SolutionID),
                 SubIssues = await Issues.GetSolutionSubIssues(solution),
-                BreadcrumbTags = solution.Issue?.ParentSolutionID.HasValue == true || solution.Issue?.ParentIssueID.HasValue == true
-                    ? await Issues.GetContentBreadcrumb(
-                        solution.Issue?.ParentSolutionID ?? solution.Issue?.ParentIssueID ?? solution.Issue?.IssueID ?? solution.SolutionID
-                      )
-                    : new List<Breadcrumb_ReadVM>()
+                BreadcrumbTags = breadcrumbTags
                 // Add other properties as needed
             };
         }
@@ -431,7 +465,7 @@ namespace atlas_the_public_think_tank.Services
         /// <summary>
         /// Gets the categories for a solution 
         /// </summary>
-        public List<Category_ReadVM> GetSolutionCategories(Solution currentSolution)
+        public List<Category_ReadVM> GetSolutionCategories(Models.Solution currentSolution)
         {
             if (currentSolution?.SolutionCategories == null)
                 return new List<Category_ReadVM>();
@@ -444,11 +478,6 @@ namespace atlas_the_public_think_tank.Services
                     CategoryName = fc.Category.CategoryName
                 }).ToList();
         }
-
-
-
-
     }
-
 }
 

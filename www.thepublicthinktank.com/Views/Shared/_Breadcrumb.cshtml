@@ -2,6 +2,10 @@
 
 @*
     The breadcrumb should be printed in reverse order
+
+    NOTE: The layout uses RTL direction css
+    This is why the title is before the icons in this file but reversed in the UI
+    This is for a css effect to do with the breadcrumb arrows implicit z-index
 *@
 @{
         Guid randomId = Guid.NewGuid(); 
@@ -18,13 +22,29 @@
                 <div class="breadcrumb-item-custom text-nowrap">
                     @if (!string.IsNullOrEmpty(breadcrumb.Url))
                     {
-                        <a href="@breadcrumb.Url">@breadcrumb.Title</a>
+                        <a href="@breadcrumb.Url">
+                            <div class="breadcrumb-item-icon-container">
+                                @breadcrumb.Title
+
+
+                                @if (breadcrumb.ContentType.Equals(ContentType.Issue))
+                                {
+                                    @Html.Partial("~/Views/Shared/Icons/_SubIssues.cshtml")
+                                }
+                                else if (breadcrumb.ContentType.Equals(ContentType.Solution))
+                                {
+                                    @Html.Partial("~/Views/Shared/Icons/_Solutions.cshtml")
+                                }
+
+                            </div>
+                        </a>
                     }
                     else
                     {
                         <span>@breadcrumb.Title</span>
                     }
                 </div>
+            
             }
         </div>
     </nav>

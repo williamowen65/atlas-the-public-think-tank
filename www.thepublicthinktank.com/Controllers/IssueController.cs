@@ -45,7 +45,7 @@ namespace atlas_the_public_think_tank.Controllers
                 ParentSolutionID = parentSolutionID,
             };
 
-            ViewBag.BreadcrumbTags = await _crud.Issues.GetContentBreadcrumb(contentId); 
+            ViewBag.BreadcrumbTags = await _crud.BreadcrumbAccessor.GetContentBreadcrumb(contentId); 
             
 
             return View(newIssue);

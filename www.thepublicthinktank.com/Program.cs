@@ -42,6 +42,7 @@ builder.Services.AddRazorPages();
 builder.Services.AddScoped<CRUD>(); // Register the CRUD service for dependency injection
 builder.Services.AddScoped<Issues>(); // Register the CRUD service for dependency injection
 builder.Services.AddScoped<Solutions>(); // Register the CRUD service for dependency injection
+builder.Services.AddScoped<BreadcrumbAccessor>(); // Register the CRUD service for dependency injection
 
 var app = builder.Build();
 
