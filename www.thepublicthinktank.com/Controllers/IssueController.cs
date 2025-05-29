@@ -65,11 +65,13 @@ namespace atlas_the_public_think_tank.Controllers
         {
 
             // Custom validation: Only one of ParentIssueID or ParentSolutionID can be set
-            if ((model.ParentIssueID.HasValue && model.ParentSolutionID.HasValue) ||
-                (!model.ParentIssueID.HasValue && !model.ParentSolutionID.HasValue))
+            bool bothParentIdsSet = model.ParentIssueID.HasValue && model.ParentSolutionID.HasValue;
+
+            if (bothParentIdsSet)
             {
                 ModelState.AddModelError(string.Empty, "You must specify either a parent issue or a parent solution, but not both.");
             }
+          
 
             if (ModelState.IsValid)
             {
