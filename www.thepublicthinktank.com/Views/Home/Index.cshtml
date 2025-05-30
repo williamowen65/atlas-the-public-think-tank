@@ -12,6 +12,16 @@
                 <a href="@Url.Action("CreateSolution","Solution")" class="btn btn-primary fw-bold outlined-text fs-5 mb-1 mb-md-0" styfs-5" style="color:var(--call-to-action-theme-color)">Create New Solution</a>
             </div>
 
+            <div class="d-flex justify-content-center mb-3">
+                @Html.Partial(
+                    "~/Views/Shared/Components/_gradient-border.cshtml",
+                     @"
+                        <a target=""_blank"" href=""https://www.youtube.com/watch?v=ULjr4gNmb9s"" class=""fw-bold text-primary "" style=""text-decoration:none; "">
+                            Inspiration for this website
+                        </a>
+                      ")
+                </div>
+
             @if (Model.Issues != null && Model.Issues.Any())
             {
                 @foreach (var issue in Model.Issues)
