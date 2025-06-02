@@ -16,7 +16,8 @@ Atlas is a social media platform designed to connect innovative thinkers with pr
 It is built with ASP.NET Core MVC for the backend and utilizes Entity Framework Core for data access. The platform is designed to be scalable, secure, and user-friendly, ensuring a seamless experience for all users.  
 
 > Note: This version is intended for a CPTC Spring Quarter release and is a multi-page app.  
-> A potential future version of this project (CPTC Summer Quarter) may see this project ported over to Blazor for a Single Page App user experience.
+> This app is built and tested on Google Chrome (The Blink rendering engine)
+> A potential future version of this project (CPTC Summer Quarter) may see this project ported over to Blazor for a Single Page App user experience.  
 
 ### [Check out the Wiki](https://github.com/williamowen65/atlas-the-public-think-tank/wiki)
 
