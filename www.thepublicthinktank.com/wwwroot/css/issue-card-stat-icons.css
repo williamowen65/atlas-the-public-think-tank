@@ -1,3 +1,16 @@
+/**
+    Stylesheet for the icons in the top right corner of the issues/solutions
+
+    These styles make use of Container queries on the card itself (as opposed to media queries against the screen size)
+
+    The icons should never stack 3 on top of each other.
+    There was a trick to make this work, seen in the html.
+    The icons are technqually in a "text-no-wrap" style by default.
+    But I used the <wbr> within the no-wrap, to force the break only where I want it.
+
+    The Scope Ribbon is included in this stylesheet
+*/
+
 /* Issue card stat icons container - Mobile first design */
 .card {
     container-type: inline-size;

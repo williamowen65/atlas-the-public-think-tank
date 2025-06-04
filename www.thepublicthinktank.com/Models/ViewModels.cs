@@ -4,12 +4,18 @@ using System.ComponentModel.DataAnnotations;
 namespace atlas_the_public_think_tank.Models
 {
 
+    /// <summary>
+    /// ViewModel for the home page
+    /// </summary>
     public class HomeIndexViewModel
     {
         public List<Issue_ReadVM> Issues { get; set; } = new List<Issue_ReadVM>();
         public List<Category_ReadVM> Categories { get; set; } = new List<Category_ReadVM>();
     }
 
+    /// <summary>
+    /// ViewModel for the creating an issue
+    /// </summary>
     public class Issue_CreateVM
     {
         public string Title { get; set; }
@@ -97,7 +103,11 @@ namespace atlas_the_public_think_tank.Models
             }
         }
     }
-    
+
+
+    /// <summary>
+    /// ViewModel for the reading a solution
+    /// </summary>
     public class Solution_ReadVM : ICardStatsViewModel
     {
         public Guid SolutionID { get; set; }
@@ -133,6 +143,9 @@ namespace atlas_the_public_think_tank.Models
         // public double AverageVote { get; set; } = 0;
     }
 
+    /// <summary>
+    /// ViewModel for the reading a category
+    /// </summary>
     public class Category_ReadVM
     {
         public Guid CategoryID { get; set; }
@@ -141,6 +154,9 @@ namespace atlas_the_public_think_tank.Models
 
 
 
+    /// <summary>
+    /// A generic ViewModel for the reading the vote content (issues/solutions/comments)
+    /// </summary>
     public class UserVote_Generic_ReadVM
     {
 
@@ -159,6 +175,10 @@ namespace atlas_the_public_think_tank.Models
         public double AverageVote { get; set; } = 0;
     }
 
+
+    /// <summary>
+    /// ViewModel for creating a vote on an issue
+    /// </summary>
     public class UserVote_Issue_CreateVM
     {
         public Guid IssueID { get; set; }
@@ -166,6 +186,10 @@ namespace atlas_the_public_think_tank.Models
 
         //public AppUser User { get; set; } // The user is captured via injection
     }
+
+    /// <summary>
+    /// ViewModel for creating a vote on an solution
+    /// </summary>
     public class UserVote_Solution_CreateVM
     {
         public Guid SolutionID { get; set; }
@@ -173,6 +197,10 @@ namespace atlas_the_public_think_tank.Models
 
         //public AppUser User { get; set; } // The user is captured via injection
     }
+
+    /// <summary>
+    /// An Enum to describe possible alert types
+    /// </summary>
     public enum AlertType
     {
         success,
@@ -184,6 +212,9 @@ namespace atlas_the_public_think_tank.Models
     }
 
 
+    /// <summary>
+    /// ViewModel for reading an alert
+    /// </summary>
     public class Alert_ReadVM
     {
         public string Message { get; set; }
@@ -196,8 +227,11 @@ namespace atlas_the_public_think_tank.Models
 
         public AlertType Type { get; set; } = AlertType.info;
     }
-    
-       public class Solution_CreateVM
+
+    /// <summary>
+    /// ViewModel for creating a solution
+    /// </summary>
+    public class Solution_CreateVM
     {
 
         [Required(ErrorMessage = "Title is required")]
@@ -223,10 +257,24 @@ namespace atlas_the_public_think_tank.Models
 
     }
 
+    /// <summary>
+    /// ViewModel for reading the scope of an issue or solution
+    /// </summary>
     public class Scope_ReadVM
-    { 
+    {
         public string ScopeName { get; set; }
         public Guid ScopeID { get; set; }
-    
+
+    }
+
+
+    /// <summary>
+    /// ViewModel for error handling
+    /// </summary>
+    public class ErrorViewModel
+    {
+        public string? RequestId { get; set; }
+
+        public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
     }
 }

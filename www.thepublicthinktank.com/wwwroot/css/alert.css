@@ -1,4 +1,9 @@
 ﻿
+/*
+    Stylesheet for the alert system. 
+    This file relates to client_alerts.js
+*/
+
 .plain-text-alert {
     margin: 0 !important;
     padding: 0 !important;

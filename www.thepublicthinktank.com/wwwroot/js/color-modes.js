@@ -1,4 +1,6 @@
-﻿/*!
+﻿/** 
+ * This JavaScript file was ported over from Bootstrap and manages the cookies related to color theme preference
+ * 
  * Color mode toggler for Bootstrap's docs (https://getbootstrap.com/)
  * Copyright 2011-2024 The Bootstrap Authors
  * Licensed under the Creative Commons Attribution 3.0 Unported License.

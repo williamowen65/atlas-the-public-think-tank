@@ -1,10 +1,19 @@
 ﻿
+/**
+ * JavaScript file for issue/solution cards
+ * 
+ * This initializes the vote dial so that 
+ * the lens is on the correct value, 
+ * the lens follows the desired value, 
+ * the dial can cast votes (Debounced - Wait until the dial has been still for a second before trying to vote)
+ * 
+ * Note: This file makes use of the IntersectionObserver API to track when a value changes during scroll.
+ *
+ */
+
 function initializeCard(cardId) {
     initializeVoteDial(cardId)
-
-
-
-
+    // TBD - More initializations are possible
 }
 
 
@@ -410,19 +419,6 @@ function createDialResetMethod(container, issueId, observer, dialId, options, st
     };
 }
 
-/**
- * Creates a debounced version of a function
- * @param {Function} func - The function to debounce
- * @param {number} wait - The number of milliseconds to delay
- * @returns {Function} - The debounced function
- */
-function debounce(func, wait) {
-    let timeout;
-    return function(...args) {
-        const context = this;
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(context, args), wait);
-    };
-}
+
 
 

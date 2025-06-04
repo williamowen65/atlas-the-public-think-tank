@@ -1,4 +1,11 @@
-﻿
+﻿/**
+    Stylesheet for the voting dial seen in issues and solutions
+
+    This css trick is the same trick used by the tab to change sidebar views.
+    The HTML for this element is not nested as it appears when looking at the interface. (it's an illusion)
+    The elements for this toggle are stacked instead of nested, and this allows for some animation freedom.
+*/
+
 :root {
 
     --dial-width: 100px;

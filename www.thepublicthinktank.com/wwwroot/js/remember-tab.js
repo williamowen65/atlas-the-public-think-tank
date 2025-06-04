@@ -1,4 +1,11 @@
-﻿document.addEventListener("DOMContentLoaded", function () {
+﻿/**
+ * JavaScript file for the "issue/{IssueID}" and "solution/{SolutionID}" pages
+ * 
+ * There is a tabbed  interface for switching between sub-issue/solutions/parent post, etc. 
+ * The last tab choice is remembered and applied. If you refresh the page, the same tab will show.
+ */
+
+document.addEventListener("DOMContentLoaded", function () {
     // Only run on pages with tab system
     const tabContainer = document.getElementById('nav-tab');
     if (!tabContainer) return;

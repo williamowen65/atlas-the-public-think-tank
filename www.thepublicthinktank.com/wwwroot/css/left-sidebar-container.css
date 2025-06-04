@@ -1,4 +1,11 @@
-﻿
+﻿/**
+    Stylesheet for The left sidebar seen on all pages
+
+    This sidebar is part of the layout on larger screens, but floats on top for mobile.
+    The sidebar is vertically scrollable and to make it hold LOTs of content
+    Also the sidebar has tabs to switch between sidebar views.
+
+*/
 
 #left-sidebar-container {
     width: var(--left-sidebar-container-width);
@@ -18,6 +25,13 @@ main {
     transition: margin-left 0.3s ease-in-out;
 }
 
+
+/**
+    This css is the tab to change sidebar views.
+    This css trick is the same trick used to make the voting dials.
+    The HTML for this element is not nested as it appears when looking at the interface. (it's an illusion)
+    The elements for this toggle are stacked instead of nested, and this allows for some animation freedom.
+*/
 .left-sidebar-toggle {
     margin-left: var(--left-sidebar-container-width);
     position: fixed; /* Ensures it stays in place */
@@ -87,6 +101,13 @@ main.sidebar-closed, footer.sidebar-closed {
 }
 
 
+/*
+    If you end up adding more tab controls, the css will need to be updated
+    to give space for the elements.
+    I would like a way for this to be dynamic and just be able to add new tab elements, but 
+    because the html is not nested (stacked instead) the elements are not aware of each others dimensions
+*/
+
 /* Container for the toggle */
 .toggle-container {
     width: 150px; /* Increased width to accommodate three sections */
@@ -94,7 +115,9 @@ main.sidebar-closed, footer.sidebar-closed {
     position: relative;
 }
 
-/* Lens element */
+/* 
+    Lens element 
+*/
 #view-mode-toggle-lens.lens {
     top: 0;
     height: 100%;

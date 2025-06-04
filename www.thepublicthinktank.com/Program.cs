@@ -18,7 +18,9 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 // and configure it to use SQL Server with the retrieved connection string
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString)
-           .EnableSensitiveDataLogging()); 
+           .EnableSensitiveDataLogging()); // TODO: Disable this logging in production
+
+
 
 builder.Services.AddDefaultIdentity<AppUser>(options =>
     options.SignIn.RequireConfirmedAccount = true)

@@ -1,8 +1,7 @@
-﻿@model UserVote_Generic_ReadVM
-
-@*
-   For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+﻿@*
+   A small portion of the vote dial (Top square - holds the average vote value)
 *@
+@model UserVote_Generic_ReadVM
 
 <div class="vote-average" id="vote-average-@Model.ContentID">
     @(Model.AverageVote % 1 == 0 ? Model.AverageVote.ToString("F0") : Model.AverageVote.ToString("F1"))
