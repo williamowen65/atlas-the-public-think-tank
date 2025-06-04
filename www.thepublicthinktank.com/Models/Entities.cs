@@ -4,13 +4,17 @@ using System;
 using System.Text.Json.Serialization;
 using System.Collections.Generic;
 
+
+/**
+* Don't use Data Annotations for EF - Use Fluent API only (ApplicationDbContext)
+*/
 namespace atlas_the_public_think_tank.Models
 {
 
-    /*
-     Don't use Data Annotations for EF - Use Fluent API only
-     */
-
+  
+    /// <summary>
+    /// Defines a user of this application
+    /// </summary>
     public class AppUser : IdentityUser<Guid>
     {
         public AppUser()
@@ -38,6 +42,9 @@ namespace atlas_the_public_think_tank.Models
         public virtual ICollection<UserHistory> UserHistory { get; set; }
     }
 
+    /// <summary>
+    /// Defines a scopes that can be defined on issues/solutions
+    /// </summary>
     public class Scope
     {
         public Guid ScopeID { get; set; }
@@ -48,6 +55,9 @@ namespace atlas_the_public_think_tank.Models
         public virtual ICollection<Issue> Issues { get; set; }
     }
 
+    /// <summary>
+    /// Defines content that was deemed inappropriate or another reason to be blocked
+    /// </summary>
     public class BlockedContent
     {
         public Guid BlockedContentID { get; set; }
@@ -59,6 +69,10 @@ namespace atlas_the_public_think_tank.Models
         public virtual ICollection<UserComment> Comments { get; set; }
     }
 
+    /// <summary>
+    /// Defines a categories (tags) 
+    /// These tags can be used to relate solutions or issues from other issue threads.
+    /// </summary>
     public class Category
     {
         public Guid CategoryID { get; set; }
@@ -69,6 +83,9 @@ namespace atlas_the_public_think_tank.Models
         public virtual ICollection<SolutionCategory> SolutionCategories { get; set; }
     }
 
+    /// <summary>
+    /// Defines an issue
+    /// </summary>
     public class Issue
     {
         public Guid IssueID { get; set; }
@@ -101,7 +118,9 @@ namespace atlas_the_public_think_tank.Models
 
 
 
-
+    /// <summary>
+    /// Defines a solution
+    /// </summary>
     public class Solution
     {
         public Guid SolutionID { get; set; }
@@ -132,6 +151,9 @@ namespace atlas_the_public_think_tank.Models
 
     }
 
+    /// <summary>
+    /// Defines an enum for ContentStatus
+    /// </summary>
     public enum ContentStatus
     {
         Draft,
@@ -139,12 +161,18 @@ namespace atlas_the_public_think_tank.Models
         Archived
     }
 
+    /// <summary>
+    /// Defines an enum for ContentType
+    /// </summary>
     public enum ContentType
     {
         Solution,
         Issue,
         Comment
     }
+    /// <summary>
+    /// Defines a comment made on issues or solutions
+    /// </summary>
     public class UserComment
     {
         public Guid CommentID { get; set; }
@@ -168,6 +196,9 @@ namespace atlas_the_public_think_tank.Models
         public virtual ICollection<CommentVote> CommentVotes { get; set; }  = new List<CommentVote>();
     }
 
+    /// <summary>
+    /// Defines a vote on issues
+    /// </summary>
     public class IssueVote
     {
         public Guid VoteID { get; set; }
@@ -184,6 +215,9 @@ namespace atlas_the_public_think_tank.Models
     }
 
 
+    /// <summary>
+    /// Defines a vote on solutions
+    /// </summary>
     public class SolutionVote
     {
         public Guid VoteID { get; set; }
@@ -199,6 +233,9 @@ namespace atlas_the_public_think_tank.Models
         public virtual Solution Solution{ get; set; }
     }
 
+    /// <summary>
+    /// Defines a vote on comments
+    /// </summary>
     public class CommentVote
     {
         public Guid VoteID { get; set; }
@@ -216,7 +253,9 @@ namespace atlas_the_public_think_tank.Models
 
 
 
-
+    /// <summary>
+    /// Defines a a table for relating Issues and Categories
+    /// </summary>
     public class IssueCategory
     {
         public Guid CategoryID { get; set; }
@@ -227,6 +266,9 @@ namespace atlas_the_public_think_tank.Models
         public virtual Issue Issue { get; set; }
     }
 
+    /// <summary>
+    /// Defines a a table for relating Solutions and Categories
+    /// </summary>
     public class SolutionCategory
     {
         public Guid CategoryID { get; set; }
@@ -237,6 +279,10 @@ namespace atlas_the_public_think_tank.Models
         public virtual Solution Solution { get; set; }
     }
 
+    /// <summary>
+    /// Defines a a table for  tracking user history
+    /// History can include everything from creating account, casting votes, creating post, etc
+    /// </summary>
     public class UserHistory
     {
         public Guid UserHistoryID { get; set; }

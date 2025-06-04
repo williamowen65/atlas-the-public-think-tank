@@ -1,5 +1,10 @@
 ﻿
+/*
+    Stylesheet for the breadcrumb (seen in issues/solutions)
 
+    Be very careful editing the breadcrumb css. It was tricky to setup.
+    Be aware that there may be bootstrap classes acting on the breadcrumb as well.
+*/
 
 
 /* Ribbon-style breadcrumb */
@@ -21,24 +26,24 @@
     display: none; /* Chrome, Safari, Opera */
 }
 
-    .breadcrumb-ribbon-custom .breadcrumb-item-custom {
-        height: 28px;
-        position: relative;
-        width: fit-content;
-        padding-inline-end: 12px;
-        padding-inline-start: 26px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transform: translateX(-15px);
-        color: white;
-        font-weight: bold;
-        text-align: center;
-        font-size: 18px;
-        margin: 0 0px;
-        clip-path: polygon(0 0, 100% 0, calc(100% + 15px) 50%, 100% 100%,0 100%, 14px 50%);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    }
+.breadcrumb-ribbon-custom .breadcrumb-item-custom {
+    height: 28px;
+    position: relative;
+    width: fit-content;
+    padding-inline-end: 12px;
+    padding-inline-start: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateX(-15px);
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    font-size: 18px;
+    margin: 0 0px;
+    clip-path: polygon(0 0, 100% 0, calc(100% + 15px) 50%, 100% 100%,0 100%, 14px 50%);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
 
 .breadcrumb-item-custom::before {
     all: revert;

@@ -1,5 +1,10 @@
 /**
- * Adds a reset method to the container that resets the dial to the default position
+ * JavaScript file relating to initialize-card.js
+ * 
+ * Adds a reset method to the container element that resets the dial to the default position
+ * 
+ * The goal is that you could just grab the dial element and call reset() on it.
+ * This is used when the user is not logged in and tries to vote - They must be logged in - The dial returns to 5 - Vote not cast.
  */
 function createDialResetMethod(container, issueId, observer, dialId, options, state) {
     container.reset = function (silent = false) {

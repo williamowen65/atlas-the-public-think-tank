@@ -1,4 +1,9 @@
-﻿@model Issue_ReadVM
+﻿@*
+    Layout of the stat icons seen on issues
+*@
+
+
+@model Issue_ReadVM
 
 <div class="issue-card-stat-icons text-nowrap">
     <span role="button" tabindex="0" aria-label="Solutions: @(Model?.Solutions?.Count() ?? 0)" class=" position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">

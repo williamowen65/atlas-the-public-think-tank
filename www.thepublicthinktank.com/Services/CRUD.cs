@@ -9,7 +9,15 @@ using System.Threading.Tasks;
 
 namespace atlas_the_public_think_tank.Services
 {
-
+    /// <summary>
+    /// A service to encapsulate CRUD logic for the app (Accessible by dependency injection)
+    /// </summary>
+    /// <remarks>
+    /// This class helps to keep code dry/changes to CRUD logic to apply to 
+    /// Ideally the endpoints can be lean and this would have all the CRUD logic
+    /// At the moment, some CRUD logic remains in controllers.
+    /// The CRUD class is a convenience class for accessing logic in this file
+    /// </remarks>
     public class CRUD
     {
         public Issues Issues { get; }
@@ -27,6 +35,13 @@ namespace atlas_the_public_think_tank.Services
         }
     }
 
+    /// <summary>
+    /// The breadcrumbs reflect the nesting of content and offer a way to navigate 
+    /// The breadcrumbAccessor helps retrieve info about that nesting. <br/>
+    /// When requesting breadcrumb data, make sure to pass the parent solution or parent issue
+    /// in order to not include the current content in the breadcrumb
+    /// 
+    /// </summary>
     public class BreadcrumbAccessor
     {
         private readonly ApplicationDbContext _context;
@@ -124,7 +139,9 @@ namespace atlas_the_public_think_tank.Services
         }
     }
 
-
+    /// <summary>
+    /// Access issues
+    /// </summary>
     public class Issues
     {
 
@@ -225,6 +242,11 @@ namespace atlas_the_public_think_tank.Services
             };
         }
 
+        /// <summary>
+        /// Gets the categories (tags) for a specific issue
+        /// </summary>
+        /// <param name="currentIssue"></param>
+        /// <returns></returns>
         public  List<Category_ReadVM> GetIssuesCategories(Issue currentIssue)
         {
             return currentIssue.IssueCategories.Select(fc => new Category_ReadVM
@@ -234,6 +256,11 @@ namespace atlas_the_public_think_tank.Services
             }).ToList() ?? new List<Category_ReadVM>();
         }
 
+        /// <summary>
+        /// Get the sub issues for an issue
+        /// </summary>
+        /// <param name="currentIssue"></param>
+        /// <returns></returns>
         public async Task<List<Issue_ReadVM>> GetIssuesSubIssuesAsync(Issue currentIssue)
         {
             if (currentIssue.ChildIssues == null)
@@ -262,6 +289,11 @@ namespace atlas_the_public_think_tank.Services
             return subIssues;
         }
 
+        /// <summary>
+        /// Get the sub issues for a solution
+        /// </summary>
+        /// <param name="currentSolution"></param>
+        /// <returns></returns>
         public async Task<List<Issue_ReadVM>> GetSolutionSubIssues(Models.Solution currentSolution)
         {
             if (currentSolution.ChildIssues == null)
@@ -290,6 +322,11 @@ namespace atlas_the_public_think_tank.Services
         }
 
 
+        /// <summary>
+        /// Get the parent issue of an issue
+        /// </summary>
+        /// <param name="currentIssue"></param>
+        /// <returns></returns>
         public  async Task<Issue_ReadVM?> GetParentIssue(Issue currentIssue)
         {
             if (currentIssue.ParentIssue == null)
@@ -318,6 +355,11 @@ namespace atlas_the_public_think_tank.Services
             };
         }
 
+        /// <summary>
+        /// Get the parent solution of an issue
+        /// </summary>
+        /// <param name="currentIssue"></param>
+        /// <returns></returns>
         public async Task<Solution_ReadVM?> GetParentSolution(Issue currentIssue)
         {
             if (currentIssue.ParentSolution == null)
@@ -349,6 +391,11 @@ namespace atlas_the_public_think_tank.Services
             };
         }
 
+        /// <summary>
+        /// Get the parent issue of a solution
+        /// </summary>
+        /// <param name="currentIssue"></param>
+        /// <returns></returns>
         public async Task<Issue_ReadVM?> GetParentIssue(Models.Solution currentSolution)
         {
 
@@ -374,6 +421,15 @@ namespace atlas_the_public_think_tank.Services
             };
         }
     }
+
+    /// <summary>
+    /// Provides methods for managing and retrieving solutions associated with issues,  including converting solution
+    /// entities to view models and retrieving solution categories.
+    /// </summary>
+    /// <remarks>This class acts as a service layer for handling operations related to solutions,  such as
+    /// fetching solutions for a specific issue, converting solution entities to  view models, and retrieving associated
+    /// categories. It relies on injected dependencies  for database access, user management, and breadcrumb
+    /// generation.</remarks>
     public class Solutions
     {
 

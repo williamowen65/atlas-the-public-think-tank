@@ -1,9 +1,13 @@
-﻿@model List<Breadcrumb_ReadVM>
+﻿@*
+    The breadcrumb is on all issues/solutions
+    The breadcrumb is printed in reverse order.
+    The data is tracked through parentIssues/parentSolutions.
 
-@*
-    The breadcrumb should be printed in reverse order
+    A breadcrumb item can be an issue or solution and is denoted by the icon on the breadcrumb.
 
 *@
+@model List<Breadcrumb_ReadVM>
+
 @{
         Guid randomId = Guid.NewGuid(); 
 }

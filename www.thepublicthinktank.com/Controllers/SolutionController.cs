@@ -9,6 +9,9 @@ using System.Security.Claims;
 
 namespace atlas_the_public_think_tank.Controllers
 {
+    /// <summary>
+    /// This C# Controller manages the solutions
+    /// </summary>
 
     [Authorize]
     public class SolutionController : Controller

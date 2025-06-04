@@ -1,4 +1,19 @@
 ﻿
+/**
+ * JavaScript file for the alert system
+ * 
+ * It is flexible -> You can append an alert anywhere in the DOM by passing a target element
+ * AlertType C# class defines the types of alerts possible, but on the client code, there isn't type safety - so make sure your spelling is correct
+ * 
+ * Workflow is that whenever an alert is needed, 
+ * we fetch that html from the server.
+ * 
+ * Use of the C# server give us type safety for the alert system
+ * 
+ * There are two helper functions: client_TopBar_Alert, client_CardFooter_Alert
+ * 
+ */
+
 const AlertTargets = {
     TopBar: "TopBar",
     CardFooter: "CardFooter"

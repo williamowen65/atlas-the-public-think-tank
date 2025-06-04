@@ -6,6 +6,10 @@ using Microsoft.AspNetCore.Identity;
 
 namespace atlas_the_public_think_tank.Data;
 
+/// <summary>
+/// Entity framework DB Context <br/>
+/// Code first migrations
+/// </summary>
 public class ApplicationDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
@@ -27,6 +31,12 @@ public class ApplicationDbContext : IdentityDbContext<AppUser, IdentityRole<Guid
     public DbSet<SolutionCategory> SolutionCategories { get; set; }
     public DbSet<UserHistory> UserHistory { get; set; }
 
+    /// <summary>
+    /// FluentAPI code for code-first migration <br/>
+    /// This code should be split into multiple files in future 
+    /// as the DbSchema is about to get more complex once "rooms" are introduced
+    /// </summary>
+    /// <param name="modelBuilder"></param>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
 
@@ -52,6 +62,7 @@ public class ApplicationDbContext : IdentityDbContext<AppUser, IdentityRole<Guid
         modelBuilder.Entity<SolutionCategory>().ToTable("SolutionsCategories", "solutions");
         modelBuilder.Entity<UserHistory>().ToTable("UserHistory", "users");
 
+        
 
         new SeedUsers(modelBuilder);
 

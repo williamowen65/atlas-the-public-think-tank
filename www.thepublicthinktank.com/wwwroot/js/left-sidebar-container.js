@@ -1,4 +1,14 @@
-﻿document.addEventListener('DOMContentLoaded', async function () {
+﻿/**
+ * JavaScript file for the left-side-bar
+ * 
+ * This fetches the sidebar content - after from the main page load event.
+ * This sets logic to open and close the sidebar
+ * Sets logic to make the sidebar float on top for mobile but toggling a class.
+ * 
+ * This file also manages the toggles for switching between sidebar views
+ */
+
+document.addEventListener('DOMContentLoaded', async function () {
     // Load sidebar content via AJAX
     await loadSidebarContent();
 

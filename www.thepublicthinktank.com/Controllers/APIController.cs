@@ -5,8 +5,13 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
+
 namespace atlas_the_public_think_tank.Controllers
 {
+    /// <summary>
+    /// This C# controller handles the "/api/{...}" endpoints.<br/>
+    /// The app will consume its own API to access data, making this data publicly available and consumable.
+    /// </summary>
     [Authorize]
     public class APIController : Controller
     {
