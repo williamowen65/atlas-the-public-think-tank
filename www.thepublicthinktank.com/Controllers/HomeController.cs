@@ -36,7 +36,8 @@ public class HomeController : Controller
         var viewModel = new HomeIndexViewModel();
 
         // Get data directly like this (Not via another api requests to my own controller - didn't pass the User credientials automatically.)
-        viewModel.Issues = await _crudService.Issues.GetEveryIssue();
+        //viewModel.Issues = await _crudService.Issues.GetEveryIssue();
+        viewModel.PaginatedPosts = await _crudService.Issues.GetIssuesPagedAsync(1);
 
         // TODO: Update this to not use another fetch... 
         // Fetch categories

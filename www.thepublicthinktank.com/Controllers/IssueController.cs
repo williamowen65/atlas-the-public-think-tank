@@ -123,20 +123,23 @@ namespace atlas_the_public_think_tank.Controllers
         }
 
 
+
         /// <summary>
-        /// This method is used to return all issue posts.
+        /// This method is used to return paginated issue posts.
         /// </summary>
+        /// <returns></returns>
         [HttpGet]
-        [Route("/api/posts")]
+
         [AllowAnonymous]
-        public async Task<IActionResult> GetAllIssues()
+        [Route("/issue/getPaginatedIssues")]
+        public async Task<IActionResult> GetPaginatedIssues(int currentPage = 1)
         {
+            PaginatedIssuesResponse paginatedIssues = await _crud.Issues.GetIssuesPagedAsync(currentPage, 3);
 
-
-            List<Issue_ReadVM> postsViewModel = await _crud.Issues.GetEveryIssue();
-
-            return Ok(postsViewModel);
+            return PartialView("~/Views/Issue/_issue-cards.cshtml", paginatedIssues.Issues);
         }
+
+
 
 
         /// <summary>
@@ -283,6 +286,8 @@ namespace atlas_the_public_think_tank.Controllers
 
             return PartialView("~/Views/Shared/Components/_voteDial.cshtml", model);
         }
+
+
 
     }
 }

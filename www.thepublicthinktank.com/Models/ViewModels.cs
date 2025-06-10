@@ -11,6 +11,19 @@ namespace atlas_the_public_think_tank.Models
     {
         public List<Issue_ReadVM> Issues { get; set; } = new List<Issue_ReadVM>();
         public List<Category_ReadVM> Categories { get; set; } = new List<Category_ReadVM>();
+
+        public PaginatedIssuesResponse PaginatedPosts { get; set; } = new PaginatedIssuesResponse();
+
+    }
+
+
+
+    public class PaginatedIssuesResponse
+    {
+        public List<Issue_ReadVM> Issues { get; set; }
+        public int TotalCount { get; set; }
+
+        public int CurrentPage { get; set; }
     }
 
     /// <summary>
