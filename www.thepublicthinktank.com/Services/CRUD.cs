@@ -1,11 +1,14 @@
 ﻿using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Migrations;
 using atlas_the_public_think_tank.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using static atlas_the_public_think_tank.Data.SeedData.SeedIds;
 
 namespace atlas_the_public_think_tank.Services
 {
@@ -149,13 +152,15 @@ namespace atlas_the_public_think_tank.Services
         private readonly UserManager<AppUser> _userManager;
         private readonly Solutions _solutions;
         private readonly BreadcrumbAccessor _breadcrumbAccessor;
+        private readonly IHttpContextAccessor _httpContextAccessor; // Inject IHttpContextAccessor
 
-        public Issues(ApplicationDbContext context, UserManager<AppUser> userManager, Solutions solutions, BreadcrumbAccessor breadcrumbAccessor)
+        public Issues(ApplicationDbContext context, UserManager<AppUser> userManager, Solutions solutions, BreadcrumbAccessor breadcrumbAccessor, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
             _userManager = userManager;
             _solutions = solutions;
             _breadcrumbAccessor = breadcrumbAccessor;
+            _httpContextAccessor = httpContextAccessor; // Assign IHttpContextAccessor
         }
 
 
@@ -181,6 +186,53 @@ namespace atlas_the_public_think_tank.Services
             return postsViewModel;
         }
 
+        public async Task<UserVote_Generic_ReadVM> GetIssueVoteStats(Guid? issueId = null)
+        {
+
+            if (!issueId.HasValue)
+            {
+                throw new ArgumentException("Issue ID must be provided", nameof(issueId));
+            }
+
+            int? userVote = null;
+
+            // Use IHttpContextAccessor to access HttpContext
+            var user = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext?.User);
+
+            if (user != null)
+            {
+                var existingVote = await _context.IssueVotes
+                    .OfType<IssueVote>()
+                    .FirstOrDefaultAsync(v => v.UserID == user.Id && v.IssueID == issueId);
+
+                if (existingVote != null)
+                {
+                    userVote = existingVote.VoteValue;
+                }
+            }
+
+            // Retrieve vote data for the issue
+            var votes = await _context.IssueVotes
+                .OfType<IssueVote>()
+                .Where(v => v.IssueID == issueId)
+                .ToListAsync();
+
+            double averageVote = votes.Any() ? votes.Average(v => v.VoteValue) : 0;
+            int totalVotes = votes.Count;
+
+            var model = new UserVote_Generic_ReadVM
+            {
+                ContentType = "Issue",
+                ContentID = issueId.Value,
+                AverageVote = averageVote,
+                TotalVotes = totalVotes,
+                UserVote = userVote
+            };
+
+            return model;
+
+        }
+
         /// <summary>
         /// Converts a list of issues to a list of issueVMs
         /// </summary>
@@ -197,6 +249,7 @@ namespace atlas_the_public_think_tank.Services
                     CreatedAt = p.CreatedAt,
                     ModifiedAt = p.ModifiedAt,
                     AuthorID = p.AuthorID,
+                    VoteStats = await GetIssueVoteStats(p.IssueID),
                     ScopeID = p.ScopeID,
                     ParentIssueID = p.ParentIssueID,
                     BlockedContentID = p.BlockedContentID,
@@ -228,6 +281,7 @@ namespace atlas_the_public_think_tank.Services
                 CreatedAt = issue.CreatedAt,
                 Author = issue.Author,
                 Scope = issue.Scope,
+                VoteStats = await GetIssueVoteStats(issue.IssueID),
                 ParentIssue = await GetParentIssue(issue),
                 ParentSolution = await GetParentSolution(issue),
                 SubIssues = await GetIssuesSubIssuesAsync(issue),
@@ -279,6 +333,7 @@ namespace atlas_the_public_think_tank.Services
                     CreatedAt = child.CreatedAt,
                     ModifiedAt = child.ModifiedAt,
                     AuthorID = child.AuthorID,
+                    VoteStats = await GetIssueVoteStats(child.IssueID),
                     ScopeID = child.ScopeID,
                     ParentIssueID = child.ParentIssueID,
                     Scope = child.Scope,
@@ -310,6 +365,7 @@ namespace atlas_the_public_think_tank.Services
                     Content = child.Content,
                     CreatedAt = child.CreatedAt,
                     ModifiedAt = child.ModifiedAt,
+                    VoteStats = await GetIssueVoteStats(child.IssueID),
                     AuthorID = child.AuthorID,
                     ScopeID = child.ScopeID,
                     ParentIssueID = child.ParentIssueID,
@@ -345,6 +401,7 @@ namespace atlas_the_public_think_tank.Services
                 ModifiedAt = currentIssue.ParentIssue.ModifiedAt,
                 AuthorID = currentIssue.ParentIssue.AuthorID,
                 ScopeID = currentIssue.ParentIssue.ScopeID,
+                VoteStats = await GetIssueVoteStats(currentIssue.ParentIssue.IssueID),
                 ParentIssueID = currentIssue.ParentIssue.ParentIssueID,
                 ParentSolutionID = currentIssue.ParentIssue.ParentSolutionID,
                 // Map other properties as needed
@@ -380,6 +437,7 @@ namespace atlas_the_public_think_tank.Services
                 AuthorID = parent.AuthorID,
                 IssueID = parent.IssueID,
                 ScopeID = parent.ScopeID,
+                VoteStats = await _solutions.GetSolutionVoteStats(parent.SolutionID),
                 Scope = parent.Scope,
                 SubIssueCount = _context.Solutions.Count(s => s.IssueID == parent.SolutionID),
                 SubIssues = await GetSolutionSubIssues(parent),
@@ -411,6 +469,7 @@ namespace atlas_the_public_think_tank.Services
                 ModifiedAt = currentSolution.Issue.ModifiedAt,
                 AuthorID = currentSolution.Issue.AuthorID,
                 ScopeID = currentSolution.Issue.ScopeID,
+                VoteStats = await GetIssueVoteStats(currentSolution.Issue.IssueID),
                 ParentIssueID = currentSolution.Issue.ParentIssueID,
                 ParentSolutionID = currentSolution.Issue.ParentSolutionID,
                 // Map other properties as needed
@@ -437,13 +496,15 @@ namespace atlas_the_public_think_tank.Services
         private readonly UserManager<AppUser> _userManager;
         private readonly IServiceProvider _serviceProvider;
         private readonly BreadcrumbAccessor _breadcrumbAccessor;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public Solutions(ApplicationDbContext context, UserManager<AppUser> userManager, IServiceProvider serviceProvider, BreadcrumbAccessor breadcrumbAccessor)
+        public Solutions(ApplicationDbContext context, UserManager<AppUser> userManager, IServiceProvider serviceProvider, BreadcrumbAccessor breadcrumbAccessor, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
             _userManager = userManager;
             _serviceProvider = serviceProvider;
             _breadcrumbAccessor = breadcrumbAccessor;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         private Issues? _issues;
@@ -472,6 +533,7 @@ namespace atlas_the_public_think_tank.Services
                     IssueID = s.IssueID,
                     ContentStatus = s.ContentStatus,
                     BlockedContentID = s.BlockedContentID,
+                    VoteStats = await GetSolutionVoteStats(s.SolutionID),
                     Scope = s.Scope,
                     ScopeID = s.ScopeID,
                     SubIssueCount = _context.Issues.Count(i => i.ParentSolutionID == s.SolutionID),
@@ -506,6 +568,7 @@ namespace atlas_the_public_think_tank.Services
                 BlockedContentID = solution.BlockedContentID,
                 Scope = solution.Scope,
                 ScopeID = solution.ScopeID,
+                VoteStats = await GetSolutionVoteStats(solution.SolutionID),
                 BlockedContent = solution.BlockedContent,
                 Comments = solution.Comments,
                 // You may want to include logic for categories if you have a many-to-many relationship
@@ -534,6 +597,54 @@ namespace atlas_the_public_think_tank.Services
                     CategoryName = fc.Category.CategoryName
                 }).ToList();
         }
+
+        public async Task<UserVote_Generic_ReadVM> GetSolutionVoteStats(Guid? solutionId = null)
+        {
+
+            if (!solutionId.HasValue)
+            {
+                throw new ArgumentException("Issue ID must be provided", nameof(solutionId));
+            }
+
+            int? userVote = null;
+
+            // Use IHttpContextAccessor to access HttpContext
+            var user = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext?.User);
+
+            if (user != null)
+            {
+                var existingVote = await _context.SolutionVotes
+                    .OfType<SolutionVote>()
+                    .FirstOrDefaultAsync(v => v.UserID == user.Id && v.SolutionID == solutionId);
+
+                if (existingVote != null)
+                {
+                    userVote = existingVote.VoteValue;
+                }
+            }
+
+            // Retrieve vote data for the issue
+            var votes = await _context.SolutionVotes
+                .OfType<SolutionVote>()
+                .Where(v => v.SolutionID == solutionId)
+                .ToListAsync();
+
+            double averageVote = votes.Any() ? votes.Average(v => v.VoteValue) : 0;
+            int totalVotes = votes.Count;
+
+            var model = new UserVote_Generic_ReadVM
+            {
+                ContentType = "Solution",
+                ContentID = solutionId.Value,
+                AverageVote = averageVote,
+                TotalVotes = totalVotes,
+                UserVote = userVote
+            };
+
+            return model;
+
+        }
+
     }
 }
 

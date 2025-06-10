@@ -131,6 +131,8 @@ namespace atlas_the_public_think_tank.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetAllIssues()
         {
+
+
             List<Issue_ReadVM> postsViewModel = await _crud.Issues.GetEveryIssue();
 
             return Ok(postsViewModel);
@@ -268,57 +270,16 @@ namespace atlas_the_public_think_tank.Controllers
         /// <summary>
         /// This method is used to get the vote dial for issues only.
         /// </summary>
+        /// <remarks>
+        /// This method is no longer used in the app b/c dial is now rendered with the main page load
+        /// </remarks>
         /// <param name="issueId">The ID of the issue</param>
         /// <returns>HTML partial view of vote dial</returns>
         [AllowAnonymous]
         [Route("/issue/GetVoteDial")]
         public async Task<IActionResult> GetVoteDial(Guid? issueId = null)
         {
-            if (!issueId.HasValue)
-            {
-                return BadRequest(new { message = "Issue ID must be provided" });
-            }
-
-            int? userVote = null;
-
-            // Check if the issue exists
-            bool contentExists = _context.Issues.Any(i => i.IssueID == issueId);
-            if (!contentExists)
-            {
-                return NotFound(new { message = "Issue not found" });
-            }
-
-            var user = await _userManager.GetUserAsync(User);
-
-            if (user != null)
-            {
-                var existingVote = await _context.IssueVotes
-                    .OfType<IssueVote>()
-                    .FirstOrDefaultAsync(v => v.UserID == user.Id && v.IssueID == issueId);
-
-                if (existingVote != null)
-                {
-                    userVote = existingVote.VoteValue;
-                }
-            }
-
-            // Retrieve vote data for the issue
-            var votes = await _context.IssueVotes
-                .OfType<IssueVote>()
-                .Where(v => v.IssueID == issueId)
-                .ToListAsync();
-
-            double averageVote = votes.Any() ? votes.Average(v => v.VoteValue) : 0;
-            int totalVotes = votes.Count;
-
-            var model = new UserVote_Generic_ReadVM
-            {
-                ContentType = "Issue",
-                ContentID = issueId.Value,
-                AverageVote = averageVote,
-                TotalVotes = totalVotes,
-                UserVote = userVote
-            };
+            var model = await _crud.Issues.GetIssueVoteStats(issueId);
 
             return PartialView("~/Views/Shared/Components/_voteDial.cshtml", model);
         }

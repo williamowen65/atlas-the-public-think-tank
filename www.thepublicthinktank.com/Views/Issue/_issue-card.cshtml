@@ -9,10 +9,11 @@
     Boolean IsContentLong = true;
 }
 
-<div class="card mb-3 issue-card " id="issue-@Model.IssueID">
+<div class="card mb-3 issue-card " id="@Model.IssueID" data-content-type="issue">
     <div class="card-content position-relative mb-2">
 
             <div class="dial-container" style="float:left">
+                @Html.Partial("~/Views/Shared/Components/_voteDial.cshtml", Model.VoteStats)
             </div>
 
         <div class="card-header  " style="border-left:var(--bs-card-border-width) solid var(--bs-card-border-color); border-top-left-radius: 0; margin-left: var(--dial-width)">
@@ -79,56 +80,3 @@
 
 </div>
 
-@* This script does load with cshtml because it is part of the initial page load *@
-<script>
-    console.log("DOMContentLoaded card for issue ID: @Model.IssueID");
-    document.addEventListener("DOMContentLoaded", () => {
-
-
-
-
-        try {
-            const issueId = '@Model.IssueID';
-            console.log("Fetching vote dial for issue:", issueId);
-            
-            fetch(`/issue/GetVoteDial?issueId=${issueId}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-                    }
-                    return response.text();
-                })
-                .then(data => {
-                    console.log("Vote dial data received:", {issueId: issueId, dataLength: data.length});
-                    const thisElement = document.querySelector(`#issue-${issueId}`);
-                    if (!thisElement) {
-                        console.error(`Element #issue-${issueId} not found`);
-                        return;
-                    }
-                    
-                    const dialContainer = thisElement.querySelector('.dial-container');
-                    if (dialContainer) {
-                        dialContainer.innerHTML = data;
-                        // Make sure this function exists and is defined before this script runs
-                        if (typeof initializeCard === 'function') {
-                            try {
-                                initializeCard(issueId);
-                            } catch (initError) {
-                                console.error("Error in initializeVoteDial:", initError);
-                            }
-                        } else {
-                            console.error("initializeVoteDial function is not defined");
-                        }
-                    } else {
-                        console.error(`Dial container not found in #issue-${issueId}`);
-                    }
-                })
-                .catch(error => console.error('Error fetching vote dial:', error));
-        } catch (outerError) {
-            console.error("Error in DOMContentLoaded handler:", outerError);
-        }
-    });
-
-
-    
-</script>

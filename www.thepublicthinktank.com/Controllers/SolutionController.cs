@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using static atlas_the_public_think_tank.Data.SeedData.SeedIds;
 
 namespace atlas_the_public_think_tank.Controllers
 {
@@ -114,58 +115,16 @@ namespace atlas_the_public_think_tank.Controllers
         /// <summary>
         /// Returns the vote dial for a specific solution.
         /// </summary>
+        /// <remarks>
+        /// This method is no longer used in the app b/c dial is now rendered with the main page load
+        /// </remarks>
         /// <param name="solutionId">The ID of the solution</param>
         /// <returns>HTML partial view of vote dial</returns>
         [AllowAnonymous]
         [Route("/solution/GetVoteDial")]
         public async Task<IActionResult> GetVoteDial(Guid? solutionId = null)
         {
-            if (!solutionId.HasValue)
-            {
-                return BadRequest(new { message = "Solution ID must be provided" });
-            }
-
-            int? userVote = null;
-
-            // Check if the solution exists
-            bool contentExists = _context.Solutions.Any(s => s.SolutionID == solutionId);
-            if (!contentExists)
-            {
-                return NotFound(new { message = "Solution not found" });
-            }
-
-            var user = await _userManager.GetUserAsync(User);
-
-            if (user != null)
-            {
-                var existingVote = await _context.SolutionVotes
-                    .OfType<SolutionVote>()
-                    .FirstOrDefaultAsync(v => v.UserID == user.Id && v.SolutionID == solutionId);
-
-                if (existingVote != null)
-                {
-                    userVote = existingVote.VoteValue;
-                }
-            }
-
-            // Retrieve vote data for the solution
-            var votes = await _context.SolutionVotes
-                .OfType<SolutionVote>()
-                .Where(v => v.SolutionID == solutionId)
-                .ToListAsync();
-
-            double averageVote = votes.Any() ? votes.Average(v => v.VoteValue) : 0;
-            int totalVotes = votes.Count;
-
-            var model = new UserVote_Generic_ReadVM
-            {
-                ContentType = "Solution",
-                ContentID = solutionId.Value,
-                AverageVote = averageVote,
-                TotalVotes = totalVotes,
-                UserVote = userVote
-            };
-
+            var model = await _crud.Solutions.GetSolutionVoteStats(solutionId);
             return PartialView("~/Views/Shared/Components/_voteDial.cshtml", model);
         }
 

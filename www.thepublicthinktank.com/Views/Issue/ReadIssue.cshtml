@@ -222,11 +222,11 @@
             const tabPane = document.getElementById(tabId);
             if (!tabPane) return;
 
-            const issueCards = tabPane.querySelectorAll('[id^="issue-"], [id^="solution-"]');
+            const issueCards = tabPane.querySelectorAll('.issue-card, .solution-card');
 
             issueCards.forEach(card => {
                 // Extract the issue ID from the card's ID attribute
-                const issueId = card.id.replace('issue-', '').replace("solution-", "");
+                const issueId = card.id
                 console.log(`Reinitializing vote dial for issue ${issueId}`);
 
                 const dialContainer = card.querySelector('.dial-container');
@@ -242,11 +242,14 @@
                             }, 50);
                         } else {
                             // If vote container doesn't exist, need to fetch the dial
-                            fetchAndInitializeCard(issueId, dialContainer);
+                            // fetchAndInitializeCard(issueId, dialContainer);
+                            console.error("Content missing vote dial")
                         }
                     } else {
                         // If no dial content, fetch it
-                        fetchAndInitializeIssueVoteDial(issueId, dialContainer);
+                        // fetchAndInitializeIssueVoteDial(issueId, dialContainer);
+
+                        console.error("Content missing vote dial")
                     }
                 }
             });
