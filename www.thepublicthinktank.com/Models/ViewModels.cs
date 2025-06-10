@@ -68,6 +68,8 @@ namespace atlas_the_public_think_tank.Models
 
         public required int SubIssueCount { get; set; }
 
+        public required UserVote_Generic_ReadVM VoteStats { get; set; }
+
         public required List<Breadcrumb_ReadVM> BreadcrumbTags { get; set; }
 
 
@@ -124,6 +126,7 @@ namespace atlas_the_public_think_tank.Models
         public required Guid ScopeID { get; set; }
         public required Scope Scope { get; set; }
 
+        public required UserVote_Generic_ReadVM VoteStats { get; set; }
         public required List<Breadcrumb_ReadVM> BreadcrumbTags { get; set; }
 
         public List<Issue_ReadVM> SubIssues { get; set; } = new List<Issue_ReadVM>();

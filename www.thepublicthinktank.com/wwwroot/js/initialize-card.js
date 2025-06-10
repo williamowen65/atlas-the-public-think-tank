@@ -7,7 +7,10 @@
  * the lens follows the desired value, 
  * the dial can cast votes (Debounced - Wait until the dial has been still for a second before trying to vote)
  * 
- * Note: This file makes use of the IntersectionObserver API to track when a value changes during scroll.
+ * Note: This file makes use of the IntersectionObserver API to track when a value changes during scroll with in the dial.
+ * Note: This file also uses the MutationObserver API to track when issue-cards are added to the DOM
+ * Note: This file is added to the <head> element, not the <body> element
+ * 
  *
  */
 
@@ -420,5 +423,60 @@ function createDialResetMethod(container, issueId, observer, dialId, options, st
 }
 
 
+
+/**
+ * Local debounce method generator specifically for this file
+ *
+ * Creates a debounced version of a function
+ * @param {Function} func - The function to debounce
+ * @param {number} wait - The number of milliseconds to delay
+ * @returns {Function} - The debounced function
+ */
+function debounce(func, wait) {
+    let timeout;
+    return function () {
+        const context = this;
+        const args = arguments;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+            func.apply(context, args);
+        }, wait);
+    };
+}
+
+
+
+
+
+/**
+ * This mutation observer watches for issue-cards to be added to the dom
+ * It calls logic for the voting dials to be initialized per issue card added to DOM
+ * 
+ * Update 6/10/2025 - Using this MutationObserver to handle initializing vote dial logic
+ * 
+ */
+const observer = new MutationObserver(mutations => {
+    mutations.forEach(mutation => {
+        mutation.addedNodes.forEach(node => {
+            if (node.classList && (node.classList.contains('issue-card') || node.classList.contains('solution-card'))) {
+                // Card was added
+                console.log('Issue card added via MutationObserver:', node);
+                // Initialize card-specific JS here
+                if (typeof initializeCard === 'function') {
+                    try {
+                        const issueId = node.id;
+                        initializeCard(issueId);
+                    } catch (initError) {
+                        console.error("Error in initializeVoteDial:", initError);
+                    }
+                } else {
+                    console.error("initializeVoteDial function is not defined");
+                }
+            }
+        });
+    });
+});
+
+observer.observe(document, { childList: true, subtree: true });
 
 

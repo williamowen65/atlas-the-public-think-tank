@@ -46,6 +46,8 @@ builder.Services.AddScoped<Issues>(); // Register the CRUD service for dependenc
 builder.Services.AddScoped<Solutions>(); // Register the CRUD service for dependency injection
 builder.Services.AddScoped<BreadcrumbAccessor>(); // Register the CRUD service for dependency injection
 
+builder.Services.AddHttpContextAccessor();
+
 var app = builder.Build();
 
 // =====================================
@@ -81,6 +83,7 @@ app.UseHttpsRedirection();
 // Enable request routing
 app.UseRouting();
 
+app.UseAuthentication();
 // Enable authorization middleware (checks if users are authorized to access resources)
 app.UseAuthorization();
 

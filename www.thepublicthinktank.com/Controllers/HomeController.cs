@@ -16,10 +16,12 @@ namespace atlas_the_public_think_tank.Controllers;
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
+    private readonly Services.CRUD _crudService; // Add this
 
-    public HomeController(ILogger<HomeController> logger)
+    public HomeController(ILogger<HomeController> logger, Services.CRUD crudService)
     {
         _logger = logger;
+        _crudService = crudService;
     }
 
     /// <summary>
@@ -33,22 +35,10 @@ public class HomeController : Controller
         // Create a view model to hold both issues and categories
         var viewModel = new HomeIndexViewModel();
 
-        // Fetch issues
-        var issueResponse = await client.GetAsync("/api/posts");
-        if (issueResponse.IsSuccessStatusCode)
-        {
-            var jsonString = await issueResponse.Content.ReadAsStringAsync();
-            viewModel.Issues = JsonSerializer.Deserialize<List<Issue_ReadVM>>(jsonString, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-        }
-        else
-        {
-            _logger.LogError($"Failed to fetch posts. Status Code: {issueResponse.StatusCode}");
-            viewModel.Issues = new List<Issue_ReadVM>();
-        }
+        // Get data directly like this (Not via another api requests to my own controller - didn't pass the User credientials automatically.)
+        viewModel.Issues = await _crudService.Issues.GetEveryIssue();
 
+        // TODO: Update this to not use another fetch... 
         // Fetch categories
         var categoryResponse = await client.GetAsync("/api/categories");
         if (categoryResponse.IsSuccessStatusCode)
