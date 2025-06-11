@@ -8,12 +8,16 @@
 @model HomeIndexViewModel
 @{
     ViewData["Title"] = "Home Page";
+
+    int NextPageNumber = Model.PaginatedPosts.CurrentPage + 1;
 }
 
 <div class="container-fluid">
     <div class="row">
         <!-- Main content with issues -->
         <div class="col-lg-9 px-0">
+            <div id="main-content">
+
             <div class="my-3">
                 <a href="@Url.Action("CreateIssue","Issue")" class="btn btn-primary fw-bold outlined-text fs-5 mb-1 mb-md-0" styfs-5" style="color:var(--call-to-action-theme-color)">Create New Issue</a>
                 <a href="@Url.Action("CreateSolution","Solution")" class="btn btn-primary fw-bold outlined-text fs-5 mb-1 mb-md-0" styfs-5" style="color:var(--call-to-action-theme-color)">Create New Solution</a>
@@ -29,13 +33,9 @@
                       ")
                 </div>
 
-            @if (Model.Issues != null && Model.Issues.Any())
+            @if (Model.PaginatedPosts != null && Model.PaginatedPosts.Issues.Any())
             {
-                @foreach (var issue in Model.Issues)
-                {
-
-                    @Html.Partial("~/Views/Issue/_issue-card.cshtml", issue)
-                }
+                @Html.Partial("~/Views/Issue/_issue-cards.cshtml", Model.PaginatedPosts.Issues)
             }
             else
             {
@@ -43,6 +43,17 @@
                     No posts available. Be the first to create a post!
                 </div>
             }
+            </div>
+            <button 
+                id="fetchPaginatedPosts" 
+                data-url="/issue/getPaginatedIssues?currentPage=@NextPageNumber" 
+                data-target="#main-content"
+                data-total-count="@Model.PaginatedPosts.TotalCount"
+                data-page-size="@Model.PaginatedPosts.PageSize"
+                    class="mx-auto d-block btn btn-primary">
+                <span class="button-text">Load more posts</span> (<span class="paginatedCount">@Model.PaginatedPosts.PageSize</span>/@Model.PaginatedPosts.TotalCount)
+            </button>
+           
         </div>
         <partial name="_Home-Page-Right-Sidebar" />
     </div>
@@ -51,13 +62,19 @@
 @section Scripts {
     <script>
         // Optional JavaScript to filter posts by category
-        $(document).ready(function() {
-            $('.category-link').click(function(e) {
-                e.preventDefault();
-                var categoryId = $(this).data('category-id');
-                // You can implement filtering logic here
-                console.log('Filter by category ID:', categoryId);
-            });
-        });
+             document.addEventListener("DOMContentLoaded", function() {
+                 $('.category-link').click(function(e) {
+                     e.preventDefault();
+                     var categoryId = $(this).data('category-id');
+                     // You can implement filtering logic here
+                     console.log('Filter by category ID:', categoryId);
+                 });
+
+                 const paginationButton = document.getElementById("fetchPaginatedPosts")
+                 setPaginationButtonListener(paginationButton)
+
+             });
+          
+
     </script>
 }

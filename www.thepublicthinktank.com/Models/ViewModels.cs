@@ -11,6 +11,27 @@ namespace atlas_the_public_think_tank.Models
     {
         public List<Issue_ReadVM> Issues { get; set; } = new List<Issue_ReadVM>();
         public List<Category_ReadVM> Categories { get; set; } = new List<Category_ReadVM>();
+
+        public PaginatedIssuesResponse PaginatedPosts { get; set; } = new PaginatedIssuesResponse();
+
+    }
+
+
+
+    public class PaginatedIssuesResponse
+    {
+        public List<Issue_ReadVM> Issues { get; set; }
+        public int TotalCount { get; set; }
+        public int PageSize { get; set; }
+        public int CurrentPage { get; set; }
+    }
+
+    public class PaginatedSolutionsResponse
+    {
+        public List<Solution_ReadVM> Solutions { get; set; }
+        public int TotalCount { get; set; }
+        public int PageSize { get; set; }
+        public int CurrentPage { get; set; }
     }
 
     /// <summary>
@@ -61,6 +82,9 @@ namespace atlas_the_public_think_tank.Models
         public Guid? BlockedContentID { get; set; }
         public List<Category_ReadVM> Categories { get; set; } = new List<Category_ReadVM>();
         public List<Issue_ReadVM> SubIssues { get; set; } = new List<Issue_ReadVM>();
+
+        public PaginatedIssuesResponse PaginatedSubIssues { get; set; } = new PaginatedIssuesResponse();
+        public PaginatedSolutionsResponse PaginatedSolutions { get; set; } = new PaginatedSolutionsResponse();
         public List<Solution_ReadVM> Solutions { get; set; } = new List<Solution_ReadVM>();
 
         public Issue_ReadVM? ParentIssue { get; set; }

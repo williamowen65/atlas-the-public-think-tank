@@ -28,14 +28,9 @@ namespace atlas_the_public_think_tank.Controllers
             _crud = crud;
         }
 
-
-
-
         [Route("/solution/create")]
         public async Task<IActionResult> CreateSolution(Guid? parentIssueID = null)
         {
-
-
             // Initialize the ViewModel
             var viewModel = new Solution_CreateVM
             {
@@ -47,10 +42,6 @@ namespace atlas_the_public_think_tank.Controllers
 
             return View(viewModel);
         }
-
-
-      
-
 
         [HttpPost]
         [Route("/solution/create")]
@@ -111,6 +102,20 @@ namespace atlas_the_public_think_tank.Controllers
             return View(model);
         }
 
+        /// <summary>
+        /// This method is used to return paginated solution posts for a specific issue.
+        /// </summary>
+        /// <param name="issueId">The ID of the parent issue</param>
+        /// <param name="currentPage">The page number to retrieve</param>
+        /// <returns>A partial view with the solutions for the specified page</returns>
+        [HttpGet]
+        [AllowAnonymous]
+        [Route("/solution/getPaginatedSolutions/{issueId}")]
+        public async Task<IActionResult> GetPaginatedSolutions(Guid issueId, int currentPage = 1)
+        {
+            PaginatedSolutionsResponse paginatedSolutions = await _crud.Solutions.GetSolutionsPagedAsync(issueId, currentPage, 3);
+            return PartialView("~/Views/Solution/_solution-cards.cshtml", paginatedSolutions.Solutions);
+        }
 
         /// <summary>
         /// Returns the vote dial for a specific solution.
@@ -128,7 +133,6 @@ namespace atlas_the_public_think_tank.Controllers
             return PartialView("~/Views/Shared/Components/_voteDial.cshtml", model);
         }
 
-
         /// <summary>
         /// Returns a HTML page for a specific solution
         /// </summary>
@@ -142,18 +146,18 @@ namespace atlas_the_public_think_tank.Controllers
             var solution = await _context.Solutions
                 .Include(s => s.Author)
                 .Include(s => s.Scope)
-                 .Include(f => f.ChildIssues)
+                .Include(f => f.ChildIssues)
                 .Include(s => s.Issue) // ParentIssue for a solution
                     .ThenInclude(i => i.Scope)
-                .Include(s=> s.Issue) // ParentIssue for a solution
+                .Include(s => s.Issue) // ParentIssue for a solution
                     .ThenInclude(i => i.Solutions)
                 .Include(s => s.Issue) // ParentIssue for a solution
                     .ThenInclude(i => i.Author)
                 .Include(s => s.Issue)
                 .Include(s => s.BlockedContent)
                 .Include(s => s.Comments)
-                 .Include(s => s.SolutionCategories)
-                     .ThenInclude(sc => sc.Category)
+                .Include(s => s.SolutionCategories)
+                    .ThenInclude(sc => sc.Category)
                 .FirstOrDefaultAsync(s => s.SolutionID == id);
 
             if (solution == null)
@@ -161,14 +165,11 @@ namespace atlas_the_public_think_tank.Controllers
                 return NotFound();
             }
 
-            // Map to the view model (adjust as needed for your project)            var solutionVM = _crud.Solutions.ConvertSolutionEntityToVM(solution);
+            // Map to the view model (adjust as needed for your project)
             var solutionVM = await _crud.Solutions.ConvertSolutionEntityToVM(solution);
-
 
             return View(solutionVM);
         }
-
-
 
         /// <summary>
         /// This method is used to cast a vote on a solution post.
@@ -244,6 +245,5 @@ namespace atlas_the_public_think_tank.Controllers
                 return Json(new { success = false, message = ex.Message });
             }
         }
-
     }
 }

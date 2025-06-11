@@ -123,20 +123,40 @@ namespace atlas_the_public_think_tank.Controllers
         }
 
 
+
         /// <summary>
-        /// This method is used to return all issue posts.
+        /// This method is used to return paginated issue posts.
         /// </summary>
+        /// <returns></returns>
         [HttpGet]
-        [Route("/api/posts")]
+
         [AllowAnonymous]
-        public async Task<IActionResult> GetAllIssues()
+        [Route("/issue/getPaginatedIssues")]
+        public async Task<IActionResult> GetPaginatedIssues(int currentPage = 1)
+        {
+            PaginatedIssuesResponse paginatedIssues = await _crud.Issues.GetIssuesPagedAsync(currentPage, 3);
+
+            return PartialView("~/Views/Issue/_issue-cards.cshtml", paginatedIssues.Issues);
+        }
+
+
+        /// <summary>
+        /// This method is used to return paginated issue posts.
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+
+        [AllowAnonymous]
+        [Route("/issue/getPaginatedSubIssues/{issueId}")]
+        public async Task<IActionResult> GetPaginatedSubIssues(Guid issueId, int currentPage = 1)
         {
 
+            PaginatedIssuesResponse paginatedIssues = await _crud.Issues.GetSubIssuesPagedAsync(issueId, currentPage, 3);
 
-            List<Issue_ReadVM> postsViewModel = await _crud.Issues.GetEveryIssue();
-
-            return Ok(postsViewModel);
+            return PartialView("~/Views/Issue/_issue-cards.cshtml", paginatedIssues.Issues);
         }
+
+
 
 
         /// <summary>
@@ -160,8 +180,8 @@ namespace atlas_the_public_think_tank.Controllers
                 .ThenInclude(p => p.Scope) // include the parent issue's scope
             //.Include(f => f.ParentSolution)
                 //.ThenInclude(p => p.Solutions)
-            .Include(f => f.ChildIssues)
-                 .ThenInclude(c => c.Scope) // include the Child issue's scope
+            //.Include(f => f.ChildIssues)   // child issues fetched via pagination
+                 //.ThenInclude(c => c.Scope) // include the Child issue's scope
             .Include(f => f.BlockedContent)
             .Include(f => f.Solutions)
                 .ThenInclude(s => s.Scope)
@@ -283,6 +303,8 @@ namespace atlas_the_public_think_tank.Controllers
 
             return PartialView("~/Views/Shared/Components/_voteDial.cshtml", model);
         }
+
+
 
     }
 }

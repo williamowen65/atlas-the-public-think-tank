@@ -5,6 +5,7 @@
 @model Issue_ReadVM;
 @{
     ViewData["Title"] = Model.Title;
+    Console.WriteLine();
 }
 
 <div class="container mt-3  ">
@@ -19,7 +20,7 @@
 
         <div class="nav nav-tabs flex-grow-1 text-nowrap overflow-x-scroll overflow-y-hidden" style="flex-wrap: revert;" id="nav-tab" role="tablist">
             <button class="nav-link active" id="solutions-tab" data-bs-toggle="tab" data-bs-target="#solutions" type="button" role="tab" aria-controls="nav-home" aria-selected="true">
-                <div class="content-count">@Model.Solutions.Count()</div>
+                <div class="content-count">@Model.PaginatedSolutions.TotalCount</div>
                 @Html.Partial("~/Views/Shared/Icons/_Solutions.cshtml")
                 Solutions
             </button>
@@ -29,7 +30,7 @@
                 Comments
             </button>
             <button class="nav-link" id="sub-issues-tab" data-bs-toggle="tab" data-bs-target="#sub-issues" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
-                <div class="content-count">@Model.SubIssues.Count()</div>
+                <div class="content-count">@Model.PaginatedSubIssues.TotalCount</div>
                 @Html.Partial("~/Views/Shared/Icons/_SubIssues.cshtml")
                 Sub-Issues
             </button>
@@ -80,7 +81,7 @@
     <div class="tab-content" id="nav-tabContent">
         <div class="tab-pane fade show active border border-1 border-top-0" id="solutions" role="tabpanel" aria-labelledby="solutions-tab" tabindex="0">
 
-            @if (Model.Solutions.Count() == 0)
+            @if (Model.PaginatedSolutions.TotalCount == 0)
             {
                 <div id="empty-issueView-solution-feed" class="empty-feed ">
                     <div class="comment-feed">
@@ -95,13 +96,22 @@
             }
             else
             {
-                foreach (Solution_ReadVM model in Model.Solutions)
-                {
-                    // Fetch the sub issue
-                    @Html.Partial("~/Views/Solution/_solution-card.cshtml", model)
-                    ;
-                }
+                <div id="solution-content">
+                    @if (Model.PaginatedSolutions != null && Model.PaginatedSolutions.Solutions.Any())
+                    {
+                        @Html.Partial("~/Views/Solution/_solution-cards.cshtml", Model.PaginatedSolutions.Solutions)
+                    }
+                </div>
 
+                <button 
+                    id="fetchPaginatedSolutions" 
+                    data-url="/solution/getPaginatedSolutions/@Model.IssueID?currentPage=2" 
+                    data-target="#solution-content"
+                    data-total-count="@Model.PaginatedSolutions.TotalCount"
+                    data-page-size="@Model.PaginatedSolutions.PageSize"
+                        class="mx-auto mb-2 d-block btn btn-primary">
+                    <span class="button-text">Load more solutions</span> (<span class="paginatedCount">@Model.PaginatedSolutions.PageSize</span>/@Model.PaginatedSolutions.TotalCount)
+                </button>
             }
 
         </div>
@@ -125,7 +135,7 @@
             }
         </div>
         <div class="tab-pane fade border border-1 border-top-0" id="sub-issues" role="tabpanel" aria-labelledby="sub-issues-tab" tabindex="0">
-            @if (Model.SubIssues.Count() == 0)
+            @if (Model.PaginatedSubIssues.TotalCount == 0)
             {
                 <div id="empty-issueView-sub-issues-feed" class="empty-feed">
 
@@ -142,13 +152,33 @@
             }
             else
             {
-                foreach (Issue_ReadVM model in Model.SubIssues)
+
+                <div id="sub-issue-content">
+
+                @if (Model.PaginatedSubIssues != null && Model.PaginatedSubIssues.Issues.Any())
+                {
+                    @Html.Partial("~/Views/Issue/_issue-cards.cshtml", Model.PaginatedSubIssues.Issues)
+                }
+                </div>
+
+                 <button 
+                    id="fetchPaginatedSubIssues" 
+                    data-url="/issue/getPaginatedSubIssues/@Model.IssueID?currentPage=2" 
+                    data-target="#sub-issue-content"
+                    data-total-count="@Model.PaginatedSubIssues.TotalCount"
+                    data-page-size="@Model.PaginatedSubIssues.PageSize"
+                        class="mx-auto mb-2 d-block btn btn-primary">
+                    <span class="button-text">Load more sub-issues</span> (<span class="paginatedCount">@Model.PaginatedSubIssues.PageSize</span>/@Model.PaginatedSubIssues.TotalCount)
+                </button>
+
+
+                @* foreach (Issue_ReadVM model in Model.SubIssues)
                 {
 
                     // Fetch the sub issue
                     @Html.Partial("~/Views/Issue/_issue-card.cshtml", model)
                     ;
-                }
+                } *@
 
             }
         </div>
@@ -185,6 +215,17 @@
     document.addEventListener("DOMContentLoaded", function() {
         dynamicDropdownContent();
         initializeDialsForTabbedLayout();
+
+        
+        const paginationButton = document.getElementById("fetchPaginatedSubIssues")
+        if (paginationButton) {
+            setPaginationButtonListener(paginationButton)
+        }
+        
+        const solutionsPaginationButton = document.getElementById("fetchPaginatedSolutions")
+        if (solutionsPaginationButton) {
+            setPaginationButtonListener(solutionsPaginationButton)
+        }
     });
 
     function initializeDialsForTabbedLayout() {
