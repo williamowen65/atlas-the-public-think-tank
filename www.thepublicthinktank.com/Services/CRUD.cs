@@ -509,7 +509,8 @@ namespace atlas_the_public_think_tank.Services
             {
                 Issues = issuesVM,
                 CurrentPage = pageNumber,
-                TotalCount = totalCount
+                TotalCount = totalCount,
+                PageSize = pageSize
             };
 
             return pr;

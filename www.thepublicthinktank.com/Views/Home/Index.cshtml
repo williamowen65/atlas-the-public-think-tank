@@ -44,7 +44,15 @@
                 </div>
             }
             </div>
-            <button id="fetchPaginatedPosts" data-url="/issue/getPaginatedIssues?currentPage=@NextPageNumber" class="mx-auto d-block btn btn-primary">Load more posts (@Model.PaginatedPosts.TotalCount total posts)</button>
+            <button 
+                id="fetchPaginatedPosts" 
+                data-url="/issue/getPaginatedIssues?currentPage=@NextPageNumber" 
+                data-target="#main-content"
+                    data-total-count="@Model.PaginatedPosts.TotalCount"
+                    data-page-size="@Model.PaginatedPosts.PageSize"
+                    class="mx-auto d-block btn btn-primary">
+                <span class="button-text">Load more posts</span> (<span class="paginatedCount">@Model.PaginatedPosts.PageSize</span>/@Model.PaginatedPosts.TotalCount)
+            </button>
            
         </div>
         <partial name="_Home-Page-Right-Sidebar" />

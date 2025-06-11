@@ -22,7 +22,7 @@ namespace atlas_the_public_think_tank.Models
     {
         public List<Issue_ReadVM> Issues { get; set; }
         public int TotalCount { get; set; }
-
+        public int PageSize { get; set; }
         public int CurrentPage { get; set; }
     }
 

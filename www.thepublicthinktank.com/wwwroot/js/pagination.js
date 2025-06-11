@@ -14,6 +14,27 @@ function setPaginationButtonListener(paginationButtonElement) {
         paginationButtonElement.addEventListener("click", (e => {
 
             const paginationUrl = paginationButtonElement.getAttribute("data-url")
+            const paginationTargetElement = paginationButtonElement.getAttribute("data-target")
+            const paginationPageSize = paginationButtonElement.getAttribute("data-page-size")
+            const paginationTotalCount = paginationButtonElement.getAttribute("data-total-count")
+            const paginatedCountElement = paginationButtonElement.querySelector(".paginatedCount")
+            const paginatedButtonText = paginationButtonElement.querySelector(".button-text")
+
+            if (!paginationTargetElement) {
+                throw new Error("Could not find pagination target element")
+            }
+            if (!paginatedCountElement) {
+                throw new Error("Could not locate a pagination count element")
+            }
+            if (!paginationPageSize) {
+                throw new Error("Could not find the pagination page size value")
+            }
+            if (!paginationTotalCount) {
+                throw new Error("Could not determine the pagination total count")
+            }
+            if (!paginatedButtonText) {
+                 throw new Error("Could not find pagination button text element")
+            }
 
             if (paginationUrl) {
                 // Call api/posts for next page of data
@@ -23,7 +44,7 @@ function setPaginationButtonListener(paginationButtonElement) {
                     .then(data => {
 
                         // Add issues to dom
-                        const domTarget = document.querySelector('#main-content')
+                        const domTarget = document.querySelector(paginationTargetElement)
                         domTarget.insertAdjacentHTML("beforeend", data)
 
                         // Find the current page number and increment it for the next request
@@ -38,6 +59,19 @@ function setPaginationButtonListener(paginationButtonElement) {
                         } else {
                             console.error("Could not extract page number from URL");
                         }
+
+                        // Update the pagination button count
+                        const currentCount = Number(paginatedCountElement.innerText)
+                        const nextCurrentCount = currentCount + Number(paginationPageSize)
+                        paginatedCountElement.innerText = Math.min(nextCurrentCount, paginationTotalCount)
+                        if (nextCurrentCount >= paginationTotalCount) {
+                            // Disable the button
+                            paginationButtonElement.disabled = true;
+                            paginatedButtonText.innerText = "No more posts"
+                        }
+
+
+
 
                     })
                     .catch(error => {
