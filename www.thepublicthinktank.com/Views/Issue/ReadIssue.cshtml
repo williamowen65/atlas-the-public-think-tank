@@ -105,7 +105,7 @@
 
                 <button 
                     id="fetchPaginatedSolutions" 
-                    data-url="/solution/getPaginatedSolutions/@Model.IssueID?currentPage=1" 
+                    data-url="/solution/getPaginatedSolutions/@Model.IssueID?currentPage=2" 
                     data-target="#solution-content"
                     data-total-count="@Model.PaginatedSolutions.TotalCount"
                     data-page-size="@Model.PaginatedSolutions.PageSize"
@@ -163,7 +163,7 @@
 
                  <button 
                     id="fetchPaginatedSubIssues" 
-                    data-url="/issue/getPaginatedSubIssues/@Model.IssueID?currentPage=1" 
+                    data-url="/issue/getPaginatedSubIssues/@Model.IssueID?currentPage=2" 
                     data-target="#sub-issue-content"
                     data-total-count="@Model.PaginatedSubIssues.TotalCount"
                     data-page-size="@Model.PaginatedSubIssues.PageSize"
