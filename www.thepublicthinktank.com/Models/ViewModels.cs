@@ -74,6 +74,8 @@ namespace atlas_the_public_think_tank.Models
         public Guid? BlockedContentID { get; set; }
         public List<Category_ReadVM> Categories { get; set; } = new List<Category_ReadVM>();
         public List<Issue_ReadVM> SubIssues { get; set; } = new List<Issue_ReadVM>();
+
+        public PaginatedIssuesResponse PaginatedSubIssues { get; set; } = new PaginatedIssuesResponse();
         public List<Solution_ReadVM> Solutions { get; set; } = new List<Solution_ReadVM>();
 
         public Issue_ReadVM? ParentIssue { get; set; }

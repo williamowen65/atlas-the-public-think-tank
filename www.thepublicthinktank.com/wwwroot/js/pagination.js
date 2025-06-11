@@ -3,8 +3,18 @@
 
 This file manages the client-side logic for pagination
 
+<button 
+    id="fetchPaginatedPosts" 
+    data-url="/issue/getPaginatedIssues?currentPage=@NextPageNumber" 
+    data-target="#main-content"
+    data-total-count="@Model.PaginatedPosts.TotalCount"
+    data-page-size="@Model.PaginatedPosts.PageSize"
+        class="mx-auto d-block btn btn-primary">
+    <span class="button-text">Load more posts</span> (<span class="paginatedCount">@Model.PaginatedPosts.PageSize</span>/@Model.PaginatedPosts.TotalCount)
+</button>
 
 
+The pagination setup also requires .NET entities to contain paginated content.
 
 */
 
@@ -69,10 +79,6 @@ function setPaginationButtonListener(paginationButtonElement) {
                             paginationButtonElement.disabled = true;
                             paginatedButtonText.innerText = "No more posts"
                         }
-
-
-
-
                     })
                     .catch(error => {
                         console.error('Error fetching issues:', error);
