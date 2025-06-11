@@ -8,6 +8,8 @@
 @model HomeIndexViewModel
 @{
     ViewData["Title"] = "Home Page";
+
+    int NextPageNumber = Model.PaginatedPosts.CurrentPage + 1;
 }
 
 <div class="container-fluid">
@@ -42,8 +44,8 @@
                 </div>
             }
             </div>
-
-            <button id="fetchPaginatedPosts" class="mx-auto d-block btn btn-primary">Load more posts (@Model.PaginatedPosts.TotalCount total posts)</button>
+            <button id="fetchPaginatedPosts" data-next-page="@NextPageNumber" class="mx-auto d-block btn btn-primary">Load more posts (@Model.PaginatedPosts.TotalCount total posts)</button>
+           
         </div>
         <partial name="_Home-Page-Right-Sidebar" />
     </div>
@@ -52,44 +54,19 @@
 @section Scripts {
     <script>
         // Optional JavaScript to filter posts by category
-        document.addEventListener("DOMContentLoaded", function() {
-            $('.category-link').click(function(e) {
-                e.preventDefault();
-                var categoryId = $(this).data('category-id');
-                // You can implement filtering logic here
-                console.log('Filter by category ID:', categoryId);
-            });
+             document.addEventListener("DOMContentLoaded", function() {
+                 $('.category-link').click(function(e) {
+                     e.preventDefault();
+                     var categoryId = $(this).data('category-id');
+                     // You can implement filtering logic here
+                     console.log('Filter by category ID:', categoryId);
+                 });
 
-              setPaginationListener();
-        });
+                 const paginationButton = document.getElementById("fetchPaginatedPosts")
+                 setPaginationButtonListener(paginationButton)
 
-        let currentPageNumber = @Model.PaginatedPosts.CurrentPage
-
-            function setPaginationListener() {
-                const fetchPaginatedPostsBtn = document.querySelector('#fetchPaginatedPosts')
-                if (fetchPaginatedPostsBtn) {
-                    fetchPaginatedPostsBtn.addEventListener("click", (e => {
-
-                        const nextPageNumber = currentPageNumber + 1
-                        // Call api/posts for next page of data
-
-                         fetch(`/issue/getPaginatedIssues?currentPage=${nextPageNumber}`)
-                            .then(response => response.text())
-                            .then(data => {
-
-                                // Add issues to dom
-                                const domTarget = document.querySelector('#main-content')
-                                domTarget.insertAdjacentHTML("beforeend", data)
-
-                                // update the currentPageNumber
-                                currentPageNumber += 1
-                            })
-                            .catch(error => {
-                                console.error('Error fetching issues:', error);
-                            });
-                }));
-            }
-        }
+             });
+          
 
     </script>
 }
