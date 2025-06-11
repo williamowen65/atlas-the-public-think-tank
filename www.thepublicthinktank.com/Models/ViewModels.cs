@@ -26,6 +26,14 @@ namespace atlas_the_public_think_tank.Models
         public int CurrentPage { get; set; }
     }
 
+    public class PaginatedSolutionsResponse
+    {
+        public List<Solution_ReadVM> Solutions { get; set; }
+        public int TotalCount { get; set; }
+        public int PageSize { get; set; }
+        public int CurrentPage { get; set; }
+    }
+
     /// <summary>
     /// ViewModel for the creating an issue
     /// </summary>
@@ -76,6 +84,7 @@ namespace atlas_the_public_think_tank.Models
         public List<Issue_ReadVM> SubIssues { get; set; } = new List<Issue_ReadVM>();
 
         public PaginatedIssuesResponse PaginatedSubIssues { get; set; } = new PaginatedIssuesResponse();
+        public PaginatedSolutionsResponse PaginatedSolutions { get; set; } = new PaginatedSolutionsResponse();
         public List<Solution_ReadVM> Solutions { get; set; } = new List<Solution_ReadVM>();
 
         public Issue_ReadVM? ParentIssue { get; set; }

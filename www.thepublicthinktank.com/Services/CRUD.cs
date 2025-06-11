@@ -286,6 +286,7 @@ namespace atlas_the_public_think_tank.Services
                 ParentSolution = await GetParentSolution(issue),
                 SubIssues = await GetIssuesSubIssuesAsync(issue),
                 PaginatedSubIssues = await GetSubIssuesPagedAsync(issue.IssueID, 1, 3),
+                PaginatedSolutions = await _solutions.GetSolutionsPagedAsync(issue.IssueID, 1, 3),
                 SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == issue.IssueID),
                 BlockedContent = issue.BlockedContent,
                 Solutions = await _solutions.GetIssuesSolutions(issue),
@@ -734,6 +735,72 @@ namespace atlas_the_public_think_tank.Services
 
             return model;
 
+        }
+
+        /// <summary>
+        /// Get paginated solutions for a specific issue
+        /// </summary>
+        /// <param name="issueId">The ID of the parent issue</param>
+        /// <param name="pageNumber">The page number to retrieve</param>
+        /// <param name="pageSize">The number of solutions per page</param>
+        /// <returns>A paginated response with solutions</returns>
+        public async Task<PaginatedSolutionsResponse> GetSolutionsPagedAsync(Guid issueId, int pageNumber, int pageSize = 3)
+        {
+            // Query for solutions for the given issue
+            var query = _context.Solutions
+                .Include(s => s.Scope)
+                .Include(s => s.Author)
+                .Include(s => s.SolutionCategories)
+                    .ThenInclude(sc => sc.Category)
+                .AsNoTracking() // For better performance when reading
+                .Where(s => s.IssueID == issueId);
+
+            var totalCount = await query.CountAsync();
+
+            Console.WriteLine($"Found {totalCount} solutions for issue {issueId}");
+
+            // Apply paging to get items for the requested page
+            var paginatedSolutions = await query
+                .OrderByDescending(s => s.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var solutionVMs = new List<Solution_ReadVM>();
+
+            foreach (var solution in paginatedSolutions)
+            {
+                var breadcrumbTags = await _breadcrumbAccessor.GetSolutionBreadcrumbTags(solution);
+
+                solutionVMs.Add(new Solution_ReadVM
+                {
+                    SolutionID = solution.SolutionID,
+                    Title = solution.Title,
+                    Content = solution.Content,
+                    CreatedAt = solution.CreatedAt,
+                    ModifiedAt = solution.ModifiedAt,
+                    AuthorID = solution.AuthorID,
+                    Author = solution.Author,
+                    IssueID = solution.IssueID,
+                    ContentStatus = solution.ContentStatus,
+                    BlockedContentID = solution.BlockedContentID,
+                    VoteStats = await GetSolutionVoteStats(solution.SolutionID),
+                    Scope = solution.Scope,
+                    ScopeID = solution.ScopeID,
+                    SubIssueCount = await _context.Issues.CountAsync(i => i.ParentSolutionID == solution.SolutionID),
+                    Categories = GetSolutionCategories(solution),
+                    SolutionCategories = solution.SolutionCategories,
+                    BreadcrumbTags = breadcrumbTags
+                });
+            }
+
+            return new PaginatedSolutionsResponse()
+            {
+                Solutions = solutionVMs,
+                CurrentPage = pageNumber,
+                TotalCount = totalCount,
+                PageSize = pageSize
+            };
         }
 
     }

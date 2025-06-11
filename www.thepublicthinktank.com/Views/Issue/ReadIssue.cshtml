@@ -20,7 +20,7 @@
 
         <div class="nav nav-tabs flex-grow-1 text-nowrap overflow-x-scroll overflow-y-hidden" style="flex-wrap: revert;" id="nav-tab" role="tablist">
             <button class="nav-link active" id="solutions-tab" data-bs-toggle="tab" data-bs-target="#solutions" type="button" role="tab" aria-controls="nav-home" aria-selected="true">
-                <div class="content-count">@Model.Solutions.Count()</div>
+                <div class="content-count">@Model.PaginatedSolutions.TotalCount</div>
                 @Html.Partial("~/Views/Shared/Icons/_Solutions.cshtml")
                 Solutions
             </button>
@@ -81,7 +81,7 @@
     <div class="tab-content" id="nav-tabContent">
         <div class="tab-pane fade show active border border-1 border-top-0" id="solutions" role="tabpanel" aria-labelledby="solutions-tab" tabindex="0">
 
-            @if (Model.Solutions.Count() == 0)
+            @if (Model.PaginatedSolutions.TotalCount == 0)
             {
                 <div id="empty-issueView-solution-feed" class="empty-feed ">
                     <div class="comment-feed">
@@ -96,13 +96,22 @@
             }
             else
             {
-                foreach (Solution_ReadVM model in Model.Solutions)
-                {
-                    // Fetch the sub issue
-                    @Html.Partial("~/Views/Solution/_solution-card.cshtml", model)
-                    ;
-                }
+                <div id="solution-content">
+                    @if (Model.PaginatedSolutions != null && Model.PaginatedSolutions.Solutions.Any())
+                    {
+                        @Html.Partial("~/Views/Solution/_solution-cards.cshtml", Model.PaginatedSolutions.Solutions)
+                    }
+                </div>
 
+                <button 
+                    id="fetchPaginatedSolutions" 
+                    data-url="/solution/getPaginatedSolutions/@Model.IssueID?currentPage=1" 
+                    data-target="#solution-content"
+                    data-total-count="@Model.PaginatedSolutions.TotalCount"
+                    data-page-size="@Model.PaginatedSolutions.PageSize"
+                        class="mx-auto mb-2 d-block btn btn-primary">
+                    <span class="button-text">Load more solutions</span> (<span class="paginatedCount">@Model.PaginatedSolutions.PageSize</span>/@Model.PaginatedSolutions.TotalCount)
+                </button>
             }
 
         </div>
@@ -209,7 +218,14 @@
 
         
         const paginationButton = document.getElementById("fetchPaginatedSubIssues")
-        setPaginationButtonListener(paginationButton)
+        if (paginationButton) {
+            setPaginationButtonListener(paginationButton)
+        }
+        
+        const solutionsPaginationButton = document.getElementById("fetchPaginatedSolutions")
+        if (solutionsPaginationButton) {
+            setPaginationButtonListener(solutionsPaginationButton)
+        }
     });
 
     function initializeDialsForTabbedLayout() {
