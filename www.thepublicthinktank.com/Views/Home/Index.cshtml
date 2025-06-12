@@ -10,6 +10,7 @@
     ViewData["Title"] = "Home Page";
 
     int NextPageNumber = Model.PaginatedPosts.CurrentPage + 1;
+    Boolean isMorePosts = Model.PaginatedPosts.PageSize < Model.PaginatedPosts.TotalCount;
 }
 
 <div class="container-fluid">
@@ -44,14 +45,18 @@
                 </div>
             }
             </div>
+
             <button 
+                @(isMorePosts ? "" : "disabled")
                 id="fetchPaginatedPosts" 
                 data-url="/issue/getPaginatedIssues?currentPage=@NextPageNumber" 
                 data-target="#main-content"
                 data-total-count="@Model.PaginatedPosts.TotalCount"
                 data-page-size="@Model.PaginatedPosts.PageSize"
-                    class="mx-auto d-block btn btn-primary">
-                <span class="button-text">Load more posts</span> (<span class="paginatedCount">@Model.PaginatedPosts.PageSize</span>/@Model.PaginatedPosts.TotalCount)
+                data-content-type="posts"
+                class="mx-auto d-block btn btn-primary">
+                <span class="button-text">@(isMorePosts ? "Load more posts" : "No more posts")</span> 
+                (<span class="paginatedCount">@(Math.Min(Model.PaginatedPosts.PageSize, Model.PaginatedPosts.TotalCount))</span>/@Model.PaginatedPosts.TotalCount)
             </button>
            
         </div>
@@ -74,7 +79,5 @@
                  setPaginationButtonListener(paginationButton)
 
              });
-          
-
     </script>
 }
