@@ -96,6 +96,10 @@
             }
             else
             {
+
+                
+                Boolean isMoreSolutions = Model.PaginatedSolutions.PageSize < Model.PaginatedSolutions.TotalCount;
+
                 <div id="solution-content">
                     @if (Model.PaginatedSolutions != null && Model.PaginatedSolutions.Solutions.Any())
                     {
@@ -104,13 +108,17 @@
                 </div>
 
                 <button 
+                     @(isMoreSolutions ? "": "disabled" )
                     id="fetchPaginatedSolutions" 
                     data-url="/solution/getPaginatedSolutions/@Model.IssueID?currentPage=2" 
                     data-target="#solution-content"
                     data-total-count="@Model.PaginatedSolutions.TotalCount"
                     data-page-size="@Model.PaginatedSolutions.PageSize"
+                    data-content-type="solutions"
                         class="mx-auto mb-2 d-block btn btn-primary">
-                    <span class="button-text">Load more solutions</span> (<span class="paginatedCount">@Model.PaginatedSolutions.PageSize</span>/@Model.PaginatedSolutions.TotalCount)
+                    <span class="button-text">
+                            @(isMoreSolutions? "Load more solutions" : "No more solutions")
+                    </span> (<span class="paginatedCount">@(Math.Min(Model.PaginatedSolutions.PageSize, Model.PaginatedSolutions.TotalCount))</span>/@Model.PaginatedSolutions.TotalCount)
                 </button>
             }
 
@@ -153,6 +161,8 @@
             else
             {
 
+                Boolean isMoreSubIssues = Model.PaginatedSubIssues.PageSize < Model.PaginatedSubIssues.TotalCount;
+
                 <div id="sub-issue-content">
 
                 @if (Model.PaginatedSubIssues != null && Model.PaginatedSubIssues.Issues.Any())
@@ -161,14 +171,19 @@
                 }
                 </div>
 
-                 <button 
+                <button 
+                    @(isMoreSubIssues ? "": "disabled" )
+
                     id="fetchPaginatedSubIssues" 
                     data-url="/issue/getPaginatedSubIssues/@Model.IssueID?currentPage=2" 
                     data-target="#sub-issue-content"
                     data-total-count="@Model.PaginatedSubIssues.TotalCount"
                     data-page-size="@Model.PaginatedSubIssues.PageSize"
+                    data-content-type="sub-issues"
                         class="mx-auto mb-2 d-block btn btn-primary">
-                    <span class="button-text">Load more sub-issues</span> (<span class="paginatedCount">@Model.PaginatedSubIssues.PageSize</span>/@Model.PaginatedSubIssues.TotalCount)
+                    <span class="button-text">
+                        @(isMoreSubIssues ? "Load more sub-issues" : "No more sub-issues")
+                    </span> (<span class="paginatedCount">@(Math.Min(Model.PaginatedSubIssues.PageSize, Model.PaginatedSubIssues.TotalCount))</span>/@Model.PaginatedSubIssues.TotalCount)
                 </button>
 
 

@@ -27,6 +27,7 @@ function setPaginationButtonListener(paginationButtonElement) {
             const paginationTargetElement = paginationButtonElement.getAttribute("data-target")
             const paginationPageSize = paginationButtonElement.getAttribute("data-page-size")
             const paginationTotalCount = paginationButtonElement.getAttribute("data-total-count")
+            const paginationContentType = paginationButtonElement.getAttribute("data-content-type")
             const paginatedCountElement = paginationButtonElement.querySelector(".paginatedCount")
             const paginatedButtonText = paginationButtonElement.querySelector(".button-text")
 
@@ -44,6 +45,9 @@ function setPaginationButtonListener(paginationButtonElement) {
             }
             if (!paginatedButtonText) {
                  throw new Error("Could not find pagination button text element")
+            }
+            if (!paginationContentType) {
+                 throw new Error("Could not find pagination button content type")
             }
 
             if (paginationUrl) {
@@ -77,7 +81,7 @@ function setPaginationButtonListener(paginationButtonElement) {
                         if (nextCurrentCount >= paginationTotalCount) {
                             // Disable the button
                             paginationButtonElement.disabled = true;
-                            paginatedButtonText.innerText = "No more posts"
+                            paginatedButtonText.innerText = `No more ${paginationContentType}`;
                         }
                     })
                     .catch(error => {
