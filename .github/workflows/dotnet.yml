@@ -1,29 +1,47 @@
-# This workflow will build a .NET project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
-
-name: .NET
+name: Playwright Tests
 
 on:
-  push:       # Trigger on any push to any branch
-    branches: ["*"]  # Wildcard to match any branch
-  pull_request:  # Trigger on any pull request to any branch
-    branches: ["*"]  # Wildcard to match any branch
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Allow manual triggering
 
 jobs:
-  Run-CloudTests:
-
+  test:
+    name: Run Playwright Tests
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
+    
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: '9.0.x'
+        
+    - name: Cache NuGet packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+          
     - name: Restore dependencies
       run: dotnet restore
+      
     - name: Build
       run: dotnet build --no-restore
-    - name: Test
-      run: dotnet test --no-build --verbosity normal --filter FullyQualifiedName~CloudTests
-
+      
+    - name: Install Playwright browsers
+      run: |
+        dotnet build CloudTests -c Debug
+        cd CloudTests
+        dotnet exec bin/Debug/net9.0/playwright.ps1 install --with-deps chromium
+      
+    - name: Run tests
+      run: dotnet test --no-build --verbosity normal
+      env:
+        CI: true
+        ASPNETCORE_ENVIRONMENT: Testing
