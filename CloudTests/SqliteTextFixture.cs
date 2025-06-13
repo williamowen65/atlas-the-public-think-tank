@@ -15,6 +15,9 @@ namespace CloudTests
 
         public SqliteTestFixture()
         {
+
+            Console.WriteLine("Setting up E2E tests with SQLite");
+
             // Create and open an in-memory SQLite connection
             _connection = new SqliteConnection("DataSource=:memory:");
             _connection.Open();

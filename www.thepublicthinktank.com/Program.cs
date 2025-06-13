@@ -29,7 +29,8 @@ public class Program
             // and configure it to use SQL Server with the retrieved connection string
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(connectionString)
-                       .EnableSensitiveDataLogging()); // TODO: Disable this logging in production
+                       //.EnableSensitiveDataLogging()
+                       ); // TODO: Disable this logging in production
         }
 
 

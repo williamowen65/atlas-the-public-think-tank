@@ -41,20 +41,22 @@ public class HomeController : Controller
 
         // TODO: Update this to not use another fetch... 
         // Fetch categories
-        var categoryResponse = await client.GetAsync("/api/categories");
-        if (categoryResponse.IsSuccessStatusCode)
-        {
-            var jsonString = await categoryResponse.Content.ReadAsStringAsync();
-            viewModel.Categories = JsonSerializer.Deserialize<List<Category_ReadVM>>(jsonString, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-        }
-        else
-        {
-            _logger.LogError($"Failed to fetch categories. Status Code: {categoryResponse.StatusCode}");
+        //var categoryResponse = await client.GetAsync("/api/categories");
+        //if (categoryResponse.IsSuccessStatusCode)
+        //{
+        //    var jsonString = await categoryResponse.Content.ReadAsStringAsync();
+        //    viewModel.Categories = JsonSerializer.Deserialize<List<Category_ReadVM>>(jsonString, new JsonSerializerOptions
+        //    {
+        //        PropertyNameCaseInsensitive = true
+        //    });
+        //}
+        //else
+        //{
+        //    _logger.LogError($"Failed to fetch categories. Status Code: {categoryResponse.StatusCode}");
+        //}
+
+        // NO INTERAL API CALLS CAN BE TESTED, So no using them.
             viewModel.Categories = new List<Category_ReadVM>();
-        }
 
 
         return View(viewModel);
