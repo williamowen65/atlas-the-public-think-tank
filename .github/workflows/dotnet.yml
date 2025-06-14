@@ -10,7 +10,7 @@ on:
     branches: ["*"]  # Wildcard to match any branch
 
 jobs:
-  Run-CloudTests:
+  E2E_Tests:
 
     runs-on: ubuntu-latest
 
