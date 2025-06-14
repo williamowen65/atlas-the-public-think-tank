@@ -127,7 +127,7 @@ public class HomeController : Controller
         return PartialView("~/Views/Shared/_Alert.cshtml", alert);
     }
 
-    [Route("privacy")]
+    [Route("sdfsdf")]
     public IActionResult Privacy()
     {
         return View();
