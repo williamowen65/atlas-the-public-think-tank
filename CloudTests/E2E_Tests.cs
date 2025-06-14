@@ -37,12 +37,15 @@ namespace CloudTests
         [DataTestMethod]
         [DataRow("/")]
         [DataRow("/privacy")]
+        [DataRow("/issue/44444444-4444-4444-4444-444444444444")]
         public async Task Should_ContainCommonHeaderWithAtlasString(string url)
         {
             // Get the response
             var response = await _client.GetAsync(url);
             response.EnsureSuccessStatusCode(); // Will throw if not 2xx
             var html = await response.Content.ReadAsStringAsync();
+
+            Console.WriteLine(html);
 
             // Parse the HTML using AngleSharp
             var context = BrowsingContext.New(Configuration.Default);
@@ -58,6 +61,61 @@ namespace CloudTests
                 // Fix: Use the TextContent property to check if the header contains the text "Atlas"
                 Assert.IsTrue(header.TextContent.Contains("Atlas"), "header should contain the text Atlas");
             }
+        }
+
+        [DataTestMethod]
+        [DataRow("/")]
+        [DataRow("/privacy")]
+        [DataRow("/issue/44444444-4444-4444-4444-444444444444")]
+        public async Task Should_ContainCommonFooterWithAtlasString(string url)
+        {
+            // Get the response
+            var response = await _client.GetAsync(url);
+            response.EnsureSuccessStatusCode(); // Will throw if not 2xx
+            var html = await response.Content.ReadAsStringAsync();
+
+            Console.WriteLine(html);
+
+            // Parse the HTML using AngleSharp
+            var context = BrowsingContext.New(Configuration.Default);
+            var document = await context.OpenAsync(req => req.Content(html));
+
+            // Now you can use DOM navigation and CSS selectors
+            var footer = document.QuerySelector("footer");
+
+            // More specific assertions
+            Assert.IsNotNull(footer, "footer should be present");
+            if (footer is not null)
+            {
+                Assert.IsTrue(footer.TextContent.Contains("Atlas"), "footer should contain the text Atlas");
+            }
+        }
+
+
+        [DataTestMethod]
+        [DataRow("/issue/44444444-4444-4444-4444-444444444444", "This is a test issue for testing solutions")]
+        public async Task Should_ShowTextContentOfGivenIssue(string url, string expectedContent)
+        {
+            // Get the response
+            var response = await _client.GetAsync(url);
+            response.EnsureSuccessStatusCode(); // Will throw if not 2xx
+            var html = await response.Content.ReadAsStringAsync();
+
+            Console.WriteLine(html);
+
+            // Parse the HTML using AngleSharp
+            var context = BrowsingContext.New(Configuration.Default);
+            var document = await context.OpenAsync(req => req.Content(html));
+
+            string id = url.Split('/').Last();
+
+            var issueCard = document.GetElementById(id);
+            Assert.IsNotNull(issueCard, "The main issue card should be present");
+            if (issueCard is not null)
+            {
+                Assert.IsTrue(issueCard.TextContent.Contains(expectedContent), "The issue card should contain the issue content");
+            }
+
         }
     }
 }
