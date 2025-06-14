@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using Microsoft.Extensions.Logging;
 using System.Linq;
 using System.Net.Http;
 
@@ -31,6 +32,12 @@ namespace CloudTests
 
                     // This environment toggles DB connection for the project build
                     builder.UseEnvironment("Testing");
+
+                    builder.ConfigureLogging(logging =>
+                    {
+                        logging.ClearProviders();
+                        logging.SetMinimumLevel(LogLevel.Error);
+                    });
 
                     builder.ConfigureServices(services =>
                     {
