@@ -101,7 +101,6 @@ namespace atlas_the_public_think_tank.Models
         public Guid? ParentSolutionID { get; set; }
         public Guid? BlockedContentID { get; set; }
 
-        public string BreadcrumbTag { get; set; }
 
         // Navigation properties
         public virtual AppUser Author { get; set; }

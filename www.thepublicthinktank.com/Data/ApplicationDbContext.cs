@@ -43,14 +43,7 @@ public class ApplicationDbContext : IdentityDbContext<AppUser, IdentityRole<Guid
         base.OnModelCreating(modelBuilder); // Ensure this is called
 
         // Configure schemas
-        modelBuilder.Entity<Issue>().ToTable("Issues", "issues", t =>
-        {
-            t.HasCheckConstraint("CK_Issue_BreadcrumbTag_Length", "LEN([BreadcrumbTag]) >= 3");
-        });
-        modelBuilder.Entity<Solution>().ToTable("Solutions", "solutions", t =>
-        {
-            t.HasCheckConstraint("CK_Solution_BreadcrumbTag_Length", "LEN([BreadcrumbTag]) >= 3");
-        });
+    
         modelBuilder.Entity<UserComment>().ToTable("Comments", "comments");
         modelBuilder.Entity<Category>().ToTable("Categories", "app");
         modelBuilder.Entity<Scope>().ToTable("Scopes", "app");
@@ -110,13 +103,6 @@ public class ApplicationDbContext : IdentityDbContext<AppUser, IdentityRole<Guid
                 .WithMany(e => e.Issues)
                 .HasForeignKey(e => e.BlockedContentID)
                 .OnDelete(DeleteBehavior.Restrict);
-
-            // BreadcrumbTag: required, 3-30 chars
-            entity.Property(e => e.BreadcrumbTag)
-                .IsRequired()
-                .HasMaxLength(30)
-                 .HasDefaultValue("defaulttag");
-
 
         });
 

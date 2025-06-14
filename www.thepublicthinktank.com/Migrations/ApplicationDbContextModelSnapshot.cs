@@ -375,13 +375,6 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Property<Guid?>("BlockedContentID")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("BreadcrumbTag")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
-                        .HasDefaultValue("defaulttag");
-
                     b.Property<string>("Content")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -423,10 +416,7 @@ namespace atlas_the_public_think_tank.Migrations
 
                     b.HasIndex("ScopeID");
 
-                    b.ToTable("Issues", "issues", t =>
-                        {
-                            t.HasCheckConstraint("CK_Issue_BreadcrumbTag_Length", "LEN([BreadcrumbTag]) >= 3");
-                        });
+                    b.ToTable("Issues");
 
                     b.HasData(
                         new
@@ -630,13 +620,6 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Property<Guid?>("BlockedContentID")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("BreadcrumbTag")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
-                        .HasDefaultValue("defaulttag");
-
                     b.Property<string>("Content")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -671,10 +654,7 @@ namespace atlas_the_public_think_tank.Migrations
 
                     b.HasIndex("ScopeID");
 
-                    b.ToTable("Solutions", "solutions", t =>
-                        {
-                            t.HasCheckConstraint("CK_Solution_BreadcrumbTag_Length", "LEN([BreadcrumbTag]) >= 3");
-                        });
+                    b.ToTable("Solutions");
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Models.SolutionCategory", b =>
