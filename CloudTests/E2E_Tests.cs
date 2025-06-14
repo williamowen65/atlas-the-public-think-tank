@@ -34,11 +34,13 @@ namespace CloudTests
             (_factory, _client, _baseUrl) = TestEnvironmentUtility.ConfigureTestEnvironment(_sqliteFixture);
         }
 
-        [TestMethod]
-        public async Task Should_LoadMockAtlasApplicationForTesting()
+        [DataTestMethod]
+        [DataRow("/")]
+        [DataRow("/privacy")]
+        public async Task Should_ContainCommonHeaderWithAtlasString(string url)
         {
             // Get the response
-            var response = await _client.GetAsync("/");
+            var response = await _client.GetAsync(url);
             response.EnsureSuccessStatusCode(); // Will throw if not 2xx
             var html = await response.Content.ReadAsStringAsync();
 
@@ -47,7 +49,6 @@ namespace CloudTests
             var document = await context.OpenAsync(req => req.Content(html));
 
             // Now you can use DOM navigation and CSS selectors
-            var title = document.Title;
             var header = document.QuerySelector("header");
 
             // More specific assertions
@@ -57,8 +58,6 @@ namespace CloudTests
                 // Fix: Use the TextContent property to check if the header contains the text "Atlas"
                 Assert.IsTrue(header.TextContent.Contains("Atlas"), "header should contain the text Atlas");
             }
-
-            Console.WriteLine($"Page title: {title}");
         }
     }
 }
