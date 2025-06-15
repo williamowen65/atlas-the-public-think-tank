@@ -3,7 +3,7 @@
 <br>
 [![GitHub milestone details](https://img.shields.io/github/milestones/progress/williamowen65/atlas-the-public-think-tank/3)](https://github.com/williamowen65/atlas-the-public-think-tank/milestone/3?closed=1)
 <br>
-[![GitHub milestone details](https://img.shields.io/github/milestones/progress/williamowen65/atlas-the-public-think-tank/6)](https://github.com/williamowen65/atlas-the-public-think-tank/milestone/6)
+[![GitHub milestone details](https://img.shields.io/github/milestones/progress/williamowen65/atlas-the-public-think-tank/7)](https://github.com/williamowen65/atlas-the-public-think-tank/milestone/7?closed=1)
 <br>
 [![GitHub milestone details](https://img.shields.io/github/milestones/progress/williamowen65/atlas-the-public-think-tank/5)](https://github.com/williamowen65/atlas-the-public-think-tank/milestone/5)
 
