@@ -1,0 +1,313 @@
+﻿
+<style>
+    /* Custom accordion styling */
+    .accordion-item {
+        /* margin-bottom: 1rem; */
+    }
+
+    .accordion-header .accordion-button {
+        border: 1px solid rgba(0,0,0,0.125);
+        /* border-radius: 5px; */
+    }
+
+    .accordion-button:not(.collapsed) {
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+
+    .accordion-collapse {
+        border-left: 1px solid rgba(0,0,0,0.125);
+        border-right: 1px solid rgba(0,0,0,0.125);
+        border-bottom: 1px solid rgba(0,0,0,0.125);
+        /* border-bottom-left-radius: 5px; */
+        /* border-bottom-right-radius: 5px; */
+    }
+
+    [data-bs-theme="dark"] .accordion-header .accordion-button {
+        border-color: rgba(255,255,255,0.15);
+    }
+
+    [data-bs-theme="dark"] .accordion-collapse {
+        border-color: rgba(255,255,255,0.15);
+    }
+</style>
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4 text-center">Frequently Asked Questions</h1>
+
+            <div class="accordion mt-5" id="faqAccordion">
+                <!-- Product Questions -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingOne">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                            What development services do you offer?
+                        </button>
+                    </h2>
+                    <div id="collapseOne" class="accordion-collapse collapse aria-labelledby="headingOne" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            We offer a range of web and software development services, including custom website development, e-commerce solutions, mobile app development, and API integrations. I specialize in a variety of programming languages and frameworks to ensure we can meet your specific project needs.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingTwo">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                            How much does a typical project cost?
+                        </button>
+                    </h2>
+                    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Project costs vary based on complexity, features required, and timeline. I provide detailed quotes after understanding your specific requirements. For small projects, pricing typically starts at $1,000, while more complex applications may range from $5,000-$50,000. Contact me for a personalized quote tailored to your project needs.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ordering Questions -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingThree">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                            What is your typical development process?
+                        </button>
+                    </h2>
+                    <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Our development process typically includes:
+                            <ol>
+                                <li><strong>Discovery:</strong> Understanding your requirements and goals</li>
+                                <li><strong>Planning:</strong> Creating project specifications and timeline</li>
+                                <li><strong>Design:</strong> Developing wireframes and user interface mockups</li>
+                                <li><strong>Development:</strong> Building the core functionality</li>
+                                <li><strong>Testing:</strong> Quality assurance and bug fixing</li>
+                                <li><strong>Deployment:</strong> Launching your application</li>
+                                <li><strong>Maintenance:</strong> Ongoing support and updates</li>
+                            </ol>
+                            I keep clients involved throughout the process with regular updates and feedback sessions.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingFour">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                            How long does a typical project take to complete?
+                        </button>
+                    </h2>
+                    <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Project timelines vary based on complexity and scope. Simple websites might take 2-4 weeks, while more complex web applications typically take 2-6 months. I provide detailed timelines during the planning phase and keep you updated on progress throughout development.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Support Questions -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingFive">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive" aria-expanded="false" aria-controls="collapseFive">
+                            Do you provide ongoing support after project completion?
+                        </button>
+                    </h2>
+                    <div id="collapseFive" class="accordion-collapse collapse" aria-labelledby="headingFive" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Yes, I offer various support and maintenance packages to ensure your application continues to run smoothly after launch. These can include regular updates, security patches, performance optimization, and feature enhancements. I can tailor a support package to match your specific needs and budget.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingSix">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSix" aria-expanded="false" aria-controls="collapseSix">
+                            How do I request changes to my project after it's completed?
+                        </button>
+                    </h2>
+                    <div id="collapseSix" class="accordion-collapse collapse" aria-labelledby="headingSix" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            For clients with active maintenance packages, you can submit change requests through our support portal or by contacting your dedicated project manager. For one-time changes, you can use the contact form on our website to describe your requirements, and I'll provide a quote for the requested modifications.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Technical Questions -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingSeven">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSeven" aria-expanded="false" aria-controls="collapseSeven">
+                            What technologies do you work with?
+                        </button>
+                    </h2>
+                    <div id="collapseSeven" class="accordion-collapse collapse" aria-labelledby="headingSeven" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            I am proficient in a wide range of technologies including:
+                            <ul>
+                                <li>
+                                    <strong>Frontend</strong>
+                                    <ul>
+                                        <li>
+                                            <strong>Core Languages:</strong>
+                                            <ul>
+                                                <li>HTML</li>
+                                                <li>CSS</li>
+                                                <li>JavaScript</li>
+                                            </ul>
+                                        </li>
+                                        <li>
+                                            <strong>Preprocessors & Styling:</strong>
+                                            <ul>
+                                                <li>SASS</li>
+                                                <li>CSS Modules</li>
+                                                <li>Bootstrap</li>
+                                            </ul>
+                                        </li>
+                                        <li>
+                                            <strong>Frameworks & Libraries:</strong>
+                                            <ul>
+                                                <li>React</li>
+                                                <li>Vue.js</li>
+                                                <li>Svelte</li>
+                                                <li>D3.js – Data Visualization</li>
+                                                <li>GSAP – Animation Platform</li>
+                                            </ul>
+                                        </li>
+                                        <li>
+                                            <strong>Web Components:</strong>
+                                            <ul>
+                                                <li>Custom HTML Elements</li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </li>
+
+                                <li>
+                                    <strong>Backend</strong>
+                                    <ul>
+                                        <li>
+                                            <strong>Languages & Frameworks:</strong>
+                                            <ul>
+                                                <li>ASP.NET Core</li>
+                                                <li>Node.js</li>
+                                            </ul>
+                                        </li>
+                                        <li>
+                                            <strong>Build Tools:</strong>
+                                            <ul>
+                                                <li>Webpack</li>
+                                            </ul>
+                                        </li>
+                                        <li>
+                                            <strong>Real-time & Networking:</strong>
+                                            <ul>
+                                                <li>Socket.io – WebSockets</li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </li>
+
+                                <li>
+                                    <strong>Mobile</strong>
+                                    <ul>
+                                        <li>React Native</li>
+                                        <li>Kotlin</li>
+                                    </ul>
+                                </li>
+
+                                <li>
+                                    <strong>Database</strong>
+                                    <ul>
+                                        <li>
+                                            <strong>Relational:</strong>
+                                            <ul>
+                                                <li>SQL Server</li>
+                                                <li>PostgreSQL</li>
+                                                <li>MySQL</li>
+                                            </ul>
+                                        </li>
+                                        <li>
+                                            <strong>NoSQL & Realtime:</strong>
+                                            <ul>
+                                                <li>MongoDB</li>
+                                                <li>Firebase Realtime Database</li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </li>
+
+                                <li>
+                                    <strong>Cloud Platforms</strong>
+                                    <ul>
+                                        <li>Azure</li>
+                                        <li>Google Cloud Platform</li>
+                                        <li>Firebase</li>
+                                    </ul>
+                                </li>
+
+                                <li>
+                                    <strong>Other Tools & Tech</strong>
+                                    <ul>
+                                        <li>
+                                            <strong>Version Control:</strong>
+                                            <ul>
+                                                <li>Git – Version Control</li>
+                                                <li>GitHub</li>
+                                            </ul>
+                                        </li>
+                                        <li>
+                                            <strong>Package Managers:</strong>
+                                            <ul>
+                                                <li>npm</li>
+                                                <li>yarn</li>
+                                            </ul>
+                                        </li>
+                                        <li>
+                                            <strong>CI/CD:</strong>
+                                            <ul>
+                                                <li>GitHub Actions</li>
+                                            </ul>
+                                        </li>
+                                        <li>
+                                            <strong>Testing & Coverage:</strong>
+                                            <ul>
+                                                <li>xUnit</li>
+                                                <li>NUnit</li>
+                                                <li>Coverlet</li>
+                                            </ul>
+                                        </li>
+                                        <li>
+                                            <strong>Other:</strong>
+                                            <ul>
+                                                <li>APIs</li>
+                                                <li>JSON</li>
+                                                <li>Markdown</li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+
+                            I am always learning and adapting to new technologies to ensure I can provide the best solutions for our clients.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingEight">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEight" aria-expanded="false" aria-controls="collapseEight">
+                            Can you help migrate an existing application or website?
+                        </button>
+                    </h2>
+                    <div id="collapseEight" class="accordion-collapse collapse" aria-labelledby="headingEight" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Yes, I specialize in helping businesses migrate their existing applications to newer technologies, different hosting environments, or improved architectures. Migration services include thorough assessment, planning, execution, and testing to ensure a smooth transition with minimal downtime.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-5 text-center">
+                <h3>Still have questions?</h3>
+                <p>Feel free to contact us for any additional information or specific inquiries about our services.</p>
+                <button type="button" class="btn btn-primary mt-2" open-sesame="createContactForm">Contact Me</button>
+            </div>
+        </div>
+    </div>
+</div>
