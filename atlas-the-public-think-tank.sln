@@ -12,6 +12,27 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "GitHubActions", "GitHubActi
 		.github\workflows\dotnet.yml = .github\workflows\dotnet.yml
 	EndProjectSection
 EndProject
+Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "pre-launch-landing-page", "pre-launch-landing-page\", "{EED2838B-BDE7-DB37-97E1-DA60BF5955DB}"
+	ProjectSection(WebsiteProperties) = preProject
+		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.8"
+		Debug.AspNetCompiler.VirtualPath = "/localhost_49692"
+		Debug.AspNetCompiler.PhysicalPath = "pre-launch-landing-page\"
+		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_49692\"
+		Debug.AspNetCompiler.Updateable = "true"
+		Debug.AspNetCompiler.ForceOverwrite = "true"
+		Debug.AspNetCompiler.FixedNames = "false"
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.VirtualPath = "/localhost_49692"
+		Release.AspNetCompiler.PhysicalPath = "pre-launch-landing-page\"
+		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_49692\"
+		Release.AspNetCompiler.Updateable = "true"
+		Release.AspNetCompiler.ForceOverwrite = "true"
+		Release.AspNetCompiler.FixedNames = "false"
+		Release.AspNetCompiler.Debug = "False"
+		VWDPort = "49692"
+		SlnRelativePath = "pre-launch-landing-page\"
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,6 +47,10 @@ Global
 		{F58050E7-20DE-4654-8B09-79AF5739EEE8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F58050E7-20DE-4654-8B09-79AF5739EEE8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F58050E7-20DE-4654-8B09-79AF5739EEE8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EED2838B-BDE7-DB37-97E1-DA60BF5955DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EED2838B-BDE7-DB37-97E1-DA60BF5955DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EED2838B-BDE7-DB37-97E1-DA60BF5955DB}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{EED2838B-BDE7-DB37-97E1-DA60BF5955DB}.Release|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
