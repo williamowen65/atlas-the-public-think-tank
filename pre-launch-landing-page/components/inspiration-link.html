@@ -18,7 +18,7 @@
         height: 30px;
     }
 
-    :root {
+    .fancy-border {
         --gradient-angle: 0deg;
     }
 
@@ -81,7 +81,7 @@
 
 <a href="https://www.youtube.com/watch?v=ULjr4gNmb9s" target="_blank" class="fancy-border bg-body-tertiary" style="text-decoration:none">
     <div class="content">
-        Inspiration for this website
+        Click here to view inspiration for this website
     </div>
     <svg class="border-svg" width="100%" height="100%">
         <defs>
@@ -103,8 +103,6 @@
 </a>
 
 <script>
-    // Wait for DOM to be fully loaded
-    //document.addEventListener('DOMContentLoaded', () => {
         // Initialize angle variable
         let angle = 0;
         let speed = 1.5;
@@ -126,6 +124,5 @@
 
         // Start the animation
         animateGradient();
-    //});
 </script>
 
