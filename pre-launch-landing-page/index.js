@@ -3,6 +3,9 @@
     fetchComponent("components/inspiration-link.html")
         .then(res => renderComponent(res, "#link-container"))
 
+    fetchComponent("components/FAQ.html")
+        .then(res => renderComponent(res, "#faq-container"))
+
 })
 
 function renderComponent(component, target) {

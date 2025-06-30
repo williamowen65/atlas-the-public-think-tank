@@ -1,0 +1,123 @@
+﻿
+<style>
+    /* Custom accordion styling */
+    .accordion-item {
+        /* margin-bottom: 1rem; */
+    }
+
+    .accordion-header .accordion-button {
+        border: 1px solid rgba(0,0,0,0.125);
+        /* border-radius: 5px; */
+    }
+
+    .accordion-button:not(.collapsed) {
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+
+    .accordion-collapse {
+        border-left: 1px solid rgba(0,0,0,0.125);
+        border-right: 1px solid rgba(0,0,0,0.125);
+        border-bottom: 1px solid rgba(0,0,0,0.125);
+        /* border-bottom-left-radius: 5px; */
+        /* border-bottom-right-radius: 5px; */
+    }
+
+    [data-bs-theme="dark"] .accordion-header .accordion-button {
+        border-color: rgba(255,255,255,0.15);
+    }
+
+    [data-bs-theme="dark"] .accordion-collapse {
+        border-color: rgba(255,255,255,0.15);
+    }
+</style>
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4 text-center">Learn about this project</h1>
+
+            <div class="accordion mt-5" id="faqAccordion" style="text-align: left;"></div>
+
+            <div class="mt-5 text-center">
+                <h3>Still have questions?</h3>
+                <p>Feel free to contact me for any additional information or specific inquiries about this project.</p>
+                <div class="btn btn-primary mt-2" style="cursor:default; user-select:auto" >Contact Me - william.owen.career@gmail.com</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function createAccordionFromData(data, parentId) {
+        const parent = document.getElementById(parentId);
+        let idCounter = 1;
+
+        data.forEach(item => {
+            const collapseId = `collapse${idCounter}`;
+            const headingId = `heading${idCounter}`;
+
+            const accordionItem = document.createElement('div');
+            accordionItem.className = 'accordion-item';
+
+            accordionItem.innerHTML = `
+        <h2 class="accordion-header" id="${headingId}">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+            data-bs-target="#${collapseId}" aria-expanded="false" aria-controls="${collapseId}">
+            ${item.question}
+          </button>
+        </h2>
+        <div id="${collapseId}" class="accordion-collapse collapse" aria-labelledby="${headingId}" data-bs-parent="#${parentId}">
+          <div class="accordion-body">
+            ${item.answer}
+          </div>
+        </div>
+      `;
+
+            parent.appendChild(accordionItem);
+            idCounter++;
+        });
+    }
+
+    const faqData = [
+        {
+            question: "<b class='pe-2'>Origin Story</b> <span> – Why and how this site came to be",
+            answer: `
+            <p>
+            This idea came to me while I was studying to become a social worker. I was learning how to help people navigate real challenges—mental health, financial strain, housing, relationships—and I began to notice something. So many of the solutions already exist in the world, but they're hard to find, disconnected, or buried beneath bureaucracy and noise.
+            </p>
+            <p>
+            That’s when a lightbulb went off: what if modern web technologies—especially the connective power of social media—could be used to actually solve problems, not just scroll past them?
+            </p>
+            <p>
+            I started sketching out ideas. Wireframes. Mockups. I shared the concept with friends and the public. As the vision became clearer, I realized I couldn’t rely on someone else to build it. I needed to pause everything and learn how to develop the site myself.
+            </p>
+            <p>
+            This site is the result of that decision.
+            </p>
+            <p>
+            While today’s social media is often framed as addictive or even harmful, it’s also proof that humans crave connection. I believe we can reimagine these platforms to be more intentional—more helpful. The mainstream options are limiting us. This project is my attempt to explore what could come next.
+            </p>`
+        },
+        {
+            question: "<b>Purpose & Philosophy</b> – What you’re trying to do, and why it matters",
+            answer: `Coming soon`
+        },
+        {
+            question: "<b>How It Works</b> – Technical overview, user interaction, backendComing soon flow",
+            answer: `Coming soon`
+        },
+        {
+            question: "<b>What's On the Site</b> ",
+            answer: `Coming soon`
+        },
+        {
+            question: "<b>Who It's For</b> – Audience and ideal users/customers",
+            answer: `Coming soon`
+        }
+    ];
+
+    // Generate accordion on load (This renders after DOMContentLoaded)
+    createAccordionFromData(faqData, 'faqAccordion');
+</script>
+
