@@ -9,7 +9,7 @@
 
 # Atlas - The Public Think Tank  
 
-> A social media platform connecting innovative thinkers with keen problem-solvers.  [(Live Site)](https://atlas.thepublicthinktank.com/)
+> A social media platform connecting innovative thinkers with keen problem-solvers.  [(Pre-Launch Landing Page)](https://atlas.thepublicthinktank.com/)
 
 ## Overview  
 
