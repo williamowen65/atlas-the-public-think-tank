@@ -30,6 +30,27 @@
     [data-bs-theme="dark"] .accordion-collapse {
         border-color: rgba(255,255,255,0.15);
     }
+
+    .question {
+        display: flex;
+        flex-wrap: wrap; /* allows responsive stacking on small screens */
+        align-items: center;
+        gap: 1rem; /* better spacing than padding */
+        width: 100%;
+        max-width: 800px; /* or match your page layout max width */
+        margin: 0 auto; /* center the container itself */
+    }
+
+        .question .title {
+            font-weight: bold;
+            white-space: nowrap; /* prevents title wrapping */
+        }
+
+        .question .desc {
+            flex-grow: 1;
+            text-align: left; /* aligns with natural flow of most content */
+        }
+
 </style>
 
 <div class=" my-5">
@@ -78,42 +99,196 @@
             idCounter++;
         });
     }
+    /*
+    .question{
+        width: 100%;
+        display: flex;
+    }
+    .question .title {
+        padding-right: 10px;
+    }
+    .question .desc {
+        flex-grow: 1;
+        text-align: center
+    }
+    */
+
 
     const faqData = [
         {
-            question: "<b class='pe-2'>Origin Story</b> <span> – Why and how this site came to be",
+            question: `<div class="question">
+            <div class="title">Origin Story</div>
+            <div class="desc"> Why and how this site came to be</div>
+            </div>`,
             answer: `
             <p>
-            This idea came to me while I was studying to become a social worker. I was learning how to help people navigate real challenges—mental health, financial strain, housing, relationships—and I began to notice something. So many of the solutions already exist in the world, but they're hard to find, disconnected, or buried beneath bureaucracy and noise.
-            </p>
-            <p>
-            That’s when a lightbulb went off: what if modern web technologies—especially the connective power of social media—could be used to actually solve problems, not just scroll past them?
-            </p>
-            <p>
-            I started sketching out ideas. Wireframes. Mockups. I shared the concept with friends and the public. As the vision became clearer, I realized I couldn’t rely on someone else to build it. I needed to pause everything and learn how to develop the site myself.
-            </p>
-            <p>
-            This site is the result of that decision.
-            </p>
-            <p>
-            While today’s social media is often framed as addictive or even harmful, it’s also proof that humans crave connection. I believe we can reimagine these platforms to be more intentional—more helpful. The mainstream options are limiting us. This project is my attempt to explore what could come next.
-            </p>`
+  This idea came to me while I was <b>studying to become a social worker</b>. I was learning how to help people navigate real challenges—mental health, financial strain, housing, relationships—and I began to notice something. <b>So many of the solutions already exist</b> in the world, but they're hard to find, disconnected, or buried beneath bureaucracy and noise.
+</p>
+
+<p>
+  That’s when a <b>lightbulb went off</b>: what if modern web technologies—especially the connective power of social media—could be used to <b>actually solve problems</b>, not just scroll past them?
+</p>
+
+<p>
+  I started sketching out ideas. Wireframes. Mockups. I shared the concept with friends and the public. As the vision became clearer, I realized I <b>couldn’t rely on someone else to build it</b>. I needed to pause everything and <b>learn how to develop the site myself</b>.
+</p>
+
+<p>
+  <b>This site is the result of that decision.</b>
+</p>
+
+<p>
+  While today’s social media is often framed as <b>addictive or even harmful</b>, it’s also proof that <b>humans crave connection</b>. I believe we can <b>reimagine these platforms to be more intentional—more helpful</b>. The mainstream options are limiting us. <b>This project is my attempt to explore what could come next.</b>
+</p>
+`
         },
         {
-            question: "<b>Purpose & Philosophy</b> – What you’re trying to do, and why it matters",
-            answer: `Coming soon`
+            question: `
+            <div class="question">
+            <div class="title d-flex flex-column align-items-center">Purpose<div>&</div> Philosophy</div>
+            <div class="desc">What you’re trying to do, and why it matters</div>
+            </div>`,
+            answer: `
+            <p>
+  <b>The purpose of this website</b> is to organize solutions to problems—big or small—by giving people the tools to think clearly, collaborate openly, and share ideas meaningfully.
+</p>
+
+<p>
+  Many problems in the world feel too large or too tangled to solve. But often, what holds us back isn’t a lack of ideas—it’s a lack of structure. <b>This platform is designed to help break complex issues into smaller, solvable parts</b>, and to allow people to engage with the parts they care about or understand best.
+</p>
+
+<p>
+  It’s also a space for <b>creativity and expression</b>, especially for voices that don’t always get heard. If someone has a great idea—whether they're young, old, experienced, or just starting out—I want them to have a way to put that idea into the world and see how it fits into a larger solution.
+</p>
+
+<p>
+  This isn’t just a static site—it’s a <b>living, evolving project</b>, and even the app itself is treated as an “issue” that can be improved over time. People can contribute ideas, suggest changes, or even fork the project entirely.
+</p>
+
+<p>
+  <b>Transparency matters</b> here, so the app is fully open-source—you can read the code, reuse it, or help build it. And because <b>safety matters</b> too, I also plan to integrate AI-powered content moderation, so that meaningful conversation is protected from harm while staying open and inclusive.
+</p>
+
+            `
         },
         {
-            question: "<b>How It Works</b> – Technical overview, user interaction, backendComing soon flow",
-            answer: `Coming soon`
+            question: `
+            <div class="question">
+            <div class="title">How It Works</div> 
+            <div class="desc">Brief Overview</div>
+            </div>`,
+            answer: `<p>
+  <b>All content on this platform is voted on using a 0–10 scale.</b> This is a major shift from mainstream social media algorithms, which typically rely on simple upvotes and downvotes.
+</p>
+
+<p>
+  A score of <b>0</b> means something like "<i>This is a bad idea</i>" or "<i>This is not an important issue</i>." On the other end, a score of <b>10</b> means "<i>This is a great solution or issue—more people should be talking about this</i>."
+</p>
+
+<p>
+  <b>Each piece of content displays three key metrics:</b>
+</p>
+
+<ul>
+  <li><b>The average score</b> based on all votes</li>
+  <li><b>Your personal score</b>, if you’ve voted</li>
+  <li><b>The total number of votes</b> the content has received</li>
+</ul>
+
+<p>
+  This voting system encourages <b>more nuance and thoughtfulness</b>, helping prioritize content not just based on popularity, but on quality, impact, and relevance.
+</p>
+`
         },
         {
-            question: "<b>What's On the Site</b> ",
-            answer: `Coming soon`
+            question: `<div class='question'>
+            <div class="title">What's On the Site</div>
+            <div class="desc">Issues, Solutions, and Comments</div>
+            </div>`,
+            answer: `
+            <p>
+  <b>Any issue or solution can be part of this platform.</b>
+</p>
+
+<p>
+  It might be something <b>global and urgent</b>, like <i>"Saving the whales," "Ending gun violence in America,"</i> or <i>"Combating climate change."</i>
+</p>
+
+<p>
+  Or it could be <b>personal and local</b>, like <i>"Finding mental health support," "Fixing the streetlights in my neighborhood,"</i> or <i>"Getting clean water to a rural town."</i>
+</p>
+
+<p>
+  It might even be <b>creative and specific</b>—like <i>"Building a student-run art gallery,"</i> or <i>"Designing a reusable packaging system for a small business."</i>
+</p>
+
+<p>
+  <b>This platform is open to problems and ideas of any scale, background, or perspective.</b> If it matters to someone, it belongs here.
+</p>
+
+            `
         },
         {
-            question: "<b>Who It's For</b> – Audience and ideal users/customers",
-            answer: `Coming soon`
+            question: `<div class='question'>
+            <div class="title">Who It's For</div>
+            <div class="desc">Audience and ideal users/customers</div> </div> `,
+            answer: `
+            <p>
+  <b>The Public Think Tank is for everyone.</b>
+</p>
+
+<p>
+  It’s for people who care, people who question, and people who imagine better ways of doing things. It’s for <b>students, parents, educators, builders, artists, activists, thinkers, and doers</b>.
+</p>
+
+<p>
+  You don’t need to be an expert to participate. <b>All you need is an idea, a question, or the desire to help.</b>
+</p>
+
+<p>
+  <b>But more than anything, this platform is for the future.</b> For young people and future generations who will inherit the consequences of the decisions we make today. This site is built as a living space where ideas grow over time, where problems are addressed not just for today—but for tomorrow and beyond.
+</p>
+
+<p>
+  Whether you’re solving a local problem or contributing to global change, <b>this is a space where your voice matters</b>.
+</p>
+
+            `
+        },
+        {
+            question: `<div class='question'>
+     <div class="title">How to Get Involved</div>
+     <div class="desc">Ways to contribute, share, or support this project</div>
+     </div> `,
+            answer: `
+        <p><b>There are a few ways you can help move this project forward:</b></p>
+
+<p>
+  <b>Support the project</b><br>
+  I’m currently funding this on my own, and every donation helps. With enough support, I could dedicate myself to working on this full-time—and build the features this platform truly needs.
+</p>
+
+<p>
+  <b>Join the community</b><br>
+  This project isn’t meant to be built in isolation. I’m actively looking for collaborators—designers, developers, thinkers, and testers—who want to be part of building something that matters.
+</p>
+
+<p>
+  <b>Become a beta tester</b><br>
+  Want to try out the site before it launches? Sign up to be notified when the beta version goes live and help shape the future of the platform.
+</p>
+
+<p>
+  <b>Every bit of support—whether it’s time, ideas, funding, or feedback—helps bring this vision to life.</b>
+</p>            
+            `
+        },
+        {
+            question: `<div class='question'>
+    <div class="title">The Vision</div>
+    <div class="desc">Where this could go, long-term</div>
+    </div> `,
+    answer: ``
         }
     ];
 
