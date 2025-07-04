@@ -1,18 +1,19 @@
-﻿using atlas_the_public_think_tank.Data;
+﻿using AngleSharp;
+using AngleSharp.Dom;
+using atlas_the_public_think_tank.Data;
+using atlas_the_public_think_tank.Models;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Net.Http;
-using System.Threading.Tasks;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Threading;
-using AngleSharp;
-using AngleSharp.Dom;
+using System.Threading.Tasks;
 
 namespace CloudTests
 {
@@ -94,6 +95,7 @@ namespace CloudTests
 
         [DataTestMethod]
         [DataRow("/issue/44444444-4444-4444-4444-444444444444", "This is a test issue for testing solutions")]
+        [DataRow("/issue/55555555-5555-5555-5555-555555555555", "This is a another test issue for testing solutions")]
         public async Task Should_ShowTextContentOfGivenIssue(string url, string expectedContent)
         {
             // Get the response
@@ -117,5 +119,39 @@ namespace CloudTests
             }
 
         }
+
+        [TestMethod]
+        public async Task PaginatedIssues_ShouldContain_OnlyThreePosts()
+        {
+            // Get the response
+            var response = await _client.GetAsync("test-get-issues-paginated");
+            response.EnsureSuccessStatusCode();
+
+            // Deserialize into PaginatedIssuesResponse
+            var jsonResponse = await response.Content.ReadAsStringAsync();
+
+            // Use System.Text.Json to deserialize the response
+            var paginatedResponse = System.Text.Json.JsonSerializer.Deserialize<PaginatedIssuesResponse>(
+                jsonResponse,
+                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+            );
+
+            // Assert that the response is not null
+            Assert.IsNotNull(paginatedResponse, "Paginated response should not be null");
+
+            if (paginatedResponse.TotalCount >= 3)
+            {
+                // Assert that the response contains exactly 3 issues
+                Assert.AreEqual(3, paginatedResponse.Issues.Count, "Should contain exactly 3 issues");
+            }
+            else {
+                Assert.AreEqual(paginatedResponse.TotalCount, paginatedResponse.Issues.Count, "Should contain exactly "+ paginatedResponse.TotalCount + " issues");
+            }
+
+            Assert.AreEqual(1, paginatedResponse.CurrentPage, "Current page should be 1");
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        }
+
     }
 }

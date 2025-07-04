@@ -16,7 +16,7 @@ namespace atlas_the_public_think_tank.Controllers;
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
-    private readonly Services.CRUD _crudService; // Add this
+    private readonly Services.CRUD _crudService; 
 
     public HomeController(ILogger<HomeController> logger, Services.CRUD crudService)
     {
