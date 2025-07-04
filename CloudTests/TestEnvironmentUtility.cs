@@ -1,10 +1,11 @@
 ﻿using atlas_the_public_think_tank.Data;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Linq;
 using System.Net.Http;
 
@@ -64,7 +65,12 @@ namespace CloudTests
                                 .FindExtension<Microsoft.EntityFrameworkCore.Sqlite.Infrastructure.Internal.SqliteOptionsExtension>()
                                 .Connection);
                         });
+
+                        // Register controllers from the test assembly
+                        services.AddControllers()
+                            .AddApplicationPart(typeof(CloudTests.TestControllers.TestController).Assembly);
                     });
+              
                 });
 
             // Create client with specific options

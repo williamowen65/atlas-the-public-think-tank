@@ -103,6 +103,18 @@ namespace CloudTests
             };
             db.Issues.Add(issue);
 
+            var issue2 = new Issue
+            {
+                IssueID = Guid.Parse("55555555-5555-5555-5555-555555555555"),
+                Title = "Test Another Issue",
+                Content = "This is a another test issue for testing solutions",
+                CreatedAt = DateTime.Now,
+                AuthorID = testUser.Id,
+                ScopeID = globalScope.ScopeID,
+                ContentStatus = ContentStatus.Published
+            };
+            db.Issues.Add(issue2);
+
             // Add test issue category
             var issueCategory = new IssueCategory
             {
