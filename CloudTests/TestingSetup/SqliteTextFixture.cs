@@ -7,7 +7,7 @@ using atlas_the_public_think_tank.Models;
 using System;
 using System.Linq;
 
-namespace CloudTests
+namespace CloudTests.TestingSetup
 {
     public class SqliteTestFixture : IDisposable
     {
