@@ -15,16 +15,16 @@ using atlas_the_public_think_tank.Models;
 /// This allows for unit test to run in the end to end test environment. 
 namespace CloudTests.TestControllers
 {
-    public class TestController : Controller
+    public class UnitTestController : Controller
     {
 
         private readonly CRUD _crudService;
-        public TestController(CRUD _crud) {
+        public UnitTestController(CRUD _crud) {
             _crudService = _crud;
         }
 
         [HttpGet]
-        [Route("test-get-issues-paginated")]
+        [Route("test-GetIssuesPagedAsync")]
         public async Task<IActionResult> Test()
         {
            PaginatedIssuesResponse res =  await _crudService.Issues.GetIssuesPagedAsync(1);

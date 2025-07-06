@@ -9,7 +9,7 @@ using System;
 using System.Linq;
 using System.Net.Http;
 
-namespace CloudTests
+namespace CloudTests.TestingSetup
 {
     public static class TestEnvironmentUtility
     {
@@ -61,14 +61,14 @@ namespace CloudTests
                         {
                             // Copy options from the SQLite fixture
                             options.UseSqlite(
-                                ((DbContextOptions<ApplicationDbContext>)sqliteOptions)
+                                sqliteOptions
                                 .FindExtension<Microsoft.EntityFrameworkCore.Sqlite.Infrastructure.Internal.SqliteOptionsExtension>()
                                 .Connection);
                         });
 
                         // Register controllers from the test assembly
                         services.AddControllers()
-                            .AddApplicationPart(typeof(CloudTests.TestControllers.TestController).Assembly);
+                            .AddApplicationPart(typeof(TestControllers.UnitTestController).Assembly); 
                     });
               
                 });
