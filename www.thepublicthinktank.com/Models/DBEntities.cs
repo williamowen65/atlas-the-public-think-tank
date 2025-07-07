@@ -86,68 +86,40 @@ namespace atlas_the_public_think_tank.Models
     /// <summary>
     /// Defines an issue
     /// </summary>
-    public class Issue
+    public class Issue : ContentItem
     {
         public Guid IssueID { get; set; }
-        public string Title { get; set; }
-        public string Content { get; set; }
-
-        public ContentStatus ContentStatus { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? ModifiedAt { get; set; }
-        public Guid AuthorID { get; set; }
-        public Guid ScopeID { get; set; }
         public Guid? ParentIssueID { get; set; }
         public Guid? ParentSolutionID { get; set; }
-        public Guid? BlockedContentID { get; set; }
-
 
         // Navigation properties
-        public virtual AppUser Author { get; set; }
-        public virtual Scope Scope { get; set; }
         public virtual Issue? ParentIssue { get; set; }
         public virtual Solution? ParentSolution { get; set; }
+
         public virtual ICollection<Issue> ChildIssues { get; set; }
-        public virtual BlockedContent BlockedContent { get; set; }
         public virtual ICollection<Solution> Solutions { get; set; }
-        public virtual ICollection<UserComment> Comments { get; set; }
         public virtual ICollection<IssueVote> IssueVotes { get; set; } = new List<IssueVote>();
         public virtual ICollection<IssueCategory> IssueCategories { get; set; }
     }
 
 
 
+
     /// <summary>
     /// Defines a solution
     /// </summary>
-    public class Solution
+    public class Solution : ContentItem
     {
         public Guid SolutionID { get; set; }
         public Guid IssueID { get; set; }
-        public string Title { get; set; }
-        public string Content { get; set; }
-        public ContentStatus ContentStatus { get; set; }
-        public Guid AuthorID { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? ModifiedAt { get; set; }
-        public Guid? BlockedContentID { get; set; }
-
-        public Guid ScopeID { get; set; }
 
         // Navigation properties
         [JsonIgnore]
         public virtual Issue Issue { get; set; }
-        public virtual AppUser Author { get; set; }
-        public virtual BlockedContent BlockedContent { get; set; }
-        public virtual ICollection<UserComment> Comments { get; set; } = new List<UserComment>();
+
         public virtual ICollection<SolutionVote> SolutionVotes { get; set; }
-
         public virtual ICollection<Issue> ChildIssues { get; set; }
-
-        public virtual Scope Scope { get; set; }
-
         public virtual ICollection<SolutionCategory> SolutionCategories { get; set; }
-
     }
 
     /// <summary>
@@ -172,81 +144,51 @@ namespace atlas_the_public_think_tank.Models
     /// <summary>
     /// Defines a comment made on issues or solutions
     /// </summary>
-    public class UserComment
+    public class UserComment : ContentBase
     {
         public Guid CommentID { get; set; }
         public Guid? IssueID { get; set; }
         public Guid? SolutionID { get; set; }
         public string Comment { get; set; }
-        public ContentStatus ContentStatus { get; set; }
-        public Guid AuthorID { get; set; }
-        public DateTime? CreatedAt { get; set; }
-        public DateTime? ModifiedAt { get; set; }
+
         public Guid? ParentCommentID { get; set; }
-        public Guid? BlockedContentID { get; set; }
 
         // Navigation properties
         public virtual Issue Issue { get; set; }
         public virtual Solution Solution { get; set; }
-        public virtual AppUser Author { get; set; }
         public virtual UserComment ParentComment { get; set; }
         public virtual ICollection<UserComment> ChildComments { get; set; }
-        public virtual BlockedContent BlockedContent { get; set; }
-        public virtual ICollection<CommentVote> CommentVotes { get; set; }  = new List<CommentVote>();
+        public virtual ICollection<CommentVote> CommentVotes { get; set; } = new List<CommentVote>();
     }
+
 
     /// <summary>
     /// Defines a vote on issues
     /// </summary>
-    public class IssueVote
+    public class IssueVote : VoteBase
     {
-        public Guid VoteID { get; set; }
-        public Guid UserID { get; set; }
-        public int VoteValue { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? ModifiedAt { get; set; }
-        
-        public Guid IssueID { get; set; } 
-
-        // Navigation property
-        public virtual AppUser User { get; set; }
+        public Guid IssueID { get; set; }
         public virtual Issue Issue { get; set; }
     }
+
 
 
     /// <summary>
     /// Defines a vote on solutions
     /// </summary>
-    public class SolutionVote
+    public class SolutionVote : VoteBase
     {
-        public Guid VoteID { get; set; }
-        public Guid UserID { get; set; }
-        public int VoteValue { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? ModifiedAt { get; set; }
-
         public Guid SolutionID { get; set; }
-
-        // Navigation property
-        public virtual AppUser User { get; set; }
-        public virtual Solution Solution{ get; set; }
+        public virtual Solution Solution { get; set; }
     }
+
 
     /// <summary>
     /// Defines a vote on comments
     /// </summary>
-    public class CommentVote
+    public class CommentVote : VoteBase
     {
-        public Guid VoteID { get; set; }
-        public Guid UserID { get; set; }
-        public int VoteValue { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? ModifiedAt { get; set; }
-
         public Guid CommentID { get; set; }
-
-        // Navigation property
-        public virtual AppUser User { get; set; }
         public virtual UserComment Comment { get; set; }
     }
 
