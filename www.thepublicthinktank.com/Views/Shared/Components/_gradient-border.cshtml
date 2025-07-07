@@ -6,51 +6,53 @@
 
 *@
 
-@model string;
 
-    <style>
+@model GradientBorderModel;
 
 
-        .fancy-border {
-            position: relative;
-            /* padding: 20px 40px; */
-            border-radius: 50px;
-            
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-wrap: nowrap;
-            overflow: visible;
-            min-width: fit-content;
-            width: 100%;
-            max-width: 400px;
-            height: 30px;
-        }
+<style>
 
-        :root {
-            --gradient-angle: 0deg;
-        }
+
+    .fancy-border {
+        position: relative;
+        /* padding: 20px 40px; */
+        border-radius: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: nowrap;
+        overflow: visible;
+        min-width: fit-content;
+        width: 100%;
+        max-width: 400px;
+        height: 30px;
+        padding-inline: 10px;
+    }
+
+    .fancy-border {
+        --gradient-angle: 0deg;
+    }
 
         .fancy-border::before {
             /* --zero-state-conic-aura-gradient-stops: #ee4d47 10%, #fd2d26 16%,
-                  #076eff 22%, #477dff 30%, #4fabff 42%, #0bcc61 55%, #70ce56 60%,
-                  #ffc723 75%, #ffb200 90%, #ee4d47 100%; */
+                      #076eff 22%, #477dff 30%, #4fabff 42%, #0bcc61 55%, #70ce56 60%,
+                      #ffc723 75%, #ffb200 90%, #ee4d47 100%; */
             /* --zero-state-conic-aura-gradient-stops:#ff5e5b 10%, #ff3c38 18%,
-        #ffb347 25%, #ffd966 35%, #f9f871 45%,
-        #88e188 58%, #00c4cc 68%, #0096ff 82%,
-        #6a4cff 92%, #ff5e5b 100%; */
+            #ffb347 25%, #ffd966 35%, #f9f871 45%,
+            #88e188 58%, #00c4cc 68%, #0096ff 82%,
+            #6a4cff 92%, #ff5e5b 100%; */
 
             --zero-state-conic-aura-gradient-stops: #ff0099 8%, #ff6600 16%, #ffea00 24%, #33ff00 36%, #00ffd0 48%, #0055ff 60%, #7a00ff 75%, #ff00ff 88%, #ff0099 100%;
             /* --zero-state-conic-aura-gradient-stops: #ff6f61 12%, #ffa07a 20%,
-        #ffe082 32%, #c5e384 44%, #74d3ae 56%,
-        #4dd0e1 68%, #81d4fa 80%, #ba68c8 90%,
-        #ff6f61 100%; */
+            #ffe082 32%, #c5e384 44%, #74d3ae 56%,
+            #4dd0e1 68%, #81d4fa 80%, #ba68c8 90%,
+            #ff6f61 100%; */
             /* --zero-state-conic-aura-gradient-stops: #0f0c29 10%, #302b63 18%, #24243e 25%,
-        #5b247a 35%, #1bcedf 50%, #44ff00 65%,
-        #ffe600 75%, #ff0000 88%, #0f0c29 100%; */
+            #5b247a 35%, #1bcedf 50%, #44ff00 65%,
+            #ffe600 75%, #ff0000 88%, #0f0c29 100%; */
             /* --zero-state-conic-aura-gradient-stops: #120078 10%, #9d0191 20%, #fd3a69 30%,
-        #ff9f1c 40%, #ffbf00 55%, #06d6a0 65%,
-        #1b9aaa 78%, #3a86ff 90%, #120078 100%; */
+            #ff9f1c 40%, #ffbf00 55%, #06d6a0 65%,
+            #1b9aaa 78%, #3a86ff 90%, #120078 100%; */
 
             background-image: conic-gradient( from var(--gradient-angle) in oklch, var(--zero-state-conic-aura-gradient-stops) );
             content: '';
@@ -64,78 +66,76 @@
         }
 
 
-        .content {
-            font-family: Arial, sans-serif;
-            font-weight: bold;
-            color: #ffffff;
-            white-space: nowrap;
-        }
+    .content {
+        font-family: Arial, sans-serif;
+        font-weight: bold;
+        color: #ffffff;
+        white-space: nowrap;
+    }
 
     .fancy-border svg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            pointer-events: none;
-        }
-
-        /* Animation for border dash */
-        .border-path {
-            stroke-dasharray: 0;
-            stroke-dashoffset: 0;
-            stroke: white;
-            fill: none;
-            /* transition: stroke-dasharray 0.5s ease; */
-        }
-    </style>
-
-    <div class="fancy-border bg-body-tertiary" style="">
-        <div class="content">
-
-        @Html.Raw(Model)
-        </div>
-        <svg class="border-svg" width="100%" height="100%">
-            <defs>
-                <mask id="mask">
-                    <rect fill="black" x="0" y="0" width="100%" height="100%"></rect>
-                    <rect class="border-path"
-                          fill="none"
-                          stroke="white"
-                          stroke-width="1px"
-                          x="3"
-                          y="3"
-                          width="calc(100%)"
-                          height="calc(100%)"
-                          rx="15px"
-                          ry="15px"></rect>
-                </mask>
-            </defs>
-        </svg>
-    </div>
-
-    <script>
-        // Wait for DOM to be fully loaded
-        document.addEventListener('DOMContentLoaded', () => {
-          // Initialize angle variable
-          let angle = 0;
-          let speed = 1.5;
-            const border = document.querySelector('.fancy-border');
-
-
-          // Function to animate the gradient
-          function animateGradient() {
-            // Increment angle and keep it between 0-360 (361 to be inclusive)
-            angle = (angle + speed) % 361;
-
-            // Update the CSS variable
-             if (border) {
-      border.style.setProperty('--gradient-angle', `-${angle}deg`);
+        position: absolute;
+        top: 0;
+        left: 0;
+        pointer-events: none;
     }
-            // Request the next animation frame
-            requestAnimationFrame(animateGradient);
-          }
 
-          // Start the animation
-          animateGradient();
-        });
-    </script>
+    /* Animation for border dash */
+    .border-path {
+        stroke-dasharray: 0;
+        stroke-dashoffset: 0;
+        stroke: white;
+        fill: none;
+        /* transition: stroke-dasharray 0.5s ease; */
+    }
+</style>
+
+<a href="@Model.Link" target="_blank" class="fancy-border bg-body-tertiary" style="text-decoration:none">
+    <div class="content">
+        @Model.LinkText
+    </div>
+    <svg class="border-svg" width="100%" height="100%">
+        <defs>
+            <mask id="mask">
+                <rect fill="black" x="0" y="0" width="100%" height="100%"></rect>
+                <rect class="border-path"
+                      fill="none"
+                      stroke="white"
+                      stroke-width="1px"
+                      x="3"
+                      y="3"
+                      width="calc(100%)"
+                      height="calc(100%)"
+                      rx="15px"
+                      ry="15px"></rect>
+            </mask>
+        </defs>
+    </svg>
+</a>
+
+<script>
+    // Initialize angle variable
+    let angle = 0;
+    let speed = 1.5;
+    const border = document.querySelector('.fancy-border');
+
+
+    // Function to animate the gradient
+    function animateGradient() {
+        // Increment angle and keep it between 0-360 (361 to be inclusive)
+        angle = (angle + speed) % 361;
+
+        // Update the CSS variable
+        if (border) {
+            border.style.setProperty('--gradient-angle', `-${angle}deg`);
+        }
+        // Request the next animation frame
+        requestAnimationFrame(animateGradient);
+    }
+
+    // Start the animation
+    animateGradient();
+</script>
+
+
 
