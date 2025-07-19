@@ -5,7 +5,10 @@
 
 @model Solution_CreateVM 
 
-@using atlas_the_public_think_tank.Models 
+@using atlas_the_public_think_tank.Models
+@using atlas_the_public_think_tank.Models.Database
+@using atlas_the_public_think_tank.Models.ViewModel
+ 
 @{ 
     ViewData["Title"] = "Create New Solution"; 
 } 
@@ -60,14 +63,14 @@
             </div>
 
             <div class="mb-3">
-                <label asp-for="IssueID" class="form-label">Related Issue (Required)</label>                
-                <select asp-for="IssueID" class="form-control select2-issue" required>
-                    @if(Model.IssueID != null)
+                <label asp-for="ParentIssueID" class="form-label">Related Issue (Required)</label>                
+                <select asp-for="ParentIssueID" class="form-control select2-issue" required>
+                    @if(Model.ParentIssueID != null)
                     {
-                        <option value="@Model.IssueID" selected>Current issue (ID: @Model.IssueID)</option>
+                        <option value="@Model.ParentIssueID" selected>Current issue (ID: @Model.ParentIssueID)</option>
                     }
                 </select>
-                <span asp-validation-for="IssueID" class="text-danger"></span>
+                <span asp-validation-for="ParentIssueID" class="text-danger"></span>
             </div>
 
             <div class="mb-3">

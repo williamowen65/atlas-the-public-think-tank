@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using atlas_the_public_think_tank.Services;
-using atlas_the_public_think_tank.Models;
+using atlas_the_public_think_tank.Models.ViewModel;
 
 /// This TestController contains routes that are only present 
 /// when running the test project.

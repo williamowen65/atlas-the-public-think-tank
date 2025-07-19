@@ -1,29 +1,11 @@
+using atlas_the_public_think_tank.Models.Database;
 using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace atlas_the_public_think_tank.Models
+namespace atlas_the_public_think_tank.Models.ViewModel
 {
 
   
-
-
-
-    public class PaginatedIssuesResponse
-    {
-        public List<Issue_ReadVM> Issues { get; set; }
-        public int TotalCount { get; set; }
-        public int PageSize { get; set; }
-        public int CurrentPage { get; set; }
-    }
-
-    public class PaginatedSolutionsResponse
-    {
-        public List<Solution_ReadVM> Solutions { get; set; }
-        public int TotalCount { get; set; }
-        public int PageSize { get; set; }
-        public int CurrentPage { get; set; }
-    }
-
     /// <summary>
     /// ViewModel for the creating an issue
     /// </summary>
@@ -46,32 +28,36 @@ namespace atlas_the_public_think_tank.Models
     }
 
 
-
-    public interface ICardStatsViewModel
+    /// <summary>
+    /// Used to paginate issues for single issue or solution page
+    /// </summary>
+    public class PaginatedIssuesResponse
     {
-        public List<Solution_ReadVM>? SolutionVM { get => null; }
-        public int SubIssueCount { get; }
+        public List<Issue_ReadVM> Issues { get; set; }
+        public int TotalCount { get; set; }
+        public int PageSize { get; set; }
+        public int CurrentPage { get; set; }
+    }
 
-        public ICollection<UserComment> Comments { get; set; }
-        public Scope Scope { get; }
+    /// <summary>
+    /// Used to paginate solutions for single issue's issue page
+    /// </summary>
+    public class PaginatedSolutionsResponse
+    {
+        public List<Solution_ReadVM> Solutions { get; set; }
+        public int TotalCount { get; set; }
+        public int PageSize { get; set; }
+        public int CurrentPage { get; set; }
     }
 
 
-    public class Issue_ReadVM : ICardStatsViewModel
+
+    public class Issue_ReadVM : ContentItem_ReadVM
     {
         public Guid IssueID { get; set; }
-        public string Title { get; set; }
-        public string Content { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? ModifiedAt { get; set; }
-        public DateTime? LastActivity { get; set; }
-        public Guid AuthorID { get; set; }
-        public Guid ScopeID { get; set; }
         public Guid? ParentIssueID { get; set; }
         public Guid? ParentSolutionID { get; set; }
-        public Guid? BlockedContentID { get; set; }
         public List<Category_ReadVM> Categories { get; set; } = new List<Category_ReadVM>();
-        public List<Issue_ReadVM> SubIssues { get; set; } = new List<Issue_ReadVM>();
 
         public PaginatedIssuesResponse PaginatedSubIssues { get; set; } = new PaginatedIssuesResponse();
         public PaginatedSolutionsResponse PaginatedSolutions { get; set; } = new PaginatedSolutionsResponse();
@@ -80,22 +66,37 @@ namespace atlas_the_public_think_tank.Models
         public Issue_ReadVM? ParentIssue { get; set; }
         public Solution_ReadVM? ParentSolution { get; set; }
 
-        public required int SubIssueCount { get; set; }
-
-        public required UserVote_Generic_ReadVM VoteStats { get; set; }
-
-        public required List<Breadcrumb_ReadVM> BreadcrumbTags { get; set; }
-
 
         // Navigation properties
-        public AppUser Author { get; set; }
-        public Scope Scope { get; set; }
+    
         public ICollection<Issue> ChildIssues { get; set; }
-        public BlockedContent BlockedContent { get; set; }
-        public ICollection<UserComment> Comments { get; set; }
         public ICollection<IssueVote> IssueVotes { get; set; }
         public ICollection<IssueCategory> IssueCategories { get; set; }
     }
+
+
+
+    /// <summary>
+    /// ViewModel for the reading a solution
+    /// </summary>
+    public class Solution_ReadVM : ContentItem_ReadVM
+    {
+        public Guid SolutionID { get; set; }     
+        public Guid ParentIssueID { get; set; }
+
+        // Navigation properties
+        public Issue_ReadVM ParentIssue { get; set; }
+       
+        // public ICollection<UserVote> UserVotes { get; set; } = new List<UserVote>();
+        public List<Category_ReadVM> Categories { get; set; } = new List<Category_ReadVM>();
+
+        public ICollection<SolutionCategory> SolutionCategories { get; set; }
+
+        // Statistics
+        // public int TotalVotes { get; set; } = 0;
+        // public double AverageVote { get; set; } = 0;
+    }
+
 
     public class Breadcrumb_ReadVM
     {
@@ -118,46 +119,6 @@ namespace atlas_the_public_think_tank.Models
                 };
             }
         }
-    }
-
-
-    /// <summary>
-    /// ViewModel for the reading a solution
-    /// </summary>
-    public class Solution_ReadVM : ICardStatsViewModel
-    {
-        public Guid SolutionID { get; set; }
-        public string Title { get; set; }
-        public string Content { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? ModifiedAt { get; set; }
-        public Guid AuthorID { get; set; }
-        public Guid IssueID { get; set; }
-        public ContentStatus ContentStatus { get; set; }
-        public Guid? BlockedContentID { get; set; }
-
-        public required int SubIssueCount { get; set; }
-        public required Guid ScopeID { get; set; }
-        public required Scope Scope { get; set; }
-
-        public required UserVote_Generic_ReadVM VoteStats { get; set; }
-        public required List<Breadcrumb_ReadVM> BreadcrumbTags { get; set; }
-
-        public List<Issue_ReadVM> SubIssues { get; set; } = new List<Issue_ReadVM>();
-
-        // Navigation properties
-        public AppUser Author { get; set; }
-        public Issue_ReadVM Issue { get; set; }
-        public BlockedContent BlockedContent { get; set; }
-        public ICollection<UserComment> Comments { get; set; } = new List<UserComment>();
-        // public ICollection<UserVote> UserVotes { get; set; } = new List<UserVote>();
-        public List<Category_ReadVM> Categories { get; set; } = new List<Category_ReadVM>();
-
-        public ICollection<SolutionCategory> SolutionCategories { get; set; }
-
-        // Statistics
-        // public int TotalVotes { get; set; } = 0;
-        // public double AverageVote { get; set; } = 0;
     }
 
     /// <summary>
@@ -259,7 +220,7 @@ namespace atlas_the_public_think_tank.Models
         public string Content { get; set; }
 
         [Required(ErrorMessage = "An issue must be selected")]
-        public Guid? IssueID { get; set; }
+        public Guid? ParentIssueID { get; set; }
 
         [Required(ErrorMessage = "Status is required")]
         public ContentStatus ContentStatus { get; set; } = ContentStatus.Draft;

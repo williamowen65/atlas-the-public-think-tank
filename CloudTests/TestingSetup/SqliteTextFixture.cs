@@ -3,9 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Identity;
 using atlas_the_public_think_tank.Data;
-using atlas_the_public_think_tank.Models;
 using System;
 using System.Linq;
+using atlas_the_public_think_tank.Models.Database;
 
 namespace CloudTests.TestingSetup
 {

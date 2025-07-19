@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using atlas_the_public_think_tank.Data;
-using atlas_the_public_think_tank.Models;
 using atlas_the_public_think_tank.Services;
+using atlas_the_public_think_tank.Models.Database;
 
 namespace atlas_the_public_think_tank;
 

@@ -1,4 +1,5 @@
-﻿
+﻿@using atlas_the_public_think_tank.Models.ViewModel
+
 @*
     This is the home page of the app.
     Specifically the main section of that page.
@@ -10,8 +11,8 @@
 @{
     ViewData["Title"] = "Home Page";
 
-    int NextPageNumber = Model.PaginatedPosts.CurrentPage + 1;
-    Boolean isMorePosts = Model.PaginatedPosts.PageSize < Model.PaginatedPosts.TotalCount;
+    int NextPageNumber = Model.PaginatedContent.CurrentPage + 1;
+    Boolean isMorePosts = Model.PaginatedContent.PageSize < Model.PaginatedContent.TotalCount;
 }
 
 <div class="container-fluid">
@@ -35,30 +36,51 @@
                     })
                 </div>
 
-            @if (Model.PaginatedPosts != null && Model.PaginatedPosts.Issues.Any())
-            {
-                @Html.Partial("~/Views/Issue/_issue-cards.cshtml", Model.PaginatedPosts.Issues)
-            }
-            else
-            {
-                <div class="alert alert-info">
-                    No posts available. Be the first to create a post!
-                </div>
-            }
+                @if (Model.PaginatedContent != null && Model.PaginatedContent.ContentItems != null && Model.PaginatedContent.ContentItems.Any())
+                {
+
+                    @foreach (var item in Model.PaginatedContent.ContentItems)
+                    {
+                        @if (item is Issue_ReadVM issue)
+                        {
+                            @Html.Partial("~/Views/Issue/_issue-card.cshtml", issue)
+                        }
+                        else if (item is Solution_ReadVM solution)
+                        {
+                            @Html.Partial("~/Views/Solution/_solution-card.cshtml", solution)
+                        }
+                        else
+                        {
+                            <div class="alert alert-warning">
+                                Unknown content type: @item.GetType().Name
+                            </div>
+                        }
+                    }
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        No posts available. Be the first to create a post!
+                    </div>
+                }
             </div>
+
+            
 
             <button 
                 @(isMorePosts ? "" : "disabled")
-                id="fetchPaginatedPosts" 
-                data-url="/issue/getPaginatedIssues?currentPage=@NextPageNumber" 
+                id="fetchPaginatedContent"
+                data-url="/home/getPaginatedContent?currentPage=@NextPageNumber"
                 data-target="#main-content"
-                data-total-count="@Model.PaginatedPosts.TotalCount"
-                data-page-size="@Model.PaginatedPosts.PageSize"
+                data-total-count="@Model.PaginatedContent.TotalCount"
+                data-page-size="@Model.PaginatedContent.PageSize"
                 data-content-type="posts"
                 class="mx-auto d-block btn btn-primary">
                 <span class="button-text">@(isMorePosts ? "Load more posts" : "No more posts")</span> 
-                (<span class="paginatedCount">@(Math.Min(Model.PaginatedPosts.PageSize, Model.PaginatedPosts.TotalCount))</span>/@Model.PaginatedPosts.TotalCount)
+                (<span class="paginatedCount">@(Math.Min(Model.PaginatedContent.PageSize, Model.PaginatedContent.TotalCount))</span>/@Model.PaginatedContent.TotalCount)
             </button>
+           
+
            
         </div>
         <partial name="_Home-Page-Right-Sidebar" />
@@ -76,7 +98,7 @@
                      console.log('Filter by category ID:', categoryId);
                  });
 
-                 const paginationButton = document.getElementById("fetchPaginatedPosts")
+                 const paginationButton = document.getElementById("fetchPaginatedContent")
                  setPaginationButtonListener(paginationButton)
 
              });

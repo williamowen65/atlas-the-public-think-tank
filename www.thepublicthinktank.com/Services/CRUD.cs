@@ -1,6 +1,7 @@
 ﻿using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Migrations;
-using atlas_the_public_think_tank.Models;
+using atlas_the_public_think_tank.Models.Database;
+using atlas_the_public_think_tank.Models.ViewModel;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.CodeAnalysis;
@@ -12,6 +13,27 @@ using static atlas_the_public_think_tank.Data.SeedData.SeedIds;
 
 namespace atlas_the_public_think_tank.Services
 {
+
+    public class ContentIndexEntry 
+    {
+        public Guid ContentId { get; set; }
+        public ContentType ContentType { get; set; }
+
+        // The below properties are filterable properties.
+        // They can all be optional and depend on the specific query
+
+        public double AverageVote { get; set; }
+        public DateTime CreatedAt { get; set; }
+
+
+    }
+
+    /// <summary>
+    /// This class (coming soon) would be a customizable filter the users can apply on the data
+    /// </summary>
+    public class ContentFilter
+    { }
+
     /// <summary>
     /// A service to encapsulate CRUD logic for the app (Accessible by dependency injection)
     /// </summary>
@@ -36,6 +58,193 @@ namespace atlas_the_public_think_tank.Services
             _context = context;
             BreadcrumbAccessor = breadcrumbAccessor;
         }
+
+
+        /// <summary>
+        /// Gets a paginated list of content IDs (Issues and Solutions) ordered by creation date
+        /// </summary>
+        /// <param name="filter">Optional filter criteria for content</param>
+        /// <param name="pageNumber">The page number to retrieve</param>
+        /// <param name="pageSize">Number of items per page</param>
+        /// <returns>List of ContentIndexEntry objects containing content IDs and types</returns>
+        //public async Task<List<ContentIndexEntry>> GetOrderedContentIdsPaged(int pageNumber, int pageSize = 3)
+        ////public async Task<List<ContentIndexEntry>> GetOrderedContentIdsPaged(ContentFilter filter, int pageNumber, int pageSize = 3)
+        //{
+
+        //    var issuesQuery = _context.Issues
+        //    .Select(i => new ContentIndexEntry
+        //    {
+        //        ContentId = i.IssueID,
+        //        ContentType = ContentType.Issue,
+        //        CreatedAt = i.CreatedAt,
+        //        AverageVote = i.IssueVotes.Any()
+        //            ? i.IssueVotes.Average(v => v.VoteValue)
+        //            : 0
+        //    });
+
+        //    var solutionsQuery = _context.Solutions
+        //    .Select(s => new ContentIndexEntry
+        //    {
+        //        ContentId = s.SolutionID,
+        //        ContentType = ContentType.Solution,
+        //        CreatedAt = s.CreatedAt,
+        //        AverageVote = s.SolutionVotes.Any()
+        //            ? s.SolutionVotes.Average(v => v.VoteValue)
+        //            : 0
+        //    });
+
+        //    var combinedQuery = issuesQuery
+        //        .Union(solutionsQuery);
+
+        //    int totalCount = await combinedQuery.CountAsync();
+
+        //    var pagedResultSet = await combinedQuery
+        //    .OrderByDescending(c => c.AverageVote)
+        //    .ThenByDescending(c => c.CreatedAt)
+        //    .Skip((pageNumber - 1) * pageSize)
+        //    .Take(pageSize)
+        //    .ToListAsync();
+
+        //    return pagedResultSet;
+
+        //}
+
+
+
+        public async Task<PaginatedContentItemsResponse> GetContentItemsPagedAsync(int pageNumber, int pageSize = 3)
+        {
+            // First, get all the issues and solutions IDs with their creation dates and vote averages
+            // This allows efficient sorting and pagination at the database level
+            var issuesIndexQuery = _context.Issues
+                .Select(i => new ContentIndexEntry
+                {
+                    ContentId = i.IssueID,
+                    ContentType = ContentType.Issue,
+                    CreatedAt = i.CreatedAt,
+                    AverageVote = i.IssueVotes.Any() ? i.IssueVotes.Average(v => v.VoteValue) : 0
+                });
+
+            var solutionsIndexQuery = _context.Solutions
+                .Select(s => new ContentIndexEntry
+                {
+                    ContentId = s.SolutionID,
+                    ContentType = ContentType.Solution,
+                    CreatedAt = s.CreatedAt,
+                    AverageVote = s.SolutionVotes.Any() ? s.SolutionVotes.Average(v => v.VoteValue) : 0
+                });
+
+            // Combine and apply sorting/pagination at the database level
+            var combinedQuery = issuesIndexQuery.Union(solutionsIndexQuery);
+            int totalCount = await combinedQuery.CountAsync();
+
+            var pagedIndexEntries = await combinedQuery
+                .OrderByDescending(c => c.AverageVote)
+                .ThenByDescending(c => c.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            // Now fetch the full content items for each ID in the paged results
+            var contentItems = new List<ContentItem_ReadVM>();
+
+            foreach (var entry in pagedIndexEntries)
+            {
+                if (entry.ContentType == ContentType.Issue)
+                {
+                    // Get the issue with all needed includes
+                    var issue = await _context.Issues
+                        .Include(p => p.Scope)
+                        .Include(p => p.Author)
+                        .Include(f => f.ParentIssue)
+                        .Include(f => f.ChildIssues)
+                        .Include(f => f.BlockedContent)
+                        .Include(f => f.Solutions)
+                            .ThenInclude(s => s.Scope)
+                        .Include(f => f.Comments)
+                        .Include(f => f.IssueVotes)
+                        .Include(p => p.IssueCategories)
+                            .ThenInclude(fc => fc.Category)
+                        .FirstOrDefaultAsync(i => i.IssueID == entry.ContentId);
+
+                    if (issue != null)
+                    {
+                        var issueVM = new Issue_ReadVM
+                        {
+                            IssueID = issue.IssueID,
+                            Title = issue.Title,
+                            Content = issue.Content,
+                            CreatedAt = issue.CreatedAt,
+                            ModifiedAt = issue.ModifiedAt,
+                            AuthorID = issue.AuthorID,
+                            VoteStats = await Issues.GetIssueVoteStats(issue.IssueID),
+                            ScopeID = issue.ScopeID,
+                            ParentIssueID = issue.ParentIssueID,
+                            ContentStatus = issue.ContentStatus,
+                            BlockedContentID = issue.BlockedContentID,
+                            Author = issue.Author,
+                            Scope = issue.Scope,
+                            Categories = Issues.GetIssuesCategories(issue),
+                            SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == issue.IssueID),
+                            SubIssues = await Issues.GetIssuesSubIssuesAsync(issue),
+                            Solutions = await Solutions.GetIssuesSolutions(issue),
+                            BreadcrumbTags = await BreadcrumbAccessor.GetIssueBreadcrumbTags(issue)
+                        };
+                        contentItems.Add(issueVM);
+                    }
+                }
+                else if (entry.ContentType == ContentType.Solution)
+                {
+                    // Get the solution with all needed includes
+                    var solution = await _context.Solutions
+                        .Include(p => p.Scope)
+                        .Include(p => p.Author)
+                        .Include(f => f.ParentIssue)
+                        .Include(f => f.ChildIssues)
+                        .Include(f => f.BlockedContent)
+                        .Include(f => f.Comments)
+                        .Include(f => f.SolutionVotes)
+                        .Include(p => p.SolutionCategories)
+                            .ThenInclude(fc => fc.Category)
+                        .FirstOrDefaultAsync(s => s.SolutionID == entry.ContentId);
+
+                    if (solution != null)
+                    {
+                        var solutionVM = new Solution_ReadVM
+                        {
+                            SolutionID = solution.SolutionID,
+                            Title = solution.Title,
+                            Content = solution.Content,
+                            CreatedAt = solution.CreatedAt,
+                            ModifiedAt = solution.ModifiedAt,
+                            AuthorID = solution.AuthorID,
+                            VoteStats = await Solutions.GetSolutionVoteStats(solution.SolutionID),
+                            ScopeID = solution.ScopeID,
+                            ParentIssueID = solution.ParentIssueID,
+                            ContentStatus = solution.ContentStatus,
+                            BlockedContentID = solution.BlockedContentID,
+                            Author = solution.Author,
+                            Scope = solution.Scope,
+                            Categories = Solutions.GetSolutionCategories(solution),
+                            SubIssueCount = _context.Issues.Count(i => i.ParentSolutionID == solution.SolutionID),
+                            SubIssues = await Issues.GetSolutionSubIssues(solution),
+                            BreadcrumbTags = await BreadcrumbAccessor.GetSolutionBreadcrumbTags(solution)
+                        };
+                        contentItems.Add(solutionVM);
+                    }
+                }
+            }
+
+            return new PaginatedContentItemsResponse
+            {
+                ContentItems = contentItems,
+                CurrentPage = pageNumber,
+                TotalCount = totalCount,
+                PageSize = pageSize
+            };
+        }
+
+
+
     }
 
     /// <summary>
@@ -61,11 +270,11 @@ namespace atlas_the_public_think_tank.Services
                 ? await GetContentBreadcrumb(issue.ParentSolutionID ?? issue.ParentIssueID ?? issue.IssueID)
                 : new List<Breadcrumb_ReadVM>();
         }
-        public async Task<List<Breadcrumb_ReadVM>> GetSolutionBreadcrumbTags(Models.Solution solution)
+        public async Task<List<Breadcrumb_ReadVM>> GetSolutionBreadcrumbTags(Models.Database.Solution solution)
         {
-            return solution.IssueID != Guid.Empty
+            return solution.ParentIssueID != Guid.Empty
              ? await GetContentBreadcrumb(
-                 solution.IssueID
+                 solution.ParentIssueID
                )
              : new List<Breadcrumb_ReadVM>();
         }
@@ -115,7 +324,7 @@ namespace atlas_the_public_think_tank.Services
 
             // If not an issue, check if it's a solution
             var solution = await _context.Solutions
-                .Include(s => s.Issue)
+                .Include(s => s.ParentIssue)
                 .FirstOrDefaultAsync(s => s.SolutionID == contentId);
 
             if (solution != null)
@@ -128,9 +337,9 @@ namespace atlas_the_public_think_tank.Services
                 });
 
                 // Solutions have parent issues, so get the breadcrumbs for the parent issue
-                if (solution.IssueID != Guid.Empty)
+                if (solution.ParentIssueID != Guid.Empty)
                 {
-                    var parentBreadcrumbs = await GetContentBreadcrumb(solution.IssueID);
+                    var parentBreadcrumbs = await GetContentBreadcrumb(solution.ParentIssueID);
                     breadcrumbs.AddRange(parentBreadcrumbs);
                 }
 
@@ -252,6 +461,7 @@ namespace atlas_the_public_think_tank.Services
                     VoteStats = await GetIssueVoteStats(p.IssueID),
                     ScopeID = p.ScopeID,
                     ParentIssueID = p.ParentIssueID,
+                    ContentStatus = p.ContentStatus,
                     BlockedContentID = p.BlockedContentID,
                     Author = p.Author,
                     Scope = p.Scope,
@@ -280,7 +490,10 @@ namespace atlas_the_public_think_tank.Services
                 Content = issue.Content,
                 CreatedAt = issue.CreatedAt,
                 Author = issue.Author,
+                AuthorID = issue.AuthorID,
                 Scope = issue.Scope,
+                ScopeID = issue.ScopeID,
+                ContentStatus = issue.ContentStatus,
                 VoteStats = await GetIssueVoteStats(issue.IssueID),
                 ParentIssue = await GetParentIssue(issue),
                 ParentSolution = await GetParentSolution(issue),
@@ -334,6 +547,7 @@ namespace atlas_the_public_think_tank.Services
                     Content = child.Content,
                     CreatedAt = child.CreatedAt,
                     ModifiedAt = child.ModifiedAt,
+                    ContentStatus = child.ContentStatus,
                     AuthorID = child.AuthorID,
                     VoteStats = await GetIssueVoteStats(child.IssueID),
                     ScopeID = child.ScopeID,
@@ -351,7 +565,7 @@ namespace atlas_the_public_think_tank.Services
         /// </summary>
         /// <param name="currentSolution"></param>
         /// <returns></returns>
-        public async Task<List<Issue_ReadVM>> GetSolutionSubIssues(Models.Solution currentSolution)
+        public async Task<List<Issue_ReadVM>> GetSolutionSubIssues(Models.Database.Solution currentSolution)
         {
             if (currentSolution.ChildIssues == null)
                 return new List<Issue_ReadVM>();
@@ -366,6 +580,7 @@ namespace atlas_the_public_think_tank.Services
                     Title = child.Title,
                     Content = child.Content,
                     CreatedAt = child.CreatedAt,
+                    ContentStatus = child.ContentStatus,
                     ModifiedAt = child.ModifiedAt,
                     VoteStats = await GetIssueVoteStats(child.IssueID),
                     AuthorID = child.AuthorID,
@@ -402,6 +617,7 @@ namespace atlas_the_public_think_tank.Services
                 CreatedAt = currentIssue.ParentIssue.CreatedAt,
                 ModifiedAt = currentIssue.ParentIssue.ModifiedAt,
                 AuthorID = currentIssue.ParentIssue.AuthorID,
+                ContentStatus = currentIssue.ParentIssue.ContentStatus,
                 ScopeID = currentIssue.ParentIssue.ScopeID,
                 VoteStats = await GetIssueVoteStats(currentIssue.ParentIssue.IssueID),
                 ParentIssueID = currentIssue.ParentIssue.ParentIssueID,
@@ -437,11 +653,12 @@ namespace atlas_the_public_think_tank.Services
                 CreatedAt = parent.CreatedAt,
                 ModifiedAt = parent.ModifiedAt,
                 AuthorID = parent.AuthorID,
-                IssueID = parent.IssueID,
+                ParentIssueID = parent.ParentIssueID,
+                ContentStatus = parent.ContentStatus,
                 ScopeID = parent.ScopeID,
                 VoteStats = await _solutions.GetSolutionVoteStats(parent.SolutionID),
                 Scope = parent.Scope,
-                SubIssueCount = _context.Solutions.Count(s => s.IssueID == parent.SolutionID),
+                SubIssueCount = _context.Solutions.Count(s => s.ParentIssueID == parent.SolutionID),
                 SubIssues = await GetSolutionSubIssues(parent),
                 Categories = _solutions.GetSolutionCategories(parent),
                 Comments = parent.Comments,
@@ -456,28 +673,29 @@ namespace atlas_the_public_think_tank.Services
         /// </summary>
         /// <param name="currentIssue"></param>
         /// <returns></returns>
-        public async Task<Issue_ReadVM?> GetParentIssue(Models.Solution currentSolution)
+        public async Task<Issue_ReadVM?> GetParentIssue(Models.Database.Solution currentSolution)
         {
 
-            var breadcrumbTags = await _breadcrumbAccessor.GetIssueBreadcrumbTags(currentSolution.Issue);
+            var breadcrumbTags = await _breadcrumbAccessor.GetIssueBreadcrumbTags(currentSolution.ParentIssue);
 
             // Issue == Parent Issue for solutions 
-            return currentSolution.Issue == null ? null : new Issue_ReadVM
+            return currentSolution.ParentIssue == null ? null : new Issue_ReadVM
             {
-                IssueID = currentSolution.Issue.IssueID,
-                Title = currentSolution.Issue.Title,
-                Content = currentSolution.Issue.Content,
-                CreatedAt = currentSolution.Issue.CreatedAt,
-                ModifiedAt = currentSolution.Issue.ModifiedAt,
-                AuthorID = currentSolution.Issue.AuthorID,
-                ScopeID = currentSolution.Issue.ScopeID,
-                VoteStats = await GetIssueVoteStats(currentSolution.Issue.IssueID),
-                ParentIssueID = currentSolution.Issue.ParentIssueID,
-                ParentSolutionID = currentSolution.Issue.ParentSolutionID,
+                IssueID = currentSolution.ParentIssue.IssueID,
+                Title = currentSolution.ParentIssue.Title,
+                Content = currentSolution.ParentIssue.Content,
+                CreatedAt = currentSolution.ParentIssue.CreatedAt,
+                ModifiedAt = currentSolution.ParentIssue.ModifiedAt,
+                AuthorID = currentSolution.ParentIssue.AuthorID,
+                ContentStatus = currentSolution.ParentIssue.ContentStatus,
+                ScopeID = currentSolution.ParentIssue.ScopeID,
+                VoteStats = await GetIssueVoteStats(currentSolution.ParentIssue.IssueID),
+                ParentIssueID = currentSolution.ParentIssue.ParentIssueID,
+                ParentSolutionID = currentSolution.ParentIssue.ParentSolutionID,
                 // Map other properties as needed
-                Scope = currentSolution.Issue.Scope,
-                Solutions = await _solutions.GetIssuesSolutions(currentSolution.Issue),
-                SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == currentSolution.Issue.IssueID),
+                Scope = currentSolution.ParentIssue.Scope,
+                Solutions = await _solutions.GetIssuesSolutions(currentSolution.ParentIssue),
+                SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == currentSolution.ParentIssue.IssueID),
                 BreadcrumbTags = breadcrumbTags
             };
         }
@@ -500,7 +718,10 @@ namespace atlas_the_public_think_tank.Services
             int totalCount = await query.CountAsync();
 
             var pagedIssues = await query
-                .OrderByDescending(i => i.CreatedAt)
+                 .OrderByDescending(i => i.IssueVotes.Any()
+                    ? i.IssueVotes.Average(v => v.VoteValue)
+                    : 0)
+                .ThenByDescending(i => i.CreatedAt) 
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -551,6 +772,7 @@ namespace atlas_the_public_think_tank.Services
                     Content = child.Content,
                     CreatedAt = child.CreatedAt,
                     ModifiedAt = child.ModifiedAt,
+                    ContentStatus = child.ContentStatus,
                     AuthorID = child.AuthorID,
                     Author = child.Author,
                     VoteStats = await GetIssueVoteStats(child.IssueID),
@@ -622,7 +844,7 @@ namespace atlas_the_public_think_tank.Services
                     CreatedAt = s.CreatedAt,
                     ModifiedAt = s.ModifiedAt,
                     AuthorID = s.AuthorID,
-                    IssueID = s.IssueID,
+                    ParentIssueID = s.ParentIssueID,
                     ContentStatus = s.ContentStatus,
                     BlockedContentID = s.BlockedContentID,
                     VoteStats = await GetSolutionVoteStats(s.SolutionID),
@@ -640,7 +862,7 @@ namespace atlas_the_public_think_tank.Services
         /// <summary>
         /// Converts a single solution to a single Solution_ReadVM
         /// </summary>
-        public async Task<Solution_ReadVM> ConvertSolutionEntityToVM(Models.Solution solution)
+        public async Task<Solution_ReadVM> ConvertSolutionEntityToVM(Models.Database.Solution solution)
         {
             // Fix: Correctly check if the IssueID is not null or empty
             // Note: IssueID == ParentIssueID for solutions....
@@ -654,8 +876,8 @@ namespace atlas_the_public_think_tank.Services
                 CreatedAt = solution.CreatedAt,
                 ModifiedAt = solution.ModifiedAt,
                 AuthorID = solution.AuthorID,
-                IssueID = solution.IssueID,
-                Issue = await Issues.GetParentIssue(solution),
+                ParentIssueID = solution.ParentIssueID,
+                ParentIssue = await Issues.GetParentIssue(solution),
                 ContentStatus = solution.ContentStatus,
                 BlockedContentID = solution.BlockedContentID,
                 Scope = solution.Scope,
@@ -676,7 +898,7 @@ namespace atlas_the_public_think_tank.Services
         /// <summary>
         /// Gets the categories for a solution 
         /// </summary>
-        public List<Category_ReadVM> GetSolutionCategories(Models.Solution currentSolution)
+        public List<Category_ReadVM> GetSolutionCategories(Models.Database.Solution currentSolution)
         {
             if (currentSolution?.SolutionCategories == null)
                 return new List<Category_ReadVM>();
@@ -753,7 +975,7 @@ namespace atlas_the_public_think_tank.Services
                 .Include(s => s.SolutionCategories)
                     .ThenInclude(sc => sc.Category)
                 .AsNoTracking() // For better performance when reading
-                .Where(s => s.IssueID == issueId);
+                .Where(s => s.ParentIssueID == issueId);
 
             var totalCount = await query.CountAsync();
 
@@ -781,7 +1003,7 @@ namespace atlas_the_public_think_tank.Services
                     ModifiedAt = solution.ModifiedAt,
                     AuthorID = solution.AuthorID,
                     Author = solution.Author,
-                    IssueID = solution.IssueID,
+                    ParentIssueID = solution.ParentIssueID,
                     ContentStatus = solution.ContentStatus,
                     BlockedContentID = solution.BlockedContentID,
                     VoteStats = await GetSolutionVoteStats(solution.SolutionID),

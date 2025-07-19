@@ -1,8 +1,8 @@
 ﻿using atlas_the_public_think_tank.Data.SeedData;
-using atlas_the_public_think_tank.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
+using atlas_the_public_think_tank.Models.Database;
 
 namespace atlas_the_public_think_tank.Data;
 
@@ -120,9 +120,9 @@ public class ApplicationDbContext : IdentityDbContext<AppUser, IdentityRole<Guid
               .OnDelete(DeleteBehavior.Restrict);
 
             // Relationships
-            entity.HasOne(e => e.Issue)
+            entity.HasOne(e => e.ParentIssue)
                 .WithMany(e => e.Solutions)
-                .HasForeignKey(e => e.IssueID)
+                .HasForeignKey(e => e.ParentIssueID)
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(e => e.Author)
