@@ -1,5 +1,6 @@
 ﻿using atlas_the_public_think_tank.Data;
-using atlas_the_public_think_tank.Models;
+using atlas_the_public_think_tank.Models.Database;
+using atlas_the_public_think_tank.Models.ViewModel;
 using atlas_the_public_think_tank.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -34,7 +35,7 @@ namespace atlas_the_public_think_tank.Controllers
             // Initialize the ViewModel
             var viewModel = new Solution_CreateVM
             {
-                IssueID = parentIssueID,
+                ParentIssueID = parentIssueID,
                 Scopes = _context.Scopes.ToList(),
                 Categories = await _context.Categories.ToListAsync(),
                 //BreadcrumbTags = await _crud.BreadcrumbAccessor.GetContentBreadcrumb(parentIssueID ?? Guid.Empty)
@@ -64,7 +65,7 @@ namespace atlas_the_public_think_tank.Controllers
                 {
                     Title = model.Title,
                     Content = model.Content,
-                    IssueID = model.IssueID.Value,
+                    ParentIssueID = model.ParentIssueID.Value,
                     ContentStatus = model.ContentStatus,
                     AuthorID = userId,
                     CreatedAt = DateTime.Now,
@@ -94,7 +95,7 @@ namespace atlas_the_public_think_tank.Controllers
                 }
 
                 // Redirect to the details view of the issue this solution is for
-                return RedirectToAction("ReadIssue", "Issue", new { id = model.IssueID });
+                return RedirectToAction("ReadIssue", "Issue", new { id = model.ParentIssueID });
             }
 
             // If we got to here, something failed, redisplay form
@@ -147,13 +148,13 @@ namespace atlas_the_public_think_tank.Controllers
                 .Include(s => s.Author)
                 .Include(s => s.Scope)
                 .Include(f => f.ChildIssues)
-                .Include(s => s.Issue) // ParentIssue for a solution
+                .Include(s => s.ParentIssue) // ParentIssue for a solution
                     .ThenInclude(i => i.Scope)
-                .Include(s => s.Issue) // ParentIssue for a solution
+                .Include(s => s.ParentIssue) // ParentIssue for a solution
                     .ThenInclude(i => i.Solutions)
-                .Include(s => s.Issue) // ParentIssue for a solution
+                .Include(s => s.ParentIssue) // ParentIssue for a solution
                     .ThenInclude(i => i.Author)
-                .Include(s => s.Issue)
+                .Include(s => s.ParentIssue)
                 .Include(s => s.BlockedContent)
                 .Include(s => s.Comments)
                 .Include(s => s.SolutionCategories)

@@ -1,10 +1,13 @@
-using System.Diagnostics;
-using Microsoft.AspNetCore.Mvc;
 using atlas_the_public_think_tank.Models;
+using atlas_the_public_think_tank.Models.ViewModel;
+using atlas_the_public_think_tank.Services;
 using Azure.Core;
-using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Diagnostics;
 using System.Text;
+using System.Text.Json;
 using System.Web;
 
 namespace atlas_the_public_think_tank.Controllers;
@@ -24,42 +27,33 @@ public class HomeController : Controller
         _crudService = crudService;
     }
 
-    /// <summary>
-    /// This method is used to return the main page of the application.
-    /// </summary>
+
     public async Task<IActionResult> Index()
     {
-        using var client = new HttpClient();
-        client.BaseAddress = new Uri($"{Request.Scheme}://{Request.Host}");
 
         // Create a view model to hold both issues and categories
         var viewModel = new HomeIndexViewModel();
 
-        // Get data directly like this (Not via another api requests to my own controller - didn't pass the User credientials automatically.)
-        //viewModel.Issues = await _crudService.Issues.GetEveryIssue();
-        viewModel.PaginatedPosts = await _crudService.Issues.GetIssuesPagedAsync(1);
+        viewModel.PaginatedContent = await _crudService.GetContentItemsPagedAsync(1);
 
-        // TODO: Update this to not use another fetch... 
-        // Fetch categories
-        //var categoryResponse = await client.GetAsync("/api/categories");
-        //if (categoryResponse.IsSuccessStatusCode)
-        //{
-        //    var jsonString = await categoryResponse.Content.ReadAsStringAsync();
-        //    viewModel.Categories = JsonSerializer.Deserialize<List<Category_ReadVM>>(jsonString, new JsonSerializerOptions
-        //    {
-        //        PropertyNameCaseInsensitive = true
-        //    });
-        //}
-        //else
-        //{
-        //    _logger.LogError($"Failed to fetch categories. Status Code: {categoryResponse.StatusCode}");
-        //}
-
-        // NO INTERAL API CALLS CAN BE TESTED, So no using them.
-            viewModel.Categories = new List<Category_ReadVM>();
-
-
+        //viewModel.Categories = new List<Category_ReadVM>();
         return View(viewModel);
+    }
+
+
+    /// <summary>
+    /// This method is used to return paginated issue posts.
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet]
+
+    [AllowAnonymous]
+    [Route("/home/getPaginatedContent")]
+    public async Task<IActionResult> GetPaginatedContentItems(int currentPage = 1)
+    {
+        PaginatedContentItemsResponse paginatedContentItems = await _crudService.GetContentItemsPagedAsync(currentPage, 3);
+
+        return PartialView("~/Views/Home/_content-item-cards.cshtml", paginatedContentItems.ContentItems);
     }
 
     /// <summary>

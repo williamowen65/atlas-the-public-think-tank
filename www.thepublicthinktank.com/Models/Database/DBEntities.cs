@@ -8,7 +8,7 @@ using System.Collections.Generic;
 /**
 * Don't use Data Annotations for EF - Use Fluent API only (ApplicationDbContext)
 */
-namespace atlas_the_public_think_tank.Models
+namespace atlas_the_public_think_tank.Models.Database
 {
 
   
@@ -111,11 +111,11 @@ namespace atlas_the_public_think_tank.Models
     public class Solution : ContentItem
     {
         public Guid SolutionID { get; set; }
-        public Guid IssueID { get; set; }
+        public required Guid ParentIssueID { get; set; }
 
         // Navigation properties
         [JsonIgnore]
-        public virtual Issue Issue { get; set; }
+        public virtual Issue ParentIssue { get; set; }
 
         public virtual ICollection<SolutionVote> SolutionVotes { get; set; }
         public virtual ICollection<Issue> ChildIssues { get; set; }

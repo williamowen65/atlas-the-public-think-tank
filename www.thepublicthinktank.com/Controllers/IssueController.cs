@@ -1,5 +1,6 @@
 ﻿using atlas_the_public_think_tank.Data;
-using atlas_the_public_think_tank.Models;
+using atlas_the_public_think_tank.Models.Database;
+using atlas_the_public_think_tank.Models.ViewModel;
 using atlas_the_public_think_tank.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;

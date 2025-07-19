@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using atlas_the_public_think_tank.Models;
 using System;
+using atlas_the_public_think_tank.Models.Database;
 
 namespace atlas_the_public_think_tank.Data.SeedData
 {

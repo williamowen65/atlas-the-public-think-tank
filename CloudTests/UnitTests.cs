@@ -1,5 +1,4 @@
-﻿using atlas_the_public_think_tank.Models;
-using CloudTests.TestingSetup;
+﻿using CloudTests.TestingSetup;
 using Microsoft.AspNetCore.Mvc.Testing;
 using AngleSharp;
 using System;
@@ -8,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using atlas_the_public_think_tank.Models.ViewModel;
 
 namespace CloudTests
 {

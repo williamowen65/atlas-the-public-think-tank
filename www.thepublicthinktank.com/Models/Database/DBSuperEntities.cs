@@ -9,7 +9,7 @@ using System.Collections.Generic;
 * This file defines database related classes to be inherited,
 * and keep the codebase DRY.
 */
-namespace atlas_the_public_think_tank.Models
+namespace atlas_the_public_think_tank.Models.Database
 {
 
     /// <summary>
@@ -40,6 +40,13 @@ namespace atlas_the_public_think_tank.Models
 
         public Guid ScopeID { get; set; }
         public virtual Scope Scope { get; set; }
+
+        public Guid ParentIssueID { get; set; }
+
+        // Navigation properties
+        [JsonIgnore]
+        public virtual Issue ParentIssue { get; set; }
+
 
         public virtual ICollection<UserComment> Comments { get; set; } = new List<UserComment>();
     }

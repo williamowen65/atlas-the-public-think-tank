@@ -1,4 +1,5 @@
-﻿@*
+﻿@using atlas_the_public_think_tank.Models.ViewModel
+@*
     Layout of the solution page, where the sub-issues, comments, etc can be found by the user
 *@
 
@@ -27,13 +28,13 @@
             </button>
             <button class="nav-link d-flex align-items-center" id="parent-post-tab" data-bs-toggle="tab" data-bs-target="#parent-post" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
                 <div class="content-count">
-                    <span>@(Model.Issue != null ? 1 : 0)</span>
+                    <span>@(Model.ParentIssue != null ? 1 : 0)</span>
                 </div>
                 <div class="me-2">
                     @Html.Partial("~/Views/Shared/Icons/_ParentIssue.cshtml")
                 </div>
 
-                @if (Model.Issue != null)
+                @if (Model.ParentIssue != null)
                 {
                     <span>Parent Issue</span>
                 }
@@ -107,9 +108,9 @@
         </div>
 
         <div class="tab-pane fade border border-1 border-top-0" id="parent-post" role="tabpanel" aria-labelledby="parent-post-tab" tabindex="0">
-            @if (Model.Issue != null)
+            @if (Model.ParentIssue != null)
             {
-                @Html.Partial("~/Views/Issue/_issue-card.cshtml", Model.Issue)
+                @Html.Partial("~/Views/Issue/_issue-card.cshtml", Model.ParentIssue)
                 ;
             }
             else
@@ -207,9 +208,9 @@
                 <li><a class="dropdown-item" href="@Url.Action("CreateIssue", "Issue", new { parentSolutionID = Model.SolutionID })">Create Sub-Issue</a></li>
             `,
             'parent-post-tab': `
-                @if (Model.Issue != null)
+                @if (Model.ParentIssue != null)
                 {
-                        <li><a class="dropdown-item" href="@Url.Action("ReadIssue", "Issue", new { id = Model.Issue.IssueID })">Go to Parent Issue</a></li>
+                        <li><a class="dropdown-item" href="@Url.Action("ReadIssue", "Issue", new { id = Model.ParentIssue.IssueID })">Go to Parent Issue</a></li>
                 }
             `
         };
