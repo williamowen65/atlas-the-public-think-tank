@@ -7,14 +7,14 @@
 <div class="issue-card-stat-icons d-flex justify-content-between align-items-center flex-wrap">
 
     
-    <div role="button" tabindex="0" aria-label="Sub Issues: @(Model.SubIssueCount)" class="position-relative">
+    <div role="button" tabindex="0" aria-label="Sub Issues: @(Model.SubIssueCount)" class="stat-icon-link go-to-content-item-sub-issue-tab position-relative">
         <div class="position-absolute content-count" style="right: -11px">
             @(Model.SubIssueCount)
         </div>
         @Html.Partial("~/Views/Shared/Icons/_SubIssues.cshtml")
     </div>
     
-    <div role="button" tabindex="0" aria-label="Comments: @(Model?.Comments?.Count() ?? 0)" class="position-relative" >
+    <div role="button" tabindex="0" aria-label="Comments: @(Model?.Comments?.Count() ?? 0)" class="stat-icon-link go-to-content-item-comment-tab position-relative">
         <div class="position-absolute content-count" style="">
             @(Model?.Comments?.Count() ?? 0)
         </div>

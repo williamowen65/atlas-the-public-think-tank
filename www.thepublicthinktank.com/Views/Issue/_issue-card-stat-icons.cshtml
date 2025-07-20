@@ -7,20 +7,20 @@
 @model Issue_ReadVM
 
 <div class="issue-card-stat-icons text-nowrap">
-    <span role="button" tabindex="0" aria-label="Solutions: @(Model?.Solutions?.Count() ?? 0)" class=" position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
+    <span role="button" tabindex="0" aria-label="Solutions: @(Model?.Solutions?.Count() ?? 0)" class="stat-icon-link go-to-content-item-solution-tab position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
         <div class="position-absolute content-count" style="">
             @(Model?.Solutions?.Count() ?? 0)
         </div>
         @Html.Partial("~/Views/Shared/Icons/_Solutions.cshtml")
     </span>
-    <span role="button" tabindex="0" aria-label="Sub Issues: @(Model?.SubIssues?.Count() ?? 0)" class="position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
-        <div class="position-absolute content-count" style="right: -11px">
+    <span role="button" tabindex="0" aria-label="Sub Issues: @(Model?.SubIssues?.Count() ?? 0)" class="stat-icon-link go-to-content-item-sub-issue-tab position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
+        <div class="position-absolute content-count sub-issue-count" style="right: -11px">
             @(Model.SubIssueCount)
         </div>
         @Html.Partial("~/Views/Shared/Icons/_SubIssues.cshtml")
     </span>
     <wbr class="" />
-    <span role="button" tabindex="0" aria-label="Comments: @(Model?.Comments?.Count() ?? 0)" class=" position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
+    <span role="button" tabindex="0" aria-label="Comments: @(Model?.Comments?.Count() ?? 0)" class="stat-icon-link go-to-content-item-comment-tab position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
         <div class="position-absolute content-count" style="">
             @(Model?.Comments?.Count() ?? 0)
         </div>

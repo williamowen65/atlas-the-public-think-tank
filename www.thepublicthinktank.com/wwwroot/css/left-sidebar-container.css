@@ -20,6 +20,13 @@
     z-index: 1030;
 }
 
+#left-sidebar-container header {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: inherit;
+}
+
 main {
     margin-left: calc(var(--left-sidebar-container-width) + 0px);
     transition: margin-left 0.3s ease-in-out;
@@ -108,10 +115,15 @@ main.sidebar-closed, footer.sidebar-closed {
     because the html is not nested (stacked instead) the elements are not aware of each others dimensions
 */
 
+html {
+    --view-mode-toggle-width: 120px;
+    --view-mode-item-dimension: calc(var(--view-mode-toggle-width) / 3);
+}
+
 /* Container for the toggle */
 .toggle-container {
-    width: 150px; /* Increased width to accommodate three sections */
-    height: 50px;
+    width: var(--view-mode-toggle-width); /* Increased width to accommodate three sections */
+    height: var(--view-mode-item-dimension);
     position: relative;
 }
 
@@ -130,8 +142,8 @@ main.sidebar-closed, footer.sidebar-closed {
 
 /* Outline element */
 #view-toggle-outline.outline {
-    width: 150px; /* Match container width */
-    height: 50px;
+    width: var(--view-mode-toggle-width); /* Increased width to accommodate three sections */
+    height: var(--view-mode-item-dimension);
     border: 1px solid var(--bs-info);
     border-radius: 0.25rem;
     position: absolute;
@@ -141,7 +153,7 @@ main.sidebar-closed, footer.sidebar-closed {
 .toggle-option.left-option {
     left: 0;
     top: 50%;
-    width: 50px;
+    width: var(--view-mode-item-dimension);
     transform: translateY(-50%);
     height: 50px;
     display: flex;
@@ -153,11 +165,11 @@ main.sidebar-closed, footer.sidebar-closed {
 
 /* Middle toggle button */
 .toggle-option.middle-option {
-    left: 50px; /* Position in the middle section */
+    left: var(--view-mode-item-dimension); /* Position in the middle section */
     top: 50%;
     transform: translateY(-50%);
-    width: 50px;
-    height: 50px;
+    width: var(--view-mode-item-dimension);
+    height: var(--view-mode-item-dimension);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -170,11 +182,87 @@ main.sidebar-closed, footer.sidebar-closed {
     right: 0;
     top: 50%;
     transform: translateY(-50%);
-    width: 50px;
-    height: 50px;
+    width: var(--view-mode-item-dimension);
+    height: var(--view-mode-item-dimension);
     display: flex;
     justify-content: center;
     align-items: center;
     position: absolute;
     padding: 0.5rem;
+}
+
+
+.disabled-group {
+    opacity: 0.6; /* visually indicate disabled state */
+    pointer-events: none; /* prevent any interaction */
+    cursor: not-allowed; /* for legacy or extra clarity */
+}
+
+
+
+/* New styles for content filter radio inputs */
+.filter-group {
+    background-color: var(--filter-group-theme-color);
+    border-radius: 4px;
+    padding: 0.5rem;
+    margin-bottom: 1rem !important;
+}
+
+.filter-group .main-label {
+
+    color: #000;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    font-weight: 500;
+    margin-bottom: 0.5rem !important;
+    display: block !important;
+    width: 100%;
+}
+
+.filter-group .form-check {
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+}
+
+.filter-group .form-check-input {
+    margin-right: 0.5rem;
+}
+
+.form-check-input:checked[type=radio] {
+    --bs-form-check-bg-image: none;
+}
+
+.filter-group .form-check-label {
+    margin-left: 0.25rem;
+}
+
+.form-check-input:checked, .form-check-input:focus, .form-check-input:focus-visible {
+    border-color: revert;
+}
+
+.form-check-input:focus {
+    box-shadow: none;
+
+}
+
+/* Make the entire filter more compact */
+.sidebar-content .range_container {
+    margin-bottom: 0.75rem;
+}
+
+
+
+/* For the labels (like Min, Max) */
+.form_control_container__time {
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+
+.average-score-label {
+    width: min-content !important;
+    white-space: nowrap !important;
+    font-size: 1rem !important;
+    margin-top: 10px !important;
 }

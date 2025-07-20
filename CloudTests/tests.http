@@ -1,0 +1,16 @@
+# For more info on HTTP files go to https://aka.ms/vs/httpfile
+
+
+### Get paginated content
+GET https://localhost:5501/home/getPaginatedContent
+Accept: application/json
+
+###
+
+GET https://localhost:5501/solution/getPaginatedSubIssues/c7e262cb-042e-413b-8dd4-08dd97a30729
+Accept: application/json
+
+###
+
+GET https://localhost:5501/issue/getPaginatedSubIssues/93bb4722-4472-4633-af34-08dd9eb33186
+Accept: application/json

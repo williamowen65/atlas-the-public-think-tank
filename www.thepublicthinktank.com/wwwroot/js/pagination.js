@@ -3,15 +3,7 @@
 
 This file manages the client-side logic for pagination
 
-<button 
-    id="fetchPaginatedPosts" 
-    data-url="/issue/getPaginatedIssues?currentPage=@NextPageNumber" 
-    data-target="#main-content"
-    data-total-count="@Model.PaginatedPosts.TotalCount"
-    data-page-size="@Model.PaginatedPosts.PageSize"
-        class="mx-auto d-block btn btn-primary">
-    <span class="button-text">Load more posts</span> (<span class="paginatedCount">@Model.PaginatedPosts.PageSize</span>/@Model.PaginatedPosts.TotalCount)
-</button>
+
 
 
 The pagination setup also requires .NET entities to contain paginated content.
@@ -23,43 +15,41 @@ function setPaginationButtonListener(paginationButtonElement) {
     if (paginationButtonElement) {
         paginationButtonElement.addEventListener("click", (e => {
 
+
             const paginationUrl = paginationButtonElement.getAttribute("data-url")
             const paginationTargetElement = paginationButtonElement.getAttribute("data-target")
-            const paginationPageSize = paginationButtonElement.getAttribute("data-page-size")
-            const paginationTotalCount = paginationButtonElement.getAttribute("data-total-count")
-            const paginationContentType = paginationButtonElement.getAttribute("data-content-type")
-            const paginatedCountElement = paginationButtonElement.querySelector(".paginatedCount")
+            const paginatedCountElement = paginationButtonElement.querySelector(".fullPaginatedCount")
             const paginatedButtonText = paginationButtonElement.querySelector(".button-text")
-
+            const paginationContentType = paginationButtonElement.getAttribute("data-content-type")
             if (!paginationTargetElement) {
                 throw new Error("Could not find pagination target element")
             }
             if (!paginatedCountElement) {
                 throw new Error("Could not locate a pagination count element")
             }
-            if (!paginationPageSize) {
-                throw new Error("Could not find the pagination page size value")
+            if (!paginationContentType) {
+                throw new Error("Could not find pagination button content type")
             }
-            if (!paginationTotalCount) {
-                throw new Error("Could not determine the pagination total count")
-            }
+         
             if (!paginatedButtonText) {
                  throw new Error("Could not find pagination button text element")
             }
-            if (!paginationContentType) {
-                 throw new Error("Could not find pagination button content type")
-            }
+           
 
             if (paginationUrl) {
                 // Call api/posts for next page of data
 
                 fetch(paginationUrl)
-                    .then(response => response.text())
+                    .then(response => response.json())
                     .then(data => {
+
+                        console.log("Paginated Response", {
+                                data
+                        })
 
                         // Add issues to dom
                         const domTarget = document.querySelector(paginationTargetElement)
-                        domTarget.insertAdjacentHTML("beforeend", data)
+                        domTarget.insertAdjacentHTML("beforeend", data.html)
 
                         // Find the current page number and increment it for the next request
                         const currentPageRegex = /currentPage=(\d+)/;
@@ -75,10 +65,9 @@ function setPaginationButtonListener(paginationButtonElement) {
                         }
 
                         // Update the pagination button count
-                        const currentCount = Number(paginatedCountElement.innerText)
-                        const nextCurrentCount = currentCount + Number(paginationPageSize)
-                        paginatedCountElement.innerText = Math.min(nextCurrentCount, paginationTotalCount)
-                        if (nextCurrentCount >= paginationTotalCount) {
+                        paginatedCountElement.innerText = `(${Math.min(data.pagination.pageSize * data.pagination.currentPage, data.pagination.totalCount)}/${data.pagination.totalCount})`;
+                        const nextCurrentCount = data.pagination.pageSize * (data.pagination.currentPage);
+                        if (nextCurrentCount >= data.pagination.totalCount) {
                             // Disable the button
                             paginationButtonElement.disabled = true;
                             paginatedButtonText.innerText = `No more ${paginationContentType}`;

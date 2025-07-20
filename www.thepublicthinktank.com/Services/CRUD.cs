@@ -1,5 +1,4 @@
 ﻿using atlas_the_public_think_tank.Data;
-using atlas_the_public_think_tank.Migrations;
 using atlas_the_public_think_tank.Models.Database;
 using atlas_the_public_think_tank.Models.ViewModel;
 using Microsoft.AspNetCore.Http;
@@ -10,6 +9,7 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using static atlas_the_public_think_tank.Data.SeedData.SeedIds;
+using Solution = atlas_the_public_think_tank.Models.Database.Solution;
 
 namespace atlas_the_public_think_tank.Services
 {
@@ -23,16 +23,60 @@ namespace atlas_the_public_think_tank.Services
         // They can all be optional and depend on the specific query
 
         public double AverageVote { get; set; }
+        public int TotalVotes { get; set; }
         public DateTime CreatedAt { get; set; }
 
+
+        /// <summary>
+        /// WeightedScore: score = (averageVote * totalVotes) / (totalVotes + k)
+        /// </summary>
+        /// <remarks>
+        /// k = tuning parameter (how much you penalize low-vote content) <br/>
+        /// Content with a low vote gets discounted more <br/>
+        /// </remarks>
+        public double WeightedScore { get; set; }
+
+        /// <summary>
+        /// score = (v / (v + m)) * R + (m / (v + m)) * C
+        /// </summary>
+        /// <remarks>
+        /// R = average vote for the item <br/>
+        /// V = number of votes for the item <br/>
+        /// m = minimum votes required for credibility (eg, 10, 20) <br/>
+        /// C = mean vote across all content <br/>
+        /// </remarks>
+        public double BayesianAverage { get; set; }
 
     }
 
     /// <summary>
-    /// This class (coming soon) would be a customizable filter the users can apply on the data
+    /// Below are alternatives to fairly score content based on average vote and total number of vote
+    /// Quality(average rating) with Confidence(How many people agree)
     /// </summary>
-    public class ContentFilter
-    { }
+    //public class ContentScore
+    //{
+    //    /// <summary>
+    //    /// WeightedScore: score = (averageVote * totalVotes) / (totalVotes + k)
+    //    /// </summary>
+    //    /// <remarks>
+    //    /// k = tuning parameter (how much you penalize low-vote content) <br/>
+    //    /// Content with a low vote gets discounted more <br/>
+    //    /// </remarks>
+    //    public double WeightedScore { get; set; }
+
+    //    /// <summary>
+    //    /// score = (v / (v + m)) * R + (m / (v + m)) * C
+    //    /// </summary>
+    //    /// <remarks>
+    //    /// R = average vote for the item <br/>
+    //    /// V = number of votes for the item <br/>
+    //    /// m = minimum votes required for credibility (eg, 10, 20) <br/>
+    //    /// C = mean vote across all content <br/>
+    //    /// </remarks>
+    //    public double BayesianAverage { get; set; }
+    //}
+
+  
 
     /// <summary>
     /// A service to encapsulate CRUD logic for the app (Accessible by dependency injection)
@@ -59,59 +103,241 @@ namespace atlas_the_public_think_tank.Services
             BreadcrumbAccessor = breadcrumbAccessor;
         }
 
-
         /// <summary>
-        /// Gets a paginated list of content IDs (Issues and Solutions) ordered by creation date
+        /// Creates a filtering utility that can be shared between Issues and Solutions
         /// </summary>
-        /// <param name="filter">Optional filter criteria for content</param>
-        /// <param name="pageNumber">The page number to retrieve</param>
-        /// <param name="pageSize">Number of items per page</param>
-        /// <returns>List of ContentIndexEntry objects containing content IDs and types</returns>
-        //public async Task<List<ContentIndexEntry>> GetOrderedContentIdsPaged(int pageNumber, int pageSize = 3)
-        ////public async Task<List<ContentIndexEntry>> GetOrderedContentIdsPaged(ContentFilter filter, int pageNumber, int pageSize = 3)
-        //{
+        public static class ContentFiltering
+        {
+            /// <summary>
+            /// Applies common filtering logic to a query of Issues
+            /// </summary>
+            public static IQueryable<Issue> ApplyIssueFilters(IQueryable<Issue> query, ContentFilter filter)
+            {
+                if (filter == null)
+                    return query;
 
-        //    var issuesQuery = _context.Issues
-        //    .Select(i => new ContentIndexEntry
-        //    {
-        //        ContentId = i.IssueID,
-        //        ContentType = ContentType.Issue,
-        //        CreatedAt = i.CreatedAt,
-        //        AverageVote = i.IssueVotes.Any()
-        //            ? i.IssueVotes.Average(v => v.VoteValue)
-        //            : 0
-        //    });
+                // Log filter info
+                Console.WriteLine("Applying content filters to issues");
+                Console.WriteLine(filter);
+                Console.WriteLine(filter.ToJson());
 
-        //    var solutionsQuery = _context.Solutions
-        //    .Select(s => new ContentIndexEntry
-        //    {
-        //        ContentId = s.SolutionID,
-        //        ContentType = ContentType.Solution,
-        //        CreatedAt = s.CreatedAt,
-        //        AverageVote = s.SolutionVotes.Any()
-        //            ? s.SolutionVotes.Average(v => v.VoteValue)
-        //            : 0
-        //    });
+                // Filter by average vote range
+                if (filter?.AvgVoteRange != null)
+                {
+                    query = query.Where(i =>
+                        (i.IssueVotes.Any() ? i.IssueVotes.Average(v => v.VoteValue) : 0) >= filter.AvgVoteRange.Min &&
+                        (i.IssueVotes.Any() ? i.IssueVotes.Average(v => v.VoteValue) : 0) <= filter.AvgVoteRange.Max);
+                }
 
-        //    var combinedQuery = issuesQuery
-        //        .Union(solutionsQuery);
+                // Filter by total vote count
+                if (filter?.TotalVoteCount != null)
+                {
+                    query = query.Where(i => i.IssueVotes.Count >= filter.TotalVoteCount.Min);
 
-        //    int totalCount = await combinedQuery.CountAsync();
+                    // Apply max filter only if it has a value
+                    if (filter.TotalVoteCount.Max.HasValue)
+                    {
+                        query = query.Where(i => i.IssueVotes.Count <= filter.TotalVoteCount.Max.Value);
+                    }
+                }
 
-        //    var pagedResultSet = await combinedQuery
-        //    .OrderByDescending(c => c.AverageVote)
-        //    .ThenByDescending(c => c.CreatedAt)
-        //    .Skip((pageNumber - 1) * pageSize)
-        //    .Take(pageSize)
-        //    .ToListAsync();
+                // Filter by date range
+                if (filter?.DateRange != null)
+                {
+                    // Apply "from date" filter if specified
+                    if (filter.DateRange.From.HasValue)
+                    {
+                        query = query.Where(i => i.CreatedAt >= filter.DateRange.From.Value.AddDays(-1));
+                    }
 
-        //    return pagedResultSet;
+                    // Apply "to date" filter if specified
+                    if (filter.DateRange.To.HasValue)
+                    {
+                        // Add one day to include the entire end date (up to 23:59:59)
+                        var toDateInclusive = filter.DateRange.To.Value.AddDays(1).AddSeconds(-1);
+                        query = query.Where(i => i.CreatedAt <= toDateInclusive);
+                    }
+                }
 
-        //}
+                return query;
+            }
+            /// <summary>
+            /// Applies common filtering logic to a query of Solutions
+            /// </summary>
+            public static IQueryable<Solution> ApplySolutionFilters(IQueryable<Solution> query, ContentFilter filter)
+            {
+                if (filter == null)
+                    return query;
+
+                // Log filter info
+                Console.WriteLine("Applying content filters to solutions");
+                Console.WriteLine(filter);
+                Console.WriteLine(filter.ToJson());
+
+                // Filter by average vote range
+                if (filter?.AvgVoteRange != null)
+                {
+                    query = query.Where(s =>
+                        (s.SolutionVotes.Any() ? s.SolutionVotes.Average(v => v.VoteValue) : 0) >= filter.AvgVoteRange.Min &&
+                        (s.SolutionVotes.Any() ? s.SolutionVotes.Average(v => v.VoteValue) : 0) <= filter.AvgVoteRange.Max);
+                }
+
+                // Filter by total vote count
+                if (filter?.TotalVoteCount != null)
+                {
+                    query = query.Where(s => s.SolutionVotes.Count >= filter.TotalVoteCount.Min);
+
+                    // Apply max filter only if it has a value
+                    if (filter.TotalVoteCount.Max.HasValue)
+                    {
+                        query = query.Where(s => s.SolutionVotes.Count <= filter.TotalVoteCount.Max.Value);
+                    }
+                }
+
+                // Filter by date range
+                if (filter?.DateRange != null)
+                {
+                    // Apply "from date" filter if specified
+                    if (filter.DateRange.From.HasValue)
+                    {
+                        query = query.Where(i => i.CreatedAt >= filter.DateRange.From.Value.AddDays(-1));
+                    }
+
+                    // Apply "to date" filter if specified
+                    if (filter.DateRange.To.HasValue)
+                    {
+                        // Add one day to include the entire end date (up to 23:59:59)
+                        var toDateInclusive = filter.DateRange.To.Value.AddDays(1).AddSeconds(-1);
+                        query = query.Where(s => s.CreatedAt <= toDateInclusive);
+                    }
+                }
+
+                return query;
+            }
+
+            /// <summary>
+            /// Applies filtering to ContentIndexEntry queries that combine both issues and solutions
+            /// </summary>
+            public static IQueryable<ContentIndexEntry> ApplyCombinedContentFilters(
+                IQueryable<ContentIndexEntry> query,
+                ContentFilter filter)
+            {
+                if (filter == null)
+                    return query;
+
+                // Log filter info
+                Console.WriteLine("Applying combined content filters");
+                Console.WriteLine(filter);
+                Console.WriteLine(filter.ToJson());
+
+                // Filter for ContentType ("both", "issues", "solutions)
+                if (filter.ContentType != null && filter.ContentType != "both")
+                {
+                    if (filter.ContentType.Equals("issues", StringComparison.OrdinalIgnoreCase))
+                    {
+                        query = query.Where(c => c.ContentType == ContentType.Issue);
+                    }
+                    else if (filter.ContentType.Equals("solutions", StringComparison.OrdinalIgnoreCase))
+                    {
+                        query = query.Where(c => c.ContentType == ContentType.Solution);
+                    }
+                    // "both" is the default and doesn't need filtering as it includes all content types
+                }
+
+                // Filter by average vote range
+                if (filter.AvgVoteRange != null)
+                {
+                    query = query.Where(c =>
+                        c.AverageVote >= filter.AvgVoteRange.Min &&
+                        c.AverageVote <= filter.AvgVoteRange.Max);
+                }
+
+                // Filter by total vote count
+                if (filter.TotalVoteCount != null)
+                {
+                    query = query.Where(c => c.TotalVotes >= filter.TotalVoteCount.Min);
+
+                    // Apply max filter only if it has a value
+                    if (filter.TotalVoteCount.Max.HasValue)
+                    {
+                        query = query.Where(c => c.TotalVotes <= filter.TotalVoteCount.Max.Value);
+                    }
+                }
+
+                // Filter by date range
+                if (filter.DateRange != null)
+                {
+                    // Apply "from date" filter if specified
+                    if (filter.DateRange.From.HasValue)
+                    {
+                        query = query.Where(i => i.CreatedAt >= filter.DateRange.From.Value.AddDays(-1));
+                    }
+
+                    // Apply "to date" filter if specified
+                    if (filter.DateRange.To.HasValue)
+                    {
+                        // Add one day to include the entire end date (up to 23:59:59)
+                        var toDateInclusive = filter.DateRange.To.Value.AddDays(1).AddSeconds(-1);
+                        query = query.Where(c => c.CreatedAt <= toDateInclusive);
+                    }
+                }
+
+                return query;
+            }
+            /// <summary>
+            /// Calculate weighted scores and apply standard sorting to ContentIndexEntry query
+            /// </summary>
+            public static IOrderedQueryable<ContentIndexEntry> ApplyCombinedContentSorting(
+                IQueryable<ContentIndexEntry> query,
+                int k = 5)
+            {
+                return query
+                    .Select(entry => new ContentIndexEntry
+                    {
+                        ContentId = entry.ContentId,
+                        ContentType = entry.ContentType,
+                        CreatedAt = entry.CreatedAt,
+                        AverageVote = entry.AverageVote,
+                        TotalVotes = entry.TotalVotes,
+                        WeightedScore = (entry.TotalVotes + k) != 0
+                            ? (entry.AverageVote * entry.TotalVotes) / (entry.TotalVotes + k)
+                            : 0
+                    })
+                    .OrderByDescending(c => c.WeightedScore)
+                    .ThenByDescending(c => c.AverageVote)
+                    .ThenByDescending(c => c.CreatedAt);
+            }
+
+            /// <summary>
+            /// Applies sorting by weighted score to an issue query
+            /// </summary>
+            public static IOrderedQueryable<Issue> ApplyWeightedScoreSorting(IQueryable<Issue> query, int k = 5)
+            {
+                return query
+                    .OrderByDescending(i => i.IssueVotes.Any()
+                        ? (i.IssueVotes.Average(v => v.VoteValue) * i.IssueVotes.Count) / (i.IssueVotes.Count + k) // Weighted score
+                        : 0)
+                    .ThenByDescending(i => i.IssueVotes.Any() ? i.IssueVotes.Average(v => v.VoteValue) : 0) // Average vote as tiebreaker
+                    .ThenByDescending(i => i.CreatedAt); // Creation date as final tiebreaker
+            }
+
+            /// <summary>
+            /// Applies sorting by weighted score to a solution query
+            /// </summary>
+            public static IOrderedQueryable<Solution> ApplyWeightedScoreSorting(IQueryable<Solution> query, int k = 5)
+            {
+                return query
+                    .OrderByDescending(s => s.SolutionVotes.Any()
+                        ? (s.SolutionVotes.Average(v => v.VoteValue) * s.SolutionVotes.Count) / (s.SolutionVotes.Count + k) // Weighted score
+                        : 0)
+                    .ThenByDescending(s => s.SolutionVotes.Any() ? s.SolutionVotes.Average(v => v.VoteValue) : 0) // Average vote as tiebreaker
+                    .ThenByDescending(s => s.CreatedAt); // Creation date as final tiebreaker
+            }
+        }
 
 
 
-        public async Task<PaginatedContentItemsResponse> GetContentItemsPagedAsync(int pageNumber, int pageSize = 3)
+        public async Task<PaginatedContentItemsResponse> GetContentItemsPagedAsync(int pageNumber, ContentFilter filter, int pageSize = 3)
         {
             // First, get all the issues and solutions IDs with their creation dates and vote averages
             // This allows efficient sorting and pagination at the database level
@@ -121,7 +347,8 @@ namespace atlas_the_public_think_tank.Services
                     ContentId = i.IssueID,
                     ContentType = ContentType.Issue,
                     CreatedAt = i.CreatedAt,
-                    AverageVote = i.IssueVotes.Any() ? i.IssueVotes.Average(v => v.VoteValue) : 0
+                    AverageVote = i.IssueVotes.Any() ? i.IssueVotes.Average(v => v.VoteValue) : 0,
+                    TotalVotes = i.IssueVotes.Any() ? i.IssueVotes.Count() : 0,
                 });
 
             var solutionsIndexQuery = _context.Solutions
@@ -130,16 +357,22 @@ namespace atlas_the_public_think_tank.Services
                     ContentId = s.SolutionID,
                     ContentType = ContentType.Solution,
                     CreatedAt = s.CreatedAt,
-                    AverageVote = s.SolutionVotes.Any() ? s.SolutionVotes.Average(v => v.VoteValue) : 0
+                    AverageVote = s.SolutionVotes.Any() ? s.SolutionVotes.Average(v => v.VoteValue) : 0,
+                    TotalVotes = s.SolutionVotes.Any() ? s.SolutionVotes.Count() : 0
                 });
 
-            // Combine and apply sorting/pagination at the database level
+            // Combine queries
             var combinedQuery = issuesIndexQuery.Union(solutionsIndexQuery);
+
+            // Apply filters using the centralized filtering method
+            combinedQuery = ContentFiltering.ApplyCombinedContentFilters(combinedQuery, filter);
+
+            // Get total count after applying filters
             int totalCount = await combinedQuery.CountAsync();
 
-            var pagedIndexEntries = await combinedQuery
-                .OrderByDescending(c => c.AverageVote)
-                .ThenByDescending(c => c.CreatedAt)
+            // Apply sorting, calculate weighted scores, and paginate
+            int k = 5; // tuning constant
+            var pagedIndexEntries = await ContentFiltering.ApplyCombinedContentSorting(combinedQuery, k)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -243,9 +476,9 @@ namespace atlas_the_public_think_tank.Services
             };
         }
 
-
-
     }
+
+
 
     /// <summary>
     /// The breadcrumbs reflect the nesting of content and offer a way to navigate 
@@ -479,7 +712,7 @@ namespace atlas_the_public_think_tank.Services
         /// <summary>
         /// Converts a single issue to a single issueVM 
         /// </summary>
-        public async Task<Issue_ReadVM> ConvertIssueEntityToVM(Issue issue)
+        public async Task<Issue_ReadVM> ConvertIssueEntityToVM(Issue issue, ContentFilter filter)
         {
             List<Breadcrumb_ReadVM> breadcrumbTags = await _breadcrumbAccessor.GetIssueBreadcrumbTags(issue);
 
@@ -498,8 +731,8 @@ namespace atlas_the_public_think_tank.Services
                 ParentIssue = await GetParentIssue(issue),
                 ParentSolution = await GetParentSolution(issue),
                 SubIssues = await GetIssuesSubIssuesAsync(issue),
-                PaginatedSubIssues = await GetSubIssuesPagedAsync(issue.IssueID, 1, 3),
-                PaginatedSolutions = await _solutions.GetSolutionsPagedAsync(issue.IssueID, 1, 3),
+                PaginatedSubIssues = await GetSubIssuesPagedAsync(issue.IssueID, 1, filter),
+                PaginatedSolutions = await _solutions.GetSolutionsPagedAsync(issue.IssueID, 1, filter),
                 SubIssueCount = _context.Issues.Count(i => i.ParentIssueID == issue.IssueID),
                 BlockedContent = issue.BlockedContent,
                 Solutions = await _solutions.GetIssuesSolutions(issue),
@@ -739,22 +972,27 @@ namespace atlas_the_public_think_tank.Services
             return pr;
         }
 
-        public async Task<PaginatedIssuesResponse> GetSubIssuesPagedAsync(Guid issueId, int pageNumber, int pageSize = 3)
+        public async Task<PaginatedIssuesResponse> GetSubIssuesPagedAsync(Guid issueId, int pageNumber, ContentFilter filter, int pageSize = 3)
         {
             // Query for sub-issues directly from the database
             var query = _context.Issues
                 .Include(i => i.Scope)
                 .Include(i => i.Author)
+                .Include(i => i.IssueVotes) // Include votes for filtering
                 .AsNoTracking() // For better performance when reading
                 .Where(i => i.ParentIssueID == issueId);
 
+            // Apply filters using the centralized filtering method
+            query = CRUD.ContentFiltering.ApplyIssueFilters(query, filter);
+
+            // Get total count after applying filters
             var totalCount = await query.CountAsync();
 
-            Console.WriteLine($"Found {totalCount} sub-issues for parent issue {issueId}");
+            Console.WriteLine($"Found {totalCount} sub-issues for parent issue {issueId} after applying filters");
 
-            // Apply paging to get items for the requested page
-            var paginatedChildIssues = await query
-                .OrderByDescending(i => i.CreatedAt)
+            // Apply sorting and paging
+            int k = 5; // tuning constant
+            var paginatedChildIssues = await CRUD.ContentFiltering.ApplyWeightedScoreSorting(query, k)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -792,7 +1030,6 @@ namespace atlas_the_public_think_tank.Services
                 PageSize = pageSize
             };
         }
-
     }
 
     /// <summary>
@@ -862,7 +1099,7 @@ namespace atlas_the_public_think_tank.Services
         /// <summary>
         /// Converts a single solution to a single Solution_ReadVM
         /// </summary>
-        public async Task<Solution_ReadVM> ConvertSolutionEntityToVM(Models.Database.Solution solution)
+        public async Task<Solution_ReadVM> ConvertSolutionEntityToVM(Models.Database.Solution solution, ContentFilter filter)
         {
             // Fix: Correctly check if the IssueID is not null or empty
             // Note: IssueID == ParentIssueID for solutions....
@@ -878,6 +1115,7 @@ namespace atlas_the_public_think_tank.Services
                 AuthorID = solution.AuthorID,
                 ParentIssueID = solution.ParentIssueID,
                 ParentIssue = await Issues.GetParentIssue(solution),
+                PaginatedSubIssues = await GetSubIssuesPagedAsync(solution.SolutionID, 1, filter),
                 ContentStatus = solution.ContentStatus,
                 BlockedContentID = solution.BlockedContentID,
                 Scope = solution.Scope,
@@ -959,14 +1197,16 @@ namespace atlas_the_public_think_tank.Services
 
         }
 
+        
         /// <summary>
         /// Get paginated solutions for a specific issue
         /// </summary>
         /// <param name="issueId">The ID of the parent issue</param>
         /// <param name="pageNumber">The page number to retrieve</param>
+        /// <param name="filter">Optional filter criteria for solutions</param>
         /// <param name="pageSize">The number of solutions per page</param>
         /// <returns>A paginated response with solutions</returns>
-        public async Task<PaginatedSolutionsResponse> GetSolutionsPagedAsync(Guid issueId, int pageNumber, int pageSize = 3)
+        public async Task<PaginatedSolutionsResponse> GetSolutionsPagedAsync(Guid issueId, int pageNumber, ContentFilter filter, int pageSize = 3)
         {
             // Query for solutions for the given issue
             var query = _context.Solutions
@@ -974,16 +1214,21 @@ namespace atlas_the_public_think_tank.Services
                 .Include(s => s.Author)
                 .Include(s => s.SolutionCategories)
                     .ThenInclude(sc => sc.Category)
+                .Include(s => s.SolutionVotes) // Include votes for filtering
                 .AsNoTracking() // For better performance when reading
                 .Where(s => s.ParentIssueID == issueId);
 
+            // Apply filters using the centralized filtering method
+            query = CRUD.ContentFiltering.ApplySolutionFilters(query, filter);
+
+            // Get total count after applying filters
             var totalCount = await query.CountAsync();
 
-            Console.WriteLine($"Found {totalCount} solutions for issue {issueId}");
+            Console.WriteLine($"Found {totalCount} solutions for issue {issueId} after applying filters");
 
-            // Apply paging to get items for the requested page
-            var paginatedSolutions = await query
-                .OrderByDescending(s => s.CreatedAt)
+            // Apply sorting and paging
+            int k = 5; // tuning constant
+            var paginatedSolutions = await CRUD.ContentFiltering.ApplyWeightedScoreSorting(query, k)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -1024,7 +1269,64 @@ namespace atlas_the_public_think_tank.Services
                 PageSize = pageSize
             };
         }
+        public async Task<PaginatedIssuesResponse> GetSubIssuesPagedAsync(Guid solutionId, int pageNumber, ContentFilter filter, int pageSize = 3)
+        {
+            // Query for sub-issues directly from the database
+            var query = _context.Issues
+                .Include(i => i.Scope)
+                .Include(i => i.Author)
+                .Include(i => i.IssueVotes) // Include votes for filtering
+                .AsNoTracking() // For better performance when reading
+                .Where(i => i.ParentSolutionID == solutionId);
 
+            // Apply filters using the centralized filtering method
+            query = CRUD.ContentFiltering.ApplyIssueFilters(query, filter);
+
+            // Get total count after applying filters
+            var totalCount = await query.CountAsync();
+
+            Console.WriteLine($"Found {totalCount} sub-issues for parent solution {solutionId} after applying filters");
+
+            // Apply sorting and paging
+            int k = 5; // tuning constant
+            var paginatedChildIssues = await CRUD.ContentFiltering.ApplyWeightedScoreSorting(query, k)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var subIssues = new List<Issue_ReadVM>();
+
+            foreach (var child in paginatedChildIssues)
+            {
+                var breadcrumbTags = await _breadcrumbAccessor.GetIssueBreadcrumbTags(child);
+
+                subIssues.Add(new Issue_ReadVM
+                {
+                    IssueID = child.IssueID,
+                    Title = child.Title,
+                    Content = child.Content,
+                    CreatedAt = child.CreatedAt,
+                    ModifiedAt = child.ModifiedAt,
+                    ContentStatus = child.ContentStatus,
+                    AuthorID = child.AuthorID,
+                    Author = child.Author,
+                    VoteStats = await Issues.GetIssueVoteStats(child.IssueID),
+                    ScopeID = child.ScopeID,
+                    ParentSolutionID = child.ParentSolutionID,
+                    Scope = child.Scope,
+                    SubIssueCount = await _context.Issues.CountAsync(i => i.ParentIssueID == child.IssueID),
+                    BreadcrumbTags = breadcrumbTags
+                });
+            }
+
+            return new PaginatedIssuesResponse()
+            {
+                Issues = subIssues,
+                CurrentPage = pageNumber,
+                TotalCount = totalCount,
+                PageSize = pageSize
+            };
+        }
     }
 }
 

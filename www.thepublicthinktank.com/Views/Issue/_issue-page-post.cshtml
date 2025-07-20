@@ -31,7 +31,7 @@
             <small class="text-muted">Posted by @Model.Author?.UserName on @Model.CreatedAt.ToString("MMM dd, yyyy")</small>
         </div>
 
-        <p class="mx-2" style="white-space: pre-wrap">@Model.Content</p>
+        <p class="mx-2" id="issue-page-post-content" style="white-space: pre-wrap">@Model.Content</p>
 
         @* @if (Model.Categories != null && Model.Categories.Any())
         {

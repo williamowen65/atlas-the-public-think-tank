@@ -2,6 +2,7 @@
 using atlas_the_public_think_tank.Models.Database;
 using atlas_the_public_think_tank.Models.ViewModel;
 using atlas_the_public_think_tank.Services;
+using atlas_the_public_think_tank.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -103,20 +104,47 @@ namespace atlas_the_public_think_tank.Controllers
             return View(model);
         }
 
+       
+
         /// <summary>
-        /// This method is used to return paginated solution posts for a specific issue.
+        /// Retrieves a paginated list of sub-issues for a specified solution.
         /// </summary>
-        /// <param name="issueId">The ID of the parent issue</param>
-        /// <param name="currentPage">The page number to retrieve</param>
-        /// <returns>A partial view with the solutions for the specified page</returns>
+        /// <param name="solutionId">The unique identifier of the solution for which sub-issues are requested.</param>
+        /// <param name="currentPage">The current page number of the paginated results. Defaults to 1.</param>
+        /// <returns>An <see cref="IActionResult"/> containing the paginated sub-issues in JSON format.</returns>
         [HttpGet]
         [AllowAnonymous]
-        [Route("/solution/getPaginatedSolutions/{issueId}")]
-        public async Task<IActionResult> GetPaginatedSolutions(Guid issueId, int currentPage = 1)
+        [Route("/solution/getPaginatedSubIssues/{solutionId}")]
+        public async Task<IActionResult> GetPaginatedSubIssues(Guid solutionId, int currentPage = 1)
         {
-            PaginatedSolutionsResponse paginatedSolutions = await _crud.Solutions.GetSolutionsPagedAsync(issueId, currentPage, 3);
-            return PartialView("~/Views/Solution/_solution-cards.cshtml", paginatedSolutions.Solutions);
+
+            ContentFilter filter = new ContentFilter();
+            if (Request.Cookies.TryGetValue("contentFilter", out string? cookieValue) && cookieValue != null)
+            {
+                filter = ContentFilter.FromJson(cookieValue);
+            }
+
+
+            PaginatedIssuesResponse paginatedSubIssues = await _crud.Solutions.GetSubIssuesPagedAsync(solutionId, currentPage, filter);
+
+            string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Issue/_issue-cards.cshtml", paginatedSubIssues.Issues);
+
+
+            var response = new
+            {
+                html = partialViewHtml,
+                pagination = new PaginationStats
+                {
+                    TotalCount = paginatedSubIssues.TotalCount,
+                    PageSize = paginatedSubIssues.PageSize,
+                    CurrentPage = paginatedSubIssues.CurrentPage,
+                    TotalPages = (int)Math.Ceiling(paginatedSubIssues.TotalCount / (double)paginatedSubIssues.PageSize)
+                }
+            };
+
+            return Json(response);
         }
+
 
         /// <summary>
         /// Returns the vote dial for a specific solution.
@@ -144,10 +172,20 @@ namespace atlas_the_public_think_tank.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> ReadSolution(Guid id)
         {
+
+            ViewData["FilterPanelMode"] = "ContentItem";
+
+            ContentFilter filter = new ContentFilter();
+            if (Request.Cookies.TryGetValue("contentFilter", out string? cookieValue) && cookieValue != null)
+            {
+                filter = ContentFilter.FromJson(cookieValue);
+            }
+
+
             var solution = await _context.Solutions
                 .Include(s => s.Author)
                 .Include(s => s.Scope)
-                .Include(f => f.ChildIssues)
+                //.Include(f => f.ChildIssues) // These will be fetched via pagination
                 .Include(s => s.ParentIssue) // ParentIssue for a solution
                     .ThenInclude(i => i.Scope)
                 .Include(s => s.ParentIssue) // ParentIssue for a solution
@@ -167,7 +205,7 @@ namespace atlas_the_public_think_tank.Controllers
             }
 
             // Map to the view model (adjust as needed for your project)
-            var solutionVM = await _crud.Solutions.ConvertSolutionEntityToVM(solution);
+            var solutionVM = await _crud.Solutions.ConvertSolutionEntityToVM(solution, filter);
 
             return View(solutionVM);
         }
