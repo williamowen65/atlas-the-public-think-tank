@@ -58,15 +58,11 @@ namespace atlas_the_public_think_tank.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetSidebar()
         {
-            var categories = await _context.Categories
-                .Select(p => new Category_ReadVM
-                {
-                    CategoryID = p.CategoryID,
-                    CategoryName = p.CategoryName
-                })
-                .ToListAsync();
+           
 
-            return PartialView("~/Views/Shared/Components/_left-sidebar-container.cshtml", categories);
+            SideBar_ReadVM sideBar_ReadVM = new SideBar_ReadVM();
+
+            return PartialView("~/Views/Shared/LeftSideBar/_left-sidebar-container.cshtml", sideBar_ReadVM);
         }
 
 

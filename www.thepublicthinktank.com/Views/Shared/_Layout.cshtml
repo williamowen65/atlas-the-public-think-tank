@@ -17,6 +17,10 @@
     <link rel="stylesheet" href="~/css/read-issue.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/issue-card-stat-icons.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/breadcrumb.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/dual-slider-input.css" asp-append-version="true" />
+    <link href="https://cdn.jsdelivr.net/npm/mc-datepicker/dist/mc-calendar.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/mc-datepicker/dist/mc-calendar.min.js"></script>
+
     @* <link rel="stylesheet" href="~/atlas_the_public_think_tank.styles.css" asp-append-version="true" /> *@
 
     <script src="~/js/initialize-card.js" asp-append-version="true"></script>
@@ -28,7 +32,7 @@
     <partial name="_ColorMode" />
 
     <partial name="_Header" />
-    <partial name="_Left-Sidebar-Toggle" />
+    @Html.Partial("~/Views/Shared/LeftSideBar/_Left-Sidebar-Toggle.cshtml")
    
     <main role="main" class="pb-3 px-md-3">
         @RenderBody()
@@ -43,6 +47,7 @@
     <script src="~/js/client_alerts.js" asp-append-version="true"></script>
     <script src="~/js/left-sidebar-container.js" asp-append-version="true"></script>
     <script src="~/js/pagination.js" asp-append-version="true"></script>
+    <script src="~/js/dual-slider-input.js" asp-append-version="true"></script>
 
 
 

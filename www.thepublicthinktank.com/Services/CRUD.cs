@@ -23,9 +23,57 @@ namespace atlas_the_public_think_tank.Services
         // They can all be optional and depend on the specific query
 
         public double AverageVote { get; set; }
+        public int TotalVotes { get; set; }
         public DateTime CreatedAt { get; set; }
 
 
+        /// <summary>
+        /// WeightedScore: score = (averageVote * totalVotes) / (totalVotes + k)
+        /// </summary>
+        /// <remarks>
+        /// k = tuning parameter (how much you penalize low-vote content) <br/>
+        /// Content with a low vote gets discounted more <br/>
+        /// </remarks>
+        public double WeightedScore { get; set; }
+
+        /// <summary>
+        /// score = (v / (v + m)) * R + (m / (v + m)) * C
+        /// </summary>
+        /// <remarks>
+        /// R = average vote for the item <br/>
+        /// V = number of votes for the item <br/>
+        /// m = minimum votes required for credibility (eg, 10, 20) <br/>
+        /// C = mean vote across all content <br/>
+        /// </remarks>
+        public double BayesianAverage { get; set; }
+
+    }
+
+    /// <summary>
+    /// Below are alternatives to fairly score content based on average vote and total number of vote
+    /// Quality(average rating) with Confidence(How many people agree)
+    /// </summary>
+    public class ContentScore
+    {
+        /// <summary>
+        /// WeightedScore: score = (averageVote * totalVotes) / (totalVotes + k)
+        /// </summary>
+        /// <remarks>
+        /// k = tuning parameter (how much you penalize low-vote content) <br/>
+        /// Content with a low vote gets discounted more <br/>
+        /// </remarks>
+        public double WeightedScore { get; set; }
+
+        /// <summary>
+        /// score = (v / (v + m)) * R + (m / (v + m)) * C
+        /// </summary>
+        /// <remarks>
+        /// R = average vote for the item <br/>
+        /// V = number of votes for the item <br/>
+        /// m = minimum votes required for credibility (eg, 10, 20) <br/>
+        /// C = mean vote across all content <br/>
+        /// </remarks>
+        public double BayesianAverage { get; set; }
     }
 
     /// <summary>
@@ -121,7 +169,8 @@ namespace atlas_the_public_think_tank.Services
                     ContentId = i.IssueID,
                     ContentType = ContentType.Issue,
                     CreatedAt = i.CreatedAt,
-                    AverageVote = i.IssueVotes.Any() ? i.IssueVotes.Average(v => v.VoteValue) : 0
+                    AverageVote = i.IssueVotes.Any() ? i.IssueVotes.Average(v => v.VoteValue) : 0,
+                    TotalVotes = i.IssueVotes.Any() ? i.IssueVotes.Count() : 0,
                 });
 
             var solutionsIndexQuery = _context.Solutions
@@ -130,15 +179,31 @@ namespace atlas_the_public_think_tank.Services
                     ContentId = s.SolutionID,
                     ContentType = ContentType.Solution,
                     CreatedAt = s.CreatedAt,
-                    AverageVote = s.SolutionVotes.Any() ? s.SolutionVotes.Average(v => v.VoteValue) : 0
+                    AverageVote = s.SolutionVotes.Any() ? s.SolutionVotes.Average(v => v.VoteValue) : 0,
+                    TotalVotes = s.SolutionVotes.Any() ? s.SolutionVotes.Count() : 0
                 });
+
+
+            int k = 5; // your tuning constant
 
             // Combine and apply sorting/pagination at the database level
             var combinedQuery = issuesIndexQuery.Union(solutionsIndexQuery);
             int totalCount = await combinedQuery.CountAsync();
 
             var pagedIndexEntries = await combinedQuery
-                .OrderByDescending(c => c.AverageVote)
+                .Select(entry => new ContentIndexEntry
+                {
+                    ContentId = entry.ContentId,
+                    ContentType = entry.ContentType,
+                    CreatedAt = entry.CreatedAt,
+                    AverageVote = entry.AverageVote,
+                    TotalVotes = entry.TotalVotes,
+                    WeightedScore = (entry.TotalVotes + k) != 0
+                    ? (entry.AverageVote * entry.TotalVotes) / (entry.TotalVotes + k)
+                    : 0
+                 })
+                .OrderByDescending(c => c.WeightedScore)
+                .ThenByDescending(c => c.AverageVote)
                 .ThenByDescending(c => c.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)

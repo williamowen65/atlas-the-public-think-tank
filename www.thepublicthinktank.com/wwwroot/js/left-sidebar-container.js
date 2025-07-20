@@ -159,6 +159,18 @@ async function loadSidebarContent() {
         const html = await response.text();
         sidebarContainer.innerHTML = html;
 
+        // Initialize the dual slider after sidebar content is loaded
+        initializeDualSlider();
+        initializeMinMaxNumberInput()
+        MCDatepicker.create({
+            el: '#datepicker-from',
+            bodyType: 'modal'
+        });
+        MCDatepicker.create({
+            el: '#datepicker-to',
+            bodyType: 'modal'
+        });
+
         return Promise.resolve(); // Explicitly return a resolved promise
     } catch (error) {
         console.error('Error loading sidebar:', error);
@@ -251,4 +263,62 @@ function setupViewToggle() {
 
     // Initialize lens position and content based on active toggle
     moveLens();
+}
+
+
+// A pair of inputs for min and max must not over lap
+// Initial min is 0
+// Inital max is "no max"
+// If min is 100, max must be no lower than 100
+function initializeMinMaxNumberInput() {
+    const totalVotesControl = document.querySelector("#total-votes-filter");
+    const minInput = totalVotesControl.querySelector("#fromInput-total-votes-filter");
+    const maxInput = totalVotesControl.querySelector("#toInput-total-votes-filter");
+    
+    if (!totalVotesControl || !minInput || !maxInput) {
+        console.log("Could not find total votes filter inputs");
+        return;
+    }
+    
+    // Set initial values
+    minInput.value = 0;
+    // Max input is initially empty (placeholder shows "No max")
+    
+    // Function to validate and adjust min/max values
+    function validateInputs() {
+        const minValue = parseInt(minInput.value) || 0;
+        const maxValue = maxInput.value ? (parseInt(maxInput.value) || 0) : null;
+        
+        // Ensure min value is not negative
+        if (minValue < 0) {
+            minInput.value = 0;
+        }
+        
+        // Ensure max value is either null ("no max") or >= min value
+        if (maxValue !== null) {
+            if (maxValue < minValue) {
+                maxInput.value = minValue;
+            }
+        }
+    }
+    
+    // Add event listeners
+    minInput.addEventListener('input', function() {
+        validateInputs();
+    });
+    
+    minInput.addEventListener('change', function() {
+        validateInputs();
+    });
+    
+    maxInput.addEventListener('input', function() {
+        validateInputs();
+    });
+    
+    maxInput.addEventListener('change', function() {
+        validateInputs();
+    });
+    
+    // Run initial validation
+    validateInputs();
 }
