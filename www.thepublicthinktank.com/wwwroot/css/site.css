@@ -134,3 +134,6 @@ svg.parent-issue-icon {
     background: var(--solution-bg);
 }
 
+.mc-calendar {
+    z-index: 2030 !important;
+}

@@ -30,11 +30,16 @@ public class HomeController : Controller
 
     public async Task<IActionResult> Index()
     {
+        ContentFilter filter = new ContentFilter();
+        if (Request.Cookies.TryGetValue("contentFilter", out string? cookieValue) && cookieValue != null)
+        {
+            filter = ContentFilter.FromJson(cookieValue);
+        }
 
         // Create a view model to hold both issues and categories
         var viewModel = new HomeIndexViewModel();
 
-        viewModel.PaginatedContent = await _crudService.GetContentItemsPagedAsync(1);
+        viewModel.PaginatedContent = await _crudService.GetContentItemsPagedAsync(1, filter);
 
         //viewModel.Categories = new List<Category_ReadVM>();
         return View(viewModel);
@@ -51,7 +56,12 @@ public class HomeController : Controller
     [Route("/home/getPaginatedContent")]
     public async Task<IActionResult> GetPaginatedContentItems(int currentPage = 1)
     {
-        PaginatedContentItemsResponse paginatedContentItems = await _crudService.GetContentItemsPagedAsync(currentPage, 3);
+        ContentFilter filter = new ContentFilter();
+        if (Request.Cookies.TryGetValue("contentFilter", out string? cookieValue) && cookieValue != null)
+        {
+            filter = ContentFilter.FromJson(cookieValue);
+        }
+        PaginatedContentItemsResponse paginatedContentItems = await _crudService.GetContentItemsPagedAsync(currentPage, filter);
 
         return PartialView("~/Views/Home/_content-item-cards.cshtml", paginatedContentItems.ContentItems);
     }

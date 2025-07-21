@@ -8,6 +8,8 @@
  * This file also manages the toggles for switching between sidebar views
  */
 
+
+
 document.addEventListener('DOMContentLoaded', async function () {
     // Load sidebar content via AJAX
     await loadSidebarContent();
@@ -61,9 +63,8 @@ document.addEventListener('DOMContentLoaded', async function () {
         updateToggleIcon();
 
         // Add click event listener to toggle sidebar
-        sidebarToggle.addEventListener('click', function () {
+        sidebarToggle.addEventListener('click', function (e) {
             const isMobile = window.innerWidth <= 768;
-
             if (isMobile) {
                 // Mobile behavior - toggle 'sidebar-open' class
                 sidebar.classList.toggle('sidebar-open');
@@ -74,7 +75,6 @@ document.addEventListener('DOMContentLoaded', async function () {
                 sidebarToggle.classList.toggle('sidebar-closed');
                 if (mainContent) mainContent.classList.toggle('sidebar-closed');
                 if (footer) footer.classList.toggle('sidebar-closed');
-
                 // Save preference to localStorage
                 const isClosed = sidebar.classList.contains('sidebar-closed');
                 localStorage.setItem('sidebarState', isClosed ? 'closed' : 'open');
@@ -86,6 +86,11 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         // Close sidebar when clicking outside on mobile
         document.addEventListener('click', function (event) {
+
+            const isCalendarClick = Boolean(event.target.closest(".mc-calendar"))
+            if (isCalendarClick) return;
+      
+
             const isMobile = window.innerWidth <= 768;
             if (isMobile &&
                 sidebar.classList.contains('sidebar-open') &&
@@ -100,6 +105,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         // Handle window resize
         window.addEventListener('resize', function () {
             const isMobile = window.innerWidth <= 768;
+
             if (isMobile) {
                 // Switching to mobile - remove desktop classes, use mobile classes
                 sidebar.classList.remove('sidebar-closed');
@@ -139,7 +145,6 @@ document.addEventListener('DOMContentLoaded', async function () {
 
 
 // Function to load sidebar content via AJAX
-// Function to load sidebar content via AJAX
 async function loadSidebarContent() {
     const sidebarContainer = document.getElementById('left-sidebar-container');
 
@@ -159,17 +164,15 @@ async function loadSidebarContent() {
         const html = await response.text();
         sidebarContainer.innerHTML = html;
 
-        // Initialize the dual slider after sidebar content is loaded
+       
+
+        // Initialize the content filter logic after sidebar content is loaded
         initializeDualSlider();
         initializeMinMaxNumberInput()
-        MCDatepicker.create({
-            el: '#datepicker-from',
-            bodyType: 'modal'
-        });
-        MCDatepicker.create({
-            el: '#datepicker-to',
-            bodyType: 'modal'
-        });
+        initializeDatePickers()
+        loadContentFilterFromCookie()
+
+      
 
         return Promise.resolve(); // Explicitly return a resolved promise
     } catch (error) {
@@ -265,60 +268,3 @@ function setupViewToggle() {
     moveLens();
 }
 
-
-// A pair of inputs for min and max must not over lap
-// Initial min is 0
-// Inital max is "no max"
-// If min is 100, max must be no lower than 100
-function initializeMinMaxNumberInput() {
-    const totalVotesControl = document.querySelector("#total-votes-filter");
-    const minInput = totalVotesControl.querySelector("#fromInput-total-votes-filter");
-    const maxInput = totalVotesControl.querySelector("#toInput-total-votes-filter");
-    
-    if (!totalVotesControl || !minInput || !maxInput) {
-        console.log("Could not find total votes filter inputs");
-        return;
-    }
-    
-    // Set initial values
-    minInput.value = 0;
-    // Max input is initially empty (placeholder shows "No max")
-    
-    // Function to validate and adjust min/max values
-    function validateInputs() {
-        const minValue = parseInt(minInput.value) || 0;
-        const maxValue = maxInput.value ? (parseInt(maxInput.value) || 0) : null;
-        
-        // Ensure min value is not negative
-        if (minValue < 0) {
-            minInput.value = 0;
-        }
-        
-        // Ensure max value is either null ("no max") or >= min value
-        if (maxValue !== null) {
-            if (maxValue < minValue) {
-                maxInput.value = minValue;
-            }
-        }
-    }
-    
-    // Add event listeners
-    minInput.addEventListener('input', function() {
-        validateInputs();
-    });
-    
-    minInput.addEventListener('change', function() {
-        validateInputs();
-    });
-    
-    maxInput.addEventListener('input', function() {
-        validateInputs();
-    });
-    
-    maxInput.addEventListener('change', function() {
-        validateInputs();
-    });
-    
-    // Run initial validation
-    validateInputs();
-}

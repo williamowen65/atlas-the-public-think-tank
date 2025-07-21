@@ -53,34 +53,30 @@ namespace atlas_the_public_think_tank.Services
     /// Below are alternatives to fairly score content based on average vote and total number of vote
     /// Quality(average rating) with Confidence(How many people agree)
     /// </summary>
-    public class ContentScore
-    {
-        /// <summary>
-        /// WeightedScore: score = (averageVote * totalVotes) / (totalVotes + k)
-        /// </summary>
-        /// <remarks>
-        /// k = tuning parameter (how much you penalize low-vote content) <br/>
-        /// Content with a low vote gets discounted more <br/>
-        /// </remarks>
-        public double WeightedScore { get; set; }
+    //public class ContentScore
+    //{
+    //    /// <summary>
+    //    /// WeightedScore: score = (averageVote * totalVotes) / (totalVotes + k)
+    //    /// </summary>
+    //    /// <remarks>
+    //    /// k = tuning parameter (how much you penalize low-vote content) <br/>
+    //    /// Content with a low vote gets discounted more <br/>
+    //    /// </remarks>
+    //    public double WeightedScore { get; set; }
 
-        /// <summary>
-        /// score = (v / (v + m)) * R + (m / (v + m)) * C
-        /// </summary>
-        /// <remarks>
-        /// R = average vote for the item <br/>
-        /// V = number of votes for the item <br/>
-        /// m = minimum votes required for credibility (eg, 10, 20) <br/>
-        /// C = mean vote across all content <br/>
-        /// </remarks>
-        public double BayesianAverage { get; set; }
-    }
+    //    /// <summary>
+    //    /// score = (v / (v + m)) * R + (m / (v + m)) * C
+    //    /// </summary>
+    //    /// <remarks>
+    //    /// R = average vote for the item <br/>
+    //    /// V = number of votes for the item <br/>
+    //    /// m = minimum votes required for credibility (eg, 10, 20) <br/>
+    //    /// C = mean vote across all content <br/>
+    //    /// </remarks>
+    //    public double BayesianAverage { get; set; }
+    //}
 
-    /// <summary>
-    /// This class (coming soon) would be a customizable filter the users can apply on the data
-    /// </summary>
-    public class ContentFilter
-    { }
+  
 
     /// <summary>
     /// A service to encapsulate CRUD logic for the app (Accessible by dependency injection)
@@ -159,8 +155,12 @@ namespace atlas_the_public_think_tank.Services
 
 
 
-        public async Task<PaginatedContentItemsResponse> GetContentItemsPagedAsync(int pageNumber, int pageSize = 3)
+        public async Task<PaginatedContentItemsResponse> GetContentItemsPagedAsync(int pageNumber, ContentFilter filter, int pageSize = 3)
         {
+
+            //Console.WriteLine(filter);
+            //Console.WriteLine(filter.ToJson());
+
             // First, get all the issues and solutions IDs with their creation dates and vote averages
             // This allows efficient sorting and pagination at the database level
             var issuesIndexQuery = _context.Issues
@@ -188,6 +188,48 @@ namespace atlas_the_public_think_tank.Services
 
             // Combine and apply sorting/pagination at the database level
             var combinedQuery = issuesIndexQuery.Union(solutionsIndexQuery);
+
+            // Apply filter
+            // Apply filters
+            // Filter by average vote range
+            if (filter?.AvgVoteRange != null)
+            {
+                combinedQuery = combinedQuery.Where(c =>
+                    c.AverageVote >= filter.AvgVoteRange.Min &&
+                    c.AverageVote <= filter.AvgVoteRange.Max);
+            }
+
+            // Filter by total vote count
+            if (filter?.TotalVoteCount != null)
+            {
+                combinedQuery = combinedQuery.Where(c => c.TotalVotes >= filter.TotalVoteCount.Min);
+
+                // Apply max filter only if it has a value
+                if (filter.TotalVoteCount.Max.HasValue)
+                {
+                    combinedQuery = combinedQuery.Where(c => c.TotalVotes <= filter.TotalVoteCount.Max.Value);
+                }
+            }
+
+            //// Filter by date range
+            //if (filter?.DateRange != null)
+            //{
+            //    if (filter.DateRange.From.HasValue)
+            //    {
+            //        combinedQuery = combinedQuery.Where(c => c.CreatedAt >= filter.DateRange.StartDate.Value);
+            //    }
+
+            //    if (filter.DateRange.To.HasValue)
+            //    {
+            //        combinedQuery = combinedQuery.Where(c => c.CreatedAt <= filter.DateRange.EndDate.Value);
+            //    }
+            //}
+
+            // End Apply filter
+
+
+
+
             int totalCount = await combinedQuery.CountAsync();
 
             var pagedIndexEntries = await combinedQuery

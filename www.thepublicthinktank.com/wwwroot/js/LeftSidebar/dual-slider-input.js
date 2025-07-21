@@ -184,6 +184,8 @@ function setToggleAccessible(currentTarget) {
 
 
 function initializeDualSliderInput(fromSlider, toSlider, fromInput, toInput) {
+    const debouncedFilterTrigger = getDebouncedFilterTrigger()
+
     // Set up initial visual styling for the slider track
     fillSlider(fromSlider, toSlider, '#C6C6C6', '#25daa5', toSlider);
 
@@ -191,10 +193,22 @@ function initializeDualSliderInput(fromSlider, toSlider, fromInput, toInput) {
     setToggleAccessible(toSlider);
 
     // Event listeners: When user interacts with sliders or inputs, call appropriate control functions
-    fromSlider.oninput = () => controlFromSlider(fromSlider, toSlider, fromInput);
-    toSlider.oninput = () => controlToSlider(fromSlider, toSlider, toInput);
-    fromInput.oninput = () => controlFromInput(fromSlider, fromInput, toInput, toSlider);
-    toInput.oninput = () => controlToInput(toSlider, fromInput, toInput, toSlider);
+    fromSlider.oninput = () => {
+        controlFromSlider(fromSlider, toSlider, fromInput);
+        debouncedFilterTrigger();
+    };
+    toSlider.oninput = () => {
+        controlToSlider(fromSlider, toSlider, toInput);
+        debouncedFilterTrigger();
+    };
+    fromInput.oninput = () => {
+        controlFromInput(fromSlider, fromInput, toInput, toSlider);
+        debouncedFilterTrigger();
+    };
+    toInput.oninput = () => {
+        controlToInput(toSlider, fromInput, toInput, toSlider);
+        debouncedFilterTrigger();
+    };
 }
 
 

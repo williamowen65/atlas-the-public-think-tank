@@ -424,27 +424,6 @@ function createDialResetMethod(container, issueId, observer, dialId, options, st
 
 
 
-/**
- * Local debounce method generator specifically for this file
- *
- * Creates a debounced version of a function
- * @param {Function} func - The function to debounce
- * @param {number} wait - The number of milliseconds to delay
- * @returns {Function} - The debounced function
- */
-function debounce(func, wait) {
-    let timeout;
-    return function () {
-        const context = this;
-        const args = arguments;
-        clearTimeout(timeout);
-        timeout = setTimeout(() => {
-            func.apply(context, args);
-        }, wait);
-    };
-}
-
-
 
 
 
