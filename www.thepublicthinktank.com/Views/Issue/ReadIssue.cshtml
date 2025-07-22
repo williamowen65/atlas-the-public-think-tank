@@ -23,17 +23,23 @@
             <button class="nav-link active" id="solutions-tab" data-bs-toggle="tab" data-bs-target="#solutions" type="button" role="tab" aria-controls="nav-home" aria-selected="true">
                 <div class="content-count">@Model.PaginatedSolutions.TotalCount</div>
                 @Html.Partial("~/Views/Shared/Icons/_Solutions.cshtml")
+                    <span class="tab-label">
                 Solutions
+                    </span>
             </button>
             <button class="nav-link" id="issue-comments-tab" data-bs-toggle="tab" data-bs-target="#issue-comments" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
                 <div class="content-count">@Model.Comments.Count()</div>
                 @Html.Partial("~/Views/Shared/Icons/_Comments.cshtml")
+                    <span class="tab-label">
                 Comments
+                    </span>
             </button>
             <button class="nav-link" id="sub-issues-tab" data-bs-toggle="tab" data-bs-target="#sub-issues" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
                 <div class="content-count">@Model.PaginatedSubIssues.TotalCount</div>
                 @Html.Partial("~/Views/Shared/Icons/_SubIssues.cshtml")
+                    <span class="tab-label">
                 Sub-Issues
+                    </span>
             </button>
             <button class="nav-link d-flex align-items-center" id="parent-post-tab" data-bs-toggle="tab" data-bs-target="#parent-post" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
                 <div class="content-count">
@@ -45,19 +51,19 @@
 
                 @if (Model.ParentIssue != null && Model.ParentSolution != null)
                 {
-                    <span>Parent Post</span>
+                    <span class="tab-label">Parent Post</span>
                 }
                 else if (Model.ParentIssue != null)
                 {
-                    <span>Parent Issue</span>
+                        <span class="tab-label">Parent Issue</span>
                 }
                 else if (Model.ParentSolution != null)
                 {
-                    <span>Parent Solution</span>
+                        <span class="tab-label">Parent Solution</span>
                 }
                 else
                 {
-                    <span>Parent Post</span>
+                        <span class="tab-label">Parent Post</span>
                 }
             </button>
             <li class="nav-item dropdown ms-auto">
@@ -108,19 +114,18 @@
                     }
                 </div>
 
-                <button 
-                     @(isMoreSolutions ? "": "disabled" )
-                    id="fetchPaginatedSolutions" 
-                    data-url="/solution/getPaginatedSolutions/@Model.IssueID?currentPage=2" 
-                    data-target="#solution-content"
-                    data-total-count="@Model.PaginatedSolutions.TotalCount"
-                    data-page-size="@Model.PaginatedSolutions.PageSize"
-                    data-content-type="solutions"
-                        class="mx-auto mb-2 d-block btn btn-primary">
-                    <span class="button-text">
-                            @(isMoreSolutions? "Load more solutions" : "No more solutions")
-                    </span> (<span class="paginatedCount">@(Math.Min(Model.PaginatedSolutions.PageSize, Model.PaginatedSolutions.TotalCount))</span>/@Model.PaginatedSolutions.TotalCount)
-                </button>
+
+                @await Html.PartialAsync("~/Views/Shared/Components/_pagination-button.cshtml", new PaginationButton_ReadVM
+                {
+                    ElementId = "fetchPaginatedSolutions",
+                        ContentType = "solutions",
+                        Target = "#solution-content",
+                        Url = "/issue/getPaginatedSolutions/" + @Model.IssueID,
+                        CurrentPage = Model.PaginatedSolutions.TotalCount,
+                        PageSize = Model.PaginatedSolutions.PageSize,
+                        TotalCount = Model.PaginatedSolutions.TotalCount,
+                        // TotalPages = Model.PaginatedSolutions.TotalPages
+                        })
             }
 
         </div>
@@ -168,34 +173,21 @@
 
                 @if (Model.PaginatedSubIssues != null && Model.PaginatedSubIssues.Issues.Any())
                 {
-                    @Html.Partial("~/Views/Issue/_issue-cards.cshtml", Model.PaginatedSubIssues.Issues)
+                    @await Html.PartialAsync("~/Views/Issue/_issue-cards.cshtml", Model.PaginatedSubIssues.Issues)
                 }
                 </div>
 
-                <button 
-                    @(isMoreSubIssues ? "": "disabled" )
-
-                    id="fetchPaginatedSubIssues" 
-                    data-url="/issue/getPaginatedSubIssues/@Model.IssueID?currentPage=2" 
-                    data-target="#sub-issue-content"
-                    data-total-count="@Model.PaginatedSubIssues.TotalCount"
-                    data-page-size="@Model.PaginatedSubIssues.PageSize"
-                    data-content-type="sub-issues"
-                        class="mx-auto mb-2 d-block btn btn-primary">
-                    <span class="button-text">
-                        @(isMoreSubIssues ? "Load more sub-issues" : "No more sub-issues")
-                    </span> (<span class="paginatedCount">@(Math.Min(Model.PaginatedSubIssues.PageSize, Model.PaginatedSubIssues.TotalCount))</span>/@Model.PaginatedSubIssues.TotalCount)
-                </button>
-
-
-                @* foreach (Issue_ReadVM model in Model.SubIssues)
+                @await Html.PartialAsync("~/Views/Shared/Components/_pagination-button.cshtml", new PaginationButton_ReadVM
                 {
-
-                    // Fetch the sub issue
-                    @Html.Partial("~/Views/Issue/_issue-card.cshtml", model)
-                    ;
-                } *@
-
+                    ElementId = "fetchPaginatedSubIssues",
+                    ContentType = "sub-issues",
+                    Target = "#sub-issue-content",
+                    Url = "/issue/getPaginatedSubIssues/" + @Model.IssueID,
+                    CurrentPage = Model.PaginatedSubIssues.TotalCount,
+                    PageSize = Model.PaginatedSubIssues.PageSize,
+                    TotalCount = Model.PaginatedSubIssues.TotalCount,
+                    // TotalPages = Model.PaginatedSubIssues.TotalPages
+                })
             }
         </div>
         <div class="tab-pane fade border border-1 border-top-0" id="parent-post" role="tabpanel" aria-labelledby="parent-post-tab" tabindex="0">
@@ -259,7 +251,7 @@
 
         if (parentPostTab) {
             parentPostTab.addEventListener('shown.bs.tab', function (e) {
-                const tabText = parentPostTab.textContent.trim();
+                const tabText = parentPostTab.querySelector(".tab-label").textContent.trim();
                 console.log(`${tabText} tab activated - reinitializing vote dials`);
                 reinitializeVoteDials('parent-post');
             });

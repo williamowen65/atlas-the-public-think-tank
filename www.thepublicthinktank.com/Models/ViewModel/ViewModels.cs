@@ -84,6 +84,8 @@ namespace atlas_the_public_think_tank.Models.ViewModel
         public Guid SolutionID { get; set; }     
         public Guid ParentIssueID { get; set; }
 
+        public PaginatedIssuesResponse PaginatedSubIssues { get; set; } = new PaginatedIssuesResponse();
+
         // Navigation properties
         public Issue_ReadVM ParentIssue { get; set; }
        

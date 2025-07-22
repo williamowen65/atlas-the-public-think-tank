@@ -22,7 +22,7 @@
                 Comments
             </button>
             <button class="nav-link" id="sub-issues-tab" data-bs-toggle="tab" data-bs-target="#sub-issues" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
-                <div class="content-count">@Model.SubIssues.Count()</div>
+                <div class="content-count">@Model.PaginatedSubIssues.TotalCount</div>
                 @Html.Partial("~/Views/Shared/Icons/_SubIssues.cshtml")
                 Sub-Issues
             </button>
@@ -79,7 +79,7 @@
             }
         </div>
         <div class="tab-pane fade border border-1 border-top-0" id="sub-issues" role="tabpanel" aria-labelledby="sub-issues-tab" tabindex="0">
-            @if (Model.SubIssues.Count() == 0)
+            @if (Model.PaginatedSubIssues.TotalCount == 0)
             {
                 <div id="empty-issueView-sub-issues-feed" class="empty-feed">
 
@@ -96,13 +96,24 @@
             }
             else
             {
-                foreach (Issue_ReadVM model in Model.SubIssues)
-                {
+                <div id="sub-issue-content">
+                    @if (Model.PaginatedSubIssues != null && Model.PaginatedSubIssues.Issues.Any())
+                    {
+                        @await Html.PartialAsync("~/Views/Issue/_issue-cards.cshtml", Model.PaginatedSubIssues.Issues)
+                    }
+                </div>
 
-                    // Fetch the sub issue
-                    @Html.Partial("~/Views/Issue/_issue-card.cshtml", model)
-                    ;
-                }
+                @await Html.PartialAsync("~/Views/Shared/Components/_pagination-button.cshtml", new PaginationButton_ReadVM
+                {
+                    ElementId = "fetchPaginatedSubIssues",
+                    ContentType = "sub-issues",
+                    Target = "#sub-issue-content",
+                    Url = "/solution/getPaginatedSubIssues/" + @Model.SolutionID,
+                    CurrentPage = Model.PaginatedSubIssues.TotalCount,
+                    PageSize = Model.PaginatedSubIssues.PageSize,
+                    TotalCount = Model.PaginatedSubIssues.TotalCount,
+                    // TotalPages = Model.PaginatedSubIssues.TotalPages
+                })
 
             }
         </div>

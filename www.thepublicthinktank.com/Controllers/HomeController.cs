@@ -1,6 +1,6 @@
-using atlas_the_public_think_tank.Models;
 using atlas_the_public_think_tank.Models.ViewModel;
 using atlas_the_public_think_tank.Services;
+using atlas_the_public_think_tank.Utilities;
 using Azure.Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,7 +19,7 @@ namespace atlas_the_public_think_tank.Controllers;
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
-    private readonly Services.CRUD _crudService; 
+    private readonly Services.CRUD _crudService;
 
     public HomeController(ILogger<HomeController> logger, Services.CRUD crudService)
     {
@@ -46,12 +46,11 @@ public class HomeController : Controller
     }
 
 
-    /// <summary>
-    /// This method is used to return paginated issue posts.
-    /// </summary>
-    /// <returns></returns>
+     /// <summary>
+     /// This method is used to return paginated issue posts.
+     /// </summary>
+     /// <returns></returns>
     [HttpGet]
-
     [AllowAnonymous]
     [Route("/home/getPaginatedContent")]
     public async Task<IActionResult> GetPaginatedContentItems(int currentPage = 1)
@@ -61,10 +60,29 @@ public class HomeController : Controller
         {
             filter = ContentFilter.FromJson(cookieValue);
         }
+
         PaginatedContentItemsResponse paginatedContentItems = await _crudService.GetContentItemsPagedAsync(currentPage, filter);
 
-        return PartialView("~/Views/Home/_content-item-cards.cshtml", paginatedContentItems.ContentItems);
+        // Render the partial view to a string
+        string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Home/_content-item-cards.cshtml", paginatedContentItems.ContentItems);
+
+        // Create a response object with both the HTML and the pagination metadata
+        var response = new
+        {
+            html = partialViewHtml,
+            pagination = new PaginationStats
+            {
+                TotalCount = paginatedContentItems.TotalCount,
+                PageSize = paginatedContentItems.PageSize,
+                CurrentPage = paginatedContentItems.CurrentPage,
+                TotalPages = (int)Math.Ceiling(paginatedContentItems.TotalCount / (double)paginatedContentItems.PageSize)
+            }
+        };
+
+        return Json(response);
     }
+
+ 
 
     /// <summary>
     /// This method is used to return a partial view for displaying alerts.

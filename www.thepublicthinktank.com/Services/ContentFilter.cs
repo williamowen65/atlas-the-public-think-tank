@@ -9,6 +9,8 @@
     /// </remarks>
     public class ContentFilter
     {
+
+        public string ContentType { get; set; } = "both";
         /// <summary>
         /// Filter range for average vote values
         /// </summary>

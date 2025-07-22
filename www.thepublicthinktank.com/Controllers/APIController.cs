@@ -47,24 +47,5 @@ namespace atlas_the_public_think_tank.Controllers
             return Ok(posts);
         }
 
-
-
-        /// <summary>
-        /// This method is used to return the sidebar with all categories.
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet]
-        [Route("/api/sidebar")]
-        [AllowAnonymous]
-        public async Task<IActionResult> GetSidebar()
-        {
-           
-
-            SideBar_ReadVM sideBar_ReadVM = new SideBar_ReadVM();
-
-            return PartialView("~/Views/Shared/LeftSideBar/_left-sidebar-container.cshtml", sideBar_ReadVM);
-        }
-
-
     }
 }

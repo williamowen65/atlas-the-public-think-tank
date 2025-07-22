@@ -158,8 +158,8 @@ namespace atlas_the_public_think_tank.Services
         public async Task<PaginatedContentItemsResponse> GetContentItemsPagedAsync(int pageNumber, ContentFilter filter, int pageSize = 3)
         {
 
-            //Console.WriteLine(filter);
-            //Console.WriteLine(filter.ToJson());
+            Console.WriteLine(filter);
+            Console.WriteLine(filter.ToJson());
 
             // First, get all the issues and solutions IDs with their creation dates and vote averages
             // This allows efficient sorting and pagination at the database level
@@ -189,8 +189,22 @@ namespace atlas_the_public_think_tank.Services
             // Combine and apply sorting/pagination at the database level
             var combinedQuery = issuesIndexQuery.Union(solutionsIndexQuery);
 
-            // Apply filter
             // Apply filters
+
+            // Filter for ContentType ("both", "issues", "solutions)
+            if (filter?.ContentType != null && filter.ContentType != "both")
+            {
+                if (filter.ContentType.Equals("issues", StringComparison.OrdinalIgnoreCase))
+                {
+                    combinedQuery = combinedQuery.Where(c => c.ContentType == ContentType.Issue);
+                }
+                else if (filter.ContentType.Equals("solutions", StringComparison.OrdinalIgnoreCase))
+                {
+                    combinedQuery = combinedQuery.Where(c => c.ContentType == ContentType.Solution);
+                }
+                // "both" is the default and doesn't need filtering as it includes all content types
+            }
+
             // Filter by average vote range
             if (filter?.AvgVoteRange != null)
             {
@@ -985,6 +999,7 @@ namespace atlas_the_public_think_tank.Services
                 AuthorID = solution.AuthorID,
                 ParentIssueID = solution.ParentIssueID,
                 ParentIssue = await Issues.GetParentIssue(solution),
+                PaginatedSubIssues = await GetSubIssuesPagedAsync(solution.SolutionID, 1, 3),
                 ContentStatus = solution.ContentStatus,
                 BlockedContentID = solution.BlockedContentID,
                 Scope = solution.Scope,
@@ -1126,6 +1141,60 @@ namespace atlas_the_public_think_tank.Services
             return new PaginatedSolutionsResponse()
             {
                 Solutions = solutionVMs,
+                CurrentPage = pageNumber,
+                TotalCount = totalCount,
+                PageSize = pageSize
+            };
+        }
+
+        public async Task<PaginatedIssuesResponse> GetSubIssuesPagedAsync(Guid solutionId, int pageNumber, int pageSize = 3)
+        {
+            // Query for sub-issues directly from the database
+            var query = _context.Issues
+                .Include(i => i.Scope)
+                .Include(i => i.Author)
+                .AsNoTracking() // For better performance when reading
+                .Where(i => i.ParentSolutionID == solutionId);
+
+            var totalCount = await query.CountAsync();
+
+            Console.WriteLine($"Found {totalCount} sub-issues for parent solution {solutionId}");
+
+            // Apply paging to get items for the requested page
+            var paginatedChildIssues = await query
+                .OrderByDescending(i => i.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var subIssues = new List<Issue_ReadVM>();
+
+            foreach (var child in paginatedChildIssues)
+            {
+                var breadcrumbTags = await _breadcrumbAccessor.GetIssueBreadcrumbTags(child);
+
+                subIssues.Add(new Issue_ReadVM
+                {
+                    IssueID = child.IssueID,
+                    Title = child.Title,
+                    Content = child.Content,
+                    CreatedAt = child.CreatedAt,
+                    ModifiedAt = child.ModifiedAt,
+                    ContentStatus = child.ContentStatus,
+                    AuthorID = child.AuthorID,
+                    Author = child.Author,
+                    VoteStats = await Issues.GetIssueVoteStats(child.IssueID),
+                    ScopeID = child.ScopeID,
+                    ParentSolutionID = child.ParentSolutionID,
+                    Scope = child.Scope,
+                    SubIssueCount = await _context.Issues.CountAsync(i => i.ParentSolutionID == child.ParentSolutionID),
+                    BreadcrumbTags = breadcrumbTags
+                });
+            }
+
+            return new PaginatedIssuesResponse()
+            {
+                Issues = subIssues,
                 CurrentPage = pageNumber,
                 TotalCount = totalCount,
                 PageSize = pageSize

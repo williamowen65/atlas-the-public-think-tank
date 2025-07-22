@@ -1,4 +1,29 @@
-﻿// A pair of inputs for min and max must not over lap
+﻿function initContentTypeListener() {
+    const contentTypeFilters = document.querySelector("#content-filter").elements["contentTypeFilter"];
+    const debouncedFilterTrigger = getDebouncedFilterTrigger();
+
+    if (contentTypeFilters) {
+        // Check if it's a collection (radio group) or a single element
+        if (contentTypeFilters.length) {
+            // It's a collection, attach listener to each radio button
+            for (let i = 0; i < contentTypeFilters.length; i++) {
+                contentTypeFilters[i].addEventListener('change', function () {
+                    debouncedFilterTrigger();
+                });
+            }
+        } else {
+            // It's a single element
+            contentTypeFilters.addEventListener('change', function () {
+                debouncedFilterTrigger();
+            });
+        }
+    } else {
+        console.log("Could not find contentTypeFilter elements");
+    }
+}
+
+
+// A pair of inputs for min and max must not over lap
 // Initial min is 0
 // Inital max is "no max"
 // If min is 100, max must be no lower than 100
@@ -14,9 +39,6 @@ function initializeMinMaxNumberInput() {
         return;
     }
 
-    // Set initial values
-    minInput.value = 0;
-    // Max input is initially empty (placeholder shows "No max")
 
     // Function to validate and adjust min/max values
     function validateInputs() {
@@ -88,7 +110,7 @@ function initializeDatePickers() {
             el: '#datepicker-from',
             ...config
         }
-        const picker = MCDatepicker.create(datepickerConfig);
+        const picker = MCDatepicker.create(datepickerConfig);   
         addFromDateListeners(picker);
         const element = document.querySelector("#datepicker-from")
         // Adding instance accessor to the element
@@ -166,6 +188,21 @@ function loadContentFilterFromCookie() {
         const filterValues = JSON.parse(storedFilter);
         console.log('Loading stored filter values:', filterValues);
 
+        if (filterValues.contentType) {
+            // set value of contentTypeFilter radio
+            const contentTypeFilters = document.querySelector("#content-filter").elements["contentTypeFilter"];
+
+            // Check if it's a collection (radio group) or a single element
+            if (contentTypeFilters && contentTypeFilters.length) {
+                for (let i = 0; i < contentTypeFilters.length; i++) {
+                    if (contentTypeFilters[i].value === filterValues.contentType) {
+                        contentTypeFilters[i].checked = true;
+                        break;
+                    }
+                }
+            } 
+        }
+
         // Apply average vote range values
         if (filterValues.avgVoteRange) {
             const minAvgVoteInput = document.querySelector("#fromInput-average-score-filter");
@@ -183,6 +220,8 @@ function loadContentFilterFromCookie() {
                 if (maxAvgVoteSlider) maxAvgVoteSlider.value = filterValues.avgVoteRange.max;
             }
         }
+
+        console.log("ON load filter values", {filterValues})
 
         // Apply total vote count values
         if (filterValues.totalVoteCount) {
@@ -202,10 +241,14 @@ function loadContentFilterFromCookie() {
             }
         }
 
+
+        
         // Apply date range values
         if (filterValues.dateRange) {
             const fromDateInput = document.querySelector("#datepicker-from");
             const toDateInput = document.querySelector("#datepicker-to");
+
+            // Useful to know: This does not cause the onSelect event to fire
 
             if (fromDateInput && filterValues.dateRange.from) {
                 const fromDate = new Date(filterValues.dateRange.from)
@@ -243,6 +286,7 @@ function getDebouncedFilterTrigger() {
 function filterTrigger() {
     // Get all filter values
     const filterValues = {
+        contentType : getContentType(),
         avgVoteRange: {
             min: getMinAvgVote(),
             max: getMaxAvgVote()
@@ -268,6 +312,28 @@ function filterTrigger() {
         console.error('Error saving filter to cookie:', error);
     }
 
+
+    try {
+        fetchFilteredContent()
+        .then(repopulatePageContents)
+    }
+    catch (error) {
+        console.error('Error fetching filtered content or setting content in DOM:', error);
+    }
+
+    function getContentType() {
+        const radioInputs = document.querySelector("#content-filter").elements["contentTypeFilter"]
+        const existingFilterCookie  = getCookie("filterCookie")
+        if (radioInputs) {
+            return radioInputs.value
+        } else if (existingFilterCookie) {
+            return existingCookieContentType;
+        } else {
+            return 'both'
+        }
+        
+    }
+
     // averageVote Range
     // Min and Max
     // returns Number
@@ -288,7 +354,7 @@ function filterTrigger() {
     }
     function getMaxTotalVote() {
         const input = document.querySelector("#toInput-total-votes-filter")
-        return Number(input.value);
+        return input.value ? Number(input.value) : null;
     }
 
     // Date Range
@@ -306,4 +372,72 @@ function filterTrigger() {
     function getTags() {
         return ["tag1"]
     }
+}
+
+/**
+ * Fetch content when the filter is updated
+ * Filter Params are sent via Cookies
+ * 
+ * Pipes return value into repopulatePageContents
+ */
+async function fetchFilteredContent() {
+
+    // Send a new get request. home/getPaginatedContent
+    return fetch("/home/getPaginatedContent?currentPage=1")
+        .then(res => res.json())
+        .then(res => {
+            return res;
+        });
+}
+
+function repopulatePageContents(updatedFilterContent) {
+    const contentFeed = document.querySelector("#main-content");
+
+    if (!contentFeed) {
+        console.error("Could not find main content element with ID 'main-content'");
+        return;
+    }
+
+    if (!updatedFilterContent) {
+        console.error("Received empty content from server");
+        return;
+    }
+
+    // Empty the content feed
+    contentFeed.innerHTML = '';
+
+    // Populate it with new content
+    contentFeed.innerHTML = updatedFilterContent.html;
+
+
+    const fetchPaginatedContentButton = document.querySelector("#fetchPaginatedContent")
+
+    // Removes a possible disabled setting on this button
+    fetchPaginatedContentButton.removeAttribute("disabled")
+    fetchPaginatedContentButton.setAttribute("data-url", "/home/getPaginatedContent?currentPage=2")
+
+    const fetchPaginatedContentButtonText = fetchPaginatedContentButton.querySelector(".button-text")
+
+    fetchPaginatedContentButtonText.innerText = "Fetch more posts";
+
+    const nextCurrentCount = updatedFilterContent.pagination.pageSize * (updatedFilterContent.pagination.currentPage);
+    if (nextCurrentCount >= updatedFilterContent.pagination.totalCount) {
+        const paginationContentType = fetchPaginatedContentButton.getAttribute("data-content-type")
+        // Disable the button
+        fetchPaginatedContentButton.disabled = true;
+        fetchPaginatedContentButtonText.innerText = `No more ${paginationContentType}`;
+    }
+
+    //// Update the Total Count on the pagination button
+    //// The "total count" should reflect
+    // Format == "(NumberOfVisiblePost/TotalNumberOfPost)"
+    const fullPaginatedCountEl = document.querySelector(".fullPaginatedCount")
+    fullPaginatedCountEl.innerText = `(${Math.min(updatedFilterContent.pagination.pageSize, updatedFilterContent.pagination.totalCount)}/${updatedFilterContent.pagination.totalCount})`;
+
+    // Scroll to top
+    //window.scrollTo({
+    //    top: 0,
+    //    behavior: 'smooth'
+    //})
+
 }

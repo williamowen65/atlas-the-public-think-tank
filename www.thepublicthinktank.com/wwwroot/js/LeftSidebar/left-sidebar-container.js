@@ -146,38 +146,22 @@ document.addEventListener('DOMContentLoaded', async function () {
 
 // Function to load sidebar content via AJAX
 async function loadSidebarContent() {
-    const sidebarContainer = document.getElementById('left-sidebar-container');
-
-    if (!sidebarContainer) {
-        console.log("Left-sidebar-container not found");
-        return Promise.resolve(); // Return a resolved promise if container not found
-    }
+ 
 
     try {
-        console.log("About to fetch sidebar")
-        const response = await fetch('/api/sidebar');
 
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-
-        const html = await response.text();
-        sidebarContainer.innerHTML = html;
-
-       
-
-        // Initialize the content filter logic after sidebar content is loaded
+        // Step one: Init the MCCalendar Date Pickers
+        initializeDatePickers() 
+        // Step 2: Set values from Filter Cookie in the DOM
+        loadContentFilterFromCookie()
+        // Step 3: Finish setting listeners on inputs
         initializeDualSlider();
         initializeMinMaxNumberInput()
-        initializeDatePickers()
-        loadContentFilterFromCookie()
+        initContentTypeListener()
 
-      
 
         return Promise.resolve(); // Explicitly return a resolved promise
     } catch (error) {
-        console.error('Error loading sidebar:', error);
-        sidebarContainer.innerHTML = '<div class="alert alert-danger">Failed to load sidebar content</div>';
         return Promise.reject(error); // Return a rejected promise on error
     }
 }

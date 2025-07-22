@@ -4,16 +4,15 @@
     width: 100%;
 }
 div.main-label {
-    background: green;
+    background: var(--filter-label-theme-color);
     width: fit-content;
     padding: 1px;
     padding-inline: 3px;
     color: black;
-    font-weight:bold;
+    font-weight: bold;
     height: fit-content;
     margin: auto auto auto 0;
     font-size: 1.2rem;
-
 }
 
 .range_container .sliders_control {

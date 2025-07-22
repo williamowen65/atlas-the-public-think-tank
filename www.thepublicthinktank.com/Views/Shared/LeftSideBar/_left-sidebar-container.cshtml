@@ -6,18 +6,20 @@
     This component is fetched via AJAX in order to get content belonging to the sidebar
 *@
 
-@model SideBar_ReadVM
 
-<header class="d-flex justify-content-between py-2 px-3 align-items-center">
+<header class="pt-3">
+    <div class="d-flex justify-content-between  px-3  align-items-center pb-2">
+
     <div id="sidebar-headings">
-        <h2 id="tree-heading" class="sidebar-heading fs-5 active" style="width: min-content">Issue Categories</h2>
-        <h2 id="info-heading" class="sidebar-heading fs-5" style="width: min-content">Page Info</h2>
-        <h2 id="filter-heading" class="sidebar-heading fs-5" style="width: min-content">Content Filter</h2>
+        <h2 id="tree-heading" class="sidebar-heading fs-5 active" >Issue Categories</h2>
+        <h2 id="info-heading" class="sidebar-heading fs-5" >Page Info</h2>
+        <h2 id="filter-heading" class="sidebar-heading fs-5" >Content Filter</h2>
     </div>
     @Html.Partial("~/Views/Shared/LeftSideBar/_view-mode-toggle.cshtml")
+    </div>
+   <hr  class="m-0"/>
 </header>
 
-<hr />
 
 <div id="sidebar-content-container" class="px-3">
     @Html.Partial("~/Views/Shared/LeftSideBar/_categories.cshtml")
@@ -26,4 +28,3 @@
 </div>
 
 
-<script src="~/js/dual-slider-input.js" asp-append-version="true"></script>
