@@ -2,6 +2,7 @@
 using atlas_the_public_think_tank.Models.Database;
 using atlas_the_public_think_tank.Models.ViewModel;
 using atlas_the_public_think_tank.Services;
+using atlas_the_public_think_tank.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -124,23 +125,6 @@ namespace atlas_the_public_think_tank.Controllers
         }
 
 
-
-        /// <summary>
-        /// This method is used to return paginated issue posts.
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet]
-
-        [AllowAnonymous]
-        [Route("/issue/getPaginatedIssues")]
-        public async Task<IActionResult> GetPaginatedIssues(int currentPage = 1)
-        {
-            PaginatedIssuesResponse paginatedIssues = await _crud.Issues.GetIssuesPagedAsync(currentPage, 3);
-
-            return PartialView("~/Views/Issue/_issue-cards.cshtml", paginatedIssues.Issues);
-        }
-
-
         /// <summary>
         /// This method is used to return paginated issue posts.
         /// </summary>
@@ -151,10 +135,73 @@ namespace atlas_the_public_think_tank.Controllers
         [Route("/issue/getPaginatedSubIssues/{issueId}")]
         public async Task<IActionResult> GetPaginatedSubIssues(Guid issueId, int currentPage = 1)
         {
+            ContentFilter filter = new ContentFilter();
+            if (Request.Cookies.TryGetValue("contentFilter", out string? cookieValue) && cookieValue != null)
+            {
+                filter = ContentFilter.FromJson(cookieValue);
+            }
 
-            PaginatedIssuesResponse paginatedIssues = await _crud.Issues.GetSubIssuesPagedAsync(issueId, currentPage, 3);
 
-            return PartialView("~/Views/Issue/_issue-cards.cshtml", paginatedIssues.Issues);
+            // TODO: Pass the filter
+
+            PaginatedIssuesResponse paginatedIssues = await _crud.Issues.GetSubIssuesPagedAsync(issueId, currentPage, filter);
+
+            string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Issue/_issue-cards.cshtml", paginatedIssues.Issues);
+
+            var response = new PaginatedContentItemsJsonResponse
+            {
+                html = partialViewHtml,
+                pagination = new PaginationStats
+                {
+                    TotalCount = paginatedIssues.TotalCount,
+                    PageSize = paginatedIssues.PageSize,
+                    CurrentPage = paginatedIssues.CurrentPage,
+                    TotalPages = (int)Math.Ceiling(paginatedIssues.TotalCount / (double)paginatedIssues.PageSize)
+                }
+            };
+
+            return Json(response);
+        }
+
+        /// <summary>
+        /// This method is used to return paginated solution posts for a specific issue.
+        /// </summary>
+        /// <remarks>
+        /// NOTE: This is for Issues fetching child solutions
+        /// </remarks>
+        /// <param name="issueId">The ID of the parent issue</param>
+        /// <param name="currentPage">The page number to retrieve</param>
+        /// <returns>A partial view with the solutions for the specified page</returns>
+        [HttpGet]
+        [AllowAnonymous]
+        [Route("/issue/getPaginatedSolutions/{issueId}")]
+        public async Task<IActionResult> GetPaginatedSolutions(Guid issueId, int currentPage = 1)
+        {
+            ContentFilter filter = new ContentFilter();
+            if (Request.Cookies.TryGetValue("contentFilter", out string? cookieValue) && cookieValue != null)
+            {
+                filter = ContentFilter.FromJson(cookieValue);
+            }
+
+
+            PaginatedSolutionsResponse paginatedSolutions = await _crud.Solutions.GetSolutionsPagedAsync(issueId, currentPage, filter);
+
+            string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Solution/_solution-cards.cshtml", paginatedSolutions.Solutions);
+
+            // Create a response object with both the HTML and the pagination metadata
+            var response = new PaginatedContentItemsJsonResponse
+            {
+                html = partialViewHtml,
+                pagination = new PaginationStats
+                {
+                    TotalCount = paginatedSolutions.TotalCount,
+                    PageSize = paginatedSolutions.PageSize,
+                    CurrentPage = paginatedSolutions.CurrentPage,
+                    TotalPages = (int)Math.Ceiling(paginatedSolutions.TotalCount / (double)paginatedSolutions.PageSize)
+                }
+            };
+
+            return Json(response);
         }
 
 
@@ -170,6 +217,15 @@ namespace atlas_the_public_think_tank.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> ReadIssue(Guid id)
         {
+            ViewData["FilterPanelMode"] = "ContentItem";
+
+            ContentFilter filter = new ContentFilter();
+            if (Request.Cookies.TryGetValue("contentFilter", out string? cookieValue) && cookieValue != null)
+            {
+                filter = ContentFilter.FromJson(cookieValue);
+            }
+
+
             var issue = await _context.Issues
             .Include(f => f.Author)
             .Include(f => f.Scope)
@@ -204,7 +260,7 @@ namespace atlas_the_public_think_tank.Controllers
 
 
             // Then map to the view model
-            var issueVM = await _crud.Issues.ConvertIssueEntityToVM(issue);
+            var issueVM = await _crud.Issues.ConvertIssueEntityToVM(issue, filter);
 
 
             return View(issueVM);

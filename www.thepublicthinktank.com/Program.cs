@@ -29,7 +29,7 @@ public class Program
             // and configure it to use SQL Server with the retrieved connection string
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(connectionString)
-                       //.EnableSensitiveDataLogging()
+                       .EnableSensitiveDataLogging()
                        ); // TODO: Disable this logging in production
         }
 
@@ -59,6 +59,7 @@ public class Program
         builder.Services.AddScoped<BreadcrumbAccessor>(); // Register the CRUD service for dependency injection
 
         builder.Services.AddHttpContextAccessor();
+
 
         var app = builder.Build();
 

@@ -19,22 +19,22 @@
     <div class="row">
         <!-- Main content with issues -->
         <div class="col-lg-9 px-0">
-            <div id="main-content">
-
             <div class="my-3">
-                <a href="@Url.Action("CreateIssue","Issue")" class="btn btn-primary fw-bold outlined-text fs-5 mb-1 mb-md-0" styfs-5" style="color:var(--call-to-action-theme-color)">Create New Issue</a>
-                <a href="@Url.Action("CreateSolution","Solution")" class="btn btn-primary fw-bold outlined-text fs-5 mb-1 mb-md-0" styfs-5" style="color:var(--call-to-action-theme-color)">Create New Solution</a>
+                <a href="@Url.Action("CreateIssue", "Issue")" class="btn btn-primary fw-bold outlined-text fs-5 mb-1 mb-md-0" styfs-5" style="color:var(--call-to-action-theme-color)">Create New Issue</a>
+                <a href="@Url.Action("CreateSolution", "Solution")" class="btn btn-primary fw-bold outlined-text fs-5 mb-1 mb-md-0" styfs-5" style="color:var(--call-to-action-theme-color)">Create New Solution</a>
             </div>
 
             <div class="d-flex justify-content-center mb-3">
-                    @Html.Partial(
-                    "~/Views/Shared/Components/_gradient-border.cshtml",
-                    new GradientBorderModel()
-                    {
-                        Link = "https://www.youtube.com/watch?v=ULjr4gNmb9s",
-                        LinkText = "Click here to view inspiration for this website"
-                    })
-                </div>
+                @await Html.PartialAsync(
+                "~/Views/Shared/Components/_gradient-border.cshtml",
+                new GradientBorderModel()
+                {
+                    Link = "https://www.youtube.com/watch?v=ULjr4gNmb9s",
+                    LinkText = "Click here to view inspiration for this website"
+                })
+            </div>
+            <div id="main-content">
+
 
                 @if (Model.PaginatedContent != null && Model.PaginatedContent.ContentItems != null && Model.PaginatedContent.ContentItems.Any())
                 {
@@ -43,11 +43,11 @@
                     {
                         @if (item is Issue_ReadVM issue)
                         {
-                            @Html.Partial("~/Views/Issue/_issue-card.cshtml", issue)
+                            @await Html.PartialAsync("~/Views/Issue/_issue-card.cshtml", issue)
                         }
                         else if (item is Solution_ReadVM solution)
                         {
-                            @Html.Partial("~/Views/Solution/_solution-card.cshtml", solution)
+                            @await Html.PartialAsync("~/Views/Solution/_solution-card.cshtml", solution)
                         }
                         else
                         {
@@ -65,23 +65,20 @@
                 }
             </div>
 
-            
+            @await Html.PartialAsync("~/Views/Shared/Components/_pagination-button.cshtml", new PaginationButton_ReadVM
+            {
+                ElementId = "fetchPaginatedContent",
+                ContentType = "posts",
+                Target = "#main-content",
+                Url = "/home/getPaginatedContent",
+                CurrentPage = Model.PaginatedContent.TotalCount,
+                PageSize = Model.PaginatedContent.PageSize,
+                TotalCount = Model.PaginatedContent.TotalCount,
+                TotalPages = Model.PaginatedContent.TotalPages
+            })
 
-            <button 
-                @(isMorePosts ? "" : "disabled")
-                id="fetchPaginatedContent"
-                data-url="/home/getPaginatedContent?currentPage=@NextPageNumber"
-                data-target="#main-content"
-                data-total-count="@Model.PaginatedContent.TotalCount"
-                data-page-size="@Model.PaginatedContent.PageSize"
-                data-content-type="posts"
-                class="mx-auto d-block btn btn-primary">
-                <span class="button-text">@(isMorePosts ? "Load more posts" : "No more posts")</span> 
-                (<span class="paginatedCount">@(Math.Min(Model.PaginatedContent.PageSize, Model.PaginatedContent.TotalCount))</span>/@Model.PaginatedContent.TotalCount)
-            </button>
-           
 
-           
+
         </div>
         <partial name="_Home-Page-Right-Sidebar" />
     </div>

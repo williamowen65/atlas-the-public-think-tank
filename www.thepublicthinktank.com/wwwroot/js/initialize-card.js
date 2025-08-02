@@ -35,8 +35,43 @@ document.addEventListener("click", e => {
             truncatedTextElement.classList.add("truncate-multiline");
         }
     }
+
+    setupQuickTabLinks(e)
 })
 
+
+
+function setupQuickTabLinks(e) {
+
+
+    if (e.target.closest(".stat-icon-link")) {
+        // Set the lastActiveTab-global local storage
+        // #sub-issue-tab, #solutions-tab, #comments-tab
+        const statIcon = e.target.closest(".stat-icon-link");
+        let tabId = null;
+
+        // Determine which tab to activate based on the clicked icon
+        if (statIcon.classList.contains("go-to-content-item-solution-tab")) {
+            tabId = "solutions-tab";
+        } else if (statIcon.classList.contains("go-to-content-item-sub-issue-tab")) {
+            tabId = "sub-issues-tab";
+        } else if (statIcon.classList.contains("go-to-content-item-comment-tab")) {
+            tabId = "comments-tab";
+        }
+
+        if (tabId) {
+            // Store the tab ID in localStorage
+            localStorage.setItem("lastActiveTab-global", tabId);
+
+            // Find the content page URL to navigate to
+            const card = statIcon.closest(".card");
+            if (card) {
+                const viewButton = card.querySelector(".view-btn")
+                viewButton.click()
+            }
+        }
+    }
+}
 
 
 
@@ -73,7 +108,7 @@ function getDialElements(issueId) {
  * @returns void. 
  */
 function initializeVoteDial(issueId) {
-    console.log("Vote dial initialized for issue ID:", issueId);
+    //console.log("Vote dial initialized for issue ID:", issueId);
     
     // Get essential elements
     const { container, dialId, options, radios } = getDialElements(issueId);
@@ -424,27 +459,6 @@ function createDialResetMethod(container, issueId, observer, dialId, options, st
 
 
 
-/**
- * Local debounce method generator specifically for this file
- *
- * Creates a debounced version of a function
- * @param {Function} func - The function to debounce
- * @param {number} wait - The number of milliseconds to delay
- * @returns {Function} - The debounced function
- */
-function debounce(func, wait) {
-    let timeout;
-    return function () {
-        const context = this;
-        const args = arguments;
-        clearTimeout(timeout);
-        timeout = setTimeout(() => {
-            func.apply(context, args);
-        }, wait);
-    };
-}
-
-
 
 
 
@@ -460,7 +474,7 @@ const observer = new MutationObserver(mutations => {
         mutation.addedNodes.forEach(node => {
             if (node.classList && (node.classList.contains('issue-card') || node.classList.contains('solution-card'))) {
                 // Card was added
-                console.log('Issue card added via MutationObserver:', node);
+                //console.log('Issue card added via MutationObserver:', node);
                 // Initialize card-specific JS here
                 if (typeof initializeCard === 'function') {
                     try {
@@ -476,6 +490,7 @@ const observer = new MutationObserver(mutations => {
         });
     });
 });
+
 
 observer.observe(document, { childList: true, subtree: true });
 

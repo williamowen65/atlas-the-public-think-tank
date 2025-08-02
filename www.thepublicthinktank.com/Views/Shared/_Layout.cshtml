@@ -9,6 +9,8 @@
     @* Select2 CSS *@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
+    @* Site.js should be loaded before other scripts. *@
+    <script src="~/js/site.js" asp-append-version="true"></script>
 
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/left-sidebar-container.css" asp-append-version="true" />    
@@ -17,6 +19,10 @@
     <link rel="stylesheet" href="~/css/read-issue.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/issue-card-stat-icons.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/breadcrumb.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/dual-slider-input.css" asp-append-version="true" />
+    <link href="https://cdn.jsdelivr.net/npm/mc-datepicker/dist/mc-calendar.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/mc-datepicker/dist/mc-calendar.min.js"></script>
+
     @* <link rel="stylesheet" href="~/atlas_the_public_think_tank.styles.css" asp-append-version="true" /> *@
 
     <script src="~/js/initialize-card.js" asp-append-version="true"></script>
@@ -28,7 +34,7 @@
     <partial name="_ColorMode" />
 
     <partial name="_Header" />
-    <partial name="_Left-Sidebar-Toggle" />
+    @Html.Partial("~/Views/Shared/LeftSideBar/_Left-Sidebar-Toggle.cshtml")
    
     <main role="main" class="pb-3 px-md-3">
         @RenderBody()
@@ -38,11 +44,13 @@
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+  
 
     <script src="~/js/client_alerts.js" asp-append-version="true"></script>
-    <script src="~/js/left-sidebar-container.js" asp-append-version="true"></script>
+    <script src="~/js/LeftSidebar/left-sidebar-container.js" asp-append-version="true"></script>
+    <script src="~/js/LeftSidebar/content-filter.js" asp-append-version="true"></script>
     <script src="~/js/pagination.js" asp-append-version="true"></script>
+    <script src="~/js/LeftSidebar/dual-slider-input.js" asp-append-version="true"></script>
 
 
 

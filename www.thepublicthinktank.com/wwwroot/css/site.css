@@ -20,12 +20,25 @@
     --header-height: 70.4px;
     --left-sidebar-container-width: 300px;
     --call-to-action-theme-color: #beff9e;
+
+}
+
+/* Custom light / dark themeing */
+
+html {
+    --filter-group-theme-color: lightgray;
+    --filter-label-theme-color: #bfbfc2;
+}
+
+html[data-bs-theme="dark"] {
+    --filter-group-theme-color: #353439;
+    --filter-label-theme-color: #586e58
 }
 
 
 
 html {
-  font-size: 14px;
+    font-size: 14px;
 }
 
 
@@ -134,3 +147,6 @@ svg.parent-issue-icon {
     background: var(--solution-bg);
 }
 
+.mc-calendar {
+    z-index: 2030 !important;
+}

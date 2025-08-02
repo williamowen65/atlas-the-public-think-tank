@@ -16,13 +16,13 @@
     <nav class="d-flex position-sticky bg-body" style="top:var(--header-height); z-index:11">
         <div class="nav nav-tabs flex-grow-1 text-nowrap overflow-x-scroll overflow-y-hidden" style="flex-wrap: revert;" id="nav-tab" role="tablist">
 
-            <button class="nav-link active" id="issue-comments-tab" data-bs-toggle="tab" data-bs-target="#issue-comments" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
+            <button class="nav-link active" id="comments-tab" data-bs-toggle="tab" data-bs-target="#issue-comments" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
                 <div class="content-count">@Model.Comments.Count()</div>
                 @Html.Partial("~/Views/Shared/Icons/_Comments.cshtml")
                 Comments
             </button>
             <button class="nav-link" id="sub-issues-tab" data-bs-toggle="tab" data-bs-target="#sub-issues" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
-                <div class="content-count">@Model.SubIssues.Count()</div>
+                <div class="content-count">@Model.PaginatedSubIssues.TotalCount</div>
                 @Html.Partial("~/Views/Shared/Icons/_SubIssues.cshtml")
                 Sub-Issues
             </button>
@@ -59,7 +59,7 @@
     </nav>
     <div class="tab-content" id="nav-tabContent">
 
-        <div class="tab-pane show active fade border border-1 border-top-0" id="issue-comments" role="tabpanel" aria-labelledby="issue-comments-tab" tabindex="0">
+        <div class="tab-pane show active fade border border-1 border-top-0" id="issue-comments" role="tabpanel" aria-labelledby="comments-tab" tabindex="0">
 
             @if (Model.Comments.Count() == 0)
             {
@@ -79,32 +79,42 @@
             }
         </div>
         <div class="tab-pane fade border border-1 border-top-0" id="sub-issues" role="tabpanel" aria-labelledby="sub-issues-tab" tabindex="0">
-            @if (Model.SubIssues.Count() == 0)
-            {
-                <div id="empty-issueView-sub-issues-feed" class="empty-feed">
+           
+                <div id="sub-issue-content">
+                    @if (Model.PaginatedSubIssues != null && Model.PaginatedSubIssues.Issues.Any())
+                    {
+                    @await Html.PartialAsync("~/Views/Issue/_issue-cards.cshtml", Model.PaginatedSubIssues.Issues)
+                } else
+                {
+                    <div id="empty-issueView-sub-issues-feed" class="empty-feed">
 
-                    <div class="comment-feed">
-                        <div class="content">
-                            <h2>Empty Sub Issues Feed</h2>
-                            <a target="_blank" href="@Url.Action("CreateIssue", "Issue", new { parentSolutionID = Model.SolutionID })">
-                                <button class="outlined-text">Create Sub-Issue</button>
-                            </a>
+                        <div class="comment-feed">
+                            <div class="content">
+                                <h2>Empty Sub Issues Feed</h2>
+                                <a target="_blank" href="@Url.Action("CreateIssue", "Issue", new { parentSolutionID = Model.SolutionID })">
+                                    <button class="outlined-text">Create Sub-Issue</button>
+                                </a>
 
+                            </div>
                         </div>
                     </div>
-                </div>
-            }
-            else
-            {
-                foreach (Issue_ReadVM model in Model.SubIssues)
-                {
 
-                    // Fetch the sub issue
-                    @Html.Partial("~/Views/Issue/_issue-card.cshtml", model)
-                    ;
                 }
+            </div>
 
-            }
+                @await Html.PartialAsync("~/Views/Shared/Components/_pagination-button.cshtml", new PaginationButton_ReadVM
+                {
+                    ElementId = "fetchPaginatedSubIssues",
+                    ContentType = "sub-issues",
+                    Target = "#sub-issue-content",
+                    Url = "/solution/getPaginatedSubIssues/" + @Model.SolutionID,
+                    CurrentPage = Model.PaginatedSubIssues.TotalCount,
+                    PageSize = Model.PaginatedSubIssues.PageSize,
+                    TotalCount = Model.PaginatedSubIssues.TotalCount,
+                    // TotalPages = Model.PaginatedSubIssues.TotalPages
+                })
+
+
         </div>
 
         <div class="tab-pane fade border border-1 border-top-0" id="parent-post" role="tabpanel" aria-labelledby="parent-post-tab" tabindex="0">
@@ -125,7 +135,17 @@
     document.addEventListener("DOMContentLoaded", function() {
         dynamicDropdownContent();
         initializeDialsForTabbedLayout();
+
+        const paginationButton = document.getElementById("fetchPaginatedSubIssues")
+        if (paginationButton) {
+            setPaginationButtonListener(paginationButton)
+        }
     });
+
+       
+
+
+
 
     function initializeDialsForTabbedLayout() {
         // Initialize vote dials on tab show event
@@ -148,40 +168,40 @@
         }
 
         // Function to find all issue cards in a tab and reinitialize vote dials
-        function reinitializeVoteDials(tabId) {
-            const tabPane = document.getElementById(tabId);
-            if (!tabPane) return;
+         function reinitializeVoteDials(tabId) {
+        const tabPane = document.getElementById(tabId);
+        if (!tabPane) return;
 
-            const issueCards = tabPane.querySelectorAll('[id^="issue-"]');
+        // Change this line to look for both issue and solution cards
+        const issueCards = tabPane.querySelectorAll('.issue-card, .solution-card');
 
-            issueCards.forEach(card => {
-                // Extract the issue ID from the card's ID attribute
-                const issueId = card.id.replace('issue-', '');
-                console.log(`Reinitializing vote dial for issue ${issueId}`);
+        issueCards.forEach(card => {
+            // Don't replace the ID prefix - use the full ID
+            const issueId = card.id;
+            // console.log(`Reinitializing vote dial for content ${issueId}`);
 
-                const dialContainer = card.querySelector('.dial-container');
-                if (dialContainer) {
-                    // Check if dial content already exists
-                    if (dialContainer.children.length > 0) {
-                        // If vote container exists, just reinitialize it
-                        const voteContainer = document.getElementById(`vote-toggle-container-${issueId}`);
-                        if (voteContainer) {
-                            setTimeout(() => {
-                                // Reinitialize with a slight delay to ensure proper rendering
-                                initializeCard(issueId);
-                            }, 50);
-                        } else {
-                            // If vote container doesn't exist, need to fetch the dial
-                            fetchAndInitializeCard(issueId, dialContainer);
-                        }
+            const dialContainer = card.querySelector('.dial-container');
+            if (dialContainer) {
+                // Check if dial content already exists
+                if (dialContainer.children.length > 0) {
+                    // If vote container exists, just reinitialize it
+                    const voteContainer = document.getElementById(`vote-toggle-container-${issueId}`);
+                    if (voteContainer) {
+                        setTimeout(() => {
+                            // Reinitialize with a slight delay to ensure proper rendering
+                            initializeCard(issueId);
+                        }, 50);
                     } else {
-                        // If no dial content, fetch it
-                        fetchAndInitializeCard(issueId, dialContainer);
+                        // If vote container doesn't exist, need to fetch the dial
+                        console.error("Content missing vote dial");
                     }
+                } else {
+                    // If no dial content, fetch it
+                    console.error("Content missing vote dial");
                 }
-            });
-        }
-
+            }
+        });
+    }
         // Helper function to fetch and initialize vote dials
         function fetchAndInitializeCard(issueId, dialContainer) {
             fetch(`/issue/GetVoteDial?issueId=${issueId}`)
@@ -201,7 +221,7 @@
 
         // Menu content templates for each tab
         const menuTemplates = {
-            'issue-comments-tab': `
+            'comments-tab': `
                 <li><a class="dropdown-item" href="#">Create Discussion</a></li>
             `,
             'sub-issues-tab': `
@@ -224,7 +244,7 @@
         }
 
         // Initialize with default tab content
-        updateDropdownContent('issue-comments-tab');
+        updateDropdownContent('comments-tab');
 
         // Add event listeners to all tabs
         const tabs = document.querySelectorAll('[data-bs-toggle="tab"]');

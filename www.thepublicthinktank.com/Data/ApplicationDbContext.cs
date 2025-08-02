@@ -1,8 +1,12 @@
-﻿using atlas_the_public_think_tank.Data.SeedData;
+﻿using atlas_the_public_think_tank.Data.SeedData.SeedIssues;
+using atlas_the_public_think_tank.Data.SeedData;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using atlas_the_public_think_tank.Models.Database;
+using atlas_the_public_think_tank.Data.SeedData.SeedUsers;
+using atlas_the_public_think_tank.Data.SeedData.SeedSolutions;
+using atlas_the_public_think_tank.Data.SeedData.SeedVotes;
 
 namespace atlas_the_public_think_tank.Data;
 
@@ -55,7 +59,7 @@ public class ApplicationDbContext : IdentityDbContext<AppUser, IdentityRole<Guid
         modelBuilder.Entity<SolutionCategory>().ToTable("SolutionsCategories", "solutions");
         modelBuilder.Entity<UserHistory>().ToTable("UserHistory", "users");
 
-        
+
 
         new SeedUsers(modelBuilder);
 
@@ -67,6 +71,11 @@ public class ApplicationDbContext : IdentityDbContext<AppUser, IdentityRole<Guid
 
         new SeedIssueCategories(modelBuilder);
 
+        new SeedSolutions(modelBuilder);
+
+        new SeedIssueVotes(modelBuilder);
+
+        new SeedSolutionVotes(modelBuilder);
 
         // Configure Issue entity
         modelBuilder.Entity<Issue>(entity =>
@@ -288,5 +297,6 @@ public class ApplicationDbContext : IdentityDbContext<AppUser, IdentityRole<Guid
                 .HasForeignKey(e => e.CommentID)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+    
     }
 }

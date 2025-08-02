@@ -1,6 +1,6 @@
-using atlas_the_public_think_tank.Models;
 using atlas_the_public_think_tank.Models.ViewModel;
 using atlas_the_public_think_tank.Services;
+using atlas_the_public_think_tank.Utilities;
 using Azure.Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,7 +19,7 @@ namespace atlas_the_public_think_tank.Controllers;
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
-    private readonly Services.CRUD _crudService; 
+    private readonly Services.CRUD _crudService;
 
     public HomeController(ILogger<HomeController> logger, Services.CRUD crudService)
     {
@@ -30,31 +30,59 @@ public class HomeController : Controller
 
     public async Task<IActionResult> Index()
     {
+        ContentFilter filter = new ContentFilter();
+        if (Request.Cookies.TryGetValue("contentFilter", out string? cookieValue) && cookieValue != null)
+        {
+            filter = ContentFilter.FromJson(cookieValue);
+        }
 
         // Create a view model to hold both issues and categories
         var viewModel = new HomeIndexViewModel();
 
-        viewModel.PaginatedContent = await _crudService.GetContentItemsPagedAsync(1);
+        viewModel.PaginatedContent = await _crudService.GetContentItemsPagedAsync(1, filter);
 
         //viewModel.Categories = new List<Category_ReadVM>();
         return View(viewModel);
     }
 
 
-    /// <summary>
-    /// This method is used to return paginated issue posts.
-    /// </summary>
-    /// <returns></returns>
+     /// <summary>
+     /// This method is used to return paginated issue posts.
+     /// </summary>
+     /// <returns></returns>
     [HttpGet]
-
     [AllowAnonymous]
     [Route("/home/getPaginatedContent")]
     public async Task<IActionResult> GetPaginatedContentItems(int currentPage = 1)
     {
-        PaginatedContentItemsResponse paginatedContentItems = await _crudService.GetContentItemsPagedAsync(currentPage, 3);
+        ContentFilter filter = new ContentFilter();
+        if (Request.Cookies.TryGetValue("contentFilter", out string? cookieValue) && cookieValue != null)
+        {
+            filter = ContentFilter.FromJson(cookieValue);
+        }
 
-        return PartialView("~/Views/Home/_content-item-cards.cshtml", paginatedContentItems.ContentItems);
+        PaginatedContentItemsResponse paginatedContentItems = await _crudService.GetContentItemsPagedAsync(currentPage, filter);
+
+        // Render the partial view to a string
+        string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Home/_content-item-cards.cshtml", paginatedContentItems.ContentItems);
+
+        // Create a response object with both the HTML and the pagination metadata
+        var response = new
+        {
+            html = partialViewHtml,
+            pagination = new PaginationStats
+            {
+                TotalCount = paginatedContentItems.TotalCount,
+                PageSize = paginatedContentItems.PageSize,
+                CurrentPage = paginatedContentItems.CurrentPage,
+                TotalPages = (int)Math.Ceiling(paginatedContentItems.TotalCount / (double)paginatedContentItems.PageSize)
+            }
+        };
+
+        return Json(response);
     }
+
+ 
 
     /// <summary>
     /// This method is used to return a partial view for displaying alerts.
