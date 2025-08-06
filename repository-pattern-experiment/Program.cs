@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using repository_pattern_experiment.Data;
+using repository_pattern_experiment.Data.RepositoryPattern.Cache;
 using repository_pattern_experiment.Data.RepositoryPattern.IRepository;
 using repository_pattern_experiment.Data.RepositoryPattern.Repository;
 using repository_pattern_experiment.Models.Database;
@@ -26,7 +27,10 @@ namespace repository_pattern_experiment
 
             builder.Services.AddControllersWithViews();
 
+            builder.Services.AddMemoryCache();
+
             builder.Services.AddScoped<IIssueRepository, IssueRepository>();
+            builder.Services.Decorate<IIssueRepository, IssueCacheRepository>();
 
             var app = builder.Build();
 
