@@ -9,7 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CloudTests", "CloudTests\Cl
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "GitHubActions", "GitHubActions", "{8EC462FD-D22E-90A8-E5CE-7E832BA40C5D}"
 EndProject
-Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "pre-launch-landing-page", "pre-launch-landing-page\", "{EED2838B-BDE7-DB37-97E1-DA60BF5955DB}"
+Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "pre-launch-landing-page(1)", "pre-launch-landing-page\", "{EED2838B-BDE7-DB37-97E1-DA60BF5955DB}"
 	ProjectSection(WebsiteProperties) = preProject
 		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.8"
 		Debug.AspNetCompiler.VirtualPath = "/localhost_61508"
@@ -30,6 +30,8 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "pre-launch-landing-page", "
 		SlnRelativePath = "pre-launch-landing-page\"
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "repository-pattern-experiment", "repository-pattern-experiment\repository-pattern-experiment.csproj", "{90358AEE-8A78-4940-ACDB-0F2A5CA53131}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -48,6 +50,10 @@ Global
 		{EED2838B-BDE7-DB37-97E1-DA60BF5955DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EED2838B-BDE7-DB37-97E1-DA60BF5955DB}.Release|Any CPU.ActiveCfg = Debug|Any CPU
 		{EED2838B-BDE7-DB37-97E1-DA60BF5955DB}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{90358AEE-8A78-4940-ACDB-0F2A5CA53131}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{90358AEE-8A78-4940-ACDB-0F2A5CA53131}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{90358AEE-8A78-4940-ACDB-0F2A5CA53131}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{90358AEE-8A78-4940-ACDB-0F2A5CA53131}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
