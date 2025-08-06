@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using repository_pattern_experiment.Data;
+using repository_pattern_experiment.Data.RepositoryPattern.IRepository;
+using repository_pattern_experiment.Data.RepositoryPattern.Repository;
 using repository_pattern_experiment.Models.Database;
 
 namespace repository_pattern_experiment
@@ -24,6 +26,8 @@ namespace repository_pattern_experiment
 
             builder.Services.AddControllersWithViews();
 
+            builder.Services.AddScoped<IIssueRepository, IssueRepository>();
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -46,7 +50,7 @@ namespace repository_pattern_experiment
             app.MapStaticAssets();
             app.MapControllerRoute(
                 name: "default",
-                pattern: "{controller=Home}/{action=Index}/{id?}")
+                pattern: "{controller=RepositoryTest}/{action=Index}/{id?}")
                 .WithStaticAssets();
             app.MapRazorPages()
                .WithStaticAssets();
