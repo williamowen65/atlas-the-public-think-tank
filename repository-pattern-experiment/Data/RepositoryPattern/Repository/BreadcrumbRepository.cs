@@ -13,9 +13,13 @@ namespace repository_pattern_experiment.Data.RepositoryPattern.Repository
         {
             _context = context;
         }
-        public async Task<List<Breadcrumb_ReadVM>> GetBreadcrumbPagedAsync(Guid contentId)
+        public async Task<List<Breadcrumb_ReadVM>> GetBreadcrumbPagedAsync(Guid? contentId)
         {
             var breadcrumbs = new List<Breadcrumb_ReadVM>();
+            if (contentId == null)
+            {
+                return breadcrumbs;
+            }
 
             // First check if the content exists as an Issue
             var issue = await _context.Issues

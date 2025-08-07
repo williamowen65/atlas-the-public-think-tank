@@ -15,13 +15,19 @@ namespace repository_pattern_experiment.Data.RepositoryPattern.Cache
             _cache = cache;
             _inner = inner;
         }
-        public async Task<List<Breadcrumb_ReadVM>> GetBreadcrumbPagedAsync(Guid itemId)
+        public async Task<List<Breadcrumb_ReadVM>> GetBreadcrumbPagedAsync(Guid? itemId)
         {
+            if (itemId == null) {
+                return await _inner.GetBreadcrumbPagedAsync(null);
+            }
+
+            #pragma warning disable CS8603 // Possible null reference return.
             return await _cache.GetOrCreateAsync($"breadcrumb:{itemId}", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
                 return await _inner.GetBreadcrumbPagedAsync(itemId);
             });
+            #pragma warning restore CS8603 // Possible null reference return.
         }
     }
 }

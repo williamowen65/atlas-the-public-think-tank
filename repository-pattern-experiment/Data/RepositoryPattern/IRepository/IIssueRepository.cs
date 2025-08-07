@@ -15,7 +15,9 @@ namespace repository_pattern_experiment.Data.RepositoryPattern.IRepository
         public string Title { get; set; }
         public string Content { get; set; }
 
-        public AppUser_ContentItem_ReadVM Author { get; set; }
+        public Guid AuthorID { get; set; }
+
+        //public AppUser_ContentItem_ReadVM Author { get; set; }
 
         public Scope Scope { get; set; }
 
@@ -25,9 +27,7 @@ namespace repository_pattern_experiment.Data.RepositoryPattern.IRepository
         public DateTime CreatedAt { get; set; }
         public DateTime? ModifiedAt { get; set; }
 
-        //public int SubIssueCount { get; set; }
-        //public int CommentCount { get; set; }
-        //public int SolutionCount { get; set; }
+        
     }
     public interface IIssueRepository
     {

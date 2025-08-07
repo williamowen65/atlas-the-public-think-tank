@@ -25,25 +25,6 @@ namespace repository_pattern_experiment.Data.RepositoryPattern.Repository
 
       
 
-
-
-        /// <summary>
-        /// Returns the vote stats on a specific content item
-        /// </summary>
-        /// <remarks>
-        /// May or may not include the active users vote on this current item.
-        /// </remarks>
-        public async Task<UserVote_Generic_Cacheable_ReadVM?> getContentVoteStats(Guid id)
-        {
-            // First check if ID exists in Issues
-            var issue = await _context.Issues.FirstOrDefaultAsync(i => i.IssueID == id);
-            if (issue != null)
-            {
-                return await GetIssueVoteStats(id);
-            }
-            return null;
-        }
-
         /// <summary>
         /// Represents a cacheable content vote entity
         /// </summary>
@@ -65,37 +46,49 @@ namespace repository_pattern_experiment.Data.RepositoryPattern.Repository
                 ContentID = issueId,
                 AverageVote = averageVote,
                 TotalVotes = totalVotes,
-                IssueVotes = votes.Select(v => new IssueVote_ReadVM
+                IssueVotes = votes.Select(v => new Vote_ReadVM
                 {
                     VoteID = v.VoteID,
                     UserID = v.UserID,
                     VoteValue = v.VoteValue,
                     CreatedAt = v.CreatedAt,
                     ModifiedAt = v.ModifiedAt
-                }).ToList()
+                }).ToDictionary(v => v.VoteID)
             };
         }
 
-        public async Task<int?> GetActiveUserIssueVote(Guid issueId)
+        /// <summary>
+        /// Represents a cacheable content vote entity
+        /// </summary>
+        /// <param name="solutionId"></param>
+        /// <returns></returns>
+        public async Task<UserVote_Solution_ReadVM> GetSolutionVoteStats(Guid solutionId)
         {
-            int? userVote = null;
+            // Retrieve vote data for the issue
+            var votes = await _context.SolutionVotes
+                .OfType<SolutionVote>()
+                .Where(v => v.SolutionID == solutionId)
+                .ToListAsync();
 
-            // Get current user if authenticated
-            var user = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext?.User);
+            double averageVote = votes.Any() ? votes.Average(v => v.VoteValue) : 0;
+            int totalVotes = votes.Count;
 
-            if (user != null)
+            return new UserVote_Solution_ReadVM
             {
-                var existingVote = await _context.IssueVotes
-                    .OfType<IssueVote>()
-                    .FirstOrDefaultAsync(v => v.UserID == user.Id && v.IssueID == issueId);
-
-                if (existingVote != null)
+                ContentID = solutionId,
+                AverageVote = averageVote,
+                TotalVotes = totalVotes,
+                SolutionVotes = votes.Select(v => new Vote_ReadVM
                 {
-                    userVote = existingVote.VoteValue;
-                }
-            }
-            return userVote;
+                    VoteID = v.VoteID,
+                    UserID = v.UserID,
+                    VoteValue = v.VoteValue,
+                    CreatedAt = v.CreatedAt,
+                    ModifiedAt = v.ModifiedAt
+                }).ToDictionary(v => v.VoteID)
+            };
         }
+
 
     }
 }

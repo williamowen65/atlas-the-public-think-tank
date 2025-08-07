@@ -13,13 +13,16 @@ namespace repository_pattern_experiment.Data.RepositoryPattern.Repository
         }
 
         /// <summary>
-        /// Represents a cachable unit of an issue
+        /// Represents a cacheable unit of an issue
         /// </summary>
+        /// <remarks>
+        /// Author info is not cached with the issue, but cached via an AppUser Cache.
+        /// This is meant to make updates to the cache easier. And not have duplicate data laying around.
+        /// </remarks>
         public async Task<IssueRepositoryViewModel?> GetIssueById(Guid id)
         {
             Issue? issue = await _context.Issues
                 .Include(i => i.Scope)
-                .Include(i => i.Author)
                 .FirstOrDefaultAsync(i => i.IssueID == id);
 
             if (issue == null)
@@ -36,12 +39,7 @@ namespace repository_pattern_experiment.Data.RepositoryPattern.Repository
                 ModifiedAt = issue.ModifiedAt,
                 Title = issue.Title,
                 Content = issue.Content,
-                Author = new AppUser_ContentItem_ReadVM
-                {
-                    Id = issue.Author.Id,
-                    UserName = issue.Author.UserName!,
-                    email = issue.Author.Email!
-                }
+                AuthorID = issue.AuthorID,
             };
         }
 

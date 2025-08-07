@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using repository_pattern_experiment.Data;
+using repository_pattern_experiment.Data.CRUD;
+using repository_pattern_experiment.Data.RepositoryPattern;
 using repository_pattern_experiment.Data.RepositoryPattern.Cache;
 using repository_pattern_experiment.Data.RepositoryPattern.IRepository;
 using repository_pattern_experiment.Data.RepositoryPattern.Repository;
@@ -29,14 +31,13 @@ namespace repository_pattern_experiment
 
             builder.Services.AddMemoryCache();
 
-            builder.Services.AddScoped<IIssueRepository, IssueRepository>();
-            builder.Services.Decorate<IIssueRepository, IssueCacheRepository>();
-            builder.Services.AddScoped<IBreadcrumbRepository, BreadcrumbRepository>();
-            builder.Services.Decorate<IBreadcrumbRepository, BreadcrumbCacheRepository>();
-            builder.Services.AddScoped<IVoteStatsRepository, VoteStatsRepository>();
-            builder.Services.Decorate<IVoteStatsRepository, VoteStatsCacheRepository>();
+            // Register all repositories with one extension method
+            builder.Services.AddRepositories();
 
             var app = builder.Build();
+
+            // Initialize the static Read class with the service provider
+            Read.Initialize(app.Services);
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())

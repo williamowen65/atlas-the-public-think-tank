@@ -5,11 +5,20 @@ namespace repository_pattern_experiment.Data.RepositoryPattern.IRepository
 
     public class SolutionRepositoryViewModel
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
+        public Guid ParentIssueID { get; set; }
         public string Title { get; set; }
-        public string Description { get; set; }
-        public int SubIssueCount { get; set; }
-        public int CommentCount { get; set; }
+        public string Content { get; set; }
+
+        public Guid AuthorID { get; set; }
+
+        public Scope Scope { get; set; }
+
+        public ContentStatus ContentStatus { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+        public DateTime? ModifiedAt { get; set; }
+
     }
     public interface ISolutionRepository
     {

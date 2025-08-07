@@ -16,13 +16,7 @@ namespace repository_pattern_experiment.Data.RepositoryPattern.Cache
         }
 
 
-        /// <summary>
-        /// Calls base implantation (Caching thie value might not be worth it)
-        /// </summary>
-        public async Task<int?> GetActiveUserIssueVote(Guid id)
-        {
-            return await _inner.GetActiveUserIssueVote(id);
-        }
+     
 
         public async Task<UserVote_Issue_ReadVM?> GetIssueVoteStats(Guid id)
         {
@@ -31,6 +25,15 @@ namespace repository_pattern_experiment.Data.RepositoryPattern.Cache
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
                 return await _inner.GetIssueVoteStats(id);
+            });
+        }
+        public async Task<UserVote_Solution_ReadVM?> GetSolutionVoteStats(Guid id)
+        {
+
+            return await _cache.GetOrCreateAsync($"vote-stats:{id}", async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                return await _inner.GetSolutionVoteStats(id);
             });
         }
 

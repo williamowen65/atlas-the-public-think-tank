@@ -16,13 +16,13 @@ namespace repository_pattern_experiment.Controllers
             _cache = cache;
         }
 
-        [Route("api/keys")]
+        [Route("cache/keys")]
         public IActionResult GetKeys()
         {
             return Json(GetAllCacheKeys());
         }
 
-        [Route("api/entries")]
+        [Route("cache/entries")]
         public IActionResult GetEntries()
         {
             var cacheEntries = GetAllCacheKeys();
