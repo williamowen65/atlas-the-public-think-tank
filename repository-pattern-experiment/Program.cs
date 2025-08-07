@@ -31,6 +31,10 @@ namespace repository_pattern_experiment
 
             builder.Services.AddScoped<IIssueRepository, IssueRepository>();
             builder.Services.Decorate<IIssueRepository, IssueCacheRepository>();
+            builder.Services.AddScoped<IBreadcrumbRepository, BreadcrumbRepository>();
+            builder.Services.Decorate<IBreadcrumbRepository, BreadcrumbCacheRepository>();
+            builder.Services.AddScoped<IVoteStatsRepository, VoteStatsRepository>();
+            builder.Services.Decorate<IVoteStatsRepository, VoteStatsCacheRepository>();
 
             var app = builder.Build();
 

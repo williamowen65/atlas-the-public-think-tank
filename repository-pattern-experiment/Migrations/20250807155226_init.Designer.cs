@@ -12,7 +12,7 @@ using repository_pattern_experiment.Data;
 namespace repository_pattern_experiment.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250806160229_init")]
+    [Migration("20250807155226_init")]
     partial class init
     {
         /// <inheritdoc />

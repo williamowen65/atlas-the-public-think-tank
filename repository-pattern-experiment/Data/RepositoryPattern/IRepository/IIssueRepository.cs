@@ -4,11 +4,27 @@ using repository_pattern_experiment.Models.ViewModel;
 namespace repository_pattern_experiment.Data.RepositoryPattern.IRepository
 {
 
+    /// <summary>
+    /// Represents a cache unit of an issue
+    /// </summary>
     public class IssueRepositoryViewModel
     {
         public Guid Id { get; set; }
+        public Guid? ParentIssueID { get; set; }
+        public Guid? ParentSolutionID { get; set; }
         public string Title { get; set; }
         public string Content { get; set; }
+
+        public AppUser_ContentItem_ReadVM Author { get; set; }
+
+        public Scope Scope { get; set; }
+
+        public ContentStatus ContentStatus { get; set; }
+
+
+        public DateTime CreatedAt { get; set; }
+        public DateTime? ModifiedAt { get; set; }
+
         //public int SubIssueCount { get; set; }
         //public int CommentCount { get; set; }
         //public int SolutionCount { get; set; }

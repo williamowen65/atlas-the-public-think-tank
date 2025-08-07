@@ -1,9 +1,11 @@
-﻿namespace repository_pattern_experiment.Data.RepositoryPattern.IRepository
+﻿using repository_pattern_experiment.Models.ViewModel;
+
+namespace repository_pattern_experiment.Data.RepositoryPattern.IRepository
 {
-    public class BreadcrumbItem_RepositoryVM
-    { }
+
     public interface IBreadcrumbRepository
     {
-        Task<List<BreadcrumbItem_RepositoryVM>> GetBreadcrumbAsync(Guid itemId);
+        Task<List<Breadcrumb_ReadVM>> GetBreadcrumbPagedAsync(Guid itemId);
     }
 }
+

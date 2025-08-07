@@ -1,4 +1,5 @@
 ﻿@using repository_pattern_experiment.Data.SeedData.SeedIssues.Data
+@using repository_pattern_experiment.Data.SeedData.SeedSolutions.Data
 @{
     ViewData["Title"] = "Home Page";
 }
@@ -9,17 +10,45 @@
 </div>
 <div class="container">
     <ul>
-        <li>IssueRepository
+        <li>
+            IssueRepository
             <ul>
                 <li>
                     <div class="d-flex flex-column">
-
-                    <code>Can Social Media Platforms Be Better?</code>    
-                    <a href="get-issue-by-id/@CanSocialMediaPlatformsBeBetter.ContentId">get-issue-by-id/@CanSocialMediaPlatformsBeBetter.ContentId</a>
+                        <code>Can Social Media Platforms Be Better?</code>
+                        <a href="get-issue-by-id/@CanSocialMediaPlatformsBeBetter.ContentId">get-issue-by-id/@CanSocialMediaPlatformsBeBetter.ContentId</a>
                     </div>
-                
+
+                    <ul>
+                        <li>
+                            <div class="d-flex flex-column">
+                                <code>Atlas the public think tank</code>
+                                <a href="get-solution-by-id/@AtlasThePublicThinkTank.ContentId">get-solution-by-id/@AtlasThePublicThinkTank.ContentId</a>
+                            </div>
+                            <ul>
+                                <li>
+                                    <div class="d-flex flex-column">
+                                        <code>Bias and Representation in Participation</code>
+                                        <a href="get-issue-by-id/@BiasAndRepresentationInParticipation.ContentId">get-issue-by-id/@BiasAndRepresentationInParticipation.ContentId</a>
+                                    </div>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
                 </li>
             </ul>
         </li>
+        <li>
+            Cache Log
+            <ul>
+                <li>
+                    <a href="api/keys">api/keys</a>
+                </li>
+                <li>
+                    <a href="api/entries">api/entries</a>
+                </li>
+            </ul>
+        </li>
+
     </ul>
 </div>
