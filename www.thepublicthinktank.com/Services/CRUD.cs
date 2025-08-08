@@ -161,6 +161,8 @@ namespace atlas_the_public_think_tank.Services
 
                 return query;
             }
+
+
             /// <summary>
             /// Applies common filtering logic to a query of Solutions
             /// </summary>

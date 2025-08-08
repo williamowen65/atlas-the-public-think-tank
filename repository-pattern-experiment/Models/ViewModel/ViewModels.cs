@@ -70,7 +70,7 @@ namespace repository_pattern_experiment.Models.ViewModel
     /// </summary>
     public class PaginatedSolutionsResponse
     {
-        public List<Solution_Cacheable> Solutions { get; set; }
+        public List<Solution_ReadVM> Solutions { get; set; } = new List<Solution_ReadVM>();
         public int TotalCount { get; set; }
         public int PageSize { get; set; }
         public int CurrentPage { get; set; }

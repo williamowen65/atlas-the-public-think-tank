@@ -53,13 +53,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
             "themselves play in developing and implementing content governance frameworks that balance competing values?";
 
         public IssueVote[] issueVotes { get; } = {
-               new IssueVote(){
-                    IssueID = ContentId,
-                    VoteID = new Guid("a1b2c3d4-5e6f-47a8-9b0c-1d2e3f4a5b6c"),
-                    UserID = SeedUserOne.user.Id,
-                    VoteValue = 3,
-                    CreatedAt = new DateTime(2024, 5, 16),
-               },
+              
                new IssueVote(){
                     IssueID = ContentId,
                     VoteID = new Guid("b2c3d4e5-6f7a-48b9-0c1d-2e3f4a5b6c7d"),

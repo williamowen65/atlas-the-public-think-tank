@@ -47,34 +47,7 @@ namespace repository_pattern_experiment.Data.SeedData.SeedIssues.Data
             "environment.";
 
         public IssueVote[] issueVotes { get; } = {
-               new IssueVote(){
-                    IssueID = ContentId,
-                    VoteID = new Guid("1d2e3f4a-5b6c-47d8-9e0f-1a2b3c4d5e6f"),
-                    UserID = SeedUserOne.user.Id,
-                    VoteValue = 10,
-                    CreatedAt = new DateTime(2024, 4, 6),
-               },
-               new IssueVote(){
-                    IssueID = ContentId,
-                    VoteID = new Guid("2e3f4a5b-6c7d-48e9-a0b1-2c3d4e5f6a7b"),
-                    UserID = SeedUserTwo.user.Id,
-                    VoteValue = 9,
-                    CreatedAt = new DateTime(2024, 4, 7),
-               },
-               new IssueVote(){
-                    IssueID = ContentId,
-                    VoteID = new Guid("3f4a5b6c-7d8e-49fa-b1c2-3d4e5f6a7b8c"),
-                    UserID = SeedUserThree.user.Id,
-                    VoteValue = 10,
-                    CreatedAt = new DateTime(2024, 4, 8),
-               },
-               new IssueVote(){
-                    IssueID = ContentId,
-                    VoteID = new Guid("4a5b6c7d-8e9f-40ab-c2d3-4e5f6a7b8c9d"),
-                    UserID = SeedUserFour.user.Id,
-                    VoteValue = 8,
-                    CreatedAt = new DateTime(2024, 4, 9),
-               },
+             
                new IssueVote(){
                     IssueID = ContentId,
                     VoteID = new Guid("5b6c7d8e-9f0a-41bc-d3e4-5f6a7b8c9d0e"),

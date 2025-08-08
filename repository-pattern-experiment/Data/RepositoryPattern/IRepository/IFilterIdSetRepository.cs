@@ -1,4 +1,5 @@
-﻿using repository_pattern_experiment.Models.ViewModel;
+﻿using repository_pattern_experiment.Data.RepositoryPattern.Repository.Helpers;
+using repository_pattern_experiment.Models.ViewModel;
 
 namespace repository_pattern_experiment.Data.RepositoryPattern.IRepository
 {
@@ -10,9 +11,11 @@ namespace repository_pattern_experiment.Data.RepositoryPattern.IRepository
     public interface IFilterIdSetRepository
     {
 
-        public Task<List<Guid>?> GetPagedSubIssueIdsOfIssueById(Guid issueId, int pageNumber = 1, int pageSize = 3);
-        public Task<int> GetTotalCountSubIssueIdsOfIssueById(Guid issueId);
-        public Task<List<Guid>?> GetPagedSolutionIdsOfIssueById(Guid issueId, int pageNumber = 1, int pageSize = 3);
-        public Task<List<Guid>?> GetPagedSubIssueIdsOfSolutionById(Guid solutionId, int pageNumber = 1, int pageSize = 3);
+        public Task<List<Guid>?> GetPagedSubIssueIdsOfIssueById(Guid issueId, ContentFilter filter, int pageNumber = 1, int pageSize = 3);
+        public Task<int> GetTotalCountSubIssuesOfIssueById(Guid issueId);
+        public Task<List<Guid>?> GetPagedSolutionIdsOfIssueById(Guid issueId, ContentFilter filter, int pageNumber = 1, int pageSize = 3);
+        public Task<int> GetTotalCountSolutionsOfIssueById(Guid issueId);
+        public Task<List<Guid>?> GetPagedSubIssueIdsOfSolutionById(Guid solutionId, ContentFilter filter, int pageNumber = 1, int pageSize = 3);
+        public Task<int> GetTotalCountSubIssuesOfSolutionById(Guid solutionId);
     }
 }

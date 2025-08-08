@@ -5,22 +5,22 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using atlas_the_public_think_tank.Data;
+using repository_pattern_experiment.Data;
 
 #nullable disable
 
-namespace atlas_the_public_think_tank.Migrations
+namespace repository_pattern_experiment.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250801203933_init-7")]
-    partial class init7
+    [Migration("20250809003403_init")]
+    partial class init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.3")
+                .HasAnnotation("ProductVersion", "9.0.7")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -160,7 +160,7 @@ namespace atlas_the_public_think_tank.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.AppUser", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.AppUser", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -548,7 +548,7 @@ namespace atlas_the_public_think_tank.Migrations
                         });
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.BlockedContent", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.BlockedContent", b =>
                 {
                     b.Property<Guid>("BlockedContentID")
                         .ValueGeneratedOnAdd()
@@ -562,7 +562,7 @@ namespace atlas_the_public_think_tank.Migrations
                     b.ToTable("BlockedContent", "app");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.Category", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.Category", b =>
                 {
                     b.Property<Guid>("CategoryID")
                         .ValueGeneratedOnAdd()
@@ -577,7 +577,7 @@ namespace atlas_the_public_think_tank.Migrations
                     b.ToTable("Categories", "app");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.CommentVote", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.CommentVote", b =>
                 {
                     b.Property<Guid>("VoteID")
                         .ValueGeneratedOnAdd()
@@ -612,7 +612,7 @@ namespace atlas_the_public_think_tank.Migrations
                     b.ToTable("CommentVotes", "comments");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.Issue", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.Issue", b =>
                 {
                     b.Property<Guid>("IssueID")
                         .ValueGeneratedOnAdd()
@@ -866,16 +866,93 @@ namespace atlas_the_public_think_tank.Migrations
                         {
                             IssueID = new Guid("5e9b3c7d-2a8f-4e16-9d7c-3a1b5e8f9d2e"),
                             AuthorID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee34"),
-                            Content = "In collaborative platforms like Atlas, ensuring that high-quality contributions receive appropriate visibility is crucial for maintaining user engagement and facilitating problem-solving.\n\nCurrently, many platforms struggle with this challenge: valuable content can be buried while sensationalist or low-quality content rises to prominence. This undermines the collective intelligence of online communities and discourages thoughtful participation.\n\nKey questions include:\n\n- How can we design discovery mechanisms that surface valuable content without creating perverse incentives?\n\n- What balance should be struck between algorithmic and human curation?\n\n- How can we ensure that new contributors have a fair chance at visibility while still maintaining quality standards?\n\n- What metrics beyond simple engagement best indicate the actual value of contributions?\n\nThese challenges are particularly relevant for a platform like Atlas that aims to harness collective intelligence for problem-solving rather than simply maximizing engagement.",
+                            Content = "How can high-quality ideas from everyday users be surfaced without being buried by noise or popularity bias?\n\nIn collaborative platforms like Atlas, ensuring that high-quality contributions receive appropriate visibility is crucial for maintaining user engagement and facilitating problem-solving.\n\nCurrently, many platforms struggle with this challenge: valuable content can be buried while sensationalist or low-quality content rises to prominence. This undermines the collective intelligence of online communities and discourages thoughtful participation.\n\nKey questions include:\n\n- How can we design discovery mechanisms that surface valuable content without creating perverse incentives?\n\n- What balance should be struck between algorithmic and human curation?\n\n- How can we ensure that new contributors have a fair chance at visibility while still maintaining quality standards?\n\n- What metrics beyond simple engagement best indicate the actual value of contributions?\n\nThese challenges are particularly relevant for a platform like Atlas that aims to harness collective intelligence for problem-solving rather than simply maximizing engagement.",
                             ContentStatus = 1,
                             CreatedAt = new DateTime(2024, 6, 15, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             ParentSolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
                             ScopeID = new Guid("a1e7c6b3-d5e2-4f8a-9c3b-8d7e6f5d4c2b"),
                             Title = "Discoverability and Visibility of Contributions"
+                        },
+                        new
+                        {
+                            IssueID = new Guid("d4c7e8a2-5b9f-47d1-8e3a-6f2c9d0b5a4e"),
+                            AuthorID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee36"),
+                            Content = "How can the Atlas platform prevent or mitigate users who post misleading information, trolls, or coordinated disinformation efforts?\n\nTraditional social media platforms struggle with combating misinformation and bad faith participation without resorting to heavy-handed moderation that risks stifling legitimate discourse. This challenge is particularly acute for a platform like Atlas that aims to foster collaborative problem-solving.\n\nKey questions include:\n\n- What verification mechanisms can be implemented that balance accuracy with accessibility?\n\n- How can the platform's reputation system be designed to reward good-faith participation while discouraging manipulation?\n\n- What role should community moderation play versus automated systems?\n\n- How can the platform distinguish between honest mistakes and deliberate misinformation?\n\n- What safeguards can prevent coordinated manipulation campaigns while protecting privacy?\n\nAddressing these challenges is essential for maintaining the integrity of discussions and ensuring that Atlas fulfills its potential as a space for meaningful collaborative problem-solving rather than becoming another vector for misinformation.",
+                            ContentStatus = 1,
+                            CreatedAt = new DateTime(2024, 7, 5, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            ParentSolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
+                            ScopeID = new Guid("a1e7c6b3-d5e2-4f8a-9c3b-8d7e6f5d4c2b"),
+                            Title = "Misinformation and Bad Faith Participation"
+                        },
+                        new
+                        {
+                            IssueID = new Guid("7a9c2e4b-6d5f-48c3-9e7a-1b2d3f4c5e6a"),
+                            AuthorID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee32"),
+                            Content = "How do you ensure contributors are credited appropriately, especially if their ideas are developed or repurposed by others?\n\nIn collaborative problem-solving environments like Atlas, ideas often evolve through iterative refinement and combination with other perspectives. While this process is essential for developing robust solutions, it presents challenges for ensuring proper attribution and recognition of intellectual contributions.\n\nTraditional intellectual property frameworks are often ill-suited for collaborative platforms where the goal is shared knowledge creation rather than exclusive ownership. Yet, proper attribution remains crucial for maintaining trust, encouraging participation, and respecting contributors' work.\n\nKey questions include:\n\n- What mechanisms can track the provenance of ideas as they evolve through collaborative refinement?\n\n- How can we balance recognition of original contributors with acknowledgment of those who significantly develop or improve ideas?\n\n- What role should automated systems play in tracking contributions versus relying on community norms and practices?\n\n- How can attribution be made transparent without creating excessive overhead that impedes collaboration?\n\n- What recourse should be available when contributors feel their contributions have been misattributed or used without proper credit?\n\nSolving these challenges is essential for creating a collaborative environment where contributors feel their work is respected and valued, while still enabling the free flow of ideas necessary for collective problem-solving.",
+                            ContentStatus = 1,
+                            CreatedAt = new DateTime(2024, 7, 25, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            ParentSolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
+                            ScopeID = new Guid("a1e7c6b3-d5e2-4f8a-9c3b-8d7e6f5d4c2b"),
+                            Title = "Intellectual Property and Attribution"
+                        },
+                        new
+                        {
+                            IssueID = new Guid("b2e3c4d5-a6b7-48c9-9d0e-1f2a3b4c5d6e"),
+                            AuthorID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee35"),
+                            Content = "What kind of moderation is required to keep discourse civil, inclusive, and focused—without being overly censorious?\n\nCreating an environment for productive problem-solving requires balancing freedom of expression with the need for respectful, constructive dialogue. Traditional moderation approaches often struggle with this balance, either allowing harmful behavior that drives away valuable contributors or implementing restrictions that stifle legitimate discussion.\n\nFor a platform like Atlas that aims to harness collective intelligence, this challenge is particularly critical. The governance model must support robust debate while preventing the toxicity that plagues many online spaces.\n\nKey questions include:\n\n- How can moderation systems distinguish between passionate disagreement and harmful behavior?\n\n- What role should community governance play versus centralized moderation?\n\n- How can moderation decisions be made transparent and accountable?\n\n- What escalation paths should exist when users disagree with moderation decisions?\n\n- How can the platform's design itself encourage constructive behavior and reduce the need for active moderation?\n\n- What metrics can measure the health of discourse without creating perverse incentives?\n\nDeveloping effective governance models is essential for creating an environment where diverse perspectives can contribute to solving complex problems without descending into unproductive conflict.",
+                            ContentStatus = 1,
+                            CreatedAt = new DateTime(2024, 8, 10, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            ParentSolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
+                            ScopeID = new Guid("a1e7c6b3-d5e2-4f8a-9c3b-8d7e6f5d4c2b"),
+                            Title = "Moderation and Governance of Public Debates"
+                        },
+                        new
+                        {
+                            IssueID = new Guid("d7e8f9a0-b1c2-43d4-95e6-f7a8b9c0d1e2"),
+                            AuthorID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee33"),
+                            Content = "How can the platform ensure diverse voices are heard and prevent dominance by already-privileged demographics?\n\nCollaborative platforms often inadvertently reproduce or amplify existing societal inequalities in who participates and whose contributions receive attention. For a platform like Atlas that aims to leverage collective intelligence to solve complex problems, ensuring diverse participation is not just a matter of fairness but also essential for developing comprehensive, effective solutions.\n\nMany current platforms struggle with representation issues across dimensions like gender, race, socioeconomic status, disability, geographic location, and educational background. These disparities limit the range of perspectives and expertise available to address challenges.\n\nKey questions include:\n\n- What design features can reduce barriers to participation for underrepresented groups?\n\n- How can discovery algorithms be designed to surface valuable contributions from diverse participants rather than reinforcing existing visibility advantages?\n\n- What metrics should be tracked to identify representation gaps without creating privacy concerns?\n\n- How can the platform encourage inclusive dialogue without tokenizing contributors from underrepresented groups?\n\n- What community norms and moderation approaches can prevent behaviors that disproportionately drive away participants from marginalized groups?\n\n- How can the platform's structure acknowledge and address the different resources (time, technical access, etc.) available to different potential participants?\n\nAddressing these challenges requires thoughtful design at all levels—from technical infrastructure to community governance—to create an environment where diverse perspectives can meaningfully contribute to problem-solving.",
+                            ContentStatus = 1,
+                            CreatedAt = new DateTime(2024, 8, 15, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            ParentSolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
+                            ScopeID = new Guid("a1e7c6b3-d5e2-4f8a-9c3b-8d7e6f5d4c2b"),
+                            Title = "Bias and Representation in Participation"
+                        },
+                        new
+                        {
+                            IssueID = new Guid("c9d8e7f6-a5b4-43c2-91d0-e8f7a6b5c4d3"),
+                            AuthorID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee37"),
+                            Content = "What strategies can maintain user interest and participation beyond the initial launch or viral phase?\n\nWhile many platforms experience strong initial engagement, sustaining meaningful participation over time remains a significant challenge. For Atlas to effectively leverage collective intelligence for problem-solving, it must overcome the tendency toward declining engagement that affects most collaborative platforms.\n\nTraditional social media often relies on addictive design patterns to maintain engagement, but these approaches frequently lead to shallow interaction rather than thoughtful participation. A platform focused on collaborative problem-solving requires different strategies to sustain long-term community involvement.\n\nKey questions include:\n\n- How can the platform create meaningful progression systems that reward deepening contribution without gamifying in ways that distort participation?\n\n- What feedback mechanisms best help users understand their impact and the value of their contributions?\n\n- How can community rituals and regular events create sustainable rhythms of participation?\n\n- What role should real-world impact and implementation of solutions play in maintaining motivation?\n\n- How can the platform support different modes of engagement that accommodate varying levels of time commitment and expertise?\n\n- What governance structures allow the community to evolve with changing needs while maintaining coherent purpose?\n\n- How can the platform encourage meaningful relationships between participants that strengthen commitment to the community?\n\nAddressing these challenges requires balancing intrinsic and extrinsic motivations while creating structures that support sustained, meaningful participation without burnout or disillusionment.",
+                            ContentStatus = 1,
+                            CreatedAt = new DateTime(2024, 8, 20, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            ParentSolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
+                            ScopeID = new Guid("a1e7c6b3-d5e2-4f8a-9c3b-8d7e6f5d4c2b"),
+                            Title = "Sustaining Long-Term Engagement"
+                        },
+                        new
+                        {
+                            IssueID = new Guid("b5a4c3d2-e1f0-47a9-b830-c5d4e3f2a1b0"),
+                            AuthorID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee39"),
+                            Content = "Should users be able to post anonymously or pseudonymously? How does that affect accountability and trust?\n\nThe question of identity and attribution on collaborative platforms presents a fundamental tension between competing values. On one hand, anonymity and pseudonymity can enable participation from vulnerable populations, protect against retaliation, and allow ideas to be evaluated on their merits rather than their source. On the other hand, these practices can reduce accountability, enable harassment, and potentially undermine trust in the system.\n\nFor a platform like Atlas that aims to foster collective problem-solving, navigating this tension is particularly important. The credibility of solutions may depend on transparent expertise, while the diversity of perspectives may require protecting contributors' identities in some contexts.\n\nKey questions include:\n\n- What granular options between full identification and complete anonymity might provide appropriate balance for different contexts?\n\n- How can reputation systems function effectively when identities may be fluid or concealed?\n\n- What verification mechanisms might establish credibility without requiring full identity disclosure?\n\n- How can platforms prevent abuse of anonymity while preserving its benefits for legitimate uses?\n\n- What community norms and technical systems can establish trust in contributions despite potential identity concealment?\n\n- How might different types of content or actions require different levels of identity verification?\n\nBalancing these considerations requires thoughtful design that respects both the values of transparency and the legitimate needs for privacy and protection in online discourse.",
+                            ContentStatus = 1,
+                            CreatedAt = new DateTime(2024, 8, 25, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            ParentSolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
+                            ScopeID = new Guid("a1e7c6b3-d5e2-4f8a-9c3b-8d7e6f5d4c2b"),
+                            Title = "Balancing Transparency with Anonymity"
+                        },
+                        new
+                        {
+                            IssueID = new Guid("c7e8f9d0-a1b2-43c4-95d6-e7f8a9b0c1d2"),
+                            AuthorID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee32"),
+                            Content = "How can the think tank be accessible across languages, cultures, and digital literacy levels?\n\nFor a platform like Atlas to achieve its goal of harnessing collective intelligence for problem-solving, it must be accessible to diverse participants worldwide. However, current collaborative platforms often face significant barriers related to language, cultural context, and varying levels of digital literacy.\n\nLanguage barriers can exclude valuable perspectives, while cultural differences in communication styles and norms may lead to misunderstandings or alienation. Additionally, complex interfaces and features can exclude participants with limited digital experience or access to technology.\n\nKey questions include:\n\n- What translation and localization approaches can make content accessible while preserving nuance and context?\n\n- How can user interfaces be designed to be intuitive across cultural contexts and digital literacy levels?\n\n- What alternative access methods could accommodate participants with limited internet connectivity or devices?\n\n- How can the platform's information architecture accommodate different cultural frameworks for organizing knowledge?\n\n- What community norms and facilitation approaches can bridge cultural differences in communication styles?\n\n- How can content moderation be culturally sensitive while maintaining consistent standards?\n\n- What technical solutions might reduce bandwidth requirements for participation?\n\nAddressing these challenges is essential for building a truly global collaborative platform that can leverage diverse perspectives from around the world, rather than only those from privileged communities with high technological access and specific cultural backgrounds.",
+                            ContentStatus = 1,
+                            CreatedAt = new DateTime(2024, 8, 30, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            ParentSolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
+                            ScopeID = new Guid("a1e7c6b3-d5e2-4f8a-9c3b-8d7e6f5d4c2b"),
+                            Title = "Translation and Global Accessibility"
                         });
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.IssueCategory", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.IssueCategory", b =>
                 {
                     b.Property<Guid>("CategoryID")
                         .HasColumnType("uniqueidentifier");
@@ -890,7 +967,7 @@ namespace atlas_the_public_think_tank.Migrations
                     b.ToTable("IssuesCategories", "issues");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.IssueVote", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.IssueVote", b =>
                 {
                     b.Property<Guid>("VoteID")
                         .ValueGeneratedOnAdd()
@@ -1439,22 +1516,6 @@ namespace atlas_the_public_think_tank.Migrations
                         },
                         new
                         {
-                            VoteID = new Guid("7a4b3c2d-1e5f-4a6b-8c9d-0e1f2a3b4c5d"),
-                            CreatedAt = new DateTime(2024, 2, 16, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IssueID = new Guid("e5c83d7a-6f29-48b5-a371-2d94c8e75f12"),
-                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dffbee30"),
-                            VoteValue = 10
-                        },
-                        new
-                        {
-                            VoteID = new Guid("8b5c4d3e-2f6a-4b7c-9d0e-1f2a3b4c5d6e"),
-                            CreatedAt = new DateTime(2024, 2, 17, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IssueID = new Guid("e5c83d7a-6f29-48b5-a371-2d94c8e75f12"),
-                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee31"),
-                            VoteValue = 9
-                        },
-                        new
-                        {
                             VoteID = new Guid("9c6d5e4f-3a7b-4c8d-0e1f-2a3b4c5d6e7f"),
                             CreatedAt = new DateTime(2024, 2, 18, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             IssueID = new Guid("e5c83d7a-6f29-48b5-a371-2d94c8e75f12"),
@@ -1799,38 +1860,6 @@ namespace atlas_the_public_think_tank.Migrations
                         },
                         new
                         {
-                            VoteID = new Guid("1d2e3f4a-5b6c-47d8-9e0f-1a2b3c4d5e6f"),
-                            CreatedAt = new DateTime(2024, 4, 6, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IssueID = new Guid("e9d72f5b-a143-47c8-93b2-6e7a8c41d59f"),
-                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dffbee30"),
-                            VoteValue = 10
-                        },
-                        new
-                        {
-                            VoteID = new Guid("2e3f4a5b-6c7d-48e9-a0b1-2c3d4e5f6a7b"),
-                            CreatedAt = new DateTime(2024, 4, 7, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IssueID = new Guid("e9d72f5b-a143-47c8-93b2-6e7a8c41d59f"),
-                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee31"),
-                            VoteValue = 9
-                        },
-                        new
-                        {
-                            VoteID = new Guid("3f4a5b6c-7d8e-49fa-b1c2-3d4e5f6a7b8c"),
-                            CreatedAt = new DateTime(2024, 4, 8, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IssueID = new Guid("e9d72f5b-a143-47c8-93b2-6e7a8c41d59f"),
-                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee32"),
-                            VoteValue = 10
-                        },
-                        new
-                        {
-                            VoteID = new Guid("4a5b6c7d-8e9f-40ab-c2d3-4e5f6a7b8c9d"),
-                            CreatedAt = new DateTime(2024, 4, 9, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IssueID = new Guid("e9d72f5b-a143-47c8-93b2-6e7a8c41d59f"),
-                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee33"),
-                            VoteValue = 8
-                        },
-                        new
-                        {
                             VoteID = new Guid("5b6c7d8e-9f0a-41bc-d3e4-5f6a7b8c9d0e"),
                             CreatedAt = new DateTime(2024, 4, 10, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             IssueID = new Guid("e9d72f5b-a143-47c8-93b2-6e7a8c41d59f"),
@@ -2028,14 +2057,6 @@ namespace atlas_the_public_think_tank.Migrations
                             IssueID = new Guid("b5a7d93c-4e28-46f1-87b3-9c5a2d41e6f8"),
                             UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee44"),
                             VoteValue = 10
-                        },
-                        new
-                        {
-                            VoteID = new Guid("a1b2c3d4-5e6f-47a8-9b0c-1d2e3f4a5b6c"),
-                            CreatedAt = new DateTime(2024, 5, 16, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IssueID = new Guid("d4e2b8f7-3c19-45a6-90d2-17f8e3c95b0a"),
-                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dffbee30"),
-                            VoteValue = 3
                         },
                         new
                         {
@@ -2652,10 +2673,402 @@ namespace atlas_the_public_think_tank.Migrations
                             IssueID = new Guid("5e9b3c7d-2a8f-4e16-9d7c-3a1b5e8f9d2e"),
                             UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee36"),
                             VoteValue = 7
+                        },
+                        new
+                        {
+                            VoteID = new Guid("e1f2a3b4-c5d6-7e8f-9a0b-1c2d3e4f5a6b"),
+                            CreatedAt = new DateTime(2024, 7, 6, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("d4c7e8a2-5b9f-47d1-8e3a-6f2c9d0b5a4e"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee31"),
+                            VoteValue = 9
+                        },
+                        new
+                        {
+                            VoteID = new Guid("f2e3d4c5-b6a7-8f9e-0a1b-2c3d4e5f6a7b"),
+                            CreatedAt = new DateTime(2024, 7, 6, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("d4c7e8a2-5b9f-47d1-8e3a-6f2c9d0b5a4e"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee33"),
+                            VoteValue = 8
+                        },
+                        new
+                        {
+                            VoteID = new Guid("a3b4c5d6-e7f8-9a0b-1c2d-3e4f5a6b7c8d"),
+                            CreatedAt = new DateTime(2024, 7, 7, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("d4c7e8a2-5b9f-47d1-8e3a-6f2c9d0b5a4e"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee35"),
+                            VoteValue = 10
+                        },
+                        new
+                        {
+                            VoteID = new Guid("b4c5d6e7-f8a9-0b1c-2d3e-4f5a6b7c8d9e"),
+                            CreatedAt = new DateTime(2024, 7, 7, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("d4c7e8a2-5b9f-47d1-8e3a-6f2c9d0b5a4e"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee38"),
+                            VoteValue = 7
+                        },
+                        new
+                        {
+                            VoteID = new Guid("c5d6e7f8-a9b0-1c2d-3e4f-5a6b7c8d9e0f"),
+                            CreatedAt = new DateTime(2024, 7, 8, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("d4c7e8a2-5b9f-47d1-8e3a-6f2c9d0b5a4e"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee41"),
+                            VoteValue = 9
+                        },
+                        new
+                        {
+                            VoteID = new Guid("d1e2f3a4-b5c6-7d8e-9f0a-1b2c3d4e5f6a"),
+                            CreatedAt = new DateTime(2024, 7, 26, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("7a9c2e4b-6d5f-48c3-9e7a-1b2d3f4c5e6a"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dffbee30"),
+                            VoteValue = 8
+                        },
+                        new
+                        {
+                            VoteID = new Guid("e2f3a4b5-c6d7-8e9f-0a1b-2c3d4e5f6a7b"),
+                            CreatedAt = new DateTime(2024, 7, 26, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("7a9c2e4b-6d5f-48c3-9e7a-1b2d3f4c5e6a"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee33"),
+                            VoteValue = 9
+                        },
+                        new
+                        {
+                            VoteID = new Guid("f3a4b5c6-d7e8-9f0a-1b2c-3d4e5f6a7b8c"),
+                            CreatedAt = new DateTime(2024, 7, 27, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("7a9c2e4b-6d5f-48c3-9e7a-1b2d3f4c5e6a"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee35"),
+                            VoteValue = 7
+                        },
+                        new
+                        {
+                            VoteID = new Guid("a4b5c6d7-e8f9-0a1b-2c3d-4e5f6a7b8c9d"),
+                            CreatedAt = new DateTime(2024, 7, 27, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("7a9c2e4b-6d5f-48c3-9e7a-1b2d3f4c5e6a"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee37"),
+                            VoteValue = 10
+                        },
+                        new
+                        {
+                            VoteID = new Guid("b5c6d7e8-f9a0-1b2c-3d4e-5f6a7b8c9d0e"),
+                            CreatedAt = new DateTime(2024, 7, 28, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("7a9c2e4b-6d5f-48c3-9e7a-1b2d3f4c5e6a"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee39"),
+                            VoteValue = 8
+                        },
+                        new
+                        {
+                            VoteID = new Guid("c6d7e8f9-a0b1-2c3d-4e5f-6a7b8c9d0e1f"),
+                            CreatedAt = new DateTime(2024, 7, 28, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("7a9c2e4b-6d5f-48c3-9e7a-1b2d3f4c5e6a"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee40"),
+                            VoteValue = 9
+                        },
+                        new
+                        {
+                            VoteID = new Guid("c1d2e3f4-a5b6-7c8d-9e0f-1a2b3c4d5e6f"),
+                            CreatedAt = new DateTime(2024, 8, 11, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("b2e3c4d5-a6b7-48c9-9d0e-1f2a3b4c5d6e"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dffbee30"),
+                            VoteValue = 9
+                        },
+                        new
+                        {
+                            VoteID = new Guid("d2e3f4a5-b6c7-8d9e-0f1a-2b3c4d5e6f7a"),
+                            CreatedAt = new DateTime(2024, 8, 11, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("b2e3c4d5-a6b7-48c9-9d0e-1f2a3b4c5d6e"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee31"),
+                            VoteValue = 8
+                        },
+                        new
+                        {
+                            VoteID = new Guid("e3f4a5b6-c7d8-9e0f-1a2b-3c4d5e6f7a8b"),
+                            CreatedAt = new DateTime(2024, 8, 12, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("b2e3c4d5-a6b7-48c9-9d0e-1f2a3b4c5d6e"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee33"),
+                            VoteValue = 10
+                        },
+                        new
+                        {
+                            VoteID = new Guid("f4a5b6c7-d8e9-0f1a-2b3c-4d5e6f7a8b9c"),
+                            CreatedAt = new DateTime(2024, 8, 12, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("b2e3c4d5-a6b7-48c9-9d0e-1f2a3b4c5d6e"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee36"),
+                            VoteValue = 7
+                        },
+                        new
+                        {
+                            VoteID = new Guid("a5b6c7d8-e9f0-1a2b-3c4d-5e6f7a8b9c0d"),
+                            CreatedAt = new DateTime(2024, 8, 13, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("b2e3c4d5-a6b7-48c9-9d0e-1f2a3b4c5d6e"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee38"),
+                            VoteValue = 9
+                        },
+                        new
+                        {
+                            VoteID = new Guid("b6c7d8e9-f0a1-2b3c-4d5e-6f7a8b9c0d1e"),
+                            CreatedAt = new DateTime(2024, 8, 13, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("b2e3c4d5-a6b7-48c9-9d0e-1f2a3b4c5d6e"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee40"),
+                            VoteValue = 8
+                        },
+                        new
+                        {
+                            VoteID = new Guid("c7d8e9f0-a1b2-3c4d-5e6f-7a8b9c0d1e2f"),
+                            CreatedAt = new DateTime(2024, 8, 14, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("b2e3c4d5-a6b7-48c9-9d0e-1f2a3b4c5d6e"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee42"),
+                            VoteValue = 9
+                        },
+                        new
+                        {
+                            VoteID = new Guid("e8f9a0b1-c2d3-4e5f-6a7b-8c9d0e1f2a3b"),
+                            CreatedAt = new DateTime(2024, 8, 16, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("d7e8f9a0-b1c2-43d4-95e6-f7a8b9c0d1e2"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee31"),
+                            VoteValue = 10
+                        },
+                        new
+                        {
+                            VoteID = new Guid("f9a0b1c2-d3e4-5f6a-7b8c-9d0e1f2a3b4c"),
+                            CreatedAt = new DateTime(2024, 8, 16, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("d7e8f9a0-b1c2-43d4-95e6-f7a8b9c0d1e2"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee32"),
+                            VoteValue = 9
+                        },
+                        new
+                        {
+                            VoteID = new Guid("a0b1c2d3-e4f5-6a7b-8c9d-0e1f2a3b4c5d"),
+                            CreatedAt = new DateTime(2024, 8, 17, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("d7e8f9a0-b1c2-43d4-95e6-f7a8b9c0d1e2"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee34"),
+                            VoteValue = 8
+                        },
+                        new
+                        {
+                            VoteID = new Guid("b1c2d3e4-f5a6-7b8c-9d0e-1f2a3b4c5d6e"),
+                            CreatedAt = new DateTime(2024, 8, 17, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("d7e8f9a0-b1c2-43d4-95e6-f7a8b9c0d1e2"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee36"),
+                            VoteValue = 10
+                        },
+                        new
+                        {
+                            VoteID = new Guid("c2d3e4f5-a6b7-8c9d-0e1f-2a3b4c5d6e7f"),
+                            CreatedAt = new DateTime(2024, 8, 18, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("d7e8f9a0-b1c2-43d4-95e6-f7a8b9c0d1e2"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee37"),
+                            VoteValue = 8
+                        },
+                        new
+                        {
+                            VoteID = new Guid("d3e4f5a6-b7c8-9d0e-1f2a-3b4c5d6e7f8a"),
+                            CreatedAt = new DateTime(2024, 8, 18, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("d7e8f9a0-b1c2-43d4-95e6-f7a8b9c0d1e2"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee39"),
+                            VoteValue = 9
+                        },
+                        new
+                        {
+                            VoteID = new Guid("e4f5a6b7-c8d9-0e1f-2a3b-4c5d6e7f8a9b"),
+                            CreatedAt = new DateTime(2024, 8, 19, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("d7e8f9a0-b1c2-43d4-95e6-f7a8b9c0d1e2"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee40"),
+                            VoteValue = 10
+                        },
+                        new
+                        {
+                            VoteID = new Guid("f5a6b7c8-d9e0-1f2a-3b4c-5d6e7f8a9b0c"),
+                            CreatedAt = new DateTime(2024, 8, 19, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("d7e8f9a0-b1c2-43d4-95e6-f7a8b9c0d1e2"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee42"),
+                            VoteValue = 9
+                        },
+                        new
+                        {
+                            VoteID = new Guid("f1e2d3c4-b5a6-4798-87b9-d0c1e2f3a4b5"),
+                            CreatedAt = new DateTime(2024, 8, 21, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("c9d8e7f6-a5b4-43c2-91d0-e8f7a6b5c4d3"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dffbee30"),
+                            VoteValue = 9
+                        },
+                        new
+                        {
+                            VoteID = new Guid("a9b8c7d6-e5f4-4312-b1a0-9d8c7b6a5f4e"),
+                            CreatedAt = new DateTime(2024, 8, 21, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("c9d8e7f6-a5b4-43c2-91d0-e8f7a6b5c4d3"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee32"),
+                            VoteValue = 8
+                        },
+                        new
+                        {
+                            VoteID = new Guid("c7b8a9d0-5e2f-4983-a1b0-c9d8e7f6a5b4"),
+                            CreatedAt = new DateTime(2024, 8, 22, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("c9d8e7f6-a5b4-43c2-91d0-e8f7a6b5c4d3"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee34"),
+                            VoteValue = 7
+                        },
+                        new
+                        {
+                            VoteID = new Guid("e5f4d3c2-b1a0-4675-8392-c1d0b9a8f7e6"),
+                            CreatedAt = new DateTime(2024, 8, 22, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("c9d8e7f6-a5b4-43c2-91d0-e8f7a6b5c4d3"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee35"),
+                            VoteValue = 10
+                        },
+                        new
+                        {
+                            VoteID = new Guid("9a8b7c6d-5f4e-4312-b0a9-1c2d3e4f5a6b"),
+                            CreatedAt = new DateTime(2024, 8, 23, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("c9d8e7f6-a5b4-43c2-91d0-e8f7a6b5c4d3"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee38"),
+                            VoteValue = 8
+                        },
+                        new
+                        {
+                            VoteID = new Guid("3c4d5e6f-7a8b-4921-83c0-f5e4d3c2b1a0"),
+                            CreatedAt = new DateTime(2024, 8, 23, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("c9d8e7f6-a5b4-43c2-91d0-e8f7a6b5c4d3"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee41"),
+                            VoteValue = 9
+                        },
+                        new
+                        {
+                            VoteID = new Guid("2d3e4f5a-6b7c-4809-a1b2-c3d4e5f6a7b8"),
+                            CreatedAt = new DateTime(2024, 8, 24, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("c9d8e7f6-a5b4-43c2-91d0-e8f7a6b5c4d3"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee43"),
+                            VoteValue = 7
+                        },
+                        new
+                        {
+                            VoteID = new Guid("d1c0b9a8-7f6e-4352-91a0-c8d7b6a5f4e3"),
+                            CreatedAt = new DateTime(2024, 8, 26, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("b5a4c3d2-e1f0-47a9-b830-c5d4e3f2a1b0"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dffbee30"),
+                            VoteValue = 8
+                        },
+                        new
+                        {
+                            VoteID = new Guid("e2d1c0b9-8a7f-4463-a2b1-d9e8c7f6a5b4"),
+                            CreatedAt = new DateTime(2024, 8, 26, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("b5a4c3d2-e1f0-47a9-b830-c5d4e3f2a1b0"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee31"),
+                            VoteValue = 9
+                        },
+                        new
+                        {
+                            VoteID = new Guid("f3e2d1c0-9b8a-4574-b3c2-e0f9d8a7b6c5"),
+                            CreatedAt = new DateTime(2024, 8, 27, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("b5a4c3d2-e1f0-47a9-b830-c5d4e3f2a1b0"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee33"),
+                            VoteValue = 7
+                        },
+                        new
+                        {
+                            VoteID = new Guid("a4f3e2d1-c0b9-4685-c4d3-f1a0e9b8c7d6"),
+                            CreatedAt = new DateTime(2024, 8, 27, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("b5a4c3d2-e1f0-47a9-b830-c5d4e3f2a1b0"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee35"),
+                            VoteValue = 10
+                        },
+                        new
+                        {
+                            VoteID = new Guid("b5a4f3e2-d1c0-4796-d5e4-a2b1f0c9d8e7"),
+                            CreatedAt = new DateTime(2024, 8, 28, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("b5a4c3d2-e1f0-47a9-b830-c5d4e3f2a1b0"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee37"),
+                            VoteValue = 8
+                        },
+                        new
+                        {
+                            VoteID = new Guid("c6b5a4f3-e2d1-4807-e6f5-b3c2a1d0e9f8"),
+                            CreatedAt = new DateTime(2024, 8, 28, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("b5a4c3d2-e1f0-47a9-b830-c5d4e3f2a1b0"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee40"),
+                            VoteValue = 6
+                        },
+                        new
+                        {
+                            VoteID = new Guid("d7c6b5a4-f3e2-4918-f7a6-c4d3b2e1f0a9"),
+                            CreatedAt = new DateTime(2024, 8, 29, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("b5a4c3d2-e1f0-47a9-b830-c5d4e3f2a1b0"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee42"),
+                            VoteValue = 9
+                        },
+                        new
+                        {
+                            VoteID = new Guid("e8d7c6b5-a4f3-4029-a8b7-d5e4c3f2a1b0"),
+                            CreatedAt = new DateTime(2024, 8, 29, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("b5a4c3d2-e1f0-47a9-b830-c5d4e3f2a1b0"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee44"),
+                            VoteValue = 7
+                        },
+                        new
+                        {
+                            VoteID = new Guid("f9e8d7c6-b5a4-4312-9021-e8d7c6b5a4f3"),
+                            CreatedAt = new DateTime(2024, 8, 31, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("c7e8f9d0-a1b2-43c4-95d6-e7f8a9b0c1d2"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dffbee30"),
+                            VoteValue = 9
+                        },
+                        new
+                        {
+                            VoteID = new Guid("a0f9e8d7-c6b5-4423-a132-f9e8d7c6b5a0"),
+                            CreatedAt = new DateTime(2024, 8, 31, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("c7e8f9d0-a1b2-43c4-95d6-e7f8a9b0c1d2"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee31"),
+                            VoteValue = 10
+                        },
+                        new
+                        {
+                            VoteID = new Guid("b1a0f9e8-d7c6-4534-b243-a0f9e8d7c6b1"),
+                            CreatedAt = new DateTime(2024, 9, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("c7e8f9d0-a1b2-43c4-95d6-e7f8a9b0c1d2"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee34"),
+                            VoteValue = 8
+                        },
+                        new
+                        {
+                            VoteID = new Guid("c2b1a0f9-e8d7-4645-c354-b1a0f9e8d7c2"),
+                            CreatedAt = new DateTime(2024, 9, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("c7e8f9d0-a1b2-43c4-95d6-e7f8a9b0c1d2"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee36"),
+                            VoteValue = 9
+                        },
+                        new
+                        {
+                            VoteID = new Guid("d3c2b1a0-f9e8-4756-d465-c2b1a0f9e8d3"),
+                            CreatedAt = new DateTime(2024, 9, 2, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("c7e8f9d0-a1b2-43c4-95d6-e7f8a9b0c1d2"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee38"),
+                            VoteValue = 7
+                        },
+                        new
+                        {
+                            VoteID = new Guid("e4d3c2b1-a0f9-4867-e576-d3c2b1a0f9e4"),
+                            CreatedAt = new DateTime(2024, 9, 2, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("c7e8f9d0-a1b2-43c4-95d6-e7f8a9b0c1d2"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee41"),
+                            VoteValue = 10
+                        },
+                        new
+                        {
+                            VoteID = new Guid("f5e4d3c2-b1a0-4978-f687-e4d3c2b1a0f5"),
+                            CreatedAt = new DateTime(2024, 9, 3, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("c7e8f9d0-a1b2-43c4-95d6-e7f8a9b0c1d2"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee43"),
+                            VoteValue = 9
+                        },
+                        new
+                        {
+                            VoteID = new Guid("a6f5e4d3-c2b1-4089-a798-f5e4d3c2b1a6"),
+                            CreatedAt = new DateTime(2024, 9, 3, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            IssueID = new Guid("c7e8f9d0-a1b2-43c4-95d6-e7f8a9b0c1d2"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee45"),
+                            VoteValue = 8
                         });
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.Scope", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.Scope", b =>
                 {
                     b.Property<Guid>("ScopeID")
                         .ValueGeneratedOnAdd()
@@ -2692,7 +3105,7 @@ namespace atlas_the_public_think_tank.Migrations
                         });
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.Solution", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.Solution", b =>
                 {
                     b.Property<Guid>("SolutionID")
                         .ValueGeneratedOnAdd()
@@ -2886,7 +3299,7 @@ namespace atlas_the_public_think_tank.Migrations
                         });
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.SolutionCategory", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.SolutionCategory", b =>
                 {
                     b.Property<Guid>("CategoryID")
                         .HasColumnType("uniqueidentifier");
@@ -2901,7 +3314,7 @@ namespace atlas_the_public_think_tank.Migrations
                     b.ToTable("SolutionsCategories", "solutions");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.SolutionVote", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.SolutionVote", b =>
                 {
                     b.Property<Guid>("VoteID")
                         .ValueGeneratedOnAdd()
@@ -2950,7 +3363,7 @@ namespace atlas_the_public_think_tank.Migrations
                             CreatedAt = new DateTime(2024, 1, 16, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             SolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
                             UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee32"),
-                            VoteValue = 7
+                            VoteValue = 10
                         },
                         new
                         {
@@ -2958,7 +3371,7 @@ namespace atlas_the_public_think_tank.Migrations
                             CreatedAt = new DateTime(2024, 1, 17, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             SolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
                             UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee33"),
-                            VoteValue = 9
+                            VoteValue = 10
                         },
                         new
                         {
@@ -2966,7 +3379,7 @@ namespace atlas_the_public_think_tank.Migrations
                             CreatedAt = new DateTime(2024, 1, 17, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             SolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
                             UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee34"),
-                            VoteValue = 6
+                            VoteValue = 10
                         },
                         new
                         {
@@ -2982,7 +3395,7 @@ namespace atlas_the_public_think_tank.Migrations
                             CreatedAt = new DateTime(2024, 1, 18, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             SolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
                             UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee36"),
-                            VoteValue = 8
+                            VoteValue = 10
                         },
                         new
                         {
@@ -2990,7 +3403,7 @@ namespace atlas_the_public_think_tank.Migrations
                             CreatedAt = new DateTime(2024, 1, 19, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             SolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
                             UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee37"),
-                            VoteValue = 5
+                            VoteValue = 10
                         },
                         new
                         {
@@ -2998,7 +3411,7 @@ namespace atlas_the_public_think_tank.Migrations
                             CreatedAt = new DateTime(2024, 1, 19, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             SolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
                             UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee38"),
-                            VoteValue = 3
+                            VoteValue = 10
                         },
                         new
                         {
@@ -3006,7 +3419,95 @@ namespace atlas_the_public_think_tank.Migrations
                             CreatedAt = new DateTime(2024, 1, 20, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             SolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
                             UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee39"),
-                            VoteValue = 7
+                            VoteValue = 10
+                        },
+                        new
+                        {
+                            VoteID = new Guid("abc12345-de67-89f0-1234-56789abcdef0"),
+                            CreatedAt = new DateTime(2024, 1, 21, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            SolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee40"),
+                            VoteValue = 9
+                        },
+                        new
+                        {
+                            VoteID = new Guid("bcd23456-ef78-90a1-2345-6789abcdef01"),
+                            CreatedAt = new DateTime(2024, 1, 21, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            SolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee41"),
+                            VoteValue = 9
+                        },
+                        new
+                        {
+                            VoteID = new Guid("cde34567-f890-a1b2-3456-789abcdef012"),
+                            CreatedAt = new DateTime(2024, 1, 22, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            SolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee42"),
+                            VoteValue = 10
+                        },
+                        new
+                        {
+                            VoteID = new Guid("def45678-90a1-b2c3-4567-89abcdef0123"),
+                            CreatedAt = new DateTime(2024, 1, 22, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            SolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee43"),
+                            VoteValue = 8
+                        },
+                        new
+                        {
+                            VoteID = new Guid("ef056789-1ab2-c3d4-5678-9abcdef01234"),
+                            CreatedAt = new DateTime(2024, 1, 23, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            SolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee44"),
+                            VoteValue = 9
+                        },
+                        new
+                        {
+                            VoteID = new Guid("f0167890-2bc3-d4e5-6789-abcdef012345"),
+                            CreatedAt = new DateTime(2024, 1, 23, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            SolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee45"),
+                            VoteValue = 9
+                        },
+                        new
+                        {
+                            VoteID = new Guid("01278901-3cd4-e5f6-789a-bcdef0123456"),
+                            CreatedAt = new DateTime(2024, 1, 24, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            SolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dffbee30"),
+                            VoteValue = 10
+                        },
+                        new
+                        {
+                            VoteID = new Guid("12389012-4de5-f607-89ab-cdef01234567"),
+                            CreatedAt = new DateTime(2024, 1, 24, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            SolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee46"),
+                            VoteValue = 11
+                        },
+                        new
+                        {
+                            VoteID = new Guid("23490123-5ef6-0789-abcd-ef012345678a"),
+                            CreatedAt = new DateTime(2024, 1, 25, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            SolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee47"),
+                            VoteValue = 12
+                        },
+                        new
+                        {
+                            VoteID = new Guid("34501234-6f07-89ab-cdef-0123456789ab"),
+                            CreatedAt = new DateTime(2024, 1, 25, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            SolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee48"),
+                            VoteValue = 12
+                        },
+                        new
+                        {
+                            VoteID = new Guid("45612345-7a89-bcde-f012-3456789abcde"),
+                            CreatedAt = new DateTime(2024, 1, 26, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            SolutionID = new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"),
+                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee49"),
+                            VoteValue = 13
                         },
                         new
                         {
@@ -3890,7 +4391,7 @@ namespace atlas_the_public_think_tank.Migrations
                         });
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.UserComment", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.UserComment", b =>
                 {
                     b.Property<Guid>("CommentID")
                         .ValueGeneratedOnAdd()
@@ -3940,7 +4441,7 @@ namespace atlas_the_public_think_tank.Migrations
                     b.ToTable("Comments", "comments");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.UserHistory", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.UserHistory", b =>
                 {
                     b.Property<Guid>("UserHistoryID")
                         .ValueGeneratedOnAdd()
@@ -3999,7 +4500,7 @@ namespace atlas_the_public_think_tank.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", null)
+                    b.HasOne("repository_pattern_experiment.Models.Database.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -4008,7 +4509,7 @@ namespace atlas_the_public_think_tank.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<System.Guid>", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", null)
+                    b.HasOne("repository_pattern_experiment.Models.Database.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -4023,7 +4524,7 @@ namespace atlas_the_public_think_tank.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", null)
+                    b.HasOne("repository_pattern_experiment.Models.Database.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -4032,26 +4533,26 @@ namespace atlas_the_public_think_tank.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<System.Guid>", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", null)
+                    b.HasOne("repository_pattern_experiment.Models.Database.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.CommentVote", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.CommentVote", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", null)
+                    b.HasOne("repository_pattern_experiment.Models.Database.AppUser", null)
                         .WithMany("CommentVotes")
                         .HasForeignKey("AppUserId");
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.UserComment", "Comment")
+                    b.HasOne("repository_pattern_experiment.Models.Database.UserComment", "Comment")
                         .WithMany("CommentVotes")
                         .HasForeignKey("CommentID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", "User")
+                    b.HasOne("repository_pattern_experiment.Models.Database.AppUser", "User")
                         .WithMany()
                         .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -4062,30 +4563,30 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.Issue", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.Issue", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", "Author")
+                    b.HasOne("repository_pattern_experiment.Models.Database.AppUser", "Author")
                         .WithMany("Issues")
                         .HasForeignKey("AuthorID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.BlockedContent", "BlockedContent")
+                    b.HasOne("repository_pattern_experiment.Models.Database.BlockedContent", "BlockedContent")
                         .WithMany("Issues")
                         .HasForeignKey("BlockedContentID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Issue", "ParentIssue")
+                    b.HasOne("repository_pattern_experiment.Models.Database.Issue", "ParentIssue")
                         .WithMany("ChildIssues")
                         .HasForeignKey("ParentIssueID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Solution", "ParentSolution")
+                    b.HasOne("repository_pattern_experiment.Models.Database.Solution", "ParentSolution")
                         .WithMany("ChildIssues")
                         .HasForeignKey("ParentSolutionID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Scope", "Scope")
+                    b.HasOne("repository_pattern_experiment.Models.Database.Scope", "Scope")
                         .WithMany("Issues")
                         .HasForeignKey("ScopeID")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -4102,15 +4603,15 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("Scope");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.IssueCategory", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.IssueCategory", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Category", "Category")
+                    b.HasOne("repository_pattern_experiment.Models.Database.Category", "Category")
                         .WithMany("IssueCategories")
                         .HasForeignKey("CategoryID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Issue", "Issue")
+                    b.HasOne("repository_pattern_experiment.Models.Database.Issue", "Issue")
                         .WithMany("IssueCategories")
                         .HasForeignKey("IssueID")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -4121,19 +4622,19 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("Issue");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.IssueVote", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.IssueVote", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", null)
+                    b.HasOne("repository_pattern_experiment.Models.Database.AppUser", null)
                         .WithMany("IssueVotes")
                         .HasForeignKey("AppUserId");
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Issue", "Issue")
+                    b.HasOne("repository_pattern_experiment.Models.Database.Issue", "Issue")
                         .WithMany("IssueVotes")
                         .HasForeignKey("IssueID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", "User")
+                    b.HasOne("repository_pattern_experiment.Models.Database.AppUser", "User")
                         .WithMany()
                         .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -4144,26 +4645,26 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.Solution", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.Solution", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", "Author")
+                    b.HasOne("repository_pattern_experiment.Models.Database.AppUser", "Author")
                         .WithMany("Solutions")
                         .HasForeignKey("AuthorID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.BlockedContent", "BlockedContent")
+                    b.HasOne("repository_pattern_experiment.Models.Database.BlockedContent", "BlockedContent")
                         .WithMany("Solutions")
                         .HasForeignKey("BlockedContentID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Issue", "ParentIssue")
+                    b.HasOne("repository_pattern_experiment.Models.Database.Issue", "ParentIssue")
                         .WithMany("Solutions")
                         .HasForeignKey("ParentIssueID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Scope", "Scope")
+                    b.HasOne("repository_pattern_experiment.Models.Database.Scope", "Scope")
                         .WithMany()
                         .HasForeignKey("ScopeID")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -4178,15 +4679,15 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("Scope");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.SolutionCategory", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.SolutionCategory", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Category", "Category")
+                    b.HasOne("repository_pattern_experiment.Models.Database.Category", "Category")
                         .WithMany("SolutionCategories")
                         .HasForeignKey("CategoryID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Solution", "Solution")
+                    b.HasOne("repository_pattern_experiment.Models.Database.Solution", "Solution")
                         .WithMany("SolutionCategories")
                         .HasForeignKey("SolutionID")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -4197,19 +4698,19 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("Solution");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.SolutionVote", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.SolutionVote", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", null)
+                    b.HasOne("repository_pattern_experiment.Models.Database.AppUser", null)
                         .WithMany("SolutionVotes")
                         .HasForeignKey("AppUserId");
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Solution", "Solution")
+                    b.HasOne("repository_pattern_experiment.Models.Database.Solution", "Solution")
                         .WithMany("SolutionVotes")
                         .HasForeignKey("SolutionID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", "User")
+                    b.HasOne("repository_pattern_experiment.Models.Database.AppUser", "User")
                         .WithMany()
                         .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -4220,30 +4721,30 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.UserComment", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.UserComment", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", "Author")
+                    b.HasOne("repository_pattern_experiment.Models.Database.AppUser", "Author")
                         .WithMany("Comments")
                         .HasForeignKey("AuthorID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.BlockedContent", "BlockedContent")
+                    b.HasOne("repository_pattern_experiment.Models.Database.BlockedContent", "BlockedContent")
                         .WithMany("Comments")
                         .HasForeignKey("BlockedContentID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Issue", "Issue")
+                    b.HasOne("repository_pattern_experiment.Models.Database.Issue", "Issue")
                         .WithMany("Comments")
                         .HasForeignKey("IssueID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.UserComment", "ParentComment")
+                    b.HasOne("repository_pattern_experiment.Models.Database.UserComment", "ParentComment")
                         .WithMany("ChildComments")
                         .HasForeignKey("ParentCommentID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Solution", "Solution")
+                    b.HasOne("repository_pattern_experiment.Models.Database.Solution", "Solution")
                         .WithMany("Comments")
                         .HasForeignKey("SolutionID")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -4259,24 +4760,24 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("Solution");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.UserHistory", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.UserHistory", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.UserComment", "Comment")
+                    b.HasOne("repository_pattern_experiment.Models.Database.UserComment", "Comment")
                         .WithMany()
                         .HasForeignKey("CommentID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Issue", "Issue")
+                    b.HasOne("repository_pattern_experiment.Models.Database.Issue", "Issue")
                         .WithMany()
                         .HasForeignKey("IssueID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Solution", "Solution")
+                    b.HasOne("repository_pattern_experiment.Models.Database.Solution", "Solution")
                         .WithMany()
                         .HasForeignKey("SolutionID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", "User")
+                    b.HasOne("repository_pattern_experiment.Models.Database.AppUser", "User")
                         .WithMany("UserHistory")
                         .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -4291,7 +4792,7 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.AppUser", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.AppUser", b =>
                 {
                     b.Navigation("CommentVotes");
 
@@ -4308,7 +4809,7 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("UserHistory");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.BlockedContent", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.BlockedContent", b =>
                 {
                     b.Navigation("Comments");
 
@@ -4317,14 +4818,14 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("Solutions");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.Category", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.Category", b =>
                 {
                     b.Navigation("IssueCategories");
 
                     b.Navigation("SolutionCategories");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.Issue", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.Issue", b =>
                 {
                     b.Navigation("ChildIssues");
 
@@ -4337,12 +4838,12 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("Solutions");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.Scope", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.Scope", b =>
                 {
                     b.Navigation("Issues");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.Solution", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.Solution", b =>
                 {
                     b.Navigation("ChildIssues");
 
@@ -4353,7 +4854,7 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("SolutionVotes");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.UserComment", b =>
+            modelBuilder.Entity("repository_pattern_experiment.Models.Database.UserComment", b =>
                 {
                     b.Navigation("ChildComments");
 

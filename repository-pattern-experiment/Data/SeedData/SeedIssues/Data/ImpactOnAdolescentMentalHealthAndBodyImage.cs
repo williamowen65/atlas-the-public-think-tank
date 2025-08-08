@@ -46,20 +46,7 @@ namespace repository_pattern_experiment.Data.SeedData.SeedIssues.Data
             "digital environments that support rather than undermine adolescent development and well-being.";
 
         public IssueVote[] issueVotes { get; } = {
-               new IssueVote(){
-                    IssueID = ContentId,
-                    VoteID = new Guid("7a4b3c2d-1e5f-4a6b-8c9d-0e1f2a3b4c5d"),
-                    UserID = SeedUserOne.user.Id,
-                    VoteValue = 10,
-                    CreatedAt = new DateTime(2024, 2, 16),
-               },
-               new IssueVote(){
-                    IssueID = ContentId,
-                    VoteID = new Guid("8b5c4d3e-2f6a-4b7c-9d0e-1f2a3b4c5d6e"),
-                    UserID = SeedUserTwo.user.Id,
-                    VoteValue = 9,
-                    CreatedAt = new DateTime(2024, 2, 17),
-               },
+            
                new IssueVote(){
                     IssueID = ContentId,
                     VoteID = new Guid("9c6d5e4f-3a7b-4c8d-0e1f-2a3b4c5d6e7f"),

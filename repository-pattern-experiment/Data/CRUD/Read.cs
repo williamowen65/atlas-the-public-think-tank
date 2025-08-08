@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using repository_pattern_experiment.Data.RepositoryPattern.IRepository;
 using repository_pattern_experiment.Data.RepositoryPattern.Repository;
+using repository_pattern_experiment.Data.RepositoryPattern.Repository.Helpers;
 using repository_pattern_experiment.Models.Database;
 using repository_pattern_experiment.Models.ViewModel;
 using System;
@@ -27,7 +28,10 @@ namespace repository_pattern_experiment.Data.CRUD
             _serviceProvider = serviceProvider;
         }
 
-        public static async Task<PaginatedIssuesResponse> PaginatedIssues(Guid issueId, int pageNumber = 1)
+        /// <summary>
+        /// Returns a paginated issue response with paginated sub issue feed and meta data
+        /// </summary>
+        public static async Task<PaginatedIssuesResponse> PaginatedSubIssueFeedForIssue(Guid issueId, ContentFilter filter, int pageNumber = 1)
         {
             if (_serviceProvider == null)
                 throw new InvalidOperationException("Read class has not been initialized with a service provider.");
@@ -37,8 +41,6 @@ namespace repository_pattern_experiment.Data.CRUD
             var services = scope.ServiceProvider;
             var filterIdRepository = services.GetRequiredService<IFilterIdSetRepository>();
 
-
-
             /*
             This is a recursive step of fetching sub issues, but it shouldn't go infinitely deep
             There needs to be something in place to stop the recursion at a depth of 3. 
@@ -46,7 +48,7 @@ namespace repository_pattern_experiment.Data.CRUD
             More seed data will be necessary.
             */
 
-            var paginatedChildIssuesIds = await filterIdRepository.GetPagedSubIssueIdsOfIssueById(issueId, pageNumber);
+            var paginatedChildIssuesIds = await filterIdRepository.GetPagedSubIssueIdsOfIssueById(issueId, filter, pageNumber);
 
             PaginatedIssuesResponse paginatedIssuesResponse = new PaginatedIssuesResponse();
 
@@ -58,7 +60,7 @@ namespace repository_pattern_experiment.Data.CRUD
                 foreach (var subIssueId in paginatedChildIssuesIds)
                 {
                     // Call Read.Issue recursively to get the full sub-issue data
-                    var subIssue = await Read.Issue(subIssueId);
+                    var subIssue = await Read.Issue(subIssueId, filter);
 
                     // Add the sub-issue to the PaginatedSubIssues.Issues collection
                     paginatedIssuesResponse.Issues.Add(subIssue);
@@ -66,14 +68,108 @@ namespace repository_pattern_experiment.Data.CRUD
 
                 paginatedIssuesResponse.CurrentPage = pageNumber;
                 paginatedIssuesResponse.PageSize = paginatedChildIssuesIds.Count;
-                paginatedIssuesResponse.TotalCount = await filterIdRepository.GetTotalCountSubIssueIdsOfIssueById(issueId);
+                paginatedIssuesResponse.TotalCount = await filterIdRepository.GetTotalCountSubIssuesOfIssueById(issueId);
 
             }
 
             return paginatedIssuesResponse;
         }
 
-        public static async Task<Issue_ReadVM> Issue(Guid issueId)
+        public static async Task<PaginatedIssuesResponse> PaginatedSubIssueFeedForSolution(Guid solutionId, ContentFilter filter, int pageNumber = 1)
+        {
+            if (_serviceProvider == null)
+                throw new InvalidOperationException("Read class has not been initialized with a service provider.");
+
+            // Create a scope to resolve scoped services
+            using var scope = _serviceProvider.CreateScope();
+            var services = scope.ServiceProvider;
+            var filterIdRepository = services.GetRequiredService<IFilterIdSetRepository>();
+
+            /*
+            This is a recursive step of fetching sub issues, but it shouldn't go infinitely deep
+            There needs to be something in place to stop the recursion at a depth of 3. 
+            Nothing is in place for that at the moment.
+            More seed data will be necessary.
+            */
+
+            var paginatedChildIssuesIds = await filterIdRepository.GetPagedSubIssueIdsOfSolutionById(solutionId, filter, pageNumber);
+
+            PaginatedIssuesResponse paginatedIssuesResponse = new PaginatedIssuesResponse();
+
+            // If there are any sub-issue IDs, recursively load them
+            if (paginatedChildIssuesIds != null && paginatedChildIssuesIds.Count > 0)
+            {
+
+                // Recursively load each sub-issue
+                foreach (var subIssueId in paginatedChildIssuesIds)
+                {
+                    // Call Read.Issue recursively to get the full sub-issue data
+                    var subIssue = await Read.Issue(subIssueId, filter);
+
+                    // Add the sub-issue to the PaginatedSubIssues.Issues collection
+                    paginatedIssuesResponse.Issues.Add(subIssue);
+                }
+
+                paginatedIssuesResponse.CurrentPage = pageNumber;
+                paginatedIssuesResponse.PageSize = paginatedChildIssuesIds.Count;
+                paginatedIssuesResponse.TotalCount = await filterIdRepository.GetTotalCountSubIssuesOfSolutionById(solutionId);
+
+            }
+
+            return paginatedIssuesResponse;
+        }
+
+        public static async Task<PaginatedSolutionsResponse> PaginatedSolutionFeedForIssue(Guid issueId, ContentFilter filter, int pageNumber = 1)
+        {
+            if (_serviceProvider == null)
+                throw new InvalidOperationException("Read class has not been initialized with a service provider.");
+
+            // Create a scope to resolve scoped services
+            using var scope = _serviceProvider.CreateScope();
+            var services = scope.ServiceProvider;
+            var filterIdRepository = services.GetRequiredService<IFilterIdSetRepository>();
+
+            /*
+            This is a recursive step of fetching sub issues, but it shouldn't go infinitely deep
+            There needs to be something in place to stop the recursion at a depth of 3. 
+            Nothing is in place for that at the moment.
+            More seed data will be necessary.
+            */
+
+            var paginatedSolutionFeedIds = await filterIdRepository.GetPagedSolutionIdsOfIssueById(issueId, filter, pageNumber);
+
+            PaginatedSolutionsResponse paginatedSolutionResponse = new PaginatedSolutionsResponse();
+
+            // If there are any sub-issue IDs, recursively load them
+            if (paginatedSolutionFeedIds != null && paginatedSolutionFeedIds.Count > 0)
+            {
+
+                // Recursively load each sub-issue
+                foreach (var solutionId in paginatedSolutionFeedIds)
+                {
+                    // Call Read.Issue recursively to get the full sub-issue data
+                    var solution = await Read.Solution(solutionId, filter);
+
+                    // Add the sub-issue to the PaginatedSubIssues.Issues collection
+                    paginatedSolutionResponse.Solutions.Add(solution);
+                }
+
+                paginatedSolutionResponse.CurrentPage = pageNumber;
+                paginatedSolutionResponse.PageSize = paginatedSolutionFeedIds.Count;
+                paginatedSolutionResponse.TotalCount = await filterIdRepository.GetTotalCountSolutionsOfIssueById(issueId);
+
+            }
+
+            return paginatedSolutionResponse;
+        }
+
+
+        /*
+         Below are the official api helpers for getting data
+         Above are ones that may be made private in the future
+         */
+
+        public static async Task<Issue_ReadVM> Issue(Guid issueId, ContentFilter filter)
         {
             if (_serviceProvider == null)
                 throw new InvalidOperationException("Read class has not been initialized with a service provider.");
@@ -100,7 +196,8 @@ namespace repository_pattern_experiment.Data.CRUD
             AppUser_ReadVM? appUser = await appUserRepository.GetAppUser(issueContent.AuthorID);
 
             // Get the sub-issue IDs (Page 1)
-            var paginatedSubIssues = await Read.PaginatedIssues(issueId);
+            var paginatedSubIssues = await Read.PaginatedSubIssueFeedForIssue(issueId, filter);
+            var paginatedSolutions = await Read.PaginatedSolutionFeedForIssue(issueId, filter);
 
             // Assemble an issue from the IRepository
             Issue_ReadVM issue = new Issue_ReadVM()
@@ -123,14 +220,13 @@ namespace repository_pattern_experiment.Data.CRUD
                 VoteStats = issueVoteStats!,
                 BreadcrumbTags = await breadcrumbRepository.GetBreadcrumbPagedAsync(issueContent.ParentIssueID ?? issueContent.ParentSolutionID),
                 PaginatedSubIssues = paginatedSubIssues!,
+                PaginatedSolutions = paginatedSolutions!,
             };
 
             return issue;
         }
 
-
-
-        public static async Task<Solution_ReadVM> Solution(Guid solutionId)
+        public static async Task<Solution_ReadVM> Solution(Guid solutionId, ContentFilter filter)
         {
 
             if (_serviceProvider == null)
@@ -157,6 +253,7 @@ namespace repository_pattern_experiment.Data.CRUD
 
             UserVote_Solution_ReadVM? solutionVoteStats = await voteStatsRepository.GetSolutionVoteStats(solutionId);
 
+            var paginatedSubIssues = await Read.PaginatedSubIssueFeedForSolution(solutionId, filter);
 
             Solution_ReadVM solution = new Solution_ReadVM()
             {
@@ -175,12 +272,18 @@ namespace repository_pattern_experiment.Data.CRUD
                 Scope = solutionContent.Scope,
                 SolutionID = solutionContent.Id,
                 VoteStats = solutionVoteStats!,
-                BreadcrumbTags = await breadcrumbRepository.GetBreadcrumbPagedAsync(solutionContent.ParentIssueID)
+                BreadcrumbTags = await breadcrumbRepository.GetBreadcrumbPagedAsync(solutionContent.ParentIssueID),
+                PaginatedSubIssues = paginatedSubIssues
             };
 
 
             return solution;
         }
-    
+
+
+        public static async Task<ContentItem_ReadVM> ContentItems(ContentFilter filter)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
