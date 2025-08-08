@@ -6,6 +6,7 @@ using repository_pattern_experiment.Models.Database;
 using repository_pattern_experiment.Models.ViewModel;
 using System;
 using System.Threading.Tasks;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace repository_pattern_experiment.Data.CRUD
 {
@@ -26,6 +27,52 @@ namespace repository_pattern_experiment.Data.CRUD
             _serviceProvider = serviceProvider;
         }
 
+        public static async Task<PaginatedIssuesResponse> PaginatedIssues(Guid issueId, int pageNumber = 1)
+        {
+            if (_serviceProvider == null)
+                throw new InvalidOperationException("Read class has not been initialized with a service provider.");
+
+            // Create a scope to resolve scoped services
+            using var scope = _serviceProvider.CreateScope();
+            var services = scope.ServiceProvider;
+            var filterIdRepository = services.GetRequiredService<IFilterIdSetRepository>();
+
+
+
+            /*
+            This is a recursive step of fetching sub issues, but it shouldn't go infinitely deep
+            There needs to be something in place to stop the recursion at a depth of 3. 
+            Nothing is in place for that at the moment.
+            More seed data will be necessary.
+            */
+
+            var paginatedChildIssuesIds = await filterIdRepository.GetPagedSubIssueIdsOfIssueById(issueId, pageNumber);
+
+            PaginatedIssuesResponse paginatedIssuesResponse = new PaginatedIssuesResponse();
+
+            // If there are any sub-issue IDs, recursively load them
+            if (paginatedChildIssuesIds != null && paginatedChildIssuesIds.Count > 0)
+            {
+
+                // Recursively load each sub-issue
+                foreach (var subIssueId in paginatedChildIssuesIds)
+                {
+                    // Call Read.Issue recursively to get the full sub-issue data
+                    var subIssue = await Read.Issue(subIssueId);
+
+                    // Add the sub-issue to the PaginatedSubIssues.Issues collection
+                    paginatedIssuesResponse.Issues.Add(subIssue);
+                }
+
+                paginatedIssuesResponse.CurrentPage = pageNumber;
+                paginatedIssuesResponse.PageSize = paginatedChildIssuesIds.Count;
+                paginatedIssuesResponse.TotalCount = await filterIdRepository.GetTotalCountSubIssueIdsOfIssueById(issueId);
+
+            }
+
+            return paginatedIssuesResponse;
+        }
+
         public static async Task<Issue_ReadVM> Issue(Guid issueId)
         {
             if (_serviceProvider == null)
@@ -40,6 +87,7 @@ namespace repository_pattern_experiment.Data.CRUD
             var voteStatsRepository = services.GetRequiredService<IVoteStatsRepository>();
             var appUserRepository = services.GetRequiredService<IAppUserRepository>();
             var breadcrumbRepository = services.GetRequiredService<IBreadcrumbRepository>();
+            var filterIdRepository = services.GetRequiredService<IFilterIdSetRepository>();
 
             var issueContent = await issueRepository.GetIssueById(issueId);
 
@@ -50,6 +98,9 @@ namespace repository_pattern_experiment.Data.CRUD
 
             UserVote_Issue_ReadVM? issueVoteStats = await voteStatsRepository.GetIssueVoteStats(issueId);
             AppUser_ReadVM? appUser = await appUserRepository.GetAppUser(issueContent.AuthorID);
+
+            // Get the sub-issue IDs (Page 1)
+            var paginatedSubIssues = await Read.PaginatedIssues(issueId);
 
             // Assemble an issue from the IRepository
             Issue_ReadVM issue = new Issue_ReadVM()
@@ -70,7 +121,8 @@ namespace repository_pattern_experiment.Data.CRUD
                 Scope = issueContent.Scope,
                 IssueID = issueContent.Id,
                 VoteStats = issueVoteStats!,
-                BreadcrumbTags = await breadcrumbRepository.GetBreadcrumbPagedAsync(issueContent.ParentIssueID ?? issueContent.ParentSolutionID)
+                BreadcrumbTags = await breadcrumbRepository.GetBreadcrumbPagedAsync(issueContent.ParentIssueID ?? issueContent.ParentSolutionID),
+                PaginatedSubIssues = paginatedSubIssues!,
             };
 
             return issue;

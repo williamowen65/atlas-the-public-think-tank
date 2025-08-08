@@ -59,7 +59,7 @@ namespace repository_pattern_experiment.Models.ViewModel
     /// </summary>
     public class PaginatedIssuesResponse
     {
-        public List<Issue_Cacheable> Issues { get; set; }
+        public List<Issue_ReadVM> Issues { get; set; } = new List<Issue_ReadVM>();
         public int TotalCount { get; set; }
         public int PageSize { get; set; }
         public int CurrentPage { get; set; }

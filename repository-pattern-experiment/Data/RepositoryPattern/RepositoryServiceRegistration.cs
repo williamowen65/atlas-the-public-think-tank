@@ -27,6 +27,9 @@ namespace repository_pattern_experiment.Data.RepositoryPattern
             services.AddScoped<ISolutionRepository, SolutionRepository>();
             services.Decorate<ISolutionRepository, SolutionCacheRepository>();
 
+            services.AddScoped<IFilterIdSetRepository, FilterIdRepository>();
+            services.Decorate<IFilterIdSetRepository, FilterIdCacheRepository>();
+
             return services;
         }
     }

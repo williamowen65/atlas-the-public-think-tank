@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis;
 using repository_pattern_experiment.Data.CRUD;
 using repository_pattern_experiment.Data.RepositoryPattern.IRepository;
 using repository_pattern_experiment.Models;
@@ -9,11 +10,13 @@ namespace repository_pattern_experiment.Controllers
     public class RepositoryTestController : Controller
     {
         private readonly ILogger<RepositoryTestController> _logger;
+        private readonly IFilterIdSetRepository filterIdSetRepository;
 
         public RepositoryTestController(
-            ILogger<RepositoryTestController> logger)
+            ILogger<RepositoryTestController> logger, IFilterIdSetRepository filterIdSetRepository)
         {
             _logger = logger;
+            this.filterIdSetRepository = filterIdSetRepository;
         }
 
         public IActionResult Index()
@@ -53,8 +56,24 @@ namespace repository_pattern_experiment.Controllers
         {
             try
             {
-                var issue = await Read.Solution(solutionId);
-                return Json(issue);
+                var solution = await Read.Solution(solutionId);
+                return Json(solution);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [Route("get-sub-issue-feed-ids-of-issue/{issueId}")]
+        public async Task<JsonResult> GetSubIssueFeedIdsOfIssue(Guid issueId, int pageNumber = 1)
+        {
+            try
+            {
+
+               var paginatedIssuesResponse = await filterIdSetRepository.GetPagedSubIssueIdsOfIssueById(issueId, pageNumber);
+
+                return Json(paginatedIssuesResponse);
             }
             catch (Exception ex)
             {
