@@ -81,6 +81,23 @@ namespace repository_pattern_experiment.Controllers
             }
         }
 
+        [Route("get-solution-feed-ids-of-issue/{issueId}")]
+        public async Task<JsonResult> GetSolutionFeedIdsOfIssue(Guid issueId, int pageNumber = 1)
+        {
+            try
+            {
+                throw new NotImplementedException();
+
+                var paginatedIssuesResponse = await filterIdSetRepository.GetPagedSubIssueIdsOfIssueById(issueId, pageNumber);
+
+                return Json(paginatedIssuesResponse);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
 
     }
 }
