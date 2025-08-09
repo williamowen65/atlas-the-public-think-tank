@@ -60,7 +60,7 @@ namespace atlas_the_public_think_tank.Models.ViewModel
     public class PaginatedIssuesResponse
     {
         public List<Issue_ReadVM> Issues { get; set; } = new List<Issue_ReadVM>();
-        public int TotalCount { get; set; }
+        public ContentCount_ReadVM ContentCount { get; set; } = new ContentCount_ReadVM();
         public int PageSize { get; set; }
         public int CurrentPage { get; set; }
     }
@@ -71,7 +71,8 @@ namespace atlas_the_public_think_tank.Models.ViewModel
     public class PaginatedSolutionsResponse
     {
         public List<Solution_ReadVM> Solutions { get; set; } = new List<Solution_ReadVM>();
-        public int TotalCount { get; set; }
+
+        public ContentCount_ReadVM ContentCount { get; set; } = new ContentCount_ReadVM();
         public int PageSize { get; set; }
         public int CurrentPage { get; set; }
     }
@@ -96,6 +97,8 @@ namespace atlas_the_public_think_tank.Models.ViewModel
 
     public class Issue_ReadVM : Issue_Cacheable
     { 
+        public Issue_ReadVM? ParentIssue { get; set; }
+        public Solution_ReadVM? ParentSolution { get; set; }
         public PaginatedIssuesResponse PaginatedSubIssues { get; set; } = new PaginatedIssuesResponse();
         public PaginatedSolutionsResponse PaginatedSolutions { get; set; } = new PaginatedSolutionsResponse();
     
@@ -120,7 +123,8 @@ namespace atlas_the_public_think_tank.Models.ViewModel
     }
 
     public class Solution_ReadVM : Solution_Cacheable
-    { 
+    {
+        public Issue_ReadVM? ParentIssue { get; set; }
         public PaginatedIssuesResponse PaginatedSubIssues { get; set; } = new PaginatedIssuesResponse();
         //public Issue_Cacheable ParentIssue { get; set; }
     }
@@ -301,6 +305,20 @@ namespace atlas_the_public_think_tank.Models.ViewModel
         public List<Scope> Scopes { get; set; } = new List<Scope>();
 
 
+    }
+
+
+    public class ContentCount_ReadVM
+    { 
+        /// <summary>
+        /// Represents a count of a content with the filters applied
+        /// </summary>
+        public int TotalCount { get; set; }
+
+        /// <summary>
+        /// Represents a count of a content without any filters applied
+        /// </summary>
+        public int AbsoluteCount { get; set; }
     }
 
     /// <summary>

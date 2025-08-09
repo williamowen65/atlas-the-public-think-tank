@@ -1,10 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
-using atlas_the_public_think_tank.Data.CRUD;
+﻿using atlas_the_public_think_tank.Data.CRUD;
 using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Models;
 using atlas_the_public_think_tank.Models.Database;
 using atlas_the_public_think_tank.Models.ViewModel;
+using Microsoft.EntityFrameworkCore;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
 {
@@ -72,26 +73,43 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             return (paginatedChildIssuesIds);
         }
 
-        public Task<int> GetTotalCountSubIssuesOfIssueById(Guid issueId)
+        public async Task<ContentCount_ReadVM?> GetContentCountSubIssuesOfIssueById(Guid issueId, ContentFilter filter)
         {
+
+            ContentCount_ReadVM counts = new ContentCount_ReadVM();
+
             var query = _context.Issues
                 .Where(i => i.ParentIssueID == issueId);
+            var filteredQuery = FilterQueryService.ApplyIssueFilters(query, filter);
 
-            return query.CountAsync();
+            counts.AbsoluteCount = await query.CountAsync();
+            counts.TotalCount = await filteredQuery.CountAsync();
+
+            return counts;
         }
-        public Task<int> GetTotalCountSubIssuesOfSolutionById(Guid solutionId)
+        public async Task<ContentCount_ReadVM?> GetContentCountSubIssuesOfSolutionById(Guid solutionId, ContentFilter filter)
         {
+            ContentCount_ReadVM counts = new ContentCount_ReadVM();
             var query = _context.Issues
                 .Where(i => i.ParentSolutionID == solutionId);
+            var filteredQuery = FilterQueryService.ApplyIssueFilters(query, filter);
 
-            return query.CountAsync();
+            counts.AbsoluteCount = await query.CountAsync();
+            counts.TotalCount  = await filteredQuery.CountAsync();
+
+            return counts;
         }
-        public Task<int> GetTotalCountSolutionsOfIssueById(Guid solutionId)
+        public async Task<ContentCount_ReadVM?> GetContentCountSolutionsOfIssueById(Guid solutionId, ContentFilter filter)
         {
+            ContentCount_ReadVM counts = new ContentCount_ReadVM();
             var query = _context.Solutions
                 .Where(i => i.ParentIssueID == solutionId);
+            var filteredQuery = FilterQueryService.ApplySolutionFilters(query, filter);
 
-            return query.CountAsync();
+            counts.AbsoluteCount = await query.CountAsync();
+            counts.TotalCount = await filteredQuery.CountAsync();
+
+            return counts;
         }
 
         public Task<List<ContentIdentifier>?> GetPagedMainContentFeedIds(ContentFilter filter, int pageNumber = 1, int pageSize = 3)
@@ -136,20 +154,40 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             return pagedIndexEntries!;
         }
 
-        public Task<int> GetTotalCountMainContentFeed()
+        public async Task<ContentCount_ReadVM?> GetContentCountMainContentFeed(ContentFilter filter)
         {
             // First, get all the issues and solutions IDs with their creation dates and vote averages
             // This allows efficient sorting and pagination at the database level
             var issuesIndexQuery = _context.Issues
-                .Select(i => i.IssueID);
+               .Select(i => new ContentIndexEntry
+               {
+                   ContentId = i.IssueID,
+                   ContentType = ContentType.Issue,
+                   CreatedAt = i.CreatedAt,
+                   AverageVote = i.IssueVotes.Any() ? i.IssueVotes.Average(v => v.VoteValue) : 0,
+                   TotalVotes = i.IssueVotes.Any() ? i.IssueVotes.Count() : 0,
+               });
 
             var solutionsIndexQuery = _context.Solutions
-                .Select(s => s.SolutionID);
+                .Select(s => new ContentIndexEntry
+                {
+                    ContentId = s.SolutionID,
+                    ContentType = ContentType.Solution,
+                    CreatedAt = s.CreatedAt,
+                    AverageVote = s.SolutionVotes.Any() ? s.SolutionVotes.Average(v => v.VoteValue) : 0,
+                    TotalVotes = s.SolutionVotes.Any() ? s.SolutionVotes.Count() : 0
+                });
+
+            ContentCount_ReadVM counts = new ContentCount_ReadVM();
 
             // Combine queries
             var combinedQuery = issuesIndexQuery.Union(solutionsIndexQuery);
+            var filteredQuery = FilterQueryService.ApplyCombinedContentFilters(combinedQuery, filter);
 
-            return combinedQuery.CountAsync();
+            counts.AbsoluteCount = await combinedQuery.CountAsync();
+            counts.TotalCount = await filteredQuery.CountAsync();
+
+            return counts;
         }
     }
 

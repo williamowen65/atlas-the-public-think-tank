@@ -59,37 +59,41 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             });
         }
 
-        public async Task<int> GetTotalCountSubIssuesOfIssueById(Guid issueId)
+        public async Task<ContentCount_ReadVM?> GetContentCountSubIssuesOfIssueById(Guid issueId, ContentFilter filter)
         {
-            return await _cache.GetOrCreateAsync($"sub-issue-total-count:{issueId}", async entry =>
+            string filterHash = filter.ToJson().GetHashCode().ToString();
+            return await _cache.GetOrCreateAsync($"sub-issue-total-count:{issueId}:{filterHash}", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
-                return await _inner.GetTotalCountSubIssuesOfIssueById(issueId);
+                return await _inner.GetContentCountSubIssuesOfIssueById(issueId, filter);
             });
         }
-        public async Task<int> GetTotalCountSubIssuesOfSolutionById(Guid solutionId)
+        public async Task<ContentCount_ReadVM?> GetContentCountSubIssuesOfSolutionById(Guid solutionId, ContentFilter filter)
         {
-            return await _cache.GetOrCreateAsync($"sub-issue-total-count:{solutionId}", async entry =>
+            string filterHash = filter.ToJson().GetHashCode().ToString();
+            return await _cache.GetOrCreateAsync($"sub-issue-total-count:{solutionId}:{filterHash}", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
-                return await _inner.GetTotalCountSubIssuesOfSolutionById(solutionId);
+                return await _inner.GetContentCountSubIssuesOfSolutionById(solutionId, filter);
             });
         }
-        public async Task<int> GetTotalCountSolutionsOfIssueById(Guid issueId)
+        public async Task<ContentCount_ReadVM?> GetContentCountSolutionsOfIssueById(Guid issueId, ContentFilter filter )
         {
-            return await _cache.GetOrCreateAsync($"solutions-total-count:{issueId}", async entry =>
+            string filterHash = filter.ToJson().GetHashCode().ToString();
+            return await _cache.GetOrCreateAsync($"solutions-total-count:{issueId}:{filterHash}", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
-                return await _inner.GetTotalCountSolutionsOfIssueById(issueId);
+                return await _inner.GetContentCountSolutionsOfIssueById(issueId, filter);
             });
         }
 
-        public async Task<int> GetTotalCountMainContentFeed()
+        public async Task<ContentCount_ReadVM?> GetContentCountMainContentFeed(ContentFilter filter)
         {
-            return await _cache.GetOrCreateAsync($"main-content-total-count", async entry =>
+            string filterHash = filter.ToJson().GetHashCode().ToString();
+            return await _cache.GetOrCreateAsync($"main-content-total-count:{filterHash}", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
-                return await _inner.GetTotalCountMainContentFeed();
+                return await _inner.GetContentCountMainContentFeed(filter);
             });
         }
     }

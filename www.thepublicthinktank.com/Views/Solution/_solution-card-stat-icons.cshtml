@@ -7,9 +7,9 @@
 <div class="issue-card-stat-icons d-flex justify-content-between align-items-center flex-wrap">
 
     
-    <div role="button" tabindex="0" aria-label="Sub Issues: @(Model.PaginatedSubIssues.TotalCount)" class="stat-icon-link go-to-content-item-sub-issue-tab position-relative">
+    <div role="button" tabindex="0" aria-label="Sub Issues: @(Model.PaginatedSubIssues.ContentCount.TotalCount)" class="stat-icon-link go-to-content-item-sub-issue-tab position-relative">
         <div class="position-absolute content-count" style="right: -11px">
-            @(Model.PaginatedSubIssues.TotalCount)
+            @(Model.PaginatedSubIssues.ContentCount.TotalCount)
         </div>
         @await Html.PartialAsync("~/Views/Shared/Icons/_SubIssues.cshtml")
     </div>

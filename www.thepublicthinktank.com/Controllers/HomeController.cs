@@ -27,7 +27,7 @@ public class HomeController : Controller
         _logger = logger;
     }
 
-
+    #region Serve the home page
     public async Task<IActionResult> Index()
     {
         ContentFilter filter = new ContentFilter();
@@ -46,12 +46,14 @@ public class HomeController : Controller
         return View(viewModel);
     }
 
-/*
+    #endregion
 
-     /// <summary>
-     /// This method is used to return paginated issue posts.
-     /// </summary>
-     /// <returns></returns>
+    #region Get paginated home page content
+
+    /// <summary>
+    /// This method is used to return paginated issue posts.
+    /// </summary>
+    /// <returns></returns>
     [HttpGet]
     [AllowAnonymous]
     [Route("/home/getPaginatedContent")]
@@ -63,7 +65,7 @@ public class HomeController : Controller
             filter = ContentFilter.FromJson(cookieValue);
         }
 
-        PaginatedContentItemsResponse paginatedContentItems = await _crudService.GetContentItemsPagedAsync(currentPage, filter);
+        PaginatedContentItemsResponse paginatedContentItems = await Read.ContentItems(filter, currentPage);
 
         // Render the partial view to a string
         string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Home/_content-item-cards.cshtml", paginatedContentItems.ContentItems);
@@ -84,7 +86,9 @@ public class HomeController : Controller
         return Json(response);
     }
 
- 
+    #endregion
+
+    #region Routes that could be in a MiscellenousController
 
     /// <summary>
     /// This method is used to return a partial view for displaying alerts.
@@ -151,7 +155,9 @@ public class HomeController : Controller
         return PartialView("~/Views/Shared/_Alert.cshtml", alert);
     }
 
-*/
+
+    
+
     [Route("privacy")]
     public IActionResult Privacy()
     {
@@ -163,5 +169,7 @@ public class HomeController : Controller
     {
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
+
+    #endregion
 
 }

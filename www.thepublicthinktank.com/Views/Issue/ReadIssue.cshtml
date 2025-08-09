@@ -1,0 +1,374 @@
+﻿@using atlas_the_public_think_tank.Models.ViewModel
+@*
+    Layout of the issue page, where the sub-issues, comments, solutions can be found by the user
+*@
+
+@model Issue_ReadVM;
+@{
+    ViewData["Title"] = Model.Title;
+    Console.WriteLine();
+}
+
+<div class="container mt-3  ">
+
+    @Html.Partial("~/Views/Issue/_issue-page-post.cshtml", Model)
+
+
+   
+
+    <nav class=" position-sticky bg-body" style="top:var(--header-height); z-index:11">
+        <div class="d-flex">
+
+        <div class="nav nav-tabs flex-grow-1 text-nowrap overflow-x-scroll overflow-y-hidden" style="flex-wrap: revert;" id="nav-tab" role="tablist">
+            <button class="nav-link active" id="solutions-tab" data-bs-toggle="tab" data-bs-target="#solutions" type="button" role="tab" aria-controls="nav-home" aria-selected="true">
+                <div class="content-count">@Model.PaginatedSolutions.ContentCount.TotalCount</div>
+                @Html.Partial("~/Views/Shared/Icons/_Solutions.cshtml")
+                    <span class="tab-label">
+                Solutions
+                    </span>
+            </button>
+            <button class="nav-link" id="comments-tab" data-bs-toggle="tab" data-bs-target="#issue-comments" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
+                <div class="content-count">@Model.Comments.Count()</div>
+                @Html.Partial("~/Views/Shared/Icons/_Comments.cshtml")
+                    <span class="tab-label">
+                Comments
+                    </span>
+            </button>
+            <button class="nav-link" id="sub-issues-tab" data-bs-toggle="tab" data-bs-target="#sub-issues" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
+                <div class="content-count">@Model.PaginatedSubIssues.ContentCount.TotalCount</div>
+                @Html.Partial("~/Views/Shared/Icons/_SubIssues.cshtml")
+                    <span class="tab-label">
+                Sub-Issues
+                    </span>
+            </button>
+            <button class="nav-link d-flex align-items-center" id="parent-post-tab" data-bs-toggle="tab" data-bs-target="#parent-post" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
+                <div class="content-count">
+                    <span>@((Model.ParentIssue != null || Model.ParentSolution != null) ? 1 : 0)</span>
+                </div>
+                <div class="me-2">
+                    @Html.Partial("~/Views/Shared/Icons/_ParentIssue.cshtml")
+                </div>
+
+                @if (Model.ParentIssue != null && Model.ParentSolution != null)
+                {
+                    <span class="tab-label">Parent Post</span>
+                }
+                else if (Model.ParentIssue != null)
+                {
+                        <span class="tab-label">Parent Issue</span>
+                }
+                else if (Model.ParentSolution != null)
+                {
+                        <span class="tab-label">Parent Solution</span>
+                }
+                else
+                {
+                        <span class="tab-label">Parent Post</span>
+                }
+            </button>
+            <li class="nav-item dropdown ms-auto">
+
+            </li>
+
+        </div>
+        <div class="ms-2 pt-2">
+
+            <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false" id="actionDropdown">
+                @Html.Partial("~/Views/Shared/Icons/_ActionsIcon.cshtml")
+                Actions
+            </a>
+            <ul class="dropdown-menu" id="dynamic-actions">
+                <!-- Content will be dynamically populated -->
+            </ul>
+        </div>
+
+        </div>
+
+    </nav>
+    <div class="tab-content" id="nav-tabContent">
+        <div class="tab-pane fade show active border border-1 border-top-0" id="solutions" role="tabpanel" aria-labelledby="solutions-tab" tabindex="0">
+
+          
+
+                
+              
+
+                <div id="solution-content">
+                    @if (Model.PaginatedSolutions != null && Model.PaginatedSolutions.Solutions.Any())
+                    {
+                        @Html.Partial("~/Views/Solution/_solution-cards.cshtml", Model.PaginatedSolutions.Solutions)
+                    } else
+                    {
+                        <div id="empty-issueView-solution-feed" class="empty-feed ">
+                            <div class="comment-feed">
+                                <div class="content">
+                                    <h2>Empty Solution Feed</h2>
+                                    <a href="@Url.Action("CreateSolution", "Solution", new { parentIssueID = Model.IssueID })">
+                                        <button class="outlined-text">Create a Solution</button>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+
+                @await Html.PartialAsync("~/Views/Shared/Components/_pagination-button.cshtml", new PaginationButton_ReadVM
+                {
+                    ElementId = "fetchPaginatedSolutions",
+                        ContentType = "solutions",
+                        Target = "#solution-content",
+                        Url = "/issue/getPaginatedSolutions/" + @Model.IssueID,
+                        CurrentPage = Model.PaginatedSolutions.ContentCount.TotalCount,
+                        PageSize = Model.PaginatedSolutions.PageSize,
+                        TotalCount = Model.PaginatedSolutions.ContentCount.TotalCount,
+                        // TotalPages = Model.PaginatedSolutions.TotalPages
+                 })
+
+        </div>
+        <div class="tab-pane fade border border-1 border-top-0" id="issue-comments" role="tabpanel" aria-labelledby="comments-tab" tabindex="0">
+
+            @if (Model.Comments.Count() == 0)
+            {
+                <div id="empty-issueView-comment-feed" class="empty-feed">
+                    <div class="comment-feed">
+                        <div class="content">
+                            <h2>Empty Comment Feed</h2>
+                            <button class="outlined-text">Start a Discussion</button>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+
+                <p>Comment feed for this issue</p>
+            }
+        </div>
+        <div class="tab-pane fade border border-1 border-top-0" id="sub-issues" role="tabpanel" aria-labelledby="sub-issues-tab" tabindex="0">
+       
+
+
+            <div id="sub-issue-content">
+
+                @if (Model.PaginatedSubIssues != null && Model.PaginatedSubIssues.Issues.Any())
+                {
+                    @await Html.PartialAsync("~/Views/Issue/_issue-cards.cshtml", Model.PaginatedSubIssues.Issues)
+                } else
+                {
+                    <div id="empty-issueView-sub-issues-feed" class="empty-feed">
+
+                        <div class="comment-feed">
+                            <div class="content">
+                                <h2>Empty Sub Issues Feed</h2>
+                                <a target="_blank" href="@Url.Action("CreateIssue", "Issue", new { parentIssueID = Model.IssueID })">
+                                    <button class="outlined-text">Create Sub-Issue</button>
+                                </a>
+
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            @await Html.PartialAsync("~/Views/Shared/Components/_pagination-button.cshtml", new PaginationButton_ReadVM
+            {
+                ElementId = "fetchPaginatedSubIssues",
+                ContentType = "sub-issues",
+                Target = "#sub-issue-content",
+                Url = "/issue/getPaginatedSubIssues/" + @Model.IssueID,
+                CurrentPage = Model.PaginatedSubIssues.ContentCount.TotalCount,
+                PageSize = Model.PaginatedSubIssues.PageSize,
+                TotalCount = Model.PaginatedSubIssues.ContentCount.TotalCount,
+                // TotalPages = Model.PaginatedSubIssues.TotalPages
+            })
+            
+        </div>
+        <div class="tab-pane fade border border-1 border-top-0" id="parent-post" role="tabpanel" aria-labelledby="parent-post-tab" tabindex="0">
+            @if (Model.ParentIssue != null && Model.ParentSolution != null)
+            {
+                <h5 class="mt-3 mb-3">Parent Issue</h5>
+                @Html.Partial("~/Views/Issue/_issue-card.cshtml", Model.ParentIssue)
+                ;
+
+                <h5 class="mt-4 mb-3">Parent Solution</h5>
+                @Html.Partial("~/Views/Solution/_solution-card.cshtml", Model.ParentSolution)
+                ;
+            }
+            else if (Model.ParentIssue != null)
+            {
+                @Html.Partial("~/Views/Issue/_issue-card.cshtml", Model.ParentIssue)
+                ;
+            }
+            else if (Model.ParentSolution != null)
+            {
+                @Html.Partial("~/Views/Solution/_solution-card.cshtml", Model.ParentSolution)
+                ;
+            }
+            else
+            {
+                <p class="empty-feed">There is no parent post</p>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        dynamicDropdownContent();
+        initializeDialsForTabbedLayout();
+
+        
+        const paginationButton = document.getElementById("fetchPaginatedSubIssues")
+        if (paginationButton) {
+            setPaginationButtonListener(paginationButton)
+        }
+        
+        const solutionsPaginationButton = document.getElementById("fetchPaginatedSolutions")
+        if (solutionsPaginationButton) {
+            setPaginationButtonListener(solutionsPaginationButton)
+        }
+    });
+
+    function initializeDialsForTabbedLayout() {
+        // Initialize vote dials on tab show event
+        const subIssuesTab = document.getElementById('sub-issues-tab');
+        const parentPostTab = document.getElementById('parent-post-tab');
+        const solutionsTab = document.getElementById('solutions-tab');
+
+        if (subIssuesTab) {
+            subIssuesTab.addEventListener('shown.bs.tab', function (e) {
+                console.log('Sub-issues tab activated - reinitializing vote dials');
+                reinitializeVoteDials('sub-issues');
+            });
+        }
+
+        if (parentPostTab) {
+            parentPostTab.addEventListener('shown.bs.tab', function (e) {
+                const tabText = parentPostTab.querySelector(".tab-label").textContent.trim();
+                console.log(`${tabText} tab activated - reinitializing vote dials`);
+                reinitializeVoteDials('parent-post');
+            });
+        }
+
+        if (solutionsTab) {
+            solutionsTab.addEventListener('shown.bs.tab', function (e) {
+                console.log('Solutions tab activated - reinitializing vote dials');
+                reinitializeVoteDials('solutions');
+            });
+        } else {
+            console.error("Solution tab not found")
+        }
+
+        // Function to find all issue cards in a tab and reinitialize vote dials
+        function reinitializeVoteDials(tabId) {
+            const tabPane = document.getElementById(tabId);
+            if (!tabPane) return;
+
+            const issueCards = tabPane.querySelectorAll('.issue-card, .solution-card');
+
+            issueCards.forEach(card => {
+                // Extract the issue ID from the card's ID attribute
+                const issueId = card.id
+                console.log(`Reinitializing vote dial for issue ${issueId}`);
+
+                const dialContainer = card.querySelector('.dial-container');
+                if (dialContainer) {
+                    // Check if dial content already exists
+                    if (dialContainer.children.length > 0) {
+                        // If vote container exists, just reinitialize it
+                        const voteContainer = document.getElementById(`vote-toggle-container-${issueId}`);
+                        if (voteContainer) {
+                            setTimeout(() => {
+                                // Reinitialize with a slight delay to ensure proper rendering
+                                initializeCard(issueId);
+                            }, 50);
+                        } else {
+                            // If vote container doesn't exist, need to fetch the dial
+                            // fetchAndInitializeCard(issueId, dialContainer);
+                            console.error("Content missing vote dial")
+                        }
+                    } else {
+                        // If no dial content, fetch it
+                        // fetchAndInitializeIssueVoteDial(issueId, dialContainer);
+
+                        console.error("Content missing vote dial")
+                    }
+                }
+            });
+        }
+
+        // Helper function to fetch and initialize vote dials
+        function fetchAndInitializeIssueVoteDial(issueId, dialContainer) {
+            fetch(`/issue/GetVoteDial?issueId=${issueId}`)
+                .then(response => response.text())
+                .then(data => {
+                    dialContainer.innerHTML = data;
+                    setTimeout(() => {
+                        initializeCard(issueId);
+                    }, 50);
+                })
+                .catch(error => console.error(`Error fetching vote dial for issue ${issueId}:`, error));
+        }
+
+        function fetchAndInitializeSolutionVoteDial(solutionId, dialContainer) {
+            fetch(`/solution/GetVoteDial?solutionId=${solutionId}`)
+                .then(response => response.text())
+                .then(data => {
+                    dialContainer.innerHTML = data;
+                    setTimeout(() => {
+                        initializeCard(solutionId);
+                    }, 50);
+                })
+                .catch(error => console.error(`Error fetching vote dial for solution ${solutionId}:`, error));
+        }
+    }
+
+    function dynamicDropdownContent(){
+        const dropdownMenu = document.getElementById('dynamic-actions');
+
+        // Menu content templates for each tab
+        const menuTemplates = {
+            'solutions-tab': `
+                <li><a class="dropdown-item" href="@Url.Action("CreateSolution", "Solution", new { parentIssueID = Model.IssueID })">Create Solution</a></li>
+            `,
+            'comments-tab': `
+                <li><a class="dropdown-item" href="#">Create Discussion</a></li>
+            `,
+            'sub-issues-tab': `
+                <li><a class="dropdown-item" href="@Url.Action("CreateIssue", "Issue", new { parentIssueID = Model.IssueID })">Create Sub-Issue</a></li>
+            `,
+            'parent-post-tab': `
+                @if (Model.ParentIssue != null)
+                {
+                        <li><a class="dropdown-item" href="@Url.Action("ReadIssue", "Issue", new { id = Model.ParentIssue.IssueID })">Go to Parent Issue</a></li>
+                }
+                @if (Model.ParentSolution != null)
+                {
+                        <li><a class="dropdown-item" href="@Url.Action("ReadSolution", "Solution", new { id = Model.ParentSolution.SolutionID })">Go to Parent Solution</a></li>
+                }
+            `
+        };
+
+        // Function to update dropdown content based on active tab
+        // Make this function available globally
+        window.updateDropdownContent = function(activeTabId) {
+            if (dropdownMenu && menuTemplates[activeTabId]) {
+                dropdownMenu.innerHTML = menuTemplates[activeTabId];
+            }
+        }
+
+        // Initialize with default tab content
+        updateDropdownContent('solutions-tab');
+
+        // Add event listeners to all tabs
+        const tabs = document.querySelectorAll('[data-bs-toggle="tab"]');
+        tabs.forEach(tab => {
+            tab.addEventListener('shown.bs.tab', function(event) {
+                updateDropdownContent(event.target.id);
+            });
+        });
+    }
+</script>
+
+<script src="~/js/remember-tab.js"></script>

@@ -23,7 +23,10 @@
     
     <div class="vote-dial-toggle @(userVote.HasValue ? "user-voted" : "") mb-1">
         <div id="vote-toggle-container-@Model.ContentID" class="vote-toggle-container" data-content-type="@Model.ContentType">
-            @* The invisible inputs that are used behind scenes of a dial *@
+            @* 
+                The invisible inputs that are used behind scenes of a dial 
+                Conditionally "Checks" the users vote value or falls back to 5
+            *@
             @for (int i = 10; i >= 0; i--)
             {
                 var radioId = $"vote-{Model.ContentID}-{i}";
@@ -33,7 +36,12 @@
             <div id="@lensId" class="lens"></div>
 
             <div id="@outlineId" class="outline"></div>
-          
+            
+            @* 
+                The visible dial inputs
+                These are linked to the radio inputs
+            *@
+
             @for (int i = 11; i >= -1; i--)
             {
                 var radioId = $"vote-{Model.ContentID}-{i}";

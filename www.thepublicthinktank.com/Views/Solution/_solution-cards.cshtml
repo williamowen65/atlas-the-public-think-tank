@@ -1,0 +1,10 @@
+@using atlas_the_public_think_tank.Models.ViewModel
+@*
+    Layout for multiple solution cards
+*@
+@model List<Solution_ReadVM>
+
+@foreach (var solution in Model)
+{
+    @Html.Partial("~/Views/Solution/_solution-card.cshtml", solution)
+}

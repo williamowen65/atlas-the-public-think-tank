@@ -29,24 +29,24 @@ namespace CloudTests.UnitTesting
         }
 
         [TestMethod]
-        public async Task GetIssuesPagedAsync_ShouldReturn_OnlyThreePosts()
+        public async Task ReadContentItems_ShouldReturn_OnlyThreePosts()
         {
             // Get the response
-            var url = "test-GetIssuesPagedAsync";
+            var url = "test-ReadContentItems";
 
-            var paginatedResponse = await _env.fetchJson<PaginatedIssuesResponse>(url);
+            var paginatedResponse = await _env.fetchJson<PaginatedContentItemsResponse>(url);
             // Assert that the response is not null
             Assert.IsNotNull(paginatedResponse, "Paginated response should not be null");
 
             if (paginatedResponse.TotalCount >= 3)
             {
                 // Assert that the response contains exactly 3 issues
-                Assert.AreEqual(3, paginatedResponse.Issues.Count, "Should contain exactly 3 issues");
+                Assert.AreEqual(3, paginatedResponse.ContentItems.Count, "Should contain exactly 3 issues");
             }
             else
             {
                 // Or less issues if total is less than 3
-                Assert.AreEqual(paginatedResponse.TotalCount, paginatedResponse.Issues.Count, "Should contain exactly " + paginatedResponse.TotalCount + " issues");
+                Assert.AreEqual(paginatedResponse.TotalCount, paginatedResponse.ContentItems.Count, "Should contain exactly " + paginatedResponse.TotalCount + " issues");
             }
 
             Assert.AreEqual(1, paginatedResponse.CurrentPage, "Current page should be 1");

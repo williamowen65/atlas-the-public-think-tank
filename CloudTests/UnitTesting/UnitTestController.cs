@@ -4,8 +4,10 @@ using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using atlas_the_public_think_tank.Services;
+//using atlas_the_public_think_tank.Services;
 using atlas_the_public_think_tank.Models.ViewModel;
+using atlas_the_public_think_tank.Data.CRUD;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 
 /// This TestController contains routes that are only present 
 /// when running the test project.
@@ -18,16 +20,16 @@ namespace CloudTests.UnitTesting
     public class UnitTestController : Controller
     {
 
-        private readonly CRUD _crudService;
-        public UnitTestController(CRUD _crud) {
-            _crudService = _crud;
+        public UnitTestController()
+        {
         }
 
         [HttpGet]
-        [Route("test-GetIssuesPagedAsync")]
+        [Route("test-ReadContentItems")]
         public async Task<IActionResult> Test()
         {
-           PaginatedIssuesResponse res =  await _crudService.Issues.GetIssuesPagedAsync(1);
+
+            PaginatedContentItemsResponse res = await Read.ContentItems(new ContentFilter());
 
             return Ok(res);
         }

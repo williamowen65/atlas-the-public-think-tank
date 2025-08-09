@@ -29,7 +29,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
             _serviceProvider = serviceProvider;
         }
 
-        #region soon-to-be-private-methods
+        #region Pagination Read methods
 
         public static async Task<PaginatedContentItemsResponse> PaginatedMainContentFeed(ContentFilter filter, int pageNumber = 1) {
 
@@ -43,13 +43,13 @@ namespace atlas_the_public_think_tank.Data.CRUD
             var voteStatsRepository = services.GetRequiredService<IVoteStatsRepository>();
 
             var paginatedMainContentIds = await filterIdRepository.GetPagedMainContentFeedIds(filter, pageNumber);
-            int totalCountMainContent = await filterIdRepository.GetTotalCountMainContentFeed();
+            var counts = await filterIdRepository.GetContentCountMainContentFeed(filter);
 
             // Create the response object
             var response = new PaginatedContentItemsResponse
             {
                 ContentItems = new List<ContentItem_ReadVM>(),
-                TotalCount = totalCountMainContent,
+                TotalCount = counts!.TotalCount,
                 PageSize = paginatedMainContentIds?.Count ?? 0,
                 CurrentPage = pageNumber
             };
@@ -71,8 +71,6 @@ namespace atlas_the_public_think_tank.Data.CRUD
                     if (contentId.Type == ContentType.Issue)
                     {
                         var issue = await Read.Issue(contentId.Id, filter);
-
-                        
 
                         item = new ContentItem_ReadVM() 
                         { 
@@ -191,7 +189,8 @@ namespace atlas_the_public_think_tank.Data.CRUD
 
                 paginatedIssuesResponse.CurrentPage = pageNumber;
                 paginatedIssuesResponse.PageSize = paginatedChildIssuesIds.Count;
-                paginatedIssuesResponse.TotalCount = await filterIdRepository.GetTotalCountSubIssuesOfIssueById(issueId);
+                var counts = await filterIdRepository.GetContentCountSubIssuesOfIssueById(issueId, filter);
+                paginatedIssuesResponse.ContentCount = counts!;
 
             }
 
@@ -235,7 +234,8 @@ namespace atlas_the_public_think_tank.Data.CRUD
 
                 paginatedIssuesResponse.CurrentPage = pageNumber;
                 paginatedIssuesResponse.PageSize = paginatedChildIssuesIds.Count;
-                paginatedIssuesResponse.TotalCount = await filterIdRepository.GetTotalCountSubIssuesOfSolutionById(solutionId);
+                var counts = await filterIdRepository.GetContentCountSubIssuesOfSolutionById(solutionId, filter);
+                paginatedIssuesResponse.ContentCount = counts!;
 
             }
 
@@ -279,7 +279,8 @@ namespace atlas_the_public_think_tank.Data.CRUD
 
                 paginatedSolutionResponse.CurrentPage = pageNumber;
                 paginatedSolutionResponse.PageSize = paginatedSolutionFeedIds.Count;
-                paginatedSolutionResponse.TotalCount = await filterIdRepository.GetTotalCountSolutionsOfIssueById(issueId);
+                var counts = await filterIdRepository.GetContentCountSolutionsOfIssueById(issueId, filter);
+                paginatedSolutionResponse.ContentCount = counts!;
 
             }
 
@@ -288,13 +289,20 @@ namespace atlas_the_public_think_tank.Data.CRUD
 
         #endregion
 
-        /*
-         Below are the official api helpers for getting data
-         Above are ones that may be made private in the future
-         */
 
-        public static async Task<Issue_ReadVM> Issue(Guid issueId, ContentFilter filter)
+        #region Read An Issue or Solution
+
+
+        /// <summary>
+        /// Read an issue from the Cache or Database
+        /// </summary>
+        /// <remarks>
+        /// Fetch parent is only ever done for the root issue of an issue page
+        /// </remarks>
+        public static async Task<Issue_ReadVM?> Issue(Guid issueId, ContentFilter filter, bool fetchParent = false)
         {
+
+
             if (_serviceProvider == null)
                 throw new InvalidOperationException("Read class has not been initialized with a service provider.");
 
@@ -304,6 +312,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
 
             // Get the required repositories from the service provider
             var issueRepository = services.GetRequiredService<IIssueRepository>();
+            var solutionRepository = services.GetRequiredService<ISolutionRepository>();
             var voteStatsRepository = services.GetRequiredService<IVoteStatsRepository>();
             var appUserRepository = services.GetRequiredService<IAppUserRepository>();
             var breadcrumbRepository = services.GetRequiredService<IBreadcrumbRepository>();
@@ -347,10 +356,28 @@ namespace atlas_the_public_think_tank.Data.CRUD
                 PaginatedSolutions = paginatedSolutions!,
             };
 
+            if (fetchParent)
+            {
+                if (issue.ParentIssueID != null)
+                {
+                    issue.ParentIssue = await Read.Issue(issue.ParentIssueID.Value, filter);
+                }
+                else if (issue.ParentSolutionID != null)
+                {
+                    issue.ParentSolution = await Read.Solution(issue.ParentSolutionID.Value, filter);
+                }
+            }
+
             return issue;
         }
 
-        public static async Task<Solution_ReadVM> Solution(Guid solutionId, ContentFilter filter)
+        /// <summary>
+        /// Read a solution from the Cache or Database
+        /// </summary>
+        /// <remarks>
+        /// Fetch parent is only ever done for the root Solution of a solution page
+        /// </remarks>
+        public static async Task<Solution_ReadVM> Solution(Guid solutionId, ContentFilter filter, bool fetchParent = false)
         {
 
             if (_serviceProvider == null)
@@ -360,6 +387,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
             using var scope = _serviceProvider.CreateScope();
             var services = scope.ServiceProvider;
 
+            var issueRepository = services.GetRequiredService<IIssueRepository>();
             var solutionRepository = services.GetRequiredService<ISolutionRepository>();
             var voteStatsRepository = services.GetRequiredService<IVoteStatsRepository>();
             var appUserRepository = services.GetRequiredService<IAppUserRepository>();
@@ -379,10 +407,13 @@ namespace atlas_the_public_think_tank.Data.CRUD
 
             var paginatedSubIssues = await Read.PaginatedSubIssueFeedForSolution(solutionId, filter);
 
+            
+
             Solution_ReadVM solution = new Solution_ReadVM()
             {
                 Content = solutionContent.Content,
                 ParentIssueID = solutionContent.ParentIssueID,
+               
                 Title = solutionContent.Title,
                 Author = new AppUser_ContentItem_ReadVM()
                 {
@@ -401,11 +432,19 @@ namespace atlas_the_public_think_tank.Data.CRUD
             };
 
 
+            if (fetchParent)
+            {
+                solution.ParentIssue = await Read.Issue(solutionContent.ParentIssueID, filter);
+            }
+
             return solution;
         }
 
+        #endregion
 
-        public static async Task<PaginatedContentItemsResponse> ContentItems(ContentFilter filter)
+
+        #region Read main page content
+        public static async Task<PaginatedContentItemsResponse> ContentItems(ContentFilter filter, int pageNumber = 1)
         {
 
             if (_serviceProvider == null)
@@ -422,9 +461,12 @@ namespace atlas_the_public_think_tank.Data.CRUD
             var breadcrumbRepository = services.GetRequiredService<IBreadcrumbRepository>();
 
 
-            var paginatedMainContentFeed = await Read.PaginatedMainContentFeed(filter);
+            var paginatedMainContentFeed = await Read.PaginatedMainContentFeed(filter, pageNumber);
 
             return paginatedMainContentFeed;
         }
+
+        #endregion
+
     }
 }

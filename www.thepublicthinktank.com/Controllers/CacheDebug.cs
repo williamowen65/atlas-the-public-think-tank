@@ -16,6 +16,8 @@ namespace repository_pattern_experiment.Controllers
             _cache = cache;
         }
 
+        #region Cache Api Routes
+
         [Route("api/cache-log/keys")]
         public IActionResult GetKeys()
         {
@@ -48,6 +50,11 @@ namespace repository_pattern_experiment.Controllers
             });
         }
 
+        #endregion
+
+
+        #region Cache Controller Helpers
+
         /// <summary>
         /// For debugging: Get all cached keys
         /// </summary>
@@ -67,5 +74,8 @@ namespace repository_pattern_experiment.Controllers
             public string Type { get; set; }
             public object Value { get; set; } // Changed to object to maintain structure
         }
+
+        #endregion
+
     }
 }

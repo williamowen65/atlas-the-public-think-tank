@@ -1,4 +1,6 @@
 ﻿using atlas_the_public_think_tank.Data;
+using atlas_the_public_think_tank.Data.CRUD;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Models.Database;
 using atlas_the_public_think_tank.Models.ViewModel;
 using atlas_the_public_think_tank.Utilities;
@@ -15,22 +17,20 @@ namespace atlas_the_public_think_tank.Controllers
     /// This C# Controller manages the solutions
     /// </summary>
 
-    /*
 
     [Authorize]
     public class SolutionController : Controller
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<AppUser> _userManager;
-        private readonly CRUD _crud;
 
-        public SolutionController(ApplicationDbContext context, UserManager<AppUser> userManager, CRUD crud)
+        public SolutionController(ApplicationDbContext context, UserManager<AppUser> userManager)
         {
             _context = context;
             _userManager = userManager;
-            _crud = crud;
         }
 
+    /*
         [Route("/solution/create")]
         public async Task<IActionResult> CreateSolution(Guid? parentIssueID = null)
         {
@@ -147,21 +147,7 @@ namespace atlas_the_public_think_tank.Controllers
         }
 
 
-        /// <summary>
-        /// Returns the vote dial for a specific solution.
-        /// </summary>
-        /// <remarks>
-        /// This method is no longer used in the app b/c dial is now rendered with the main page load
-        /// </remarks>
-        /// <param name="solutionId">The ID of the solution</param>
-        /// <returns>HTML partial view of vote dial</returns>
-        [AllowAnonymous]
-        [Route("/solution/GetVoteDial")]
-        public async Task<IActionResult> GetVoteDial(Guid? solutionId = null)
-        {
-            var model = await _crud.Solutions.GetSolutionVoteStats(solutionId);
-            return PartialView("~/Views/Shared/Components/_voteDial.cshtml", model);
-        }
+        */
 
         /// <summary>
         /// Returns a HTML page for a specific solution
@@ -182,23 +168,10 @@ namespace atlas_the_public_think_tank.Controllers
                 filter = ContentFilter.FromJson(cookieValue);
             }
 
+            bool fetchParent = true;
 
-            var solution = await _context.Solutions
-                .Include(s => s.Author)
-                .Include(s => s.Scope)
-                //.Include(f => f.ChildIssues) // These will be fetched via pagination
-                .Include(s => s.ParentIssue) // ParentIssue for a solution
-                    .ThenInclude(i => i.Scope)
-                .Include(s => s.ParentIssue) // ParentIssue for a solution
-                    .ThenInclude(i => i.Solutions)
-                .Include(s => s.ParentIssue) // ParentIssue for a solution
-                    .ThenInclude(i => i.Author)
-                .Include(s => s.ParentIssue)
-                .Include(s => s.BlockedContent)
-                .Include(s => s.Comments)
-                .Include(s => s.SolutionCategories)
-                    .ThenInclude(sc => sc.Category)
-                .FirstOrDefaultAsync(s => s.SolutionID == id);
+            var solution = await Read.Solution(id, filter, fetchParent);
+           
 
             if (solution == null)
             {
@@ -206,85 +179,87 @@ namespace atlas_the_public_think_tank.Controllers
             }
 
             // Map to the view model (adjust as needed for your project)
-            var solutionVM = await _crud.Solutions.ConvertSolutionEntityToVM(solution, filter);
 
-            return View(solutionVM);
+            return View(solution);
         }
 
-        /// <summary>
-        /// This method is used to cast a vote on a solution post.
-        /// </summary>
-        /// <param name="model"></param>
-        [HttpPost]
-        [Route("/solution/vote")]
-        public async Task<IActionResult> SolutionVote(UserVote_Solution_CreateVM model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return Json(new { success = false, message = "Invalid vote data" });
-            }
+        /*
 
-            try
-            {
-                var user = await _userManager.GetUserAsync(User);
 
-                if (user == null)
+            /// <summary>
+            /// This method is used to cast a vote on a solution post.
+            /// </summary>
+            /// <param name="model"></param>
+            [HttpPost]
+            [Route("/solution/vote")]
+            public async Task<IActionResult> SolutionVote(UserVote_Solution_CreateVM model)
+            {
+                if (!ModelState.IsValid)
                 {
-                    return Json(new { success = false, message = "You must login in order to vote" });
+                    return Json(new { success = false, message = "Invalid vote data" });
                 }
 
-                // Check if the user has already voted on this solution
-                var existingVote = await _context.SolutionVotes
-                    .OfType<SolutionVote>()
-                    .FirstOrDefaultAsync(v => v.UserID == user.Id && v.SolutionID == model.SolutionID);
+                try
+                {
+                    var user = await _userManager.GetUserAsync(User);
 
-                if (existingVote != null)
-                {
-                    // Update existing vote
-                    existingVote.VoteValue = (int)model.VoteValue;
-                    existingVote.ModifiedAt = DateTime.UtcNow;
-                    _context.SolutionVotes.Update(existingVote);
-                }
-                else
-                {
-                    // Create new vote
-                    SolutionVote vote = new SolutionVote
+                    if (user == null)
                     {
-                        User = user,
-                        UserID = user.Id,
-                        SolutionID = model.SolutionID,
-                        VoteValue = (int)model.VoteValue,
-                        CreatedAt = DateTime.UtcNow
-                    };
+                        return Json(new { success = false, message = "You must login in order to vote" });
+                    }
 
-                    _context.SolutionVotes.Add(vote);
+                    // Check if the user has already voted on this solution
+                    var existingVote = await _context.SolutionVotes
+                        .OfType<SolutionVote>()
+                        .FirstOrDefaultAsync(v => v.UserID == user.Id && v.SolutionID == model.SolutionID);
+
+                    if (existingVote != null)
+                    {
+                        // Update existing vote
+                        existingVote.VoteValue = (int)model.VoteValue;
+                        existingVote.ModifiedAt = DateTime.UtcNow;
+                        _context.SolutionVotes.Update(existingVote);
+                    }
+                    else
+                    {
+                        // Create new vote
+                        SolutionVote vote = new SolutionVote
+                        {
+                            User = user,
+                            UserID = user.Id,
+                            SolutionID = model.SolutionID,
+                            VoteValue = (int)model.VoteValue,
+                            CreatedAt = DateTime.UtcNow
+                        };
+
+                        _context.SolutionVotes.Add(vote);
+                    }
+
+                    await _context.SaveChangesAsync();
+
+                    // get updated stats
+                    double average = await _context.SolutionVotes
+                         .OfType<SolutionVote>()
+                         .Where(v => v.SolutionID == model.SolutionID)
+                         .AverageAsync(v => v.VoteValue);
+                    int count = await _context.SolutionVotes
+                         .OfType<SolutionVote>()
+                         .Where(v => v.SolutionID == model.SolutionID)
+                         .CountAsync();
+
+                    return Json(new
+                    {
+                        success = true,
+                        message = "Vote saved successfully",
+                        average,
+                        count
+                    });
                 }
-
-                await _context.SaveChangesAsync();
-
-                // get updated stats
-                double average = await _context.SolutionVotes
-                     .OfType<SolutionVote>()
-                     .Where(v => v.SolutionID == model.SolutionID)
-                     .AverageAsync(v => v.VoteValue);
-                int count = await _context.SolutionVotes
-                     .OfType<SolutionVote>()
-                     .Where(v => v.SolutionID == model.SolutionID)
-                     .CountAsync();
-
-                return Json(new
+                catch (Exception ex)
                 {
-                    success = true,
-                    message = "Vote saved successfully",
-                    average,
-                    count
-                });
+                    return Json(new { success = false, message = ex.Message });
+                }
             }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
+        */
     }
-    */
 }
