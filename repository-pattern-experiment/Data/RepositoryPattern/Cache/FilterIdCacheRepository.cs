@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Caching.Memory;
 using repository_pattern_experiment.Data.RepositoryPattern.IRepository;
 using repository_pattern_experiment.Data.RepositoryPattern.Repository.Helpers;
+using repository_pattern_experiment.Models;
 using repository_pattern_experiment.Models.ViewModel;
 
 namespace repository_pattern_experiment.Data.RepositoryPattern.Cache
@@ -48,6 +49,16 @@ namespace repository_pattern_experiment.Data.RepositoryPattern.Cache
             });
         }
 
+        public async Task<List<ContentIdentifier>?> GetPagedMainContentFeedIds(ContentFilter filter, int pageNumber = 1, int pageSize = 3)
+        {
+            string filterHash = filter.ToJson().GetHashCode().ToString();
+            return await _cache.GetOrCreateAsync($"main-content-feed-ids:{filterHash}:{pageNumber}", async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                return await _inner.GetPagedMainContentFeedIds(filter, pageNumber, pageSize);
+            });
+        }
+
         public async Task<int> GetTotalCountSubIssuesOfIssueById(Guid issueId)
         {
             return await _cache.GetOrCreateAsync($"sub-issue-total-count:{issueId}", async entry =>
@@ -70,6 +81,15 @@ namespace repository_pattern_experiment.Data.RepositoryPattern.Cache
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
                 return await _inner.GetTotalCountSolutionsOfIssueById(issueId);
+            });
+        }
+
+        public async Task<int> GetTotalCountMainContentFeed()
+        {
+            return await _cache.GetOrCreateAsync($"main-content-total-count", async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                return await _inner.GetTotalCountMainContentFeed();
             });
         }
     }

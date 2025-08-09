@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using repository_pattern_experiment.Data.RepositoryPattern.IRepository;
 using repository_pattern_experiment.Data.RepositoryPattern.Repository;
@@ -26,6 +27,106 @@ namespace repository_pattern_experiment.Data.CRUD
         public static void Initialize(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
+        }
+
+        #region soon-to-be-private-methods
+
+        public static async Task<PaginatedContentItemsResponse> PaginatedMainContentFeed(ContentFilter filter, int pageNumber = 1) {
+
+            if (_serviceProvider == null)
+                throw new InvalidOperationException("Read class has not been initialized with a service provider.");
+
+            // Create a scope to resolve scoped services
+            using var scope = _serviceProvider.CreateScope();
+            var services = scope.ServiceProvider;
+            var filterIdRepository = services.GetRequiredService<IFilterIdSetRepository>();
+
+            var paginatedMainContentIds = await filterIdRepository.GetPagedMainContentFeedIds(filter, pageNumber);
+            int totalCountMainContent = await filterIdRepository.GetTotalCountMainContentFeed();
+
+            // Create the response object
+            var response = new PaginatedContentItemsResponse
+            {
+                ContentItems = new List<ContentItem_ReadVM>(),
+                TotalCount = totalCountMainContent,
+                PageSize = paginatedMainContentIds?.Count ?? 0,
+                CurrentPage = pageNumber
+            };
+
+            // If there are no content IDs, return the empty response
+            if (paginatedMainContentIds == null || paginatedMainContentIds.Count == 0)
+            {
+                return response;
+            }
+
+            // Process each content identifier and fetch the appropriate content
+            foreach (var contentId in paginatedMainContentIds)
+            {
+                try
+                {
+                    ContentItem_ReadVM item;
+
+                    // Based on the content type, fetch either an issue or a solution
+                    if (contentId.Type == ContentType.Issue)
+                    {
+                        var issue = await Read.Issue(contentId.Id, filter);
+                        item = new ContentItem_ReadVM() 
+                        { 
+                            Author = issue.Author,
+                            BreadcrumbTags = issue.BreadcrumbTags,
+                            Content = issue.Content,
+                            ContentStatus = issue.ContentStatus,
+                            CreatedAt = issue.CreatedAt,    
+                            ModifiedAt = issue.ModifiedAt,  
+                            Scope = issue.Scope,
+                            Title = issue.Title,
+                            BlockedContent = issue.BlockedContent,
+                            Comments = issue.Comments,
+                            LastActivity = issue.LastActivity,
+                            PaginatedSubIssues = issue.PaginatedSubIssues,
+                            PaginatedSolutions = issue.PaginatedSolutions,
+                            
+                        };
+                    }
+                    else if (contentId.Type == ContentType.Solution)
+                    {
+                        var solution = await Read.Solution(contentId.Id, filter);
+                        item = new ContentItem_ReadVM() 
+                        { 
+                            Author = solution.Author,
+                            BreadcrumbTags = solution.BreadcrumbTags,
+                            Content = solution.Content,
+                            ContentStatus = solution.ContentStatus,
+                            CreatedAt = solution.CreatedAt,
+                            ModifiedAt = solution.ModifiedAt,
+                            Scope = solution.Scope,
+                            Title = solution.Title,
+                            BlockedContent= solution.BlockedContent,
+                            Comments = solution.Comments,
+                            LastActivity = solution.LastActivity,
+                            PaginatedSubIssues = solution.PaginatedSubIssues
+                        };
+                    }
+                    else
+                    {
+                        // Skip unknown content types
+                        continue;
+                    }
+
+                    // Add the item to the response
+                    response.ContentItems.Add(item);
+                }
+                catch (Exception ex)
+                {
+                    // Log the error but continue processing other items
+                    // Consider adding proper logging here
+                    Console.WriteLine($"Error loading content item {contentId.Id}: {ex.Message}");
+                }
+            }
+
+            return response;
+
+
         }
 
         /// <summary>
@@ -163,6 +264,7 @@ namespace repository_pattern_experiment.Data.CRUD
             return paginatedSolutionResponse;
         }
 
+        #endregion
 
         /*
          Below are the official api helpers for getting data
@@ -281,9 +383,26 @@ namespace repository_pattern_experiment.Data.CRUD
         }
 
 
-        public static async Task<ContentItem_ReadVM> ContentItems(ContentFilter filter)
+        public static async Task<PaginatedContentItemsResponse> ContentItems(ContentFilter filter)
         {
-            throw new NotImplementedException();
+
+            if (_serviceProvider == null)
+                throw new InvalidOperationException("Read class has not been initialized with a service provider.");
+
+            // Create a scope to resolve scoped services
+            using var scope = _serviceProvider.CreateScope();
+            var services = scope.ServiceProvider;
+
+            var issueRepository = services.GetRequiredService<IIssueRepository>();
+            var solutionRepository = services.GetRequiredService<ISolutionRepository>();
+            var voteStatsRepository = services.GetRequiredService<IVoteStatsRepository>();
+            var appUserRepository = services.GetRequiredService<IAppUserRepository>();
+            var breadcrumbRepository = services.GetRequiredService<IBreadcrumbRepository>();
+
+
+            var paginatedMainContentFeed = await Read.PaginatedMainContentFeed(filter);
+
+            return paginatedMainContentFeed;
         }
     }
 }

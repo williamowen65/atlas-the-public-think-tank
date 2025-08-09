@@ -9,7 +9,7 @@ namespace repository_pattern_experiment.Models.ViewModel
     /// <remarks>
     /// The home page serves this as content.
     /// </remarks>
-    public class ContentItem_ReadVM
+    public class ContentItem_Cacheable
     {
 
         public required string Title { get; set; }
@@ -19,11 +19,14 @@ namespace repository_pattern_experiment.Models.ViewModel
         public DateTime? LastActivity { get; set; }
         //public required Guid AuthorID { get; set; }
         //public required Guid ScopeID { get; set; }
-
         public required ContentStatus ContentStatus { get; set; }
 
         public Guid? BlockedContentID { get; set; }
+        
 
+        /*
+            Some of these below items shouldn't be in the cache via this item... Breadcrumb, Author, Comments
+        */
         public required List<Breadcrumb_ReadVM> BreadcrumbTags { get; set; }
 
         // Navigation Prop
@@ -32,5 +35,11 @@ namespace repository_pattern_experiment.Models.ViewModel
         public required Scope Scope { get; set; }
 
         public BlockedContent BlockedContent { get; set; }
+    }
+
+    public class ContentItem_ReadVM : ContentItem_Cacheable
+    {
+        public PaginatedIssuesResponse PaginatedSubIssues { get; set; } = new PaginatedIssuesResponse();
+        public PaginatedSolutionsResponse? PaginatedSolutions { get; set; } = new PaginatedSolutionsResponse();
     }
 }

@@ -93,11 +93,12 @@ namespace repository_pattern_experiment.Controllers
          */
 
         [Route("get-content-feed-ids")]
-        public async Task<JsonResult> GetContentFeedIds()
+        public async Task<JsonResult> GetContentFeedIds([FromQuery] ContentFilter filter, int pageNumber = 1)
         {
             try
             {
-                throw new NotImplementedException();
+                var paginatedMainContentFeedIds = await filterIdSetRepository.GetPagedMainContentFeedIds(filter, pageNumber);
+                return Json(paginatedMainContentFeedIds);
             }
             catch (Exception ex)
             {

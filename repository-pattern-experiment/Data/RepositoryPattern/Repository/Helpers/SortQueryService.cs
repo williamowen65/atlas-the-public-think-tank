@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using repository_pattern_experiment.Models;
 using repository_pattern_experiment.Models.Database;
 
 namespace repository_pattern_experiment.Data.RepositoryPattern.Repository.Helpers
@@ -31,6 +32,31 @@ namespace repository_pattern_experiment.Data.RepositoryPattern.Repository.Helper
                     : 0)
                 .ThenByDescending(s => s.SolutionVotes.Any() ? s.SolutionVotes.Average(v => v.VoteValue) : 0) // Average vote as tiebreaker
                 .ThenByDescending(s => s.CreatedAt); // Creation date as final tiebreaker
+        }
+
+
+        /// <summary>
+        /// Calculate weighted scores and apply standard sorting to ContentIndexEntry query
+        /// </summary>
+        public static IOrderedQueryable<ContentIndexEntry> ApplyCombinedContentSorting(
+            IQueryable<ContentIndexEntry> query,
+            int k = 5)
+        {
+            return query
+                .Select(entry => new ContentIndexEntry
+                {
+                    ContentId = entry.ContentId,
+                    ContentType = entry.ContentType,
+                    CreatedAt = entry.CreatedAt,
+                    AverageVote = entry.AverageVote,
+                    TotalVotes = entry.TotalVotes,
+                    WeightedScore = (entry.TotalVotes + k) != 0
+                        ? (entry.AverageVote * entry.TotalVotes) / (entry.TotalVotes + k)
+                        : 0
+                })
+                .OrderByDescending(c => c.WeightedScore)
+                .ThenByDescending(c => c.AverageVote)
+                .ThenByDescending(c => c.CreatedAt);
         }
     }
 }

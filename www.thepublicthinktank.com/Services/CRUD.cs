@@ -286,6 +286,8 @@ namespace atlas_the_public_think_tank.Services
 
                 return query;
             }
+            
+            
             /// <summary>
             /// Calculate weighted scores and apply standard sorting to ContentIndexEntry query
             /// </summary>

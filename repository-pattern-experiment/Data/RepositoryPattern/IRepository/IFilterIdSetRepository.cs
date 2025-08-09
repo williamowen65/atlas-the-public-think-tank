@@ -1,4 +1,6 @@
 ﻿using repository_pattern_experiment.Data.RepositoryPattern.Repository.Helpers;
+using repository_pattern_experiment.Models;
+using repository_pattern_experiment.Models.Database;
 using repository_pattern_experiment.Models.ViewModel;
 
 namespace repository_pattern_experiment.Data.RepositoryPattern.IRepository
@@ -17,5 +19,8 @@ namespace repository_pattern_experiment.Data.RepositoryPattern.IRepository
         public Task<int> GetTotalCountSolutionsOfIssueById(Guid issueId);
         public Task<List<Guid>?> GetPagedSubIssueIdsOfSolutionById(Guid solutionId, ContentFilter filter, int pageNumber = 1, int pageSize = 3);
         public Task<int> GetTotalCountSubIssuesOfSolutionById(Guid solutionId);
+        public Task<List<ContentIdentifier>?> GetPagedMainContentFeedIds(ContentFilter filter, int pageNumber = 1, int pageSize = 3);
+        public Task<int> GetTotalCountMainContentFeed();
+
     }
 }

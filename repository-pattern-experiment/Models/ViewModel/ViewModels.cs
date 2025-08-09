@@ -81,7 +81,7 @@ namespace repository_pattern_experiment.Models.ViewModel
     /// <summary>
     /// Represents a Cacheable version of the Issue
     /// </summary>
-    public class Issue_Cacheable : ContentItem_ReadVM
+    public class Issue_Cacheable : ContentItem_Cacheable
     {
         public Guid IssueID { get; set; }
         public Guid? ParentIssueID { get; set; }
@@ -107,7 +107,7 @@ namespace repository_pattern_experiment.Models.ViewModel
     /// <summary>
     /// ViewModel for the reading a solution
     /// </summary>
-    public class Solution_Cacheable : ContentItem_ReadVM
+    public class Solution_Cacheable : ContentItem_Cacheable
     {
         public Guid SolutionID { get; set; }     
         public Guid ParentIssueID { get; set; }
