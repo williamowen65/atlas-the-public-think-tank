@@ -5,6 +5,7 @@
 /// </summary>
 namespace atlas_the_public_think_tank.Controllers
 {
+    /*
     public class CommentController : Controller
     {
         public IActionResult Index()
@@ -12,4 +13,5 @@ namespace atlas_the_public_think_tank.Controllers
             return View();
         }
     }
+    */
 }

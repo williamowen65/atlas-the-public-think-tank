@@ -1,7 +1,6 @@
 ﻿using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Models.Database;
 using atlas_the_public_think_tank.Models.ViewModel;
-using atlas_the_public_think_tank.Services;
 using atlas_the_public_think_tank.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -15,6 +14,8 @@ namespace atlas_the_public_think_tank.Controllers
     /// <summary>
     /// This C# Controller manages the solutions
     /// </summary>
+
+    /*
 
     [Authorize]
     public class SolutionController : Controller
@@ -285,4 +286,5 @@ namespace atlas_the_public_think_tank.Controllers
             }
         }
     }
+    */
 }

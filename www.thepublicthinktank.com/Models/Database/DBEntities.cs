@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.CodeAnalysis;
 using System;
-using System.Text.Json.Serialization;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 
 
 /**
@@ -123,22 +124,34 @@ namespace atlas_the_public_think_tank.Models.Database
     }
 
     /// <summary>
-    /// Defines an enum for ContentStatus
+    /// Defines an enum for ContentStatus with string representations
     /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum ContentStatus
     {
+        [EnumMember(Value = "Draft")]
         Draft,
+
+        [EnumMember(Value = "Published")]
         Published,
+
+        [EnumMember(Value = "Archived")]
         Archived
     }
 
     /// <summary>
-    /// Defines an enum for ContentType
+    /// Defines an enum for ContentType with string representations
     /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum ContentType
     {
+        [EnumMember(Value = "Solution")]
         Solution,
+
+        [EnumMember(Value = "Issue")]
         Issue,
+
+        [EnumMember(Value = "Comment")]
         Comment
     }
     /// <summary>

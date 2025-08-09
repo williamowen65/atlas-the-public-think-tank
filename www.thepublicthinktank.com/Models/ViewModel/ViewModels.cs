@@ -5,6 +5,32 @@ using System.ComponentModel.DataAnnotations;
 namespace atlas_the_public_think_tank.Models.ViewModel
 {
 
+    /// <summary>
+    /// Represents info about the Author of a ContentItem
+    /// </summary>
+    /// <remarks>
+    /// Hides personal information 
+    /// and extra info that doesn't need to be cached per
+    /// ContentItem Cache (Ex: SolutionVotes/commentVotes... 
+    /// These can be found via a users profile instead)
+    /// </remarks>
+    public class AppUser_ContentItem_ReadVM
+    { 
+        public Guid Id { get; set; }
+        public string UserName { get; set; }
+        public string email { get; set; }
+
+    }
+    /// <summary>
+    /// Represent the App User in entirety minus sensitive info
+    /// </summary>
+    public class AppUser_ReadVM
+    { 
+        public Guid Id { get; set; }
+        public string UserName { get; set; }
+        public string email { get; set; }
+
+    }
   
     /// <summary>
     /// ViewModel for the creating an issue
@@ -33,7 +59,7 @@ namespace atlas_the_public_think_tank.Models.ViewModel
     /// </summary>
     public class PaginatedIssuesResponse
     {
-        public List<Issue_ReadVM> Issues { get; set; }
+        public List<Issue_ReadVM> Issues { get; set; } = new List<Issue_ReadVM>();
         public int TotalCount { get; set; }
         public int PageSize { get; set; }
         public int CurrentPage { get; set; }
@@ -44,7 +70,7 @@ namespace atlas_the_public_think_tank.Models.ViewModel
     /// </summary>
     public class PaginatedSolutionsResponse
     {
-        public List<Solution_ReadVM> Solutions { get; set; }
+        public List<Solution_ReadVM> Solutions { get; set; } = new List<Solution_ReadVM>();
         public int TotalCount { get; set; }
         public int PageSize { get; set; }
         public int CurrentPage { get; set; }
@@ -52,51 +78,51 @@ namespace atlas_the_public_think_tank.Models.ViewModel
 
 
 
-    public class Issue_ReadVM : ContentItem_ReadVM
+    /// <summary>
+    /// Represents a Cacheable version of the Issue
+    /// </summary>
+    public class Issue_Cacheable : ContentItem_Cacheable
     {
         public Guid IssueID { get; set; }
         public Guid? ParentIssueID { get; set; }
         public Guid? ParentSolutionID { get; set; }
-        public List<Category_ReadVM> Categories { get; set; } = new List<Category_ReadVM>();
 
+        public required UserVote_Issue_ReadVM VoteStats { get; set; }
+
+        public List<Category_ReadVM> IssueCategories { get; set; } = new List<Category_ReadVM>();
+
+
+    }
+
+    public class Issue_ReadVM : Issue_Cacheable
+    { 
         public PaginatedIssuesResponse PaginatedSubIssues { get; set; } = new PaginatedIssuesResponse();
         public PaginatedSolutionsResponse PaginatedSolutions { get; set; } = new PaginatedSolutionsResponse();
-        public List<Solution_ReadVM> Solutions { get; set; } = new List<Solution_ReadVM>();
-
-        public Issue_ReadVM? ParentIssue { get; set; }
-        public Solution_ReadVM? ParentSolution { get; set; }
-
-
-        // Navigation properties
     
-        public ICollection<Issue> ChildIssues { get; set; }
-        public ICollection<IssueVote> IssueVotes { get; set; }
-        public ICollection<IssueCategory> IssueCategories { get; set; }
     }
+
 
 
 
     /// <summary>
     /// ViewModel for the reading a solution
     /// </summary>
-    public class Solution_ReadVM : ContentItem_ReadVM
+    public class Solution_Cacheable : ContentItem_Cacheable
     {
         public Guid SolutionID { get; set; }     
         public Guid ParentIssueID { get; set; }
 
+
+        public required UserVote_Solution_ReadVM VoteStats { get; set; }
+
+        public List<Category_ReadVM> SolutionCategories { get; set; } = new List<Category_ReadVM>();
+
+    }
+
+    public class Solution_ReadVM : Solution_Cacheable
+    { 
         public PaginatedIssuesResponse PaginatedSubIssues { get; set; } = new PaginatedIssuesResponse();
-
-        // Navigation properties
-        public Issue_ReadVM ParentIssue { get; set; }
-       
-        // public ICollection<UserVote> UserVotes { get; set; } = new List<UserVote>();
-        public List<Category_ReadVM> Categories { get; set; } = new List<Category_ReadVM>();
-
-        public ICollection<SolutionCategory> SolutionCategories { get; set; }
-
-        // Statistics
-        // public int TotalVotes { get; set; } = 0;
-        // public double AverageVote { get; set; } = 0;
+        //public Issue_Cacheable ParentIssue { get; set; }
     }
 
 
@@ -137,22 +163,62 @@ namespace atlas_the_public_think_tank.Models.ViewModel
     /// <summary>
     /// A generic ViewModel for the reading the vote content (issues/solutions/comments)
     /// </summary>
-    public class UserVote_Generic_ReadVM
+    public class UserVote_Generic_Cacheable_ReadVM
     {
 
-        public string ContentType { get; set; } // "Issue", "Solution", or "Comment"
+        //public ContentType ContentType { get; set; } // "Issue", "Solution", or "Comment"
         public Guid ContentID { get; set; }
 
-        // A user may have voted and if so, when loading the dial, their vote should be cast
-        public int? UserVote { get; set; }
+        public ContentType ContentType { get; set; }
+   
 
         //public string UserId { get; set; } // This is provided by ASP.NET Identity
 
         public int TotalVotes { get; set; } = 0;
 
-        public ICollection<IssueVote> IssueVotes { get; set; } = new List<IssueVote>();
 
         public double AverageVote { get; set; } = 0;
+    }
+
+   
+
+    public class UserVote_Issue_ReadVM : UserVote_Generic_Cacheable_ReadVM
+    {
+        /// <summary>
+        /// IssueVotes are stored as a map in memory for ease of update in the cache.
+        /// </summary>
+        public Dictionary<Guid, Vote_ReadVM> IssueVotes { get; set; } = new Dictionary<Guid, Vote_ReadVM>();
+    }
+
+    public class UserVote_Solution_ReadVM : UserVote_Generic_Cacheable_ReadVM
+    {
+        /// <summary>
+        /// IssueVotes are stored as a map in memory for ease of update in the cache.
+        /// </summary>
+        public Dictionary<Guid, Vote_ReadVM> SolutionVotes { get; set; } = new Dictionary<Guid, Vote_ReadVM>();
+
+
+    }
+
+    public class UserVote_Generic_ReadVM : UserVote_Generic_Cacheable_ReadVM
+    {
+        /// <summary>
+        /// IssueVotes are stored as a map in memory for ease of update in the cache.
+        /// </summary>
+        public Dictionary<Guid, Vote_ReadVM> GenericContentVotes { get; set; } = new Dictionary<Guid, Vote_ReadVM>();
+    }
+
+
+
+
+
+    public class Vote_ReadVM
+    {
+        public Guid VoteID { get; set; }
+        public Guid UserID { get; set; }
+        public int VoteValue { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? ModifiedAt { get; set; }
     }
 
 

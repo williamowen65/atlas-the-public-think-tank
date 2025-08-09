@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using atlas_the_public_think_tank.Data;
-using atlas_the_public_think_tank.Services;
 using atlas_the_public_think_tank.Models.Database;
+using atlas_the_public_think_tank.Data.RepositoryPattern;
+using atlas_the_public_think_tank.Data.CRUD;
 
 namespace atlas_the_public_think_tank;
 
@@ -53,15 +54,17 @@ public class Program
 
         builder.Services.AddRazorPages();
 
-        builder.Services.AddScoped<CRUD>(); // Register the CRUD service for dependency injection
-        builder.Services.AddScoped<Issues>(); // Register the CRUD service for dependency injection
-        builder.Services.AddScoped<Solutions>(); // Register the CRUD service for dependency injection
-        builder.Services.AddScoped<BreadcrumbAccessor>(); // Register the CRUD service for dependency injection
-
         builder.Services.AddHttpContextAccessor();
 
+        builder.Services.AddMemoryCache();
+
+        // Register all repositories with one extension method
+        builder.Services.AddRepositories();
 
         var app = builder.Build();
+
+        // Initialize the static Read class with the service provider
+        Read.Initialize(app.Services);
 
         // =====================================
         // Middleware and Routing Configuration

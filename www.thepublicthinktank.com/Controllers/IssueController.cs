@@ -1,7 +1,6 @@
 ﻿using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Models.Database;
 using atlas_the_public_think_tank.Models.ViewModel;
-using atlas_the_public_think_tank.Services;
 using atlas_the_public_think_tank.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -12,7 +11,7 @@ using System.Security.Claims;
 namespace atlas_the_public_think_tank.Controllers
 {
 
-
+    /*
     /// <summary>
     /// This controller handles all CRUD operations for 
     /// the Issue, Solutions, Comments, UserHistory, and Voting
@@ -364,4 +363,5 @@ namespace atlas_the_public_think_tank.Controllers
 
 
     }
+    */
 }

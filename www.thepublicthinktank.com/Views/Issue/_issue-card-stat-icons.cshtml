@@ -7,26 +7,26 @@
 @model Issue_ReadVM
 
 <div class="issue-card-stat-icons text-nowrap">
-    <span role="button" tabindex="0" aria-label="Solutions: @(Model?.Solutions?.Count() ?? 0)" class="stat-icon-link go-to-content-item-solution-tab position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
+    <span role="button" tabindex="0" aria-label="Solutions: @(Model?.PaginatedSolutions.TotalCount)" class="stat-icon-link go-to-content-item-solution-tab position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
         <div class="position-absolute content-count" style="">
-            @(Model?.Solutions?.Count() ?? 0)
+            @(Model?.PaginatedSolutions.TotalCount)
         </div>
-        @Html.Partial("~/Views/Shared/Icons/_Solutions.cshtml")
+        @await Html.PartialAsync("~/Views/Shared/Icons/_Solutions.cshtml")
     </span>
-    <span role="button" tabindex="0" aria-label="Sub Issues: @(Model?.SubIssues?.Count() ?? 0)" class="stat-icon-link go-to-content-item-sub-issue-tab position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
+    <span role="button" tabindex="0" aria-label="Sub Issues: @(Model?.PaginatedSubIssues.TotalCount)" class="stat-icon-link go-to-content-item-sub-issue-tab position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
         <div class="position-absolute content-count sub-issue-count" style="right: -11px">
-            @(Model.SubIssueCount)
+            @(Model?.PaginatedSubIssues.TotalCount)
         </div>
-        @Html.Partial("~/Views/Shared/Icons/_SubIssues.cshtml")
+        @await Html.PartialAsync("~/Views/Shared/Icons/_SubIssues.cshtml")
     </span>
     <wbr class="" />
-    <span role="button" tabindex="0" aria-label="Comments: @(Model?.Comments?.Count() ?? 0)" class="stat-icon-link go-to-content-item-comment-tab position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
+    <span role="button" tabindex="0" aria-label="Comments: @(0)" class="stat-icon-link go-to-content-item-comment-tab position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
         <div class="position-absolute content-count" style="">
-            @(Model?.Comments?.Count() ?? 0)
+            @(0)
         </div>
-        @Html.Partial("~/Views/Shared/Icons/_Comments.cshtml")
+        @await Html.PartialAsync("~/Views/Shared/Icons/_Comments.cshtml")
     </span>
     @* @Html.Partial("~/Views/Shared/Icons/_ParentIssue.cshtml") *@
 
-    @Html.Partial("~/Views/Shared/Components/_scope-ribbon.cshtml", Model.Scope)
+    @await Html.PartialAsync("~/Views/Shared/Components/_scope-ribbon.cshtml", Model.Scope)
 </div>

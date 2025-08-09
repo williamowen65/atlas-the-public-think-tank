@@ -9,17 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Views\CRUDIssue\**" />
-    <Compile Remove="Views\Solutions\**" />
-    <Content Remove="Views\CRUDIssue\**" />
-    <Content Remove="Views\Solutions\**" />
-    <EmbeddedResource Remove="Views\CRUDIssue\**" />
-    <EmbeddedResource Remove="Views\Solutions\**" />
-    <None Remove="Views\CRUDIssue\**" />
-    <None Remove="Views\Solutions\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="9.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="9.0.3" />
@@ -28,6 +17,7 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.3" />
     <PackageReference Include="Microsoft.Extensions.Logging.ApplicationInsights" Version="2.23.0" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
+    <PackageReference Include="Scrutor" Version="6.1.0" />
   </ItemGroup>
 
 </Project>

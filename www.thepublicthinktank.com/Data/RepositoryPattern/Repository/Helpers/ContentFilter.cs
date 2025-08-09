@@ -1,4 +1,4 @@
-﻿namespace atlas_the_public_think_tank.Services
+﻿namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
 {
     /// <summary>
     /// Represents a customizable filter that users can apply to content queries

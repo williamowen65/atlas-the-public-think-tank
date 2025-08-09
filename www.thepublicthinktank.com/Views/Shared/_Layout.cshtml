@@ -33,31 +33,31 @@
 
     <partial name="_ColorMode" />
 
-    <partial name="_Header" />
-    @Html.Partial("~/Views/Shared/LeftSideBar/_Left-Sidebar-Toggle.cshtml")
+    <partial name="_Header" /> 
+
+    @await Html.PartialAsync("~/Views/Shared/LeftSideBar/_Left-Sidebar-Toggle.cshtml")
    
     <main role="main" class="pb-3 px-md-3">
         @RenderBody()
     </main>
 
-    <partial name="_Footer" />
+    <partial name="_Footer" /> 
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
   
 
-    <script src="~/js/client_alerts.js" asp-append-version="true"></script>
+     <script src="~/js/client_alerts.js" asp-append-version="true"></script>
+
+    @* left-sidebar-container.js and content-filter.js and dual-slider-input.js must be loaded together *@
     <script src="~/js/LeftSidebar/left-sidebar-container.js" asp-append-version="true"></script>
     <script src="~/js/LeftSidebar/content-filter.js" asp-append-version="true"></script>
+    <script src="~/js/LeftSidebar/dual-slider-input.js" asp-append-version="true"></script> 
+
     <script src="~/js/pagination.js" asp-append-version="true"></script>
-    <script src="~/js/LeftSidebar/dual-slider-input.js" asp-append-version="true"></script>
-
-
 
     @* Select2 JS *@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-
 
     <script src="~/js/color-modes.js" asp-append-version="true"></script>
     <script src="https://cdn.jsdelivr.net/npm/masonry-layout@4.2.2/dist/masonry.pkgd.min.js" integrity="sha384-GNFwBvfVxBkLMJpYMOABq3c+d3KnQxudP/mGPkzpZSTYykLBNsZEnG2D9G/X/+7D" crossorigin="anonymous" async></script>
