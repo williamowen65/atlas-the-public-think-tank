@@ -1513,22 +1513,6 @@ namespace atlas_the_public_think_tank.Migrations
                         },
                         new
                         {
-                            VoteID = new Guid("7a4b3c2d-1e5f-4a6b-8c9d-0e1f2a3b4c5d"),
-                            CreatedAt = new DateTime(2024, 2, 16, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IssueID = new Guid("e5c83d7a-6f29-48b5-a371-2d94c8e75f12"),
-                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dffbee30"),
-                            VoteValue = 10
-                        },
-                        new
-                        {
-                            VoteID = new Guid("8b5c4d3e-2f6a-4b7c-9d0e-1f2a3b4c5d6e"),
-                            CreatedAt = new DateTime(2024, 2, 17, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IssueID = new Guid("e5c83d7a-6f29-48b5-a371-2d94c8e75f12"),
-                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee31"),
-                            VoteValue = 9
-                        },
-                        new
-                        {
                             VoteID = new Guid("9c6d5e4f-3a7b-4c8d-0e1f-2a3b4c5d6e7f"),
                             CreatedAt = new DateTime(2024, 2, 18, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             IssueID = new Guid("e5c83d7a-6f29-48b5-a371-2d94c8e75f12"),
@@ -1873,38 +1857,6 @@ namespace atlas_the_public_think_tank.Migrations
                         },
                         new
                         {
-                            VoteID = new Guid("1d2e3f4a-5b6c-47d8-9e0f-1a2b3c4d5e6f"),
-                            CreatedAt = new DateTime(2024, 4, 6, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IssueID = new Guid("e9d72f5b-a143-47c8-93b2-6e7a8c41d59f"),
-                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dffbee30"),
-                            VoteValue = 10
-                        },
-                        new
-                        {
-                            VoteID = new Guid("2e3f4a5b-6c7d-48e9-a0b1-2c3d4e5f6a7b"),
-                            CreatedAt = new DateTime(2024, 4, 7, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IssueID = new Guid("e9d72f5b-a143-47c8-93b2-6e7a8c41d59f"),
-                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee31"),
-                            VoteValue = 9
-                        },
-                        new
-                        {
-                            VoteID = new Guid("3f4a5b6c-7d8e-49fa-b1c2-3d4e5f6a7b8c"),
-                            CreatedAt = new DateTime(2024, 4, 8, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IssueID = new Guid("e9d72f5b-a143-47c8-93b2-6e7a8c41d59f"),
-                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee32"),
-                            VoteValue = 10
-                        },
-                        new
-                        {
-                            VoteID = new Guid("4a5b6c7d-8e9f-40ab-c2d3-4e5f6a7b8c9d"),
-                            CreatedAt = new DateTime(2024, 4, 9, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IssueID = new Guid("e9d72f5b-a143-47c8-93b2-6e7a8c41d59f"),
-                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee33"),
-                            VoteValue = 8
-                        },
-                        new
-                        {
                             VoteID = new Guid("5b6c7d8e-9f0a-41bc-d3e4-5f6a7b8c9d0e"),
                             CreatedAt = new DateTime(2024, 4, 10, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             IssueID = new Guid("e9d72f5b-a143-47c8-93b2-6e7a8c41d59f"),
@@ -2102,14 +2054,6 @@ namespace atlas_the_public_think_tank.Migrations
                             IssueID = new Guid("b5a7d93c-4e28-46f1-87b3-9c5a2d41e6f8"),
                             UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee44"),
                             VoteValue = 10
-                        },
-                        new
-                        {
-                            VoteID = new Guid("a1b2c3d4-5e6f-47a8-9b0c-1d2e3f4a5b6c"),
-                            CreatedAt = new DateTime(2024, 5, 16, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IssueID = new Guid("d4e2b8f7-3c19-45a6-90d2-17f8e3c95b0a"),
-                            UserID = new Guid("1a61454c-5b83-4aab-8661-96d6dffbee30"),
-                            VoteValue = 3
                         },
                         new
                         {

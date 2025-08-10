@@ -11,19 +11,19 @@
 
 <div class="container mt-3  ">
 
-    @Html.Partial("~/Views/Solution/_solution-page-post.cshtml", Model)
+    @await Html.PartialAsync("~/Views/Solution/_solution-page-post.cshtml", Model) 
 
     <nav class="d-flex position-sticky bg-body" style="top:var(--header-height); z-index:11">
         <div class="nav nav-tabs flex-grow-1 text-nowrap overflow-x-scroll overflow-y-hidden" style="flex-wrap: revert;" id="nav-tab" role="tablist">
 
             <button class="nav-link active" id="comments-tab" data-bs-toggle="tab" data-bs-target="#issue-comments" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
                 <div class="content-count">@Model.Comments.Count()</div>
-                @Html.Partial("~/Views/Shared/Icons/_Comments.cshtml")
+                @await Html.PartialAsync("~/Views/Shared/Icons/_Comments.cshtml")
                 Comments
             </button>
             <button class="nav-link" id="sub-issues-tab" data-bs-toggle="tab" data-bs-target="#sub-issues" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
-                <div class="content-count">@Model.PaginatedSubIssues.TotalCount</div>
-                @Html.Partial("~/Views/Shared/Icons/_SubIssues.cshtml")
+                <div class="content-count">@Model.PaginatedSubIssues.ContentCount.TotalCount</div>
+                @await Html.PartialAsync("~/Views/Shared/Icons/_SubIssues.cshtml")
                 Sub-Issues
             </button>
             <button class="nav-link d-flex align-items-center" id="parent-post-tab" data-bs-toggle="tab" data-bs-target="#parent-post" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
@@ -31,7 +31,7 @@
                     <span>@(Model.ParentIssue != null ? 1 : 0)</span>
                 </div>
                 <div class="me-2">
-                    @Html.Partial("~/Views/Shared/Icons/_ParentIssue.cshtml")
+                    @await Html.PartialAsync("~/Views/Shared/Icons/_ParentIssue.cshtml")
                 </div>
 
                 @if (Model.ParentIssue != null)
@@ -108,9 +108,9 @@
                     ContentType = "sub-issues",
                     Target = "#sub-issue-content",
                     Url = "/solution/getPaginatedSubIssues/" + @Model.SolutionID,
-                    CurrentPage = Model.PaginatedSubIssues.TotalCount,
+                    CurrentPage = Model.PaginatedSubIssues.ContentCount.TotalCount,
                     PageSize = Model.PaginatedSubIssues.PageSize,
-                    TotalCount = Model.PaginatedSubIssues.TotalCount,
+                    TotalCount = Model.PaginatedSubIssues.ContentCount.TotalCount,
                     // TotalPages = Model.PaginatedSubIssues.TotalPages
                 })
 

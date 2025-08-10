@@ -1,5 +1,6 @@
+using atlas_the_public_think_tank.Data.CRUD;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Models.ViewModel;
-using atlas_the_public_think_tank.Services;
 using atlas_the_public_think_tank.Utilities;
 using Azure.Core;
 using Microsoft.AspNetCore.Authorization;
@@ -16,18 +17,17 @@ namespace atlas_the_public_think_tank.Controllers;
 /// This controller handles ALL the main pages   
 /// and alert functionalities of the application.
 /// </summary>
+/// 
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
-    private readonly Services.CRUD _crudService;
 
-    public HomeController(ILogger<HomeController> logger, Services.CRUD crudService)
+    public HomeController(ILogger<HomeController> logger)
     {
         _logger = logger;
-        _crudService = crudService;
     }
 
-
+    #region Serve the home page
     public async Task<IActionResult> Index()
     {
         ContentFilter filter = new ContentFilter();
@@ -39,17 +39,21 @@ public class HomeController : Controller
         // Create a view model to hold both issues and categories
         var viewModel = new HomeIndexViewModel();
 
-        viewModel.PaginatedContent = await _crudService.GetContentItemsPagedAsync(1, filter);
+
+        viewModel.PaginatedContent = await Read.ContentItems(filter);
 
         //viewModel.Categories = new List<Category_ReadVM>();
         return View(viewModel);
     }
 
+    #endregion
 
-     /// <summary>
-     /// This method is used to return paginated issue posts.
-     /// </summary>
-     /// <returns></returns>
+    #region Get paginated home page content
+
+    /// <summary>
+    /// This method is used to return paginated issue posts.
+    /// </summary>
+    /// <returns></returns>
     [HttpGet]
     [AllowAnonymous]
     [Route("/home/getPaginatedContent")]
@@ -61,7 +65,7 @@ public class HomeController : Controller
             filter = ContentFilter.FromJson(cookieValue);
         }
 
-        PaginatedContentItemsResponse paginatedContentItems = await _crudService.GetContentItemsPagedAsync(currentPage, filter);
+        PaginatedContentItemsResponse paginatedContentItems = await Read.ContentItems(filter, currentPage);
 
         // Render the partial view to a string
         string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Home/_content-item-cards.cshtml", paginatedContentItems.ContentItems);
@@ -82,7 +86,9 @@ public class HomeController : Controller
         return Json(response);
     }
 
- 
+    #endregion
+
+    #region Routes that could be in a MiscellenousController
 
     /// <summary>
     /// This method is used to return a partial view for displaying alerts.
@@ -149,6 +155,9 @@ public class HomeController : Controller
         return PartialView("~/Views/Shared/_Alert.cshtml", alert);
     }
 
+
+    
+
     [Route("privacy")]
     public IActionResult Privacy()
     {
@@ -161,6 +170,6 @@ public class HomeController : Controller
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
 
-
+    #endregion
 
 }

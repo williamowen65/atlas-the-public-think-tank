@@ -16,15 +16,22 @@
 <div class="card mb-3 solution-card" id="@Model.SolutionID" data-content-type="solution">
     <div class="">
         <div class="dial-container" style="float:left">
-            @Html.Partial("~/Views/Shared/Components/_voteDial.cshtml", Model.VoteStats)
+            @await Html.PartialAsync("~/Views/Shared/Components/_voteDial.cshtml", new UserVote_Generic_ReadVM()
+            {
+                AverageVote = Model.VoteStats.AverageVote,
+                ContentID = Model.VoteStats.ContentID,
+                ContentType = Model.VoteStats.ContentType,
+                GenericContentVotes = Model.VoteStats.SolutionVotes,
+                TotalVotes = Model.VoteStats.TotalVotes
+            }))
         </div>
 
         <div class="card-header" style="border-left:var(--bs-card-border-width) solid var(--bs-card-border-color); border-top-left-radius: 0; margin-left: var(--dial-width)">
             <h5 class="mb-0">
                 <div style="font-size:20px;" class="float-end">
-                    @Html.Partial("~/Views/Shared/Components/_scope-ribbon.cshtml", Model.Scope)
+                    @await Html.PartialAsync("~/Views/Shared/Components/_scope-ribbon.cshtml", Model.Scope)
                 </div>
-                @Html.Partial("~/Views/Shared/Icons/_Solutions.cshtml")
+                @await Html.PartialAsync("~/Views/Shared/Icons/_Solutions.cshtml")
                 @* Title and this float need to be next to each other for float styling to work. *@
                 @Model.Title
             </h5>
@@ -43,7 +50,7 @@
             </div>
         } *@    
     </div>
-    @Html.Partial("~/Views/Shared/_Breadcrumb.cshtml", Model.BreadcrumbTags)
+    @await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", Model.BreadcrumbTags)
     
     <div class="card-footer d-flex justify-content-between">
         <div class="" id="card-@Model.SolutionID-footer-alert">

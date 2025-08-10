@@ -79,6 +79,9 @@ function setupQuickTabLinks(e) {
 // DIAL JS
 
 function getDialElements(issueId) {
+
+    //console.trace("getDialElements");
+
     const containerId = `vote-toggle-container-${issueId}`;
     const container = document.getElementById(containerId);
 
@@ -141,6 +144,8 @@ function initializeVoteDial(issueId) {
     setupScrollEvents(container, dialId, state);
     setupRadioChangeEvents(radios, saveVoteDebounced, container, state);
     //createDialResetMethod(container, issueId, observer, dialId, options, state);
+
+    console.log("Dial initialized: ", issueId)
 }
 
 /**

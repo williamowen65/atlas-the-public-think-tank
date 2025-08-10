@@ -11,25 +11,37 @@
     var dialId = $"vote-dial-{Model.ContentID}";
     var lensId = $"vote-lens-{Model.ContentID}";
     var outlineId = $"vote-outline-{Model.ContentID}";
+
+      @* TODO: Active users vote *@
+      int? userVote = null;
 }
 
 @* issue @Model.IssueID *@
 <div class="dial mb-2" style="width: var(--dial-width); height: 190px; user-select:none;">
     
-    @Html.Partial("~/Views/Shared/Components/_voteAverage.cshtml")
+    @await Html.PartialAsync("~/Views/Shared/Components/_voteAverage.cshtml") 
     
-    <div class="vote-dial-toggle @(Model.UserVote.HasValue ? "user-voted" : "") mb-1">
+    <div class="vote-dial-toggle @(userVote.HasValue ? "user-voted" : "") mb-1">
         <div id="vote-toggle-container-@Model.ContentID" class="vote-toggle-container" data-content-type="@Model.ContentType">
+            @* 
+                The invisible inputs that are used behind scenes of a dial 
+                Conditionally "Checks" the users vote value or falls back to 5
+            *@
             @for (int i = 10; i >= 0; i--)
             {
                 var radioId = $"vote-{Model.ContentID}-{i}";
-                <input class="" id="@radioId" type="radio" name="@dialId" value="@i" @(i == (Model.UserVote ?? 5) ? "checked" : "") />
+                <input class="" id="@radioId" type="radio" name="@dialId" value="@i" @(i == (userVote ?? 5)  ? "checked" : "") />
             }
 
             <div id="@lensId" class="lens"></div>
 
             <div id="@outlineId" class="outline"></div>
-          
+            
+            @* 
+                The visible dial inputs
+                These are linked to the radio inputs
+            *@
+
             @for (int i = 11; i >= -1; i--)
             {
                 var radioId = $"vote-{Model.ContentID}-{i}";
@@ -41,7 +53,7 @@
         </div>
     </div>    
     
-    @Html.Partial("~/Views/Shared/Components/_voteCount.cshtml")
+    @await Html.PartialAsync("~/Views/Shared/Components/_voteCount.cshtml")
   
 </div>
 

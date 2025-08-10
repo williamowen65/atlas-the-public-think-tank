@@ -8,15 +8,65 @@
 }
 
 
-@foreach (var item in Model)
+  @foreach (var item in Model)
 {
-    @if (item is Issue_ReadVM issue)
+
+    @if (item.ContentType == atlas_the_public_think_tank.Models.Database.ContentType.Issue)
     {
-        @Html.Partial("~/Views/Issue/_issue-card.cshtml", issue)
+        @await Html.PartialAsync("~/Views/Issue/_issue-card.cshtml", new Issue_ReadVM
+        {
+            IssueID = item.ContentID,
+            Title = item.Title,
+            Content = item.Content,
+            CreatedAt = item.CreatedAt,
+            ModifiedAt = item.ModifiedAt,
+            LastActivity = item.LastActivity,
+            ContentStatus = item.ContentStatus,
+            BlockedContentID = item.BlockedContentID,
+            BreadcrumbTags = item.BreadcrumbTags,
+            Author = item.Author,
+            Comments = item.Comments,
+            Scope = item.Scope,
+            BlockedContent = item.BlockedContent,
+            PaginatedSubIssues = item.PaginatedSubIssues,
+            PaginatedSolutions = item.PaginatedSolutions!,
+            VoteStats = new UserVote_Issue_ReadVM()
+            {
+                IssueVotes = item.VoteStats.GenericContentVotes,
+                AverageVote = item.VoteStats.AverageVote,
+                ContentID = item.VoteStats.ContentID,
+                TotalVotes = item.VoteStats.TotalVotes,
+                ContentType = atlas_the_public_think_tank.Models.Database.ContentType.Issue
+            }
+        });
     }
-    else if (item is Solution_ReadVM solution)
+    else if (item.ContentType == atlas_the_public_think_tank.Models.Database.ContentType.Solution)
     {
-        @Html.Partial("~/Views/Solution/_solution-card.cshtml", solution)
+        @await Html.PartialAsync("~/Views/Solution/_solution-card.cshtml", new Solution_ReadVM
+        {
+            SolutionID = item.ContentID,
+            Title = item.Title,
+            Content = item.Content,
+            CreatedAt = item.CreatedAt,
+            ModifiedAt = item.ModifiedAt,
+            LastActivity = item.LastActivity,
+            ContentStatus = item.ContentStatus,
+            BlockedContentID = item.BlockedContentID,
+            BreadcrumbTags = item.BreadcrumbTags,
+            Author = item.Author,
+            Comments = item.Comments,
+            Scope = item.Scope,
+            BlockedContent = item.BlockedContent,
+            PaginatedSubIssues = item.PaginatedSubIssues,
+            VoteStats = new UserVote_Solution_ReadVM()
+            {
+                SolutionVotes = item.VoteStats.GenericContentVotes,
+                AverageVote = item.VoteStats.AverageVote,
+                ContentID = item.VoteStats.ContentID,
+                TotalVotes = item.VoteStats.TotalVotes,
+                ContentType = atlas_the_public_think_tank.Models.Database.ContentType.Issue
+            }
+        });
     }
     else
     {
