@@ -17,32 +17,10 @@
 
 Atlas is a social media platform designed to connect innovative thinkers with problem-solvers. It provides a space for users to share ideas, collaborate on projects, and engage in meaningful discussions. The platform aims to foster a community of forward-thinkers who can collectively address complex challenges.  
 
-It is built with ASP.NET Core MVC for the backend and utilizes Entity Framework Core for data access. The platform is designed to be scalable, secure, and user-friendly, ensuring a seamless experience for all users.  
+### Documentation
 
-> Note: This version is intended for a CPTC Spring Quarter release and is a multi-page app.  
-> This app is built and tested on Google Chrome (The Blink rendering engine)
-> A potential future version of this project (CPTC Summer Quarter) may see this project ported over to Blazor for a Single Page App user experience.  
+Contributors, maintainers, and curious readers can find all documentation for on [the Wiki](https://github.com/williamowen65/atlas-the-public-think-tank/wiki).
 
-### [Find all documentation for contributors, maintainers, and curious readers on the Wiki](https://github.com/williamowen65/atlas-the-public-think-tank/wiki)
-
-## Features  
-
-Atlas boasts a wide range of features to enhance user experience and facilitate collaboration. Here’s a comprehensive list of the planned features.  
-
-### Core Features  
-
-- [x] **User Authentication**: Secure login and registration system.  
-- [x] **Profile Management**: Users can create and manage their profiles, showcasing their skills and interests.  
-- [x] **Discussion Issues**: Dedicated spaces for users to engage in discussions on various topics.  
-- [x] **Idea Sharing**: Users can post ideas, articles, and projects for feedback and collaboration.  
-- [x] **Search Functionality**: Advanced search to find users, ideas, and projects based on keywords and tags.  
-- [x] **Feedback System**: Users can provide feedback on ideas and projects, fostering a culture of constructive criticism.  
-- [x] **Regular Updates and Maintenance**: Commitment to regular updates and maintenance to ensure the platform remains secure, up-to-date, and aligned with user needs and technological advancements.  
-- [x] **Admin Dashboard**: Tools for administrators to manage users, content, and platform settings.  
-- [x] **Community Guidelines and Code of Conduct**: Clear guidelines to ensure a respectful and inclusive community, with mechanisms for reporting and addressing violations.  
-- [x] **Responsive Design**: Optimized for both desktop and mobile devices to ensure accessibility on the go.  
-
----
 
 ### Collaboration  
 
