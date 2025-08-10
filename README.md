@@ -23,7 +23,7 @@ It is built with ASP.NET Core MVC for the backend and utilizes Entity Framework 
 > This app is built and tested on Google Chrome (The Blink rendering engine)
 > A potential future version of this project (CPTC Summer Quarter) may see this project ported over to Blazor for a Single Page App user experience.  
 
-### [Check out the Wiki](https://github.com/williamowen65/atlas-the-public-think-tank/wiki)
+### [Find all documentation for contributors, maintainers, and curious readers on the Wiki](https://github.com/williamowen65/atlas-the-public-think-tank/wiki)
 
 ## Features  
 
