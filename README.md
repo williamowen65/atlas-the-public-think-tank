@@ -11,11 +11,20 @@
 
 # Atlas - The Public Think Tank  
 
-> A social media platform connecting innovative thinkers with keen problem-solvers.  [(Pre-Launch Landing Page)](https://atlas.thepublicthinktank.com/)
+> Atlas is a social media platform designed to connect innovative thinkers with problem-solvers. It provides a space for users to share ideas, collaborate on projects, and engage in meaningful discussions around issues and solutions. The platform aims to foster a community of forward-thinkers who can collectively address complex challenges.
 
-## Overview  
+[Pre-Launch Landing Page](https://atlas.thepublicthinktank.com/)
 
-Atlas is a social media platform designed to connect innovative thinkers with problem-solvers. It provides a space for users to share ideas, collaborate on projects, and engage in meaningful discussions. The platform aims to foster a community of forward-thinkers who can collectively address complex challenges.  
+### MVP Features
+
+- A 0 - 10 rating system on Issues, Solutions, and Comments offers the users more say than the the common "like" pattern or "upvote/downvote" pattern of mainstream social media.
+- Issues and Solutions are also nested with offering users ways to navigate parent and child issues or solutions.
+- Content feeds can be filtered and sorted
+- Issues, Solutions, and Users can be followed by users
+
+### Extra Feature Goals
+
+- AI Content Moderation
 
 ### Documentation
 
@@ -24,7 +33,7 @@ Contributors, maintainers, and curious readers can find all documentation for on
 
 ### Collaboration  
 
-This project seeks contributions from the community. The system for facilitating this is not implemented yet. But if you are interested in contributing, please feel free to reach out via this [Discussion Board](https://github.com/williamowen65/atlas-the-public-think-tank/discussions/2).  
+This project seeks contributions from the community. If you are interested in contributing, please feel free to reach out via this [Discussion Board](https://github.com/williamowen65/atlas-the-public-think-tank/discussions/2).  
 
 
 
