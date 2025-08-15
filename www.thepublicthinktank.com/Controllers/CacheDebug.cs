@@ -21,13 +21,16 @@ namespace repository_pattern_experiment.Controllers
         [Route("api/cache-log/keys")]
         public IActionResult GetKeys()
         {
-            return Json(GetAllCacheKeys());
+            List<string> CacheKeys = GetAllCacheKeys();
+            CacheKeys.Sort();
+            return Json(CacheKeys);
         }
 
         [Route("api/cache-log/entries")]
         public IActionResult GetEntries()
         {
             var cacheEntries = GetAllCacheKeys();
+            cacheEntries.Sort();
             var cacheItems = new List<CacheItem>();
 
             foreach (var key in cacheEntries)
