@@ -13,7 +13,7 @@
 
 > Atlas is a social media platform designed to connect innovative thinkers with problem-solvers. It provides a space for users to share ideas, collaborate on projects, and engage in meaningful discussions around issues and solutions. The platform aims to foster a community of forward-thinkers who can collectively address complex challenges.
 
-[Pre-Launch Landing Page](https://atlas.thepublicthinktank.com/) / [GoFundMe](https://www.gofundme.com/f/fund-william-owens-innovative-social-media-project?attribution_id=sl%3A941d2104-ef5c-4c33-b0b0-8bb291918c80&utm_campaign=unknown&utm_medium=undefined&utm_source=undefined) 
+[Pre-Launch Landing Page](https://atlas.thepublicthinktank.com/) / [GoFundMe](https://www.gofundme.com/f/fund-william-owens-innovative-social-media-project?attribution_id=sl%3A941d2104-ef5c-4c33-b0b0-8bb291918c80&utm_campaign=unknown&utm_medium=undefined&utm_source=undefined) / [The Wiki](https://github.com/williamowen65/atlas-the-public-think-tank/wiki)
 
 ### MVP Features
 
