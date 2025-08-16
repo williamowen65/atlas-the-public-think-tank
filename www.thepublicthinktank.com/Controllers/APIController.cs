@@ -118,7 +118,7 @@ namespace atlas_the_public_think_tank.Controllers
         {
             try
             {
-                var contentItems = await Read.ContentItems(filter, pageNumber);
+                var contentItems = await Read.PaginatedMainContentFeed(filter, pageNumber);
                 return Json(contentItems);
             }
             catch (Exception ex)

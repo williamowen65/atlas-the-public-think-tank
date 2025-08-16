@@ -29,7 +29,7 @@ namespace CloudTests.UnitTesting
         public async Task<IActionResult> Test()
         {
 
-            PaginatedContentItemsResponse res = await Read.ContentItems(new ContentFilter());
+            PaginatedContentItemsResponse res = await Read.PaginatedMainContentFeed(new ContentFilter());
 
             return Ok(res);
         }

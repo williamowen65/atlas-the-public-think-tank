@@ -40,7 +40,6 @@ namespace atlas_the_public_think_tank.Data.CRUD
             using var scope = _serviceProvider.CreateScope();
             var services = scope.ServiceProvider;
             var filterIdRepository = services.GetRequiredService<IFilterIdSetRepository>();
-            var voteStatsRepository = services.GetRequiredService<IVoteStatsRepository>();
 
             var paginatedMainContentIds = await filterIdRepository.GetPagedMainContentFeedIds(filter, pageNumber);
             var counts = await filterIdRepository.GetContentCountMainContentFeed(filter);
@@ -316,7 +315,6 @@ namespace atlas_the_public_think_tank.Data.CRUD
             var voteStatsRepository = services.GetRequiredService<IVoteStatsRepository>();
             var appUserRepository = services.GetRequiredService<IAppUserRepository>();
             var breadcrumbRepository = services.GetRequiredService<IBreadcrumbRepository>();
-            var filterIdRepository = services.GetRequiredService<IFilterIdSetRepository>();
 
             var issueContent = await issueRepository.GetIssueById(issueId);
 
@@ -442,31 +440,6 @@ namespace atlas_the_public_think_tank.Data.CRUD
 
         #endregion
 
-
-        #region Read main page content
-        public static async Task<PaginatedContentItemsResponse> ContentItems(ContentFilter filter, int pageNumber = 1)
-        {
-
-            if (_serviceProvider == null)
-                throw new InvalidOperationException("Read class has not been initialized with a service provider.");
-
-            // Create a scope to resolve scoped services
-            using var scope = _serviceProvider.CreateScope();
-            var services = scope.ServiceProvider;
-
-            var issueRepository = services.GetRequiredService<IIssueRepository>();
-            var solutionRepository = services.GetRequiredService<ISolutionRepository>();
-            var voteStatsRepository = services.GetRequiredService<IVoteStatsRepository>();
-            var appUserRepository = services.GetRequiredService<IAppUserRepository>();
-            var breadcrumbRepository = services.GetRequiredService<IBreadcrumbRepository>();
-
-
-            var paginatedMainContentFeed = await Read.PaginatedMainContentFeed(filter, pageNumber);
-
-            return paginatedMainContentFeed;
-        }
-
-        #endregion
 
     }
 }

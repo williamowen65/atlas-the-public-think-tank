@@ -40,7 +40,7 @@ public class HomeController : Controller
         var viewModel = new HomeIndexViewModel();
 
 
-        viewModel.PaginatedContent = await Read.ContentItems(filter);
+        viewModel.PaginatedContent = await Read.PaginatedMainContentFeed(filter);
 
         //viewModel.Categories = new List<Category_ReadVM>();
         return View(viewModel);
@@ -56,8 +56,8 @@ public class HomeController : Controller
     /// <returns></returns>
     [HttpGet]
     [AllowAnonymous]
-    [Route("/home/getPaginatedContent")]
-    public async Task<IActionResult> GetPaginatedContentItems(int currentPage = 1)
+    [Route("/getPaginatedMainContentFeed")]
+    public async Task<JsonResult> GetPaginatedContentItems(int currentPage = 1)
     {
         ContentFilter filter = new ContentFilter();
         if (Request.Cookies.TryGetValue("contentFilter", out string? cookieValue) && cookieValue != null)
@@ -65,7 +65,7 @@ public class HomeController : Controller
             filter = ContentFilter.FromJson(cookieValue);
         }
 
-        PaginatedContentItemsResponse paginatedContentItems = await Read.ContentItems(filter, currentPage);
+        PaginatedContentItemsResponse paginatedContentItems = await Read.PaginatedMainContentFeed(filter, currentPage);
 
         // Render the partial view to a string
         string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Home/_content-item-cards.cshtml", paginatedContentItems.ContentItems);
