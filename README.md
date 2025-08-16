@@ -7,8 +7,6 @@
 <br>
 [![GitHub milestone details](https://img.shields.io/github/milestones/progress/williamowen65/atlas-the-public-think-tank/5)](https://github.com/williamowen65/atlas-the-public-think-tank/milestone/5)
 <br>
-[![GitHub milestone details](https://img.shields.io/github/milestones/progress/williamowen65/atlas-the-public-think-tank/8)](https://github.com/williamowen65/atlas-the-public-think-tank/milestone/8)
-
 # Atlas - The Public Think Tank  
 
 > Atlas is a social media platform designed to connect innovative thinkers with problem-solvers. It provides a space for users to share ideas, collaborate on projects, and engage in meaningful discussions around issues and solutions. The platform aims to foster a community of forward-thinkers who can collectively address complex challenges.
