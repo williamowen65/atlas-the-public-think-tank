@@ -35,7 +35,7 @@
                     </div>
                      @await Html.PartialAsync("~/Views/Shared/Icons/_SubIssues.cshtml")
                     @* Title and this float need to be next to each other for float styling to work. *@
-                    @Model.Title
+                    <span class="card-title">@Model.Title</span>
                 </h5>
                 <small class="text-muted">Posted by @Model.Author?.UserName on @Model.CreatedAt.ToString("MMM dd, yyyy")</small>
              

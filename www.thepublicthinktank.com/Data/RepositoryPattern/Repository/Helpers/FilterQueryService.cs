@@ -5,6 +5,13 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
 {
     public static class FilterQueryService
     {
+
+        private static IConfiguration _config;
+
+        public static void Initialize(IConfiguration config)
+        {
+            _config = config;
+        }
         /// <summary>
         /// Applies common filtering logic to a query of Issues
         /// </summary>
@@ -13,10 +20,13 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
             if (filter == null)
                 return query;
 
+            bool LogFilters = _config.GetValue<bool>("Logging:Conditional:Filters");
             // Log filter info
-            Console.WriteLine("Applying content filters to issues");
-            Console.WriteLine(filter);
-            Console.WriteLine(filter.ToJson());
+            if (LogFilters) { 
+                Console.WriteLine("Applying content filters to issues");
+                Console.WriteLine(filter);
+                Console.WriteLine(filter.ToJson());
+            }
 
             // Filter by average vote range
             if (filter?.AvgVoteRange != null)
@@ -67,10 +77,14 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
             if (filter == null)
                 return query;
 
+            bool LogFilters = _config.GetValue<bool>("Logging:Conditional:Filters");
             // Log filter info
-            Console.WriteLine("Applying content filters to solutions");
-            Console.WriteLine(filter);
-            Console.WriteLine(filter.ToJson());
+            if (LogFilters)
+            {
+                Console.WriteLine("Applying content filters to solutions");
+                Console.WriteLine(filter);
+                Console.WriteLine(filter.ToJson());
+            }
 
             // Filter by average vote range
             if (filter?.AvgVoteRange != null)
@@ -123,10 +137,15 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
             if (filter == null)
                 return query;
 
+
+            bool LogFilters = _config.GetValue<bool>("Logging:Conditional:Filters");
             // Log filter info
-            Console.WriteLine("Applying combined content filters");
-            Console.WriteLine(filter);
-            Console.WriteLine(filter.ToJson());
+            if (LogFilters)
+            {
+                Console.WriteLine("Applying combined content filters");
+                Console.WriteLine(filter);
+                Console.WriteLine(filter.ToJson());
+            }
 
             // Filter for ContentType ("both", "issues", "solutions)
             if (filter.ContentType != null && filter.ContentType != "both")

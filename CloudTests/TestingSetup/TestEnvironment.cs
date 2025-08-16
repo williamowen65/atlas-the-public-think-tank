@@ -26,7 +26,7 @@ namespace CloudTests.TestingSetup
     public class TestEnvironment
     {
         private WebApplicationFactory<atlas_the_public_think_tank.Program> _factory;
-        private SqliteTestFixture2 _sqliteFixture;
+        private SqliteTestFixture _sqliteFixture;
         private string _baseUrl;
         public HttpClient _client;
         public ApplicationDbContext _db;
@@ -34,13 +34,13 @@ namespace CloudTests.TestingSetup
 
         public TestEnvironment() {
             // Create SQLite test fixture
-            _sqliteFixture = new SqliteTestFixture2();
+            _sqliteFixture = new SqliteTestFixture();
             
             // Initialize cookie container
             _cookieContainer = new CookieContainer();
             
             // Use the utility class to configure the test environment
-            (_factory, _client, _baseUrl) = TestEnvironmentUtility2.ConfigureTestEnvironment(_sqliteFixture, _cookieContainer);
+            (_factory, _client, _baseUrl) = TestEnvironmentUtility.ConfigureTestEnvironment(_sqliteFixture, _cookieContainer);
             _db = _sqliteFixture.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         }
 
@@ -223,11 +223,11 @@ namespace CloudTests.TestingSetup
         }
     }
 
-    public class SqliteTestFixture2 : IDisposable
+    public class SqliteTestFixture : IDisposable
     {
         private readonly SqliteConnection _connection;
 
-        public SqliteTestFixture2()
+        public SqliteTestFixture()
         {
             Console.WriteLine("Setting up E2E tests with SQLite");
 
@@ -325,7 +325,7 @@ namespace CloudTests.TestingSetup
             return response;
         }
     }
-    public static class TestEnvironmentUtility2
+    public static class TestEnvironmentUtility
     {
         /// <summary>
         /// Configures the test environment with a SQLite database for integration testing
@@ -334,7 +334,7 @@ namespace CloudTests.TestingSetup
         /// <param name="cookieContainer">Optional cookie container for handling cookies in tests</param>
         /// <returns>A tuple containing the WebApplicationFactory and HttpClient configured for testing</returns>
         public static (WebApplicationFactory<atlas_the_public_think_tank.Program> factory, HttpClient client, string baseUrl)
-            ConfigureTestEnvironment(SqliteTestFixture2 sqliteFixture, CookieContainer cookieContainer = null)
+            ConfigureTestEnvironment(SqliteTestFixture sqliteFixture, CookieContainer cookieContainer = null)
         {
             string baseUrl = "https://localhost:5501";
 

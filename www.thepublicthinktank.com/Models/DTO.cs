@@ -43,4 +43,11 @@ namespace atlas_the_public_think_tank.Models
         public Guid Id { get; set; }
         public ContentType Type { get; set; }
     }
+
+
+    public class ApplicationInsightsSettings
+    {
+        public string ConnectionString { get; set; } = string.Empty;
+        public bool EnableSendBeacon { get; set; } = true;
+    }
 }
