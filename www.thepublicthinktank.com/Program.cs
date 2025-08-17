@@ -4,6 +4,7 @@ using atlas_the_public_think_tank.Data.RepositoryPattern;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Models;
 using atlas_the_public_think_tank.Models.Database;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -38,6 +39,11 @@ public class Program
                 options.UseSqlServer(connectionString)
                        //.EnableSensitiveDataLogging()
                        ); // TODO: Disable this logging in production
+
+
+            // Add OpenTelemetry and configure it to use Azure Monitor.
+            builder.Services.AddOpenTelemetry().UseAzureMonitor();
+
         }
 
 
@@ -69,7 +75,7 @@ public class Program
 
         builder.Services.Configure<ApplicationInsightsSettings>(options =>
         {
-            var connectionString = builder.Configuration.GetSection("ApplicationInsights")["ConnectionString"];
+            var connectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
             if (connectionString == null)
             {
                 throw new InvalidOperationException("ApplicationInsights ConnectionString is not configured.");
