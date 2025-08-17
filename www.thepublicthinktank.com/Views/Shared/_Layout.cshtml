@@ -1,4 +1,13 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.Extensions.Options
+@using atlas_the_public_think_tank.Models
+@inject IOptions<ApplicationInsightsSettings> AppInsightsSettings
+
+@{
+
+    Console.WriteLine("t");
+}
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -55,6 +64,29 @@
     <script src="~/js/LeftSidebar/dual-slider-input.js" asp-append-version="true"></script> 
 
     <script src="~/js/pagination.js" asp-append-version="true"></script>
+
+    <script>
+
+        @*
+        
+            This application insights connection string is sensitive
+
+            For local development - it is set in secrets.json
+                It is fine though, because it is not shared to github.
+            For Staging and Production - It is set in the cloud, but it will not be secure because
+                there is no way to hide it from the client.
+            For these environments it will need to be required to configure Network Isolation settings
+                and only allow the deployment to interact with the insights
+        
+        *@
+
+        let configObj = {
+            connectionString: "@AppInsightsSettings.Value.ConnectionString",
+            enableSendBeacon: @AppInsightsSettings.Value.EnableSendBeacon.ToString().ToLower()
+        };
+    </script>
+    <script src="~/js/ApplicationInsights/index.js"></script>
+    <script src="~/js/ApplicationInsights/ContentNavigation.js"></script>
 
     @* Select2 JS *@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>

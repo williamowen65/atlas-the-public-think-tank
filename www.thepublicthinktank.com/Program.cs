@@ -1,9 +1,12 @@
+using atlas_the_public_think_tank.Data;
+using atlas_the_public_think_tank.Data.CRUD;
+using atlas_the_public_think_tank.Data.RepositoryPattern;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
+using atlas_the_public_think_tank.Models;
+using atlas_the_public_think_tank.Models.Database;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using atlas_the_public_think_tank.Data;
-using atlas_the_public_think_tank.Models.Database;
-using atlas_the_public_think_tank.Data.RepositoryPattern;
-using atlas_the_public_think_tank.Data.CRUD;
 
 namespace atlas_the_public_think_tank;
 
@@ -13,6 +16,10 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        /* See information on appsettings and environment variables: https://github.com/williamowen65/atlas-the-public-think-tank/wiki/3.2.%20Appsettings%20and%20Environment%20Variables */
+        Console.WriteLine($"Using environment: {builder.Environment.EnvironmentName}");
+
+        // When running the test project, TestEnvironmentUtility intercepts the builder and sets the Environment to testing
         var isTesting = builder.Environment.EnvironmentName == "Testing"
             || builder.Configuration["ASPNETCORE_ENVIRONMENT"] == "Testing";
 
@@ -30,8 +37,13 @@ public class Program
             // and configure it to use SQL Server with the retrieved connection string
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(connectionString)
-                       .EnableSensitiveDataLogging()
+                       //.EnableSensitiveDataLogging()
                        ); // TODO: Disable this logging in production
+
+
+            // Add OpenTelemetry and configure it to use Azure Monitor.
+            builder.Services.AddOpenTelemetry().UseAzureMonitor();
+
         }
 
 
@@ -61,10 +73,24 @@ public class Program
         // Register all repositories with one extension method
         builder.Services.AddRepositories();
 
+        builder.Services.Configure<ApplicationInsightsSettings>(options =>
+        {
+            var connectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+            if (connectionString == null)
+            {
+                throw new InvalidOperationException("ApplicationInsights ConnectionString is not configured.");
+            }
+
+            options.ConnectionString = connectionString;
+            options.EnableSendBeacon = true;
+        });
+
         var app = builder.Build();
 
         // Initialize the static Read class with the service provider
         Read.Initialize(app.Services);
+
+        FilterQueryService.Initialize(builder.Configuration);
 
         // =====================================
         // Middleware and Routing Configuration
