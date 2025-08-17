@@ -1,6 +1,8 @@
 ﻿using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Data.CRUD;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
+using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
+using atlas_the_public_think_tank.Models;
 using atlas_the_public_think_tank.Models.Database;
 using atlas_the_public_think_tank.Models.ViewModel;
 using atlas_the_public_think_tank.Utilities;
@@ -9,6 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace atlas_the_public_think_tank.Controllers
 {
@@ -22,11 +25,16 @@ namespace atlas_the_public_think_tank.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IWebHostEnvironment _environment;
 
-        public IssueController(ApplicationDbContext context, UserManager<AppUser> userManager)
+        public IssueController(
+            ApplicationDbContext context, 
+            UserManager<AppUser> userManager, 
+            IWebHostEnvironment env)
         {
             _context = context;
             _userManager = userManager;
+            _environment = env;
         }
 
         #region Issue Page
@@ -245,84 +253,55 @@ namespace atlas_the_public_think_tank.Controllers
 
         #region Vote on an issue
 
-        /*
 
+        /// <summary>
+        /// This method is used to cast a vote on a issue post.
+        /// </summary>
+        /// <param name="model"></param>
+        [AllowAnonymous] // There will be an error sent if user is not logged in
+        [HttpPost]
+        [Route("/issue/vote")]
+        public async Task<IActionResult> IssueVote([FromBody] UserVote_Issue_UpsertVM model)
+        {
 
-            /// <summary>
-            /// This method is used to cast a vote on a issue post.
-            /// </summary>
-            /// <param name="model"></param>
-            [HttpPost]
-            [Route("/issue/vote")]
-            public async Task<IActionResult> IssueVote(UserVote_Issue_CreateVM model)
-            {
-                if (!ModelState.IsValid)
+            if (ModelState.IsValid) { 
+                // Add specific validation checks
+                if (model.IssueID == Guid.Empty)
                 {
-                    return Json(new { success = false, message = "Invalid vote data" });
+                    ModelState.AddModelError("IssueID", "IssueID: cannot be empty");
                 }
 
-                try
+                if (model.VoteValue < 0 || model.VoteValue > 10) // Adjust range as needed
                 {
-                    var user = await _userManager.GetUserAsync(User);
-
-                    if (user == null)
-                    {
-                        return Json(new { success = false, message = "You must login in order to vote" });
-                    }
-
-                    // Check if the user has already voted on this issue
-                    var existingVote = await _context.IssueVotes
-                        .OfType<IssueVote>()
-                        .FirstOrDefaultAsync(v => v.UserID == user.Id && v.IssueID == model.IssueID);
-
-                    if (existingVote != null)
-                    {
-                        // Update existing vote
-                        existingVote.VoteValue = (int)model.VoteValue;
-                        existingVote.ModifiedAt = DateTime.UtcNow;
-                        _context.IssueVotes.Update(existingVote);
-                    }
-                    else
-                    {
-                        // Create new vote
-                        IssueVote vote = new IssueVote
-                        {
-                            User = user,
-                            UserID = user.Id,
-                            IssueID = model.IssueID,
-                            VoteValue = (int)model.VoteValue,
-                            CreatedAt = DateTime.UtcNow
-                        };
-
-                        _context.IssueVotes.Add(vote);
-                    }
-
-                    await _context.SaveChangesAsync();
-
-                    // get updated stats
-                    double average = await _context.IssueVotes
-                         .OfType<IssueVote>()
-                         .Where(v => v.IssueID == model.IssueID)
-                         .AverageAsync(v => v.VoteValue);
-                    int count = await _context.IssueVotes
-                         .OfType<IssueVote>()
-                         .Where(v => v.IssueID == model.IssueID)
-                         .CountAsync();
-
-                    return Json(new
-                    {
-                        success = true,
-                        message = "Vote saved successfully",
-                        average,
-                        count
-                    });
-                }
-                catch (Exception ex)
-                {
-                    return Json(new { success = false, message = ex.Message });
+                    ModelState.AddModelError("VoteValue", "VoteValue: must be between 0 and 10 (inclusive)");
                 }
             }
-        */
+
+            if (!ModelState.IsValid)
+            {
+                return Json(new { success = false, message = "Invalid vote data", errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage) });
+            }
+
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Unauthorized(new { success = false, message = "You must login in order to vote" });
+            }
+
+            try
+            {
+                JsonVoteResponse? voteResponse = await Upsert.IssueVote(model, user);   
+                // Successful path
+                return Json(voteResponse);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message});
+            }
+        }
+        
+        
         #endregion
     }
 }

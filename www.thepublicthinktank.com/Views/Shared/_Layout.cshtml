@@ -69,14 +69,16 @@
 
         @*
         
-            This application insights connection string is sensitive
+           This application insights connection string is sensitive. No matter what, the client will have access to the key because it is used in client side click tracking.
 
-            For local development - it is set in secrets.json
-                It is fine though, because it is not shared to github.
-            For Staging and Production - It is set in the cloud, but it will not be secure because
-                there is no way to hide it from the client.
-            For these environments it will need to be required to configure Network Isolation settings
-                and only allow the deployment to interact with the insights
+            - For local development 
+              - it is set in secrets.json
+              - it is not shared to github.
+            - For Staging and Production 
+              - It is set in the cloud, 
+              - but it will still be visible to the client. 
+              - There is no way to hide it from the client.
+              - For these environments Network Isolation settings need to be configured to only allow the deployment to interact with the insights
         
         *@
 

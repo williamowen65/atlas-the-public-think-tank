@@ -84,6 +84,8 @@ function getDialElements(issueId) {
 
     const containerId = `vote-toggle-container-${issueId}`;
     const container = document.getElementById(containerId);
+    const card = container.closest(".card")
+    const contentType = card.getAttribute("data-content-type")
 
     if (!container) {
         console.error(`Container not found for issue ID: ${issueId}`);
@@ -99,7 +101,7 @@ function getDialElements(issueId) {
     const radios = Array.from(container.querySelectorAll(`input[name="${dialId}"]`));
 
     return {
-        container, dialId, options, radios
+        container, dialId, options, radios, contentType
     }
 }
 
@@ -227,36 +229,41 @@ function setupRadioChangeEvents(radios, saveVoteDebounced, container, state) {
     });
 }
 
-/**
- * Creates a debounced function for saving votes to the server
- */
-function createDebouncedSaveVote(contentId) {
-    const { container, dialId } = getDialElements(contentId);
-    // Function to save vote to server with debouncing
-    return debounce(function(voteValue) {
-        console.log(`Saving vote ${voteValue} for issue ${contentId}`);
+function saveVote(voteValue, {
+    contentId,
+    container,
+    dialId,
+    contentType
+}) {
+    console.log(`Saving vote ${voteValue} for ${contentType} ${contentId}`);
 
-        const contentType = container.getAttribute("data-content-type")
 
-        const formData = new FormData();
-        formData.append(`${contentType}ID`, contentId);
-        formData.append('VoteValue', voteValue);
-        
-        const voteNotCasted = "Vote not casted"
+    const formData = new FormData();
+    formData.append(`${contentType}ID`, contentId);
+    formData.append('VoteValue', voteValue);
 
-        fetch(`/${contentType}/Vote`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
+
+    fetch(`/${contentType}/Vote`, {
+        method: 'POST',
+        body: JSON.stringify({
+            [`${contentType}ID`]: contentId,
+            'VoteValue': voteValue
+        }),
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+        .then(async (response) => {
+
+            if (!response.ok) {
+
+                const test = await response.json();
+
+                throw new Error(test.message);
             }
+            return await response.json();
         })
-            .then(async (response) => {
-                if (!response.ok) {
-                    throw new Error(voteNotCasted);
-                }
-                return await response.json();
-            })
         .then(data => {
             console.log('Vote saved successfully:', data);
             // Optionally update the UI based on response
@@ -277,60 +284,74 @@ function createDebouncedSaveVote(contentId) {
             }
         })
         .catch(error => {
-    console.error('Error saving vote:', error);
+            console.error('Error saving vote:', error);
 
-   if (error.message == voteNotCasted) {
-        // Select dial number 5
-        const defaultRadio = document.querySelector(`input[name="${dialId}"][value="5"]`);
-        
-        if (defaultRadio) {
-            // Add class to temporarily prevent observer
-            container.classList.add('temporarily-prevent-observer');
-            
-            // Set checked state
-            defaultRadio.checked = true;
-            
-            // Find the label for scrolling
-            const label = document.querySelector(`label[for="${defaultRadio.id}"]`);
-            if (label) {
-                const labelTop = label.offsetTop;
-                const containerHeight = container.clientHeight;
-                const labelHeight = label.clientHeight;
-                
-                // Just scroll to position without triggering the change event
-                container.scrollTo({
-                    top: labelTop - (containerHeight / 2) + (labelHeight / 2),
-                    behavior: 'smooth'
-                });
-            }
-            
-            // Remove the class after a short delay
-            setTimeout(() => {
+                // Select dial number 5
+                const defaultRadio = document.querySelector(`input[name="${dialId}"][value="5"]`);
 
-                client_TopBar_Alert({
-                    type: 'warning',
-                    message: `
-                    <h4>Vote not cast</h4> 
-                    <p>You need to be logged in to cast a vote.</p>
+                if (defaultRadio) {
+                    // Add class to temporarily prevent observer
+                    container.classList.add('temporarily-prevent-observer');
+
+                    // Set checked state
+                    defaultRadio.checked = true;
+
+                    // Find the label for scrolling
+                    const label = document.querySelector(`label[for="${defaultRadio.id}"]`);
+                    if (label) {
+                        const labelTop = label.offsetTop;
+                        const containerHeight = container.clientHeight;
+                        const labelHeight = label.clientHeight;
+
+                        // Just scroll to position without triggering the change event
+                        container.scrollTo({
+                            top: labelTop - (containerHeight / 2) + (labelHeight / 2),
+                            behavior: 'smooth'
+                        });
+                    }
+
+                    // Remove the class after a short delay
+                    setTimeout(() => {
+
+                        client_TopBar_Alert({
+                            type: 'warning',
+                            message: `
+                    <h4>Vote not cast</h4>
+                    <p>${error.message}</p>
                     `,
-                });
+                        });
 
-                client_CardFooter_Alert({
-                    cardId: contentId,
-                    type: 'plaintext',
-                    message: `
-                  Vote not cast - Login required
+                        client_CardFooter_Alert({
+                            cardId: contentId,
+                            type: 'plaintext',
+                            message: `
+                  Vote not cast - ${error.message}
                     `,
-                    dismissible: false
-                });
-            }, 500); 
-            setTimeout(() => {
-                container.classList.remove('temporarily-prevent-observer');
-            }, 1000) // 1 second delay to allow scroll to finish
-        }
-    }
-});
+                            dismissible: false
+                        });
+                    }, 500);
+                    setTimeout(() => {
+                        container.classList.remove('temporarily-prevent-observer');
+                    }, 1000) // 1 second delay to allow scroll to finish
+                }
+        });
+}
+
+/**
+ * Creates a debounced function for saving votes to the server
+ */
+function createDebouncedSaveVote(contentId) {
+    const { container, dialId, contentType } = getDialElements(contentId);
+    // Function to save vote to server with debouncing
+    return debounce(function (voteValue) {
+        saveVote(voteValue, {
+            contentId,
+            container,
+            dialId,
+            contentType
+        })
     }, 800); // 800ms debounce delay
+//
 }
 
 

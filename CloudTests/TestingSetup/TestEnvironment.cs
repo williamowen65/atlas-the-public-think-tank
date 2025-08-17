@@ -30,7 +30,7 @@ namespace CloudTests.TestingSetup
         private string _baseUrl;
         public HttpClient _client;
         public ApplicationDbContext _db;
-        private CookieContainer _cookieContainer;
+        public CookieContainer _cookieContainer;
 
         public TestEnvironment() {
             // Create SQLite test fixture
@@ -44,6 +44,37 @@ namespace CloudTests.TestingSetup
             _db = _sqliteFixture.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         }
 
+        /// <summary>
+        /// Sends a POST request to the specified URL with JSON payload and returns the deserialized response
+        /// </summary>
+        /// <typeparam name="TResult">The type to deserialize the response to</typeparam>
+        /// <typeparam name="TPayload">The type of the payload to send</typeparam>
+        /// <param name="url">The URL to post to</param>
+        /// <param name="payload">The payload to send as JSON</param>
+        /// <returns>The deserialized response</returns>
+        public async Task<TResult> fetchPost<TResult, TPayload>(string url, TPayload payload)
+        {
+            // Create the content from the payload
+            var jsonContent = new StringContent(
+                JsonSerializer.Serialize(payload),
+                Encoding.UTF8,
+                "application/json");
+
+            // Send the request
+            var response = await SendRequestAsync(HttpMethod.Post, url, jsonContent);
+
+            // Read the response content
+            var json = await response.Content.ReadAsStringAsync();
+
+            // Deserialize and return the result
+            #pragma warning disable CS8603 // Possible null reference return.
+            return JsonSerializer.Deserialize<TResult>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+            #pragma warning restore CS8603 // Possible null reference return.
+        }
+
         public async Task<IDocument> fetchHTML(string url)
         {
             // Create a new request message to ensure cookies are attached
@@ -55,6 +86,7 @@ namespace CloudTests.TestingSetup
 
             return await TextHtmlToDocument(html);
         }
+
 
         public async Task<IDocument> TextHtmlToDocument(string html)
         {
@@ -203,7 +235,7 @@ namespace CloudTests.TestingSetup
             }
             
             // Debug output to help diagnose issues
-            var uri = request.RequestUri ?? new Uri(_baseUrl + url);
+            var uri = new Uri(_baseUrl);
             var cookieHeader = _cookieContainer.GetCookieHeader(uri);
             Console.WriteLine($"Request to {uri}. Cookies: {cookieHeader}");
             

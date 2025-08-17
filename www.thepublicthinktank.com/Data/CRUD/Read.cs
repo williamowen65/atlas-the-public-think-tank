@@ -92,7 +92,8 @@ namespace atlas_the_public_think_tank.Data.CRUD
                                 GenericContentVotes = issue.VoteStats.IssueVotes,
                                 AverageVote = issue.VoteStats.AverageVote,
                                 ContentID = issue.VoteStats.ContentID,
-                                TotalVotes = issue.VoteStats.TotalVotes
+                                TotalVotes = issue.VoteStats.TotalVotes,
+                                ContentType = ContentType.Issue
                             }
 
 
@@ -122,7 +123,8 @@ namespace atlas_the_public_think_tank.Data.CRUD
                                 GenericContentVotes = solution.VoteStats.SolutionVotes,
                                 AverageVote = solution.VoteStats.AverageVote,
                                 ContentID = solution.VoteStats.ContentID,
-                                TotalVotes = solution.VoteStats.TotalVotes
+                                TotalVotes = solution.VoteStats.TotalVotes,
+                                ContentType = ContentType.Solution
                             }
                         };
                     }

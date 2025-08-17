@@ -1,6 +1,7 @@
 ﻿using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Data.CRUD;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
+using atlas_the_public_think_tank.Models;
 using atlas_the_public_think_tank.Models.Database;
 using atlas_the_public_think_tank.Models.ViewModel;
 using atlas_the_public_think_tank.Utilities;
@@ -183,83 +184,58 @@ namespace atlas_the_public_think_tank.Controllers
             return View(solution);
         }
 
-        /*
+        #region Vote on a solution
 
 
-            /// <summary>
-            /// This method is used to cast a vote on a solution post.
-            /// </summary>
-            /// <param name="model"></param>
-            [HttpPost]
-            [Route("/solution/vote")]
-            public async Task<IActionResult> SolutionVote(UserVote_Solution_CreateVM model)
+        /// <summary>
+        /// This method is used to cast a vote on a solution post.
+        /// </summary>
+        /// <param name="model"></param>
+        [AllowAnonymous] // There will be an error sent if user is not logged in
+        [HttpPost]
+        [Route("/solution/vote")]
+        public async Task<IActionResult> IssueVote([FromBody] UserVote_Solution_UpsertVM model)
+        {
+
+            if (ModelState.IsValid)
             {
-                if (!ModelState.IsValid)
+                // Add specific validation checks
+                if (model.SolutionID == Guid.Empty)
                 {
-                    return Json(new { success = false, message = "Invalid vote data" });
+                    ModelState.AddModelError("SolutionID", "SolutionID: cannot be empty");
                 }
 
-                try
+                if (model.VoteValue < 0 || model.VoteValue > 10) // Adjust range as needed
                 {
-                    var user = await _userManager.GetUserAsync(User);
-
-                    if (user == null)
-                    {
-                        return Json(new { success = false, message = "You must login in order to vote" });
-                    }
-
-                    // Check if the user has already voted on this solution
-                    var existingVote = await _context.SolutionVotes
-                        .OfType<SolutionVote>()
-                        .FirstOrDefaultAsync(v => v.UserID == user.Id && v.SolutionID == model.SolutionID);
-
-                    if (existingVote != null)
-                    {
-                        // Update existing vote
-                        existingVote.VoteValue = (int)model.VoteValue;
-                        existingVote.ModifiedAt = DateTime.UtcNow;
-                        _context.SolutionVotes.Update(existingVote);
-                    }
-                    else
-                    {
-                        // Create new vote
-                        SolutionVote vote = new SolutionVote
-                        {
-                            User = user,
-                            UserID = user.Id,
-                            SolutionID = model.SolutionID,
-                            VoteValue = (int)model.VoteValue,
-                            CreatedAt = DateTime.UtcNow
-                        };
-
-                        _context.SolutionVotes.Add(vote);
-                    }
-
-                    await _context.SaveChangesAsync();
-
-                    // get updated stats
-                    double average = await _context.SolutionVotes
-                         .OfType<SolutionVote>()
-                         .Where(v => v.SolutionID == model.SolutionID)
-                         .AverageAsync(v => v.VoteValue);
-                    int count = await _context.SolutionVotes
-                         .OfType<SolutionVote>()
-                         .Where(v => v.SolutionID == model.SolutionID)
-                         .CountAsync();
-
-                    return Json(new
-                    {
-                        success = true,
-                        message = "Vote saved successfully",
-                        average,
-                        count
-                    });
-                }
-                catch (Exception ex)
-                {
-                    return Json(new { success = false, message = ex.Message });
+                    ModelState.AddModelError("VoteValue", "VoteValue: must be between 0 and 10 (inclusive)");
                 }
             }
-        */
+
+            if (!ModelState.IsValid)
+            {
+                return Json(new { success = false, message = "Invalid vote data", errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage) });
+            }
+
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Unauthorized(new { success = false, message = "You must login in order to vote" });
+            }
+
+            try
+            {
+                JsonVoteResponse? voteResponse = await Upsert.SolutionVote(model, user);
+                // Successful path
+                return Json(voteResponse);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+
+        #endregion
     }
 }
