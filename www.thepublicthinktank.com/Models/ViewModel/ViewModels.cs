@@ -170,9 +170,15 @@ namespace atlas_the_public_think_tank.Models.ViewModel
     public class UserVote_Generic_Cacheable_ReadVM
     {
 
-        //public ContentType ContentType { get; set; } // "Issue", "Solution", or "Comment"
         public Guid ContentID { get; set; }
 
+        /// <summary>
+        /// ContentType is track here to help with examining data, but this property isn't 
+        /// used in the DOM. ContentType is available in the DOM, but that content type is from a parent
+        /// </summary>
+        /// <remarks>
+        /// This adds some extra data to the cache, but makes the cache more readable.
+        /// </remarks>
         public ContentType ContentType { get; set; }
    
 
@@ -191,7 +197,7 @@ namespace atlas_the_public_think_tank.Models.ViewModel
         /// <summary>
         /// IssueVotes are stored as a map in memory for ease of update in the cache.
         /// </summary>
-        public Dictionary<Guid, Vote_ReadVM> IssueVotes { get; set; } = new Dictionary<Guid, Vote_ReadVM>();
+        public Dictionary<Guid, Vote_Cacheable_ReadVM> IssueVotes { get; set; } = new Dictionary<Guid, Vote_Cacheable_ReadVM>();
     }
 
     public class UserVote_Solution_ReadVM : UserVote_Generic_Cacheable_ReadVM
@@ -199,7 +205,7 @@ namespace atlas_the_public_think_tank.Models.ViewModel
         /// <summary>
         /// IssueVotes are stored as a map in memory for ease of update in the cache.
         /// </summary>
-        public Dictionary<Guid, Vote_ReadVM> SolutionVotes { get; set; } = new Dictionary<Guid, Vote_ReadVM>();
+        public Dictionary<Guid, Vote_Cacheable_ReadVM> SolutionVotes { get; set; } = new Dictionary<Guid, Vote_Cacheable_ReadVM>();
 
 
     }
@@ -209,43 +215,43 @@ namespace atlas_the_public_think_tank.Models.ViewModel
         /// <summary>
         /// IssueVotes are stored as a map in memory for ease of update in the cache.
         /// </summary>
-        public Dictionary<Guid, Vote_ReadVM> GenericContentVotes { get; set; } = new Dictionary<Guid, Vote_ReadVM>();
+        public Dictionary<Guid, Vote_Cacheable_ReadVM> GenericContentVotes { get; set; } = new Dictionary<Guid, Vote_Cacheable_ReadVM>();
     }
 
 
 
 
 
-    public class Vote_ReadVM
+    public class Vote_Cacheable_ReadVM
     {
         public Guid VoteID { get; set; }
         public Guid UserID { get; set; }
         public int VoteValue { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? ModifiedAt { get; set; }
+
+
     }
 
 
     /// <summary>
     /// ViewModel for creating a vote on an issue
     /// </summary>
-    public class UserVote_Issue_CreateVM
+    public class UserVote_Issue_UpsertVM
     {
-        public Guid IssueID { get; set; }
-        public int VoteValue { get; set; }
+        public required Guid IssueID { get; set; }
+        public required int VoteValue { get; set; }
 
-        //public AppUser User { get; set; } // The user is captured via injection
     }
 
     /// <summary>
     /// ViewModel for creating a vote on an solution
     /// </summary>
-    public class UserVote_Solution_CreateVM
+    public class UserVote_Solution_UpsertVM
     {
-        public Guid SolutionID { get; set; }
-        public int VoteValue { get; set; }
+        public required Guid SolutionID { get; set; }
+        public required int VoteValue { get; set; }
 
-        //public AppUser User { get; set; } // The user is captured via injection
     }
 
     /// <summary>

@@ -50,4 +50,12 @@ namespace atlas_the_public_think_tank.Models
         public string ConnectionString { get; set; } = string.Empty;
         public bool EnableSendBeacon { get; set; } = true;
     }
+
+    public class JsonVoteResponse
+    {
+        public string Message { get; set; }
+        public bool Success { get; set; }
+        public double? Average { get; set; }
+        public int? Count { get; set; }
+    }
 }

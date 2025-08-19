@@ -1,5 +1,7 @@
 ﻿using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
+using atlas_the_public_think_tank.Models.Database;
+using CloudTests.TestingSetup.TestingData;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -61,6 +63,30 @@ namespace CloudTests.TestingSetup
             // Verify the contentFilter cookie was received by the server
             Assert.IsNotNull(serverCookies, "Server should return cookie dictionary");
             Assert.IsTrue(serverCookies.ContainsKey("contentFilter"), "Server should receive the contentFilter cookie");
+        }
+
+
+
+        [TestMethod]
+        public async Task A_User_Can_Login_Via_Helper_Methods()
+        {
+            // Arrange
+            AppUser testUser = Users.CreateTestUser1(_db);
+            string email = "testuser@example.com";
+            string password = "Password123!";
+
+            // Act - Attempt to login via the endpoint
+            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
+
+            // Assert - Verify login was successful
+            Assert.IsTrue(loginSuccess, "Login should be successful");
+
+            var requestMessage = new HttpRequestMessage(HttpMethod.Get, "/api/debug/cookies");
+            var debugResponse = await _env._client.SendAsync(requestMessage);
+            debugResponse.EnsureSuccessStatusCode();
+            var cookieDebug = await debugResponse.Content.ReadAsStringAsync();
+
+            Console.WriteLine($"Debug cookies from server: {cookieDebug}");
         }
     }
 }

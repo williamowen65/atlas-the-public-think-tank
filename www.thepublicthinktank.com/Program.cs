@@ -89,6 +89,7 @@ public class Program
 
         // Initialize the static Read class with the service provider
         Read.Initialize(app.Services);
+        Upsert.Initialize(app.Services);
 
         FilterQueryService.Initialize(builder.Configuration);
 
