@@ -229,6 +229,8 @@ function setupRadioChangeEvents(radios, saveVoteDebounced, container, state) {
     });
 }
 
+const pageLoadMoment = Date.now();
+
 function saveVote(voteValue, {
     contentId,
     container,
@@ -236,6 +238,21 @@ function saveVote(voteValue, {
     contentType
 }) {
     console.log(`Saving vote ${voteValue} for ${contentType} ${contentId}`);
+
+    /*
+    There is a known error where the voting dial accidentally
+    votes on load (sometimes). 
+    To prevent those from triggering a vote, there is a check. 
+    Voting can only begin one second after page load
+    */
+    const currentMoment = Date.now();
+    const timeSincePageLoad = currentMoment - pageLoadMoment;
+
+    // Prevent votes within the first second after page load
+    if (timeSincePageLoad < 1000) {
+        console.log('Vote prevented - too soon after page load');
+        return; // Exit the function without saving the vote
+    }
 
 
     const formData = new FormData();
@@ -518,6 +535,18 @@ const observer = new MutationObserver(mutations => {
 });
 
 
+
+/*
+ There is an error where sometimes the card doesn't get initialized
+ because dom elements are added before the observer is ready
+ This is an attempt to stop that error (set 8-19-2025)
+*/
+document.addEventListener("DOMContentLoaded", () => {
+    Array.from(document.querySelectorAll(".card")).forEach((node) => {
+        const issueId = node.id;
+        initializeCard(issueId);
+    })
+})
 observer.observe(document, { childList: true, subtree: true });
 
 
