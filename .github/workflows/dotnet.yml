@@ -6,8 +6,6 @@ name: .NET
 on:
   push:       # Trigger on any push to any branch
     branches: ["*"]  # Wildcard to match any branch
-  pull_request:  # Trigger on any pull request to any branch
-    branches: ["*"]  # Wildcard to match any branch
 
 jobs:
   E2E_Tests:
