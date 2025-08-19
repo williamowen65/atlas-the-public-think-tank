@@ -542,7 +542,7 @@ const observer = new MutationObserver(mutations => {
  This is an attempt to stop that error (set 8-19-2025)
 */
 document.addEventListener("DOMContentLoaded", () => {
-    Array.from(document.querySelectorAll(".card")).forEach((node) => {
+    Array.from(document.querySelectorAll(".issue-card, .solution-card")).forEach((node) => {
         const issueId = node.id;
         initializeCard(issueId);
     })

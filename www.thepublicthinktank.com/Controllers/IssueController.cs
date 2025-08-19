@@ -154,28 +154,17 @@ namespace atlas_the_public_think_tank.Controllers
 
         #region Create New Issue Page
 
-        /*
             /// <summary>
             /// This method is used to return the create issue page.
             /// </summary>
             [Route("/create-issue")]
             public async Task<IActionResult> CreateIssue(Guid? parentIssueID, Guid? parentSolutionID)
             {
-                Guid contentId = parentIssueID ?? parentSolutionID ?? Guid.Empty;
+                CreateIssueViewModel model = new CreateIssueViewModel();
 
-                Issue_CreateVM newIssue = new()
-                {
-                    Categories = _context.Categories.ToList(),
-                    Scopes = _context.Scopes.ToList(),
-                    ParentIssueID = parentIssueID,
-                    ParentSolutionID = parentSolutionID,
-                };
-
-                ViewBag.BreadcrumbTags = await _crud.BreadcrumbAccessor.GetContentBreadcrumb(contentId); 
-
-
-                return View(newIssue);
+                return View(model);
             }
+        /*
 
 
 
