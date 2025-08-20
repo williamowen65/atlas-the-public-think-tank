@@ -1,5 +1,6 @@
 ﻿@using System.ComponentModel.DataAnnotations
-@model CreateIssueViewModel;
+@using atlas_the_public_think_tank.Models.Database
+@model CreateIssuePageViewModel;
 
 @{
     // Console.WriteLine("test");
@@ -7,10 +8,10 @@
 
 
 
-<div class="m-1 create-issue-page">
+<div class="m-1 create-issue-page" >
 
     @* Create new issue description  *@
-    <div class="border-1 border card">
+    <form class="border-1 border card" asp-controller="Issue" asp-action="CreateIssue" method="post">
         <h5 class="card-header text-center ">
             Create a new Issue
         </h5>
@@ -22,12 +23,12 @@
 
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormInput.cshtml", Model, new ViewDataDictionary(ViewData)
+                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormInput.cshtml", Model.MainIssue, new ViewDataDictionary(ViewData)
                 {
                     { "PropertyName", "Title" },
                 })
 
-                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormMarkdownEditor/FormMarkdownEditor.cshtml", Model, new ViewDataDictionary(ViewData)
+                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormMarkdownEditor/FormMarkdownEditor.cshtml", Model.MainIssue, new ViewDataDictionary(ViewData)
                 {
                     { "PropertyName", "Content" },
                     { "Rows", 10 },
@@ -89,27 +90,26 @@
 
             </div>
         </div>
-    </div>
+        <div class="card-footer">
+            <div class="col-6 mx-auto d-flex">
+                <button asp-controller="Issue" asp-action="CreateIssue" asp-route-contentStatus="@ContentStatus.Draft" class="btn btn-primary fw-bold fs-4" type="submit">Save Draft</button>
+                <button id="publish-issue" asp-route-contentStatus="@ContentStatus.Published" class="btn btn-primary fw-bold fs-4 ms-2 flex-grow-1" type="submit">Publish Issue</button>
+            </div>
+        </div>
+    </form>
 
     @* Solutions will be set in this container*@
     <div class="issue-solutions"></div>
 
 
 
-    <div class="d-grid gap-2 col-6 mx-auto mt-2">
-        <button id="add-solution" class="btn btn-success fw-bold fs-4" type="button">Add Solution</button>
-        <div class="d-flex">
-
-        <button class="btn btn-primary fw-bold fs-4" type="button">Save Draft</button>
-        <button id="publish-issue" class="btn btn-primary fw-bold fs-4 ms-2 flex-grow-1" type="button">Publish Issue</button>
-        </div>
-        @* <button class="btn btn-primary fw-bold fs-4" type="button">Publish Issue & Solutions</button> *@
-        @* <button type="submit" class="btn btn-primary">Create Post</button> *@
-        @* <a asp-action="Index" class="btn btn-secondary">Cancel</a> *@
+   
+    <div class="col-6 mx-auto mt-2 d-flex">
+        <button id="add-solution" class="btn btn-success fw-bold fs-4 flex-grow-1" type="button">Add Solution</button>
     </div>
 
     <template id="create-solution-template">
-        <div class="border-1 border card">
+        <form class="border-1 border card" asp-controller="Solution" asp-action="CreateSolution" method="post">
             <h5 class="card-header text-center ">
                 Solution <span class="solution-count"></span>
             </h5>
@@ -178,7 +178,13 @@
                  
                 </div>
             </div>
-        </div>
+            <div class="card-footer">
+                <div class="col-6 mx-auto d-flex">
+                    <button asp-route-contentStatus="@ContentStatus.Draft" class="btn btn-primary fw-bold fs-4" type="submit">Save Draft</button>
+                    <button asp-route-contentStatus="@ContentStatus.Published" class="publish-solution btn btn-primary fw-bold fs-4 ms-2 flex-grow-1" type="submit">Publish Solution</button>
+                </div>
+            </div>
+        </form>
     </template>
 
 </div>
@@ -248,12 +254,7 @@
                 setupFormField(textarea.id, maxLength, field.id);
             });
 
-            // Update the publish button text
-            if(solutionCount == 1) {
-                publishIssueBtn.innerText = "Publish Issue and Solution";
-            } else if(solutionCount > 1){
-                publishIssueBtn.innerText = "Publish Issue and Solutions";
-            }
+           
         });
 
             

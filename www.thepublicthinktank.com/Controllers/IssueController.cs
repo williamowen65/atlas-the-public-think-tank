@@ -158,12 +158,28 @@ namespace atlas_the_public_think_tank.Controllers
             /// This method is used to return the create issue page.
             /// </summary>
             [Route("/create-issue")]
-            public async Task<IActionResult> CreateIssue(Guid? parentIssueID, Guid? parentSolutionID)
+            public IActionResult CreateIssue(Guid? parentIssueID, Guid? parentSolutionID)
             {
-                CreateIssueViewModel model = new CreateIssueViewModel();
+                CreateIssuePageViewModel model = new CreateIssuePageViewModel();
 
                 return View(model);
             }
+
+
+        /// <summary>
+        /// This method is used to create a new issue post.
+        /// </summary>
+        /// <param name="model"></param>
+        [HttpPost]
+        [Route("/create-issue")]
+        [ValidateAntiForgeryToken]
+        public IActionResult CreateIssue(CreateIssueViewModel model, ContentStatus contentStatus)
+        {
+
+
+            return StatusCode(200);
+        }
+
         /*
 
 
