@@ -110,6 +110,7 @@
 
     <template id="create-solution-template">
         <form class="border-1 border card" asp-controller="Solution" asp-action="CreateSolution" method="post">
+            @Html.AntiForgeryToken()
             <h5 class="card-header text-center ">
                 Solution <span class="solution-count"></span>
             </h5>
@@ -180,8 +181,8 @@
             </div>
             <div class="card-footer">
                 <div class="col-6 mx-auto d-flex">
-                    <button asp-route-contentStatus="@ContentStatus.Draft" class="btn btn-primary fw-bold fs-4" type="submit">Save Draft</button>
-                    <button asp-route-contentStatus="@ContentStatus.Published" class="publish-solution btn btn-primary fw-bold fs-4 ms-2 flex-grow-1" type="submit">Publish Solution</button>
+                    <button formaction="/create-solution?contentStatus=@ContentStatus.Draft" class="btn btn-primary fw-bold fs-4" type="submit">Save Draft</button>
+                    <button formaction="/create-solution?contentStatus=@ContentStatus.Published"  class="publish-solution btn btn-primary fw-bold fs-4 ms-2 flex-grow-1" type="submit">Publish Solution</button>
                 </div>
             </div>
         </form>
