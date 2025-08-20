@@ -39,11 +39,46 @@ namespace atlas_the_public_think_tank.Controllers
         [HttpPost]
         [Route("/create-solution")]
         [ValidateAntiForgeryToken]
-        public IActionResult CreateSolution(CreateSolutionViewModel model, ContentStatus contentStatus)
+        public async Task<IActionResult> CreateSolution(CreateSolutionViewModel model, ContentStatus contentStatus)
         {
+            ContentCreationResponseBase contentCreationResponse = new ContentCreationResponseBase();
+
+            try
+            {
+                // Create new solution via repository pattern (cache)
+                if (!ModelState.IsValid)
+                {
+                    contentCreationResponse.Success = false;
+                    return Json(contentCreationResponse);
+                }
+
+                // Get author
+                var user = await _userManager.GetUserAsync(User);
 
 
-            return StatusCode(200);
+                //// Create new solution via repository pattern (cache)
+                //Solution_ReadVM solution = Create.Solution(new Solution() 
+                //{
+                //    ParentIssueID = model.ParentIssueID,
+                //    AuthorID = user.Id,
+                //    Content = model.Content,
+                //    ContentStatus = contentStatus,
+                //    CreatedAt = DateTime.UtcNow,
+                //    ScopeID = (Guid)model.ScopeID!,
+                //    Title = model.Title                    
+                //});
+
+
+                //contentCreationResponse.Content = solution;
+
+
+                contentCreationResponse.Success = true;
+            }
+            catch (Exception ex) {
+                contentCreationResponse.Success = false;
+            }
+
+            return Json(contentCreationResponse);
         }
 
         /*
@@ -209,7 +244,7 @@ namespace atlas_the_public_think_tank.Controllers
         [AllowAnonymous] // There will be an error sent if user is not logged in
         [HttpPost]
         [Route("/solution/vote")]
-        public async Task<IActionResult> IssueVote([FromBody] UserVote_Solution_UpsertVM model)
+        public async Task<IActionResult> SolutionVote([FromBody] UserVote_Solution_UpsertVM model)
         {
 
             if (ModelState.IsValid)

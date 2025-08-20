@@ -1,6 +1,7 @@
-﻿using Microsoft.Extensions.Caching.Memory;
-using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
+﻿using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Models.Database;
+using atlas_the_public_think_tank.Models.ViewModel;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 {
@@ -26,10 +27,10 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             });
         }
 
-        public Task AddIssueAsync(Issue issue, Guid? parentIssueId, Guid? parentSolutionId)
+        public async Task<Issue_ReadVM> AddIssueAsync(Issue issue)
         {
             // Could optionally invalidate cache here
-            return _inner.AddIssueAsync(issue, parentIssueId, parentSolutionId);
+            return await _inner.AddIssueAsync(issue);
         }
     }
 }

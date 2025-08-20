@@ -1,0 +1,65 @@
+﻿@using System.ComponentModel.DataAnnotations
+@model dynamic
+
+@{
+    // Validate ViewData
+    if (ViewData["PropertyName"] == null)
+    {
+        throw new Exception("Missing PropertyName argument");
+    }
+    if (ViewData["ListItems"] == null)
+    {
+        throw new Exception("Missing ListItems argument for select");
+    }
+
+    // Parameters
+    var propertyName = ViewData["PropertyName"] as string;
+    var uniqueId = $"field_{Guid.NewGuid().ToString("N")}";
+    List<object> listItems = ViewData["ListItems"] as List<object>;
+    string dataValueField = ViewData["ValueField"] as string ?? "Id";
+    string dataTextField = ViewData["TextField"] as string ?? "name";
+
+    string? dataSelectedValue = ViewData["SelectedValue"] as string ?? null;
+
+    bool isRequired = false;
+
+    try
+    {
+        // Get property info
+        var propertyInfo = Model.GetType().GetProperty(propertyName);
+
+        // Safe way to get attributes
+        if (propertyInfo != null)
+        {
+            var attributes = propertyInfo.GetCustomAttributes(false);
+            foreach (var attr in attributes)
+            {
+                if (attr is RequiredAttribute requiredBool)
+                {
+                    isRequired = true;
+                }
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        // Silently handle any exceptions and use default values
+    }
+
+    // Create a SelectList for the items
+    var selectList = new SelectList(listItems, dataValueField, dataTextField);
+}
+
+<div class="mb-3 form-element">
+    <label for="@propertyName" class="form-label">Scope</label>
+    <select id="@propertyName" name="@propertyName" class="form-select select2">
+        <option value="">-- Select a Scope --</option>
+        @foreach (var item in selectList)
+        {
+            <option value="@item.Value" selected="@(dataSelectedValue == item.Value ? "selected" : null)">
+                @item.Text
+            </option>
+        }
+    </select>
+    <span class="text-danger field-validation-valid" data-valmsg-for="@propertyName" data-valmsg-replace="true"></span>
+</div>

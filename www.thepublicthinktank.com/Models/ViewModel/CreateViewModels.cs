@@ -7,6 +7,9 @@ namespace atlas_the_public_think_tank.Models.ViewModel
     public class CreateIssuePageViewModel()
     {
 
+        
+        public List<Scope> Scopes { get; set; } = new List<Scope>();
+
         /// <summary>
         /// Represents the main issue content that the user is creating
         /// </summary>
@@ -23,6 +26,30 @@ namespace atlas_the_public_think_tank.Models.ViewModel
         public List<CreateSolutionViewModel> Solutions { get; set; } = new List<CreateSolutionViewModel>();
     }
 
+
+    public class ContentCreationResponseBase
+    {
+        public bool Success { get; set; }
+
+      
+
+        /// <summary>
+        /// Collection of validation errors or other error messages that occurred during content creation
+        /// </summary>
+        public List<List<string>> Errors { get; set; } = new List<List<string>>();
+    }
+
+    public class IssueCreationResponse : ContentCreationResponseBase
+    {
+
+        /// <summary>
+        /// Content would be the newly created content (plus the content ID)
+        /// </summary>
+        public string Content { get; set; }
+
+    }
+
+
     public class CreateContentItemBase
     {
         [Display(Name = "Title")]
@@ -31,10 +58,20 @@ namespace atlas_the_public_think_tank.Models.ViewModel
         public string Title { get; set; }
 
         [Display(Name = "Body text")]
+        [MinLength(30, ErrorMessage = "Content must be at least 30 characters")]
         [Required(ErrorMessage = "Content is required")]
         public string Content { get; set; }
-        
-        public Scope Scope { get; set; }
+
+
+        /// <summary>
+        /// ScopeId is Guid? with an DataAnnotation of Required 
+        /// to intentionally throw the correct error response.
+        /// This is because Guid is a non nullable type.
+        /// </summary>
+        [Required(ErrorMessage = "Scope is required")]
+        [Display(Name = "Scope")]
+        public Guid? ScopeID { get; set; }
+
 
         public ContentStatus ContentStatus { get; set; }
     }
@@ -61,4 +98,15 @@ namespace atlas_the_public_think_tank.Models.ViewModel
     { }
     public class SolutionTags
     { }
+
+    class CreateIssueWrapper
+    {
+        public CreateIssueViewModel? Issue { get; set; }
+        public List<Scope> Scopes { get; set; }
+    }
+    class EditIssueWrapper
+    {
+        public Issue_ReadVM? Issue { get; set; }
+        public List<Scope> Scopes { get; set; }
+    }
 }

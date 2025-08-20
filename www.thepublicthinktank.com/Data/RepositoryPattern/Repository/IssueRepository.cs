@@ -2,6 +2,8 @@
 using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Models.Database;
 using atlas_the_public_think_tank.Models.ViewModel;
+using atlas_the_public_think_tank.Data.CRUD;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
 {
@@ -44,9 +46,16 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
         }
 
 
-        public Task AddIssueAsync(Issue issue, Guid? parentIssueId, Guid? parentSolutionId)
+        public async Task<Issue_ReadVM?> AddIssueAsync(Issue issue)
         {
-            return Task.CompletedTask;
+            // Add the issue to the database
+            await _context.Issues.AddAsync(issue);
+            await _context.SaveChangesAsync();
+
+            // Create and return the view model
+            return await Read.Issue(issue.IssueID, new ContentFilter());
         }
+
+     
     }
 }

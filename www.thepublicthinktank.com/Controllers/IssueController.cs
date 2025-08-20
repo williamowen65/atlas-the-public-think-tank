@@ -154,16 +154,31 @@ namespace atlas_the_public_think_tank.Controllers
 
         #region Create New Issue Page
 
-            /// <summary>
-            /// This method is used to return the create issue page.
-            /// </summary>
-            [Route("/create-issue")]
-            public IActionResult CreateIssue(Guid? parentIssueID, Guid? parentSolutionID)
+        /// <summary>
+        /// This method is used to return the create issue page.
+        /// </summary>
+        [Route("/create-issue")]
+        public IActionResult CreateIssuePage(Guid? parentIssueID, Guid? parentSolutionID)
+        {
+            CreateIssuePageViewModel model = new CreateIssuePageViewModel
             {
-                CreateIssuePageViewModel model = new CreateIssuePageViewModel();
+                // Load Scopes from the database
+                Scopes = _context.Scopes.ToList()
+            };
 
-                return View(model);
+            // Set parent IDs if provided
+            if (parentIssueID.HasValue)
+            {
+                model.MainIssue.ParentIssueID = parentIssueID;
             }
+
+            if (parentSolutionID.HasValue)
+            {
+                model.MainIssue.ParentSolutionID = parentSolutionID;
+            }
+
+            return View(model);
+        }
 
 
         /// <summary>
@@ -173,97 +188,188 @@ namespace atlas_the_public_think_tank.Controllers
         [HttpPost]
         [Route("/create-issue")]
         [ValidateAntiForgeryToken]
-        public IActionResult CreateIssue(CreateIssueViewModel model, ContentStatus contentStatus)
+        public async Task<IActionResult> CreateIssue(CreateIssueViewModel model, ContentStatus contentStatus)
         {
+            IssueCreationResponse contentCreationResponse = new IssueCreationResponse();
+
+            try
+            {
+                // Create new solution via repository pattern (cache)
+                if (!ModelState.IsValid)
+                {
+                    contentCreationResponse.Success = false;
+
+                    // Add validation errors to response
+                    foreach (var state in ModelState)
+                    {
+                        foreach (var error in state.Value.Errors)
+                        {
+                            var errorEntry = new List<string>();
+                            errorEntry.Add(state.Key);
+                            errorEntry.Add(error.ErrorMessage);
+                            contentCreationResponse.Errors.Add(errorEntry);
+                        }
+                    }
 
 
-            return StatusCode(200);
+
+                    return Json(contentCreationResponse);
+                }
+
+                // Get author
+                var user = await _userManager.GetUserAsync(User);
+
+                // Create new solution via repository pattern (cache)
+                Issue_ReadVM issue = await Create.Issue(new Issue()
+                {
+                    ParentIssueID = model.ParentIssueID,
+                    ParentSolutionID = model.ParentSolutionID,
+                    AuthorID = user.Id,
+                    Content = model.Content,
+                    ContentStatus = contentStatus,
+                    CreatedAt = DateTime.UtcNow,
+                    ScopeID = (Guid)model.ScopeID!,  // Use ScopeID instead of Scope.ScopeID
+                    Title = model.Title
+                });
+
+                string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Issue/_issue-card.cshtml", issue);
+
+                contentCreationResponse.Content = partialViewHtml;
+                contentCreationResponse.Success = true;
+            }
+            catch (Exception ex)
+            {
+                contentCreationResponse.Success = false;
+            }
+
+            return Json(contentCreationResponse);
         }
 
-        /*
+        /// <summary>
+        /// This method is used to return the create issue page.
+        /// </summary>
+        [Route("/edit-issue")]
+        public async  Task<IActionResult> EditIssuePartialView(Guid issueId)
+        {
+            Issue_ReadVM? issue = await Read.Issue(issueId, new ContentFilter());
 
 
+            EditIssueWrapper issueWrapper = new EditIssueWrapper()
+            {
+                Issue = issue,
+                Scopes = await _context.Scopes.ToListAsync()
+            };
+
+            // render Partial view and return json
+            string html = await ControllerExtensions.RenderViewToStringAsync(this,"~/Views/Issue/_edit-issue.cshtml", issueWrapper);
+
+
+            return Json(new {
+                content= html
+            });
+        }
+
+        /// <summary>
+        /// This method is used to edit an issue post.
+        /// </summary>
+        /// <param name="model"></param>
+        [HttpPost]
+        [Route("/edit-issue")]
+        [ValidateAntiForgeryToken]
+        //public async Task<IActionResult> EditIssue(CreateIssueViewModel model, ContentStatus contentStatus)
+        public IActionResult EditIssue(CreateIssueViewModel model, ContentStatus contentStatus)
+        {
+            return Json(new {
+                success = true,
+                content = "<h1>hello</h1>"
+            });
+        }
+
+
+            /*
+
+
+
+
+                /// <summary>
+                /// This method is used to create a new issue post.
+                /// </summary>
+                /// <param name="model"></param>
+                [HttpPost]
+                [Route("/create-issue")]
+                [ValidateAntiForgeryToken]
+                public async Task<IActionResult> CreateIssue(Issue_CreateVM model)
+                {
+
+                    // Custom validation: Only one of ParentIssueID or ParentSolutionID can be set
+                    bool bothParentIdsSet = model.ParentIssueID.HasValue && model.ParentSolutionID.HasValue;
+
+                    if (bothParentIdsSet)
+                    {
+                        ModelState.AddModelError(string.Empty, "You must specify either a parent issue or a parent solution, but not both.");
+                    }
+
+
+                    if (ModelState.IsValid)
+                    {
+                        var user = await _userManager.GetUserAsync(User);
+
+
+                        var issuePost = new Issue
+                        {
+                            Title = model.Title,
+                            Content = model.Content,
+                            ScopeID = model.ScopeID,
+                            ParentIssueID = model.ParentIssueID,
+                            ParentSolutionID = model.ParentSolutionID,
+                            ContentStatus = model.ContentStatus,
+                            AuthorID = user.Id,
+                            CreatedAt = DateTime.UtcNow
+                        };
+
+                        var entry = _context.Issues.Add(issuePost);
+                        await _context.SaveChangesAsync(); // Save to generate the IssueID
+
+                        // Now add the category relationships
+                        if (model.SelectedCategoryIds != null && model.SelectedCategoryIds.Any())
+                        {
+                            foreach (Guid categoryId in model.SelectedCategoryIds)
+                            {
+                                var issueCategory = new IssueCategory
+                                {
+                                    IssueID = entry.Entity.IssueID,
+                                    CategoryID = categoryId
+                                };
+                                _context.IssueCategories.Add(issueCategory);
+                            }
+
+
+                            // Save the User History (todo)
+
+                            await _context.SaveChangesAsync();
+                        }
+
+                        return RedirectToAction("Index", "Home");
+                    }
+
+                    // If we got this far, something failed, redisplay form
+                    // Repopulate the dropdown data
+                    model.Categories = _context.Categories.ToList();
+                    model.Scopes = _context.Scopes.ToList();
+                    return View(model);
+                }
+            */
+
+            #endregion
+
+            #region Vote on an issue
 
 
             /// <summary>
-            /// This method is used to create a new issue post.
+            /// This method is used to cast a vote on a issue post.
             /// </summary>
             /// <param name="model"></param>
-            [HttpPost]
-            [Route("/create-issue")]
-            [ValidateAntiForgeryToken]
-            public async Task<IActionResult> CreateIssue(Issue_CreateVM model)
-            {
-
-                // Custom validation: Only one of ParentIssueID or ParentSolutionID can be set
-                bool bothParentIdsSet = model.ParentIssueID.HasValue && model.ParentSolutionID.HasValue;
-
-                if (bothParentIdsSet)
-                {
-                    ModelState.AddModelError(string.Empty, "You must specify either a parent issue or a parent solution, but not both.");
-                }
-
-
-                if (ModelState.IsValid)
-                {
-                    var user = await _userManager.GetUserAsync(User);
-
-
-                    var issuePost = new Issue
-                    {
-                        Title = model.Title,
-                        Content = model.Content,
-                        ScopeID = model.ScopeID,
-                        ParentIssueID = model.ParentIssueID,
-                        ParentSolutionID = model.ParentSolutionID,
-                        ContentStatus = model.ContentStatus,
-                        AuthorID = user.Id,
-                        CreatedAt = DateTime.UtcNow
-                    };
-
-                    var entry = _context.Issues.Add(issuePost);
-                    await _context.SaveChangesAsync(); // Save to generate the IssueID
-
-                    // Now add the category relationships
-                    if (model.SelectedCategoryIds != null && model.SelectedCategoryIds.Any())
-                    {
-                        foreach (Guid categoryId in model.SelectedCategoryIds)
-                        {
-                            var issueCategory = new IssueCategory
-                            {
-                                IssueID = entry.Entity.IssueID,
-                                CategoryID = categoryId
-                            };
-                            _context.IssueCategories.Add(issueCategory);
-                        }
-
-
-                        // Save the User History (todo)
-
-                        await _context.SaveChangesAsync();
-                    }
-
-                    return RedirectToAction("Index", "Home");
-                }
-
-                // If we got this far, something failed, redisplay form
-                // Repopulate the dropdown data
-                model.Categories = _context.Categories.ToList();
-                model.Scopes = _context.Scopes.ToList();
-                return View(model);
-            }
-        */
-
-        #endregion
-
-        #region Vote on an issue
-
-
-        /// <summary>
-        /// This method is used to cast a vote on a issue post.
-        /// </summary>
-        /// <param name="model"></param>
-        [AllowAnonymous] // There will be an error sent if user is not logged in
+            [AllowAnonymous] // There will be an error sent if user is not logged in
         [HttpPost]
         [Route("/issue/vote")]
         public async Task<IActionResult> IssueVote([FromBody] UserVote_Issue_UpsertVM model)

@@ -2,6 +2,10 @@
 @using atlas_the_public_think_tank.Models
 @inject IOptions<ApplicationInsightsSettings> AppInsightsSettings
 
+@using atlas_the_public_think_tank.Models.Database
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<AppUser> SignInManager
+
 @{
 
     Console.WriteLine("t");
@@ -12,11 +16,13 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - atlas_the_public_think_tank</title>
+    <title>@ViewData["Title"] - Atlas: The Public Think Tank</title>
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     @* Select2 CSS *@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+    <script src="~/js/ClientSideEnums.js"></script>
 
     @* Site.js should be loaded before other scripts. *@
     <script src="~/js/site.js" asp-append-version="true"></script>
@@ -34,6 +40,8 @@
 
     @* <link rel="stylesheet" href="~/atlas_the_public_think_tank.styles.css" asp-append-version="true" /> *@
 
+    <script src="~/js/DocumentObserver.js"></script>
+
     <script src="~/js/initialize-card.js" asp-append-version="true"></script>
     <script src="https://kit.fontawesome.com/16aebb51db.js" crossorigin="anonymous"></script>
 </head>
@@ -49,6 +57,7 @@
     <main role="main" class="pb-3 px-md-3">
         @RenderBody()
     </main>
+
 
     <partial name="_Footer" /> 
 
@@ -66,6 +75,8 @@
     <script src="~/js/pagination.js" asp-append-version="true"></script>
 
     <script src="~/js/FormFields.js"></script>
+
+    <script src="~/js/ContentEdit.js"> </script>
 
     <script>
 

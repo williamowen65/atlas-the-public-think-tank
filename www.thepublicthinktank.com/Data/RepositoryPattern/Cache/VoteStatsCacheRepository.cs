@@ -75,6 +75,11 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 
             }
 
+            //TODO Invalidate all paginated filter sets with the filter hash.
+
+
+
+
             return result;
         }
 
@@ -113,6 +118,8 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 }
 
             }
+
+            //TODO Invalidate all paginated filter sets with the filter hash.
 
             return result;
         }

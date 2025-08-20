@@ -88,6 +88,7 @@ public class Program
         var app = builder.Build();
 
         // Initialize the static Read class with the service provider
+        Create.Initialize(app.Services);
         Read.Initialize(app.Services);
         Upsert.Initialize(app.Services);
 

@@ -3,100 +3,33 @@
 @model CreateIssuePageViewModel;
 
 @{
-    // Console.WriteLine("test");
+    ViewData["Title"] = "Create a new Issue";
+    Console.WriteLine("test");
 }
+
+
+<style>
+
+    
+</style>
 
 
 
 <div class="m-1 create-issue-page" >
 
-    @* Create new issue description  *@
-    <form class="border-1 border card" asp-controller="Issue" asp-action="CreateIssue" method="post">
-        <h5 class="card-header text-center ">
-            Create a new Issue
-        </h5>
-        <div class="card-header text-center bg-primary-subtle" style="background: linear-gradient(-299deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.15));">
-            <h5 class="m-0">An issue is a challenge, question, or problem.</h5> <small>Add solutions separately to keep discussions clear.</small>
-        </div>
-        <div class="card-body d-flex">
-            <div class="flex-grow-1 me-4">
+    <div id="issue">
+        @*  
+            After saving issue as Draft or Publish, a rendered card replaces this content.
+            The user can cast their initial vote, or to back to edit.
+        *@
+        @await Html.PartialAsync("~/Views/Issue/_create-issue.cshtml", new CreateIssueWrapper
+        {
+            Issue = Model.MainIssue,
+            Scopes = Model.Scopes
+        })
+    </div>
 
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormInput.cshtml", Model.MainIssue, new ViewDataDictionary(ViewData)
-                {
-                    { "PropertyName", "Title" },
-                })
-
-                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormMarkdownEditor/FormMarkdownEditor.cshtml", Model.MainIssue, new ViewDataDictionary(ViewData)
-                {
-                    { "PropertyName", "Content" },
-                    { "Rows", 10 },
-                })
-
-            </div>
-            <div>
-                <div class="mb-3">
-                    Tags Select 2
-                    @* <label class="form-label">Categories (Tags)</label>
-                    <select multiple name="SelectedCategoryIds" class="form-select select2"
-                            asp-items="@(new SelectList(Model.Categories, "CategoryID", "CategoryName"))">
-                    </select>
-                    <span asp-validation-for="SelectedCategoryIds" class="text-danger"></span> *@
-                </div>
-                <div class="mb-3">
-                    Scope Select 2
-                    @* <label asp-for="ScopeID" class="form-label">Scope</label>
-                    <select asp-for="ScopeID" class="form-select select2"
-                            asp-items="@(new SelectList(Model.Scopes, "ScopeID", "ScopeName"))">
-                        <option value="">-- Select a Scope --</option>
-                    </select>
-                    <span asp-validation-for="ScopeID" class="text-danger"></span> *@
-                </div>
-
-                @* I would like this to be a select2 as well. except I'd like to render the items specifically to have more content. But I want it to start out empty, because it will use ajax for fetching data and populating the select2. 
-
-           
-
-            *@
-
-
-
-                <div class="mb-3">
-                    Parent Issue Select 2
-
-                    @* <label asp-for="ParentIssueID" class="form-label">Parent Issue (Optional)</label>
-                    <select asp-for="ParentIssueID" class="form-control select2-parent">
-                        @if (Model.ParentIssueID != null)
-                        {
-                            <option value="@Model.ParentIssueID" selected>Current parent issue (ID: @Model.ParentIssueID)</option>
-                        }
-                    </select>
-                    <span asp-validation-for="ParentIssueID" class="text-danger"></span> *@
-                </div>
-
-                <div class="mb-3">
-                    Parent Solution Select 2
-                    @* <label asp-for="ParentSolutionID" class="form-label">Parent Solution (Optional)</label>
-                    <select asp-for="ParentSolutionID" class="form-control select2-parent">
-                        @if (Model.ParentSolutionID != null)
-                        {
-                            <option value="@Model.ParentSolutionID" selected>Current parent issue (ID: @Model.ParentSolutionID)</option>
-                        }
-                    </select>
-                    <span asp-validation-for="ParentSolutionID" class="text-danger"></span> *@
-                </div>
-
-
-            </div>
-        </div>
-        <div class="card-footer">
-            <div class="col-6 mx-auto d-flex">
-                <button asp-controller="Issue" asp-action="CreateIssue" asp-route-contentStatus="@ContentStatus.Draft" class="btn btn-primary fw-bold fs-4" type="submit">Save Draft</button>
-                <button id="publish-issue" asp-route-contentStatus="@ContentStatus.Published" class="btn btn-primary fw-bold fs-4 ms-2 flex-grow-1" type="submit">Publish Issue</button>
-            </div>
-        </div>
-    </form>
+    
 
     @* Solutions will be set in this container*@
     <div class="issue-solutions"></div>
@@ -134,7 +67,7 @@
                                         })
 
                 </div>
-                <div>
+                <div class="col-4">
                     <div class="mb-3">
                         Tags Select 2
                         @* <label class="form-label">Categories (Tags)</label>
@@ -261,3 +194,6 @@
             
     });
 </script>
+
+
+<script src="~/js/ContentCreate.js"></script>
