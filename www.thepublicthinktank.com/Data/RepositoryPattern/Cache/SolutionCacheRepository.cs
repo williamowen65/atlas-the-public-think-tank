@@ -1,6 +1,8 @@
-﻿using Microsoft.Extensions.Caching.Memory;
-using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
+﻿using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Models.Database;
+using atlas_the_public_think_tank.Models.ViewModel;
+using Microsoft.Extensions.Caching.Memory;
+using repository_pattern_experiment.Controllers;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 {
@@ -20,16 +22,19 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         {
             return await _cache.GetOrCreateAsync($"solution:{id}", async entry =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
                 return await _inner.GetSolutionById(id);
             });
         }
 
 
 
-        public Task AddSolutionAsync(Solution solution, Guid parentIssueId)
+        public async Task<Solution_ReadVM> AddSolutionAsync(Solution solution)
         {
-            throw new NotImplementedException();
+            // When creating an issue invalidate all filterIdSets in the cache
+            CacheHelper.ClearAllFeedIdSets();
+
+            return await _inner.AddSolutionAsync(solution);
         }
 
     }

@@ -80,6 +80,10 @@ function setupQuickTabLinks(e) {
 
 function getDialElements(issueId) {
 
+    //if (!issueId) {
+    //    console.error("IssueId not passed to getDialElements")
+    //}
+
     //console.trace("getDialElements");
 
     const containerId = `vote-toggle-container-${issueId}`;
@@ -552,6 +556,5 @@ function initInitializeCardObserver(node) {
     }
 }
 
-//contentItemLoadedObserver.observe(document, { childList: true, subtree: true });
 
 

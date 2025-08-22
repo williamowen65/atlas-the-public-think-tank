@@ -31,7 +31,10 @@ namespace atlas_the_public_think_tank.Models.ViewModel
     {
         public bool Success { get; set; }
 
-      
+        /// <summary>
+        /// Content would be the newly created content 
+        /// </summary>
+        public string Content { get; set; }
 
         /// <summary>
         /// Collection of validation errors or other error messages that occurred during content creation
@@ -39,15 +42,6 @@ namespace atlas_the_public_think_tank.Models.ViewModel
         public List<List<string>> Errors { get; set; } = new List<List<string>>();
     }
 
-    public class IssueCreationResponse : ContentCreationResponseBase
-    {
-
-        /// <summary>
-        /// Content would be the newly created content (plus the content ID)
-        /// </summary>
-        public string Content { get; set; }
-
-    }
 
 
     public class CreateContentItemBase
@@ -85,13 +79,24 @@ namespace atlas_the_public_think_tank.Models.ViewModel
         public Guid? ParentSolutionID { get; set; }
         public Guid? ParentIssueID { get; set; }
     }
-
-
     public class CreateSolutionViewModel : CreateContentItemBase
     {
-        public Guid ParentIssueID { get; set; }
+        public Issue_ReadVM? ParentIssue { get; set; }
         public List<SolutionTags> SolutionTags { get; set; } = new List<SolutionTags>();
-        
+
+        [Required(ErrorMessage = "Parent Issue is required when creating a solution")]
+        public Guid? ParentIssueID { get; set; }
+    }
+
+    public class UpdateIssueViewModel : CreateIssueViewModel
+    {
+        /// <summary>
+        /// ScopeId is Guid? with an DataAnnotation of Required 
+        /// to intentionally throw the correct error response.
+        /// This is because Guid is a non nullable type.
+        /// </summary>
+        [Required(ErrorMessage = "IssueID is required when updating an existing issue")]
+        public Guid? IssueID { get; set; }
     }
 
     public class IssueTags
@@ -102,6 +107,21 @@ namespace atlas_the_public_think_tank.Models.ViewModel
     class CreateIssueWrapper
     {
         public CreateIssueViewModel? Issue { get; set; }
+        public List<Scope> Scopes { get; set; }
+
+        /// <summary>
+        /// If the url params include a ParentIssueID, then this will be populated
+        /// </summary>
+        public Issue_ReadVM? ParentIssue { get; set; }
+
+        /// <summary>
+        /// If the url params include a ParentSolutionID, then this will be populated
+        /// </summary>
+        public Solution_ReadVM? ParentSolution { get; set; }
+    }
+    class CreateSolutionWrapper
+    {
+        public CreateSolutionViewModel? Solution { get; set; }
         public List<Scope> Scopes { get; set; }
     }
     class EditIssueWrapper

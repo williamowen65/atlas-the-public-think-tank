@@ -49,6 +49,8 @@ Client side scripts tied to this view: ContentCreate.js
                         { "ListItems", Model.Scopes.Cast<object>().ToList() },
                         { "ValueField", "ScopeID"},
                         { "TextField", "ScopeName"},
+                        { "FieldPlaceholder", "-- Select a Scope --"},
+                        { "FieldLabel", "Scope"}
                         })
 
             @* <div class="mb-3">
@@ -67,31 +69,55 @@ Client side scripts tied to this view: ContentCreate.js
             *@
 
 
+            @if (Model.ParentSolution == null)
+            {
+                
 
-            <div class="mb-3">
-                Parent Issue Select 2
+                List<object> issueIdList = new List<object>();
+                string? selectedParentIssueValue = null;
+                if (Model.ParentIssue != null)
+                {    
+                    issueIdList.Add(Model.ParentIssue);
+                    selectedParentIssueValue = Model.ParentIssue.IssueID.ToString();
+                }
+                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml", Model.ParentIssue, new ViewDataDictionary(ViewData)
+                {
+                    { "PropertyName", "ParentIssueID" },
+                            { "ListItems", issueIdList},
+                            { "ValueField", "IssueID"},
+                            { "TextField", "Title"},
+                            { "SelectedValue", selectedParentIssueValue },
+                            { "DisabledField", selectedParentIssueValue != null ? true : false},
+                            { "FieldPlaceholder", "-- Select a Parent Issue --"},
+                            { "FieldLabel", "Parent Issue"}
+                })
+             }
 
-                @* <label asp-for="ParentIssueID" class="form-label">Parent Issue (Optional)</label>
-                    <select asp-for="ParentIssueID" class="form-control select2-parent">
-                        @if (Model.ParentIssueID != null)
-                        {
-                            <option value="@Model.ParentIssueID" selected>Current parent issue (ID: @Model.ParentIssueID)</option>
-                        }
-                    </select>
-                    <span asp-validation-for="ParentIssueID" class="text-danger"></span> *@
-            </div>
+            @if (Model.ParentIssue == null)
+            {
+                
 
-            <div class="mb-3">
-                Parent Solution Select 2
-                @* <label asp-for="ParentSolutionID" class="form-label">Parent Solution (Optional)</label>
-                    <select asp-for="ParentSolutionID" class="form-control select2-parent">
-                        @if (Model.ParentSolutionID != null)
-                        {
-                            <option value="@Model.ParentSolutionID" selected>Current parent issue (ID: @Model.ParentSolutionID)</option>
-                        }
-                    </select>
-                    <span asp-validation-for="ParentSolutionID" class="text-danger"></span> *@
-            </div>
+                List<object> solutionIdList = new List<object>();
+                string? selectedParentSolutionValue = null;
+                if (Model.ParentSolution != null)
+                {
+                    solutionIdList.Add(Model.ParentSolution);
+                    selectedParentSolutionValue = Model.ParentSolution.SolutionID.ToString();
+                }
+                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml", Model.ParentSolution, new ViewDataDictionary(ViewData)
+                {
+                    { "PropertyName", "ParentSolutionID" },
+                            { "ListItems", solutionIdList},
+                            { "ValueField", "SolutionID"},
+                            { "TextField", "Title"},
+                            { "SelectedValue", selectedParentSolutionValue },
+                            { "DisabledField", selectedParentSolutionValue != null ? true : false},
+                            { "FieldPlaceholder", "-- Select a Parent Solution--"},
+                            { "FieldLabel", "Parent Solution" }
+                })
+
+            }
+
 
 
         </div>

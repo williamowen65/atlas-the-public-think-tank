@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 
 namespace atlas_the_public_think_tank.Controllers
 {
@@ -170,6 +171,7 @@ namespace atlas_the_public_think_tank.Controllers
             if (parentIssueID.HasValue)
             {
                 model.MainIssue.ParentIssueID = parentIssueID;
+                
             }
 
             if (parentSolutionID.HasValue)
@@ -190,7 +192,7 @@ namespace atlas_the_public_think_tank.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateIssue(CreateIssueViewModel model, ContentStatus contentStatus)
         {
-            IssueCreationResponse contentCreationResponse = new IssueCreationResponse();
+            ContentCreationResponseBase contentCreationResponse = new ContentCreationResponseBase();
 
             try
             {
@@ -277,12 +279,54 @@ namespace atlas_the_public_think_tank.Controllers
         [Route("/edit-issue")]
         [ValidateAntiForgeryToken]
         //public async Task<IActionResult> EditIssue(CreateIssueViewModel model, ContentStatus contentStatus)
-        public IActionResult EditIssue(CreateIssueViewModel model, ContentStatus contentStatus)
+        public async  Task<IActionResult> EditIssue(UpdateIssueViewModel model, ContentStatus contentStatus)
         {
-            return Json(new {
-                success = true,
-                content = "<h1>hello</h1>"
+            ContentCreationResponseBase contentCreationResponse = new ContentCreationResponseBase();
+
+            if (!ModelState.IsValid)
+            {
+                contentCreationResponse.Success = false;
+
+                // Add validation errors to response
+                foreach (var state in ModelState)
+                {
+                    foreach (var error in state.Value.Errors)
+                    {
+                        var errorEntry = new List<string>();
+                        errorEntry.Add(state.Key);
+                        errorEntry.Add(error.ErrorMessage);
+                        contentCreationResponse.Errors.Add(errorEntry);
+                    }
+                }
+                return Json(contentCreationResponse);
+            }
+
+
+            var user = await _userManager.GetUserAsync(User);
+
+            // Update Issue
+            Issue_ReadVM? issue = await Update.Issue(new Issue()
+            {
+                IssueID = (Guid)model.IssueID!,
+                ParentIssueID = model.ParentIssueID,
+                ParentSolutionID = model.ParentSolutionID,
+                AuthorID = user.Id,
+                Content = model.Content,
+                ContentStatus = contentStatus,
+                CreatedAt = DateTime.UtcNow,
+                ScopeID = (Guid)model.ScopeID!,  // Use ScopeID instead of Scope.ScopeID
+                Title = model.Title
             });
+
+
+            // Render issue
+            // render Partial view and return json
+            string html = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Issue/_issue-card.cshtml", issue);
+
+            contentCreationResponse.Content = html;
+            contentCreationResponse.Success = true;
+
+            return Json(contentCreationResponse);
         }
 
 

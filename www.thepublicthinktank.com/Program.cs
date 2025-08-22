@@ -7,6 +7,8 @@ using atlas_the_public_think_tank.Models.Database;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using repository_pattern_experiment.Controllers;
 
 namespace atlas_the_public_think_tank;
 
@@ -91,6 +93,11 @@ public class Program
         Create.Initialize(app.Services);
         Read.Initialize(app.Services);
         Upsert.Initialize(app.Services);
+        Update.Initialize(app.Services);
+        // Get the IMemoryCache service from the service provider
+        var memoryCache = app.Services.GetRequiredService<IMemoryCache>();
+        // Initialize the CacheHelper with the memory cache
+        CacheHelper.Initialize(memoryCache);
 
         FilterQueryService.Initialize(builder.Configuration);
 

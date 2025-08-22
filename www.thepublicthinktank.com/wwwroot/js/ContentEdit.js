@@ -28,8 +28,6 @@ function setEditIssueContent(container) {
         });
 }
 
-
-
 function initEditorsInNode(node) {
 
     const formFields = Array.from(node.querySelectorAll('.form-field'))
@@ -83,7 +81,7 @@ function initListenersForEditIssue(node) {
     // Function to handle form submission via fetch
     function submitForm(e, contentStatus) {
 
-        const contentItemEl = e.target.closest('.card')
+        const contentItemEl = form
         const errorContainers = Array.from(contentItemEl.querySelectorAll(".text-danger"))
         errorContainers.forEach(container => {
             container.innerText = ""
@@ -92,9 +90,9 @@ function initListenersForEditIssue(node) {
         // Get form data
         const formData = new FormData(form);
 
-
         // Add the content status to the form data
         formData.append("contentStatus", contentStatus);
+      
 
         // Get anti-forgery token
         const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
@@ -119,10 +117,21 @@ function initListenersForEditIssue(node) {
                     // replace node with data.content (as a node)
                     // Parse the HTML content into DOM nodes
                     const tempContainer = document.createElement('div');
+                    
                     tempContainer.innerHTML = data.content;
 
-                    form.replaceWith(tempContainer.firstChild)
+                    // remove the author card alert tab
+                    const issueId = formData.get('IssueID');
+                    const authorContentTab = document.querySelector(`.author-content-alert[data-id='${issueId}']`)
+                    authorContentTab.remove()
 
+                    // replace form with updated card - use the actual DOM nodes
+                    // using the children collection because there might be multiple elements
+                    const newContent = document.createDocumentFragment();
+                    while (tempContainer.firstChild) {
+                        newContent.appendChild(tempContainer.firstChild);
+                    }
+                    contentItemEl.replaceWith(newContent);
                     // Handle successful response
                     // window.location.href = `/issue/${data.content.issueID}`;
                 } else {

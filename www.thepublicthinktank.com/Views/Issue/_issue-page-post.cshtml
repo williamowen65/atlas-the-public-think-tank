@@ -31,7 +31,10 @@
                 <div style="font-size:20px;" class="float-end">
                     @Html.Partial("~/Views/Shared/Components/_scope-ribbon.cshtml", Model.Scope)
                 </div>
+                <span class="float-start me-2">
+
                 @Html.Partial("~/Views/Shared/Icons/_SubIssues.cshtml")
+                </span>
                 @* Title and this float need to be next to each other for float styling to work. *@
                 @Model.Title
             </h5>

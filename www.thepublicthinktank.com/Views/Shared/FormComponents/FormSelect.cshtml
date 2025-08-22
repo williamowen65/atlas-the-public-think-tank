@@ -18,6 +18,9 @@
     List<object> listItems = ViewData["ListItems"] as List<object>;
     string dataValueField = ViewData["ValueField"] as string ?? "Id";
     string dataTextField = ViewData["TextField"] as string ?? "name";
+    bool isDisabledField = ViewData["DisabledField"] != null && (bool)ViewData["DisabledField"]!;
+    string dataFieldLabel = ViewData["FieldLabel"] as string ?? "Missing field label";
+    string dataFieldPlaceholder = ViewData["FieldPlaceholder"] as string ?? "Missing field placeholder";
 
     string? dataSelectedValue = ViewData["SelectedValue"] as string ?? null;
 
@@ -51,9 +54,9 @@
 }
 
 <div class="mb-3 form-element">
-    <label for="@propertyName" class="form-label">Scope</label>
-    <select id="@propertyName" name="@propertyName" class="form-select select2">
-        <option value="">-- Select a Scope --</option>
+    <label for="@propertyName" class="form-label">@dataFieldLabel</label>
+    <select id="@propertyName" name="@propertyName" class="form-select select2" @(isDisabledField ? "disabled" : "")>
+        <option value="">@dataFieldPlaceholder</option>
         @foreach (var item in selectList)
         {
             <option value="@item.Value" selected="@(dataSelectedValue == item.Value ? "selected" : null)">

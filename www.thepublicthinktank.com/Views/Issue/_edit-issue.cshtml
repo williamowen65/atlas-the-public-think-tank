@@ -3,6 +3,12 @@
 
 @*
 Client side scripts tied to this view: ContentEdit.js
+
+NOTE: This isn't ideal but the model of this view is different than the model (UpdateIssueViewModel)
+which the POST edit-issue accepts.
+This make the model binding really intentional, vs being specifically typed.
+EditIssueWrapper provides List<Scope>
+
 *@
 
 @* Create new issue description  *@
@@ -17,6 +23,8 @@ Client side scripts tied to this view: ContentEdit.js
         <div class="flex-grow-1 me-4">
 
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <input type="hidden" name="IssueID" id="IssueID" value="@Model.Issue.IssueID" />
 
             @await Html.PartialAsync("~/Views/Shared/FormComponents/FormInput.cshtml", Model.Issue, new ViewDataDictionary(ViewData)
             {

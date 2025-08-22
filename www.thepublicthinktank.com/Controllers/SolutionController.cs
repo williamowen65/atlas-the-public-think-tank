@@ -32,14 +32,47 @@ namespace atlas_the_public_think_tank.Controllers
         }
 
 
+      
+
+
         /// <summary>
-        /// This method is used to create a new issue post.
+        /// This method is used to return solution create form for the create issue page.
+        /// </summary>
+        [Route("/create-solution-form")]
+        public async Task<IActionResult> CreateSolutionPartialView(Guid issueId)
+        {
+            Issue_ReadVM? issue = await Read.Issue(issueId, new ContentFilter());
+
+            // issue must already exist
+
+            CreateSolutionWrapper solutionWrapper = new CreateSolutionWrapper()
+            {
+                Solution = new CreateSolutionViewModel() { 
+                    ParentIssueID = issueId,
+                    ParentIssue = issue
+                },
+                Scopes = await _context.Scopes.ToListAsync()
+            };
+
+            // render Partial view and return json
+            string html = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Solution/_create-solution.cshtml", solutionWrapper);
+
+            ContentCreationResponseBase contentCreationResponse = new ContentCreationResponseBase();
+
+            contentCreationResponse.Success = true;
+            contentCreationResponse.Content = html;
+
+            return Json(contentCreationResponse);
+        }
+
+        /// <summary>
+        /// This method is used to create a new solution post.
         /// </summary>
         /// <param name="model"></param>
         [HttpPost]
         [Route("/create-solution")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateSolution(CreateSolutionViewModel model, ContentStatus contentStatus)
+        public async Task<IActionResult> CreateSolutionPost(CreateSolutionViewModel model, ContentStatus contentStatus)
         {
             ContentCreationResponseBase contentCreationResponse = new ContentCreationResponseBase();
 
@@ -49,37 +82,53 @@ namespace atlas_the_public_think_tank.Controllers
                 if (!ModelState.IsValid)
                 {
                     contentCreationResponse.Success = false;
+
+                    // Add validation errors to response
+                    foreach (var state in ModelState)
+                    {
+                        foreach (var error in state.Value.Errors)
+                        {
+                            var errorEntry = new List<string>();
+                            errorEntry.Add(state.Key);
+                            errorEntry.Add(error.ErrorMessage);
+                            contentCreationResponse.Errors.Add(errorEntry);
+                        }
+                    }
+
                     return Json(contentCreationResponse);
                 }
 
                 // Get author
                 var user = await _userManager.GetUserAsync(User);
 
-
-                //// Create new solution via repository pattern (cache)
-                //Solution_ReadVM solution = Create.Solution(new Solution() 
-                //{
-                //    ParentIssueID = model.ParentIssueID,
-                //    AuthorID = user.Id,
-                //    Content = model.Content,
-                //    ContentStatus = contentStatus,
-                //    CreatedAt = DateTime.UtcNow,
-                //    ScopeID = (Guid)model.ScopeID!,
-                //    Title = model.Title                    
-                //});
-
-
-                //contentCreationResponse.Content = solution;
+                // Create new solution via repository pattern (cache)
+                Solution_ReadVM solution = await Create.Solution(new Solution()
+                { 
+                    ParentIssueID = (Guid)model.ParentIssueID!,
+                    AuthorID = user.Id,
+                    Content = model.Content,
+                    ContentStatus = contentStatus,
+                    CreatedAt = DateTime.UtcNow,
+                    ScopeID = (Guid)model.ScopeID!,
+                    Title = model.Title,
+                });
 
 
+
+                string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Solution/_solution-card.cshtml", solution);
+
+                //contentCreationResponse.Content = partialViewHtml;
+                contentCreationResponse.Content = partialViewHtml;
                 contentCreationResponse.Success = true;
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 contentCreationResponse.Success = false;
             }
 
             return Json(contentCreationResponse);
         }
+
 
         /*
             [Route("/solution/create")]

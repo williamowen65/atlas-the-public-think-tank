@@ -570,9 +570,10 @@ function repopulateHomePageContents(updatedFilterContent) {
     ContentFilterSectionRePopulationWorkflow.updatePaginationButton(
         updatedFilterContent,
         "fetchPaginatedContent",
-        "/home/getPaginatedContent",
+        "/getPaginatedMainContentFeed",
         "posts"
     )
+
 }
 
 

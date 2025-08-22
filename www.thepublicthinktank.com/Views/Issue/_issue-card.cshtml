@@ -13,12 +13,8 @@
 
 @model Issue_ReadVM
 @{
-    Console.WriteLine();
-
     Boolean IsContentLong = true;
-
     string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
     bool doesUserOwnContent = false;
     AppUser? user = null;
     if (!string.IsNullOrEmpty(userId) && Model.Author != null)
@@ -26,16 +22,14 @@
         doesUserOwnContent = Model.Author.Id.ToString() == userId;
         user = await UserManager.GetUserAsync(User);
     }
-
-    // bool IsUserLoggedIn = SignInManager.IsSignedIn(User);
-    // AppUser? user = await UserManager.GetUserAsync(User);
-
 }
+
+
 
 
 @if (doesUserOwnContent && user != null)
 {
-    <div class="card mx-5 text-center border-info" style="border-bottom:0px;border-bottom-left-radius: 0px; border-bottom-right-radius: 0px">
+    <div class="card mx-5 text-center border-info author-content-alert" data-id="@Model.IssueID" style="border-bottom:0px;border-bottom-left-radius: 0px; border-bottom-right-radius: 0px">
         <div class="card-header" style="border-bottom:0px">
             You are the owner of this issue node.
             <div class="float-end">
@@ -68,7 +62,10 @@
                 <div style="font-size:20px; height: 46px;" class="float-end">
                      @await Html.PartialAsync("~/Views/Issue/_issue-card-stat-icons.cshtml", Model) 
                     </div>
+                <span class="float-start me-2">
+
                      @await Html.PartialAsync("~/Views/Shared/Icons/_SubIssues.cshtml")
+                    </span>
                     @* Title and this float need to be next to each other for float styling to work. *@
                     <span class="card-title">@Model.Title</span>
                 </h5>
@@ -123,4 +120,5 @@
     </div>
 
 </div>
+
 

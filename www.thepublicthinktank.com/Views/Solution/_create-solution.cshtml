@@ -1,0 +1,107 @@
+﻿@model CreateSolutionWrapper
+
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+
+
+<form class="border-1 border card mb-3 create-solution-card">
+    @*
+        asp-controller="Solution" asp-action="CreateSolution" method="post"
+        These are controlled via the Ajax in ContentCreate.js
+    *@
+        @Html.AntiForgeryToken()
+        <h5 class="card-header text-center ">
+            Solution <span class="solution-count"></span>
+        </h5>
+        <div class="card-header text-center bg-success" style="background: linear-gradient(-299deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.3));">
+            <h5 class="m-0">A solution is a proposed answer, idea, or approach to an issue.</h5> <small>(This should be addressing the issue that you wrote)</small>
+        </div>
+        <div class="card-body d-flex">
+            <div class="flex-grow-1 me-4">
+
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormInput.cshtml", new CreateSolutionViewModel(), new ViewDataDictionary(ViewData)
+                {
+                    { "PropertyName", "Title" },
+                                })
+
+                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormMarkdownEditor/FormMarkdownEditor.cshtml", new CreateSolutionViewModel(), new ViewDataDictionary(ViewData)
+                                {
+                    { "PropertyName", "Content" },
+                                { "Rows", 10 },
+                                })
+
+            </div>
+            <div class="col-4">
+                <div class="mb-3">
+                    Tags Select 2
+                    @* <label class="form-label">Categories (Tags)</label>
+             <select multiple name="SelectedCategoryIds" class="form-select select2"
+                     asp-items="@(new SelectList(Model.Categories, "CategoryID", "CategoryName"))">
+             </select>
+             <span asp-validation-for="SelectedCategoryIds" class="text-danger"></span> *@
+                </div>
+
+              @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml", Model.Solution, new ViewDataDictionary(ViewData)
+                        {
+                { "PropertyName", "ScopeID" },
+                        { "ListItems", Model.Scopes.Cast<object>().ToList() },
+                        { "ValueField", "ScopeID"},
+                        { "TextField", "ScopeName"},
+                        { "FieldPlaceholder", "-- Select a Scope --"},
+                        { "FieldLabel", "Scope"}
+                        })
+
+                @* I would like this to be a select2 as well. except I'd like to render the items specifically to have more content. But I want it to start out empty, because it will use ajax for fetching data and populating the select2. 
+
+    
+
+
+
+     *@
+
+            @{
+                List<object> issueIdList = new List<object>();
+                issueIdList.Add(Model.Solution!.ParentIssue);
+            }
+            @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml", Model.Solution.ParentIssue, new ViewDataDictionary(ViewData)
+                 {
+                    { "PropertyName", "ParentIssueID" },
+                    { "ListItems", issueIdList},
+                    { "ValueField", "IssueID"},
+                    { "TextField", "Title"},
+                    { "SelectedValue", Model.Solution!.ParentIssue.IssueID.ToString()},
+                    {"DisabledField", true},
+                    { "FieldPlaceholder", "-- Select a Parent Issue --"},
+                    { "FieldLabel", "Parent Issue"}
+                })
+
+                    
+
+                @*      
+                        @* <label asp-for="ParentIssueID" class="form-label">Parent Issue (Optional)</label>
+             <select asp-for="ParentIssueID" class="form-control select2-parent">
+                 @if (Model.ParentIssueID != null)
+                 {
+                     <option value="@Model.ParentIssueID" selected>Current parent issue (ID: @Model.ParentIssueID)</option>
+                 }
+             </select>
+             <span asp-validation-for="ParentIssueID" class="text-danger"></span> 
+                    *@
+
+
+
+
+            </div>
+        </div>
+        <div class="card-footer">
+            <div class="col-6 ms-auto d-flex">
+            <button class="create-solution-draft btn btn-sm btn-secondary fw-bold ms-auto" type="submit">Save as Draft</button>
+            <button class="publish-solution btn btn-sm btn-primary fw-bold ms-2" type="submit">Publish Solution</button>
+            </div>
+        </div>
+    </form>
