@@ -1,5 +1,42 @@
 ﻿
-function setupFormField(propertyName, maxLength, fieldId) {
+document.addEventListener("DOMContentLoaded", function () {
+    const formFields = Array.from(document.querySelectorAll(".form-input"))
+    formFields.forEach(formField => {
+        setupFormField(formField);
+    })
+});
+
+if (typeof documentObserver == 'object') {
+    documentObserver.registerEvent(initFormFieldListener)
+    //documentObserver.registerEvent(initEditContentObserver)
+} else {
+    throw error("documentObserver not defined")
+}
+
+/**
+ * Form listener set via mutation observer
+ * @param {any} node
+ */
+function initFormFieldListener(node) {
+
+    if (node.nodeType === 1) { // Element node
+        // The buttons for submitting edit forms are always nested in the form
+        const formInputs = node.querySelectorAll('.form-input');
+        formInputs.forEach(formInput => {
+            // These buttons render ask the server for the edit form
+            setupFormField(formInput)
+        });
+    }
+}
+
+
+
+
+function setupFormField(formField) {
+    const propertyName = formField.querySelector("label").getAttribute("for")
+    const maxLength = Number(formField.querySelector(".char-counter").getAttribute("data-max-length"))
+    const fieldId = formField.getAttribute("id")
+
     // Target this specific form field instance using the unique ID
     const formFieldContainer = document.getElementById(fieldId);
     if (!formFieldContainer) return;

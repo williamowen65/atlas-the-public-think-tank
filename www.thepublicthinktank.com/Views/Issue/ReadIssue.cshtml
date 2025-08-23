@@ -11,7 +11,10 @@
 
 <div class="container mt-3  ">
 
-    @Html.Partial("~/Views/Issue/_issue-page-post.cshtml", Model)
+    @* @await Html.PartialAsync("~/Views/Issue/_issue-author-tag.cshtml", Model) *@
+
+    @* @Html.Partial("~/Views/Issue/_issue-page-post.cshtml", Model) *@
+    @Html.Partial("~/Views/Issue/_issue-card.cshtml", Model)
 
 
    

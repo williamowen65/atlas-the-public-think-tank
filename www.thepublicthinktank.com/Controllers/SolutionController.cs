@@ -32,9 +32,6 @@ namespace atlas_the_public_think_tank.Controllers
         }
 
 
-      
-
-
         /// <summary>
         /// This method is used to return solution create form for the create issue page.
         /// </summary>
@@ -123,6 +120,7 @@ namespace atlas_the_public_think_tank.Controllers
 
                 //contentCreationResponse.Content = partialViewHtml;
                 contentCreationResponse.Content = partialViewHtml;
+                contentCreationResponse.ContentId = solution.SolutionID;
                 contentCreationResponse.Success = true;
             }
             catch (Exception ex)

@@ -1,48 +1,44 @@
-﻿document.addEventListener("DOMContentLoaded", () => {
+﻿
+/**
+ * Detects DOM elements related to editing content that are present onload (before the mutation observer can detect them)
+ */
+document.addEventListener("DOMContentLoaded", () => {
+    Array.from(document.querySelectorAll("form.issue-editor, form.solution-editor"))
+        .forEach((form) => {
+            initListenersForContentCreateForm(form)
+    });
+});
 
-    /*
-    This JS file is used on both CreateIssuePage and CreateSolutionPage
-    The logic below is meant for the CreateSolutionPage
-    where the .create-solution-card is loaded by default
-    */
-    const createSolutionForm = document.querySelector(".create-solution-card")
-    if (createSolutionForm) {
-        initCreateSolutionFormSubmissionListeners(createSolutionForm)
-    }
-})
-
-
-
-function initCreateSolutionFormSubmissionListeners(form) {
-
-    // Get form and button elements
-    // Note: these buttons have idenifiers as classes, not ids b/c there may be multiple solution
-    const draftSolutionButton = document.querySelector(".create-solution-draft");
-    const publishSolutionButton = document.querySelector(".publish-solution");
-
+function initListenersForContentCreateForm(form) {
     // Prevent default form submission and handle both buttons
     form.addEventListener("submit", (e) => {
         e.preventDefault(); // Prevent standard form submission
     });
+     const contentType = form.getAttribute("data-content-type")
+
+
+    const draftButton = document.querySelector(`.create-${contentType}-draft`);
+    const publishButton = document.querySelector(`.publish-${contentType}`);
 
     // Handler for Draft button
-    draftSolutionButton.addEventListener("click", (e) => {
-        submitSolutionCreateForm(e, ContentStatus.Draft);
+    draftButton.addEventListener("click", (e) => {
+        submitContentCreateForm(e, ContentStatus.Draft);
     });
 
     // Handler for Publish button
-    publishSolutionButton.addEventListener("click", (e) => {
-        submitSolutionCreateForm(e, ContentStatus.Published);
+    publishButton.addEventListener("click", (e) => {
+        submitContentCreateForm(e, ContentStatus.Published);
     });
 
-    function submitSolutionCreateForm(e, contentStatus) {
+    function submitContentCreateForm(e, contentStatus) {
 
-
-        const form = e.target.closest('form')
+        // Clear all error messages
         const errorContainers = Array.from(form.querySelectorAll(".text-danger"))
         errorContainers.forEach(container => {
             container.innerText = ""
         })
+
+       
 
         // Get form data
         const formData = new FormData(form);
@@ -50,20 +46,35 @@ function initCreateSolutionFormSubmissionListeners(form) {
         // Add the content status to the form data
         formData.append("contentStatus", contentStatus);
 
+        // This JavaScript file is for creating issues or solutions
+        // Issues could have ParentIssue, or ParentSolution, or Neither
+        // Solution must have a ParentSolution
+
         // Manually add the ParentIssueID from the disabled select element
         const parentIssueSelect = form.querySelector('#ParentIssueID');
         if (parentIssueSelect && parentIssueSelect.disabled && parentIssueSelect.value) {
             formData.append("ParentIssueID", parentIssueSelect.value);
         }
 
+        if (contentType == 'solution' && !parentIssueSelect.value) {
+            throw new Error("When creating a new solution, a parent issue is required")
+        }
 
+        // Manually add the ParentIssueID from the disabled select element
+        const parentSolutionSelect = form.querySelector('#ParentSolutionID');
+        if (parentSolutionSelect && parentSolutionSelect.disabled && parentSolutionSelect.value) {
+            formData.append("ParentSolutionID", parentSolutionSelect.value);
+        }
 
         // Get anti-forgery token
         const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
 
+        let url;
+        if (contentType == 'issue') url = `/create-issue`
+        if (contentType == 'solution') url = `/create-solution`
 
         // Send POST request via fetch
-        fetch("/create-solution", {
+        fetch(url, {
             method: "POST",
             headers: {
                 "RequestVerificationToken": token
@@ -78,21 +89,13 @@ function initCreateSolutionFormSubmissionListeners(form) {
             })
             .then(data => {
                 if (data.success) {
-                    console.log("create solution", { data })
+                    console.log("create " + contentType, { data })
+
+                    //const issueContainerEl = document.querySelector("#issue")
+                    //issueContainerEl.innerHTML = data.content
+
                     // Handle successful response
-                    // Create a temporary container to parse the HTML string into DOM nodes
-                    const tempContainer = document.createElement('div');
-                    tempContainer.innerHTML = data.content;
-
-                    // Create a document fragment to hold all content
-                    const newContent = document.createDocumentFragment();
-                    // Move all children from the temporary container to the fragment
-                    while (tempContainer.firstChild) {
-                        newContent.appendChild(tempContainer.firstChild);
-                    }
-
-                    // Replace the form with all the new content
-                    form.parentNode.replaceChild(newContent, form);
+                     window.location.href = `/${contentType}/${data.contentId}`;
                 } else {
                     // Handle validation errors or other failures
                     // alert("Failed to create issue. Please check your form inputs and try again.");
@@ -108,5 +111,6 @@ function initCreateSolutionFormSubmissionListeners(form) {
                 console.error("Error submitting form:", error);
                 alert("An error occurred while submitting the form. Please try again.");
             });
+
     }
 }

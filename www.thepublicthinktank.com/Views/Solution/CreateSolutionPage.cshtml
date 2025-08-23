@@ -29,7 +29,7 @@
 
         }
 
-        @await Html.PartialAsync("~/Views/Solution/_create-solution.cshtml", new CreateOrEditSolutionWrapper
+        @await Html.PartialAsync("~/Views/Solution/_create-or-edit-solution.cshtml", new CreateOrEditSolutionWrapper
         {
             Solution = Model.Solution,
                 Scopes = Model.Scopes,
@@ -43,4 +43,4 @@
 
 
 @* Todo: update this js form*@
-<script src="~/js/CreateSolution.js"></script>
+<script src="~/js/ContentCreate.js"></script>

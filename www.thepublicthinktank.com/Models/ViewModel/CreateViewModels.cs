@@ -47,6 +47,8 @@ namespace atlas_the_public_think_tank.Models.ViewModel
         /// </summary>
         public string Content { get; set; }
 
+        public Guid ContentId { get; set; }
+
         /// <summary>
         /// Collection of validation errors or other error messages that occurred during content creation
         /// </summary>

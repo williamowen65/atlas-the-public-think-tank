@@ -1,4 +1,15 @@
 ﻿
+/**
+ * 
+ * This file is loaded with the layout.cshtml
+ * 
+ * It is for editing issues and solutions
+ * 
+ * These content items can be edited from any page of the website
+ * 
+ */
+
+
 if (typeof documentObserver == 'object') {
     documentObserver.registerEvent(initEditContentButtonObserver)
     //documentObserver.registerEvent(initEditContentObserver)
@@ -26,7 +37,8 @@ function initEditContentButtonObserver(node) {
 }
 
 /**
- * Detects DOM elements related to editing content that are present onload (before the mutation observer can detect them)
+ * Detects DOM elements related to fetch edit forms that are present onload (before the mutation observer can detect them)
+ * This would be in the first 3 content items of the feed if any of them are written by active user.
  */
 document.addEventListener("DOMContentLoaded", () => {
     Array.from(document.querySelectorAll(".edit-issue-button, .edit-solution-button")).forEach((button) => {
@@ -83,13 +95,9 @@ function fetchRelatedEditForm(e) {
  */
 function initListenersOnFormElements(form) {
 
-    const formFields = Array.from(form.querySelectorAll('.form-field'))
+    const formFields = Array.from(form.querySelectorAll('.form-input'))
     formFields.forEach(field => {
-
-        const fieldName = field.querySelector("textarea").id
-        // Listener on 
-        const maxLength = Number(field.querySelector(".char-counter").getAttribute("data-max-length"))
-        setupFormField(fieldName, maxLength, field.id);
+        setupFormField(field);
     })
 
     // Add submission event for edit form

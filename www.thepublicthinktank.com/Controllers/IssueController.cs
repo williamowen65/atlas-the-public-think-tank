@@ -242,6 +242,7 @@ namespace atlas_the_public_think_tank.Controllers
                 string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Issue/_issue-card.cshtml", issue);
 
                 contentCreationResponse.Content = partialViewHtml;
+                contentCreationResponse.ContentId = issue.IssueID;
                 contentCreationResponse.Success = true;
             }
             catch (Exception ex)
