@@ -24,19 +24,11 @@
             After saving issue as Draft or Publish, a rendered card replaces this content.
             The user can cast their initial vote, or to back to edit.
         *@
-        @{
-
-            Issue_ReadVM? parentIssue = Model.MainIssue.ParentIssueID != null ? await Read.Issue((Guid)Model.MainIssue.ParentIssueID!, new ContentFilter()) : null;
-            Solution_ReadVM? parentSolution = Model.MainIssue.ParentSolutionID != null ? await Read.Solution((Guid)Model.MainIssue.ParentSolutionID!, new ContentFilter()) : null;
-
-        }
-
-        @await Html.PartialAsync("~/Views/Issue/_create-issue.cshtml", new CreateIssueWrapper
+    
+        @await Html.PartialAsync("~/Views/Issue/_create-or-edit-issue.cshtml", new CreateOrEditIssueWrapper
         {
             Issue = Model.MainIssue,
             Scopes = Model.Scopes,
-            ParentIssue = parentIssue,
-            ParentSolution = parentSolution
         })
     </div>
 
@@ -49,6 +41,5 @@
 
 </div>
 
-
-
-<script src="~/js/ContentCreate.js"></script>
+<script src="~/js/CreateIssue.js"></script>
+<script src="~/js/CreateSolution.js"></script>  

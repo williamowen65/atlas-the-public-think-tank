@@ -1,13 +1,60 @@
 ﻿
-function setEditIssueContent(container) {
+if (typeof documentObserver == 'object') {
+    documentObserver.registerEvent(initEditContentButtonObserver)
+    //documentObserver.registerEvent(initEditContentObserver)
+} else {
+    throw error("documentObserver not defined")
+}
 
 
-    const issueId = container.getAttribute("data-content-id")
-    const issueCard = document.querySelector(`*[id="${issueId}"]`)
+/**
+ * Detects DOM elements related to editing content and assigns listeners
+ * This observer detects the button and assigned a listener.
+ * @param {DOMElement} node - is passed to method via global MutationObserver
+ */
 
+function initEditContentButtonObserver(node) {
+
+    if (node.nodeType === 1) { // Element node
+        // The buttons for submitting edit forms are always nested in the form
+        const editButtons = node.querySelectorAll('.edit-issue-button, .edit-solution-button');
+        editButtons.forEach(button => {
+            // These buttons render ask the server for the edit form
+            initListenerOnEditButton(button)
+        });
+    }
+}
+
+/**
+ * Detects DOM elements related to editing content that are present onload (before the mutation observer can detect them)
+ */
+document.addEventListener("DOMContentLoaded", () => {
+    Array.from(document.querySelectorAll(".edit-issue-button, .edit-solution-button")).forEach((button) => {
+        initListenerOnEditButton(button)
+    });
+});
+
+function initListenerOnEditButton(button) {
+    button.addEventListener("click", fetchRelatedEditForm)
+}
+
+/**
+ * Fetches an edit issue form or an edit solution form
+ * and renders the form in place of the issue-card or solution-card
+ * @param {any} e - Event on button click
+ */
+function fetchRelatedEditForm(e) {
+    const button = e.target.closest("button")
+    const contentType = button.getAttribute("data-content-type")
+    const contentId = button.getAttribute("data-content-id")
+    const contentCard = document.querySelector(`*[id="${contentId}"]`)
+    let url;
+    if (contentType == 'issue') url = `/edit-issue?issueId=${contentId}`
+    if (contentType == 'solution') url = `/edit-solution?solutionId=${contentId}`
     // Fetch issue editor from server
-    // Fetch issue editor from server
-    fetch(`/edit-issue?issueId=${issueId}`)
+
+
+    fetch(url)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`Server returned ${response.status}: ${response.statusText}`);
@@ -18,71 +65,85 @@ function setEditIssueContent(container) {
             const tempContainer = document.createElement('div');
             tempContainer.innerHTML = html.content;
             const editIssueTemplate = tempContainer.firstElementChild;
-            issueCard.replaceWith(editIssueTemplate);
+            contentCard.replaceWith(editIssueTemplate);
+
             // Initialize any new editors that were just added
-            initEditorsInNode(editIssueTemplate);
+            initListenersOnFormElements(editIssueTemplate);
 
         })
         .catch(error => {
-            console.error("Error fetching issue editor:", error);
+            console.error(`Error fetching ${contentType} editor:`, error);
         });
 }
 
-function initEditorsInNode(node) {
 
-    const formFields = Array.from(node.querySelectorAll('.form-field'))
+/**
+ * This sets the listeners on the newly created form
+ * @param {DOMElement} form
+ */
+function initListenersOnFormElements(form) {
+
+    const formFields = Array.from(form.querySelectorAll('.form-field'))
     formFields.forEach(field => {
 
         const fieldName = field.querySelector("textarea").id
         // Listener on 
-        const maxLength = 300; // Default max length
+        const maxLength = Number(field.querySelector(".char-counter").getAttribute("data-max-length"))
         setupFormField(fieldName, maxLength, field.id);
     })
 
-    // Add submission event for edit issue form
-    initListenersForEditIssue(node)
-
+    // Add submission event for edit form
+    initFormSubmissionListeners(form)
 }
 
-
-function initListenersForEditIssue(node) {
-
-    // Get form and button elements
-    const form = node
-    const draftIssueButton = form.querySelector(".update-issue-draft");
-    const publishIssueButton = form.querySelector(".publish-issue");
-    const updateIssueButton = form.querySelector(".update-issue");
-
-    // Prevent default form submission and handle both buttons
+/**
+ * Handle setting the listeners on the submit buttons and POST logic
+ * @param {DOMElement} form
+ */
+function initFormSubmissionListeners(form) {
     form.addEventListener("submit", (e) => {
         e.preventDefault(); // Prevent standard form submission
     });
 
-    if (draftIssueButton) {
-        // Handler for Draft button
-        draftIssueButton.addEventListener("click", (e) => {
-            submitForm(e, ContentStatus.Draft);
-        });
+    const contentType = form.getAttribute("data-content-type")
+    if (!contentType) {
+        throw new Error("Form missing 'data-content-type'")
     }
 
-    if (publishIssueButton) {
-        // Handler for Publish button
-        publishIssueButton.addEventListener("click", (e) => {
-            submitForm(e, ContentStatus.Published);
-        });
+    // The create-or-edit forms are dynamic and not all these buttons exist at 
+    // the same time
+
+    let draftButton = null;
+    let publishButton = null;
+    let updateButton = null;
+
+    if (contentType == 'issue') {
+        draftButton = form.querySelector(".update-issue-draft");
+        publishButton = form.querySelector(".publish-issue");
+        updateButton = form.querySelector(".update-issue");
+    }
+    if (contentType == 'solution') {
+        draftButton = form.querySelector(".update-solution-draft");
+        publishButton = form.querySelector(".publish-solution");
+        updateButton = form.querySelector(".update-solution");
     }
 
-    if (updateIssueButton) {
-        updateIssueButton.addEventListener("click", (e) => {
-            submitForm(e, ContentStatus.Published);
-        });
+    // ContentStatus is defined in ClientSideEnums.js
+
+    if (draftButton) {
+        draftButton.addEventListener("click", (e) => submitForm(e, ContentStatus.Draft))
+    }
+    if (publishButton) {
+        publishButton.addEventListener("click", (e) => submitForm(e, ContentStatus.Published))
+    }
+    if (updateButton) {
+        updateButton.addEventListener("click", (e) => submitForm(e, ContentStatus.Published))
     }
 
-    // Function to handle form submission via fetch
+
     function submitForm(e, contentStatus) {
-
-        const contentItemEl = form
-        const errorContainers = Array.from(contentItemEl.querySelectorAll(".text-danger"))
+        // Clear all errors before submitting
+        const errorContainers = Array.from(form.querySelectorAll(".text-danger"))
         errorContainers.forEach(container => {
             container.innerText = ""
         })
@@ -92,13 +153,44 @@ function initListenersForEditIssue(node) {
 
         // Add the content status to the form data
         formData.append("contentStatus", contentStatus);
-      
+
+        // Add potentially hidden/disabled fields
+        // An issue may have an hidden IssueID, or possibly disabled parentIssueID, or possibly disabled parentSolutionID
+        // A Solution will have a hidden IssueID, and possibly diasabled ParentIssueID
+        const issueIdField = form.querySelector("#IssueID")
+        const solutionIdField = form.querySelector("#SolutionID")
+        const parentIssueIdField = form.querySelector("#ParentIssueID")
+        const parentSolutionIdField = form.querySelector("#ParentSolutionID")
+
+        // Add these fields to formData if they exist, even if hidden or disabled
+        if (issueIdField && issueIdField.value) {
+            formData.append("IssueID", issueIdField.value);
+        }
+        if (solutionIdField && solutionIdField.value) {
+            formData.append("SolutionID", solutionIdField.value);
+        }
+        if (parentIssueIdField && parentIssueIdField.value) {
+            formData.append("ParentIssueID", parentIssueIdField.value);
+        }
+        if (parentSolutionIdField && parentSolutionIdField.value) {
+            formData.append("ParentSolutionID", parentSolutionIdField.value);
+        }
+
+
+
 
         // Get anti-forgery token
         const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
 
-        // Send POST request via fetch
-        fetch("/edit-issue", {
+        const url = form.getAttribute("data-form-url")
+        if (!url) {
+            throw new Error("Form missing 'data-form-url'")
+        }
+
+        // form data should have the issueID or solutionID depending on contentType
+
+
+        fetch(url, {
             method: "POST",
             headers: {
                 "RequestVerificationToken": token
@@ -113,17 +205,21 @@ function initListenersForEditIssue(node) {
             })
             .then(data => {
                 if (data.success) {
-                    console.log("edit issue", { data })
+                    // Handle successful response
+                    console.log("edit " + contentType, { data })
                     // replace node with data.content (as a node)
                     // Parse the HTML content into DOM nodes
                     const tempContainer = document.createElement('div');
-                    
+
                     tempContainer.innerHTML = data.content;
 
-                    // remove the author card alert tab
-                    const issueId = formData.get('IssueID');
-                    const authorContentTab = document.querySelector(`.author-content-alert[data-id='${issueId}']`)
+
+
+                    //// remove the author card alert tab
+                    const contentID = tempContainer.querySelector(".card.solution-card, .card.issue-card").getAttribute("id")
+                    const authorContentTab = document.querySelector(`.author-content-alert[data-id='${contentID}']`)
                     authorContentTab.remove()
+                    // NOTE: A new author content tab will be added with the card
 
                     // replace form with updated card - use the actual DOM nodes
                     // using the children collection because there might be multiple elements
@@ -131,15 +227,13 @@ function initListenersForEditIssue(node) {
                     while (tempContainer.firstChild) {
                         newContent.appendChild(tempContainer.firstChild);
                     }
-                    contentItemEl.replaceWith(newContent);
-                    // Handle successful response
-                    // window.location.href = `/issue/${data.content.issueID}`;
+                    form.replaceWith(newContent);
                 } else {
                     // Handle validation errors or other failures
                     // alert("Failed to create issue. Please check your form inputs and try again.");
                     console.error("Error details:", data);
                     data.errors.forEach(error => {
-                        const fieldElement = contentItemEl.querySelector(`*[name=${error[0]}]`).closest(".form-element")
+                        const fieldElement = form.querySelector(`*[name=${error[0]}]`).closest(".form-element")
                         const fieldErrorEl = fieldElement.querySelector(".text-danger")
                         fieldErrorEl.innerText = error[1]
 
@@ -152,65 +246,7 @@ function initListenersForEditIssue(node) {
                 console.error("Error submitting form:", error);
                 alert("An error occurred while submitting the form. Please try again.");
             });
-    }
 
-
-}
-
-
-
-
-if (typeof documentObserver == 'object') {
-    documentObserver.registerEvent(initEditContentButtonObserver)
-    //documentObserver.registerEvent(initEditContentObserver)
-} else {
-    throw error("documentObserver not defined")
-}
-
-
-function initEditContentButtonObserver(node) {
-
-    /*
-        When an issue is rendered and the author of the post is logged in
-        This observer detects the button and assigned a listener.
-    */
-
-
-    // Check if the node itself is an edit button
-    if (node.classList && (node.classList.contains('edit-issue-button') || node.classList.contains('edit-solution-button'))) {
-        handleEditButtonAdded(node);
-    }
-    // Also check if the node contains edit buttons (most common case)
-    else if (node.nodeType === 1) { // Element node
-        const editButtons = node.querySelectorAll('.edit-issue-button, .edit-solution-button');
-        editButtons.forEach(button => {
-            handleEditButtonAdded(button);
-        });
     }
 
 }
-
-
-
-// Extract the button handling logic to a separate function
-function handleEditButtonAdded(node) {
-    // Initialize card-specific JS here
-    if (typeof setEditIssueContent === 'function') {
-        try {
-            node.addEventListener("click", () => setEditIssueContent(node));
-        } catch (initError) {
-            console.error("Error in setEditIssueContent:", initError);
-        }
-    } else {
-        console.error("setEditIssueContent function is not defined");
-    }
-}
-
-
-// This captures setting the event on authors issue that are loaded with the initial page
-document.addEventListener("DOMContentLoaded", () => {
-    Array.from(document.querySelectorAll(".edit-issue-button, .edit-solution-button")).forEach((node) => {
-        node.addEventListener("click", () => setEditIssueContent(node))
-    });
-});
-

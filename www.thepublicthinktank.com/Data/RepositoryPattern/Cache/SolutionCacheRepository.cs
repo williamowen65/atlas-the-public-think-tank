@@ -37,5 +37,16 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             return await _inner.AddSolutionAsync(solution);
         }
 
+        public async Task<Solution_ReadVM> UpdateSolutionAsync(Solution solution)
+        {
+            // Invalidate the cache related to this issue
+            // issue, and possibly other related ones
+
+            _cache.Remove($"solution:{solution.SolutionID}");
+
+            // Update any nested breadcrumbs
+
+            return await _inner.UpdateSolutionAsync(solution);
+        }
     }
 }

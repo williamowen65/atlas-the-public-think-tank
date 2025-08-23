@@ -38,6 +38,9 @@ namespace atlas_the_public_think_tank.Controllers
         /// <summary>
         /// This method is used to return solution create form for the create issue page.
         /// </summary>
+        /// <remarks>
+        /// This is similar to the process that happens on the create solution page, but it occurs in this controller action instead
+        /// </remarks>
         [Route("/create-solution-form")]
         public async Task<IActionResult> CreateSolutionPartialView(Guid issueId)
         {
@@ -45,7 +48,7 @@ namespace atlas_the_public_think_tank.Controllers
 
             // issue must already exist
 
-            CreateSolutionWrapper solutionWrapper = new CreateSolutionWrapper()
+            CreateOrEditSolutionWrapper solutionWrapper = new CreateOrEditSolutionWrapper()
             {
                 Solution = new CreateSolutionViewModel() { 
                     ParentIssueID = issueId,
@@ -55,7 +58,7 @@ namespace atlas_the_public_think_tank.Controllers
             };
 
             // render Partial view and return json
-            string html = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Solution/_create-solution.cshtml", solutionWrapper);
+            string html = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Solution/_create-or-edit-solution.cshtml", solutionWrapper);
 
             ContentCreationResponseBase contentCreationResponse = new ContentCreationResponseBase();
 
@@ -67,6 +70,7 @@ namespace atlas_the_public_think_tank.Controllers
 
         /// <summary>
         /// This method is used to create a new solution post.
+        /// After submitting a post, the form is replaced with a rendered solution card (ready for voting)
         /// </summary>
         /// <param name="model"></param>
         [HttpPost]
@@ -129,125 +133,29 @@ namespace atlas_the_public_think_tank.Controllers
             return Json(contentCreationResponse);
         }
 
+        
+        /// <summary>
+        /// This method serves the "create solution" page
+        /// </summary>
+        [Route("/create-solution")]
+        public IActionResult CreateSolutionPage(Guid? parentIssueID = null)
+        {
 
-        /*
-            [Route("/solution/create")]
-            public async Task<IActionResult> CreateSolution(Guid? parentIssueID = null)
+            CreateSolutionPageViewModel model = new CreateSolutionPageViewModel
             {
-                // Initialize the ViewModel
-                var viewModel = new Solution_CreateVM
-                {
-                    ParentIssueID = parentIssueID,
-                    Scopes = _context.Scopes.ToList(),
-                    Categories = await _context.Categories.ToListAsync(),
-                    //BreadcrumbTags = await _crud.BreadcrumbAccessor.GetContentBreadcrumb(parentIssueID ?? Guid.Empty)
-                };
-
-                return View(viewModel);
-            }
-
-            [HttpPost]
-            [Route("/solution/create")]
-            [ValidateAntiForgeryToken]
-            public async Task<IActionResult> CreateSolution(Solution_CreateVM model)
+                // Load Scopes from the database
+                Scopes = _context.Scopes.ToList()
+            };
+            // Set parent IDs if provided
+            if (parentIssueID.HasValue)
             {
-                if (ModelState.IsValid)
-                {
-                    // Get the current user ID
-                    string userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                    Guid userId;
-                    if (!Guid.TryParse(userIdStr, out userId))
-                    {
-                        // Handle the error (e.g., return an error response or throw)
-                        ModelState.AddModelError("", "Invalid user ID.");
-                    }
-
-                    // Create the Solution entity
-                    var solution = new Solution
-                    {
-                        Title = model.Title,
-                        Content = model.Content,
-                        ParentIssueID = model.ParentIssueID.Value,
-                        ContentStatus = model.ContentStatus,
-                        AuthorID = userId,
-                        CreatedAt = DateTime.Now,
-                        ScopeID = model.ScopeID,
-                    };
-
-                    // Add the solution to the context
-                    _context.Solutions.Add(solution);
-                    await _context.SaveChangesAsync();
-
-                    // Now add the category relationships
-                    if (model.SelectedCategoryIds != null && model.SelectedCategoryIds.Any())
-                    {
-                        foreach (Guid categoryId in model.SelectedCategoryIds)
-                        {
-                            var solutionCategory = new SolutionCategory
-                            {
-                                SolutionID = solution.SolutionID,
-                                CategoryID = categoryId
-                            };
-                            _context.SolutionCategories.Add(solutionCategory);
-                        }
-
-                        // Save the User History (todo)
-
-                        await _context.SaveChangesAsync();
-                    }
-
-                    // Redirect to the details view of the issue this solution is for
-                    return RedirectToAction("ReadIssue", "Issue", new { id = model.ParentIssueID });
-                }
-
-                // If we got to here, something failed, redisplay form
-                model.Categories = await _context.Categories.ToListAsync();
-                return View(model);
+                model.Solution.ParentIssueID = parentIssueID;
             }
 
 
+            return View(model);
+        }
 
-            /// <summary>
-            /// Retrieves a paginated list of sub-issues for a specified solution.
-            /// </summary>
-            /// <param name="solutionId">The unique identifier of the solution for which sub-issues are requested.</param>
-            /// <param name="currentPage">The current page number of the paginated results. Defaults to 1.</param>
-            /// <returns>An <see cref="IActionResult"/> containing the paginated sub-issues in JSON format.</returns>
-            [HttpGet]
-            [AllowAnonymous]
-            [Route("/solution/getPaginatedSubIssues/{solutionId}")]
-            public async Task<IActionResult> GetPaginatedSubIssues(Guid solutionId, int currentPage = 1)
-            {
-
-                ContentFilter filter = new ContentFilter();
-                if (Request.Cookies.TryGetValue("contentFilter", out string? cookieValue) && cookieValue != null)
-                {
-                    filter = ContentFilter.FromJson(cookieValue);
-                }
-
-
-                PaginatedIssuesResponse paginatedSubIssues = await _crud.Solutions.GetSubIssuesPagedAsync(solutionId, currentPage, filter);
-
-                string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Issue/_issue-cards.cshtml", paginatedSubIssues.Issues);
-
-
-                var response = new
-                {
-                    html = partialViewHtml,
-                    pagination = new PaginationStats
-                    {
-                        TotalCount = paginatedSubIssues.TotalCount,
-                        PageSize = paginatedSubIssues.PageSize,
-                        CurrentPage = paginatedSubIssues.CurrentPage,
-                        TotalPages = (int)Math.Ceiling(paginatedSubIssues.TotalCount / (double)paginatedSubIssues.PageSize)
-                    }
-                };
-
-                return Json(response);
-            }
-
-
-            */
 
         /// <summary>
         /// Returns a HTML page for a specific solution
@@ -281,6 +189,97 @@ namespace atlas_the_public_think_tank.Controllers
             // Map to the view model (adjust as needed for your project)
 
             return View(solution);
+        }
+
+        /// <summary>
+        /// This method is used to return the partial for editing a solution
+        /// </summary>
+        [Route("/edit-solution")]
+        public async Task<IActionResult> EditSolutionPartialView(Guid solutionId)
+        {
+            Solution_ReadVM? solution = await Read.Solution(solutionId, new ContentFilter());
+
+
+            CreateOrEditSolutionWrapper solutionWrapper = new CreateOrEditSolutionWrapper()
+            {
+                Solution = new CreateSolutionViewModel()
+                { 
+                    SolutionID = solution.SolutionID,
+                    Content = solution.Content,
+                    ContentStatus = solution.ContentStatus,
+                    ScopeID = solution.Scope.ScopeID,
+                    Title = solution.Title,
+                    ParentIssue = await Read.Issue(solution.ParentIssueID, new ContentFilter()),
+                    ParentIssueID = solution.ParentIssueID,
+                },
+                Scopes = await _context.Scopes.ToListAsync()
+            };
+
+            // render Partial view and return json
+            string html = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Solution/_create-or-edit-solution.cshtml", solutionWrapper);
+
+
+            return Json(new
+            {
+                content = html
+            });
+        }
+
+
+        /// <summary>
+        /// This method is used to edit an issue post.
+        /// </summary>
+        /// <param name="model"></param>
+        [HttpPost]
+        [Route("/edit-solution")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditSolution(UpdateSolutionViewModel model, ContentStatus contentStatus)
+        {
+            ContentCreationResponseBase contentCreationResponse = new ContentCreationResponseBase();
+
+            if (!ModelState.IsValid)
+            {
+                contentCreationResponse.Success = false;
+
+                // Add validation errors to response
+                foreach (var state in ModelState)
+                {
+                    foreach (var error in state.Value.Errors)
+                    {
+                        var errorEntry = new List<string>();
+                        errorEntry.Add(state.Key);
+                        errorEntry.Add(error.ErrorMessage);
+                        contentCreationResponse.Errors.Add(errorEntry);
+                    }
+                }
+                return Json(contentCreationResponse);
+            }
+
+
+            var user = await _userManager.GetUserAsync(User);
+
+            // Update solution
+            Solution_ReadVM? solution = await Update.Solution(new Solution()
+            {
+                SolutionID = (Guid)model.SolutionID!,
+                ParentIssueID = (Guid)model.ParentIssueID!,
+                AuthorID = user.Id,
+                Content = model.Content,
+                ContentStatus = contentStatus,
+                CreatedAt = DateTime.UtcNow,
+                ScopeID = (Guid)model.ScopeID!,  // Use ScopeID instead of Scope.ScopeID
+                Title = model.Title
+            });
+
+
+            // Render issue
+            // render Partial view and return json
+            string html = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Solution/_solution-card.cshtml", solution);
+
+            contentCreationResponse.Content = html;
+            contentCreationResponse.Success = true;
+
+            return Json(contentCreationResponse);
         }
 
         #region Vote on a solution

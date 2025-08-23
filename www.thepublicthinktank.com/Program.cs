@@ -54,6 +54,13 @@ public class Program
             .AddRoles<IdentityRole<Guid>>()
             .AddEntityFrameworkStores<ApplicationDbContext>();
 
+        // After the AddDefaultIdentity line, add this configuration:
+        builder.Services.ConfigureApplicationCookie(options =>
+        {
+            // This makes it so the [Authorize] routes will redirect to to the login page with the correct url
+            options.LoginPath = "/login";
+        });
+
         // Add a developer-friendly exception filter for database-related errors
         // (helps provide detailed error information during development)
         builder.Services.AddDatabaseDeveloperPageExceptionFilter();

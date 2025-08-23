@@ -42,5 +42,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.IRepository
         /// <returns></returns>
         Task<Solution_ReadVM> AddSolutionAsync(Solution solution);
 
+        Task<Solution_ReadVM> UpdateSolutionAsync(Solution solution);
+
     }
 }

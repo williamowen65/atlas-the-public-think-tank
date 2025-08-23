@@ -18,6 +18,7 @@ using atlas_the_public_think_tank.Models.Database;
 
 namespace WebApplication1.Areas.Identity.Pages.Account
 {
+    
     public class LoginModel : PageModel
     {
         private readonly SignInManager<AppUser> _signInManager;

@@ -1,0 +1,32 @@
+﻿@using System.Security.Claims
+@using Microsoft.AspNetCore.Identity
+@using atlas_the_public_think_tank.Models.Database
+@inject UserManager<AppUser> UserManager
+
+
+@model Solution_ReadVM
+
+@{
+
+    string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    bool doesUserOwnContent = false;
+    AppUser? user = null;
+    if (!string.IsNullOrEmpty(userId) && Model.Author != null)
+    {
+        doesUserOwnContent = Model.Author.Id.ToString() == userId;
+        user = await UserManager.GetUserAsync(User);
+    }
+}
+
+@if (doesUserOwnContent && user != null)
+{
+    <div class="card mx-5 text-center border-info author-content-alert" data-content-type="solution" data-id="@Model.SolutionID" style="border-bottom:0px;border-bottom-left-radius: 0px; border-bottom-right-radius: 0px">
+        <div class="card-header" style="border-bottom:0px">
+            You are the owner of this solution node.
+            <div class="float-end">
+                <button data-content-type="solution" data-content-id="@Model.SolutionID" class="edit-solution-button border-0 bg-transparent"> <i class="fa fa-edit"></i></button>
+            </div>
+        </div>
+    </div>
+}
+

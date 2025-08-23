@@ -48,5 +48,13 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
 
         }
 
+        public async Task<Solution_ReadVM> UpdateSolutionAsync(Solution solution)
+        {
+            _context.Solutions.Update(solution);
+            await _context.SaveChangesAsync();
+
+            return await Read.Solution(solution.SolutionID, new ContentFilter());
+
+        }
     }
 }

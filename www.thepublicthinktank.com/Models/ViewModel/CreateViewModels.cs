@@ -25,6 +25,17 @@ namespace atlas_the_public_think_tank.Models.ViewModel
         /// </remarks>
         public List<CreateSolutionViewModel> Solutions { get; set; } = new List<CreateSolutionViewModel>();
     }
+    public class CreateSolutionPageViewModel()
+    {
+
+        public List<Scope> Scopes { get; set; } = new List<Scope>();
+
+        /// <summary>
+        /// Represents the main issue content that the user is creating
+        /// </summary>
+        public CreateSolutionViewModel Solution { get; set; } = new CreateSolutionViewModel();
+
+    }
 
 
     public class ContentCreationResponseBase
@@ -67,20 +78,24 @@ namespace atlas_the_public_think_tank.Models.ViewModel
         public Guid? ScopeID { get; set; }
 
 
-        public ContentStatus ContentStatus { get; set; }
+        public ContentStatus? ContentStatus { get; set; }
     }
 
 
     public class CreateIssueViewModel : CreateContentItemBase
     {
-
+        public Guid? IssueID { get; set; }
         public List<IssueTags> IssueTags { get; set; } = new List<IssueTags>();
        
         public Guid? ParentSolutionID { get; set; }
         public Guid? ParentIssueID { get; set; }
+
+        public Issue_ReadVM? ParentIssue { get; set; }
+        public Solution_ReadVM? ParentSolution { get; set; }
     }
     public class CreateSolutionViewModel : CreateContentItemBase
     {
+        public Guid? SolutionID { get; set; }
         public Issue_ReadVM? ParentIssue { get; set; }
         public List<SolutionTags> SolutionTags { get; set; } = new List<SolutionTags>();
 
@@ -98,35 +113,45 @@ namespace atlas_the_public_think_tank.Models.ViewModel
         [Required(ErrorMessage = "IssueID is required when updating an existing issue")]
         public Guid? IssueID { get; set; }
     }
+    public class UpdateSolutionViewModel : CreateSolutionViewModel
+    {
+        /// <summary>
+        /// ScopeId is Guid? with an DataAnnotation of Required 
+        /// to intentionally throw the correct error response.
+        /// This is because Guid is a non nullable type.
+        /// </summary>
+        [Required(ErrorMessage = "SolutionID is required when updating an existing solution")]
+        public Guid? SolutionID { get; set; }
+    }
+
+
 
     public class IssueTags
     { }
     public class SolutionTags
     { }
 
-    class CreateIssueWrapper
+    class CreateOrEditIssueWrapper
     {
         public CreateIssueViewModel? Issue { get; set; }
         public List<Scope> Scopes { get; set; }
 
-        /// <summary>
-        /// If the url params include a ParentIssueID, then this will be populated
-        /// </summary>
-        public Issue_ReadVM? ParentIssue { get; set; }
-
-        /// <summary>
-        /// If the url params include a ParentSolutionID, then this will be populated
-        /// </summary>
-        public Solution_ReadVM? ParentSolution { get; set; }
+        
     }
-    class CreateSolutionWrapper
+    class CreateOrEditSolutionWrapper
     {
         public CreateSolutionViewModel? Solution { get; set; }
         public List<Scope> Scopes { get; set; }
+
     }
     class EditIssueWrapper
     {
         public Issue_ReadVM? Issue { get; set; }
+        public List<Scope> Scopes { get; set; }
+    }
+    class EditSolutionWrapper
+    {
+        public Solution_ReadVM? Solution { get; set; }
         public List<Scope> Scopes { get; set; }
     }
 }

@@ -159,7 +159,7 @@ namespace atlas_the_public_think_tank.Controllers
         /// This method is used to return the create issue page.
         /// </summary>
         [Route("/create-issue")]
-        public IActionResult CreateIssuePage(Guid? parentIssueID, Guid? parentSolutionID)
+        public async Task<IActionResult> CreateIssuePage(Guid? parentIssueID, Guid? parentSolutionID)
         {
             CreateIssuePageViewModel model = new CreateIssuePageViewModel
             {
@@ -171,13 +171,18 @@ namespace atlas_the_public_think_tank.Controllers
             if (parentIssueID.HasValue)
             {
                 model.MainIssue.ParentIssueID = parentIssueID;
-                
+                Issue_ReadVM? parentIssue = await Read.Issue((Guid)model.MainIssue.ParentIssueID!, new ContentFilter());
+                model.MainIssue.ParentIssue = parentIssue;
             }
 
             if (parentSolutionID.HasValue)
             {
                 model.MainIssue.ParentSolutionID = parentSolutionID;
+                Solution_ReadVM? parentSolution = await Read.Solution((Guid)model.MainIssue.ParentSolutionID!, new ContentFilter());
+                model.MainIssue.ParentSolution = parentSolution;
             }
+
+          
 
             return View(model);
         }
@@ -255,15 +260,34 @@ namespace atlas_the_public_think_tank.Controllers
         {
             Issue_ReadVM? issue = await Read.Issue(issueId, new ContentFilter());
 
+            if (issue == null) {
+                throw new Exception("Issue doesn't exist for GET EditIssuePartialView");
+            }
 
-            EditIssueWrapper issueWrapper = new EditIssueWrapper()
+            CreateOrEditIssueWrapper issueWrapper = new CreateOrEditIssueWrapper()
             {
-                Issue = issue,
+                Issue = new CreateIssueViewModel() { 
+                    Content = issue.Content,
+                    ContentStatus = issue.ContentStatus,
+                    ParentIssueID= issue.ParentIssueID,
+                    ParentSolutionID= issue.ParentSolutionID,
+                    ScopeID = issue.Scope.ScopeID,
+                    Title = issue.Title,
+                    IssueID = issue.IssueID
+                },
                 Scopes = await _context.Scopes.ToListAsync()
             };
 
+            if (issue.ParentIssueID != null) {
+                issueWrapper.Issue.ParentIssue = await Read.Issue((Guid)issue.ParentIssueID!, new ContentFilter());
+            }
+            if (issue.ParentSolutionID != null)
+            {
+                issueWrapper.Issue.ParentSolution = await Read.Solution((Guid)issue.ParentSolutionID!, new ContentFilter());
+            }
+
             // render Partial view and return json
-            string html = await ControllerExtensions.RenderViewToStringAsync(this,"~/Views/Issue/_edit-issue.cshtml", issueWrapper);
+            string html = await ControllerExtensions.RenderViewToStringAsync(this,"~/Views/Issue/_create-or-edit-issue.cshtml", issueWrapper);
 
 
             return Json(new {

@@ -1,18 +1,28 @@
-﻿@model CreateIssueWrapper
+﻿@using atlas_the_public_think_tank.Models.Database
+@model CreateOrEditIssueWrapper
 
 @*
 Client side scripts tied to this view: ContentCreate.js
 *@
 
+@{
+
+    bool isEditMode = Model.Issue.IssueID != null;
+}
+
+
 @* Create new issue description  *@
-<form class="border-1 border card" >
+<form class="border-1 border card mb-3 issue-editor" data-content-type="issue" data-form-url="/edit-issue">
     @*
         asp-controller="Issue" asp-action="CreateIssue" method="post"
         These are controlled via the Ajax in ContentCreate.js
     *@
-    <h5 class="card-header text-center ">
-        Create a new Issue
-    </h5>
+    @if (!isEditMode)
+    {
+        <h5 class="card-header text-center ">
+            Create a new Issue
+        </h5>
+    }
     <div class="card-header text-center bg-primary-subtle" style="background: linear-gradient(-299deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.15));">
         <h5 class="m-0">An issue is a challenge, question, or problem.</h5> <small>Add solutions separately to keep discussions clear.</small>
     </div>
@@ -20,6 +30,11 @@ Client side scripts tied to this view: ContentCreate.js
         <div class="flex-grow-1 me-4">
 
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            @if (Model.Issue.IssueID != null)
+            {
+                <input type="hidden" name="IssueID" id="IssueID" value="@Model.Issue.IssueID" />
+            }
 
             @await Html.PartialAsync("~/Views/Shared/FormComponents/FormInput.cshtml", Model.Issue, new ViewDataDictionary(ViewData)
             {
@@ -43,6 +58,16 @@ Client side scripts tied to this view: ContentCreate.js
                     <span asp-validation-for="SelectedCategoryIds" class="text-danger"></span> *@
             </div>
 
+            @{
+
+                string? selectedScopeId = null;
+                if (Model.Issue.ScopeID != null)
+                {
+                    selectedScopeId = Model.Issue.ScopeID.ToString();
+                }
+
+            }
+
             @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml", Model.Issue, new ViewDataDictionary(ViewData)
                         {
                 { "PropertyName", "ScopeID" },
@@ -50,37 +75,29 @@ Client side scripts tied to this view: ContentCreate.js
                         { "ValueField", "ScopeID"},
                         { "TextField", "ScopeName"},
                         { "FieldPlaceholder", "-- Select a Scope --"},
-                        { "FieldLabel", "Scope"}
-                        })
+                        { "FieldLabel", "Scope"},
+                        {"SelectedValue", selectedScopeId}
+                })
 
-            @* <div class="mb-3">
-                    <label asp-for="@Model.MainIssue.ScopeID" class="form-label">Scope</label>
-                    <select asp-for="@Model.MainIssue.ScopeID" class="form-select select2"
-                            asp-items="@(new SelectList(Model.Scopes, "ScopeID", "ScopeName"))">
-                        <option value="">-- Select a Scope --</option>
-                    </select>
-                    <span asp-validation-for="@Model.MainIssue.ScopeID" class="text-danger"></span>
-                </div> *@
+        
 
             @* I would like this to be a select2 as well. except I'd like to render the items specifically to have more content. But I want it to start out empty, because it will use ajax for fetching data and populating the select2. 
-
-           
 
             *@
 
 
-            @if (Model.ParentSolution == null)
+            @if (Model.Issue.ParentSolution == null)
             {
                 
 
                 List<object> issueIdList = new List<object>();
                 string? selectedParentIssueValue = null;
-                if (Model.ParentIssue != null)
+                if (Model.Issue.ParentIssue != null)
                 {    
-                    issueIdList.Add(Model.ParentIssue);
-                    selectedParentIssueValue = Model.ParentIssue.IssueID.ToString();
+                    issueIdList.Add(Model.Issue.ParentIssue);
+                    selectedParentIssueValue = Model.Issue.ParentIssue.IssueID.ToString();
                 }
-                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml", Model.ParentIssue, new ViewDataDictionary(ViewData)
+                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml", Model.Issue.ParentIssue, new ViewDataDictionary(ViewData)
                 {
                     { "PropertyName", "ParentIssueID" },
                             { "ListItems", issueIdList},
@@ -93,18 +110,18 @@ Client side scripts tied to this view: ContentCreate.js
                 })
              }
 
-            @if (Model.ParentIssue == null)
+            @if (Model.Issue.ParentIssue == null)
             {
                 
 
                 List<object> solutionIdList = new List<object>();
                 string? selectedParentSolutionValue = null;
-                if (Model.ParentSolution != null)
+                if (Model.Issue.ParentSolution != null)
                 {
-                    solutionIdList.Add(Model.ParentSolution);
-                    selectedParentSolutionValue = Model.ParentSolution.SolutionID.ToString();
+                    solutionIdList.Add(Model.Issue.ParentSolution);
+                    selectedParentSolutionValue = Model.Issue.ParentSolution.SolutionID.ToString();
                 }
-                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml", Model.ParentSolution, new ViewDataDictionary(ViewData)
+                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml", Model.Issue.ParentSolution, new ViewDataDictionary(ViewData)
                 {
                     { "PropertyName", "ParentSolutionID" },
                             { "ListItems", solutionIdList},
@@ -123,9 +140,22 @@ Client side scripts tied to this view: ContentCreate.js
         </div>
     </div>
     <div class="card-footer">
-        <div class="ms-auto d-flex">
-            <button id="create-issue-draft" class=" btn btn-sm btn-secondary fw-bold ms-auto" type="submit">Save as Draft</button>
-            <button id="publish-issue" class=" btn btn-sm btn-primary fw-bold ms-2" type="submit">Publish Issue</button>
+        <div class=" ms-auto d-flex">
+            @if (Model.Issue.ContentStatus == null)
+            {
+                <button class="create-issue-draft btn btn-sm btn-secondary fw-bold ms-auto" type="submit">Create as Draft</button>
+                <button class="publish-issue btn btn-sm btn-primary fw-bold ms-2" type="submit">Publish Issue</button>
+            }
+            @if (Model.Issue.ContentStatus == ContentStatus.Draft)
+            {
+                <button class="update-issue-draft btn btn-sm btn-secondary fw-bold ms-auto" type="submit">Update Draft</button>
+                <button class="publish-issue btn btn-sm btn-primary fw-bold ms-2" type="submit">Publish Issue</button>
+            }
+            @if (Model.Issue.ContentStatus == ContentStatus.Published)
+            {
+
+                <button class="btn btn-primary btn-sm fw-bold ms-auto update-issue w-fit" type="submit">Update Issue Post</button>
+            }
         </div>
     </div>
 </form>
