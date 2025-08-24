@@ -129,6 +129,48 @@ namespace CloudTests.UserStories
             Assert.IsTrue(success);
         }
 
+        [TestMethod]
+        public async Task User1_CanCreateAnIssue_AndThenCreateSolutionsForThatIssue_AndVisitContent_AndSeeAuthoredTag()
+        {
+            var (issueJsonDoc, issueTitle, content) = await CreateValidIssue();
+            var rootElement = issueJsonDoc.RootElement;
+            string newContentId = rootElement.GetProperty("contentId").GetString();
+
+            // call CreateValidSolution and test the result
+            var (solutionJsonDoc, solutionTitle, solutionContent) = await CreateValidSolution(newContentId);
+            var solutionRootElement = solutionJsonDoc.RootElement;
+            bool success = solutionRootElement.GetProperty("success").GetBoolean();
+            Assert.IsTrue(success);
+
+            string newSolutionContentId = solutionRootElement.GetProperty("contentId").ToString();
+            string url = $"/solution/{newSolutionContentId}";
+            var document = await _env.fetchHTML(url);
+            var authorContentTag = document.QuerySelector($".author-content-alert[data-id='{newSolutionContentId}']");
+            Assert.IsNotNull(authorContentTag, "Author content tag should exist.");
+        }
+
+        [TestMethod]
+        public async Task User1_CanCreateAnIssue_AndThenCreateSolutionsForThatIssue_AndWhenCreatingAnIssueForThatSolution_TheParentSolutionSelect_shouldBeSetToCorrectSolution()
+        {
+            var (issueJsonDoc, issueTitle, content) = await CreateValidIssue();
+            var rootElement = issueJsonDoc.RootElement;
+            string newContentId = rootElement.GetProperty("contentId").GetString();
+
+            // call CreateValidSolution and test the result
+            var (solutionJsonDoc, solutionTitle, solutionContent) = await CreateValidSolution(newContentId);
+            var solutionRootElement = solutionJsonDoc.RootElement;
+            string newSolutionContentId = solutionRootElement.GetProperty("contentId").ToString();
+            string url = $"/create-issue?parentSolutionID={newSolutionContentId}";
+            var document = await _env.fetchHTML(url);
+            var ParentSolutionSelect = document.QuerySelector($"select#ParentSolutionID");
+            // Select should be disabled and set to solution
+            Assert.IsTrue(ParentSolutionSelect.HasAttribute("disabled"), "Parent Solution select should be disabled.");
+            var selectedOption = ParentSolutionSelect.QuerySelector("option[selected]");
+            Assert.AreEqual(newSolutionContentId, selectedOption.GetAttribute("value"), "Parent Solution select should be preset to the solution id.");
+
+
+        }
+
 
 
 
