@@ -2,7 +2,9 @@
 -- First identifies all root issues by the user, then recursively deletes each tree
 
 -- User parameter
+
 DECLARE @UserID uniqueidentifier = '49294663-7E59-4AA8-7649-08DDE3405379'; -- Set the AppUser ID whose content you want to delete
+
 
 -- Temporary storage for root issues
 IF OBJECT_ID('tempdb..#UserRootIssues') IS NOT NULL
@@ -107,6 +109,7 @@ BEGIN
     END
 
     -- Delete issue votes
+
     IF OBJECT_ID('issues.IssueVotes', 'U') IS NOT NULL
     BEGIN
         DELETE iv
