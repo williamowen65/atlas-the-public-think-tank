@@ -1166,10 +1166,11 @@ namespace atlas_the_public_think_tank.Migrations
                 column: "AppUserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CommentVotes_CommentID",
+                name: "IX_CommentVotes_CommentID_UserID",
                 schema: "comments",
                 table: "CommentVotes",
-                column: "CommentID");
+                columns: new[] { "CommentID", "UserID" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_CommentVotes_UserID",
@@ -1215,10 +1216,11 @@ namespace atlas_the_public_think_tank.Migrations
                 column: "AppUserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_IssueVotes_IssueID",
+                name: "IX_IssueVotes_IssueID_UserID",
                 schema: "issues",
                 table: "IssueVotes",
-                column: "IssueID");
+                columns: new[] { "IssueID", "UserID" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_IssueVotes_UserID",
@@ -1259,10 +1261,11 @@ namespace atlas_the_public_think_tank.Migrations
                 column: "AppUserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_SolutionVotes_SolutionID",
+                name: "IX_SolutionVotes_SolutionID_UserID",
                 schema: "solutions",
                 table: "SolutionVotes",
-                column: "SolutionID");
+                columns: new[] { "SolutionID", "UserID" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_SolutionVotes_UserID",
