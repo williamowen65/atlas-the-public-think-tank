@@ -80,6 +80,10 @@ function setupQuickTabLinks(e) {
 
 function getDialElements(issueId) {
 
+    //if (!issueId) {
+    //    console.error("IssueId not passed to getDialElements")
+    //}
+
     //console.trace("getDialElements");
 
     const containerId = `vote-toggle-container-${issueId}`;
@@ -510,29 +514,8 @@ function createDialResetMethod(container, issueId, observer, dialId, options, st
  * It calls logic for the voting dials to be initialized per issue card added to DOM
  * 
  * Update 6/10/2025 - Using this MutationObserver to handle initializing vote dial logic
- * 
+ * Update 8/21/2025 - Using consolidated documentObserver
  */
-const observer = new MutationObserver(mutations => {
-    mutations.forEach(mutation => {
-        mutation.addedNodes.forEach(node => {
-            if (node.classList && (node.classList.contains('issue-card') || node.classList.contains('solution-card'))) {
-                // Card was added
-                //console.log('Issue card added via MutationObserver:', node);
-                // Initialize card-specific JS here
-                if (typeof initializeCard === 'function') {
-                    try {
-                        const issueId = node.id;
-                        initializeCard(issueId);
-                    } catch (initError) {
-                        console.error("Error in initializeVoteDial:", initError);
-                    }
-                } else {
-                    console.error("initializeVoteDial function is not defined");
-                }
-            }
-        });
-    });
-});
 
 
 
@@ -542,11 +525,36 @@ const observer = new MutationObserver(mutations => {
  This is an attempt to stop that error (set 8-19-2025)
 */
 document.addEventListener("DOMContentLoaded", () => {
-    Array.from(document.querySelectorAll(".card")).forEach((node) => {
+    Array.from(document.querySelectorAll(".issue-card, .solution-card")).forEach((node) => {
         const issueId = node.id;
         initializeCard(issueId);
     })
 })
-observer.observe(document, { childList: true, subtree: true });
+if (typeof documentObserver == 'object') {
+    documentObserver.registerEvent(initInitializeCardObserver)
+} else {
+    throw error("documentObserver not defined")
+}
+
+
+function initInitializeCardObserver(node) {
+        if (node.classList && (node.classList.contains('issue-card') || node.classList.contains('solution-card'))) {
+            // Card was added
+            //console.log('Issue card added via MutationObserver:', node);
+            // Initialize card-specific JS here
+            if (typeof initializeCard === 'function') {
+                try {
+                    const issueId = node.id;
+                    initializeCard(issueId);
+                } catch (initError) {
+                    console.error("Error in initializeVoteDial:", initError);
+                }
+            } else {
+                console.error("initializeVoteDial function is not defined");
+            }
+
+    }
+}
+
 
 

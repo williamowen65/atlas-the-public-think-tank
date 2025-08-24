@@ -18,7 +18,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         {
             return await _cache.GetOrCreateAsync($"app-user:{UserId}", async entry =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
                 return await _inner.GetAppUser(UserId);
             });
         }

@@ -1,6 +1,8 @@
-﻿using Microsoft.Extensions.Caching.Memory;
-using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
+﻿using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Models.Database;
+using atlas_the_public_think_tank.Models.ViewModel;
+using Microsoft.Extensions.Caching.Memory;
+using repository_pattern_experiment.Controllers;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 {
@@ -21,15 +23,31 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         {
             return await _cache.GetOrCreateAsync($"issue:{id}", async entry =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
                 return await _inner.GetIssueById(id);
             });
         }
 
-        public Task AddIssueAsync(Issue issue, Guid? parentIssueId, Guid? parentSolutionId)
+        public async Task<Issue_ReadVM> AddIssueAsync(Issue issue)
         {
-            // Could optionally invalidate cache here
-            return _inner.AddIssueAsync(issue, parentIssueId, parentSolutionId);
+            // When creating an issue invalidate all filterIdSets in the cache
+            CacheHelper.ClearAllFeedIdSets();
+
+            return await _inner.AddIssueAsync(issue);
+        }
+
+        public async Task<Issue_ReadVM?> UpdateIssueAsync(Issue issue)
+        {
+            // Invalidate the cache related to this issue
+            // issue, and possibly other related ones
+
+            _cache.Remove($"issue:{issue.IssueID}");
+
+            // Update any nested breadcrumbs
+
+
+
+            return  await _inner.UpdateIssueAsync(issue);
         }
     }
 }

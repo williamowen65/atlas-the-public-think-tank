@@ -1,8 +1,9 @@
-﻿using Microsoft.Extensions.Caching.Memory;
-using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
-using atlas_the_public_think_tank.Models.ViewModel;
-using atlas_the_public_think_tank.Models.Database;
+﻿using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Models;
+using atlas_the_public_think_tank.Models.Database;
+using atlas_the_public_think_tank.Models.ViewModel;
+using Microsoft.Extensions.Caching.Memory;
+using repository_pattern_experiment.Controllers;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 {
@@ -25,7 +26,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
             return await _cache.GetOrCreateAsync($"vote-stats:{id}", async entry =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
                 return await _inner.GetIssueVoteStats(id);
             });
         }
@@ -34,7 +35,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
             return await _cache.GetOrCreateAsync($"vote-stats:{id}", async entry =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
                 return await _inner.GetSolutionVoteStats(id);
             });
         }
@@ -66,7 +67,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                         // Update the cache with new expiration
                         var cacheEntryOptions = new MemoryCacheEntryOptions
                         {
-                            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10)
+                            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1)
                         };
 
                         _cache.Set(cacheKey, cachedStats, cacheEntryOptions);
@@ -74,6 +75,11 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 }
                 
             }
+
+            //TODO Invalidate all paginated filter sets with the filter hash.
+
+            CacheHelper.ClearAllFeedIdSets();
+
 
             return result;
         }
@@ -105,7 +111,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                         // Update the cache with new expiration
                         var cacheEntryOptions = new MemoryCacheEntryOptions
                         {
-                            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10)
+                            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1)
                         };
 
                         _cache.Set(cacheKey, cachedStats, cacheEntryOptions);
@@ -113,6 +119,8 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 }
 
             }
+
+            //TODO Invalidate all paginated filter sets with the filter hash.
 
             return result;
         }

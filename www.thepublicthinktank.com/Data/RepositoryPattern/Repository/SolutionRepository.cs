@@ -1,6 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using atlas_the_public_think_tank.Data.CRUD;
 using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Models.Database;
+using atlas_the_public_think_tank.Models.ViewModel;
+using Microsoft.EntityFrameworkCore;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
 {
@@ -34,11 +37,24 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
                 AuthorID = solution.AuthorID,
             };
         }
-        public Task AddSolutionAsync(Solution solution, Guid parentIssueId)
+        public async Task<Solution_ReadVM> AddSolutionAsync(Solution solution)
         {
-            throw new NotImplementedException();
-          
+            // Add the issue to the database
+            await _context.Solutions.AddAsync(solution);
+            await _context.SaveChangesAsync();
+
+            // Create and return the view model
+            return await Read.Solution(solution.SolutionID, new ContentFilter());
+
         }
 
+        public async Task<Solution_ReadVM> UpdateSolutionAsync(Solution solution)
+        {
+            _context.Solutions.Update(solution);
+            await _context.SaveChangesAsync();
+
+            return await Read.Solution(solution.SolutionID, new ContentFilter());
+
+        }
     }
 }

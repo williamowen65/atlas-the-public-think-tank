@@ -1,4 +1,5 @@
 ﻿using atlas_the_public_think_tank.Models.Database;
+using atlas_the_public_think_tank.Models.ViewModel;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.IRepository
 {
@@ -39,7 +40,9 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.IRepository
         /// Updates related cache items (solution count on an issue)
         /// </remarks>
         /// <returns></returns>
-        Task AddSolutionAsync(Solution solution, Guid parentIssueId);
+        Task<Solution_ReadVM> AddSolutionAsync(Solution solution);
+
+        Task<Solution_ReadVM> UpdateSolutionAsync(Solution solution);
 
     }
 }

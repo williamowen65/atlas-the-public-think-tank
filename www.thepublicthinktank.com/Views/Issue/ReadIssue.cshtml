@@ -11,7 +11,10 @@
 
 <div class="container mt-3  ">
 
-    @Html.Partial("~/Views/Issue/_issue-page-post.cshtml", Model)
+    @* @await Html.PartialAsync("~/Views/Issue/_issue-author-tag.cshtml", Model) *@
+
+    @* @Html.Partial("~/Views/Issue/_issue-page-post.cshtml", Model) *@
+    @Html.Partial("~/Views/Issue/_issue-card.cshtml", Model)
 
 
    
@@ -103,7 +106,7 @@
                             <div class="comment-feed">
                                 <div class="content">
                                     <h2>Empty Solution Feed</h2>
-                                    <a href="@Url.Action("CreateSolution", "Solution", new { parentIssueID = Model.IssueID })">
+                                    <a href="@Url.Action("CreateSolutionPage", "Solution", new { parentIssueID = Model.IssueID })">
                                         <button class="outlined-text">Create a Solution</button>
                                     </a>
                                 </div>
@@ -330,7 +333,7 @@
         // Menu content templates for each tab
         const menuTemplates = {
             'solutions-tab': `
-                <li><a class="dropdown-item" href="@Url.Action("CreateSolution", "Solution", new { parentIssueID = Model.IssueID })">Create Solution</a></li>
+                <li><a class="dropdown-item" href="@Url.Action("CreateSolutionPost", "Solution", new { parentIssueID = Model.IssueID })">Create Solution</a></li>
             `,
             'comments-tab': `
                 <li><a class="dropdown-item" href="#">Create Discussion</a></li>

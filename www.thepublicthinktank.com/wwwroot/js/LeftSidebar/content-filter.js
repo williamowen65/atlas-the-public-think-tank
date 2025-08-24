@@ -413,7 +413,7 @@ function filterTrigger() {
  */
 async function fetchFilteredHomePageContent() {
     // Send a new get request. home/getPaginatedContent
-    return fetch("/home/getPaginatedContent?currentPage=1")
+    return fetch("/getPaginatedMainContentFeed?currentPage=1")
         .then(res => res.json())
         .then(res => {
             return res;
@@ -570,9 +570,10 @@ function repopulateHomePageContents(updatedFilterContent) {
     ContentFilterSectionRePopulationWorkflow.updatePaginationButton(
         updatedFilterContent,
         "fetchPaginatedContent",
-        "/home/getPaginatedContent",
+        "/getPaginatedMainContentFeed",
         "posts"
     )
+
 }
 
 

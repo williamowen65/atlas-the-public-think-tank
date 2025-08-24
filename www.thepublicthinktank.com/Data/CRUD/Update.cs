@@ -5,7 +5,7 @@ using atlas_the_public_think_tank.Models.ViewModel;
 
 namespace atlas_the_public_think_tank.Data.CRUD
 {
-    public static class Create
+    public static class Update
     {
         private static IServiceProvider? _serviceProvider;
 
@@ -24,13 +24,12 @@ namespace atlas_the_public_think_tank.Data.CRUD
             var services = scope.ServiceProvider;
             var solutionRepository = services.GetRequiredService<ISolutionRepository>();
 
-            Solution_ReadVM solutionVM = await solutionRepository.AddSolutionAsync(solution);
+            Solution_ReadVM? solutionVM = await solutionRepository.UpdateSolutionAsync(solution);
 
             return solutionVM;
-
-
         }
-        public async static Task<Issue_ReadVM> Issue(Issue issue) {
+        
+        public async static Task<Issue_ReadVM?> Issue(Issue issue) {
             if (_serviceProvider == null)
                 throw new InvalidOperationException("Read class has not been initialized with a service provider.");
 
@@ -39,10 +38,10 @@ namespace atlas_the_public_think_tank.Data.CRUD
             var services = scope.ServiceProvider;
             var issueRepository = services.GetRequiredService<IIssueRepository>();
 
-            Issue_ReadVM issueVM = await issueRepository.AddIssueAsync(issue);
+            Issue_ReadVM? issueVM = await issueRepository.UpdateIssueAsync(issue);
 
             return issueVM;
         }
-      
+
     }
 }

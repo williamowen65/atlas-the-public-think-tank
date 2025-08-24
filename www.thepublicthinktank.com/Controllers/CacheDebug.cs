@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,7 +22,7 @@ namespace repository_pattern_experiment.Controllers
         [Route("api/cache-log/keys")]
         public IActionResult GetKeys()
         {
-            List<string> CacheKeys = GetAllCacheKeys();
+            List<string> CacheKeys = CacheHelper.GetAllCacheKeys();
             CacheKeys.Sort();
             return Json(CacheKeys);
         }
@@ -29,7 +30,7 @@ namespace repository_pattern_experiment.Controllers
         [Route("api/cache-log/entries")]
         public IActionResult GetEntries()
         {
-            var cacheEntries = GetAllCacheKeys();
+            var cacheEntries = CacheHelper.GetAllCacheKeys();
             cacheEntries.Sort();
             var cacheItems = new List<CacheItem>();
 
@@ -58,17 +59,6 @@ namespace repository_pattern_experiment.Controllers
 
         #region Cache Controller Helpers
 
-        /// <summary>
-        /// For debugging: Get all cached keys
-        /// </summary>
-        private List<string> GetAllCacheKeys()
-        {
-            if (_cache is MemoryCache memoryCache)
-            {
-                return memoryCache.Keys.Cast<object>().Select(k => k.ToString()).ToList();
-            }
-            return new List<string>();
-        }
 
         // Model for view
         public class CacheItem
@@ -80,5 +70,41 @@ namespace repository_pattern_experiment.Controllers
 
         #endregion
 
+    }
+
+    public static class CacheHelper
+    {
+        private static IMemoryCache _cache;
+
+        public static void Initialize(IMemoryCache cache)
+        {
+            _cache = cache;
+        }
+
+        /// <summary>
+        /// For debugging: Get all cached keys
+        /// </summary>
+        public static List<string> GetAllCacheKeys()
+        {
+            if (_cache is MemoryCache memoryCache)
+            {
+                return memoryCache.Keys.Cast<object>().Select(k => k.ToString()).ToList();
+            }
+            return new List<string>();
+        }
+
+        public static void ClearAllFeedIdSets()
+        {
+            // When creating an issue invalidate all filterIdSets in the cache
+            List<string> keys = CacheHelper.GetAllCacheKeys();
+            // all of the keys with "feed-ids" should be invalidated
+            foreach (var key in keys)
+            {
+                if (key.Contains("feed-ids", StringComparison.OrdinalIgnoreCase))
+                {
+                    _cache.Remove(key);
+                }
+            }
+        }
     }
 }

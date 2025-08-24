@@ -1,0 +1,46 @@
+﻿@using System.ComponentModel.DataAnnotations
+@using atlas_the_public_think_tank.Data.CRUD
+@using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
+@using atlas_the_public_think_tank.Models.Database
+@model CreateSolutionPageViewModel;
+
+@{
+    ViewData["Title"] = "Create a new Solution";
+}
+
+
+<div class="m-1 create-solution-page">
+
+    <div id="solution">
+        @*  
+            After saving issue as Draft or Publish, a rendered card replaces this content.
+            The user can cast their initial vote, or to back to edit.
+        *@
+        @{
+
+            Issue_ReadVM? parentIssue = Model.Solution.ParentIssueID != null ? await Read.Issue((Guid)Model.Solution.ParentIssueID!, new ContentFilter()) : null;
+
+            if (parentIssue != null)
+            {
+                Model.Solution.ParentIssue = parentIssue;    
+            }
+
+            Console.WriteLine();
+
+        }
+
+        @await Html.PartialAsync("~/Views/Solution/_create-or-edit-solution.cshtml", new CreateOrEditSolutionWrapper
+        {
+            Solution = Model.Solution,
+                Scopes = Model.Scopes,
+                })
+    </div>
+
+  
+
+</div>
+
+
+
+@* Todo: update this js form*@
+<script src="~/js/ContentCreate.js"></script>

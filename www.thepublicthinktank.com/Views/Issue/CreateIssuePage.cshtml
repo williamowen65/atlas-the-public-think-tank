@@ -1,0 +1,37 @@
+﻿@using System.ComponentModel.DataAnnotations
+@using atlas_the_public_think_tank.Data.CRUD
+@using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
+@using atlas_the_public_think_tank.Models.Database
+@model CreateIssuePageViewModel;
+
+@{
+    ViewData["Title"] = "Create a new Issue";
+    Console.WriteLine("test");
+}
+
+
+<style>
+
+    
+</style>
+
+
+
+<div class="m-1 create-issue-page" >
+
+    <div id="issue">
+        @*  
+            After saving issue as Draft or Publish, a rendered card replaces this content.
+            The user can cast their initial vote, or to back to edit.
+        *@
+    
+        @await Html.PartialAsync("~/Views/Issue/_create-or-edit-issue.cshtml", new CreateOrEditIssueWrapper
+        {
+            Issue = Model.MainIssue,
+            Scopes = Model.Scopes,
+        })
+    </div>
+
+</div>
+
+<script src="~/js/ContentCreate.js"></script>

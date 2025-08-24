@@ -398,7 +398,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
 
             if (solutionContent == null)
             {
-                throw new InvalidOperationException("Issue not found");
+                throw new InvalidOperationException("Solution not found");
             }
 
             AppUser_ReadVM? appUser = await appUserRepository.GetAppUser(solutionContent.AuthorID);

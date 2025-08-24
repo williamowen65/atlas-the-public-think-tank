@@ -1,14 +1,16 @@
 ﻿@using atlas_the_public_think_tank.Models.ViewModel
+
 @*
     Layout of the solution card
 *@
 @model Solution_ReadVM
 
 @{
-    Console.WriteLine();
-    
     Boolean IsContentLong = true;
 }
+
+@await Html.PartialAsync("~/Views/Solution/_solution-author-tag.cshtml", Model)
+
 
 <div class="card mb-3 solution-card" id="@Model.SolutionID" data-content-type="solution">
     <div class="card-content position-relative mb-2">
@@ -28,7 +30,10 @@
                 <div style="font-size:20px;" class="float-end">
                     @await Html.PartialAsync("~/Views/Solution/_solution-card-stat-icons.cshtml", Model)
                 </div>
+                <span class="float-start me-2">
+
                 @await Html.PartialAsync("~/Views/Shared/Icons/_Solutions.cshtml")
+                </span>
                 @* Title and this float need to be next to each other for float styling to work. *@
                 <span class="card-title">@Model.Title</span>
             </h5>

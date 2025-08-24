@@ -7,6 +7,8 @@ using atlas_the_public_think_tank.Models.Database;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using repository_pattern_experiment.Controllers;
 
 namespace atlas_the_public_think_tank;
 
@@ -52,6 +54,13 @@ public class Program
             .AddRoles<IdentityRole<Guid>>()
             .AddEntityFrameworkStores<ApplicationDbContext>();
 
+        // After the AddDefaultIdentity line, add this configuration:
+        builder.Services.ConfigureApplicationCookie(options =>
+        {
+            // This makes it so the [Authorize] routes will redirect to to the login page with the correct url
+            options.LoginPath = "/login";
+        });
+
         // Add a developer-friendly exception filter for database-related errors
         // (helps provide detailed error information during development)
         builder.Services.AddDatabaseDeveloperPageExceptionFilter();
@@ -88,8 +97,14 @@ public class Program
         var app = builder.Build();
 
         // Initialize the static Read class with the service provider
+        Create.Initialize(app.Services);
         Read.Initialize(app.Services);
         Upsert.Initialize(app.Services);
+        Update.Initialize(app.Services);
+        // Get the IMemoryCache service from the service provider
+        var memoryCache = app.Services.GetRequiredService<IMemoryCache>();
+        // Initialize the CacheHelper with the memory cache
+        CacheHelper.Initialize(memoryCache);
 
         FilterQueryService.Initialize(builder.Configuration);
 

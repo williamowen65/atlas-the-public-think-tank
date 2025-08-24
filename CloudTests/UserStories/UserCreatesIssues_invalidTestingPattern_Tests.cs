@@ -11,7 +11,7 @@ using CloudTests.TestingSetup.TestingData;
 namespace CloudTests.UserStories
 {
     [TestClass]
-    public class UserCreatesIssues_Tests
+    public class UserCreatesIssues_invalidTestingPattern_Tests
     {
         private static HttpClient _client;
         private static ApplicationDbContext _db;

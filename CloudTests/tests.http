@@ -2,7 +2,7 @@
 
 
 ### Get paginated content
-GET https://localhost:5501/home/getPaginatedContent
+GET https://localhost:5501/getPaginatedMainContentFeed
 Accept: application/json
 
 ###

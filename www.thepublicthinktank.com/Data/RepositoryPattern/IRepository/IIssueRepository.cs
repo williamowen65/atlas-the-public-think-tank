@@ -49,6 +49,9 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.IRepository
         /// <remarks>
         /// Potentially updates a related cache item (parent issue or parent solution count)
         /// </remarks>
-        Task AddIssueAsync(Issue issue, Guid? parentIssueId, Guid? parentSolutionId);
+        Task<Issue_ReadVM> AddIssueAsync(Issue issue);
+
+
+        Task<Issue_ReadVM?> UpdateIssueAsync(Issue issue);
     }
 }

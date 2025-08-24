@@ -23,7 +23,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             string filterHash = filter.ToJson().GetHashCode().ToString();
             return await _cache.GetOrCreateAsync($"solution-feed-ids:{issueId}:{filterHash}:{pageNumber}", async entry =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
                 return await _inner.GetPagedSolutionIdsOfIssueById(issueId, filter, pageNumber, pageSize);
             });
         }
@@ -33,7 +33,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             string filterHash = filter.ToJson().GetHashCode().ToString();
             return await _cache.GetOrCreateAsync($"sub-issue-feed-ids:{issueId}:{filterHash}:{pageNumber}", async entry =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
                 var pagedSubIssueIds= await _inner.GetPagedSubIssueIdsOfIssueById(issueId, filter, pageNumber, pageSize);
                 return pagedSubIssueIds;
             });
@@ -44,7 +44,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             string filterHash = filter.ToJson().GetHashCode().ToString();
             return await _cache.GetOrCreateAsync($"sub-issue-feed-ids:{solutionId}:{filterHash}:{pageNumber}", async entry =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
                 return await _inner.GetPagedSubIssueIdsOfSolutionById(solutionId, filter, pageNumber, pageSize);
             });
         }
@@ -54,7 +54,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             string filterHash = filter.ToJson().GetHashCode().ToString();
             return await _cache.GetOrCreateAsync($"main-content-feed-ids:{filterHash}:{pageNumber}", async entry =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
                 return await _inner.GetPagedMainContentFeedIds(filter, pageNumber, pageSize);
             });
         }
@@ -64,7 +64,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             string filterHash = filter.ToJson().GetHashCode().ToString();
             return await _cache.GetOrCreateAsync($"sub-issue-total-count:{issueId}:{filterHash}", async entry =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
                 return await _inner.GetContentCountSubIssuesOfIssueById(issueId, filter);
             });
         }
@@ -73,7 +73,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             string filterHash = filter.ToJson().GetHashCode().ToString();
             return await _cache.GetOrCreateAsync($"sub-issue-total-count:{solutionId}:{filterHash}", async entry =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
                 return await _inner.GetContentCountSubIssuesOfSolutionById(solutionId, filter);
             });
         }
@@ -82,7 +82,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             string filterHash = filter.ToJson().GetHashCode().ToString();
             return await _cache.GetOrCreateAsync($"solutions-total-count:{issueId}:{filterHash}", async entry =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
                 return await _inner.GetContentCountSolutionsOfIssueById(issueId, filter);
             });
         }
@@ -92,7 +92,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             string filterHash = filter.ToJson().GetHashCode().ToString();
             return await _cache.GetOrCreateAsync($"main-content-total-count:{filterHash}", async entry =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
                 return await _inner.GetContentCountMainContentFeed(filter);
             });
         }
