@@ -115,6 +115,23 @@ namespace CloudTests.UserStories
             Assert.IsNotNull(authorContentTag, "Author content tag should exist.");
         }
 
+        [TestMethod]
+        public async Task User1_CanCreateAnIssue_AndThenCreateSolutionsForThatIssue()
+        {
+            var (issueJsonDoc, issueTitle, content) = await CreateValidIssue();
+            var rootElement = issueJsonDoc.RootElement;
+            string newContentId = rootElement.GetProperty("contentId").GetString();
+
+            // call CreateValidSolution and test the result
+            var (solutionJsonDoc, solutionTitle, solutionContent) = await CreateValidSolution(newContentId);
+            var solutionRootElement = solutionJsonDoc.RootElement;
+            bool success = solutionRootElement.GetProperty("success").GetBoolean();
+            Assert.IsTrue(success);
+        }
+
+
+
+
         public async Task<(JsonDocument JsonDoc, string Title, string Content)> CreateValidIssue()
         {
             // 1. GET page to obtain antiforgery cookie + hidden token
@@ -135,6 +152,34 @@ namespace CloudTests.UserStories
 
             // 4. POST (cookie with antiforgery token should already be in HttpClient handler)
             var postResponse = await _env.PostFormAsync("/create-issue", formData);
+            var body = await postResponse.Content.ReadAsStringAsync();
+            // Convert body to JSON
+            var jsonDoc = JsonDocument.Parse(body);
+            return (jsonDoc, title, content);
+        }
+
+        public async Task<(JsonDocument JsonDoc, string Title, string Content)> CreateValidSolution(string parentIssueID)
+        {
+            // 1. GET page to obtain antiforgery cookie + hidden token
+            string url = "/create-solution" + "?parentIssueID=" +parentIssueID;
+            string tokenValue = await GetAntiForgeryToken(url);
+            string scopeId = await GetScopeIDFromPage(url);
+
+            string title = "Title longer than 15 characters";
+            string content = "Content longer than 30 characters";
+
+            // 3. Prepare form data INCLUDING the antiforgery token
+            var formData = new Dictionary<string, string>
+            {
+                ["__RequestVerificationToken"] = tokenValue!,
+                ["Title"] = title,
+                ["Content"] = content,
+                ["ScopeID"] = scopeId,
+                ["ParentIssueID"] = parentIssueID
+            };
+
+            // 4. POST (cookie with antiforgery token should already be in HttpClient handler)
+            var postResponse = await _env.PostFormAsync("/create-solution", formData);
             var body = await postResponse.Content.ReadAsStringAsync();
             // Convert body to JSON
             var jsonDoc = JsonDocument.Parse(body);
