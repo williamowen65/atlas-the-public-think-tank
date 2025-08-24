@@ -64,10 +64,12 @@ function setPaginationButtonListener(paginationButtonElement) {
                             console.error("Could not extract page number from URL");
                         }
 
+                        const newCount = Array.from(domTarget.querySelectorAll(".issue-card, .solution-card")).length
+
+
                         // Update the pagination button count
-                        paginatedCountElement.innerText = `(${Math.min(data.pagination.pageSize * data.pagination.currentPage, data.pagination.totalCount)}/${data.pagination.totalCount})`;
-                        const nextCurrentCount = data.pagination.pageSize * (data.pagination.currentPage);
-                        if (nextCurrentCount >= data.pagination.totalCount) {
+                        paginatedCountElement.innerText = `(${newCount}/${data.pagination.totalCount})`;
+                        if (newCount >= data.pagination.totalCount) {
                             // Disable the button
                             paginationButtonElement.disabled = true;
                             paginatedButtonText.innerText = `No more ${paginationContentType}`;
