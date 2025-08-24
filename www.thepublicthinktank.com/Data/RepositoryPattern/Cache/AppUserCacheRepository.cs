@@ -16,11 +16,12 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
         public async Task<AppUser_ReadVM?> GetAppUser(Guid UserId)
         {
-            return await _cache.GetOrCreateAsync($"app-user:{UserId}", async entry =>
-            {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
-                return await _inner.GetAppUser(UserId);
-            });
+            //return await _cache.GetOrCreateAsync($"app-user:{UserId}", async entry =>
+            //{
+            //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
+            //    return await _inner.GetAppUser(UserId);
+            //});                     
+            return await _inner.GetAppUser(UserId);
         }
     }
 }

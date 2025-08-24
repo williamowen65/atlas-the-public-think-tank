@@ -51,6 +51,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             return new UserVote_Issue_ReadVM
             {
                 ContentID = issueId,
+                ContentType = ContentType.Issue,
                 AverageVote = averageVote,
                 TotalVotes = totalVotes,
                 IssueVotes = votes.Select(v => new Vote_Cacheable_ReadVM
@@ -86,6 +87,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             return new UserVote_Solution_ReadVM
             {
                 ContentID = solutionId,
+                ContentType = ContentType.Solution,
                 AverageVote = averageVote,
                 TotalVotes = totalVotes,
                 SolutionVotes = votes.Select(v => new Vote_Cacheable_ReadVM
@@ -143,7 +145,8 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
                             UserID = existingVote.UserID,
                             VoteValue = existingVote.VoteValue,
                             CreatedAt = existingVote.CreatedAt,
-                            ModifiedAt = existingVote.ModifiedAt
+                            ModifiedAt = existingVote.ModifiedAt,
+                            
                         };
                     
                 }

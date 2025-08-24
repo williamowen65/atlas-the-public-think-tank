@@ -32,10 +32,10 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "pre-launch-landing-page", "
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3986CB4F-8582-4213-A385-7B2470124CDB}"
 	ProjectSection(SolutionItems) = preProject
-		Query for combining issues and solutions.sql = Query for combining issues and solutions.sql
-		target-database-schema-and-stored-procedures.sql = target-database-schema-and-stored-procedures.sql
-		TestDataCleanUp-ByAuthorID.sql = TestDataCleanUp-ByAuthorID.sql
-		TestDataCleanUp-ByIssueID.sql = TestDataCleanUp-ByIssueID.sql
+		General.sql = General.sql
+		sql-documents\target-database-schema-and-stored-procedures.sql = sql-documents\target-database-schema-and-stored-procedures.sql
+		sql-documents\TestDataCleanUp-ByAuthorID.sql = sql-documents\TestDataCleanUp-ByAuthorID.sql
+		sql-documents\TestDataCleanUp-ByIssueID.sql = sql-documents\TestDataCleanUp-ByIssueID.sql
 	EndProjectSection
 EndProject
 Global

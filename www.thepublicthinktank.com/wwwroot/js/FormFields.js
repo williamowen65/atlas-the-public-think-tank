@@ -4,14 +4,15 @@ document.addEventListener("DOMContentLoaded", function () {
     formFields.forEach(formField => {
         setupFormField(formField);
     })
+    // Add mutation observer after initial load
+    if (typeof documentObserver == 'object') {
+        documentObserver.registerEvent(initFormFieldListener)
+        //documentObserver.registerEvent(initEditContentObserver)
+    } else {
+        throw error("documentObserver not defined")
+    }
 });
 
-if (typeof documentObserver == 'object') {
-    documentObserver.registerEvent(initFormFieldListener)
-    //documentObserver.registerEvent(initEditContentObserver)
-} else {
-    throw error("documentObserver not defined")
-}
 
 /**
  * Form listener set via mutation observer

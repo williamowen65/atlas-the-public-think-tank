@@ -21,17 +21,17 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
         public async Task<IssueRepositoryViewModel?> GetIssueById(Guid id)
         {
-            return await _cache.GetOrCreateAsync($"issue:{id}", async entry =>
-            {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
-                return await _inner.GetIssueById(id);
-            });
+            //return await _cache.GetOrCreateAsync($"issue:{id}", async entry =>
+            //{
+            //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
+            //});
+            return await _inner.GetIssueById(id);
         }
 
         public async Task<Issue_ReadVM> AddIssueAsync(Issue issue)
         {
             // When creating an issue invalidate all filterIdSets in the cache
-            CacheHelper.ClearAllFeedIdSets();
+            //CacheHelper.ClearAllFeedIdSets();
 
             return await _inner.AddIssueAsync(issue);
         }
@@ -41,7 +41,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             // Invalidate the cache related to this issue
             // issue, and possibly other related ones
 
-            _cache.Remove($"issue:{issue.IssueID}");
+            //_cache.Remove($"issue:{issue.IssueID}");
 
             // Update any nested breadcrumbs
 

@@ -20,11 +20,12 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
         public async Task<SolutionRepositoryViewModel?> GetSolutionById(Guid id)
         {
-            return await _cache.GetOrCreateAsync($"solution:{id}", async entry =>
-            {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
-                return await _inner.GetSolutionById(id);
-            });
+            //return await _cache.GetOrCreateAsync($"solution:{id}", async entry =>
+            //{
+            //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
+            //    return await _inner.GetSolutionById(id);
+            //});
+             return await _inner.GetSolutionById(id);
         }
 
 
@@ -32,7 +33,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         public async Task<Solution_ReadVM> AddSolutionAsync(Solution solution)
         {
             // When creating an issue invalidate all filterIdSets in the cache
-            CacheHelper.ClearAllFeedIdSets();
+            //CacheHelper.ClearAllFeedIdSets();
 
             return await _inner.AddSolutionAsync(solution);
         }
@@ -42,7 +43,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             // Invalidate the cache related to this issue
             // issue, and possibly other related ones
 
-            _cache.Remove($"solution:{solution.SolutionID}");
+            //_cache.Remove($"solution:{solution.SolutionID}");
 
             // Update any nested breadcrumbs
 
