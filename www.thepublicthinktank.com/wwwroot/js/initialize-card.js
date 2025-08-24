@@ -15,8 +15,16 @@
  */
 
 function initializeCard(cardId) {
+    const card = document.querySelector(`.card[id="${cardId}"]`)
+
+    if (!card.classList.contains("initialized")) {
     initializeVoteDial(cardId)
     // TBD - More initializations are possible
+    }
+
+    //card.classList.add("initialized")
+
+
 }
 
 
@@ -151,7 +159,9 @@ function initializeVoteDial(issueId) {
     setupRadioChangeEvents(radios, saveVoteDebounced, container, state);
     //createDialResetMethod(container, issueId, observer, dialId, options, state);
 
-    console.log("Dial initialized: ", issueId)
+
+    //console.log("Dial initialized: ", issueId)
+    //console.trace("Dial initialized: ", issueId)
 }
 
 /**
@@ -529,12 +539,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const issueId = node.id;
         initializeCard(issueId);
     })
+
+    // Only do this after the inital loaded options have been set
+    if (typeof documentObserver == 'object') {
+        documentObserver.registerEvent(initInitializeCardObserver)
+    } else {
+        throw error("documentObserver not defined")
+    }
+
 })
-if (typeof documentObserver == 'object') {
-    documentObserver.registerEvent(initInitializeCardObserver)
-} else {
-    throw error("documentObserver not defined")
-}
+
 
 
 function initInitializeCardObserver(node) {

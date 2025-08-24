@@ -9,7 +9,7 @@
  * 
  */
 
-
+// This can be added right away b/c no existing edit forms should be on the page
 if (typeof documentObserver == 'object') {
     documentObserver.registerEvent(initEditContentButtonObserver)
     //documentObserver.registerEvent(initEditContentObserver)

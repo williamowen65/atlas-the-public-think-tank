@@ -12,7 +12,7 @@ using atlas_the_public_think_tank.Data;
 namespace atlas_the_public_think_tank.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250821131630_init")]
+    [Migration("20250824185754_init")]
     partial class init
     {
         /// <inheritdoc />

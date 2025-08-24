@@ -21,13 +21,14 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 return await _inner.GetBreadcrumbPagedAsync(null);
             }
 
-            #pragma warning disable CS8603 // Possible null reference return.
-            return await _cache.GetOrCreateAsync($"breadcrumb:{itemId}", async entry =>
-            {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
-                return await _inner.GetBreadcrumbPagedAsync(itemId);
-            });
-            #pragma warning restore CS8603 // Possible null reference return.
+            //#pragma warning disable CS8603 // Possible null reference return.
+            //return await _cache.GetOrCreateAsync($"breadcrumb:{itemId}", async entry =>
+            //{
+            //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
+            //    return await _inner.GetBreadcrumbPagedAsync(itemId);
+            //});
+            //#pragma warning restore CS8603 // Possible null reference return.
+            return await _inner.GetBreadcrumbPagedAsync(itemId);
         }
     }
 }
