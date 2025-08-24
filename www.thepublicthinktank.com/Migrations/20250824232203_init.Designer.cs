@@ -12,7 +12,7 @@ using atlas_the_public_think_tank.Data;
 namespace atlas_the_public_think_tank.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250824185754_init")]
+    [Migration("20250824232203_init")]
     partial class init
     {
         /// <inheritdoc />
@@ -605,9 +605,10 @@ namespace atlas_the_public_think_tank.Migrations
 
                     b.HasIndex("AppUserId");
 
-                    b.HasIndex("CommentID");
-
                     b.HasIndex("UserID");
+
+                    b.HasIndex("CommentID", "UserID")
+                        .IsUnique();
 
                     b.ToTable("CommentVotes", "comments");
                 });
@@ -995,9 +996,10 @@ namespace atlas_the_public_think_tank.Migrations
 
                     b.HasIndex("AppUserId");
 
-                    b.HasIndex("IssueID");
-
                     b.HasIndex("UserID");
+
+                    b.HasIndex("IssueID", "UserID")
+                        .IsUnique();
 
                     b.ToTable("IssueVotes", "issues");
 
@@ -3342,9 +3344,10 @@ namespace atlas_the_public_think_tank.Migrations
 
                     b.HasIndex("AppUserId");
 
-                    b.HasIndex("SolutionID");
-
                     b.HasIndex("UserID");
+
+                    b.HasIndex("SolutionID", "UserID")
+                        .IsUnique();
 
                     b.ToTable("SolutionVotes", "solutions");
 

@@ -189,6 +189,9 @@ public class ApplicationDbContext : IdentityDbContext<AppUser, IdentityRole<Guid
         {
             entity.HasKey(e => e.VoteID);
 
+            // Ensure a user can only cast one vote per issue
+            entity.HasIndex(e => new { e.IssueID, e.UserID }).IsUnique();
+
             entity.HasOne(e => e.Issue)
                 .WithMany(i => i.IssueVotes)
                 .HasForeignKey(e => e.IssueID)
@@ -205,6 +208,9 @@ public class ApplicationDbContext : IdentityDbContext<AppUser, IdentityRole<Guid
         {
             entity.HasKey(e => e.VoteID);
 
+            // Ensure a user can only cast one vote per issue
+            entity.HasIndex(e => new { e.SolutionID, e.UserID }).IsUnique();
+
             entity.HasOne(e => e.Solution)
                 .WithMany(s => s.SolutionVotes)
                 .HasForeignKey(e => e.SolutionID)
@@ -220,6 +226,9 @@ public class ApplicationDbContext : IdentityDbContext<AppUser, IdentityRole<Guid
         modelBuilder.Entity<CommentVote>(entity =>
         {
             entity.HasKey(e => e.VoteID);
+
+            // Ensure a user can only cast one vote per issue
+            entity.HasIndex(e => new { e.CommentID, e.UserID }).IsUnique();
 
             entity.HasOne(e => e.Comment)
                 .WithMany(c => c.CommentVotes)
