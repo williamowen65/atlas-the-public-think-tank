@@ -50,7 +50,8 @@ namespace CloudTests.UserStories
         {
             string url = "/issue/" + issue.IssueID;
             var document = await _env.fetchHTML(url);
-            var contentContainer = document.GetElementById("issue-page-post-content");
+            var issueCard = document.QuerySelector($".issue-card[id='{issue.IssueID}']");
+            var contentContainer = issueCard.QuerySelector(".issue-content");
             Assert.IsTrue(contentContainer!.TextContent == issue.Content);
         }
 

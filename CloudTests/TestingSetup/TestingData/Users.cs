@@ -93,7 +93,7 @@ namespace CloudTests.TestingSetup.TestingData
         public static async Task<bool> LoginUserViaEndpoint(TestEnvironment _env, string email, string password)
         {
             // The standard Identity login endpoint
-            string loginUrl = "/Identity/Account/Login";
+            string loginUrl = "/login";
 
             // Create form data with login credentials and anti-forgery token
             var formData = new Dictionary<string, string>
