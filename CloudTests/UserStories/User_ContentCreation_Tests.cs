@@ -86,6 +86,38 @@ namespace CloudTests.UserStories
         public async Task User1_CanSubmit_CorrectIssueForm_AndViewTheNewIssue()
         {
             // 1. GET page to obtain antiforgery cookie + hidden token
+            var (jsonDoc, title, content) = await CreateValidIssue();
+
+            var rootElement = jsonDoc.RootElement;
+            bool success = rootElement.GetProperty("success").GetBoolean();
+            Assert.IsTrue(success);
+
+            string newContentId = rootElement.GetProperty("contentId").ToString();
+            string url = $"/issue/{newContentId}";
+            var document = await _env.fetchHTML(url);
+            var container = document.QuerySelector("body");
+            Assert.IsTrue(container.TextContent.Contains(title));
+            Assert.IsTrue(container.TextContent.Contains(content));
+        }
+
+        [TestMethod]
+        public async Task User1_VisitsAuthoredContent_AndViews_AuthorContentTag()
+        {
+            // 1. GET page to obtain antiforgery cookie + hidden token
+            var (jsonDoc, title, content) = await CreateValidIssue();
+
+            var rootElement = jsonDoc.RootElement;
+
+            string newContentId = rootElement.GetProperty("contentId").ToString();
+            string url = $"/issue/{newContentId}";
+            var document = await _env.fetchHTML(url);
+            var authorContentTag = document.QuerySelector($".author-content-alert[data-id='{newContentId}']");
+            Assert.IsNotNull(authorContentTag, "Author content tag should exist.");
+        }
+
+        public async Task<(JsonDocument JsonDoc, string Title, string Content)> CreateValidIssue()
+        {
+            // 1. GET page to obtain antiforgery cookie + hidden token
             string tokenValue = await GetAntiForgeryToken("/create-issue");
             string scopeId = await GetScopeIDFromPage("/create-issue");
 
@@ -106,17 +138,9 @@ namespace CloudTests.UserStories
             var body = await postResponse.Content.ReadAsStringAsync();
             // Convert body to JSON
             var jsonDoc = JsonDocument.Parse(body);
-            var rootElement = jsonDoc.RootElement;
-            bool success = rootElement.GetProperty("success").GetBoolean();
-            Assert.IsTrue(success);
-
-            string newContentId = rootElement.GetProperty("contentId").ToString();
-            string url = $"/issue/{newContentId}";
-            var document = await _env.fetchHTML(url);
-            var container = document.QuerySelector("body");
-            Assert.IsTrue(container.TextContent.Contains(title));
-            Assert.IsTrue(container.TextContent.Contains(content));
+            return (jsonDoc, title, content);
         }
+
 
         public async Task<string> GetAntiForgeryToken(string url) 
         {
