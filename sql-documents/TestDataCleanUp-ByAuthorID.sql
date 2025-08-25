@@ -3,7 +3,7 @@
 
 -- User parameter
 
-DECLARE @UserID uniqueidentifier = '49294663-7E59-4AA8-7649-08DDE3405379'; -- Set the AppUser ID whose content you want to delete
+DECLARE @UserID uniqueidentifier = 'C898F9AF-176F-449A-D28B-08DDE3653088'; -- Set the AppUser ID whose content you want to delete
 
 
 -- Temporary storage for root issues
@@ -205,5 +205,14 @@ DEALLOCATE RootIssue_Cursor;
 
 -- Clean up temp tables
 DROP TABLE #UserRootIssues;
+
+
+-- Delete any other votes cast by this user
+DELETE FROM issues.IssueVotes
+WHERE UserID = @UserID;
+
+DELETE FROM solutions.SolutionVotes
+WHERE UserID = @UserID;
+
 
 PRINT 'User content deletion complete';

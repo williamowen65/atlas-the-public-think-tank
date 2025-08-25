@@ -1,14 +1,11 @@
 using atlas_the_public_think_tank.Data;
-using atlas_the_public_think_tank.Data.CRUD;
-using atlas_the_public_think_tank.Data.RepositoryPattern;
-using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
-using atlas_the_public_think_tank.Models;
-using atlas_the_public_think_tank.Models.Database;
+//using atlas_the_public_think_tank.Data.CRUD;
+//using atlas_the_public_think_tank.Data.RepositoryPattern;
+//using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
+using atlas_the_public_think_tank.Models.Database.Users;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
-using repository_pattern_experiment.Controllers;
 
 namespace atlas_the_public_think_tank;
 
@@ -80,33 +77,33 @@ public class Program
         builder.Services.AddMemoryCache();
 
         // Register all repositories with one extension method
-        builder.Services.AddRepositories();
+        //builder.Services.AddRepositories();
 
-        builder.Services.Configure<ApplicationInsightsSettings>(options =>
-        {
-            var connectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
-            if (connectionString == null)
-            {
-                throw new InvalidOperationException("ApplicationInsights ConnectionString is not configured.");
-            }
+        //builder.Services.Configure<ApplicationInsightsSettings>(options =>
+        //{
+        //    var connectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+        //    if (connectionString == null)
+        //    {
+        //        throw new InvalidOperationException("ApplicationInsights ConnectionString is not configured.");
+        //    }
 
-            options.ConnectionString = connectionString;
-            options.EnableSendBeacon = true;
-        });
+        //    options.ConnectionString = connectionString;
+        //    options.EnableSendBeacon = true;
+        //});
 
         var app = builder.Build();
 
         // Initialize the static Read class with the service provider
-        Create.Initialize(app.Services);
-        Read.Initialize(app.Services);
-        Upsert.Initialize(app.Services);
-        Update.Initialize(app.Services);
+        //Create.Initialize(app.Services);
+        //Read.Initialize(app.Services);
+        //Upsert.Initialize(app.Services);
+        //Update.Initialize(app.Services);
         // Get the IMemoryCache service from the service provider
-        var memoryCache = app.Services.GetRequiredService<IMemoryCache>();
-        // Initialize the CacheHelper with the memory cache
-        CacheHelper.Initialize(memoryCache);
+        //var memoryCache = app.Services.GetRequiredService<IMemoryCache>();
+        //// Initialize the CacheHelper with the memory cache
+        //CacheHelper.Initialize(memoryCache);
 
-        FilterQueryService.Initialize(builder.Configuration);
+        //FilterQueryService.Initialize(builder.Configuration);
 
         // =====================================
         // Middleware and Routing Configuration

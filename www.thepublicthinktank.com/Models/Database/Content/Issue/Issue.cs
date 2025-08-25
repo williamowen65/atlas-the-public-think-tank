@@ -1,0 +1,75 @@
+﻿using atlas_the_public_think_tank.Data;
+using atlas_the_public_think_tank.Models.Database.Content.Common;
+using Microsoft.EntityFrameworkCore;
+
+namespace atlas_the_public_think_tank.Models.Database.Content.Issue
+{
+
+    /// <summary>
+    /// Defines an issue
+    /// </summary>
+    public class Issue : ContentItem
+    {
+        public Guid IssueID { get; set; }
+        public Guid? ParentIssueID { get; set; }
+        public Guid? ParentSolutionID { get; set; }
+
+        // Navigation properties
+        public virtual Issue? ParentIssue { get; set; }
+        public virtual Solution.Solution? ParentSolution { get; set; }
+
+        public virtual required ICollection<Issue> ChildIssues { get; set; }
+        public virtual required ICollection<Solution.Solution> Solutions { get; set; }
+        public virtual required ICollection<IssueVote> IssueVotes { get; set; }
+        public virtual required ICollection<IssueTag> IssueTags { get; set; }
+    }
+
+
+    public class IssueModel : IModelComposer
+    {
+        public static void Declare(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Issue>().ToTable("Issues", "issue");
+        }
+        public static void Build(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Issue>(entity =>
+            {
+                entity.HasKey(e => e.IssueID);
+                entity.Property(e => e.Title).HasMaxLength(200).IsRequired();
+                entity.Property(e => e.Content).IsRequired();
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+
+                // Self-referencing relationship
+                entity.HasOne(e => e.ParentIssue)
+                    .WithMany(e => e.ChildIssues)
+                    .HasForeignKey(e => e.ParentIssueID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+
+                entity.HasOne(e => e.ParentSolution)
+                    .WithMany()
+                    .HasForeignKey(e => e.ParentSolutionID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Relationships
+                entity.HasOne(e => e.Author)
+                    .WithMany(e => e.Issues)
+                    .HasForeignKey(e => e.AuthorID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Scope)
+                    .WithMany(e => e.Issues)
+                    .HasForeignKey(e => e.ScopeID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.BlockedContent)
+                    .WithMany(e => e.Issues)
+                    .HasForeignKey(e => e.BlockedContentID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+            });
+        }
+
+    }
+}
