@@ -1,5 +1,8 @@
-﻿using atlas_the_public_think_tank.Models;
-using atlas_the_public_think_tank.Models.Database;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
+using atlas_the_public_think_tank.Models;
+ 
+using atlas_the_public_think_tank.Models.Enums;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
 {

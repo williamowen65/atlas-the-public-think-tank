@@ -1,8 +1,10 @@
 ﻿@using System.ComponentModel.DataAnnotations
 @using atlas_the_public_think_tank.Data.CRUD
 @using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
-@using atlas_the_public_think_tank.Models.Database
-@model CreateSolutionPageViewModel;
+@using atlas_the_public_think_tank.Models.ViewModel.AjaxVM
+@using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue
+@using atlas_the_public_think_tank.Models.ViewModel.PageVM
+@model CreateSolution_PageVM;
 
 @{
     ViewData["Title"] = "Create a new Solution";
@@ -29,7 +31,7 @@
 
         }
 
-        @await Html.PartialAsync("~/Views/Solution/_create-or-edit-solution.cshtml", new CreateOrEditSolutionWrapper
+        @await Html.PartialAsync("~/Views/Solution/_create-or-edit-solution.cshtml", new Solution_CreateOrEdit_AjaxVM
         {
             Solution = Model.Solution,
                 Scopes = Model.Scopes,

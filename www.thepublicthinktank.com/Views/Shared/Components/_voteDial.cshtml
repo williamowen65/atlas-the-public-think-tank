@@ -1,6 +1,7 @@
 ﻿@using Microsoft.AspNetCore.Identity
-@using atlas_the_public_think_tank.Models.Database
+@using atlas_the_public_think_tank.Data.DatabaseEntities.Users
 @using atlas_the_public_think_tank.Models.ViewModel
+@using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common.ContentItemVote
 @inject UserManager<AppUser> UserManager
 
 
@@ -10,7 +11,7 @@
 
     Note that the dial container elements are siblings
 *@
-@model UserVote_Generic_ReadVM
+@model ContentItemVotes_ReadVM
 
 @{
     // Generate unique IDs using the issue ID

@@ -1,7 +1,13 @@
-﻿using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Models;
-using atlas_the_public_think_tank.Models.Database;
+using atlas_the_public_think_tank.Models.Cacheable;
 using atlas_the_public_think_tank.Models.ViewModel;
+using atlas_the_public_think_tank.Models.ViewModel.AjaxVM;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue.IssueVote;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution.SolutionVote;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.Issue.IssueVote;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.Solution.SolutionVote;
 
 namespace atlas_the_public_think_tank.Data.CRUD
 {
@@ -16,7 +22,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
         }
 
 
-        public static async Task<JsonVoteResponse?> IssueVote(UserVote_Issue_UpsertVM model, AppUser user)
+        public static async Task<VoteResponse_AjaxVM?> IssueVote(IssueVote_UpsertVM model, AppUser user)
         {
             if (_serviceProvider == null)
             { 
@@ -24,7 +30,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
             }
 
             // Create the response object
-            JsonVoteResponse voteResponse = new JsonVoteResponse();
+            VoteResponse_AjaxVM voteResponse = new VoteResponse_AjaxVM();
             
             // Create a scope to resolve scoped services
             using var scope = _serviceProvider.CreateScope();
@@ -35,9 +41,9 @@ namespace atlas_the_public_think_tank.Data.CRUD
            
             try
             {
-                Vote_Cacheable_ReadVM? issueVote = await voteStatsRepository.UpsertIssueVote(model, user);
+                Vote_Cacheable? issueVote = await voteStatsRepository.UpsertIssueVote(model, user);
 
-                UserVote_Issue_ReadVM? issueVoteStats = await voteStatsRepository.GetIssueVoteStats(model.IssueID);
+                IssueVotes_ReadVM? issueVoteStats = await voteStatsRepository.GetIssueVoteStats(model.IssueID);
 
                 voteResponse.Success = true;
                 voteResponse.Message = "Vote successfully upserted";
@@ -55,7 +61,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
 
         }
 
-        internal static async Task<JsonVoteResponse?> SolutionVote(UserVote_Solution_UpsertVM model, AppUser user)
+        internal static async Task<VoteResponse_AjaxVM?> SolutionVote(SolutionVote_UpsertVM model, AppUser user)
         {
             if (_serviceProvider == null)
             {
@@ -63,7 +69,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
             }
 
             // Create the response object
-            JsonVoteResponse voteResponse = new JsonVoteResponse();
+            VoteResponse_AjaxVM voteResponse = new VoteResponse_AjaxVM();
 
             // Create a scope to resolve scoped services
             using var scope = _serviceProvider.CreateScope();
@@ -73,9 +79,9 @@ namespace atlas_the_public_think_tank.Data.CRUD
 
             try
             {
-                Vote_Cacheable_ReadVM? solutionVote = await voteStatsRepository.UpsertSolutionVote(model, user);
+                Vote_Cacheable? solutionVote = await voteStatsRepository.UpsertSolutionVote(model, user);
 
-                UserVote_Solution_ReadVM? solutionVoteStats = await voteStatsRepository.GetSolutionVoteStats(model.SolutionID);
+                SolutionVotes_ReadVM? solutionVoteStats = await voteStatsRepository.GetSolutionVoteStats(model.SolutionID);
 
                 voteResponse.Success = true;
                 voteResponse.Message = "Vote successfully upserted";

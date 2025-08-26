@@ -1,9 +1,12 @@
-﻿using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
-using atlas_the_public_think_tank.Models;
-using atlas_the_public_think_tank.Models.Database;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
+using atlas_the_public_think_tank.Models.Cacheable;
 using atlas_the_public_think_tank.Models.ViewModel;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue.IssueVote;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution.SolutionVote;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.Issue.IssueVote;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.Solution.SolutionVote;
 using Microsoft.Extensions.Caching.Memory;
-using repository_pattern_experiment.Controllers;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 {
@@ -21,7 +24,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
      
 
-        public async Task<UserVote_Issue_ReadVM?> GetIssueVoteStats(Guid id)
+        public async Task<IssueVotes_ReadVM?> GetIssueVoteStats(Guid id)
         {
 
             //return await _cache.GetOrCreateAsync($"vote-stats:{id}", async entry =>
@@ -30,7 +33,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             //});
             return await _inner.GetIssueVoteStats(id);
         }
-        public async Task<UserVote_Solution_ReadVM?> GetSolutionVoteStats(Guid id)
+        public async Task<SolutionVotes_ReadVM?> GetSolutionVoteStats(Guid id)
         {
 
             //return await _cache.GetOrCreateAsync($"vote-stats:{id}", async entry =>
@@ -41,7 +44,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             return await _inner.GetSolutionVoteStats(id);
         }
 
-        public async Task<Vote_Cacheable_ReadVM?> UpsertIssueVote(UserVote_Issue_UpsertVM model, AppUser user)
+        public async Task<Vote_Cacheable?> UpsertIssueVote(IssueVote_UpsertVM model, AppUser user)
         {
             // First, call the inner repository to update the database
             var result = await _inner.UpsertIssueVote(model, user);
@@ -85,7 +88,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             return result;
         }
 
-        public async Task<Vote_Cacheable_ReadVM?> UpsertSolutionVote(UserVote_Solution_UpsertVM model, AppUser user)
+        public async Task<Vote_Cacheable?> UpsertSolutionVote(SolutionVote_UpsertVM model, AppUser user)
         {
             // First, call the inner repository to update the database
             var result = await _inner.UpsertSolutionVote(model, user);

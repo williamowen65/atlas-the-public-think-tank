@@ -1,7 +1,9 @@
-﻿using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
-using atlas_the_public_think_tank.Data.RepositoryPattern.Repository;
-using atlas_the_public_think_tank.Models.Database;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
+using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Models.ViewModel;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution;
 
 namespace atlas_the_public_think_tank.Data.CRUD
 {

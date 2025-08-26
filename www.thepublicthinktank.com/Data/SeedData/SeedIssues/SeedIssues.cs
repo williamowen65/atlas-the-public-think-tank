@@ -1,5 +1,6 @@
-﻿using atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data;
-using atlas_the_public_think_tank.Models.Database;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+using atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data;
+ 
 using Microsoft.EntityFrameworkCore;
 using System;
 

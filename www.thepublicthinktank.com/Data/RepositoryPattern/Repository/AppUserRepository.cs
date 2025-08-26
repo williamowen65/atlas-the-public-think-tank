@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
-using atlas_the_public_think_tank.Models.Database;
 using atlas_the_public_think_tank.Models.ViewModel;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.User;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
 {
@@ -19,7 +19,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
         /// Represents the entire AppUser minus sensitive info
         /// </summary>
         /// <remarks>
-        /// Relates to <see cref="AppUser_ContentItem_ReadVM"/>
+        /// Relates to <see cref="AppUser_ReadVM"/>
         /// </remarks>
         public async Task<AppUser_ReadVM?> GetAppUser(Guid UserId)
         {

@@ -1,12 +1,12 @@
 ﻿using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Models.ViewModel;
-using atlas_the_public_think_tank.Models.Database;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Data.CRUD;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
 
 
 namespace atlas_the_public_think_tank.Controllers

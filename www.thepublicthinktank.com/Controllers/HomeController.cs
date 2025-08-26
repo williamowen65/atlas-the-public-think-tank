@@ -1,6 +1,11 @@
 using atlas_the_public_think_tank.Data.CRUD;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
+using atlas_the_public_think_tank.Models.Enums;
 using atlas_the_public_think_tank.Models.ViewModel;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.ContentItem_Common;
+using atlas_the_public_think_tank.Models.ViewModel.PageVM;
+using atlas_the_public_think_tank.Models.ViewModel.UI_VM;
 using atlas_the_public_think_tank.Utilities;
 using Azure.Core;
 using Microsoft.AspNetCore.Authorization;
@@ -37,7 +42,7 @@ public class HomeController : Controller
         }
 
         // Create a view model to hold both issues and categories
-        var viewModel = new HomeIndexViewModel();
+        var viewModel = new Home_PageVM();
 
 
         viewModel.PaginatedContent = await Read.PaginatedMainContentFeed(filter);
@@ -65,7 +70,7 @@ public class HomeController : Controller
             filter = ContentFilter.FromJson(cookieValue);
         }
 
-        PaginatedContentItemsResponse paginatedContentItems = await Read.PaginatedMainContentFeed(filter, currentPage);
+        ContentItems_Paginated_ReadVM paginatedContentItems = await Read.PaginatedMainContentFeed(filter, currentPage);
 
         // Render the partial view to a string
         string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Home/_content-item-cards.cshtml", paginatedContentItems.ContentItems);
@@ -74,7 +79,7 @@ public class HomeController : Controller
         var response = new
         {
             html = partialViewHtml,
-            pagination = new PaginationStats
+            pagination = new PaginationStats_VM
             {
                 TotalCount = paginatedContentItems.TotalCount,
                 PageSize = paginatedContentItems.PageSize,
@@ -143,7 +148,7 @@ public class HomeController : Controller
         }
 
         // Create an alert view model
-        var alert = new Alert_ReadVM
+        var alert = new Alert_VM
         {
             Message = message,
             Type = alertType,

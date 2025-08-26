@@ -14,7 +14,7 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
-using atlas_the_public_think_tank.Models.Database;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
 
 namespace WebApplication1.Areas.Identity.Pages.Account
 {

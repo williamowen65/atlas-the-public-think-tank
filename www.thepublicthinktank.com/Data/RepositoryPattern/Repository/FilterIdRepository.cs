@@ -1,11 +1,10 @@
-﻿using atlas_the_public_think_tank.Data.CRUD;
-using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
+﻿using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Models;
-using atlas_the_public_think_tank.Models.Database;
+using atlas_the_public_think_tank.Models.Enums;
 using atlas_the_public_think_tank.Models.ViewModel;
+using atlas_the_public_think_tank.Models.ViewModel.UI_VM;
 using Microsoft.EntityFrameworkCore;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
 {
@@ -73,10 +72,10 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             return (paginatedChildIssuesIds);
         }
 
-        public async Task<ContentCount_ReadVM?> GetContentCountSubIssuesOfIssueById(Guid issueId, ContentFilter filter)
+        public async Task<ContentCount_VM?> GetContentCountSubIssuesOfIssueById(Guid issueId, ContentFilter filter)
         {
 
-            ContentCount_ReadVM counts = new ContentCount_ReadVM();
+            ContentCount_VM counts = new ContentCount_VM();
 
             var query = _context.Issues
                 .Where(i => i.ParentIssueID == issueId);
@@ -87,9 +86,9 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
 
             return counts;
         }
-        public async Task<ContentCount_ReadVM?> GetContentCountSubIssuesOfSolutionById(Guid solutionId, ContentFilter filter)
+        public async Task<ContentCount_VM?> GetContentCountSubIssuesOfSolutionById(Guid solutionId, ContentFilter filter)
         {
-            ContentCount_ReadVM counts = new ContentCount_ReadVM();
+            ContentCount_VM counts = new ContentCount_VM();
             var query = _context.Issues
                 .Where(i => i.ParentSolutionID == solutionId);
             var filteredQuery = FilterQueryService.ApplyIssueFilters(query, filter);
@@ -99,9 +98,9 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
 
             return counts;
         }
-        public async Task<ContentCount_ReadVM?> GetContentCountSolutionsOfIssueById(Guid solutionId, ContentFilter filter)
+        public async Task<ContentCount_VM?> GetContentCountSolutionsOfIssueById(Guid solutionId, ContentFilter filter)
         {
-            ContentCount_ReadVM counts = new ContentCount_ReadVM();
+            ContentCount_VM counts = new ContentCount_VM();
             var query = _context.Solutions
                 .Where(i => i.ParentIssueID == solutionId);
             var filteredQuery = FilterQueryService.ApplySolutionFilters(query, filter);
@@ -154,7 +153,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             return pagedIndexEntries!;
         }
 
-        public async Task<ContentCount_ReadVM?> GetContentCountMainContentFeed(ContentFilter filter)
+        public async Task<ContentCount_VM?> GetContentCountMainContentFeed(ContentFilter filter)
         {
             // First, get all the issues and solutions IDs with their creation dates and vote averages
             // This allows efficient sorting and pagination at the database level
@@ -178,7 +177,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
                     TotalVotes = s.SolutionVotes.Any() ? s.SolutionVotes.Count() : 0
                 });
 
-            ContentCount_ReadVM counts = new ContentCount_ReadVM();
+            ContentCount_VM counts = new ContentCount_VM();
 
             // Combine queries
             var combinedQuery = issuesIndexQuery.Union(solutionsIndexQuery);

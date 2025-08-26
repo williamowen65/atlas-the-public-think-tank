@@ -1,5 +1,6 @@
 ﻿using atlas_the_public_think_tank.Data;
-using atlas_the_public_think_tank.Models.Database;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+ 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;

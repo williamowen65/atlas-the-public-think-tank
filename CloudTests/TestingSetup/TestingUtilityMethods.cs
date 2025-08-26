@@ -1,6 +1,7 @@
-﻿using atlas_the_public_think_tank.Data.SeedData.SeedIssues;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+using atlas_the_public_think_tank.Data.SeedData.SeedIssues;
 using atlas_the_public_think_tank.Data.SeedData.SeedSolutions;
-using atlas_the_public_think_tank.Models.Database;
+ 
 using System;
 using System.Collections.Generic;
 using System.Linq;

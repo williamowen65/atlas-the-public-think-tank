@@ -157,424 +157,57 @@ namespace atlas_the_public_think_tank.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.AppUser", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment.Comment", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<Guid>("CommentID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("AccessFailedCount")
+                    b.Property<Guid>("AuthorID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("BlockedContentID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(3000)
+                        .HasColumnType("nvarchar(3000)");
+
+                    b.Property<int>("ContentStatus")
                         .HasColumnType("int");
 
-                    b.Property<string>("ConcurrencyStamp")
-                        .IsConcurrencyToken()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
 
-                    b.Property<string>("Email")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<bool>("EmailConfirmed")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("LockoutEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTimeOffset?>("LockoutEnd")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("NormalizedEmail")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("NormalizedUserName")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("PasswordHash")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("PhoneNumberConfirmed")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("SecurityStamp")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("TwoFactorEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("UserName")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NormalizedEmail")
-                        .HasDatabaseName("EmailIndex");
-
-                    b.HasIndex("NormalizedUserName")
-                        .IsUnique()
-                        .HasDatabaseName("UserNameIndex")
-                        .HasFilter("[NormalizedUserName] IS NOT NULL");
-
-                    b.ToTable("AspNetUsers", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dffbee30"),
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                            Email = "seed.user1@example.com",
-                            EmailConfirmed = true,
-                            LockoutEnabled = true,
-                            NormalizedEmail = "SEED.USER1@EXAMPLE.COM",
-                            NormalizedUserName = "SEED.USER.ONE",
-                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
-                            TwoFactorEnabled = false,
-                            UserName = "Seed.User.One"
-                        },
-                        new
-                        {
-                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee31"),
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                            Email = "seed.user2@example.com",
-                            EmailConfirmed = true,
-                            LockoutEnabled = true,
-                            NormalizedEmail = "SEED.USER2@EXAMPLE.COM",
-                            NormalizedUserName = "SEED.USER.TWO",
-                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
-                            TwoFactorEnabled = false,
-                            UserName = "Seed.User.Two"
-                        },
-                        new
-                        {
-                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee32"),
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                            Email = "seed.user3@example.com",
-                            EmailConfirmed = true,
-                            LockoutEnabled = true,
-                            NormalizedEmail = "SEED.USER3@EXAMPLE.COM",
-                            NormalizedUserName = "SEED.USER.THREE",
-                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
-                            TwoFactorEnabled = false,
-                            UserName = "Seed.User.Three"
-                        },
-                        new
-                        {
-                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee33"),
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                            Email = "seed.user4@example.com",
-                            EmailConfirmed = true,
-                            LockoutEnabled = true,
-                            NormalizedEmail = "SEED.USER4@EXAMPLE.COM",
-                            NormalizedUserName = "SEED.USER.FOUR",
-                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
-                            TwoFactorEnabled = false,
-                            UserName = "Seed.User.Four"
-                        },
-                        new
-                        {
-                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee34"),
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                            Email = "seed.user5@example.com",
-                            EmailConfirmed = true,
-                            LockoutEnabled = true,
-                            NormalizedEmail = "SEED.USER5@EXAMPLE.COM",
-                            NormalizedUserName = "SEED.USER.FIVE",
-                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
-                            TwoFactorEnabled = false,
-                            UserName = "Seed.User.Five"
-                        },
-                        new
-                        {
-                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee35"),
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                            Email = "seed.user6@example.com",
-                            EmailConfirmed = true,
-                            LockoutEnabled = true,
-                            NormalizedEmail = "SEED.USER6@EXAMPLE.COM",
-                            NormalizedUserName = "SEED.USER.SIX",
-                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
-                            TwoFactorEnabled = false,
-                            UserName = "Seed.User.Six"
-                        },
-                        new
-                        {
-                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee36"),
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                            Email = "seed.user7@example.com",
-                            EmailConfirmed = true,
-                            LockoutEnabled = true,
-                            NormalizedEmail = "SEED.USER7@EXAMPLE.COM",
-                            NormalizedUserName = "SEED.USER.SEVEN",
-                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
-                            TwoFactorEnabled = false,
-                            UserName = "Seed.User.Seven"
-                        },
-                        new
-                        {
-                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee37"),
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                            Email = "seed.user8@example.com",
-                            EmailConfirmed = true,
-                            LockoutEnabled = true,
-                            NormalizedEmail = "SEED.USER8@EXAMPLE.COM",
-                            NormalizedUserName = "SEED.USER.EIGHT",
-                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
-                            TwoFactorEnabled = false,
-                            UserName = "Seed.User.Eight"
-                        },
-                        new
-                        {
-                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee38"),
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                            Email = "seed.user9@example.com",
-                            EmailConfirmed = true,
-                            LockoutEnabled = true,
-                            NormalizedEmail = "SEED.USER9@EXAMPLE.COM",
-                            NormalizedUserName = "SEED.USER.NINE",
-                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
-                            TwoFactorEnabled = false,
-                            UserName = "Seed.User.Nine"
-                        },
-                        new
-                        {
-                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee39"),
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                            Email = "seed.user10@example.com",
-                            EmailConfirmed = true,
-                            LockoutEnabled = true,
-                            NormalizedEmail = "SEED.USER10@EXAMPLE.COM",
-                            NormalizedUserName = "SEED.USER.TEN",
-                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
-                            TwoFactorEnabled = false,
-                            UserName = "Seed.User.Ten"
-                        },
-                        new
-                        {
-                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee40"),
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                            Email = "seed.user11@example.com",
-                            EmailConfirmed = true,
-                            LockoutEnabled = true,
-                            NormalizedEmail = "SEED.USER11@EXAMPLE.COM",
-                            NormalizedUserName = "SEED.USER.ELEVEN",
-                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
-                            TwoFactorEnabled = false,
-                            UserName = "Seed.User.Eleven"
-                        },
-                        new
-                        {
-                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee41"),
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                            Email = "seed.user12@example.com",
-                            EmailConfirmed = true,
-                            LockoutEnabled = true,
-                            NormalizedEmail = "SEED.USER12@EXAMPLE.COM",
-                            NormalizedUserName = "SEED.USER.TWELVE",
-                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
-                            TwoFactorEnabled = false,
-                            UserName = "Seed.User.Twelve"
-                        },
-                        new
-                        {
-                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee42"),
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                            Email = "seed.user13@example.com",
-                            EmailConfirmed = true,
-                            LockoutEnabled = true,
-                            NormalizedEmail = "SEED.USER13@EXAMPLE.COM",
-                            NormalizedUserName = "SEED.USER.THIRTEEN",
-                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
-                            TwoFactorEnabled = false,
-                            UserName = "Seed.User.Thirteen"
-                        },
-                        new
-                        {
-                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee43"),
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                            Email = "seed.user14@example.com",
-                            EmailConfirmed = true,
-                            LockoutEnabled = true,
-                            NormalizedEmail = "SEED.USER14@EXAMPLE.COM",
-                            NormalizedUserName = "SEED.USER.FOURTEEN",
-                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
-                            TwoFactorEnabled = false,
-                            UserName = "Seed.User.Fourteen"
-                        },
-                        new
-                        {
-                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee44"),
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                            Email = "seed.user15@example.com",
-                            EmailConfirmed = true,
-                            LockoutEnabled = true,
-                            NormalizedEmail = "SEED.USER15@EXAMPLE.COM",
-                            NormalizedUserName = "SEED.USER.FIFTEEN",
-                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
-                            TwoFactorEnabled = false,
-                            UserName = "Seed.User.Fifteen"
-                        },
-                        new
-                        {
-                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee45"),
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                            Email = "seed.user16@example.com",
-                            EmailConfirmed = true,
-                            LockoutEnabled = true,
-                            NormalizedEmail = "SEED.USER16@EXAMPLE.COM",
-                            NormalizedUserName = "SEED.USER.SIXTEEN",
-                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
-                            TwoFactorEnabled = false,
-                            UserName = "Seed.User.Sixteen"
-                        },
-                        new
-                        {
-                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee46"),
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                            Email = "seed.user17@example.com",
-                            EmailConfirmed = true,
-                            LockoutEnabled = true,
-                            NormalizedEmail = "SEED.USER17@EXAMPLE.COM",
-                            NormalizedUserName = "SEED.USER.SEVENTEEN",
-                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
-                            TwoFactorEnabled = false,
-                            UserName = "Seed.User.Seventeen"
-                        },
-                        new
-                        {
-                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee47"),
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                            Email = "seed.user18@example.com",
-                            EmailConfirmed = true,
-                            LockoutEnabled = true,
-                            NormalizedEmail = "SEED.USER18@EXAMPLE.COM",
-                            NormalizedUserName = "SEED.USER.EIGHTEEN",
-                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
-                            TwoFactorEnabled = false,
-                            UserName = "Seed.User.Eighteen"
-                        },
-                        new
-                        {
-                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee48"),
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                            Email = "seed.user19@example.com",
-                            EmailConfirmed = true,
-                            LockoutEnabled = true,
-                            NormalizedEmail = "SEED.USER19@EXAMPLE.COM",
-                            NormalizedUserName = "SEED.USER.NINETEEN",
-                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
-                            TwoFactorEnabled = false,
-                            UserName = "Seed.User.Nineteen"
-                        },
-                        new
-                        {
-                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee49"),
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                            Email = "seed.user20@example.com",
-                            EmailConfirmed = true,
-                            LockoutEnabled = true,
-                            NormalizedEmail = "SEED.USER20@EXAMPLE.COM",
-                            NormalizedUserName = "SEED.USER.TWENTY",
-                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
-                            TwoFactorEnabled = false,
-                            UserName = "Seed.User.Twenty"
-                        });
-                });
-
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.BlockedContent", b =>
-                {
-                    b.Property<Guid>("BlockedContentID")
-                        .ValueGeneratedOnAdd()
+                    b.Property<Guid?>("IssueID")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<short?>("ReasonID")
-                        .HasColumnType("smallint");
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
 
-                    b.HasKey("BlockedContentID");
-
-                    b.ToTable("BlockedContent", "app");
-                });
-
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.Category", b =>
-                {
-                    b.Property<Guid>("CategoryID")
-                        .ValueGeneratedOnAdd()
+                    b.Property<Guid?>("ParentCommentID")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("CategoryName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<Guid?>("SolutionID")
+                        .HasColumnType("uniqueidentifier");
 
-                    b.HasKey("CategoryID");
+                    b.HasKey("CommentID");
 
-                    b.ToTable("Categories", "app");
+                    b.HasIndex("AuthorID");
+
+                    b.HasIndex("BlockedContentID");
+
+                    b.HasIndex("IssueID");
+
+                    b.HasIndex("ParentCommentID");
+
+                    b.HasIndex("SolutionID");
+
+                    b.ToTable("Comments", "comments");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.CommentVote", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment.CommentVote", b =>
                 {
                     b.Property<Guid>("VoteID")
                         .ValueGeneratedOnAdd()
@@ -610,7 +243,44 @@ namespace atlas_the_public_think_tank.Migrations
                     b.ToTable("CommentVotes", "comments");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.Issue", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common.Scope", b =>
+                {
+                    b.Property<Guid>("ScopeID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ScopeName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ScopeID");
+
+                    b.ToTable("Scopes", "app");
+
+                    b.HasData(
+                        new
+                        {
+                            ScopeID = new Guid("a1e7c6b3-d5e2-4f8a-9c3b-8d7e6f5d4c2b"),
+                            ScopeName = "Global"
+                        },
+                        new
+                        {
+                            ScopeID = new Guid("b2d8f1a7-e4c9-4f8a-8d5f-7e6c9d8b3a2f"),
+                            ScopeName = "National"
+                        },
+                        new
+                        {
+                            ScopeID = new Guid("c3b9a2d8-f1e7-4f8a-9c3b-8d7e6f5d4c2b"),
+                            ScopeName = "Local"
+                        },
+                        new
+                        {
+                            ScopeID = new Guid("d4c9b3a2-f8e7-4f8a-9c3b-8d7e6f5d4c2b"),
+                            ScopeName = "Individual"
+                        });
+                });
+
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.Issue", b =>
                 {
                     b.Property<Guid>("IssueID")
                         .ValueGeneratedOnAdd()
@@ -646,6 +316,9 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Property<Guid>("ScopeID")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("SolutionID")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -663,7 +336,9 @@ namespace atlas_the_public_think_tank.Migrations
 
                     b.HasIndex("ScopeID");
 
-                    b.ToTable("Issues");
+                    b.HasIndex("SolutionID");
+
+                    b.ToTable("Issues", "issues");
 
                     b.HasData(
                         new
@@ -950,22 +625,26 @@ namespace atlas_the_public_think_tank.Migrations
                         });
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.IssueCategory", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.IssueTag", b =>
                 {
-                    b.Property<Guid>("CategoryID")
+                    b.Property<Guid>("TagID")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("IssueID")
                         .HasColumnType("uniqueidentifier");
 
-                    b.HasKey("CategoryID", "IssueID");
+                    b.Property<string>("TagName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("TagID", "IssueID");
 
                     b.HasIndex("IssueID");
 
-                    b.ToTable("IssuesCategories", "issues");
+                    b.ToTable("IssuesTags", "issues");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.IssueVote", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.IssueVote", b =>
                 {
                     b.Property<Guid>("VoteID")
                         .ValueGeneratedOnAdd()
@@ -3067,44 +2746,7 @@ namespace atlas_the_public_think_tank.Migrations
                         });
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.Scope", b =>
-                {
-                    b.Property<Guid>("ScopeID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ScopeName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("ScopeID");
-
-                    b.ToTable("Scopes", "app");
-
-                    b.HasData(
-                        new
-                        {
-                            ScopeID = new Guid("a1e7c6b3-d5e2-4f8a-9c3b-8d7e6f5d4c2b"),
-                            ScopeName = "Global"
-                        },
-                        new
-                        {
-                            ScopeID = new Guid("b2d8f1a7-e4c9-4f8a-8d5f-7e6c9d8b3a2f"),
-                            ScopeName = "National"
-                        },
-                        new
-                        {
-                            ScopeID = new Guid("c3b9a2d8-f1e7-4f8a-9c3b-8d7e6f5d4c2b"),
-                            ScopeName = "Local"
-                        },
-                        new
-                        {
-                            ScopeID = new Guid("d4c9b3a2-f8e7-4f8a-9c3b-8d7e6f5d4c2b"),
-                            ScopeName = "Individual"
-                        });
-                });
-
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.Solution", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.Solution", b =>
                 {
                     b.Property<Guid>("SolutionID")
                         .ValueGeneratedOnAdd()
@@ -3150,7 +2792,7 @@ namespace atlas_the_public_think_tank.Migrations
 
                     b.HasIndex("ScopeID");
 
-                    b.ToTable("Solutions");
+                    b.ToTable("Solutions", "solutions");
 
                     b.HasData(
                         new
@@ -3298,22 +2940,26 @@ namespace atlas_the_public_think_tank.Migrations
                         });
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.SolutionCategory", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.SolutionTag", b =>
                 {
-                    b.Property<Guid>("CategoryID")
+                    b.Property<Guid>("TagID")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("SolutionID")
                         .HasColumnType("uniqueidentifier");
 
-                    b.HasKey("CategoryID", "SolutionID");
+                    b.Property<string>("TagName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("TagID", "SolutionID");
 
                     b.HasIndex("SolutionID");
 
-                    b.ToTable("SolutionsCategories", "solutions");
+                    b.ToTable("SolutionsTags", "solutions");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.SolutionVote", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.SolutionVote", b =>
                 {
                     b.Property<Guid>("VoteID")
                         .ValueGeneratedOnAdd()
@@ -4391,57 +4037,7 @@ namespace atlas_the_public_think_tank.Migrations
                         });
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.UserComment", b =>
-                {
-                    b.Property<Guid>("CommentID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("AuthorID")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("BlockedContentID")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Comment")
-                        .IsRequired()
-                        .HasMaxLength(3000)
-                        .HasColumnType("nvarchar(3000)");
-
-                    b.Property<int>("ContentStatus")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("IssueID")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("ModifiedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("ParentCommentID")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("SolutionID")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("CommentID");
-
-                    b.HasIndex("AuthorID");
-
-                    b.HasIndex("BlockedContentID");
-
-                    b.HasIndex("IssueID");
-
-                    b.HasIndex("ParentCommentID");
-
-                    b.HasIndex("SolutionID");
-
-                    b.ToTable("Comments", "comments");
-                });
-
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.UserHistory", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.History.UserHistory", b =>
                 {
                     b.Property<Guid>("UserHistoryID")
                         .ValueGeneratedOnAdd()
@@ -4473,9 +4069,6 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Property<Guid>("UserID")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("UserVoteID")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("UserHistoryID");
 
                     b.HasIndex("CommentID");
@@ -4489,6 +4082,408 @@ namespace atlas_the_public_think_tank.Migrations
                     b.ToTable("UserHistory", "users");
                 });
 
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Moderation.BlockedContent", b =>
+                {
+                    b.Property<Guid>("BlockedContentID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<short?>("ReasonID")
+                        .HasColumnType("smallint");
+
+                    b.HasKey("BlockedContentID");
+
+                    b.ToTable("BlockedContent", "app");
+                });
+
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AccessFailedCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("LockoutEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("LockoutEnd")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("NormalizedEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("NormalizedUserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("PhoneNumberConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SecurityStamp")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("UserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedEmail")
+                        .HasDatabaseName("EmailIndex");
+
+                    b.HasIndex("NormalizedUserName")
+                        .IsUnique()
+                        .HasDatabaseName("UserNameIndex")
+                        .HasFilter("[NormalizedUserName] IS NOT NULL");
+
+                    b.ToTable("AspNetUsers", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dffbee30"),
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                            Email = "seed.user1@example.com",
+                            EmailConfirmed = true,
+                            LockoutEnabled = true,
+                            NormalizedEmail = "SEED.USER1@EXAMPLE.COM",
+                            NormalizedUserName = "SEED.USER.ONE",
+                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
+                            TwoFactorEnabled = false,
+                            UserName = "Seed.User.One"
+                        },
+                        new
+                        {
+                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee31"),
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                            Email = "seed.user2@example.com",
+                            EmailConfirmed = true,
+                            LockoutEnabled = true,
+                            NormalizedEmail = "SEED.USER2@EXAMPLE.COM",
+                            NormalizedUserName = "SEED.USER.TWO",
+                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
+                            TwoFactorEnabled = false,
+                            UserName = "Seed.User.Two"
+                        },
+                        new
+                        {
+                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee32"),
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                            Email = "seed.user3@example.com",
+                            EmailConfirmed = true,
+                            LockoutEnabled = true,
+                            NormalizedEmail = "SEED.USER3@EXAMPLE.COM",
+                            NormalizedUserName = "SEED.USER.THREE",
+                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
+                            TwoFactorEnabled = false,
+                            UserName = "Seed.User.Three"
+                        },
+                        new
+                        {
+                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee33"),
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                            Email = "seed.user4@example.com",
+                            EmailConfirmed = true,
+                            LockoutEnabled = true,
+                            NormalizedEmail = "SEED.USER4@EXAMPLE.COM",
+                            NormalizedUserName = "SEED.USER.FOUR",
+                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
+                            TwoFactorEnabled = false,
+                            UserName = "Seed.User.Four"
+                        },
+                        new
+                        {
+                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee34"),
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                            Email = "seed.user5@example.com",
+                            EmailConfirmed = true,
+                            LockoutEnabled = true,
+                            NormalizedEmail = "SEED.USER5@EXAMPLE.COM",
+                            NormalizedUserName = "SEED.USER.FIVE",
+                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
+                            TwoFactorEnabled = false,
+                            UserName = "Seed.User.Five"
+                        },
+                        new
+                        {
+                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee35"),
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                            Email = "seed.user6@example.com",
+                            EmailConfirmed = true,
+                            LockoutEnabled = true,
+                            NormalizedEmail = "SEED.USER6@EXAMPLE.COM",
+                            NormalizedUserName = "SEED.USER.SIX",
+                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
+                            TwoFactorEnabled = false,
+                            UserName = "Seed.User.Six"
+                        },
+                        new
+                        {
+                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee36"),
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                            Email = "seed.user7@example.com",
+                            EmailConfirmed = true,
+                            LockoutEnabled = true,
+                            NormalizedEmail = "SEED.USER7@EXAMPLE.COM",
+                            NormalizedUserName = "SEED.USER.SEVEN",
+                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
+                            TwoFactorEnabled = false,
+                            UserName = "Seed.User.Seven"
+                        },
+                        new
+                        {
+                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee37"),
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                            Email = "seed.user8@example.com",
+                            EmailConfirmed = true,
+                            LockoutEnabled = true,
+                            NormalizedEmail = "SEED.USER8@EXAMPLE.COM",
+                            NormalizedUserName = "SEED.USER.EIGHT",
+                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
+                            TwoFactorEnabled = false,
+                            UserName = "Seed.User.Eight"
+                        },
+                        new
+                        {
+                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee38"),
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                            Email = "seed.user9@example.com",
+                            EmailConfirmed = true,
+                            LockoutEnabled = true,
+                            NormalizedEmail = "SEED.USER9@EXAMPLE.COM",
+                            NormalizedUserName = "SEED.USER.NINE",
+                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
+                            TwoFactorEnabled = false,
+                            UserName = "Seed.User.Nine"
+                        },
+                        new
+                        {
+                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee39"),
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                            Email = "seed.user10@example.com",
+                            EmailConfirmed = true,
+                            LockoutEnabled = true,
+                            NormalizedEmail = "SEED.USER10@EXAMPLE.COM",
+                            NormalizedUserName = "SEED.USER.TEN",
+                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
+                            TwoFactorEnabled = false,
+                            UserName = "Seed.User.Ten"
+                        },
+                        new
+                        {
+                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee40"),
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                            Email = "seed.user11@example.com",
+                            EmailConfirmed = true,
+                            LockoutEnabled = true,
+                            NormalizedEmail = "SEED.USER11@EXAMPLE.COM",
+                            NormalizedUserName = "SEED.USER.ELEVEN",
+                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
+                            TwoFactorEnabled = false,
+                            UserName = "Seed.User.Eleven"
+                        },
+                        new
+                        {
+                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee41"),
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                            Email = "seed.user12@example.com",
+                            EmailConfirmed = true,
+                            LockoutEnabled = true,
+                            NormalizedEmail = "SEED.USER12@EXAMPLE.COM",
+                            NormalizedUserName = "SEED.USER.TWELVE",
+                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
+                            TwoFactorEnabled = false,
+                            UserName = "Seed.User.Twelve"
+                        },
+                        new
+                        {
+                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee42"),
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                            Email = "seed.user13@example.com",
+                            EmailConfirmed = true,
+                            LockoutEnabled = true,
+                            NormalizedEmail = "SEED.USER13@EXAMPLE.COM",
+                            NormalizedUserName = "SEED.USER.THIRTEEN",
+                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
+                            TwoFactorEnabled = false,
+                            UserName = "Seed.User.Thirteen"
+                        },
+                        new
+                        {
+                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee43"),
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                            Email = "seed.user14@example.com",
+                            EmailConfirmed = true,
+                            LockoutEnabled = true,
+                            NormalizedEmail = "SEED.USER14@EXAMPLE.COM",
+                            NormalizedUserName = "SEED.USER.FOURTEEN",
+                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
+                            TwoFactorEnabled = false,
+                            UserName = "Seed.User.Fourteen"
+                        },
+                        new
+                        {
+                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee44"),
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                            Email = "seed.user15@example.com",
+                            EmailConfirmed = true,
+                            LockoutEnabled = true,
+                            NormalizedEmail = "SEED.USER15@EXAMPLE.COM",
+                            NormalizedUserName = "SEED.USER.FIFTEEN",
+                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
+                            TwoFactorEnabled = false,
+                            UserName = "Seed.User.Fifteen"
+                        },
+                        new
+                        {
+                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee45"),
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                            Email = "seed.user16@example.com",
+                            EmailConfirmed = true,
+                            LockoutEnabled = true,
+                            NormalizedEmail = "SEED.USER16@EXAMPLE.COM",
+                            NormalizedUserName = "SEED.USER.SIXTEEN",
+                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
+                            TwoFactorEnabled = false,
+                            UserName = "Seed.User.Sixteen"
+                        },
+                        new
+                        {
+                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee46"),
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                            Email = "seed.user17@example.com",
+                            EmailConfirmed = true,
+                            LockoutEnabled = true,
+                            NormalizedEmail = "SEED.USER17@EXAMPLE.COM",
+                            NormalizedUserName = "SEED.USER.SEVENTEEN",
+                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
+                            TwoFactorEnabled = false,
+                            UserName = "Seed.User.Seventeen"
+                        },
+                        new
+                        {
+                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee47"),
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                            Email = "seed.user18@example.com",
+                            EmailConfirmed = true,
+                            LockoutEnabled = true,
+                            NormalizedEmail = "SEED.USER18@EXAMPLE.COM",
+                            NormalizedUserName = "SEED.USER.EIGHTEEN",
+                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
+                            TwoFactorEnabled = false,
+                            UserName = "Seed.User.Eighteen"
+                        },
+                        new
+                        {
+                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee48"),
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                            Email = "seed.user19@example.com",
+                            EmailConfirmed = true,
+                            LockoutEnabled = true,
+                            NormalizedEmail = "SEED.USER19@EXAMPLE.COM",
+                            NormalizedUserName = "SEED.USER.NINETEEN",
+                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
+                            TwoFactorEnabled = false,
+                            UserName = "Seed.User.Nineteen"
+                        },
+                        new
+                        {
+                            Id = new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee49"),
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                            Email = "seed.user20@example.com",
+                            EmailConfirmed = true,
+                            LockoutEnabled = true,
+                            NormalizedEmail = "SEED.USER20@EXAMPLE.COM",
+                            NormalizedUserName = "SEED.USER.TWENTY",
+                            PasswordHash = "AQAAAAEAACcQAAAAEExamplePasswordHash==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "d12ef04d-5b83-4aab-8661-567ffb12e15",
+                            TwoFactorEnabled = false,
+                            UserName = "Seed.User.Twenty"
+                        });
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", null)
@@ -4500,7 +4495,7 @@ namespace atlas_the_public_think_tank.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", null)
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -4509,7 +4504,7 @@ namespace atlas_the_public_think_tank.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<System.Guid>", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", null)
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -4524,7 +4519,7 @@ namespace atlas_the_public_think_tank.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", null)
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -4533,218 +4528,37 @@ namespace atlas_the_public_think_tank.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<System.Guid>", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", null)
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.CommentVote", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment.Comment", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", null)
-                        .WithMany("CommentVotes")
-                        .HasForeignKey("AppUserId");
-
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.UserComment", "Comment")
-                        .WithMany("CommentVotes")
-                        .HasForeignKey("CommentID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Comment");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.Issue", b =>
-                {
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", "Author")
-                        .WithMany("Issues")
-                        .HasForeignKey("AuthorID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.BlockedContent", "BlockedContent")
-                        .WithMany("Issues")
-                        .HasForeignKey("BlockedContentID")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Issue", "ParentIssue")
-                        .WithMany("ChildIssues")
-                        .HasForeignKey("ParentIssueID")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Solution", "ParentSolution")
-                        .WithMany("ChildIssues")
-                        .HasForeignKey("ParentSolutionID")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Scope", "Scope")
-                        .WithMany("Issues")
-                        .HasForeignKey("ScopeID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Author");
-
-                    b.Navigation("BlockedContent");
-
-                    b.Navigation("ParentIssue");
-
-                    b.Navigation("ParentSolution");
-
-                    b.Navigation("Scope");
-                });
-
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.IssueCategory", b =>
-                {
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Category", "Category")
-                        .WithMany("IssueCategories")
-                        .HasForeignKey("CategoryID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Issue", "Issue")
-                        .WithMany("IssueCategories")
-                        .HasForeignKey("IssueID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Category");
-
-                    b.Navigation("Issue");
-                });
-
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.IssueVote", b =>
-                {
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", null)
-                        .WithMany("IssueVotes")
-                        .HasForeignKey("AppUserId");
-
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Issue", "Issue")
-                        .WithMany("IssueVotes")
-                        .HasForeignKey("IssueID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Issue");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.Solution", b =>
-                {
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", "Author")
-                        .WithMany("Solutions")
-                        .HasForeignKey("AuthorID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.BlockedContent", "BlockedContent")
-                        .WithMany("Solutions")
-                        .HasForeignKey("BlockedContentID")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Issue", "ParentIssue")
-                        .WithMany("Solutions")
-                        .HasForeignKey("ParentIssueID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Scope", "Scope")
-                        .WithMany()
-                        .HasForeignKey("ScopeID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Author");
-
-                    b.Navigation("BlockedContent");
-
-                    b.Navigation("ParentIssue");
-
-                    b.Navigation("Scope");
-                });
-
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.SolutionCategory", b =>
-                {
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Category", "Category")
-                        .WithMany("SolutionCategories")
-                        .HasForeignKey("CategoryID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Solution", "Solution")
-                        .WithMany("SolutionCategories")
-                        .HasForeignKey("SolutionID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Category");
-
-                    b.Navigation("Solution");
-                });
-
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.SolutionVote", b =>
-                {
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", null)
-                        .WithMany("SolutionVotes")
-                        .HasForeignKey("AppUserId");
-
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Solution", "Solution")
-                        .WithMany("SolutionVotes")
-                        .HasForeignKey("SolutionID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Solution");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.UserComment", b =>
-                {
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", "Author")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", "Author")
                         .WithMany("Comments")
                         .HasForeignKey("AuthorID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.BlockedContent", "BlockedContent")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Moderation.BlockedContent", "BlockedContent")
                         .WithMany("Comments")
                         .HasForeignKey("BlockedContentID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Issue", "Issue")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.Issue", "Issue")
                         .WithMany("Comments")
                         .HasForeignKey("IssueID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.UserComment", "ParentComment")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment.Comment", "ParentComment")
                         .WithMany("ChildComments")
                         .HasForeignKey("ParentCommentID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Solution", "Solution")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.Solution", "Solution")
                         .WithMany("Comments")
                         .HasForeignKey("SolutionID")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -4760,24 +4574,189 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("Solution");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.UserHistory", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment.CommentVote", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.UserComment", "Comment")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", null)
+                        .WithMany("CommentVotes")
+                        .HasForeignKey("AppUserId");
+
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment.Comment", "Comment")
+                        .WithMany("CommentVotes")
+                        .HasForeignKey("CommentID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Comment");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.Issue", b =>
+                {
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", "Author")
+                        .WithMany("Issues")
+                        .HasForeignKey("AuthorID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Moderation.BlockedContent", "BlockedContent")
+                        .WithMany("Issues")
+                        .HasForeignKey("BlockedContentID")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.Issue", "ParentIssue")
+                        .WithMany("ChildIssues")
+                        .HasForeignKey("ParentIssueID")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.Solution", "ParentSolution")
+                        .WithMany()
+                        .HasForeignKey("ParentSolutionID")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common.Scope", "Scope")
+                        .WithMany("Issues")
+                        .HasForeignKey("ScopeID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.Solution", null)
+                        .WithMany("ChildIssues")
+                        .HasForeignKey("SolutionID");
+
+                    b.Navigation("Author");
+
+                    b.Navigation("BlockedContent");
+
+                    b.Navigation("ParentIssue");
+
+                    b.Navigation("ParentSolution");
+
+                    b.Navigation("Scope");
+                });
+
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.IssueTag", b =>
+                {
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.Issue", null)
+                        .WithMany("IssueTags")
+                        .HasForeignKey("IssueID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.IssueVote", b =>
+                {
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", null)
+                        .WithMany("IssueVotes")
+                        .HasForeignKey("AppUserId");
+
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.Issue", "Issue")
+                        .WithMany("IssueVotes")
+                        .HasForeignKey("IssueID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Issue");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.Solution", b =>
+                {
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", "Author")
+                        .WithMany("Solutions")
+                        .HasForeignKey("AuthorID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Moderation.BlockedContent", "BlockedContent")
+                        .WithMany("Solutions")
+                        .HasForeignKey("BlockedContentID")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.Issue", "ParentIssue")
+                        .WithMany("Solutions")
+                        .HasForeignKey("ParentIssueID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common.Scope", "Scope")
+                        .WithMany()
+                        .HasForeignKey("ScopeID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Author");
+
+                    b.Navigation("BlockedContent");
+
+                    b.Navigation("ParentIssue");
+
+                    b.Navigation("Scope");
+                });
+
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.SolutionTag", b =>
+                {
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.Solution", null)
+                        .WithMany("SolutionTags")
+                        .HasForeignKey("SolutionID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.SolutionVote", b =>
+                {
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", null)
+                        .WithMany("SolutionVotes")
+                        .HasForeignKey("AppUserId");
+
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.Solution", "Solution")
+                        .WithMany("SolutionVotes")
+                        .HasForeignKey("SolutionID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Solution");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.History.UserHistory", b =>
+                {
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment.Comment", "Comment")
                         .WithMany()
                         .HasForeignKey("CommentID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Issue", "Issue")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.Issue", "Issue")
                         .WithMany()
                         .HasForeignKey("IssueID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.Solution", "Solution")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.Solution", "Solution")
                         .WithMany()
                         .HasForeignKey("SolutionID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.Database.AppUser", "User")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", "User")
                         .WithMany("UserHistory")
                         .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -4792,7 +4771,52 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.AppUser", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment.Comment", b =>
+                {
+                    b.Navigation("ChildComments");
+
+                    b.Navigation("CommentVotes");
+                });
+
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common.Scope", b =>
+                {
+                    b.Navigation("Issues");
+                });
+
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.Issue", b =>
+                {
+                    b.Navigation("ChildIssues");
+
+                    b.Navigation("Comments");
+
+                    b.Navigation("IssueTags");
+
+                    b.Navigation("IssueVotes");
+
+                    b.Navigation("Solutions");
+                });
+
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.Solution", b =>
+                {
+                    b.Navigation("ChildIssues");
+
+                    b.Navigation("Comments");
+
+                    b.Navigation("SolutionTags");
+
+                    b.Navigation("SolutionVotes");
+                });
+
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Moderation.BlockedContent", b =>
+                {
+                    b.Navigation("Comments");
+
+                    b.Navigation("Issues");
+
+                    b.Navigation("Solutions");
+                });
+
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", b =>
                 {
                     b.Navigation("CommentVotes");
 
@@ -4807,58 +4831,6 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("Solutions");
 
                     b.Navigation("UserHistory");
-                });
-
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.BlockedContent", b =>
-                {
-                    b.Navigation("Comments");
-
-                    b.Navigation("Issues");
-
-                    b.Navigation("Solutions");
-                });
-
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.Category", b =>
-                {
-                    b.Navigation("IssueCategories");
-
-                    b.Navigation("SolutionCategories");
-                });
-
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.Issue", b =>
-                {
-                    b.Navigation("ChildIssues");
-
-                    b.Navigation("Comments");
-
-                    b.Navigation("IssueCategories");
-
-                    b.Navigation("IssueVotes");
-
-                    b.Navigation("Solutions");
-                });
-
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.Scope", b =>
-                {
-                    b.Navigation("Issues");
-                });
-
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.Solution", b =>
-                {
-                    b.Navigation("ChildIssues");
-
-                    b.Navigation("Comments");
-
-                    b.Navigation("SolutionCategories");
-
-                    b.Navigation("SolutionVotes");
-                });
-
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.Database.UserComment", b =>
-                {
-                    b.Navigation("ChildComments");
-
-                    b.Navigation("CommentVotes");
                 });
 #pragma warning restore 612, 618
         }

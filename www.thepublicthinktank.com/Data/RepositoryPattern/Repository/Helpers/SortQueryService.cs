@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using atlas_the_public_think_tank.Models;
-using atlas_the_public_think_tank.Models.Database;
+ 
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
 {

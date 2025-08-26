@@ -1,7 +1,8 @@
 ﻿using AngleSharp;
 using AngleSharp.Dom;
 using atlas_the_public_think_tank.Data;
-using atlas_the_public_think_tank.Models.Database;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+ 
 using CloudTests.UnitTesting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;

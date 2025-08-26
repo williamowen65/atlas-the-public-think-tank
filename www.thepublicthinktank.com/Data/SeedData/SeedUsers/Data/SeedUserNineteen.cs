@@ -1,4 +1,5 @@
-using atlas_the_public_think_tank.Models.Database;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+ 
 
 namespace atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data
 {

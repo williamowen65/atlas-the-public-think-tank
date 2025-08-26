@@ -1,8 +1,9 @@
 ﻿@using System.ComponentModel.DataAnnotations
 @using atlas_the_public_think_tank.Data.CRUD
 @using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
-@using atlas_the_public_think_tank.Models.Database
-@model CreateIssuePageViewModel;
+@using atlas_the_public_think_tank.Models.ViewModel.AjaxVM
+@using atlas_the_public_think_tank.Models.ViewModel.PageVM
+@model CreateIssue_PageVM;
 
 @{
     ViewData["Title"] = "Create a new Issue";
@@ -25,7 +26,7 @@
             The user can cast their initial vote, or to back to edit.
         *@
     
-        @await Html.PartialAsync("~/Views/Issue/_create-or-edit-issue.cshtml", new CreateOrEditIssueWrapper
+        @await Html.PartialAsync("~/Views/Issue/_create-or-edit-issue.cshtml", new Issue_CreateOrEdit_AjaxVM
         {
             Issue = Model.MainIssue,
             Scopes = Model.Scopes,

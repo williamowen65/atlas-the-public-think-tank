@@ -1,4 +1,5 @@
 ﻿using atlas_the_public_think_tank.Models.ViewModel;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.User;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.IRepository
 {
@@ -14,7 +15,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.IRepository
         /// 
         /// </summary>
         /// <remarks>
-        /// Relates to <see cref="AppUser_ContentItem_ReadVM"/> which is a version meant for Author of a content item
+        /// Relates to <see cref="AppUser_ReadVM"/> which is a version meant for Author of a content item
         /// </remarks>
         Task<AppUser_ReadVM?> GetAppUser(Guid UserId);
     }

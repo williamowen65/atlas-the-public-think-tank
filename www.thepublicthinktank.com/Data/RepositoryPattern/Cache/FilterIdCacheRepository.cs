@@ -1,9 +1,10 @@
-﻿using Microsoft.CodeAnalysis;
-using Microsoft.Extensions.Caching.Memory;
-using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
+﻿using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Models;
 using atlas_the_public_think_tank.Models.ViewModel;
+using atlas_the_public_think_tank.Models.ViewModel.UI_VM;
+using Microsoft.CodeAnalysis;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 {
@@ -62,7 +63,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             return await _inner.GetPagedMainContentFeedIds(filter, pageNumber, pageSize);
         }
 
-        public async Task<ContentCount_ReadVM?> GetContentCountSubIssuesOfIssueById(Guid issueId, ContentFilter filter)
+        public async Task<ContentCount_VM?> GetContentCountSubIssuesOfIssueById(Guid issueId, ContentFilter filter)
         {
             //string filterHash = filter.ToJson().GetHashCode().ToString();
             //return await _cache.GetOrCreateAsync($"sub-issue-total-count:{issueId}:{filterHash}", async entry =>
@@ -72,7 +73,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             //});
             return await _inner.GetContentCountSubIssuesOfIssueById(issueId, filter);
         }
-        public async Task<ContentCount_ReadVM?> GetContentCountSubIssuesOfSolutionById(Guid solutionId, ContentFilter filter)
+        public async Task<ContentCount_VM?> GetContentCountSubIssuesOfSolutionById(Guid solutionId, ContentFilter filter)
         {
             //string filterHash = filter.ToJson().GetHashCode().ToString();
             //return await _cache.GetOrCreateAsync($"sub-issue-total-count:{solutionId}:{filterHash}", async entry =>
@@ -82,7 +83,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             //});
             return await _inner.GetContentCountSubIssuesOfSolutionById(solutionId, filter);
         }
-        public async Task<ContentCount_ReadVM?> GetContentCountSolutionsOfIssueById(Guid issueId, ContentFilter filter )
+        public async Task<ContentCount_VM?> GetContentCountSolutionsOfIssueById(Guid issueId, ContentFilter filter )
         {
             //string filterHash = filter.ToJson().GetHashCode().ToString();
             //return await _cache.GetOrCreateAsync($"solutions-total-count:{issueId}:{filterHash}", async entry =>
@@ -93,7 +94,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             return await _inner.GetContentCountSolutionsOfIssueById(issueId, filter);
         }
 
-        public async Task<ContentCount_ReadVM?> GetContentCountMainContentFeed(ContentFilter filter)
+        public async Task<ContentCount_VM?> GetContentCountMainContentFeed(ContentFilter filter)
         {
             //string filterHash = filter.ToJson().GetHashCode().ToString();
             //return await _cache.GetOrCreateAsync($"main-content-total-count:{filterHash}", async entry =>
