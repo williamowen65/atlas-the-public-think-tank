@@ -10,6 +10,6 @@ namespace atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue
         /// This is because Guid is a non nullable type.
         /// </summary>
         [Required(ErrorMessage = "IssueID is required when updating an existing issue")]
-        public Guid? IssueID { get; set; }
+        public new Guid? IssueID { get; set; }
     }
 }

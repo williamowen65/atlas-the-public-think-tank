@@ -11,7 +11,7 @@ namespace atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution
         /// This is because Guid is a non nullable type.
         /// </summary>
         [Required(ErrorMessage = "SolutionID is required when updating an existing solution")]
-        public Guid? SolutionID { get; set; }
+        public new Guid? SolutionID { get; set; }
     }
 
 }
