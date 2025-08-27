@@ -118,6 +118,7 @@ Client side scripts tied to this view: ContentCreate.js
                     PropertyName = "ParentIssueID",
                     TextField = "Title",
                     ValueField = "IssueID",
+                    DisabledField = selectedParentIssueValue != null ? true : false,
                     ListItems = issueIdList,
                     SelectedValue = selectedParentIssueValue
                 })
@@ -145,7 +146,8 @@ Client side scripts tied to this view: ContentCreate.js
                     TextField = "Title",
                     ValueField = "SolutionID",
                     ListItems = solutionIdList,
-                    SelectedValue  =selectedParentSolutionValue
+                    SelectedValue  =selectedParentSolutionValue,
+                    DisabledField = selectedParentSolutionValue != null ? true : false,
                 })
 
             }
