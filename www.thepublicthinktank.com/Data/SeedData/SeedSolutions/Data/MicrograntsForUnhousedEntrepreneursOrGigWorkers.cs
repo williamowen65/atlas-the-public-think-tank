@@ -1,6 +1,8 @@
-﻿using atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
+using atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
-using atlas_the_public_think_tank.Models.Database;
+ 
+using atlas_the_public_think_tank.Models.Enums;
 
 namespace atlas_the_public_think_tank.Data.SeedData.SeedSolutions.Data
 {

@@ -1,6 +1,7 @@
 ﻿using AngleSharp;
 using AngleSharp.Dom;
 using atlas_the_public_think_tank.Models.ViewModel;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;
 using CloudTests.TestingSetup;
 using Microsoft.AspNetCore.Mvc.Testing;
 using System;
@@ -34,7 +35,7 @@ namespace CloudTests.UnitTesting
             // Get the response
             var url = "test-ReadContentItems";
 
-            var paginatedResponse = await _env.fetchJson<PaginatedContentItemsResponse>(url);
+            var paginatedResponse = await _env.fetchJson<ContentItems_Paginated_ReadVM>(url);
             // Assert that the response is not null
             Assert.IsNotNull(paginatedResponse, "Paginated response should not be null");
 

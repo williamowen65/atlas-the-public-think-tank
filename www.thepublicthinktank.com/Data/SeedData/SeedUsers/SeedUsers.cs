@@ -1,5 +1,6 @@
-﻿using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
-using atlas_the_public_think_tank.Models.Database;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
+ 
 using Microsoft.EntityFrameworkCore;
 
 namespace atlas_the_public_think_tank.Data.SeedData.SeedUsers

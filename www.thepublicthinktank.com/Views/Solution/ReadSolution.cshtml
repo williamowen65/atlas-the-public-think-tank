@@ -1,4 +1,5 @@
-﻿@using atlas_the_public_think_tank.Models.ViewModel
+﻿@using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution
+@using atlas_the_public_think_tank.Models.ViewModel.UI_VM
 @*
     Layout of the solution page, where the sub-issues, comments, etc can be found by the user
 *@
@@ -102,7 +103,7 @@
                 }
             </div>
 
-                @await Html.PartialAsync("~/Views/Shared/Components/_pagination-button.cshtml", new PaginationButton_ReadVM
+            @await Html.PartialAsync("~/Views/Shared/Components/_pagination-button.cshtml", new PaginationButton_VM
                 {
                     ElementId = "fetchPaginatedSubIssues",
                     ContentType = "sub-issues",

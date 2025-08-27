@@ -1,8 +1,13 @@
-﻿using atlas_the_public_think_tank.Models.Database;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Moderation;
+using atlas_the_public_think_tank.Models.Enums;
+using atlas_the_public_think_tank.Models.ViewModel;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.User;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.ContentItem_Common;
 
-namespace atlas_the_public_think_tank.Models.ViewModel
+namespace atlas_the_public_think_tank.Models.Cacheable.Common
 {
-
     /// <summary>
     /// Issues and Solutions inherit this super class
     /// </summary>
@@ -22,7 +27,7 @@ namespace atlas_the_public_think_tank.Models.ViewModel
         public required ContentStatus ContentStatus { get; set; }
 
         public Guid? BlockedContentID { get; set; }
-        
+
 
         /*
             Some of these below items shouldn't be in the cache via this item... Breadcrumb, Author, Comments
@@ -30,19 +35,10 @@ namespace atlas_the_public_think_tank.Models.ViewModel
         public required List<Breadcrumb_ReadVM> BreadcrumbTags { get; set; }
 
         // Navigation Prop
-        public AppUser_ContentItem_ReadVM Author { get; set; }
-        public ICollection<UserComment> Comments { get; set; } = new List<UserComment>();
+        public AppUser_ReadVM Author { get; set; }
+        public ICollection<Comment> Comments { get; set; } = new List<Comment>();
         public required Scope Scope { get; set; }
 
         public BlockedContent BlockedContent { get; set; }
-    }
-
-    public class ContentItem_ReadVM : ContentItem_Cacheable
-    {
-        public Guid ContentID { get; set; }
-        public required UserVote_Generic_ReadVM VoteStats { get; set; }
-        public ContentType ContentType { get; set; }
-        public PaginatedIssuesResponse PaginatedSubIssues { get; set; } = new PaginatedIssuesResponse();
-        public PaginatedSolutionsResponse? PaginatedSolutions { get; set; } = new PaginatedSolutionsResponse();
     }
 }

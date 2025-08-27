@@ -1,4 +1,5 @@
-﻿@using atlas_the_public_think_tank.Models.ViewModel
+﻿@using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common.ContentItemVote
+@using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue
 
 
 @*
@@ -18,7 +19,7 @@
     <div class="card-content position-relative mb-2">
 
             <div class="dial-container" style="float:left">
-            @await Html.PartialAsync("~/Views/Shared/Components/_voteDial.cshtml", new UserVote_Generic_ReadVM()
+            @await Html.PartialAsync("~/Views/Shared/Components/_voteDial.cshtml", new ContentItemVotes_ReadVM()
             {
                 AverageVote = Model.VoteStats.AverageVote,
                 ContentID = Model.VoteStats.ContentID,

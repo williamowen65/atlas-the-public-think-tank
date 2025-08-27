@@ -1,6 +1,7 @@
 ﻿using atlas_the_public_think_tank.Data;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
-using atlas_the_public_think_tank.Models.Database;
+ 
 using CloudTests.TestingSetup.TestingData;
 using System;
 using System.Collections.Generic;

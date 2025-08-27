@@ -1,9 +1,12 @@
 ﻿
 using atlas_the_public_think_tank.Data;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues;
 using atlas_the_public_think_tank.Data.SeedData.SeedSolutions;
-using atlas_the_public_think_tank.Models.Database;
+ 
 using atlas_the_public_think_tank.Models.ViewModel;
+using atlas_the_public_think_tank.Models.ViewModel.AjaxVM;
 using CloudTests.TestingSetup;
 using CloudTests.TestingSetup.TestingData;
 
@@ -41,8 +44,6 @@ namespace CloudTests.UserStories
             AppUser testUser = Users.CreateTestUser1(_db);
             // Add test scopes
             Scope globalScope = Scopes.CreateGlobalScope(_db);
-            // Add test categories
-            Category environmentCategory = Categories.CreateEnvironmentCategory(_db);
             // Add test issues
             Issues.CreateTestIssue(_db, Issues.TestIssue1);
             // Add a sub issue (first sub issue)
@@ -116,7 +117,7 @@ namespace CloudTests.UserStories
         public async Task TestIssue1Page_PaginationAPI_Page2_ShouldReturnJsonWithOneMorePost()
         {
             string url = "/issue/getPaginatedSubIssues/" + Issues.TestIssue1.IssueID.ToString() + "?currentPage=2";
-            var JsonResponse = await _env.fetchJson<PaginatedContentItemsJsonResponse>(url);
+            var JsonResponse = await _env.fetchJson<ContentItems_Paginated_AjaxVM>(url);
             var document = await _env.TextHtmlToDocument(JsonResponse.html);
             var container = document.QuerySelector("body");
             

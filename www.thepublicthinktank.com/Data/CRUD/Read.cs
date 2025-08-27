@@ -1,14 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.CodeAnalysis;
-using Microsoft.Extensions.DependencyInjection;
-using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
-using atlas_the_public_think_tank.Data.RepositoryPattern.Repository;
+﻿using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
-using atlas_the_public_think_tank.Models.Database;
+using atlas_the_public_think_tank.Models.Enums;
 using atlas_the_public_think_tank.Models.ViewModel;
-using System;
-using System.Threading.Tasks;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common.ContentItemVote;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue.IssueVote;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution.SolutionVote;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.User;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.Solution;
 
 namespace atlas_the_public_think_tank.Data.CRUD
 {
@@ -31,7 +32,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
 
         #region Pagination Read methods
 
-        public static async Task<PaginatedContentItemsResponse> PaginatedMainContentFeed(ContentFilter filter, int pageNumber = 1) {
+        public static async Task<ContentItems_Paginated_ReadVM> PaginatedMainContentFeed(ContentFilter filter, int pageNumber = 1) {
 
             if (_serviceProvider == null)
                 throw new InvalidOperationException("Read class has not been initialized with a service provider.");
@@ -45,7 +46,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
             var counts = await filterIdRepository.GetContentCountMainContentFeed(filter);
 
             // Create the response object
-            var response = new PaginatedContentItemsResponse
+            var response = new ContentItems_Paginated_ReadVM
             {
                 ContentItems = new List<ContentItem_ReadVM>(),
                 TotalCount = counts!.TotalCount,
@@ -88,7 +89,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
                             LastActivity = issue.LastActivity,
                             PaginatedSubIssues = issue.PaginatedSubIssues,
                             PaginatedSolutions = issue.PaginatedSolutions,
-                            VoteStats = new UserVote_Generic_ReadVM() { 
+                            VoteStats = new ContentItemVotes_ReadVM() { 
                                 GenericContentVotes = issue.VoteStats.IssueVotes,
                                 AverageVote = issue.VoteStats.AverageVote,
                                 ContentID = issue.VoteStats.ContentID,
@@ -118,7 +119,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
                             Comments = solution.Comments,
                             LastActivity = solution.LastActivity,
                             PaginatedSubIssues = solution.PaginatedSubIssues,
-                            VoteStats = new UserVote_Generic_ReadVM()
+                            VoteStats = new ContentItemVotes_ReadVM()
                             {
                                 GenericContentVotes = solution.VoteStats.SolutionVotes,
                                 AverageVote = solution.VoteStats.AverageVote,
@@ -153,7 +154,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
         /// <summary>
         /// Returns a paginated issue response with paginated sub issue feed and meta data
         /// </summary>
-        public static async Task<PaginatedIssuesResponse> PaginatedSubIssueFeedForIssue(Guid issueId, ContentFilter filter, int pageNumber = 1)
+        public static async Task<Issues_Paginated_ReadVM> PaginatedSubIssueFeedForIssue(Guid issueId, ContentFilter filter, int pageNumber = 1)
         {
             if (_serviceProvider == null)
                 throw new InvalidOperationException("Read class has not been initialized with a service provider.");
@@ -172,7 +173,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
 
             var paginatedChildIssuesIds = await filterIdRepository.GetPagedSubIssueIdsOfIssueById(issueId, filter, pageNumber);
 
-            PaginatedIssuesResponse paginatedIssuesResponse = new PaginatedIssuesResponse();
+            Issues_Paginated_ReadVM paginatedIssuesResponse = new Issues_Paginated_ReadVM();
 
             // If there are any sub-issue IDs, recursively load them
             if (paginatedChildIssuesIds != null && paginatedChildIssuesIds.Count > 0)
@@ -198,7 +199,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
             return paginatedIssuesResponse;
         }
 
-        public static async Task<PaginatedIssuesResponse> PaginatedSubIssueFeedForSolution(Guid solutionId, ContentFilter filter, int pageNumber = 1)
+        public static async Task<Issues_Paginated_ReadVM> PaginatedSubIssueFeedForSolution(Guid solutionId, ContentFilter filter, int pageNumber = 1)
         {
             if (_serviceProvider == null)
                 throw new InvalidOperationException("Read class has not been initialized with a service provider.");
@@ -217,7 +218,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
 
             var paginatedChildIssuesIds = await filterIdRepository.GetPagedSubIssueIdsOfSolutionById(solutionId, filter, pageNumber);
 
-            PaginatedIssuesResponse paginatedIssuesResponse = new PaginatedIssuesResponse();
+            Issues_Paginated_ReadVM paginatedIssuesResponse = new Issues_Paginated_ReadVM();
 
             // If there are any sub-issue IDs, recursively load them
             if (paginatedChildIssuesIds != null && paginatedChildIssuesIds.Count > 0)
@@ -243,7 +244,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
             return paginatedIssuesResponse;
         }
 
-        public static async Task<PaginatedSolutionsResponse> PaginatedSolutionFeedForIssue(Guid issueId, ContentFilter filter, int pageNumber = 1)
+        public static async Task<Solutions_Paginated_ReadVM> PaginatedSolutionFeedForIssue(Guid issueId, ContentFilter filter, int pageNumber = 1)
         {
             if (_serviceProvider == null)
                 throw new InvalidOperationException("Read class has not been initialized with a service provider.");
@@ -262,7 +263,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
 
             var paginatedSolutionFeedIds = await filterIdRepository.GetPagedSolutionIdsOfIssueById(issueId, filter, pageNumber);
 
-            PaginatedSolutionsResponse paginatedSolutionResponse = new PaginatedSolutionsResponse();
+            Solutions_Paginated_ReadVM paginatedSolutionResponse = new Solutions_Paginated_ReadVM();
 
             // If there are any sub-issue IDs, recursively load them
             if (paginatedSolutionFeedIds != null && paginatedSolutionFeedIds.Count > 0)
@@ -325,7 +326,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
                 throw new InvalidOperationException("Issue not found");
             }
 
-            UserVote_Issue_ReadVM? issueVoteStats = await voteStatsRepository.GetIssueVoteStats(issueId);
+            IssueVotes_ReadVM? issueVoteStats = await voteStatsRepository.GetIssueVoteStats(issueId);
             AppUser_ReadVM? appUser = await appUserRepository.GetAppUser(issueContent.AuthorID);
 
             // Get the sub-issue IDs (Page 1)
@@ -339,7 +340,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
                 ParentIssueID = issueContent.ParentIssueID,
                 ParentSolutionID = issueContent.ParentSolutionID,
                 Title = issueContent.Title,
-                Author = new AppUser_ContentItem_ReadVM()
+                Author = new AppUser_ReadVM()
                 {
                     email = appUser!.email,
                     Id = appUser.Id,
@@ -403,7 +404,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
 
             AppUser_ReadVM? appUser = await appUserRepository.GetAppUser(solutionContent.AuthorID);
 
-            UserVote_Solution_ReadVM? solutionVoteStats = await voteStatsRepository.GetSolutionVoteStats(solutionId);
+            SolutionVotes_ReadVM? solutionVoteStats = await voteStatsRepository.GetSolutionVoteStats(solutionId);
 
             var paginatedSubIssues = await Read.PaginatedSubIssueFeedForSolution(solutionId, filter);
 
@@ -415,7 +416,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
                 ParentIssueID = solutionContent.ParentIssueID,
                
                 Title = solutionContent.Title,
-                Author = new AppUser_ContentItem_ReadVM()
+                Author = new AppUser_ReadVM()
                 {
                     email = appUser!.email,
                     Id = appUser.Id,

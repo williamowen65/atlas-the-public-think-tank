@@ -1,9 +1,18 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
 using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
-using atlas_the_public_think_tank.Models.Database;
-using atlas_the_public_think_tank.Models.ViewModel;
 using atlas_the_public_think_tank.Models;
+using atlas_the_public_think_tank.Models.Cacheable;
+using atlas_the_public_think_tank.Models.Enums;
+ 
+using atlas_the_public_think_tank.Models.ViewModel;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue.IssueVote;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution.SolutionVote;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.Issue.IssueVote;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.Solution.SolutionVote;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
 {
@@ -37,7 +46,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
         /// <remarks>
         /// The votes are keyed by UserID for ease of lookup of a users vote on content
         /// </remarks>
-        public async Task<UserVote_Issue_ReadVM> GetIssueVoteStats(Guid issueId)
+        public async Task<IssueVotes_ReadVM> GetIssueVoteStats(Guid issueId)
         {
             // Retrieve vote data for the issue
             var votes = await _context.IssueVotes
@@ -48,13 +57,13 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             double averageVote = votes.Any() ? votes.Average(v => v.VoteValue) : 0;
             int totalVotes = votes.Count;
 
-            return new UserVote_Issue_ReadVM
+            return new IssueVotes_ReadVM
             {
                 ContentID = issueId,
                 ContentType = ContentType.Issue,
                 AverageVote = averageVote,
                 TotalVotes = totalVotes,
-                IssueVotes = votes.Select(v => new Vote_Cacheable_ReadVM
+                IssueVotes = votes.Select(v => new Vote_Cacheable
                 {
                     VoteID = v.VoteID,
                     UserID = v.UserID,
@@ -73,7 +82,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
         /// <remarks>
         /// The votes are keyed by UserID for ease of lookup of a users vote on content
         /// </remarks>
-        public async Task<UserVote_Solution_ReadVM> GetSolutionVoteStats(Guid solutionId)
+        public async Task<SolutionVotes_ReadVM> GetSolutionVoteStats(Guid solutionId)
         {
             // Retrieve vote data for the issue
             var votes = await _context.SolutionVotes
@@ -84,13 +93,13 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             double averageVote = votes.Any() ? votes.Average(v => v.VoteValue) : 0;
             int totalVotes = votes.Count;
 
-            return new UserVote_Solution_ReadVM
+            return new SolutionVotes_ReadVM
             {
                 ContentID = solutionId,
                 ContentType = ContentType.Solution,
                 AverageVote = averageVote,
                 TotalVotes = totalVotes,
-                SolutionVotes = votes.Select(v => new Vote_Cacheable_ReadVM
+                SolutionVotes = votes.Select(v => new Vote_Cacheable
                 {
                     VoteID = v.VoteID,
                     UserID = v.UserID,
@@ -102,7 +111,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             };
         }
 
-        public async Task<Vote_Cacheable_ReadVM?> UpsertIssueVote(UserVote_Issue_UpsertVM model, AppUser user)
+        public async Task<Vote_Cacheable?> UpsertIssueVote(IssueVote_UpsertVM model, AppUser user)
         {
 
 
@@ -128,7 +137,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
                     .Where(v => v.UserID == user.Id && v.IssueID == model.IssueID)
                     .FirstOrDefaultAsync();
 
-                Vote_Cacheable_ReadVM issueVote;
+                Vote_Cacheable issueVote;
 
                 if (existingVote != null)
                 {
@@ -139,7 +148,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
                         _context.IssueVotes.Update(existingVote);
 
                         // Convert to Vote_Cacheable_ReadVM
-                        issueVote = new Vote_Cacheable_ReadVM
+                        issueVote = new Vote_Cacheable
                         {
                             VoteID = existingVote.VoteID,
                             UserID = existingVote.UserID,
@@ -166,7 +175,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
                     await _context.IssueVotes.AddAsync(newVote);
 
                     // Convert to Vote_Cacheable_ReadVM
-                    issueVote = new Vote_Cacheable_ReadVM
+                    issueVote = new Vote_Cacheable
                     {
                         VoteID = newVote.VoteID,
                         UserID = newVote.UserID,
@@ -182,7 +191,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
            
         }
 
-        public async Task<Vote_Cacheable_ReadVM?> UpsertSolutionVote(UserVote_Solution_UpsertVM model, AppUser user)
+        public async Task<Vote_Cacheable?> UpsertSolutionVote(SolutionVote_UpsertVM model, AppUser user)
         {
 
             // Create a scope to resolve scoped services
@@ -207,7 +216,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
                 .Where(v => v.UserID == user.Id && v.SolutionID == model.SolutionID)
                 .FirstOrDefaultAsync();
 
-            Vote_Cacheable_ReadVM solutionVote;
+            Vote_Cacheable solutionVote;
 
             if (existingVote != null)
             {
@@ -218,7 +227,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
                 _context.SolutionVotes.Update(existingVote);
 
                 // Convert to Vote_Cacheable_ReadVM
-                solutionVote = new Vote_Cacheable_ReadVM
+                solutionVote = new Vote_Cacheable
                 {
                     VoteID = existingVote.VoteID,
                     UserID = existingVote.UserID,
@@ -244,7 +253,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
                 await _context.SolutionVotes.AddAsync(newVote);
 
                 // Convert to Vote_Cacheable_ReadVM
-                solutionVote = new Vote_Cacheable_ReadVM
+                solutionVote = new Vote_Cacheable
                 {
                     VoteID = newVote.VoteID,
                     UserID = newVote.UserID,

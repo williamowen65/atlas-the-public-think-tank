@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Models.Database;
+﻿ 
+using atlas_the_public_think_tank.Models.Enums;
 
 namespace atlas_the_public_think_tank.Models
 {
@@ -51,11 +52,5 @@ namespace atlas_the_public_think_tank.Models
         public bool EnableSendBeacon { get; set; } = true;
     }
 
-    public class JsonVoteResponse
-    {
-        public string Message { get; set; }
-        public bool Success { get; set; }
-        public double? Average { get; set; }
-        public int? Count { get; set; }
-    }
+  
 }

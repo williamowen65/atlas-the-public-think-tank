@@ -1,8 +1,9 @@
 ﻿using atlas_the_public_think_tank.Data;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data;
 using atlas_the_public_think_tank.Data.SeedData.SeedSolutions.Data;
 using atlas_the_public_think_tank.Models;
-using atlas_the_public_think_tank.Models.Database;
+using atlas_the_public_think_tank.Models.ViewModel.AjaxVM;
 using CloudTests.TestingSetup;
 using CloudTests.TestingSetup.TestingData;
 using Microsoft.AspNetCore.Mvc;
@@ -47,7 +48,7 @@ namespace CloudTests.UserStories
             };
 
             // Send the unauthorized request
-            var response = await _env.fetchPost<JsonVoteResponse, object>(url, votePayload);
+            var response = await _env.fetchPost<VoteResponse_AjaxVM, object>(url, votePayload);
 
             // Get the response content
             Assert.IsTrue(response.Message.Contains("You must login in order to vote"));
@@ -138,7 +139,7 @@ namespace CloudTests.UserStories
             };
 
             // Act
-            var response = await _env.fetchPost<JsonVoteResponse, object>(url, votePayload);
+            var response = await _env.fetchPost<VoteResponse_AjaxVM, object>(url, votePayload);
 
             // Assert
             Assert.IsTrue(response.Success);
@@ -168,7 +169,7 @@ namespace CloudTests.UserStories
             };
 
             // Act
-            var response = await _env.fetchPost<JsonVoteResponse, object>(url, votePayload);
+            var response = await _env.fetchPost<VoteResponse_AjaxVM, object>(url, votePayload);
 
             // Assert
             Assert.IsFalse(response.Success);

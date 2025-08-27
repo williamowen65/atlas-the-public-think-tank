@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.SeedData.SeedSolutions.Data;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
-using atlas_the_public_think_tank.Models.Database;
+ 
+using atlas_the_public_think_tank.Models.Enums;
 using static atlas_the_public_think_tank.Data.SeedData.SeedIds;
 
 namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data

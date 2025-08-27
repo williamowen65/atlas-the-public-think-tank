@@ -1,9 +1,10 @@
 ﻿
 using AngleSharp.Dom;
 using atlas_the_public_think_tank.Data;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues;
 using atlas_the_public_think_tank.Data.SeedData.SeedSolutions;
-using atlas_the_public_think_tank.Models.Database;
+ 
 using atlas_the_public_think_tank.Models.ViewModel;
 using CloudTests.TestingSetup;
 using CloudTests.TestingSetup.TestingData;

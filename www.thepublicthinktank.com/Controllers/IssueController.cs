@@ -1,18 +1,24 @@
 ﻿using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Data.CRUD;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
-using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
 using atlas_the_public_think_tank.Models;
-using atlas_the_public_think_tank.Models.Database;
+using atlas_the_public_think_tank.Models.Enums;
 using atlas_the_public_think_tank.Models.ViewModel;
+using atlas_the_public_think_tank.Models.ViewModel.AjaxVM;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.ContentItem_Common;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.Issue.IssueVote;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.Solution;
+using atlas_the_public_think_tank.Models.ViewModel.PageVM;
 using atlas_the_public_think_tank.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 
 namespace atlas_the_public_think_tank.Controllers
 {
@@ -90,14 +96,14 @@ namespace atlas_the_public_think_tank.Controllers
             }
 
 
-            PaginatedIssuesResponse paginatedIssues = await Read.PaginatedSubIssueFeedForIssue(issueId, filter, currentPage);
+            Issues_Paginated_ReadVM paginatedIssues = await Read.PaginatedSubIssueFeedForIssue(issueId, filter, currentPage);
 
             string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Issue/_issue-cards.cshtml", paginatedIssues.Issues);
 
-            var response = new PaginatedContentItemsJsonResponse
+            var response = new ContentItems_Paginated_AjaxVM
             {
                 html = partialViewHtml,
-                pagination = new PaginationStats
+                pagination = new PaginationStats_VM
                 {
                     TotalCount = paginatedIssues.ContentCount.TotalCount,
                     PageSize = paginatedIssues.PageSize,
@@ -132,15 +138,15 @@ namespace atlas_the_public_think_tank.Controllers
             }
 
 
-            PaginatedSolutionsResponse paginatedSolutions = await Read.PaginatedSolutionFeedForIssue(issueId, filter, currentPage);
+            Solutions_Paginated_ReadVM paginatedSolutions = await Read.PaginatedSolutionFeedForIssue(issueId, filter, currentPage);
 
             string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Solution/_solution-cards.cshtml", paginatedSolutions.Solutions);
 
             // Create a response object with both the HTML and the pagination metadata
-            var response = new PaginatedContentItemsJsonResponse
+            var response = new ContentItems_Paginated_AjaxVM
             {
                 html = partialViewHtml,
-                pagination = new PaginationStats
+                pagination = new PaginationStats_VM
                 {
                     TotalCount = paginatedSolutions.ContentCount.TotalCount,
                     PageSize = paginatedSolutions.PageSize,
@@ -161,7 +167,7 @@ namespace atlas_the_public_think_tank.Controllers
         [Route("/create-issue")]
         public async Task<IActionResult> CreateIssuePage(Guid? parentIssueID, Guid? parentSolutionID)
         {
-            CreateIssuePageViewModel model = new CreateIssuePageViewModel
+            CreateIssue_PageVM model = new CreateIssue_PageVM
             {
                 // Load Scopes from the database
                 Scopes = _context.Scopes.ToList()
@@ -195,9 +201,9 @@ namespace atlas_the_public_think_tank.Controllers
         [HttpPost]
         [Route("/create-issue")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateIssue(CreateIssueViewModel model, ContentStatus contentStatus)
+        public async Task<IActionResult> CreateIssue(Issue_CreateVM model, ContentStatus contentStatus)
         {
-            ContentCreationResponseBase contentCreationResponse = new ContentCreationResponseBase();
+            ContentCreationResponse_JsonVM contentCreationResponse = new ContentCreationResponse_JsonVM();
 
             try
             {
@@ -265,9 +271,9 @@ namespace atlas_the_public_think_tank.Controllers
                 throw new Exception("Issue doesn't exist for GET EditIssuePartialView");
             }
 
-            CreateOrEditIssueWrapper issueWrapper = new CreateOrEditIssueWrapper()
+            Issue_CreateOrEdit_AjaxVM issueWrapper = new Issue_CreateOrEdit_AjaxVM()
             {
-                Issue = new CreateIssueViewModel() { 
+                Issue = new Issue_CreateVM() { 
                     Content = issue.Content,
                     ContentStatus = issue.ContentStatus,
                     ParentIssueID= issue.ParentIssueID,
@@ -304,9 +310,9 @@ namespace atlas_the_public_think_tank.Controllers
         [Route("/edit-issue")]
         [ValidateAntiForgeryToken]
         //public async Task<IActionResult> EditIssue(CreateIssueViewModel model, ContentStatus contentStatus)
-        public async  Task<IActionResult> EditIssue(UpdateIssueViewModel model, ContentStatus contentStatus)
+        public async  Task<IActionResult> EditIssue(Issue_UpdateVM model, ContentStatus contentStatus)
         {
-            ContentCreationResponseBase contentCreationResponse = new ContentCreationResponseBase();
+            ContentCreationResponse_JsonVM contentCreationResponse = new ContentCreationResponse_JsonVM();
 
             if (!ModelState.IsValid)
             {
@@ -441,7 +447,7 @@ namespace atlas_the_public_think_tank.Controllers
             [AllowAnonymous] // There will be an error sent if user is not logged in
         [HttpPost]
         [Route("/issue/vote")]
-        public async Task<IActionResult> IssueVote([FromBody] UserVote_Issue_UpsertVM model)
+        public async Task<IActionResult> IssueVote([FromBody] IssueVote_UpsertVM model)
         {
 
             if (ModelState.IsValid) { 
@@ -471,7 +477,7 @@ namespace atlas_the_public_think_tank.Controllers
 
             try
             {
-                JsonVoteResponse? voteResponse = await Upsert.IssueVote(model, user);   
+                VoteResponse_AjaxVM? voteResponse = await Upsert.IssueVote(model, user);   
                 // Successful path
                 return Json(voteResponse);
             }
