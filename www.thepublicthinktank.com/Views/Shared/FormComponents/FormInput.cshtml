@@ -1,20 +1,16 @@
 ﻿@using System.ComponentModel.DataAnnotations
-@model dynamic
+@using atlas_the_public_think_tank.Models.ViewModel.UI_VM.FormComponentVM
+@model FormInputVM
 
 @{
-    // Validate ViewData
-    if (ViewData["PropertyName"] == null)
-    {
-        throw new Exception("Missing PropertyName argument");
-    }
 
     // Parameters
-    var propertyName = ViewData["PropertyName"] as string;
+    var propertyName = Model.PropertyName;
     var labelText = propertyName;
-    var rows = ViewData["Rows"] as int? ?? 1;
+    var rows = Model.Rows ?? 1;
     var uniqueId = $"field_{Guid.NewGuid().ToString("N")}";
 
-    
+
     /// NOTE: This FormInput always will have a max value
     // Default values in case we can't get the attributes
     int maxLength = 300;
@@ -25,7 +21,7 @@
     try
     {
         // Get property info
-        var propertyInfo = Model.GetType().GetProperty(propertyName);
+        var propertyInfo = Model.Model.GetType().GetProperty(propertyName);
 
         // Safe way to get attributes
         if (propertyInfo != null)
@@ -55,13 +51,14 @@
         // Silently handle any exceptions and use default values
     }
 
-    // Get the actual value from the model
+    // Get the actual value from the model (For Edit operation)
     object propertyValue = null;
     try
     {
-        propertyValue = Model.GetType().GetProperty(propertyName)?.GetValue(Model, null);
+        propertyValue = Model.Model.GetType().GetProperty(propertyName)?.GetValue(Model.Model, null);
     }
     catch { }
+
 }
 
 

@@ -57,6 +57,7 @@ function initListenersForContentCreateForm(form) {
         }
 
         if (contentType == 'solution' && !parentIssueSelect.value) {
+            // TODO: This can be passed to the server for the proper error handling.
             throw new Error("When creating a new solution, a parent issue is required")
         }
 

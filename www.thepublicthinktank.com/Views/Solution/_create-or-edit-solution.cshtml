@@ -1,5 +1,6 @@
 ﻿@using atlas_the_public_think_tank.Models.Enums
 @using atlas_the_public_think_tank.Models.ViewModel.AjaxVM
+@using atlas_the_public_think_tank.Models.ViewModel.UI_VM.FormComponentVM
 @model Solution_CreateOrEdit_AjaxVM
 
 @*
@@ -46,16 +47,19 @@
                 <input type="hidden" name="SolutionID" id="SolutionID" value="@Model.Solution.SolutionID" />
             }
 
-                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormInput.cshtml", Model.Solution, new ViewDataDictionary(ViewData)
-                {
-                    { "PropertyName", "Title" },
-                                })
+            @await Html.PartialAsync("~/Views/Shared/FormComponents/FormInput.cshtml", new FormInputVM()
+            {
+                Model = Model.Solution,
+                PropertyName = "Title"
+            })
 
-                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormMarkdownEditor/FormMarkdownEditor.cshtml", Model.Solution, new ViewDataDictionary(ViewData)
-                                {
-                    { "PropertyName", "Content" },
-                                { "Rows", 10 },
-                                })
+            @await Html.PartialAsync("~/Views/Shared/FormComponents/FormMarkdownEditor/FormMarkdownEditor.cshtml", new FormMarkdownEditorVM()
+            {
+                Model = Model.Solution,
+                PropertyName = "Content",
+                Rows = 10
+            })
+            
 
             </div>
             <div class="col-4">
@@ -78,16 +82,20 @@
                 }
 
             }
-              @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml", Model.Solution, new ViewDataDictionary(ViewData)
-                        {
-                { "PropertyName", "ScopeID" },
-                        { "ListItems", Model.Scopes.Cast<object>().ToList() },
-                        { "ValueField", "ScopeID"},
-                        { "TextField", "ScopeName"},
-                        { "FieldPlaceholder", "-- Select a Scope --"},
-                        { "FieldLabel", "Scope"},
-                        { "SelectedValue", selectedScopeId}
-                        })
+            
+            @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
+            new FormSelectVM()
+            {
+                Model = Model.Solution,
+                PropertyName = "ScopeID",
+                ListItems = Model.Scopes.Cast<object>().ToList(),
+                FieldLabel = "Scope",
+                FieldPlaceholder = "-- Select a Scope --",
+                TextField = "ScopeName",
+                ValueField = "ScopeID",
+                SelectedValue = selectedScopeId
+
+            })
 
                 @* I would like this to be a select2 as well. except I'd like to render the items specifically to have more content. But I want it to start out empty, because it will use ajax for fetching data and populating the select2. 
                 *@
@@ -101,17 +109,20 @@
                     selectedParentIssueValue = Model.Solution.ParentIssue.IssueID.ToString();
                 }
             }
-            @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml", Model.Solution.ParentIssue, new ViewDataDictionary(ViewData)
-                 {
-                    { "PropertyName", "ParentIssueID" },
-                    { "ListItems", issueIdList},
-                    { "ValueField", "IssueID"},
-                    { "TextField", "Title"},
-                    { "SelectedValue", selectedParentIssueValue},
-                    { "DisabledField",  selectedParentIssueValue != null ? true : false},
-                    { "FieldPlaceholder", "-- Select a Parent Issue --"},
-                    { "FieldLabel", "Parent Issue"}
-                })
+
+            @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
+            new FormSelectVM()
+            {
+                Model = Model.Solution.ParentIssue,
+                FieldLabel = "Parent Issue",
+                FieldPlaceholder = "-- Select a Parent Issue --",
+                PropertyName = "ParentIssueID",
+                TextField = "Title",
+                ValueField = "IssueID",
+                ListItems = issueIdList,
+                DisabledField = selectedParentIssueValue != null ? true : false,
+                SelectedValue = selectedParentIssueValue
+            })
 
             </div>
         </div>

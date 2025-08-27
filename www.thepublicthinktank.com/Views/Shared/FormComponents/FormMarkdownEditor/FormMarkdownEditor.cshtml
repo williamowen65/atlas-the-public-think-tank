@@ -1,18 +1,14 @@
 ﻿@using System.ComponentModel.DataAnnotations
-@model dynamic
+@using atlas_the_public_think_tank.Models.ViewModel.UI_VM.FormComponentVM
+@model FormMarkdownEditorVM
 
 @{
 
-    // Validate ViewData
-    if (ViewData["PropertyName"] == null)
-    {
-        throw new Exception("Missing PropertyName argument");
-    }
 
-    var propertyName = ViewData["PropertyName"] as string;
+    var propertyName = Model.PropertyName;
 
     var labelText = propertyName;
-    var rows = ViewData["Rows"] as int? ?? 1;
+    var rows = Model.Rows ?? 1;
     var uniqueId = $"field_{Guid.NewGuid().ToString("N")}";
     bool isRequired = false;
     object propertyValue = null;
@@ -20,7 +16,7 @@
     try
     {
         // Get property info
-        var propertyInfo = Model.GetType().GetProperty(propertyName);
+        var propertyInfo = Model.Model.GetType().GetProperty(propertyName);
 
         // Safe way to get attributes
         if (propertyInfo != null)
@@ -28,7 +24,7 @@
             var attributes = propertyInfo.GetCustomAttributes(false);
             foreach (var attr in attributes)
             {
-                
+
                 if (attr is RequiredAttribute requiredBool)
                 {
                     isRequired = true;
@@ -39,13 +35,15 @@
                 }
             }
 
-            propertyValue = Model.GetType().GetProperty(propertyName)?.GetValue(Model, null);
+            // For editing workflow
+            propertyValue = Model.Model.GetType().GetProperty(propertyName)?.GetValue(Model.Model, null);
         }
     }
     catch (Exception ex)
     {
         // Silently handle any exceptions and use default values
     }
+
 }
 
 

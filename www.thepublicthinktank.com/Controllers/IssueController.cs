@@ -259,6 +259,10 @@ namespace atlas_the_public_think_tank.Controllers
             return Json(contentCreationResponse);
         }
 
+        #endregion
+
+        #region edit issue
+
         /// <summary>
         /// This method is used to return the create issue page.
         /// </summary>
