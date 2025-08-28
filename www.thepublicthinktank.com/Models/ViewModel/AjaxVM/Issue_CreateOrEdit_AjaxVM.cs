@@ -5,7 +5,7 @@ namespace atlas_the_public_think_tank.Models.ViewModel.AjaxVM
 {
     public class Issue_CreateOrEdit_AjaxVM
     {
-        public Issue_CreateVM? Issue { get; set; }
+        public Issue_CreateOrEditVM? Issue { get; set; }
         public List<Scope> Scopes { get; set; }
     }
 }

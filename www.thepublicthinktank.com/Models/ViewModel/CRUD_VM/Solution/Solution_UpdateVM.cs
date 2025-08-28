@@ -3,7 +3,7 @@
 namespace atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution
 {
 
-    public class Solution_UpdateVM : Solution_CreateVM
+    public class Solution_UpdateVM : Solution_CreateOrEditVM
     {
         /// <summary>
         /// ScopeId is Guid? with an DataAnnotation of Required 

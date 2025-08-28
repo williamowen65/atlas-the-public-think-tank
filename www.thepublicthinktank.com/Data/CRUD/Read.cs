@@ -1,4 +1,6 @@
-﻿using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Repository;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Models.Enums;
 using atlas_the_public_think_tank.Models.ViewModel;
@@ -41,6 +43,8 @@ namespace atlas_the_public_think_tank.Data.CRUD
             using var scope = _serviceProvider.CreateScope();
             var services = scope.ServiceProvider;
             var filterIdRepository = services.GetRequiredService<IFilterIdSetRepository>();
+            var issueRepository = services.GetRequiredService<IIssueRepository>();
+            var solutionRepository = services.GetRequiredService<ISolutionRepository>();
 
             var paginatedMainContentIds = await filterIdRepository.GetPagedMainContentFeedIds(filter, pageNumber);
             var counts = await filterIdRepository.GetContentCountMainContentFeed(filter);
@@ -72,16 +76,17 @@ namespace atlas_the_public_think_tank.Data.CRUD
                     {
                         var issue = await Read.Issue(contentId.Id, filter);
 
-                        item = new ContentItem_ReadVM() 
-                        { 
+                        item = new ContentItem_ReadVM()
+                        {
                             ContentID = issue.IssueID,
                             ContentType = ContentType.Issue,
                             Author = issue.Author,
                             BreadcrumbTags = issue.BreadcrumbTags,
                             Content = issue.Content,
                             ContentStatus = issue.ContentStatus,
-                            CreatedAt = issue.CreatedAt,    
-                            ModifiedAt = issue.ModifiedAt,  
+                            CreatedAt = issue.CreatedAt,
+                            ModifiedAt = issue.ModifiedAt,
+                            VersionHistoryCount = issue.ModifiedAt != null ? await issueRepository.GetIssueVersionHistoryCount(issue.IssueID): null,
                             Scope = issue.Scope,
                             Title = issue.Title,
                             BlockedContent = issue.BlockedContent,
@@ -89,15 +94,13 @@ namespace atlas_the_public_think_tank.Data.CRUD
                             LastActivity = issue.LastActivity,
                             PaginatedSubIssues = issue.PaginatedSubIssues,
                             PaginatedSolutions = issue.PaginatedSolutions,
-                            VoteStats = new ContentItemVotes_ReadVM() { 
+                            VoteStats = new ContentItemVotes_ReadVM() {
                                 GenericContentVotes = issue.VoteStats.IssueVotes,
                                 AverageVote = issue.VoteStats.AverageVote,
                                 ContentID = issue.VoteStats.ContentID,
                                 TotalVotes = issue.VoteStats.TotalVotes,
                                 ContentType = ContentType.Issue
                             }
-
-
                         };
                     }
                     else if (contentId.Type == ContentType.Solution)
@@ -113,6 +116,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
                             ContentStatus = solution.ContentStatus,
                             CreatedAt = solution.CreatedAt,
                             ModifiedAt = solution.ModifiedAt,
+                            VersionHistoryCount = solution.ModifiedAt != null ? await solutionRepository.GetSolutionVersionHistoryCount(solution.SolutionID) : null,
                             Scope = solution.Scope,
                             Title = solution.Title,
                             BlockedContent= solution.BlockedContent,
@@ -349,6 +353,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
                 ContentStatus = issueContent.ContentStatus,
                 CreatedAt = issueContent.CreatedAt,
                 ModifiedAt = issueContent.ModifiedAt,
+                VersionHistoryCount = issueContent.ModifiedAt != null ? await issueRepository.GetIssueVersionHistoryCount(issueId) : null,
                 Scope = issueContent.Scope,
                 IssueID = issueContent.Id,
                 VoteStats = issueVoteStats!,
@@ -425,6 +430,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
                 ContentStatus = solutionContent.ContentStatus,
                 CreatedAt = solutionContent.CreatedAt,
                 ModifiedAt = solutionContent.ModifiedAt,
+                VersionHistoryCount = solutionContent.ModifiedAt != null ? await solutionRepository.GetSolutionVersionHistoryCount(solutionId) : null,
                 Scope = solutionContent.Scope,
                 SolutionID = solutionContent.Id,
                 VoteStats = solutionVoteStats!,

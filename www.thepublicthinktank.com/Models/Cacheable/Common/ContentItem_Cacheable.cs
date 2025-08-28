@@ -21,6 +21,9 @@ namespace atlas_the_public_think_tank.Models.Cacheable.Common
         public required string Content { get; set; }
         public required DateTime CreatedAt { get; set; }
         public DateTime? ModifiedAt { get; set; }
+        public int? VersionHistoryCount { get; set; }
+
+        // LastActivity could be when last comment or vote was
         public DateTime? LastActivity { get; set; }
         //public required Guid AuthorID { get; set; }
         //public required Guid ScopeID { get; set; }

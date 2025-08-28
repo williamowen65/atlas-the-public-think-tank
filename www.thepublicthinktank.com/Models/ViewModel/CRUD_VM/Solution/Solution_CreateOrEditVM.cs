@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations;
 namespace atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution
 {
 
-    public class Solution_CreateVM : ContentItem_CreateVM_EditVM
+    public class Solution_CreateOrEditVM : ContentItem_CreateVM_EditVM
     {
         public Guid? SolutionID { get; set; }
         public Issue_ReadVM? ParentIssue { get; set; }

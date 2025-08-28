@@ -1,12 +1,17 @@
 ﻿@using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue
+@model Issue_ReadVM
 @*
     Layout of the stat icons seen on issues
+   
 *@
 
+@{
+    Console.WriteLine();
+}
 
-@model Issue_ReadVM
 
 <div class="issue-card-stat-icons text-nowrap">
+    
     <span role="button" tabindex="0" aria-label="Solutions: @(Model?.PaginatedSolutions.ContentCount.TotalCount)" class="stat-icon-link go-to-content-item-solution-tab position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
         <div class="position-absolute content-count" style="">
             @(Model?.PaginatedSolutions.ContentCount.TotalCount)
@@ -26,7 +31,14 @@
         </div>
         @await Html.PartialAsync("~/Views/Shared/Icons/_Comments.cshtml")
     </span>
-    @* @Html.Partial("~/Views/Shared/Icons/_ParentIssue.cshtml") *@
-
+    @if (Model.ModifiedAt != null)
+    {
+        <span role="button" tabindex="0" class="stat-icon-link version-history position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
+            <div class="position-absolute content-count" style="">
+                @Model.VersionHistoryCount
+            </div>
+            @await Html.PartialAsync("~/Views/Shared/Icons/_VersionHistoryIcon.cshtml")
+       </span>
+    }
     @await Html.PartialAsync("~/Views/Shared/Components/_scope-ribbon.cshtml", Model.Scope)
 </div>

@@ -201,7 +201,7 @@ namespace atlas_the_public_think_tank.Controllers
         [HttpPost]
         [Route("/create-issue")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateIssue(Issue_CreateVM model, ContentStatus contentStatus)
+        public async Task<IActionResult> CreateIssue(Issue_CreateOrEditVM model, ContentStatus contentStatus)
         {
             ContentCreationResponse_JsonVM contentCreationResponse = new ContentCreationResponse_JsonVM();
 
@@ -269,22 +269,35 @@ namespace atlas_the_public_think_tank.Controllers
         [Route("/edit-issue")]
         public async  Task<IActionResult> EditIssuePartialView(Guid issueId)
         {
+            ContentCreationResponse_JsonVM contentCreationResponse = new ContentCreationResponse_JsonVM();
             Issue_ReadVM? issue = await Read.Issue(issueId, new ContentFilter());
+
+            var user = await _userManager.GetUserAsync(User);
 
             if (issue == null) {
                 throw new Exception("Issue doesn't exist for GET EditIssuePartialView");
             }
+            // Confirm this user owns this content
+            if (user.Id != issue.Author.Id)
+            {
+                contentCreationResponse.Success = false;
+                var errorEntry = new List<string>();
+                errorEntry.Add("Error Message");
+                errorEntry.Add($"You are not the author of the issue with the id {issue.IssueID}");
+                contentCreationResponse.Errors.Add(errorEntry);
+                return Json(contentCreationResponse);
+            }
 
             Issue_CreateOrEdit_AjaxVM issueWrapper = new Issue_CreateOrEdit_AjaxVM()
             {
-                Issue = new Issue_CreateVM() { 
+                Issue = new Issue_CreateOrEditVM() { 
                     Content = issue.Content,
                     ContentStatus = issue.ContentStatus,
                     ParentIssueID= issue.ParentIssueID,
                     ParentSolutionID= issue.ParentSolutionID,
                     ScopeID = issue.Scope.ScopeID,
                     Title = issue.Title,
-                    IssueID = issue.IssueID
+                    IssueID = issue.IssueID,
                 },
                 Scopes = await _context.Scopes.ToListAsync()
             };
@@ -300,10 +313,10 @@ namespace atlas_the_public_think_tank.Controllers
             // render Partial view and return json
             string html = await ControllerExtensions.RenderViewToStringAsync(this,"~/Views/Issue/_create-or-edit-issue.cshtml", issueWrapper);
 
+            contentCreationResponse.Success = true;
+            contentCreationResponse.Content = html;
 
-            return Json(new {
-                content= html
-            });
+            return Json(contentCreationResponse);
         }
 
         /// <summary>
@@ -314,7 +327,7 @@ namespace atlas_the_public_think_tank.Controllers
         [Route("/edit-issue")]
         [ValidateAntiForgeryToken]
         //public async Task<IActionResult> EditIssue(CreateIssueViewModel model, ContentStatus contentStatus)
-        public async  Task<IActionResult> EditIssue(Issue_UpdateVM model, ContentStatus contentStatus)
+        public async  Task<IActionResult> EditIssue(Issue_CreateOrEditVM model, ContentStatus contentStatus)
         {
             ContentCreationResponse_JsonVM contentCreationResponse = new ContentCreationResponse_JsonVM();
 
@@ -336,8 +349,21 @@ namespace atlas_the_public_think_tank.Controllers
                 return Json(contentCreationResponse);
             }
 
-
             var user = await _userManager.GetUserAsync(User);
+
+            // pull issue from DAL
+            Issue_ReadVM? issueRef = await Read.Issue((Guid)model.IssueID!, new ContentFilter());
+            // Confirm this user owns this content
+            if (user.Id != issueRef.Author.Id) {
+                contentCreationResponse.Success = false;
+                var errorEntry = new List<string>();
+                errorEntry.Add("Error Message");
+                errorEntry.Add($"You are not the author of the issue with the id {issueRef.IssueID}");
+                contentCreationResponse.Errors.Add(errorEntry);
+                return Json(contentCreationResponse);
+            }
+            // Also get the createdAt value
+
 
             // Update Issue
             Issue_ReadVM? issue = await Update.Issue(new Issue()
@@ -348,8 +374,9 @@ namespace atlas_the_public_think_tank.Controllers
                 AuthorID = user.Id,
                 Content = model.Content,
                 ContentStatus = contentStatus,
-                CreatedAt = DateTime.UtcNow,
-                ScopeID = (Guid)model.ScopeID!,  // Use ScopeID instead of Scope.ScopeID
+                CreatedAt = issueRef.CreatedAt,
+                ModifiedAt = DateTime.UtcNow, // Set ModifiedAt
+                ScopeID = (Guid)model.ScopeID!,  
                 Title = model.Title
             });
 

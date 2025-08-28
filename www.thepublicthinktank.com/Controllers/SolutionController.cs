@@ -1,5 +1,6 @@
 ﻿using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Data.CRUD;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
@@ -53,7 +54,7 @@ namespace atlas_the_public_think_tank.Controllers
 
             Solution_CreateOrEdit_AjaxVM solutionWrapper = new Solution_CreateOrEdit_AjaxVM()
             {
-                Solution = new Solution_CreateVM() { 
+                Solution = new Solution_CreateOrEditVM() { 
                     ParentIssueID = issueId,
                     ParentIssue = issue
                 },
@@ -79,7 +80,7 @@ namespace atlas_the_public_think_tank.Controllers
         [HttpPost]
         [Route("/create-solution")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateSolutionPost(Solution_CreateVM model, ContentStatus contentStatus)
+        public async Task<IActionResult> CreateSolutionPost(Solution_CreateOrEditVM model, ContentStatus contentStatus)
         {
             ContentCreationResponse_JsonVM contentCreationResponse = new ContentCreationResponse_JsonVM();
 
@@ -201,12 +202,33 @@ namespace atlas_the_public_think_tank.Controllers
         [Route("/edit-solution")]
         public async Task<IActionResult> EditSolutionPartialView(Guid solutionId)
         {
+
+            ContentCreationResponse_JsonVM contentCreationResponse = new ContentCreationResponse_JsonVM();
+
             Solution_ReadVM? solution = await Read.Solution(solutionId, new ContentFilter());
+
+            var user = await _userManager.GetUserAsync(User);
+
+            if (solution == null)
+            {
+                throw new Exception("Solution doesn't exist for GET EditIssuePartialView");
+            }
+            // Confirm this user owns this content
+            if (user.Id != solution.Author.Id)
+            {
+                contentCreationResponse.Success = false;
+                var errorEntry = new List<string>();
+                errorEntry.Add("Error Message");
+                errorEntry.Add($"You are not the author of the solution with the id {solution.SolutionID}");
+                contentCreationResponse.Errors.Add(errorEntry);
+                return Json(contentCreationResponse);
+            }
+
 
 
             Solution_CreateOrEdit_AjaxVM solutionWrapper = new Solution_CreateOrEdit_AjaxVM()
             {
-                Solution = new Solution_CreateVM()
+                Solution = new Solution_CreateOrEditVM()
                 { 
                     SolutionID = solution.SolutionID,
                     Content = solution.Content,
@@ -222,11 +244,10 @@ namespace atlas_the_public_think_tank.Controllers
             // render Partial view and return json
             string html = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Solution/_create-or-edit-solution.cshtml", solutionWrapper);
 
+            contentCreationResponse.Success = true;
+            contentCreationResponse.Content = html;
 
-            return Json(new
-            {
-                content = html
-            });
+            return Json(contentCreationResponse);
         }
 
 
@@ -237,7 +258,7 @@ namespace atlas_the_public_think_tank.Controllers
         [HttpPost]
         [Route("/edit-solution")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EditSolution(Solution_UpdateVM model, ContentStatus contentStatus)
+        public async Task<IActionResult> EditSolution(Solution_CreateOrEditVM model, ContentStatus contentStatus)
         {
             ContentCreationResponse_JsonVM contentCreationResponse = new ContentCreationResponse_JsonVM();
 
@@ -260,7 +281,21 @@ namespace atlas_the_public_think_tank.Controllers
             }
 
 
+
             var user = await _userManager.GetUserAsync(User);
+
+            // pull issue from DAL
+            Solution_ReadVM? solutionRef = await Read.Solution((Guid)model.SolutionID!, new ContentFilter());
+            // Confirm this user owns this content
+            if (user.Id != solutionRef.Author.Id)
+            {
+                contentCreationResponse.Success = false;
+                var errorEntry = new List<string>();
+                errorEntry.Add("Error Message");
+                errorEntry.Add($"You are not the author of the solution with the id {solutionRef.SolutionID}");
+                contentCreationResponse.Errors.Add(errorEntry);
+                return Json(contentCreationResponse);
+            }
 
             // Update solution
             Solution_ReadVM? solution = await Update.Solution(new Solution()
@@ -270,7 +305,8 @@ namespace atlas_the_public_think_tank.Controllers
                 AuthorID = user.Id,
                 Content = model.Content,
                 ContentStatus = contentStatus,
-                CreatedAt = DateTime.UtcNow,
+                CreatedAt = solutionRef.CreatedAt,
+                ModifiedAt = DateTime.UtcNow, // Set ModifiedAt
                 ScopeID = (Guid)model.ScopeID!,  // Use ScopeID instead of Scope.ScopeID
                 Title = model.Title
             });

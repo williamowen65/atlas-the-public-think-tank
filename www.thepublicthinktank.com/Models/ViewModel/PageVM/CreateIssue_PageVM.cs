@@ -11,7 +11,7 @@ namespace atlas_the_public_think_tank.Models.ViewModel.PageVM
         /// <summary>
         /// Represents the main issue content that the user is creating
         /// </summary>
-        public Issue_CreateVM MainIssue { get; set; } = new Issue_CreateVM();
+        public Issue_CreateOrEditVM MainIssue { get; set; } = new Issue_CreateOrEditVM();
 
         /// <summary>
         /// When creating an issue, the user has the options to create solutions to that issue
@@ -21,6 +21,6 @@ namespace atlas_the_public_think_tank.Models.ViewModel.PageVM
         /// <remarks>
         /// Special business logic: For any of the solutions to be published, their parents issue must be published
         /// </remarks>
-        public List<Solution_CreateVM> Solutions { get; set; } = new List<Solution_CreateVM>();
+        public List<Solution_CreateOrEditVM> Solutions { get; set; } = new List<Solution_CreateOrEditVM>();
     }
 }

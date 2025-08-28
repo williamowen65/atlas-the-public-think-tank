@@ -6,7 +6,7 @@ namespace atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue
 {
 
 
-    public class Issue_CreateVM : ContentItem_CreateVM_EditVM
+    public class Issue_CreateOrEditVM : ContentItem_CreateVM_EditVM
     {
         public Guid? IssueID { get; set; }
         public List<IssueTags> IssueTags { get; set; } = new List<IssueTags>();
@@ -16,5 +16,6 @@ namespace atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue
 
         public Issue_ReadVM? ParentIssue { get; set; }
         public Solution_ReadVM? ParentSolution { get; set; }
+
     }
 }

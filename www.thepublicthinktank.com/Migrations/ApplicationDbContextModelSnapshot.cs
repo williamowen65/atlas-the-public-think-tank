@@ -189,6 +189,16 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Property<Guid?>("ParentCommentID")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime>("PeriodEnd")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodEnd");
+
+                    b.Property<DateTime>("PeriodStart")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodStart");
+
                     b.Property<Guid?>("SolutionID")
                         .HasColumnType("uniqueidentifier");
 
@@ -205,6 +215,17 @@ namespace atlas_the_public_think_tank.Migrations
                     b.HasIndex("SolutionID");
 
                     b.ToTable("Comments", "comments");
+
+                    b.ToTable(tb => tb.IsTemporal(ttb =>
+                            {
+                                ttb.UseHistoryTable("CommentsHistory", "comments");
+                                ttb
+                                    .HasPeriodStart("PeriodStart")
+                                    .HasColumnName("PeriodStart");
+                                ttb
+                                    .HasPeriodEnd("PeriodEnd")
+                                    .HasColumnName("PeriodEnd");
+                            }));
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment.CommentVote", b =>
@@ -313,6 +334,16 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Property<Guid?>("ParentSolutionID")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime>("PeriodEnd")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodEnd");
+
+                    b.Property<DateTime>("PeriodStart")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodStart");
+
                     b.Property<Guid>("ScopeID")
                         .HasColumnType("uniqueidentifier");
 
@@ -339,6 +370,17 @@ namespace atlas_the_public_think_tank.Migrations
                     b.HasIndex("SolutionID");
 
                     b.ToTable("Issues", "issues");
+
+                    b.ToTable(tb => tb.IsTemporal(ttb =>
+                            {
+                                ttb.UseHistoryTable("IssuesHistory", "issues");
+                                ttb
+                                    .HasPeriodStart("PeriodStart")
+                                    .HasColumnName("PeriodStart");
+                                ttb
+                                    .HasPeriodEnd("PeriodEnd")
+                                    .HasColumnName("PeriodEnd");
+                            }));
 
                     b.HasData(
                         new
@@ -2774,6 +2816,16 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Property<Guid>("ParentIssueID")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime>("PeriodEnd")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodEnd");
+
+                    b.Property<DateTime>("PeriodStart")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodStart");
+
                     b.Property<Guid>("ScopeID")
                         .HasColumnType("uniqueidentifier");
 
@@ -2793,6 +2845,17 @@ namespace atlas_the_public_think_tank.Migrations
                     b.HasIndex("ScopeID");
 
                     b.ToTable("Solutions", "solutions");
+
+                    b.ToTable(tb => tb.IsTemporal(ttb =>
+                            {
+                                ttb.UseHistoryTable("SolutionsHistory", "solutions");
+                                ttb
+                                    .HasPeriodStart("PeriodStart")
+                                    .HasColumnName("PeriodStart");
+                                ttb
+                                    .HasPeriodEnd("PeriodEnd")
+                                    .HasColumnName("PeriodEnd");
+                            }));
 
                     b.HasData(
                         new
