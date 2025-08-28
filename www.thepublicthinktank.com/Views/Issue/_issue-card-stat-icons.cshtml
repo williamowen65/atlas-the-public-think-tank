@@ -31,9 +31,9 @@
         </div>
         @await Html.PartialAsync("~/Views/Shared/Icons/_Comments.cshtml")
     </span>
-    @if (Model.ModifiedAt != null)
+    @if (Model.ModifiedAt != null && Model.VersionHistoryCount !=null)
     {
-        <span role="button" tabindex="0" class="stat-icon-link version-history position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
+        <span role="button" tabindex="0" class="stat-icon-link show-version-history position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
             <div class="position-absolute content-count" style="">
                 @Model.VersionHistoryCount
             </div>

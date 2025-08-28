@@ -17,9 +17,11 @@
 function initializeCard(cardId) {
     const card = document.querySelector(`.card[id="${cardId}"]`)
 
-    if (!card.classList.contains("initialized")) {
-    initializeVoteDial(cardId)
-    // TBD - More initializations are possible
+    const isVersionHistoryModal = card.closest("#versionControlModal");
+
+    if (!isVersionHistoryModal) {
+         initializeVoteDial(cardId)
+         // TBD - More initializations are possible
     }
 
     //card.classList.add("initialized")
@@ -65,6 +67,9 @@ function setupQuickTabLinks(e) {
             tabId = "sub-issues-tab";
         } else if (statIcon.classList.contains("go-to-content-item-comment-tab")) {
             tabId = "comments-tab";
+        } else if (statIcon.classList.contains("show-version-history")) {
+            fetchVersionHistory(e)
+            return;
         }
 
         if (tabId) {
@@ -81,6 +86,173 @@ function setupQuickTabLinks(e) {
     }
 }
 
+function fetchVersionHistory(e) {
+    const contentCard = e.target.closest(".card")
+    const contentType = contentCard.getAttribute('data-content-type');
+    const contentId = contentCard.getAttribute("id")
+
+    fetch(`/${contentType}-version-history?${contentType}Id=${contentId}`)
+        .then(res => res.json())
+        .then(res => {
+            const htmlString = res.content;
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlString;
+
+            // Process version history markup BEFORE appending to body
+            isolateAndDisableVersionHistoryDials(tempDiv);
+
+            // Append children to body
+            while (tempDiv.firstChild) {
+                document.body.appendChild(tempDiv.firstChild);
+            }
+
+            // Show the modal
+            const modalElement = document.getElementById('versionControlModal');
+            if (modalElement && window.bootstrap && bootstrap.Modal) {
+                const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+                modal.show();
+
+                // Add event listener to remove modal from DOM on close
+                modalElement.addEventListener('hidden.bs.modal', function handleModalHidden() {
+                    modalElement.removeEventListener('hidden.bs.modal', handleModalHidden);
+                    modalElement.parentNode && modalElement.parentNode.removeChild(modalElement);
+                });
+
+            } else {
+                console.error('Version history modal element or Bootstrap JS not found.');
+            }
+        })
+        .catch(err => {
+            console.log(err)
+        })
+}
+
+/**
+ * Rewrites IDs / radio groups in the version history modal so they do NOT
+ * conflict with live feed dials, disables them, and adds a banner.
+ */
+function isolateAndDisableVersionHistoryDials(root) {
+    // Inject style once
+    if (!document.getElementById('vh-dial-style')) {
+        const style = document.createElement('style');
+        style.id = 'vh-dial-style';
+        style.textContent = `
+            .vh-dial-disabled-wrapper { position:relative; }
+            .vh-dial-disabled-overlay {
+                position:absolute;
+                inset:0;
+                background:rgba(0,0,0,0.55);
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                flex-direction:column;
+                color:#fff;
+                font-size:.9rem;
+                font-weight:600;
+                text-align:center;
+                z-index:5;
+                padding:.5rem;
+                border-radius:4px;
+            }
+            .vh-dial-disabled-overlay span.small {
+                font-weight:400;
+                font-size:.75rem;
+                opacity:.85;
+            }
+            .vh-dial-disabled-wrapper .toggle-option,
+            .vh-dial-disabled-wrapper input[type=radio] {
+                pointer-events:none !important;
+            }
+            .vh-dial-disabled-wrapper.user-voted { /* just in case */
+                pointer-events:none;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Find cards inside the modal
+    const modal = root.querySelector('#versionControlModal');
+    if (!modal) return;
+
+    // Remove author-content-alerts
+    const authorAlerts = Array.from(modal.querySelectorAll(".author-content-alert"))
+    authorAlerts.forEach(alert => {
+        alert.remove()
+    })
+
+
+    const cards = modal.querySelectorAll('.card[data-content-type]');
+    
+
+    cards.forEach((card, idx) => {
+        if (!card.id) return;
+
+        // Remove default bottom margin
+        card.classList.remove("mb-3")
+        // Remove top corner border radius
+        card.classList.add("rounded-top-0")
+      
+
+        const originalCardId = card.id;
+        card.setAttribute('data-original-card-id', originalCardId);
+        const newCardId = `vh-${originalCardId}-${idx}`;
+        card.id = newCardId;
+
+        // Vote dial container pattern: vote-toggle-container-{originalId}
+        const voteContainer = card.querySelector(`#vote-toggle-container-${originalCardId}`);
+        if (!voteContainer) return;
+
+        const parentWrapper = voteContainer.parentElement;
+        if (parentWrapper && !parentWrapper.classList.contains('vh-dial-disabled-wrapper')) {
+            parentWrapper.classList.add('vh-dial-disabled-wrapper');
+        }
+
+        // Rewrite container id
+        const newContainerId = `vh-vote-toggle-container-${originalCardId}-${idx}`;
+        voteContainer.id = newContainerId;
+
+        // Collect radios BEFORE renaming
+        const radios = voteContainer.querySelectorAll('input[type="radio"]');
+
+        // Determine old radio group name (assume consistent)
+        let oldGroupName = null;
+        if (radios.length) {
+            oldGroupName = radios[0].name; // e.g., vote-dial-123
+        }
+
+        // New group name
+        const newGroupName = oldGroupName ? `vh-${oldGroupName}-${idx}` : null;
+
+        // Rewrite radios + labels
+        radios.forEach((r, rIdx) => {
+            const oldId = r.id;
+            const newId = `vh-${oldId}-${idx}`;
+            r.id = newId;
+            if (newGroupName) r.name = newGroupName;
+            r.disabled = true;
+            r.setAttribute('aria-disabled', 'true');
+        });
+
+        voteContainer.querySelectorAll('label[for]').forEach(label => {
+            const oldFor = label.getAttribute('for');
+            if (oldFor) {
+                label.setAttribute('for', `vh-${oldFor}-${idx}`);
+            }
+        });
+
+        // Add overlay banner (only once per container)
+        if (!voteContainer.querySelector('.vh-dial-disabled-overlay')) {
+            const overlay = document.createElement('div');
+            overlay.className = 'vh-dial-disabled-overlay';
+            overlay.innerHTML = `
+                <div>
+                    Disabled
+                </div>
+            `;
+            parentWrapper.appendChild(overlay);
+        }
+    });
+}
 
 
 
@@ -554,7 +726,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function initInitializeCardObserver(node) {
         if (node.classList && (node.classList.contains('issue-card') || node.classList.contains('solution-card'))) {
             // Card was added
-            //console.log('Issue card added via MutationObserver:', node);
+            console.log('Issue card added via MutationObserver:', node);
             // Initialize card-specific JS here
             if (typeof initializeCard === 'function') {
                 try {

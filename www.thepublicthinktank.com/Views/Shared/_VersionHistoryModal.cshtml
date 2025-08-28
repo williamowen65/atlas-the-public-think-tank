@@ -1,0 +1,140 @@
+﻿@using atlas_the_public_think_tank.Models.Enums
+@using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common
+@using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue
+@using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue.IssueVote
+@using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution
+@using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution.SolutionVote
+@using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.ContentItem_Common
+@model VersionHistoryModal_VM
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+
+    Console.WriteLine();
+}
+
+<div class="modal fade modal-xl" id="versionControlModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Version History</h1>
+                <span class="ms-2">(@Model.contentItemVersions!.Count() versions)</span>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                @* Render the version history of the content item *@
+
+                @* NOTE: Potential optimization "Content-Item-Dispatch-View" to wrap this... 
+                   This logic is too similar to the logic in _content-item-cards.cshtml
+                *@
+               
+                @{
+                    var versionNumber = 1;
+                }
+                @foreach (ContentItem_ReadVM item in Model.contentItemVersions!)
+                {
+                    <div class="card">
+
+                        <div class="modal-header">
+
+
+                            <div class="d-flex flex-column justify-content-between mx-auto text-center " style="max-width: 500px">
+                            <h2 class="fs-4">This is version # @versionNumber</h2>
+                            @if (item.ModifiedAt != null)
+                            {    
+                                <p class="mb-0 ms-2">Modified: @item.ModifiedAt</p>
+                            }
+                        </div>
+                        </div>
+                      
+                        @{
+                            versionNumber++;
+                        }
+
+                        @* Type checking*@
+                        @if (item.ContentType == ContentType.Issue)
+                        {
+                            @*render as an issue card*@
+                            @await Html.PartialAsync("~/Views/Issue/_issue-card.cshtml", new Issue_ReadVM
+                            {
+                                IssueID = item.ContentID,
+                                Title = item.Title,
+                                Content = item.Content,
+                                CreatedAt = item.CreatedAt,
+                                ModifiedAt = item.ModifiedAt,
+                                // These are commented out to not show the version history button again 
+                                // VersionHistoryCount = item.VersionHistoryCount,
+                                LastActivity = item.LastActivity,
+                                ContentStatus = item.ContentStatus,
+                                BlockedContentID = item.BlockedContentID,
+                                BreadcrumbTags = item.BreadcrumbTags,
+                                Author = item.Author,
+                                Comments = item.Comments,
+                                Scope = item.Scope,
+                                BlockedContent = item.BlockedContent,
+                                PaginatedSubIssues = item.PaginatedSubIssues,
+                                PaginatedSolutions = item.PaginatedSolutions!,
+                                VoteStats = new IssueVotes_ReadVM()
+                                {
+                                    IssueVotes = item.VoteStats.GenericContentVotes,
+                                    AverageVote = item.VoteStats.AverageVote,
+                                    ContentID = item.VoteStats.ContentID,
+                                    TotalVotes = item.VoteStats.TotalVotes,
+                                    ContentType = ContentType.Issue
+                                }
+                            });
+                        }
+                        @if (item.ContentType == ContentType.Solution)
+                        {
+                            @*render as an solution card*@
+                            @await Html.PartialAsync("~/Views/Solution/_solution-card.cshtml", new Solution_ReadVM
+                            {
+                                SolutionID = item.ContentID,
+                                Title = item.Title,
+                                Content = item.Content,
+                                CreatedAt = item.CreatedAt,
+                                ModifiedAt = item.ModifiedAt,
+                                // These are commented out to not show the version history button again
+                                // VersionHistoryCount = item.VersionHistoryCount,
+                                LastActivity = item.LastActivity,
+                                ContentStatus = item.ContentStatus,
+                                BlockedContentID = item.BlockedContentID,
+                                BreadcrumbTags = item.BreadcrumbTags,
+                                Author = item.Author,
+                                Comments = item.Comments,
+                                Scope = item.Scope,
+                                BlockedContent = item.BlockedContent,
+                                PaginatedSubIssues = item.PaginatedSubIssues,
+                                VoteStats = new SolutionVotes_ReadVM()
+                                {
+                                    SolutionVotes = item.VoteStats.GenericContentVotes,
+                                    AverageVote = item.VoteStats.AverageVote,
+                                    ContentID = item.VoteStats.ContentID,
+                                    TotalVotes = item.VoteStats.TotalVotes,
+                                    ContentType = ContentType.Issue
+                                }
+                                });
+                        }
+                        @if (item.ContentType == ContentType.Comment)
+                        {
+                            @*render as an comment card*@
+                        }
+                    </div>
+
+                    @if (versionNumber < Model.contentItemVersions.Count())
+                    {
+                        <hr />    
+                    }
+
+                }
+
+
+            </div>
+            @* <div class="modal-footer"> *@
+                @* <button type="button" class="btn btn-primary">Report content?</button> *@
+            @* </div> *@
+        </div>
+    </div>
+</div>
+

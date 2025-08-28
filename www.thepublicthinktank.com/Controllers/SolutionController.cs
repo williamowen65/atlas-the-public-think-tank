@@ -11,6 +11,7 @@ using atlas_the_public_think_tank.Models.ViewModel.AjaxVM;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.ContentItem_Common;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.Solution.SolutionVote;
 using atlas_the_public_think_tank.Models.ViewModel.PageVM;
 using atlas_the_public_think_tank.Utilities;
@@ -373,6 +374,45 @@ namespace atlas_the_public_think_tank.Controllers
             }
         }
 
+
+        #endregion
+
+        #region Solution Version History Feed
+
+        /// <summary>
+        /// This method is used to return the version history of an issue
+        /// </summary>
+        [AllowAnonymous]
+        [Route("/solution-version-history")]
+        public async Task<IActionResult> SolutionVersionHistory(Guid solutionId)
+        {
+            ContentCreationResponse_JsonVM contentCreationResponse = new ContentCreationResponse_JsonVM();
+
+            // check if issue exists
+            Solution_ReadVM? solution = await Read.Solution(solutionId, new ContentFilter());
+            if (solution == null)
+            {
+                contentCreationResponse.Success = false;
+                List<string> errorEntry = new List<string> { $"The solution {solutionId} does not exist" };
+                contentCreationResponse.Errors.Add(errorEntry);
+                return Json(contentCreationResponse);
+            }
+
+            List<ContentItem_ReadVM> contentItemVersions = await Read.SolutionVersionHistory(solution);
+
+            string html = await ControllerExtensions.RenderViewToStringAsync(
+                this,
+                "~/Views/Shared/_VersionHistoryModal.cshtml",
+                new VersionHistoryModal_VM
+                {
+                    contentItemVersions = contentItemVersions
+                });
+
+            contentCreationResponse.Success = true;
+            contentCreationResponse.Content = html;
+
+            return Json(contentCreationResponse);
+        }
 
         #endregion
     }
