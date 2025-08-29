@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+﻿using atlas_the_public_think_tank.Data;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues;
 using atlas_the_public_think_tank.Data.SeedData.SeedSolutions;
  
@@ -52,6 +53,33 @@ namespace CloudTests.TestingSetup
                     return avgVote >= min && avgVote <= max;
                 })
                 .ToArray();
+        }
+
+        public async static Task deleteDatabase(
+            HttpClient _client,
+            ApplicationDbContext _db
+
+            )
+        {
+
+            if (_db != null)
+            {
+                try
+                {
+                    await _db.Database.EnsureDeletedAsync(); // Deletes the test database
+                    Console.WriteLine("Test database deleted successfully.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Database cleanup failed: {ex.Message}");
+                }
+                finally
+                {
+                    await _db.DisposeAsync();
+                }
+            }
+
+            _client?.Dispose();
         }
     }
 }

@@ -1,0 +1,45 @@
+name: .NET Tests with MSSQL
+
+on:
+  push:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: Y
+          SA_PASSWORD: "Aa123456!" # must meet SQL Server complexity requirements
+        ports:
+          - 1433:1433
+        options: >-
+          --name mssql
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Wait for SQL Server to be ready
+        run: |
+          echo "Waiting for SQL Server to start..."
+            for i in {1..60}; do
+              nc -zv localhost 1433 && echo "SQL Server is up!" && break
+              echo "SQL Server not ready yet... ($i)"
+              sleep 5
+            done
+
+      - name: Run CloudTest project test
+        env: 
+            GITHUB_ACTION: "true"
+        run: dotnet test CloudTests/CloudTests.csproj --verbosity normal
+
+      - name: Dump SQL Server logs on failure
+        if: failure()
+        run: docker logs mssql

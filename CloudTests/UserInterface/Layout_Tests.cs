@@ -22,6 +22,15 @@ namespace CloudTests.UserInterface
             _client = _env._client;
         }
 
+        [TestCleanup]
+        public async Task ClassCleanup()
+        {
+            await TestingUtilityMethods.deleteDatabase(_client, _db);
+        }
+
+
+
+
         [DataTestMethod]
         [DataRow("/")]
         [DataRow("/privacy")]

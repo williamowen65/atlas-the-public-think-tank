@@ -34,7 +34,15 @@ namespace CloudTests.UserStories
             _client = _env._client;
         }
 
-       
+
+        [TestCleanup]
+        public async Task ClassCleanup()
+        {
+            await TestingUtilityMethods.deleteDatabase(_client, _db);
+        }
+
+
+
 
         [TestMethod]
         public async Task UnauthorizedVote_Returns_YouMustBeLoggedInToVote()

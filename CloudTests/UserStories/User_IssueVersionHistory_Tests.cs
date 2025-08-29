@@ -1,11 +1,8 @@
-﻿
-using AngleSharp.Dom;
+﻿using AngleSharp.Dom;
 using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
-using atlas_the_public_think_tank.Data.SeedData.SeedIssues;
-using atlas_the_public_think_tank.Data.SeedData.SeedSolutions;
  
-using atlas_the_public_think_tank.Models.ViewModel;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;
 using CloudTests.TestingSetup;
 using CloudTests.TestingSetup.TestingData;
 using System;
@@ -39,6 +36,14 @@ namespace CloudTests.UserStories
         }
 
 
+        [ClassCleanup]
+        public static async Task ClassCleanup()
+        {
+            await TestingUtilityMethods.deleteDatabase(_client, _db);
+        }
+
+
+
 
         [TestMethod]
         public async Task User1_CanCreateAnIssue_AndEditIssue_AndSeeVersionHistoryIcon()
@@ -55,10 +60,13 @@ namespace CloudTests.UserStories
               "This is just an example issue content",
               newContentId1);
 
-            var rootElement2 = jsonDoc2.RootElement;
-            string newContentId2 = rootElement2.GetProperty("contentId").ToString();
 
-            Assert.IsTrue(true);
+            // Go to the issues page and should see version control icon
+            string issueUrl = $"/issue/{newContentId1}";
+            var document = await _env.fetchHTML(issueUrl);
+            var versionHistoryButton = document.QuerySelector(".show-version-history");
+            Assert.IsNotNull(versionHistoryButton, "Version history button should be present");
+
         }
 
 
@@ -104,10 +112,10 @@ namespace CloudTests.UserStories
           string issueId
          )
         {
-            // 1. GET page to obtain antiforgery cookie + hidden token
-            string tokenValue = await GetAntiForgeryToken($"/edit-issue?issueId={issueId}");
-            string scopeId = await GetScopeIDFromPage($"/edit-issue?issueId={issueId}");
-
+            string url = $"/edit-issue?issueId={issueId}";
+            // The edit issue GET endpoint returns JSON with an HTML partial in the "content" key.
+            string tokenValue = await GetAntiForgeryTokenFromJson(url);
+            string scopeId = await GetScopeIDFromJsonPage(url);
 
             // 3. Prepare form data INCLUDING the antiforgery token
             var formData = new Dictionary<string, string>
@@ -142,6 +150,22 @@ namespace CloudTests.UserStories
             return tokenValue;
         }
 
+        // New helper for endpoints returning JSON with an embedded HTML partial in a "content" key
+        public async Task<string> GetAntiForgeryTokenFromJson(string url)
+        {
+            ContentCreationResponse_JsonVM json = await _env.fetchJson<ContentCreationResponse_JsonVM>(url);
+            
+            string? html = json.Content;
+
+            var document = await _env.TextHtmlToDocument(html!);
+            var tokenValue = document
+                .QuerySelector("input[name=__RequestVerificationToken]")
+                ?.GetAttribute("value");
+
+            Assert.IsFalse(string.IsNullOrWhiteSpace(tokenValue), "Antiforgery token not found in JSON provided HTML partial.");
+            return tokenValue!;
+        }
+
         public async Task<string> GetScopeIDFromPage(string url)
         {
             var document = await _env.fetchHTML(url);
@@ -163,6 +187,31 @@ namespace CloudTests.UserStories
             }
 
             Assert.Fail("No valid ScopeID option found.");
+            return string.Empty;
+        }
+
+        // New helper for endpoints returning JSON with an embedded HTML partial in a "content" key
+        public async Task<string> GetScopeIDFromJsonPage(string url, string htmlJsonKey = "content")
+        {
+            ContentCreationResponse_JsonVM json = await _env.fetchJson<ContentCreationResponse_JsonVM>(url);
+            
+            string? html = json.Content;
+
+            var document = await _env.TextHtmlToDocument(html!);
+            var selectElement = document.QuerySelector("select[name=ScopeID]");
+            Assert.IsNotNull(selectElement, "Scope select element not found in JSON provided HTML partial.");
+
+            var optionElements = selectElement.QuerySelectorAll("option");
+            foreach (var option in optionElements)
+            {
+                string? value = option.GetAttribute("value");
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return value;
+                }
+            }
+
+            Assert.Fail("No valid ScopeID option found in JSON provided HTML partial.");
             return string.Empty;
         }
     }

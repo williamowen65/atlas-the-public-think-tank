@@ -32,16 +32,16 @@ public class Program
 
         if (!isTesting)
         { 
-            // Retrieve the connection string from appsettings.json
-            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+        // Retrieve the connection string from appsettings.json
+        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-            // Register the application's database context (ApplicationDbContext) with the DI container
-            // and configure it to use SQL Server with the retrieved connection string
-            builder.Services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(connectionString)
-                       //.EnableSensitiveDataLogging()
-                       ); // TODO: Disable this logging in production
+        // Register the application's database context (ApplicationDbContext) with the DI container
+        // and configure it to use SQL Server with the retrieved connection string
+        builder.Services.AddDbContext<ApplicationDbContext>(options =>
+            options.UseSqlServer(connectionString)
+                    //.EnableSensitiveDataLogging()
+                    ); 
 
 
             // Add OpenTelemetry and configure it to use Azure Monitor.

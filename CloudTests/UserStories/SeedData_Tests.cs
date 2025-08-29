@@ -34,6 +34,12 @@ namespace CloudTests.UserStories
 
         }
 
+        [ClassCleanup]
+        public static async Task ClassCleanup()
+        {
+            await TestingUtilityMethods.deleteDatabase(_client, _db);
+        }
+
 
         [DataTestMethod]
         [DynamicData(nameof(GetIssues), DynamicDataSourceType.Method)]

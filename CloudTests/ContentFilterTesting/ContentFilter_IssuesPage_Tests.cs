@@ -4,10 +4,7 @@ using atlas_the_public_think_tank.Data.SeedData.SeedIssues;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data;
 using atlas_the_public_think_tank.Data.SeedData.SeedSolutions;
  
-using atlas_the_public_think_tank.Models.ViewModel;
 using CloudTests.TestingSetup;
-using CloudTests.TestingSetup.TestingData;
-using System.Text.Json;
 
 namespace CloudTests.ContentFilterTesting
 {
@@ -33,7 +30,13 @@ namespace CloudTests.ContentFilterTesting
             _client = _env._client;
         }
 
-  
+        [ClassCleanup]
+        public static async Task ClassCleanup()
+        {
+            await TestingUtilityMethods.deleteDatabase(_client, _db);
+        }
+
+
 
         [DataTestMethod]
         [DataRow(0, 10)]

@@ -20,11 +20,7 @@ namespace CloudTests.TestingSetup
         private static ApplicationDbContext _db;
         private static TestEnvironment _env;
 
-        [TestInitialize]
-        public async Task Setup()
-        {
-
-        }
+       
 
         [ClassInitialize]
         public static void ClassInit(TestContext context)
@@ -33,6 +29,12 @@ namespace CloudTests.TestingSetup
             _env = new TestEnvironment();
             _db = _env._db;
             _client = _env._client;
+        }
+
+        [ClassCleanup]
+        public static async Task ClassCleanup()
+        {
+            await TestingUtilityMethods.deleteDatabase(_client, _db);
         }
 
 
