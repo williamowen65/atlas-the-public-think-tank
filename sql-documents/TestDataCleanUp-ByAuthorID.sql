@@ -3,7 +3,7 @@
 
 -- User parameter
 
-DECLARE @UserID uniqueidentifier = '49294663-7E59-4AA8-7649-08DDE3405379'; -- Set the AppUser ID whose content you want to delete
+DECLARE @UserID uniqueidentifier = '1A1199B8-D325-4112-A84E-08DDE648F789'; -- Set the AppUser ID whose content you want to delete
 
 
 -- Temporary storage for root issues
@@ -13,7 +13,7 @@ IF OBJECT_ID('tempdb..#UserRootIssues') IS NOT NULL
 -- Find all top-level issues created by the user (no parent content)
 SELECT IssueID
 INTO #UserRootIssues
-FROM Issues
+FROM issues.Issues
 WHERE AuthorID = @UserID
   AND ParentIssueID IS NULL
   AND ParentSolutionID IS NULL;
@@ -51,7 +51,7 @@ BEGIN
             CAST(NULL AS uniqueidentifier) AS SolutionID,
             0 AS Level,
             CAST(CONVERT(varchar(36), i.IssueID) AS varchar(max)) AS Path
-        FROM Issues i
+        FROM issues.Issues i
         WHERE i.IssueID = @CurrentIssueID
 
         UNION ALL
@@ -63,7 +63,7 @@ BEGIN
             h.Level + 1,
             h.Path + '>' + CONVERT(varchar(36), child.IssueID)
         FROM ContentHierarchy h
-        JOIN Issues child ON child.ParentIssueID = h.IssueID
+        JOIN issues.Issues child ON child.ParentIssueID = h.IssueID
         WHERE h.IssueID IS NOT NULL
 
         UNION ALL
@@ -75,7 +75,7 @@ BEGIN
             h.Level + 1,
             h.Path + '>' + CONVERT(varchar(36), s.SolutionID)
         FROM ContentHierarchy h
-        JOIN Solutions s ON s.ParentIssueID = h.IssueID
+        JOIN solutions.Solutions s ON s.ParentIssueID = h.IssueID
         WHERE h.IssueID IS NOT NULL
 
         UNION ALL
@@ -87,7 +87,7 @@ BEGIN
             h.Level + 1,
             h.Path + '>' + CONVERT(varchar(36), i.IssueID)
         FROM ContentHierarchy h
-        JOIN Issues i ON i.ParentSolutionID = h.SolutionID
+        JOIN issues.Issues i ON i.ParentSolutionID = h.SolutionID
         WHERE h.SolutionID IS NOT NULL
     )
     SELECT *
@@ -102,7 +102,7 @@ BEGIN
     BEGIN
         DELETE cv
         FROM CommentVotes cv
-        JOIN UserComment c ON cv.CommentID = c.CommentID
+        JOIN comments.Comment c ON cv.CommentID = c.CommentID
         JOIN #ContentHierarchy h ON 
             (h.IssueID = c.IssueID AND c.IssueID IS NOT NULL) OR 
             (h.SolutionID = c.SolutionID AND c.SolutionID IS NOT NULL);
@@ -175,14 +175,14 @@ BEGIN
     BEGIN
         -- Delete solutions at this level
         DELETE s
-        FROM Solutions s
+        FROM solutions.Solutions s
         JOIN #ContentHierarchy h ON h.SolutionID = s.SolutionID
         WHERE h.Level = @CurrentLevel
           AND h.SolutionID IS NOT NULL;
 
         -- Delete issues at this level
         DELETE i
-        FROM Issues i
+        FROM issues.Issues i
         JOIN #ContentHierarchy h ON h.IssueID = i.IssueID
         WHERE h.Level = @CurrentLevel
           AND h.IssueID IS NOT NULL;
@@ -190,6 +190,10 @@ BEGIN
         -- Move up one level
         SET @CurrentLevel = @CurrentLevel - 1;
     END
+
+
+    -- TODO ALSO DELETE RELATED HISOTRY TABLE INFO
+
 
     -- Clean up temp table for this iteration
     DROP TABLE #ContentHierarchy;

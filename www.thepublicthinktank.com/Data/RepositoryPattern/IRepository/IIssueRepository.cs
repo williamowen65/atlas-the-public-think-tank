@@ -56,5 +56,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.IRepository
 
 
         Task<Issue_ReadVM?> UpdateIssueAsync(Issue issue);
+
+        Task<int> GetIssueVersionHistoryCount(Guid issueID);
     }
 }

@@ -38,6 +38,12 @@ namespace CloudTests.UserStories
             UserStory_Setup();
         }
 
+        [ClassCleanup]
+        public static async Task ClassCleanup()
+        {
+            await TestingUtilityMethods.deleteDatabase(_client, _db);
+        }
+
         public static void UserStory_Setup()
         {
 

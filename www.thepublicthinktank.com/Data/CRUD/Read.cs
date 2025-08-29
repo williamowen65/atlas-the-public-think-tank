@@ -1,4 +1,8 @@
-﻿using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
+using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Repository;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Models.Enums;
 using atlas_the_public_think_tank.Models.ViewModel;
@@ -10,6 +14,7 @@ using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution.SolutionVote;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.User;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.Solution;
+using Microsoft.EntityFrameworkCore;
 
 namespace atlas_the_public_think_tank.Data.CRUD
 {
@@ -41,6 +46,8 @@ namespace atlas_the_public_think_tank.Data.CRUD
             using var scope = _serviceProvider.CreateScope();
             var services = scope.ServiceProvider;
             var filterIdRepository = services.GetRequiredService<IFilterIdSetRepository>();
+            var issueRepository = services.GetRequiredService<IIssueRepository>();
+            var solutionRepository = services.GetRequiredService<ISolutionRepository>();
 
             var paginatedMainContentIds = await filterIdRepository.GetPagedMainContentFeedIds(filter, pageNumber);
             var counts = await filterIdRepository.GetContentCountMainContentFeed(filter);
@@ -72,16 +79,17 @@ namespace atlas_the_public_think_tank.Data.CRUD
                     {
                         var issue = await Read.Issue(contentId.Id, filter);
 
-                        item = new ContentItem_ReadVM() 
-                        { 
+                        item = new ContentItem_ReadVM()
+                        {
                             ContentID = issue.IssueID,
                             ContentType = ContentType.Issue,
                             Author = issue.Author,
                             BreadcrumbTags = issue.BreadcrumbTags,
                             Content = issue.Content,
                             ContentStatus = issue.ContentStatus,
-                            CreatedAt = issue.CreatedAt,    
-                            ModifiedAt = issue.ModifiedAt,  
+                            CreatedAt = issue.CreatedAt,
+                            ModifiedAt = issue.ModifiedAt,
+                            VersionHistoryCount = issue.ModifiedAt != null ? await issueRepository.GetIssueVersionHistoryCount(issue.IssueID): null,
                             Scope = issue.Scope,
                             Title = issue.Title,
                             BlockedContent = issue.BlockedContent,
@@ -89,15 +97,13 @@ namespace atlas_the_public_think_tank.Data.CRUD
                             LastActivity = issue.LastActivity,
                             PaginatedSubIssues = issue.PaginatedSubIssues,
                             PaginatedSolutions = issue.PaginatedSolutions,
-                            VoteStats = new ContentItemVotes_ReadVM() { 
+                            VoteStats = new ContentItemVotes_ReadVM() {
                                 GenericContentVotes = issue.VoteStats.IssueVotes,
                                 AverageVote = issue.VoteStats.AverageVote,
                                 ContentID = issue.VoteStats.ContentID,
                                 TotalVotes = issue.VoteStats.TotalVotes,
                                 ContentType = ContentType.Issue
                             }
-
-
                         };
                     }
                     else if (contentId.Type == ContentType.Solution)
@@ -113,6 +119,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
                             ContentStatus = solution.ContentStatus,
                             CreatedAt = solution.CreatedAt,
                             ModifiedAt = solution.ModifiedAt,
+                            VersionHistoryCount = solution.ModifiedAt != null ? await solutionRepository.GetSolutionVersionHistoryCount(solution.SolutionID) : null,
                             Scope = solution.Scope,
                             Title = solution.Title,
                             BlockedContent= solution.BlockedContent,
@@ -349,6 +356,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
                 ContentStatus = issueContent.ContentStatus,
                 CreatedAt = issueContent.CreatedAt,
                 ModifiedAt = issueContent.ModifiedAt,
+                VersionHistoryCount = issueContent.ModifiedAt != null ? await issueRepository.GetIssueVersionHistoryCount(issueId) : null,
                 Scope = issueContent.Scope,
                 IssueID = issueContent.Id,
                 VoteStats = issueVoteStats!,
@@ -425,6 +433,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
                 ContentStatus = solutionContent.ContentStatus,
                 CreatedAt = solutionContent.CreatedAt,
                 ModifiedAt = solutionContent.ModifiedAt,
+                VersionHistoryCount = solutionContent.ModifiedAt != null ? await solutionRepository.GetSolutionVersionHistoryCount(solutionId) : null,
                 Scope = solutionContent.Scope,
                 SolutionID = solutionContent.Id,
                 VoteStats = solutionVoteStats!,
@@ -443,6 +452,136 @@ namespace atlas_the_public_think_tank.Data.CRUD
 
         #endregion
 
+
+        #region Get Content Items Version History
+
+        public static async Task<List<ContentItem_ReadVM>> IssueVersionHistory(Issue_ReadVM issue) 
+        {
+            if (_serviceProvider == null)
+                throw new InvalidOperationException("Read class has not been initialized with a service provider.");
+
+            using var methodScope = _serviceProvider.CreateScope();
+            var services = methodScope.ServiceProvider;
+            var _context = services.GetRequiredService<ApplicationDbContext>();
+            var _appUserRepository = services.GetRequiredService<IAppUserRepository>();
+            var _breadcrumbRepository = services.GetRequiredService<IBreadcrumbRepository>();
+
+
+            // TODO: Potentially move the temporal issues to the cache layer
+            // This currently skips the repository pattern
+
+
+            // Pull all temporal versions of the issue
+            List<Issue> versions = await _context.Issues
+                .TemporalAll()
+                .Where(i => i.IssueID == issue.IssueID)
+                .OrderBy(i => EF.Property<DateTime>(i, "PeriodStart"))
+                .ToListAsync();
+
+
+            List<ContentItem_ReadVM> contentItemVersions = new();
+
+            foreach (var version in versions)
+            {
+                AppUser_ReadVM? appUser = await _appUserRepository.GetAppUser(version.AuthorID);
+
+                Scope? scope = await _context.Scopes
+                .Where(s => s.ScopeID == version.ScopeID)
+                .FirstOrDefaultAsync();
+
+                var contentItem = new ContentItem_ReadVM
+                {
+                    ContentID = version.IssueID,
+                    Title = version.Title,
+                    Content = version.Content,
+                    ContentType = ContentType.Issue,
+                    ContentStatus = version.ContentStatus,
+                    CreatedAt = version.CreatedAt,
+                    ModifiedAt = version.ModifiedAt,
+                    Author = appUser!,
+                    BreadcrumbTags = await _breadcrumbRepository.GetBreadcrumbPagedAsync(version.ParentIssueID ?? version.ParentSolutionID),
+                    Scope = scope,
+                    VoteStats = new ContentItemVotes_ReadVM
+                    {
+                        GenericContentVotes = issue.VoteStats.IssueVotes,
+                        AverageVote = issue.VoteStats.AverageVote,
+                        ContentID = issue.VoteStats.ContentID,
+                        TotalVotes = issue.VoteStats.TotalVotes,
+                        ContentType = ContentType.Issue
+                    }
+                };
+
+                contentItemVersions.Add(contentItem);
+            }
+
+
+            return contentItemVersions;
+        }
+
+        public static async Task<List<ContentItem_ReadVM>> SolutionVersionHistory(Solution_ReadVM solution) 
+        {
+            if (_serviceProvider == null)
+                throw new InvalidOperationException("Read class has not been initialized with a service provider.");
+
+            using var methodScope = _serviceProvider.CreateScope();
+            var services = methodScope.ServiceProvider;
+            var _context = services.GetRequiredService<ApplicationDbContext>();
+            var _appUserRepository = services.GetRequiredService<IAppUserRepository>();
+            var _breadcrumbRepository = services.GetRequiredService<IBreadcrumbRepository>();
+
+
+            // TODO: Potentially move the temporal issues to the cache layer
+            // This currently skips the repository pattern
+
+
+            // Pull all temporal versions of the issue
+            List<Solution> versions = await _context.Solutions
+                .TemporalAll()
+                .Where(s => s.SolutionID == solution.SolutionID)
+                .OrderBy(s => EF.Property<DateTime>(s, "PeriodStart"))
+                .ToListAsync();
+
+
+            List<ContentItem_ReadVM> contentItemVersions = new();
+
+            foreach (var version in versions)
+            {
+                AppUser_ReadVM? appUser = await _appUserRepository.GetAppUser(version.AuthorID);
+
+                Scope? scope = await _context.Scopes
+                .Where(s => s.ScopeID == version.ScopeID)
+                .FirstOrDefaultAsync();
+
+                var contentItem = new ContentItem_ReadVM
+                {
+                    ContentID = version.SolutionID,
+                    Title = version.Title,
+                    Content = version.Content,
+                    ContentType = ContentType.Solution,
+                    ContentStatus = version.ContentStatus,
+                    CreatedAt = version.CreatedAt,
+                    ModifiedAt = version.ModifiedAt,
+                    Author = appUser!,
+                    BreadcrumbTags = await _breadcrumbRepository.GetBreadcrumbPagedAsync(version.ParentIssueID),
+                    Scope = scope,
+                    VoteStats = new ContentItemVotes_ReadVM
+                    {
+                        GenericContentVotes = solution.VoteStats.SolutionVotes,
+                        AverageVote = solution.VoteStats.AverageVote,
+                        ContentID = solution.VoteStats.ContentID,
+                        TotalVotes = solution.VoteStats.TotalVotes,
+                        ContentType = ContentType.Issue
+                    }
+                };
+
+                contentItemVersions.Add(contentItem);
+            }
+
+
+            return contentItemVersions;
+        }
+
+        #endregion
 
     }
 }

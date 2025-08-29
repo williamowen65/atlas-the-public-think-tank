@@ -12,8 +12,8 @@ using atlas_the_public_think_tank.Data;
 namespace atlas_the_public_think_tank.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250827002350_init2")]
-    partial class init2
+    [Migration("20250828153327_init")]
+    partial class init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -160,7 +160,7 @@ namespace atlas_the_public_think_tank.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Comment.Comment", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment.Comment", b =>
                 {
                     b.Property<Guid>("CommentID")
                         .ValueGeneratedOnAdd()
@@ -210,7 +210,7 @@ namespace atlas_the_public_think_tank.Migrations
                     b.ToTable("Comments", "comments");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Comment.CommentVote", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment.CommentVote", b =>
                 {
                     b.Property<Guid>("VoteID")
                         .ValueGeneratedOnAdd()
@@ -246,7 +246,7 @@ namespace atlas_the_public_think_tank.Migrations
                     b.ToTable("CommentVotes", "comments");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Common.Scope", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common.Scope", b =>
                 {
                     b.Property<Guid>("ScopeID")
                         .ValueGeneratedOnAdd()
@@ -283,7 +283,7 @@ namespace atlas_the_public_think_tank.Migrations
                         });
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Issue.Issue", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.Issue", b =>
                 {
                     b.Property<Guid>("IssueID")
                         .ValueGeneratedOnAdd()
@@ -316,6 +316,16 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Property<Guid?>("ParentSolutionID")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime>("PeriodEnd")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodEnd");
+
+                    b.Property<DateTime>("PeriodStart")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodStart");
+
                     b.Property<Guid>("ScopeID")
                         .HasColumnType("uniqueidentifier");
 
@@ -341,7 +351,18 @@ namespace atlas_the_public_think_tank.Migrations
 
                     b.HasIndex("SolutionID");
 
-                    b.ToTable("Issues", "issue");
+                    b.ToTable("Issues", "issues");
+
+                    b.ToTable(tb => tb.IsTemporal(ttb =>
+                            {
+                                ttb.UseHistoryTable("IssuesHistory", "issues");
+                                ttb
+                                    .HasPeriodStart("PeriodStart")
+                                    .HasColumnName("PeriodStart");
+                                ttb
+                                    .HasPeriodEnd("PeriodEnd")
+                                    .HasColumnName("PeriodEnd");
+                            }));
 
                     b.HasData(
                         new
@@ -628,7 +649,7 @@ namespace atlas_the_public_think_tank.Migrations
                         });
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Issue.IssueTag", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.IssueTag", b =>
                 {
                     b.Property<Guid>("TagID")
                         .HasColumnType("uniqueidentifier");
@@ -647,7 +668,7 @@ namespace atlas_the_public_think_tank.Migrations
                     b.ToTable("IssuesTags", "issues");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Issue.IssueVote", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.IssueVote", b =>
                 {
                     b.Property<Guid>("VoteID")
                         .ValueGeneratedOnAdd()
@@ -2749,7 +2770,7 @@ namespace atlas_the_public_think_tank.Migrations
                         });
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Solution.Solution", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.Solution", b =>
                 {
                     b.Property<Guid>("SolutionID")
                         .ValueGeneratedOnAdd()
@@ -2943,7 +2964,7 @@ namespace atlas_the_public_think_tank.Migrations
                         });
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Solution.SolutionTag", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.SolutionTag", b =>
                 {
                     b.Property<Guid>("TagID")
                         .HasColumnType("uniqueidentifier");
@@ -2962,7 +2983,7 @@ namespace atlas_the_public_think_tank.Migrations
                     b.ToTable("SolutionsTags", "solutions");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Solution.SolutionVote", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.SolutionVote", b =>
                 {
                     b.Property<Guid>("VoteID")
                         .ValueGeneratedOnAdd()
@@ -4040,7 +4061,7 @@ namespace atlas_the_public_think_tank.Migrations
                         });
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.History.UserHistory", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.History.UserHistory", b =>
                 {
                     b.Property<Guid>("UserHistoryID")
                         .ValueGeneratedOnAdd()
@@ -4085,7 +4106,7 @@ namespace atlas_the_public_think_tank.Migrations
                     b.ToTable("UserHistory", "users");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.Moderation.BlockedContent", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Moderation.BlockedContent", b =>
                 {
                     b.Property<Guid>("BlockedContentID")
                         .ValueGeneratedOnAdd()
@@ -4099,7 +4120,7 @@ namespace atlas_the_public_think_tank.Migrations
                     b.ToTable("BlockedContent", "app");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.Users.AppUser", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -4498,7 +4519,7 @@ namespace atlas_the_public_think_tank.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Users.AppUser", null)
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -4507,7 +4528,7 @@ namespace atlas_the_public_think_tank.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<System.Guid>", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Users.AppUser", null)
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -4522,7 +4543,7 @@ namespace atlas_the_public_think_tank.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Users.AppUser", null)
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -4531,37 +4552,37 @@ namespace atlas_the_public_think_tank.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<System.Guid>", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Users.AppUser", null)
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Comment.Comment", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment.Comment", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Users.AppUser", "Author")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", "Author")
                         .WithMany("Comments")
                         .HasForeignKey("AuthorID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Moderation.BlockedContent", "BlockedContent")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Moderation.BlockedContent", "BlockedContent")
                         .WithMany("Comments")
                         .HasForeignKey("BlockedContentID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Issue.Issue", "Issue")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.Issue", "Issue")
                         .WithMany("Comments")
                         .HasForeignKey("IssueID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Comment.Comment", "ParentComment")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment.Comment", "ParentComment")
                         .WithMany("ChildComments")
                         .HasForeignKey("ParentCommentID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Solution.Solution", "Solution")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.Solution", "Solution")
                         .WithMany("Comments")
                         .HasForeignKey("SolutionID")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -4577,19 +4598,19 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("Solution");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Comment.CommentVote", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment.CommentVote", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Users.AppUser", null)
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", null)
                         .WithMany("CommentVotes")
                         .HasForeignKey("AppUserId");
 
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Comment.Comment", "Comment")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment.Comment", "Comment")
                         .WithMany("CommentVotes")
                         .HasForeignKey("CommentID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Users.AppUser", "User")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", "User")
                         .WithMany()
                         .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -4600,36 +4621,36 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Issue.Issue", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.Issue", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Users.AppUser", "Author")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", "Author")
                         .WithMany("Issues")
                         .HasForeignKey("AuthorID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Moderation.BlockedContent", "BlockedContent")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Moderation.BlockedContent", "BlockedContent")
                         .WithMany("Issues")
                         .HasForeignKey("BlockedContentID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Issue.Issue", "ParentIssue")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.Issue", "ParentIssue")
                         .WithMany("ChildIssues")
                         .HasForeignKey("ParentIssueID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Solution.Solution", "ParentSolution")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.Solution", "ParentSolution")
                         .WithMany()
                         .HasForeignKey("ParentSolutionID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Common.Scope", "Scope")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common.Scope", "Scope")
                         .WithMany("Issues")
                         .HasForeignKey("ScopeID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Solution.Solution", null)
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.Solution", null)
                         .WithMany("ChildIssues")
                         .HasForeignKey("SolutionID");
 
@@ -4644,28 +4665,28 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("Scope");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Issue.IssueTag", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.IssueTag", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Issue.Issue", null)
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.Issue", null)
                         .WithMany("IssueTags")
                         .HasForeignKey("IssueID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Issue.IssueVote", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.IssueVote", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Users.AppUser", null)
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", null)
                         .WithMany("IssueVotes")
                         .HasForeignKey("AppUserId");
 
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Issue.Issue", "Issue")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.Issue", "Issue")
                         .WithMany("IssueVotes")
                         .HasForeignKey("IssueID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Users.AppUser", "User")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", "User")
                         .WithMany()
                         .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -4676,26 +4697,26 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Solution.Solution", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.Solution", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Users.AppUser", "Author")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", "Author")
                         .WithMany("Solutions")
                         .HasForeignKey("AuthorID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Moderation.BlockedContent", "BlockedContent")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Moderation.BlockedContent", "BlockedContent")
                         .WithMany("Solutions")
                         .HasForeignKey("BlockedContentID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Issue.Issue", "ParentIssue")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.Issue", "ParentIssue")
                         .WithMany("Solutions")
                         .HasForeignKey("ParentIssueID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Common.Scope", "Scope")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common.Scope", "Scope")
                         .WithMany()
                         .HasForeignKey("ScopeID")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -4710,28 +4731,28 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("Scope");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Solution.SolutionTag", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.SolutionTag", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Solution.Solution", null)
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.Solution", null)
                         .WithMany("SolutionTags")
                         .HasForeignKey("SolutionID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Solution.SolutionVote", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.SolutionVote", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Users.AppUser", null)
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", null)
                         .WithMany("SolutionVotes")
                         .HasForeignKey("AppUserId");
 
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Solution.Solution", "Solution")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.Solution", "Solution")
                         .WithMany("SolutionVotes")
                         .HasForeignKey("SolutionID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Users.AppUser", "User")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", "User")
                         .WithMany()
                         .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -4742,24 +4763,24 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.History.UserHistory", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.History.UserHistory", b =>
                 {
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Comment.Comment", "Comment")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment.Comment", "Comment")
                         .WithMany()
                         .HasForeignKey("CommentID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Issue.Issue", "Issue")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.Issue", "Issue")
                         .WithMany()
                         .HasForeignKey("IssueID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Solution.Solution", "Solution")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.Solution", "Solution")
                         .WithMany()
                         .HasForeignKey("SolutionID")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("atlas_the_public_think_tank.Models.DatabaseEntities.Users.AppUser", "User")
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", "User")
                         .WithMany("UserHistory")
                         .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -4774,19 +4795,19 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Comment.Comment", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment.Comment", b =>
                 {
                     b.Navigation("ChildComments");
 
                     b.Navigation("CommentVotes");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Common.Scope", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common.Scope", b =>
                 {
                     b.Navigation("Issues");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Issue.Issue", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue.Issue", b =>
                 {
                     b.Navigation("ChildIssues");
 
@@ -4799,7 +4820,7 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("Solutions");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.Content.Solution.Solution", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.Solution", b =>
                 {
                     b.Navigation("ChildIssues");
 
@@ -4810,7 +4831,7 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("SolutionVotes");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.Moderation.BlockedContent", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Moderation.BlockedContent", b =>
                 {
                     b.Navigation("Comments");
 
@@ -4819,7 +4840,7 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("Solutions");
                 });
 
-            modelBuilder.Entity("atlas_the_public_think_tank.Models.DatabaseEntities.Users.AppUser", b =>
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", b =>
                 {
                     b.Navigation("CommentVotes");
 

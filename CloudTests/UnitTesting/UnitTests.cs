@@ -1,5 +1,6 @@
 ﻿using AngleSharp;
 using AngleSharp.Dom;
+using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Models.ViewModel;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;
 using CloudTests.TestingSetup;
@@ -19,14 +20,21 @@ namespace CloudTests.UnitTesting
         private static string _baseUrl;
         private static HttpClient _client;
         private static TestEnvironment _env;
+        private static ApplicationDbContext _db;
 
         [TestInitialize]
         public async Task Setup()
         {
             // Use the utility class to configure the test environment
             _env = new TestEnvironment();
-            //_db = testEnv._db;
+            _db = _env._db;
             _client = _env._client;
+        }
+
+        [TestCleanup]
+        public async Task ClassCleanup()
+        {
+            await TestingUtilityMethods.deleteDatabase(_client, _db);
         }
 
         [TestMethod]

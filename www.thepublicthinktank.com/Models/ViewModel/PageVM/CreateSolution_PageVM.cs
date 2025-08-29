@@ -10,7 +10,7 @@ namespace atlas_the_public_think_tank.Models.ViewModel.PageVM
         /// <summary>
         /// Represents the main issue content that the user is creating
         /// </summary>
-        public Solution_CreateVM Solution { get; set; } = new Solution_CreateVM();
+        public Solution_CreateOrEditVM Solution { get; set; } = new Solution_CreateOrEditVM();
 
 
     }

@@ -33,7 +33,7 @@
 @container card (max-width: 604px) {
     .issue-card-stat-icons {
         font-size: 20px;
-        max-width: 100px;
+        max-width: 71px;
         min-width: 67px;
         height: 72px;
         margin-bottom: 0;
@@ -42,6 +42,10 @@
         .issue-card-stat-icons span[role=button] {
             padding-bottom: 3px;
         }
+
+    .stat-icon-link.version-history {
+        margin-inline: 0 !important;
+    }
 }
 
 /* Position adjustments for content count on mobile */

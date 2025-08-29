@@ -38,6 +38,12 @@ namespace CloudTests.UserStories
             Assert.IsTrue(loginSuccess, "Login should be successful");
         }
 
+        [ClassCleanup]
+        public static async Task ClassCleanup()
+        {
+            await TestingUtilityMethods.deleteDatabase(_client, _db);
+        }
+
         [DataTestMethod]
         [DataRow("/create-issue")]
         [DataRow("/create-solution")]

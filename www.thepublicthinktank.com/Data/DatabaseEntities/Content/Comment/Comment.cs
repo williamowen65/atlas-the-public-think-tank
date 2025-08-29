@@ -35,7 +35,10 @@ namespace atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment
     {
         public static void Declare(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Comment>().ToTable("Comments", "comments");
+            modelBuilder.Entity<Comment>().ToTable(
+                "Comments", 
+                "comments",
+                tb => tb.IsTemporal(temporal => { temporal.UseHistoryTable("CommentsHistory", "comments"); }));
         }
         public static void Build(ModelBuilder modelBuilder)
         {

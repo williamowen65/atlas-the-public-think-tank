@@ -49,5 +49,10 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
             return  await _inner.UpdateIssueAsync(issue);
         }
+
+        public async Task<int> GetIssueVersionHistoryCount(Guid issueID) 
+        {
+            return await _inner.GetIssueVersionHistoryCount(issueID);
+        }
     }
 }

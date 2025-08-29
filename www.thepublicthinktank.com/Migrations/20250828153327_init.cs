@@ -8,11 +8,541 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace atlas_the_public_think_tank.Migrations
 {
     /// <inheritdoc />
-    public partial class init2 : Migration
+    public partial class init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.EnsureSchema(
+                name: "app");
+
+            migrationBuilder.EnsureSchema(
+                name: "comments");
+
+            migrationBuilder.EnsureSchema(
+                name: "issues");
+
+            migrationBuilder.EnsureSchema(
+                name: "solutions");
+
+            migrationBuilder.EnsureSchema(
+                name: "users");
+
+            migrationBuilder.CreateTable(
+                name: "AspNetRoles",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
+                    NormalizedName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
+                    ConcurrencyStamp = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetRoles", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AspNetUsers",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
+                    NormalizedUserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
+                    Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
+                    NormalizedEmail = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
+                    EmailConfirmed = table.Column<bool>(type: "bit", nullable: false),
+                    PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    SecurityStamp = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ConcurrencyStamp = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    PhoneNumber = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    PhoneNumberConfirmed = table.Column<bool>(type: "bit", nullable: false),
+                    TwoFactorEnabled = table.Column<bool>(type: "bit", nullable: false),
+                    LockoutEnd = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
+                    LockoutEnabled = table.Column<bool>(type: "bit", nullable: false),
+                    AccessFailedCount = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetUsers", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "BlockedContent",
+                schema: "app",
+                columns: table => new
+                {
+                    BlockedContentID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ReasonID = table.Column<short>(type: "smallint", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_BlockedContent", x => x.BlockedContentID);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Scopes",
+                schema: "app",
+                columns: table => new
+                {
+                    ScopeID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ScopeName = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Scopes", x => x.ScopeID);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AspNetRoleClaims",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    RoleId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ClaimType = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ClaimValue = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetRoleClaims", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AspNetRoleClaims_AspNetRoles_RoleId",
+                        column: x => x.RoleId,
+                        principalTable: "AspNetRoles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AspNetUserClaims",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ClaimType = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ClaimValue = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetUserClaims", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AspNetUserClaims_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AspNetUserLogins",
+                columns: table => new
+                {
+                    LoginProvider = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
+                    ProviderKey = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
+                    ProviderDisplayName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetUserLogins", x => new { x.LoginProvider, x.ProviderKey });
+                    table.ForeignKey(
+                        name: "FK_AspNetUserLogins_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AspNetUserRoles",
+                columns: table => new
+                {
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    RoleId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetUserRoles", x => new { x.UserId, x.RoleId });
+                    table.ForeignKey(
+                        name: "FK_AspNetUserRoles_AspNetRoles_RoleId",
+                        column: x => x.RoleId,
+                        principalTable: "AspNetRoles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_AspNetUserRoles_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AspNetUserTokens",
+                columns: table => new
+                {
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    LoginProvider = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
+                    Value = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetUserTokens", x => new { x.UserId, x.LoginProvider, x.Name });
+                    table.ForeignKey(
+                        name: "FK_AspNetUserTokens_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Comments",
+                schema: "comments",
+                columns: table => new
+                {
+                    CommentID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    IssueID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    SolutionID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    Content = table.Column<string>(type: "nvarchar(3000)", maxLength: 3000, nullable: false),
+                    ParentCommentID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    ContentStatus = table.Column<int>(type: "int", nullable: false),
+                    AuthorID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ModifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    BlockedContentID = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Comments", x => x.CommentID);
+                    table.ForeignKey(
+                        name: "FK_Comments_AspNetUsers_AuthorID",
+                        column: x => x.AuthorID,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Comments_BlockedContent_BlockedContentID",
+                        column: x => x.BlockedContentID,
+                        principalSchema: "app",
+                        principalTable: "BlockedContent",
+                        principalColumn: "BlockedContentID",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Comments_Comments_ParentCommentID",
+                        column: x => x.ParentCommentID,
+                        principalSchema: "comments",
+                        principalTable: "Comments",
+                        principalColumn: "CommentID",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CommentVotes",
+                schema: "comments",
+                columns: table => new
+                {
+                    VoteID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CommentID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    AppUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UserID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    VoteValue = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ModifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CommentVotes", x => x.VoteID);
+                    table.ForeignKey(
+                        name: "FK_CommentVotes_AspNetUsers_AppUserId",
+                        column: x => x.AppUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_CommentVotes_AspNetUsers_UserID",
+                        column: x => x.UserID,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_CommentVotes_Comments_CommentID",
+                        column: x => x.CommentID,
+                        principalSchema: "comments",
+                        principalTable: "Comments",
+                        principalColumn: "CommentID",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Issues",
+                schema: "issues",
+                columns: table => new
+                {
+                    IssueID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ParentIssueID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    ParentSolutionID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    PeriodEnd = table.Column<DateTime>(type: "datetime2", nullable: false)
+                        .Annotation("SqlServer:TemporalIsPeriodEndColumn", true),
+                    PeriodStart = table.Column<DateTime>(type: "datetime2", nullable: false)
+                        .Annotation("SqlServer:TemporalIsPeriodStartColumn", true),
+                    SolutionID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    ContentStatus = table.Column<int>(type: "int", nullable: false),
+                    AuthorID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
+                    ModifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    BlockedContentID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ScopeID = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Issues", x => x.IssueID);
+                    table.ForeignKey(
+                        name: "FK_Issues_AspNetUsers_AuthorID",
+                        column: x => x.AuthorID,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Issues_BlockedContent_BlockedContentID",
+                        column: x => x.BlockedContentID,
+                        principalSchema: "app",
+                        principalTable: "BlockedContent",
+                        principalColumn: "BlockedContentID",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Issues_Issues_ParentIssueID",
+                        column: x => x.ParentIssueID,
+                        principalSchema: "issues",
+                        principalTable: "Issues",
+                        principalColumn: "IssueID",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Issues_Scopes_ScopeID",
+                        column: x => x.ScopeID,
+                        principalSchema: "app",
+                        principalTable: "Scopes",
+                        principalColumn: "ScopeID",
+                        onDelete: ReferentialAction.Restrict);
+                })
+                .Annotation("SqlServer:IsTemporal", true)
+                .Annotation("SqlServer:TemporalHistoryTableName", "IssuesHistory")
+                .Annotation("SqlServer:TemporalHistoryTableSchema", "issues")
+                .Annotation("SqlServer:TemporalPeriodEndColumnName", "PeriodEnd")
+                .Annotation("SqlServer:TemporalPeriodStartColumnName", "PeriodStart");
+
+            migrationBuilder.CreateTable(
+                name: "IssuesTags",
+                schema: "issues",
+                columns: table => new
+                {
+                    TagID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    IssueID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TagName = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_IssuesTags", x => new { x.TagID, x.IssueID });
+                    table.ForeignKey(
+                        name: "FK_IssuesTags_Issues_IssueID",
+                        column: x => x.IssueID,
+                        principalSchema: "issues",
+                        principalTable: "Issues",
+                        principalColumn: "IssueID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "IssueVotes",
+                schema: "issues",
+                columns: table => new
+                {
+                    VoteID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    IssueID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    AppUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UserID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    VoteValue = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ModifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_IssueVotes", x => x.VoteID);
+                    table.ForeignKey(
+                        name: "FK_IssueVotes_AspNetUsers_AppUserId",
+                        column: x => x.AppUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_IssueVotes_AspNetUsers_UserID",
+                        column: x => x.UserID,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_IssueVotes_Issues_IssueID",
+                        column: x => x.IssueID,
+                        principalSchema: "issues",
+                        principalTable: "Issues",
+                        principalColumn: "IssueID",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Solutions",
+                schema: "solutions",
+                columns: table => new
+                {
+                    SolutionID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ParentIssueID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ContentStatus = table.Column<int>(type: "int", nullable: false),
+                    AuthorID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ModifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    BlockedContentID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    Title = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: false),
+                    Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ScopeID = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Solutions", x => x.SolutionID);
+                    table.ForeignKey(
+                        name: "FK_Solutions_AspNetUsers_AuthorID",
+                        column: x => x.AuthorID,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Solutions_BlockedContent_BlockedContentID",
+                        column: x => x.BlockedContentID,
+                        principalSchema: "app",
+                        principalTable: "BlockedContent",
+                        principalColumn: "BlockedContentID",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Solutions_Issues_ParentIssueID",
+                        column: x => x.ParentIssueID,
+                        principalSchema: "issues",
+                        principalTable: "Issues",
+                        principalColumn: "IssueID",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Solutions_Scopes_ScopeID",
+                        column: x => x.ScopeID,
+                        principalSchema: "app",
+                        principalTable: "Scopes",
+                        principalColumn: "ScopeID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SolutionsTags",
+                schema: "solutions",
+                columns: table => new
+                {
+                    TagID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    SolutionID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TagName = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SolutionsTags", x => new { x.TagID, x.SolutionID });
+                    table.ForeignKey(
+                        name: "FK_SolutionsTags_Solutions_SolutionID",
+                        column: x => x.SolutionID,
+                        principalSchema: "solutions",
+                        principalTable: "Solutions",
+                        principalColumn: "SolutionID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SolutionVotes",
+                schema: "solutions",
+                columns: table => new
+                {
+                    VoteID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    SolutionID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    AppUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UserID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    VoteValue = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ModifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SolutionVotes", x => x.VoteID);
+                    table.ForeignKey(
+                        name: "FK_SolutionVotes_AspNetUsers_AppUserId",
+                        column: x => x.AppUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_SolutionVotes_AspNetUsers_UserID",
+                        column: x => x.UserID,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_SolutionVotes_Solutions_SolutionID",
+                        column: x => x.SolutionID,
+                        principalSchema: "solutions",
+                        principalTable: "Solutions",
+                        principalColumn: "SolutionID",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UserHistory",
+                schema: "users",
+                columns: table => new
+                {
+                    UserHistoryID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Action = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Link = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    Timestamp = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
+                    IssueID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    SolutionID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    CommentID = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserHistory", x => x.UserHistoryID);
+                    table.ForeignKey(
+                        name: "FK_UserHistory_AspNetUsers_UserID",
+                        column: x => x.UserID,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_UserHistory_Comments_CommentID",
+                        column: x => x.CommentID,
+                        principalSchema: "comments",
+                        principalTable: "Comments",
+                        principalColumn: "CommentID",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_UserHistory_Issues_IssueID",
+                        column: x => x.IssueID,
+                        principalSchema: "issues",
+                        principalTable: "Issues",
+                        principalColumn: "IssueID",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_UserHistory_Solutions_SolutionID",
+                        column: x => x.SolutionID,
+                        principalSchema: "solutions",
+                        principalTable: "Solutions",
+                        principalColumn: "SolutionID",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
             migrationBuilder.InsertData(
                 table: "AspNetUsers",
                 columns: new[] { "Id", "AccessFailedCount", "ConcurrencyStamp", "Email", "EmailConfirmed", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "SecurityStamp", "TwoFactorEnabled", "UserName" },
@@ -53,7 +583,7 @@ namespace atlas_the_public_think_tank.Migrations
                 });
 
             migrationBuilder.InsertData(
-                schema: "issue",
+                schema: "issues",
                 table: "Issues",
                 columns: new[] { "IssueID", "AuthorID", "BlockedContentID", "Content", "ContentStatus", "CreatedAt", "ModifiedAt", "ParentIssueID", "ParentSolutionID", "ScopeID", "SolutionID", "Title" },
                 values: new object[,]
@@ -137,7 +667,7 @@ namespace atlas_the_public_think_tank.Migrations
                 });
 
             migrationBuilder.InsertData(
-                schema: "issue",
+                schema: "issues",
                 table: "Issues",
                 columns: new[] { "IssueID", "AuthorID", "BlockedContentID", "Content", "ContentStatus", "CreatedAt", "ModifiedAt", "ParentIssueID", "ParentSolutionID", "ScopeID", "SolutionID", "Title" },
                 values: new object[,]
@@ -311,7 +841,7 @@ namespace atlas_the_public_think_tank.Migrations
                 });
 
             migrationBuilder.InsertData(
-                schema: "issue",
+                schema: "issues",
                 table: "Issues",
                 columns: new[] { "IssueID", "AuthorID", "BlockedContentID", "Content", "ContentStatus", "CreatedAt", "ModifiedAt", "ParentIssueID", "ParentSolutionID", "ScopeID", "SolutionID", "Title" },
                 values: new object[,]
@@ -558,2696 +1088,366 @@ namespace atlas_the_public_think_tank.Migrations
                     { new Guid("f8c0b9a7-5d4e-48f3-b2a1-7b6c5d4e3f2a"), null, new DateTime(2024, 10, 16, 0, 0, 0, 0, DateTimeKind.Unspecified), null, new Guid("a7d9c8b6-4e3f-47a2-95d1-6b8c0a5e3f2d"), new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee40"), 10 },
                     { new Guid("f9a0b1c8-7d4e-49f5-b3c0-a6e9d7f4b2c1"), null, new DateTime(2024, 5, 16, 0, 0, 0, 0, DateTimeKind.Unspecified), null, new Guid("d7e9f8a6-5b2c-47d3-91a8-e4c7b5d2f10e"), new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee31"), 10 }
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AspNetRoleClaims_RoleId",
+                table: "AspNetRoleClaims",
+                column: "RoleId");
+
+            migrationBuilder.CreateIndex(
+                name: "RoleNameIndex",
+                table: "AspNetRoles",
+                column: "NormalizedName",
+                unique: true,
+                filter: "[NormalizedName] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AspNetUserClaims_UserId",
+                table: "AspNetUserClaims",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AspNetUserLogins_UserId",
+                table: "AspNetUserLogins",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AspNetUserRoles_RoleId",
+                table: "AspNetUserRoles",
+                column: "RoleId");
+
+            migrationBuilder.CreateIndex(
+                name: "EmailIndex",
+                table: "AspNetUsers",
+                column: "NormalizedEmail");
+
+            migrationBuilder.CreateIndex(
+                name: "UserNameIndex",
+                table: "AspNetUsers",
+                column: "NormalizedUserName",
+                unique: true,
+                filter: "[NormalizedUserName] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Comments_AuthorID",
+                schema: "comments",
+                table: "Comments",
+                column: "AuthorID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Comments_BlockedContentID",
+                schema: "comments",
+                table: "Comments",
+                column: "BlockedContentID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Comments_IssueID",
+                schema: "comments",
+                table: "Comments",
+                column: "IssueID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Comments_ParentCommentID",
+                schema: "comments",
+                table: "Comments",
+                column: "ParentCommentID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Comments_SolutionID",
+                schema: "comments",
+                table: "Comments",
+                column: "SolutionID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CommentVotes_AppUserId",
+                schema: "comments",
+                table: "CommentVotes",
+                column: "AppUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CommentVotes_CommentID_UserID",
+                schema: "comments",
+                table: "CommentVotes",
+                columns: new[] { "CommentID", "UserID" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CommentVotes_UserID",
+                schema: "comments",
+                table: "CommentVotes",
+                column: "UserID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Issues_AuthorID",
+                schema: "issues",
+                table: "Issues",
+                column: "AuthorID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Issues_BlockedContentID",
+                schema: "issues",
+                table: "Issues",
+                column: "BlockedContentID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Issues_ParentIssueID",
+                schema: "issues",
+                table: "Issues",
+                column: "ParentIssueID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Issues_ParentSolutionID",
+                schema: "issues",
+                table: "Issues",
+                column: "ParentSolutionID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Issues_ScopeID",
+                schema: "issues",
+                table: "Issues",
+                column: "ScopeID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Issues_SolutionID",
+                schema: "issues",
+                table: "Issues",
+                column: "SolutionID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_IssuesTags_IssueID",
+                schema: "issues",
+                table: "IssuesTags",
+                column: "IssueID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_IssueVotes_AppUserId",
+                schema: "issues",
+                table: "IssueVotes",
+                column: "AppUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_IssueVotes_IssueID_UserID",
+                schema: "issues",
+                table: "IssueVotes",
+                columns: new[] { "IssueID", "UserID" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_IssueVotes_UserID",
+                schema: "issues",
+                table: "IssueVotes",
+                column: "UserID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Solutions_AuthorID",
+                schema: "solutions",
+                table: "Solutions",
+                column: "AuthorID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Solutions_BlockedContentID",
+                schema: "solutions",
+                table: "Solutions",
+                column: "BlockedContentID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Solutions_ParentIssueID",
+                schema: "solutions",
+                table: "Solutions",
+                column: "ParentIssueID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Solutions_ScopeID",
+                schema: "solutions",
+                table: "Solutions",
+                column: "ScopeID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SolutionsTags_SolutionID",
+                schema: "solutions",
+                table: "SolutionsTags",
+                column: "SolutionID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SolutionVotes_AppUserId",
+                schema: "solutions",
+                table: "SolutionVotes",
+                column: "AppUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SolutionVotes_SolutionID_UserID",
+                schema: "solutions",
+                table: "SolutionVotes",
+                columns: new[] { "SolutionID", "UserID" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SolutionVotes_UserID",
+                schema: "solutions",
+                table: "SolutionVotes",
+                column: "UserID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserHistory_CommentID",
+                schema: "users",
+                table: "UserHistory",
+                column: "CommentID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserHistory_IssueID",
+                schema: "users",
+                table: "UserHistory",
+                column: "IssueID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserHistory_SolutionID",
+                schema: "users",
+                table: "UserHistory",
+                column: "SolutionID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserHistory_UserID",
+                schema: "users",
+                table: "UserHistory",
+                column: "UserID");
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Comments_Issues_IssueID",
+                schema: "comments",
+                table: "Comments",
+                column: "IssueID",
+                principalSchema: "issues",
+                principalTable: "Issues",
+                principalColumn: "IssueID",
+                onDelete: ReferentialAction.Restrict);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Comments_Solutions_SolutionID",
+                schema: "comments",
+                table: "Comments",
+                column: "SolutionID",
+                principalSchema: "solutions",
+                principalTable: "Solutions",
+                principalColumn: "SolutionID",
+                onDelete: ReferentialAction.Restrict);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Issues_Solutions_ParentSolutionID",
+                schema: "issues",
+                table: "Issues",
+                column: "ParentSolutionID",
+                principalSchema: "solutions",
+                principalTable: "Solutions",
+                principalColumn: "SolutionID",
+                onDelete: ReferentialAction.Restrict);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Issues_Solutions_SolutionID",
+                schema: "issues",
+                table: "Issues",
+                column: "SolutionID",
+                principalSchema: "solutions",
+                principalTable: "Solutions",
+                principalColumn: "SolutionID");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DeleteData(
+            migrationBuilder.DropForeignKey(
+                name: "FK_Issues_AspNetUsers_AuthorID",
                 schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("0a1b2c3d-4e5f-46ab-c8d9-0e1f2a3b4c5d"));
+                table: "Issues");
 
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("0b7c6d5e-4f8a-4b9c-1d2e-3f4a5b6c7d8e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("0c1d2e3f-4a5b-46c7-8d9e-0f1a2b3c4d5e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("0d1e2f3a-4b5c-6d7e-8f9a-0b1c2d3e4f5a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("0d7e6f5a-4b8c-4d9e-1f2a-3b4c5d6e7f8a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("0e1f2a3b-4c5d-46e7-f8a9-0b1c2d3e4f5a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("0f1a2b3c-4d5e-46f7-b8c9-0d1e2f3a4b5c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("19c84b3e-6f5a-47d0-a2c1-9e87f0d3b542"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("1a2b3c4d-5e6f-47a8-c9d0-1e2f3a4b5c6d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("1b2c3d4e-5f6a-47bc-d90e-1f2a3b4c5d6e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("1c8d7e6f-5a9b-4c0d-2e3f-4a5b6c7d8e9f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("1e2f3a4b-5c6d-7e8f-9a0b-1c2d3e4f5a6b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("1e8f7a6b-5c9d-4e0f-2a3b-4c5d6e7f8a9b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("1f2a3b4c-5d6e-47f8-a90b-1c2d3e4f5a6b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("1f8a3c54-09be-47d6-a2c7-835fb940d6e9"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("2a3b4c5d-6e7f-48a9-0b1c-2d3e4f5a6b7c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("2b3c4d5e-6f7a-48b9-d0e1-2f3a4b5c6d7e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("2b7c1e49-5ad3-4f06-98e2-0c31fb57a8d4"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("2c3d4e5f-6a7b-48cd-0e1f-2a3b4c5d6e7f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("2d3e4f5a-6b7c-4809-a1b2-c3d4e5f6a7b8"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("2d3e4f5a-6b7c-48d9-9e0f-1a2b3c4d5e6f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("2d639f18-75ab-4e20-9c84-f06d3b1c7a5e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("2f3a4b5c-6d7e-8f9a-0b1c-2d3e4f5a6b7c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("2f9a8b7c-6d0e-4f1a-3b4c-5d6e7f8a9b0c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("3a0b9c8d-7e1f-4a2b-4c5d-6e7f8a9b0c1d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("3a4b5c6d-7e8f-9a0b-1c2d-3e4f5a6b7c8d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("3b4c5d6e-7f8a-490b-1c2d-3e4f5a6b7c8d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("3c4d5e6f-7a8b-4921-83c0-f5e4d3c2b1a0"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("3c4d5e6f-7a8b-49c0-e1f2-3a4b5c6d7e8f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("3d4e5f6a-7b8c-49de-1f2a-3b4c5d6e7f8a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("3e4f5a6b-7c8d-49e0-a1b2-3c4d5e6f7a8b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("3e5f7c82-1abd-42f9-8e6b-0d94c3a58f27"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("3e9f7d12-0a5b-46c8-9d3e-f2a1b8c5d674"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("3f2a96e0-d5c1-47b8-8ef3-4b7d98ca61a5"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("42c83a9d-f150-4e8b-a7d2-9ef683b5c4f1"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("4b1c0d9e-8f2a-4b3c-5d6e-7f8a9b0c1d2e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("4b5c6d7e-8f9a-0b1c-2d3e-4f5a6b7c8d9e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("4c5d6e7f-8a9b-400c-2d3e-4f5a6b7c8d9e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("4d5e6f7a-8b9c-40d1-f2a3-4b5c6d7e8f9a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("4e5f6a7b-8c9d-40ef-2a3b-4c5d6e7f8a9b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("4e9db5a7-08c1-49f2-b3e6-7d82510f6ca9"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("4f5a6b7c-8d9e-40f1-b2c3-4d5e6f7a8b9c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("5a6b7c8d-9e0f-41a2-c3d4-5e6f7a8b9c0d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("5b6c7d8e-9f0a-41bc-d3e4-5f6a7b8c9d0e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("5c2d1e0f-9a3b-4c4d-6e7f-8a9b0c1d2e3f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("5c6d7e8f-9a0b-1c2d-3e4f-5a6b7c8d9e0f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("5d21e7f9-80b3-46a2-9c4d-1f8e0a7b6954"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("5d2e8b47-a0f3-491c-b6d5-e7940c38af26"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("5d6e7f8a-9b0c-41d2-3e4f-5a6b7c8d9e0f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("5e6f7a8b-9c0d-41e2-a3b4-5c6d7e8f9a0b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("5f6a7b8c-9d0e-41fa-3b4c-5d6e7f8a9b0c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("6b7c8d9e-0f1a-42b3-d4e5-6f7a8b9c0d1e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("6c7d8e9f-0a1b-42cd-e4f5-6a7b8c9d0e1f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("6d3e2f1a-0b4c-4d5e-7f8a-9b0c1d2e3f4a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("6d7e8f9a-0b1c-2d3e-4f5a-6b7c8d9e0f1a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("6d9e0f34-82a5-4b1c-b7d8-5e30c9f16a72"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("6e7f8a9b-0c1d-42e3-4f5a-6b7c8d9e0f1a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("6f7a8b9c-0d1e-42f3-b4c5-6d7e8f9a0b1c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("71d8e054-9c3b-48a2-bf67-30e195d84a2c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("76b91d2a-4e5f-48c0-97d3-a8b6c5f2e70d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("7b8c9d0e-1f2a-43b4-c5d6-7e8f9a0b1c2d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("7c8d9e0f-1a2b-43c4-e5f6-7a8b9c0d1e2f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("7d8e9f0a-1b2c-43de-f5a6-7b8c9d0e1f2a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("7db92e45-3af6-4c18-b507-29d1e6085fca"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("7e4f3a2b-1c5d-4e6f-8a9b-0c1d2e3f4a5b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("7e8f9a0b-1c2d-3e4f-5a6b-7c8d9e0f1a2b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("7f8a9b0c-1d2e-43f4-5a6b-7c8d9e0f1a2b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("87a1bf23-c64d-40e5-b9a7-15f2d8c09e4a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("87ef24d1-9c56-48a7-b3f0-5e72d18c94ba"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("8a9b0c1d-2e3f-44a5-6b7c-8d9e0f1a2b3c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("8b9c0d1e-2f3a-4b5c-6d7e-8f9a0b1c2d3e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("8c9d0e1f-2a3b-44c5-d6e7-8f9a0b1c2d3e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("8d9e0f1a-2b3c-44d5-f6a7-8b9c0d1e2f3a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("8e9f0a1b-2c3d-44ef-a6b7-8c9d0e1f2a3b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("8f5a4b3c-2d6e-4f7a-9b0c-1d2e3f4a5b6c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("8f9a0b1c-2d3e-4f5a-6b7c-8d9e0f1a2b3c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("91c4e7d2-5a8f-49b3-0e6d-7f8a2b1c9e05"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("93a5b4c0-1d7e-46f8-b29a-5c06e874d3f2"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("9a0b1c2d-3e4f-5a6b-7c8d-9e0f1a2b3c4d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("9a6b5c4d-3e7f-4a8b-0c1d-2e3f4a5b6c7d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("9a8b7c6d-5f4e-4312-b0a9-1c2d3e4f5a6b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("9b0c1d2e-3f4a-45b6-7c8d-9e0f1a2b3c4d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("9c0d1e2f-3a4b-5c6d-7e8f-9a0b1c2d3e4f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("9c5d8e63-7f21-48b4-a1e9-f30d762b85c1"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("9c6d5e4f-3a7b-4c8d-0e1f-2a3b4c5d6e7f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("9d0e1f2a-3b4c-45d6-e7f8-9a0b1c2d3e4f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("9e0f1a2b-3c4d-45e6-a7b8-9c0d1e2f3a4b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("9f0a1b2c-3d4e-45fa-b7c8-9d0e1f2a3b4c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a0b1c2d3-e4f5-6a7b-8c9d-0e1f2a3b4c5d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a0f9e8d7-c6b5-4423-a132-f9e8d7c6b5a0"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a1b24f8c-3e12-47d6-9e78-5f98c732a641"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a1b27e90-c864-45d8-e61f-4d2a0b81b65c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a1b2c3d4-e5f6-47a8-b9c0-d1e2f3a4b5c6"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a3b2c1d0-e9f8-47a6-b5c4-d3e2f1a0b9c8"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a3b49e12-c086-47de-ec3f-6d4a2b03b87c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a3b4c5d6-7e8f-49a0-1b2c-3d4e5f6a7b8c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a3b4c5d6-7e8f-4a9b-1c2d-3e4f5a6b7c8d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a3b4c5d6-e7f8-49a0-b1c2-d3e4f5a6b7c8"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a3b4c5d6-e7f8-9a0b-1c2d-3e4f5a6b7c8d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a4b5c6d7-e8f9-0a1b-2c3d-4e5f6a7b8c9d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a4b7c9e1-2d3f-4a5b-6c7d-8e9f0a1b2c3d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a4f3e2d1-c0b9-4685-c4d3-f1a0e9b8c7d6"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a5b6c7d8-e9f0-1a2b-3c4d-5e6f7a8b9c0d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a63d9f28-7b4e-45c1-8f0a-e2d6b957c31f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a6b78c9d-0e12-4f34-a556-8b90c123d974"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a6b7c8d9-e012-4f34-a567-8a90b123c207"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a6b7c8d9-e012-4f34-ab56-7a90b123c863"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a6f5e4d3-c2b1-4089-a798-f5e4d3c2b1a6"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a7b6c5d4-e3f2-41a0-b9c8-d7e6f5a4b3c2"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a7b83e56-c420-41de-ec7f-0d8a6b47b21c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a7b8c9d0-1e2f-43a4-5b6c-7d8e9f0a1b2c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a7b8c9d0-1e2f-4a3b-5c6d-7e8f9a0b1c2d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a7b8c9d0-e123-4a45-bc67-8d90e123f752"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a7b8c9d0-e1f2-3a4b-5c6d-7e8f9a0b1c2d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a7b8c9d0-e1f2-43a4-b5c6-d7e8f9a0b1c2"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a9a8b7c6-d543-4e21-fa09-8b76c543d530"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a9b0c1d2-3e4f-4a5b-7c8d-9e0f1a2b3c4d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a9b8c7d6-e5f4-4312-b1a0-9d8c7b6a5f4e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a9b8c7d6-e5f4-43a2-b1c0-d9e8f7a6b5c4"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b0c1d2e3-4f5a-4b6c-8d9e-0f1a2b3c4d5e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b0c9d8e7-f6a5-44b3-c2d1-e0f9a8b7c6d5"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b1a0f9e8-d7c6-4534-b243-a0f9e8d7c6b1"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b1c2d3e4-f5a6-7b8c-9d0e-1f2a3b4c5d6e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b2c38f01-d975-46e9-f72a-5e3b1c92c76d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b2c3d4e5-6f7a-48b9-0c1d-2e3f4a5b6c7d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b2c3d4e5-f6a7-48b9-c0d1-e2f3a4b5c6d7"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b3c45d9e-5f21-48e7-af89-6f07d843b752"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b4c3d2e1-f0a9-48b7-c6d5-e4f3a2b1c0d9"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b4c50f23-d197-48ef-fd4a-7e5b3c14c98d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b4c5d6e7-8f9a-40b1-2c3d-4e5f6a7b8c9d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b4c5d6e7-8f9a-4b0c-2d3e-4f5a6b7c8d9e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b4c5d6e7-f8a9-0b1c-2d3e-4f5a6b7c8d9e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b4c5d6e7-f8a9-40b1-c2d3-e4f5a6b7c8d9"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b5a4f3e2-d1c0-4796-d5e4-a2b1f0c9d8e7"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b5c6d7e8-f9a0-1b2c-3d4e-5f6a7b8c9d0e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b5c8d0e2-3f4a-5b6c-7d8e-9f0a1b2c3d4e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b5c9a2e7-3d14-46f8-95a0-7183df462c01"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b6c7d8e9-f0a1-2b3c-4d5e-6f7a8b9c0d1e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b8c7d6e5-f4a3-42b1-c9d0-e8f7a6b5c4d3"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b8c94f67-d531-42ef-fd8a-1e9b7c58c32d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b8c9d0e1-2f3a-44b5-6c7d-8e9f0a1b2c3d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b8c9d0e1-2f3a-4b5c-6d7e-8f9a0b1c2d3e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b8c9d0e1-f2a3-44b5-c6d7-e8f9a0b1c2d3"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b8c9d0e1-f2a3-4b5c-6d7e-8f9a0b1c2d3e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c0e7d59a-42f1-48b3-9165-7a84f3d20b8c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c1d0e9f8-a7b6-45c4-d3e2-f1a0b9c8d7e6"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c1d2e3f4-5a6b-4c7d-9e0f-1a2b3c4d5e6f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c1d2e3f4-a567-4b89-cd01-2e34f567a429"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c1d2e3f4-a5b6-7c8d-9e0f-1a2b3c4d5e6f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c2b1a0f9-e8d7-4645-c354-b1a0f9e8d7c2"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c2d3e4f5-a6b7-8c9d-0e1f-2a3b4c5d6e7f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c3d49a12-e086-47fa-a83b-6f4c2d03d87e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c3d4e5f6-7a8b-49c0-1d2e-3f4a5b6c7d8e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c3d4e5f6-a7b8-49c0-d1e2-f3a4b5c6d7e8"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c5d4e3f2-a1b0-49c8-d7e6-f5a4b3c2d1e0"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c5d61a34-e208-49fa-ae5b-8f6c4d25d09e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c5d6e7f8-9a0b-41c2-3d4e-5f6a7b8c9d0e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c5d6e7f8-9a0b-4c1d-3e4f-5a6b7c8d9e0f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c5d6e7f8-a9b0-1c2d-3e4f-5a6b7c8d9e0f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c5d6e7f8-a9b0-41c2-d3e4-f5a6b7c8d9e0"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c6b5a4f3-e2d1-4807-e6f5-b3c2a1d0e9f8"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c6d7e8f9-a0b1-2c3d-4e5f-6a7b8c9d0e1f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c6d9e0f3-4a5b-6c7d-8e9f-0a1b2c3d4e5f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c7b8a9d0-5e2f-4983-a1b0-c9d8e7f6a5b4"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c7d58e3a-9f21-47b6-a12d-8e44bc67f531"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c7d58e3a-9f21-47b6-a12d-8e94bc67f531"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c7d8e9f0-a1b2-3c4d-5e6f-7a8b9c0d1e2f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c8f49e27-35a1-4d60-b8e7-2f17d0a59c36"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c9d05a78-e642-43fa-ae9b-2f0c8d69d43e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c9d0e1f2-3a45-4b67-cd89-0e12f345a196"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c9d0e1f2-3a4b-45c6-7d8e-9f0a1b2c3d4e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c9d0e1f2-3a4b-4c5d-7e8f-9a0b1c2d3e4f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c9d0e1f2-a3b4-45c6-d7e8-f9a0b1c2d3e4"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c9d8e7f6-a5b4-43c2-d0e1-f9a8b7c6d5e4"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d0e16b89-f753-44ab-bf0c-3a1d9e70e54f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d0e1f2a3-4b5c-46d7-8e9f-0a1b2c3d4e5f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d0e1f2a3-4b5c-4d6e-8f9a-0b1c2d3e4f5a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d0e1f2a3-b4c5-46d7-e8f9-a0b1c2d3e4f5"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d0e9f8a7-b6c5-44d3-e1f2-a0b9c8d7e6f5"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d1c0b9a8-7f6e-4352-91a0-c8d7b6a5f4e3"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d1e2f3a4-b5c6-7d8e-9f0a-1b2c3d4e5f6a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d2a6b9f1-4c53-47e0-9387-61a50fc8d249"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d2e3f4a5-b6c7-8d9e-0f1a-2b3c4d5e6f7a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d3c2b1a0-f9e8-4756-d465-c2b1a0f9e8d3"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d3e4f5a6-b7c8-9d0e-1f2a-3b4c5d6e7f8a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d4e50b23-f197-48ab-b94c-7a5d3e14e98f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d4e5f6a7-8b9c-40d1-2e3f-4a5b6c7d8e9f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d4e5f6a7-b890-4c12-de34-5f67a890b318"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d4e5f6a7-b8c9-40d1-e2f3-a4b5c6d7e8f9"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d5e67f0a-7b23-49c8-bd90-7e18f934c863"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d6e5f4a3-b2c1-40d9-e8f7-a6b5c4d3e2f1"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d6e72b45-f319-40ab-bf6c-9a7d5e36e10f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d6e7f8a9-0b1c-4d2e-4f5a-6b7c8d9e0f1a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d7c6b5a4-f3e2-4918-f7a6-c4d3b2e1f0a9"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d8e94b67-f531-42a5-b38c-1a9d7e58e32f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e1f0a9b8-c7d6-45e4-f2a3-b1c0d9e8f7a6"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e1f23c7a-9b56-48d0-a4e7-0c3d9f82b615"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e1f27c90-a864-45bc-ca1d-4b2e0f81f65a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e1f2a3b4-5c67-4d89-ae01-2f34e567f085"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e1f2a3b4-5c6d-47e8-9f0a-1b2c3d4e5f6a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e1f2a3b4-5c6d-4e7f-9a0b-1c2d3e4f5a6b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e1f2a3b4-c5d6-47e8-f9a0-b1c2d3e4f5a6"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e1f2a3b4-c5d6-7e8f-9a0b-1c2d3e4f5a6b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e2d1c0b9-8a7f-4463-a2b1-d9e8c7f6a5b4"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e2f3a4b5-c678-4d90-ef12-3a45b678c641"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e2f3a4b5-c6d7-8e9f-0a1b-2c3d4e5f6a7b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e3f4a5b6-c7d8-9e0f-1a2b-3c4d5e6f7a8b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e4d3c2b1-a0f9-4867-e576-d3c2b1a0f9e4"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e4f5a6b7-c8d9-0e1f-2a3b-4c5d6e7f8a9b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e5d09b37-c28f-46a4-95f0-1d7ce8a2b950"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e5f4d3c2-b1a0-4675-8392-c1d0b9a8f7e6"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e5f61c34-a208-49bc-ca5d-8b6e4f25f09a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e5f6a7b8-9c0d-41e2-3f4a-5b6c7d8e9f0a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e5f6a7b8-c9d0-41e2-f3a4-b5c6d7e8f9a0"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e7f6a5b4-c3d2-41e0-f9a8-b7c6d5e4f3a2"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e7f8a9b0-1c2d-4e3f-5a6b-7c8d9e0f1a2b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e7f8d9c0-a1b2-4c3d-9e8f-7a6b5c4d3e2f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e8d7c6b5-a4f3-4029-a8b7-d5e4c3f2a1b0"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e8f9a0b1-c2d3-4e5f-6a7b-8c9d0e1f2a3b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e9f05c78-a642-43b6-c49d-2b0e8f69f43a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f0a16d89-b753-44c7-d50e-3c1f9a70a54b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f18d0c37-6a95-48be-921f-5e4a7b9d0c38"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f1e2d3c4-b5a6-4798-87b9-d0c1e2f3a4b5"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f2a1b0c9-d8e7-46f5-a3b4-c2d1e0f9a8b7"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f2a38d01-b975-46cd-db2e-5c3f1a92a76b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f2a3b4c5-6d7e-48f9-0a1b-2c3d4e5f6a7b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f2a3b4c5-6d7e-4f8a-0b1c-2d3e4f5a6b7c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f2a3b4c5-d6e7-48f9-a0b1-c2d3e4f5a6b7"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f2e3d4c5-b6a7-8f9e-0a1b-2c3d4e5f6a7b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f3a4b5c6-d7e8-9f0a-1b2c-3d4e5f6a7b8c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f3e2d1c0-9b8a-4574-b3c2-e0f9d8a7b6c5"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f4a5b6c7-d890-4e12-af34-5a67b890c974"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f4a5b6c7-d8e9-0f1a-2b3c-4d5e6f7a8b9c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f5a37e84-20d9-48b1-936c-7a0be5d12c48"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f5a6b7c8-d9e0-1f2a-3b4c-5d6e7f8a9b0c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f5e4d3c2-b1a0-4978-f687-e4d3c2b1a0f5"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f6a72d45-b319-40cd-db6e-9c7f5a36a10b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f6a7b8c9-0d1e-42f3-4a5b-6c7d8e9f0a1b"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f6a7b8c9-d0e1-2f3a-4b5c-6d7e8f9a0b1c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f6a7b8c9-d0e1-42f3-a4b5-c6d7e8f9a0b1"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f8a7b6c5-d4e3-42f1-a0b9-c8d7e6f5a4b3"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f8a9b0c1-2d3e-4f4a-6b7c-8d9e0f1a2b3c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f8e9d0c1-b2a3-4d5e-0f1a-2b3c4d5e6f7a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f9a0b1c2-d3e4-5f6a-7b8c-9d0e1f2a3b4c"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f9e8d7c6-b5a4-4312-9021-e8d7c6b5a4f3"));
-
-            migrationBuilder.DeleteData(
-                schema: "issues",
-                table: "IssueVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("fb249a5e-d07c-43e1-b8a5-36f1c094d782"));
-
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("9a7e6cbd-8c1f-4d3f-a07f-3d8c9c2bfc44"));
-
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("a5d9c7e8-3b2f-47a1-9c5e-8f6d4b2a1c3d"));
-
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("d6c9a5b4-3e2f-47d1-8c7a-5b9e6f4d3c2a"));
-
-            migrationBuilder.DeleteData(
-                schema: "app",
-                table: "Scopes",
-                keyColumn: "ScopeID",
-                keyValue: new Guid("b2d8f1a7-e4c9-4f8a-8d5f-7e6c9d8b3a2f"));
-
-            migrationBuilder.DeleteData(
-                schema: "app",
-                table: "Scopes",
-                keyColumn: "ScopeID",
-                keyValue: new Guid("c3b9a2d8-f1e7-4f8a-9c3b-8d7e6f5d4c2b"));
-
-            migrationBuilder.DeleteData(
-                schema: "app",
-                table: "Scopes",
-                keyColumn: "ScopeID",
-                keyValue: new Guid("d4c9b3a2-f8e7-4f8a-9c3b-8d7e6f5d4c2b"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("01278901-3cd4-e5f6-789a-bcdef0123456"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("0e7f8a9b-6c5d-4e3f-1a2b-9c8d7e6f5a4b"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("0f9a8b7c-6d5e-4f3a-2b1c-9d8c7b6a5f4e"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("12389012-4de5-f607-89ab-cdef01234567"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("1a0b9c8d-7e6f-4a4b-3c2d-0e9d8c7b6a5f"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("1f8a9b0c-7d6e-5f4a-2b3c-0d9e8f7a6b5c"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("23490123-5ef6-0789-abcd-ef012345678a"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("2a9b0c1d-8e7f-6a5b-3c4d-1e0f9a8b7c6d"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("2b1c0d9e-8f7a-4b5c-4d3e-1f0e9d8c7b6a"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("2f8a7d5e-4b9c-48e1-a036-7c53f4e8d12b"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("34501234-6f07-89ab-cdef-0123456789ab"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("3b0c1d2e-9f8a-7b6c-4d5e-2f1a0b9c8d7e"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("3c2d1e0f-9a8b-4c6d-5e4f-2a1f0e9d8c7b"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("45612345-7a89-bcde-f012-3456789abcde"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("4c1d2e3f-0a9b-8c7d-5e6f-3a2b1c0d9e8f"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("4d3e2f1a-0b9c-4d7e-6f5a-3b2a1f0e9d8c"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("5a4b3c2d-1e0f-4a8b-9c7d-6e5f4d3c2b1a"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("5d7c8f3a-2e6b-4c1d-9a3f-0e8d7b5c6a4f"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("5e4f3a2b-1c0d-4e8f-7a6b-4c3b2a1f0e9d"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("6a3b5c8d-1e7f-4a9b-8c5d-2e4f6a7b8c9d"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("6b5c4d3e-2f1a-4b9c-8d7e-5f4e3d2c1b0a"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("6f5a4b3c-2d1e-4f9a-8b7c-5d4c3b2a1f0e"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("7a6b5c4d-3e2f-4a0b-9c8d-6e5d4c3b2a1f"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("7b4c6d5e-3f2a-1b9c-8d7e-6f5a4b3c2d1e"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("7c6d5e4f-3a2b-4c0d-9e8f-6a5f4e3d2c1b"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("8b7c6d5e-4f3a-4b1c-0d9e-7f6e5d4c3b2a"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("8b9c0d1e-2f3a-4b5c-6d7e-8f9a0b1c2d3e"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("8c5d6e7f-4a3b-2c1d-9e8f-7a6b5c4d3e2f"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("8d7e6f5a-4b3c-4d1e-0f9a-7b6a5f4e3d2c"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("96b5c4f1-e2d3-47a8-9b0c-1d2e3f4a5b7c"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("9c0d1e2f-3a4b-5c6d-7e8f-9a0b1c2d3e4f"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("9c8d7e6f-5a4b-4c2d-1e0f-8a7f6e5d4c3b"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("9d6e7f8a-5b4c-3d2e-0f1a-8b7c6d5e4f3a"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("9e8f7a6b-5c4d-4e2f-1a0b-8c7b6a5f4e3d"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a0b1c2d9-8e5f-40a6-c4d1-b7f0e8a5d3c2"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a1b2c3d4-e5f6-4a7b-8c9d-1e2f3a4b5c6d"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a1b7f6e5-8d32-47c0-b965-2f48a3b1c7d6"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a1f0e9d8-7c64-41b5-b309-4e82f7a5b1c0"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a3d5c4b2-0e9f-43a8-b7b6-2c1d0e9f8a7b"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a3f2e1d0-9c86-43b7-b521-6e04f9a7b3c2"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a5b1f0e9-2d76-41c4-b309-6f82a7b5c1d0"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a6b5c4f1-e2d3-47a8-9b0c-1d2e3f4a5b7b"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a6b7c8d5-4e1f-46a2-c0d7-b3f6e4a1d9c8"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a7b3f2e1-4d98-43c6-b521-8f04a9b7c3d2"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a7b8c9d0-e1f2-4a3b-4c5d-6e7f8a9b0c1d"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a7b8c9d0-e1f2-4a3b-5c6d-7e8f9a0b1c2d"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a7f6e5d4-3c20-47b1-b965-0e48f3a1b7c6"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("a9d1c0b8-6e5f-49a4-b3b2-8c7d6e5f4a3b"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("abc12345-de67-89f0-1234-56789abcdef0"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b0e2d1c9-7f6a-40b5-b4c3-9d8e7f6a5b4c"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b1c2d3e0-9f6a-41b7-d5e2-c8a1f9b6e4d3"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b2a1f0e9-8d75-42c6-b410-5f93a8b6c2d1"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b2c3d4e5-f6a7-4b8c-9d0e-2f3a4b5c6d7e"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b2c8a7f6-9e43-48d1-b076-3a59b4c2d8e7"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b4a3f2e1-0d97-44c8-b632-7f15a0b8c4d3"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b4e6d5c3-1f0a-44b9-a8c7-3d2e1f0a9b8c"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b5a6c4f1-e2d3-47a8-9b0c-1d2e3f4a5b7a"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b6c2a1f0-3e87-42d5-b410-7a93b8c6d2e1"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b7c8d9e6-5f2a-47b3-d1e8-c4a7f5b2e0d9"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b8a7f6e5-4d31-48c2-b076-1f59a4b2c8d7"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b8c9d0e1-f2a3-4b4c-5d6e-7f8a9b0c1d2e"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b8c9d0e1-f2a3-4b5c-6d7e-8f9a0b1c2d3e"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("b8e0d9c7-5f4a-48b3-a2c1-7d6e5f4a3b2c"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("bcd23456-ef78-90a1-2345-6789abcdef01"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c1f3e2d0-8a7b-41c6-b5d4-0e9f8a7b6c5d"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c2d3e4f1-0a7b-42c8-e6f3-d9b2a0c7f5e4"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c3b2a1f0-9e86-43d7-b521-6a04b9c7d3e2"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c3d4e5f6-a7b8-4c9d-0e1f-3a4b5c6d7e8f"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c3d9b8a7-0f54-49e2-b187-4b60c5d3e9f8"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c4f1e2d3-a5b6-47a8-9b0c-1d2e3f4a5b6f"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c5f7e6d4-2a1b-45c0-b9d8-4e3f2a1b0c9d"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c7d3b2a1-4f98-43e6-a521-8b04c9d7e3f2"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c8d9e0f7-6a3b-48c4-e2f9-d5b8a6c3f1e0"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c9b8a7f6-5e42-49d3-b187-2a60b5c3d9e8"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c9d0e1f2-a3b4-4c5d-6e7f-8a9b0c1d2e3f"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("c9f1e0d8-6a5b-49c4-b3d2-8e7f6a5b4c3d"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("cde34567-f890-a1b2-3456-789abcdef012"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d0a2f1e9-7b6c-40d5-b4e3-9f8a7b6c5d4e"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d0c9b8a7-6f53-40e4-b298-3b71c6d4e0f9"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d0e1f2a3-b4c5-4d6e-7f8a-9b0c1d2e3f4a"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d2a4f3e1-9b8c-42d7-b6e5-1f0a9b8c7d6e"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d3c4f1e2-b6a5-47a8-9b0c-1d2e3f4a5b6e"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d3e4f5a2-1b8c-43d9-f7a4-e0c3b1d8a6f5"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d4c3b2a1-0f97-44e8-a632-7b15c0d8e4f3"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d4e0c9b8-1a65-40f3-b298-5c71d6e4f0a9"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d4e5f6a7-b8c9-4d0e-1f2a-4b5c6d7e8f9a"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d6a8f7e5-3b2c-46d1-b0e9-5f4a3b2c1d0e"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d6e7f8a9-b0c1-47d2-93e4-5f8c7b6a9d0e"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d8e4c3b2-5a09-44f7-b632-9c15d0e8f4a3"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("d9e0f1a8-7b4c-49d5-f3a0-e6c9b7d4a2f1"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("def45678-90a1-b2c3-4567-89abcdef0123"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e1b3a2f0-8c7d-41e6-b5f4-0a9b8c7d6e5f"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e1d0c9b8-7a64-41f5-b309-4c82d7e5f1a0"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e2d3c4f1-a5b6-47a8-9b0c-1d2e3f4a5b6d"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e4f5a6b3-2c9d-44e0-a8b5-f1d4c2e9b7a6"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e5d4c3b2-1a08-45f9-b743-8c26d1e9f5a4"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e5f1d0c9-2b76-41a4-b309-6d82e7f5a1b0"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e5f6a7b8-c9d0-4e1f-2a3b-5c6d7e8f9a0b"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e7b9a8f6-4c3d-47e2-b1f0-6a5b4c3d2e1f"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e8f9a0b7-6c3d-48e4-a2b9-f5d8c6e3a1b0"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("e9f5d4c3-6b10-45a8-b743-0d26e1f9a5b4"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("ef056789-1ab2-c3d4-5678-9abcdef01234"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f0167890-2bc3-d4e5-6789-abcdef012345"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f0a6e5d4-7c21-46b9-b854-1e37f2a0b6c5"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f0e9d8c7-6b53-40a4-b298-3d71e6f4a0b9"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f1e2d3c4-b5a6-47a8-9b0c-1d2e3f4a5b6c"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f2a3b4c5-d6e7-4f8a-9b0c-1d2e3f4a5b6c"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f2c4b3a1-9d8e-42f7-b6a5-1b0c9d8e7f6a"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f2e1d0c9-8b75-42a6-b410-5d93e8f6a2b1"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f4a0e9d8-1c65-40b3-b298-5e71f6a4b0c9"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f5a6b7c4-3d0e-45f1-b9c6-a2e5d3f0c8b7"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f6a2e1d0-3c87-42b5-b410-7e93f8a6b2c1"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f6a7b8c9-d0e1-4f2a-3b4c-6d7e8f9a0b1c"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f6e5d4c3-2b19-46a0-b854-9d37e2f0a6b5"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f8c0b9a7-5d4e-48f3-b2a1-7b6c5d4e3f2a"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "SolutionVotes",
-                keyColumn: "VoteID",
-                keyValue: new Guid("f9a0b1c8-7d4e-49f5-b3c0-a6e9d7f4b2c1"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "Solutions",
-                keyColumn: "SolutionID",
-                keyValue: new Guid("a2c7d49e-5f38-41b6-9e76-8c429d5b1f83"));
-
-            migrationBuilder.DeleteData(
-                table: "AspNetUsers",
-                keyColumn: "Id",
-                keyValue: new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee31"));
-
-            migrationBuilder.DeleteData(
-                table: "AspNetUsers",
-                keyColumn: "Id",
-                keyValue: new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee40"));
-
-            migrationBuilder.DeleteData(
-                table: "AspNetUsers",
-                keyColumn: "Id",
-                keyValue: new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee43"));
-
-            migrationBuilder.DeleteData(
-                table: "AspNetUsers",
-                keyColumn: "Id",
-                keyValue: new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee44"));
-
-            migrationBuilder.DeleteData(
-                table: "AspNetUsers",
-                keyColumn: "Id",
-                keyValue: new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee45"));
-
-            migrationBuilder.DeleteData(
-                table: "AspNetUsers",
-                keyColumn: "Id",
-                keyValue: new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee46"));
-
-            migrationBuilder.DeleteData(
-                table: "AspNetUsers",
-                keyColumn: "Id",
-                keyValue: new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee47"));
-
-            migrationBuilder.DeleteData(
-                table: "AspNetUsers",
-                keyColumn: "Id",
-                keyValue: new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee48"));
-
-            migrationBuilder.DeleteData(
-                table: "AspNetUsers",
-                keyColumn: "Id",
-                keyValue: new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee49"));
-
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("5e9b3c7d-2a8f-4e16-9d7c-3a1b5e8f9d2e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("7a9c2e4b-6d5f-48c3-9e7a-1b2d3f4c5e6a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("a8c74b9e-5d12-47f3-9a6b-83c95e27d4f1"));
-
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("a9b8c7d6-e5f4-4321-b0a9-c8d7e6f5a4b3"));
-
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("b2e3c4d5-a6b7-48c9-9d0e-1f2a3b4c5d6e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("b5a4c3d2-e1f0-47a9-b830-c5d4e3f2a1b0"));
-
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("c7e51d93-b24a-48f6-95c0-7d38e96f2a45"));
-
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("c7e8f9d0-a1b2-43c4-95d6-e7f8a9b0c1d2"));
-
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("c9d8e7f6-a5b4-43c2-91d0-e8f7a6b5c4d3"));
-
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("d4c7e8a2-5b9f-47d1-8e3a-6f2c9d0b5a4e"));
-
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("d4e2b8f7-3c19-45a6-90d2-17f8e3c95b0a"));
-
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("d7e8f9a0-b1c2-43d4-95e6-f7a8b9c0d1e2"));
-
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("d9e2c5a8-7b14-4f83-9d6a-2c85e4b7f930"));
-
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("e5c83d7a-6f29-48b5-a371-2d94c8e75f12"));
-
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("e8f2a395-c16d-48c1-b31c-d7c5a622b2f5"));
-
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("e9d72f5b-a143-47c8-93b2-6e7a8c41d59f"));
-
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("f7e6d5c4-b3a2-41f0-8c9d-6e5f4a3b2c1d"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "Solutions",
-                keyColumn: "SolutionID",
-                keyValue: new Guid("a7d9c8b6-4e3f-47a2-95d1-6b8c0a5e3f2d"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "Solutions",
-                keyColumn: "SolutionID",
-                keyValue: new Guid("a8e3d7c5-6b9f-47a2-8c51-4f9e0d25b38a"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "Solutions",
-                keyColumn: "SolutionID",
-                keyValue: new Guid("b4e7f8d2-9c3a-45b1-87d6-0e9f2c5a4b3d"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "Solutions",
-                keyColumn: "SolutionID",
-                keyValue: new Guid("b9a7c8d6-5e4f-48b3-90a1-2d3e4f5c6b7a"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "Solutions",
-                keyColumn: "SolutionID",
-                keyValue: new Guid("c5d2e3f2-b1a0-47c9-8d67-5f2e3b4a1d90"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "Solutions",
-                keyColumn: "SolutionID",
-                keyValue: new Guid("c5d9a7b3-6e42-48f1-95ac-2e87d3b9c61f"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "Solutions",
-                keyColumn: "SolutionID",
-                keyValue: new Guid("d2e8c7b5-9a43-48f1-b076-3c59d4a2e8f0"));
-
-            migrationBuilder.DeleteData(
+            migrationBuilder.DropForeignKey(
+                name: "FK_Solutions_AspNetUsers_AuthorID",
                 schema: "solutions",
-                table: "Solutions",
-                keyColumn: "SolutionID",
-                keyValue: new Guid("d7e9f8a6-5b2c-47d3-91a8-e4c7b5d2f10e"));
+                table: "Solutions");
 
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "Solutions",
-                keyColumn: "SolutionID",
-                keyValue: new Guid("d7f6e5c4-3b2a-40d9-8e71-5f94a3c2b1d0"));
+            migrationBuilder.DropForeignKey(
+                name: "FK_Issues_BlockedContent_BlockedContentID",
+                schema: "issues",
+                table: "Issues");
 
-            migrationBuilder.DeleteData(
+            migrationBuilder.DropForeignKey(
+                name: "FK_Solutions_BlockedContent_BlockedContentID",
                 schema: "solutions",
-                table: "Solutions",
-                keyColumn: "SolutionID",
-                keyValue: new Guid("e7d9c6b2-3a5f-4182-9e08-51bd72af46c3"));
+                table: "Solutions");
 
-            migrationBuilder.DeleteData(
+            migrationBuilder.DropForeignKey(
+                name: "FK_Solutions_Issues_ParentIssueID",
                 schema: "solutions",
-                table: "Solutions",
-                keyColumn: "SolutionID",
-                keyValue: new Guid("e9d8c7b6-5a42-49f3-b187-2c60d5a3e9f1"));
+                table: "Solutions");
 
-            migrationBuilder.DeleteData(
-                table: "AspNetUsers",
-                keyColumn: "Id",
-                keyValue: new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee32"));
+            migrationBuilder.DropTable(
+                name: "AspNetRoleClaims");
 
-            migrationBuilder.DeleteData(
-                table: "AspNetUsers",
-                keyColumn: "Id",
-                keyValue: new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee34"));
+            migrationBuilder.DropTable(
+                name: "AspNetUserClaims");
 
-            migrationBuilder.DeleteData(
-                table: "AspNetUsers",
-                keyColumn: "Id",
-                keyValue: new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee36"));
+            migrationBuilder.DropTable(
+                name: "AspNetUserLogins");
 
-            migrationBuilder.DeleteData(
-                table: "AspNetUsers",
-                keyColumn: "Id",
-                keyValue: new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee38"));
+            migrationBuilder.DropTable(
+                name: "AspNetUserRoles");
 
-            migrationBuilder.DeleteData(
-                table: "AspNetUsers",
-                keyColumn: "Id",
-                keyValue: new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee41"));
+            migrationBuilder.DropTable(
+                name: "AspNetUserTokens");
 
-            migrationBuilder.DeleteData(
-                table: "AspNetUsers",
-                keyColumn: "Id",
-                keyValue: new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee42"));
+            migrationBuilder.DropTable(
+                name: "CommentVotes",
+                schema: "comments");
 
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("6fa94c21-d827-4b0e-a3f5-7e9b8d512c39"));
+            migrationBuilder.DropTable(
+                name: "IssuesTags",
+                schema: "issues");
 
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("b5a7d93c-4e28-46f1-87b3-9c5a2d41e6f8"));
+            migrationBuilder.DropTable(
+                name: "IssueVotes",
+                schema: "issues");
 
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("f3d6b8a9-2c41-47e5-8a93-5d7c1e9f4a8b"));
+            migrationBuilder.DropTable(
+                name: "SolutionsTags",
+                schema: "solutions");
 
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("fd43657c-a0a8-4721-a6b5-3f23e35088fc"));
-
-            migrationBuilder.DeleteData(
-                schema: "solutions",
-                table: "Solutions",
-                keyColumn: "SolutionID",
-                keyValue: new Guid("8f6b5d24-c7a1-4e3f-9b8c-d15e83f62a19"));
+            migrationBuilder.DropTable(
+                name: "SolutionVotes",
+                schema: "solutions");
 
-            migrationBuilder.DeleteData(
-                table: "AspNetUsers",
-                keyColumn: "Id",
-                keyValue: new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee35"));
+            migrationBuilder.DropTable(
+                name: "UserHistory",
+                schema: "users");
 
-            migrationBuilder.DeleteData(
-                table: "AspNetUsers",
-                keyColumn: "Id",
-                keyValue: new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee37"));
+            migrationBuilder.DropTable(
+                name: "AspNetRoles");
 
-            migrationBuilder.DeleteData(
-                table: "AspNetUsers",
-                keyColumn: "Id",
-                keyValue: new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee39"));
+            migrationBuilder.DropTable(
+                name: "Comments",
+                schema: "comments");
 
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("b7c9e5d3-4a2f-48b1-9e7c-5d3a4b2f8c1e"));
+            migrationBuilder.DropTable(
+                name: "AspNetUsers");
 
-            migrationBuilder.DeleteData(
-                schema: "issue",
-                table: "Issues",
-                keyColumn: "IssueID",
-                keyValue: new Guid("e47a95c8-939e-4b5a-a054-f7c127db4eb3"));
+            migrationBuilder.DropTable(
+                name: "BlockedContent",
+                schema: "app");
 
-            migrationBuilder.DeleteData(
-                table: "AspNetUsers",
-                keyColumn: "Id",
-                keyValue: new Guid("1a61454c-5b83-4aab-8661-96d6dff2ee33"));
+            migrationBuilder.DropTable(
+                name: "Issues",
+                schema: "issues")
+                .Annotation("SqlServer:IsTemporal", true)
+                .Annotation("SqlServer:TemporalHistoryTableName", "IssuesHistory")
+                .Annotation("SqlServer:TemporalHistoryTableSchema", "issues")
+                .Annotation("SqlServer:TemporalPeriodEndColumnName", "PeriodEnd")
+                .Annotation("SqlServer:TemporalPeriodStartColumnName", "PeriodStart");
 
-            migrationBuilder.DeleteData(
-                table: "AspNetUsers",
-                keyColumn: "Id",
-                keyValue: new Guid("1a61454c-5b83-4aab-8661-96d6dffbee30"));
+            migrationBuilder.DropTable(
+                name: "Solutions",
+                schema: "solutions");
 
-            migrationBuilder.DeleteData(
-                schema: "app",
-                table: "Scopes",
-                keyColumn: "ScopeID",
-                keyValue: new Guid("a1e7c6b3-d5e2-4f8a-9c3b-8d7e6f5d4c2b"));
+            migrationBuilder.DropTable(
+                name: "Scopes",
+                schema: "app");
         }
     }
 }

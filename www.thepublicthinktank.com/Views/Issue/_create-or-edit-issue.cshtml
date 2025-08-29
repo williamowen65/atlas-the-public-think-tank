@@ -14,11 +14,12 @@ Client side scripts tied to this view: ContentCreate.js
 
 
 @* Create new issue description  *@
-<form class="border-1 border card mb-3 issue-editor" data-content-type="issue" data-form-url="/edit-issue">
+<form class="border-1 border card mb-3 issue-editor" data-content-type="issue" >
     @*
         asp-controller="Issue" asp-action="CreateIssue" method="post"
         These are controlled via the Ajax in ContentCreate.js
     *@
+    @Html.AntiForgeryToken()
     @if (!isEditMode)
     {
         <h5 class="card-header text-center ">

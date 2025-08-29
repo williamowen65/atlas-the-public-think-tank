@@ -1,15 +1,18 @@
 ﻿using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Data.CRUD;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Repository;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
-using atlas_the_public_think_tank.Models;
 using atlas_the_public_think_tank.Models.Enums;
-using atlas_the_public_think_tank.Models.ViewModel;
 using atlas_the_public_think_tank.Models.ViewModel.AjaxVM;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common.ContentItemVote;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.User;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.ContentItem_Common;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.Issue.IssueVote;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.Solution;
@@ -19,6 +22,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace atlas_the_public_think_tank.Controllers
 {
@@ -33,15 +37,22 @@ namespace atlas_the_public_think_tank.Controllers
         private readonly ApplicationDbContext _context;
         private readonly UserManager<AppUser> _userManager;
         private readonly IWebHostEnvironment _environment;
+        private readonly IBreadcrumbRepository _breadcrumbRepository;
+        private readonly IAppUserRepository _appUserRepository;
 
         public IssueController(
             ApplicationDbContext context, 
             UserManager<AppUser> userManager, 
-            IWebHostEnvironment env)
+            IWebHostEnvironment env,
+            IBreadcrumbRepository breadcrumbRepository,
+            IAppUserRepository appUserRepository
+            )
         {
             _context = context;
             _userManager = userManager;
             _environment = env;
+            _breadcrumbRepository = breadcrumbRepository;
+            _appUserRepository = appUserRepository;
         }
 
         #region Issue Page
@@ -201,7 +212,7 @@ namespace atlas_the_public_think_tank.Controllers
         [HttpPost]
         [Route("/create-issue")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateIssue(Issue_CreateVM model, ContentStatus contentStatus)
+        public async Task<IActionResult> CreateIssue(Issue_CreateOrEditVM model, ContentStatus contentStatus)
         {
             ContentCreationResponse_JsonVM contentCreationResponse = new ContentCreationResponse_JsonVM();
 
@@ -269,22 +280,35 @@ namespace atlas_the_public_think_tank.Controllers
         [Route("/edit-issue")]
         public async  Task<IActionResult> EditIssuePartialView(Guid issueId)
         {
+            ContentCreationResponse_JsonVM contentCreationResponse = new ContentCreationResponse_JsonVM();
             Issue_ReadVM? issue = await Read.Issue(issueId, new ContentFilter());
+
+            var user = await _userManager.GetUserAsync(User);
 
             if (issue == null) {
                 throw new Exception("Issue doesn't exist for GET EditIssuePartialView");
             }
+            // Confirm this user owns this content
+            if (user.Id != issue.Author.Id)
+            {
+                contentCreationResponse.Success = false;
+                var errorEntry = new List<string>();
+                errorEntry.Add("Error Message");
+                errorEntry.Add($"You are not the author of the issue with the id {issue.IssueID}");
+                contentCreationResponse.Errors.Add(errorEntry);
+                return Json(contentCreationResponse);
+            }
 
             Issue_CreateOrEdit_AjaxVM issueWrapper = new Issue_CreateOrEdit_AjaxVM()
             {
-                Issue = new Issue_CreateVM() { 
+                Issue = new Issue_CreateOrEditVM() { 
                     Content = issue.Content,
                     ContentStatus = issue.ContentStatus,
                     ParentIssueID= issue.ParentIssueID,
                     ParentSolutionID= issue.ParentSolutionID,
                     ScopeID = issue.Scope.ScopeID,
                     Title = issue.Title,
-                    IssueID = issue.IssueID
+                    IssueID = issue.IssueID,
                 },
                 Scopes = await _context.Scopes.ToListAsync()
             };
@@ -300,10 +324,10 @@ namespace atlas_the_public_think_tank.Controllers
             // render Partial view and return json
             string html = await ControllerExtensions.RenderViewToStringAsync(this,"~/Views/Issue/_create-or-edit-issue.cshtml", issueWrapper);
 
+            contentCreationResponse.Success = true;
+            contentCreationResponse.Content = html;
 
-            return Json(new {
-                content= html
-            });
+            return Json(contentCreationResponse);
         }
 
         /// <summary>
@@ -313,8 +337,7 @@ namespace atlas_the_public_think_tank.Controllers
         [HttpPost]
         [Route("/edit-issue")]
         [ValidateAntiForgeryToken]
-        //public async Task<IActionResult> EditIssue(CreateIssueViewModel model, ContentStatus contentStatus)
-        public async  Task<IActionResult> EditIssue(Issue_UpdateVM model, ContentStatus contentStatus)
+        public async  Task<IActionResult> EditIssue(Issue_CreateOrEditVM model, ContentStatus contentStatus)
         {
             ContentCreationResponse_JsonVM contentCreationResponse = new ContentCreationResponse_JsonVM();
 
@@ -336,8 +359,21 @@ namespace atlas_the_public_think_tank.Controllers
                 return Json(contentCreationResponse);
             }
 
-
             var user = await _userManager.GetUserAsync(User);
+
+            // pull issue from DAL
+            Issue_ReadVM? issueRef = await Read.Issue((Guid)model.IssueID!, new ContentFilter());
+            // Confirm this user owns this content
+            if (user.Id != issueRef.Author.Id) {
+                contentCreationResponse.Success = false;
+                var errorEntry = new List<string>();
+                errorEntry.Add("Error Message");
+                errorEntry.Add($"You are not the author of the issue with the id {issueRef.IssueID}");
+                contentCreationResponse.Errors.Add(errorEntry);
+                return Json(contentCreationResponse);
+            }
+            // Also get the createdAt value
+
 
             // Update Issue
             Issue_ReadVM? issue = await Update.Issue(new Issue()
@@ -348,8 +384,9 @@ namespace atlas_the_public_think_tank.Controllers
                 AuthorID = user.Id,
                 Content = model.Content,
                 ContentStatus = contentStatus,
-                CreatedAt = DateTime.UtcNow,
-                ScopeID = (Guid)model.ScopeID!,  // Use ScopeID instead of Scope.ScopeID
+                CreatedAt = issueRef.CreatedAt,
+                ModifiedAt = DateTime.UtcNow, // Set ModifiedAt
+                ScopeID = (Guid)model.ScopeID!,  
                 Title = model.Title
             });
 
@@ -364,84 +401,9 @@ namespace atlas_the_public_think_tank.Controllers
             return Json(contentCreationResponse);
         }
 
+        #endregion
 
-            /*
-
-
-
-
-                /// <summary>
-                /// This method is used to create a new issue post.
-                /// </summary>
-                /// <param name="model"></param>
-                [HttpPost]
-                [Route("/create-issue")]
-                [ValidateAntiForgeryToken]
-                public async Task<IActionResult> CreateIssue(Issue_CreateVM model)
-                {
-
-                    // Custom validation: Only one of ParentIssueID or ParentSolutionID can be set
-                    bool bothParentIdsSet = model.ParentIssueID.HasValue && model.ParentSolutionID.HasValue;
-
-                    if (bothParentIdsSet)
-                    {
-                        ModelState.AddModelError(string.Empty, "You must specify either a parent issue or a parent solution, but not both.");
-                    }
-
-
-                    if (ModelState.IsValid)
-                    {
-                        var user = await _userManager.GetUserAsync(User);
-
-
-                        var issuePost = new Issue
-                        {
-                            Title = model.Title,
-                            Content = model.Content,
-                            ScopeID = model.ScopeID,
-                            ParentIssueID = model.ParentIssueID,
-                            ParentSolutionID = model.ParentSolutionID,
-                            ContentStatus = model.ContentStatus,
-                            AuthorID = user.Id,
-                            CreatedAt = DateTime.UtcNow
-                        };
-
-                        var entry = _context.Issues.Add(issuePost);
-                        await _context.SaveChangesAsync(); // Save to generate the IssueID
-
-                        // Now add the category relationships
-                        if (model.SelectedCategoryIds != null && model.SelectedCategoryIds.Any())
-                        {
-                            foreach (Guid categoryId in model.SelectedCategoryIds)
-                            {
-                                var issueCategory = new IssueCategory
-                                {
-                                    IssueID = entry.Entity.IssueID,
-                                    CategoryID = categoryId
-                                };
-                                _context.IssueCategories.Add(issueCategory);
-                            }
-
-
-                            // Save the User History (todo)
-
-                            await _context.SaveChangesAsync();
-                        }
-
-                        return RedirectToAction("Index", "Home");
-                    }
-
-                    // If we got this far, something failed, redisplay form
-                    // Repopulate the dropdown data
-                    model.Categories = _context.Categories.ToList();
-                    model.Scopes = _context.Scopes.ToList();
-                    return View(model);
-                }
-            */
-
-            #endregion
-
-            #region Vote on an issue
+        #region Vote on an issue
 
 
             /// <summary>
@@ -490,8 +452,49 @@ namespace atlas_the_public_think_tank.Controllers
                 return Json(new { success = false, message = ex.Message});
             }
         }
-        
-        
+
+
         #endregion
-    }
+
+
+        #region Issue Version History Feed
+
+        /// <summary>
+        /// This method is used to return the version history of an issue
+        /// </summary>
+        [AllowAnonymous]
+        [Route("/issue-version-history")]
+        public async Task<IActionResult> IssueVersionHistory(Guid issueId)
+        {
+            ContentCreationResponse_JsonVM contentCreationResponse = new ContentCreationResponse_JsonVM();
+
+            // check if issue exists
+            Issue_ReadVM? issue = await Read.Issue(issueId, new ContentFilter());
+            if (issue == null)
+            {
+                contentCreationResponse.Success = false;
+                List<string> errorEntry = new List<string> { $"The issue {issueId} does not exist" };
+                contentCreationResponse.Errors.Add(errorEntry);
+                return Json(contentCreationResponse);
+            }
+
+            List<ContentItem_ReadVM> contentItemVersions = await Read.IssueVersionHistory(issue);
+
+            string html = await ControllerExtensions.RenderViewToStringAsync(
+                this,
+                "~/Views/Shared/_VersionHistoryModal.cshtml",
+                new VersionHistoryModal_VM
+                {
+                    contentItemVersions = contentItemVersions
+                });
+
+            contentCreationResponse.Success = true;
+            contentCreationResponse.Content = html;
+
+            return Json(contentCreationResponse);
+        }
+
+        #endregion
+
+        }
 }

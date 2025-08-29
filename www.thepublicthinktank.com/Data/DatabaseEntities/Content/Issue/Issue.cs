@@ -25,11 +25,24 @@ namespace atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue
     }
 
 
+    /// <summary>
+    /// Defined the SQL relationships of an issue
+    /// </summary>
+    /// <remarks>
+    /// This content is versioned with SQL Server
+    /// https://learn.microsoft.com/en-us/sql/relational-databases/tables/temporal-tables?view=sql-server-ver17
+    /// </remarks>
     public class IssueModel : IModelComposer
     {
         public static void Declare(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Issue>().ToTable("Issues", "issues");
+            modelBuilder.Entity<Issue>().ToTable(
+                "Issues",
+                "issues",
+                tb => tb.IsTemporal(temporal =>
+                {
+                    temporal.UseHistoryTable("IssuesHistory", "issues");
+                }));
         }
         public static void Build(ModelBuilder modelBuilder)
         {

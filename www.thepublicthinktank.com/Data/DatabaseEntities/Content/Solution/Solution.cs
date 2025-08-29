@@ -27,7 +27,13 @@ namespace atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution
     {
         public static void Build(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Solution>().ToTable("Solutions", "solutions");
+            modelBuilder.Entity<Solution>().ToTable(
+                "Solutions", 
+                "solutions",
+                 tb => tb.IsTemporal(temporal =>
+                 {
+                     temporal.UseHistoryTable("SolutionsHistory", "solutions");
+                 }));
         }
 
         public static void Declare(ModelBuilder modelBuilder)

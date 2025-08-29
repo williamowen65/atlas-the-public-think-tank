@@ -56,7 +56,14 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             await _context.SaveChangesAsync();
 
             return await Read.Solution(solution.SolutionID, new ContentFilter());
+        }
 
+        public async Task<int> GetSolutionVersionHistoryCount(Guid solutionID)
+        {
+            return await _context.Solutions
+             .TemporalAll()
+             .Where(s => s.SolutionID == solutionID)
+             .CountAsync();
         }
     }
 }
