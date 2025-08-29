@@ -337,7 +337,6 @@ namespace atlas_the_public_think_tank.Controllers
         [HttpPost]
         [Route("/edit-issue")]
         [ValidateAntiForgeryToken]
-        //public async Task<IActionResult> EditIssue(CreateIssueViewModel model, ContentStatus contentStatus)
         public async  Task<IActionResult> EditIssue(Issue_CreateOrEditVM model, ContentStatus contentStatus)
         {
             ContentCreationResponse_JsonVM contentCreationResponse = new ContentCreationResponse_JsonVM();
