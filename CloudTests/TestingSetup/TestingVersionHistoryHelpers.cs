@@ -1,86 +1,28 @@
-﻿using AngleSharp.Dom;
-using atlas_the_public_think_tank.Data;
-using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
- 
-using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;
-using CloudTests.TestingSetup;
-using CloudTests.TestingSetup.TestingData;
+﻿using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 
-
-namespace CloudTests.UserStories
+namespace CloudTests.TestingSetup
 {
-    [TestClass]
-    public class User_IssueVersionHistory_Tests
+    public static class TestingVersionHistoryHelpers
     {
-        private static HttpClient _client;
-        private static ApplicationDbContext _db;
-        private static TestEnvironment _env;
-
-        [ClassInitialize]
-        public static async Task ClassInit(TestContext context)
-        {
-            // Arrange environment
-            _env = new TestEnvironment();
-            _db = _env._db;
-            _client = _env._client;
-
-            // Create and login user
-            AppUser testUser = Users.CreateTestUser1(_db);
-            string email = "testuser@example.com";
-            string password = "Password123!";
-
-            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
-            Assert.IsTrue(loginSuccess, "Login should be successful");
-        }
-
-
-        [ClassCleanup]
-        public static async Task ClassCleanup()
-        {
-            await TestingUtilityMethods.deleteDatabase(_client, _db);
-        }
 
 
 
-
-        [TestMethod]
-        public async Task User1_CanCreateAnIssue_AndEditIssue_AndSeeVersionHistoryIcon()
-        {
-            var (jsonDoc1, title1, content1) = await CreateIssue(
-                "This is just an example issue title (content creation)",
-                "This is just an example issue content");
-
-            var rootElement1 = jsonDoc1.RootElement;
-            string newContentId1 = rootElement1.GetProperty("contentId").ToString();
-
-            var (jsonDoc2, title2, content2) = await EditIssue(
-              "This is just an example issue title (edit 1)",
-              "This is just an example issue content",
-              newContentId1);
-
-
-            // Go to the issues page and should see version control icon
-            string issueUrl = $"/issue/{newContentId1}";
-            var document = await _env.fetchHTML(issueUrl);
-            var versionHistoryButton = document.QuerySelector(".show-version-history");
-            Assert.IsNotNull(versionHistoryButton, "Version history button should be present");
-
-        }
-
-
-
-
-        public async Task<(JsonDocument JsonDoc, string Title, string Content)> CreateIssue(
+        public static async Task<(JsonDocument JsonDoc, string Title, string Content)> CreateIssue(
+          TestEnvironment _env,
           string title,
           string content,
           Guid? parentIssueId = null
          )
         {
             // 1. GET page to obtain antiforgery cookie + hidden token
-            string tokenValue = await GetAntiForgeryToken("/create-issue");
-            string scopeId = await GetScopeIDFromPage("/create-issue");
+            string tokenValue = await GetAntiForgeryToken(_env, "/create-issue");
+            string scopeId = await GetScopeIDFromPage(_env, "/create-issue");
 
 
             // 3. Prepare form data INCLUDING the antiforgery token
@@ -96,7 +38,7 @@ namespace CloudTests.UserStories
             {
                 formData.Add("ParentIssueID", parentIssueId.ToString()!);
             }
-           
+
             // 4. POST (cookie with antiforgery token should already be in HttpClient handler)
             var postResponse = await _env.PostFormAsync("/create-issue", formData);
             var body = await postResponse.Content.ReadAsStringAsync();
@@ -104,9 +46,40 @@ namespace CloudTests.UserStories
             var jsonDoc = JsonDocument.Parse(body);
             return (jsonDoc, title, content);
         }
+        public static async Task<(JsonDocument JsonDoc, string Title, string Content)> CreateSolution(
+          TestEnvironment _env,
+          string title,
+          string content,
+          string parentIssueId
+         )
+        {
+            // 1. GET page to obtain antiforgery cookie + hidden token
+            string tokenValue = await GetAntiForgeryToken(_env, "/create-solution");
+            string scopeId = await GetScopeIDFromPage(_env, "/create-solution");
 
 
-        public async Task<(JsonDocument JsonDoc, string Title, string Content)> EditIssue(
+            // 3. Prepare form data INCLUDING the antiforgery token
+            var formData = new Dictionary<string, string>
+            {
+                ["__RequestVerificationToken"] = tokenValue!,
+                ["Title"] = title,
+                ["Content"] = content,
+                ["ScopeID"] = scopeId,
+                ["ParentIssueID"] = parentIssueId
+            };
+
+         
+            // 4. POST (cookie with antiforgery token should already be in HttpClient handler)
+            var postResponse = await _env.PostFormAsync("/create-solution", formData);
+            var body = await postResponse.Content.ReadAsStringAsync();
+            // Convert body to JSON
+            var jsonDoc = JsonDocument.Parse(body);
+            return (jsonDoc, title, content);
+        }
+
+
+        public static async Task<(JsonDocument JsonDoc, string Title, string Content)> EditIssue(
+            TestEnvironment _env,
           string title,
           string content,
           string issueId
@@ -114,8 +87,8 @@ namespace CloudTests.UserStories
         {
             string url = $"/edit-issue?issueId={issueId}";
             // The edit issue GET endpoint returns JSON with an HTML partial in the "content" key.
-            string tokenValue = await GetAntiForgeryTokenFromJson(url);
-            string scopeId = await GetScopeIDFromJsonPage(url);
+            string tokenValue = await GetAntiForgeryTokenFromJson(_env, url);
+            string scopeId = await GetScopeIDFromJsonPage(_env, url);
 
             // 3. Prepare form data INCLUDING the antiforgery token
             var formData = new Dictionary<string, string>
@@ -127,7 +100,7 @@ namespace CloudTests.UserStories
                 ["IssueID"] = issueId
             };
 
-           
+
             // 4. POST (cookie with antiforgery token should already be in HttpClient handler)
             var postResponse = await _env.PostFormAsync("/edit-issue", formData);
             var body = await postResponse.Content.ReadAsStringAsync();
@@ -136,8 +109,43 @@ namespace CloudTests.UserStories
             return (jsonDoc, title, content);
         }
 
+        public static async Task<(JsonDocument JsonDoc, string Title, string Content)> EditSolution(
+            TestEnvironment _env,
+          string title,
+          string content,
+          string solutionId,
+          string parentIssueId
+         )
+        {
+            string url = $"/edit-solution?solutionId={solutionId}";
+            // The edit issue GET endpoint returns JSON with an HTML partial in the "content" key.
+            string tokenValue = await GetAntiForgeryTokenFromJson(_env, url);
+            string scopeId = await GetScopeIDFromJsonPage(_env, url);
 
-        public async Task<string> GetAntiForgeryToken(string url) 
+            // 3. Prepare form data INCLUDING the antiforgery token
+            var formData = new Dictionary<string, string>
+            {
+                ["__RequestVerificationToken"] = tokenValue!,
+                ["Title"] = title,
+                ["Content"] = content,
+                ["ScopeID"] = scopeId,
+                ["SolutionID"] = solutionId,
+                ["ParentIssueID"] = parentIssueId
+            };
+
+
+            // 4. POST (cookie with antiforgery token should already be in HttpClient handler)
+            var postResponse = await _env.PostFormAsync("/edit-solution", formData);
+            var body = await postResponse.Content.ReadAsStringAsync();
+            // Convert body to JSON
+            var jsonDoc = JsonDocument.Parse(body);
+            return (jsonDoc, title, content);
+        }
+
+
+        public static async Task<string> GetAntiForgeryToken(
+            TestEnvironment _env,
+            string url)
         {
             var document = await _env.fetchHTML(url);
 
@@ -151,10 +159,10 @@ namespace CloudTests.UserStories
         }
 
         // New helper for endpoints returning JSON with an embedded HTML partial in a "content" key
-        public async Task<string> GetAntiForgeryTokenFromJson(string url)
+        public static async Task<string> GetAntiForgeryTokenFromJson(TestEnvironment _env, string url)
         {
             ContentCreationResponse_JsonVM json = await _env.fetchJson<ContentCreationResponse_JsonVM>(url);
-            
+
             string? html = json.Content;
 
             var document = await _env.TextHtmlToDocument(html!);
@@ -166,12 +174,14 @@ namespace CloudTests.UserStories
             return tokenValue!;
         }
 
-        public async Task<string> GetScopeIDFromPage(string url)
+        public static async Task<string> GetScopeIDFromPage(
+            TestEnvironment _env,
+            string url)
         {
             var document = await _env.fetchHTML(url);
 
             // Try to find a select element for scope - assuming the name is either "Scope" or "ScopeID"
-            var selectElement =  document.QuerySelector("select[name=ScopeID]");
+            var selectElement = document.QuerySelector("select[name=ScopeID]");
 
             Assert.IsNotNull(selectElement, "Scope select element not found on the page.");
 
@@ -191,10 +201,10 @@ namespace CloudTests.UserStories
         }
 
         // New helper for endpoints returning JSON with an embedded HTML partial in a "content" key
-        public async Task<string> GetScopeIDFromJsonPage(string url, string htmlJsonKey = "content")
+        public static async Task<string> GetScopeIDFromJsonPage(TestEnvironment _env, string url, string htmlJsonKey = "content")
         {
             ContentCreationResponse_JsonVM json = await _env.fetchJson<ContentCreationResponse_JsonVM>(url);
-            
+
             string? html = json.Content;
 
             var document = await _env.TextHtmlToDocument(html!);
