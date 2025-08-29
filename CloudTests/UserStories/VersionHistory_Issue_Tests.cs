@@ -66,7 +66,7 @@ namespace CloudTests.UserStories
 
 
         [TestMethod]
-        public async Task User1_CanCreateAnIssue_AndEditIssue_AndSeeVersionHistoryIcon()
+        public async Task VersionHistoryIcon_DisplaysAfterUser1_CreateAnIssue_AndEditsIssue()
         {
             // Go to the issues page and should see version control icon
             string issueUrl = $"/issue/{editedContentId}";
@@ -77,7 +77,7 @@ namespace CloudTests.UserStories
         }
 
         [TestMethod]
-        public async Task User_CanView_VersionHistoryModal()
+        public async Task VersionHistoryModal_ForIssue_IsVisible()
         {
             // Go to the issues page and should see version control icon
             string issueUrl = $"/issue-version-history?issueId={editedContentId}";
@@ -88,7 +88,7 @@ namespace CloudTests.UserStories
         }
 
         [TestMethod]
-        public async Task VersionHistoryModal_HasTitle_VersionHistory()
+        public async Task VersionHistoryModal_ForIssue_HasTitle_VersionHistory()
         {
             // Go to the issues page and should see version control icon
             string issueUrl = $"/issue-version-history?issueId={editedContentId}";
@@ -100,7 +100,7 @@ namespace CloudTests.UserStories
         }
 
         [TestMethod]
-        public async Task EditedContentShouldContain_2Entries()
+        public async Task VersionHistoryModal_ForIssue_Displays_2Entries()
         {
             // Go to the issues page and should see version control icon
             string issueUrl = $"/issue-version-history?issueId={editedContentId}";
