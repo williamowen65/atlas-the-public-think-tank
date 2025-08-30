@@ -1,10 +1,11 @@
 ﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution;
+using atlas_the_public_think_tank.Models.ViewModel.UI_VM;
 
 namespace atlas_the_public_think_tank.Models.ViewModel.PageVM
 {
-    public class CreateIssue_PageVM
+    public class CreateIssue_PageVM : PageVM.Common.PageVM
     {
         public List<Scope> Scopes { get; set; } = new List<Scope>();
 
@@ -22,5 +23,7 @@ namespace atlas_the_public_think_tank.Models.ViewModel.PageVM
         /// Special business logic: For any of the solutions to be published, their parents issue must be published
         /// </remarks>
         public List<Solution_CreateOrEditVM> Solutions { get; set; } = new List<Solution_CreateOrEditVM>();
+
+     
     }
 }

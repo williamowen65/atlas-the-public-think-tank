@@ -14,11 +14,14 @@ using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.ContentItem_Common;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.Solution.SolutionVote;
 using atlas_the_public_think_tank.Models.ViewModel.PageVM;
+using atlas_the_public_think_tank.Models.ViewModel.UI_VM;
 using atlas_the_public_think_tank.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text;
+using static atlas_the_public_think_tank.Data.SeedData.SeedIds;
 
 namespace atlas_the_public_think_tank.Controllers
 {
@@ -40,38 +43,96 @@ namespace atlas_the_public_think_tank.Controllers
         }
 
 
+        #region Solution page
+
+
         /// <summary>
-        /// This method is used to return solution create form for the create issue page.
+        /// Returns a HTML page for a specific solution
         /// </summary>
-        /// <remarks>
-        /// This is similar to the process that happens on the create solution page, but it occurs in this controller action instead
-        /// </remarks>
-        [Route("/create-solution-form")]
-        public async Task<IActionResult> CreateSolutionPartialView(Guid issueId)
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("/solution/{id}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ReadSolution(Guid id)
         {
-            Issue_ReadVM? issue = await Read.Issue(issueId, new ContentFilter());
 
-            // issue must already exist
+            Solution_PageVM solution_PageVM = new Solution_PageVM();
 
-            Solution_CreateOrEdit_AjaxVM solutionWrapper = new Solution_CreateOrEdit_AjaxVM()
+            ViewData["FilterPanelMode"] = "ContentItem";
+
+            ContentFilter filter = new ContentFilter();
+            if (Request.Cookies.TryGetValue("contentFilter", out string? cookieValue) && cookieValue != null)
             {
-                Solution = new Solution_CreateOrEditVM() { 
-                    ParentIssueID = issueId,
-                    ParentIssue = issue
-                },
-                Scopes = await _context.Scopes.ToListAsync()
+                filter = ContentFilter.FromJson(cookieValue);
+            }
+
+            bool fetchParent = true;
+
+            var solution = await Read.Solution(id, filter, fetchParent);
+
+
+            if (solution == null)
+            {
+                return NotFound();
+            }
+
+            solution_PageVM.Solution = solution;
+            solution_PageVM.Sidebar.PageInfo = GetPageInfo(filter, solution);
+
+            // Map to the view model (adjust as needed for your project)
+
+            return View(solution_PageVM);
+        }
+
+        #endregion
+
+
+        #region Paginated Solution PageFeeds
+
+        /// <summary>
+        /// This method is used to return paginated issue posts.
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+
+        [AllowAnonymous]
+        [Route("/solution/getPaginatedSubIssues/{solutionId}")]
+        public async Task<IActionResult> GetPaginatedSubIssues(Guid solutionId, int currentPage = 1)
+        {
+            ContentFilter filter = new ContentFilter();
+            if (Request.Cookies.TryGetValue("contentFilter", out string? cookieValue) && cookieValue != null)
+            {
+                filter = ContentFilter.FromJson(cookieValue);
+            }
+
+            Solution_ReadVM? solution = await Read.Solution(solutionId, filter);
+
+            Issues_Paginated_ReadVM paginatedIssues = await Read.PaginatedSubIssueFeedForSolution(solutionId, filter, currentPage);
+
+            string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Issue/_issue-cards.cshtml", paginatedIssues.Issues);
+
+            var response = new ContentItems_Paginated_AjaxVM
+            {
+                html = partialViewHtml,
+                pagination = new PaginationStats_VM
+                {
+                    TotalCount = paginatedIssues.ContentCount.TotalCount,
+                    PageSize = paginatedIssues.PageSize,
+                    CurrentPage = paginatedIssues.CurrentPage,
+                    TotalPages = (int)Math.Ceiling(paginatedIssues.ContentCount.TotalCount / (double)paginatedIssues.PageSize)
+                }
             };
 
-            // render Partial view and return json
-            string html = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Solution/_create-or-edit-solution.cshtml", solutionWrapper);
+            response.Sidebar.PageInfo = GetPageInfo(filter, solution!);
 
-            ContentCreationResponse_JsonVM contentCreationResponse = new ContentCreationResponse_JsonVM();
-
-            contentCreationResponse.Success = true;
-            contentCreationResponse.Content = html;
-
-            return Json(contentCreationResponse);
+            return Json(response);
         }
+
+
+        #endregion
+
+        #region Create new solution 
 
         /// <summary>
         /// This method is used to create a new solution post.
@@ -163,39 +224,9 @@ namespace atlas_the_public_think_tank.Controllers
         }
 
 
-        /// <summary>
-        /// Returns a HTML page for a specific solution
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        [HttpGet]
-        [Route("/solution/{id}")]
-        [AllowAnonymous]
-        public async Task<IActionResult> ReadSolution(Guid id)
-        {
+        #endregion
 
-            ViewData["FilterPanelMode"] = "ContentItem";
-
-            ContentFilter filter = new ContentFilter();
-            if (Request.Cookies.TryGetValue("contentFilter", out string? cookieValue) && cookieValue != null)
-            {
-                filter = ContentFilter.FromJson(cookieValue);
-            }
-
-            bool fetchParent = true;
-
-            var solution = await Read.Solution(id, filter, fetchParent);
-           
-
-            if (solution == null)
-            {
-                return NotFound();
-            }
-
-            // Map to the view model (adjust as needed for your project)
-
-            return View(solution);
-        }
+        #region Edit Solution
 
         /// <summary>
         /// This method is used to return the partial for editing a solution
@@ -323,6 +354,8 @@ namespace atlas_the_public_think_tank.Controllers
             return Json(contentCreationResponse);
         }
 
+        #endregion
+
         #region Vote on a solution
 
 
@@ -415,5 +448,95 @@ namespace atlas_the_public_think_tank.Controllers
         }
 
         #endregion
+
+
+
+        public PageInfo GetPageInfo(ContentFilter filter, Solution_ReadVM solution)
+        {
+
+            PageInfo pageInfo = new PageInfo();
+
+            string filterHash = filter.ToJson().GetHashCode().ToString();
+            ContentFilter defaultFilter = new ContentFilter();
+            string defaultFilterHash = defaultFilter.ToJson().GetHashCode().ToString();
+
+            bool isFilterApplied = filterHash != defaultFilterHash;
+
+            // Build filter difference details
+            StringBuilder filterDetails = new StringBuilder();
+            if (isFilterApplied)
+            {
+                // Check Content Type
+                if (!string.IsNullOrEmpty(filter.ContentType) && filter.ContentType != defaultFilter.ContentType)
+                {
+                    filterDetails.Append($"• Content Type: {filter.ContentType}<br>");
+                }
+
+                // Check Vote Range
+                if (filter.AvgVoteRange?.Min != defaultFilter.AvgVoteRange?.Min ||
+                    filter.AvgVoteRange?.Max != defaultFilter.AvgVoteRange?.Max)
+                {
+                    filterDetails.Append($"• Vote Range: {filter.AvgVoteRange?.Min ?? 0} to {filter.AvgVoteRange?.Max ?? 5}<br>");
+                }
+
+                // Check Vote Count
+                if (filter.TotalVoteCount?.Min != defaultFilter.TotalVoteCount?.Min ||
+                   filter.TotalVoteCount?.Max != defaultFilter.TotalVoteCount?.Max)
+                {
+                    int min = filter.TotalVoteCount?.Min ?? 0;
+                    int? max = filter.TotalVoteCount?.Max;
+                    string rangeText = max.HasValue ? $"{min} to {max.Value}" : $"{min} and up";
+                    filterDetails.Append($"• Vote Count: {rangeText}<br>");
+                }
+
+                // Check Date Range
+                if (filter.DateRange?.From != defaultFilter.DateRange?.From ||
+                    filter.DateRange?.To != defaultFilter.DateRange?.To)
+                {
+                    string dateRangeText = "";
+                    if (filter.DateRange?.From != null)
+                        dateRangeText += $"from {filter.DateRange.From.Value.ToShortDateString()} ";
+                    if (filter.DateRange?.To != null)
+                        dateRangeText += $"to {filter.DateRange.To.Value.ToShortDateString()}";
+
+                    filterDetails.Append($"• Date Range: {dateRangeText.Trim()}<br>");
+                }
+
+                // Check Tags
+                if (filter.Tags?.Count > 0)
+                {
+                    filterDetails.Append($"• Tags: {string.Join(", ", filter.Tags)}<br>");
+                }
+            }
+
+            // Build PageInfo HTML
+            pageInfo.FilterAlert = isFilterApplied
+                 ? $"""
+          <div style='color: #b94a48; font-weight: bold;'>
+              <div style='margin-top: 5px; font-weight: normal;'>
+                  <div style='padding-left: 10px; font-size: 0.9em;'>
+                      {filterDetails}
+                  </div>
+              </div>
+          </div>
+          """
+                 : null;
+
+            pageInfo.PageContext = $"""
+            <span style="font-size:13px;">
+                <strong>You are visiting a Solution page.</strong>
+                <br/>
+                <span class="title" data-content-id="{solution.SolutionID}">{solution.Title}</span>
+                <br />
+                <strong>Stats:</strong> 
+                <br/><span class="sub-issue-content-count">{solution.PaginatedSubIssues?.ContentCount?.TotalCount ?? 0}</span> {(isFilterApplied ? $" of {solution.PaginatedSubIssues?.ContentCount?.AbsoluteCount}" : "")} sub-issues 
+            </span>
+            """;
+
+
+            return pageInfo;
+        }
+
+
     }
 }

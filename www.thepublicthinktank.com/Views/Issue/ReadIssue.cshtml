@@ -1,12 +1,13 @@
 ﻿@using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue
+@using atlas_the_public_think_tank.Models.ViewModel.PageVM
 @using atlas_the_public_think_tank.Models.ViewModel.UI_VM
 @*
     Layout of the issue page, where the sub-issues, comments, solutions can be found by the user
 *@
 
-@model Issue_ReadVM;
+@model Issue_PageVM;
 @{
-    ViewData["Title"] = Model.Title;
+    ViewData["Title"] = Model.Issue.Title;
     Console.WriteLine();
 }
 
@@ -15,7 +16,7 @@
     @* @await Html.PartialAsync("~/Views/Issue/_issue-author-tag.cshtml", Model) *@
 
     @* @Html.Partial("~/Views/Issue/_issue-page-post.cshtml", Model) *@
-    @Html.Partial("~/Views/Issue/_issue-card.cshtml", Model)
+    @await Html.PartialAsync("~/Views/Issue/_issue-card.cshtml", Model.Issue)
 
 
    
@@ -25,43 +26,43 @@
 
         <div class="nav nav-tabs flex-grow-1 text-nowrap overflow-x-scroll overflow-y-hidden" style="flex-wrap: revert;" id="nav-tab" role="tablist">
             <button class="nav-link active" id="solutions-tab" data-bs-toggle="tab" data-bs-target="#solutions" type="button" role="tab" aria-controls="nav-home" aria-selected="true">
-                <div class="content-count">@Model.PaginatedSolutions.ContentCount.TotalCount</div>
-                @Html.Partial("~/Views/Shared/Icons/_Solutions.cshtml")
+                <div class="content-count">@Model.Issue.PaginatedSolutions.ContentCount.TotalCount</div>
+                @await Html.PartialAsync("~/Views/Shared/Icons/_Solutions.cshtml")
                     <span class="tab-label">
                 Solutions
                     </span>
             </button>
             <button class="nav-link" id="comments-tab" data-bs-toggle="tab" data-bs-target="#issue-comments" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
-                <div class="content-count">@Model.Comments.Count()</div>
-                @Html.Partial("~/Views/Shared/Icons/_Comments.cshtml")
+                    <div class="content-count">@Model.Issue.Comments.Count()</div>
+                @await Html.PartialAsync("~/Views/Shared/Icons/_Comments.cshtml")
                     <span class="tab-label">
                 Comments
                     </span>
             </button>
             <button class="nav-link" id="sub-issues-tab" data-bs-toggle="tab" data-bs-target="#sub-issues" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
-                <div class="content-count">@Model.PaginatedSubIssues.ContentCount.TotalCount</div>
-                @Html.Partial("~/Views/Shared/Icons/_SubIssues.cshtml")
+                    <div class="content-count">@Model.Issue.PaginatedSubIssues.ContentCount.TotalCount</div>
+                @await Html.PartialAsync("~/Views/Shared/Icons/_SubIssues.cshtml")
                     <span class="tab-label">
                 Sub-Issues
                     </span>
             </button>
             <button class="nav-link d-flex align-items-center" id="parent-post-tab" data-bs-toggle="tab" data-bs-target="#parent-post" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
                 <div class="content-count">
-                    <span>@((Model.ParentIssue != null || Model.ParentSolution != null) ? 1 : 0)</span>
+                        <span>@((Model.Issue.ParentIssue != null || Model.Issue.ParentSolution != null) ? 1 : 0)</span>
                 </div>
                 <div class="me-2">
-                    @Html.Partial("~/Views/Shared/Icons/_ParentIssue.cshtml")
+                    @await Html.PartialAsync("~/Views/Shared/Icons/_ParentIssue.cshtml")
                 </div>
 
-                @if (Model.ParentIssue != null && Model.ParentSolution != null)
+                    @if (Model.Issue.ParentIssue != null && Model.Issue.ParentSolution != null)
                 {
                     <span class="tab-label">Parent Post</span>
                 }
-                else if (Model.ParentIssue != null)
+                    else if (Model.Issue.ParentIssue != null)
                 {
                         <span class="tab-label">Parent Issue</span>
                 }
-                else if (Model.ParentSolution != null)
+                    else if (Model.Issue.ParentSolution != null)
                 {
                         <span class="tab-label">Parent Solution</span>
                 }
@@ -78,7 +79,7 @@
         <div class="ms-2 pt-2">
 
             <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false" id="actionDropdown">
-                @Html.Partial("~/Views/Shared/Icons/_ActionsIcon.cshtml")
+                @await Html.PartialAsync("~/Views/Shared/Icons/_ActionsIcon.cshtml")
                 Actions
             </a>
             <ul class="dropdown-menu" id="dynamic-actions">
@@ -98,16 +99,16 @@
               
 
                 <div id="solution-content">
-                    @if (Model.PaginatedSolutions != null && Model.PaginatedSolutions.Solutions.Any())
+                @if (Model.Issue.PaginatedSolutions != null && Model.Issue.PaginatedSolutions.Solutions.Any())
                     {
-                        @Html.Partial("~/Views/Solution/_solution-cards.cshtml", Model.PaginatedSolutions.Solutions)
+                    @await Html.PartialAsync("~/Views/Solution/_solution-cards.cshtml", Model.Issue.PaginatedSolutions.Solutions)
                     } else
                     {
                         <div id="empty-issueView-solution-feed" class="empty-feed ">
                             <div class="comment-feed">
                                 <div class="content">
                                     <h2>Empty Solution Feed</h2>
-                                    <a href="@Url.Action("CreateSolutionPage", "Solution", new { parentIssueID = Model.IssueID })">
+                                <a href="@Url.Action("CreateSolutionPage", "Solution", new { parentIssueID = Model.Issue.IssueID })">
                                         <button class="outlined-text">Create a Solution</button>
                                     </a>
                                 </div>
@@ -122,17 +123,17 @@
                     ElementId = "fetchPaginatedSolutions",
                         ContentType = "solutions",
                         Target = "#solution-content",
-                        Url = "/issue/getPaginatedSolutions/" + @Model.IssueID,
-                        CurrentPage = Model.PaginatedSolutions.ContentCount.TotalCount,
-                        PageSize = Model.PaginatedSolutions.PageSize,
-                        TotalCount = Model.PaginatedSolutions.ContentCount.TotalCount,
+                        Url = "/issue/getPaginatedSolutions/" + @Model.Issue.IssueID,
+                        CurrentPage = Model.Issue.PaginatedSolutions.ContentCount.TotalCount,
+                        PageSize = Model.Issue.PaginatedSolutions.PageSize,
+                        TotalCount = Model.Issue.PaginatedSolutions.ContentCount.TotalCount,
                         // TotalPages = Model.PaginatedSolutions.TotalPages
                  })
 
         </div>
         <div class="tab-pane fade border border-1 border-top-0" id="issue-comments" role="tabpanel" aria-labelledby="comments-tab" tabindex="0">
 
-            @if (Model.Comments.Count() == 0)
+            @if (Model.Issue.Comments.Count() == 0)
             {
                 <div id="empty-issueView-comment-feed" class="empty-feed">
                     <div class="comment-feed">
@@ -155,9 +156,9 @@
 
             <div id="sub-issue-content">
 
-                @if (Model.PaginatedSubIssues != null && Model.PaginatedSubIssues.Issues.Any())
+                @if (Model.Issue.PaginatedSubIssues != null && Model.Issue.PaginatedSubIssues.Issues.Any())
                 {
-                    @await Html.PartialAsync("~/Views/Issue/_issue-cards.cshtml", Model.PaginatedSubIssues.Issues)
+                    @await Html.PartialAsync("~/Views/Issue/_issue-cards.cshtml", Model.Issue.PaginatedSubIssues.Issues)
                 } else
                 {
                     <div id="empty-issueView-sub-issues-feed" class="empty-feed">
@@ -165,7 +166,7 @@
                         <div class="comment-feed">
                             <div class="content">
                                 <h2>Empty Sub Issues Feed</h2>
-                                <a href="@Url.Action("CreateIssue", "Issue", new { parentIssueID = Model.IssueID })">
+                                <a href="@Url.Action("CreateIssue", "Issue", new { parentIssueID = Model.Issue.IssueID })">
                                     <button class="outlined-text">Create Sub-Issue</button>
                                 </a>
 
@@ -180,33 +181,33 @@
                 ElementId = "fetchPaginatedSubIssues",
                 ContentType = "sub-issues",
                 Target = "#sub-issue-content",
-                Url = "/issue/getPaginatedSubIssues/" + @Model.IssueID,
-                CurrentPage = Model.PaginatedSubIssues.ContentCount.TotalCount,
-                PageSize = Model.PaginatedSubIssues.PageSize,
-                TotalCount = Model.PaginatedSubIssues.ContentCount.TotalCount,
+                        Url = "/issue/getPaginatedSubIssues/" + @Model.Issue.IssueID,
+                        CurrentPage = Model.Issue.PaginatedSubIssues.ContentCount.TotalCount,
+                        PageSize = Model.Issue.PaginatedSubIssues.PageSize,
+                        TotalCount = Model.Issue.PaginatedSubIssues.ContentCount.TotalCount,
                 // TotalPages = Model.PaginatedSubIssues.TotalPages
             })
             
         </div>
         <div class="tab-pane fade border border-1 border-top-0" id="parent-post" role="tabpanel" aria-labelledby="parent-post-tab" tabindex="0">
-            @if (Model.ParentIssue != null && Model.ParentSolution != null)
+            @if (Model.Issue.ParentIssue != null && Model.Issue.ParentSolution != null)
             {
                 <h5 class="mt-3 mb-3">Parent Issue</h5>
-                @Html.Partial("~/Views/Issue/_issue-card.cshtml", Model.ParentIssue)
+                @await Html.PartialAsync("~/Views/Issue/_issue-card.cshtml", Model.Issue.ParentIssue)
                 ;
 
                 <h5 class="mt-4 mb-3">Parent Solution</h5>
-                @Html.Partial("~/Views/Solution/_solution-card.cshtml", Model.ParentSolution)
+                @await Html.PartialAsync("~/Views/Solution/_solution-card.cshtml", Model.Issue.ParentSolution)
                 ;
             }
-            else if (Model.ParentIssue != null)
+            else if (Model.Issue.ParentIssue != null)
             {
-                @Html.Partial("~/Views/Issue/_issue-card.cshtml", Model.ParentIssue)
+                @await Html.PartialAsync("~/Views/Issue/_issue-card.cshtml", Model.Issue.ParentIssue)
                 ;
             }
-            else if (Model.ParentSolution != null)
+            else if (Model.Issue.ParentSolution != null)
             {
-                @Html.Partial("~/Views/Solution/_solution-card.cshtml", Model.ParentSolution)
+                @await Html.PartialAsync("~/Views/Solution/_solution-card.cshtml", Model.Issue.ParentSolution)
                 ;
             }
             else
@@ -334,22 +335,22 @@
         // Menu content templates for each tab
         const menuTemplates = {
             'solutions-tab': `
-                <li><a class="dropdown-item" href="@Url.Action("CreateSolutionPost", "Solution", new { parentIssueID = Model.IssueID })">Create Solution</a></li>
+                <li><a class="dropdown-item" href="@Url.Action("CreateSolutionPost", "Solution", new { parentIssueID = Model.Issue.IssueID })">Create Solution</a></li>
             `,
             'comments-tab': `
                 <li><a class="dropdown-item" href="#">Create Discussion</a></li>
             `,
             'sub-issues-tab': `
-                <li><a class="dropdown-item" href="@Url.Action("CreateIssue", "Issue", new { parentIssueID = Model.IssueID })">Create Sub-Issue</a></li>
+                <li><a class="dropdown-item" href="@Url.Action("CreateIssue", "Issue", new { parentIssueID = Model.Issue.IssueID })">Create Sub-Issue</a></li>
             `,
             'parent-post-tab': `
-                @if (Model.ParentIssue != null)
+                @if (Model.Issue.ParentIssue != null)
                 {
-                        <li><a class="dropdown-item" href="@Url.Action("ReadIssue", "Issue", new { id = Model.ParentIssue.IssueID })">Go to Parent Issue</a></li>
+                            <li><a class="dropdown-item" href="@Url.Action("ReadIssue", "Issue", new { id = Model.Issue.ParentIssue.IssueID })">Go to Parent Issue</a></li>
                 }
-                @if (Model.ParentSolution != null)
+                @if (Model.Issue.ParentSolution != null)
                 {
-                        <li><a class="dropdown-item" href="@Url.Action("ReadSolution", "Solution", new { id = Model.ParentSolution.SolutionID })">Go to Parent Solution</a></li>
+                            <li><a class="dropdown-item" href="@Url.Action("ReadSolution", "Solution", new { id = Model.Issue.ParentSolution.SolutionID })">Go to Parent Solution</a></li>
                 }
             `
         };

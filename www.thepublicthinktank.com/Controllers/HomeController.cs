@@ -1,7 +1,8 @@
-using atlas_the_public_think_tank.Data.CRUD;
+﻿using atlas_the_public_think_tank.Data.CRUD;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Models.Enums;
 using atlas_the_public_think_tank.Models.ViewModel;
+using atlas_the_public_think_tank.Models.ViewModel.AjaxVM;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.ContentItem_Common;
 using atlas_the_public_think_tank.Models.ViewModel.PageVM;
@@ -10,6 +11,7 @@ using atlas_the_public_think_tank.Utilities;
 using Azure.Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using NuGet.Protocol;
 using System;
 using System.Diagnostics;
 using System.Text;
@@ -41,10 +43,10 @@ public class HomeController : Controller
             filter = ContentFilter.FromJson(cookieValue);
         }
 
+   
         // Create a view model to hold both issues and categories
         var viewModel = new Home_PageVM();
-
-
+        viewModel.Sidebar.PageInfo = GetPageInfo(filter);
         viewModel.PaginatedContent = await Read.PaginatedMainContentFeed(filter);
 
         //viewModel.Categories = new List<Category_ReadVM>();
@@ -76,7 +78,7 @@ public class HomeController : Controller
         string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Home/_content-item-cards.cshtml", paginatedContentItems.ContentItems);
 
         // Create a response object with both the HTML and the pagination metadata
-        var response = new
+        var response = new ContentItems_Paginated_AjaxVM
         {
             html = partialViewHtml,
             pagination = new PaginationStats_VM
@@ -87,6 +89,8 @@ public class HomeController : Controller
                 TotalPages = (int)Math.Ceiling(paginatedContentItems.TotalCount / (double)paginatedContentItems.PageSize)
             }
         };
+
+        response.Sidebar.PageInfo = GetPageInfo(filter);
 
         return Json(response);
     }
@@ -176,5 +180,90 @@ public class HomeController : Controller
     }
 
     #endregion
+
+
+
+    public PageInfo GetPageInfo(ContentFilter filter)
+    {
+
+        PageInfo pageInfo = new PageInfo();
+
+        string filterHash = filter.ToJson().GetHashCode().ToString();
+        ContentFilter defaultFilter = new ContentFilter();
+        string defaultFilterHash = defaultFilter.ToJson().GetHashCode().ToString();
+
+        bool isFilterApplied = filterHash != defaultFilterHash;
+
+        // Build filter difference details
+        StringBuilder filterDetails = new StringBuilder();
+        if (isFilterApplied)
+        {
+            // Check Content Type
+            if (!string.IsNullOrEmpty(filter.ContentType) && filter.ContentType != defaultFilter.ContentType)
+            {
+                filterDetails.Append($"• Content Type: {filter.ContentType}<br>");
+            }
+
+            // Check Vote Range
+            if (filter.AvgVoteRange?.Min != defaultFilter.AvgVoteRange?.Min ||
+                filter.AvgVoteRange?.Max != defaultFilter.AvgVoteRange?.Max)
+            {
+                filterDetails.Append($"• Vote Range: {filter.AvgVoteRange?.Min ?? 0} to {filter.AvgVoteRange?.Max ?? 5}<br>");
+            }
+
+            // Check Vote Count
+            if (filter.TotalVoteCount?.Min != defaultFilter.TotalVoteCount?.Min ||
+               filter.TotalVoteCount?.Max != defaultFilter.TotalVoteCount?.Max)
+            {
+                int min = filter.TotalVoteCount?.Min ?? 0;
+                int? max = filter.TotalVoteCount?.Max;
+                string rangeText = max.HasValue ? $"{min} to {max.Value}" : $"{min} and up";
+                filterDetails.Append($"• Vote Count: {rangeText}<br>");
+            }
+
+            // Check Date Range
+            if (filter.DateRange?.From != defaultFilter.DateRange?.From ||
+                filter.DateRange?.To != defaultFilter.DateRange?.To)
+            {
+                string dateRangeText = "";
+                if (filter.DateRange?.From != null)
+                    dateRangeText += $"from {filter.DateRange.From.Value.ToShortDateString()} ";
+                if (filter.DateRange?.To != null)
+                    dateRangeText += $"to {filter.DateRange.To.Value.ToShortDateString()}";
+
+                filterDetails.Append($"• Date Range: {dateRangeText.Trim()}<br>");
+            }
+
+            // Check Tags
+            if (filter.Tags?.Count > 0)
+            {
+                filterDetails.Append($"• Tags: {string.Join(", ", filter.Tags)}<br>");
+            }
+        }
+
+        // Build PageInfo HTML
+       pageInfo.FilterAlert = isFilterApplied
+            ? $"""
+          <div style='color: #b94a48; font-weight: bold;'>
+              <div style='margin-top: 5px; font-weight: normal;'>
+                  <div style='padding-left: 10px; font-size: 0.9em;'>
+                      {filterDetails}
+                  </div>
+              </div>
+          </div>
+          """
+            : null;
+
+        pageInfo.PageContext = """
+            <span style="font-size:13px;">
+                <strong>You are visiting the home page.</strong>
+                <p>This page shows a combined feed of issues and solutions from across the platform. 
+            Content is ordered by your selected sorting option and may be filtered based on your settings.</p>
+            </span>
+            """;
+
+
+        return pageInfo;
+    }
 
 }

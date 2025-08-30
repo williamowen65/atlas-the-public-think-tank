@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+using atlas_the_public_think_tank.Models.ViewModel.UI_VM;
 
 namespace WebApplication1.Areas.Identity.Pages.Account
 {
@@ -31,6 +32,22 @@ namespace WebApplication1.Areas.Identity.Pages.Account
             _logger = logger;
             _hostEnvironment = hostEnvironment;
         }
+
+
+
+        public SideBar_VM Sidebar = new SideBar_VM()
+        {
+            PageInfo = new PageInfo()
+            {
+                PageContext = $"""
+                <p class="text-center">
+                  Welcome back to <br/><strong>Atlas: The Public Think Tank</strong>! 
+                </p>
+                <p>Sign in to cast your votes, share your ideas, and continue shaping the conversation.</p>
+                """
+            },
+            ShowPageDisplayOptions = false
+        };
 
         /// <summary>
         ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
@@ -86,6 +103,7 @@ namespace WebApplication1.Areas.Identity.Pages.Account
             /// </summary>
             [Display(Name = "Remember me?")]
             public bool RememberMe { get; set; }
+
         }
 
         public async Task OnGetAsync(string returnUrl = null)

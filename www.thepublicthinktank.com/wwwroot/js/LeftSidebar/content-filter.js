@@ -401,7 +401,7 @@ function filterTrigger() {
 
     // Tags
     function getTags() {
-        return ["tag1"]
+        return []
     }
 }
 
@@ -416,6 +416,7 @@ async function fetchFilteredHomePageContent() {
     return fetch("/getPaginatedMainContentFeed?currentPage=1")
         .then(res => res.json())
         .then(res => {
+            //console.log("Filter response", {res})
             return res;
         });
 }
@@ -557,6 +558,50 @@ class ContentFilterSectionRePopulationWorkflow
     static updateContentTab(updatedFilterContent, contentTabSelector) {
         const contentTabContentCountEl = document.querySelector(contentTabSelector + " .content-count");
         contentTabContentCountEl.innerText = updatedFilterContent.pagination.totalCount
+    }
+
+    static updatePageInfo(pageInfo) {
+        const pageInfoContextEl = document.querySelector("#page-info .page-context .dynamic-html")
+        //debugger
+        pageInfoContextEl.innerHTML = pageInfo.pageContext
+
+        const pageInfoAlertEl = document.querySelector("#page-info .page-active-filters")
+        if (pageInfo.filterAlert) {
+            pageInfoAlertEl.classList.remove("d-none")
+            const pageInfoAlertElContent = pageInfoAlertEl.querySelector(".dynamic-html")
+            pageInfoAlertElContent.innerHTML = pageInfo.filterAlert
+        } else {
+            pageInfoAlertEl.classList.add("d-none")
+        }
+        if (pageInfo.pageContext) {
+            const pageContextEl = document.querySelector("#page-info .page-context .dynamic-html")
+            pageContextEl.innerHTML = pageInfo.pageContext
+        }
+    }
+
+    /**
+     * This update the counts of subissue and solutions to reflect the filter
+     * 
+     * Counts appear in the sidebar
+     * Counts appear in the root issue/solution
+     * (The parent issue if any should be updated but via a new route that doesn't exist yet.)
+     */
+    static updateContentItemSubContentCounts(pageInfo) {
+        const tempEl = document.createElement("div")
+        tempEl.innerHTML = pageInfo.pageContext
+        // extract the new content counts
+        const solutionCountEl = tempEl.querySelector(".solution-content-count")
+        const subIssueCountEl = tempEl.querySelector(".sub-issue-content-count")
+        const mainContentId = tempEl.querySelector('.title').getAttribute("data-content-id")
+        // get the main contain item
+        const mainCard = document.querySelector(`.card[id="${mainContentId}"]`)
+        const mainCardSubIssueCountEl = mainCard.querySelector(".sub-issue-count")
+        mainCardSubIssueCountEl.innerHTML = subIssueCountEl.innerHTML
+        if (solutionCountEl) {
+            const mainCardSolutionCountEl = mainCard.querySelector(".solution-count")
+            mainCardSolutionCountEl.innerHTML = solutionCountEl.innerHTML
+
+        }
 
     }
 }
@@ -573,6 +618,7 @@ function repopulateHomePageContents(updatedFilterContent) {
         "/getPaginatedMainContentFeed",
         "posts"
     )
+    ContentFilterSectionRePopulationWorkflow.updatePageInfo(updatedFilterContent.sidebar.pageInfo)
 
 }
 
@@ -604,6 +650,10 @@ function repopulateIssuePageContents(updatedFilterContent) {
     )
     ContentFilterSectionRePopulationWorkflow.updateContentTab(updatedSolutionsContent, "#solutions-tab")
 
+    // It may be worth merging the pagination routes into a single route, because they dont both need to update Page info
+    ContentFilterSectionRePopulationWorkflow.updatePageInfo(updatedSolutionsContent.sidebar.pageInfo)
+    ContentFilterSectionRePopulationWorkflow.updateContentItemSubContentCounts(updatedSolutionsContent.sidebar.pageInfo)
+
     // Update the Sub Issues Content
     ContentFilterSectionRePopulationWorkflow.requireFilterContentData(updatedSubIssuesContent)
     ContentFilterSectionRePopulationWorkflow.updateContentFeed("sub-issue-content", updatedSubIssuesContent.html)
@@ -633,5 +683,6 @@ function repopulateSolutionPageContents(updatedFilterContent) {
         "sub-issues"
     )
     ContentFilterSectionRePopulationWorkflow.updateContentTab(updatedSubIssuesContent, "#sub-issues-tab")
-
+    ContentFilterSectionRePopulationWorkflow.updatePageInfo(updatedSubIssuesContent.sidebar.pageInfo)
+    ContentFilterSectionRePopulationWorkflow.updateContentItemSubContentCounts(updatedSubIssuesContent.sidebar.pageInfo)
 }
