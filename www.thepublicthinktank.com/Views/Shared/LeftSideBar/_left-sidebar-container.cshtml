@@ -1,4 +1,7 @@
-﻿@using atlas_the_public_think_tank.Models.ViewModel
+﻿@using atlas_the_public_think_tank.Models.ViewModel.UI_VM
+@model SideBar_VM
+
+
 @*
     The left sidebar of the app,
     Present on all pages via the layout file
@@ -15,16 +18,16 @@
         <h2 id="info-heading" class="sidebar-heading fs-5" >Page Info</h2>
         <h2 id="filter-heading" class="sidebar-heading fs-5" >Content Filter</h2>
     </div>
-    @Html.Partial("~/Views/Shared/LeftSideBar/_view-mode-toggle.cshtml")
+    @await Html.PartialAsync("~/Views/Shared/LeftSideBar/_view-mode-toggle.cshtml")
     </div>
    <hr  class="m-0"/>
 </header>
 
 
 <div id="sidebar-content-container" class="px-3">
-    @Html.Partial("~/Views/Shared/LeftSideBar/_categories.cshtml")
-    @Html.Partial("~/Views/Shared/LeftSideBar/_page-info.cshtml")
-    @Html.Partial("~/Views/Shared/LeftSideBar/_content-filter.cshtml")
+    @await Html.PartialAsync("~/Views/Shared/LeftSideBar/_categories.cshtml")
+    @await Html.PartialAsync("~/Views/Shared/LeftSideBar/_page-info.cshtml", Model)
+    @await Html.PartialAsync("~/Views/Shared/LeftSideBar/_content-filter.cshtml")
 </div>
 
 

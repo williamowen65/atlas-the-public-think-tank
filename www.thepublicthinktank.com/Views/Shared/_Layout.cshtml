@@ -1,10 +1,11 @@
-﻿
-@using Microsoft.Extensions.Options
+﻿@using Microsoft.Extensions.Options
 @using atlas_the_public_think_tank.Data.DatabaseEntities.Users
 @using atlas_the_public_think_tank.Models
 @inject IOptions<ApplicationInsightsSettings> AppInsightsSettings
 @using Microsoft.AspNetCore.Identity
+@using atlas_the_public_think_tank.Models.ViewModel.UI_VM
 @inject SignInManager<AppUser> SignInManager
+@model dynamic
 
 @{
 
@@ -50,9 +51,38 @@
 
     <partial name="_ColorMode" />
 
-    <partial name="_Header" /> 
+    <partial name="_Header" />
 
-    @await Html.PartialAsync("~/Views/Shared/LeftSideBar/_Left-Sidebar-Toggle.cshtml")
+    @{
+
+        @*
+            The logic in the block is to make it so every page, 
+            even Identity generated pages have a default Sidebar model to work with.
+        *@
+
+        SideBar_VM sidebar_VM = new SideBar_VM();
+        if (Model != null)
+        {
+            // Use dynamic typing to safely check for Sidebar property
+            try
+            {
+                dynamic dynamicModel = Model;
+                if (dynamicModel.Sidebar != null)
+                {
+                    sidebar_VM = dynamicModel.Sidebar;
+                }
+            }
+            catch
+            {
+                // Property doesn't exist - sidebar_VM remains null
+            }
+        }
+    }
+
+
+
+    @await Component.InvokeAsync("Sidebar", sidebar_VM)
+    
    
     <main role="main" class="pb-3 px-md-3">
         @RenderBody()

@@ -13,7 +13,7 @@
 <div class="issue-card-stat-icons text-nowrap">
     
     <span role="button" tabindex="0" aria-label="Solutions: @(Model?.PaginatedSolutions.ContentCount.TotalCount)" class="stat-icon-link go-to-content-item-solution-tab position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
-        <div class="position-absolute content-count" style="">
+        <div class="position-absolute content-count solution-count" style="">
             @(Model?.PaginatedSolutions.ContentCount.TotalCount)
         </div>
         @await Html.PartialAsync("~/Views/Shared/Icons/_Solutions.cshtml")
@@ -26,7 +26,7 @@
     </span>
     <wbr class="" />
     <span role="button" tabindex="0" aria-label="Comments: @(0)" class="stat-icon-link go-to-content-item-comment-tab position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
-        <div class="position-absolute content-count" style="">
+        <div class="position-absolute content-count comment-count" style="">
             @(0)
         </div>
         @await Html.PartialAsync("~/Views/Shared/Icons/_Comments.cshtml")
