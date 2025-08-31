@@ -198,10 +198,10 @@ namespace atlas_the_public_think_tank.Data.CRUD
 
                 paginatedIssuesResponse.CurrentPage = pageNumber;
                 paginatedIssuesResponse.PageSize = paginatedChildIssuesIds.Count;
-                var counts = await filterIdRepository.GetContentCountSubIssuesOfIssueById(issueId, filter);
-                paginatedIssuesResponse.ContentCount = counts!;
 
             }
+            var counts = await filterIdRepository.GetContentCountSubIssuesOfIssueById(issueId, filter);
+            paginatedIssuesResponse.ContentCount = counts!;
 
             return paginatedIssuesResponse;
         }
@@ -243,10 +243,10 @@ namespace atlas_the_public_think_tank.Data.CRUD
 
                 paginatedIssuesResponse.CurrentPage = pageNumber;
                 paginatedIssuesResponse.PageSize = paginatedChildIssuesIds.Count;
-                var counts = await filterIdRepository.GetContentCountSubIssuesOfSolutionById(solutionId, filter);
-                paginatedIssuesResponse.ContentCount = counts!;
 
             }
+            var counts = await filterIdRepository.GetContentCountSubIssuesOfSolutionById(solutionId, filter);
+            paginatedIssuesResponse.ContentCount = counts!;
 
             return paginatedIssuesResponse;
         }
@@ -288,10 +288,10 @@ namespace atlas_the_public_think_tank.Data.CRUD
 
                 paginatedSolutionResponse.CurrentPage = pageNumber;
                 paginatedSolutionResponse.PageSize = paginatedSolutionFeedIds.Count;
-                var counts = await filterIdRepository.GetContentCountSolutionsOfIssueById(issueId, filter);
-                paginatedSolutionResponse.ContentCount = counts!;
 
             }
+            var counts = await filterIdRepository.GetContentCountSolutionsOfIssueById(issueId, filter);
+            paginatedSolutionResponse.ContentCount = counts!;
 
             return paginatedSolutionResponse;
         }

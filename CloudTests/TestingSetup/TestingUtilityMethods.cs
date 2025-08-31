@@ -14,15 +14,15 @@ namespace CloudTests.TestingSetup
     public class TestingUtilityMethods
     {
 
-        //public static Issue[] GetSubIssuesOf(Issue issue)
-        //{
-        //    Issue[] seedIssuesData = SeedIssues.SeedIssuesData;
+        public static SeedIssueContainer[] GetSubIssuesOf(Issue issue)
+        {
+            SeedIssueContainer[] seedIssuesDataContainers = SeedIssues.SeedIssuesDataContainers;
 
-        //    // return all issues that have a ParentIssueID of issue.IssueID
-        //    return seedIssuesData
-        //        .Where(i => i.ParentIssueID == issue.IssueID)
-        //        .ToArray();
-        //}
+            // return all issues that have a ParentIssueID of issue.IssueID
+            return seedIssuesDataContainers
+                .Where(idc => idc.issue.ParentIssueID == issue.IssueID)
+                .ToArray();
+        }
         public static SeedSolutionContainer[] GetSeedSolutionDataContainersOf(Issue issue)
         {
             SeedSolutionContainer[] seedSolutionDataContainers = SeedSolutions.SeedSolutionDataContainers;

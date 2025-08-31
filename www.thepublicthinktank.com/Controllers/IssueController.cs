@@ -620,7 +620,7 @@ namespace atlas_the_public_think_tank.Controllers
                 <span class="title" data-content-id="{issue.IssueID}">{issue.Title}</span>
                 <br />
                 <strong>Stats{(isFilterApplied ? " with filter" : "")}:</strong> 
-                <br/><span class="solution-content-count">{issue.PaginatedSolutions?.ContentCount?.TotalCount ?? 0}</span> {(isFilterApplied ? $" of {issue.PaginatedSolutions?.ContentCount?.AbsoluteCount}" : "")} solutions
+                <br/><span class="solution-content-count">{issue.PaginatedSolutions?.ContentCount?.TotalCount ?? 0}</span>{(isFilterApplied ? $" of {issue.PaginatedSolutions?.ContentCount?.AbsoluteCount}" : "")} solutions
                 <br/><span class="sub-issue-content-count">{issue.PaginatedSubIssues?.ContentCount?.TotalCount ?? 0}</span>{(isFilterApplied ? $" of {issue.PaginatedSubIssues?.ContentCount?.AbsoluteCount}" : "")} sub-issues 
             </span>
             """;

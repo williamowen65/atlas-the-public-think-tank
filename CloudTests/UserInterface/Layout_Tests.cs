@@ -2,10 +2,13 @@
 using AngleSharp.Dom;
 using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;
 using CloudTests.TestingSetup;
 using CloudTests.TestingSetup.TestingData;
+using Humanizer;
+using System;
 
 
 namespace CloudTests.UserInterface
@@ -33,6 +36,15 @@ namespace CloudTests.UserInterface
         }
 
 
+        #region general layout
+
+
+        public static IEnumerable<object[]> GetIssueUrls()
+        {
+            yield return new object[] { "/issue/" + ClimateChange.ContentId.ToString() };
+            yield return new object[] { "/issue/" + CriticalDeclineOfEndangeredSpecies.ContentId.ToString() };
+            yield return new object[] { "/issue/" + Homelessness.ContentId.ToString() };
+        }
 
 
         [DataTestMethod]
@@ -49,6 +61,8 @@ namespace CloudTests.UserInterface
                 Assert.IsTrue(header.TextContent.Contains("Atlas"), "header should contain the text Atlas");
             }
         }
+
+
 
         [DataTestMethod]
         [DataRow("/")]
@@ -74,6 +88,10 @@ namespace CloudTests.UserInterface
             var averageScoreFilter = document.QuerySelector("#average-score-filter");
             Assert.IsNotNull(averageScoreFilter, "Content filter field should exist on page load");
         }
+
+        #endregion
+
+        #region Content Editing UI
 
         [DataTestMethod]
         [DataRow("/create-issue")]
@@ -167,20 +185,105 @@ namespace CloudTests.UserInterface
             Assert.IsNotNull(formUrl, "Form Url attribute should exists");
         }
 
+        #endregion
 
-        public static IEnumerable<object[]> GetIssueUrls()
+        #region Sidebar UI
+
+        /// Every page should have a Context section
+
+        [DataTestMethod]
+        [DataRow("/")]
+        [DynamicData(nameof(GetIssueUrls), DynamicDataSourceType.Method)]
+        public async Task EveryPage_ShouldHave_PageContextSection(string url)
         {
-            yield return new object[] { "/issue/" + ClimateChange.ContentId.ToString() };
-            yield return new object[] { "/issue/" + CriticalDeclineOfEndangeredSpecies.ContentId.ToString() };
-            yield return new object[] { "/issue/" + Homelessness.ContentId.ToString() };
+            var document = await _env.fetchHTML(url);
+            var contextSection = document.QuerySelector("#page-info .page-context");
+            Assert.IsNotNull(contextSection, "Context section should exist");
         }
-        public static IEnumerable<object[]> GetEditContentUrls()
+
+        /// If a filter is applied, there should be an alert
+
+        [DataTestMethod]
+        [DataRow("/")]
+        [DynamicData(nameof(GetIssueUrls), DynamicDataSourceType.Method)]
+        public async Task IfFilterApplied_ShouldHave_FilterAlert(string url) 
         {
-            yield return new object[] { "/create-issue"};
-            yield return new object[] { "/create-solution"};
-            //yield return new object[] { "/issue/" + CriticalDeclineOfEndangeredSpecies.ContentId.ToString() };
-            //yield return new object[] { "/issue/" + Homelessness.ContentId.ToString() };
+
+            var filterSettings = new ContentFilter
+            {
+                AvgVoteRange = new RangeFilter<double> { Min = 1 }
+                // All other properties will use their defaults
+            };
+
+            _env.SetCookie("contentFilter", filterSettings);
+
+            var document = await _env.fetchHTML(url);
+            var filterAlterSection = document.QuerySelector("#page-info .page-active-filters");
+            Assert.IsNotNull(filterAlterSection, "Context section should exist");
+            Assert.IsFalse(filterAlterSection.ClassList.Contains("d-none"), "Filter alert should be visible (not have d-none class)");
         }
+
+        public static IEnumerable<object[]> GetFilterDataRows()
+        {
+            yield return new object[] { 
+                new ContentFilter()
+                {
+                    AvgVoteRange = new RangeFilter<double> { Min = 1, Max = 10 }
+                },
+                new string[] { "Vote Range: 1 to 10" }
+            };
+            yield return new object[] { 
+                new ContentFilter()
+                {
+                    AvgVoteRange = new RangeFilter<double> { Min = 4.5, Max = 5.5 }
+                },
+                new string[] { "Vote Range: 4.5 to 5.5" }
+            };
+            yield return new object[] { 
+                new ContentFilter()
+                {
+                    AvgVoteRange = new RangeFilter<double> { Min = 4.5, Max = 5.5 },
+                    TotalVoteCount = new NullableMaxRangeFilter<int> { Min = 3}
+
+                },
+                new string[] { "Vote Range: 4.5 to 5.5", "Vote Count: 3 and up" }
+            };
+        }
+
+        [DataTestMethod]
+        [DynamicData(nameof(GetFilterDataRows), DynamicDataSourceType.Method)]
+        public async Task IfFilterApplied_ShouldHave_FilterAlert_WithSpecificFilterInfo(ContentFilter filter, string[] expectedAlerts) 
+        {
+
+
+            _env.SetCookie("contentFilter", filter);
+
+            var document = await _env.fetchHTML("/");
+            var filterAlterSection = document.QuerySelector("#page-info .page-active-filters");
+            Assert.IsNotNull(filterAlterSection, "Filter alert section should exist");
+            foreach (string alert in expectedAlerts) { 
+                Assert.IsTrue(filterAlterSection.InnerHtml.Contains(alert));
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow("/")]
+        [DynamicData(nameof(GetIssueUrls), DynamicDataSourceType.Method)]
+        public async Task IfNoFilterApplied_ShouldNotHave_FilterAlert(string url) 
+        {
+
+            var document = await _env.fetchHTML(url);
+            var filterAlterSection = document.QuerySelector("#page-info .page-active-filters");
+            Assert.IsNotNull(filterAlterSection, "Filter alert section should exist");
+            Assert.IsTrue(filterAlterSection.ClassList.Contains("d-none"), "Filter alert should not be visible (should have d-none class)");
+        }
+
+
+        // When a filter is applied the total count and absolute count are visible
+
+
+        #endregion
+
 
 
 

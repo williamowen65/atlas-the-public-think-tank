@@ -54,6 +54,12 @@
     <partial name="_Header" />
 
     @{
+
+        @*
+            The logic in the block is to make it so every page, 
+            even Identity generated pages have a default Sidebar model to work with.
+        *@
+
         SideBar_VM sidebar_VM = new SideBar_VM();
         if (Model != null)
         {
