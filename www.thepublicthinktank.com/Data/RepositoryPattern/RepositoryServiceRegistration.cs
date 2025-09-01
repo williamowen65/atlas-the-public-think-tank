@@ -30,6 +30,9 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern
             services.AddScoped<IFilterIdSetRepository, FilterIdRepository>();
             services.Decorate<IFilterIdSetRepository, FilterIdCacheRepository>();
 
+            services.AddScoped<IScopeRepository, ScopeRepository>();
+            services.Decorate<IScopeRepository, ScopeCacheRepository>();
+
             return services;
         }
     }

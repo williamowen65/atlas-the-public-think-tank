@@ -67,6 +67,20 @@ function initListenersForContentCreateForm(form) {
             formData.append("ParentSolutionID", parentSolutionSelect.value);
         }
 
+
+        // Append all of the Scope info
+        //const scopeFieldset = form.querySelector(".scope-fieldset");
+        //if (scopeFieldset) {
+        //    const selects = scopeFieldset.querySelectorAll("select[name]");
+        //    selects.forEach(select => {
+        //        if (!select.value) {
+        //            formData.remove(select.name);
+        //        }
+        //    });
+        //}
+
+
+
         // Get anti-forgery token
         const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
 
@@ -102,7 +116,7 @@ function initListenersForContentCreateForm(form) {
                     // alert("Failed to create issue. Please check your form inputs and try again.");
                     console.error("Error details:", data);
                     data.errors.forEach(error => {
-                        const fieldElement = form.querySelector(`*[name=${error[0]}]`).closest(".form-element")
+                        const fieldElement = form.querySelector(`*[name="${error[0]}"]`).closest(".form-element")
                         const fieldErrorEl = fieldElement.querySelector(".text-danger")
                         fieldErrorEl.innerText = error[1]
                     })

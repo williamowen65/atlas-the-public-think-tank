@@ -28,11 +28,10 @@
     
         @await Html.PartialAsync("~/Views/Issue/_create-or-edit-issue.cshtml", new Issue_CreateOrEdit_AjaxVM
         {
-            Issue = Model.MainIssue,
-            Scopes = Model.Scopes,
+            Issue = Model.MainIssue
         })
     </div>
 
 </div>
 
-<script src="~/js/ContentCreate.js"></script>
+<script src="~/js/Content/Create.js"></script>

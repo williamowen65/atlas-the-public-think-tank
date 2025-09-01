@@ -94,3 +94,18 @@
 .expand-button-spacer {
     display: none;
 }
+
+.composite-scope {
+    display: none;
+    max-width: 230px;
+    max-height: 100px;
+    overflow-y: scroll;
+}
+.show-composite-scope .composite-scope {
+    display: block;
+}
+
+.expanded.show-composite-scope .composite-scope {
+    max-height: initial;
+    overflow-y: initial;
+}

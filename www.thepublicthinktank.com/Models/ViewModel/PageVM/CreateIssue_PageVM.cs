@@ -7,7 +7,6 @@ namespace atlas_the_public_think_tank.Models.ViewModel.PageVM
 {
     public class CreateIssue_PageVM : PageVM.Common.PageVM
     {
-        public List<Scope> Scopes { get; set; } = new List<Scope>();
 
         /// <summary>
         /// Represents the main issue content that the user is creating

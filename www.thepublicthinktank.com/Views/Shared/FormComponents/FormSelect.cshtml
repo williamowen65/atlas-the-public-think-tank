@@ -3,7 +3,7 @@
 @model FormSelectVM
 
 @{
-   
+
     // Parameters
     var propertyName = Model.PropertyName;
     var uniqueId = $"field_{Guid.NewGuid().ToString("N")}";
@@ -15,6 +15,8 @@
     string dataFieldPlaceholder = Model.FieldPlaceholder;
 
     string? dataSelectedValue = Model.SelectedValue;
+
+    string[]? dataSelectedValues = Model.SelectedValues;
 
     bool isRequired = false;
 
@@ -47,11 +49,15 @@
 
 <div class="mb-3 form-element">
     <label for="@propertyName" class="form-label">@dataFieldLabel</label>
-    <select id="@propertyName" name="@propertyName" class="form-select select2" @(isDisabledField ? "disabled" : "")>
+    <select id="@propertyName" name="@propertyName" class="form-select my-select2 d-none" @(isDisabledField ? "disabled" : String.Empty) @(Model.AllowMultiple == true ? "multiple" : String.Empty)>
         <option value="">@dataFieldPlaceholder</option>
         @foreach (var item in selectList)
         {
-            <option value="@item.Value" selected="@(dataSelectedValue == item.Value ? "selected" : null)">
+            var isSelected =
+            (dataSelectedValues != null && dataSelectedValues.Contains(item.Value?.ToString()))
+            || (dataSelectedValue == item.Value?.ToString());
+
+            <option value="@item.Value" selected="@(isSelected ? "selected" : null)">
                 @item.Text
             </option>
         }

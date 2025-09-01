@@ -14,19 +14,19 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedSolutions
      
 
         public static SeedSolutionContainer[] SeedSolutionDataContainers = {
-             new AtlasThePublicThinkTank(),
-             new TransparentAlgorithmSettings(),
-             new MoodBubbles(),
-             new ConsumptionTracker(),
-             new RoleplayThreads(),
-             new AnnotationMode(),
-             new ModularPosting(),
-             new SecondChanceHiringIncentivesForEmployers(),
-             new PublicEducationCampaignsToReduceStigma(),
-             new PaidTransitionalEmployment(),
              new MobileOutreachTeamsWithCliniciansAndSocialWorkers(),
-             new MicrograntsForUnhousedEntrepreneursOrGigWorkers(),
-             new MakeAlgorithmsUserAdjustable(),
+             //new AtlasThePublicThinkTank(),
+             //new TransparentAlgorithmSettings(),
+             //new MoodBubbles(),
+             //new ConsumptionTracker(),
+             //new RoleplayThreads(),
+             //new AnnotationMode(),
+             //new PaidTransitionalEmployment(),
+             //new SecondChanceHiringIncentivesForEmployers(),
+             //new PublicEducationCampaignsToReduceStigma(),
+             //new MicrograntsForUnhousedEntrepreneursOrGigWorkers(),
+             //new ModularPosting(),
+             //new MakeAlgorithmsUserAdjustable(),
              //new DownRankPersonalAttacksAndPerformativeOutrage()
          };
 

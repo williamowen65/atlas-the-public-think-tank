@@ -74,7 +74,8 @@
     flex-direction: column;
     align-items: center;
     gap: 10px;
-    margin-top: 40px;
+/*    margin-top: 40px;*/
+    margin-top: 19px;
 }
 
 :root {
@@ -112,6 +113,7 @@
     right: 5px;
     clip-path: polygon(0 0, 100% 0, 100% 80%, 50% 100%, 0 80%);
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    cursor: pointer;
 }
 
     .ribbon.individual {
@@ -127,6 +129,12 @@
     }
 
     .ribbon.global {
+        background: #27ae60; /* green */
+    }
+    .ribbon.community {
+        background: #27ae60; /* green */
+    }
+    .ribbon.household {
         background: #27ae60; /* green */
     }
 

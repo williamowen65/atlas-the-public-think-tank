@@ -152,8 +152,8 @@ public class Program
         // Map default controller routes (e.g., HomeController -> /Home/Index)
         app.MapControllerRoute(
             name: "default",
-            //pattern: "{controller=Home}/{action=Index}/{id?}")
             pattern: "{controller=Home}/{action=Index}/{id?}")
+            //pattern: "{controller=RnD}/{action=RnDCreateIssue}/{id?}")
             .WithStaticAssets();
 
         // Map Razor Pages endpoints (for Razor Page files like .cshtml)

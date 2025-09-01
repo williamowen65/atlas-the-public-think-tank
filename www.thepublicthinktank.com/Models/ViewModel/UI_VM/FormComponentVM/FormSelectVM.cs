@@ -12,7 +12,10 @@
         public required string FieldPlaceholder { get; set; }
         public required string FieldLabel { get; set; }
 
+        public bool AllowMultiple { get; set; }
+
         public string? SelectedValue { get; set; }
+        public string[]? SelectedValues { get; set; }
 
         public bool DisabledField { get; set; } = false;
     }

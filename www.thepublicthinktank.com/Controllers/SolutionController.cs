@@ -1,5 +1,6 @@
 ﻿using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Data.CRUD;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
@@ -179,7 +180,7 @@ namespace atlas_the_public_think_tank.Controllers
                     Content = model.Content,
                     ContentStatus = contentStatus,
                     CreatedAt = DateTime.UtcNow,
-                    ScopeID = (Guid)model.ScopeID!,
+                    Scope = new Scope(),
                     Title = model.Title,
                 });
 
@@ -265,7 +266,7 @@ namespace atlas_the_public_think_tank.Controllers
                     SolutionID = solution.SolutionID,
                     Content = solution.Content,
                     ContentStatus = solution.ContentStatus,
-                    ScopeID = solution.Scope.ScopeID,
+                    Scope = new Scope_CreateOrEditVM(),
                     Title = solution.Title,
                     ParentIssue = await Read.Issue(solution.ParentIssueID, new ContentFilter()),
                     ParentIssueID = solution.ParentIssueID,
@@ -339,7 +340,7 @@ namespace atlas_the_public_think_tank.Controllers
                 ContentStatus = contentStatus,
                 CreatedAt = solutionRef.CreatedAt,
                 ModifiedAt = DateTime.UtcNow, // Set ModifiedAt
-                ScopeID = (Guid)model.ScopeID!,  // Use ScopeID instead of Scope.ScopeID
+                Scope = new Scope(),
                 Title = model.Title
             });
 

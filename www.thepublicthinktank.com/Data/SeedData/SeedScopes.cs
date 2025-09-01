@@ -2,6 +2,8 @@
 using System;
  
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data;
+using atlas_the_public_think_tank.Data.SeedData.SeedSolutions.Data;
 
 namespace atlas_the_public_think_tank.Data.SeedData
 {
@@ -9,12 +11,14 @@ namespace atlas_the_public_think_tank.Data.SeedData
     {
         public SeedScopes(ModelBuilder modelBuilder)
         {
+
+
+            // Update: Each seed datum is going to need to seed it's own scope data
+
             // Seed Scopes
             modelBuilder.Entity<Scope>().HasData(
-                new Scope { ScopeID = SeedIds.Scopes.Global, ScopeName = "Global" },
-                new Scope { ScopeID = SeedIds.Scopes.National, ScopeName = "National" },
-                new Scope { ScopeID = SeedIds.Scopes.Local, ScopeName = "Local" },
-                new Scope { ScopeID = SeedIds.Scopes.Individual, ScopeName = "Individual" }
+                new Homelessness().scope,
+                new MobileOutreachTeamsWithCliniciansAndSocialWorkers().scope
             );
         }
     }

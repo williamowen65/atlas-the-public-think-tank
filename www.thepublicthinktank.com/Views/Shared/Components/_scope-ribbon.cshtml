@@ -2,34 +2,50 @@
 
 @*
     This html partial is used on every issue/solution
+    Update: Added Household scale case.
+    Pseudocode:
+      - Determine highest scale via Model.Scales.Max()
+      - Switch on that value
+      - Added new case Scale.Household rendering 🏠 with class 'household'
+      - Fallback shows ❓
 *@
 
 @model Scope
 
 @{
-    // Handle the case where Model is null
-    string scopeName = Model?.ScopeName ?? "Unknown";
+    // Potential null safety (left minimal per request):
+    // Assumes Model and Model.Scales are non-null and contain at least one element.
 }
 
 <div class="scope-ribbons">
-    @switch (scopeName)
+    @switch (Model.Scales.Max())
     {
-        case "Individual":
+        case Scale.Individual:
             <div class="ribbon individual">
                 <text>👤</text>
             </div>
             break;
-        case "National":
+        case Scale.Household:
+            <div class="ribbon household">
+                <text>🏠</text>
+            </div>
+            break;
+        case Scale.National:
             <div class="ribbon national">
                 <text>🏛️</text>
             </div>
             break;
-        case "Local":
+        case Scale.Regional:
             <div class="ribbon local">
                 <text>📍</text>
             </div>
             break;
-        case "Global":
+        case Scale.Community:
+            <div class="ribbon community">
+                <text>🤝</text>
+            </div>
+            break;
+        case Scale.Global:
             <div class="ribbon global">
                 <text>🌍</text>
             </div>
@@ -41,4 +57,3 @@
             break;
     }
 </div>
-@* <div class="ribbon-spacer"></div> *@

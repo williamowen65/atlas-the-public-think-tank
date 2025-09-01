@@ -1,4 +1,6 @@
-﻿using atlas_the_public_think_tank.Models.Enums;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Models.Enums;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.ContentItem_Common;
 using System.ComponentModel.DataAnnotations;
 
 namespace atlas_the_public_think_tank.Models.ViewModel.CRUD.Common
@@ -16,15 +18,7 @@ namespace atlas_the_public_think_tank.Models.ViewModel.CRUD.Common
         public string Content { get; set; }
 
 
-        /// <summary>
-        /// ScopeId is Guid? with an DataAnnotation of Required 
-        /// to intentionally throw the correct error response.
-        /// This is because Guid is a non nullable type.
-        /// </summary>
-        [Required(ErrorMessage = "Scope is required")]
-        [Display(Name = "Scope")]
-        public Guid? ScopeID { get; set; }
-
+        public Scope_CreateOrEditVM Scope { get; set; } = new Scope_CreateOrEditVM();
 
         public ContentStatus? ContentStatus { get; set; }
     }

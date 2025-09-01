@@ -13,13 +13,6 @@ Client side scripts tied to this view: ContentCreate.js
     bool isEditMode = Model.Issue.IssueID != null;
 }
 
-
-@* Create new issue description  *@
-<form class="border-1 border card mb-3 issue-editor" data-content-type="issue" data-form-url="/edit-issue">
-    @*
-        asp-controller="Issue" asp-action="CreateIssue" method="post"
-        These are controlled via the Ajax in ContentCreate.js
-    *@
     @Html.AntiForgeryToken()
     @if (!isEditMode)
     {
@@ -43,15 +36,15 @@ Client side scripts tied to this view: ContentCreate.js
             @await Html.PartialAsync("~/Views/Shared/FormComponents/FormInput.cshtml", new FormInputVM()
             {
                 Model = Model.Issue,
-                PropertyName = "Title"
-            })
+                        PropertyName = "Title"
+                        })
 
             @await Html.PartialAsync("~/Views/Shared/FormComponents/FormMarkdownEditor/FormMarkdownEditor.cshtml", new FormMarkdownEditorVM()
-            {
+                        {
                 Model = Model.Issue,
-                PropertyName = "Content",
-                Rows = 10
-            })
+                        PropertyName = "Content",
+                        Rows = 10
+                        })
 
             @* @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
             new FormSelectVM()
@@ -65,7 +58,7 @@ Client side scripts tied to this view: ContentCreate.js
                 ListItems = {},
             }) *@
 
-         
+
 
         </div>
         <div class="col-4">
@@ -99,7 +92,7 @@ Client side scripts tied to this view: ContentCreate.js
                     ListItems = issueIdList,
                     SelectedValue = selectedParentIssueValue
                 })
-            }
+                        }
 
             @if (Model.Issue.ParentIssue == null)
             {
@@ -127,7 +120,7 @@ Client side scripts tied to this view: ContentCreate.js
                     DisabledField = selectedParentSolutionValue != null ? true : false,
                 })
 
-            }
+                        }
 
 
             @{
@@ -145,120 +138,102 @@ Client side scripts tied to this view: ContentCreate.js
 
             <fieldset style="all:revert" class="scope-fieldset">
                 <legend style="all:revert">Scope</legend>
-                @if (Model.Issue.Scope.ScopeID != null)
-                {
-                    <input type="hidden" name="Scope.ScopeID" id="Scope.ScopeID" value="@Model.Issue.Scope.ScopeID" />
-                }
 
 
-            @{
-                var scaleList = Enum.GetValues(typeof(Scale))
+                @{
+                    var scaleList = Enum.GetValues(typeof(Scale))
                     .Cast<Scale>()
                     .Select(e => new { Scale = (int)e, Text = e.ToString() })
                     .Cast<object>()
                     .ToList();
 
-               string[] selectedScaleValues = Model.Issue.Scope.Scales?
-                    .Select(s => ((int)s).ToString())
-                    .ToArray() ?? Array.Empty<string>();
-            }
+                    // Convert ICollection<Scale> to string[] for SelectedValues
+                    string[] selectedScaleValues = Model.Issue.Scope.Scales?
+                        .Select(s => ((int)s).ToString())
+                        .ToArray() ?? Array.Empty<string>();
+                }
 
-            @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml", 
-            new FormSelectVM()
-            {
-                Model = Model.Issue.Scope,
-                PropertyName = "Scope.Scales",
-                ListItems = scaleList,
-                FieldLabel = "Scale",
-                FieldPlaceholder = "-- Select Scales --",
-                TextField = "Text",
-                ValueField = "Scale",
-                AllowMultiple = true,
-                SelectedValues = selectedScaleValues
-            }) 
+                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
+                new FormSelectVM()
+                {
+                    Model = Model.Issue,
+                    PropertyName = "Scope.Scales",
+                    ListItems = scaleList,
+                    FieldLabel = "Scale",
+                    FieldPlaceholder = "-- Select Scales --",
+                    TextField = "Text",
+                    ValueField = "Scale",
+                    AllowMultiple = true,
+                    SelectedValues = selectedScaleValues
+                })
 
 
-              @{
-                var domainList = Enum.GetValues(typeof(Domain))
+                @{
+                    var domainList = Enum.GetValues(typeof(Domain))
                     .Cast<Domain>()
                     .Select(e => new { Value = (int)e, Text = e.ToString() })
                     .Cast<object>()
                     .ToList();
 
-                string[] selectedDomainValues = Model.Issue.Scope.Domains?
+                    string[] selectedDomainValues = Model.Issue.Scope.Domains?
                     .Select(s => ((int)s).ToString())
                     .ToArray() ?? Array.Empty<string>();
+                }
+
+                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
+                new FormSelectVM()
+                {
+                    Model = Model.Issue,
+                    PropertyName = "Scope.Domains",
+                    ListItems = domainList,
+                    FieldLabel = "Domains",
+                    FieldPlaceholder = "-- Select Domains --",
+                    TextField = "Text",
+                    ValueField = "Value",
+                    AllowMultiple = true,
+                    SelectedValues = selectedDomainValues
+                })
+
+                @*   
+            @{
+                var entityList = Enum.GetValues(typeof(EntityType))
+                    .Cast<EntityType>()
+                    .Select(e => new { Value = (int)e, Text = e.ToString() })
+                    .Cast<object>()
+                    .ToList();
             }
 
             @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml", 
             new FormSelectVM()
             {
                 Model = Model.Issue.Scope,
-                PropertyName = "Scope.Domains",
-                ListItems = domainList,
-                FieldLabel = "Domains",
-                FieldPlaceholder = "-- Select Domains --",
+                PropertyName = "Value",
+                ListItems = entityList,
+                FieldLabel = "Entities",
+                FieldPlaceholder = "-- Select Entities --",
                 TextField = "Text",
                 ValueField = "Value",
-                AllowMultiple = true,
-                SelectedValues = selectedDomainValues
-                })
-
-                @{
-                    var entityList = Enum.GetValues(typeof(EntityType))
-                    .Cast<EntityType>()
-                    .Select(e => new { Value = (int)e, Text = e.ToString() })
-                    .Cast<object>()
-                    .ToList();
-
-                    string[] selectedEntityTypeValues = Model.Issue.Scope.EntityTypes?
-                    .Select(s => ((int)s).ToString())
-                    .ToArray() ?? Array.Empty<string>();
-                }
-
-
-                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
-                new FormSelectVM()
-                {
-                    Model = Model.Issue.Scope,
-                    PropertyName = "Scope.EntityTypes",
-                    ListItems = entityList,
-                    FieldLabel = "Entities",
-                    FieldPlaceholder = "-- Select Entities --",
-                    TextField = "Text",
-                    ValueField = "Value",
-                    AllowMultiple = true,
-                    SelectedValues = selectedEntityTypeValues
-                })
-
-
-                @{
-                    var timeframeList = Enum.GetValues(typeof(Timeframe))
+            }) 
+           
+            @{
+                var timeframeList = Enum.GetValues(typeof(Timeframe))
                     .Cast<Timeframe>()
                     .Select(e => new { Value = (int)e, Text = e.ToString() })
                     .Cast<object>()
                     .ToList();
+            }
 
-                    string[] selectedTimeframeValues = Model.Issue.Scope.Timeframes?
-                    .Select(s => ((int)s).ToString())
-                    .ToArray() ?? Array.Empty<string>();
-                }
-
-                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
-                new FormSelectVM()
-                {
-                    Model = Model.Issue.Scope,
-                    PropertyName = "Scope.Timeframes",
-                    ListItems = timeframeList,
-                    FieldLabel = "Timeframes",
-                    FieldPlaceholder = "-- Select Timeframes --",
-                    TextField = "Text",
-                    ValueField = "Value",
-                    AllowMultiple = true,
-                    SelectedValues = selectedTimeframeValues
-                })
-
-
+            @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml", 
+            new FormSelectVM()
+            {
+                Model = Model.Issue.Scope,
+                PropertyName = "Value",
+                ListItems = timeframeList,
+                FieldLabel = "Timeframes",
+                FieldPlaceholder = "-- Select Timeframes --",
+                TextField = "Text",
+                ValueField = "Value",
+            }) 
 
             @{
                 var boundariesList = Enum.GetValues(typeof(BoundaryType))
@@ -266,10 +241,6 @@ Client side scripts tied to this view: ContentCreate.js
                     .Select(e => new { Value = (int)e, Text = e.ToString() })
                     .Cast<object>()
                     .ToList();
-
-                string[] selectedBoundaryTypeValues = Model.Issue.Scope.Boundaries?
-                    .Select(s => ((int)s).ToString())
-                    .ToArray() ?? Array.Empty<string>();
             }
 
             @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml", 
@@ -282,9 +253,8 @@ Client side scripts tied to this view: ContentCreate.js
                 FieldPlaceholder = "-- Select Boundaries --",
                 TextField = "Text",
                 ValueField = "Value",
-                AllowMultiple = true,
-                SelectedValues = selectedBoundaryTypeValues
             }) 
+            *@
             </fieldset>
 
 
@@ -316,7 +286,5 @@ Client side scripts tied to this view: ContentCreate.js
             }
         </div>
     </div>
-</form>
 
 
-               

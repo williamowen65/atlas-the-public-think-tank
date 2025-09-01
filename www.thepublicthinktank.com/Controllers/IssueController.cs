@@ -190,8 +190,6 @@ namespace atlas_the_public_think_tank.Controllers
         {
             CreateIssue_PageVM model = new CreateIssue_PageVM
             {
-                // Load Scopes from the database
-                Scopes = _context.Scopes.ToList()
             };
 
             // Set parent IDs if provided
@@ -275,12 +273,23 @@ namespace atlas_the_public_think_tank.Controllers
                     }
 
 
-
                     return Json(contentCreationResponse);
                 }
 
                 // Get author
                 var user = await _userManager.GetUserAsync(User);
+
+
+                /// Convert Scope_CreateVM to Scope
+                /// You must save the scope first to get an ID
+                Scope_ReadVM scopeVM = await Create.Scope(new Scope()
+                {
+                    Boundaries = model.Scope.Boundaries,
+                    Domains = model.Scope.Domains,
+                    EntityTypes = model.Scope.EntityTypes,
+                    Scales = model.Scope.Scales,
+                    Timeframes = model.Scope.Timeframes
+                });
 
                 // Create new solution via repository pattern (cache)
                 Issue_ReadVM issue = await Create.Issue(new Issue()
@@ -291,7 +300,7 @@ namespace atlas_the_public_think_tank.Controllers
                     Content = model.Content,
                     ContentStatus = contentStatus,
                     CreatedAt = DateTime.UtcNow,
-                    ScopeID = (Guid)model.ScopeID!,  // Use ScopeID instead of Scope.ScopeID
+                    ScopeID = scopeVM.ScopeID,
                     Title = model.Title
                 });
 
@@ -304,6 +313,9 @@ namespace atlas_the_public_think_tank.Controllers
             catch (Exception ex)
             {
                 contentCreationResponse.Success = false;
+                List<string> errorEntry = new List<string>();
+                errorEntry.Add(ex.Message);
+                contentCreationResponse.Errors.Add(errorEntry);
             }
 
             return Json(contentCreationResponse);
@@ -347,11 +359,18 @@ namespace atlas_the_public_think_tank.Controllers
                     ContentStatus = issue.ContentStatus,
                     ParentIssueID = issue.ParentIssueID,
                     ParentSolutionID = issue.ParentSolutionID,
-                    ScopeID = issue.Scope.ScopeID,
+                    Scope = new Scope_CreateOrEditVM()
+                    {
+                        ScopeID = issue.Scope.ScopeID,
+                        Boundaries = issue.Scope.Boundaries,
+                        Domains = issue.Scope.Domains,
+                        EntityTypes = issue.Scope.EntityTypes,
+                        Scales = issue.Scope.Scales,
+                        Timeframes = issue.Scope.Timeframes
+                    },
                     Title = issue.Title,
                     IssueID = issue.IssueID,
-                },
-                Scopes = await _context.Scopes.ToListAsync()
+                }
             };
 
             if (issue.ParentIssueID != null)
@@ -417,6 +436,18 @@ namespace atlas_the_public_think_tank.Controllers
             }
             // Also get the createdAt value
 
+            // Update the Scope
+            Scope_ReadVM? scopeVM = await Update.Scope(new Scope()
+            {
+                ScopeID = (Guid)model.Scope.ScopeID!,
+                Boundaries = model.Scope.Boundaries,
+                Domains = model.Scope.Domains,
+                EntityTypes = model.Scope.EntityTypes,
+                Scales = model.Scope.Scales,
+                Timeframes = model.Scope.Timeframes
+            });
+
+
 
             // Update Issue
             Issue_ReadVM? issue = await Update.Issue(new Issue()
@@ -429,7 +460,7 @@ namespace atlas_the_public_think_tank.Controllers
                 ContentStatus = contentStatus,
                 CreatedAt = issueRef.CreatedAt,
                 ModifiedAt = DateTime.UtcNow, // Set ModifiedAt
-                ScopeID = (Guid)model.ScopeID!,
+                ScopeID = (Guid)model.Scope.ScopeID!,
                 Title = model.Title
             });
 

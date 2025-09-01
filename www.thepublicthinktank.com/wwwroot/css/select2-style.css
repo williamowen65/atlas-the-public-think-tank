@@ -1,0 +1,16 @@
+﻿.select2-container--default .select2-selection {
+    background-color: transparent;
+}
+.select2-container--default .select2-selection__choice {
+    background-color: var(--bs-border-color) !important;
+}
+.select2-dropdown {
+    background-color: var(--bs-border-color) !important;
+}
+.select2-container--default .select2-results__option--selected {
+    background-color: var(--bs-body-bg) !important;
+}
+.select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+    color: initial;
+}
+ 

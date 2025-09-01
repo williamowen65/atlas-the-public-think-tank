@@ -73,7 +73,7 @@
                 </div>
 
 
-            @{
+            @* @{
 
                 string? selectedScopeId = null;
                 if (Model.Solution.ScopeID != null)
@@ -95,7 +95,7 @@
                 ValueField = "ScopeID",
                 SelectedValue = selectedScopeId
 
-            })
+            }) *@
 
                 @* I would like this to be a select2 as well. except I'd like to render the items specifically to have more content. But I want it to start out empty, because it will use ajax for fetching data and populating the select2. 
                 *@

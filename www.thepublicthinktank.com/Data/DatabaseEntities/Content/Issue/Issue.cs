@@ -71,11 +71,6 @@ namespace atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue
                     .HasForeignKey(e => e.AuthorID)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                entity.HasOne(e => e.Scope)
-                    .WithMany(e => e.Issues)
-                    .HasForeignKey(e => e.ScopeID)
-                    .OnDelete(DeleteBehavior.Restrict);
-
                 entity.HasOne(e => e.BlockedContent)
                     .WithMany(e => e.Issues)
                     .HasForeignKey(e => e.BlockedContentID)

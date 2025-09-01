@@ -20,16 +20,16 @@ function initializeCard(cardId) {
     const isVersionHistoryModal = card.closest("#versionControlModal");
 
     if (!isVersionHistoryModal) {
-         initializeVoteDial(cardId)
+        initializeVoteDial(cardId)
+        initializeCompositeScope(cardId)
          // TBD - More initializations are possible
     }
 
     //card.classList.add("initialized")
-
-
 }
 
 
+// Delgated listener for some card click events
 document.addEventListener("click", e => {
     if (e.target.closest(".card-expand-toggle, .card-minimize-toggle")) {
         const card = e.target.closest(".card")
@@ -48,7 +48,6 @@ document.addEventListener("click", e => {
 
     setupQuickTabLinks(e)
 })
-
 
 
 function setupQuickTabLinks(e) {
@@ -323,7 +322,7 @@ function initializeVoteDial(issueId) {
     
     // Initialize components
     const saveVoteDebounced = createDebouncedSaveVote(issueId);
-    const observer = configureIntersectionObserver(container, options, state, dialId);
+    const observer = configureIntersectionObserverForDialVotes(container, options, state, dialId);
     
     // Set up UI and event handlers
     scrollToSelectedOption(container, dialId);
@@ -561,7 +560,7 @@ function createDebouncedSaveVote(contentId) {
 /**
  * Sets up intersection observer to track visible options during scrolling
  */
-function configureIntersectionObserver(container, options, state, dialId) {
+function configureIntersectionObserverForDialVotes(container, options, state, dialId) {
     const observer = new IntersectionObserver((entries) => {
         if (!state.isScrolling || state.isResetting || container.classList.contains('temporarily-prevent-observer')) return;
 
@@ -707,12 +706,15 @@ function createDialResetMethod(container, issueId, observer, dialId, options, st
  This is an attempt to stop that error (set 8-19-2025)
 */
 document.addEventListener("DOMContentLoaded", () => {
+    // First get all existing cards
     Array.from(document.querySelectorAll(".issue-card, .solution-card")).forEach((node) => {
         const issueId = node.id;
         initializeCard(issueId);
     })
 
-    // Only do this after the inital loaded options have been set
+    // Then listen for new cards to be added
+    // The document observer makes it so you don't need to remember to set the event in the fetch. 
+    // Simply add the content to the dom, and the dom will know what to do with it.
     if (typeof documentObserver == 'object') {
         documentObserver.registerEvent(initInitializeCardObserver)
     } else {
@@ -722,7 +724,7 @@ document.addEventListener("DOMContentLoaded", () => {
 })
 
 
-
+// Event registed in documentObservert event queue
 function initInitializeCardObserver(node) {
         if (node.classList && (node.classList.contains('issue-card') || node.classList.contains('solution-card'))) {
             // Card was added
@@ -738,8 +740,18 @@ function initInitializeCardObserver(node) {
             } else {
                 console.error("initializeVoteDial function is not defined");
             }
-
     }
+}
+
+// The scope ribbon is getting an update 8/31/2025
+// This sets a listener to simply add a class to the card ("show-composite-scope")
+function initializeCompositeScope(cardId) {
+    const card = document.querySelector(`.card[id="${cardId}"]`)
+    const ribbon = card.querySelector(".ribbon")
+
+    ribbon.addEventListener("click", () => {
+        card.classList.toggle("show-composite-scope")
+    })
 }
 
 

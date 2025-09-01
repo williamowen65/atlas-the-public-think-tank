@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
  
 using atlas_the_public_think_tank.Models.Enums;
@@ -7,6 +8,8 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
 {
     public class Homelessness : SeedIssueContainer
     {
+
+
 
         public Issue issue
         {
@@ -20,7 +23,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
                     ContentStatus = ContentStatus.Published,
                     CreatedAt = new DateTime(2024, 1, 15),
                     AuthorID = SeedUserFour.user.Id, // Using centralized user ID
-                    ScopeID = SeedIds.Scopes.Global // Using centralized scope ID
+                    ScopeID = scope.ScopeID
                 };
             }
         }
@@ -38,6 +41,20 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
 
             "Tackling homelessness requires a coordinated, compassionate approach that addresses both immediate needs and " +
             "the root causes of housing instability.";
+
+
+        public Scope scope { get {
+                return new Scope()
+                {
+                    ScopeID = new Guid("b2e2e2c7-7e2a-4e2d-9b1a-2c3e4f5a6b7c"),
+                    Scales = { Scale.Community, Scale.Regional, Scale.National },
+                    Domains = { Domain.Economic, Domain.Political, Domain.Cultural, Domain.Technological, Domain.Health },
+                    EntityTypes = { EntityType.Person, EntityType.Organization, EntityType.Government },
+                    Boundaries = { BoundaryType.Jurisdictional, BoundaryType.Social },
+                    Timeframes = { Timeframe.Generational }
+                };
+            }
+        }
 
         public IssueVote[] issueVotes { get; } = {
                new IssueVote(){
