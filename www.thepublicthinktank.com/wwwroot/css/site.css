@@ -143,9 +143,6 @@ svg.parent-issue-icon {
     /* Add other dark mode variables here */
 }
 
-.solution-card .card-header {
-    background: var(--solution-bg);
-}
 
 .mc-calendar {
     z-index: 2030 !important;

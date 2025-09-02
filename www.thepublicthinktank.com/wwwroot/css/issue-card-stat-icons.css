@@ -116,27 +116,27 @@
     cursor: pointer;
 }
 
-    .ribbon.individual {
-        background: #e74c3c; /* red */
-    }
+.ribbon.individual {
+    background: #e74c3c; /* red */
+}
 
-    .ribbon.local {
-        background: #769aed; /* orange */
-    }
+.ribbon.local {
+    background: #769aed; /* orange */
+}
 
-    .ribbon.national {
-        background: #2980b9; /* blue */
-    }
+.ribbon.national {
+    background: #2980b9; /* blue */
+}
 
-    .ribbon.global {
-        background: #27ae60; /* green */
-    }
-    .ribbon.community {
-        background: #27ae60; /* green */
-    }
-    .ribbon.household {
-        background: #27ae60; /* green */
-    }
+.ribbon.global {
+    background: #27ae60; /* green */
+}
+.ribbon.community {
+    background: #27ae60; /* green */
+}
+.ribbon.household {
+    background: #27ae60; /* green */
+}
 
 
     /* Add this to your CSS file */

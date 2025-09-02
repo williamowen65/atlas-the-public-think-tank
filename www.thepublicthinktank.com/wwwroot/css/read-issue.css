@@ -109,3 +109,19 @@
     max-height: initial;
     overflow-y: initial;
 }
+
+.card.solution-card.expanded .card-header,
+.card.issue-card.expanded .card-header {
+    position: sticky;
+    top: var(--header-height);
+    
+}
+
+
+.solution-card .card-header {
+    background: var(--solution-bg);
+}
+
+.issue-card .card-header {
+    background: var(--bs-danger-bg-subtle);
+}
