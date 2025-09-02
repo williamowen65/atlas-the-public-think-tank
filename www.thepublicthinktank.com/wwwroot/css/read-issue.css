@@ -117,11 +117,29 @@
     
 }
 
+:root {
+    --solution-bg: #03ca03; /* Light mode green */
+    --issue-bg: #f8d7da
+    /* Add other light mode variables here */
+}
+
+[data-bs-theme="dark"] {
+    --solution-bg: #006600; /* Dark mode green */
+    --issue-bg: #686364;
+    /* Add other dark mode variables here */
+}
 
 .solution-card .card-header {
     background: var(--solution-bg);
 }
 
 .issue-card .card-header {
-    background: var(--bs-danger-bg-subtle);
+    background: var(--issue-bg);
+}
+
+
+
+.issue-card .card-header,
+.solution-card .card-header {
+    margin-left: var(--dial-width);
 }

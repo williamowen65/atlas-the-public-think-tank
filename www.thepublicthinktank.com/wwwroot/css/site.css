@@ -133,15 +133,7 @@ svg.parent-issue-icon {
     text-stroke: 0.5px black; /* optional non-prefixed */
 }
 
-:root {
-    --solution-bg: #03ca03; /* Light mode green */
-    /* Add other light mode variables here */
-}
 
-[data-bs-theme="dark"] {
-    --solution-bg: #006600; /* Dark mode green */
-    /* Add other dark mode variables here */
-}
 
 
 .mc-calendar {
