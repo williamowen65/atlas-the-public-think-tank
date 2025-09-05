@@ -41,19 +41,10 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "pre-launch-landing-page(1)"
 		SlnRelativePath = "pre-launch-landing-page\"
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "terraform", "terraform", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{DA27B20D-3056-416F-AEF3-074B872DC691}"
 	ProjectSection(SolutionItems) = preProject
-		terraform\README.md = terraform\README.md
+		README.md = README.md
 	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dev", "dev", "{59FDBA0E-8670-4523-A913-2B3EABCAC167}"
-	ProjectSection(SolutionItems) = preProject
-		terraform\dev\main.tf = terraform\dev\main.tf
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "prod", "prod", "{7500E060-3ED9-4A9B-A78D-B51E594EC136}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "staging", "staging", "{B20706F1-F2AF-46E4-AEE2-40E9B13FA87A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -76,11 +67,6 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{59FDBA0E-8670-4523-A913-2B3EABCAC167} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
-		{7500E060-3ED9-4A9B-A78D-B51E594EC136} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
-		{B20706F1-F2AF-46E4-AEE2-40E9B13FA87A} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {91FBCB71-A526-4836-AC90-535593188277}
