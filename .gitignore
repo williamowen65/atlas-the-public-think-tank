@@ -361,3 +361,25 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+
+# Terraform system files
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+
+# Sensitive variable files
+*.tfvars
+*.tfvars.json
+*.auto.tfvars
+*.auto.tfvars.json
+
+# Provider binaries (like the .exe you mentioned)
+**/terraform-provider-*
+
+# IDE/editor files (optional but common)
+.vscode/
+.idea/
+*.swp
+*.bak
