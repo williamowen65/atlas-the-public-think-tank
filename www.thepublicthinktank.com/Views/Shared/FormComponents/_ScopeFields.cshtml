@@ -1,8 +1,8 @@
 ﻿@using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common
 @using atlas_the_public_think_tank.Models.ViewModel.AjaxVM
+@using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.ContentItem_Common
 @using atlas_the_public_think_tank.Models.ViewModel.UI_VM.FormComponentVM
-@model Issue_CreateOrEdit_AjaxVM
-
+@model Scope_CreateOrEditVM
 
 @{
 }
@@ -11,9 +11,9 @@
 
 <fieldset style="all:revert" class="scope-fieldset">
     <legend style="all:revert">Scope</legend>
-    @if (Model.Issue.Scope.ScopeID != null)
+    @if (Model.ScopeID != Guid.Empty)
     {
-        <input type="hidden" name="Scope.ScopeID" id="Scope.ScopeID" value="@Model.Issue.Scope.ScopeID" />
+        <input type="hidden" name="Scope.ScopeID" id="Scope.ScopeID" value="@Model.ScopeID" />
     }
 
 
@@ -24,7 +24,7 @@
         .Cast<object>()
         .ToList();
 
-        string[] selectedScaleValues = Model.Issue.Scope.Scales?
+        string[] selectedScaleValues = Model.Scales?
         .Select(s => ((int)s).ToString())
         .ToArray() ?? Array.Empty<string>();
     }
@@ -32,7 +32,7 @@
     @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
     new FormSelectVM()
     {
-        Model = Model.Issue.Scope,
+        Model = Model,
         PropertyName = "Scope.Scales",
         ListItems = scaleList,
         FieldLabel = "Scale",
@@ -51,7 +51,7 @@
         .Cast<object>()
         .ToList();
 
-        string[] selectedDomainValues = Model.Issue.Scope.Domains?
+        string[] selectedDomainValues = Model.Domains?
         .Select(s => ((int)s).ToString())
         .ToArray() ?? Array.Empty<string>();
     }
@@ -59,7 +59,7 @@
     @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
     new FormSelectVM()
     {
-        Model = Model.Issue.Scope,
+        Model = Model,
         PropertyName = "Scope.Domains",
         ListItems = domainList,
         FieldLabel = "Domains",
@@ -77,7 +77,7 @@
         .Cast<object>()
         .ToList();
 
-        string[] selectedEntityTypeValues = Model.Issue.Scope.EntityTypes?
+        string[] selectedEntityTypeValues = Model.EntityTypes?
         .Select(s => ((int)s).ToString())
         .ToArray() ?? Array.Empty<string>();
     }
@@ -86,7 +86,7 @@
     @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
     new FormSelectVM()
     {
-        Model = Model.Issue.Scope,
+        Model = Model,
         PropertyName = "Scope.EntityTypes",
         ListItems = entityList,
         FieldLabel = "Entities",
@@ -105,7 +105,7 @@
         .Cast<object>()
         .ToList();
 
-        string[] selectedTimeframeValues = Model.Issue.Scope.Timeframes?
+        string[] selectedTimeframeValues = Model.Timeframes?
         .Select(s => ((int)s).ToString())
         .ToArray() ?? Array.Empty<string>();
     }
@@ -113,7 +113,7 @@
     @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
     new FormSelectVM()
     {
-        Model = Model.Issue.Scope,
+        Model = Model,
         PropertyName = "Scope.Timeframes",
         ListItems = timeframeList,
         FieldLabel = "Timeframes",
@@ -133,7 +133,7 @@
         .Cast<object>()
         .ToList();
 
-        string[] selectedBoundaryTypeValues = Model.Issue.Scope.Boundaries?
+        string[] selectedBoundaryTypeValues = Model.Boundaries?
         .Select(s => ((int)s).ToString())
         .ToArray() ?? Array.Empty<string>();
     }
@@ -141,7 +141,7 @@
     @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
     new FormSelectVM()
     {
-        Model = Model.Issue.Scope,
+        Model = Model,
         PropertyName = "Value",
         ListItems = boundariesList,
         FieldLabel = "Boundaries",

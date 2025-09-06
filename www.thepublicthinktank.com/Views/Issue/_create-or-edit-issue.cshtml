@@ -69,10 +69,69 @@ Client side scripts tied to this view: ContentCreate.js
         </div>
         <div class="col-4">
 
-            
-            @await Html.PartialAsync("~/Views/Shared/FormComponents/_ParentContentFields.cshtml", Model)
+
+
+
+            <fieldset style="all:revert" class="parent-fieldset">
+                @* <legend style="all:revert">Parent Content</legend> *@
+
+                @if (Model.Issue.ParentSolution == null)
+                {
+                    List<object> issueIdList = new List<object>();
+                    string? selectedParentIssueValue = null;
+                    if (Model.Issue.ParentIssue != null)
+                    {
+                        issueIdList.Add(Model.Issue.ParentIssue);
+                        selectedParentIssueValue = Model.Issue.ParentIssue.IssueID.ToString();
+
+                    }
+
+
+                    @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
+                    new FormSelectVM()
+                    {
+                        Model = Model.Issue.ParentIssue,
+                        FieldLabel = "Parent Issue",
+                        FieldPlaceholder = "-- Select a Parent Issue --",
+                        PropertyName = "ParentIssueID",
+                        TextField = "Title",
+                        ValueField = "IssueID",
+                        DisabledField = selectedParentIssueValue != null ? true : false,
+                        ListItems = issueIdList,
+                        SelectedValue = selectedParentIssueValue
+                    })
+                                }
+
+                @if (Model.Issue.ParentIssue == null)
+                {
+
+
+                    List<object> solutionIdList = new List<object>();
+                    string? selectedParentSolutionValue = null;
+                    if (Model.Issue.ParentSolution != null)
+                    {
+                        solutionIdList.Add(Model.Issue.ParentSolution);
+                        selectedParentSolutionValue = Model.Issue.ParentSolution.SolutionID.ToString();
+                    }
+
+                    @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
+                    new FormSelectVM()
+                    {
+                        Model = Model.Issue.ParentSolution,
+                        FieldLabel = "Parent Solution",
+                        FieldPlaceholder = "-- Select a Parent Solution--",
+                        PropertyName = "ParentSolutionID",
+                        TextField = "Title",
+                        ValueField = "SolutionID",
+                        ListItems = solutionIdList,
+                        SelectedValue = selectedParentSolutionValue,
+                        DisabledField = selectedParentSolutionValue != null ? true : false,
+                    })
+
+                }
+            </fieldset>
        
-            @await Html.PartialAsync("~/Views/Shared/FormComponents/_ScopeFields.cshtml", Model)
+            @await Html.PartialAsync("~/Views/Shared/FormComponents/_ScopeFields.cshtml", Model.Issue.Scope)
 
         </div>
     </div>
