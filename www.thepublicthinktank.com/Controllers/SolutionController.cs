@@ -22,6 +22,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
+using System.Threading.Tasks;
 using static atlas_the_public_think_tank.Data.SeedData.SeedIds;
 
 namespace atlas_the_public_think_tank.Controllers
@@ -172,6 +173,17 @@ namespace atlas_the_public_think_tank.Controllers
                 // Get author
                 var user = await _userManager.GetUserAsync(User);
 
+
+                Scope_ReadVM scopeVM = await Create.Scope(new Scope()
+                {
+                    Boundaries = model.Scope.Boundaries,
+                    Domains = model.Scope.Domains,
+                    EntityTypes = model.Scope.EntityTypes,
+                    Scales = model.Scope.Scales,
+                    Timeframes = model.Scope.Timeframes
+                });
+
+
                 // Create new solution via repository pattern (cache)
                 Solution_ReadVM solution = await Create.Solution(new Solution()
                 { 
@@ -180,7 +192,7 @@ namespace atlas_the_public_think_tank.Controllers
                     Content = model.Content,
                     ContentStatus = contentStatus,
                     CreatedAt = DateTime.UtcNow,
-                    Scope = new Scope(),
+                    ScopeID = scopeVM.ScopeID,
                     Title = model.Title,
                 });
 
@@ -206,19 +218,30 @@ namespace atlas_the_public_think_tank.Controllers
         /// This method serves the "create solution" page
         /// </summary>
         [Route("/create-solution")]
-        public IActionResult CreateSolutionPage(Guid? parentIssueID = null)
+        public async Task<IActionResult> CreateSolutionPage(Guid? parentIssueID = null)
         {
 
-            CreateSolution_PageVM model = new CreateSolution_PageVM
-            {
-                // Load Scopes from the database
-                Scopes = _context.Scopes.ToList()
-            };
+            CreateSolution_PageVM model = new CreateSolution_PageVM();
+           
             // Set parent IDs if provided
             if (parentIssueID.HasValue)
             {
                 model.Solution.ParentIssueID = parentIssueID;
+                Issue_ReadVM? parentIssue = await Read.Issue((Guid)model.Solution.ParentIssueID!, new ContentFilter());
+                model.Solution.ParentIssue = parentIssue;
             }
+
+            model.Sidebar = new SideBar_VM()
+            {
+                ShowPageDisplayOptions = false,
+                PageInfo = new PageInfo()
+                {
+                    PageContext = $"""
+                    <strong>Create a New Solution</strong><br/>
+                    
+                    """
+                }
+            };
 
 
             return View(model);

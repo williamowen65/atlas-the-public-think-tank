@@ -188,9 +188,7 @@ namespace atlas_the_public_think_tank.Controllers
         [Route("/create-issue")]
         public async Task<IActionResult> CreateIssuePage(Guid? parentIssueID, Guid? parentSolutionID)
         {
-            CreateIssue_PageVM model = new CreateIssue_PageVM
-            {
-            };
+            CreateIssue_PageVM model = new CreateIssue_PageVM();
 
             // Set parent IDs if provided
             if (parentIssueID.HasValue)
@@ -231,8 +229,6 @@ namespace atlas_the_public_think_tank.Controllers
                       larger problem or emerges as a challenge within a proposed solution, link it 
                       as a sub-issue. This helps others see how problems connect in the bigger picture.
                     </p>
-                    
-
                     """
                 }
             };

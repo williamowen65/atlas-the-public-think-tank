@@ -13,6 +13,6 @@ namespace atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution
         public List<SolutionTags> SolutionTags { get; set; } = new List<SolutionTags>();
 
         [Required(ErrorMessage = "Parent Issue is required when creating a solution")]
-        public Guid? ParentIssueID { get; set; }
+        public Guid? ParentIssueID { get; set; } = null;
     }
 }

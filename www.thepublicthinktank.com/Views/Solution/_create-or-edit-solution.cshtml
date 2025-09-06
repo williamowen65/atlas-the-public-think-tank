@@ -63,66 +63,37 @@
 
             </div>
             <div class="col-4">
-                <div class="mb-3">
-                    Tags Select 2
-                    @* <label class="form-label">Categories (Tags)</label>
-             <select multiple name="SelectedCategoryIds" class="form-select select2"
-                     asp-items="@(new SelectList(Model.Categories, "CategoryID", "CategoryName"))">
-             </select>
-             <span asp-validation-for="SelectedCategoryIds" class="text-danger"></span> *@
-                </div>
 
+            <fieldset style="all:revert" class="parent-fieldset">
 
-            @* @{
-
-                string? selectedScopeId = null;
-                if (Model.Solution.ScopeID != null)
-                {
-                    selectedScopeId = Model.Solution.ScopeID.ToString();
+                @{
+                    List<object> issueIdList = new List<object>();
+                    string? selectedParentIssueValue = null;
+                    if (Model.Solution.ParentIssue != null)
+                    {
+                        issueIdList.Add(Model.Solution.ParentIssue);
+                        selectedParentIssueValue = Model.Solution.ParentIssue.IssueID.ToString();
+                    }
                 }
 
-            }
-            
-            @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
-            new FormSelectVM()
-            {
-                Model = Model.Solution,
-                PropertyName = "ScopeID",
-                ListItems = Model.Scopes.Cast<object>().ToList(),
-                FieldLabel = "Scope",
-                FieldPlaceholder = "-- Select a Scope --",
-                TextField = "ScopeName",
-                ValueField = "ScopeID",
-                SelectedValue = selectedScopeId
-
-            }) *@
-
-                @* I would like this to be a select2 as well. except I'd like to render the items specifically to have more content. But I want it to start out empty, because it will use ajax for fetching data and populating the select2. 
-                *@
-
-            @{
-                List<object> issueIdList = new List<object>();
-                string? selectedParentIssueValue = null;
-                if (Model.Solution.ParentIssue != null)
+                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
+                new FormSelectVM()
                 {
-                    issueIdList.Add(Model.Solution.ParentIssue);
-                    selectedParentIssueValue = Model.Solution.ParentIssue.IssueID.ToString();
-                }
-            }
+                    Model = Model.Solution.ParentIssue,
+                    FieldLabel = "Parent Issue",
+                    FieldPlaceholder = "-- Select a Parent Issue --",
+                    PropertyName = "ParentIssueID",
+                    TextField = "Title",
+                    ValueField = "IssueID",
+                    ListItems = issueIdList,
+                    DisabledField = selectedParentIssueValue != null ? true : false,
+                    SelectedValue = selectedParentIssueValue
+                })
+            </fieldset>
 
-            @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
-            new FormSelectVM()
-            {
-                Model = Model.Solution.ParentIssue,
-                FieldLabel = "Parent Issue",
-                FieldPlaceholder = "-- Select a Parent Issue --",
-                PropertyName = "ParentIssueID",
-                TextField = "Title",
-                ValueField = "IssueID",
-                ListItems = issueIdList,
-                DisabledField = selectedParentIssueValue != null ? true : false,
-                SelectedValue = selectedParentIssueValue
-            })
+
+                @await Html.PartialAsync("~/Views/Shared/FormComponents/_ScopeFields.cshtml", Model.Solution.Scope)
+
 
             </div>
         </div>

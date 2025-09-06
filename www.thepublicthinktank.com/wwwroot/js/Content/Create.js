@@ -58,7 +58,7 @@ function initListenersForContentCreateForm(form) {
 
         if (contentType == 'solution' && !parentIssueSelect.value) {
             // TODO: This can be passed to the server for the proper error handling.
-            throw new Error("When creating a new solution, a parent issue is required")
+            console.warn("When creating a new solution, a parent issue is required... This is a frontend warning before submission -- error handling provided by backend")
         }
 
         // Manually add the ParentIssueID from the disabled select element
