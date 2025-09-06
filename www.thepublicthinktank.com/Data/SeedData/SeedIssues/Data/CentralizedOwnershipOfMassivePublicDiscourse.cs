@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
  
 using atlas_the_public_think_tank.Models.Enums;
@@ -19,7 +20,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
                     ContentStatus = ContentStatus.Published,
                     CreatedAt = new DateTime(2024, 3, 20),
                     AuthorID = SeedUserSeven.user.Id, // Using centralized user ID
-                    ScopeID = SeedIds.Scopes.Global, // Using centralized scope ID
+                    ScopeID = scope.ScopeID,
                     ParentIssueID = CanSocialMediaPlatformsBeBetter.ContentId // Making it a sub-issue of the social media platforms issue
                 };
             }
@@ -49,6 +50,21 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
             "processes. Finding the right balance between innovation, free expression, and democratic accountability " +
             "remains one of the central challenges of our digital age.";
 
+        public Scope scope
+        {
+            get
+            {
+                return new Scope()
+                {
+                    ScopeID = new Guid("7308cac5-991e-416d-8e59-d567fe29717c"),
+                    Scales = { Scale.Global },
+                    Domains = { Domain.Political, Domain.Technological, Domain.Economic },
+                    EntityTypes = { EntityType.Corporate, EntityType.Government, EntityType.Organization },
+                    Timeframes = { Timeframe.LongTerm },
+                    Boundaries = { },
+                };
+            }
+        }
         public IssueVote[] issueVotes { get; } = {
                new IssueVote(){
                     IssueID = ContentId,

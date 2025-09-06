@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
  
 using atlas_the_public_think_tank.Models.Enums;
@@ -19,7 +20,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
                     ContentStatus = ContentStatus.Published,
                     CreatedAt = new DateTime(2024, 8, 17),
                     AuthorID = SeedUserTwelve.user.Id, // Using centralized user ID
-                    ScopeID = SeedIds.Scopes.Global, // Using centralized scope ID
+                    ScopeID = scope.ScopeID,
                     ParentIssueID = SystemicFailuresAndSafetyNets.ContentId // Making this a sub-issue of SystemicFailuresAndSafetyNets
                 };
             }
@@ -46,6 +47,21 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
             "job training, and mental health care tailored to the unique needs of each population. By strengthening transitional " +
             "services, we can reduce the risk of homelessness and promote successful reintegration into society.";
 
+        public Scope scope
+        {
+            get
+            {
+                return new Scope()
+                {
+                    ScopeID = new Guid("f030a6b4-5fe0-4c87-ba88-a4bd8339a394"),
+                    Scales = { Scale.National, Scale.Community },
+                    Domains = { Domain.Health, Domain.Economic, Domain.Social },
+                    EntityTypes = { EntityType.Government, EntityType.Organization, EntityType.Person },
+                    Timeframes = { Timeframe.LongTerm, Timeframe.ShortTerm },
+                    Boundaries = { },
+                };
+            }
+        }
         public IssueVote[] issueVotes { get; } = {
                new IssueVote(){
                     IssueID = ContentId,

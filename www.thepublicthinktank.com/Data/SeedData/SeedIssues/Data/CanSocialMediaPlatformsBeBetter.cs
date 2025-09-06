@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
  
 using atlas_the_public_think_tank.Models.Enums;
@@ -19,7 +20,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
                     ContentStatus = ContentStatus.Published,
                     CreatedAt = new DateTime(2024, 1, 18),
                     AuthorID = SeedUserOne.user.Id, // Using centralized user ID
-                    ScopeID = SeedIds.Scopes.Global // Using centralized scope ID
+                    ScopeID = scope.ScopeID
                 };
             }
         }
@@ -43,6 +44,21 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
             "platforms. Addressing them is essential for building digital spaces that truly support healthy public discourse, " +
             "individual rights, and social cohesion.";
 
+        public Scope scope
+        {
+            get
+            {
+                return new Scope()
+                {
+                    ScopeID = new Guid("2ed7e15a-569a-4d5f-b157-96c8052e3d46"),
+                    Scales = { Scale.Global },
+                    Domains = { Domain.Technological, Domain.Health },
+                    EntityTypes = { EntityType.Organization, EntityType.Person },
+                    Timeframes = { Timeframe.LongTerm },
+                    Boundaries = { },
+                };
+            }
+        }
 
 
         public IssueVote[] issueVotes { get; } = {

@@ -471,23 +471,36 @@ namespace atlas_the_public_think_tank.Data.CRUD
             // This currently skips the repository pattern
 
 
-            // Pull all temporal versions of the issue
-            List<Issue> versions = await _context.Issues
+            // Pull all temporal versions of the issue with their period information
+            var versionsWithPeriodStart = await _context.Issues
                 .TemporalAll()
                 .Where(i => i.IssueID == issue.IssueID)
                 .OrderBy(i => EF.Property<DateTime>(i, "PeriodStart"))
+                .Select(i => new
+                {
+                    Issue = i,
+                    PeriodStart = EF.Property<DateTime>(i, "PeriodStart")
+                })
                 .ToListAsync();
-
 
             List<ContentItem_ReadVM> contentItemVersions = new();
 
-            foreach (var version in versions)
+            foreach (var versionData in versionsWithPeriodStart)
             {
+                var version = versionData.Issue;
+                var versionPeriodStart = versionData.PeriodStart;
+
                 AppUser_ReadVM? appUser = await _appUserRepository.GetAppUser(version.AuthorID);
 
+                // Now use the captured versionPeriodStart in the scope query
                 Scope? scope = await _context.Scopes
-                .Where(s => s.ScopeID == version.ScopeID)
-                .FirstOrDefaultAsync();
+                    .TemporalAll()
+                    .Where(s => s.ScopeID == version.ScopeID)
+                    .Where(s =>
+                        EF.Property<DateTime>(s, "PeriodStart") <= versionPeriodStart &&
+                        EF.Property<DateTime>(s, "PeriodEnd") > versionPeriodStart)
+                    .OrderByDescending(s => EF.Property<DateTime>(s, "PeriodStart"))
+                    .FirstOrDefaultAsync();
 
                 var contentItem = new ContentItem_ReadVM
                 {
@@ -534,23 +547,36 @@ namespace atlas_the_public_think_tank.Data.CRUD
             // This currently skips the repository pattern
 
 
-            // Pull all temporal versions of the issue
-            List<Solution> versions = await _context.Solutions
+            // Pull all temporal versions of the solution with their period information
+            var versionsWithPeriodStart = await _context.Solutions
                 .TemporalAll()
                 .Where(s => s.SolutionID == solution.SolutionID)
                 .OrderBy(s => EF.Property<DateTime>(s, "PeriodStart"))
+                .Select(s => new
+                {
+                    Solution = s,
+                    PeriodStart = EF.Property<DateTime>(s, "PeriodStart")
+                })
                 .ToListAsync();
-
 
             List<ContentItem_ReadVM> contentItemVersions = new();
 
-            foreach (var version in versions)
+            foreach (var versionData in versionsWithPeriodStart)
             {
-                AppUser_ReadVM? appUser = await _appUserRepository.GetAppUser(version.AuthorID);
+                var version = versionData.Solution;
+                var versionPeriodStart = versionData.PeriodStart;
 
+                AppUser_ReadVM? appUser = await _appUserRepository.GetAppUser(version.AuthorID);
+              
+                // Now use the captured versionPeriodStart in the scope query
                 Scope? scope = await _context.Scopes
-                .Where(s => s.ScopeID == version.ScopeID)
-                .FirstOrDefaultAsync();
+                    .TemporalAll()
+                    .Where(s => s.ScopeID == version.ScopeID)
+                    .Where(s =>
+                        EF.Property<DateTime>(s, "PeriodStart") <= versionPeriodStart &&
+                        EF.Property<DateTime>(s, "PeriodEnd") > versionPeriodStart)
+                    .OrderByDescending(s => EF.Property<DateTime>(s, "PeriodStart"))
+                    .FirstOrDefaultAsync();
 
                 var contentItem = new ContentItem_ReadVM
                 {
@@ -580,6 +606,8 @@ namespace atlas_the_public_think_tank.Data.CRUD
 
             return contentItemVersions;
         }
+
+
 
         #endregion
 

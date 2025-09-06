@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
  
 using atlas_the_public_think_tank.Models.Enums;
@@ -19,7 +20,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
                     ContentStatus = ContentStatus.Published,
                     CreatedAt = new DateTime(2024, 6, 10),
                     AuthorID = SeedUserEight.user.Id, // Using centralized user ID
-                    ScopeID = SeedIds.Scopes.Global, // Using centralized scope ID
+                    ScopeID = scope.ScopeID, 
                     ParentIssueID = Homelessness.ContentId // Making this a sub-issue of Homelessness
                 };
             }
@@ -51,6 +52,22 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
             "design that prioritizes dignity and self-determination. By tackling the invisible barrier of stigma, we can " +
             "significantly improve service utilization and effectiveness in addressing homelessness.";
 
+
+        public Scope scope
+        {
+            get
+            {
+                return new Scope()
+                {
+                    ScopeID = new Guid("d3415df0-9ae6-450f-8665-eacd297d2ddc"),
+                    Scales = { Scale.National, Scale.Community },
+                    Domains = { Domain.Health, Domain.Social, Domain.Cultural },
+                    EntityTypes = { EntityType.Organization, EntityType.Person, EntityType.Government },
+                    Timeframes = { Timeframe.LongTerm, Timeframe.ShortTerm },
+                    Boundaries = { },
+                };
+            }
+        }
         public IssueVote[] issueVotes { get; } = {
                new IssueVote(){
                     IssueID = ContentId,

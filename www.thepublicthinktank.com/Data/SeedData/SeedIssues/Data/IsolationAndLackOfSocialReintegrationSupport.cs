@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
  
 using atlas_the_public_think_tank.Models.Enums;
@@ -19,7 +20,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
                     ContentStatus = ContentStatus.Published,
                     CreatedAt = new DateTime(2024, 8, 20),
                     AuthorID = SeedUserEleven.user.Id, // Using centralized user ID
-                    ScopeID = SeedIds.Scopes.Global, // Using centralized scope ID
+                    ScopeID = scope.ScopeID,
                     ParentIssueID = SystemicFailuresAndSafetyNets.ContentId // Making this a sub-issue of SystemicFailuresAndSafetyNets
                 };
             }
@@ -51,6 +52,21 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
             "inclusion, we can help vulnerable individuals build the relationships and social capital essential for stable housing " +
             "and wellbeing.";
 
+        public Scope scope
+        {
+            get
+            {
+                return new Scope()
+                {
+                    ScopeID = new Guid("38283341-1f14-4b8d-ab4c-f960037ea327"),
+                    Scales = { Scale.Community, Scale.National },
+                    Domains = { Domain.Health, Domain.Social },
+                    EntityTypes = { EntityType.Organization, EntityType.Person, EntityType.Government },
+                    Timeframes = { Timeframe.LongTerm, Timeframe.ShortTerm },
+                    Boundaries = { },
+                };
+            }
+        }
         public IssueVote[] issueVotes { get; } = {
                new IssueVote(){
                     IssueID = ContentId,

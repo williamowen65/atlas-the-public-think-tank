@@ -432,8 +432,9 @@ namespace atlas_the_public_think_tank.Controllers
                 return Json(contentCreationResponse);
             }
 
-            // Update the Scope
-            Scope_ReadVM? scopeVM = await Update.Scope(new Scope()
+            // Diff check between issueRef.Scope & incomingScope before trying to make an update
+
+            Scope incomingScope = new Scope()
             {
                 ScopeID = (Guid)model.Scope.ScopeID!,
                 Boundaries = model.Scope.Boundaries,
@@ -441,12 +442,18 @@ namespace atlas_the_public_think_tank.Controllers
                 EntityTypes = model.Scope.EntityTypes,
                 Scales = model.Scope.Scales,
                 Timeframes = model.Scope.Timeframes
-            });
+            };
+
+            bool scopeDiff = DiffCheckers.AreScopesDifferent(incomingScope, issueRef.Scope);
+
+            if (scopeDiff) 
+            {
+                // Update the Scope
+                Scope_ReadVM? scopeVM = await Update.Scope(incomingScope);
+            }
 
 
-
-            // Update Issue
-            Issue_ReadVM? issue = await Update.Issue(new Issue()
+            Issue incomingIssue = new Issue()
             {
                 IssueID = (Guid)model.IssueID!,
                 ParentIssueID = model.ParentIssueID,
@@ -458,12 +465,26 @@ namespace atlas_the_public_think_tank.Controllers
                 ModifiedAt = DateTime.UtcNow, // Set ModifiedAt
                 ScopeID = (Guid)model.Scope.ScopeID!,
                 Title = model.Title
-            });
+            };
+
+            bool issueDiff = DiffCheckers.AreIssuesDifferent(Converter.ConvertIssue_ReadVMToIssue(issueRef), incomingIssue);
+            Issue_ReadVM? issue = issueRef;
+            if (issueDiff)
+            {
+                // Update Issue
+                // TODO: An issues content and title should be versioned as separate entities to remove duplication
+                issue = await Update.Issue(incomingIssue);
+            }
+            else if (scopeDiff == true && issueDiff != true) { 
+                // Update Issue So that the scope it versioned as a new issue
+                issue = await Update.Issue(incomingIssue);
+            }
+          
 
 
-            // Render issue
-            // render Partial view and return json
-            string html = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Issue/_issue-card.cshtml", issue);
+           // Render issue
+           // render Partial view and return json
+           string html = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Issue/_issue-card.cshtml", issue);
 
             contentCreationResponse.Content = html;
             contentCreationResponse.Success = true;

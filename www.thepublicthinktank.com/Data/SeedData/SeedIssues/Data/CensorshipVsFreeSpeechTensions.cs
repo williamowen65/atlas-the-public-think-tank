@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
  
 using atlas_the_public_think_tank.Models.Enums;
@@ -19,7 +20,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
                     ContentStatus = ContentStatus.Published,
                     CreatedAt = new DateTime(2024, 5, 15),
                     AuthorID = SeedUserNine.user.Id, // Using centralized user ID
-                    ScopeID = SeedIds.Scopes.Global, // Using centralized scope ID
+                    ScopeID = scope.ScopeID,
                     ParentIssueID = CanSocialMediaPlatformsBeBetter.ContentId // Making it a sub-issue of the social media platforms issue
                 };
             }
@@ -54,6 +55,21 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
             "transparency, consistency, and accountability? And what role should governments, civil society, and users " +
             "themselves play in developing and implementing content governance frameworks that balance competing values?";
 
+        public Scope scope
+        {
+            get
+            {
+                return new Scope()
+                {
+                    ScopeID = new Guid("f57b23e6-8926-45a2-b988-76c122c4202d"),
+                    Scales = { Scale.Global, Scale.National },
+                    Domains = { Domain.Political, Domain.Cultural, Domain.Technological },
+                    EntityTypes = { EntityType.Government, EntityType.Organization, EntityType.Person },
+                    Timeframes = { Timeframe.LongTerm, Timeframe.ShortTerm },
+                    Boundaries = { },
+                };
+            }
+        }
         public IssueVote[] issueVotes { get; } = {
               
                new IssueVote(){

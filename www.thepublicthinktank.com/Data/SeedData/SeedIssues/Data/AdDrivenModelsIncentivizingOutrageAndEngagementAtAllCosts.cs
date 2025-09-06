@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
  
 using atlas_the_public_think_tank.Models.Enums;
@@ -19,7 +20,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
                     ContentStatus = ContentStatus.Published,
                     CreatedAt = new DateTime(2024, 3, 10),
                     AuthorID = SeedUserFive.user.Id, // Using centralized user ID
-                    ScopeID = SeedIds.Scopes.Global, // Using centralized scope ID
+                    ScopeID = scope.ScopeID,
                     ParentIssueID = CanSocialMediaPlatformsBeBetter.ContentId // Making it a sub-issue of the social media platforms issue
                 };
             }
@@ -50,6 +51,21 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
             "or both. Without such changes, platforms may continue optimizing for engagement metrics that fail to account for " +
             "human and social well-being.";
 
+        public Scope scope
+        {
+            get
+            {
+                return new Scope()
+                {
+                    ScopeID = new Guid("b1454543-b9ec-4bb9-9109-edc6a88bb065"),
+                    Scales = { Scale.Global },
+                    Domains = { Domain.Technological, Domain.Economic },
+                    EntityTypes = { EntityType.Organization, EntityType.Corporate },
+                    Timeframes = { Timeframe.LongTerm },
+                    Boundaries = { },
+                };
+            }
+        }
         public IssueVote[] issueVotes { get; } = {
                new IssueVote(){
                     IssueID = ContentId,

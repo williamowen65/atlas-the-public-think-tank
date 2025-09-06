@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
  
 using atlas_the_public_think_tank.Models.Enums;
@@ -19,7 +20,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
                     ContentStatus = ContentStatus.Published,
                     CreatedAt = new DateTime(2024, 4, 5),
                     AuthorID = SeedUserFour.user.Id, // Using centralized user ID
-                    ScopeID = SeedIds.Scopes.Global, // Using centralized scope ID
+                    ScopeID = scope.ScopeID,
                     ParentIssueID = CanSocialMediaPlatformsBeBetter.ContentId // Making it a sub-issue of the social media platforms issue
                 };
             }
@@ -47,6 +48,22 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
             "initiatives, regulatory frameworks, and innovations in content verification. Finding solutions that balance " +
             "free expression with information integrity remains one of the most urgent challenges in our digital media " +
             "environment.";
+
+        public Scope scope
+        {
+            get
+            {
+                return new Scope()
+                {
+                    ScopeID = new Guid("06873890-b60a-48c2-bab4-cb7731ec5e01"),
+                    Scales = { Scale.Global },
+                    Domains = { Domain.Technological, Domain.Cultural, Domain.Political },
+                    EntityTypes = { EntityType.Organization, EntityType.Person },
+                    Timeframes = { Timeframe.LongTerm, Timeframe.ShortTerm },
+                    Boundaries = { },
+                };
+            }
+        }
 
         public IssueVote[] issueVotes { get; } = {
              

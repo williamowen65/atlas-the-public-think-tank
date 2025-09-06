@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
  
@@ -21,7 +22,23 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedSolutions.Data
                     ContentStatus = ContentStatus.Published,
                     CreatedAt = new DateTime(2024, 9, 10),
                     AuthorID = SeedUserEight.user.Id, // Using centralized user ID
-                    ScopeID = SeedIds.Scopes.Global // Using centralized scope ID
+                    ScopeID = scope.ScopeID
+                };
+            }
+        }
+
+        public Scope scope
+        {
+            get
+            {
+                return new Scope()
+                {
+                    ScopeID = new Guid("a059b123-f631-4774-a866-33ba0bb415b5"),
+                    Scales = { Scale.Global },
+                    Domains = { Domain.Economic, Domain.Health }, // Employment, economic stability, health
+                    EntityTypes = { EntityType.Government, EntityType.Corporate, EntityType.Organization },
+                    Timeframes = { Timeframe.ShortTerm, Timeframe.LongTerm },
+                    Boundaries = { },
                 };
             }
         }

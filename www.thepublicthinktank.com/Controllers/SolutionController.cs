@@ -364,8 +364,7 @@ namespace atlas_the_public_think_tank.Controllers
             }
 
 
-            // Update the Scope
-            Scope_ReadVM? scopeVM = await Update.Scope(new Scope()
+            Scope incomingScope = new Scope()
             {
                 ScopeID = (Guid)model.Scope.ScopeID!,
                 Boundaries = model.Scope.Boundaries,
@@ -373,12 +372,17 @@ namespace atlas_the_public_think_tank.Controllers
                 EntityTypes = model.Scope.EntityTypes,
                 Scales = model.Scope.Scales,
                 Timeframes = model.Scope.Timeframes
-            });
+            };
 
+            bool scopeDiff = DiffCheckers.AreScopesDifferent(incomingScope, solutionRef.Scope);
 
+            if (scopeDiff)
+            {
+                // Update the Scope
+                Scope_ReadVM? scopeVM = await Update.Scope(incomingScope);
+            }
 
-            // Update solution
-            Solution_ReadVM? solution = await Update.Solution(new Solution()
+            Solution incomingSolution = new Solution()
             {
                 SolutionID = (Guid)model.SolutionID!,
                 ParentIssueID = (Guid)model.ParentIssueID!,
@@ -389,7 +393,20 @@ namespace atlas_the_public_think_tank.Controllers
                 ModifiedAt = DateTime.UtcNow, // Set ModifiedAt
                 ScopeID = (Guid)model.Scope.ScopeID!,
                 Title = model.Title
-            });
+            };
+
+            bool solutionDiff = DiffCheckers.AreSolutionsDifferent(Converter.ConvertSolution_ReadVMToSolution(solutionRef), incomingSolution);
+            // Update solution
+            Solution_ReadVM? solution = solutionRef;
+            if (solutionDiff) { 
+                
+                solution = await Update.Solution(incomingSolution);
+            }
+            else if (scopeDiff == true && solutionDiff != true)
+            {
+                // Update solution so that the scope it versioned as a new issue
+                solution = await Update.Solution(incomingSolution);
+            }
 
 
             // Render issue

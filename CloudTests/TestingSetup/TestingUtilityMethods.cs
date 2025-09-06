@@ -1,8 +1,8 @@
 ﻿using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues;
 using atlas_the_public_think_tank.Data.SeedData.SeedSolutions;
- 
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -81,5 +81,68 @@ namespace CloudTests.TestingSetup
 
             _client?.Dispose();
         }
+
+
+        public static IEnumerable<object[]> GetIssues()
+        {
+            int max = 5;
+            int count = 0;
+            foreach (var container in SeedIssues.SeedIssuesDataContainers)
+            {
+                if (count++ >= max) break;
+                yield return new object[] { container.issue };
+            }
+        }
+        public static IEnumerable<object[]> GetSolutions()
+        {
+            int max = 5;
+            int count = 0;
+            // Iterate through all SeedIssueContainer instances in SeedIssuesDataContainers
+            foreach (var container in SeedSolutions.SeedSolutionDataContainers)
+            {
+                if (count++ >= max) break;
+                yield return new object[] { container.solution };
+            }
+        }
+
+        public static IEnumerable<object[]> GetIssueUrls()
+        {
+            int max = 5;
+            int count = 0;
+            // Iterate through all SeedIssueContainer instances in SeedIssuesDataContainers
+            foreach (var container in SeedIssues.SeedIssuesDataContainers)
+            {
+                if (count++ >= max) break;
+                yield return new object[] { "/issue/" + container.issue.IssueID.ToString() };
+            }
+        }
+
+        public static IEnumerable<object[]> GetFilterDataRows()
+        {
+            yield return new object[] {
+                new ContentFilter()
+                {
+                    AvgVoteRange = new RangeFilter<double> { Min = 1, Max = 10 }
+                },
+                new string[] { "Vote Range: 1 to 10" }
+            };
+            yield return new object[] {
+                new ContentFilter()
+                {
+                    AvgVoteRange = new RangeFilter<double> { Min = 4.5, Max = 5.5 }
+                },
+                new string[] { "Vote Range: 4.5 to 5.5" }
+            };
+            yield return new object[] {
+                new ContentFilter()
+                {
+                    AvgVoteRange = new RangeFilter<double> { Min = 4.5, Max = 5.5 },
+                    TotalVoteCount = new NullableMaxRangeFilter<int> { Min = 3}
+
+                },
+                new string[] { "Vote Range: 4.5 to 5.5", "Vote Count: 3 and up" }
+            };
+        }
+
     }
 }

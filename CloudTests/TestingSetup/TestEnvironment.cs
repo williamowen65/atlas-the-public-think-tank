@@ -2,7 +2,6 @@
 using AngleSharp.Dom;
 using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
-using CloudTests.UnitTesting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -158,7 +157,7 @@ namespace CloudTests.TestingSetup
             return await _client.SendAsync(request);
         }
 
-        public async Task<HttpResponseMessage> PostFormAsync(string url, Dictionary<string, string> formData)
+        public async Task<HttpResponseMessage> PostFormAsync(string url, List<KeyValuePair<string, string>> formData)
         {
             var content = new FormUrlEncodedContent(formData);
             return await SendRequestAsync(HttpMethod.Post, url, content);
@@ -275,7 +274,7 @@ namespace CloudTests.TestingSetup
                             options.UseSqlServer(connectionString));
 
                         services.AddControllers()
-                                .AddApplicationPart(typeof(UnitTestController).Assembly);
+                                .AddApplicationPart(typeof(TestController).Assembly);
                     });
                 });
 

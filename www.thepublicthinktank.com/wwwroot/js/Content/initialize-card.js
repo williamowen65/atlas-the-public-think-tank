@@ -21,9 +21,9 @@ function initializeCard(cardId) {
 
     if (!isVersionHistoryModal) {
         initializeVoteDial(cardId)
-        initializeCompositeScope(cardId)
          // TBD - More initializations are possible
     }
+    initializeCompositeScopeRibbonListener(cardId)
 
     //card.classList.add("initialized")
 }
@@ -726,26 +726,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Event registed in documentObservert event queue
 function initInitializeCardObserver(node) {
-        if (node.classList && (node.classList.contains('issue-card') || node.classList.contains('solution-card'))) {
-            // Card was added
-            console.log('Issue card added via MutationObserver:', node);
-            // Initialize card-specific JS here
-            if (typeof initializeCard === 'function') {
-                try {
-                    const issueId = node.id;
-                    initializeCard(issueId);
-                } catch (initError) {
-                    console.error("Error in initializeVoteDial:", initError);
-                }
-            } else {
-                console.error("initializeVoteDial function is not defined");
+    if (!(node instanceof Element)) return;
+    if (node.classList && (node.classList.contains('issue-card') || node.classList.contains('solution-card'))) {
+        // Card was added
+        console.log('Issue card added via MutationObserver:', node);
+        // Initialize card-specific JS here
+        if (typeof initializeCard === 'function') {
+            try {
+                const contentId = node.id;
+                initializeCard(contentId);
+            } catch (initError) {
+                console.error("Error in initializeVoteDial:", initError);
             }
+        } else {
+            console.error("initializeVoteDial function is not defined");
+        }
     }
+    const childCards = node.querySelectorAll('.issue-card, .solution-card');
+    childCards.forEach(child => {
+        const contentId = child.getAttribute("id")
+        initializeCard(contentId);
+    });
 }
 
 // The scope ribbon is getting an update 8/31/2025
 // This sets a listener to simply add a class to the card ("show-composite-scope")
-function initializeCompositeScope(cardId) {
+function initializeCompositeScopeRibbonListener(cardId) {
     const card = document.querySelector(`.card[id="${cardId}"]`)
     const ribbon = card.querySelector(".ribbon")
 

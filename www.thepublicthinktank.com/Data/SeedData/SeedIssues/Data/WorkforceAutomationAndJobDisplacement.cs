@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
  
 using atlas_the_public_think_tank.Models.Enums;
@@ -19,7 +20,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
                     ContentStatus = ContentStatus.Published,
                     CreatedAt = new DateTime(2024, 1, 20),
                     AuthorID = SeedUserThirteen.user.Id, // Using centralized user ID
-                    ScopeID = SeedIds.Scopes.Global // Using centralized scope ID
+                    ScopeID = scope.ScopeID
                 };
             }
         }
@@ -45,6 +46,21 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
             "These questions demand urgent attention from policymakers, business leaders, educators, and citizens as we " +
             "collectively shape how automation will transform not just our economy, but the very nature of work itself.";
 
+        public Scope scope
+        {
+            get
+            {
+                return new Scope()
+                {
+                    ScopeID = new Guid("1c93c95b-7842-440d-aeb9-cdbd61e1fb2f"),
+                    Scales = { Scale.Global, Scale.National },
+                    Domains = { Domain.Technological, Domain.Economic },
+                    EntityTypes = { EntityType.Government, EntityType.Organization },
+                    Timeframes = { Timeframe.LongTerm },
+                    Boundaries = { },
+                };
+            }
+        }
         public IssueVote[] issueVotes { get; } = {
                new IssueVote(){
                     IssueID = ContentId,

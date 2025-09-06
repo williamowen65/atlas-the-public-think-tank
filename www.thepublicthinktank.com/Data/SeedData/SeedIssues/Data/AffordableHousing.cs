@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
  
 using atlas_the_public_think_tank.Models.Enums;
@@ -19,7 +20,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
                     ContentStatus = ContentStatus.Published,
                     CreatedAt = new DateTime(2024, 1, 17),
                     AuthorID = SeedUserOne.user.Id, // Using centralized user ID
-                    ScopeID = SeedIds.Scopes.Global, // Using centralized scope ID
+                    ScopeID = scope.ScopeID,
                     ParentIssueID = Homelessness.ContentId // Making this a sub-issue of Homelessness
                 };
             }
@@ -47,6 +48,21 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
           "homelessness often have nowhere to go. Solutions may include reforming zoning laws, expanding housing trust funds, " +
           "increasing public-private partnerships, and scaling up supportive housing models.";
 
+        public Scope scope
+        {
+            get
+            {
+                return new Scope()
+                {
+                    ScopeID = new Guid("10873349-5aaa-4e6f-a08a-cbbe1ac2127f"),
+                    Scales = { Scale.Community, Scale.National }, // Housing is local/national
+                    Domains = { Domain.Economic, Domain.Health },
+                    EntityTypes = { EntityType.Government, EntityType.Organization },
+                    Timeframes = { Timeframe.LongTerm },
+                    Boundaries = { }, // Not defined in enums, leave empty
+                };
+            }
+        }
         public IssueVote[] issueVotes { get; } = new IssueVote[] { };
     }
 }

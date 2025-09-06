@@ -1,10 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.SeedData.SeedSolutions.Data;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
  
 using atlas_the_public_think_tank.Models.Enums;
+using System;
+using System.Collections.Generic;
 using static atlas_the_public_think_tank.Data.SeedData.SeedIds;
 
 namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
@@ -44,8 +45,24 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
                     ContentStatus = ContentStatus.Published,
                     CreatedAt = new DateTime(2024, 7, 5),
                     AuthorID = SeedUserSeven.user.Id, // Using centralized user ID
-                    ScopeID = Scopes.Global, // Using centralized scope ID
+                    ScopeID = scope.ScopeID,
                     ParentSolutionID = AtlasThePublicThinkTank.ContentId // Making this a sub-issue of Atlas solution
+                };
+            }
+        }
+
+        public Scope scope
+        {
+            get
+            {
+                return new Scope()
+                {
+                    ScopeID = new Guid("ff976803-e30a-45d6-a74d-4bcbb024a513"),
+                    Scales = { Scale.Global },
+                    Domains = { Domain.Technological, Domain.Cultural, Domain.Political },
+                    EntityTypes = { EntityType.Organization, EntityType.Person },
+                    Timeframes = { Timeframe.LongTerm, Timeframe.ShortTerm },
+                    Boundaries = { },
                 };
             }
         }

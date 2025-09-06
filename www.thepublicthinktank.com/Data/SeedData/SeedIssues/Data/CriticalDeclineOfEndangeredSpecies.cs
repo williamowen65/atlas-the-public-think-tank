@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
  
 using atlas_the_public_think_tank.Models.Enums;
@@ -18,7 +19,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
                     CreatedAt = new DateTime(2024, 1, 16),
                     ParentIssueID = ClimateChange.ContentId,
                     AuthorID = SeedUserOne.user.Id, // Using centralized user ID
-                    ScopeID = SeedIds.Scopes.Global // Using centralized scope ID
+                    ScopeID = scope.ScopeID
                 };
             } 
         }
@@ -44,6 +45,23 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
             "profound consequences for human survival. Protecting endangered species means preserving the interconnected " +
             "web of life. It demands stronger conservation laws, habitat restoration, indigenous land stewardship, and " +
             "a commitment to shifting our relationship with nature—from exploitation to stewardship.";
+
+        public Scope scope
+        {
+            get
+            {
+                return new Scope()
+                {
+                    ScopeID = new Guid("7b9fd298-f051-4664-a274-b642a520ac64"),
+                    Scales = { Scale.Global, Scale.Regional },
+                    Domains = { Domain.Environmental, Domain.Health },
+                    EntityTypes = { EntityType.Government, EntityType.Organization },
+                    Timeframes = { Timeframe.LongTerm },
+                    Boundaries = { },
+                };
+            }
+        }
+
         public IssueVote[] issueVotes { get; } = new IssueVote[] { };
     }
 

@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
  
@@ -21,7 +22,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedSolutions.Data
                     ContentStatus = ContentStatus.Published,
                     CreatedAt = new DateTime(2024, 1, 15),
                     AuthorID = SeedUserOne.user.Id, // Using centralized user ID
-                    ScopeID = SeedIds.Scopes.Global // Using centralized scope ID
+                    ScopeID = scope.ScopeID,
                 };
             }
         }
@@ -44,6 +45,21 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedSolutions.Data
 
             "This solution doesn't just critique existing social media—it offers a concrete alternative that shows how technology can be harnessed to connect people in more meaningful, productive ways.";
 
+        public Scope scope
+        {
+            get
+            {
+                return new Scope()
+                {
+                    ScopeID = new Guid("3119d678-b8b9-4c6f-90f7-e35e5d446dfc"),
+                    Scales = { Scale.Global },
+                    Domains = { Domain.Technological, Domain.Political }, // Atlas platform
+                    EntityTypes = { EntityType.Organization, EntityType.Government },
+                    Timeframes = { Timeframe.LongTerm },
+                    Boundaries = { },
+                };
+            }
+        }
         public SolutionVote[] solutionVotes { get; } = {
             new SolutionVote
             {

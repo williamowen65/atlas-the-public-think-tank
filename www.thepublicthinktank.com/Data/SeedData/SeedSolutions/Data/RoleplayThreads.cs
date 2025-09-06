@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
  
@@ -21,7 +22,23 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedSolutions.Data
                     ContentStatus = ContentStatus.Published,
                     CreatedAt = new DateTime(2024, 4, 5),
                     AuthorID = SeedUserOne.user.Id, // Using centralized user ID
-                    ScopeID = SeedIds.Scopes.Global // Using centralized scope ID
+                    ScopeID = scope.ScopeID
+                };
+            }
+        }
+
+        public Scope scope
+        {
+            get
+            {
+                return new Scope()
+                {
+                    ScopeID = new Guid("26524034-13d3-4e9c-a361-ddf01271a71f"),
+                    Scales = { Scale.Global },
+                    Domains = { Domain.Cultural, Domain.Technological },
+                    EntityTypes = { EntityType.Person, EntityType.Organization },
+                    Timeframes = { Timeframe.ShortTerm },
+                    Boundaries = { },
                 };
             }
         }

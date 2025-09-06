@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
  
 using atlas_the_public_think_tank.Models.Enums;
@@ -19,7 +20,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
                     ContentStatus = ContentStatus.Published,
                     CreatedAt = new DateTime(2024, 7, 15),
                     AuthorID = SeedUserThree.user.Id, // Using centralized user ID
-                    ScopeID = SeedIds.Scopes.Global, // Using centralized scope ID
+                    ScopeID = scope.ScopeID,
                     ParentIssueID = Homelessness.ContentId
                 };
             }
@@ -53,6 +54,21 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
             "in construction methods and financing models; tenant protections that maintain stability without discouraging " +
             "supply growth; and regional approaches that recognize housing markets transcend municipal boundaries.";
 
+        public Scope scope
+        {
+            get
+            {
+                return new Scope()
+                {
+                    ScopeID = new Guid("d34e087c-ef33-4dd1-98fd-759440c16961"),
+                    Scales = { Scale.National, Scale.Community },
+                    Domains = { Domain.Economic, Domain.Health, Domain.Environmental },
+                    EntityTypes = { EntityType.Government, EntityType.Organization },
+                    Timeframes = { Timeframe.LongTerm },
+                    Boundaries = { },
+                };
+            }
+        }
         public IssueVote[] issueVotes { get; } = {
                new IssueVote(){
                     IssueID = ContentId,

@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
  
 using atlas_the_public_think_tank.Models.Enums;
@@ -18,7 +19,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
                     ContentStatus = ContentStatus.Published,
                     CreatedAt = new DateTime(2024, 1, 15),
                     AuthorID = SeedUserOne.user.Id, // Using centralized user ID
-                    ScopeID = SeedIds.Scopes.Global // Using centralized scope ID
+                    ScopeID = scope.ScopeID
                 };
             } 
         }
@@ -45,7 +46,21 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
             "protect natural ecosystems, and build resilient infrastructure. The challenge is immense, but so is the " +
             "responsibility—and the opportunity—to shape a livable future for all.";
 
-
+        public Scope scope
+        {
+            get
+            {
+                return new Scope()
+                {
+                    ScopeID = new Guid("a28b1e20-0234-4d48-91de-0e9b2bf2bc29"),
+                    Scales = { Scale.Global, Scale.National, Scale.Community },
+                    Domains = { Domain.Environmental, Domain.Economic, Domain.Health },
+                    EntityTypes = { EntityType.Government, EntityType.Organization, EntityType.Person },
+                    Timeframes = { Timeframe.LongTerm },
+                    Boundaries = { },
+                };
+            }
+        }
         public IssueVote[] issueVotes { get; } = {
                new IssueVote(){
                     IssueID = ContentId,

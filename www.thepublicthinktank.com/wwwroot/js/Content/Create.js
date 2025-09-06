@@ -68,18 +68,7 @@ function initListenersForContentCreateForm(form) {
         }
 
 
-        // Append all of the Scope info
-        //const scopeFieldset = form.querySelector(".scope-fieldset");
-        //if (scopeFieldset) {
-        //    const selects = scopeFieldset.querySelectorAll("select[name]");
-        //    selects.forEach(select => {
-        //        if (!select.value) {
-        //            formData.remove(select.name);
-        //        }
-        //    });
-        //}
-
-
+   
 
         // Get anti-forgery token
         const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
@@ -87,6 +76,29 @@ function initListenersForContentCreateForm(form) {
         let url;
         if (contentType == 'issue') url = `/create-issue`
         if (contentType == 'solution') url = `/create-solution`
+
+
+        /*
+            NOTE
+                if trying to log formData 
+                    Object.fromEntries(formData.entries()) will not show a complete object
+                    For some reason this does not print the List of items in the formData
+                if trying to view the List elements of Scope, like Scope.Scales
+                    formData.getAll("Scope.Scales")
+
+                or 
+
+                const obj = {};
+                for (const [key, value] of formData.entries()) {
+                    if (obj[key]) {
+                        if (!Array.isArray(obj[key])) obj[key] = [obj[key]];
+                        obj[key].push(value);
+                    } else {
+                        obj[key] = value;
+                    }
+                }
+            
+        */
 
         // Send POST request via fetch
         fetch(url, {

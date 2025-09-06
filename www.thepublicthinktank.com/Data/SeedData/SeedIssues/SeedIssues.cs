@@ -1,41 +1,37 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data;
  
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Reflection;
 
 namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues
 {
     public class SeedIssues
     {
-        public static SeedIssueContainer[] SeedIssuesDataContainers = {
-                    new Homelessness(),
-                    //new ClimateChange(),
-                    //new CriticalDeclineOfEndangeredSpecies(),
-                    //new AffordableHousing(),
-                    //new CanSocialMediaPlatformsBeBetter(),
-                    //new DeclineOfSouthernResidentOrcaPopulation(),
-                    //new OceanAcidification(),
-                    //new WorkforceAutomationAndJobDisplacement(),
-                    //new ImpactOnAdolescentMentalHealthAndBodyImage(),
-                    //new AdDrivenModelsIncentivizingOutrageAndEngagementAtAllCosts(),
-                    //new CentralizedOwnershipOfMassivePublicDiscourse(),
-                    //new SpreadOfMisinformationAndEchoChambers(),
-                    //new AmplificationOfPoliticalPolarizationAndExtremism(),
-                    //new CensorshipVsFreeSpeechTensions(),
-                    //new StigmaPreventingPeopleFromSeekingHelp(),
-                    //new HousingSupplyAndAffordability(),
-                    //new SystemicFailuresAndSafetyNets(),
-                    //new GapsInTransitionalServicesAfterFosterCarePrisonOrMilitaryService(),
-                    //new DiscoverabilityAndVisibilityOfContributions(),
-                    //new MisinformationAndBadFaithParticipation(),
-                    //new IntellectualPropertyAndAttribution(),
-                    //new ModerationAndGovernanceOfPublicDebates(),
-                    //new BiasAndRepresentationInParticipation(),
-                    //new SustainingLongTermEngagement(),
-                    //new BalancingTransparencyWithAnonymity(),
-                    //new TranslationAndGlobalAccessibility()
-            };
+
+        // file path Data/SeedData/SeedIssues/Data
+        public static SeedIssueContainer?[] SeedIssuesDataContainers { get; } =
+         Assembly.GetExecutingAssembly() // or typeof(SomeClass).Assembly if it's another DLL
+             .GetTypes()
+             .Where(t => t.IsClass && !t.IsAbstract && typeof(SeedIssueContainer).IsAssignableFrom(t))
+             .Select(t =>
+             {
+                 try
+                 {
+                     return (SeedIssueContainer)Activator.CreateInstance(t);
+                 }
+                 catch (Exception ex)
+                 {
+                     // Log the error or handle it appropriately
+                     Console.WriteLine($"Failed to create instance of {t.Name}: {ex.Message}");
+                     return null;
+                 }
+             })
+             .Where(instance => instance != null)
+             .ToArray();
+
 
         public static Issue[] SeedIssuesData = SeedIssuesDataContainers
           .Select(container => container.issue) 
@@ -52,6 +48,8 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues
     {
         Issue issue { get; }
         IssueVote[] issueVotes { get; }
+
+        Scope scope { get; }
     }
 
 }

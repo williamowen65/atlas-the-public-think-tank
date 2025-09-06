@@ -96,12 +96,20 @@ namespace CloudTests.TestingSetup.TestingData
             // The standard Identity login endpoint
             string loginUrl = "/login";
 
-            // Create form data with login credentials and anti-forgery token
-            var formData = new Dictionary<string, string>
+            // Replace this block in LoginUserViaEndpoint method:
+            // var formData = new List<KeyValuePair<string, string>>
+            // {
+            //     { "Input.Email", email },
+            //     { "Input.Password", password },
+            //     { "Input.RememberMe", "true" }
+            // };
+
+            // With the following code:
+            var formData = new List<KeyValuePair<string, string>>
             {
-                { "Input.Email", email },
-                { "Input.Password", password },
-                { "Input.RememberMe", "true" }
+                new KeyValuePair<string, string>("Input.Email", email),
+                new KeyValuePair<string, string>("Input.Password", password),
+                new KeyValuePair<string, string>("Input.RememberMe", "true")
             };
 
             // You need to fetch the login page first to get the anti-forgery token
@@ -110,7 +118,11 @@ namespace CloudTests.TestingSetup.TestingData
 
             if (!string.IsNullOrEmpty(antiForgeryToken))
             {
-                formData.Add("__RequestVerificationToken", antiForgeryToken);
+             
+                if (!string.IsNullOrEmpty(antiForgeryToken))
+                {
+                    formData.Add(new KeyValuePair<string, string>("__RequestVerificationToken", antiForgeryToken));
+                }
             }
 
             // Send the login POST request

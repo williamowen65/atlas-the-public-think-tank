@@ -1,0 +1,27 @@
+#!/usr/bin/env node
+
+const { execSync } = require('child_process');
+const crypto = require('crypto');
+
+// Get global node_modules path
+const globalNodeModules = execSync('npm root -g').toString().trim();
+
+// Load copy-paste from global install
+const clipboard = require(require('path').join(globalNodeModules, 'copy-paste'));
+
+/**
+ * Generates a UUID and copies it to the clipboard.
+ */
+function generateAndCopyUUID() {
+    const uuid = crypto.randomUUID();
+    clipboard.copy(uuid, (err) => {
+        if (err) {
+            console.error('Error copying to clipboard:', err);
+        } else {
+            console.log('UUID copied to clipboard:', uuid);
+        }
+    });
+}
+
+// Run script
+generateAndCopyUUID();

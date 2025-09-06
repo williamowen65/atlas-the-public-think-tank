@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
  
@@ -21,7 +22,23 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedSolutions.Data
                     ContentStatus = ContentStatus.Published,
                     CreatedAt = new DateTime(2024, 5, 27),
                     AuthorID = SeedUserEight.user.Id, // Using centralized user ID
-                    ScopeID = SeedIds.Scopes.Global // Using centralized scope ID
+                    ScopeID = scope.ScopeID
+                };
+            }
+        }
+
+        public Scope scope
+        {
+            get
+            {
+                return new Scope()
+                {
+                    ScopeID = new Guid("fa86f462-e7ed-47b4-8c86-c6cc5bfc02e8"),
+                    Scales = { Scale.Global },
+                    Domains = { Domain.Political, Domain.Cultural }, // Civil discourse design
+                    EntityTypes = { EntityType.Person, EntityType.Organization },
+                    Timeframes = { Timeframe.ShortTerm, Timeframe.LongTerm },
+                    Boundaries = { },
                 };
             }
         }
@@ -66,104 +83,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedSolutions.Data
             "constructive political discourse rather than the hollow dopamine hits of tribal combat.";
 
         public SolutionVote[] solutionVotes { get; } = {
-               new SolutionVote(){
-                    SolutionID = ContentId,
-                    VoteID = new Guid("a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"),
-                    UserID = SeedUserOne.user.Id,
-                    VoteValue = 9,
-                    CreatedAt = new DateTime(2024, 5, 28),
-               },
-               new SolutionVote(){
-                    SolutionID = ContentId,
-                    VoteID = new Guid("b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e"),
-                    UserID = SeedUserTwo.user.Id,
-                    VoteValue = 10,
-                    CreatedAt = new DateTime(2024, 5, 28),
-               },
-               new SolutionVote(){
-                    SolutionID = ContentId,
-                    VoteID = new Guid("c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f"),
-                    UserID = SeedUserThree.user.Id,
-                    VoteValue = 8,
-                    CreatedAt = new DateTime(2024, 5, 29),
-               },
-               new SolutionVote(){
-                    SolutionID = ContentId,
-                    VoteID = new Guid("d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a"),
-                    UserID = SeedUserFour.user.Id,
-                    VoteValue = 9,
-                    CreatedAt = new DateTime(2024, 5, 29),
-               },
-               new SolutionVote(){
-                    SolutionID = ContentId,
-                    VoteID = new Guid("e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b"),
-                    UserID = SeedUserFive.user.Id,
-                    VoteValue = 7,
-                    CreatedAt = new DateTime(2024, 5, 30),
-               },
-               new SolutionVote(){
-                    SolutionID = ContentId,
-                    VoteID = new Guid("f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c"),
-                    UserID = SeedUserSix.user.Id,
-                    VoteValue = 10,
-                    CreatedAt = new DateTime(2024, 5, 30),
-               },
-               new SolutionVote(){
-                    SolutionID = ContentId,
-                    VoteID = new Guid("a7b8c9d0-e1f2-4a3b-4c5d-6e7f8a9b0c1d"),
-                    UserID = SeedUserSeven.user.Id,
-                    VoteValue = 9,
-                    CreatedAt = new DateTime(2024, 5, 31),
-               },
-               new SolutionVote(){
-                    SolutionID = ContentId,
-                    VoteID = new Guid("b8c9d0e1-f2a3-4b4c-5d6e-7f8a9b0c1d2e"),
-                    UserID = SeedUserNine.user.Id,
-                    VoteValue = 8,
-                    CreatedAt = new DateTime(2024, 5, 31),
-               },
-               new SolutionVote(){
-                    SolutionID = ContentId,
-                    VoteID = new Guid("c9d0e1f2-a3b4-4c5d-6e7f-8a9b0c1d2e3f"),
-                    UserID = SeedUserTen.user.Id,
-                    VoteValue = 9,
-                    CreatedAt = new DateTime(2024, 6, 1),
-               },
-               new SolutionVote(){
-                    SolutionID = ContentId,
-                    VoteID = new Guid("d0e1f2a3-b4c5-4d6e-7f8a-9b0c1d2e3f4a"),
-                    UserID = SeedUserEleven.user.Id,
-                    VoteValue = 10,
-                    CreatedAt = new DateTime(2024, 6, 1),
-               },
-               new SolutionVote(){
-                    SolutionID = ContentId,
-                    VoteID = new Guid("e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b"),
-                    UserID = SeedUserTwelve.user.Id,
-                    VoteValue = 8,
-                    CreatedAt = new DateTime(2024, 6, 2),
-               },
-               new SolutionVote(){
-                    SolutionID = ContentId,
-                    VoteID = new Guid("f2a3b4c5-d6e7-4f8a-9b0c-1d2e3f4a5b6c"),
-                    UserID = SeedUserThirteen.user.Id,
-                    VoteValue = 9,
-                    CreatedAt = new DateTime(2024, 6, 2),
-               },
-               new SolutionVote(){
-                    SolutionID = ContentId,
-                    VoteID = new Guid("a3b4c5d6-e7f8-4a9b-0c1d-2e3f4a5b6c7d"),
-                    UserID = SeedUserFourteen.user.Id,
-                    VoteValue = 7,
-                    CreatedAt = new DateTime(2024, 6, 3),
-               },
-               new SolutionVote(){
-                    SolutionID = ContentId,
-                    VoteID = new Guid("b4c5d6e7-f8a9-4b0c-1d2e-3f4a5b6c7d8e"),
-                    UserID = SeedUserFifteen.user.Id,
-                    VoteValue = 8,
-                    CreatedAt = new DateTime(2024, 6, 3),
-               }
+               
         };
     }
 }

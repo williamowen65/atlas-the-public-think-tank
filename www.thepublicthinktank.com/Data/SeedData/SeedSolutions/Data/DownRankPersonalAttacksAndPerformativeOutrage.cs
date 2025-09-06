@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
  
@@ -15,13 +16,29 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedSolutions.Data
                 return new Solution
                 {
                     SolutionID = ContentId,
-                    ParentIssueID = DeliberativeAndCivilDiscourseDesign.ContentId,
+                    ParentIssueID = AmplificationOfPoliticalPolarizationAndExtremism.ContentId,
                     Title = "Down-Rank Personal Attacks and Performative Outrage",
                     Content = content,
                     ContentStatus = ContentStatus.Published,
                     CreatedAt = new DateTime(2024, 5, 20),
                     AuthorID = SeedUserFour.user.Id, // Using centralized user ID
-                    ScopeID = SeedIds.Scopes.Global // Using centralized scope ID
+                    ScopeID = scope.ScopeID
+                };
+            }
+        }
+
+        public Scope scope
+        {
+            get
+            {
+                return new Scope()
+                {
+                    ScopeID = new Guid("56c24d9d-a605-4ed5-991e-cac7944cd747"),
+                    Scales = { Scale.Global },
+                    Domains = { Domain.Political, Domain.Cultural },
+                    EntityTypes = { EntityType.Organization },
+                    Timeframes = { Timeframe.ShortTerm },
+                    Boundaries = { },
                 };
             }
         }

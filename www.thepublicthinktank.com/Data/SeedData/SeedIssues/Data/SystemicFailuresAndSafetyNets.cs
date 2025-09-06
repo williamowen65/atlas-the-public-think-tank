@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
  
 using atlas_the_public_think_tank.Models.Enums;
@@ -19,7 +20,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
                     ContentStatus = ContentStatus.Published,
                     CreatedAt = new DateTime(2024, 8, 1),
                     AuthorID = SeedUserTen.user.Id, // Using centralized user ID
-                    ScopeID = SeedIds.Scopes.Global, // Using centralized scope ID
+                    ScopeID = scope.ScopeID,
                     ParentIssueID = Homelessness.ContentId // Making this a sub-issue of Homelessness
                 };
             }
@@ -46,6 +47,22 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
             "are trauma-informed, culturally competent, and responsive to the needs of diverse populations. By strengthening " +
             "the social safety net, we can reduce the risk of homelessness and promote greater stability and opportunity for all.";
 
+
+        public Scope scope
+        {
+            get
+            {
+                return new Scope()
+                {
+                    ScopeID = new Guid("b6e3886d-91ac-412f-82fc-92113cf6b1cc"),
+                    Scales = { Scale.National, Scale.Community },
+                    Domains = { Domain.Health, Domain.Economic, Domain.Social },
+                    EntityTypes = { EntityType.Government, EntityType.Organization, EntityType.Person },
+                    Timeframes = { Timeframe.LongTerm },
+                    Boundaries = { },
+                };
+            }
+        }
         public IssueVote[] issueVotes { get; } = {
                new IssueVote(){
                     IssueID = ContentId,

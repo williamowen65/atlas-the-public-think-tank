@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
  
 using atlas_the_public_think_tank.Models.Enums;
@@ -19,7 +20,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
                     ContentStatus = ContentStatus.Published,
                     CreatedAt = new DateTime(2024, 9, 5),
                     AuthorID = SeedUserThirteen.user.Id, // Using centralized user ID
-                    ScopeID = SeedIds.Scopes.Global, // Using centralized scope ID
+                    ScopeID = scope.ScopeID,
                     ParentIssueID = GapsInTransitionalServicesAfterFosterCarePrisonOrMilitaryService.ContentId // Making this a sub-issue of GapsInTransitionalServicesAfterFosterCarePrisonOrMilitaryService
                 };
             }
@@ -52,6 +53,21 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
             "service agencies. By improving access to quality education and training, we can help vulnerable individuals build " +
             "sustainable paths to stability and self-sufficiency.";
 
+        public Scope scope
+        {
+            get
+            {
+                return new Scope()
+                {
+                    ScopeID = new Guid("c0a4e8ff-17dc-43a4-bb13-5931f3a6b687"),
+                    Scales = { Scale.National, Scale.Community },
+                    Domains = { Domain.Economic, Domain.Health, Domain.Social },
+                    EntityTypes = { EntityType.Government, EntityType.Organization, EntityType.Person },
+                    Timeframes = { Timeframe.LongTerm, Timeframe.ShortTerm },
+                    Boundaries = { },
+                };
+            }
+        }
         public IssueVote[] issueVotes { get; } = {
                new IssueVote(){
                     IssueID = ContentId,

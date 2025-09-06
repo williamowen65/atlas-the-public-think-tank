@@ -1,10 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.SeedData.SeedSolutions.Data;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
  
 using atlas_the_public_think_tank.Models.Enums;
+using System;
+using System.Collections.Generic;
 using static atlas_the_public_think_tank.Data.SeedData.SeedIds;
 
 namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
@@ -48,12 +49,27 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
                     ContentStatus = ContentStatus.Published,
                     CreatedAt = new DateTime(2024, 8, 15),
                     AuthorID = SeedUserFour.user.Id, // Using centralized user ID
-                    ScopeID = Scopes.Global, // Using centralized scope ID
+                    ScopeID = scope.ScopeID,
                     ParentSolutionID = AtlasThePublicThinkTank.ContentId // Making this a sub-issue of Atlas solution
                 };
             }
         }
 
+        public Scope scope
+        {
+            get
+            {
+                return new Scope()
+                {
+                    ScopeID = new Guid("e9f82158-76e9-4071-87d5-4e0d8d9d99a6"),
+                    Scales = { Scale.Community, Scale.Global }, // Representation/bias
+                    Domains = { Domain.Cultural, Domain.Health },
+                    EntityTypes = { EntityType.Person, EntityType.Organization },
+                    Timeframes = { Timeframe.LongTerm },
+                    Boundaries = { },
+                };
+            }
+        }
         public IssueVote[] issueVotes { get; } = {
             new IssueVote
             {

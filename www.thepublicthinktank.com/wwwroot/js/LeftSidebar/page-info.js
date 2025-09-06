@@ -37,12 +37,26 @@
 
     // If a custom documentObserver system exists, register so dynamically added cards also get updated
     if (typeof documentObserver === 'object' && typeof documentObserver.registerEvent === 'function') {
-        documentObserver.registerEvent(function (node) {
-            const stored = localStorage.getItem(LS_KEY);
-            const currentScopeSetting = stored === "true";
-            if (currentScopeSetting && node.classList && (node.classList.contains('issue-card') || node.classList.contains('solution-card'))) {
-                node.classList.add('show-composite-scope');
-            }
+        documentObserver.registerEvent(docObserverCompositeScope);
+    }
+
+    function docObserverCompositeScope(node) {
+        if (!(node instanceof Element)) return;
+        const stored = localStorage.getItem(LS_KEY);
+        const currentScopeSetting = stored === "true";
+        if (!currentScopeSetting) return;
+
+        // If node itself is a card, apply the class
+        if (node.classList && (node.classList.contains('issue-card') || node.classList.contains('solution-card'))) {
+            node.classList.add('show-composite-scope');
+        }
+
+        // Also apply to any child cards
+        const childCards = node.querySelectorAll('.issue-card, .solution-card');
+        childCards.forEach(child => {
+            child.classList.add('show-composite-scope');
         });
     }
+
+   
 });

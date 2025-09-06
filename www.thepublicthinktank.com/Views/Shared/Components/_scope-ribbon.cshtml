@@ -17,7 +17,7 @@
     // Assumes Model and Model.Scales are non-null and contain at least one element.
 }
 
-<div class="scope-ribbons">
+<div class="scope-ribbon" data-scope-id="@Model.ScopeID" >
     @switch (Model.Scales.Max())
     {
         case Scale.Individual:

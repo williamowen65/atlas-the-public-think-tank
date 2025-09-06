@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
  
 using atlas_the_public_think_tank.Models.Enums;
@@ -18,7 +19,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
                     CreatedAt = new DateTime(2024, 1, 16),
                     ParentIssueID = ClimateChange.ContentId,
                     AuthorID = SeedUserOne.user.Id, // Using centralized user ID
-                    ScopeID = SeedIds.Scopes.Global // Using centralized scope ID
+                    ScopeID = scope.ScopeID,
                 };
             } 
         }
@@ -45,6 +46,22 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
             "regions, rely heavily on healthy marine ecosystems for their livelihoods. Thus, ocean acidification is not just an " +
             "environmental issue—it’s an economic and humanitarian one as well.";
 
+
+        public Scope scope
+        {
+            get
+            {
+                return new Scope()
+                {
+                    ScopeID = new Guid("6efde1fc-a07a-4fc8-b548-aa5a77143efe"),
+                    Scales = { Scale.Global, Scale.Regional },
+                    Domains = { Domain.Environmental, Domain.Economic, Domain.Health },
+                    EntityTypes = { EntityType.Government, EntityType.Organization },
+                    Timeframes = { Timeframe.LongTerm },
+                    Boundaries = { },
+                };
+            }
+        }
         public IssueVote[] issueVotes { get; } = new IssueVote[] { };
 
     }

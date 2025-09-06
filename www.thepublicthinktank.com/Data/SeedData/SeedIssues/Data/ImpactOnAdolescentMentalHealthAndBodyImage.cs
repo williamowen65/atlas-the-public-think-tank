@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
  
 using atlas_the_public_think_tank.Models.Enums;
@@ -19,7 +20,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
                     ContentStatus = ContentStatus.Published,
                     CreatedAt = new DateTime(2024, 2, 15),
                     AuthorID = SeedUserThree.user.Id, // Using centralized user ID
-                    ScopeID = SeedIds.Scopes.Global, // Using centralized scope ID
+                    ScopeID = scope.ScopeID,
                     ParentIssueID = CanSocialMediaPlatformsBeBetter.ContentId
                 };
             }
@@ -47,6 +48,21 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
             "from technology companies, parents, educators, healthcare providers, and policymakers to create healthier " +
             "digital environments that support rather than undermine adolescent development and well-being.";
 
+        public Scope scope
+        {
+            get
+            {
+                return new Scope()
+                {
+                    ScopeID = new Guid("efc852d8-925b-40be-9925-dc499e8be6ee"),
+                    Scales = { Scale.Global, Scale.National },
+                    Domains = { Domain.Health, Domain.Cultural, Domain.Technological },
+                    EntityTypes = { EntityType.Person, EntityType.Organization, EntityType.Government },
+                    Timeframes = { Timeframe.LongTerm, Timeframe.ShortTerm },
+                    Boundaries = { },
+                };
+            }
+        }
         public IssueVote[] issueVotes { get; } = {
             
                new IssueVote(){

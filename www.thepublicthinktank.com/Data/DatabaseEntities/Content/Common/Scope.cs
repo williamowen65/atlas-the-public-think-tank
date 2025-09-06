@@ -28,7 +28,13 @@ namespace atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common
     {
         public static void Declare(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Scope>().ToTable("Scopes", "app");
+            modelBuilder.Entity<Scope>().ToTable(
+                "Scopes", 
+                "scopes",
+                tb => tb.IsTemporal(temporal =>
+                {
+                    temporal.UseHistoryTable("ScopesHistory", "scopes");
+                }));
         }
         public static void Build(ModelBuilder modelBuilder)
         {
@@ -86,6 +92,9 @@ namespace atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common
 
         [EnumMember(Value = "Health")]
         Health,
+
+        [EnumMember(Value = "Social")]
+        Social,
 
     }
 
