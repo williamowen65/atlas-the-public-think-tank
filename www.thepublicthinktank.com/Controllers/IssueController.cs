@@ -419,6 +419,7 @@ namespace atlas_the_public_think_tank.Controllers
             var user = await _userManager.GetUserAsync(User);
 
             // pull issue from DAL
+            // Also get the createdAt value
             Issue_ReadVM? issueRef = await Read.Issue((Guid)model.IssueID!, new ContentFilter());
             // Confirm this user owns this content
             if (user.Id != issueRef.Author.Id)
@@ -430,7 +431,6 @@ namespace atlas_the_public_think_tank.Controllers
                 contentCreationResponse.Errors.Add(errorEntry);
                 return Json(contentCreationResponse);
             }
-            // Also get the createdAt value
 
             // Update the Scope
             Scope_ReadVM? scopeVM = await Update.Scope(new Scope()

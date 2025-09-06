@@ -289,7 +289,15 @@ namespace atlas_the_public_think_tank.Controllers
                     SolutionID = solution.SolutionID,
                     Content = solution.Content,
                     ContentStatus = solution.ContentStatus,
-                    Scope = new Scope_CreateOrEditVM(),
+                    Scope = new Scope_CreateOrEditVM()
+                    {
+                        ScopeID = solution.Scope.ScopeID,
+                        Boundaries = solution.Scope.Boundaries,
+                        Domains = solution.Scope.Domains,
+                        EntityTypes = solution.Scope.EntityTypes,
+                        Scales = solution.Scope.Scales,
+                        Timeframes = solution.Scope.Timeframes
+                    },
                     Title = solution.Title,
                     ParentIssue = await Read.Issue(solution.ParentIssueID, new ContentFilter()),
                     ParentIssueID = solution.ParentIssueID,
@@ -341,7 +349,9 @@ namespace atlas_the_public_think_tank.Controllers
             var user = await _userManager.GetUserAsync(User);
 
             // pull issue from DAL
+            // Also to get the created at value
             Solution_ReadVM? solutionRef = await Read.Solution((Guid)model.SolutionID!, new ContentFilter());
+
             // Confirm this user owns this content
             if (user.Id != solutionRef.Author.Id)
             {
@@ -353,6 +363,20 @@ namespace atlas_the_public_think_tank.Controllers
                 return Json(contentCreationResponse);
             }
 
+
+            // Update the Scope
+            Scope_ReadVM? scopeVM = await Update.Scope(new Scope()
+            {
+                ScopeID = (Guid)model.Scope.ScopeID!,
+                Boundaries = model.Scope.Boundaries,
+                Domains = model.Scope.Domains,
+                EntityTypes = model.Scope.EntityTypes,
+                Scales = model.Scope.Scales,
+                Timeframes = model.Scope.Timeframes
+            });
+
+
+
             // Update solution
             Solution_ReadVM? solution = await Update.Solution(new Solution()
             {
@@ -363,7 +387,7 @@ namespace atlas_the_public_think_tank.Controllers
                 ContentStatus = contentStatus,
                 CreatedAt = solutionRef.CreatedAt,
                 ModifiedAt = DateTime.UtcNow, // Set ModifiedAt
-                Scope = new Scope(),
+                ScopeID = (Guid)model.Scope.ScopeID!,
                 Title = model.Title
             });
 
