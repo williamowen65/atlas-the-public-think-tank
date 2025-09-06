@@ -12,7 +12,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "GitHubActions", "GitHubActi
 		.github\workflows\SQLServerTest.yml = .github\workflows\SQLServerTest.yml
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3986CB4F-8582-4213-A385-7B2470124CDB}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SQL Scripts", "SQL Scripts", "{3986CB4F-8582-4213-A385-7B2470124CDB}"
 	ProjectSection(SolutionItems) = preProject
 		sql-documents\General.sql = sql-documents\General.sql
 		sql-documents\target-database-schema-and-stored-procedures.sql = sql-documents\target-database-schema-and-stored-procedures.sql
@@ -39,6 +39,12 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "pre-launch-landing-page", "
 		Release.AspNetCompiler.Debug = "False"
 		VWDPort = "61508"
 		SlnRelativePath = "pre-launch-landing-page\"
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{DA27B20D-3056-416F-AEF3-074B872DC691}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		README.md = README.md
 	EndProjectSection
 EndProject
 Global

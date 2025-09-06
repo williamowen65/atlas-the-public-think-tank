@@ -8,6 +8,12 @@
     <RootNamespace>atlas_the_public_think_tank</RootNamespace>
   </PropertyGroup>
 
+
+  <ItemGroup>
+     <Compile Remove="terraform\**\*.tf" />
+	 <None Include="terraform\**\*.tf" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.3.0" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="9.0.3" />
