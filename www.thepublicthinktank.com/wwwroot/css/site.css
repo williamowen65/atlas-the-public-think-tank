@@ -1,0 +1,141 @@
+/*
+    Style sheet for Main site
+    
+    Try to keep this file as lean as possible. 
+    Distribute your css in specific files relating to features. 
+
+
+    Note about :root css variables.
+    There are more variables declared in other css files relating to specific features.
+
+    The "Inpiration for this website" button has a css variable (in another file) for the rotation of color
+    JS updates this variable infinitly, but it only updates the variable within the scope of the button, not the :root
+    Inifinite updates to the :root css varaibles caused a bad developer experience where I couldn't toggle classes via dev tools.
+    Hence, the JS now targets the css variable scoped to the element.
+*/
+
+
+/* Global CSS Variables */
+:root {
+    --header-height: 70.4px;
+    --left-sidebar-container-width: 300px;
+    --call-to-action-theme-color: #beff9e;
+
+}
+
+/* Custom light / dark themeing */
+
+html {
+    --filter-group-theme-color: lightgray;
+    --filter-label-theme-color: #bfbfc2;
+}
+
+html[data-bs-theme="dark"] {
+    --filter-group-theme-color: #353439;
+    --filter-label-theme-color: #586e58
+}
+
+
+
+html {
+    font-size: 14px;
+}
+
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+  color: var(--bs-secondary-color);
+  text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+  text-align: start;
+}
+
+
+
+/* CSS Above this was auto generated */
+
+header.main-header {
+    height: var(--header-height);
+}
+.transparent-btn {
+    border: none;
+    background: transparent;
+}
+.row {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.general-btn, .general-btn .anchor-btn-wrapper {
+    display: flex;
+    align-items: center;
+    margin-inline: .5rem !important;
+    border-radius: 19px;
+    height: 40px;
+    --background-hover-color: rgb(52, 61, 66);
+    overflow: hidden; /* prevent anchor tags for bleeding outside of container */
+    width: 121px;
+}
+
+.general-btn i {
+    margin-right: .5rem !important;
+}
+
+.hoverable {
+    transition: background 0.3s;
+}
+
+.hoverable:hover {
+  background-color: var(--background-hover-color);
+}
+
+.anchor-btn-wrapper {
+    text-decoration:none;
+/*    cursor:default;*/
+}
+
+.accordion-button:focus {
+    box-shadow: none;
+}
+
+svg.parent-issue-icon {
+    height: 17px;
+    width: 17px;
+}
+.card svg.parent-issue-icon {
+    height: 24px !important;
+    width: 24px;
+    transform: translateY(-4px);
+}
+
+.outlined-text {
+    -webkit-text-stroke: 0.5px black; /* outline width and color */
+    text-stroke: 0.5px black; /* optional non-prefixed */
+}
+
+
+
+
+.mc-calendar {
+    z-index: 2030 !important;
+}

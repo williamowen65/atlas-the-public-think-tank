@@ -1,0 +1,59 @@
+﻿@using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common
+
+@*
+    This html partial is used on every issue/solution
+    Update: Added Household scale case.
+    Pseudocode:
+      - Determine highest scale via Model.Scales.Max()
+      - Switch on that value
+      - Added new case Scale.Household rendering 🏠 with class 'household'
+      - Fallback shows ❓
+*@
+
+@model Scope
+
+@{
+    // Potential null safety (left minimal per request):
+    // Assumes Model and Model.Scales are non-null and contain at least one element.
+}
+
+<div class="scope-ribbon" data-scope-id="@Model.ScopeID" >
+    @switch (Model.Scales.Max())
+    {
+        case Scale.Individual:
+            <div class="ribbon individual">
+                <text>👤</text>
+            </div>
+            break;
+        case Scale.Household:
+            <div class="ribbon household">
+                <text>🏠</text>
+            </div>
+            break;
+        case Scale.National:
+            <div class="ribbon national">
+                <text>🏛️</text>
+            </div>
+            break;
+        case Scale.Regional:
+            <div class="ribbon local">
+                <text>📍</text>
+            </div>
+            break;
+        case Scale.Community:
+            <div class="ribbon community">
+                <text>🤝</text>
+            </div>
+            break;
+        case Scale.Global:
+            <div class="ribbon global">
+                <text>🌍</text>
+            </div>
+            break;
+        default:
+            <div class="ribbon">
+                <text>❓</text>
+            </div>
+            break;
+    }
+</div>

@@ -1,0 +1,112 @@
+﻿
+/*
+    Stylesheet for the breadcrumb (seen in issues/solutions)
+
+    Be very careful editing the breadcrumb css. It was tricky to setup.
+    Be aware that there may be bootstrap classes acting on the breadcrumb as well.
+*/
+
+
+/* Ribbon-style breadcrumb */
+.breadcrumb-ribbon-custom {
+    display: flex;
+    /* DO NOT USE justify-content as it messes up the scrollbar */
+    padding: 0;
+    margin: 0;
+}
+
+
+
+/* Hide scrollbar for breadcrumb ribbon */
+.breadcrumb-ribbon-custom {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
+}
+.breadcrumb-ribbon-custom::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+}
+
+.breadcrumb-ribbon-custom .breadcrumb-item-custom {
+    height: 28px;
+    position: relative;
+    width: fit-content;
+    padding-inline-end: 12px;
+    padding-inline-start: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateX(-15px);
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    font-size: 18px;
+    margin: 0 0px;
+    clip-path: polygon(0 0, 100% 0, calc(100% + 15px) 50%, 100% 100%,0 100%, 14px 50%);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.breadcrumb-item-custom::before {
+    all: revert;
+    content: "";
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translate(-6px,-50%);
+    width: 0;
+    height: 0;
+    border-top: 20px solid transparent;
+    border-bottom: 20px solid transparent;
+    border-left: 20px solid white;
+    z-index: 1;
+}
+
+.breadcrumb-ribbon-custom .breadcrumb-item-custom.active {
+    background: #e74c3c; /* red */
+}
+
+.breadcrumb-ribbon-custom .breadcrumb-item-custom a {
+    color: white;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+:root {
+    --charcoal: #264653ff;
+    --persian-green: #06584e;
+    --gunmetal: #2d3142ff;
+    --paynes-gray: #4f5d75ff;
+    /* --coral: #ef8354ff; Removed coral */
+}
+
+/* Alternate between all five colors (now four) */
+.breadcrumb-ribbon-custom .breadcrumb-item-custom:nth-child(4n+1) {
+    background: var(--charcoal);
+}
+.breadcrumb-ribbon-custom .breadcrumb-item-custom:nth-child(4n+1)::before {
+    border-left-color: var(--charcoal);
+}
+
+.breadcrumb-ribbon-custom .breadcrumb-item-custom:nth-child(4n+2) {
+    background: var(--persian-green);
+}
+.breadcrumb-ribbon-custom .breadcrumb-item-custom:nth-child(4n+2)::before {
+    border-left-color: var(--persian-green);
+}
+
+.breadcrumb-ribbon-custom .breadcrumb-item-custom:nth-child(4n+3) {
+    background: var(--gunmetal);
+}
+.breadcrumb-ribbon-custom .breadcrumb-item-custom:nth-child(4n+3)::before {
+    border-left-color: var(--gunmetal);
+}
+
+.breadcrumb-ribbon-custom .breadcrumb-item-custom:nth-child(4n) {
+    background: var(--paynes-gray);
+}
+.breadcrumb-ribbon-custom .breadcrumb-item-custom:nth-child(4n)::before {
+    border-left-color: var(--paynes-gray);
+}
+    

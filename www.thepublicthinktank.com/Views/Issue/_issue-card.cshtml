@@ -1,0 +1,99 @@
+﻿@using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common.ContentItemVote
+@using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue
+
+
+@*
+    Layout of the issue card
+*@
+
+@model Issue_ReadVM
+@{
+    Boolean IsContentLong = true;
+   
+}
+
+
+@await Html.PartialAsync("~/Views/Issue/_issue-author-tag.cshtml", Model)
+
+<div class="card mb-3 issue-card " id="@Model.IssueID" data-content-type="issue">
+    <div class="card-content position-relative mb-2">
+
+            <div class="dial-container" style="float:left">
+            @await Html.PartialAsync("~/Views/Shared/Components/_voteDial.cshtml", new ContentItemVotes_ReadVM()
+            {
+                AverageVote = Model.VoteStats.AverageVote,
+                ContentID = Model.VoteStats.ContentID,
+                ContentType = Model.VoteStats.ContentType,
+                GenericContentVotes = Model.VoteStats.IssueVotes,
+                TotalVotes = Model.VoteStats.TotalVotes,
+            }) 
+        </div>
+
+        <div class="card-header  " style="border-left:var(--bs-card-border-width) solid var(--bs-card-border-color); border-top-left-radius: 0;">
+               
+                <h5 class="mb-0">
+                <div style="font-size:20px; height: 46px;" class="float-end">
+                     @await Html.PartialAsync("~/Views/Issue/_issue-card-stat-icons.cshtml", Model) 
+                    </div>
+                <span class="float-start me-2">
+
+                     @await Html.PartialAsync("~/Views/Shared/Icons/_SubIssues.cshtml")
+                    </span>
+                    @* Title and this float need to be next to each other for float styling to work. *@
+                    <span class="card-title">@Model.Title</span>
+                </h5>
+                <small class="text-muted">Posted by @Model.Author?.UserName on @Model.CreatedAt.ToString("MMM dd, yyyy")</small>
+             
+
+
+            </div>
+        @await Html.PartialAsync("~/Views/Shared/Components/_scope-composite.cshtml", Model.Scope)
+        <p class="mx-2 mb-2 truncate-multiline text-collapsible-target issue-content" style="white-space: pre-wrap">@Model.Content</p>
+
+
+                @* @if (Model.Categories != null && Model.Categories.Any())
+                {
+                    <div class="mt-2">
+                        @foreach (var category in Model.Categories)
+                        {
+                            <span class="badge bg-secondary me-1">@category.CategoryName</span>
+                        }
+                    </div>
+                } *@
+             @if (IsContentLong)
+        {
+            <div class="expand-button-spacer" style="height: 30px;"></div>
+
+        }
+
+    </div>
+
+
+    @await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", Model.BreadcrumbTags) 
+
+    <div class="card-footer d-flex justify-content-between">
+        <div class="" id="card-@Model.IssueID-footer-alert">
+        </div>
+          @if (IsContentLong)
+        {
+            <div class="card-collapse-toggle-container position-absolute" style="
+        left: 50%;
+        transform: translate(-50%, @(Model.BreadcrumbTags.Count > 0 ? "-77px" : "-48px"));
+    ">
+                <button class="card-expand-toggle btn btn-secondary btn-sm  mx-auto">Expand</button>
+            </div>
+        }
+        <div class="">
+             @if (IsContentLong)
+        {
+                <button class="card-minimize-toggle btn btn-secondary btn-sm mx-auto d-none">Minimize</button>
+        }
+            <a href="@Url.Action("ReadIssue", "Issue", new { id = Model.IssueID })" class="btn view-btn btn-sm btn-outline-primary bg-primary-subtle">View</a>
+            <a href="#" class="btn btn-sm btn-outline-secondary bg-success-subtle">Share</a>
+            <a href="#" class="btn btn-sm btn-outline-secondary bg-dark-subtle">Follow</a>
+        </div>
+    </div>
+
+</div>
+
+

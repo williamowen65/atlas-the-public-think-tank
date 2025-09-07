@@ -1,0 +1,145 @@
+﻿/**
+    Style sheet for the "issue/{IssueID}" and "solution/{SolutionID}" pages
+    For right now they, are identical in styling
+*/
+
+
+.empty-feed {
+
+    height: 400px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+}
+
+.comment-feed {
+    position: relative;
+    padding: 2.4rem;
+    background-color: var(--bs-tertiary-bg);
+    border: 4px dashed var(--bs-secondary-color);
+    border-radius: 16px;
+    text-align: center;
+    overflow: hidden;
+}
+
+/* Inner dashed box with pseudo-elements */
+.comment-feed::before,
+.comment-feed::after {
+    content: "";
+    position: absolute;
+    border-style: dashed;
+    border-color: var(--bs-secondary-color);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Horizontal upper line */
+.comment-feed::before, .comment-feed::after {
+    top: 0.65rem;
+    left: 1.25rem;
+    right: 1.25rem;
+    height: 0;
+    border-width: 0 0 2px 0;
+}
+.comment-feed::after {
+    top: revert;
+    bottom: 0.65rem;
+}
+    /* Optional: Responsive content */
+    .comment-feed .content {
+        position: relative;
+        z-index: 1;
+    }
+
+.comment-feed button {
+    margin-top: 1rem;
+    padding: 0.75rem 1.5rem;
+    background-color: var(--bs-primary);
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    font-weight: bold;
+    /*Hard coded color style for button text, not themed */
+    color: var(--call-to-action-theme-color);
+}
+
+.nav-link {
+    position: relative;
+}
+.nav-link .content-count {
+    position: absolute;
+    right:5px;
+    top:0;
+    scale: 0.6;
+}
+
+.issue-card .content-count {
+    position: absolute;
+    right: -7px;
+    top: -9px;
+    scale: 0.6;
+}
+
+
+.truncate-multiline {
+    display: -webkit-box; 
+    -webkit-box-orient: vertical; 
+    -webkit-line-clamp: 4; 
+    overflow: hidden; 
+}
+
+.expanded 
+.expand-button-spacer {
+    display: none;
+}
+
+.composite-scope {
+    display: none;
+    max-width: 230px;
+    max-height: 100px;
+    overflow-y: scroll;
+}
+.show-composite-scope .composite-scope {
+    display: block;
+}
+
+.expanded.show-composite-scope .composite-scope {
+    max-height: initial;
+    overflow-y: initial;
+}
+
+.card.solution-card.expanded .card-header,
+.card.issue-card.expanded .card-header {
+    position: sticky;
+    top: var(--header-height);
+    
+}
+
+:root {
+    --solution-bg: #03ca03; /* Light mode green */
+    --issue-bg: #f8d7da
+    /* Add other light mode variables here */
+}
+
+[data-bs-theme="dark"] {
+    --solution-bg: #006600; /* Dark mode green */
+    --issue-bg: #686364;
+    /* Add other dark mode variables here */
+}
+
+.solution-card .card-header {
+    background: var(--solution-bg);
+}
+
+.issue-card .card-header {
+    background: var(--issue-bg);
+}
+
+
+
+.issue-card .card-header,
+.solution-card .card-header {
+    margin-left: var(--dial-width);
+}

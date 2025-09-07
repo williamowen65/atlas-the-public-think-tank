@@ -1,0 +1,290 @@
+﻿@using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common
+@using atlas_the_public_think_tank.Models.Enums
+@using atlas_the_public_think_tank.Models.ViewModel.AjaxVM
+@using atlas_the_public_think_tank.Models.ViewModel.UI_VM.FormComponentVM
+@model Issue_CreateOrEdit_AjaxVM
+
+@*
+Client side scripts tied to this view: ContentCreate.js
+*@
+
+@{
+
+    bool isEditMode = Model.Issue.IssueID != null;
+}
+
+    @Html.AntiForgeryToken()
+    @if (!isEditMode)
+    {
+        <h5 class="card-header text-center ">
+            Create a new Issue
+        </h5>
+    }
+    <div class="card-header text-center bg-primary-subtle" style="background: linear-gradient(-299deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.15));">
+        <h5 class="m-0">An issue is a challenge, question, or problem.</h5> <small>Add solutions separately to keep discussions clear.</small>
+    </div>
+    <div class="card-body d-flex">
+        <div class="flex-grow-1 me-4">
+
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            @if (Model.Issue.IssueID != null)
+            {
+                <input type="hidden" name="IssueID" id="IssueID" value="@Model.Issue.IssueID" />
+            }
+
+            @await Html.PartialAsync("~/Views/Shared/FormComponents/FormInput.cshtml", new FormInputVM()
+            {
+                Model = Model.Issue,
+                        PropertyName = "Title"
+                        })
+
+            @await Html.PartialAsync("~/Views/Shared/FormComponents/FormMarkdownEditor/FormMarkdownEditor.cshtml", new FormMarkdownEditorVM()
+                        {
+                Model = Model.Issue,
+                        PropertyName = "Content",
+                        Rows = 10
+                        })
+
+            @* @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
+            new FormSelectVM()
+            {
+                Model = Model.Issue,
+                FieldLabel = "Tags",
+                FieldPlaceholder = "-- Select Tags --",
+                PropertyName = "Text",
+                TextField = "Text",
+                ValueField = "Value",
+                ListItems = {},
+            }) *@
+
+
+
+        </div>
+        <div class="col-4">
+
+
+
+            @if (Model.Issue.ParentSolution == null)
+            {
+
+
+                List<object> issueIdList = new List<object>();
+                string? selectedParentIssueValue = null;
+                if (Model.Issue.ParentIssue != null)
+                {
+                    issueIdList.Add(Model.Issue.ParentIssue);
+                    selectedParentIssueValue = Model.Issue.ParentIssue.IssueID.ToString();
+
+                }
+
+
+                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
+                new FormSelectVM()
+                {
+                    Model = Model.Issue.ParentIssue,
+                    FieldLabel = "Parent Issue",
+                    FieldPlaceholder = "-- Select a Parent Issue --",
+                    PropertyName = "ParentIssueID",
+                    TextField = "Title",
+                    ValueField = "IssueID",
+                    DisabledField = selectedParentIssueValue != null ? true : false,
+                    ListItems = issueIdList,
+                    SelectedValue = selectedParentIssueValue
+                })
+                        }
+
+            @if (Model.Issue.ParentIssue == null)
+            {
+
+
+                List<object> solutionIdList = new List<object>();
+                string? selectedParentSolutionValue = null;
+                if (Model.Issue.ParentSolution != null)
+                {
+                    solutionIdList.Add(Model.Issue.ParentSolution);
+                    selectedParentSolutionValue = Model.Issue.ParentSolution.SolutionID.ToString();
+                }
+
+                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
+                new FormSelectVM()
+                {
+                    Model = Model.Issue.ParentSolution,
+                    FieldLabel = "Parent Solution",
+                    FieldPlaceholder = "-- Select a Parent Solution--",
+                    PropertyName = "ParentSolutionID",
+                    TextField = "Title",
+                    ValueField = "SolutionID",
+                    ListItems = solutionIdList,
+                    SelectedValue = selectedParentSolutionValue,
+                    DisabledField = selectedParentSolutionValue != null ? true : false,
+                })
+
+                        }
+
+
+            @{
+                // string? selectedScopeId = null;
+                // if (Model.Issue.ScopeID != null)
+                // {
+                //     selectedScopeId = Model.Issue.ScopeID.ToString();
+                // }
+
+
+
+
+
+            }
+
+            <fieldset style="all:revert" class="scope-fieldset">
+                <legend style="all:revert">Scope</legend>
+
+
+                @{
+                    var scaleList = Enum.GetValues(typeof(Scale))
+                    .Cast<Scale>()
+                    .Select(e => new { Scale = (int)e, Text = e.ToString() })
+                    .Cast<object>()
+                    .ToList();
+
+                    // Convert ICollection<Scale> to string[] for SelectedValues
+                    string[] selectedScaleValues = Model.Issue.Scope.Scales?
+                        .Select(s => ((int)s).ToString())
+                        .ToArray() ?? Array.Empty<string>();
+                }
+
+                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
+                new FormSelectVM()
+                {
+                    Model = Model.Issue,
+                    PropertyName = "Scope.Scales",
+                    ListItems = scaleList,
+                    FieldLabel = "Scale",
+                    FieldPlaceholder = "-- Select Scales --",
+                    TextField = "Text",
+                    ValueField = "Scale",
+                    AllowMultiple = true,
+                    SelectedValues = selectedScaleValues
+                })
+
+
+                @{
+                    var domainList = Enum.GetValues(typeof(Domain))
+                    .Cast<Domain>()
+                    .Select(e => new { Value = (int)e, Text = e.ToString() })
+                    .Cast<object>()
+                    .ToList();
+
+                    string[] selectedDomainValues = Model.Issue.Scope.Domains?
+                    .Select(s => ((int)s).ToString())
+                    .ToArray() ?? Array.Empty<string>();
+                }
+
+                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
+                new FormSelectVM()
+                {
+                    Model = Model.Issue,
+                    PropertyName = "Scope.Domains",
+                    ListItems = domainList,
+                    FieldLabel = "Domains",
+                    FieldPlaceholder = "-- Select Domains --",
+                    TextField = "Text",
+                    ValueField = "Value",
+                    AllowMultiple = true,
+                    SelectedValues = selectedDomainValues
+                })
+
+                @*   
+            @{
+                var entityList = Enum.GetValues(typeof(EntityType))
+                    .Cast<EntityType>()
+                    .Select(e => new { Value = (int)e, Text = e.ToString() })
+                    .Cast<object>()
+                    .ToList();
+            }
+
+            @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml", 
+            new FormSelectVM()
+            {
+                Model = Model.Issue.Scope,
+                PropertyName = "Value",
+                ListItems = entityList,
+                FieldLabel = "Entities",
+                FieldPlaceholder = "-- Select Entities --",
+                TextField = "Text",
+                ValueField = "Value",
+            }) 
+           
+            @{
+                var timeframeList = Enum.GetValues(typeof(Timeframe))
+                    .Cast<Timeframe>()
+                    .Select(e => new { Value = (int)e, Text = e.ToString() })
+                    .Cast<object>()
+                    .ToList();
+            }
+
+            @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml", 
+            new FormSelectVM()
+            {
+                Model = Model.Issue.Scope,
+                PropertyName = "Value",
+                ListItems = timeframeList,
+                FieldLabel = "Timeframes",
+                FieldPlaceholder = "-- Select Timeframes --",
+                TextField = "Text",
+                ValueField = "Value",
+            }) 
+
+            @{
+                var boundariesList = Enum.GetValues(typeof(BoundaryType))
+                    .Cast<BoundaryType>()
+                    .Select(e => new { Value = (int)e, Text = e.ToString() })
+                    .Cast<object>()
+                    .ToList();
+            }
+
+            @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml", 
+            new FormSelectVM()
+            {
+                Model = Model.Issue.Scope,
+                PropertyName = "Value",
+                ListItems = boundariesList,
+                FieldLabel = "Boundaries",
+                FieldPlaceholder = "-- Select Boundaries --",
+                TextField = "Text",
+                ValueField = "Value",
+            }) 
+            *@
+            </fieldset>
+
+
+            @* I would like this to be a select2 as well. except I'd like to render the items specifically to have more content. But I want it to start out empty, because it will use ajax for fetching data and populating the select2. 
+
+            *@
+
+
+
+
+        </div>
+    </div>
+    <div class="card-footer">
+        <div class=" ms-auto d-flex">
+            @if (Model.Issue.ContentStatus == null)
+            {
+                <button class="create-issue-draft btn btn-sm btn-secondary fw-bold ms-auto" type="submit">Create as Draft</button>
+                <button class="publish-issue btn btn-sm btn-primary fw-bold ms-2" type="submit">Publish Issue</button>
+            }
+            @if (Model.Issue.ContentStatus == ContentStatus.Draft)
+            {
+                <button class="update-issue-draft btn btn-sm btn-secondary fw-bold ms-auto" type="submit">Update Draft</button>
+                <button class="publish-issue btn btn-sm btn-primary fw-bold ms-2" type="submit">Publish Issue</button>
+            }
+            @if (Model.Issue.ContentStatus == ContentStatus.Published)
+            {
+
+                <button class="btn btn-primary btn-sm fw-bold ms-auto update-issue w-fit" type="submit">Update Issue Post</button>
+            }
+        </div>
+    </div>
+
+

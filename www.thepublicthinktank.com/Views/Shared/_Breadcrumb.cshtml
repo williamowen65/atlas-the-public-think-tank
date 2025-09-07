@@ -1,0 +1,73 @@
+﻿@using atlas_the_public_think_tank.Models.Enums
+@using atlas_the_public_think_tank.Models.ViewModel
+@using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.ContentItem_Common
+@*
+    The breadcrumb is on all issues/solutions
+    The breadcrumb is printed in reverse order.
+    The data is tracked through parentIssues/parentSolutions.
+
+    A breadcrumb item can be an issue or solution and is denoted by the icon on the breadcrumb.
+
+*@
+@model List<Breadcrumb_ReadVM>
+
+@{
+        Guid randomId = Guid.NewGuid(); 
+}
+
+@if (Model.Any())
+{
+    <nav aria-label="breadcrumb" class="flex-grow-1 mb-1">
+        <div class="d-flex flex-nowrap breadcrumb breadcrumb-ribbon-custom overflow-y-hidden overflow-x-scroll" id="@randomId">
+            @* @for (int i = 0; i <= Model.Count - 1; i++) *@
+            @for (int i = Model.Count - 1; i >= 0; i--)
+            {
+                var breadcrumb = Model[i];
+                <div class="breadcrumb-item-custom text-nowrap">
+                    @if (!string.IsNullOrEmpty(breadcrumb.Url))
+                    {
+                        <a href="@breadcrumb.Url">
+                            <div class="breadcrumb-item-icon-container">
+
+
+                                @if (breadcrumb.ContentType.Equals(ContentType.Issue))
+                                {
+                                    @Html.Partial("~/Views/Shared/Icons/_SubIssues.cshtml")
+                                }
+                                else if (breadcrumb.ContentType.Equals(ContentType.Solution))
+                                {
+                                    @Html.Partial("~/Views/Shared/Icons/_Solutions.cshtml")
+                                }
+
+
+                                <span class="breadcrumb-title">@breadcrumb.Title</span>
+
+
+                            </div>
+                        </a>
+                    }
+                    else
+                    {
+                        <span>@breadcrumb.Title</span>
+                    }
+                </div>
+            
+            }
+        </div>
+    </nav>
+}
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+         // Scroll this nav bar to the right; use @randomId
+
+
+         // this needs to be updated to work when switching tabs 
+
+        const nav = document.getElementById("@randomId");
+        if (nav) {
+            nav.scrollLeft = nav.scrollWidth;
+        }
+    })
+</script>

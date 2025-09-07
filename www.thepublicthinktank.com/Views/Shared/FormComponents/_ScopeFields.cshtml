@@ -1,0 +1,154 @@
+﻿@using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common
+@using atlas_the_public_think_tank.Models.ViewModel.AjaxVM
+@using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.ContentItem_Common
+@using atlas_the_public_think_tank.Models.ViewModel.UI_VM.FormComponentVM
+@model Scope_CreateOrEditVM
+
+@{
+}
+
+
+
+<fieldset style="all:revert" class="scope-fieldset">
+    <legend style="all:revert">Scope</legend>
+    @if (Model.ScopeID != Guid.Empty)
+    {
+        <input type="hidden" name="Scope.ScopeID" id="Scope.ScopeID" value="@Model.ScopeID" />
+    }
+
+
+    @{
+        var scaleList = Enum.GetValues(typeof(Scale))
+        .Cast<Scale>()
+        .Select(e => new { Scale = (int)e, Text = e.ToString() })
+        .Cast<object>()
+        .ToList();
+
+        string[] selectedScaleValues = Model.Scales?
+        .Select(s => ((int)s).ToString())
+        .ToArray() ?? Array.Empty<string>();
+    }
+
+    @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
+    new FormSelectVM()
+    {
+        Model = Model,
+        PropertyName = "Scope.Scales",
+        ListItems = scaleList,
+        FieldLabel = "Scale",
+        FieldPlaceholder = "-- Select Scales --",
+        TextField = "Text",
+        ValueField = "Scale",
+        AllowMultiple = true,
+        SelectedValues = selectedScaleValues
+    })
+
+
+    @{
+        var domainList = Enum.GetValues(typeof(Domain))
+        .Cast<Domain>()
+        .Select(e => new { Value = (int)e, Text = e.ToString() })
+        .Cast<object>()
+        .ToList();
+
+        string[] selectedDomainValues = Model.Domains?
+        .Select(s => ((int)s).ToString())
+        .ToArray() ?? Array.Empty<string>();
+    }
+
+    @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
+    new FormSelectVM()
+    {
+        Model = Model,
+        PropertyName = "Scope.Domains",
+        ListItems = domainList,
+        FieldLabel = "Domains",
+        FieldPlaceholder = "-- Select Domains --",
+        TextField = "Text",
+        ValueField = "Value",
+        AllowMultiple = true,
+        SelectedValues = selectedDomainValues
+    })
+
+    @{
+        var entityList = Enum.GetValues(typeof(EntityType))
+        .Cast<EntityType>()
+        .Select(e => new { Value = (int)e, Text = e.ToString() })
+        .Cast<object>()
+        .ToList();
+
+        string[] selectedEntityTypeValues = Model.EntityTypes?
+        .Select(s => ((int)s).ToString())
+        .ToArray() ?? Array.Empty<string>();
+    }
+
+
+    @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
+    new FormSelectVM()
+    {
+        Model = Model,
+        PropertyName = "Scope.EntityTypes",
+        ListItems = entityList,
+        FieldLabel = "Entities",
+        FieldPlaceholder = "-- Select Entities --",
+        TextField = "Text",
+        ValueField = "Value",
+        AllowMultiple = true,
+        SelectedValues = selectedEntityTypeValues
+    })
+
+
+    @{
+        var timeframeList = Enum.GetValues(typeof(Timeframe))
+        .Cast<Timeframe>()
+        .Select(e => new { Value = (int)e, Text = e.ToString() })
+        .Cast<object>()
+        .ToList();
+
+        string[] selectedTimeframeValues = Model.Timeframes?
+        .Select(s => ((int)s).ToString())
+        .ToArray() ?? Array.Empty<string>();
+    }
+
+    @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
+    new FormSelectVM()
+    {
+        Model = Model,
+        PropertyName = "Scope.Timeframes",
+        ListItems = timeframeList,
+        FieldLabel = "Timeframes",
+        FieldPlaceholder = "-- Select Timeframes --",
+        TextField = "Text",
+        ValueField = "Value",
+        AllowMultiple = true,
+        SelectedValues = selectedTimeframeValues
+    })
+
+
+
+    @{
+        var boundariesList = Enum.GetValues(typeof(BoundaryType))
+        .Cast<BoundaryType>()
+        .Select(e => new { Value = (int)e, Text = e.ToString() })
+        .Cast<object>()
+        .ToList();
+
+        string[] selectedBoundaryTypeValues = Model.Boundaries?
+        .Select(s => ((int)s).ToString())
+        .ToArray() ?? Array.Empty<string>();
+    }
+
+    @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
+    new FormSelectVM()
+    {
+        Model = Model,
+        PropertyName = "Value",
+        ListItems = boundariesList,
+        FieldLabel = "Boundaries",
+        FieldPlaceholder = "-- Select Boundaries --",
+        TextField = "Text",
+        ValueField = "Value",
+        AllowMultiple = true,
+        SelectedValues = selectedBoundaryTypeValues
+    })
+</fieldset>

@@ -1,0 +1,124 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using atlas_the_public_think_tank.Data.DatabaseEntities.Users
+@using atlas_the_public_think_tank.Models.ViewModel
+@using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common.ContentItemVote
+@inject UserManager<AppUser> UserManager
+
+
+
+@*
+    Contains the layout for the voting dials.
+
+    Note that the dial container elements are siblings
+*@
+@model ContentItemVotes_ReadVM
+
+@{
+    // Generate unique IDs using the issue ID
+    var dialId = $"vote-dial-{Model.ContentID}";
+    var lensId = $"vote-lens-{Model.ContentID}";
+    var outlineId = $"vote-outline-{Model.ContentID}";
+
+    int? userVote = null;
+    if (User.Identity.IsAuthenticated)
+    {
+         // Get active user's vote
+        // Method 1: Get userId from UserManager (recommended for Razor Pages/MVC)
+        var userId = UserManager.GetUserId(User);
+        
+        if (userId != null)
+        {
+            var userGuid = Guid.Parse(userId);
+            
+            // Look for user's vote in the GenericContentVotes dictionary
+            var userVoteObj = Model.GenericContentVotes.Values
+                .FirstOrDefault(v => v.UserID == userGuid);
+                
+            if (userVoteObj != null)
+            {
+                userVote = userVoteObj.VoteValue;
+            }
+        }
+
+
+    }
+}
+
+@* issue @Model.IssueID *@
+<div class="dial mb-2" style="width: var(--dial-width); height: 190px; user-select:none;">
+    
+    @await Html.PartialAsync("~/Views/Shared/Components/_voteAverage.cshtml") 
+    
+    <div class="vote-dial-toggle @(userVote.HasValue ? "user-voted" : "") mb-1">
+        <div id="vote-toggle-container-@Model.ContentID" class="vote-toggle-container">
+            @* 
+                The invisible inputs that are used behind scenes of a dial 
+                Conditionally "Checks" the users vote value or falls back to 5
+            *@
+            @for (int i = 10; i >= 0; i--)
+            {
+                var radioId = $"vote-{Model.ContentID}-{i}";
+                <input class="" id="@radioId" type="radio" name="@dialId" value="@i" @(i == (userVote ?? 5)  ? "checked" : "") />
+            }
+
+            <div id="@lensId" class="lens"></div>
+
+            <div id="@outlineId" class="outline"></div>
+            
+            @* 
+                The visible dial inputs
+                These are linked to the radio inputs
+            *@
+
+            @for (int i = 11; i >= -1; i--)
+            {
+                var radioId = $"vote-{Model.ContentID}-{i}";
+                var optionClass = $"vote-option-{Model.ContentID}-{i}";
+                <label role="button" for="@radioId" class="toggle-option @optionClass">
+                    <span>@(i == 11 || i == -1 ? "" : i.ToString())</span>
+                </label>
+            }
+        </div>
+    </div>    
+    
+    @await Html.PartialAsync("~/Views/Shared/Components/_voteCount.cshtml")
+  
+</div>
+
+ <style>
+
+        /* Position the lens based on which radio is selected */     
+        @for (int i = 10; i >= 0; i--)
+        {
+            var radioId = $"vote-{Model.ContentID}-{i}";
+            var optionClass = $"vote-option-{Model.ContentID}-{i}";
+            <text>
+            #@radioId:checked ~ .lens {
+                transform: translateY(@(36 * (11 - i))px);
+                z-index: 1;
+            }
+            #@radioId:checked ~ .@optionClass {
+                color: #ffffff; /* Make text white when selected */
+            }
+            </text>
+        }
+
+        /* Style for the labels */
+        @for (int i = 11; i >= -1; i--)
+        {
+            var optionClass = $"vote-option-{Model.ContentID}-{i}";
+            <text>
+            .@optionClass {
+                position: absolute;
+                width: 100%;
+                top: @(36 * (11 - i))px;
+                @if(i == 11 || i == -1) {
+                    <text>opacity: 0.5; /* Make buffer options semi-transparent */</text>
+                }
+            }
+            </text>
+        }
+
+      
+ </style>    
+

@@ -1,0 +1,42 @@
+﻿
+<style>
+
+
+    #topbar-layout {
+        grid-template-columns: 126px 1fr;
+    }
+
+    @@media (min-width: 768px) {
+        #topbar-layout {
+            grid-template-columns: calc(var(--left-sidebar-container-width) - 36px) 1fr;
+        }
+    }
+</style>
+
+<header class="py-3 main-header border-bottom sticky-top bg-body">
+    <div id="topbar-layout" class="container-fluid d-grid gap-3 align-items-center" style="">
+
+        <a asp-area="" asp-controller="Home" asp-action="Index" class="ff-consolas d-flex align-items-center col-lg-4 mb-2 mb-lg-0 link-body-emphasis text-decoration-none fw-bold w-100" style="transform: translateY(-10px)">
+            <div id="large-logo" class="text-center mx-auto">
+                <span class="site-name position-relative">
+                    <span class="fs-2">Atlas</span>
+                    <br>
+                    <small class="position-absolute text-nowrap" style="top:15px; left:-36px">The Public Think Tank</small>
+                </span>
+            </div>
+
+        </a>
+
+
+        <div class="d-flex align-items-center">
+            <form class="w-100 me-3" role="search">
+                <input type="search" class="form-control" placeholder="Search..." aria-label="Search">
+            </form>
+
+            <partial name="_UserHeaderControls" />
+
+        </div>
+    </div>
+
+    <div id="header-alert-target"></div>
+</header>

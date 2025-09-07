@@ -1,0 +1,45 @@
+﻿@using atlas_the_public_think_tank.Models.Enums
+@using atlas_the_public_think_tank.Models.ViewModel
+@using atlas_the_public_think_tank.Models.ViewModel.UI_VM
+@*
+    Relates to alert.css and client_alert.js
+
+    An alert can be fetched from the server and placed anywhere in the dom.
+*@
+
+@model Alert_VM
+
+<div id="alert-container" class="container alert-container d-flex flex-column align-items-center" style="">
+    @{
+        string alertClass = Model.Type switch
+        {
+            AlertType.success => "bg-success text-white",
+            AlertType.info => "bg-info text-dark",
+            AlertType.warning => "bg-warning text-dark",
+            AlertType.error => "bg-danger text-white",
+            AlertType.plaintext => "plain-text-alert", // No background class for plain-text
+            _ => "bg-info text-dark"
+        };
+    }    <div class="alert @alertClass w-auto d-flex align-items-center" 
+         role="alert" 
+         id="@Model.Id"
+
+    @* This  use of Raw was because the parseInt in client_alert wasn't handling the extra quotes.... data-timeout="&quot;5000&quot;" *@
+
+
+        @(Model.Timeout > 0 ? Html.Raw($"data-timeout={Model.Timeout}") : "")>
+         
+        @*
+         I am considering the use of rendering text to html here because these alerts are
+         created by this application. But maybe this isn't a good idea 
+         *@
+
+        <div>@Html.Raw(Model.Message)</div>
+        @if (Model.Dismissible)
+        {
+            <button type="button" class="btn-close ms-3"
+                    onclick="dismissAlert('@Model.Id')"
+                    aria-label="Close"></button>
+        }
+    </div>
+</div>

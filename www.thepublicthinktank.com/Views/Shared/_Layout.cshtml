@@ -1,0 +1,152 @@
+﻿@using Microsoft.Extensions.Options
+@using atlas_the_public_think_tank.Data.DatabaseEntities.Users
+@using atlas_the_public_think_tank.Models
+@inject IOptions<ApplicationInsightsSettings> AppInsightsSettings
+@using Microsoft.AspNetCore.Identity
+@using atlas_the_public_think_tank.Models.ViewModel.UI_VM
+@inject SignInManager<AppUser> SignInManager
+@model dynamic
+
+@{
+
+    Console.WriteLine("t");
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Atlas: The Public Think Tank</title>
+    <script type="importmap"></script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    @* Select2 CSS *@
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+    <script src="~/js/Site/ClientSideEnums.js"></script>
+
+    @* Site.js should be loaded before other scripts. *@
+    <script src="~/js/Site/index.js" asp-append-version="true"></script>
+
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/left-sidebar-container.css" asp-append-version="true" />    
+    <link rel="stylesheet" href="~/css/vote-dial.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/alert.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/read-issue.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/issue-card-stat-icons.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/breadcrumb.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/dual-slider-input.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/select2-style.css"  asp-append-version="true"/>
+    <link href="https://cdn.jsdelivr.net/npm/mc-datepicker/dist/mc-calendar.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/mc-datepicker/dist/mc-calendar.min.js"></script>
+
+    @* <link rel="stylesheet" href="~/atlas_the_public_think_tank.styles.css" asp-append-version="true" /> *@
+
+    <script src="~/js/Site/DocumentObserver.js"></script>
+
+    <script src="~/js/Content/initialize-card.js" asp-append-version="true"></script>
+    <script src="https://kit.fontawesome.com/16aebb51db.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  
+
+    <partial name="_ColorMode" />
+
+    <partial name="_Header" />
+
+    @{
+
+        @*
+            The logic in the block is to make it so every page, 
+            even Identity generated pages have a default Sidebar model to work with.
+        *@
+
+        SideBar_VM sidebar_VM = new SideBar_VM();
+        if (Model != null)
+        {
+            // Use dynamic typing to safely check for Sidebar property
+            try
+            {
+                dynamic dynamicModel = Model;
+                if (dynamicModel.Sidebar != null)
+                {
+                    sidebar_VM = dynamicModel.Sidebar;
+                }
+            }
+            catch
+            {
+                // Property doesn't exist - sidebar_VM remains null
+            }
+        }
+    }
+
+
+
+    @await Component.InvokeAsync("Sidebar", sidebar_VM)
+    
+   
+    <main role="main" class="pb-3 px-md-3">
+        @RenderBody()
+    </main>
+
+
+    <partial name="_Footer" /> 
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+  
+
+     <script src="~/js/Site/client_alerts.js" asp-append-version="true"></script>
+
+    @* left-sidebar-container.js and content-filter.js and dual-slider-input.js must be loaded together *@
+    <script src="~/js/LeftSidebar/left-sidebar-container.js" asp-append-version="true"></script>
+    <script src="~/js/Content/Filter.js" asp-append-version="true"></script>
+    <script src="~/js/LeftSidebar/dual-slider-input.js" asp-append-version="true"></script> 
+    <script src="~/js/LeftSidebar/page-info.js" asp-append-version="true"></script>
+
+    <script src="~/js/Content/Pagination.js" asp-append-version="true"></script>
+
+    <script src="~/js/Forms/InitFields.js" asp-append-version="true"></script>
+
+    @* Issues and Solutions can be edited from any page they are found on  *@
+    <script src="~/js/Content/Edit.js" asp-append-version="true"> </script>
+
+    <script src="~/js/Forms/InitSelect2.js" asp-append-version="true"></script>
+
+
+    <script>
+
+        @*
+        
+           This application insights connection string is sensitive. No matter what, the client will have access to the key because it is used in client side click tracking.
+
+            - For local development 
+              - it is set in secrets.json
+              - it is not shared to github.
+            - For Staging and Production 
+              - It is set in the cloud, 
+              - but it will still be visible to the client. 
+              - There is no way to hide it from the client.
+              - For these environments Network Isolation settings need to be configured to only allow the deployment to interact with the insights
+        
+        *@
+
+        let configObj = {
+            connectionString: "@AppInsightsSettings.Value.ConnectionString",
+            enableSendBeacon: @AppInsightsSettings.Value.EnableSendBeacon.ToString().ToLower()
+        };
+    </script>
+    <script src="~/js/ApplicationInsights/index.js"></script>
+    <script src="~/js/ApplicationInsights/ContentNavigation.js"></script>
+
+    @* Select2 JS *@
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script src="~/js/Site/color-modes.js" asp-append-version="true"></script>
+    <script src="https://cdn.jsdelivr.net/npm/masonry-layout@4.2.2/dist/masonry.pkgd.min.js" integrity="sha384-GNFwBvfVxBkLMJpYMOABq3c+d3KnQxudP/mGPkzpZSTYykLBNsZEnG2D9G/X/+7D" crossorigin="anonymous" async></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@@floating-ui/core@1.6.9"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@@floating-ui/dom@1.6.13"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

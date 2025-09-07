@@ -1,0 +1,121 @@
+﻿@using atlas_the_public_think_tank.Models.Enums
+@using atlas_the_public_think_tank.Models.ViewModel.AjaxVM
+@using atlas_the_public_think_tank.Models.ViewModel.UI_VM.FormComponentVM
+@model Solution_CreateOrEdit_AjaxVM
+
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+
+    bool isEditMode = Model.Solution.SolutionID != null;
+}
+
+
+<form class="border-1 border card mb-3 solution-editor" data-content-type="solution" data-form-url="/edit-solution">
+    @*
+        asp-controller="Solution" asp-action="CreateSolution" method="post"
+        These are controlled via the Ajax in ContentCreate.js
+    *@
+        @Html.AntiForgeryToken()
+
+        @if (!isEditMode)
+        {
+        
+            <h5 class="card-header text-center ">
+                Solution <span class="solution-count"></span>
+            </h5>
+        }
+        <div class="card-header text-center bg-success" style="background: linear-gradient(-299deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.3));">
+            <h5 class="m-0">A solution is a proposed answer, idea, or approach to an issue.</h5> 
+        @if (!isEditMode)
+        {
+            <small>(This should be addressing the issue that you wrote)</small>
+        }
+        else
+        {
+            <small>(This should be addressing the parent issue)</small>
+        }
+    </div>
+        <div class="card-body d-flex">
+            <div class="flex-grow-1 me-4">
+
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            @if (Model.Solution.SolutionID != null)
+            {
+                <input type="hidden" name="SolutionID" id="SolutionID" value="@Model.Solution.SolutionID" />
+            }
+
+            @await Html.PartialAsync("~/Views/Shared/FormComponents/FormInput.cshtml", new FormInputVM()
+            {
+                Model = Model.Solution,
+                PropertyName = "Title"
+            })
+
+            @await Html.PartialAsync("~/Views/Shared/FormComponents/FormMarkdownEditor/FormMarkdownEditor.cshtml", new FormMarkdownEditorVM()
+            {
+                Model = Model.Solution,
+                PropertyName = "Content",
+                Rows = 10
+            })
+            
+
+            </div>
+            <div class="col-4">
+
+            <fieldset style="all:revert" class="parent-fieldset">
+
+                @{
+                    List<object> issueIdList = new List<object>();
+                    string? selectedParentIssueValue = null;
+                    if (Model.Solution.ParentIssue != null)
+                    {
+                        issueIdList.Add(Model.Solution.ParentIssue);
+                        selectedParentIssueValue = Model.Solution.ParentIssue.IssueID.ToString();
+                    }
+                }
+
+                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
+                new FormSelectVM()
+                {
+                    Model = Model.Solution.ParentIssue,
+                    FieldLabel = "Parent Issue",
+                    FieldPlaceholder = "-- Select a Parent Issue --",
+                    PropertyName = "ParentIssueID",
+                    TextField = "Title",
+                    ValueField = "IssueID",
+                    ListItems = issueIdList,
+                    DisabledField = selectedParentIssueValue != null ? true : false,
+                    SelectedValue = selectedParentIssueValue
+                })
+            </fieldset>
+
+
+                @await Html.PartialAsync("~/Views/Shared/FormComponents/_ScopeFields.cshtml", Model.Solution.Scope)
+
+
+            </div>
+        </div>
+        <div class="card-footer">
+          
+
+        <div class=" ms-auto d-flex">
+            @if (Model.Solution.ContentStatus == null)
+            {
+                <button class="create-solution-draft btn btn-sm btn-secondary fw-bold ms-auto" type="submit">Save as Draft</button>
+            <button class="publish-solution btn btn-sm btn-primary fw-bold ms-2" type="submit">Publish Solution</button>
+            }
+            @if (Model.Solution.ContentStatus == ContentStatus.Draft)
+            {
+                <button class="update-solution-draft btn btn-sm btn-secondary fw-bold ms-auto" type="submit">Update Draft</button>
+                <button class="publish-solution btn btn-sm btn-primary fw-bold ms-2" type="submit">Publish Solution</button>
+            }
+            @if (Model.Solution.ContentStatus == ContentStatus.Published)
+            {
+
+                <button class="btn btn-primary btn-sm fw-bold ms-auto update-solution w-fit" type="submit">Update Solution Post</button>
+            }
+        </div>
+        </div>
+    </form>

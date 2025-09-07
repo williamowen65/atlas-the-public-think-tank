@@ -1,0 +1,37 @@
+# For more info on HTTP files go to https://aka.ms/vs/httpfile
+
+
+### Get paginated content
+GET https://localhost:5501/getPaginatedMainContentFeed
+Accept: application/json
+
+###
+
+GET https://localhost:5501/solution/getPaginatedSubIssues/c7e262cb-042e-413b-8dd4-08dd97a30729
+Accept: application/json
+
+###
+
+GET https://localhost:5501/issue/getPaginatedSubIssues/93bb4722-4472-4633-af34-08dd9eb33186
+Accept: application/json
+
+###
+
+// Should fail because Issue id doesn't match any issue
+POST  https://localhost:5501/issue/vote
+Content-Type: application/json
+
+{
+  "IssueID": "93bb4722-4472-4633-af34-08dd9eb33186",
+  "voteValue" : 0
+}
+###
+
+
+POST  https://localhost:5501/issue/vote
+Content-Type: application/json
+
+{
+  "IssueID": "d7e8f9a0-b1c2-43d4-95e6-f7a8b9c0d1e2",
+  "voteValue" : 10
+}

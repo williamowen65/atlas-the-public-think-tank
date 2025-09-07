@@ -1,0 +1,66 @@
+﻿@using System.ComponentModel.DataAnnotations
+@using atlas_the_public_think_tank.Models.ViewModel.UI_VM.FormComponentVM
+@model FormSelectVM
+
+@{
+
+    // Parameters
+    var propertyName = Model.PropertyName;
+    var uniqueId = $"field_{Guid.NewGuid().ToString("N")}";
+    List<object> listItems = Model.ListItems;
+    string dataValueField = Model.ValueField;
+    string dataTextField = Model.TextField;
+    bool isDisabledField = Model.DisabledField;
+    string dataFieldLabel = Model.FieldLabel;
+    string dataFieldPlaceholder = Model.FieldPlaceholder;
+
+    string? dataSelectedValue = Model.SelectedValue;
+
+    string[]? dataSelectedValues = Model.SelectedValues;
+
+    bool isRequired = false;
+
+    try
+    {
+        // Get property info
+        var propertyInfo = Model.Model.GetType().GetProperty(propertyName);
+
+        // Safe way to get attributes
+        if (propertyInfo != null)
+        {
+            var attributes = propertyInfo.GetCustomAttributes(false);
+            foreach (var attr in attributes)
+            {
+                if (attr is RequiredAttribute requiredBool)
+                {
+                    isRequired = true;
+                }
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        // Silently handle any exceptions and use default values
+    }
+
+    // Create a SelectList for the items
+    var selectList = new SelectList(listItems, dataValueField, dataTextField);
+}
+
+<div class="mb-3 form-element">
+    <label for="@propertyName" class="form-label">@dataFieldLabel</label>
+    <select id="@propertyName" name="@propertyName" class="form-select my-select2 d-none" @(isDisabledField ? "disabled" : String.Empty) @(Model.AllowMultiple == true ? "multiple" : String.Empty)>
+        <option value="">@dataFieldPlaceholder</option>
+        @foreach (var item in selectList)
+        {
+            var isSelected =
+            (dataSelectedValues != null && dataSelectedValues.Contains(item.Value?.ToString()))
+            || (dataSelectedValue == item.Value?.ToString());
+
+            <option value="@item.Value" selected="@(isSelected ? "selected" : null)">
+                @item.Text
+            </option>
+        }
+    </select>
+    <span class="text-danger field-validation-valid" data-valmsg-for="@propertyName" data-valmsg-replace="true"></span>
+</div>

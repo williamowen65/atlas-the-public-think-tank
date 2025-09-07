@@ -1,0 +1,91 @@
+﻿@using atlas_the_public_think_tank.Models.ViewModel
+@using atlas_the_public_think_tank.Models.ViewModel.PageVM
+@using atlas_the_public_think_tank.Models.ViewModel.UI_VM
+
+@*
+    This is the home page of the app.
+    Specifically the main section of that page.
+    The layout file contains the sidebar and header.
+*@
+
+
+@model Home_PageVM
+@{
+    ViewData["Title"] = "Home Page";
+
+    int NextPageNumber = Model.PaginatedContent.CurrentPage + 1;
+    Boolean isMorePosts = Model.PaginatedContent.PageSize < Model.PaginatedContent.TotalCount;
+}
+
+
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Main content with issues -->
+        <div class="col-lg-9 px-0">
+            <div class="my-3">
+                <a href="@Url.Action("CreateIssue", "Issue")" class="btn btn-primary fw-bold outlined-text fs-5 mb-1 mb-md-0" styfs-5" style="color:var(--call-to-action-theme-color)">Create New Issue</a>
+                <a href="@Url.Action("CreateSolutionPage", "Solution")" class="btn btn-primary fw-bold outlined-text fs-5 mb-1 mb-md-0" styfs-5" style="color:var(--call-to-action-theme-color)">Create New Solution</a>
+            </div>
+
+            <div class="d-flex justify-content-center mb-3">
+                @await Html.PartialAsync(
+                "~/Views/Shared/Components/_gradient-border.cshtml",
+                new GradientBorder_VM()
+                {
+                    Link = "https://www.youtube.com/watch?v=ULjr4gNmb9s",
+                    LinkText = "Click here to view inspiration for this website"
+                })          
+            </div>
+            <div id="main-content">
+
+
+                @if (Model.PaginatedContent != null && Model.PaginatedContent.ContentItems != null && Model.PaginatedContent.ContentItems.Any())
+                {
+
+                    @await Html.PartialAsync("~/Views/Home/_content-item-cards.cshtml", Model.PaginatedContent.ContentItems)
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        No posts available. Be the first to create a post!
+                    </div>
+                }
+            </div>
+
+            @await Html.PartialAsync("~/Views/Shared/Components/_pagination-button.cshtml", new PaginationButton_VM
+            {
+                ElementId = "fetchPaginatedContent",
+                        ContentType = "posts",
+                        Target = "#main-content",
+                        Url = "/getPaginatedMainContentFeed",
+                        CurrentPage = Model.PaginatedContent.TotalCount,
+                        PageSize = Model.PaginatedContent.PageSize,
+                        TotalCount = Model.PaginatedContent.TotalCount,
+                        TotalPages = Model.PaginatedContent.TotalPages
+                        })
+
+
+
+        </div>
+        <partial name="_Home-Page-Right-Sidebar" />
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Optional JavaScript to filter posts by category
+             document.addEventListener("DOMContentLoaded", function() {
+                 $('.category-link').click(function(e) {
+                     e.preventDefault();
+                     var categoryId = $(this).data('category-id');
+                     // You can implement filtering logic here
+                     console.log('Filter by category ID:', categoryId);
+                 });
+
+                 const paginationButton = document.getElementById("fetchPaginatedContent")
+                 setPaginationButtonListener(paginationButton)
+
+             });
+    </script>
+}

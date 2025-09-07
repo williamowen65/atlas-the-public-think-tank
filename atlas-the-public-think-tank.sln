@@ -1,0 +1,76 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35828.75
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "www.thepublicthinktank.com", "www.thepublicthinktank.com\www.thepublicthinktank.com.csproj", "{D0587ED8-7D90-4C4F-A6C1-52CFD875CF46}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CloudTests", "CloudTests\CloudTests.csproj", "{F58050E7-20DE-4654-8B09-79AF5739EEE8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "GitHubActions", "GitHubActions", "{8EC462FD-D22E-90A8-E5CE-7E832BA40C5D}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\SQLServerTest.yml = .github\workflows\SQLServerTest.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SQL Scripts", "SQL Scripts", "{3986CB4F-8582-4213-A385-7B2470124CDB}"
+	ProjectSection(SolutionItems) = preProject
+		sql-documents\General.sql = sql-documents\General.sql
+		sql-documents\target-database-schema-and-stored-procedures.sql = sql-documents\target-database-schema-and-stored-procedures.sql
+		sql-documents\TestDataCleanUp-ByAuthorID.sql = sql-documents\TestDataCleanUp-ByAuthorID.sql
+		sql-documents\TestDataCleanUp-ByIssueID.sql = sql-documents\TestDataCleanUp-ByIssueID.sql
+	EndProjectSection
+EndProject
+Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "pre-launch-landing-page", "pre-launch-landing-page\", "{EED2838B-BDE7-DB37-97E1-DA60BF5955DB}"
+	ProjectSection(WebsiteProperties) = preProject
+		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.8"
+		Debug.AspNetCompiler.VirtualPath = "/localhost_61508"
+		Debug.AspNetCompiler.PhysicalPath = "pre-launch-landing-page\"
+		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_61508\"
+		Debug.AspNetCompiler.Updateable = "true"
+		Debug.AspNetCompiler.ForceOverwrite = "true"
+		Debug.AspNetCompiler.FixedNames = "false"
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.VirtualPath = "/localhost_61508"
+		Release.AspNetCompiler.PhysicalPath = "pre-launch-landing-page\"
+		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_61508\"
+		Release.AspNetCompiler.Updateable = "true"
+		Release.AspNetCompiler.ForceOverwrite = "true"
+		Release.AspNetCompiler.FixedNames = "false"
+		Release.AspNetCompiler.Debug = "False"
+		VWDPort = "61508"
+		SlnRelativePath = "pre-launch-landing-page\"
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{DA27B20D-3056-416F-AEF3-074B872DC691}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		guid-to-clipboard-script-nodejs.txt = guid-to-clipboard-script-nodejs.txt
+		README.md = README.md
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D0587ED8-7D90-4C4F-A6C1-52CFD875CF46}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D0587ED8-7D90-4C4F-A6C1-52CFD875CF46}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D0587ED8-7D90-4C4F-A6C1-52CFD875CF46}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D0587ED8-7D90-4C4F-A6C1-52CFD875CF46}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F58050E7-20DE-4654-8B09-79AF5739EEE8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F58050E7-20DE-4654-8B09-79AF5739EEE8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F58050E7-20DE-4654-8B09-79AF5739EEE8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F58050E7-20DE-4654-8B09-79AF5739EEE8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EED2838B-BDE7-DB37-97E1-DA60BF5955DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EED2838B-BDE7-DB37-97E1-DA60BF5955DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EED2838B-BDE7-DB37-97E1-DA60BF5955DB}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{EED2838B-BDE7-DB37-97E1-DA60BF5955DB}.Release|Any CPU.Build.0 = Debug|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {91FBCB71-A526-4836-AC90-535593188277}
+	EndGlobalSection
+EndGlobal

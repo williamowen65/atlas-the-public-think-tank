@@ -1,0 +1,268 @@
+﻿/**
+    Stylesheet for The left sidebar seen on all pages
+
+    This sidebar is part of the layout on larger screens, but floats on top for mobile.
+    The sidebar is vertically scrollable and to make it hold LOTs of content
+    Also the sidebar has tabs to switch between sidebar views.
+
+*/
+
+#left-sidebar-container {
+    width: var(--left-sidebar-container-width);
+    position: fixed; /* Ensures it stays in place */
+    top: calc(var(--header-height, 60px)); /* Adjust based on your header height */
+    bottom: 0;
+    height: calc(100vh - var(--header-height, 60px)); /* Full viewport height minus header height */
+    overflow-y: auto; /* Add scrolling if content overflows */
+    background-color: var(--bs-body-bg, #f8f9fa); /* Fallback to light gray if variable is not defined */
+    overflow-x: auto;
+    transition: transform 0.3s ease-in-out;
+    z-index: 1030;
+}
+
+#left-sidebar-container header {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: inherit;
+}
+
+main {
+    margin-left: calc(var(--left-sidebar-container-width) + 0px);
+    transition: margin-left 0.3s ease-in-out;
+}
+
+
+/**
+    This css is the tab to change sidebar views.
+    This css trick is the same trick used to make the voting dials.
+    The HTML for this element is not nested as it appears when looking at the interface. (it's an illusion)
+    The elements for this toggle are stacked instead of nested, and this allows for some animation freedom.
+*/
+.left-sidebar-toggle {
+    margin-left: var(--left-sidebar-container-width);
+    position: fixed; /* Ensures it stays in place */
+    top: calc(var(--header-height, 60px) + 50px); /* Adjust based on your header height */
+    transform: translate(-50%);
+    z-index: 3;
+    border-radius: 50%; /* Ensures the element is a perfect circle */
+    height: 35px;
+    width: 35px;
+    border: 1px solid var(--bs-gray-600);
+    display: flex; /* Enables flexbox for centering */
+    justify-content: center; /* Horizontally centers the content */
+    align-items: center;
+    background-color: var(--bs-body-bg, #f8f9fa);
+    transition: margin-left 0.3s ease-in-out;
+    z-index: 1040;
+}
+
+
+/* For when sidebar is closed - desktop */
+.sidebar-initial-closed #left-sidebar-container,
+.sidebar-initial-closed .left-sidebar-toggle,
+.sidebar-initial-closed main,
+.sidebar-initial-closed footer,
+main.sidebar-closed, footer.sidebar-closed {
+    margin-left: 0;
+}
+/* Desktop sidebar closed styles */
+.sidebar-initial-closed #left-sidebar-container ,
+#left-sidebar-container.sidebar-closed {
+    transform: translateX(-100%);
+}
+
+.left-sidebar-toggle.sidebar-closed {
+    margin-left: 0;
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+    #left-sidebar-container {
+        transform: translateX(-100%);
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    }
+
+        #left-sidebar-container.sidebar-open {
+            transform: translateX(0);
+        }
+
+    .left-sidebar-toggle {
+        margin-left: 0;
+    }
+
+    main, footer {
+        margin-left: 0;
+    }
+
+    body.sidebar-open::after {
+        content: '';
+        position: fixed;
+        top: var(--header-height, 60px);
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1029;
+    }
+}
+
+
+/*
+    If you end up adding more tab controls, the css will need to be updated
+    to give space for the elements.
+    I would like a way for this to be dynamic and just be able to add new tab elements, but 
+    because the html is not nested (stacked instead) the elements are not aware of each others dimensions
+*/
+
+html {
+    --view-mode-toggle-width: 120px;
+    --view-mode-item-dimension: calc(var(--view-mode-toggle-width) / 3);
+}
+
+/* Container for the toggle */
+.toggle-container {
+    width: var(--view-mode-toggle-width); /* Increased width to accommodate three sections */
+    height: var(--view-mode-item-dimension);
+    position: relative;
+}
+
+/* 
+    Lens element 
+*/
+#view-mode-toggle-lens.lens {
+    top: 0;
+    height: 100%;
+    width: 33.33%; /* Now one-third instead of half */
+    position: absolute;
+    transition: transform 0.3s ease; /* Smooth transition for movement */
+    transform: translateX(0); /* Default position (left) */
+}
+
+
+/* Outline element */
+#view-toggle-outline.outline {
+    width: var(--view-mode-toggle-width); /* Increased width to accommodate three sections */
+    height: var(--view-mode-item-dimension);
+    border: 1px solid var(--bs-info);
+    border-radius: 0.25rem;
+    position: absolute;
+}
+
+/* Left toggle button */
+.toggle-option.left-option {
+    left: 0;
+    top: 50%;
+    width: var(--view-mode-item-dimension);
+    transform: translateY(-50%);
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    padding: 0.5rem;
+}
+
+/* Middle toggle button */
+.toggle-option.middle-option {
+    left: var(--view-mode-item-dimension); /* Position in the middle section */
+    top: 50%;
+    transform: translateY(-50%);
+    width: var(--view-mode-item-dimension);
+    height: var(--view-mode-item-dimension);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    padding: 0.5rem;
+}
+
+/* Right toggle button */
+.toggle-option.right-option {
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: var(--view-mode-item-dimension);
+    height: var(--view-mode-item-dimension);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    padding: 0.5rem;
+}
+
+
+.disabled-group {
+    opacity: 0.6; /* visually indicate disabled state */
+    pointer-events: none; /* prevent any interaction */
+    cursor: not-allowed; /* for legacy or extra clarity */
+}
+
+
+
+/* New styles for content filter radio inputs */
+.filter-group {
+    background-color: var(--filter-group-theme-color);
+    border-radius: 4px;
+    padding: 0.5rem;
+    margin-bottom: 1rem !important;
+}
+
+.filter-group .main-label {
+
+    color: #000;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    font-weight: 500;
+    margin-bottom: 0.5rem !important;
+    display: block !important;
+    width: 100%;
+}
+
+.filter-group .form-check {
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+}
+
+.filter-group .form-check-input {
+    margin-right: 0.5rem;
+}
+
+.form-check-input:checked[type=radio] {
+    --bs-form-check-bg-image: none;
+}
+
+.filter-group .form-check-label {
+    margin-left: 0.25rem;
+}
+
+.form-check-input:checked, .form-check-input:focus, .form-check-input:focus-visible {
+    border-color: revert;
+}
+
+.form-check-input:focus {
+    box-shadow: none;
+
+}
+
+/* Make the entire filter more compact */
+.sidebar-content .range_container {
+    margin-bottom: 0.75rem;
+}
+
+
+
+/* For the labels (like Min, Max) */
+.form_control_container__time {
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+
+.average-score-label {
+    width: min-content !important;
+    white-space: nowrap !important;
+    font-size: 1rem !important;
+    margin-top: 10px !important;
+}
