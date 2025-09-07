@@ -26,19 +26,22 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
+      - name: Build CloudTests project (and dependencies)
+        run: dotnet build CloudTests/CloudTests.csproj --configuration Debug
+
       - name: Wait for SQL Server to be ready
         run: |
           echo "Waiting for SQL Server to start..."
-            for i in {1..60}; do
-              nc -zv localhost 1433 && echo "SQL Server is up!" && break
-              echo "SQL Server not ready yet... ($i)"
-              sleep 5
-            done
+          for i in {1..60}; do
+            nc -zv localhost 1433 && echo "SQL Server is up!" && break
+            echo "SQL Server not ready yet... ($i)"
+            sleep 5
+          done
 
-      - name: Run CloudTest project test
+      - name: Run CloudTest project tests
         env: 
-            GITHUB_ACTION: "true"
-        run: dotnet test CloudTests/CloudTests.csproj --verbosity normal
+          GITHUB_ACTION: "true"
+        run: dotnet test CloudTests/CloudTests.csproj --no-build --verbosity normal
 
       - name: Dump SQL Server logs on failure
         if: failure()
