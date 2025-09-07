@@ -12,8 +12,8 @@ using atlas_the_public_think_tank.Data;
 namespace atlas_the_public_think_tank.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250907182641_init13")]
-    partial class init13
+    [Migration("20250907192159_init")]
+    partial class init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -323,118 +323,118 @@ namespace atlas_the_public_think_tank.Migrations
                         {
                             ScopeID = new Guid("b1454543-b9ec-4bb9-9109-edc6a88bb065"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
+                            Domains = "[4,1]",
+                            EntityTypes = "[1,3]",
                             Scales = "[6]",
-                            Timeframes = "[]"
+                            Timeframes = "[2]"
                         },
                         new
                         {
                             ScopeID = new Guid("10873349-5aaa-4e6f-a08a-cbbe1ac2127f"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
-                            Scales = "[6]",
-                            Timeframes = "[]"
+                            Domains = "[1,5]",
+                            EntityTypes = "[2,1]",
+                            Scales = "[3,5]",
+                            Timeframes = "[2]"
                         },
                         new
                         {
                             ScopeID = new Guid("c28f380c-fa61-4113-a38f-d16a4ff4f5f1"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
+                            Domains = "[0,2]",
+                            EntityTypes = "[2,1]",
                             Scales = "[6]",
-                            Timeframes = "[]"
+                            Timeframes = "[3,2]"
                         },
                         new
                         {
                             ScopeID = new Guid("adb98c92-49b8-47bb-b652-e4917e055150"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
+                            Domains = "[2,4]",
+                            EntityTypes = "[0,1]",
                             Scales = "[6]",
-                            Timeframes = "[]"
+                            Timeframes = "[3]"
                         },
                         new
                         {
                             ScopeID = new Guid("e9f82158-76e9-4071-87d5-4e0d8d9d99a6"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
-                            Scales = "[6]",
-                            Timeframes = "[]"
+                            Domains = "[2,5]",
+                            EntityTypes = "[0,1]",
+                            Scales = "[3,6]",
+                            Timeframes = "[2]"
                         },
                         new
                         {
                             ScopeID = new Guid("2ed7e15a-569a-4d5f-b157-96c8052e3d46"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
+                            Domains = "[4,5]",
+                            EntityTypes = "[1,0]",
                             Scales = "[6]",
-                            Timeframes = "[]"
+                            Timeframes = "[2]"
                         },
                         new
                         {
                             ScopeID = new Guid("f57b23e6-8926-45a2-b988-76c122c4202d"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
-                            Scales = "[6]",
-                            Timeframes = "[]"
+                            Domains = "[0,2,4]",
+                            EntityTypes = "[2,1,0]",
+                            Scales = "[6,5]",
+                            Timeframes = "[2,3]"
                         },
                         new
                         {
                             ScopeID = new Guid("7308cac5-991e-416d-8e59-d567fe29717c"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
+                            Domains = "[0,4,1]",
+                            EntityTypes = "[3,2,1]",
                             Scales = "[6]",
-                            Timeframes = "[]"
+                            Timeframes = "[2]"
                         },
                         new
                         {
                             ScopeID = new Guid("a28b1e20-0234-4d48-91de-0e9b2bf2bc29"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
-                            Scales = "[6]",
-                            Timeframes = "[]"
+                            Domains = "[3,1,5]",
+                            EntityTypes = "[2,1,0]",
+                            Scales = "[6,5,3]",
+                            Timeframes = "[2]"
                         },
                         new
                         {
                             ScopeID = new Guid("7b9fd298-f051-4664-a274-b642a520ac64"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
-                            Scales = "[6]",
-                            Timeframes = "[]"
+                            Domains = "[3,5]",
+                            EntityTypes = "[2,1]",
+                            Scales = "[6,4]",
+                            Timeframes = "[2]"
                         },
                         new
                         {
                             ScopeID = new Guid("8a86e236-5a53-4801-8b39-f3a3a3ca373e"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
-                            Scales = "[6]",
-                            Timeframes = "[]"
+                            Domains = "[3,2]",
+                            EntityTypes = "[2,1]",
+                            Scales = "[4,3]",
+                            Timeframes = "[2]"
                         },
                         new
                         {
                             ScopeID = new Guid("c52dbb0d-13a4-4702-a829-df6b11b87088"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
-                            Scales = "[6]",
-                            Timeframes = "[]"
+                            Domains = "[4,2]",
+                            EntityTypes = "[1,0]",
+                            Scales = "[6,3]",
+                            Timeframes = "[2,3]"
                         },
                         new
                         {
                             ScopeID = new Guid("f030a6b4-5fe0-4c87-ba88-a4bd8339a394"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
-                            Scales = "[6]",
-                            Timeframes = "[]"
+                            Domains = "[5,1,6]",
+                            EntityTypes = "[2,1,0]",
+                            Scales = "[5,3]",
+                            Timeframes = "[2,3]"
                         },
                         new
                         {
@@ -449,190 +449,190 @@ namespace atlas_the_public_think_tank.Migrations
                         {
                             ScopeID = new Guid("d34e087c-ef33-4dd1-98fd-759440c16961"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
-                            Scales = "[6]",
-                            Timeframes = "[]"
+                            Domains = "[1,5,3]",
+                            EntityTypes = "[2,1]",
+                            Scales = "[5,3]",
+                            Timeframes = "[2]"
                         },
                         new
                         {
                             ScopeID = new Guid("efc852d8-925b-40be-9925-dc499e8be6ee"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
-                            Scales = "[6]",
-                            Timeframes = "[]"
+                            Domains = "[5,2,4]",
+                            EntityTypes = "[0,1,2]",
+                            Scales = "[6,5]",
+                            Timeframes = "[2,3]"
                         },
                         new
                         {
                             ScopeID = new Guid("f1e29a41-926e-40e3-ace4-f1f22a11de0c"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
+                            Domains = "[4,1,2]",
+                            EntityTypes = "[1,0]",
                             Scales = "[6]",
-                            Timeframes = "[]"
+                            Timeframes = "[2]"
                         },
                         new
                         {
                             ScopeID = new Guid("38283341-1f14-4b8d-ab4c-f960037ea327"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
-                            Scales = "[6]",
-                            Timeframes = "[]"
+                            Domains = "[5,6]",
+                            EntityTypes = "[1,0,2]",
+                            Scales = "[3,5]",
+                            Timeframes = "[2,3]"
                         },
                         new
                         {
                             ScopeID = new Guid("c0a4e8ff-17dc-43a4-bb13-5931f3a6b687"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
-                            Scales = "[6]",
-                            Timeframes = "[]"
+                            Domains = "[1,5,6]",
+                            EntityTypes = "[2,1,0]",
+                            Scales = "[5,3]",
+                            Timeframes = "[2,3]"
                         },
                         new
                         {
                             ScopeID = new Guid("ff976803-e30a-45d6-a74d-4bcbb024a513"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
+                            Domains = "[4,2,0]",
+                            EntityTypes = "[1,0]",
                             Scales = "[6]",
-                            Timeframes = "[]"
+                            Timeframes = "[2,3]"
                         },
                         new
                         {
                             ScopeID = new Guid("1032b6b2-f0f4-437c-9bb8-b386016bbdc7"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
-                            Scales = "[6]",
-                            Timeframes = "[]"
+                            Domains = "[2,0,4]",
+                            EntityTypes = "[1,0]",
+                            Scales = "[6,3]",
+                            Timeframes = "[2,3]"
                         },
                         new
                         {
                             ScopeID = new Guid("6efde1fc-a07a-4fc8-b548-aa5a77143efe"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
-                            Scales = "[6]",
-                            Timeframes = "[]"
+                            Domains = "[3,1,5]",
+                            EntityTypes = "[2,1]",
+                            Scales = "[6,4]",
+                            Timeframes = "[2]"
                         },
                         new
                         {
                             ScopeID = new Guid("06873890-b60a-48c2-bab4-cb7731ec5e01"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
+                            Domains = "[4,2,0]",
+                            EntityTypes = "[1,0]",
                             Scales = "[6]",
-                            Timeframes = "[]"
+                            Timeframes = "[2,3]"
                         },
                         new
                         {
                             ScopeID = new Guid("d3415df0-9ae6-450f-8665-eacd297d2ddc"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
-                            Scales = "[6]",
-                            Timeframes = "[]"
+                            Domains = "[5,6,2]",
+                            EntityTypes = "[1,0,2]",
+                            Scales = "[5,3]",
+                            Timeframes = "[2,3]"
                         },
                         new
                         {
                             ScopeID = new Guid("dbbc70cf-975c-4bb0-9d60-866a88bed614"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
-                            Scales = "[6]",
-                            Timeframes = "[]"
+                            Domains = "[4,2,6]",
+                            EntityTypes = "[1,0]",
+                            Scales = "[6,3]",
+                            Timeframes = "[2]"
                         },
                         new
                         {
                             ScopeID = new Guid("b6e3886d-91ac-412f-82fc-92113cf6b1cc"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
-                            Scales = "[6]",
-                            Timeframes = "[]"
+                            Domains = "[5,1,6]",
+                            EntityTypes = "[2,1,0]",
+                            Scales = "[5,3]",
+                            Timeframes = "[2]"
                         },
                         new
                         {
                             ScopeID = new Guid("882d34c7-1a8f-4ca6-afd2-995cae21b60d"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
+                            Domains = "[4,2,6]",
+                            EntityTypes = "[1,0]",
                             Scales = "[6]",
-                            Timeframes = "[]"
+                            Timeframes = "[2,3]"
                         },
                         new
                         {
                             ScopeID = new Guid("1c93c95b-7842-440d-aeb9-cdbd61e1fb2f"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
-                            Scales = "[6]",
-                            Timeframes = "[]"
+                            Domains = "[4,1]",
+                            EntityTypes = "[2,1]",
+                            Scales = "[6,5]",
+                            Timeframes = "[2]"
                         },
                         new
                         {
                             ScopeID = new Guid("76bfbcac-97fb-4ee0-b128-d0089e53149c"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
+                            Domains = "[4,2]",
+                            EntityTypes = "[0,1]",
                             Scales = "[6]",
-                            Timeframes = "[]"
+                            Timeframes = "[3]"
                         },
                         new
                         {
                             ScopeID = new Guid("3119d678-b8b9-4c6f-90f7-e35e5d446dfc"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
+                            Domains = "[4,0]",
+                            EntityTypes = "[1,2]",
                             Scales = "[6]",
-                            Timeframes = "[]"
+                            Timeframes = "[2]"
                         },
                         new
                         {
                             ScopeID = new Guid("81b1b7fc-c732-4c6b-a888-db7ecb9d5609"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
-                            Scales = "[6]",
-                            Timeframes = "[]"
+                            Domains = "[4,5]",
+                            EntityTypes = "[0]",
+                            Scales = "[1,6]",
+                            Timeframes = "[3]"
                         },
                         new
                         {
                             ScopeID = new Guid("fa86f462-e7ed-47b4-8c86-c6cc5bfc02e8"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
+                            Domains = "[0,2]",
+                            EntityTypes = "[0,1]",
                             Scales = "[6]",
-                            Timeframes = "[]"
+                            Timeframes = "[3,2]"
                         },
                         new
                         {
                             ScopeID = new Guid("56c24d9d-a605-4ed5-991e-cac7944cd747"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
+                            Domains = "[0,2]",
+                            EntityTypes = "[1]",
                             Scales = "[6]",
-                            Timeframes = "[]"
+                            Timeframes = "[3]"
                         },
                         new
                         {
                             ScopeID = new Guid("af37ce9d-db74-43f1-964f-f6fcb394ec9e"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
+                            Domains = "[4,0]",
+                            EntityTypes = "[1,0]",
                             Scales = "[6]",
-                            Timeframes = "[]"
+                            Timeframes = "[2]"
                         },
                         new
                         {
                             ScopeID = new Guid("77f65326-607d-4c65-bff1-424bae316eab"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
+                            Domains = "[1,5]",
+                            EntityTypes = "[1,0]",
                             Scales = "[6]",
-                            Timeframes = "[]"
+                            Timeframes = "[3]"
                         },
                         new
                         {
@@ -647,55 +647,64 @@ namespace atlas_the_public_think_tank.Migrations
                         {
                             ScopeID = new Guid("c65ca915-45d4-4975-929b-9a79199dc51f"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
+                            Domains = "[4,2]",
+                            EntityTypes = "[1]",
                             Scales = "[6]",
-                            Timeframes = "[]"
+                            Timeframes = "[3]"
                         },
                         new
                         {
                             ScopeID = new Guid("3d3a2d73-23e5-4622-9a82-46d0e6d84d26"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
+                            Domains = "[5,4]",
+                            EntityTypes = "[0,1]",
                             Scales = "[6]",
-                            Timeframes = "[]"
+                            Timeframes = "[3]"
                         },
                         new
                         {
                             ScopeID = new Guid("f89199d9-3218-4712-8362-5c21e4e741c2"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
+                            Domains = "[1,5]",
+                            EntityTypes = "[2,1]",
                             Scales = "[6]",
-                            Timeframes = "[]"
+                            Timeframes = "[3,2]"
                         },
                         new
                         {
                             ScopeID = new Guid("bf2d669f-8a15-4ea9-8a1e-9e3287addb4f"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
+                            Domains = "[2,5]",
+                            EntityTypes = "[1,2]",
                             Scales = "[6]",
-                            Timeframes = "[]"
+                            Timeframes = "[2]"
                         },
                         new
                         {
                             ScopeID = new Guid("26524034-13d3-4e9c-a361-ddf01271a71f"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
+                            Domains = "[2,4]",
+                            EntityTypes = "[0,1]",
                             Scales = "[6]",
-                            Timeframes = "[]"
+                            Timeframes = "[3]"
                         },
                         new
                         {
                             ScopeID = new Guid("a059b123-f631-4774-a866-33ba0bb415b5"),
                             Boundaries = "[]",
-                            Domains = "[]",
-                            EntityTypes = "[]",
+                            Domains = "[1,5]",
+                            EntityTypes = "[2,3,1]",
                             Scales = "[6]",
-                            Timeframes = "[]"
+                            Timeframes = "[3,2]"
+                        },
+                        new
+                        {
+                            ScopeID = new Guid("681601f2-ed2c-4188-9221-879efa33cc67"),
+                            Boundaries = "[]",
+                            Domains = "[4]",
+                            EntityTypes = "[1]",
+                            Scales = "[6]",
+                            Timeframes = "[2]"
                         });
                 });
 
@@ -3671,6 +3680,17 @@ namespace atlas_the_public_think_tank.Migrations
                             ParentIssueID = new Guid("e47a95c8-939e-4b5a-a054-f7c127db4eb3"),
                             ScopeID = new Guid("a059b123-f631-4774-a866-33ba0bb415b5"),
                             Title = "Second Chance Hiring Incentives for Employers"
+                        },
+                        new
+                        {
+                            SolutionID = new Guid("a2c7d49e-5f38-41b6-9e76-8c429d5b1f83"),
+                            AuthorID = new Guid("1a61454c-5b83-4aab-8661-96d6dffbee30"),
+                            Content = "Let users toggle what affects their feed: recency, variety, depth, etc.\n\nSocial media platforms should implement transparent algorithm settings that allow users to have direct control over what content appears in their feeds. This solution would enable individuals to customize their experience based on personal preferences and values, rather than being subject to black-box algorithms optimized solely for engagement metrics.\n\nKey features would include:\n\n- Adjustable content preferences: Users could set sliders for content recency vs. relevance, content diversity, topic depth, and the balance between content from connections versus broader sources\n\n- Explicit content filters: Clear options to filter sensitive topics, controversial content, or specific categories based on personal comfort levels\n\n- Algorithm transparency documentation: Plain-language explanations of how the algorithm works and what factors influence content selection\n\n- Usage insights: Data visualizations showing users how their content consumption patterns affect what they see\n\nThis approach would return agency to users, reduce algorithm-driven echo chambers, and build trust through transparency. Platforms implementing such settings would differentiate themselves as more ethical and user-centric, potentially attracting individuals concerned about digital wellbeing and algorithmic manipulation.",
+                            ContentStatus = 1,
+                            CreatedAt = new DateTime(2024, 2, 10, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            ParentIssueID = new Guid("b7c9e5d3-4a2f-48b1-9e7c-5d3a4b2f8c1e"),
+                            ScopeID = new Guid("681601f2-ed2c-4188-9221-879efa33cc67"),
+                            Title = "Transparent Algorithm Settings"
                         });
                 });
 
