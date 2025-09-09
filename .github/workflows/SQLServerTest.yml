@@ -65,7 +65,8 @@ jobs:
           echo "passed=$PASSED" >> $GITHUB_OUTPUT
           echo "failed=$FAILED" >> $GITHUB_OUTPUT
 
-      - name: Update test badge in Gist
+      - name: Update test badge in Gist if testing on main branch
+        if: github.ref == 'refs/heads/main'
         env:
           GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
           GIST_ID: 4ac1300861898e7568dbec51c70bd24b
