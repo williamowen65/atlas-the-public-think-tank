@@ -9,3 +9,9 @@ variable "sql_admin_password" {
   type        = string
   sensitive   = true
 }
+
+variable "aspnetcore_env" {
+  description = "Development | Staging | Production"
+  type        = string
+  sensitive   = false
+}

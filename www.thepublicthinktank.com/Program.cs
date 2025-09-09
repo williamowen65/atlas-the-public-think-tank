@@ -19,8 +19,12 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+
         /* See information on appsettings and environment variables: https://github.com/williamowen65/atlas-the-public-think-tank/wiki/3.2.%20Appsettings%20and%20Environment%20Variables */
         Console.WriteLine($"Using environment: {builder.Environment.EnvironmentName}");
+
+        var connString = builder.Configuration.GetConnectionString("DefaultConnection");
+        Console.WriteLine($"Connection string being used: {connString}");
 
         // When running the test project, TestEnvironmentUtility intercepts the builder and sets the Environment to testing
         var isTesting = builder.Environment.EnvironmentName == "Testing"
@@ -32,16 +36,20 @@ public class Program
 
         if (!isTesting)
         { 
-        // Retrieve the connection string from appsettings.json
-        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+            // Retrieve the connection string from appsettings.json
+             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-        // Register the application's database context (ApplicationDbContext) with the DI container
-        // and configure it to use SQL Server with the retrieved connection string
-        builder.Services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlServer(connectionString)
+
+            Console.WriteLine("EF Core connection string: " + connectionString);
+
+
+            // Register the application's database context (ApplicationDbContext) with the DI container
+            // and configure it to use SQL Server with the retrieved connection string
+            builder.Services.AddDbContext<ApplicationDbContext>(options =>
+               options.UseSqlServer(connectionString)
                     .EnableSensitiveDataLogging()
-                    ); 
+            );
 
 
             // Add OpenTelemetry and configure it to use Azure Monitor.
@@ -159,6 +167,9 @@ public class Program
         // Map Razor Pages endpoints (for Razor Page files like .cshtml)
         app.MapRazorPages()
            .WithStaticAssets();
+
+        var port = Environment.GetEnvironmentVariable("PORT");
+        Console.WriteLine($"ENV VARIBALE FOR PORT {port}");
 
         // Start the application and begin listening for incoming HTTP requests
         app.Run();

@@ -20,6 +20,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SQL Scripts", "SQL Scripts"
 		sql-documents\TestDataCleanUp-ByIssueID.sql = sql-documents\TestDataCleanUp-ByIssueID.sql
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{DA27B20D-3056-416F-AEF3-074B872DC691}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		guid-to-clipboard-script-nodejs.txt = guid-to-clipboard-script-nodejs.txt
+		README.md = README.md
+	EndProjectSection
+EndProject
 Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "pre-launch-landing-page", "pre-launch-landing-page\", "{EED2838B-BDE7-DB37-97E1-DA60BF5955DB}"
 	ProjectSection(WebsiteProperties) = preProject
 		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.8"
@@ -39,13 +46,6 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "pre-launch-landing-page", "
 		Release.AspNetCompiler.Debug = "False"
 		VWDPort = "61508"
 		SlnRelativePath = "pre-launch-landing-page\"
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{DA27B20D-3056-416F-AEF3-074B872DC691}"
-	ProjectSection(SolutionItems) = preProject
-		.gitignore = .gitignore
-		guid-to-clipboard-script-nodejs.txt = guid-to-clipboard-script-nodejs.txt
-		README.md = README.md
 	EndProjectSection
 EndProject
 Global

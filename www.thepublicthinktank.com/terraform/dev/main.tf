@@ -56,8 +56,28 @@ resource "azurerm_mssql_database" "mssql_database_dev" {
   collation    = "SQL_Latin1_General_CP1_CI_AS"
   license_type = "LicenseIncluded"
   max_size_gb  = 2
-  sku_name     = "Basic" 
+  sku_name     = "Basic"
   enclave_type = "VBS"
+}
+
+resource "azurerm_mssql_firewall_rule" "mssql_firewall_rule_dev" {
+  name             = "AllowMyIP"
+  server_id        = azurerm_mssql_server.mssql_server_dev.id
+  start_ip_address = "208.53.112.211"
+  end_ip_address   = "208.53.112.211"
+}
+
+# TWO STEP APPLY PROCESS
+# First: terraform apply -target="azurerm_linux_web_app.web-app-dev"
+# Second: terraform apply  
+# the second will over the firewall rule
+resource "azurerm_mssql_firewall_rule" "app_service_fw" {
+  for_each = toset(split(",", azurerm_linux_web_app.web-app-dev.possible_outbound_ip_addresses))
+
+  name             = "AllowAppService-${each.key}"
+  server_id        = azurerm_mssql_server.mssql_server_dev.id
+  start_ip_address = each.value
+  end_ip_address   = each.value
 }
 
 resource "azurerm_service_plan" "service_plan_dev" {
@@ -68,6 +88,7 @@ resource "azurerm_service_plan" "service_plan_dev" {
   sku_name            = "F1" # Free tier
 }
 
+
 resource "azurerm_linux_web_app" "web-app-dev" {
   name                = "atlas-dev-${random_pet.server_name.id}-web-app"
   resource_group_name = azurerm_resource_group.rg_dev.name
@@ -75,6 +96,34 @@ resource "azurerm_linux_web_app" "web-app-dev" {
   service_plan_id     = azurerm_service_plan.service_plan_dev.id
 
   site_config {
-    always_on = false  
+    always_on = false
+  }
+
+  app_settings = {
+    "ASPNETCORE_ENVIRONMENT"          = var.aspnetcore_env
+    "APPLICATIONINSIGHTS_CONNECTION_STRING" = azurerm_application_insights.app_insights_dev.connection_string
+  }
+
+  connection_string {
+    name = "DefaultConnection"
+    type = "SQLAzure"
+    value = format(
+      "Server=tcp:%s.database.windows.net,1433;Database=%s;User ID=%s;Password=%s;Encrypt=true;TrustServerCertificate=false;Connection Timeout=30;",
+      azurerm_mssql_server.mssql_server_dev.name,
+      azurerm_mssql_database.mssql_database_dev.name,
+      azurerm_mssql_server.mssql_server_dev.administrator_login,
+      azurerm_mssql_server.mssql_server_dev.administrator_login_password
+    )
   }
 }
+
+
+output "web_app_connection_string" {
+  value = [
+    for cs in azurerm_linux_web_app.web-app-dev.connection_string : cs.value
+  ][0]
+  description = "The connection string for the Linux web app."
+  sensitive   = true
+}
+
+
