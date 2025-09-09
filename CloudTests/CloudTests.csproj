@@ -5,6 +5,7 @@
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+	 <IsPublishable>false</IsPublishable>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,5 +23,8 @@
   <ItemGroup>
     <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
   </ItemGroup>
+
+	
+
 
 </Project>
