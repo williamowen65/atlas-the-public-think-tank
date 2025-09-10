@@ -110,11 +110,38 @@
     overflow-y: initial;
 }
 
-.card.solution-card.expanded .card-header,
-.card.issue-card.expanded .card-header {
+.card-sticky-header {
+    position: absolute;
+    visibility: hidden;
+    text-align: center;
+    height: 0;
+    /*margin-bottom: 20px;*/ /*space to offset the height 0 */
+    overflow: visible;
+    margin: auto;
+    z-index: 1;
+    position: absolute;
+    width: fit-content;
+}
+
+.sticky-header-content {
+    /*    padding-inline: 20px;*/
+    /*background: rgba(0,0,0,0.7);*/ /* slightly transparent */
+    /*backdrop-filter: blur(6px);*/ /* adds a nice frosted glass effect */
+    /*    color: #fff;*/
+    padding: 0.5rem 1rem;
+    border-radius: 0 0 8px 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    border: var(--bs-card-border-width) solid var(--bs-card-border-color);
+    border-top: 0;
+}
+
+.card.solution-card.expanded .card-sticky-header,
+.card.issue-card.expanded .card-sticky-header {
     position: sticky;
     top: var(--header-height);
-    
+    visibility: visible;
+
 }
 
 :root {
@@ -142,4 +169,12 @@
 .issue-card .card-header,
 .solution-card .card-header {
     margin-left: var(--dial-width);
+    z-index: 2;
+    position: relative; /* So that the z-index can be applied... relative, not absoltue to maintain width*/
+}
+
+.dial-container {
+    z-index: 1;
+    position: relative;
+    background: linear-gradient(to bottom, var(--bs-body-bg) 0%, var(--bs-body-bg) 70%, rgba(255,255,255,0) 100%);
 }

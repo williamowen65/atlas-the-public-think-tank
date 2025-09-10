@@ -15,6 +15,7 @@
 
 <div class="card mb-3 solution-card" id="@Model.SolutionID" data-content-type="solution">
     <div class="card-content position-relative mb-2">
+        @await Html.PartialAsync("~/Views/Solution/_solution-card-sticky-header.cshtml", Model)
         <div class="dial-container" style="float:left">
             @await Html.PartialAsync("~/Views/Shared/Components/_voteDial.cshtml", new ContentItemVotes_ReadVM()
             {
