@@ -1,8 +1,8 @@
 <div align="center">
   
 [![Milestones](https://img.shields.io/badge/Project-Milestones-orange)](https://github.com/williamowen65/atlas-the-public-think-tank/milestones)
-<br>
 [![GitHub milestone details](https://img.shields.io/github/milestones/progress/williamowen65/atlas-the-public-think-tank/5)](https://github.com/williamowen65/atlas-the-public-think-tank/milestone/5)
+<br>
 [![Tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/williamowen65/4ac1300861898e7568dbec51c70bd24b/raw/test-badge.json)](#)
 [![Community Contributions](https://img.shields.io/github/milestones/progress/williamowen65/atlas-the-public-think-tank/9)](https://github.com/williamowen65/atlas-the-public-think-tank/milestone/9)
 
