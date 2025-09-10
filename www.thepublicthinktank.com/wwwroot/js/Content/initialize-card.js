@@ -44,6 +44,34 @@ document.addEventListener("click", e => {
         } else {
             truncatedTextElement.classList.add("truncate-multiline");
         }
+
+        const isMinimizetoggle = Boolean(e.target.closest(".card-minimize-toggle"))
+        //const isExpandtoggle = Boolean(e.target.closest(".card-expand-toggle"))
+        //if (isExpandtoggle) {
+            // Move scroll position to top of card (plus header height (var(--header-height)))
+            const headerHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-height')) || 0;
+            const cardTop = card.getBoundingClientRect().top + window.scrollY;
+            window.scrollTo({
+                top: cardTop - headerHeight,
+                behavior: isMinimizetoggle ? 'instant' :'smooth'
+            });
+        //}
+
+        //if (isMinimizetoggle) {
+        //    // Retain the scroll position around the clicked element.
+        //    // Get card's position relative to viewport before minimizing
+        //    const prevRect = e.target.getBoundingClientRect();
+        //    const prevTop = prevRect.top;
+
+        //    // Use setTimeout to wait for DOM changes (minimize toggle) to take effect
+        //    setTimeout(() => {
+        //        const newRect = e.target.getBoundingClientRect();
+        //        const newTop = newRect.top;
+        //        // Calculate the difference and adjust scroll
+        //        const scrollDiff = newTop - prevTop;
+        //        window.scrollBy({ top: scrollDiff, behavior: 'instant' });
+        //    }, 0);
+        //}
     }
 
     setupQuickTabLinks(e)
