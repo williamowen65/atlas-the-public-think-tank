@@ -1,12 +1,11 @@
 <div align="center">
   
-[![GitHub milestone details](https://img.shields.io/github/milestones/progress/williamowen65/atlas-the-public-think-tank/2)](https://github.com/williamowen65/atlas-the-public-think-tank/milestone/2?closed=1)
-[![GitHub milestone details](https://img.shields.io/github/milestones/progress/williamowen65/atlas-the-public-think-tank/3)](https://github.com/williamowen65/atlas-the-public-think-tank/milestone/3?closed=1)
-[![GitHub milestone details](https://img.shields.io/github/milestones/progress/williamowen65/atlas-the-public-think-tank/7)](https://github.com/williamowen65/atlas-the-public-think-tank/milestone/7?closed=1)
+[![Milestones](https://img.shields.io/badge/Project-Milestones-orange)](https://github.com/williamowen65/atlas-the-public-think-tank/milestones)
 <br>
 [![GitHub milestone details](https://img.shields.io/github/milestones/progress/williamowen65/atlas-the-public-think-tank/5)](https://github.com/williamowen65/atlas-the-public-think-tank/milestone/5)
 [![Tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/williamowen65/4ac1300861898e7568dbec51c70bd24b/raw/test-badge.json)](#)
 [![Community Contributions](https://img.shields.io/github/milestones/progress/williamowen65/atlas-the-public-think-tank/9)](https://github.com/williamowen65/atlas-the-public-think-tank/milestone/9)
+
 </div>
 
 # Atlas - The Public Think Tank  
