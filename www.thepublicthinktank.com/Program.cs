@@ -40,10 +40,6 @@ public class Program
              var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-
-            Console.WriteLine("EF Core connection string: " + connectionString);
-
-
             // Register the application's database context (ApplicationDbContext) with the DI container
             // and configure it to use SQL Server with the retrieved connection string
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -104,6 +100,15 @@ public class Program
         });
 
         var app = builder.Build();
+
+
+        var applySeedData = builder.Configuration.GetValue<bool>("ApplySeedData");
+        Console.WriteLine($"Env flag ApplySeedData: {applySeedData}");
+        if (applySeedData)
+        {
+            SeedDataHelper.SeedDatabase(app.Services);
+        }
+
 
         // Initialize the static Read class with the service provider
         Create.Initialize(app.Services);
@@ -167,9 +172,6 @@ public class Program
         // Map Razor Pages endpoints (for Razor Page files like .cshtml)
         app.MapRazorPages()
            .WithStaticAssets();
-
-        var port = Environment.GetEnvironmentVariable("PORT");
-        Console.WriteLine($"ENV VARIBALE FOR PORT {port}");
 
         // Start the application and begin listening for incoming HTTP requests
         app.Run();

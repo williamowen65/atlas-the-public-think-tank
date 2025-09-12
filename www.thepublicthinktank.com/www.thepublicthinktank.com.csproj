@@ -33,6 +33,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Data\SeedData\SeedIssues\Data\" />
     <Folder Include="Models\DTOs\" />
     <Folder Include="Models\ViewModel\CRUD_VM\Comment\" />
     <Folder Include="Properties\ServiceDependencies\" />

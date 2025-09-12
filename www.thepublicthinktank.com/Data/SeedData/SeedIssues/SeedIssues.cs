@@ -1,7 +1,7 @@
 ﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data;
- 
+
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Reflection;
@@ -13,7 +13,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues
 
         // file path Data/SeedData/SeedIssues/Data
         public static SeedIssueContainer?[] SeedIssuesDataContainers { get; } =
-         Assembly.GetExecutingAssembly() // or typeof(SomeClass).Assembly if it's another DLL
+             typeof(SeedIssues).Assembly // or typeof(SomeClass).Assembly if it's another DLL
              .GetTypes()
              .Where(t => t.IsClass && !t.IsAbstract && typeof(SeedIssueContainer).IsAssignableFrom(t))
              .Select(t =>
@@ -34,12 +34,39 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues
 
 
         public static Issue[] SeedIssuesData = SeedIssuesDataContainers
-          .Select(container => container.issue) 
+          .Select(container => container.issue)
           .ToArray();
 
-        public SeedIssues(ModelBuilder modelBuilder)
+        public static void Seed(ApplicationDbContext context)
         {
-            modelBuilder.Entity<Issue>().HasData(SeedIssuesData);
+            // Only seed if there are no issues
+            if (!context.Issues.Any())
+            {
+                foreach (var issue in SeedIssuesData)
+                {
+                    try
+                    {
+                        // Guaranteeing that the entity doesn't contain navigation properties
+                        context.Issues.Add(new Issue()
+                        {
+                            IssueID = issue.IssueID,
+                            Title = issue.Title,
+                            Content = issue.Content,
+                            CreatedAt = issue.CreatedAt,
+                            ModifiedAt = issue.ModifiedAt,
+                            AuthorID = issue.AuthorID,
+                            ScopeID = issue.ScopeID,
+                            ParentIssueID = issue.ParentIssueID,
+                            ParentSolutionID = issue.ParentSolutionID
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log the error or handle it appropriately
+                        Console.WriteLine($"Failed to add issue '{issue?.Title}': {ex.Message}");
+                    }
+                }
+            }
         }
     }
 
