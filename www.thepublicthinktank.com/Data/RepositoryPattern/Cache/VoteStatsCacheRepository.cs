@@ -14,15 +14,17 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
     {
         private readonly IVoteStatsRepository _inner;
         private readonly IMemoryCache _cache;
+        private readonly ILogger _cacheLogger;
 
-        public VoteStatsCacheRepository(IVoteStatsRepository inner, IMemoryCache cache)
+        public VoteStatsCacheRepository(IVoteStatsRepository inner, IMemoryCache cache, ILoggerFactory loggerFactory)
         {
             _cache = cache;
             _inner = inner;
+            _cacheLogger = loggerFactory.CreateLogger("CacheLog");
         }
 
 
-     
+
 
         public async Task<IssueVotes_ReadVM?> GetIssueVoteStats(Guid id)
         {
@@ -31,6 +33,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             //{
             //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
             //});
+            _cacheLogger.LogInformation($"[!] Cache miss for GetIssueVoteStats {id}");
             return await _inner.GetIssueVoteStats(id);
         }
         public async Task<SolutionVotes_ReadVM?> GetSolutionVoteStats(Guid id)
@@ -41,6 +44,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
             //    return await _inner.GetSolutionVoteStats(id);
             //});
+            _cacheLogger.LogInformation($"[!] Cache miss for GetIssueVoteStats {id}");
             return await _inner.GetSolutionVoteStats(id);
         }
 

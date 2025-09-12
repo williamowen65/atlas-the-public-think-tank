@@ -11,10 +11,12 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
         private readonly IBreadcrumbRepository _inner;
         private readonly IMemoryCache _cache;
-        public BreadcrumbCacheRepository(IBreadcrumbRepository inner, IMemoryCache cache)
+        private readonly ILogger _cacheLogger;
+        public BreadcrumbCacheRepository(IBreadcrumbRepository inner, IMemoryCache cache, ILoggerFactory loggerFactory)
         {
             _cache = cache;
             _inner = inner;
+            _cacheLogger = loggerFactory.CreateLogger("CacheLog");
         }
         public async Task<List<Breadcrumb_ReadVM>> GetBreadcrumbPagedAsync(Guid? itemId)
         {
@@ -29,6 +31,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             //    return await _inner.GetBreadcrumbPagedAsync(itemId);
             //});
             //#pragma warning restore CS8603 // Possible null reference return.
+            _cacheLogger.LogInformation($"[!] Cache miss for GetBreadcrumbPagedAsync {itemId}");
             return await _inner.GetBreadcrumbPagedAsync(itemId);
         }
     }

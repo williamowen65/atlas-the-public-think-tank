@@ -51,12 +51,12 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             var cacheKey = $"issue:{id}";
             if (_cache.TryGetValue(cacheKey, out IssueRepositoryViewModel? cachedIssue))
             {
-                _cacheLogger.LogInformation("Cache hit for issue {IssueId}", id);
+                _cacheLogger.LogInformation("[+] Cache hit for issue {IssueId}", id);
                 return cachedIssue;
             }
             else
             {
-                _cacheLogger.LogInformation("Cache miss for issue {IssueId}", id);
+                _cacheLogger.LogInformation("[!] Cache miss for issue {IssueId}", id);
                 var issue = await _cache.GetOrCreateAsync(cacheKey, async entry =>
                 {
                     entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
@@ -100,6 +100,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
         public async Task<int> GetIssueVersionHistoryCount(Guid issueID)
         {
+            _cacheLogger.LogInformation("[!] Cache miss for issue VersionHistoryCount {IssueId}", issueID);
             return await _inner.GetIssueVersionHistoryCount(issueID);
         }
     }

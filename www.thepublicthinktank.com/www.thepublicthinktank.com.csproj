@@ -35,6 +35,7 @@
   <ItemGroup>
     <Folder Include="Models\DTOs\" />
     <Folder Include="Models\ViewModel\CRUD_VM\Comment\" />
+    <Folder Include="Properties\PublishProfiles\" />
     <Folder Include="Properties\ServiceDependencies\" />
   </ItemGroup>
 
