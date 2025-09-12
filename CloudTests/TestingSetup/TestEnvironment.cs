@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
@@ -32,11 +33,11 @@ namespace CloudTests.TestingSetup
         public CookieContainer _cookieContainer;
         public string _connectionString; // dynamic testing connection string
 
-        public TestEnvironment()
+        public TestEnvironment(bool applySeedData = true)
         {
             _cookieContainer = new CookieContainer();
 
-            (_factory, _client, _baseUrl, _connectionString) = TestEnvironmentUtility.ConfigureTestEnvironment(_cookieContainer);
+            (_factory, _client, _baseUrl, _connectionString) = TestEnvironmentUtility.ConfigureTestEnvironment(_cookieContainer, applySeedData);
 
             // Create a scope from the factory's service provider and resolve the SQL Server DbContext
             _scope = _factory.Services.CreateScope();
@@ -219,7 +220,7 @@ namespace CloudTests.TestingSetup
     public static class TestEnvironmentUtility
     {
         public static (WebApplicationFactory<atlas_the_public_think_tank.Program> factory, HttpClient client, string baseUrl, string connectionString)
-            ConfigureTestEnvironment(CookieContainer cookieContainer = null)
+            ConfigureTestEnvironment(CookieContainer cookieContainer = null, bool applySeedData = true)
         {
             string baseUrl = "https://localhost:5501";
 
@@ -251,6 +252,18 @@ namespace CloudTests.TestingSetup
                 {
                     builder.UseUrls(baseUrl);
                     builder.UseEnvironment("Testing");
+
+
+                    // Set the builder.Configuration variable based on applySeedData arg
+                    builder.ConfigureAppConfiguration((context, config) =>
+                    {
+                        var testingAppSettings = new Dictionary<string, string?>
+                        {
+                            ["ApplySeedData"] = applySeedData.ToString().ToLowerInvariant()
+                        };
+
+                        config.AddInMemoryCollection(testingAppSettings);
+                    });
 
                     builder.ConfigureLogging(logging =>
                     {

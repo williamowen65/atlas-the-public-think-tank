@@ -56,12 +56,12 @@ namespace CloudTests.IssueTests
             _env.SetCookie("contentFilter", filterSettings);
 
 
-            string url = "/issue/" + Homelessness.ContentId;
+            string url = "/issue/" + SeedIssues.SeedIssuesDataContainers[0].issue.IssueID;
             var document = await _env.fetchHTML(url);
             var paginationButton = document.QuerySelector("#fetchPaginatedSolutions");
             var buttonText = paginationButton.TextContent;
 
-            SeedSolutionContainer[] AllSolutionsOfIssue = TestingUtilityMethods.GetSeedSolutionDataContainersOf(new Homelessness().issue);
+            SeedSolutionContainer[] AllSolutionsOfIssue = TestingUtilityMethods.GetSeedSolutionDataContainersOf(SeedIssues.SeedIssuesDataContainers[0].issue);
 
             int expectedCount = TestingUtilityMethods.filterByAvgVoteRange(AllSolutionsOfIssue, min, max).Count();
 
@@ -90,16 +90,16 @@ namespace CloudTests.IssueTests
             _env.SetCookie("contentFilter", filterSettings);
 
 
-            string url = "/issue/" + Homelessness.ContentId;
+            string url = "/issue/" + SeedIssues.SeedIssuesDataContainers[0].issue.IssueID;
             var document = await _env.fetchHTML(url);
             var paginationButton = document.QuerySelector("#fetchPaginatedSolutions");
             var buttonText = paginationButton.TextContent;
 
-            SeedSolutionContainer[] AllSolutionsOfIssue = TestingUtilityMethods.GetSeedSolutionDataContainersOf(new Homelessness().issue);
+            SeedSolutionContainer[] AllSolutionsOfIssue = TestingUtilityMethods.GetSeedSolutionDataContainersOf(SeedIssues.SeedIssuesDataContainers[0].issue);
             int allSolutionsCount = AllSolutionsOfIssue.Length;
             int expectedSolutionFilteredCount = TestingUtilityMethods.filterByAvgVoteRange(AllSolutionsOfIssue, min, max).Count();
 
-            SeedIssueContainer[] AllSubIssuesOfIssue = TestingUtilityMethods.GetSubIssuesOf(new Homelessness().issue);
+            SeedIssueContainer[] AllSubIssuesOfIssue = TestingUtilityMethods.GetSubIssuesOf(SeedIssues.SeedIssuesDataContainers[0].issue);
             int allSubIssuesCount = AllSubIssuesOfIssue.Length;
             int expectedSubIssuesFilteredCount = TestingUtilityMethods.filterByAvgVoteRange(AllSubIssuesOfIssue, min, max).Count();
 

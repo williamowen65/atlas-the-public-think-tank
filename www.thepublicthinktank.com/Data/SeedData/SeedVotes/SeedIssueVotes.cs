@@ -4,37 +4,67 @@ using atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data;
 using atlas_the_public_think_tank.Data.SeedData.SeedSolutions;
 using atlas_the_public_think_tank.Data.SeedData.SeedSolutions.Data;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
- 
 using Microsoft.EntityFrameworkCore;
+using static atlas_the_public_think_tank.Data.SeedData.SeedIds;
 
 namespace atlas_the_public_think_tank.Data.SeedData.SeedVotes
 {
-    public class SeedIssueVotes
+    public static class SeedIssueVotes
     {
-       
-
         public static IssueVote[] SeedIssuesVoteData = SeedIssues.SeedIssues.SeedIssuesDataContainers
-         .SelectMany(container => container.issueVotes)
-         .ToArray();
+            .SelectMany(container => container.issueVotes)
+            .ToArray();
 
-        public SeedIssueVotes(ModelBuilder modelBuilder)
+        public static void Seed(ApplicationDbContext context)
         {
-            modelBuilder.Entity<IssueVote>().HasData(SeedIssuesVoteData);
+            var existingVoteIds = context.IssueVotes.Select(v => v.VoteID).ToHashSet();
+            var newVotes = SeedIssuesVoteData.Where(v => !existingVoteIds.Contains(v.VoteID))
+                // Guaranteeing that the entity doesn't contain navigation properties
+                .Select(iv => new IssueVote()
+                {
+                    VoteValue = iv.VoteValue,
+                    IssueID = iv.IssueID,
+                    VoteID = iv.VoteID,
+                    UserID = iv.UserID,
+                    CreatedAt = iv.CreatedAt,
+                    ModifiedAt = iv.ModifiedAt
+                 })
+                .ToList();
+
+            if (newVotes.Any())
+            {
+                context.IssueVotes.AddRange(newVotes);
+            }
         }
     }
-    public class SeedSolutionVotes
+
+    public static class SeedSolutionVotes
     {
-        
-
         public static SolutionVote[] SeedSolutionVoteData = SeedSolutions.SeedSolutions.SeedSolutionDataContainers
-          .SelectMany(container => container.solutionVotes)
-          .ToArray();
+            .SelectMany(container => container.solutionVotes)
+            .ToArray();
 
-        public SeedSolutionVotes(ModelBuilder modelBuilder)
+        public static void Seed(ApplicationDbContext context)
         {
-            modelBuilder.Entity<SolutionVote>().HasData(SeedSolutionVoteData);
+            var existingVoteIds = context.SolutionVotes.Select(v => v.VoteID).ToHashSet();
+            var newVotes = SeedSolutionVoteData.Where(v => !existingVoteIds.Contains(v.VoteID))
+                // Guaranteeing that the entity doesn't contain navigation properties
+                .Select(sv => new SolutionVote()
+                {
+
+                    VoteValue = sv.VoteValue,
+                    SolutionID = sv.SolutionID,
+                    VoteID = sv.VoteID,
+                    UserID = sv.UserID,
+                    CreatedAt = sv.CreatedAt,
+                    ModifiedAt = sv.ModifiedAt
+                })
+                .ToList();
+
+            if (newVotes.Any())
+            {
+                context.SolutionVotes.AddRange(newVotes);
+            }
         }
     }
-
-
 }

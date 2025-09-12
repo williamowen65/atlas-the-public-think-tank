@@ -87,16 +87,6 @@ public class ApplicationDbContext : IdentityDbContext<AppUser, IdentityRole<Guid
         SolutionTagModel.Build(modelBuilder);
         UserHistoryModel.Build(modelBuilder);
 
-
-        // This seed data should only be included for development migrations
-        // TODO: Add conditional check
-        new SeedUsers(modelBuilder);
-        new SeedScopes(modelBuilder);
-        new SeedIssues(modelBuilder);
-        new SeedSolutions(modelBuilder);
-        new SeedIssueVotes(modelBuilder);
-        new SeedSolutionVotes(modelBuilder);
-
     }
 
 
