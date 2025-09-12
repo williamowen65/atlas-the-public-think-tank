@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Models;
 using atlas_the_public_think_tank.Models.ViewModel;
@@ -10,6 +11,9 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 {
     public class FilterIdCacheRepository : IFilterIdSetRepository
     {
+        // These EntityNames are used for invalidation purposes
+        public readonly string FilterIdSet_EntityName = "feed-ids";
+        public readonly string ContentCount_EntityName = "total-count";
 
         private readonly IFilterIdSetRepository _inner;
         private readonly IMemoryCache _cache;
@@ -18,6 +22,17 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             _cache = cache;
             _inner = inner;
         }
+
+        /*
+             Entity: FilterIdSet
+             Access Frequency: High
+             Cacheable?: Yes
+             Cache Invalidation Frequency: High (Note, invalidation, not update -- Letting the database do the work of the sorting order)
+                Almost every action on the website cause an invalidation.
+                    Adding root issue, sub-issue, solution, comment
+                    A vote on content
+                Anything that would change the order of the sorting contents
+         */
 
         public async Task<List<Guid>?> GetPagedSolutionIdsOfIssueById(Guid issueId, ContentFilter filter, int pageNumber = 1, int pageSize = 3)
         {
@@ -83,7 +98,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             //});
             return await _inner.GetContentCountSubIssuesOfSolutionById(solutionId, filter);
         }
-        public async Task<ContentCount_VM?> GetContentCountSolutionsOfIssueById(Guid issueId, ContentFilter filter )
+        public async Task<ContentCount_VM?> GetContentCountSolutionsOfIssueById(Guid issueId, ContentFilter filter)
         {
             //string filterHash = filter.ToJson().GetHashCode().ToString();
             //return await _cache.GetOrCreateAsync($"solutions-total-count:{issueId}:{filterHash}", async entry =>

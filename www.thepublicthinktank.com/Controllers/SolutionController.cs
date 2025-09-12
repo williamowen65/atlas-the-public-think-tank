@@ -392,7 +392,8 @@ namespace atlas_the_public_think_tank.Controllers
                 CreatedAt = solutionRef.CreatedAt,
                 ModifiedAt = DateTime.UtcNow, // Set ModifiedAt
                 ScopeID = (Guid)model.Scope.ScopeID!,
-                Title = model.Title
+                Title = model.Title,
+                Scope = incomingScope,
             };
 
             bool solutionDiff = DiffCheckers.AreSolutionsDifferent(Converter.ConvertSolution_ReadVMToSolution(solutionRef), incomingSolution);

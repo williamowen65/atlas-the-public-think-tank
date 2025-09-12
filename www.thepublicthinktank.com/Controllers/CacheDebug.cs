@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using static repository_pattern_experiment.Controllers.CacheDebug;
 
 namespace repository_pattern_experiment.Controllers
 {
@@ -52,6 +53,26 @@ namespace repository_pattern_experiment.Controllers
                 WriteIndented = true,
                 MaxDepth = 10
             });
+        }
+
+        [Route("api/cache-log/entry")]
+        public IActionResult GetEntry(string key)
+        {
+            if (_cache.TryGetValue(key, out var value))
+            {
+                return Json(new CacheItem
+                {
+                    Key = key,
+                    Type = value?.GetType().FullName,
+                    Value = value // Keep the original object
+                },
+                new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    MaxDepth = 10
+                });
+            }
+            return Json("Entry Not Found");
         }
 
         #endregion

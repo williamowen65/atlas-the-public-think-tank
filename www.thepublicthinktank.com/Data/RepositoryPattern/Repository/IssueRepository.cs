@@ -54,7 +54,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             await _context.Issues.AddAsync(issue);
             await _context.SaveChangesAsync();
 
-            // Create and return the view model
+            // Create and return the view model (also sets the cache)
             return await Read.Issue(issue.IssueID, new ContentFilter());
         }
 
