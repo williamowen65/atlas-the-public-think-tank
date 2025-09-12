@@ -66,7 +66,7 @@ namespace CloudTests.UserTests
         public async Task User1_CanSubmit_IssueForm_WithError_AndGetErrorFeedback()
         {
             // 1. GET page to obtain antiforgery cookie + hidden token
-            string tokenValue = await  TestingVersionHistoryHelpers.GetAntiForgeryToken(_env, "/create-issue");
+            string tokenValue = await  TestingCRUDHelpers.GetAntiForgeryToken(_env, "/create-issue");
 
             // 3. Prepare form data INCLUDING the antiforgery token
             var formData = new List<KeyValuePair<string, string>>
@@ -182,7 +182,7 @@ namespace CloudTests.UserTests
 
         public async Task<(JsonDocument JsonDoc, string Title, string Content)> CreateValidIssue()
         {
-            return await TestingVersionHistoryHelpers.CreateIssue(_env,
+            return await TestingCRUDHelpers.CreateIssue(_env,
                "This is just an example issue title (content creation)",
                "This is just an example issue content",
                new Scope()
@@ -193,7 +193,7 @@ namespace CloudTests.UserTests
 
         public async Task<(JsonDocument JsonDoc, string Title, string Content)> CreateValidSolution(string parentIssueID)
         {
-            return await TestingVersionHistoryHelpers.CreateSolution(_env,
+            return await TestingCRUDHelpers.CreateSolution(_env,
               "This is just an example solution title (content creation)",
               "This is just an example solution content",
               new Scope()

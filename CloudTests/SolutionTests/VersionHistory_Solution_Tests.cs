@@ -43,7 +43,7 @@ namespace CloudTests.SolutionTests
             bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
 
-            var (jsonDoc1, title1, content1) = await TestingVersionHistoryHelpers.CreateIssue(_env,
+            var (jsonDoc1, title1, content1) = await TestingCRUDHelpers.CreateIssue(_env,
                 "This is just an example issue title (content creation)",
                 "This is just an example issue content",
                 new Scope()
@@ -59,7 +59,7 @@ namespace CloudTests.SolutionTests
             string? scopeId = scopeRibbonEl.GetAttribute("data-scope-id");
             Assert.IsNotNull(scopeId, "Scope Id should exists");
 
-            var (jsonDoc2, title2, content2) = await TestingVersionHistoryHelpers.CreateSolution(_env,
+            var (jsonDoc2, title2, content2) = await TestingCRUDHelpers.CreateSolution(_env,
                "This is just an example solution title (content creation)",
                "This is just an example solution content",
                 new Scope()
@@ -73,7 +73,7 @@ namespace CloudTests.SolutionTests
             var rootElement2 = jsonDoc2.RootElement;
             string newSolutionId = rootElement2.GetProperty("contentId").ToString();
 
-            var (jsonDoc3, title3, content3) = await TestingVersionHistoryHelpers.EditSolution(_env,
+            var (jsonDoc3, title3, content3) = await TestingCRUDHelpers.EditSolution(_env,
             "This is just an example solution title (edit 1)",
             "This is just an example solution content",
             newSolutionId,

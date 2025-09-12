@@ -418,7 +418,7 @@ namespace atlas_the_public_think_tank.Controllers
 
             var user = await _userManager.GetUserAsync(User);
 
-            // pull issue from DAL
+            // pull issue from DAL -- This is for confirming some info before making the update
             // Also get the createdAt value
             Issue_ReadVM? issueRef = await Read.Issue((Guid)model.IssueID!, new ContentFilter());
             // Confirm this user owns this content
@@ -464,7 +464,8 @@ namespace atlas_the_public_think_tank.Controllers
                 CreatedAt = issueRef.CreatedAt,
                 ModifiedAt = DateTime.UtcNow, // Set ModifiedAt
                 ScopeID = (Guid)model.Scope.ScopeID!,
-                Title = model.Title
+                Title = model.Title,
+                Scope = incomingScope,
             };
 
             bool issueDiff = DiffCheckers.AreIssuesDifferent(Converter.ConvertIssue_ReadVMToIssue(issueRef), incomingIssue);

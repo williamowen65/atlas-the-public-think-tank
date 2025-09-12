@@ -1,8 +1,10 @@
 ﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
 using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Models.ViewModel;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 {
@@ -11,23 +13,36 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
         private readonly ISolutionRepository _inner;
         private readonly IMemoryCache _cache;
-        public SolutionCacheRepository(ISolutionRepository inner, IMemoryCache cache)
+        private readonly ILogger _cacheLogger;
+        private readonly IFilterIdSetRepository _filterIdSetRepository;
+
+        public SolutionCacheRepository(ISolutionRepository inner, IMemoryCache cache, ILoggerFactory loggerFactory, IFilterIdSetRepository filterIdSetRepository)
         {
             _cache = cache;
             _inner = inner;
+            _cacheLogger = loggerFactory.CreateLogger("CacheLog");
+            _filterIdSetRepository = filterIdSetRepository;
         }
-
 
         public async Task<SolutionRepositoryViewModel?> GetSolutionById(Guid id)
         {
-            //return await _cache.GetOrCreateAsync($"solution:{id}", async entry =>
-            //{
-            //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
-            //    return await _inner.GetSolutionById(id);
-            //});
-             return await _inner.GetSolutionById(id);
+            var cacheKey = $"solution:{id}";
+            if (_cache.TryGetValue(cacheKey, out SolutionRepositoryViewModel? cachedSolution))
+            {
+                _cacheLogger.LogInformation("Cache hit for solution {SolutionId}", id);
+                return cachedSolution;
+            }
+            else
+            {
+                _cacheLogger.LogInformation("Cache miss for solution {SolutionId}", id);
+                var solution = await _cache.GetOrCreateAsync(cacheKey, async entry =>
+                {
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                    return await _inner.GetSolutionById(id);
+                });
+                return solution;
+            }
         }
-
 
 
         public async Task<Solution_ReadVM> AddSolutionAsync(Solution solution)
@@ -40,14 +55,20 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
         public async Task<Solution_ReadVM> UpdateSolutionAsync(Solution solution)
         {
-            // Invalidate the cache related to this issue
-            // issue, and possibly other related ones
+            var cacheKey = $"solution:{solution.SolutionID}";
 
-            //_cache.Remove($"solution:{solution.SolutionID}");
+            // Convert solution to SolutionRepositoryViewModel
+            SolutionRepositoryViewModel cacheableSolution = Converter.ConvertSolutionToSolutionRepositoryViewModel(solution);
 
-            // Update any nested breadcrumbs
+            // Update Cache
+            _cache.Set(cacheKey, cacheableSolution, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10)
+            });
 
-            return await _inner.UpdateSolutionAsync(solution);
+            Solution_ReadVM updatedSolutionVM = await _inner.UpdateSolutionAsync(solution);
+
+            return updatedSolutionVM;
         }
 
         public async Task<int> GetSolutionVersionHistoryCount(Guid solutionID)
