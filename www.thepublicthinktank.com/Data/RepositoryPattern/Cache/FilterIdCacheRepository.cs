@@ -6,6 +6,8 @@ using atlas_the_public_think_tank.Models.ViewModel;
 using atlas_the_public_think_tank.Models.ViewModel.UI_VM;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
+using static atlas_the_public_think_tank.Data.SeedData.SeedIds;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 {
@@ -17,10 +19,12 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
         private readonly IFilterIdSetRepository _inner;
         private readonly IMemoryCache _cache;
-        public FilterIdCacheRepository(IFilterIdSetRepository inner, IMemoryCache cache)
+        private readonly ILogger _cacheLogger;
+        public FilterIdCacheRepository(IFilterIdSetRepository inner, IMemoryCache cache, ILoggerFactory loggerFactory)
         {
             _cache = cache;
             _inner = inner;
+            _cacheLogger = loggerFactory.CreateLogger("CacheLog");
         }
 
         /*
@@ -42,6 +46,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
             //    return await _inner.GetPagedSolutionIdsOfIssueById(issueId, filter, pageNumber, pageSize);
             //});
+            _cacheLogger.LogInformation($"[!] Cache miss for GetPagedSolutionIdsOfIssueById {issueId}");
             return await _inner.GetPagedSolutionIdsOfIssueById(issueId, filter, pageNumber, pageSize);
         }
 
@@ -53,6 +58,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
             //    return await _inner.GetPagedSubIssueIdsOfIssueById(issueId, filter, pageNumber, pageSize);
             //});
+            _cacheLogger.LogInformation($"[!] Cache miss for GetPagedSubIssueIdsOfIssueById {issueId}");
             return await _inner.GetPagedSubIssueIdsOfIssueById(issueId, filter, pageNumber, pageSize);
         }
 
@@ -64,6 +70,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
             //    return await _inner.GetPagedSubIssueIdsOfSolutionById(solutionId, filter, pageNumber, pageSize);
             //});
+            _cacheLogger.LogInformation($"[!] Cache miss for GetPagedSubIssueIdsOfSolutionById {solutionId}");
             return await _inner.GetPagedSubIssueIdsOfSolutionById(solutionId, filter, pageNumber, pageSize);
         }
 
@@ -75,6 +82,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
             //    return await _inner.GetPagedMainContentFeedIds(filter, pageNumber, pageSize);
             //});
+            _cacheLogger.LogInformation($"[!] Cache miss for GetPagedMainContentFeedIds");
             return await _inner.GetPagedMainContentFeedIds(filter, pageNumber, pageSize);
         }
 
@@ -86,6 +94,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
             //    return await _inner.GetContentCountSubIssuesOfIssueById(issueId, filter);
             //});
+            _cacheLogger.LogInformation($"[!] Cache miss for GetContentCountSubIssuesOfIssueById {issueId}");
             return await _inner.GetContentCountSubIssuesOfIssueById(issueId, filter);
         }
         public async Task<ContentCount_VM?> GetContentCountSubIssuesOfSolutionById(Guid solutionId, ContentFilter filter)
@@ -96,6 +105,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
             //    return await _inner.GetContentCountSubIssuesOfSolutionById(solutionId, filter);
             //});
+            _cacheLogger.LogInformation($"[!] Cache miss for GetContentCountSubIssuesOfSolutionById {solutionId}");
             return await _inner.GetContentCountSubIssuesOfSolutionById(solutionId, filter);
         }
         public async Task<ContentCount_VM?> GetContentCountSolutionsOfIssueById(Guid issueId, ContentFilter filter)
@@ -106,6 +116,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
             //    return await _inner.GetContentCountSolutionsOfIssueById(issueId, filter);
             //}); 
+            _cacheLogger.LogInformation($"[!] Cache miss for GetContentCountSolutionsOfIssueById {issueId}");
             return await _inner.GetContentCountSolutionsOfIssueById(issueId, filter);
         }
 
@@ -117,6 +128,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
             //    return await _inner.GetContentCountMainContentFeed(filter);
             //});
+            _cacheLogger.LogInformation($"[!] Cache miss for GetContentCountMainContentFeed");
             return await _inner.GetContentCountMainContentFeed(filter);
         }
     }

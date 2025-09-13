@@ -9,11 +9,15 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
     {
         private readonly IScopeRepository _inner;
         private readonly IMemoryCache _cache;
-        public ScopeCacheRepository(IScopeRepository inner, IMemoryCache cache)
+        private readonly ILogger _cacheLogger;
+        public ScopeCacheRepository(IScopeRepository inner, IMemoryCache cache, ILoggerFactory loggerFactory)
         {
             _cache = cache;
             _inner = inner;
+            _cacheLogger = loggerFactory.CreateLogger("CacheLog");
         }
+
+        
 
         public async Task<Scope_ReadVM> AddScopeAsync(Scope scope)
         {

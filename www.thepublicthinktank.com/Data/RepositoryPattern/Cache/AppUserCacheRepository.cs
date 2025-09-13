@@ -9,10 +9,12 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
     {
         private readonly IAppUserRepository _inner;
         private readonly IMemoryCache _cache;
-        public AppUserCacheRepository(IAppUserRepository inner, IMemoryCache cache)
+        private readonly ILogger _cacheLogger;
+        public AppUserCacheRepository(IAppUserRepository inner, IMemoryCache cache, ILoggerFactory loggerFactory)
         {
             _cache = cache;
             _inner = inner;
+            _cacheLogger = loggerFactory.CreateLogger("CacheLog");
         }
 
         public async Task<AppUser_ReadVM?> GetAppUser(Guid UserId)
@@ -22,6 +24,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
             //    return await _inner.GetAppUser(UserId);
             //});                     
+            _cacheLogger.LogInformation($"[!] Cache miss for GetAppUser {UserId}");
             return await _inner.GetAppUser(UserId);
         }
     }
