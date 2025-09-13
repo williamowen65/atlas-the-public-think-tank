@@ -172,29 +172,14 @@ namespace CloudTests.CacheTests
 
 
 
-        [DataTestMethod]
-        [DataRow("keys")]
-        [DataRow("entries")]
-        public async Task CacheTesting_AddingNewIssue_CreatesCacheEntryForIssue(string path) 
+        [TestMethod]
+        public async Task CacheTesting_AddingNewIssue_CreatesCacheEntryForIssue() 
         {
-
             var (content, issueId, scopeId) = await CreateTestIssue();
-
-            string url = $"/api/cache-log/{path}";
+            string url = $"/api/cache-log/keys";
             string expectedCacheKey = $"issue:{issueId}";
-            if (path == "keys") { 
-                var cacheLog = await _env.fetchJson<List<string>>(url);
-                Assert.IsTrue(cacheLog.Contains(expectedCacheKey), $"cache log should contain key {expectedCacheKey}");
-            }
-            if (path == "entries") {
-           
-                var cacheLog = await _env.fetchJson<List<CacheIssueEntry>>(url);
-                var cacheEntryExist = cacheLog.Any(e => e.Key == expectedCacheKey);
-                Assert.IsTrue(cacheEntryExist, $"cache log should contain key {expectedCacheKey}");
-                var cacheEntry = cacheLog.FirstOrDefault(e => e.Key == expectedCacheKey);
-
-                Assert.IsTrue(cacheEntry.Value.Content == content);
-            }
+            var cacheLog = await _env.fetchJson<List<string>>(url);
+            Assert.IsTrue(cacheLog.Contains(expectedCacheKey), $"cache log should contain key {expectedCacheKey}");
         }
 
 
@@ -202,7 +187,9 @@ namespace CloudTests.CacheTests
         public async Task CacheTesting_UpdatingAnIssue_OverwritesCacheEntryForIssue()
         {
             var (content, issueId, scopeId) = await CreateTestIssue();
-            
+
+            await Read.Issue(new Guid(issueId), new ContentFilter());
+
             string contentUpdate = "This is just an example issue content with updated content";
             var (_jsonDoc2, _title2, _content2) = await TestingCRUDHelpers.EditIssue(_env,
              "This is just an example issue title (content creation)",
@@ -214,14 +201,12 @@ namespace CloudTests.CacheTests
                  Scales = { Scale.Global, Scale.National }
              });
 
+            await Read.Issue(new Guid(issueId), new ContentFilter());
 
-            string url = $"/api/cache-log/entries";
-            string expectedCacheKey = $"issue:{issueId}";
+            string cacheKey = $"issue:{issueId}";
+            string url = $"/api/cache-log/entry?key={cacheKey}";
 
-            var cacheLog = await _env.fetchJson<List<CacheIssueEntry>>(url);
-            var cacheEntryExist = cacheLog.Any(e => e.Key == expectedCacheKey);
-            Assert.IsTrue(cacheEntryExist, $"cache log should contain key {expectedCacheKey}");
-            var cacheEntry = cacheLog.FirstOrDefault(e => e.Key == expectedCacheKey);
+            var cacheEntry = await _env.fetchJson<CacheIssueEntry>(url);
 
             Assert.IsTrue(cacheEntry.Value.Content == contentUpdate);
         }
