@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace CloudTests.TestingSetup
 {
-    public static class TestingVersionHistoryHelpers
+    public static class TestingCRUDHelpers
     {
 
         public static void AttachScopeToFormData(Scope scope, List<KeyValuePair<string, string>> formData)
@@ -61,7 +61,7 @@ namespace CloudTests.TestingSetup
          )
         {
             // 1. GET page to obtain antiforgery cookie + hidden token
-            string tokenValue = await TestingVersionHistoryHelpers.GetAntiForgeryToken(_env, "/create-issue");
+            string tokenValue = await TestingCRUDHelpers.GetAntiForgeryToken(_env, "/create-issue");
             //string scopeId = await GetScopeIDFromPage(_env, "/create-issue");
 
 

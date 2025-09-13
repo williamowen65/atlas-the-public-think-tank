@@ -121,7 +121,7 @@ namespace CloudTests.LayoutTests
             bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
 
-            var (jsonDoc1, title1, content1) = await TestingVersionHistoryHelpers.CreateIssue(_env,
+            var (jsonDoc1, title1, content1) = await TestingCRUDHelpers.CreateIssue(_env,
                 "This is just an example issue title (content creation)",
                 "This is just an example issue content",
                 new Scope() {
@@ -155,7 +155,7 @@ namespace CloudTests.LayoutTests
             Assert.IsTrue(loginSuccess, "Login should be successful");
 
 
-            var (jsonDoc1, title1, content1) = await TestingVersionHistoryHelpers.CreateIssue(_env,
+            var (jsonDoc1, title1, content1) = await TestingCRUDHelpers.CreateIssue(_env,
                 "This is just an example issue title (content creation)",
                 "This is just an example issue content",
                 new Scope() { 
@@ -165,7 +165,7 @@ namespace CloudTests.LayoutTests
             var rootElement1 = jsonDoc1.RootElement;
             string parentIssueId = rootElement1.GetProperty("contentId").ToString();
 
-            var (jsonDoc2, title2, content2) = await TestingVersionHistoryHelpers.CreateSolution(_env,
+            var (jsonDoc2, title2, content2) = await TestingCRUDHelpers.CreateSolution(_env,
                "This is just an example solution title (content creation)",
                "This is just an example solution content",
                new Scope() { 

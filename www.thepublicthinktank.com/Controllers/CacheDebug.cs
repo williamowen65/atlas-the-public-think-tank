@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using static repository_pattern_experiment.Controllers.CacheDebug;
 
 namespace repository_pattern_experiment.Controllers
 {
@@ -54,6 +55,26 @@ namespace repository_pattern_experiment.Controllers
             });
         }
 
+        [Route("api/cache-log/entry")]
+        public IActionResult GetEntry(string key)
+        {
+            if (_cache.TryGetValue(key, out var value))
+            {
+                return Json(new CacheItem
+                {
+                    Key = key,
+                    Type = value?.GetType().FullName,
+                    Value = value // Keep the original object
+                },
+                new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    MaxDepth = 10
+                });
+            }
+            return Json("Entry Not Found");
+        }
+
         #endregion
 
 
@@ -101,6 +122,44 @@ namespace repository_pattern_experiment.Controllers
             foreach (var key in keys)
             {
                 if (key.Contains("feed-ids", StringComparison.OrdinalIgnoreCase))
+                {
+                    _cache.Remove(key);
+                }
+            }
+        }
+
+        public static void ClearSubIssueFeedIdsForIssue(Guid issueId)
+        {
+            List<string> keys = CacheHelper.GetAllCacheKeys();
+            foreach (var key in keys)
+            {
+                // Invlidate the cache no matter the filter type, or page number
+                if (key.Contains($"sub-issue-feed-ids:{issueId}", StringComparison.OrdinalIgnoreCase))
+                {
+                    _cache.Remove(key);
+                }
+            }
+        }
+        public static void ClearContentCountSubIssuesForIssue(Guid issueId)
+        {
+            List<string> keys = CacheHelper.GetAllCacheKeys();
+            foreach (var key in keys)
+            {
+                // Invlidate the cache no matter the filter type, or page number
+                if (key.Contains($"sub-issue-content-counts:{issueId}", StringComparison.OrdinalIgnoreCase))
+                {
+                    _cache.Remove(key);
+                }
+            }
+        }
+
+        public static void ClearIssueContentVersionHistoryCache(Guid issueId)
+        {
+            List<string> keys = CacheHelper.GetAllCacheKeys();
+            foreach (var key in keys)
+            {
+                // Invlidate the cache no matter the filter type, or page number
+                if (key.Contains($"issue-version-history:{issueId}", StringComparison.OrdinalIgnoreCase))
                 {
                     _cache.Remove(key);
                 }

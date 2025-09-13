@@ -32,6 +32,14 @@ namespace CloudTests.IssueTests
 
         }
 
+        /// <summary>
+        /// Create user, Create Issue, Edit that issue
+        /// </summary>
+        /// <remarks>
+        /// All of the content is created and edited before the page is actually viewed.
+        /// Viewing the app is what sets the cache.
+        /// So these test cases work because they represent an initial page load.
+        /// </remarks>
         public static async Task<string> CreateDemoData()
         {
 
@@ -43,7 +51,7 @@ namespace CloudTests.IssueTests
             bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
 
-            var (jsonDoc1, title1, content1) = await TestingVersionHistoryHelpers.CreateIssue(_env,
+            var (jsonDoc1, title1, content1) = await TestingCRUDHelpers.CreateIssue(_env,
                 "This is just an example issue title (content creation)",
                 "This is just an example issue content",
                 new Scope()
@@ -59,7 +67,7 @@ namespace CloudTests.IssueTests
             string? scopeId = scopeRibbonEl.GetAttribute("data-scope-id");
             Assert.IsNotNull(scopeId, "Scope Id should exists");
 
-            var (jsonDoc2, title2, content2) = await TestingVersionHistoryHelpers.EditIssue(_env,
+            var (jsonDoc2, title2, content2) = await TestingCRUDHelpers.EditIssue(_env,
               "This is just an example issue title (edit 1)",
               "This is just an example issue content",
               parentIssueId,
