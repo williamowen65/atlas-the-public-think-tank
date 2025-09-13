@@ -32,6 +32,14 @@ namespace CloudTests.IssueTests
 
         }
 
+        /// <summary>
+        /// Create user, Create Issue, Edit that issue
+        /// </summary>
+        /// <remarks>
+        /// All of the content is created and edited before the page is actually viewed.
+        /// Viewing the app is what sets the cache.
+        /// So these test cases work because they represent an initial page load.
+        /// </remarks>
         public static async Task<string> CreateDemoData()
         {
 

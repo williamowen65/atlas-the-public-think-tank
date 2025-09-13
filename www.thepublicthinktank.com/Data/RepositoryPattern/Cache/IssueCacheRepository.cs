@@ -2,8 +2,11 @@
 using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Models.ViewModel;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue;
 using Microsoft.Extensions.Caching.Memory;
+using repository_pattern_experiment.Controllers;
+using static atlas_the_public_think_tank.Data.SeedData.SeedIds;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 {
@@ -75,6 +78,13 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             // When creating an issue invalidate all filterIdSets in the cache
             //CacheHelper.ClearAllFeedIdSets();
 
+            if (issue.ParentIssueID != null) {
+                // Clear sub-issue-feed-ids cache for parent issue
+                CacheHelper.ClearSubIssueFeedIdsForIssue((Guid)issue.ParentIssueID);
+                CacheHelper.ClearContentCountSubIssuesForIssue((Guid)issue.ParentIssueID);
+            }
+
+
             return await _inner.AddIssueAsync(issue);
         }
 
@@ -95,6 +105,11 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
             Issue_ReadVM? updatedIssueVM = await _inner.UpdateIssueAsync(issue);
 
+            var cacheKeyIssueVersionHistory = $"issue-version-history:{issue.IssueID}";
+
+            // Note: This method may be better suited to be Update instead of clear.
+            CacheHelper.ClearIssueContentVersionHistoryCache(issue.IssueID);
+
             return updatedIssueVM;
         }
 
@@ -102,6 +117,25 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         {
             _cacheLogger.LogInformation("[!] Cache miss for issue VersionHistoryCount {IssueId}", issueID);
             return await _inner.GetIssueVersionHistoryCount(issueID);
+        }
+
+        public async Task<List<ContentItem_ReadVM>?> GetIssueVersionHistoryById(Issue_ReadVM issue)
+        {
+            var cacheKey = $"issue-version-history:{issue.IssueID}";
+            if (_cache.TryGetValue(cacheKey, out List<ContentItem_ReadVM>? cachedIssueVersionHistory))
+            {
+                _cacheLogger.LogInformation($"[+] Cache hit for issue VersionHistory {issue.IssueID}");
+                return cachedIssueVersionHistory;
+            }
+            else
+            {
+                _cacheLogger.LogInformation($"[!] Cache miss for issue VersionHistory {issue.IssueID}");
+                return await _cache.GetOrCreateAsync(cacheKey, async entry =>
+                {
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                    return await _inner.GetIssueVersionHistoryById(issue);
+                });
+            }
         }
     }
 }

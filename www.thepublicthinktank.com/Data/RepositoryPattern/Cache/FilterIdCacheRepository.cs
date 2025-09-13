@@ -46,20 +46,56 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
             //    return await _inner.GetPagedSolutionIdsOfIssueById(issueId, filter, pageNumber, pageSize);
             //});
-            _cacheLogger.LogInformation($"[!] Cache miss for GetPagedSolutionIdsOfIssueById {issueId}");
+            _cacheLogger.LogInformation($"[!] Cache miss for filterIdSet.GetPagedSolutionIdsOfIssueById {issueId}");
             return await _inner.GetPagedSolutionIdsOfIssueById(issueId, filter, pageNumber, pageSize);
         }
 
         public async Task<List<Guid>?> GetPagedSubIssueIdsOfIssueById(Guid issueId, ContentFilter filter, int pageNumber = 1, int pageSize = 3)
         {
-            //string filterHash = filter.ToJson().GetHashCode().ToString();
-            //return await _cache.GetOrCreateAsync($"sub-issue-feed-ids:{issueId}:{filterHash}:{pageNumber}", async entry =>
-            //{
-            //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
-            //    return await _inner.GetPagedSubIssueIdsOfIssueById(issueId, filter, pageNumber, pageSize);
-            //});
-            _cacheLogger.LogInformation($"[!] Cache miss for GetPagedSubIssueIdsOfIssueById {issueId}");
-            return await _inner.GetPagedSubIssueIdsOfIssueById(issueId, filter, pageNumber, pageSize);
+            string filterHash = filter.ToJson().GetHashCode().ToString();
+            var cacheKey = $"sub-issue-feed-ids:{issueId}:{filterHash}:{pageNumber}";
+            if (_cache.TryGetValue(cacheKey, out List<Guid>? cachedPagedSubIssueIds))
+            {
+                _cacheLogger.LogInformation($"[+] Cache hit for filterIdSet.GetPagedSubIssueIdsOfIssueById {issueId}");
+                return cachedPagedSubIssueIds;
+            }
+            else 
+            {
+                _cacheLogger.LogInformation($"[!] Cache miss for filterIdSet.GetPagedSubIssueIdsOfIssueById {issueId}");
+                return await _cache.GetOrCreateAsync(cacheKey, async entry =>
+                {
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                    return await _inner.GetPagedSubIssueIdsOfIssueById(issueId, filter, pageNumber, pageSize);
+                });
+            }
+        }
+
+        /// <summary>
+        /// Returns an object with Total and Absolute count... 
+        /// This will give info about how much content there is to be paginated, and how much content would be present if there were no filters set.
+        /// </summary>
+        /// <param name="issueId"></param>
+        /// <param name="filter"></param>
+        /// <returns>ContentCount_VM</returns>
+        public async Task<ContentCount_VM?> GetContentCountSubIssuesOfIssueById(Guid issueId, ContentFilter filter)
+        {
+            string filterHash = filter.ToJson().GetHashCode().ToString();
+            var cacheKey = $"sub-issue-content-counts:{issueId}:{filterHash}";
+            if (_cache.TryGetValue(cacheKey, out ContentCount_VM? subIssueContentCounts))
+            {
+                _cacheLogger.LogInformation($"[+] Cache hit for filterIdSet.GetContentCountSubIssuesOfIssueById {issueId}");
+                return subIssueContentCounts;
+            }
+            else
+            {
+                _cacheLogger.LogInformation($"[!] Cache miss for filterIdSet.GetContentCountSubIssuesOfIssueById {issueId}");
+                return await _cache.GetOrCreateAsync(cacheKey, async entry =>
+                {
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                    return await _inner.GetContentCountSubIssuesOfIssueById(issueId, filter);
+                });
+            }
+           
         }
 
         public async Task<List<Guid>?> GetPagedSubIssueIdsOfSolutionById(Guid solutionId, ContentFilter filter, int pageNumber = 1, int pageSize = 3)
@@ -70,7 +106,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
             //    return await _inner.GetPagedSubIssueIdsOfSolutionById(solutionId, filter, pageNumber, pageSize);
             //});
-            _cacheLogger.LogInformation($"[!] Cache miss for GetPagedSubIssueIdsOfSolutionById {solutionId}");
+            _cacheLogger.LogInformation($"[!] Cache miss for filterIdSet.GetPagedSubIssueIdsOfSolutionById {solutionId}");
             return await _inner.GetPagedSubIssueIdsOfSolutionById(solutionId, filter, pageNumber, pageSize);
         }
 
@@ -82,21 +118,11 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
             //    return await _inner.GetPagedMainContentFeedIds(filter, pageNumber, pageSize);
             //});
-            _cacheLogger.LogInformation($"[!] Cache miss for GetPagedMainContentFeedIds");
+            _cacheLogger.LogInformation($"[!] Cache miss for filterIdSet.GetPagedMainContentFeedIds");
             return await _inner.GetPagedMainContentFeedIds(filter, pageNumber, pageSize);
         }
 
-        public async Task<ContentCount_VM?> GetContentCountSubIssuesOfIssueById(Guid issueId, ContentFilter filter)
-        {
-            //string filterHash = filter.ToJson().GetHashCode().ToString();
-            //return await _cache.GetOrCreateAsync($"sub-issue-total-count:{issueId}:{filterHash}", async entry =>
-            //{
-            //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
-            //    return await _inner.GetContentCountSubIssuesOfIssueById(issueId, filter);
-            //});
-            _cacheLogger.LogInformation($"[!] Cache miss for GetContentCountSubIssuesOfIssueById {issueId}");
-            return await _inner.GetContentCountSubIssuesOfIssueById(issueId, filter);
-        }
+      
         public async Task<ContentCount_VM?> GetContentCountSubIssuesOfSolutionById(Guid solutionId, ContentFilter filter)
         {
             //string filterHash = filter.ToJson().GetHashCode().ToString();
@@ -105,7 +131,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
             //    return await _inner.GetContentCountSubIssuesOfSolutionById(solutionId, filter);
             //});
-            _cacheLogger.LogInformation($"[!] Cache miss for GetContentCountSubIssuesOfSolutionById {solutionId}");
+            _cacheLogger.LogInformation($"[!] Cache miss for filterIdSet.GetContentCountSubIssuesOfSolutionById {solutionId}");
             return await _inner.GetContentCountSubIssuesOfSolutionById(solutionId, filter);
         }
         public async Task<ContentCount_VM?> GetContentCountSolutionsOfIssueById(Guid issueId, ContentFilter filter)
@@ -116,7 +142,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
             //    return await _inner.GetContentCountSolutionsOfIssueById(issueId, filter);
             //}); 
-            _cacheLogger.LogInformation($"[!] Cache miss for GetContentCountSolutionsOfIssueById {issueId}");
+            _cacheLogger.LogInformation($"[!] Cache miss for filterIdSet.GetContentCountSolutionsOfIssueById {issueId}");
             return await _inner.GetContentCountSolutionsOfIssueById(issueId, filter);
         }
 
@@ -128,7 +154,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
             //    return await _inner.GetContentCountMainContentFeed(filter);
             //});
-            _cacheLogger.LogInformation($"[!] Cache miss for GetContentCountMainContentFeed");
+            _cacheLogger.LogInformation($"[!] Cache miss for filterIdSet.GetContentCountMainContentFeed");
             return await _inner.GetContentCountMainContentFeed(filter);
         }
     }
