@@ -19,13 +19,22 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
         public async Task<AppUser_ReadVM?> GetAppUser(Guid UserId)
         {
-            //return await _cache.GetOrCreateAsync($"app-user:{UserId}", async entry =>
-            //{
-            //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
-            //    return await _inner.GetAppUser(UserId);
-            //});                     
-            _cacheLogger.LogInformation($"[!] Cache miss for GetAppUser {UserId}");
-            return await _inner.GetAppUser(UserId);
+            var cacheKey = $"app-user:{UserId}";
+
+            if (_cache.TryGetValue(cacheKey, out AppUser_ReadVM? cachedAppUser))
+            {
+                _cacheLogger.LogInformation($"[+] Cache hit for AppUser {UserId}");
+                return cachedAppUser;
+            }
+            else
+            { 
+                _cacheLogger.LogInformation($"[!] Cache miss for GetAppUser {UserId}");
+                return await _cache.GetOrCreateAsync(cacheKey, async entry =>
+                {
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                    return await _inner.GetAppUser(UserId);
+                });
+            }
         }
     }
 }
