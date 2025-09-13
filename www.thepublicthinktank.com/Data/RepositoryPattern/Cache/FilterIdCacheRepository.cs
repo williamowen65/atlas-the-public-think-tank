@@ -20,11 +20,13 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         private readonly IFilterIdSetRepository _inner;
         private readonly IMemoryCache _cache;
         private readonly ILogger _cacheLogger;
-        public FilterIdCacheRepository(IFilterIdSetRepository inner, IMemoryCache cache, ILoggerFactory loggerFactory)
+        private readonly IConfiguration _configuration;
+        public FilterIdCacheRepository(IFilterIdSetRepository inner, IMemoryCache cache, ILoggerFactory loggerFactory, IConfiguration configuration)
         {
             _cache = cache;
             _inner = inner;
             _cacheLogger = loggerFactory.CreateLogger("CacheLog");
+            _configuration = configuration;
         }
 
         /*
@@ -52,6 +54,13 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
         public async Task<List<Guid>?> GetPagedSubIssueIdsOfIssueById(Guid issueId, ContentFilter filter, int pageNumber = 1, int pageSize = 3)
         {
+
+            if (_configuration.GetValue<bool>("Caching:Enabled") == false)
+            {
+                _cacheLogger.LogInformation($"[~] Cache skip for filterIdSet.GetPagedSubIssueIdsOfIssueById {issueId}");
+                return await _inner.GetPagedSubIssueIdsOfIssueById(issueId, filter, pageNumber, pageSize);
+            }
+
             string filterHash = filter.ToJson().GetHashCode().ToString();
             var cacheKey = $"sub-issue-feed-ids:{issueId}:{filterHash}:{pageNumber}";
             if (_cache.TryGetValue(cacheKey, out List<Guid>? cachedPagedSubIssueIds))
@@ -79,6 +88,13 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         /// <returns>ContentCount_VM</returns>
         public async Task<ContentCount_VM?> GetContentCountSubIssuesOfIssueById(Guid issueId, ContentFilter filter)
         {
+
+            if (_configuration.GetValue<bool>("Caching:Enabled") == false)
+            {
+                _cacheLogger.LogInformation($"[~] Cache skip for filterIdSet.GetContentCountSubIssuesOfIssueById {issueId}");
+                return await _inner.GetContentCountSubIssuesOfIssueById(issueId, filter);
+            }
+
             string filterHash = filter.ToJson().GetHashCode().ToString();
             var cacheKey = $"sub-issue-content-counts:{issueId}:{filterHash}";
             if (_cache.TryGetValue(cacheKey, out ContentCount_VM? subIssueContentCounts))

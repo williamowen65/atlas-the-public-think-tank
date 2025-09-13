@@ -10,15 +10,24 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         private readonly IAppUserRepository _inner;
         private readonly IMemoryCache _cache;
         private readonly ILogger _cacheLogger;
-        public AppUserCacheRepository(IAppUserRepository inner, IMemoryCache cache, ILoggerFactory loggerFactory)
+        private readonly IConfiguration _configuration;
+        public AppUserCacheRepository(IAppUserRepository inner, IMemoryCache cache, ILoggerFactory loggerFactory, IConfiguration configuration)
         {
             _cache = cache;
             _inner = inner;
             _cacheLogger = loggerFactory.CreateLogger("CacheLog");
+            _configuration = configuration;
         }
 
         public async Task<AppUser_ReadVM?> GetAppUser(Guid UserId)
         {
+
+            if (_configuration.GetValue<bool>("Caching:Enabled") == false)
+            {
+                _cacheLogger.LogInformation($"[~] Cache skip for AppUser {UserId}");
+                return await _inner.GetAppUser(UserId);
+            }
+
             var cacheKey = $"app-user:{UserId}";
 
             if (_cache.TryGetValue(cacheKey, out AppUser_ReadVM? cachedAppUser))

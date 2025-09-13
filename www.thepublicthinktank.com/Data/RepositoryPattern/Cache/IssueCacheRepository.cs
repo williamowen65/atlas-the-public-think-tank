@@ -19,13 +19,15 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         private readonly IMemoryCache _cache;
         private readonly ILogger _cacheLogger;
         private readonly IFilterIdSetRepository _filterIdSetRepository;
+        private readonly IConfiguration _configuration;
 
-        public IssueCacheRepository(IIssueRepository inner, IMemoryCache cache, ILoggerFactory loggerFactory, IFilterIdSetRepository filterIdSetRepository)
+        public IssueCacheRepository(IIssueRepository inner, IMemoryCache cache, ILoggerFactory loggerFactory, IFilterIdSetRepository filterIdSetRepository, IConfiguration configuration)
         {
             _cache = cache;
             _inner = inner;
             _cacheLogger = loggerFactory.CreateLogger("CacheLog");
             _filterIdSetRepository = filterIdSetRepository;
+            _configuration = configuration;
         }
 
 
@@ -51,6 +53,13 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
         public async Task<IssueRepositoryViewModel?> GetIssueById(Guid id)
         {
+
+            if (_configuration.GetValue<bool>("Caching:Enabled") == false)
+            {
+                _cacheLogger.LogInformation("[~] Cache skip for issue {IssueId}", id);
+                return await _inner.GetIssueById(id);
+            }
+
             var cacheKey = $"issue:{id}";
             if (_cache.TryGetValue(cacheKey, out IssueRepositoryViewModel? cachedIssue))
             {
@@ -60,12 +69,11 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             else
             {
                 _cacheLogger.LogInformation("[!] Cache miss for issue {IssueId}", id);
-                var issue = await _cache.GetOrCreateAsync(cacheKey, async entry =>
+                return await _cache.GetOrCreateAsync(cacheKey, async entry =>
                 {
                     entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
                     return await _inner.GetIssueById(id);
                 });
-                return issue;
             }
         }
 
@@ -121,6 +129,13 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
         public async Task<List<ContentItem_ReadVM>?> GetIssueVersionHistoryById(Issue_ReadVM issue)
         {
+
+            if (_configuration.GetValue<bool>("Caching:Enabled") == false)
+            {
+                _cacheLogger.LogInformation($"[~] Cache skip for issue VersionHistory {issue.IssueID}");
+                return await _inner.GetIssueVersionHistoryById(issue);
+            }
+
             var cacheKey = $"issue-version-history:{issue.IssueID}";
             if (_cache.TryGetValue(cacheKey, out List<ContentItem_ReadVM>? cachedIssueVersionHistory))
             {

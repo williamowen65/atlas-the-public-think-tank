@@ -15,17 +15,26 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         private readonly IMemoryCache _cache;
         private readonly ILogger _cacheLogger;
         private readonly IFilterIdSetRepository _filterIdSetRepository;
+        private readonly IConfiguration _configuration;
 
-        public SolutionCacheRepository(ISolutionRepository inner, IMemoryCache cache, ILoggerFactory loggerFactory, IFilterIdSetRepository filterIdSetRepository)
+        public SolutionCacheRepository(ISolutionRepository inner, IMemoryCache cache, ILoggerFactory loggerFactory, IFilterIdSetRepository filterIdSetRepository, IConfiguration configuration)
         {
             _cache = cache;
             _inner = inner;
             _cacheLogger = loggerFactory.CreateLogger("CacheLog");
             _filterIdSetRepository = filterIdSetRepository;
+            _configuration = configuration;
         }
 
         public async Task<SolutionRepositoryViewModel?> GetSolutionById(Guid id)
         {
+
+            if (_configuration.GetValue<bool>("Caching:Enabled") == false)
+            {
+                _cacheLogger.LogInformation("[~] Cache skip for solution {SolutionId}", id);
+                return await _inner.GetSolutionById(id);
+            }
+
             var cacheKey = $"solution:{id}";
             if (_cache.TryGetValue(cacheKey, out SolutionRepositoryViewModel? cachedSolution))
             {
@@ -55,6 +64,12 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
         public async Task<Solution_ReadVM> UpdateSolutionAsync(Solution solution)
         {
+            if (_configuration.GetValue<bool>("Caching:Enabled") == false)
+            {
+                _cacheLogger.LogInformation($"[~] Cache skip for updating solution {solution.SolutionID}");
+                return await _inner.UpdateSolutionAsync(solution);
+            }
+
             var cacheKey = $"solution:{solution.SolutionID}";
 
             // Convert solution to SolutionRepositoryViewModel
@@ -66,9 +81,8 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10)
             });
 
-            Solution_ReadVM updatedSolutionVM = await _inner.UpdateSolutionAsync(solution);
+           return await _inner.UpdateSolutionAsync(solution);
 
-            return updatedSolutionVM;
         }
 
         public async Task<int> GetSolutionVersionHistoryCount(Guid solutionID)
