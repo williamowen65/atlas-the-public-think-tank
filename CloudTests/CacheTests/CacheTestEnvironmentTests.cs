@@ -33,8 +33,14 @@ namespace CloudTests.CacheTests
         public async Task Setup()
         {
             // Use the utility class to configure the test environment
-            bool applySeedData = false;
-            _env = new TestEnvironment(applySeedData);
+            string appSettings = @"
+            {
+                ""ApplySeedData"": false,
+                ""Caching"": {
+                    ""enabled"": true
+                }
+            }";
+            _env = new TestEnvironment(appSettings);
             _db = _env._db;
             _client = _env._client;
         }

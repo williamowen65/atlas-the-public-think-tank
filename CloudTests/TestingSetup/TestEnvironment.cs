@@ -33,11 +33,16 @@ namespace CloudTests.TestingSetup
         public CookieContainer _cookieContainer;
         public string _connectionString; // dynamic testing connection string
 
-        public TestEnvironment(bool applySeedData = true)
+        public TestEnvironment() : this(null)
+        { 
+            // overload
+        }
+
+        public TestEnvironment(string appSettingsOverride)
         {
             _cookieContainer = new CookieContainer();
 
-            (_factory, _client, _baseUrl, _connectionString) = TestEnvironmentUtility.ConfigureTestEnvironment(_cookieContainer, applySeedData);
+            (_factory, _client, _baseUrl, _connectionString) = TestEnvironmentUtility.ConfigureTestEnvironment(appSettingsOverride, _cookieContainer);
 
             // Create a scope from the factory's service provider and resolve the SQL Server DbContext
             _scope = _factory.Services.CreateScope();
@@ -220,7 +225,7 @@ namespace CloudTests.TestingSetup
     public static class TestEnvironmentUtility
     {
         public static (WebApplicationFactory<atlas_the_public_think_tank.Program> factory, HttpClient client, string baseUrl, string connectionString)
-            ConfigureTestEnvironment(CookieContainer cookieContainer = null, bool applySeedData = true)
+            ConfigureTestEnvironment(string appSettingsOverride, CookieContainer cookieContainer = null)
         {
             string baseUrl = "https://localhost:5501";
 
@@ -257,13 +262,30 @@ namespace CloudTests.TestingSetup
                     // Set the builder.Configuration variable based on applySeedData arg
                     builder.ConfigureAppConfiguration((context, config) =>
                     {
-                        var testingAppSettings = new Dictionary<string, string?>
+                        if (!string.IsNullOrEmpty(appSettingsOverride))
                         {
-                            ["ApplySeedData"] = applySeedData.ToString().ToLowerInvariant()
-                        };
+                            using var doc = JsonDocument.Parse(appSettingsOverride);
+                            var dict = new Dictionary<string, string?>();
 
-                        config.AddInMemoryCollection(testingAppSettings);
+                            foreach (var prop in doc.RootElement.EnumerateObject())
+                            {
+                                if (prop.Value.ValueKind == JsonValueKind.Object)
+                                {
+                                    foreach (var subProp in prop.Value.EnumerateObject())
+                                    {
+                                        dict[$"{prop.Name}:{subProp.Name}"] = subProp.Value.ToString();
+                                    }
+                                }
+                                else
+                                {
+                                    dict[prop.Name] = prop.Value.ToString();
+                                }
+                            }
+
+                            config.AddInMemoryCollection(dict);
+                        }
                     });
+
 
                     builder.ConfigureLogging(logging =>
                     {
