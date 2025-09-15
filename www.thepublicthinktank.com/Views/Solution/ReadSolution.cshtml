@@ -24,7 +24,7 @@
                 Comments
             </button>
             <button class="nav-link" id="sub-issues-tab" data-bs-toggle="tab" data-bs-target="#sub-issues" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
-                <div class="content-count">@Model.Solution.PaginatedSubIssues.ContentCount.TotalCount</div>
+                <div class="content-count">@Model.Solution.PaginatedSubIssues.ContentCount.FilteredCount</div>
                 @await Html.PartialAsync("~/Views/Shared/Icons/_SubIssues.cshtml")
                 Sub-Issues
             </button>
@@ -110,9 +110,9 @@
                     ContentType = "sub-issues",
                     Target = "#sub-issue-content",
                     Url = "/solution/getPaginatedSubIssues/" + @Model.Solution.SolutionID,
-                    CurrentPage = Model.Solution.PaginatedSubIssues.ContentCount.TotalCount,
+                    CurrentPage = Model.Solution.PaginatedSubIssues.ContentCount.FilteredCount,
                     PageSize = Model.Solution.PaginatedSubIssues.PageSize,
-                    TotalCount = Model.Solution.PaginatedSubIssues.ContentCount.TotalCount,
+                    TotalCount = Model.Solution.PaginatedSubIssues.ContentCount.FilteredCount,
                     // TotalPages = Model.Solution.PaginatedSubIssues.TotalPages
                 })
 

@@ -10,9 +10,12 @@ using atlas_the_public_think_tank.Data.SeedData.SeedSolutions.Data;
 using atlas_the_public_think_tank.Models;
 using atlas_the_public_think_tank.Models.ViewModel.AjaxVM;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution;
 using CloudTests.TestingSetup;
 using CloudTests.TestingSetup.TestingData;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -20,6 +23,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using static CloudTests.CacheTests.Cache_Issue_Tests;
 
 
 namespace CloudTests.CacheTests
@@ -31,6 +35,8 @@ namespace CloudTests.CacheTests
         private static HttpClient _client;
         private static ApplicationDbContext _db;
         private static TestEnvironment _env;
+        private TestingCRUDHelper _testingCRUDHelper;
+
 
 
         [TestInitialize]
@@ -47,6 +53,16 @@ namespace CloudTests.CacheTests
             _env = new TestEnvironment(appSettings);
             _db = _env._db;
             _client = _env._client;
+            _testingCRUDHelper = new TestingCRUDHelper(_env);
+
+            // Create and login user
+            AppUser testUser = Users.CreateTestUser1(_db);
+            string email = "testuser@example.com";
+            string password = "Password123!";
+
+            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
+            Assert.IsTrue(loginSuccess, "Login should be successful");
+
         }
 
 
@@ -56,6 +72,7 @@ namespace CloudTests.CacheTests
             await TestingUtilityMethods.deleteDatabase(_client, _db);
         }
 
+        #region Solution Cache DTOs
 
         public class CacheSolutionEntry
         {
@@ -64,158 +81,258 @@ namespace CloudTests.CacheTests
             public SolutionRepositoryViewModel Value { get; set; }
         }
 
+        #endregion
+
+        #region Testing creating solution
+
         [TestMethod]
-        public async Task CacheTesting_AddingNewSolution_CreatesCacheKeyForSolution() 
+        public async Task CacheTestingSolution_AddingNewSolution_CreatesCacheKeyForSolution() 
         {
-
-            // Create and login user
-            AppUser testUser = Users.CreateTestUser1(_db);
-            string email = "testuser@example.com";
-            string password = "Password123!";
-
-            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
-            Assert.IsTrue(loginSuccess, "Login should be successful");
-
-            string content = "This is just an example issue content";
-
-            var (jsonDoc1, title1, content1) = await TestingCRUDHelpers.CreateIssue(_env,
-              "This is just an example issue title (content creation)",
-              content,
-              new Scope()
-              {
-                  Scales = { Scale.Global, Scale.National }
-              });
-
-            var rootElement1 = jsonDoc1.RootElement;
-            string parentIssueId = rootElement1.GetProperty("contentId").ToString();
-
-            var (jsonDoc2, title2, content2) = await TestingCRUDHelpers.CreateSolution(_env,
-            "This is just an example issue title (content creation)",
-            content,
-            new Scope()
-            {
-                Scales = { Scale.Global, Scale.National }
-            },
-            parentIssueId);
-
-
-            var rootElement2 = jsonDoc2.RootElement;
-            string solutionId = rootElement2.GetProperty("contentId").ToString();
-
-
-            string url = $"/api/cache-log/keys";
+            // Create Issue
+            var (issueJsonDoc, parentIssueId, issuetitle, issueContent, issueScope) = await _testingCRUDHelper.CreateTestIssue();
+            // Create Solution
+            var (solutionJsonDoc, solutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId);
+            // Create Cache Key
             string expectedCacheKey = $"solution:{solutionId}";
+            // Fetch data
+            string url = $"/api/cache-log/keys";
             var cacheLog = await _env.fetchJson<List<string>>(url);
+            // Confirm data
             Assert.IsTrue(cacheLog.Contains(expectedCacheKey), $"cache log should contain key {expectedCacheKey}");
         }
 
 
         [TestMethod]
-        public async Task CacheTesting_AddingNewSolution_CreatesCacheEntryForSolution()
+        public async Task CacheTestingSolution_AddingNewSolution_CreatesCacheEntryForSolution()
         {
-
-            // Create and login user
-            AppUser testUser = Users.CreateTestUser1(_db);
-            string email = "testuser@example.com";
-            string password = "Password123!";
-
-            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
-            Assert.IsTrue(loginSuccess, "Login should be successful");
-
-            string issueContent = "This is just an example issue content";
-            string solutionContent = "This is just an example solution content";
-
-            var (jsonDoc1, title1, content1) = await TestingCRUDHelpers.CreateIssue(_env,
-              "This is just an example issue title (content creation)",
-              issueContent,
-              new Scope()
-              {
-                  Scales = { Scale.Global, Scale.National }
-              });
-
-            var rootElement1 = jsonDoc1.RootElement;
-            string parentIssueId = rootElement1.GetProperty("contentId").ToString();
-
-            var (jsonDoc2, title2, content2) = await TestingCRUDHelpers.CreateSolution(_env,
-            "This is just an example issue title (content creation)",
-            solutionContent,
-            new Scope()
-            {
-                Scales = { Scale.Global, Scale.National }
-            },
-            parentIssueId);
-
-
-            var rootElement2 = jsonDoc2.RootElement;
-            string solutionId = rootElement2.GetProperty("contentId").ToString();
+            // Create Issue
+            var (issueJsonDoc, parentIssueId, issuetitle, issueContent, issueScope) = await _testingCRUDHelper.CreateTestIssue();
+           // Create solution
+            var (solutionJsonDoc, solutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId);
 
             string url = $"/api/cache-log/entry?key=solution:{solutionId}";
             var cacheEntry = await _env.fetchJson<CacheSolutionEntry>(url);
             Assert.IsTrue(cacheEntry.Value.Content == solutionContent);
         }
 
+        #endregion
+
+        #region Testing editing a solution
+
         [TestMethod]
-        public async Task CacheTesting_UpdatingSolution_CreatesAndOverwritesCacheEntryForSolution()
+        public async Task CacheTestingSolution_UpdatingSolution_CreatesAndOverwritesCacheEntryForSolution()
         {
-
-            // Create and login user
-            AppUser testUser = Users.CreateTestUser1(_db);
-            string email = "testuser@example.com";
-            string password = "Password123!";
-
-            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
-            Assert.IsTrue(loginSuccess, "Login should be successful");
-
-            string issueContent = "This is just an example issue content";
-            string solutionContent = "This is just an example solution content";
-            string solutionContentUpdate = "This is just an example solution content with an update";
-
-            var (jsonDoc1, title1, content1) = await TestingCRUDHelpers.CreateIssue(_env,
-              "This is just an example issue title (content creation)",
-              issueContent,
-              new Scope()
-              {
-                  Scales = { Scale.Global, Scale.National }
-              });
-
-            var rootElement1 = jsonDoc1.RootElement;
-            string parentIssueId = rootElement1.GetProperty("contentId").ToString();
-
-            var (jsonDoc2, title2, content2) = await TestingCRUDHelpers.CreateSolution(_env,
-            "This is just an example solution title",
-            solutionContent,
-            new Scope()
-            {
-                Scales = { Scale.Global, Scale.National }
-            },
-            parentIssueId);
-
-
-            var rootElement2 = jsonDoc2.RootElement;
-            string solutionId = rootElement2.GetProperty("contentId").ToString();
-
-            var solutionDoc = await _env.TextHtmlToDocument(rootElement2.GetProperty("content").ToString());
-            var scopeRibbonEl = solutionDoc.QuerySelector(".scope-ribbon");
-            string? scopeId = scopeRibbonEl!.GetAttribute("data-scope-id");
-
-
-            var (_jsonDoc3, _title3, _content3) = await TestingCRUDHelpers.EditSolution(_env,
-             "This is just an example solution title",
-             solutionContentUpdate,
-             solutionId,
-             parentIssueId,
-             new Scope()
-             {
-                 ScopeID = new Guid(scopeId!),
-                 Scales = { Scale.Global, Scale.National }
-             });
-
+            // Create Issue
+            var (issueJsonDoc, parentIssueId, issuetitle, issueContent, issueScope) = await _testingCRUDHelper.CreateTestIssue();
+            // Create solution
+            var (solutionJsonDoc, solutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId);
+            // Edit Solution
+            var (updatedSolutionJsonDoc, updatedSolutionId, updatedSolutionTitle, updatedSolutionContent, updatedSolutionScope) = await _testingCRUDHelper.EditTestSolution(solutionId, solutionScope.ScopeID, parentIssueId);
 
             string url = $"/api/cache-log/entry?key=solution:{solutionId}";
             var cacheEntry = await _env.fetchJson<CacheSolutionEntry>(url);
-            Assert.IsTrue(cacheEntry.Value.Content == solutionContentUpdate); ;
+            Assert.IsTrue(cacheEntry.Value.Content == updatedSolutionContent); ;
         }
 
+        [TestMethod]
+        public async Task CacheTestingSolution_UpdatingSolution_UpdatesSolutionVersionHistoryCache()
+        {
+            Assert.Fail();
+        }
+
+        #endregion
+
+        #region Testing solution sub-issues
+
+        [TestMethod]
+        public async Task CacheTestingSolution_PagedSubIssues_ShouldBeUpToDate()
+        {
+            // Create issue
+            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue();
+            // Create sub-issue
+            var (solutionJsonDoc, parentSolutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId);
+            // This is the solution being testing... 
+            // Note it has no sub-issues at creation
+
+            // Repopulate cache (this might not be necessary since creating a solution calls this method at the end)
+            //await Read.Solution(new Guid(parentSolutionId!), new ContentFilter());
+
+
+            // Assemble cache key for sub-issue-feed-ids
+            ContentFilter filter = new ContentFilter();
+            string filterHash = filter.ToJson().GetHashCode().ToString();
+            int pageNumber = 1;
+            var cacheKey = $"sub-issue-feed-ids:{parentSolutionId}:{filterHash}:{pageNumber}"; ;
+
+            string url = $"/api/cache-log/entry?key={cacheKey}";
+            var cacheEntry = await _env.fetchJson<CacheEntryIdsDTO>(url);
+
+            Assert.IsTrue(cacheEntry.Value.Count() == 0);
+
+            //// Create a new sub-issue for the the solution
+            var (subIssueJsonDoc1, subIssueId1, subIssueTitle1, subIssueContent1, subIssueScope1) = await _testingCRUDHelper.CreateTestSubIssue(null, new Guid(parentSolutionId));
+            // Repopulate cache
+            var solutionVM = await Read.Solution(new Guid(parentSolutionId!), new ContentFilter());
+
+            var cacheEntry2 = await _env.fetchJson<CacheEntryIdsDTO>(url);
+            //// Read this solution to repopulate cache
+            Assert.IsTrue(cacheEntry2.Value.Count() == 1);
+        }
+
+        [TestMethod]
+        public async Task CacheTestingSolution_SubIssues_ContentCounts_ShouldBeUpToDate()
+        {
+            // Create issue
+            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue();
+            // Create sub-issue
+            var (solutionJsonDoc, parentSolutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId);
+            // This is the solution being testing... 
+            // Note it has no sub-issues at creation
+            // Assemble cache key for sub-issue-feed-ids
+            ContentFilter filter = new ContentFilter();
+            string filterHash = filter.ToJson().GetHashCode().ToString();
+            var cacheKey = $"sub-issue-content-counts:{parentSolutionId}:{filterHash}";
+
+            string url = $"/api/cache-log/entry?key={cacheKey}";
+            var cacheEntry = await _env.fetchJson<CacheEntry_ContentCountDTO>(url);
+
+            Assert.IsTrue(cacheEntry.Value.AbsoluteCount == 0);
+            Assert.IsTrue(cacheEntry.Value.FilteredCount == 0);
+
+
+            var (subIssueJsonDoc1, subIssueId1, subIssueTitle1, subIssueContent1, subIssueScope1) = await _testingCRUDHelper.CreateTestSubIssue(null, new Guid(parentSolutionId));
+            await Read.Solution(new Guid(parentSolutionId!), new ContentFilter());
+
+            var cacheEntry2 = await _env.fetchJson<CacheEntry_ContentCountDTO>(url);
+            Assert.IsTrue(cacheEntry2.Value.AbsoluteCount == 1);
+            Assert.IsTrue(cacheEntry2.Value.FilteredCount == 1);
+
+            var (subIssueJsonDoc2, subIssueId2, subIssueTitle2, subIssueContent2, subIssueScope2) = await _testingCRUDHelper.CreateTestSubIssue(null, new Guid(parentSolutionId));
+            await Read.Solution(new Guid(parentSolutionId!), new ContentFilter());
+
+            var cacheEntry3 = await _env.fetchJson<CacheEntry_ContentCountDTO>(url);
+            Assert.IsTrue(cacheEntry3.Value.AbsoluteCount == 2);
+            Assert.IsTrue(cacheEntry3.Value.FilteredCount == 2);
+
+            var (subIssueJsonDoc3, subIssueId3, subIssueTitle3, subIssueContent3, subIssueScope3) = await _testingCRUDHelper.CreateTestSubIssue(null, new Guid(parentSolutionId));
+            await Read.Solution(new Guid(parentSolutionId!), new ContentFilter());
+
+            var cacheEntry4 = await _env.fetchJson<CacheEntry_ContentCountDTO>(url);
+            Assert.IsTrue(cacheEntry4.Value.AbsoluteCount == 3);
+            Assert.IsTrue(cacheEntry4.Value.FilteredCount == 3);
+
+            var (subIssueJsonDoc4, subIssueId4, subIssueTitle4, subIssueContent4, subIssueScope4) = await _testingCRUDHelper.CreateTestSubIssue(null, new Guid(parentSolutionId));
+            await Read.Solution(new Guid(parentSolutionId!), new ContentFilter());
+
+            var cacheEntry5 = await _env.fetchJson<CacheEntry_ContentCountDTO>(url);
+            Assert.IsTrue(cacheEntry5.Value.AbsoluteCount == 4);
+            Assert.IsTrue(cacheEntry5.Value.FilteredCount == 4); 
+
+        }
+
+        [TestMethod]
+        public async Task CacheTestingSolution_SubIssues_UpdatingFilter_ContentCounts_ShouldBeUpToDate()
+        {
+            // Create issue
+            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue();
+            // Create sub-issue
+            var (solutionJsonDoc, parentSolutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId);
+            // This is the solution being tested... 
+
+            var (subIssueJsonDoc1, subIssueId1, subIssueTitle1, subIssueContent1, subIssueScope1) = await _testingCRUDHelper.CreateTestSubIssue(null, new Guid(parentSolutionId));
+            var (subIssueJsonDoc2, subIssueId2, subIssueTitle2, subIssueContent2, subIssueScope2) = await _testingCRUDHelper.CreateTestSubIssue(null, new Guid(parentSolutionId));
+            var (subIssueJsonDoc3, subIssueId3, subIssueTitle3, subIssueContent3, subIssueScope3) = await _testingCRUDHelper.CreateTestSubIssue(null, new Guid(parentSolutionId));
+            var (subIssueJsonDoc4, subIssueId4, subIssueTitle4, subIssueContent4, subIssueScope4) = await _testingCRUDHelper.CreateTestSubIssue(null, new Guid(parentSolutionId));
+
+            await _testingCRUDHelper.CreateTestVoteOnIssue(subIssueId2, 8);
+
+            
+
+            // Default test with basically no filter
+            ContentFilter filter = new ContentFilter()
+            { 
+                // This is the default
+                AvgVoteRange = new RangeFilter<double> { Min = 0, Max = 10, },
+                // Plus some other defaults
+            };
+            // populate cache
+            await Read.Solution(new Guid(parentSolutionId!), filter);
+            string filterHash = filter.ToJson().GetHashCode().ToString();
+            var cacheKey = $"sub-issue-content-counts:{parentSolutionId}:{filterHash}";
+            string url = $"/api/cache-log/entry?key={cacheKey}";
+            var cacheEntry = await _env.fetchJson<CacheEntry_ContentCountDTO>(url);
+            Assert.IsTrue(cacheEntry.Value.AbsoluteCount == 4);
+            Assert.IsTrue(cacheEntry.Value.FilteredCount == 4);
+
+
+            // Test with basically filtering out content
+            ContentFilter filter2 = new ContentFilter()
+            {
+                AvgVoteRange = new RangeFilter<double> { Min = 5, Max = 10 },
+                // Plus some other defaults
+            };
+            // populate cache
+            await Read.Solution(new Guid(parentSolutionId!), filter2);
+            string filterHash2 = filter2.ToJson().GetHashCode().ToString();
+            var cacheKey2 = $"sub-issue-content-counts:{parentSolutionId}:{filterHash2}";
+            string url2 = $"/api/cache-log/entry?key={cacheKey2}";
+            var cacheEntry2 = await _env.fetchJson<CacheEntry_ContentCountDTO>(url2);
+            Assert.IsTrue(cacheEntry2.Value.AbsoluteCount == 4);
+            Assert.IsTrue(cacheEntry2.Value.FilteredCount == 1); 
+
+
+
+
+        }
+
+        [TestMethod]
+        public async Task CacheTestingSolutions_SubIssueVote_ReordersContent_PagedSubIssues_ShouldBeUpToDate()
+        {
+            // Create issue
+            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue();
+            // Create sub-issue
+            var (solutionJsonDoc, parentSolutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId);
+
+            ContentFilter filter = new ContentFilter();
+            string filterHash = filter.ToJson().GetHashCode().ToString();
+            int pageNumber = 1;
+            var cacheKey = $"sub-issue-feed-ids:{parentSolutionId}:{filterHash}:{pageNumber}";
+
+            string url = $"/api/cache-log/entry?key={cacheKey}";
+
+
+            // Create sub issues for a solution (all with no votes)
+            var (subIssueJsonDoc1, subIssueId1, subIssueTitle1, subIssueContent1, subIssueScope1) = await _testingCRUDHelper.CreateTestSubIssue(null, new Guid(parentSolutionId));
+            var (subIssueJsonDoc2, subIssueId2, subIssueTitle2, subIssueContent2, subIssueScope2) = await _testingCRUDHelper.CreateTestSubIssue(null, new Guid(parentSolutionId));
+            var (subIssueJsonDoc3, subIssueId3, subIssueTitle3, subIssueContent3, subIssueScope3) = await _testingCRUDHelper.CreateTestSubIssue(null, new Guid(parentSolutionId));
+
+            // populate cache
+            await Read.Solution(new Guid(parentSolutionId!), new ContentFilter());
+
+            // VOTE 1
+            // Cast a vote on sub-issue 2 (This should clear sub-issue-feed-ids for this the parent solution of this sub-issue)
+            await _testingCRUDHelper.CreateTestVoteOnIssue(subIssueId2, 8);
+            await Read.Solution(new Guid(parentSolutionId!), new ContentFilter());
+            var cacheEntry = await _env.fetchJson<CacheEntryIdsDTO>(url);
+            Assert.IsTrue(cacheEntry.Value[0] == subIssueId2);
+
+            // VOTE 2
+            await _testingCRUDHelper.CreateTestVoteOnIssue(subIssueId3, 9);
+            await Read.Solution(new Guid(parentSolutionId!), new ContentFilter());
+            var cacheEntry2 = await _env.fetchJson<CacheEntryIdsDTO>(url);
+            Assert.IsTrue(cacheEntry2.Value[0] == subIssueId3);
+            Assert.IsTrue(cacheEntry2.Value[1] == subIssueId2);
+
+            // VOTE 3
+            await _testingCRUDHelper.CreateTestVoteOnIssue(subIssueId1, 10);
+            await Read.Solution(new Guid(parentSolutionId!), new ContentFilter());
+            var cacheEntry3 = await _env.fetchJson<CacheEntryIdsDTO>(url);
+            Assert.IsTrue(cacheEntry3.Value[0] == subIssueId1);
+            Assert.IsTrue(cacheEntry3.Value[1] == subIssueId3);
+            Assert.IsTrue(cacheEntry3.Value[2] == subIssueId2);
+        }
+
+        #endregion
 
 
 

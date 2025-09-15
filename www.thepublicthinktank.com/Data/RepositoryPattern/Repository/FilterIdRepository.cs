@@ -59,7 +59,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             var query = _context.Issues
                 .Where(i => i.ParentSolutionID == solutionId);
 
-            // TODO Apply Filter / Sorting
+            // TODO Apply Filter / Sorting (NOTE: Using Issue filters because working with sub issues)
             var filteredQuery = FilterQueryService.ApplyIssueFilters(query, filter);
             // TODO Apply Weighted Score
             var sortedQuery = SortQueryService.ApplyWeightedScoreSorting(filteredQuery);
@@ -82,7 +82,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             var filteredQuery = FilterQueryService.ApplyIssueFilters(query, filter);
 
             counts.AbsoluteCount = await query.CountAsync();
-            counts.TotalCount = await filteredQuery.CountAsync();
+            counts.FilteredCount = await filteredQuery.CountAsync();
 
             return counts;
         }
@@ -91,10 +91,11 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             ContentCount_VM counts = new ContentCount_VM();
             var query = _context.Issues
                 .Where(i => i.ParentSolutionID == solutionId);
+            // Note: Using issue filter since this is for sub issues
             var filteredQuery = FilterQueryService.ApplyIssueFilters(query, filter);
 
             counts.AbsoluteCount = await query.CountAsync();
-            counts.TotalCount  = await filteredQuery.CountAsync();
+            counts.FilteredCount  = await filteredQuery.CountAsync();
 
             return counts;
         }
@@ -106,7 +107,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             var filteredQuery = FilterQueryService.ApplySolutionFilters(query, filter);
 
             counts.AbsoluteCount = await query.CountAsync();
-            counts.TotalCount = await filteredQuery.CountAsync();
+            counts.FilteredCount = await filteredQuery.CountAsync();
 
             return counts;
         }
@@ -184,7 +185,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             var filteredQuery = FilterQueryService.ApplyCombinedContentFilters(combinedQuery, filter);
 
             counts.AbsoluteCount = await combinedQuery.CountAsync();
-            counts.TotalCount = await filteredQuery.CountAsync();
+            counts.FilteredCount = await filteredQuery.CountAsync();
 
             return counts;
         }
