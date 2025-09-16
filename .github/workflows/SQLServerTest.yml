@@ -37,33 +37,30 @@ jobs:
             echo "SQL Server not ready yet... ($i)"
             sleep 5
           done
-
+      
       - name: Run CloudTest project tests
         id: run-tests
         run: |
-          # Run tests and save output to a file
+          # run tests, capture output and exit code
+          set +e
           dotnet test CloudTests/CloudTests.csproj --no-build --verbosity normal > test_output.txt 2>&1
+          EXIT_CODE=$?
+          set -e
       
-          # Initialize counters
-          PASSED=0
-          FAILED=0
+          # parse results
+          PASSED=$(grep -oP 'Passed:\s+\K[0-9]+' test_output.txt | tail -1 || echo 0)
+          FAILED=$(grep -oP 'Failed:\s+\K[0-9]+' test_output.txt | tail -1 || echo 0)
       
-          # Loop through each line and extract numbers
-          while IFS= read -r line; do
-              if [[ "$line" =~ Passed:\ ([0-9]+) ]]; then
-                  PASSED=${BASH_REMATCH[1]}
-              fi
-              if [[ "$line" =~ Failed:\ ([0-9]+) ]]; then
-                  FAILED=${BASH_REMATCH[1]}
-              fi
-          done < test_output.txt
-      
-          # Output the entire test output
+          # always show the full output
           cat test_output.txt
       
-          # Export as GitHub Actions outputs
-          echo "passed=$PASSED" >> $GITHUB_OUTPUT
-          echo "failed=$FAILED" >> $GITHUB_OUTPUT
+          # export numbers for later steps
+          echo "passed=$PASSED" >> "$GITHUB_OUTPUT"
+          echo "failed=$FAILED" >> "$GITHUB_OUTPUT"
+      
+          # finally return the real test exit code so the job still fails
+          exit $EXIT_CODE
+
 
       - name: Update test badge in Gist if testing on main branch
         if: github.ref == 'refs/heads/main'
