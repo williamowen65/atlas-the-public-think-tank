@@ -66,6 +66,7 @@ namespace CloudTests.TestingSetup
             // Verify the contentFilter cookie was received by the server
             Assert.IsNotNull(serverCookies, "Server should return cookie dictionary");
             Assert.IsTrue(serverCookies.ContainsKey("contentFilter"), "Server should receive the contentFilter cookie");
+   
         }
 
 

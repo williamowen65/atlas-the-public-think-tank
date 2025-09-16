@@ -50,6 +50,7 @@ jobs:
           # parse results
           PASSED=$(grep -oP 'Passed:\s+\K[0-9]+' test_output.txt | tail -1 || echo 0)
           FAILED=$(grep -oP 'Failed:\s+\K[0-9]+' test_output.txt | tail -1 || echo 0)
+          FAILED=${FAILED:-0}
       
           # always show the full output
           cat test_output.txt
@@ -63,7 +64,7 @@ jobs:
 
 
       - name: Update test badge in Gist if testing on main branch
-        if: github.ref == 'refs/heads/main'
+        if: always() && github.ref == 'refs/heads/main'
         env:
           GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
           GIST_ID: 4ac1300861898e7568dbec51c70bd24b
