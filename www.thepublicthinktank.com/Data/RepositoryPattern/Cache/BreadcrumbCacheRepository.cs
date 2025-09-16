@@ -24,6 +24,11 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 return await _inner.GetBreadcrumbPagedAsync(null);
             }
 
+
+            // Note: When implementing this, Create tests case
+            // What if a parent issue/solution title is updated
+            // What if a parent issue/solution is moved to point to a different parent.
+
             //#pragma warning disable CS8603 // Possible null reference return.
             //return await _cache.GetOrCreateAsync($"breadcrumb:{itemId}", async entry =>
             //{

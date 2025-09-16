@@ -1,4 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+using atlas_the_public_think_tank.Models.Cacheable;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue.IssueVote;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution.SolutionVote;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.Issue.IssueVote;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.Solution.SolutionVote;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -93,6 +99,10 @@ namespace repository_pattern_experiment.Controllers
 
     }
 
+
+    /// <summary>
+    /// TODO: Move this to repository helpers
+    /// </summary>
     public static class CacheHelper
     {
         private static IMemoryCache _cache;
@@ -226,6 +236,82 @@ namespace repository_pattern_experiment.Controllers
                     _cache.Remove(key);
                 }
             }
+        }
+
+
+        /// <summary>
+        /// Updates the "vote-stats" cache <br/>
+        /// See <see cref="IssueVotes_Cacheable_ReadVM"/>
+        /// </summary>
+        public static void UpdateCache_IssueVoteStats(Vote_Cacheable? newVote, IssueVote_UpsertVM model, AppUser user)
+        {
+            if (newVote != null)
+            {
+                // Get the cache key for this issue's vote stats
+                string cacheKey = $"vote-stats:{model.IssueID}";
+                if (_cache.TryGetValue<IssueVotes_Cacheable_ReadVM>(cacheKey, out var cachedStats))
+                {
+                    // Update the cached stats
+                    if (cachedStats != null)
+                    {
+                        // Update or add the vote in the dictionary
+                        cachedStats.IssueVotes[user.Id] = newVote;
+
+                        // Recalculate averages and totals
+                        cachedStats.TotalVotes = cachedStats.IssueVotes.Count;
+                        cachedStats.AverageVote = cachedStats.IssueVotes.Any()
+                            ? cachedStats.IssueVotes.Values.Average(v => v.VoteValue)
+                            : 0;
+
+                        // Update the cache with new expiration
+                        var cacheEntryOptions = new MemoryCacheEntryOptions
+                        {
+                            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1)
+                        };
+                        _cache.Set(cacheKey, cachedStats, cacheEntryOptions);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Updates the "vote-stats" cache <br/>
+        /// See <see cref="IssueVotes_Cacheable_ReadVM"/>
+        /// </summary>
+        public static void UpdateCache_SolutionVoteStats(Vote_Cacheable? newVote, SolutionVote_UpsertVM model, AppUser user)
+        {
+
+            if (newVote != null)
+            {
+                // Get the cache key for this issue's vote stats
+                string cacheKey = $"vote-stats:{model.SolutionID}";
+
+                if (_cache.TryGetValue<SolutionVotes_Cacheable_ReadVM>(cacheKey, out var cachedStats))
+                {
+                    // Update the cached stats
+                    if (cachedStats != null)
+                    {
+                        // Update or add the vote in the dictionary
+                        cachedStats.SolutionVotes[user.Id] = newVote;
+
+                        // Recalculate averages and totals
+                        cachedStats.TotalVotes = cachedStats.SolutionVotes.Count;
+                        cachedStats.AverageVote = cachedStats.SolutionVotes.Any()
+                            ? cachedStats.SolutionVotes.Values.Average(v => v.VoteValue)
+                            : 0;
+
+                        // Update the cache with new expiration
+                        var cacheEntryOptions = new MemoryCacheEntryOptions
+                        {
+                            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1)
+                        };
+
+                        _cache.Set(cacheKey, cachedStats, cacheEntryOptions);
+                    }
+                }
+
+            }
+
         }
     }
 }

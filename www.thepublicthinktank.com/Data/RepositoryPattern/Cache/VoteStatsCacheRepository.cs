@@ -5,6 +5,7 @@ using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Models.Cacheable;
 using atlas_the_public_think_tank.Models.ViewModel;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue.IssueVote;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution;
@@ -21,77 +22,93 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         private readonly IVoteStatsRepository _inner;
         private readonly IMemoryCache _cache;
         private readonly ILogger _cacheLogger;
-
-        public VoteStatsCacheRepository(IVoteStatsRepository inner, IMemoryCache cache, ILoggerFactory loggerFactory)
+        private readonly IConfiguration _configuration;
+        public VoteStatsCacheRepository(IVoteStatsRepository inner, IMemoryCache cache, ILoggerFactory loggerFactory, IConfiguration configuration)
         {
             _cache = cache;
             _inner = inner;
             _cacheLogger = loggerFactory.CreateLogger("CacheLog");
+            _configuration = configuration;
         }
 
 
 
+        /// <summary>
+        /// Cache layer for "Issue Vote Stats"
+        /// </summary>
+        /// <remarks>
+        /// Votes are updated in the cache via:
+        /// <see cref="VoteStatsCacheRepository.UpsertIssueVote(IssueVote_UpsertVM, AppUser)"/>
+        /// </remarks>
+        public async Task<IssueVotes_Cacheable_ReadVM?> GetIssueVoteStats(Guid id)
+        {
+            if (_configuration.GetValue<bool>("Caching:Enabled") == false)
+            {
+                _cacheLogger.LogInformation($"[~] Cache skip for GetIssueVoteStats {id}");
+                return await _inner.GetIssueVoteStats(id);
+            }
 
-        public async Task<IssueVotes_ReadVM?> GetIssueVoteStats(Guid id)
+            var cacheKey = $"vote-stats:{id}";
+            if (_cache.TryGetValue(cacheKey, out IssueVotes_Cacheable_ReadVM? cachedIssueVoteStats))
+            {
+                _cacheLogger.LogInformation($"[+] Cache hit for GetIssueVoteStats {id}");
+                return cachedIssueVoteStats;
+            }
+            else
+            {
+                _cacheLogger.LogInformation($"[!] Cache miss for GetIssueVoteStats {id}");
+                return await _cache.GetOrCreateAsync(cacheKey, async entry =>
+                {
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                    return await _inner.GetIssueVoteStats(id);
+                });
+            }
+        }
+        public async Task<SolutionVotes_Cacheable_ReadVM?> GetSolutionVoteStats(Guid id)
         {
 
-            //return await _cache.GetOrCreateAsync($"vote-stats:{id}", async entry =>
-            //{
-            //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
-            //});
-            _cacheLogger.LogInformation($"[!] Cache miss for GetIssueVoteStats {id}");
-            return await _inner.GetIssueVoteStats(id);
-        }
-        public async Task<SolutionVotes_ReadVM?> GetSolutionVoteStats(Guid id)
-        {
+            if (_configuration.GetValue<bool>("Caching:Enabled") == false)
+            {
+                _cacheLogger.LogInformation($"[~] Cache skip for GetSolutionVoteStats( {id}");
+                return await _inner.GetSolutionVoteStats(id);
+            }
 
-            //return await _cache.GetOrCreateAsync($"vote-stats:{id}", async entry =>
-            //{
-            //    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
-            //    return await _inner.GetSolutionVoteStats(id);
-            //});
-            _cacheLogger.LogInformation($"[!] Cache miss for GetIssueVoteStats {id}");
-            return await _inner.GetSolutionVoteStats(id);
+            var cacheKey = $"vote-stats:{id}";
+            if (_cache.TryGetValue(cacheKey, out SolutionVotes_Cacheable_ReadVM? cachedSolutionVoteStats))
+            {
+                _cacheLogger.LogInformation($"[+] Cache hit for GetSolutionVoteStats( {id}");
+                return cachedSolutionVoteStats;
+            }
+            else
+            {
+                _cacheLogger.LogInformation($"[!] Cache miss for GetSolutionVoteStats( {id}");
+                return await _cache.GetOrCreateAsync(cacheKey, async entry =>
+                {
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                    return await _inner.GetSolutionVoteStats(id);
+                });
+            }
+
         }
 
+
+        /// <summary>
+        /// Cache layer for "Update or inserts an issue vote"
+        /// </summary>
+        /// <remarks>
+        /// Clears dependent caches: <br/>
+        /// The voted issue may be a sub-issue of another issue, or a sub-issue of a solution. <br/>
+        /// Content feed sorting needs to be updated <br/>
+        /// Content counts need to be recalculated based on content filters <br/><br/>
+        /// Note: <see cref="Vote_Cacheable"/> is stored in the cache as part of <see cref="IssueVotes_Cacheable_ReadVM"/>
+        /// </remarks>
         public async Task<Vote_Cacheable?> UpsertIssueVote(IssueVote_UpsertVM model, AppUser user)
         {
             // First, call the inner repository to update the database
             var result = await _inner.UpsertIssueVote(model, user);
 
-            #region update vote-stat cache (todo)
-
-            //if (result != null)
-            //{
-            //    // Get the cache key for this issue's vote stats
-            //    string cacheKey = $"vote-stats:{model.IssueID}";
-
-            //    if (_cache.TryGetValue<UserVote_Issue_ReadVM>(cacheKey, out var cachedStats))
-            //    {
-            //        // Update the cached stats
-            //        if (cachedStats != null)
-            //        {
-            //            // Update or add the vote in the dictionary
-            //            cachedStats.IssueVotes[user.Id] = result;
-
-            //            // Recalculate averages and totals
-            //            cachedStats.TotalVotes = cachedStats.IssueVotes.Count;
-            //            cachedStats.AverageVote = cachedStats.IssueVotes.Any() 
-            //                ? cachedStats.IssueVotes.Values.Average(v => v.VoteValue) 
-            //                : 0;
-
-            //            // Update the cache with new expiration
-            //            var cacheEntryOptions = new MemoryCacheEntryOptions
-            //            {
-            //                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1)
-            //            };
-
-            //            _cache.Set(cacheKey, cachedStats, cacheEntryOptions);
-            //        }
-            //    }
-
-            //}
-            #endregion
+            // Update the vote stats in the cache
+            CacheHelper.UpdateCache_IssueVoteStats(result, model, user);
 
             Issue_ReadVM? issue = await Read.Issue(model.IssueID, new ContentFilter());
 
@@ -108,45 +125,22 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             return result;
         }
 
+        /// <summary>
+        /// Cache layer for "Update or inserts a solution vote"
+        /// </summary>
+        /// <remarks>
+        /// Clears dependent caches: <br/>
+        /// The voted solution would have a parent issue<br/>
+        /// Content feed sorting needs to be invalidated </br>
+        /// Content counts need to be recalculated based on content filters 
+        /// </remarks>
         public async Task<Vote_Cacheable?> UpsertSolutionVote(SolutionVote_UpsertVM model, AppUser user)
         {
             // First, call the inner repository to update the database
             var result = await _inner.UpsertSolutionVote(model, user);
 
-
-            #region update solution vote cache (todo)
-
-            //if (result != null)
-            //{
-            //    // Get the cache key for this issue's vote stats
-            //    string cacheKey = $"vote-stats:{model.SolutionID}";
-
-            //    if (_cache.TryGetValue<UserVote_Solution_ReadVM>(cacheKey, out var cachedStats))
-            //    {
-            //        // Update the cached stats
-            //        if (cachedStats != null)
-            //        {
-            //            // Update or add the vote in the dictionary
-            //            cachedStats.SolutionVotes[user.Id] = result;
-
-            //            // Recalculate averages and totals
-            //            cachedStats.TotalVotes = cachedStats.SolutionVotes.Count;
-            //            cachedStats.AverageVote = cachedStats.SolutionVotes.Any()
-            //                ? cachedStats.SolutionVotes.Values.Average(v => v.VoteValue)
-            //                : 0;
-
-            //            // Update the cache with new expiration
-            //            var cacheEntryOptions = new MemoryCacheEntryOptions
-            //            {
-            //                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1)
-            //            };
-
-            //            _cache.Set(cacheKey, cachedStats, cacheEntryOptions);
-            //        }
-            //    }
-
-            //}
-            #endregion
+            // Update the vote stats in the cache
+            CacheHelper.UpdateCache_SolutionVoteStats(result, model, user);
 
             Solution_ReadVM? solution = await Read.Solution(model.SolutionID, new ContentFilter());
 

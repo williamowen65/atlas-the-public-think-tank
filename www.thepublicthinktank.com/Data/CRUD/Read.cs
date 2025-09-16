@@ -311,7 +311,6 @@ namespace atlas_the_public_think_tank.Data.CRUD
         public static async Task<Issue_ReadVM?> Issue(Guid issueId, ContentFilter filter, bool fetchParent = false)
         {
 
-
             if (_serviceProvider == null)
                 throw new InvalidOperationException("Read class has not been initialized with a service provider.");
 
@@ -333,7 +332,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
                 throw new InvalidOperationException("Issue not found");
             }
 
-            IssueVotes_ReadVM? issueVoteStats = await voteStatsRepository.GetIssueVoteStats(issueId);
+            IssueVotes_Cacheable_ReadVM? issueVoteStats = await voteStatsRepository.GetIssueVoteStats(issueId);
             AppUser_ReadVM? appUser = await appUserRepository.GetAppUser(issueContent.AuthorID);
 
             // Get the sub-issue IDs (Page 1)
@@ -412,7 +411,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
 
             AppUser_ReadVM? appUser = await appUserRepository.GetAppUser(solutionContent.AuthorID);
 
-            SolutionVotes_ReadVM? solutionVoteStats = await voteStatsRepository.GetSolutionVoteStats(solutionId);
+            SolutionVotes_Cacheable_ReadVM? solutionVoteStats = await voteStatsRepository.GetSolutionVoteStats(solutionId);
 
             var paginatedSubIssues = await Read.PaginatedSubIssueFeedForSolution(solutionId, filter);
 
@@ -480,7 +479,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
             var solutionRepository = services.GetRequiredService<ISolutionRepository>();
 
             // Pull all temporal versions of the solution with their period information
-            var contentItemVersions = await solutionRepository.GetSolutionVersionHistoryById(solution);
+            var contentItemVersions = await solutionRepository.GetSolutionVersionHistoryBySolutionVM(solution);
 
             return contentItemVersions!;
         }

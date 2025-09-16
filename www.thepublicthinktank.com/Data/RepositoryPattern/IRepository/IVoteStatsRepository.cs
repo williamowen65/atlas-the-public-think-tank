@@ -12,8 +12,8 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.IRepository
     public interface IVoteStatsRepository
     {
 
-        Task<IssueVotes_ReadVM?> GetIssueVoteStats(Guid id);
-        Task<SolutionVotes_ReadVM?> GetSolutionVoteStats(Guid id);
+        Task<IssueVotes_Cacheable_ReadVM?> GetIssueVoteStats(Guid id);
+        Task<SolutionVotes_Cacheable_ReadVM?> GetSolutionVoteStats(Guid id);
 
 
         /// <summary>

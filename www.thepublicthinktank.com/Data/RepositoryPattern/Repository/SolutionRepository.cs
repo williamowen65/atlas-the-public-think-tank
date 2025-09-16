@@ -72,7 +72,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
              .CountAsync();
         }
 
-        public async Task<List<ContentItem_ReadVM>?> GetSolutionVersionHistoryById(Solution_ReadVM solution)
+        public async Task<List<ContentItem_ReadVM>?> GetSolutionVersionHistoryBySolutionVM(Solution_ReadVM solution)
         {
 
             if (_serviceProvider == null)

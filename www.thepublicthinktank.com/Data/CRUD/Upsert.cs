@@ -43,7 +43,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
             {
                 Vote_Cacheable? issueVote = await voteStatsRepository.UpsertIssueVote(model, user);
 
-                IssueVotes_ReadVM? issueVoteStats = await voteStatsRepository.GetIssueVoteStats(model.IssueID);
+                IssueVotes_Cacheable_ReadVM? issueVoteStats = await voteStatsRepository.GetIssueVoteStats(model.IssueID);
 
                 voteResponse.Success = true;
                 voteResponse.Message = "Vote successfully upserted";
@@ -81,7 +81,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
             {
                 Vote_Cacheable? solutionVote = await voteStatsRepository.UpsertSolutionVote(model, user);
 
-                SolutionVotes_ReadVM? solutionVoteStats = await voteStatsRepository.GetSolutionVoteStats(model.SolutionID);
+                SolutionVotes_Cacheable_ReadVM? solutionVoteStats = await voteStatsRepository.GetSolutionVoteStats(model.SolutionID);
 
                 voteResponse.Success = true;
                 voteResponse.Message = "Vote successfully upserted";

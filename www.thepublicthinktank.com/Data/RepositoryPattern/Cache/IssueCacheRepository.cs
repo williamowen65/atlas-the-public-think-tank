@@ -47,7 +47,13 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 Adding a comment, should invalidate an ID set,
         */
 
-
+        /// <summary>
+        /// Caching layer for "reading an issue" from the cache.
+        /// </summary>
+        /// <remarks>
+        /// However, a full issue read is performed with
+        /// <see cref="CRUD.Read.Issue(Guid, ContentFilter, bool)"/> which pulls from multiple parts of the cache.
+        /// </remarks>
         public async Task<IssueRepositoryViewModel?> GetIssueById(Guid id)
         {
 
@@ -75,9 +81,12 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         }
 
 
-        /*
-            AddIssueAsync sets cache implicitly by nested call to Read.Issue
-        */
+        /// <summary>
+        /// Cache layer for "creating a new issue"
+        /// </summary>
+        /// <remarks>
+        /// Clears related parent content cache entities <br/>
+        /// </remarks>
         public async Task<Issue_ReadVM> AddIssueAsync(Issue issue)
         {
             // When creating an issue invalidate all filterIdSets in the cache
@@ -99,9 +108,15 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
 
 
+
+        /// <summary>
+        /// Cache layer for "Updating an issue"
+        /// </summary>
+        /// <remarks>
+        /// Directly updates the cache, preventing a database read
+        /// </remarks>
         public async Task<Issue_ReadVM?> UpdateIssueAsync(Issue issue)
         {
-
             var cacheKey = $"issue:{issue.IssueID}";
 
             //convert issue to IssueRepositoryViewModel
@@ -128,9 +143,15 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             return await _inner.GetIssueVersionHistoryCount(issueID);
         }
 
+        /// <summary>
+        /// Cache layer for "The version history of an issue"
+        /// </summary>
+        /// <remarks>
+        /// Cache should be updated/invalidated by: <br/>
+        /// <see cref="IssueCacheRepository.UpdateIssueAsync(Issue)"/>
+        /// </remarks>
         public async Task<List<ContentItem_ReadVM>?> GetIssueVersionHistoryById(Issue_ReadVM issue)
         {
-
             if (_configuration.GetValue<bool>("Caching:Enabled") == false)
             {
                 _cacheLogger.LogInformation($"[~] Cache skip for issue VersionHistory {issue.IssueID}");
