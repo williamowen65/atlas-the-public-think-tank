@@ -463,9 +463,6 @@ namespace atlas_the_public_think_tank.Data.CRUD
             using var methodScope = _serviceProvider.CreateScope();
             var services = methodScope.ServiceProvider;
             var issueRepository = services.GetRequiredService<IIssueRepository>();
-            // TODO: Potentially move the temporal issues to the cache layer
-            // This currently skips the repository pattern
-
 
             // Pull all temporal versions of the issue with their period information
             var contentItemVersions = await issueRepository.GetIssueVersionHistoryById(issue);
@@ -480,73 +477,12 @@ namespace atlas_the_public_think_tank.Data.CRUD
 
             using var methodScope = _serviceProvider.CreateScope();
             var services = methodScope.ServiceProvider;
-            var _context = services.GetRequiredService<ApplicationDbContext>();
-            var _appUserRepository = services.GetRequiredService<IAppUserRepository>();
-            var _breadcrumbRepository = services.GetRequiredService<IBreadcrumbRepository>();
-
-
-            // TODO: Potentially move the temporal issues to the cache layer
-            // This currently skips the repository pattern
-
+            var solutionRepository = services.GetRequiredService<ISolutionRepository>();
 
             // Pull all temporal versions of the solution with their period information
-            var versionsWithPeriodStart = await _context.Solutions
-                .TemporalAll()
-                .Where(s => s.SolutionID == solution.SolutionID)
-                .OrderBy(s => EF.Property<DateTime>(s, "PeriodStart"))
-                .Select(s => new
-                {
-                    Solution = s,
-                    PeriodStart = EF.Property<DateTime>(s, "PeriodStart")
-                })
-                .ToListAsync();
+            var contentItemVersions = await solutionRepository.GetSolutionVersionHistoryById(solution);
 
-            List<ContentItem_ReadVM> contentItemVersions = new();
-
-            foreach (var versionData in versionsWithPeriodStart)
-            {
-                var version = versionData.Solution;
-                var versionPeriodStart = versionData.PeriodStart;
-
-                AppUser_ReadVM? appUser = await _appUserRepository.GetAppUser(version.AuthorID);
-              
-                // Now use the captured versionPeriodStart in the scope query
-                Scope? scope = await _context.Scopes
-                    .TemporalAll()
-                    .Where(s => s.ScopeID == version.ScopeID)
-                    .Where(s =>
-                        EF.Property<DateTime>(s, "PeriodStart") <= versionPeriodStart &&
-                        EF.Property<DateTime>(s, "PeriodEnd") > versionPeriodStart)
-                    .OrderByDescending(s => EF.Property<DateTime>(s, "PeriodStart"))
-                    .FirstOrDefaultAsync();
-
-                var contentItem = new ContentItem_ReadVM
-                {
-                    ContentID = version.SolutionID,
-                    Title = version.Title,
-                    Content = version.Content,
-                    ContentType = ContentType.Solution,
-                    ContentStatus = version.ContentStatus,
-                    CreatedAt = version.CreatedAt,
-                    ModifiedAt = version.ModifiedAt,
-                    Author = appUser!,
-                    BreadcrumbTags = await _breadcrumbRepository.GetBreadcrumbPagedAsync(version.ParentIssueID),
-                    Scope = scope,
-                    VoteStats = new ContentItemVotes_ReadVM
-                    {
-                        GenericContentVotes = solution.VoteStats.SolutionVotes,
-                        AverageVote = solution.VoteStats.AverageVote,
-                        ContentID = solution.VoteStats.ContentID,
-                        TotalVotes = solution.VoteStats.TotalVotes,
-                        ContentType = ContentType.Issue
-                    }
-                };
-
-                contentItemVersions.Add(contentItem);
-            }
-
-
-            return contentItemVersions;
+            return contentItemVersions!;
         }
 
 
