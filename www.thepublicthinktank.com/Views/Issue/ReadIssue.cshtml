@@ -26,7 +26,7 @@
 
         <div class="nav nav-tabs flex-grow-1 text-nowrap overflow-x-scroll overflow-y-hidden" style="flex-wrap: revert;" id="nav-tab" role="tablist">
             <button class="nav-link active" id="solutions-tab" data-bs-toggle="tab" data-bs-target="#solutions" type="button" role="tab" aria-controls="nav-home" aria-selected="true">
-                <div class="content-count">@Model.Issue.PaginatedSolutions.ContentCount.TotalCount</div>
+                <div class="content-count">@Model.Issue.PaginatedSolutions.ContentCount.FilteredCount</div>
                 @await Html.PartialAsync("~/Views/Shared/Icons/_Solutions.cshtml")
                     <span class="tab-label">
                 Solutions
@@ -40,7 +40,7 @@
                     </span>
             </button>
             <button class="nav-link" id="sub-issues-tab" data-bs-toggle="tab" data-bs-target="#sub-issues" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
-                    <div class="content-count">@Model.Issue.PaginatedSubIssues.ContentCount.TotalCount</div>
+                    <div class="content-count">@Model.Issue.PaginatedSubIssues.ContentCount.FilteredCount</div>
                 @await Html.PartialAsync("~/Views/Shared/Icons/_SubIssues.cshtml")
                     <span class="tab-label">
                 Sub-Issues
@@ -124,9 +124,9 @@
                         ContentType = "solutions",
                         Target = "#solution-content",
                         Url = "/issue/getPaginatedSolutions/" + @Model.Issue.IssueID,
-                        CurrentPage = Model.Issue.PaginatedSolutions.ContentCount.TotalCount,
+                        CurrentPage = Model.Issue.PaginatedSolutions.ContentCount.FilteredCount,
                         PageSize = Model.Issue.PaginatedSolutions.PageSize,
-                        TotalCount = Model.Issue.PaginatedSolutions.ContentCount.TotalCount,
+                        TotalCount = Model.Issue.PaginatedSolutions.ContentCount.FilteredCount,
                         // TotalPages = Model.PaginatedSolutions.TotalPages
                  })
 
@@ -182,9 +182,9 @@
                 ContentType = "sub-issues",
                 Target = "#sub-issue-content",
                         Url = "/issue/getPaginatedSubIssues/" + @Model.Issue.IssueID,
-                        CurrentPage = Model.Issue.PaginatedSubIssues.ContentCount.TotalCount,
+                        CurrentPage = Model.Issue.PaginatedSubIssues.ContentCount.FilteredCount,
                         PageSize = Model.Issue.PaginatedSubIssues.PageSize,
-                        TotalCount = Model.Issue.PaginatedSubIssues.ContentCount.TotalCount,
+                        TotalCount = Model.Issue.PaginatedSubIssues.ContentCount.FilteredCount,
                 // TotalPages = Model.PaginatedSubIssues.TotalPages
             })
             

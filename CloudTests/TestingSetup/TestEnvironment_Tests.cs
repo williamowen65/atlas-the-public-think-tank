@@ -1,7 +1,7 @@
 ﻿using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
- 
+
 using CloudTests.TestingSetup.TestingData;
 using System;
 using System.Collections.Generic;
@@ -20,19 +20,19 @@ namespace CloudTests.TestingSetup
         private static ApplicationDbContext _db;
         private static TestEnvironment _env;
 
-       
 
-        [ClassInitialize]
-        public static void ClassInit(TestContext context)
+
+        [TestInitialize]
+        public async Task Setup()
         {
-            // Use the utility class to configure the test environment
+
             _env = new TestEnvironment();
             _db = _env._db;
             _client = _env._client;
         }
 
-        [ClassCleanup]
-        public static async Task ClassCleanup()
+        [TestCleanup]
+        public async Task TestCleanup()
         {
             await TestingUtilityMethods.deleteDatabase(_client, _db);
         }
@@ -74,9 +74,9 @@ namespace CloudTests.TestingSetup
         public async Task A_User_Can_Login_Via_Helper_Methods()
         {
             // Arrange
-            AppUser testUser = Users.CreateTestUser1(_db);
-            string email = "testuser@example.com";
-            string password = "Password123!";
+            string email = Users.TestUser1.Email!;
+            string password = Users.TestUser1Password;
+            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
 
             // Act - Attempt to login via the endpoint
             bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
@@ -90,6 +90,30 @@ namespace CloudTests.TestingSetup
             var cookieDebug = await debugResponse.Content.ReadAsStringAsync();
 
             Console.WriteLine($"Debug cookies from server: {cookieDebug}");
+        }
+
+        [TestMethod]
+        public async Task A_User_Can_Be_Created_LoggedIn_AndThen_Later_Another_User_Can_Be_Created_LoggedIn()
+        {
+            // Arrange
+            string email = Users.TestUser1.Email!;
+            string password = Users.TestUser1Password;
+            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
+            // Act - Attempt to login via the endpoint
+            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
+            // Assert - Verify login was successful
+            Assert.IsTrue(loginSuccess, "Login should be successful");
+
+
+            // Arrange
+            string email2 = Users.TestUser2.Email!;
+            string password2 = Users.TestUser2Password;
+            AppUser testUser2 = Users.CreateTestUser(_db, Users.TestUser2, password2);
+            // Act - Attempt to login via the endpoint
+            bool loginSuccess2 = await Users.LoginUserViaEndpoint(_env, email2, password2);
+            // Assert - Verify login was successful
+            Assert.IsTrue(loginSuccess2, "Login should be successful");
+
         }
     }
 }

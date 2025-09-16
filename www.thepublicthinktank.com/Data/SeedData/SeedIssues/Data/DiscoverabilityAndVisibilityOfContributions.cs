@@ -1,0 +1,96 @@
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+using atlas_the_public_think_tank.Data.SeedData.SeedSolutions.Data;
+using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
+ 
+using atlas_the_public_think_tank.Models.Enums;
+using System;
+using System.Collections.Generic;
+using static atlas_the_public_think_tank.Data.SeedData.SeedIds;
+
+namespace atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data
+{
+    public class DiscoverabilityAndVisibilityOfContributions : SeedIssueContainer
+    {
+        public static Guid ContentId = new Guid("5e9b3c7d-2a8f-4e16-9d7c-3a1b5e8f9d2e");
+
+        public string content =
+            "How can high-quality ideas from everyday users be surfaced without being buried by noise or popularity bias?\n\n" +
+            "In collaborative platforms like Atlas, ensuring that high-quality contributions receive appropriate visibility is crucial for maintaining user engagement and facilitating problem-solving.\n\n" +
+
+            "Currently, many platforms struggle with this challenge: valuable content can be buried while sensationalist or low-quality content rises to prominence. This undermines the collective intelligence of online communities and discourages thoughtful participation.\n\n" +
+
+            "Key questions include:\n\n" +
+
+            "- How can we design discovery mechanisms that surface valuable content without creating perverse incentives?\n\n" +
+
+            "- What balance should be struck between algorithmic and human curation?\n\n" +
+
+            "- How can we ensure that new contributors have a fair chance at visibility while still maintaining quality standards?\n\n" +
+
+            "- What metrics beyond simple engagement best indicate the actual value of contributions?\n\n" +
+
+            "These challenges are particularly relevant for a platform like Atlas that aims to harness collective intelligence for problem-solving rather than simply maximizing engagement.";
+
+        public Issue issue
+        {
+            get
+            {
+                return new Issue
+                {
+                    IssueID = ContentId,
+                    Title = "Discoverability and Visibility of Contributions",
+                    Content = content,
+                    ContentStatus = ContentStatus.Published,
+                    CreatedAt = new DateTime(2024, 6, 15),
+                    AuthorID = SeedUserFive.user.Id, // Using centralized user ID
+                    ScopeID = scope.ScopeID,
+                    ParentSolutionID = AtlasThePublicThinkTank.ContentId // Making this a sub-issue of Atlas solution
+                };
+            }
+        }
+
+        public Scope scope
+        {
+            get
+            {
+                return new Scope()
+                {
+                    ScopeID = new Guid("c52dbb0d-13a4-4702-a829-df6b11b87088"),
+                    Scales = { Scale.Global, Scale.Community },
+                    Domains = { Domain.Technological, Domain.Cultural },
+                    EntityTypes = { EntityType.Organization, EntityType.Person },
+                    Timeframes = { Timeframe.LongTerm, Timeframe.ShortTerm },
+                    Boundaries = { },
+                };
+            }
+        }
+
+        public IssueVote[] issueVotes { get; } = {
+            new IssueVote
+            {
+                VoteID = new Guid("a4b7c9e1-2d3f-4a5b-6c7d-8e9f0a1b2c3d"),
+                IssueID = ContentId,
+                UserID = SeedUserOne.user.Id,
+                VoteValue = 9,
+                CreatedAt = new DateTime(2024, 6, 16)
+            },
+            new IssueVote
+            {
+                VoteID = new Guid("b5c8d0e2-3f4a-5b6c-7d8e-9f0a1b2c3d4e"),
+                IssueID = ContentId,
+                UserID = SeedUserThree.user.Id,
+                VoteValue = 8,
+                CreatedAt = new DateTime(2024, 6, 16)
+            },
+            new IssueVote
+            {
+                VoteID = new Guid("c6d9e0f3-4a5b-6c7d-8e9f-0a1b2c3d4e5f"),
+                IssueID = ContentId,
+                UserID = SeedUserSeven.user.Id,
+                VoteValue = 7,
+                CreatedAt = new DateTime(2024, 6, 17)
+            }
+        };
+    }
+}

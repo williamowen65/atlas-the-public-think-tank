@@ -69,7 +69,9 @@ namespace CloudTests.IssueTests
         public async Task AuthorizedVote_MissingVoteData_Returns_ErrorResponses()
         {
 
-            AppUser testUser = Users.CreateTestUser1(_db);
+            string email = Users.TestUser1.Email!;
+            string password = Users.TestUser1Password;
+            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
             Users.LoginUser(_env, testUser);
 
             string url = "/issue/vote";
@@ -102,7 +104,9 @@ namespace CloudTests.IssueTests
         public async Task AuthorizedVote_VotesOutOfRange_Returns_ErrorResponses(int voteValue)
         {
 
-            AppUser testUser = Users.CreateTestUser1(_db);
+            string email = Users.TestUser1.Email!;
+            string password = Users.TestUser1Password;
+            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
             Users.LoginUser(_env, testUser);
 
             string url = "/issue/vote";
@@ -130,9 +134,10 @@ namespace CloudTests.IssueTests
         public async Task AuthorizedVote_SuccessfulVote_Returns_SuccessResponse()
         {
             // Arrange
-            AppUser testUser = Users.CreateTestUser1(_db);
-            string email = "testuser@example.com";
-            string password = "Password123!";
+            string email = Users.TestUser1.Email!;
+            string password = Users.TestUser1Password;
+            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
+          
 
             // Act - Attempt to login via the endpoint
             bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
@@ -160,9 +165,9 @@ namespace CloudTests.IssueTests
         public async Task AuthorizedVote_InvalidIssueId_Returns_ErrorResponse()
         {
             // Arrange
-            AppUser testUser = Users.CreateTestUser1(_db);
-            string email = "testuser@example.com";
-            string password = "Password123!";
+            string email = Users.TestUser1.Email!;
+            string password = Users.TestUser1Password;
+            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
 
             // Act - Attempt to login via the endpoint
             bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);

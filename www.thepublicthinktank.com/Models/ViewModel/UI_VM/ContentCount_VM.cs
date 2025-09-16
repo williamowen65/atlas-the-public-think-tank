@@ -5,7 +5,7 @@
         /// <summary>
         /// Represents a count of a content with the filters applied
         /// </summary>
-        public int TotalCount { get; set; }
+        public int FilteredCount { get; set; }
 
         /// <summary>
         /// Represents a count of a content without any filters applied

@@ -119,10 +119,10 @@ namespace atlas_the_public_think_tank.Controllers
                 html = partialViewHtml,
                 pagination = new PaginationStats_VM
                 {
-                    TotalCount = paginatedIssues.ContentCount.TotalCount,
+                    TotalCount = paginatedIssues.ContentCount.FilteredCount,
                     PageSize = paginatedIssues.PageSize,
                     CurrentPage = paginatedIssues.CurrentPage,
-                    TotalPages = (int)Math.Ceiling(paginatedIssues.ContentCount.TotalCount / (double)paginatedIssues.PageSize)
+                    TotalPages = (int)Math.Ceiling(paginatedIssues.ContentCount.FilteredCount / (double)paginatedIssues.PageSize)
                 }
             };
 
@@ -392,7 +392,8 @@ namespace atlas_the_public_think_tank.Controllers
                 CreatedAt = solutionRef.CreatedAt,
                 ModifiedAt = DateTime.UtcNow, // Set ModifiedAt
                 ScopeID = (Guid)model.Scope.ScopeID!,
-                Title = model.Title
+                Title = model.Title,
+                Scope = incomingScope,
             };
 
             bool solutionDiff = DiffCheckers.AreSolutionsDifferent(Converter.ConvertSolution_ReadVMToSolution(solutionRef), incomingSolution);
@@ -594,7 +595,7 @@ namespace atlas_the_public_think_tank.Controllers
                 <span class="title" data-content-id="{solution.SolutionID}">{solution.Title}</span>
                 <br />
                 <strong>Stats:</strong> 
-                <br/><span class="sub-issue-content-count">{solution.PaginatedSubIssues?.ContentCount?.TotalCount ?? 0}</span> {(isFilterApplied ? $" of {solution.PaginatedSubIssues?.ContentCount?.AbsoluteCount}" : "")} sub-issues 
+                <br/><span class="sub-issue-content-count">{solution.PaginatedSubIssues?.ContentCount?.FilteredCount ?? 0}</span> {(isFilterApplied ? $" of {solution.PaginatedSubIssues?.ContentCount?.AbsoluteCount}" : "")} sub-issues 
             </span>
             """;
 

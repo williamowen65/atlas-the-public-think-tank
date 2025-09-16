@@ -93,9 +93,9 @@ namespace CloudTests.LayoutTests
         public async Task CreateForm_ShouldHave_SpecificAttributes(string url)
         {
             // Create and login user
-            AppUser testUser = Users.CreateTestUser1(_db);
-            string email = "testuser@example.com";
-            string password = "Password123!";
+            string email = Users.TestUser1.Email!;
+            string password = Users.TestUser1Password;
+            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
 
             bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
@@ -114,14 +114,14 @@ namespace CloudTests.LayoutTests
         public async Task EditIssueForm_ShouldHave_SpecificAttributes()
         {
             // Create and login user
-            AppUser testUser = Users.CreateTestUser1(_db);
-            string email = "testuser@example.com";
-            string password = "Password123!";
+            string email = Users.TestUser1.Email!;
+            string password = Users.TestUser1Password;
+            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
 
             bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
 
-            var (jsonDoc1, title1, content1) = await TestingVersionHistoryHelpers.CreateIssue(_env,
+            var (jsonDoc1, title1, content1) = await TestingCRUDHelpers.CreateIssue(_env,
                 "This is just an example issue title (content creation)",
                 "This is just an example issue content",
                 new Scope() {
@@ -147,15 +147,15 @@ namespace CloudTests.LayoutTests
         public async Task EditSolutionForm_ShouldHave_SpecificAttributes()
         {
             // Create and login user
-            AppUser testUser = Users.CreateTestUser1(_db);
-            string email = "testuser@example.com";
-            string password = "Password123!";
+            string email = Users.TestUser1.Email!;
+            string password = Users.TestUser1Password;
+            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
 
             bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
 
 
-            var (jsonDoc1, title1, content1) = await TestingVersionHistoryHelpers.CreateIssue(_env,
+            var (jsonDoc1, title1, content1) = await TestingCRUDHelpers.CreateIssue(_env,
                 "This is just an example issue title (content creation)",
                 "This is just an example issue content",
                 new Scope() { 
@@ -165,7 +165,7 @@ namespace CloudTests.LayoutTests
             var rootElement1 = jsonDoc1.RootElement;
             string parentIssueId = rootElement1.GetProperty("contentId").ToString();
 
-            var (jsonDoc2, title2, content2) = await TestingVersionHistoryHelpers.CreateSolution(_env,
+            var (jsonDoc2, title2, content2) = await TestingCRUDHelpers.CreateSolution(_env,
                "This is just an example solution title (content creation)",
                "This is just an example solution content",
                new Scope() { 

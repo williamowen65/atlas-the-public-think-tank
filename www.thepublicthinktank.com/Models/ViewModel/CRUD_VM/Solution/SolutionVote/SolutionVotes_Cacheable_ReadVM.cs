@@ -3,7 +3,7 @@
 namespace atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution.SolutionVote
 {
 
-    public class SolutionVotes_ReadVM : ContentItem_VoteStats_Cacheable
+    public class SolutionVotes_Cacheable_ReadVM : ContentItem_VoteStats_Cacheable
     {
         /// <summary>
         /// IssueVotes are stored as a map in memory for ease of update in the cache.

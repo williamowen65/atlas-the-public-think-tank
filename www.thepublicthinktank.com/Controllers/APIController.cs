@@ -52,6 +52,7 @@ namespace atlas_the_public_think_tank.Controllers
                     {
                         ["/keys"] = "Endpoint for inspecting cache keys",
                         ["/entries"] = "Endpoint for inspecting cache entries",
+                        ["/entry?key={cache-key}"] = "Endpoint for inspecting specific cache entries",
                     }
                 },
                 ["Filter Query Params Examples"] = new List<string>
