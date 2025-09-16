@@ -140,6 +140,31 @@ namespace repository_pattern_experiment.Controllers
                 }
             }
         }
+        
+        public static void ClearSubIssueFeedIdsForSolution(Guid solutionId)
+        {
+            List<string> keys = CacheHelper.GetAllCacheKeys();
+            foreach (var key in keys)
+            {
+                // Invlidate the cache no matter the filter type, or page number
+                if (key.Contains($"sub-issue-feed-ids:{solutionId}", StringComparison.OrdinalIgnoreCase))
+                {
+                    _cache.Remove(key);
+                }
+            }
+        }
+        public static void ClearSolutionFeedIdsForIssue(Guid issueId)
+        {
+            List<string> keys = CacheHelper.GetAllCacheKeys();
+            foreach (var key in keys)
+            {
+                // Invlidate the cache no matter the filter type, or page number
+                if (key.Contains($"solution-feed-ids:{issueId}", StringComparison.OrdinalIgnoreCase))
+                {
+                    _cache.Remove(key);
+                }
+            }
+        }
         public static void ClearContentCountSubIssuesForIssue(Guid issueId)
         {
             List<string> keys = CacheHelper.GetAllCacheKeys();
@@ -147,6 +172,30 @@ namespace repository_pattern_experiment.Controllers
             {
                 // Invlidate the cache no matter the filter type, or page number
                 if (key.Contains($"sub-issue-content-counts:{issueId}", StringComparison.OrdinalIgnoreCase))
+                {
+                    _cache.Remove(key);
+                }
+            }
+        }
+        public static void ClearContentCountSubIssuesForSolution(Guid solutionId)
+        {
+            List<string> keys = CacheHelper.GetAllCacheKeys();
+            foreach (var key in keys)
+            {
+                // Invlidate the cache no matter the filter type, or page number
+                if (key.Contains($"sub-issue-content-counts:{solutionId}", StringComparison.OrdinalIgnoreCase))
+                {
+                    _cache.Remove(key);
+                }
+            }
+        }
+        public static void ClearContentCountSolutionsForIssue(Guid issueId)
+        {
+            List<string> keys = CacheHelper.GetAllCacheKeys();
+            foreach (var key in keys)
+            {
+                // Invlidate the cache no matter the filter type, or page number
+                if (key.Contains($"solution-content-counts:{issueId}", StringComparison.OrdinalIgnoreCase))
                 {
                     _cache.Remove(key);
                 }

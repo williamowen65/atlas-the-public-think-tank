@@ -1,10 +1,14 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
 using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Models.ViewModel;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using repository_pattern_experiment.Controllers;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 {
@@ -59,6 +63,9 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             // When creating an issue invalidate all filterIdSets in the cache
             //CacheHelper.ClearAllFeedIdSets();
 
+            CacheHelper.ClearSolutionFeedIdsForIssue((Guid)solution.ParentIssueID);
+            CacheHelper.ClearContentCountSolutionsForIssue((Guid)solution.ParentIssueID);
+
             return await _inner.AddSolutionAsync(solution);
         }
 
@@ -90,5 +97,33 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             _cacheLogger.LogInformation($"[!] Cache miss for solution VersionHistoryCount {solutionID}");
             return await _inner.GetSolutionVersionHistoryCount(solutionID);
         }
+
+
+        // needs to be added to interface
+        //public async Task<List<ContentItem_ReadVM>?> GetSolutionVersionHistoryById(Issue_ReadVM issue)
+        //{
+
+        //    if (_configuration.GetValue<bool>("Caching:Enabled") == false)
+        //    {
+        //        _cacheLogger.LogInformation($"[~] Cache skip for issue VersionHistory {issue.IssueID}");
+        //        return await _inner.GetSolutionVersionHistoryById(issue);
+        //    }
+
+        //    var cacheKey = $"issue-version-history:{issue.IssueID}";
+        //    if (_cache.TryGetValue(cacheKey, out List<ContentItem_ReadVM>? cachedIssueVersionHistory))
+        //    {
+        //        _cacheLogger.LogInformation($"[+] Cache hit for issue VersionHistory {issue.IssueID}");
+        //        return cachedIssueVersionHistory;
+        //    }
+        //    else
+        //    {
+        //        _cacheLogger.LogInformation($"[!] Cache miss for issue VersionHistory {issue.IssueID}");
+        //        return await _cache.GetOrCreateAsync(cacheKey, async entry =>
+        //        {
+        //            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+        //            return await _inner.GetIssueVersionHistoryById(issue);
+        //        });
+        //    }
+        //}
     }
 }

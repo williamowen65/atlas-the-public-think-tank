@@ -7,6 +7,7 @@ using atlas_the_public_think_tank.Models.Cacheable;
 using atlas_the_public_think_tank.Models.ViewModel;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue.IssueVote;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution.SolutionVote;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.Issue.IssueVote;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.Solution.SolutionVote;
@@ -58,7 +59,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             // First, call the inner repository to update the database
             var result = await _inner.UpsertIssueVote(model, user);
 
-            #region clear vote-stat cache
+            #region update vote-stat cache (todo)
 
             //if (result != null)
             //{
@@ -92,12 +93,16 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             //}
             #endregion
 
-            //TODO Invalidate all paginated filter sets with the filter hash.
             Issue_ReadVM? issue = await Read.Issue(model.IssueID, new ContentFilter());
 
             if (issue!.ParentIssueID != null) {
                 CacheHelper.ClearSubIssueFeedIdsForIssue((Guid)issue.ParentIssueID!);
                 CacheHelper.ClearContentCountSubIssuesForIssue((Guid)issue.ParentIssueID);
+            }
+            if (issue!.ParentSolutionID != null)
+            { 
+                CacheHelper.ClearSubIssueFeedIdsForSolution((Guid)issue.ParentSolutionID!);
+                CacheHelper.ClearContentCountSubIssuesForSolution((Guid)issue.ParentSolutionID!);
             }
 
             return result;
@@ -107,6 +112,9 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         {
             // First, call the inner repository to update the database
             var result = await _inner.UpsertSolutionVote(model, user);
+
+
+            #region update solution vote cache (todo)
 
             //if (result != null)
             //{
@@ -138,8 +146,12 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             //    }
 
             //}
+            #endregion
 
-            //TODO Invalidate all paginated filter sets with the filter hash.
+            Solution_ReadVM? solution = await Read.Solution(model.SolutionID, new ContentFilter());
+
+            CacheHelper.ClearSolutionFeedIdsForIssue((Guid)solution.ParentIssueID!);
+            CacheHelper.ClearContentCountSolutionsForIssue((Guid)solution.ParentIssueID);
 
             return result;
         }

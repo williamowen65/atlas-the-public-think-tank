@@ -49,7 +49,7 @@ namespace CloudTests.TestingSetup
             return (jsonDoc, issueId, title, content, scope);
         }
 
-        public async Task<(JsonDocument JsonDoc, string issueId, string title, string content, Scope scope)> CreateTestSubIssue(Guid parentIssueId)
+        public async Task<(JsonDocument JsonDoc, string issueId, string title, string content, Scope scope)> CreateTestSubIssue(Guid? parentIssueId = null, Guid? parentSolutionId = null)
         {
             string title = "This is a title for a test sub-issue";
             string content = "This is a content for a test sub-issue";
@@ -57,7 +57,7 @@ namespace CloudTests.TestingSetup
             {
                 Scales = { Scale.Global }
             };
-            var (jsonDoc, issueId, scopeId) = await CreateIssue(title, content, scope, parentIssueId);
+            var (jsonDoc, issueId, scopeId) = await CreateIssue(title, content, scope, parentIssueId, parentSolutionId);
             scope.ScopeID = new Guid(scopeId);
             return (jsonDoc, issueId, title, content, scope);
         }
@@ -67,7 +67,8 @@ namespace CloudTests.TestingSetup
             string title,
             string content,
             Scope scope,
-            Guid? parentIssueId = null
+            Guid? parentIssueId = null,
+            Guid? parentSolutionId = null
          )
         {
             // 1. GET page to obtain antiforgery cookie + hidden token
@@ -85,6 +86,10 @@ namespace CloudTests.TestingSetup
             if (parentIssueId != Guid.Empty)
             {
                 formData.Add(new KeyValuePair<string, string>("ParentIssueID", parentIssueId.ToString()!));
+            }
+            if (parentSolutionId != Guid.Empty)
+            {
+                formData.Add(new KeyValuePair<string, string>("ParentSolutionID", parentSolutionId.ToString()!));
             }
 
             // Update your PostFormAsync to accept List<KeyValuePair<string, string>>
@@ -188,7 +193,19 @@ namespace CloudTests.TestingSetup
 
             // Send the unauthorized request
             var response = await _env.fetchPost<VoteResponse_AjaxVM, object>(url, votePayload);
+        }
+        public async Task CreateTestVoteOnSolution(string solutionId, int voteValue)
+        {
+            string url = "/solution/vote";
+            // Create a payload with vote data
+            var votePayload = new
+            {
+                solutionId,
+                VoteValue = voteValue
+            };
 
+            // Send the unauthorized request
+            var response = await _env.fetchPost<VoteResponse_AjaxVM, object>(url, votePayload);
         }
 
 
@@ -196,7 +213,38 @@ namespace CloudTests.TestingSetup
 
         #region Test Solution CRUD helpers
 
-        public async Task<(JsonDocument JsonDoc, string Title, string Content)> CreateSolution(
+        public async Task<(JsonDocument JsonDoc, string issueId, string title, string content, Scope scope)> CreateTestSolution(string parentIssueId)
+        {
+            string title = "This is a title for a test solution";
+            string content = "This is a content for a test solution";
+            Scope scope = new Scope()
+            {
+                Scales = { Scale.Global }
+            };
+            var (jsonDoc, solutionId, scopeId) = await CreateSolution(title, content, scope, parentIssueId);
+            scope.ScopeID = new Guid(scopeId);
+            return (jsonDoc, solutionId, title, content, scope);
+        }
+
+        public async Task<(JsonDocument JsonDoc, string solutionId, string title, string content, Scope scope)> EditTestSolution(
+           string solutionId,
+           Guid scopeId,
+           string parentIssueId
+        )
+        {
+            string title = "This is an updated title for a test solution";
+            string content = "This is an updated content for a test solution";
+            Scope scope = new Scope()
+            {
+                ScopeID = scopeId,
+                Scales = { Scale.Global, Scale.National },
+                Domains = { Domain.Social }
+            };
+            var (jsonDoc, _solutionId, _scopeId) = await EditSolution(solutionId, title, content, parentIssueId, scope);
+            return (jsonDoc, solutionId, title, content, scope);
+        }
+
+        public async Task<(JsonDocument JsonDoc, string solutionId, string scopeId)> CreateSolution(
           string title,
           string content,
           Scope scope,
@@ -224,15 +272,20 @@ namespace CloudTests.TestingSetup
             var body = await postResponse.Content.ReadAsStringAsync();
             // Convert body to JSON
             var jsonDoc = JsonDocument.Parse(body);
-            return (jsonDoc, title, content);
+            var rootElement = jsonDoc.RootElement;
+            string solutionId = rootElement.GetProperty("contentId").ToString();
+            var issueDoc = await _env.TextHtmlToDocument(rootElement.GetProperty("content").ToString());
+            var scopeRibbonEl = issueDoc.QuerySelector(".scope-ribbon");
+            string? scopeId = scopeRibbonEl!.GetAttribute("data-scope-id");
+            return (jsonDoc, solutionId, scopeId);
         }
 
 
       
         public async Task<(JsonDocument JsonDoc, string Title, string Content)> EditSolution(
+          string solutionId,
           string title,
           string content,
-          string solutionId,
           string parentIssueId,
           Scope scope
          )

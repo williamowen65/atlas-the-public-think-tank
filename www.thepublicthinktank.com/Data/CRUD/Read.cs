@@ -56,7 +56,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
             var response = new ContentItems_Paginated_ReadVM
             {
                 ContentItems = new List<ContentItem_ReadVM>(),
-                TotalCount = counts!.TotalCount,
+                TotalCount = counts!.FilteredCount,
                 PageSize = paginatedMainContentIds?.Count ?? 0,
                 CurrentPage = pageNumber
             };

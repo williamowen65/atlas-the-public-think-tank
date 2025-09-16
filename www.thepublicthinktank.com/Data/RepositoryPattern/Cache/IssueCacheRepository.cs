@@ -10,9 +10,6 @@ using static atlas_the_public_think_tank.Data.SeedData.SeedIds;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 {
-
-
-
     public class IssueCacheRepository : IIssueRepository
     {
         private readonly IIssueRepository _inner;
@@ -91,7 +88,11 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 CacheHelper.ClearSubIssueFeedIdsForIssue((Guid)issue.ParentIssueID);
                 CacheHelper.ClearContentCountSubIssuesForIssue((Guid)issue.ParentIssueID);
             }
-
+            if(issue.ParentSolutionID != null)
+            { 
+                CacheHelper.ClearSubIssueFeedIdsForSolution((Guid)issue.ParentSolutionID);
+                CacheHelper.ClearContentCountSubIssuesForSolution((Guid)issue.ParentSolutionID);
+            }
 
             return await _inner.AddIssueAsync(issue);
         }
