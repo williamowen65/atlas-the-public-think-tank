@@ -48,8 +48,9 @@ jobs:
           set -e
       
           # parse results
-          PASSED=$(grep -oP 'Passed:\s+\K[0-9]+' test_output.txt | tail -1 || echo 0)
-          FAILED=$(grep -oP 'Failed:\s+\K[0-9]+' test_output.txt | tail -1 || echo 0)
+          FAILED=$(grep -oP 'Failed:\s+\K[0-9]+' test_output.txt | tail -1) || FAILED=0
+          PASSED=$(grep -oP 'Passed:\s+\K[0-9]+' test_output.txt | tail -1) || PASSED=0
+
       
           # always show the full output
           cat test_output.txt
