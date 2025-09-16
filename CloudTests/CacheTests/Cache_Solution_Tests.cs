@@ -11,7 +11,9 @@ using atlas_the_public_think_tank.Models;
 using atlas_the_public_think_tank.Models.ViewModel.AjaxVM;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue.IssueVote;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution.SolutionVote;
 using CloudTests.TestingSetup;
 using CloudTests.TestingSetup.TestingData;
 using Microsoft.AspNetCore.Mvc;
@@ -56,14 +58,17 @@ namespace CloudTests.CacheTests
             _testingCRUDHelper = new TestingCRUDHelper(_env);
 
             // Create and login user
-            AppUser testUser = Users.CreateTestUser1(_db);
-            string email = "testuser@example.com";
-            string password = "Password123!";
+            string email = Users.TestUser1.Email!;
+            string password = Users.TestUser1Password;
+            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
 
             bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
 
         }
+
+
+
 
 
         [TestCleanup]
@@ -165,6 +170,65 @@ namespace CloudTests.CacheTests
 
             // Confirm that there are 2 entries in version history
             Assert.IsTrue(cacheEntry2.Value.Count() == 2);
+        }
+
+        [TestMethod]
+        public async Task CacheTestingSolution_VotingOnSolution_UpdatesVoteStats()
+        {
+            // Create issue
+            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue();
+            var (solutionJsonDoc, solutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId);
+
+            var cacheKey = $"vote-stats:{solutionId}";
+
+            string url = $"/api/cache-log/entry?key={cacheKey}";
+
+            var cacheEntry0 = await _env.fetchJson<CacheEntry_SolutionVoteStatsDTO>(url);
+            SolutionVotes_Cacheable_ReadVM voteStats0 = cacheEntry0.Value;
+
+            Assert.IsTrue(voteStats0.TotalVotes == 0);
+            Assert.IsTrue(voteStats0.SolutionVotes.Count == 0);
+
+            // Updating a vote should update through the cache (No need to call Read.Issue to populate the cache)
+            VoteResponse_AjaxVM voteResponse1 =  await _testingCRUDHelper.CreateTestVoteOnSolution(solutionId, 10);
+
+            var cacheEntry1 = await _env.fetchJson<CacheEntry_SolutionVoteStatsDTO>(url);
+            SolutionVotes_Cacheable_ReadVM voteStats1 = cacheEntry1.Value;
+
+            Assert.IsTrue(voteStats1.TotalVotes == 1);
+            Assert.IsTrue(voteStats1.SolutionVotes.Count == 1);
+            Assert.IsTrue(voteStats1.SolutionVotes.Values.Average(v => v.VoteValue) == voteResponse1.Average);
+
+            // Updating a vote should update through the cache (No need to call Read.Issue to populate the cache)
+            VoteResponse_AjaxVM voteResponse2 =  await _testingCRUDHelper.CreateTestVoteOnSolution(solutionId, 6);
+
+            var cacheEntry2 = await _env.fetchJson<CacheEntry_SolutionVoteStatsDTO>(url);
+            SolutionVotes_Cacheable_ReadVM voteStats2 = cacheEntry2.Value;
+
+            ///NOTE: The Total votes and count stay the same because the logged in user has not changed
+            Assert.IsTrue(voteStats2.TotalVotes == 1);
+            Assert.IsTrue(voteStats2.SolutionVotes.Count == 1);
+            Assert.IsTrue(voteStats2.SolutionVotes.Values.Average(v => v.VoteValue) == voteResponse2.Average);
+
+            //// Create and login user
+            string email2 = Users.TestUser2.Email!;
+            string password2 = Users.TestUser2Password;
+            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser2, password2);
+
+            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email2, password2);
+            Assert.IsTrue(loginSuccess, "Login should be successful");
+
+            // Updating a vote should update through the cache (No need to call Read.Issue to populate the cache)
+            VoteResponse_AjaxVM voteResponse3 = await _testingCRUDHelper.CreateTestVoteOnSolution(solutionId, 7);
+
+            var cacheEntry3 = await _env.fetchJson<CacheEntry_SolutionVoteStatsDTO>(url);
+            SolutionVotes_Cacheable_ReadVM voteStats3 = cacheEntry3.Value;
+
+            ///NOTE: The Total votes and count are updated because a new user has voted
+            Assert.IsTrue(voteStats3.TotalVotes == 2);
+            Assert.IsTrue(voteStats3.SolutionVotes.Count == 2);
+            Assert.IsTrue(voteStats3.SolutionVotes.Values.Average(v => v.VoteValue) == voteResponse3.Average);
+
         }
 
         #endregion

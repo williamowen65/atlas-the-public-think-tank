@@ -46,7 +46,9 @@ namespace CloudTests.UserTests
         public static void UserStory_Setup()
         {
 
-            AppUser testUser = Users.CreateTestUser1(_db);
+            string email = Users.TestUser1.Email!;
+            string password = Users.TestUser1Password;
+            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
             // Add test scopes
             Scope globalScope = Scopes.CreateGlobalScope(_db);
             // Add test issues

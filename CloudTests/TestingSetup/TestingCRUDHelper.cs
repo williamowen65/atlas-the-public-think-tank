@@ -181,7 +181,7 @@ namespace CloudTests.TestingSetup
             return (content, issueId, scopeId);
         }
 
-        public async Task CreateTestVoteOnIssue(string issueId, int voteValue)
+        public async Task<VoteResponse_AjaxVM> CreateTestVoteOnIssue(string issueId, int voteValue)
         {
             string url = "/issue/vote";
             // Create a payload with vote data
@@ -191,10 +191,9 @@ namespace CloudTests.TestingSetup
                 VoteValue = voteValue
             };
 
-            // Send the unauthorized request
-            var response = await _env.fetchPost<VoteResponse_AjaxVM, object>(url, votePayload);
+            return await _env.fetchPost<VoteResponse_AjaxVM, object>(url, votePayload);
         }
-        public async Task CreateTestVoteOnSolution(string solutionId, int voteValue)
+        public async Task<VoteResponse_AjaxVM> CreateTestVoteOnSolution(string solutionId, int voteValue)
         {
             string url = "/solution/vote";
             // Create a payload with vote data
@@ -204,8 +203,7 @@ namespace CloudTests.TestingSetup
                 VoteValue = voteValue
             };
 
-            // Send the unauthorized request
-            var response = await _env.fetchPost<VoteResponse_AjaxVM, object>(url, votePayload);
+            return await _env.fetchPost<VoteResponse_AjaxVM, object>(url, votePayload);
         }
 
 

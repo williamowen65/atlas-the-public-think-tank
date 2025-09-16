@@ -30,9 +30,15 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             _configuration = configuration;
         }
 
+        /// <summary>
+        /// Caching layer for "reading a solution" from the cache.
+        /// </summary>
+        /// <remarks>
+        /// However, a full solution read is performed with
+        /// <see cref="CRUD.Read.Solution(Guid, ContentFilter, bool)"/> which pulls from multiple parts of the cache.
+        /// </remarks>
         public async Task<SolutionRepositoryViewModel?> GetSolutionById(Guid id)
         {
-
             if (_configuration.GetValue<bool>("Caching:Enabled") == false)
             {
                 _cacheLogger.LogInformation("[~] Cache skip for solution {SolutionId}", id);
@@ -57,7 +63,14 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             }
         }
 
-
+        /// <summary>
+        /// Cache layer for "creating a new solution"
+        /// </summary>
+        /// <remarks>
+        /// Clears related cache entities: <br/>
+        /// Solutions only belong to issues. Adding a solution should update the solution
+        /// feed for that issue, and the counts of solutions for that issue
+        /// </remarks>
         public async Task<Solution_ReadVM> AddSolutionAsync(Solution solution)
         {
             // When creating an issue invalidate all filterIdSets in the cache
@@ -69,6 +82,13 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             return await _inner.AddSolutionAsync(solution);
         }
 
+
+        /// <summary>
+        /// Cache layer for "Updating a solution"
+        /// </summary>
+        /// <remarks>
+        /// Directly updates the cache, preventing a database read
+        /// </remarks>
         public async Task<Solution_ReadVM> UpdateSolutionAsync(Solution solution)
         {
             if (_configuration.GetValue<bool>("Caching:Enabled") == false)
@@ -89,7 +109,6 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             });
 
 
-
             // Note: This method may be better suited to be Update instead of clear.
             CacheHelper.ClearSolutionContentVersionHistoryCache(solution.SolutionID);
 
@@ -105,14 +124,20 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         }
 
 
-        
-        public async Task<List<ContentItem_ReadVM>?> GetSolutionVersionHistoryById(Solution_ReadVM solution)
+        /// <summary>
+        /// Cache layer for "The version history of a solution"
+        /// </summary>
+        /// <remarks>
+        /// Cache should be updated/invalidated by: <br/>
+        /// <see cref="SolutionCacheRepository.UpdateSolutionAsync(Solution)"/>
+        /// </remarks>
+        public async Task<List<ContentItem_ReadVM>?> GetSolutionVersionHistoryBySolutionVM(Solution_ReadVM solution)
         {
 
             if (_configuration.GetValue<bool>("Caching:Enabled") == false)
             {
                 _cacheLogger.LogInformation($"[~] Cache skip for solution VersionHistory {solution.SolutionID}");
-                return await _inner.GetSolutionVersionHistoryById(solution);
+                return await _inner.GetSolutionVersionHistoryBySolutionVM(solution);
             }
 
             var cacheKey = $"solution-version-history:{solution.SolutionID}";
@@ -127,7 +152,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 return await _cache.GetOrCreateAsync(cacheKey, async entry =>
                 {
                     entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
-                    return await _inner.GetSolutionVersionHistoryById(solution);
+                    return await _inner.GetSolutionVersionHistoryBySolutionVM(solution);
                 });
             }
         }

@@ -52,7 +52,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.IRepository
 
         Task<int> GetSolutionVersionHistoryCount(Guid solutionID);
 
-        Task<List<ContentItem_ReadVM>?> GetSolutionVersionHistoryById(Solution_ReadVM solution);
+        Task<List<ContentItem_ReadVM>?> GetSolutionVersionHistoryBySolutionVM(Solution_ReadVM solution);
 
     }
 }

@@ -29,19 +29,34 @@ namespace CloudTests.TestingSetup.TestingData
             ConcurrencyStamp = Guid.NewGuid().ToString(),
             LockoutEnabled = false
         };
+        public static string TestUser1Password = "Password123!";
+
+        public static AppUser TestUser2 { get; } = new AppUser
+        {
+            Id = Guid.NewGuid(),
+            UserName = "testuser2@example.com",
+            NormalizedUserName = "TESTUSER2@EXAMPLE.COM",
+            Email = "testuser2@example.com",
+            NormalizedEmail = "TESTUSER2@EXAMPLE.COM",
+            EmailConfirmed = true,
+            SecurityStamp = Guid.NewGuid().ToString(),
+            ConcurrencyStamp = Guid.NewGuid().ToString(),
+            LockoutEnabled = false
+        };
+        public static string TestUser2Password = "Password1234!";
      
 
-        public static AppUser CreateTestUser1(ApplicationDbContext db)
+        public static AppUser CreateTestUser(ApplicationDbContext db, AppUser user, string password)
         {
             // Hash the password
             var passwordHasher = new PasswordHasher<AppUser>();
-            TestUser1.PasswordHash = passwordHasher.HashPassword(TestUser1, "Password123!");
+            user.PasswordHash = passwordHasher.HashPassword(user, password);
 
-            db.Users.Add(TestUser1);
+            db.Users.Add(user);
 
             db.SaveChanges();
 
-            return TestUser1;
+            return user;
         }
 
 

@@ -46,7 +46,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
         /// <remarks>
         /// The votes are keyed by UserID for ease of lookup of a users vote on content
         /// </remarks>
-        public async Task<IssueVotes_ReadVM> GetIssueVoteStats(Guid issueId)
+        public async Task<IssueVotes_Cacheable_ReadVM> GetIssueVoteStats(Guid issueId)
         {
             // Retrieve vote data for the issue
             var votes = await _context.IssueVotes
@@ -57,7 +57,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             double averageVote = votes.Any() ? votes.Average(v => v.VoteValue) : 0;
             int totalVotes = votes.Count;
 
-            return new IssueVotes_ReadVM
+            return new IssueVotes_Cacheable_ReadVM
             {
                 ContentID = issueId,
                 ContentType = ContentType.Issue,
@@ -82,7 +82,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
         /// <remarks>
         /// The votes are keyed by UserID for ease of lookup of a users vote on content
         /// </remarks>
-        public async Task<SolutionVotes_ReadVM> GetSolutionVoteStats(Guid solutionId)
+        public async Task<SolutionVotes_Cacheable_ReadVM> GetSolutionVoteStats(Guid solutionId)
         {
             // Retrieve vote data for the issue
             var votes = await _context.SolutionVotes
@@ -93,7 +93,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             double averageVote = votes.Any() ? votes.Average(v => v.VoteValue) : 0;
             int totalVotes = votes.Count;
 
-            return new SolutionVotes_ReadVM
+            return new SolutionVotes_Cacheable_ReadVM
             {
                 ContentID = solutionId,
                 ContentType = ContentType.Solution,
