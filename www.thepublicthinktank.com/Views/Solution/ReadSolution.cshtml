@@ -13,9 +13,13 @@
 
 <div class="container mt-3  ">
 
-    @await Html.PartialAsync("~/Views/Solution/_solution-card.cshtml", Model.Solution) 
+    @await Html.PartialAsync(
+        "~/Views/Solution/_solution-card.cshtml",
+        Model.Solution,
+        new ViewDataDictionary(ViewData) { { "defaultExpand", true } }
+    )
 
-    <nav class="d-flex position-sticky bg-body" style="top:var(--header-height); z-index:11">
+    <nav class="d-flex sub-content-tab-bar position-sticky bg-body" style="top:var(--header-height); z-index:11">
         <div class="nav nav-tabs flex-grow-1 text-nowrap overflow-x-scroll overflow-y-hidden" style="flex-wrap: revert;" id="nav-tab" role="tablist">
 
             <button class="nav-link active" id="comments-tab" data-bs-toggle="tab" data-bs-target="#issue-comments" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">

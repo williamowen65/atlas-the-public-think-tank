@@ -16,12 +16,16 @@
     @* @await Html.PartialAsync("~/Views/Issue/_issue-author-tag.cshtml", Model) *@
 
     @* @Html.Partial("~/Views/Issue/_issue-page-post.cshtml", Model) *@
-    @await Html.PartialAsync("~/Views/Issue/_issue-card.cshtml", Model.Issue)
+    @await Html.PartialAsync(
+        "~/Views/Issue/_issue-card.cshtml", 
+        Model.Issue, 
+        new ViewDataDictionary(ViewData) { { "defaultExpand", true } }
+    )
 
 
    
 
-    <nav class=" position-sticky bg-body" style="top:var(--header-height); z-index:11">
+    <nav class="sub-content-tab-bar position-sticky bg-body" style="top:var(--header-height); z-index:11">
         <div class="d-flex">
 
         <div class="nav nav-tabs flex-grow-1 text-nowrap overflow-x-scroll overflow-y-hidden" style="flex-wrap: revert;" id="nav-tab" role="tablist">

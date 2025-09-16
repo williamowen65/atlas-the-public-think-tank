@@ -9,13 +9,14 @@
 @model Issue_ReadVM
 @{
     Boolean IsContentLong = true;
-   
+
+    bool isDefaultExpand = ViewData["defaultExpand"] is bool b && b;
 }
 
 
 @await Html.PartialAsync("~/Views/Issue/_issue-author-tag.cshtml", Model)
 
-<div class="card mb-3 issue-card " id="@Model.IssueID" data-content-type="issue">
+<div class="card mb-3 issue-card @(isDefaultExpand ? "expanded-by-default expanded" : "")" id="@Model.IssueID" data-content-type="issue">
     <div class="card-content position-relative  mb-2">
             @await Html.PartialAsync("~/Views/Issue/_issue-card-sticky-header.cshtml", Model)
 
@@ -50,7 +51,7 @@
 
             </div>
             @await Html.PartialAsync("~/Views/Shared/Components/_scope-composite.cshtml", Model.Scope)
-            <p class="mx-2 mb-2 truncate-multiline text-collapsible-target issue-content" style="white-space: pre-wrap">@Model.Content</p>
+        <p class="mx-2 mb-2 @(isDefaultExpand ? "" : "truncate-multiline") text-collapsible-target issue-content" style="white-space: pre-wrap">@Model.Content</p>
 
 
             @* @if (Model.Categories != null && Model.Categories.Any())
@@ -62,7 +63,7 @@
                         }
                     </div>
                 } *@
-            @if (IsContentLong)
+            @if (IsContentLong && !isDefaultExpand)
             {
                 <div class="expand-button-spacer" style="height: 30px;"></div>
 
@@ -78,7 +79,7 @@
     <div class="card-footer d-flex justify-content-between">
         <div class="" id="card-@Model.IssueID-footer-alert">
         </div>
-          @if (IsContentLong)
+          @if (IsContentLong && !isDefaultExpand)
         {
             <div class="card-collapse-toggle-container position-absolute" style="
         left: 50%;
@@ -88,7 +89,7 @@
             </div>
         }
         <div class="">
-             @if (IsContentLong)
+             @if (IsContentLong && !isDefaultExpand)
         {
                 <button class="card-minimize-toggle btn btn-secondary btn-sm mx-auto d-none">Minimize</button>
         }
