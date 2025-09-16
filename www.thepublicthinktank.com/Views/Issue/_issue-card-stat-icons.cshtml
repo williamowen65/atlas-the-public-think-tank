@@ -12,15 +12,15 @@
 
 <div class="issue-card-stat-icons text-nowrap">
     
-    <span role="button" tabindex="0" aria-label="Solutions: @(Model?.PaginatedSolutions.ContentCount.TotalCount)" class="stat-icon-link go-to-content-item-solution-tab position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
+    <span role="button" tabindex="0" aria-label="Solutions: @(Model?.PaginatedSolutions.ContentCount.FilteredCount)" class="stat-icon-link go-to-content-item-solution-tab position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
         <div class="position-absolute content-count solution-count" style="">
-            @(Model?.PaginatedSolutions.ContentCount.TotalCount)
+            @(Model?.PaginatedSolutions.ContentCount.FilteredCount)
         </div>
         @await Html.PartialAsync("~/Views/Shared/Icons/_Solutions.cshtml")
     </span>
-    <span role="button" tabindex="0" aria-label="Sub Issues: @(Model?.PaginatedSubIssues.ContentCount.TotalCount)" class="stat-icon-link go-to-content-item-sub-issue-tab position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
+    <span role="button" tabindex="0" aria-label="Sub Issues: @(Model?.PaginatedSubIssues.ContentCount.FilteredCount)" class="stat-icon-link go-to-content-item-sub-issue-tab position-relative" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
         <div class="position-absolute content-count sub-issue-count" style="right: -11px">
-            @(Model?.PaginatedSubIssues.ContentCount.TotalCount)
+            @(Model?.PaginatedSubIssues.ContentCount.FilteredCount)
         </div>
         @await Html.PartialAsync("~/Views/Shared/Icons/_SubIssues.cshtml")
     </span>

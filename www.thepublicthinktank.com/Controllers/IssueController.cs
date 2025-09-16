@@ -123,10 +123,10 @@ namespace atlas_the_public_think_tank.Controllers
                 html = partialViewHtml,
                 pagination = new PaginationStats_VM
                 {
-                    TotalCount = paginatedIssues.ContentCount.TotalCount,
+                    TotalCount = paginatedIssues.ContentCount.FilteredCount,
                     PageSize = paginatedIssues.PageSize,
                     CurrentPage = paginatedIssues.CurrentPage,
-                    TotalPages = (int)Math.Ceiling(paginatedIssues.ContentCount.TotalCount / (double)paginatedIssues.PageSize)
+                    TotalPages = (int)Math.Ceiling(paginatedIssues.ContentCount.FilteredCount / (double)paginatedIssues.PageSize)
                 }
             };
 
@@ -167,10 +167,10 @@ namespace atlas_the_public_think_tank.Controllers
                 html = partialViewHtml,
                 pagination = new PaginationStats_VM
                 {
-                    TotalCount = paginatedSolutions.ContentCount.TotalCount,
+                    TotalCount = paginatedSolutions.ContentCount.FilteredCount,
                     PageSize = paginatedSolutions.PageSize,
                     CurrentPage = paginatedSolutions.CurrentPage,
-                    TotalPages = (int)Math.Ceiling(paginatedSolutions.ContentCount.TotalCount / (double)paginatedSolutions.PageSize)
+                    TotalPages = (int)Math.Ceiling(paginatedSolutions.ContentCount.FilteredCount / (double)paginatedSolutions.PageSize)
                 }
             };
 
@@ -418,7 +418,7 @@ namespace atlas_the_public_think_tank.Controllers
 
             var user = await _userManager.GetUserAsync(User);
 
-            // pull issue from DAL
+            // pull issue from DAL -- This is for confirming some info before making the update
             // Also get the createdAt value
             Issue_ReadVM? issueRef = await Read.Issue((Guid)model.IssueID!, new ContentFilter());
             // Confirm this user owns this content
@@ -464,7 +464,8 @@ namespace atlas_the_public_think_tank.Controllers
                 CreatedAt = issueRef.CreatedAt,
                 ModifiedAt = DateTime.UtcNow, // Set ModifiedAt
                 ScopeID = (Guid)model.Scope.ScopeID!,
-                Title = model.Title
+                Title = model.Title,
+                Scope = incomingScope,
             };
 
             bool issueDiff = DiffCheckers.AreIssuesDifferent(Converter.ConvertIssue_ReadVMToIssue(issueRef), incomingIssue);
@@ -668,8 +669,8 @@ namespace atlas_the_public_think_tank.Controllers
                 <span class="title" data-content-id="{issue.IssueID}">{issue.Title}</span>
                 <br />
                 <strong>Stats{(isFilterApplied ? " with filter" : "")}:</strong> 
-                <br/><span class="solution-content-count">{issue.PaginatedSolutions?.ContentCount?.TotalCount ?? 0}</span>{(isFilterApplied ? $" of {issue.PaginatedSolutions?.ContentCount?.AbsoluteCount}" : "")} solutions
-                <br/><span class="sub-issue-content-count">{issue.PaginatedSubIssues?.ContentCount?.TotalCount ?? 0}</span>{(isFilterApplied ? $" of {issue.PaginatedSubIssues?.ContentCount?.AbsoluteCount}" : "")} sub-issues 
+                <br/><span class="solution-content-count">{issue.PaginatedSolutions?.ContentCount?.FilteredCount ?? 0}</span>{(isFilterApplied ? $" of {issue.PaginatedSolutions?.ContentCount?.AbsoluteCount}" : "")} solutions
+                <br/><span class="sub-issue-content-count">{issue.PaginatedSubIssues?.ContentCount?.FilteredCount ?? 0}</span>{(isFilterApplied ? $" of {issue.PaginatedSubIssues?.ContentCount?.AbsoluteCount}" : "")} sub-issues 
             </span>
             """;
 

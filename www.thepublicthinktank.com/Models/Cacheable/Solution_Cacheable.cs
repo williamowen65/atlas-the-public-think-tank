@@ -13,7 +13,7 @@ namespace atlas_the_public_think_tank.Models.Cacheable
         public Guid ParentIssueID { get; set; }
 
 
-        public required SolutionVotes_ReadVM VoteStats { get; set; }
+        public required SolutionVotes_Cacheable_ReadVM VoteStats { get; set; }
 
     }
 }

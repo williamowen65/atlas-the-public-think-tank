@@ -75,7 +75,7 @@
                                 BlockedContent = item.BlockedContent,
                                 PaginatedSubIssues = item.PaginatedSubIssues,
                                 PaginatedSolutions = item.PaginatedSolutions!,
-                                VoteStats = new IssueVotes_ReadVM()
+                                VoteStats = new IssueVotes_Cacheable_ReadVM()
                                 {
                                     IssueVotes = item.VoteStats.GenericContentVotes,
                                     AverageVote = item.VoteStats.AverageVote,
@@ -106,7 +106,7 @@
                                 Scope = item.Scope,
                                 BlockedContent = item.BlockedContent,
                                 PaginatedSubIssues = item.PaginatedSubIssues,
-                                VoteStats = new SolutionVotes_ReadVM()
+                                VoteStats = new SolutionVotes_Cacheable_ReadVM()
                                 {
                                     SolutionVotes = item.VoteStats.GenericContentVotes,
                                     AverageVote = item.VoteStats.AverageVote,
