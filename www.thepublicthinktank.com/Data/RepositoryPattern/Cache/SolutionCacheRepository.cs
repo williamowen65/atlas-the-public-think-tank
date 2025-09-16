@@ -88,7 +88,13 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10)
             });
 
-           return await _inner.UpdateSolutionAsync(solution);
+
+
+            // Note: This method may be better suited to be Update instead of clear.
+            CacheHelper.ClearSolutionContentVersionHistoryCache(solution.SolutionID);
+
+
+            return await _inner.UpdateSolutionAsync(solution);
 
         }
 
@@ -109,7 +115,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 return await _inner.GetSolutionVersionHistoryById(solution);
             }
 
-            var cacheKey = $"issue-version-history:{solution.SolutionID}";
+            var cacheKey = $"solution-version-history:{solution.SolutionID}";
             if (_cache.TryGetValue(cacheKey, out List<ContentItem_ReadVM>? cachedIssueVersionHistory))
             {
                 _cacheLogger.LogInformation($"[+] Cache hit for solution VersionHistory {solution.SolutionID}");
