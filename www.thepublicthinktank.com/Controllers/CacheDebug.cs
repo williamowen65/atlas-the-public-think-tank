@@ -214,5 +214,18 @@ namespace repository_pattern_experiment.Controllers
                 }
             }
         }
+
+        public static void ClearSolutionContentVersionHistoryCache(Guid solutionId)
+        {
+            List<string> keys = CacheHelper.GetAllCacheKeys();
+            foreach (var key in keys)
+            {
+                // Invlidate the cache no matter the filter type, or page number
+                if (key.Contains($"solution-version-history:{solutionId}", StringComparison.OrdinalIgnoreCase))
+                {
+                    _cache.Remove(key);
+                }
+            }
+        }
     }
 }

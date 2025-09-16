@@ -137,7 +137,34 @@ namespace CloudTests.CacheTests
         [TestMethod]
         public async Task CacheTestingSolution_UpdatingSolution_UpdatesSolutionVersionHistoryCache()
         {
-            Assert.Fail();
+
+            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue();
+            var (solutionJsonDoc, solutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId);
+
+            // Get an Issue_ReadVM object which is used by Read.IssueVersionHistory
+            Solution_ReadVM? solution = await Read.Solution(new Guid(solutionId), new ContentFilter());
+            // Specifically populate the version history cache for the issue by reading
+            List<ContentItem_ReadVM> contentItemVersions = await Read.SolutionVersionHistory(solution!);
+
+            // Assemble Cache key and fetch data
+            string cacheKey = $"solution-version-history:{solutionId}";
+            string url = $"/api/cache-log/entry?key={cacheKey}";
+            var cacheEntry1 = await _env.fetchJson<CacheEntryIssueVersionHistoryDTO>(url);
+
+            // Confirm version history has one entry (The current solution)
+            Assert.IsTrue(cacheEntry1.Value.Count() == 1);
+
+            // Update the solution
+            var (updatedSolutionJsonDoc, updatedSolutionId, updatedSolutionTitle, updatedSolutionContent, updatedSolutionScope) = await _testingCRUDHelper.EditTestSolution(solutionId, solutionScope.ScopeID, parentIssueId);
+
+            // Repopulate the version history cache by reading
+            List<ContentItem_ReadVM> contentItemVersions2 = await Read.SolutionVersionHistory(solution!);
+
+            // Fetch Data
+            var cacheEntry2 = await _env.fetchJson<CacheEntryIssueVersionHistoryDTO>(url);
+
+            // Confirm that there are 2 entries in version history
+            Assert.IsTrue(cacheEntry2.Value.Count() == 2);
         }
 
         #endregion

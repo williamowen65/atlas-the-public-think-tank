@@ -4,6 +4,7 @@ using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository;
 using atlas_the_public_think_tank.Models.Enums;
 using atlas_the_public_think_tank.Models.ViewModel;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.IRepository
@@ -50,6 +51,8 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.IRepository
         Task<Solution_ReadVM> UpdateSolutionAsync(Solution solution);
 
         Task<int> GetSolutionVersionHistoryCount(Guid solutionID);
+
+        Task<List<ContentItem_ReadVM>?> GetSolutionVersionHistoryById(Solution_ReadVM solution);
 
     }
 }

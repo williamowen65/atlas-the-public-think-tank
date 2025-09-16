@@ -88,7 +88,13 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10)
             });
 
-           return await _inner.UpdateSolutionAsync(solution);
+
+
+            // Note: This method may be better suited to be Update instead of clear.
+            CacheHelper.ClearSolutionContentVersionHistoryCache(solution.SolutionID);
+
+
+            return await _inner.UpdateSolutionAsync(solution);
 
         }
 
@@ -99,31 +105,31 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         }
 
 
-        // needs to be added to interface
-        //public async Task<List<ContentItem_ReadVM>?> GetSolutionVersionHistoryById(Issue_ReadVM issue)
-        //{
+        
+        public async Task<List<ContentItem_ReadVM>?> GetSolutionVersionHistoryById(Solution_ReadVM solution)
+        {
 
-        //    if (_configuration.GetValue<bool>("Caching:Enabled") == false)
-        //    {
-        //        _cacheLogger.LogInformation($"[~] Cache skip for issue VersionHistory {issue.IssueID}");
-        //        return await _inner.GetSolutionVersionHistoryById(issue);
-        //    }
+            if (_configuration.GetValue<bool>("Caching:Enabled") == false)
+            {
+                _cacheLogger.LogInformation($"[~] Cache skip for solution VersionHistory {solution.SolutionID}");
+                return await _inner.GetSolutionVersionHistoryById(solution);
+            }
 
-        //    var cacheKey = $"issue-version-history:{issue.IssueID}";
-        //    if (_cache.TryGetValue(cacheKey, out List<ContentItem_ReadVM>? cachedIssueVersionHistory))
-        //    {
-        //        _cacheLogger.LogInformation($"[+] Cache hit for issue VersionHistory {issue.IssueID}");
-        //        return cachedIssueVersionHistory;
-        //    }
-        //    else
-        //    {
-        //        _cacheLogger.LogInformation($"[!] Cache miss for issue VersionHistory {issue.IssueID}");
-        //        return await _cache.GetOrCreateAsync(cacheKey, async entry =>
-        //        {
-        //            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
-        //            return await _inner.GetIssueVersionHistoryById(issue);
-        //        });
-        //    }
-        //}
+            var cacheKey = $"solution-version-history:{solution.SolutionID}";
+            if (_cache.TryGetValue(cacheKey, out List<ContentItem_ReadVM>? cachedIssueVersionHistory))
+            {
+                _cacheLogger.LogInformation($"[+] Cache hit for solution VersionHistory {solution.SolutionID}");
+                return cachedIssueVersionHistory;
+            }
+            else
+            {
+                _cacheLogger.LogInformation($"[!] Cache miss for solution VersionHistory {solution.SolutionID}");
+                return await _cache.GetOrCreateAsync(cacheKey, async entry =>
+                {
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                    return await _inner.GetSolutionVersionHistoryById(solution);
+                });
+            }
+        }
     }
 }
