@@ -1,7 +1,7 @@
 ﻿using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
- 
+
 using CloudTests.TestingSetup.TestingData;
 using System;
 using System.Collections.Generic;
@@ -20,19 +20,19 @@ namespace CloudTests.TestingSetup
         private static ApplicationDbContext _db;
         private static TestEnvironment _env;
 
-       
 
-        [ClassInitialize]
-        public static void ClassInit(TestContext context)
+
+        [TestInitialize]
+        public async Task Setup()
         {
-            // Use the utility class to configure the test environment
+
             _env = new TestEnvironment();
             _db = _env._db;
             _client = _env._client;
         }
 
-        [ClassCleanup]
-        public static async Task ClassCleanup()
+        [TestCleanup]
+        public async Task TestCleanup()
         {
             await TestingUtilityMethods.deleteDatabase(_client, _db);
         }
