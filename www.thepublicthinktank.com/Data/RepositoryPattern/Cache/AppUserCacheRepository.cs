@@ -37,7 +37,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             }
             else
             { 
-                _cacheLogger.LogInformation($"[!] Cache miss for GetAppUser {UserId}");
+                _cacheLogger.LogWarning($"[!] Cache miss for GetAppUser {UserId}");
                 return await _cache.GetOrCreateAsync(cacheKey, async entry =>
                 {
                     entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);

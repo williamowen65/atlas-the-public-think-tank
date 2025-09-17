@@ -10,6 +10,11 @@
     public class ContentFilter
     {
 
+        /// <summary>
+        /// Creates a new instance of the default content filter
+        /// </summary>
+        public ContentFilter() { }
+
         public string ContentType { get; set; } = "both";
         /// <summary>
         /// Filter range for average vote values
@@ -31,12 +36,16 @@
         /// </summary>
         public List<string> Tags { get; set; } = new();
 
-        
+        public string ToCacheString()
+        {
+            return
+                $"type({ContentType})" +
+                $"+avg({AvgVoteRange.Min},{AvgVoteRange.Max})" +
+                $"+votecount({TotalVoteCount.Min},{(TotalVoteCount.Max != null ? TotalVoteCount.Max : "null")})" +
+                $"+daterange({(DateRange.From != null ? DateRange.From.ToString() : "null")},{(DateRange.To != null ? DateRange.To.ToString() : "null")})" +
+                $"+tags({string.Join(",", Tags)})";
+        }
 
-        /// <summary>
-        /// Creates a new instance of the default content filter
-        /// </summary>
-        public ContentFilter() { }
 
         /// <summary>
         /// Creates a content filter from a JSON string (typically from a cookie)

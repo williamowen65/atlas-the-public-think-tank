@@ -89,6 +89,11 @@ namespace CloudTests.CacheTests
             public string Key { get; set; }
             public List<string> Value { get; set; }
         }
+        public class CacheEntryIdsHomePageDTO
+        {
+            public string Key { get; set; }
+            public List<ContentIdentifier> Value { get; set; }
+        }
         public class CacheEntry_IssueVoteStatsDTO
         {
             public string Key { get; set; }
@@ -265,11 +270,11 @@ namespace CloudTests.CacheTests
 
             // Assemble cache key for sub-issue-feed-ids
             ContentFilter filter = new ContentFilter();
-            string filterHash = filter.ToJson().GetHashCode().ToString();
+            string filterCacheString = filter.ToCacheString();
             int pageNumber = 1;
-            var cacheKey = $"sub-issue-feed-ids:{parentIssueId}:{filterHash}:{pageNumber}"; ;
-
-            string url = $"/api/cache-log/entry?key={cacheKey}";
+            var cacheKey = $"sub-issue-feed-ids:{parentIssueId}:{filterCacheString}:page({pageNumber})"; ;
+            string encodedCacheKey = Uri.EscapeDataString(cacheKey);
+            string url = $"/api/cache-log/entry?key={encodedCacheKey}";
             var cacheEntry = await _env.fetchJson<CacheEntryIdsDTO>(url);
 
             Assert.IsTrue(cacheEntry.Value.Count() == 1);
@@ -288,11 +293,12 @@ namespace CloudTests.CacheTests
 
             // Assemble cache key for sub-issue-content-counts
             ContentFilter filter = new ContentFilter();
-            string filterHash = filter.ToJson().GetHashCode().ToString();
-            var cacheKey = $"sub-issue-content-counts:{parentIssueId}:{filterHash}";
+            string filterCacheString = filter.ToCacheString();
+            var cacheKey = $"sub-issue-content-counts:{parentIssueId}:{filterCacheString}";
+            string encodedCacheKey = Uri.EscapeDataString(cacheKey);
 
             // Fetch data
-            string url = $"/api/cache-log/entry?key={cacheKey}";
+            string url = $"/api/cache-log/entry?key={encodedCacheKey}";
             var cacheEntry = await _env.fetchJson<CacheEntry_ContentCountDTO>(url);
 
             // Confirm data
@@ -327,11 +333,12 @@ namespace CloudTests.CacheTests
 
             // Assemble key
             ContentFilter filter = new ContentFilter();
-            string filterHash = filter.ToJson().GetHashCode().ToString();
-            var cacheKey = $"sub-issue-content-counts:{parentIssueId}:{filterHash}";
-            
+            string filterCacheString = filter.ToCacheString();
+            var cacheKey = $"sub-issue-content-counts:{parentIssueId}:{filterCacheString}";
+            string encodedCacheKey = Uri.EscapeDataString(cacheKey);
+
             // Fetch data
-            string url = $"/api/cache-log/entry?key={cacheKey}";
+            string url = $"/api/cache-log/entry?key={encodedCacheKey}";
             var cacheEntry = await _env.fetchJson<CacheEntry_ContentCountDTO>(url);
 
             // Test response
@@ -348,11 +355,11 @@ namespace CloudTests.CacheTests
             await Read.Issue(new Guid(parentIssueId!), updatedFilter);
 
             // Assemble new cache key with new filter
-            string filterHash2 = updatedFilter.ToJson().GetHashCode().ToString();
-            var cacheKey2 = $"sub-issue-content-counts:{parentIssueId}:{filterHash2}";
-
+            string filterCacheString2 = updatedFilter.ToCacheString();
+            var cacheKey2 = $"sub-issue-content-counts:{parentIssueId}:{filterCacheString2}";
+            string encodedCacheKey2 = Uri.EscapeDataString(cacheKey2);
             // Fetch data
-            string url2 = $"/api/cache-log/entry?key={cacheKey2}";
+            string url2 = $"/api/cache-log/entry?key={encodedCacheKey2}";
             var cacheEntry2 = await _env.fetchJson<CacheEntry_ContentCountDTO>(url2);
 
             // Test response
@@ -382,10 +389,11 @@ namespace CloudTests.CacheTests
             // Repopulate cache
             await Read.Issue(new Guid(parentIssueId!), filter);
 
-            string filterHash = filter.ToJson().GetHashCode().ToString();
+            string filterCacheString = filter.ToCacheString();
             int pageNumber = 1;
-            var cacheKey = $"sub-issue-feed-ids:{parentIssueId}:{filterHash}:{pageNumber}"; 
-            string url = $"/api/cache-log/entry?key={cacheKey}";
+            var cacheKey = $"sub-issue-feed-ids:{parentIssueId}:{filterCacheString}:page({pageNumber})";
+            string encodedCacheKey = Uri.EscapeDataString(cacheKey);
+            string url = $"/api/cache-log/entry?key={encodedCacheKey}";
             var cacheEntry = await _env.fetchJson<CacheEntryIdsDTO>(url);
 
             Assert.IsTrue(cacheEntry.Value[0] == subIssueId2);
@@ -409,11 +417,11 @@ namespace CloudTests.CacheTests
 
             // Assemble cache key for sub-issue-feed-ids
             ContentFilter filter = new ContentFilter();
-            string filterHash = filter.ToJson().GetHashCode().ToString();
+            string filterCacheString = filter.ToCacheString();
             int pageNumber = 1;
-            var cacheKey = $"solution-feed-ids:{parentIssueId}:{filterHash}:{pageNumber}"; ;
-
-            string url = $"/api/cache-log/entry?key={cacheKey}";
+            var cacheKey = $"solution-feed-ids:{parentIssueId}:{filterCacheString}:page({pageNumber})";
+            string encodedCacheKey = Uri.EscapeDataString(cacheKey);
+            string url = $"/api/cache-log/entry?key={encodedCacheKey}";
             var cacheEntry = await _env.fetchJson<CacheEntryIdsDTO>(url);
 
             Assert.IsTrue(cacheEntry.Value.Count() == 1);
@@ -432,11 +440,12 @@ namespace CloudTests.CacheTests
 
             // Assemble cache key for sub-issue-content-counts
             ContentFilter filter = new ContentFilter();
-            string filterHash = filter.ToJson().GetHashCode().ToString();
-            var cacheKey = $"solution-content-counts:{parentIssueId}:{filterHash}";
+            string filterCacheString = filter.ToCacheString();
+            var cacheKey = $"solution-content-counts:{parentIssueId}:{filterCacheString}";
+            string encodedCacheKey = Uri.EscapeDataString(cacheKey);
 
             // Fetch data
-            string url = $"/api/cache-log/entry?key={cacheKey}";
+            string url = $"/api/cache-log/entry?key={encodedCacheKey}";
             var cacheEntry = await _env.fetchJson<CacheEntry_ContentCountDTO>(url);
 
             // Confirm data
@@ -470,11 +479,11 @@ namespace CloudTests.CacheTests
 
             // Assemble key
             ContentFilter filter = new ContentFilter();
-            string filterHash = filter.ToJson().GetHashCode().ToString();
-            var cacheKey = $"solution-content-counts:{parentIssueId}:{filterHash}";
-
+            string filterCacheString = filter.ToCacheString();
+            var cacheKey = $"solution-content-counts:{parentIssueId}:{filterCacheString}";
+            string encodedCacheKey = Uri.EscapeDataString(cacheKey);
             // Fetch data
-            string url = $"/api/cache-log/entry?key={cacheKey}";
+            string url = $"/api/cache-log/entry?key={encodedCacheKey}";
             var cacheEntry = await _env.fetchJson<CacheEntry_ContentCountDTO>(url);
 
             // Test response
@@ -491,11 +500,11 @@ namespace CloudTests.CacheTests
             await Read.Issue(new Guid(parentIssueId!), updatedFilter);
 
             // Assemble new cache key with new filter
-            string filterHash2 = updatedFilter.ToJson().GetHashCode().ToString();
-            var cacheKey2 = $"solution-content-counts:{parentIssueId}:{filterHash2}";
-
+            string filterCacheString2 = updatedFilter.ToCacheString();
+            var cacheKey2 = $"solution-content-counts:{parentIssueId}:{filterCacheString2}";
+            string encodedCacheKey2 = Uri.EscapeDataString(cacheKey2);
             // Fetch data
-            string url2 = $"/api/cache-log/entry?key={cacheKey2}";
+            string url2 = $"/api/cache-log/entry?key={encodedCacheKey2}";
             var cacheEntry2 = await _env.fetchJson<CacheEntry_ContentCountDTO>(url2);
 
             // Test response
@@ -523,11 +532,12 @@ namespace CloudTests.CacheTests
             // Repopulate cache
             await Read.Issue(new Guid(parentIssueId!), filter);
 
-            string filterHash = filter.ToJson().GetHashCode().ToString();
+            string filterCacheString = filter.ToCacheString();
             int pageNumber = 1;
 
-            var cacheKey = $"solution-feed-ids:{parentIssueId}:{filterHash}:{pageNumber}"; ;
-            string url = $"/api/cache-log/entry?key={cacheKey}";
+            var cacheKey = $"solution-feed-ids:{parentIssueId}:{filterCacheString}:page({pageNumber})"; ;
+            string encodedCacheKey = Uri.EscapeDataString(cacheKey);
+            string url = $"/api/cache-log/entry?key={encodedCacheKey}";
             var cacheEntry = await _env.fetchJson<CacheEntryIdsDTO>(url);
 
             Assert.IsTrue(cacheEntry.Value[0] == solutionId2);

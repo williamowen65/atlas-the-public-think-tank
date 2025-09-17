@@ -89,8 +89,9 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         /// </remarks>
         public async Task<Issue_ReadVM> AddIssueAsync(Issue issue)
         {
-            // When creating an issue invalidate all filterIdSets in the cache
-            //CacheHelper.ClearAllFeedIdSets();
+            #region cache invalidation
+            // When creating an issue invalidate all related filterIdSets in the cache
+            // This can later be optimized
 
             if (issue.ParentIssueID != null) {
                 // Clear sub-issue-feed-ids cache for parent issue
@@ -102,6 +103,13 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 CacheHelper.ClearSubIssueFeedIdsForSolution((Guid)issue.ParentSolutionID);
                 CacheHelper.ClearContentCountSubIssuesForSolution((Guid)issue.ParentSolutionID);
             }
+
+            // Main page
+            CacheHelper.ClearContentCountForMainPage();
+            CacheHelper.ClearMainPageFeedIds();
+
+
+            #endregion
 
             return await _inner.AddIssueAsync(issue);
         }
@@ -166,7 +174,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             }
             else
             {
-                _cacheLogger.LogInformation($"[!] Cache miss for issue VersionHistory {issue.IssueID}");
+                _cacheLogger.LogWarning($"[!] Cache miss for issue VersionHistory {issue.IssueID}");
                 return await _cache.GetOrCreateAsync(cacheKey, async entry =>
                 {
                     entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);

@@ -73,11 +73,17 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         /// </remarks>
         public async Task<Solution_ReadVM> AddSolutionAsync(Solution solution)
         {
-            // When creating an issue invalidate all filterIdSets in the cache
-            //CacheHelper.ClearAllFeedIdSets();
+
+            #region cache invalidation
 
             CacheHelper.ClearSolutionFeedIdsForIssue((Guid)solution.ParentIssueID);
             CacheHelper.ClearContentCountSolutionsForIssue((Guid)solution.ParentIssueID);
+
+            // Main page
+            CacheHelper.ClearContentCountForMainPage();
+            CacheHelper.ClearMainPageFeedIds();
+
+            #endregion
 
             return await _inner.AddSolutionAsync(solution);
         }
@@ -119,7 +125,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
         public async Task<int> GetSolutionVersionHistoryCount(Guid solutionID)
         {
-            _cacheLogger.LogInformation($"[!] Cache miss for solution VersionHistoryCount {solutionID}");
+            _cacheLogger.LogWarning($"[!] Cache miss for solution VersionHistoryCount {solutionID}");
             return await _inner.GetSolutionVersionHistoryCount(solutionID);
         }
 
@@ -148,7 +154,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             }
             else
             {
-                _cacheLogger.LogInformation($"[!] Cache miss for solution VersionHistory {solution.SolutionID}");
+                _cacheLogger.LogWarning($"[!] Cache miss for solution VersionHistory {solution.SolutionID}");
                 return await _cache.GetOrCreateAsync(cacheKey, async entry =>
                 {
                     entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
