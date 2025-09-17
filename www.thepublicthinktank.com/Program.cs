@@ -3,6 +3,7 @@ using atlas_the_public_think_tank.Data.CRUD;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
 using atlas_the_public_think_tank.Data.RepositoryPattern;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
+using atlas_the_public_think_tank.Middleware;
 using atlas_the_public_think_tank.Models;
  
 using Azure.Monitor.OpenTelemetry.AspNetCore;
@@ -172,6 +173,10 @@ public class Program
         // Map Razor Pages endpoints (for Razor Page files like .cshtml)
         app.MapRazorPages()
            .WithStaticAssets();
+
+
+        // Log Razor Page requests with custom category
+        app.UsePageRequestLogging();
 
         // Start the application and begin listening for incoming HTTP requests
         app.Run();

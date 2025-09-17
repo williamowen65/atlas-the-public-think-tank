@@ -56,7 +56,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             }
             else
             {
-                _cacheLogger.LogInformation($"[!] Cache miss for GetIssueVoteStats {id}");
+                _cacheLogger.LogWarning($"[!] Cache miss for GetIssueVoteStats {id}");
                 return await _cache.GetOrCreateAsync(cacheKey, async entry =>
                 {
                     entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
@@ -81,7 +81,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             }
             else
             {
-                _cacheLogger.LogInformation($"[!] Cache miss for GetSolutionVoteStats( {id}");
+                _cacheLogger.LogWarning($"[!] Cache miss for GetSolutionVoteStats( {id}");
                 return await _cache.GetOrCreateAsync(cacheKey, async entry =>
                 {
                     entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
@@ -107,6 +107,8 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             // First, call the inner repository to update the database
             var result = await _inner.UpsertIssueVote(model, user);
 
+            #region cache invalidation
+
             // Update the vote stats in the cache
             CacheHelper.UpdateCache_IssueVoteStats(result, model, user);
 
@@ -121,6 +123,12 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 CacheHelper.ClearSubIssueFeedIdsForSolution((Guid)issue.ParentSolutionID!);
                 CacheHelper.ClearContentCountSubIssuesForSolution((Guid)issue.ParentSolutionID!);
             }
+
+            // Main page
+            CacheHelper.ClearContentCountForMainPage();
+            CacheHelper.ClearMainPageFeedIds();
+
+            #endregion
 
             return result;
         }
@@ -139,6 +147,8 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             // First, call the inner repository to update the database
             var result = await _inner.UpsertSolutionVote(model, user);
 
+            #region cache invalidation
+
             // Update the vote stats in the cache
             CacheHelper.UpdateCache_SolutionVoteStats(result, model, user);
 
@@ -146,6 +156,12 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
             CacheHelper.ClearSolutionFeedIdsForIssue((Guid)solution.ParentIssueID!);
             CacheHelper.ClearContentCountSolutionsForIssue((Guid)solution.ParentIssueID);
+
+            // Main page
+            CacheHelper.ClearContentCountForMainPage();
+            CacheHelper.ClearMainPageFeedIds();
+
+            #endregion
 
             return result;
         }

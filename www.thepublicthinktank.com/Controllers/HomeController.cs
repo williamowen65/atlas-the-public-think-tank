@@ -188,11 +188,11 @@ public class HomeController : Controller
 
         PageInfo pageInfo = new PageInfo();
 
-        string filterHash = filter.ToJson().GetHashCode().ToString();
+        string filterCacheString = filter.ToCacheString();
         ContentFilter defaultFilter = new ContentFilter();
-        string defaultFilterHash = defaultFilter.ToJson().GetHashCode().ToString();
+        string defaultFilterCacheString = defaultFilter.ToCacheString();
 
-        bool isFilterApplied = filterHash != defaultFilterHash;
+        bool isFilterApplied = filterCacheString != defaultFilterCacheString;
 
         // Build filter difference details
         StringBuilder filterDetails = new StringBuilder();

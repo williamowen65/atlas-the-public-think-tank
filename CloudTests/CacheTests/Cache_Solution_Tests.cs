@@ -251,11 +251,12 @@ namespace CloudTests.CacheTests
 
             // Assemble cache key for sub-issue-feed-ids
             ContentFilter filter = new ContentFilter();
-            string filterHash = filter.ToJson().GetHashCode().ToString();
+            string filterCacheString = filter.ToCacheString();
             int pageNumber = 1;
-            var cacheKey = $"sub-issue-feed-ids:{parentSolutionId}:{filterHash}:{pageNumber}"; ;
+            var cacheKey = $"sub-issue-feed-ids:{parentSolutionId}:{filterCacheString}:page({pageNumber})"; ;
+            string encodedCacheKey = Uri.EscapeDataString(cacheKey);
 
-            string url = $"/api/cache-log/entry?key={cacheKey}";
+            string url = $"/api/cache-log/entry?key={encodedCacheKey}";
             var cacheEntry = await _env.fetchJson<CacheEntryIdsDTO>(url);
 
             Assert.IsTrue(cacheEntry.Value.Count() == 0);
@@ -281,10 +282,11 @@ namespace CloudTests.CacheTests
             // Note it has no sub-issues at creation
             // Assemble cache key for sub-issue-feed-ids
             ContentFilter filter = new ContentFilter();
-            string filterHash = filter.ToJson().GetHashCode().ToString();
-            var cacheKey = $"sub-issue-content-counts:{parentSolutionId}:{filterHash}";
+            string filterCacheString = filter.ToCacheString();
+            var cacheKey = $"sub-issue-content-counts:{parentSolutionId}:{filterCacheString}";
+            string encodedCacheKey = Uri.EscapeDataString(cacheKey);
 
-            string url = $"/api/cache-log/entry?key={cacheKey}";
+            string url = $"/api/cache-log/entry?key={encodedCacheKey}";
             var cacheEntry = await _env.fetchJson<CacheEntry_ContentCountDTO>(url);
 
             Assert.IsTrue(cacheEntry.Value.AbsoluteCount == 0);
@@ -348,9 +350,11 @@ namespace CloudTests.CacheTests
             };
             // populate cache
             await Read.Solution(new Guid(parentSolutionId!), filter);
-            string filterHash = filter.ToJson().GetHashCode().ToString();
-            var cacheKey = $"sub-issue-content-counts:{parentSolutionId}:{filterHash}";
-            string url = $"/api/cache-log/entry?key={cacheKey}";
+            string filterCacheString = filter.ToCacheString();
+            var cacheKey = $"sub-issue-content-counts:{parentSolutionId}:{filterCacheString}";
+            string encodedCacheKey = Uri.EscapeDataString(cacheKey);
+
+            string url = $"/api/cache-log/entry?key={encodedCacheKey}";
             var cacheEntry = await _env.fetchJson<CacheEntry_ContentCountDTO>(url);
             Assert.IsTrue(cacheEntry.Value.AbsoluteCount == 4);
             Assert.IsTrue(cacheEntry.Value.FilteredCount == 4);
@@ -364,9 +368,10 @@ namespace CloudTests.CacheTests
             };
             // populate cache
             await Read.Solution(new Guid(parentSolutionId!), filter2);
-            string filterHash2 = filter2.ToJson().GetHashCode().ToString();
-            var cacheKey2 = $"sub-issue-content-counts:{parentSolutionId}:{filterHash2}";
-            string url2 = $"/api/cache-log/entry?key={cacheKey2}";
+            string filterCacheString2 = filter2.ToCacheString();
+            var cacheKey2 = $"sub-issue-content-counts:{parentSolutionId}:{filterCacheString2}";
+            string encodedCacheKey2 = Uri.EscapeDataString(cacheKey2);
+            string url2 = $"/api/cache-log/entry?key={encodedCacheKey2}";
             var cacheEntry2 = await _env.fetchJson<CacheEntry_ContentCountDTO>(url2);
             Assert.IsTrue(cacheEntry2.Value.AbsoluteCount == 4);
             Assert.IsTrue(cacheEntry2.Value.FilteredCount == 1); 
@@ -385,11 +390,11 @@ namespace CloudTests.CacheTests
             var (solutionJsonDoc, parentSolutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId);
 
             ContentFilter filter = new ContentFilter();
-            string filterHash = filter.ToJson().GetHashCode().ToString();
+            string filterCacheString = filter.ToCacheString();
             int pageNumber = 1;
-            var cacheKey = $"sub-issue-feed-ids:{parentSolutionId}:{filterHash}:{pageNumber}";
-
-            string url = $"/api/cache-log/entry?key={cacheKey}";
+            var cacheKey = $"sub-issue-feed-ids:{parentSolutionId}:{filterCacheString}:page({pageNumber})";
+            string encodedCacheKey = Uri.EscapeDataString(cacheKey);
+            string url = $"/api/cache-log/entry?key={encodedCacheKey}";
 
 
             // Create sub issues for a solution (all with no votes)

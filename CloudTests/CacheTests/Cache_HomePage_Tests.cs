@@ -25,6 +25,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using static CloudTests.CacheTests.Cache_Issue_Tests;
 
 namespace CloudTests.CacheTests
 {
@@ -71,7 +72,38 @@ namespace CloudTests.CacheTests
             await TestingUtilityMethods.deleteDatabase(_client, _db);
         }
 
+        [TestMethod]
+        public async Task CacheTestingHomePage_AddingNew_Issues_Solutions_PagedContentShouldBeUpToDate()
+        {
+            var (jsonDoc, issueId1, title, content, scope) = await _testingCRUDHelper.CreateTestIssue();
 
+            // Common filter
+            ContentFilter filter = new ContentFilter();
+            string filterCacheString = filter.ToCacheString();
+            int pageNumber = 1;
+            var cacheKey = $"main-content-feed-ids:{filterCacheString}:page({pageNumber})";
+            string encodedCacheKey = Uri.EscapeDataString(cacheKey);
+            string url = $"/api/cache-log/entry?key={encodedCacheKey}";
+
+            // Visit the home page to populate the cache
+            await _env.fetchHTML("/");
+
+            // Fetch and eval
+            var cacheEntry1 = await _env.fetchJson<CacheEntryIdsHomePageDTO>(url);
+            Assert.IsTrue(cacheEntry1.Value.Any(entry => entry.Id.ToString() == issueId1));
+
+            // Test issue 2
+
+            var (jsonDoc2, issueId2, title2, content2, scope2) = await _testingCRUDHelper.CreateTestIssue();
+            
+            // Visit the home page to populate the cache
+            await _env.fetchHTML("/");
+
+            // Fetch and eval
+            var cacheEntry2 = await _env.fetchJson<CacheEntryIdsHomePageDTO>(url);
+            Assert.IsTrue(cacheEntry2.Value.Any(entry => entry.Id.ToString() == issueId1));
+            Assert.IsTrue(cacheEntry2.Value.Any(entry => entry.Id.ToString() == issueId2));
+        }
 
     }
 }
