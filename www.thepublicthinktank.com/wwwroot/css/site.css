@@ -139,3 +139,35 @@ svg.parent-issue-icon {
 .mc-calendar {
     z-index: 2030 !important;
 }
+#header-search-bar-results {
+    width: 83%;
+    margin: auto;
+/*    top: var(--header-height);*/
+    max-height: calc(100vh - var(--header-height));
+    overflow-y: scroll;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    border-bottom-left-radius: var(--bs-border-radius-lg);
+    border-bottom-right-radius: var(--bs-border-radius-lg);
+}
+.search-result-item {
+    color: black;
+}
+
+.backdrop-search-results {
+    position: absolute;
+
+    left: 0;
+    background: #0000ff36;
+    width: 100%;
+    box-sizing: border-box;
+    height: 100vh;  
+    backdrop-filter: blur(2px);
+}
+.search-bar-results-header {
+    /*    position: absolute;
+    top: var(--header-height);
+    left: 0;*/
+        top: var(--header-height);
+}

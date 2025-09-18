@@ -1,0 +1,101 @@
+﻿@using atlas_the_public_think_tank.Data.RawSQL
+@using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
+@using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue
+@using atlas_the_public_think_tank.Data.CRUD
+@using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution
+
+@model List<SearchResult>
+
+
+<div class="search-results-container">
+    @if (Model != null && Model.Any())
+    {
+        foreach (var result in Model)
+        {
+            @* <a href="/@result.Type/@result.Id" class="" style="text-decoration: none"> *@
+                
+                    @if (result.Type == "Issue")
+                    {
+                        Issue_ReadVM? issue = await Read.Issue(result.Id, new ContentFilter());
+                        @await Html.PartialAsync("~/Views/Issue/_issue-card.cshtml", issue)
+
+                    @* <div class="search-result-item issue p-2"
+                         style="background: var(--issue-bg)">
+                            <h5 class="search-result-title ">
+                                @await Html.PartialAsync("~/Views/Shared/Icons/_SubIssues.cshtml")
+                                @(issue!.Title)
+                            </h5>
+                        </div> *@
+                    } else
+                    {
+
+                        Solution_ReadVM? solution = await Read.Solution(result.Id, new ContentFilter());
+                    @await Html.PartialAsync("~/Views/Solution/_solution-card.cshtml", solution)
+                    @* <div class="search-result-item solution  p-2"
+                         style="background: var(--solution-bg)">
+                            <h5 class="search-result-title">
+                            @await Html.PartialAsync("~/Views/Shared/Icons/_Solutions.cshtml")
+                                @(solution!.Title)</h5>
+                        </div> *@
+                    }
+
+                 
+            @* </a> *@
+            <hr class="search-result-divider" />
+        }
+    }
+    else
+    {
+        <div class="">
+            <p>No search results found. Please try different search terms.</p>
+        </div>
+    }
+</div>
+
+<style>
+    .search-results-container {
+    }
+    
+    .search-result-item {
+        padding: 15px 0;
+    }
+    
+    .search-result-title {
+        margin-bottom: 5px;
+    }
+    
+    .search-result-title a {
+        color: #007bff;
+        text-decoration: none;
+    }
+    
+    .search-result-title a:hover {
+        text-decoration: underline;
+    }
+    
+    .search-result-excerpt {
+        margin-bottom: 10px;
+        color: #555;
+    }
+    
+    .search-result-metadata {
+        font-size: 0.85em;
+        color: #777;
+    }
+    
+    .search-result-date, .search-result-category {
+        margin-right: 15px;
+    }
+    
+    .search-result-divider {
+        margin: 0;
+        border-top: 1px solid #eee;
+    }
+    
+    .no-results {
+        padding: 20px;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        text-align: center;
+    }
+</style>

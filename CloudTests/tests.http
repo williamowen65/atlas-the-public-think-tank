@@ -38,9 +38,18 @@ Content-Type: application/json
 
 ###
 
-POST https://localhost:5501/search
+POST https://localhost:5501/search?showRanks=true
 Content-Type: application/json
 
 {
-  "searchString": "homelessness"
+  "searchString": "Homelessness"
+}
+
+###
+
+POST https://localhost:5501/search-contains
+Content-Type: application/json
+
+{
+  "searchString": "Homele remains a pervasive and complex "
 }

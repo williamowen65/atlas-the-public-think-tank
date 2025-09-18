@@ -126,32 +126,8 @@ public class Program
         var memoryCache = app.Services.GetRequiredService<IMemoryCache>();
         // Initialize the CacheHelper with the memory cache
         CacheHelper.Initialize(memoryCache);
-        //{
-        //    using var scope = app.Services.CreateScope();
-        //    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        //    SearchContentItems.Initialize(context);
-        //}
-
-        Console.WriteLine("About to run custom migration");
-
+        // Add custom migrations (Full Text Search)
         CustomMigrationRunner.RunUp(app.Services);
-
-        //{
-        //    using var scope = app.Services.CreateScope();
-        //    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        //    //var issues = context.Issues.ToList();
-        //    //foreach (var issue in issues)
-        //    //{
-        //    //    Console.WriteLine($"Issue ID: {issue.IssueID}, Title: {issue.Title}");
-        //    //}
-
-        //    var issue2 = context.Database.ExecuteSqlRaw("SELECT * FROM issues.Issues");
-
-        //    // Log the retrieved issues to the console
-
-        //}
-
-
 
         FilterQueryService.Initialize(builder.Configuration);
 

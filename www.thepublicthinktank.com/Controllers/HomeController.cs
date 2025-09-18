@@ -1,5 +1,6 @@
 ﻿using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Data.CRUD;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.RawSQL;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Models.Enums;
@@ -108,17 +109,42 @@ public class HomeController : Controller
 
     [HttpPost]
     [Route("/search")]
-    public async Task<IActionResult> Search([FromBody] SearchRequest searchRequest)
+    public async Task<IActionResult> Search([FromBody] SearchRequest searchRequest, [FromQuery] bool showRanks, [FromQuery] double rankCutOffPercent)
     {
 
-        if (searchRequest.SearchString.Length == 0) {
-            return Json("[]");
+   
+
+        List<SearchResult> searchResult = await SearchContentItems.SearchAsync(searchRequest.SearchString, _context, rankCutOffPercent);
+
+        if (showRanks)
+        {
+            return Json(searchResult);
         }
 
-        var contentItems = await SearchContentItems.SearchAsync(searchRequest.SearchString, _context);
 
-        return Json(contentItems);
+        string html = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Shared/_search-result.cshtml", searchResult);
+
+
+        return Json(new {
+            html = html
+        });
     }
+
+    [HttpPost]
+    [Route("/search-contains")]
+    public async Task<IActionResult> SearchContains([FromBody] SearchRequest searchRequest)
+    {
+
+   
+
+        List<SearchResult> searchResult = await SearchContentItems.SearchContainsTableAsync(searchRequest.SearchString, _context);
+
+        return Json(searchResult);
+
+
+    }
+
+
 
 
 

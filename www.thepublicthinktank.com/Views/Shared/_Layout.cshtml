@@ -82,6 +82,8 @@
 
 
     @await Component.InvokeAsync("Sidebar", sidebar_VM)
+
+    @await Html.PartialAsync("~/Views/Shared/_SearchBarResults.cshtml")
     
    
     <main role="main" class="pb-3 px-md-3">
