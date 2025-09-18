@@ -1,16 +1,21 @@
 using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Data.CRUD;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+using atlas_the_public_think_tank.Data.RawSQL;
 using atlas_the_public_think_tank.Data.RepositoryPattern;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Middleware;
+using atlas_the_public_think_tank.Migrations_NonEF;
 using atlas_the_public_think_tank.Models;
  
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 using repository_pattern_experiment.Controllers;
+using System;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace atlas_the_public_think_tank;
 
@@ -110,6 +115,7 @@ public class Program
             SeedDataHelper.SeedDatabase(app.Services);
         }
 
+        
 
         // Initialize the static Read class with the service provider
         Create.Initialize(app.Services);
@@ -120,6 +126,32 @@ public class Program
         var memoryCache = app.Services.GetRequiredService<IMemoryCache>();
         // Initialize the CacheHelper with the memory cache
         CacheHelper.Initialize(memoryCache);
+        //{
+        //    using var scope = app.Services.CreateScope();
+        //    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        //    SearchContentItems.Initialize(context);
+        //}
+
+        Console.WriteLine("About to run custom migration");
+
+        CustomMigrationRunner.RunUp(app.Services);
+
+        //{
+        //    using var scope = app.Services.CreateScope();
+        //    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        //    //var issues = context.Issues.ToList();
+        //    //foreach (var issue in issues)
+        //    //{
+        //    //    Console.WriteLine($"Issue ID: {issue.IssueID}, Title: {issue.Title}");
+        //    //}
+
+        //    var issue2 = context.Database.ExecuteSqlRaw("SELECT * FROM issues.Issues");
+
+        //    // Log the retrieved issues to the console
+
+        //}
+
+
 
         FilterQueryService.Initialize(builder.Configuration);
 
@@ -178,6 +210,7 @@ public class Program
         // Log Razor Page requests with custom category
         app.UsePageRequestLogging();
 
+      
         // Start the application and begin listening for incoming HTTP requests
         app.Run();
     }

@@ -3,6 +3,7 @@ using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 
 using CloudTests.TestingSetup.TestingData;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,6 +38,19 @@ namespace CloudTests.TestingSetup
             await TestingUtilityMethods.deleteDatabase(_client, _db);
         }
 
+
+        [TestMethod]
+        public async Task Test_Environment_SQLServer_Has_FullTextFeature_TurnedOn()
+        {
+            var conn = _db.Database.GetDbConnection();
+            await conn.OpenAsync();
+
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT FULLTEXTSERVICEPROPERTY('IsFullTextInstalled') AS IsFullTextInstalled;";
+            var result = await cmd.ExecuteScalarAsync();
+
+            Assert.AreEqual(1, Convert.ToInt32(result), "Full-text search should be installed.");
+        }
 
 
         [TestMethod]
