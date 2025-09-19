@@ -140,9 +140,9 @@ svg.parent-issue-icon {
     z-index: 2030 !important;
 }
 #header-search-bar-results {
-    width: 83%;
+    width: 100%;
     margin: auto;
-/*    top: var(--header-height);*/
+    /*    top: var(--header-height);*/
     max-height: calc(100vh - var(--header-height));
     overflow-y: scroll;
     position: absolute;
@@ -151,6 +151,12 @@ svg.parent-issue-icon {
     border-bottom-left-radius: var(--bs-border-radius-lg);
     border-bottom-right-radius: var(--bs-border-radius-lg);
 }
+
+
+
+
+
+
 .search-result-item {
     color: black;
 }
@@ -170,4 +176,11 @@ svg.parent-issue-icon {
     top: var(--header-height);
     left: 0;*/
         top: var(--header-height);
+}
+
+header.small-screen-search-bar #header-logo {
+    display:none !important;
+}
+header.small-screen-search-bar #user-header-controls {
+    display:none !important;
 }

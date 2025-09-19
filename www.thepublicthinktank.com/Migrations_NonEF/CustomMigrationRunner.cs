@@ -32,7 +32,14 @@ namespace atlas_the_public_think_tank.Migrations_NonEF
             // This needs to be called for the testing environment.
             // It is called by the TestEnvironment constructor, but not soon enough. 
             // The migration needs to be applied at runtime. Not after the app has been built.
-            context.Database.Migrate();
+            
+
+            // Replace the selected line with the following
+            var env = scope.ServiceProvider.GetRequiredService<IHostEnvironment>();
+            if (env.IsEnvironment("Testing"))
+            {
+                context.Database.Migrate();
+            }
 
             // Apply SQL commands to the database
             foreach (var command in migrationBuilder.Operations.OfType<SqlOperation>())
