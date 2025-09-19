@@ -12,36 +12,16 @@
     {
         foreach (var result in Model)
         {
-            @* <a href="/@result.Type/@result.Id" class="" style="text-decoration: none"> *@
-                
-                    @if (result.Type == "Issue")
-                    {
-                        Issue_ReadVM? issue = await Read.Issue(result.Id, new ContentFilter());
-                        @await Html.PartialAsync("~/Views/Issue/_issue-card.cshtml", issue)
+            @if (result.Type == "Issue")
+            {
+                Issue_ReadVM? issue = await Read.Issue(result.Id, new ContentFilter());
+                @await Html.PartialAsync("~/Views/Issue/_issue-card.cshtml", issue)
+            } else
+            {
 
-                    @* <div class="search-result-item issue p-2"
-                         style="background: var(--issue-bg)">
-                            <h5 class="search-result-title ">
-                                @await Html.PartialAsync("~/Views/Shared/Icons/_SubIssues.cshtml")
-                                @(issue!.Title)
-                            </h5>
-                        </div> *@
-                    } else
-                    {
-
-                        Solution_ReadVM? solution = await Read.Solution(result.Id, new ContentFilter());
-                    @await Html.PartialAsync("~/Views/Solution/_solution-card.cshtml", solution)
-                    @* <div class="search-result-item solution  p-2"
-                         style="background: var(--solution-bg)">
-                            <h5 class="search-result-title">
-                            @await Html.PartialAsync("~/Views/Shared/Icons/_Solutions.cshtml")
-                                @(solution!.Title)</h5>
-                        </div> *@
-                    }
-
-                 
-            @* </a> *@
-            <hr class="search-result-divider" />
+                Solution_ReadVM? solution = await Read.Solution(result.Id, new ContentFilter());
+                @await Html.PartialAsync("~/Views/Solution/_solution-card.cshtml", solution)
+            }
         }
     }
     else
