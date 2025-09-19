@@ -26,7 +26,7 @@ namespace atlas_the_public_think_tank.Data.RawSQL
         //}
 
 
-        public static async Task<List<SearchResult>> SearchAsync(string searchString, ApplicationDbContext context, double rankCutOffPercent = 0.5)
+        public static async Task<List<SearchResult>> SearchAsync(string searchString, ApplicationDbContext context, double rankCutOffPercent = 0.5, string contentType = "both")
         {
 
             //double rankCutOffPercent = 0.5;
@@ -94,7 +94,7 @@ namespace atlas_the_public_think_tank.Data.RawSQL
                 s.Content, 
                 ct.RANK 
             FROM [solutions].[Solutions] s
-            JOIN CONTAINSTABLE([solutions].[Solutions], (Title, Content), @p1) ct
+            JOIN CONTAINSTABLE([solutions].[Solutions], (Title, Content), @p0) ct
                 ON s.SolutionID = ct.[KEY]";
 
             var solutionsContainsQuery = context.Solutions
@@ -118,7 +118,7 @@ namespace atlas_the_public_think_tank.Data.RawSQL
             s.Content, 
             ft.RANK 
         FROM [solutions].[Solutions] s
-        JOIN FREETEXTTABLE([solutions].[Solutions], (Title, Content), @p1) ft
+        JOIN FREETEXTTABLE([solutions].[Solutions], (Title, Content), @p0) ft
             ON s.SolutionID = ft.[KEY]";
 
             var solutionsFreeTextQuery = context.Solutions
@@ -133,8 +133,24 @@ namespace atlas_the_public_think_tank.Data.RawSQL
                     SearchMethod = "FreeText"
                 });
 
-            // Combine, order and take top results
-            var combinedQuery = issuesContainsQuery.Union(solutionsContainsQuery).Union(issuesFreeTextQuery).Union(solutionsFreeTextQuery);
+
+            IQueryable<SearchResult>? combinedQuery = null;
+
+            if (contentType == "both")
+            {
+                // Combine, order and take top results
+                combinedQuery = issuesContainsQuery.Union(solutionsContainsQuery).Union(issuesFreeTextQuery).Union(solutionsFreeTextQuery);
+            }
+            else if (contentType == "issue")
+            {
+                combinedQuery = issuesContainsQuery.Union(issuesFreeTextQuery);
+            }
+            else if (contentType == "solution")
+            {
+                combinedQuery = solutionsContainsQuery.Union(solutionsFreeTextQuery);
+            } else {
+                throw new Exception($"Unknown contentType {contentType}");
+            }
 
             if (!combinedQuery.Any())
                 return new List<SearchResult>();

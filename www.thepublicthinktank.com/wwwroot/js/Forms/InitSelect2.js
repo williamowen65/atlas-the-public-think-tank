@@ -1,4 +1,7 @@
-﻿document.addEventListener("DOMContentLoaded", () => {
+﻿
+
+
+document.addEventListener("DOMContentLoaded", () => {
 
     const select2elements = Array.from(document.querySelectorAll(".my-select2"))
     select2elements.forEach(selectEl => {
@@ -27,7 +30,35 @@
         });
     }
 
+
     function initSelect2(node) {
+
+
+
+        if (!(node instanceof Element)) return
+
+        const configSelect2 = {
+            width: '100%',
+            allowClear: true
+        }
+        const hasAjaxCallback = node.hasAttribute("ajax-callback")
+        if (hasAjaxCallback) {
+            const callbackName = node.getAttribute("ajax-callback");
+
+
+            // Check if the callback function exists in the global scope
+            if (typeof window[callbackName] !== 'function') {
+                throw new Error(`Ajax callback function '${callbackName}' not found`);
+            }
+            
+            // Call the callback function to get the AJAX configuration
+            const ajaxConfig = window[callbackName](node);
+            
+            // Apply the AJAX configuration to select2
+            configSelect2.ajax = ajaxConfig;
+        }
+
+
         // check if node has attribute multiple
         const isMultiple = node.hasAttribute("multiple");
             //debugger
@@ -39,18 +70,32 @@
 
             if (placeholderOption) {
                 // Remove the placeholder option from the select
+                // Multi select place holder needs to be defined in options, not html.. 
                 node.removeChild(placeholderOption);
 
+                configSelect2.placeholder = placeholderOption.text
+
                 // If select2 is initialized with a placeholder, it will show it in the UI
-                $(node).select2({
-                    width: '100%',
-                    placeholder: placeholderOption.text,
-                    //allowClear: true
-                });
+                $(node).select2(configSelect2);
                 return;
             }
         }
 
-        $(node).select2({ width: '100%' });
+        $(node).select2(configSelect2);
+
+        const hasSelect2ListenerCallback = node.hasAttribute("select2-listener-callback")
+        if (hasSelect2ListenerCallback) {
+            const callbackName = node.getAttribute("select2-listener-callback");
+
+            // Check if the callback function exists in the global scope
+            if (typeof window[callbackName] !== 'function') {
+                throw new Error(`select2 listener callback function '${callbackName}' not found`);
+            }
+
+            window[callbackName](node);
+        }
+
+        console.log({ configSelect2 })
     }
+
 })

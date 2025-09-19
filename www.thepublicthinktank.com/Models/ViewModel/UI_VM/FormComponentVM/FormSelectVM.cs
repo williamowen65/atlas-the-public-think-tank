@@ -1,4 +1,6 @@
-﻿namespace atlas_the_public_think_tank.Models.ViewModel.UI_VM.FormComponentVM
+﻿using System.Text.Json;
+
+namespace atlas_the_public_think_tank.Models.ViewModel.UI_VM.FormComponentVM
 {
     public class FormSelectVM
     {
@@ -18,5 +20,12 @@
         public string[]? SelectedValues { get; set; }
 
         public bool DisabledField { get; set; } = false;
+
+        public string? AjaxConfigurationCallback { get; set; }
+
+        public string? Select2ListenerCallback { get; set; }
     }
+
+
 }
+

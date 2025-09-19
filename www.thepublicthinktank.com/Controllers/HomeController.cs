@@ -109,18 +109,15 @@ public class HomeController : Controller
 
     [HttpPost]
     [Route("/search")]
-    public async Task<IActionResult> Search([FromBody] SearchRequest searchRequest, [FromQuery] bool showRanks, [FromQuery] double rankCutOffPercent)
+    public async Task<IActionResult> Search([FromBody] SearchRequest searchRequest, [FromQuery] bool showRanks, [FromQuery] double rankCutOffPercent, [FromQuery] string contentType = "both")
     {
 
-   
-
-        List<SearchResult> searchResult = await SearchContentItems.SearchAsync(searchRequest.SearchString, _context, rankCutOffPercent);
+        List<SearchResult> searchResult = await SearchContentItems.SearchAsync(searchRequest.SearchString, _context, rankCutOffPercent, contentType);
 
         if (showRanks)
         {
             return Json(searchResult);
         }
-
 
         string html = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Shared/_search-result.cshtml", searchResult);
 

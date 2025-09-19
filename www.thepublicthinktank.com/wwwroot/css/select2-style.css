@@ -13,4 +13,30 @@
 .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
     color: initial;
 }
- 
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: #e0e0e0;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__clear,
+.select2-container .select2-selection--single .select2-selection__clear {
+    display: none;
+}
+
+.select2-container .select2-selection--single .select2-selection__clear-custom {
+    background-color: transparent;
+    border: none;
+    font-size: 1em;
+}
+.select2-container--default .select2-selection--single .select2-selection__clear-custom {
+    cursor: pointer;
+    float: right;
+    font-weight: bold;
+    height: 26px;
+    margin-right: 20px;
+    padding-right: 0px;
+}
+
+.select2-container--default.select2-container--disabled .select2-selection--single {
+    background-color: transparent;
+}

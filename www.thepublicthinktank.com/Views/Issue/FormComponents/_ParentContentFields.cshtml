@@ -2,10 +2,8 @@
 @using atlas_the_public_think_tank.Models.ViewModel.UI_VM.FormComponentVM
 @model Issue_CreateOrEdit_AjaxVM
 
-
-
 <fieldset style="all:revert" class="parent-fieldset">
-    @* <legend style="all:revert">Parent Content</legend> *@
+    <legend style="all:revert">Create issue as sub-issue <small><i>(Optional)</i></small></legend>
 
     @if (Model.Issue.ParentSolution == null)
     {
@@ -18,26 +16,31 @@
 
         }
 
+        <div class="parentIssueSelectContainer">
+
 
         @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
-        new FormSelectVM()
-        {
-            Model = Model.Issue.ParentIssue,
-            FieldLabel = "Parent Issue",
-            FieldPlaceholder = "-- Select a Parent Issue --",
-            PropertyName = "ParentIssueID",
-            TextField = "Title",
-            ValueField = "IssueID",
-            DisabledField = selectedParentIssueValue != null ? true : false,
-            ListItems = issueIdList,
-            SelectedValue = selectedParentIssueValue
-        })
-        }
+                    new FormSelectVM()
+                {
+                    Model = Model.Issue.ParentIssue,
+                    FieldLabel = "Parent Issue",
+                    FieldPlaceholder = "-- Select a Parent Issue --",
+                    PropertyName = "ParentIssueID",
+                    TextField = "Title",
+                    ValueField = "IssueID",
+                    DisabledField = selectedParentIssueValue != null ? true : false,
+                    ListItems = issueIdList,
+                    SelectedValue = selectedParentIssueValue,
+                    AjaxConfigurationCallback = "getParentIssueSelect2AjaxConfig",
+                    Select2ListenerCallback = "setParentIssueSelect2Listener"
+                })
+
+        </div>
+
+    }
 
     @if (Model.Issue.ParentIssue == null)
     {
-
-
         List<object> solutionIdList = new List<object>();
         string? selectedParentSolutionValue = null;
         if (Model.Issue.ParentSolution != null)
@@ -45,6 +48,7 @@
             solutionIdList.Add(Model.Issue.ParentSolution);
             selectedParentSolutionValue = Model.Issue.ParentSolution.SolutionID.ToString();
         }
+        <div class="parentSolutionSelectContainer">
 
         @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
         new FormSelectVM()
@@ -58,7 +62,9 @@
             ListItems = solutionIdList,
             SelectedValue = selectedParentSolutionValue,
             DisabledField = selectedParentSolutionValue != null ? true : false,
+            AjaxConfigurationCallback = "getParentSolutionSelect2AjaxConfig",
+            Select2ListenerCallback = "setParentSolutionSelect2Listener"
         })
-
-        }
+        </div>
+    }
 </fieldset>

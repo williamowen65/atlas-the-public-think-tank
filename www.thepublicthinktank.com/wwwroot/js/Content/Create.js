@@ -6,8 +6,13 @@ document.addEventListener("DOMContentLoaded", () => {
     Array.from(document.querySelectorAll("form.issue-editor, form.solution-editor"))
         .forEach((form) => {
             initListenersForContentCreateForm(form)
-    });
+        });
+
+   
 });
+
+
+
 
 function initListenersForContentCreateForm(form) {
     // Prevent default form submission and handle both buttons
@@ -140,4 +145,20 @@ function initListenersForContentCreateForm(form) {
             });
 
     }
+
+    // ParentIssue Select2 Search
+    //const parentIssueSelectEl = document.querySelector("select#ParentIssueID")
+    
+    
+
+
+    // Parent Solution Select2 Search
+
+    
+
+}
+
+
+function parentIssueSearchMethod() {
+    alert("Searching for parent issue")
 }
