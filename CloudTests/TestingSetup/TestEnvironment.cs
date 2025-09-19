@@ -233,9 +233,9 @@ namespace CloudTests.TestingSetup
             var dbName = $"atlas_the_public_think_tank-testing-{Guid.NewGuid()}";
 
             // Local default (LocalDB, Windows auth)
-            var localConnection =
-                $"Server=(localdb)\\mssqllocaldb;Database={dbName};Trusted_Connection=True;MultipleActiveResultSets=true";
-
+            //var localConnection = $"Server=DESKTOP-COPKNK8\\SQLEXPRESS;Database={dbName};User Id=FFalk;Password=P@55w0rd!Q9zL#;MultipleActiveResultSets=true;Encrypt=True;TrustServerCertificate=True;";
+            var localConnection = $"Server=DESKTOP-COPKNK8\\SQLEXPRESS;Database={dbName};Trusted_Connection=True;MultipleActiveResultSets=true;Encrypt=True;TrustServerCertificate=True;";
+          
             // GitHub Actions / container SQL (SA user)
             var actionsPassword = Environment.GetEnvironmentVariable("TEST_SQL_SA_PASSWORD") ?? "Aa123456!";
             var actionsConnection =
@@ -311,6 +311,8 @@ namespace CloudTests.TestingSetup
                         services.AddControllers()
                                 .AddApplicationPart(typeof(TestController).Assembly);
                     });
+
+
                 });
 
             var innerHandler = factory.Server.CreateHandler();

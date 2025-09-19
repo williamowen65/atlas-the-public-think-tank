@@ -82,6 +82,8 @@
 
 
     @await Component.InvokeAsync("Sidebar", sidebar_VM)
+
+    @await Html.PartialAsync("~/Views/Shared/_SearchBarResults.cshtml")
     
    
     <main role="main" class="pb-3 px-md-3">
@@ -111,6 +113,7 @@
     <script src="~/js/Content/Edit.js" asp-append-version="true"> </script>
 
     <script src="~/js/Forms/InitSelect2.js" asp-append-version="true"></script>
+    <script src="~/js/Site/InitSearchBar.js" asp-append-version="true"></script>
 
 
     <script>

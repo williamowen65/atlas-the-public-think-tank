@@ -155,6 +155,11 @@
     top: calc(var(--header-height) + var(--sub-content-tab-bar));
 }
 
+.search-results-container .card.solution-card.expanded .card-sticky-header,
+.search-results-container .card.issue-card.expanded .card-sticky-header {
+    top: 0;
+}
+
 
 :root {
     --solution-bg: #03ca03; /* Light mode green */

@@ -29,14 +29,17 @@
 
 
         <div class="d-flex align-items-center">
-            <form class="w-100 me-3" role="search">
-                <input type="search" class="form-control" placeholder="Search..." aria-label="Search">
-            </form>
+            @await Html.PartialAsync("~/Views/Shared/_SearchBar.cshtml")
 
             <partial name="_UserHeaderControls" />
 
         </div>
     </div>
+    
 
     <div id="header-alert-target"></div>
 </header>
+
+
+
+

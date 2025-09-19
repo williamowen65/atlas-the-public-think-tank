@@ -1,4 +1,7 @@
-﻿using atlas_the_public_think_tank.Data.CRUD;
+﻿using atlas_the_public_think_tank.Data;
+using atlas_the_public_think_tank.Data.CRUD;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+using atlas_the_public_think_tank.Data.RawSQL;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Models.Enums;
 using atlas_the_public_think_tank.Models.ViewModel;
@@ -28,10 +31,12 @@ namespace atlas_the_public_think_tank.Controllers;
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
+    private readonly ApplicationDbContext _context;
 
-    public HomeController(ILogger<HomeController> logger)
+    public HomeController(ILogger<HomeController> logger, ApplicationDbContext context)
     {
         _logger = logger;
+        _context = context;
     }
 
     #region Serve the home page
@@ -96,6 +101,52 @@ public class HomeController : Controller
     }
 
     #endregion
+
+    public class SearchRequest
+    {
+        public string SearchString { get; set; }
+    }
+
+    [HttpPost]
+    [Route("/search")]
+    public async Task<IActionResult> Search([FromBody] SearchRequest searchRequest, [FromQuery] bool showRanks, [FromQuery] double rankCutOffPercent)
+    {
+
+   
+
+        List<SearchResult> searchResult = await SearchContentItems.SearchAsync(searchRequest.SearchString, _context, rankCutOffPercent);
+
+        if (showRanks)
+        {
+            return Json(searchResult);
+        }
+
+
+        string html = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Shared/_search-result.cshtml", searchResult);
+
+
+        return Json(new {
+            html = html
+        });
+    }
+
+    [HttpPost]
+    [Route("/search-contains")]
+    public async Task<IActionResult> SearchContains([FromBody] SearchRequest searchRequest)
+    {
+
+   
+
+        List<SearchResult> searchResult = await SearchContentItems.SearchContainsTableAsync(searchRequest.SearchString, _context);
+
+        return Json(searchResult);
+
+
+    }
+
+
+
+
 
     #region Routes that could be in a MiscellenousController
 

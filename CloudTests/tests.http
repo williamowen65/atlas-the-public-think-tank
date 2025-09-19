@@ -35,3 +35,21 @@ Content-Type: application/json
   "IssueID": "d7e8f9a0-b1c2-43d4-95e6-f7a8b9c0d1e2",
   "voteValue" : 10
 }
+
+###
+
+POST https://localhost:5501/search?showRanks=true
+Content-Type: application/json
+
+{
+  "searchString": "Homelessness"
+}
+
+###
+
+POST https://localhost:5501/search-contains
+Content-Type: application/json
+
+{
+  "searchString": "Homele remains a pervasive and complex "
+}

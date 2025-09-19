@@ -16,5 +16,7 @@ namespace atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common
         public virtual Scope? Scope { get; set; }
     
         public virtual ICollection<Comment.Comment>? Comments { get; set; }
+
+        public int? RANK { get; set; }
     }
 }

@@ -12,8 +12,8 @@ using atlas_the_public_think_tank.Data;
 namespace atlas_the_public_think_tank.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250912171931_init")]
-    partial class init
+    [Migration("20250917203711_init2")]
+    partial class init2
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -362,6 +362,9 @@ namespace atlas_the_public_think_tank.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("PeriodStart");
 
+                    b.Property<int?>("RANK")
+                        .HasColumnType("int");
+
                     b.Property<Guid?>("ScopeID")
                         .HasColumnType("uniqueidentifier");
 
@@ -493,6 +496,9 @@ namespace atlas_the_public_think_tank.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime2")
                         .HasColumnName("PeriodStart");
+
+                    b.Property<int?>("RANK")
+                        .HasColumnType("int");
 
                     b.Property<Guid?>("ScopeID")
                         .HasColumnType("uniqueidentifier");
