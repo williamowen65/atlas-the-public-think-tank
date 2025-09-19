@@ -16,7 +16,7 @@
 <header class="py-3 main-header border-bottom sticky-top bg-body">
     <div id="topbar-layout" class="container-fluid d-grid gap-3 align-items-center" style="">
 
-        <a asp-area="" asp-controller="Home" asp-action="Index" class="ff-consolas d-flex align-items-center col-lg-4 mb-2 mb-lg-0 link-body-emphasis text-decoration-none fw-bold w-100" style="transform: translateY(-10px)">
+        <a asp-area="" asp-controller="Home" asp-action="Index" id="header-logo" class="ff-consolas d-flex align-items-center col-lg-4 mb-2 mb-lg-0 link-body-emphasis text-decoration-none fw-bold w-100" style="transform: translateY(-10px)">
             <div id="large-logo" class="text-center mx-auto">
                 <span class="site-name position-relative">
                     <span class="fs-2">Atlas</span>
@@ -28,7 +28,7 @@
         </a>
 
 
-        <div class="d-flex align-items-center">
+        <div class="d-flex align-items-center justify-content-end search-bar-grid-element">
             @await Html.PartialAsync("~/Views/Shared/_SearchBar.cshtml")
 
             <partial name="_UserHeaderControls" />
@@ -37,9 +37,9 @@
     </div>
     
 
-    <div id="header-alert-target"></div>
+    
 </header>
-
+<div id="header-alert-target" class="position-absolute" style="z-index:1000000000; left: 50%; transform: translateX(-50%);"></div>
 
 
 
