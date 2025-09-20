@@ -4,7 +4,9 @@ namespace atlas_the_public_think_tank.Controllers
 {
     public class UserProfileController : Controller
     {
-        public IActionResult Index()
+
+        [Route("/user-profile")]
+        public IActionResult UserProfile()
         {
             return View();
         }
