@@ -174,7 +174,7 @@ public class Program
         // Map default controller routes (e.g., HomeController -> /Home/Index)
         app.MapControllerRoute(
             name: "default",
-            pattern: "{controller=Home}/{action=Index}/{id?}")
+            pattern: "{controller=Home}/{action=HomePage}/{id?}")
             //pattern: "{controller=RnD}/{action=RnDCreateIssue}/{id?}")
             .WithStaticAssets();
 
