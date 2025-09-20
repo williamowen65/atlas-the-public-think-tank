@@ -522,7 +522,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
         }
 
         #region User Issue Info
-        public static async Task<List<Issue_ReadVM?>> PaginatedUsersIssues(Guid userId, ContentFilter filter, int pageNumber = 1)
+        public static async Task<Issues_Paginated_ReadVM> PaginatedUsersIssues(Guid userId, ContentFilter filter, int pageNumber = 1)
         {
             if (_serviceProvider == null)
                 throw new InvalidOperationException("Read class has not been initialized with a service provider.");
@@ -536,13 +536,20 @@ namespace atlas_the_public_think_tank.Data.CRUD
             List<Guid> usersIssueIds = (await filterIdSetRepository.GetPagedIssueIdsOfIssuesCreatedByUser(userId, filter, pageNumber))!;
 
             // Use Read.Issue to get the issue
-            var issues = new List<Issue_ReadVM?>();
+            var paginatedIssues = new List<Issue_ReadVM?>();
             foreach (var issueId in usersIssueIds)
             {
                 var issue = await Read.Issue(issueId, filter);
-                issues.Add(issue);
+                paginatedIssues.Add(issue);
             }
-            return issues;
+
+            Issues_Paginated_ReadVM issues_Paginated_ReadVM = new Issues_Paginated_ReadVM();
+            issues_Paginated_ReadVM.Issues = paginatedIssues!;
+            issues_Paginated_ReadVM.CurrentPage = pageNumber;
+            issues_Paginated_ReadVM.PageSize = paginatedIssues.Count();
+            issues_Paginated_ReadVM.ContentCount = (await Read.UsersIssueCounts(userId, filter))!;
+
+            return issues_Paginated_ReadVM;
         }
 
         public static async Task<ContentCount_VM?> UsersIssueCounts(Guid userId, ContentFilter filter)
@@ -560,7 +567,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
         }
         #endregion
         #region User Solution Info
-        public static async Task<List<Solution_ReadVM?>> PaginatedUsersSolutions(Guid userId, ContentFilter filter, int pageNumber = 1)
+        public static async Task<Solutions_Paginated_ReadVM> PaginatedUsersSolutions(Guid userId, ContentFilter filter, int pageNumber = 1)
         {
             if (_serviceProvider == null)
                 throw new InvalidOperationException("Read class has not been initialized with a service provider.");
@@ -574,13 +581,20 @@ namespace atlas_the_public_think_tank.Data.CRUD
             List<Guid> usersSolutionIds = (await filterIdSetRepository.GetPagedSolutionIdsOfSolutionsCreatedByUser(userId, filter, pageNumber))!;
 
             // Use Read.Issue to get the issue
-            var solutions = new List<Solution_ReadVM?>();
+            var paginatedSolutions = new List<Solution_ReadVM?>();
             foreach (var solutionId in usersSolutionIds)
             {
                 var solution = await Read.Solution(solutionId, filter);
-                solutions.Add(solution);
+                paginatedSolutions.Add(solution);
             }
-            return solutions;
+
+            Solutions_Paginated_ReadVM solutions_Paginated_ReadVM = new Solutions_Paginated_ReadVM();
+            solutions_Paginated_ReadVM.Solutions = paginatedSolutions!;
+            solutions_Paginated_ReadVM.CurrentPage = pageNumber;
+            solutions_Paginated_ReadVM.PageSize = paginatedSolutions.Count();
+            solutions_Paginated_ReadVM.ContentCount = (await Read.UsersSolutionCounts(userId, filter))!;
+
+            return solutions_Paginated_ReadVM;
         }
 
         public static async Task<ContentCount_VM?> UsersSolutionCounts(Guid userId, ContentFilter filter)

@@ -78,6 +78,12 @@ document.addEventListener("click", e => {
 })
 
 
+/**
+ * In Issue and Solution cards, there are icons for comments, sub-issues, and solutions.
+ * These icons are links to the content page with the tab selected automatically
+ * @param {Event} e
+ * @returns void
+ */
 function setupQuickTabLinks(e) {
 
 
@@ -113,6 +119,10 @@ function setupQuickTabLinks(e) {
     }
 }
 
+/**
+ * Clicking the Version history icon should popup a modal of version changes
+ * @param {Event} e
+ */
 function fetchVersionHistory(e) {
     const contentCard = e.target.closest(".card")
     const contentType = contentCard.getAttribute('data-content-type');
@@ -154,10 +164,13 @@ function fetchVersionHistory(e) {
         })
 }
 
+
 /**
- * Rewrites IDs / radio groups in the version history modal so they do NOT
- * conflict with live feed dials, disables them, and adds a banner.
- */
+  * Prepares the version history modal content to NOT conflict with the main content.
+  * Prevents duplicate IDs on the page related to dom events
+  * @param {DOMElement} root
+  * @returns void
+  */
 function isolateAndDisableVersionHistoryDials(root) {
     // Inject style once
     if (!document.getElementById('vh-dial-style')) {
@@ -415,15 +428,19 @@ function setupScrollEvents(container, dialId, state) {
  */
 function setupRadioChangeEvents(radios, saveVoteDebounced, container, state) {
     radios.forEach(radio => {
-        radio.addEventListener('change', function () {
+        // Replace radio with a clone to remove all previous listeners
+        const clone = radio.cloneNode(true);
+        radio.parentNode.replaceChild(clone, radio);
+
+        clone.addEventListener('change', function () {
             if (this.checked) {
                 const value = parseInt(this.value);
-                
+
                 // Only save valid vote values (0-10)
                 if (value >= 0 && value <= 10) {
                     saveVoteDebounced(value);
                 }
-                
+
                 const label = document.querySelector(`label[for="${this.id}"]`);
                 if (label) {
                     const labelTop = label.offsetTop;
@@ -712,8 +729,6 @@ function createDialResetMethod(container, issueId, observer, dialId, options, st
         }, 500); // Delay to ensure scrolling is complete
     };
 }
-
-
 
 
 
