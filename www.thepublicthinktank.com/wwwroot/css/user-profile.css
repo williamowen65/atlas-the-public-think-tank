@@ -1,0 +1,18 @@
+﻿ul.dropdown-menu.show {
+    width: 380px;
+    transform: translate(0,0) !important;
+    top: var(--header-height) !important;
+}
+
+.dropdown-item {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+
+}
+
+.user-actions-dropdown i {
+    margin-right: 23px;
+}
+
