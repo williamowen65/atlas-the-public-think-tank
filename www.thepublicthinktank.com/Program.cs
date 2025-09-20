@@ -1,13 +1,13 @@
-using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Data.CRUD;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+using atlas_the_public_think_tank.Data.DbContext;
 using atlas_the_public_think_tank.Data.RawSQL;
 using atlas_the_public_think_tank.Data.RepositoryPattern;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Middleware;
 using atlas_the_public_think_tank.Migrations_NonEF;
 using atlas_the_public_think_tank.Models;
- 
+
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -105,18 +105,13 @@ public class Program
             options.EnableSendBeacon = true;
         });
 
+        builder.Services.AddScoped<UserHistoryProcessor>();
+
         var app = builder.Build();
 
 
-        var applySeedData = builder.Configuration.GetValue<bool>("ApplySeedData");
-        Console.WriteLine($"Env flag ApplySeedData: {applySeedData}");
-        if (applySeedData)
-        {
-            SeedDataHelper.SeedDatabase(app.Services);
-        }
 
         
-
         // Initialize the static Read class with the service provider
         Create.Initialize(app.Services);
         Read.Initialize(app.Services);
@@ -130,6 +125,15 @@ public class Program
         CustomMigrationRunner.RunUp(app.Services);
 
         FilterQueryService.Initialize(builder.Configuration);
+
+
+        // Apply seed data needs to be after the CRUD Initializers
+        var applySeedData = builder.Configuration.GetValue<bool>("ApplySeedData");
+        Console.WriteLine($"Env flag ApplySeedData: {applySeedData}");
+        if (applySeedData)
+        {
+            SeedDataHelper.SeedDatabase(app.Services);
+        }
 
         // =====================================
         // Middleware and Routing Configuration

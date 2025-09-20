@@ -336,5 +336,31 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         }
 
         #endregion
+
+
+        public async Task<List<Guid>?> GetPagedIssueIdsOfIssuesCreatedByUser(Guid userId, ContentFilter filter, int pageNumber = 1, int pageSize = 3)
+        {
+            _cacheLogger.LogWarning($"[!] Cache miss for filterIdSet.GetPagedIssueIdsOfIssuesCreatedByUser");
+            return await _inner.GetPagedIssueIdsOfIssuesCreatedByUser(userId, filter);
+        }
+
+        public async Task<ContentCount_VM?> GetContentCountIssuesOfIssuesCreatedByUser(Guid userId, ContentFilter filter)
+        {
+            _cacheLogger.LogWarning($"[!] Cache miss for filterIdSet.GetContentCountIssuesOfIssuesCreatedByUser");
+            return await _inner.GetContentCountIssuesOfIssuesCreatedByUser(userId, filter);
+        }
+
+        public async Task<List<Guid>?> GetPagedSolutionIdsOfSolutionsCreatedByUser(Guid userId, ContentFilter filter, int pageNumber = 1, int pageSize = 3)
+        {
+            _cacheLogger.LogWarning($"[!] Cache miss for filterIdSet.GetPagedSolutionIdsOfSolutionsCreatedByUser");
+            return await _inner.GetPagedSolutionIdsOfSolutionsCreatedByUser(userId, filter);
+        }
+
+        public async Task<ContentCount_VM?> GetContentCountSolutionsOfSolutionsCreatedByUser(Guid userId, ContentFilter filter)
+        {
+            _cacheLogger.LogWarning($"[!] Cache miss for filterIdSet.GetContentCountSolutionsOfSolutionsCreatedByUser");
+            return await _inner.GetContentCountSolutionsOfSolutionsCreatedByUser(userId, filter);
+        }
+
     }
 }

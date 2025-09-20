@@ -1,4 +1,4 @@
-﻿using atlas_the_public_think_tank.Data;
+﻿using atlas_the_public_think_tank.Data.DbContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.ComponentModel.DataAnnotations;

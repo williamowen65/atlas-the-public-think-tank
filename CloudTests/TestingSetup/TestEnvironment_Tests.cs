@@ -1,5 +1,5 @@
-﻿using atlas_the_public_think_tank.Data;
-using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+using atlas_the_public_think_tank.Data.DbContext;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 
 using CloudTests.TestingSetup.TestingData;

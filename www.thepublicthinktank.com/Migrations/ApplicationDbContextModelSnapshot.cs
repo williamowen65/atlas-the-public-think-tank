@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using atlas_the_public_think_tank.Data;
+using atlas_the_public_think_tank.Data.DbContext;
 
 #nullable disable
 

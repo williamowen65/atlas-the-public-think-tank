@@ -1,4 +1,4 @@
-﻿using atlas_the_public_think_tank.Data;
+﻿using atlas_the_public_think_tank.Data.DbContext;
 using atlas_the_public_think_tank.Data.SeedData;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues;
 using atlas_the_public_think_tank.Data.SeedData.SeedSolutions;
@@ -18,13 +18,13 @@ public static class SeedDataHelper
 
         // Example: Seed users
         SeedUsers.Seed(context);
+        context.SaveChanges(); // Save Users
         SeedScopes.Seed(context);
         SeedIssues.Seed(context);
         SeedSolutions.Seed(context);
+        context.SaveChanges(); // Save issues, solutions, and their scopes
         SeedIssueVotes.Seed(context);
         SeedSolutionVotes.Seed(context);
-
-        // Save changes if needed
-        context.SaveChanges();
+        context.SaveChanges(); // Save votes
     }
 }

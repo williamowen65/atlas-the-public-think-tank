@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using atlas_the_public_think_tank.Data.DbContext;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using static atlas_the_public_think_tank.Controllers.HomeController;
 
