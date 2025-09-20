@@ -21,7 +21,7 @@ namespace atlas_the_public_think_tank.Models.ViewModel.UI_VM.FormComponentVM
 
         public bool DisabledField { get; set; } = false;
 
-        public string? AjaxConfigurationCallback { get; set; }
+        public string? Select2ConfigurationCallback { get; set; }
 
         public string? Select2ListenerCallback { get; set; }
     }
