@@ -1,4 +1,6 @@
-﻿@* User Profile Layout *@
+﻿@using atlas_the_public_think_tank.Models.ViewModel.PageVM
+@model UserProfile_PageVM
+@* User Profile Layout *@
 @{
     ViewData["Title"] = "User Profile";
 }
@@ -20,8 +22,8 @@
                              </button>  
                         </div> 
                         <div class="profile-identity">
-                            <h1>Jane Doe</h1>
-                            <div class="handle">janedoe</div>
+                            <h1>@Model.appUserVM.UserName</h1>
+                            <div class="handle">@Model.appUserVM.email</div>  
                             <small class="text-muted">Senior Research Analyst | Joined Jan 2025</small>
                         </div>
                     </div>
@@ -29,8 +31,9 @@
             </div>
              
             <div class="profile-stats-bar">
-                <div class="stat-items" aria-label="User statistics">
-                    <div class="stat"><strong>128</strong> Posts</div>
+                <div class="stat-items text-center" aria-label="User statistics">
+                    <div class="stat"><strong>@Model.userStats.Issues</strong>Issues</div>
+                    <div class="stat"><strong>@Model.userStats.Solutions</strong>Solutions</div>
                     <div class="stat"><strong>4.3K</strong> Followers</div>
                     <div class="stat"><strong>512</strong> Following</div>
                     <div class="stat"><strong>27</strong> Projects</div>  
@@ -43,19 +46,19 @@
 
     <section class="profile-tabs" data-profile-tabs>
         <ul class="tab-list" role="tablist">
-            <li><button role="tab" aria-selected="true" aria-controls="panel-activity" id="tab-activity">Activity</button></li>
+            <li><button role="tab" aria-selected="false" aria-controls="panel-activity" id="tab-activity">Activity</button></li>
             <li><button role="tab" aria-selected="false" aria-controls="panel-content" id="tab-content">Content</button></li>
             <li><button role="tab" aria-selected="false" aria-controls="panel-projects" id="tab-projects">Projects</button></li>
-            <li><button role="tab" aria-selected="false" aria-controls="panel-history" id="tab-history">History</button></li>
+            <li><button role="tab" aria-selected="true" aria-controls="panel-history" id="tab-history">History</button></li>
             <li><button role="tab" aria-selected="false" aria-controls="panel-stats" id="tab-stats">Stats</button></li>
         </ul>
         <div class="tab-panels">
-            <div id="panel-activity" class="tab-panel active" role="tabpanel" aria-labelledby="tab-activity">
-                <h2 class="h5">Recent Activity</h2>
-                <p class="text-muted">User interactions, comments, endorsements.</p>
+            <div id="panel-activity" class="tab-panel" role="tabpanel" aria-labelledby="tab-activity">
+                <h2 class="h5">User Activity</h2>
+                <p class="text-muted">User interactions, comments, endorsements.</p> 
                 <div class="feed" data-feed="activity">
-                    <p>(Activity feed placeholder)</p>
-                </div>
+                    ...
+                </div>   
             </div>
             <div id="panel-content" class="tab-panel" role="tabpanel" aria-labelledby="tab-content">
                 <h2 class="h5">Published Content</h2>
@@ -71,10 +74,13 @@
                     <p>(Projects grid placeholder)</p>
                 </div>
             </div>
-            <div id="panel-history" class="tab-panel" role="tabpanel" aria-labelledby="tab-history">
+            <div id="panel-history" class="tab-panel active" role="tabpanel" aria-labelledby="tab-history">
                 <h2 class="h5">Revision / Participation History</h2>
                 <div class="feed" data-feed="history">
-                    <p>(History timeline placeholder)</p>
+                    @foreach (var entry in Model.userHistory)
+                    {
+                        @await Html.PartialAsync("~/Views/UserProfile/_UserHistoryEntry.cshtml", entry)
+                    }
                 </div>
             </div>
             <div id="panel-stats" class="tab-panel" role="tabpanel" aria-labelledby="tab-stats">

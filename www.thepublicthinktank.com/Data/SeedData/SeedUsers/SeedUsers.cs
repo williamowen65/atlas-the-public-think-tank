@@ -1,4 +1,5 @@
 ﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+using atlas_the_public_think_tank.Data.DbContext;
 using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
 using Microsoft.EntityFrameworkCore;
 

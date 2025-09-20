@@ -1,7 +1,7 @@
 ﻿using AngleSharp;
 using AngleSharp.Dom;
-using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+using atlas_the_public_think_tank.Data.DbContext;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;

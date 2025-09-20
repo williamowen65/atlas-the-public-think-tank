@@ -1,6 +1,7 @@
 ﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
+using atlas_the_public_think_tank.Data.DatabaseEntities.History;
 using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
@@ -14,6 +15,7 @@ using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution.SolutionVote;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.User;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.Solution;
+using atlas_the_public_think_tank.Models.ViewModel.UI_VM;
 using Microsoft.EntityFrameworkCore;
 
 namespace atlas_the_public_think_tank.Data.CRUD
@@ -488,5 +490,116 @@ namespace atlas_the_public_think_tank.Data.CRUD
 
         #endregion
 
+
+        #region User info
+
+        public static async Task<AppUser_ReadVM?> AppUser(Guid userId)
+        {
+
+            if (_serviceProvider == null)
+                throw new InvalidOperationException("Read class has not been initialized with a service provider.");
+
+            // Create a scope to resolve scoped services
+            using var scope = _serviceProvider.CreateScope();
+            var services = scope.ServiceProvider;
+            var appUserRepository = services.GetRequiredService<IAppUserRepository>();
+
+            return await appUserRepository.GetAppUser(userId);
+        }
+
+        public static async Task<List<UserHistory>?> UserHistory(Guid userId)
+        {
+            if (_serviceProvider == null)
+                throw new InvalidOperationException("Read class has not been initialized with a service provider.");
+
+            // Create a scope to resolve scoped services
+            using var scope = _serviceProvider.CreateScope();
+            var services = scope.ServiceProvider;
+
+            var appUserRepository = services.GetRequiredService<IAppUserRepository>();
+
+            return await appUserRepository.GetUserHistory(userId);
+        }
+
+        #region User Issue Info
+        public static async Task<List<Issue_ReadVM?>> PaginatedUsersIssues(Guid userId, ContentFilter filter, int pageNumber = 1)
+        {
+            if (_serviceProvider == null)
+                throw new InvalidOperationException("Read class has not been initialized with a service provider.");
+
+            // Create a scope to resolve scoped services
+            using var scope = _serviceProvider.CreateScope();
+            var services = scope.ServiceProvider;
+
+            var filterIdSetRepository = services.GetRequiredService<IFilterIdSetRepository>();
+            // Get the paginated Id's of a users issues
+            List<Guid> usersIssueIds = (await filterIdSetRepository.GetPagedIssueIdsOfIssuesCreatedByUser(userId, filter, pageNumber))!;
+
+            // Use Read.Issue to get the issue
+            var issues = new List<Issue_ReadVM?>();
+            foreach (var issueId in usersIssueIds)
+            {
+                var issue = await Read.Issue(issueId, filter);
+                issues.Add(issue);
+            }
+            return issues;
+        }
+
+        public static async Task<ContentCount_VM?> UsersIssueCounts(Guid userId, ContentFilter filter)
+        {
+            if (_serviceProvider == null)
+                throw new InvalidOperationException("Read class has not been initialized with a service provider.");
+
+            // Create a scope to resolve scoped services
+            using var scope = _serviceProvider.CreateScope();
+            var services = scope.ServiceProvider;
+
+            var filterIdSetRepository = services.GetRequiredService<IFilterIdSetRepository>();
+
+            return await filterIdSetRepository.GetContentCountIssuesOfIssuesCreatedByUser(userId, filter);
+        }
+        #endregion
+        #region User Solution Info
+        public static async Task<List<Solution_ReadVM?>> PaginatedUsersSolutions(Guid userId, ContentFilter filter, int pageNumber = 1)
+        {
+            if (_serviceProvider == null)
+                throw new InvalidOperationException("Read class has not been initialized with a service provider.");
+
+            // Create a scope to resolve scoped services
+            using var scope = _serviceProvider.CreateScope();
+            var services = scope.ServiceProvider;
+
+            var filterIdSetRepository = services.GetRequiredService<IFilterIdSetRepository>();
+            // Get the paginated Id's of a users issues
+            List<Guid> usersSolutionIds = (await filterIdSetRepository.GetPagedSolutionIdsOfSolutionsCreatedByUser(userId, filter, pageNumber))!;
+
+            // Use Read.Issue to get the issue
+            var solutions = new List<Solution_ReadVM?>();
+            foreach (var solutionId in usersSolutionIds)
+            {
+                var solution = await Read.Solution(solutionId, filter);
+                solutions.Add(solution);
+            }
+            return solutions;
+        }
+
+        public static async Task<ContentCount_VM?> UsersSolutionCounts(Guid userId, ContentFilter filter)
+        {
+            if (_serviceProvider == null)
+                throw new InvalidOperationException("Read class has not been initialized with a service provider.");
+
+            // Create a scope to resolve scoped services
+            using var scope = _serviceProvider.CreateScope();
+            var services = scope.ServiceProvider;
+
+            var filterIdSetRepository = services.GetRequiredService<IFilterIdSetRepository>();
+
+            return await filterIdSetRepository.GetContentCountSolutionsOfSolutionsCreatedByUser(userId, filter);
+        }
+
+        #endregion
+
+
+        #endregion
     }
 }

@@ -45,7 +45,7 @@
                     @* Title and this float need to be next to each other for float styling to work. *@
                     <span class="card-title">@Model.Title</span>
                 </h5>
-                <small class="text-muted">Posted by @Model.Author?.UserName on @Model.CreatedAt.ToString("MMM dd, yyyy")</small>
+            <small class="text-muted">Posted by <a href="@Url.Action("UserProfile", "UserProfile", new { userId = Model.Author?.Id })">@Model.Author?.UserName</a> on @Model.CreatedAt.ToString("MMM dd, yyyy")</small>
 
 
 

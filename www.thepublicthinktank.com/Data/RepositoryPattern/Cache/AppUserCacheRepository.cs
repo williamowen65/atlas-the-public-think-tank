@@ -2,6 +2,7 @@
 using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Models.ViewModel;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.User;
+using atlas_the_public_think_tank.Data.DatabaseEntities.History;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 {
@@ -44,6 +45,13 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                     return await _inner.GetAppUser(UserId);
                 });
             }
+        }
+
+        public async Task<List<UserHistory>?> GetUserHistory(Guid UserId)
+        {
+
+            _cacheLogger.LogWarning($"[!] Cache miss for GetUserHistory {UserId}");
+            return await _inner.GetUserHistory(UserId);
         }
     }
 }

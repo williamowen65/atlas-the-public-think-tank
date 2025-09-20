@@ -1,8 +1,7 @@
 ﻿using AngleSharp.Dom;
-using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
-
+using atlas_the_public_think_tank.Data.DbContext;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;
 using CloudTests.TestingSetup;
 using CloudTests.TestingSetup.TestingData;
