@@ -31,7 +31,7 @@
                     DisabledField = selectedParentIssueValue != null ? true : false,
                     ListItems = issueIdList,
                     SelectedValue = selectedParentIssueValue,
-                    AjaxConfigurationCallback = "getParentIssueSelect2AjaxConfig",
+                    Select2ConfigurationCallback = "getParentIssueSelect2Config",
                     Select2ListenerCallback = "setParentIssueSelect2Listener"
                 })
 
@@ -62,7 +62,7 @@
             ListItems = solutionIdList,
             SelectedValue = selectedParentSolutionValue,
             DisabledField = selectedParentSolutionValue != null ? true : false,
-            AjaxConfigurationCallback = "getParentSolutionSelect2AjaxConfig",
+            Select2ConfigurationCallback = "getParentSolutionSelect2Config",
             Select2ListenerCallback = "setParentSolutionSelect2Listener"
         })
         </div>

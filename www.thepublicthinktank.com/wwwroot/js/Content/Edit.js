@@ -301,18 +301,44 @@ const parentContentAjaxConfigBase = (node) => ({
 })
 
 // Global method for select2 ajax
-window.getParentIssueSelect2AjaxConfig = function (node) {
+window.getParentIssueSelect2Config = function (node) {
     return {
-        ...parentContentAjaxConfigBase(node),
-        url: "/search?showRanks=true&contentType=issue"
+        language: {
+            noResults: function () {
+                setTimeout(() => {
+                    const select2container = $(node).data("select2").$dropdown[0]
+                    const messageNode = select2container.querySelector(".select2-results__message")
+                    messageNode.innerHTML = "<div>No matching issues found. <a href='/create-issue'>Create new?</a></div>"
+                }, 1)
+                return null;   // your custom
+            }
+        },
+        allowClear: true,
+        ajax: {
+            ...parentContentAjaxConfigBase(node),
+            url: "/search?showRanks=true&contentType=issue"
+        }
     }
 }
 
 // Global method for select2 ajax
-window.getParentSolutionSelect2AjaxConfig = function (node) {
+window.getParentSolutionSelect2Config = function (node) {
     return {
-        ...parentContentAjaxConfigBase(node),
-        url: "/search?showRanks=true&contentType=solution"
+        language: {
+            noResults: function () {
+                setTimeout(() => {
+                    const select2container = $(node).data("select2").$dropdown[0]
+                    const messageNode = select2container.querySelector(".select2-results__message")
+                    messageNode.innerHTML = "<div>No matching solution found. <a href='/create-solution'>Create new?</a></div>"
+                }, 1)
+                return null;   // your custom
+            }
+        },
+        allowClear: true,
+        ajax: {
+            ...parentContentAjaxConfigBase(node),
+            url: "/search?showRanks=true&contentType=solution"
+        }
     }
 }
 

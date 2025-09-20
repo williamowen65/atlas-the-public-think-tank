@@ -37,9 +37,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!(node instanceof Element)) return
 
-        const configSelect2 = {
+        let configSelect2 = {
             width: '100%',
-            allowClear: true
         }
         const hasAjaxCallback = node.hasAttribute("ajax-callback")
         if (hasAjaxCallback) {
@@ -55,7 +54,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const ajaxConfig = window[callbackName](node);
             
             // Apply the AJAX configuration to select2
-            configSelect2.ajax = ajaxConfig;
+            configSelect2 = Object.assign(configSelect2, ajaxConfig);
+            
         }
 
 
