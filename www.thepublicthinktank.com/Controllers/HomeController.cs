@@ -40,7 +40,7 @@ public class HomeController : Controller
     }
 
     #region Serve the home page
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> HomePage()
     {
         ContentFilter filter = new ContentFilter();
         if (Request.Cookies.TryGetValue("contentFilter", out string? cookieValue) && cookieValue != null)

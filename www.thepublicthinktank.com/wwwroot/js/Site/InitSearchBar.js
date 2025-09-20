@@ -42,7 +42,7 @@
         revertSmallScreenSearch();
     })
 
-    var sendSearchRequestThrottle = throttle(sendSearchRequest, 3000);
+    var sendSearchRequestThrottle = throttle(sendSearchRequest, 0);
     searchBarInputElement.addEventListener("keyup", (e) => {
         const searchString = e.target.value;
         if (searchString.length == 0) {
@@ -54,6 +54,7 @@
         sendSearchRequestThrottle(e);
     });
 
+
    
 
     searchBarInputElement.addEventListener("change", (e) => {
@@ -64,6 +65,15 @@
             revertSmallScreenSearch()
         }
     });
+
+    searchBarInputElement.addEventListener("blur", (e) => {
+        const searchString = e.target.value;
+        if (searchString.length === 0) {
+            searchResultsContainer.innerHTML = "";
+            backdrop.classList.add('d-none')
+            revertSmallScreenSearch()
+        }
+    })
 
 
 

@@ -94,7 +94,7 @@ header.main-header {
     height: 40px;
     --background-hover-color: rgb(52, 61, 66);
     overflow: hidden; /* prevent anchor tags for bleeding outside of container */
-    width: 121px;
+/*    width: 121px;*/
 }
 
 .general-btn i {

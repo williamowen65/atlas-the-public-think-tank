@@ -1,0 +1,116 @@
+﻿@* User Profile Layout *@
+@{
+    ViewData["Title"] = "User Profile";
+}
+ 
+
+<div class="container profile-page py-4">
+    <div class="profile-header mb-5">
+        <div class="profile-banner " role="img" aria-label="User banner image">
+            <div class="d-flex justify-content-center">
+                <div class="user-banner-info d-flex align-items-center w-100">
+                    <div class="profile-avatar-wrapper my-5 mx-auto" style="width: 295px;">
+                        <div class="d-flex align-items-center justify-content-between" style="min-width: 100%;">
+                            <button type="button" class="user-profile-action-btn">
+                                @await Html.PartialAsync("~/Views/Shared/Icons/_send-message-icon.cshtml")
+                            </button> 
+                            <img class="profile-avatar" src="https://github.com/mdo.png" alt="User avatar" />
+                            <button type="button" class="user-profile-action-btn">
+                                @await Html.PartialAsync("~/Views/Shared/Icons/_follow-user-icon.cshtml")
+                             </button>  
+                        </div> 
+                        <div class="profile-identity">
+                            <h1>Jane Doe</h1>
+                            <div class="handle">janedoe</div>
+                            <small class="text-muted">Senior Research Analyst | Joined Jan 2025</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+             
+            <div class="profile-stats-bar">
+                <div class="stat-items" aria-label="User statistics">
+                    <div class="stat"><strong>128</strong> Posts</div>
+                    <div class="stat"><strong>4.3K</strong> Followers</div>
+                    <div class="stat"><strong>512</strong> Following</div>
+                    <div class="stat"><strong>27</strong> Projects</div>  
+                </div>
+            </div>
+        </div>
+    </div>     
+     
+
+
+    <section class="profile-tabs" data-profile-tabs>
+        <ul class="tab-list" role="tablist">
+            <li><button role="tab" aria-selected="true" aria-controls="panel-activity" id="tab-activity">Activity</button></li>
+            <li><button role="tab" aria-selected="false" aria-controls="panel-content" id="tab-content">Content</button></li>
+            <li><button role="tab" aria-selected="false" aria-controls="panel-projects" id="tab-projects">Projects</button></li>
+            <li><button role="tab" aria-selected="false" aria-controls="panel-history" id="tab-history">History</button></li>
+            <li><button role="tab" aria-selected="false" aria-controls="panel-stats" id="tab-stats">Stats</button></li>
+        </ul>
+        <div class="tab-panels">
+            <div id="panel-activity" class="tab-panel active" role="tabpanel" aria-labelledby="tab-activity">
+                <h2 class="h5">Recent Activity</h2>
+                <p class="text-muted">User interactions, comments, endorsements.</p>
+                <div class="feed" data-feed="activity">
+                    <p>(Activity feed placeholder)</p>
+                </div>
+            </div>
+            <div id="panel-content" class="tab-panel" role="tabpanel" aria-labelledby="tab-content">
+                <h2 class="h5">Published Content</h2>
+                <p class="text-muted">Articles, papers, or posts authored by the user.</p>
+                <div class="feed" data-feed="content">
+                    <p>(Content list placeholder)</p>
+                </div>
+            </div>
+            <div id="panel-projects" class="tab-panel" role="tabpanel" aria-labelledby="tab-projects">
+                <h2 class="h5">Projects</h2>
+                <p class="text-muted">Collaborative or owned research projects.</p>
+                <div class="feed" data-feed="projects">
+                    <p>(Projects grid placeholder)</p>
+                </div>
+            </div>
+            <div id="panel-history" class="tab-panel" role="tabpanel" aria-labelledby="tab-history">
+                <h2 class="h5">Revision / Participation History</h2>
+                <div class="feed" data-feed="history">
+                    <p>(History timeline placeholder)</p>
+                </div>
+            </div>
+            <div id="panel-stats" class="tab-panel" role="tabpanel" aria-labelledby="tab-stats">
+                <h2 class="h5">Engagement & Impact</h2>
+                <div class="feed" data-feed="stats">
+                    <p>(Charts / metrics placeholder)</p>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+    (function() {
+        const tabsRoot = document.querySelector('[data-profile-tabs]');
+        if (!tabsRoot) return;
+        const tabs = Array.from(tabsRoot.querySelectorAll('[role="tab"]'));
+        const panels = Array.from(tabsRoot.querySelectorAll('[role="tabpanel"]'));
+
+        function activate(tab) {
+            tabs.forEach(t => { const sel = t === tab; t.setAttribute('aria-selected', sel); });
+            panels.forEach(p => p.classList.toggle('active', p.id === tab.getAttribute('aria-controls')));
+        }
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => activate(tab));
+            tab.addEventListener('keydown', e => {
+                const idx = tabs.indexOf(document.activeElement);
+                if (idx < 0) return;
+                if (['ArrowRight','ArrowLeft','Home','End'].includes(e.key)) { e.preventDefault(); }
+                let nextIdx = idx;
+                if (e.key === 'ArrowRight') nextIdx = (idx + 1) % tabs.length;
+                if (e.key === 'ArrowLeft') nextIdx = (idx - 1 + tabs.length) % tabs.length;
+                if (e.key === 'Home') nextIdx = 0;
+                if (e.key === 'End') nextIdx = tabs.length - 1;
+                if (nextIdx !== idx) { tabs[nextIdx].focus(); activate(tabs[nextIdx]); }
+            });
+        });
+    })();
+</script>
