@@ -258,3 +258,114 @@ function initFormSubmissionListeners(form) {
     }
 
 }
+
+
+/* CREATE OR EDIT METHODS */
+
+
+const parentContentAjaxConfigBase = (node) => ({
+    dataType: "json",
+    method: "POST",
+    contentType: 'application/json',
+    transport: function (params, success, failure) {
+        // 🔑 Cancel if there's no user input
+        const parsedData = JSON.parse(params.data)
+        const select2Instance = $(node).data('select2');
+        const dropdown = select2Instance.dropdown.$dropdown[0]
+        const hasOptionsAlready = dropdown.querySelector(".select2-results__option--selectable")
+
+        if (parsedData.searchString.trim() === '' && !hasOptionsAlready) {
+
+            // This prevent the "no results" from initially appearing
+            dropdown.querySelector(".loading-results").innerText = "Start typing to search"
+
+            return null;  // ← no network call
+        }
+
+        // otherwise perform the default Ajax call
+        return $.ajax(params).then(success).fail(failure);
+    },
+    data: function (params) {
+        // Making sure a default empty string is passed.
+        // Function to build the data payload for the POST request
+        return JSON.stringify({ searchString: params.term || "" });
+    },
+    processResults: function (data) {
+        return {
+            results: data.map(e => ({
+                id: e.id,
+                text: e.title
+            }))
+        };
+    }
+})
+
+// Global method for select2 ajax
+window.getParentIssueSelect2AjaxConfig = function (node) {
+    return {
+        ...parentContentAjaxConfigBase(node),
+        url: "/search?showRanks=true&contentType=issue"
+    }
+}
+
+// Global method for select2 ajax
+window.getParentSolutionSelect2AjaxConfig = function (node) {
+    return {
+        ...parentContentAjaxConfigBase(node),
+        url: "/search?showRanks=true&contentType=solution"
+    }
+}
+
+window.setParentIssueSelect2Listener = function (node) {
+    const select2Instance = $(node).data('select2');
+    // updating the classname of the clear button to not use the broken select 2 clear listener (delegated listener)
+    // Styles were copied to the select2 css to keep the layout
+    const clearButton = select2Instance.$container[0].querySelector(".select2-selection__clear")
+    clearButton.classList.remove('select2-selection__clear')
+    clearButton.classList.add('select2-selection__clear-custom')
+    clearButton.classList.add('d-none')
+
+
+    const solutionSelectContainer = document.querySelector(".parentSolutionSelectContainer")
+    select2Instance.$element.on("select2:select", (e) => {
+        if (solutionSelectContainer) {
+            solutionSelectContainer.classList.add("d-none")
+        }
+        clearButton.classList.remove("d-none")
+    })
+
+
+    clearButton.addEventListener("click", (e) => {
+        e.stopPropagation();
+        solutionSelectContainer.classList.remove("d-none")
+        $(node).val(null).trigger("change")
+        clearButton.classList.add("d-none")
+        $(node).select2('close');
+    })
+}
+
+window.setParentSolutionSelect2Listener = function (node) {
+    const select2Instance = $(node).data('select2');
+    // updating the classname of the clear button to not use the broken select 2 clear listener (delegated listener)
+    // Styles were copied to the select2 css to keep the layout
+    const clearButton = select2Instance.$container[0].querySelector(".select2-selection__clear")
+    clearButton.classList.remove('select2-selection__clear')
+    clearButton.classList.add('select2-selection__clear-custom')
+    clearButton.classList.add('d-none')
+
+
+    const issueSelectContainer = document.querySelector(".parentIssueSelectContainer")
+    select2Instance.$element.on("select2:select", (e) => {
+        issueSelectContainer.classList.add("d-none")
+        clearButton.classList.remove("d-none")
+    })
+
+
+    clearButton.addEventListener("click", (e) => {
+        e.stopPropagation();
+        issueSelectContainer.classList.remove("d-none")
+        $(node).val(null).trigger("change")
+        clearButton.classList.add("d-none")
+        $(node).select2('close');
+    })
+}

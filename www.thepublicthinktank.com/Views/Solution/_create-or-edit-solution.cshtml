@@ -28,17 +28,11 @@
         }
         <div class="card-header text-center bg-success" style="background: linear-gradient(-299deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.3));">
             <h5 class="m-0">A solution is a proposed answer, idea, or approach to an issue.</h5> 
-        @if (!isEditMode)
-        {
-            <small>(This should be addressing the issue that you wrote)</small>
-        }
-        else
-        {
-            <small>(This should be addressing the parent issue)</small>
-        }
+      
+            <small>(This should be addressing a parent issue)</small>
     </div>
-        <div class="card-body d-flex">
-            <div class="flex-grow-1 me-4">
+    <div class="card-body d-flex flex-md-row flex-column">
+        <div class="flex-grow-1 me-md-4">
 
                 <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
@@ -62,7 +56,7 @@
             
 
             </div>
-            <div class="col-4">
+        <div class="col-md-4 col-12">
 
             <fieldset style="all:revert" class="parent-fieldset">
 
@@ -76,6 +70,7 @@
                     }
                 }
 
+                <div class="parentIssueSelectContainer">
                 @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
                 new FormSelectVM()
                 {
@@ -87,8 +82,11 @@
                     ValueField = "IssueID",
                     ListItems = issueIdList,
                     DisabledField = selectedParentIssueValue != null ? true : false,
-                    SelectedValue = selectedParentIssueValue
+                    SelectedValue = selectedParentIssueValue,
+                    AjaxConfigurationCallback = "getParentIssueSelect2AjaxConfig",
+                    Select2ListenerCallback = "setParentIssueSelect2Listener"
                 })
+                </div>
             </fieldset>
 
 

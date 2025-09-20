@@ -30,8 +30,8 @@ Client side scripts tied to this view: ContentCreate.js
     <div class="card-header text-center bg-primary-subtle" style="background: linear-gradient(-299deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.15));">
         <h5 class="m-0">An issue is a challenge, question, or problem.</h5> <small>Add solutions separately to keep discussions clear.</small>
     </div>
-    <div class="card-body d-flex">
-        <div class="flex-grow-1 me-4">
+    <div class="card-body d-flex flex-md-row flex-column">
+        <div class="flex-grow-1 me-md-4">
 
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
@@ -67,7 +67,7 @@ Client side scripts tied to this view: ContentCreate.js
 
          
         </div>
-        <div class="col-4">
+        <div class="col-md-4 col-12">
 
             @await Html.PartialAsync("~/Views/Issue/FormComponents/_ParentContentFields.cshtml",Model)
 

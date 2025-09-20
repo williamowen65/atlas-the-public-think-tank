@@ -38,11 +38,11 @@ Content-Type: application/json
 
 ###
 
-POST https://localhost:5501/search?showRanks=true
+POST https://localhost:5501/search?showRanks=true&contentType=solution
 Content-Type: application/json
 
 {
-  "searchString": "Homelessness"
+  "searchString": "Homeles"
 }
 
 ###
