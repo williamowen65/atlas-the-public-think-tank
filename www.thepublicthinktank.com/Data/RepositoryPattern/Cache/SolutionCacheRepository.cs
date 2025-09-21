@@ -1,5 +1,6 @@
 ﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers;
 using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Models.ViewModel;
@@ -45,7 +46,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 return await _inner.GetSolutionById(id);
             }
 
-            var cacheKey = $"solution:{id}";
+            var cacheKey = $"{CacheKeyPrefix.Solution}:{id}";
             if (_cache.TryGetValue(cacheKey, out SolutionRepositoryViewModel? cachedSolution))
             {
                 _cacheLogger.LogInformation("[+] Cache hit for solution {SolutionId}", id);
@@ -83,6 +84,9 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             CacheHelper.ClearContentCountForMainPage();
             CacheHelper.ClearMainPageFeedIds();
 
+            CacheHelper.ClearSolutionFeedIdsForUser(solution.AuthorID);
+            CacheHelper.ClearContentCountSolutionsForUser(solution.AuthorID);
+
             #endregion
 
             return await _inner.AddSolutionAsync(solution);
@@ -103,7 +107,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 return await _inner.UpdateSolutionAsync(solution);
             }
 
-            var cacheKey = $"solution:{solution.SolutionID}";
+            var cacheKey = $"{CacheKeyPrefix.Solution}:{solution.SolutionID}";
 
             // Convert solution to SolutionRepositoryViewModel
             SolutionRepositoryViewModel cacheableSolution = Converter.ConvertSolutionToSolutionRepositoryViewModel(solution);
@@ -146,7 +150,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 return await _inner.GetSolutionVersionHistoryBySolutionVM(solution);
             }
 
-            var cacheKey = $"solution-version-history:{solution.SolutionID}";
+            var cacheKey = $"{CacheKeyPrefix.SolutionVersionHistory}:{solution.SolutionID}";
             if (_cache.TryGetValue(cacheKey, out List<ContentItem_ReadVM>? cachedIssueVersionHistory))
             {
                 _cacheLogger.LogInformation($"[+] Cache hit for solution VersionHistory {solution.SolutionID}");

@@ -117,9 +117,7 @@ namespace CloudTests.IssueTests
             if (allSubIssuesCount != expectedSubIssuesFilteredCount)
             {
                 bool test = contextSectionText.Contains($"{expectedSubIssuesFilteredCount} of {AllSubIssuesOfIssue.Count()} sub-issues");
-                //if (!test) {
-                //    Console.WriteLine();
-                //}
+      
                 Assert.IsTrue(test);
             }
 

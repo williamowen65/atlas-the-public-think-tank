@@ -3,6 +3,7 @@ using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
 using atlas_the_public_think_tank.Data.DbContext;
 using atlas_the_public_think_tank.Data.RawSQL;
 using atlas_the_public_think_tank.Data.RepositoryPattern;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Middleware;
 using atlas_the_public_think_tank.Migrations_NonEF;

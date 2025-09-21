@@ -306,30 +306,7 @@
             });
         }
 
-        // Helper function to fetch and initialize vote dials
-        function fetchAndInitializeIssueVoteDial(issueId, dialContainer) {
-            fetch(`/issue/GetVoteDial?issueId=${issueId}`)
-                .then(response => response.text())
-                .then(data => {
-                    dialContainer.innerHTML = data;
-                    setTimeout(() => {
-                        initializeCard(issueId);
-                    }, 50);
-                })
-                .catch(error => console.error(`Error fetching vote dial for issue ${issueId}:`, error));
-        }
-
-        function fetchAndInitializeSolutionVoteDial(solutionId, dialContainer) {
-            fetch(`/solution/GetVoteDial?solutionId=${solutionId}`)
-                .then(response => response.text())
-                .then(data => {
-                    dialContainer.innerHTML = data;
-                    setTimeout(() => {
-                        initializeCard(solutionId);
-                    }, 50);
-                })
-                .catch(error => console.error(`Error fetching vote dial for solution ${solutionId}:`, error));
-        }
+       
     }
 
     function dynamicDropdownContent(){

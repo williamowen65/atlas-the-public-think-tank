@@ -3,6 +3,7 @@ using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Models.ViewModel;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.User;
 using atlas_the_public_think_tank.Data.DatabaseEntities.History;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 {
@@ -29,7 +30,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 return await _inner.GetAppUser(UserId);
             }
 
-            var cacheKey = $"app-user:{UserId}";
+            var cacheKey = $"{CacheKeyPrefix.Solution}:{UserId}";
 
             if (_cache.TryGetValue(cacheKey, out AppUser_ReadVM? cachedAppUser))
             {
@@ -50,8 +51,29 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         public async Task<List<UserHistory>?> GetUserHistory(Guid UserId)
         {
 
-            _cacheLogger.LogWarning($"[!] Cache miss for GetUserHistory {UserId}");
-            return await _inner.GetUserHistory(UserId);
+            if(_configuration.GetValue<bool>("Caching:Enabled") == false)
+            {
+                _cacheLogger.LogInformation($"[~] Cache skip for GetUserHistory {UserId}");
+                return await _inner.GetUserHistory(UserId);
+            }
+
+            var cacheKey = $"{CacheKeyPrefix.UserHistory}:{UserId}";
+
+            if (_cache.TryGetValue(cacheKey, out List<UserHistory>? cachedAppUser))
+            {
+                _cacheLogger.LogInformation($"[+] Cache hit for GetUserHistory {UserId}");
+                return cachedAppUser;
+            }
+            else
+            {
+                _cacheLogger.LogWarning($"[!] Cache miss for GetUserHistory {UserId}");
+                return await _cache.GetOrCreateAsync(cacheKey, async entry =>
+                {
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                    return await _inner.GetUserHistory(UserId);
+                });
+            }
+
         }
     }
 }
