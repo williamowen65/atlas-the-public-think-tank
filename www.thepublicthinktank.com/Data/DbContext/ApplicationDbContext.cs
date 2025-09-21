@@ -1,5 +1,4 @@
-﻿
-using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
@@ -16,7 +15,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 
-namespace atlas_the_public_think_tank.Data;
+namespace atlas_the_public_think_tank.Data.DbContext;
 
 /// <summary>
 /// The files which define the models may also define
@@ -33,10 +32,10 @@ public interface IModelComposer
 /// Entity framework DB Context <br/>
 /// Code first migrations
 /// </summary>
-public class ApplicationDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>
+public class ApplicationDbContext : UserHistoryDbContext
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-        : base(options)
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IServiceProvider serviceProvider)
+        : base(options, serviceProvider)
     {
     }
 
@@ -51,7 +50,7 @@ public class ApplicationDbContext : IdentityDbContext<AppUser, IdentityRole<Guid
     public DbSet<SolutionVote> SolutionVotes { get; set; }
     public DbSet<SolutionTag> SolutionTags { get; set; }
     public DbSet<CommentVote> CommentVotes { get; set; }
-    public DbSet<UserHistory> UserHistory { get; set; }
+    
 
     /// <summary>
     /// FluentAPI code for code-first migration <br/>

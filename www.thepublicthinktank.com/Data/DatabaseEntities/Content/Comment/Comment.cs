@@ -1,5 +1,5 @@
-﻿using atlas_the_public_think_tank.Data;
-using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DbContext;
 using Microsoft.EntityFrameworkCore;
 
 namespace atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment
