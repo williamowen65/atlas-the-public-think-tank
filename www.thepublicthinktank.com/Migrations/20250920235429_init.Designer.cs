@@ -5,15 +5,15 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using atlas_the_public_think_tank.Data;
+using atlas_the_public_think_tank.Data.DbContext;
 
 #nullable disable
 
 namespace atlas_the_public_think_tank.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250917203711_init2")]
-    partial class init2
+    [Migration("20250920235429_init")]
+    partial class init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

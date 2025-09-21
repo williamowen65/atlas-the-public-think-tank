@@ -1,8 +1,8 @@
-﻿using atlas_the_public_think_tank.Data;
-using atlas_the_public_think_tank.Data.CRUD;
+﻿using atlas_the_public_think_tank.Data.CRUD;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+using atlas_the_public_think_tank.Data.DbContext;
 using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues;

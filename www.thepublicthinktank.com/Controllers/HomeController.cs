@@ -1,6 +1,6 @@
-﻿using atlas_the_public_think_tank.Data;
-using atlas_the_public_think_tank.Data.CRUD;
+﻿using atlas_the_public_think_tank.Data.CRUD;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+using atlas_the_public_think_tank.Data.DbContext;
 using atlas_the_public_think_tank.Data.RawSQL;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Models.Enums;
@@ -40,7 +40,7 @@ public class HomeController : Controller
     }
 
     #region Serve the home page
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> HomePage()
     {
         ContentFilter filter = new ContentFilter();
         if (Request.Cookies.TryGetValue("contentFilter", out string? cookieValue) && cookieValue != null)

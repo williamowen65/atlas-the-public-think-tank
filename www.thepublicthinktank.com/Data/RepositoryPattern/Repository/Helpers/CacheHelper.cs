@@ -45,6 +45,14 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
             }
         }
 
+        public static void ClearEntireCache()
+        {
+            List<string> keys = CacheHelper.GetAllCacheKeys();
+            foreach (var key in keys)
+            {
+                _cache.Remove(key);
+            }
+        }
         public static void ClearSubIssueFeedIdsForIssue(Guid issueId)
         {
             List<string> keys = CacheHelper.GetAllCacheKeys();
@@ -176,9 +184,9 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
         /// Updates the "vote-stats" cache <br/>
         /// See <see cref="IssueVotes_Cacheable_ReadVM"/>
         /// </summary>
-        public static void UpdateCache_IssueVoteStats(Vote_Cacheable? newVote, IssueVote_UpsertVM model, AppUser user)
+        public static void UpdateCache_IssueVoteStats(Vote_Cacheable? newOrUpdateVote, IssueVote_UpsertVM model, AppUser user)
         {
-            if (newVote != null)
+            if (newOrUpdateVote != null)
             {
                 // Get the cache key for this issue's vote stats
                 string cacheKey = $"vote-stats:{model.IssueID}";
@@ -188,7 +196,8 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
                     if (cachedStats != null)
                     {
                         // Update or add the vote in the dictionary
-                        cachedStats.IssueVotes[user.Id] = newVote;
+                        cachedStats.IssueVotes[user.Id] = newOrUpdateVote;
+                        // This will update the count automatically
 
                         // Recalculate averages and totals
                         cachedStats.TotalVotes = cachedStats.IssueVotes.Count;

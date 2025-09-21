@@ -2,6 +2,8 @@
 using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Models.ViewModel;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.User;
+using atlas_the_public_think_tank.Data.DbContext;
+using atlas_the_public_think_tank.Data.DatabaseEntities.History;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
 {
@@ -35,6 +37,13 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
                 UserName = user.UserName ?? string.Empty,
                 email = user.Email ?? string.Empty
             };
+        }
+
+        public async Task<List<UserHistory>?> GetUserHistory(Guid UserId)
+        {
+            return await _context.UserHistory
+                  .Where(uh => uh.UserID == UserId)
+                  .ToListAsync();
         }
     }
 }
