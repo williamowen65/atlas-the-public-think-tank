@@ -110,18 +110,11 @@ namespace CloudTests.TestingSetup.TestingData
             // The standard Identity login endpoint
             string loginUrl = "/login";
 
-            // Replace this block in LoginUserViaEndpoint method:
-            // var formData = new List<KeyValuePair<string, string>>
-            // {
-            //     { "Input.Email", email },
-            //     { "Input.Password", password },
-            //     { "Input.RememberMe", "true" }
-            // };
-
+           
             // With the following code:
             var formData = new List<KeyValuePair<string, string>>
             {
-                new KeyValuePair<string, string>("Input.Email", email),
+                new KeyValuePair<string, string>("Input.EmailOrUserName", email),
                 new KeyValuePair<string, string>("Input.Password", password),
                 new KeyValuePair<string, string>("Input.RememberMe", "true")
             };

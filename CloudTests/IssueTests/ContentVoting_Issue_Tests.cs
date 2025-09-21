@@ -156,9 +156,9 @@ namespace CloudTests.IssueTests
             var response = await _env.fetchPost<VoteResponse_AjaxVM, object>(url, votePayload);
 
             // Assert
-            Assert.IsTrue(response.Success);
-            Assert.IsTrue(response.Message.Contains("Vote successfully upserted"));
-            Assert.IsTrue(response.Count == SeedIssues.SeedIssuesDataContainers[0].issueVotes.Count() + 1);
+            Assert.IsTrue(response.Success, "Success should be true");
+            Assert.IsTrue(response.Message.Contains("Vote successfully upserted"), "Response should contain specific message");
+            Assert.IsTrue(response.Count == SeedIssues.SeedIssuesDataContainers[0].issueVotes.Count() + 1, "Count on response object should be correct");
         }
 
         [TestMethod]

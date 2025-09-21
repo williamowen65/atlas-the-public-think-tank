@@ -176,9 +176,9 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
         /// Updates the "vote-stats" cache <br/>
         /// See <see cref="IssueVotes_Cacheable_ReadVM"/>
         /// </summary>
-        public static void UpdateCache_IssueVoteStats(Vote_Cacheable? newVote, IssueVote_UpsertVM model, AppUser user)
+        public static void UpdateCache_IssueVoteStats(Vote_Cacheable? newOrUpdateVote, IssueVote_UpsertVM model, AppUser user)
         {
-            if (newVote != null)
+            if (newOrUpdateVote != null)
             {
                 // Get the cache key for this issue's vote stats
                 string cacheKey = $"vote-stats:{model.IssueID}";
@@ -188,10 +188,12 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
                     if (cachedStats != null)
                     {
                         // Update or add the vote in the dictionary
-                        cachedStats.IssueVotes[user.Id] = newVote;
+                        cachedStats.IssueVotes[user.Id] = newOrUpdateVote;
+
+                        bool isNewVote = cachedStats.IssueVotes[newOrUpdateVote.UserID] == null;
 
                         // Recalculate averages and totals
-                        cachedStats.TotalVotes = cachedStats.IssueVotes.Count;
+                        cachedStats.TotalVotes = cachedStats.IssueVotes.Count + (isNewVote ? 1 : 0); // <-- If the is truly a new vote then add 1. if it is an update add 0
                         cachedStats.AverageVote = cachedStats.IssueVotes.Any()
                             ? cachedStats.IssueVotes.Values.Average(v => v.VoteValue)
                             : 0;
