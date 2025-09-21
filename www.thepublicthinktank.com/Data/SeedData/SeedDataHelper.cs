@@ -29,7 +29,6 @@ public static class SeedDataHelper
         SeedSolutionVotes.Seed(context);
         context.SaveChanges(); // Save votes
 
-
         // If running seed data clear the cache after creating seed data so I can populate on its own with app functionality
         CacheHelper.ClearEntireCache();
         // this is important for testing
