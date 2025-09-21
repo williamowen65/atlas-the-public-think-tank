@@ -193,7 +193,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
                         bool isNewVote = cachedStats.IssueVotes[newOrUpdateVote.UserID] == null;
 
                         // Recalculate averages and totals
-                        cachedStats.TotalVotes = cachedStats.IssueVotes.Count + (isNewVote ? 1 : 0); // <-- If the is truly a new vote then add 1. if it is an update add 0
+                        cachedStats.TotalVotes = cachedStats.IssueVotes.Count;// + (isNewVote ? 1 : 0); // <-- If the is truly a new vote then add 1. if it is an update add 0
                         cachedStats.AverageVote = cachedStats.IssueVotes.Any()
                             ? cachedStats.IssueVotes.Values.Average(v => v.VoteValue)
                             : 0;
