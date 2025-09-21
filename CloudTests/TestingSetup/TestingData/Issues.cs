@@ -1,6 +1,5 @@
-﻿using atlas_the_public_think_tank.Data;
-using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
- 
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+using atlas_the_public_think_tank.Data.DbContext;
 using atlas_the_public_think_tank.Models.Enums;
 using System;
 using System.Collections.Generic;

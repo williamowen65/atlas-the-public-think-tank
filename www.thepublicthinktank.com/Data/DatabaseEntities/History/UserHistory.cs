@@ -1,8 +1,8 @@
-﻿using atlas_the_public_think_tank.Data;
-using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+using atlas_the_public_think_tank.Data.DbContext;
 using Microsoft.EntityFrameworkCore;
 
 namespace atlas_the_public_think_tank.Data.DatabaseEntities.History
@@ -18,7 +18,7 @@ namespace atlas_the_public_think_tank.Data.DatabaseEntities.History
     /// </remarks>
     public class UserHistory
     {
-        public required Guid UserHistoryID { get; set; }
+        public Guid UserHistoryID { get; set; }
         public required Guid UserID { get; set; }
         public required string Action { get; set; }
         public string? Link { get; set; }
@@ -32,7 +32,7 @@ namespace atlas_the_public_think_tank.Data.DatabaseEntities.History
         //public Guid? UserVoteID { get; set; }
 
         // Navigation properties
-        public virtual required AppUser User { get; set; }
+        public virtual AppUser User { get; set; }
         public virtual Issue? Issue { get; set; }
         public virtual Solution? Solution { get; set; }
         public virtual Comment? Comment { get; set; }

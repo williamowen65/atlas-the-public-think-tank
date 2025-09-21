@@ -21,7 +21,7 @@
     },
     "resourceName": {
       "type": "string",
-      "defaultValue": "atlas-dev-eminent-pelican-web-app",
+      "defaultValue": "atlas-dev-artistic-whale-web-app",
       "metadata": {
         "description": "Name of the main resource to be created by this template."
       }

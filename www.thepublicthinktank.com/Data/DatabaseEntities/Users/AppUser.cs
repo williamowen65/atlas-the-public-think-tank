@@ -12,6 +12,7 @@ namespace atlas_the_public_think_tank.Data.DatabaseEntities.Users
     /// </summary>
     public class AppUser : IdentityUser<Guid>
     {
+
         public AppUser()
         {
             Issues = new List<Issue>();

@@ -1,7 +1,7 @@
 ﻿using AngleSharp;
 using AngleSharp.Dom;
-using atlas_the_public_think_tank.Data;
 using atlas_the_public_think_tank.Data.CRUD;
+using atlas_the_public_think_tank.Data.DbContext;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Models.ViewModel;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;

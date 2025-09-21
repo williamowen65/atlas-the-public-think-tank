@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
+﻿using atlas_the_public_think_tank.Data.DbContext;
+using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Models;
 using atlas_the_public_think_tank.Models.Enums;
@@ -185,6 +186,70 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             var filteredQuery = FilterQueryService.ApplyCombinedContentFilters(combinedQuery, filter);
 
             counts.AbsoluteCount = await combinedQuery.CountAsync();
+            counts.FilteredCount = await filteredQuery.CountAsync();
+
+            return counts;
+        }
+
+        public async Task<List<Guid>?> GetPagedIssueIdsOfIssuesCreatedByUser(Guid userId, ContentFilter filter, int pageNumber = 1, int pageSize = 3)
+        {
+            var query = _context.Issues
+            .Where(i => i.AuthorID == userId);
+
+            // TODO Apply Filter / Sorting
+            var filteredQuery = FilterQueryService.ApplyIssueFilters(query, filter);
+            // TODO Apply Weighted Score
+            var sortedQuery = SortQueryService.ApplyWeightedScoreSorting(filteredQuery);
+
+            var paginatedChildIssuesIds = await sortedQuery.Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .Select(i => i.IssueID)
+            .ToListAsync();
+
+            return (paginatedChildIssuesIds);
+        }
+
+        public async Task<ContentCount_VM?> GetContentCountIssuesOfIssuesCreatedByUser(Guid userId, ContentFilter filter)
+        {
+            ContentCount_VM counts = new ContentCount_VM();
+            var query = _context.Issues
+                .Where(i => i.AuthorID == userId);
+            // Note: Using issue filter since this is for sub issues
+            var filteredQuery = FilterQueryService.ApplyIssueFilters(query, filter);
+
+            counts.AbsoluteCount = await query.CountAsync();
+            counts.FilteredCount = await filteredQuery.CountAsync();
+
+            return counts;
+        }
+
+        public async Task<List<Guid>?> GetPagedSolutionIdsOfSolutionsCreatedByUser(Guid userId, ContentFilter filter, int pageNumber = 1, int pageSize = 3)
+        {
+            var query = _context.Solutions
+            .Where(i => i.AuthorID == userId);
+
+            // TODO Apply Filter / Sorting
+            var filteredQuery = FilterQueryService.ApplySolutionFilters(query, filter);
+            // TODO Apply Weighted Score
+            var sortedQuery = SortQueryService.ApplyWeightedScoreSorting(filteredQuery);
+
+            var paginatedChildSolutionsIds = await sortedQuery.Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .Select(s => s.SolutionID)
+            .ToListAsync();
+
+            return (paginatedChildSolutionsIds);
+        }
+
+        public async Task<ContentCount_VM?> GetContentCountSolutionsOfSolutionsCreatedByUser(Guid userId, ContentFilter filter)
+        {
+            ContentCount_VM counts = new ContentCount_VM();
+            var query = _context.Solutions
+                .Where(i => i.AuthorID == userId);
+            // Note: Using issue filter since this is for sub issues
+            var filteredQuery = FilterQueryService.ApplySolutionFilters(query, filter);
+
+            counts.AbsoluteCount = await query.CountAsync();
             counts.FilteredCount = await filteredQuery.CountAsync();
 
             return counts;

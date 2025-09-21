@@ -3,6 +3,7 @@ using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Models.ViewModel;
 using atlas_the_public_think_tank.Models.Enums;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.ContentItem_Common;
+using atlas_the_public_think_tank.Data.DbContext;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
 {
