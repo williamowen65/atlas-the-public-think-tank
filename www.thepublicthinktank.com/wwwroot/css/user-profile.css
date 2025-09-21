@@ -206,12 +206,11 @@ button.user-profile-action-btn {
         font-weight: 500;
         cursor: pointer;
         position: relative;
-        color: #555;
         border-radius: 8px 8px 0 0;
     }
 
 .tab-list button[aria-selected="true"] {
-    color: #111;
+    backdrop-filter: contrast(0.85);
 }
 
 .tab-list button[aria-selected="true"]::after {
@@ -233,19 +232,42 @@ button.user-profile-action-btn {
 .tab-panels {
     background: var(--bs-body-bg,#fff);
     border: 1px solid #e3e6eb;
-    border-radius: 0 12px 12px 12px;
-    padding: 1.25rem 1.5rem 2rem;
+    border-top: none;
+    border-radius: 0 0px 12px 12px;
     min-height: 300px;
 }
+.tab-panel {
+    padding: 1.25rem 1.5rem 2rem;
+}
+
+#panel-solution.tab-panel,
+#panel-issue.tab-panel {
+    padding: 0;
+}
+
+
 
 .tab-panel {
     display: none;
     animation: fade .25s ease;
 }
 
-    .tab-panel.active {
-        display: block;
-    }
+.tab-panel.active {
+    display: block;
+}
+
+.edit-profile {
+    position: absolute;
+    top:0;
+    right: 0;
+
+}
+
+.profile-tabs .tab-list .content-count {
+    top: 3px;
+    scale: 0.7;
+    position: absolute;
+}
 
 @keyframes fade {
     from {
@@ -266,6 +288,12 @@ button.user-profile-action-btn {
         left: clamp(1rem, 4vw, 2.5rem);
         transform: translateX(0%);
         flex-direction: initial;*/
+    }
+
+
+    #panel-solution.tab-panel,
+    #panel-issue.tab-panel {
+/*        padding: 1.25rem 1.5rem 2rem;*/
     }
 
     .profile-avatar {

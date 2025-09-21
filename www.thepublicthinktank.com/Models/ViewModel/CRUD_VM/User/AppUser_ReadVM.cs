@@ -15,6 +15,11 @@
         public string UserName { get; set; }
         public string email { get; set; }
 
-        public string FullName { get; set; }
+        public string FullName { get; set; } = "[Full Name]";
     }
+
+    //public class AppUser_ReadVM_Extended : AppUser_ReadVM
+    //{ 
+    //    public 
+    //}
 }

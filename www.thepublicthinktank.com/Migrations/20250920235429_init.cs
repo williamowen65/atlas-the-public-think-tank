@@ -319,7 +319,8 @@ namespace atlas_the_public_think_tank.Migrations
                     BlockedContentID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ScopeID = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                    ScopeID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    RANK = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -432,7 +433,8 @@ namespace atlas_the_public_think_tank.Migrations
                     BlockedContentID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     Title = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: false),
                     Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ScopeID = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                    ScopeID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    RANK = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
