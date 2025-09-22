@@ -1,5 +1,6 @@
 ﻿using atlas_the_public_think_tank.Data.CRUD;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
 using atlas_the_public_think_tank.Data.DbContext;
 using atlas_the_public_think_tank.Data.RawSQL;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
@@ -7,12 +8,16 @@ using atlas_the_public_think_tank.Models.Enums;
 using atlas_the_public_think_tank.Models.ViewModel;
 using atlas_the_public_think_tank.Models.ViewModel.AjaxVM;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.ContentItem_Common;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.Issue.IssueVote;
 using atlas_the_public_think_tank.Models.ViewModel.PageVM;
 using atlas_the_public_think_tank.Models.ViewModel.UI_VM;
 using atlas_the_public_think_tank.Utilities;
 using Azure.Core;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using NuGet.Protocol;
 using System;
@@ -20,6 +25,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Web;
+using static atlas_the_public_think_tank.Data.SeedData.SeedIds;
 
 namespace atlas_the_public_think_tank.Controllers;
 
@@ -32,11 +38,13 @@ public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
     private readonly ApplicationDbContext _context;
+    private readonly UserManager<AppUser> _userManager;
 
-    public HomeController(ILogger<HomeController> logger, ApplicationDbContext context)
+    public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, UserManager<AppUser> userManager)
     {
         _logger = logger;
         _context = context;
+        _userManager = userManager;
     }
 
     #region Serve the home page
@@ -127,21 +135,89 @@ public class HomeController : Controller
         });
     }
 
+
+    /// <summary>
+    /// This method is for manual http testing of Contains Search vs Free Text Search
+    /// </summary>
+    /// <param name="searchRequest"></param>
+    /// <returns></returns>
     [HttpPost]
     [Route("/search-contains")]
     public async Task<IActionResult> SearchContains([FromBody] SearchRequest searchRequest)
     {
-
-   
-
         List<SearchResult> searchResult = await SearchContentItems.SearchContainsTableAsync(searchRequest.SearchString, _context);
 
         return Json(searchResult);
-
-
     }
 
 
+
+
+    /// <summary>
+    /// This method is used to request to vote
+    /// It's purpose is to prevent accidental votes when just swiping
+    /// </summary>
+    /// <param name="model"></param>
+    [AllowAnonymous] // There will be an error sent if user is not logged in
+    [HttpPost]
+    [Route("/vote-request")]
+    public async Task<IActionResult> VoteRequest([FromBody] ConfirmVoteRequestDTO confirmVoteRequestDTO)
+    {
+        if (ModelState.IsValid) {
+            // catch programming errors
+            // Add specific validation checks
+            if (confirmVoteRequestDTO.ContentID == Guid.Empty)
+            {
+                ModelState.AddModelError("ContentID", "ContentID: cannot be empty");
+            }
+            if (confirmVoteRequestDTO.ContentType == null)
+            {
+                ModelState.AddModelError("ContentType", "ContentType: cannot be empty");
+            }
+
+            if (confirmVoteRequestDTO.VoteValue < 0 || confirmVoteRequestDTO.VoteValue > 10) // Adjust range as needed
+            {
+                ModelState.AddModelError("VoteValue", "VoteValue: must be between 0 and 10 (inclusive)");
+            }
+        }
+        if (!ModelState.IsValid)
+        {
+            return Json(new { success = false, message = "Invalid vote data", errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage) });
+        }
+        var user = await _userManager.GetUserAsync(User);
+
+        if (user == null)
+        {
+            return Unauthorized(new { success = false, message = "You must login in order to vote" });
+        }
+
+        var confirmVoteVM = new ConfirmVoteViewModel()
+        {
+            ContentID = confirmVoteRequestDTO.ContentID,
+            ContentType = confirmVoteRequestDTO.ContentType,
+            VoteValue = confirmVoteRequestDTO.VoteValue,
+        };
+
+        if (confirmVoteRequestDTO.ContentType == "issue")
+        {
+            Issue_ReadVM?  issue =  await Read.Issue(confirmVoteRequestDTO.ContentID, new ContentFilter());
+            confirmVoteVM.ContentItem = Converter.ConvertIssue_ReadVMToContentItem_ReadVM(issue!);
+        }
+        else if (confirmVoteRequestDTO.ContentType == "solution")
+        { 
+            Solution_ReadVM? solution = await Read.Solution(confirmVoteRequestDTO.ContentID, new ContentFilter());
+            confirmVoteVM.ContentItem = Converter.ConvertSolution_ReadVMToContentItem_ReadVM(solution!);
+        }
+
+        
+
+        return Json(new {
+            html = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Shared/_ConfirmVote.cshtml", confirmVoteVM)
+            //html = PartialView("_ConfirmVote", confirmVoteVM)
+        });
+
+
+    }
 
 
 

@@ -295,6 +295,10 @@ function isolateAndDisableVersionHistoryDials(root) {
 }
 
 
+function getSelectedRadioValue(dialId, container) {
+    const checkedRadio = container.querySelector(`input[name="${dialId}"][checked]`);
+    return checkedRadio ? checkedRadio.value : null;
+}
 
 // DIAL JS
 
@@ -323,6 +327,11 @@ function getDialElements(issueId) {
 
     // Scope radio queries to within the container or to the specific name
     const radios = Array.from(container.querySelectorAll(`input[name="${dialId}"]`));
+
+    // Returns the value of the selected radio button for a given dialId, or null if none selected
+  
+   
+
 
     return {
         container, dialId, options, radios, contentType
@@ -362,13 +371,13 @@ function initializeVoteDial(issueId) {
     };
     
     // Initialize components
-    const saveVoteDebounced = createDebouncedSaveVote(issueId);
+    const confirmVoteDebounced = createDebouncedConfirmVote(issueId);
     const observer = configureIntersectionObserverForDialVotes(container, options, state, dialId);
     
     // Set up UI and event handlers
     scrollToSelectedOption(container, dialId);
     setupScrollEvents(container, dialId, state);
-    setupRadioChangeEvents(radios, saveVoteDebounced, container, state);
+    setupRadioChangeEvents(radios, confirmVoteDebounced, container, state);
     //createDialResetMethod(container, issueId, observer, dialId, options, state);
 
 
@@ -490,7 +499,7 @@ function saveVote(voteValue, {
     formData.append('VoteValue', voteValue);
 
 
-    fetch(`/${contentType}/Vote`, {
+    return fetch(`/${contentType}/Vote`, {
         method: 'POST',
         body: JSON.stringify({
             [`${contentType}ID`]: contentId,
@@ -529,79 +538,189 @@ function saveVote(voteValue, {
             if (countElement && data.count !== undefined) {
                 countElement.textContent = data.count;
             }
-        })
-        .catch(error => {
-            console.error('Error saving vote:', error);
 
-                // Select dial number 5
-                const defaultRadio = document.querySelector(`input[name="${dialId}"][value="5"]`);
-
-                if (defaultRadio) {
-                    // Add class to temporarily prevent observer
-                    container.classList.add('temporarily-prevent-observer');
-
-                    // Set checked state
-                    defaultRadio.checked = true;
-
-                    // Find the label for scrolling
-                    const label = document.querySelector(`label[for="${defaultRadio.id}"]`);
-                    if (label) {
-                        const labelTop = label.offsetTop;
-                        const containerHeight = container.clientHeight;
-                        const labelHeight = label.clientHeight;
-
-                        // Just scroll to position without triggering the change event
-                        container.scrollTo({
-                            top: labelTop - (containerHeight / 2) + (labelHeight / 2),
-                            behavior: 'smooth'
-                        });
-                    }
-
-                    // Remove the class after a short delay
-                    setTimeout(() => {
-
-                        client_TopBar_Alert({
-                            type: 'warning',
-                            message: `
-                    <h4>Vote not cast</h4>
-                    <p>${error.message}</p>
-                    `,
-                        });
-
-                        client_CardFooter_Alert({
-                            cardId: contentId,
-                            type: 'plaintext',
-                            message: `
-                  Vote not cast - ${error.message}
-                    `,
-                            dismissible: false
-                        });
-                    }, 500);
-                    setTimeout(() => {
-                        container.classList.remove('temporarily-prevent-observer');
-                    }, 1000) // 1 second delay to allow scroll to finish
+            // Ensure only the correct radio input has the 'checked' attribute
+            // This is important for reseting the vote to the correct position
+            const radioInputs = container.querySelectorAll("input[type=radio]");
+            radioInputs.forEach(radio => {
+                if (parseInt(radio.value) === voteValue) {
+                    radio.setAttribute("checked", true);
+                } else {
+                    radio.removeAttribute("checked");
                 }
-        });
+            });
+
+        })
+ 
 }
 
 /**
  * Creates a debounced function for saving votes to the server
  */
-function createDebouncedSaveVote(contentId) {
+function createDebouncedConfirmVote(contentId) {
     const { container, dialId, contentType } = getDialElements(contentId);
     // Function to save vote to server with debouncing
+
+    const contentReferences = {
+        contentId,
+        container,
+        dialId,
+        contentType
+    }
+
     return debounce(function (voteValue) {
-        saveVote(voteValue, {
-            contentId,
-            container,
-            dialId,
-            contentType
-        })
+
+        contentReferences.previousExistingVote = getSelectedRadioValue(dialId, container)
+
+        confirmVote(voteValue, contentReferences)
+            .then(() => {
+                console.log('Promise resolved: proceeding to saveVote');
+                return saveVote(voteValue, contentReferences);
+            })
+            .catch((error) => {
+                console.log('Promise rejected: caught in catch block', error);
+                showErrorAlert(error, contentReferences);
+            });
     }, 800); // 800ms debounce delay
-//
+}
+
+function showErrorAlert(error, {
+    contentId,
+    container,
+    dialId,
+    contentType,
+    previousExistingVote = 5 // This is the default for no vote cast
+}) {
+        console.error('Error saving vote:', error);
+
+        // Select dial number 5
+        const defaultRadio = document.querySelector(`input[name="${dialId}"][value="${previousExistingVote}"]`);
+
+        if (defaultRadio) {
+            // Add class to temporarily prevent observer
+            container.classList.add('temporarily-prevent-observer');
+
+            // Set checked state
+            defaultRadio.checked = true;
+
+            // Find the label for scrolling
+            const label = document.querySelector(`label[for="${defaultRadio.id}"]`);
+            if (label) {
+                const labelTop = label.offsetTop;
+                const containerHeight = container.clientHeight;
+                const labelHeight = label.clientHeight;
+
+                // Just scroll to position without triggering the change event
+                container.scrollTo({
+                    top: labelTop - (containerHeight / 2) + (labelHeight / 2),
+                    behavior: 'smooth'
+                });
+            }
+
+            // Remove the class after a short delay
+            setTimeout(() => {
+
+                client_TopBar_Alert({
+                    type: 'warning',
+                    message: `
+                    <h4>Vote not cast</h4>
+                    <p>${error.message}</p>
+                    `,
+                });
+
+                client_CardFooter_Alert({
+                    cardId: contentId,
+                    type: 'plaintext',
+                    message: `
+                  Vote not cast - ${error.message}
+                    `,
+                    dismissible: false
+                });
+            }, 500);
+            setTimeout(() => {
+                container.classList.remove('temporarily-prevent-observer');
+            }, 1000) // 1 second delay to allow scroll to finish
+        }
 }
 
 
+async function confirmVote(voteValue, contentData) {
+    return fetch(`/vote-request`, {
+        method: 'POST',
+        body: JSON.stringify({
+            'ContentID': contentData.contentId,
+            'ContentType': contentData.contentType,
+            'VoteValue': voteValue
+        }),
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+        .then(async (response) => {
+
+            if (!response.ok) {
+
+                const test = await response.json();
+
+                throw new Error(test.message);
+            }
+            return await response.json();
+        })// After receiving response.html from the server
+        .then(response => {
+            //console.log({ response });
+
+           
+            // 1. Add the modal HTML to the DOM
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = response.html;
+            while (tempDiv.firstChild) {
+                document.body.appendChild(tempDiv.firstChild);
+            }
+
+            // 2. Get the modal element
+            const modalElement = document.getElementById('confirmVoteModal');
+            if (modalElement && window.bootstrap && bootstrap.Modal) {
+                const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+                modal.show();
+
+                //// 3. Remove modal from DOM on close
+                modalElement.addEventListener('hidden.bs.modal', function handleModalHidden() {
+                    modalElement.removeEventListener('hidden.bs.modal', handleModalHidden);
+                    modalElement.parentNode && modalElement.parentNode.removeChild(modalElement);
+                });
+
+                console.log("About to return promise for confirm")
+
+            
+                return new Promise((resolve, reject) => {
+                    const confirmBtn = modalElement.querySelector('#confirmVoteModalConfirmBtn');
+                    if (confirmBtn) {
+                        confirmBtn.addEventListener('click', function () {
+                            modal.hide();
+                            resolve();
+                        });
+                    }
+                    const closeBtn = modalElement.querySelector('.close-modal');
+                    if (closeBtn) {
+                        closeBtn.addEventListener('click', function (e) {
+                            modal.hide();
+                            reject(new Error('Vote confirmation was cancelled by user.'));
+                        });
+                    }
+                });
+
+
+
+            } else {
+                console.error('Confirm vote modal element or Bootstrap JS not found.');
+            }
+        })
+     
+
+   
+
+}
 /**
  * Sets up intersection observer to track visible options during scrolling
  */
@@ -683,13 +802,13 @@ function createDialResetMethod(container, issueId, observer, dialId, options, st
                     containerToReset = newContainer;
                     
                     // We need to recreate all event handlers and methods on the new container
-                    const saveVoteDebounced = createDebouncedSaveVote(issueId);
+                    const confirmVoteDebounced = createDebouncedConfirmVote(issueId);
                     const { options, radios } = getDialElements(issueId);
                     // Recreate the reset method on the new container (recursive but will only happen once)
                     
                     scrollToSelectedOption(containerToReset, dialId);
                     setupScrollEvents(container, dialId, state);
-                    setupRadioChangeEvents(radios, saveVoteDebounced, container, state);
+                    setupRadioChangeEvents(radios, confirmVoteDebounced, container, state);
                     createDialResetMethod(containerToReset, issueId, observer, dialId, options, state);
                 }
                 
