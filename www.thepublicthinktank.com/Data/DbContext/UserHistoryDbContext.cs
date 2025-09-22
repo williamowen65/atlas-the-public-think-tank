@@ -3,6 +3,7 @@ using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
 using atlas_the_public_think_tank.Data.DatabaseEntities.History;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -70,6 +71,8 @@ namespace atlas_the_public_think_tank.Data.DbContext
             }
 
             UserHistory.AddRange(historyEntries);
+
+            
         }
 
         // Async version for SaveChangesAsync
@@ -131,6 +134,8 @@ namespace atlas_the_public_think_tank.Data.DbContext
             if (entry.Entity is IssueVote)
             {
                 Guid? userId = ExtractUserId(entry, ((IssueVote)entry.Entity).UserID);
+
+                CacheHelper.ClearUserHistoryCache((Guid)userId!);
 
                 Guid issueId = ((IssueVote)entry.Entity).IssueID;
                 var issue = await Read.Issue(issueId, new ContentFilter());

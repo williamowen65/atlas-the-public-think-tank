@@ -1,6 +1,7 @@
 ﻿using atlas_the_public_think_tank.Data.CRUD;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers;
 using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Models.Cacheable;
@@ -48,7 +49,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 return await _inner.GetIssueVoteStats(id);
             }
 
-            var cacheKey = $"vote-stats:{id}";
+            var cacheKey = $"{CacheKeyPrefix.VoteStats}:{id}";
             if (_cache.TryGetValue(cacheKey, out IssueVotes_Cacheable_ReadVM? cachedIssueVoteStats))
             {
                 _cacheLogger.LogInformation($"[+] Cache hit for GetIssueVoteStats {id}");
@@ -73,7 +74,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 return await _inner.GetSolutionVoteStats(id);
             }
 
-            var cacheKey = $"vote-stats:{id}";
+            var cacheKey = $"{CacheKeyPrefix.VoteStats}:{id}";
             if (_cache.TryGetValue(cacheKey, out SolutionVotes_Cacheable_ReadVM? cachedSolutionVoteStats))
             {
                 _cacheLogger.LogInformation($"[+] Cache hit for GetSolutionVoteStats( {id}");

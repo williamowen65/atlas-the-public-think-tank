@@ -331,6 +331,7 @@ function filterTrigger() {
         const isSolutionPage = window.location.pathname.includes('/solution/') ||
             window.location.pathname.startsWith('/solution');
 
+        const isUserProfilePage = window.location.pathname.startsWith('/user-profile');
 
 
         if (isOnHomePage) {
@@ -341,8 +342,11 @@ function filterTrigger() {
             fetchFilteredIssuePageContent()
                 .then(repopulateIssuePageContents)
         } else if (isSolutionPage) {
-            fetchFilteredSolutionPageContent() 
+            fetchFilteredSolutionPageContent()
                 .then(repopulateSolutionPageContents)
+        } else if (isUserProfilePage) {
+            fetchFilteredUserProfilePageContent()
+                .then(repopulateUserProfilePageContents)
         } else {
 
             console.log("CONTENT FILTER UPDATE: FETCH FOR AN ISSUE PAGE OR SOLUTION PAGE")
@@ -421,8 +425,32 @@ async function fetchFilteredHomePageContent() {
         });
 }
 
+
+async function fetchFilteredUserProfilePageContent() {
+
+    const userId = ContentFilterSectionRePopulationWorkflow.getUserIdFromUrl()
+
+    if (!userId) {
+        console.error("Could not extract user ID from URL");
+        return Promise.reject("user ID not found");
+    }
+    const contentFetchPromises = [
+        fetch(`/user-profile/getPaginatedUserIssues/${userId}?currentPage=1`),
+        fetch(`/user-profile/getPaginatedUserSolutions/${userId}?currentPage=1`)
+    ]
+
+    return Promise.all(contentFetchPromises)
+        .then(responses => Promise.all(
+            responses.map(r => r.json())
+        )).then(res => ({
+            subissues: res[0],
+            solutions: res[1]
+        }))
+}
+
 const issueGuidRegex = /\/issue\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i
 const solutionGuidRegex = /\/solution\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i
+
 
 /**
  * Fetches filtered content when on an Issue page
@@ -509,6 +537,12 @@ class ContentFilterSectionRePopulationWorkflow
         const solutionIdMatch = url.match(solutionGuidRegex);
         const solutionId = solutionIdMatch ? solutionIdMatch[1] : null;
         return solutionId
+    }
+
+    static getUserIdFromUrl() {
+        // Extract userId from query string (?userId=...)
+        const params = new URLSearchParams(window.location.search);
+        return params.get("userId");
     }
     
 
@@ -620,6 +654,35 @@ function repopulateHomePageContents(updatedFilterContent) {
     )
     ContentFilterSectionRePopulationWorkflow.updatePageInfo(updatedFilterContent.sidebar.pageInfo)
 
+}
+
+function repopulateUserProfilePageContents(updatedFilterContent) {
+
+    const userId = ContentFilterSectionRePopulationWorkflow.getUserIdFromUrl()
+
+    const updatedUserIssuesContent = updatedFilterContent.subissues
+    const updatedUserSolutionsContent = updatedFilterContent.solutions
+
+    ContentFilterSectionRePopulationWorkflow.requireFilterContentData(updatedUserIssuesContent)
+    ContentFilterSectionRePopulationWorkflow.updateContentFeed("user-issue-content", updatedUserIssuesContent.html)
+    ContentFilterSectionRePopulationWorkflow.updatePaginationButton(
+        updatedUserIssuesContent,
+        "fetchPaginatedUserIssues",
+        "/user-profile/getPaginatedUserIssues/" + userId,
+        "user issues"
+    )
+    ContentFilterSectionRePopulationWorkflow.updateContentTab(updatedUserIssuesContent, "#tab-issue")
+
+
+    ContentFilterSectionRePopulationWorkflow.requireFilterContentData(updatedUserSolutionsContent)
+    ContentFilterSectionRePopulationWorkflow.updateContentFeed("user-solution-content", updatedUserSolutionsContent.html)
+    ContentFilterSectionRePopulationWorkflow.updatePaginationButton(
+        updatedUserSolutionsContent,
+        "fetchPaginatedUserSolutions",
+        "/user-profile/getPaginatedUserSolutions/" + userId,
+        "user solutions"
+    )
+    ContentFilterSectionRePopulationWorkflow.updateContentTab(updatedUserSolutionsContent, "#tab-solution")
 }
 
 

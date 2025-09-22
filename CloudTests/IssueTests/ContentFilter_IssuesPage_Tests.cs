@@ -58,10 +58,11 @@ namespace CloudTests.IssueTests
 
             string url = "/issue/" + SeedIssues.SeedIssuesDataContainers[0].issue.IssueID;
             var document = await _env.fetchHTML(url);
+
             var paginationButton = document.QuerySelector("#fetchPaginatedSolutions");
             var buttonText = paginationButton.TextContent;
 
-            SeedSolutionContainer[] AllSolutionsOfIssue = TestingUtilityMethods.GetSeedSolutionDataContainersOf(SeedIssues.SeedIssuesDataContainers[0].issue);
+            SeedSolutionContainer[] AllSolutionsOfIssue = TestingUtilityMethods.GetSeedSolutionsOf(SeedIssues.SeedIssuesDataContainers[0].issue);
 
             int expectedCount = TestingUtilityMethods.filterByAvgVoteRange(AllSolutionsOfIssue, min, max).Count();
 
@@ -95,7 +96,7 @@ namespace CloudTests.IssueTests
             var paginationButton = document.QuerySelector("#fetchPaginatedSolutions");
             var buttonText = paginationButton.TextContent;
 
-            SeedSolutionContainer[] AllSolutionsOfIssue = TestingUtilityMethods.GetSeedSolutionDataContainersOf(SeedIssues.SeedIssuesDataContainers[0].issue);
+            SeedSolutionContainer[] AllSolutionsOfIssue = TestingUtilityMethods.GetSeedSolutionsOf(SeedIssues.SeedIssuesDataContainers[0].issue);
             int allSolutionsCount = AllSolutionsOfIssue.Length;
             int expectedSolutionFilteredCount = TestingUtilityMethods.filterByAvgVoteRange(AllSolutionsOfIssue, min, max).Count();
 
@@ -117,9 +118,7 @@ namespace CloudTests.IssueTests
             if (allSubIssuesCount != expectedSubIssuesFilteredCount)
             {
                 bool test = contextSectionText.Contains($"{expectedSubIssuesFilteredCount} of {AllSubIssuesOfIssue.Count()} sub-issues");
-                //if (!test) {
-                //    Console.WriteLine();
-                //}
+      
                 Assert.IsTrue(test);
             }
 

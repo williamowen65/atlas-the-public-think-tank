@@ -1,4 +1,5 @@
 ﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers;
 using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Models.ViewModel;
@@ -63,7 +64,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 return await _inner.GetIssueById(id);
             }
 
-            var cacheKey = $"issue:{id}";
+            var cacheKey = $"{CacheKeyPrefix.Issue}:{id}";
             if (_cache.TryGetValue(cacheKey, out IssueRepositoryViewModel? cachedIssue))
             {
                 _cacheLogger.LogInformation("[+] Cache hit for issue {IssueId}", id);
@@ -94,7 +95,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             // This can later be optimized
 
             if (issue.ParentIssueID != null) {
-                // Clear sub-issue-feed-ids cache for parent issue
+                // Clear CacheHelper.CacheKeysPrefix.FeedIds.SubIssueOfIssue cache for parent issue
                 CacheHelper.ClearSubIssueFeedIdsForIssue((Guid)issue.ParentIssueID);
                 CacheHelper.ClearContentCountSubIssuesForIssue((Guid)issue.ParentIssueID);
             }
@@ -108,7 +109,10 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             CacheHelper.ClearContentCountForMainPage();
             CacheHelper.ClearMainPageFeedIds();
 
-
+            // User Profile FeedId
+            CacheHelper.ClearIssueFeedIdsForUser(issue.AuthorID);
+            // User Profile Content count
+            CacheHelper.ClearContentCountIssuesForUser(issue.AuthorID);
             #endregion
 
             return await _inner.AddIssueAsync(issue);
@@ -125,7 +129,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         /// </remarks>
         public async Task<Issue_ReadVM?> UpdateIssueAsync(Issue issue)
         {
-            var cacheKey = $"issue:{issue.IssueID}";
+            var cacheKey = $"{CacheKeyPrefix.Issue}:{issue.IssueID}";
 
             //convert issue to IssueRepositoryViewModel
             IssueRepositoryViewModel cacheableIssue = Converter.ConvertIssueToIssueRepositoryViewModel(issue);
@@ -137,11 +141,13 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
             Issue_ReadVM? updatedIssueVM = await _inner.UpdateIssueAsync(issue);
 
-            var cacheKeyIssueVersionHistory = $"issue-version-history:{issue.IssueID}";
+            var cacheKeyIssueVersionHistory = $"{CacheKeyPrefix.IssueVersionHistory}:{issue.IssueID}";
 
             // Note: This method may be better suited to be Update instead of clear.
             CacheHelper.ClearIssueContentVersionHistoryCache(issue.IssueID);
 
+
+            // Why is this not calling _inner.UpdateIssueAsync?
             return updatedIssueVM;
         }
 
@@ -158,15 +164,15 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         /// Cache should be updated/invalidated by: <br/>
         /// <see cref="IssueCacheRepository.UpdateIssueAsync(Issue)"/>
         /// </remarks>
-        public async Task<List<ContentItem_ReadVM>?> GetIssueVersionHistoryById(Issue_ReadVM issue)
+        public async Task<List<ContentItem_ReadVM>?> GetIssueVersionHistoryByIssueVM(Issue_ReadVM issue)
         {
             if (_configuration.GetValue<bool>("Caching:Enabled") == false)
             {
                 _cacheLogger.LogInformation($"[~] Cache skip for issue VersionHistory {issue.IssueID}");
-                return await _inner.GetIssueVersionHistoryById(issue);
+                return await _inner.GetIssueVersionHistoryByIssueVM(issue);
             }
 
-            var cacheKey = $"issue-version-history:{issue.IssueID}";
+            var cacheKey = $"{CacheKeyPrefix.IssueVersionHistory}:{issue.IssueID}";
             if (_cache.TryGetValue(cacheKey, out List<ContentItem_ReadVM>? cachedIssueVersionHistory))
             {
                 _cacheLogger.LogInformation($"[+] Cache hit for issue VersionHistory {issue.IssueID}");
@@ -178,7 +184,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 return await _cache.GetOrCreateAsync(cacheKey, async entry =>
                 {
                     entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
-                    return await _inner.GetIssueVersionHistoryById(issue);
+                    return await _inner.GetIssueVersionHistoryByIssueVM(issue);
                 });
             }
         }

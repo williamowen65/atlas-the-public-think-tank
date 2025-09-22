@@ -2,6 +2,7 @@
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
 using atlas_the_public_think_tank.Data.DbContext;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers;
 using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues;
@@ -98,7 +99,7 @@ namespace CloudTests.CacheTests
             // Create Solution
             var (solutionJsonDoc, solutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId);
             // Create Cache Key
-            string expectedCacheKey = $"solution:{solutionId}";
+            string expectedCacheKey = $"{CacheKeyPrefix.Solution}:{solutionId}";
             // Fetch data
             string url = $"/api/cache-log/keys";
             var cacheLog = await _env.fetchJson<List<string>>(url);
@@ -179,7 +180,7 @@ namespace CloudTests.CacheTests
             var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue();
             var (solutionJsonDoc, solutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId);
 
-            var cacheKey = $"vote-stats:{solutionId}";
+            var cacheKey = $"{CacheKeyPrefix.VoteStats}:{solutionId}";
 
             string url = $"/api/cache-log/entry?key={cacheKey}";
 
@@ -249,11 +250,11 @@ namespace CloudTests.CacheTests
             //await Read.Solution(new Guid(parentSolutionId!), new ContentFilter());
 
 
-            // Assemble cache key for sub-issue-feed-ids
+            // Assemble cache key for CacheHelper.CacheKeysPrefix.FeedIds.SubIssueOfIssue
             ContentFilter filter = new ContentFilter();
             string filterCacheString = filter.ToCacheString();
             int pageNumber = 1;
-            var cacheKey = $"sub-issue-feed-ids:{parentSolutionId}:{filterCacheString}:page({pageNumber})"; ;
+            var cacheKey = $"{CacheKeyPrefix.SubIssueOfIssueOrSolutionFeedIds}:{parentSolutionId}:{filterCacheString}:page({pageNumber})"; ;
             string encodedCacheKey = Uri.EscapeDataString(cacheKey);
 
             string url = $"/api/cache-log/entry?key={encodedCacheKey}";
@@ -280,10 +281,10 @@ namespace CloudTests.CacheTests
             var (solutionJsonDoc, parentSolutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId);
             // This is the solution being testing... 
             // Note it has no sub-issues at creation
-            // Assemble cache key for sub-issue-feed-ids
+            // Assemble cache key for CacheKeyPrefix.SubIssueForIssueContentCount
             ContentFilter filter = new ContentFilter();
             string filterCacheString = filter.ToCacheString();
-            var cacheKey = $"sub-issue-content-counts:{parentSolutionId}:{filterCacheString}";
+            var cacheKey = $"{CacheKeyPrefix.SubIssueForIssueContentCount}:{parentSolutionId}:{filterCacheString}";
             string encodedCacheKey = Uri.EscapeDataString(cacheKey);
 
             string url = $"/api/cache-log/entry?key={encodedCacheKey}";
@@ -351,7 +352,7 @@ namespace CloudTests.CacheTests
             // populate cache
             await Read.Solution(new Guid(parentSolutionId!), filter);
             string filterCacheString = filter.ToCacheString();
-            var cacheKey = $"sub-issue-content-counts:{parentSolutionId}:{filterCacheString}";
+            var cacheKey = $"{CacheKeyPrefix.SubIssueForIssueContentCount}:{parentSolutionId}:{filterCacheString}";
             string encodedCacheKey = Uri.EscapeDataString(cacheKey);
 
             string url = $"/api/cache-log/entry?key={encodedCacheKey}";
@@ -369,7 +370,7 @@ namespace CloudTests.CacheTests
             // populate cache
             await Read.Solution(new Guid(parentSolutionId!), filter2);
             string filterCacheString2 = filter2.ToCacheString();
-            var cacheKey2 = $"sub-issue-content-counts:{parentSolutionId}:{filterCacheString2}";
+            var cacheKey2 = $"{CacheKeyPrefix.SubIssueForIssueContentCount}:{parentSolutionId}:{filterCacheString2}";
             string encodedCacheKey2 = Uri.EscapeDataString(cacheKey2);
             string url2 = $"/api/cache-log/entry?key={encodedCacheKey2}";
             var cacheEntry2 = await _env.fetchJson<CacheEntry_ContentCountDTO>(url2);
@@ -392,7 +393,7 @@ namespace CloudTests.CacheTests
             ContentFilter filter = new ContentFilter();
             string filterCacheString = filter.ToCacheString();
             int pageNumber = 1;
-            var cacheKey = $"sub-issue-feed-ids:{parentSolutionId}:{filterCacheString}:page({pageNumber})";
+            var cacheKey = $"{CacheKeyPrefix.SubIssueOfIssueOrSolutionFeedIds}:{parentSolutionId}:{filterCacheString}:page({pageNumber})";
             string encodedCacheKey = Uri.EscapeDataString(cacheKey);
             string url = $"/api/cache-log/entry?key={encodedCacheKey}";
 
@@ -406,7 +407,7 @@ namespace CloudTests.CacheTests
             await Read.Solution(new Guid(parentSolutionId!), new ContentFilter());
 
             // VOTE 1
-            // Cast a vote on sub-issue 2 (This should clear sub-issue-feed-ids for this the parent solution of this sub-issue)
+            // Cast a vote on sub-issue 2 (This should clear CacheHelper.CacheKeysPrefix.FeedIds.SubIssueOfIssue for this the parent solution of this sub-issue)
             await _testingCRUDHelper.CreateTestVoteOnIssue(subIssueId2, 8);
             await Read.Solution(new Guid(parentSolutionId!), new ContentFilter());
             var cacheEntry = await _env.fetchJson<CacheEntryIdsDTO>(url);

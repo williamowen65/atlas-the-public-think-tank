@@ -1,8 +1,11 @@
 ﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
 using atlas_the_public_think_tank.Data.DbContext;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues;
 using atlas_the_public_think_tank.Data.SeedData.SeedSolutions;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,7 +26,17 @@ namespace CloudTests.TestingSetup
                 .Where(idc => idc.issue.ParentIssueID == issue.IssueID)
                 .ToArray();
         }
-        public static SeedSolutionContainer[] GetSeedSolutionDataContainersOf(Issue issue)
+
+        public static SeedIssueContainer[] GetIssuesOf(AppUser user)
+        {
+            SeedIssueContainer[] seedIssuesDataContainers = SeedIssues.SeedIssuesDataContainers;
+
+            // return all issues that have a ParentIssueID of issue.IssueID
+            return seedIssuesDataContainers
+                .Where(idc => idc.issue.AuthorID == user.Id)
+                .ToArray();
+        }
+        public static SeedSolutionContainer[] GetSeedSolutionsOf(Issue issue)
         {
             SeedSolutionContainer[] seedSolutionDataContainers = SeedSolutions.SeedSolutionDataContainers;
 
@@ -40,13 +53,21 @@ namespace CloudTests.TestingSetup
                 {
                     double avgVote = 0;
 
-                    if (item is SeedIssueContainer issue && issue.issueVotes.Any())
+                    if (item is SeedIssueContainer issueContainer && issueContainer.issueVotes.Any())
                     {
-                        avgVote = issue.issueVotes.Average(v => v.VoteValue);
+                        avgVote = issueContainer.issueVotes.Average(v => v.VoteValue);
                     }
-                    else if (item is SeedSolutionContainer solution && solution.solutionVotes.Any())
+                    else if (item is SeedSolutionContainer solutionContainer && solutionContainer.solutionVotes.Any())
                     {
-                        avgVote = solution.solutionVotes.Average(v => v.VoteValue);
+                        avgVote = solutionContainer.solutionVotes.Average(v => v.VoteValue);
+                    }
+                    else if (item is Issue_ReadVM issue)
+                    {
+                        avgVote = issue.VoteStats.AverageVote;
+                    }
+                    else if (item is Solution_ReadVM solution)
+                    {
+                        avgVote = solution.VoteStats.AverageVote;
                     }
 
                     // Filter based on average vote being within range
