@@ -23,7 +23,9 @@ namespace atlas_the_public_think_tank.Controllers
         public async Task<IActionResult> UserProfile([FromQuery][BindRequired] Guid userId)
         {
 
-       
+            ViewData["FilterPanelMode"] = "UserProfile";
+
+
             if (userId == Guid.Empty)
             {
                 return BadRequest("User ID is required.");
