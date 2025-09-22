@@ -1,4 +1,5 @@
 ﻿using atlas_the_public_think_tank.Data.CRUD;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
 using atlas_the_public_think_tank.Data.DatabaseEntities.History;
@@ -54,6 +55,7 @@ namespace atlas_the_public_think_tank.Data.DbContext
                                      e.State == EntityState.Deleted))
             {
                 if (entry.Entity is UserHistory) continue;
+                if (entry.Entity is Scope) continue;
 
                 using var scope = _serviceProvider.CreateScope();
                 var services = scope.ServiceProvider;
@@ -86,6 +88,7 @@ namespace atlas_the_public_think_tank.Data.DbContext
                                      e.State == EntityState.Deleted))
             {
                 if (entry.Entity is UserHistory) continue;
+                if (entry.Entity is Scope) continue;
 
                 using var scope = _serviceProvider.CreateScope();
                 var services = scope.ServiceProvider;
@@ -121,21 +124,24 @@ namespace atlas_the_public_think_tank.Data.DbContext
 
             HttpContext? httpContext = _httpContextAccessor.HttpContext;
 
+            Guid? userId = null;
+
+            UserHistory? userHistory = null;
+
             if (entry.Entity is AppUser && entry.State == EntityState.Added)
             {
-                return new UserHistory
+                userId = ((AppUser)entry.Entity).Id;
+                userHistory = new UserHistory
                 {
                     Action = "Account Created",
-                    UserID = ((AppUser)entry.Entity).Id,
+                    UserID = (Guid)userId!,
                     Timestamp = now
                 };
             }
 
             if (entry.Entity is IssueVote)
             {
-                Guid? userId = ExtractUserId(entry, ((IssueVote)entry.Entity).UserID);
-
-                CacheHelper.ClearUserHistoryCache((Guid)userId!);
+                userId = ExtractUserId(entry, ((IssueVote)entry.Entity).UserID);
 
                 Guid issueId = ((IssueVote)entry.Entity).IssueID;
                 var issue = await Read.Issue(issueId, new ContentFilter());
@@ -144,7 +150,7 @@ namespace atlas_the_public_think_tank.Data.DbContext
 
                 string actionText = VoteSwitch(voteValue, entry);
 
-                return new UserHistory
+                userHistory = new UserHistory
                 {
                     Action = $"{actionText} on an issue: {issue!.Title}",
                     UserID = (Guid)userId!,
@@ -155,7 +161,7 @@ namespace atlas_the_public_think_tank.Data.DbContext
 
             if (entry.Entity is SolutionVote)
             {
-                Guid? userId = ExtractUserId(entry, ((SolutionVote)entry.Entity).UserID);
+                userId = ExtractUserId(entry, ((SolutionVote)entry.Entity).UserID);
 
                 Guid solutionId = ((SolutionVote)entry.Entity).SolutionID;
                 var solution = await Read.Solution(solutionId, new ContentFilter());
@@ -164,7 +170,7 @@ namespace atlas_the_public_think_tank.Data.DbContext
 
                 string actionText = VoteSwitch(voteValue, entry);
 
-                return new UserHistory
+                userHistory = new UserHistory
                 {
                     Action = $"{actionText} on a solution: {solution!.Title}",
                     UserID = (Guid)userId!,
@@ -176,11 +182,11 @@ namespace atlas_the_public_think_tank.Data.DbContext
             if (entry.Entity is Issue)
             {
                 Issue thisIssue = ((Issue)entry.Entity);
-                Guid? userId = ExtractUserId(entry, thisIssue.AuthorID);
+                userId = ExtractUserId(entry, thisIssue.AuthorID);
 
                 string actionText = ContentItemSwitch(entry, "an issue");
 
-                return new UserHistory
+                userHistory = new UserHistory
                 {
                     Action = $"{actionText}: {thisIssue.Title}",
                     UserID = (Guid)userId!,
@@ -193,11 +199,11 @@ namespace atlas_the_public_think_tank.Data.DbContext
             if (entry.Entity is Solution)
             {
                 Solution thisSolution = ((Solution)entry.Entity);
-                Guid? userId = ExtractUserId(entry, thisSolution.AuthorID);
+                userId = ExtractUserId(entry, thisSolution.AuthorID);
 
                 string actionText = ContentItemSwitch(entry, "a solution");
 
-                return new UserHistory
+                userHistory = new UserHistory
                 {
                     Action = $"{actionText}: {thisSolution.Title}",
                     UserID = (Guid)userId!,
@@ -207,9 +213,9 @@ namespace atlas_the_public_think_tank.Data.DbContext
 
             }
 
+            CacheHelper.ClearUserHistoryCache((Guid)userId!);
 
-
-            return null;
+            return userHistory;
            
         }
 
