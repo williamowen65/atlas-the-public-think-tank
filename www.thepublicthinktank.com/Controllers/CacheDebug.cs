@@ -1,5 +1,5 @@
 ﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
-using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers;
 using atlas_the_public_think_tank.Models.Cacheable;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue.IssueVote;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution.SolutionVote;

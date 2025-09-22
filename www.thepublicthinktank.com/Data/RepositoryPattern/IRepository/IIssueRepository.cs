@@ -46,7 +46,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.IRepository
         /// </returns>
         Task<IssueRepositoryViewModel?> GetIssueById(Guid id);
 
-        Task<List<ContentItem_ReadVM>?> GetIssueVersionHistoryById(Issue_ReadVM issue);
+        Task<List<ContentItem_ReadVM>?> GetIssueVersionHistoryByIssueVM(Issue_ReadVM issue);
 
         /// <summary>
         /// Adds an issue (Root issue or Sub-Issue)

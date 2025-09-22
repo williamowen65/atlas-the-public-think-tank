@@ -3,6 +3,7 @@ using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
 using atlas_the_public_think_tank.Data.DbContext;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers;
 using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues;
@@ -81,7 +82,7 @@ namespace CloudTests.CacheTests
             ContentFilter filter = new ContentFilter();
             string filterCacheString = filter.ToCacheString();
             int pageNumber = 1;
-            var cacheKey = $"main-content-feed-ids:{filterCacheString}:page({pageNumber})";
+            var cacheKey = $"{CacheKeyPrefix.MainContentFeedIds}:{filterCacheString}:page({pageNumber})";
             string encodedCacheKey = Uri.EscapeDataString(cacheKey);
             string url = $"/api/cache-log/entry?key={encodedCacheKey}";
 

@@ -1,5 +1,6 @@
 ﻿
 using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers;
 using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Models.ViewModel;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;
@@ -40,7 +41,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 return await _inner.GetBreadcrumbPagedAsync(itemId);
             }
 
-            var cacheKey = $"breadcrumb:{itemId}";
+            var cacheKey = $"{CacheKeyPrefix.Breadcrumb}:{itemId}";
             if (_cache.TryGetValue(cacheKey, out List<Breadcrumb_ReadVM>? cachedBreadcrumbList))
             {
                 _cacheLogger.LogInformation($"[+] Cache hit for GetBreadcrumbPagedAsync {itemId}");

@@ -10,6 +10,10 @@ using System.Threading.Tasks;
 
 namespace CloudTests.TestingSetup
 {
+    /// <summary>
+    /// Use this instead of <see cref="TestingCRUDHelpers"/> which is the old version.
+    /// Migrate the other test over to this version
+    /// </summary>
     public class TestingCRUDHelper
     {
         public readonly TestEnvironment _env;
@@ -211,7 +215,7 @@ namespace CloudTests.TestingSetup
 
         #region Test Solution CRUD helpers
 
-        public async Task<(JsonDocument JsonDoc, string issueId, string title, string content, Scope scope)> CreateTestSolution(string parentIssueId)
+        public async Task<(JsonDocument JsonDoc, string solutionId, string title, string content, Scope scope)> CreateTestSolution(string parentIssueId)
         {
             string title = "This is a title for a test solution";
             string content = "This is a content for a test solution";

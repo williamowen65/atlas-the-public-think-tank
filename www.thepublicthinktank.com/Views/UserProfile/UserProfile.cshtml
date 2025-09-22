@@ -101,13 +101,13 @@
                     @await Html.PartialAsync("~/Views/Shared/Components/_pagination-button.cshtml", new PaginationButton_VM
                     {
                         ElementId = "fetchPaginatedUserIssues",
-                        ContentType = "user-issues",
-                        Target = "#sub-issue-content",
-                        Url = "/issue/getPaginatedUserIssues/" + @Model.appUserVM.Id,
+                        ContentType = "user issues",
+                        Target = "#user-issue-content",
+                        Url = "/user-profile/getPaginatedUserIssues/" + @Model.appUserVM.Id,
                         CurrentPage = Model.paginatedUserIssues.ContentCount.FilteredCount,
                         PageSize = Model.paginatedUserIssues.PageSize,
                         TotalCount = Model.paginatedUserIssues.ContentCount.FilteredCount,
-                        })
+                     })
                 </div>   
             </div>
             <div id="panel-solution" class="tab-panel" role="tabpanel" aria-labelledby="tab-solution">
@@ -125,6 +125,17 @@
                             </div>
                         }
                     </div>
+
+                    @await Html.PartialAsync("~/Views/Shared/Components/_pagination-button.cshtml", new PaginationButton_VM
+                    {
+                        ElementId = "fetchPaginatedUserSolutions",
+                        ContentType = "user solutions",
+                        Target = "#user-solution-content",
+                        Url = "/user-profile/getPaginatedUserSolutions/" + @Model.appUserVM.Id,
+                        CurrentPage = Model.paginatedUserSolutions.ContentCount.FilteredCount,
+                        PageSize = Model.paginatedUserSolutions.PageSize,
+                        TotalCount = Model.paginatedUserSolutions.ContentCount.FilteredCount,
+                    })
                 </div>
             </div>
             <div id="panel-projects" class="tab-panel" role="tabpanel" aria-labelledby="tab-projects">
@@ -154,7 +165,19 @@
 </div>
 
 <script>
+       document.addEventListener("DOMContentLoaded", function() {
     (function() {
+         const paginationButton = document.getElementById("fetchPaginatedUserIssues")
+        if (paginationButton) {
+            setPaginationButtonListener(paginationButton)
+        }
+
+        const solutionsPaginationButton = document.getElementById("fetchPaginatedUserSolutions")
+        if (solutionsPaginationButton) {
+            setPaginationButtonListener(solutionsPaginationButton)
+        }
+
+
         const tabsRoot = document.querySelector('[data-profile-tabs]');
         if (!tabsRoot) return;
         const tabs = Array.from(tabsRoot.querySelectorAll('[role="tab"]'));
@@ -201,4 +224,5 @@
         });
 
     })();
+    })
 </script>

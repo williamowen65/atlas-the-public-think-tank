@@ -134,7 +134,7 @@ namespace atlas_the_public_think_tank.Controllers
             return Json(response);
         }
 
-
+    
 
         /// <summary>
         /// This method is used to return paginated solution posts for a specific issue.

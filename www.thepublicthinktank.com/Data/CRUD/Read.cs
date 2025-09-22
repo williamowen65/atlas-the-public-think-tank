@@ -466,7 +466,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
             var issueRepository = services.GetRequiredService<IIssueRepository>();
 
             // Pull all temporal versions of the issue with their period information
-            var contentItemVersions = await issueRepository.GetIssueVersionHistoryById(issue);
+            var contentItemVersions = await issueRepository.GetIssueVersionHistoryByIssueVM(issue);
 
             return contentItemVersions!;
         }
