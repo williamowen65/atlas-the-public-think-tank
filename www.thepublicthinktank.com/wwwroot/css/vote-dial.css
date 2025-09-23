@@ -79,6 +79,14 @@
     color: #000000; /* Default text color is black */
 }
 
+.vote-count svg * {
+    transition: fill .1s ease-in-out;
+
+}
+.vote-count:hover svg * {
+    fill: #a48d8d !important;
+}
+
 
 /* Custom scrollbar styling */
 .vote-toggle-container::-webkit-scrollbar {

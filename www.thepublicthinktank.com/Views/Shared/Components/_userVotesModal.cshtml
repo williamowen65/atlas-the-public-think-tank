@@ -1,0 +1,57 @@
+﻿@using atlas_the_public_think_tank.Models.ViewModel.AjaxVM
+@model UserVoteModalVM
+
+@* The modal showing user votes *@
+
+<div class="modal" tabindex="-1" id="userVoteModal">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Votes on @Model.content.Title</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            @* <div class="modal-header py-1">
+                Filter 
+            </div>  *@
+
+            <div class="modal-body pt-0">
+                @if (Model.ContentVotesWithUserKey != null && Model.ContentVotesWithUserKey.Any())
+                {
+                    <table class="table table-striped position-relative">
+
+                        <thead style="
+                            position: sticky;
+                            top: 0;
+                        ">
+                            <tr>
+                                <th>Voter</th>
+                                <th>Vote Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                        @foreach (var kvp in Model.ContentVotesWithUserKey.OrderByDescending(v => v.Value.VoteValue))
+                        {
+                            <tr class="">
+                                <td>
+                                    <strong><a href="/user-profile?userId=@kvp.Key.Id">@(kvp.Key.UserName)</a></strong>
+                                </td>
+                                <td>
+                                    @kvp.Value.VoteValue
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p>No votes found.</p>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

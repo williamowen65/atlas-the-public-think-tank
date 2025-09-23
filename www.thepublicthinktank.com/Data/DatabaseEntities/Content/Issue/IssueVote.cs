@@ -21,7 +21,9 @@ namespace atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue
     {
         public static void Declare(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<IssueVote>().ToTable("IssueVotes", "issues");
+            modelBuilder.Entity<IssueVote>().ToTable("IssueVotes", "issues", (tb) => {
+                tb.HasCheckConstraint("CK_IssueVote_VoteValue_Range", "[VoteValue] >= 0 AND [VoteValue] <= 10");
+            });
         }
         public static void Build(ModelBuilder modelBuilder)
         {

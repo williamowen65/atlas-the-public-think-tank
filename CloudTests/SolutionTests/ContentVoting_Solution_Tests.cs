@@ -1,13 +1,18 @@
-﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
 using atlas_the_public_think_tank.Data.DbContext;
+using atlas_the_public_think_tank.Data.SeedData.SeedIssues;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data;
 using atlas_the_public_think_tank.Data.SeedData.SeedSolutions;
 using atlas_the_public_think_tank.Data.SeedData.SeedSolutions.Data;
+using atlas_the_public_think_tank.Data.SeedData.SeedUsers.Data;
 using atlas_the_public_think_tank.Models;
 using atlas_the_public_think_tank.Models.ViewModel.AjaxVM;
 using CloudTests.TestingSetup;
 using CloudTests.TestingSetup.TestingData;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -44,6 +49,23 @@ namespace CloudTests.SolutionTests
 
 
 
+        public AppUser TestSolutionVote { get; } = new AppUser
+        {
+            Id = Guid.NewGuid(),
+            UserName = "solutionvotetest@example.com",
+            NormalizedUserName = "SOLUTIONVOTETEST@EXAMPLE.COM",
+            Email = "solutionvotetest@example.com",
+            NormalizedEmail = "SOLUTIONVOTETEST@EXAMPLE.COM",
+            EmailConfirmed = true,
+            SecurityStamp = Guid.NewGuid().ToString(),
+            ConcurrencyStamp = Guid.NewGuid().ToString(),
+            LockoutEnabled = false
+        };
+        public string TestSolutionVotePassword = "Password1234!";
+
+
+
+
         [TestMethod]
         public async Task UnauthorizedVote_Returns_YouMustBeLoggedInToVote()
         {
@@ -61,6 +83,45 @@ namespace CloudTests.SolutionTests
             // Get the response content
             Assert.IsTrue(response.Message.Contains("You must login in order to vote"));
         }
+
+        [DataTestMethod]
+        [DataRow(-1)]
+        [DataRow(-100)]
+        [DataRow(11)]
+        [DataRow(100)]
+        public async Task CheckConstraint_SolutionVote_VoteValue_Range(int voteValue)
+        {
+            AppUser testUser = Users.CreateTestUser(_db, TestSolutionVote, TestSolutionVotePassword);
+
+            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, TestSolutionVote.Email!, TestSolutionVotePassword);
+
+
+            SolutionVote solutionVote = new SolutionVote
+            {
+                VoteID = Guid.NewGuid(),
+                SolutionID = SeedSolutions.SeedSolutionDataContainers[0].solution.SolutionID,
+                UserID = testUser.Id,
+                VoteValue = voteValue,
+                CreatedAt = new DateTime(2024, 1, 26)
+            };
+
+            _db.Add(solutionVote);
+
+            int numberOfUpdatesMade = 0;
+            try
+            {
+                numberOfUpdatesMade = _db.SaveChanges();
+            }
+            catch (DbUpdateException ex)
+            {
+                // Optionally assert that the exception is due to the check constraint
+                Assert.IsTrue(ex.InnerException?.Message.Contains("CK_SolutionVote_VoteValue_Range") ?? false,
+                    "Exception should be due to VoteValue check constraint.");
+            }
+            Assert.IsTrue(numberOfUpdatesMade == 0, "SaveChanges should not succeed with out-of-range VoteValue.");
+
+        }
+
 
 
         [TestMethod]
