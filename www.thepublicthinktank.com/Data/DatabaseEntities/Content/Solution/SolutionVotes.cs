@@ -23,7 +23,9 @@ namespace atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution
     {
         public static void Declare(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<SolutionVote>().ToTable("SolutionVotes", "solutions");
+            modelBuilder.Entity<SolutionVote>().ToTable("SolutionVotes", "solutions", (tb) => {
+                tb.HasCheckConstraint("CK_SolutionVote_VoteValue_Range", "[VoteValue] >= 0 AND [VoteValue] <= 10");
+            });
         }
         public static void Build(ModelBuilder modelBuilder)
         {

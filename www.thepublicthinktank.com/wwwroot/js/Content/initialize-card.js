@@ -46,36 +46,68 @@ document.addEventListener("click", e => {
         }
 
         const isMinimizetoggle = Boolean(e.target.closest(".card-minimize-toggle"))
-        //const isExpandtoggle = Boolean(e.target.closest(".card-expand-toggle"))
-        //if (isExpandtoggle) {
-            // Move scroll position to top of card (plus header height (var(--header-height)))
-            const headerHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-height')) || 0;
-            const cardTop = card.getBoundingClientRect().top + window.scrollY;
-            window.scrollTo({
-                top: cardTop - headerHeight,
-                behavior: isMinimizetoggle ? 'instant' :'smooth'
-            });
-        //}
-
-        //if (isMinimizetoggle) {
-        //    // Retain the scroll position around the clicked element.
-        //    // Get card's position relative to viewport before minimizing
-        //    const prevRect = e.target.getBoundingClientRect();
-        //    const prevTop = prevRect.top;
-
-        //    // Use setTimeout to wait for DOM changes (minimize toggle) to take effect
-        //    setTimeout(() => {
-        //        const newRect = e.target.getBoundingClientRect();
-        //        const newTop = newRect.top;
-        //        // Calculate the difference and adjust scroll
-        //        const scrollDiff = newTop - prevTop;
-        //        window.scrollBy({ top: scrollDiff, behavior: 'instant' });
-        //    }, 0);
-        //}
+       
+        // Move scroll position to top of card (plus header height (var(--header-height)))
+        const headerHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-height')) || 0;
+        const cardTop = card.getBoundingClientRect().top + window.scrollY;
+        window.scrollTo({
+            top: cardTop - headerHeight,
+            behavior: isMinimizetoggle ? 'instant' :'smooth'
+        });
+     
     }
 
     setupQuickTabLinks(e)
+    setupVoteDialCountListener(e)
 })
+
+function setupVoteDialCountListener(e) {
+    if (e.target.closest(".vote-count")) {
+        // All of the vote data has been passed to the vote count view,
+        // just need to move that to a modal and trigger it
+        const contentCard = e.target.closest(".issue-card, .solution-card")
+        const contentType = contentCard.getAttribute("data-content-type")
+        const contentId = contentCard.getAttribute("id")
+
+        fetch(`/user-vote-modal?contentId=${contentId}&contentType=${contentType}`)
+            .then(res => res.json())
+            .then(res => {
+                if (!res.success) {
+                    console.log({"Vote dial count modal request error":res})
+                    throw new Error(res.message)
+                }
+                return res;
+            })
+            .then(res => {
+                // Add the modal HTML to the DOM
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = res.html;
+                while (tempDiv.firstChild) {
+                    document.body.appendChild(tempDiv.firstChild);
+                }
+
+                // Show the modal
+                const modalElement = document.getElementById('userVoteModal');
+                if (modalElement && window.bootstrap && bootstrap.Modal) {
+                    const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+                    modal.show();
+
+                    // Remove modal from DOM on close
+                    modalElement.addEventListener('hidden.bs.modal', function handleModalHidden() {
+                        modalElement.removeEventListener('hidden.bs.modal', handleModalHidden);
+                        modalElement.parentNode && modalElement.parentNode.removeChild(modalElement);
+                    });
+                } else {
+                    console.error('User vote modal element or Bootstrap JS not found.');
+                }
+
+            })
+            .catch(error => {
+
+                console.log({error})
+            })
+    }
+}
 
 
 /**
@@ -378,8 +410,6 @@ function initializeVoteDial(issueId) {
     scrollToSelectedOption(container, dialId);
     setupScrollEvents(container, dialId, state);
     setupRadioChangeEvents(radios, confirmVoteDebounced, container, state);
-    //createDialResetMethod(container, issueId, observer, dialId, options, state);
-
 
     //console.log("Dial initialized: ", issueId)
     //console.trace("Dial initialized: ", issueId)

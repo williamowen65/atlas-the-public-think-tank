@@ -1,22 +1,25 @@
 ﻿@using atlas_the_public_think_tank.Models.ViewModel
 @using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common.ContentItemVote
 @*
-    A portion of the vote dial that show the count of people who have voted.
-*@
+                        A portion of the vote dial that show the count of people who have voted.
+                    *@
 @model ContentItemVotes_ReadVM
 @{
 }
 
-<div class="" style="position: relative;">
+<div class="vote-count" style="position: relative;    cursor: pointer;">
 
-
-<div id="vote-count-@Model.ContentID" class="" style="
+  
+@* THE VOTE DIAL *@
+<div id="vote-count-@Model.ContentID" class=""  style="
 position: absolute;
     top: 50%;
     color: white;
     left: 50%;
     transform: translate(-50%, -24%);
-    z-index:10"
+    z-index:10;
+"
+    
 >
 @Model.TotalVotes
 </div>

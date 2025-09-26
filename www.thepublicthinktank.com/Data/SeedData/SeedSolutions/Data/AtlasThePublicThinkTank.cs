@@ -194,7 +194,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedSolutions.Data
                 VoteID = new Guid("12389012-4de5-f607-89ab-cdef01234567"),
                 SolutionID = ContentId,
                 UserID = SeedUserSeventeen.user.Id,
-                VoteValue = 11,
+                VoteValue = 5,
                 CreatedAt = new DateTime(2024, 1, 24)
             },
             new SolutionVote
@@ -202,7 +202,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedSolutions.Data
                 VoteID = new Guid("23490123-5ef6-0789-abcd-ef012345678a"),
                 SolutionID = ContentId,
                 UserID = SeedUserEighteen.user.Id,
-                VoteValue = 12,
+                VoteValue = 5,
                 CreatedAt = new DateTime(2024, 1, 25)
             },
             new SolutionVote
@@ -210,7 +210,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedSolutions.Data
                 VoteID = new Guid("34501234-6f07-89ab-cdef-0123456789ab"),
                 SolutionID = ContentId,
                 UserID = SeedUserNineteen.user.Id,
-                VoteValue = 12,
+                VoteValue = 5,
                 CreatedAt = new DateTime(2024, 1, 25)
             },
             new SolutionVote
@@ -218,7 +218,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedSolutions.Data
                 VoteID = new Guid("45612345-7a89-bcde-f012-3456789abcde"),
                 SolutionID = ContentId,
                 UserID = SeedUserTwenty.user.Id,
-                VoteValue = 13,
+                VoteValue = 5,
                 CreatedAt = new DateTime(2024, 1, 26)
             }
         };

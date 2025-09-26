@@ -22,7 +22,9 @@ namespace atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment
     {
         public static void Declare(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<CommentVote>().ToTable("CommentVotes", "comments");
+            modelBuilder.Entity<CommentVote>().ToTable("CommentVotes", "comments", (tb) => { 
+                tb.HasCheckConstraint("CK_CommentVote_VoteValue_Range", "[VoteValue] >= 0 AND [VoteValue] <= 10"); 
+            });
         }
 
         public static void Build(ModelBuilder modelBuilder)

@@ -3,13 +3,18 @@ using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
 using atlas_the_public_think_tank.Data.DbContext;
 using atlas_the_public_think_tank.Data.RawSQL;
+using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
+using atlas_the_public_think_tank.Models.Cacheable;
 using atlas_the_public_think_tank.Models.Enums;
 using atlas_the_public_think_tank.Models.ViewModel;
 using atlas_the_public_think_tank.Models.ViewModel.AjaxVM;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue.IssueVote;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution.SolutionVote;
+using atlas_the_public_think_tank.Models.ViewModel.CRUD.User;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.ContentItem_Common;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.Issue.IssueVote;
 using atlas_the_public_think_tank.Models.ViewModel.PageVM;
@@ -26,6 +31,7 @@ using System.Text;
 using System.Text.Json;
 using System.Web;
 using static atlas_the_public_think_tank.Data.SeedData.SeedIds;
+using ContentType = atlas_the_public_think_tank.Models.Enums.ContentType;
 
 namespace atlas_the_public_think_tank.Controllers;
 
@@ -39,12 +45,18 @@ public class HomeController : Controller
     private readonly ILogger<HomeController> _logger;
     private readonly ApplicationDbContext _context;
     private readonly UserManager<AppUser> _userManager;
+    private readonly IVoteStatsRepository _voteStatsRepository;
+    private readonly IAppUserRepository _appUserRepository;
+    private readonly IIssueRepository _issueRepository;
 
-    public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, UserManager<AppUser> userManager)
+    public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, UserManager<AppUser> userManager, IVoteStatsRepository voteStatsRepository, IAppUserRepository appUserRepository, IIssueRepository issueRepository)
     {
         _logger = logger;
         _context = context;
         _userManager = userManager;
+        _voteStatsRepository = voteStatsRepository;
+        _appUserRepository = appUserRepository;
+        _issueRepository = issueRepository;
     }
 
     #region Serve the home page
@@ -213,11 +225,88 @@ public class HomeController : Controller
 
         return Json(new {
             html = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Shared/_ConfirmVote.cshtml", confirmVoteVM)
-            //html = PartialView("_ConfirmVote", confirmVoteVM)
         });
-
-
     }
+
+
+ 
+
+   
+
+    [AllowAnonymous]
+    [Route("/user-vote-modal")]
+    public async Task<IActionResult> UserVoteModal([FromQuery] UserVoteModalRequest userVoteModalRequest)
+    {
+        if (userVoteModalRequest.ContentId == Guid.Empty)
+        {
+            ModelState.AddModelError("ContentId", "ContentID: cannot be empty");
+        }
+        if (userVoteModalRequest.ContentType == null || (userVoteModalRequest.ContentType != ContentType.Solution && userVoteModalRequest.ContentType != ContentType.Issue))
+        {
+            ModelState.AddModelError("ContentType", "ContentType: must not be null, and must equal issue or solution");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return Json(new { success = false, message = "Invalid vote data", errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage) });
+        }
+
+        var userVoteModalVM = new UserVoteModalVM
+        {
+            ContentVotesWithUserKey = new Dictionary<AppUser_ReadVM, Vote_Cacheable>()
+        };
+
+        if (userVoteModalRequest.ContentType == ContentType.Issue)
+        {
+
+            // Get info about the content
+            Issue_ReadVM? issue_ReadVM = await Read.Issue(userVoteModalRequest.ContentId, new ContentFilter());
+            if (issue_ReadVM != null)
+            {
+                userVoteModalVM.content = Converter.ConvertIssue_ReadVMToContentItem_ReadVM(issue_ReadVM);
+                // Get user info from the vote stats
+                var ContentVotes = issue_ReadVM.VoteStats.IssueVotes;
+                foreach (var kvp in ContentVotes)
+                {
+                    var userId = kvp.Key;
+                    var vote = kvp.Value;
+                    var userVM = await Read.AppUser(userId);
+                    if (userVM != null)
+                    {
+                        userVoteModalVM.ContentVotesWithUserKey[userVM] = vote;
+                    }
+                }
+            }
+
+          
+        }
+        else if (userVoteModalRequest.ContentType == ContentType.Solution)
+        {
+            Solution_ReadVM? solution_ReadVM = await Read.Solution(userVoteModalRequest.ContentId, new ContentFilter());
+            if (solution_ReadVM != null)
+            {
+                userVoteModalVM.content = Converter.ConvertSolution_ReadVMToContentItem_ReadVM(solution_ReadVM);
+                var ContentVotes = solution_ReadVM.VoteStats.SolutionVotes;
+                foreach (var kvp in ContentVotes)
+                {
+                    var userId = kvp.Key;
+                    var vote = kvp.Value;
+                    var userVM = await Read.AppUser(userId);
+                    if (userVM != null)
+                    {
+                        userVoteModalVM.ContentVotesWithUserKey[userVM] = vote;
+                    }
+                }
+            }
+        }
+
+        return Json(new
+        {
+            success = true,
+            html = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Shared/Components/_userVotesModal.cshtml", userVoteModalVM)
+        });
+    }
+
 
 
 
