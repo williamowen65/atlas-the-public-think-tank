@@ -90,6 +90,8 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         /// </remarks>
         public async Task<Issue_ReadVM> AddIssueAsync(Issue issue)
         {
+
+            // TODO Improve cache validation on a per ContentStatus basis (draft, published, etc)
             #region cache invalidation
             // When creating an issue invalidate all related filterIdSets in the cache
             // This can later be optimized
@@ -133,6 +135,8 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
             //convert issue to IssueRepositoryViewModel
             IssueRepositoryViewModel cacheableIssue = Converter.ConvertIssueToIssueRepositoryViewModel(issue);
+            
+            // TODO: Create cache helper method for this.
             // Update Cache
             _cache.Set(cacheKey, cacheableIssue, new MemoryCacheEntryOptions
             {
@@ -141,10 +145,16 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
             Issue_ReadVM? updatedIssueVM = await _inner.UpdateIssueAsync(issue);
 
-            var cacheKeyIssueVersionHistory = $"{CacheKeyPrefix.IssueVersionHistory}:{issue.IssueID}";
-
             // Note: This method may be better suited to be Update instead of clear.
             CacheHelper.ClearIssueContentVersionHistoryCache(issue.IssueID);
+
+            //Get the logged in user here (if the user updates a post from Draft to Published the feed should be updated)
+            CacheHelper.ClearIssueFeedIdsForUser(issue.AuthorID);
+            CacheHelper.ClearContentCountIssuesForUser(issue.AuthorID);
+
+            CacheHelper.ClearContentCountForMainPage(); 
+            CacheHelper.ClearMainPageFeedIds();
+
 
 
             // Why is this not calling _inner.UpdateIssueAsync?

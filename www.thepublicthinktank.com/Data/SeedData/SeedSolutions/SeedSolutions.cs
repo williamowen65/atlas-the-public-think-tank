@@ -45,6 +45,7 @@ namespace atlas_the_public_think_tank.Data.SeedData.SeedSolutions
                     // Guaranteeing that the entity doesn't contain navigation properties
                     context.Solutions.Add(new Solution()
                     {
+                        ContentStatus = solution.ContentStatus, 
                         SolutionID = solution.SolutionID,
                         ParentIssueID = solution.ParentIssueID,
                         Title = solution.Title,

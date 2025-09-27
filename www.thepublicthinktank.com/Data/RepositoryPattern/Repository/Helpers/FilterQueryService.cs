@@ -31,6 +31,11 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
                 Console.WriteLine(filter.ToJson());
             }
 
+            if (filter?.ContentStatus != null)
+            {
+                query = query.Where(s => s.ContentStatus == filter.ContentStatus);
+            }
+
             // Filter by average vote range
             if (filter?.AvgVoteRange != null)
             {
@@ -87,6 +92,10 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
                 Console.WriteLine("Applying content filters to solutions");
                 Console.WriteLine(filter);
                 Console.WriteLine(filter.ToJson());
+            }
+
+            if (filter?.ContentStatus != null) {
+                query = query.Where(s => s.ContentStatus == filter.ContentStatus);
             }
 
             // Filter by average vote range
@@ -148,6 +157,11 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
                 Console.WriteLine("Applying combined content filters");
                 Console.WriteLine(filter);
                 Console.WriteLine(filter.ToJson());
+            }
+
+            if (filter?.ContentStatus != null)
+            {
+                query = query.Where(s => s.ContentStatus == filter.ContentStatus);
             }
 
             // Filter for ContentType ("both", "issues", "solutions)

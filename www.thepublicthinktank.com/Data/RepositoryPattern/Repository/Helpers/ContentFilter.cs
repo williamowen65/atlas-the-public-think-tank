@@ -1,4 +1,6 @@
-﻿namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
+﻿using atlas_the_public_think_tank.Models.Enums;
+
+namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
 {
     /// <summary>
     /// Represents a customizable filter that users can apply to content queries
@@ -14,6 +16,10 @@
         /// Creates a new instance of the default content filter
         /// </summary>
         public ContentFilter() { }
+
+        // By default, the content filter should filter for published content only
+        // This can be overridden for other use cases
+        public ContentStatus ContentStatus { get; set; } = ContentStatus.Published;
 
         public string ContentType { get; set; } = "both";
         /// <summary>
@@ -40,6 +46,7 @@
         {
             return
                 $"type({ContentType})" +
+                $"+status({ContentStatus})" +
                 $"+avg({AvgVoteRange.Min},{AvgVoteRange.Max})" +
                 $"+votecount({TotalVoteCount.Min},{(TotalVoteCount.Max != null ? TotalVoteCount.Max : "null")})" +
                 $"+daterange({(DateRange.From != null ? DateRange.From.ToString() : "null")},{(DateRange.To != null ? DateRange.To.ToString() : "null")})" +

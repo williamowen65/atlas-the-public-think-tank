@@ -1,4 +1,10 @@
-﻿ul.dropdown-menu.user-actions-dropdown.show {
+﻿.draft-count {
+    top: -19px;
+    right: 12px;
+    transform: scale(0.7);
+}
+
+ul.dropdown-menu.user-actions-dropdown.show {
     width: 380px;
     transform: translate(0,0) !important;
     top: var(--header-height) !important;

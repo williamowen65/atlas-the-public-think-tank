@@ -191,7 +191,9 @@ public class Program
         // Log Razor Page requests with custom category
         app.UsePageRequestLogging();
 
-      
+
+        app.UseStatusCodePagesWithReExecute("/Error/{0}");
+
         // Start the application and begin listening for incoming HTTP requests
         app.Run();
     }

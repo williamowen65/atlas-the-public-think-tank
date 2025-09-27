@@ -15,6 +15,7 @@ using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution.SolutionVote;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.User;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.Solution;
+using atlas_the_public_think_tank.Models.ViewModel.PageVM;
 using atlas_the_public_think_tank.Models.ViewModel.UI_VM;
 using Microsoft.EntityFrameworkCore;
 
@@ -613,6 +614,22 @@ namespace atlas_the_public_think_tank.Data.CRUD
 
         #endregion
 
+
+        public static async Task<UserDraft_PageVM?> UserDrafts(Guid userId, ContentFilter filter)
+        {
+            filter.ContentStatus = ContentStatus.Draft;
+
+            Issues_Paginated_ReadVM usersIssues = (await Read.PaginatedUsersIssues(userId, filter))!;
+            Solutions_Paginated_ReadVM usersSolutions = (await Read.PaginatedUsersSolutions(userId, filter))!;
+
+            UserDraft_PageVM userDraft_PageVM = new UserDraft_PageVM()
+            {
+                paginatedUserIssuesDrafts = usersIssues,
+                paginatedUserSolutionsDrafts = usersSolutions
+            };
+
+            return userDraft_PageVM;
+        }
 
         #endregion
     }

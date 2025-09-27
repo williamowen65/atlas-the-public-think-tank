@@ -39,6 +39,7 @@ namespace atlas_the_public_think_tank.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<AppUser> _userManager;
+        private readonly SignInManager<AppUser> _signInManager;
         private readonly IWebHostEnvironment _environment;
         private readonly IBreadcrumbRepository _breadcrumbRepository;
         private readonly IAppUserRepository _appUserRepository;
@@ -46,6 +47,7 @@ namespace atlas_the_public_think_tank.Controllers
         public IssueController(
             ApplicationDbContext context,
             UserManager<AppUser> userManager,
+            SignInManager<AppUser> signInManager,
             IWebHostEnvironment env,
             IBreadcrumbRepository breadcrumbRepository,
             IAppUserRepository appUserRepository
@@ -53,6 +55,7 @@ namespace atlas_the_public_think_tank.Controllers
         {
             _context = context;
             _userManager = userManager;
+            _signInManager = signInManager;
             _environment = env;
             _breadcrumbRepository = breadcrumbRepository;
             _appUserRepository = appUserRepository;
@@ -79,15 +82,46 @@ namespace atlas_the_public_think_tank.Controllers
                 filter = ContentFilter.FromJson(cookieValue);
             }
 
-            bool fetchParent = true;
+            // TODO Prevent reading of Draft issue unless you have permissions
+            // Try Catch the Read issue
 
-            var issue = await Read.Issue(id, filter, fetchParent);
+
+            bool fetchParent = true;
+            Issue_ReadVM? issue = null;
+            try
+            {
+               issue = await Read.Issue(id, filter, fetchParent);
+            }
+            catch(Exception ex) {
+                if (ex.Message != "Issue not found") {
+                    throw;
+                }
+            }
+                       
+            
             // This retrieves the first set of paginated sub-issues and paginated solutions
 
             if (issue == null)
             {
                 return NotFound();
             }
+
+            bool isDraft = issue.ContentStatus == ContentStatus.Draft;
+            if (isDraft) {
+                // Must be signed in
+                if (!_signInManager.IsSignedIn(User))
+                {
+                    return Unauthorized();
+                }
+
+                // Safely parse the user ID; treat invalid/missing as unauthorized
+                string? userIdStr = _userManager.GetUserId(User);
+                if (!Guid.TryParse(userIdStr, out Guid userId) || userId != issue.Author.Id)
+                {
+                    return Unauthorized();
+                }
+            }
+
 
             issue_PageVM.Issue = issue;
             issue_PageVM.Sidebar.PageInfo = GetPageInfo(filter, issue);

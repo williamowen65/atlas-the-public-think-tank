@@ -120,6 +120,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             var issuesIndexQuery = _context.Issues
                 .Select(i => new ContentIndexEntry
                 {
+                    ContentStatus = i.ContentStatus,
                     ContentId = i.IssueID,
                     ContentType = ContentType.Issue,
                     CreatedAt = i.CreatedAt,
@@ -130,6 +131,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             var solutionsIndexQuery = _context.Solutions
                 .Select(s => new ContentIndexEntry
                 {
+                    ContentStatus = s.ContentStatus,
                     ContentId = s.SolutionID,
                     ContentType = ContentType.Solution,
                     CreatedAt = s.CreatedAt,
@@ -162,6 +164,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             var issuesIndexQuery = _context.Issues
                .Select(i => new ContentIndexEntry
                {
+                   ContentStatus = i.ContentStatus,
                    ContentId = i.IssueID,
                    ContentType = ContentType.Issue,
                    CreatedAt = i.CreatedAt,
@@ -172,6 +175,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             var solutionsIndexQuery = _context.Solutions
                 .Select(s => new ContentIndexEntry
                 {
+                    ContentStatus = s.ContentStatus,
                     ContentId = s.SolutionID,
                     ContentType = ContentType.Solution,
                     CreatedAt = s.CreatedAt,

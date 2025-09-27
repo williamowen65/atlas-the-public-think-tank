@@ -74,7 +74,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         /// </remarks>
         public async Task<Solution_ReadVM> AddSolutionAsync(Solution solution)
         {
-
+            // TODO Improve cache validation on a per ContentStatus basis (draft, published, etc)
             #region cache invalidation
 
             CacheHelper.ClearSolutionFeedIdsForIssue((Guid)solution.ParentIssueID);
@@ -112,6 +112,8 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             // Convert solution to SolutionRepositoryViewModel
             SolutionRepositoryViewModel cacheableSolution = Converter.ConvertSolutionToSolutionRepositoryViewModel(solution);
 
+
+            // TODO Move this to cache helper
             // Update Cache
             _cache.Set(cacheKey, cacheableSolution, new MemoryCacheEntryOptions
             {
