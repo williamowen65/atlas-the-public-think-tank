@@ -63,12 +63,16 @@
                 @{
                     List<object> issueIdList = new List<object>();
                     string? selectedParentIssueValue = null;
+                    string? select2TemplateCallback = null;
+                    string? parentIssueIdFromQuery = Context.Request.Query["parentIssueID"].FirstOrDefault();
+                    bool hasParentIssueIdQuery = !string.IsNullOrEmpty(parentIssueIdFromQuery);
                     if (Model.Solution.ParentIssue != null)
                     {
                         issueIdList.Add(Model.Solution.ParentIssue);
                         selectedParentIssueValue = Model.Solution.ParentIssue.IssueID.ToString();
+                        select2TemplateCallback = $"/issue/get-issue-select2-template/{selectedParentIssueValue}";
                     }
-                }
+                } 
 
                 <div class="parentIssueSelectContainer">
                 @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
@@ -81,8 +85,9 @@
                     TextField = "Title",
                     ValueField = "IssueID",
                     ListItems = issueIdList,
-                    DisabledField = selectedParentIssueValue != null ? true : false,
+                    DisabledField = hasParentIssueIdQuery,
                     SelectedValue = selectedParentIssueValue,
+                    Select2TemplateCallback = select2TemplateCallback,
                     Select2ConfigurationCallback = "getParentIssueSelect2Config",
                     Select2ListenerCallback = "setParentIssueSelect2Listener"
                 })

@@ -50,18 +50,25 @@
 
 <div class="mb-3 form-element" >
     <label for="@propertyName" class="form-label">@dataFieldLabel</label>
-    <select id="@propertyName" name="@propertyName" @(Model.Select2ConfigurationCallback != null ? $"ajax-callback={Model.Select2ConfigurationCallback}" : "") @(Model.Select2ListenerCallback != null ? $"select2-listener-callback={Model.Select2ListenerCallback}" : "") class="form-select my-select2 d-none" @(isDisabledField ? "disabled" : String.Empty) @(Model.AllowMultiple == true ? "multiple" : String.Empty)>
-        <option value="">@dataFieldPlaceholder</option>
-        @foreach (var item in selectList)
-        {
-            var isSelected =
-            (dataSelectedValues != null && dataSelectedValues.Contains(item.Value?.ToString()))
-            || (dataSelectedValue == item.Value?.ToString());
+    <select id="@propertyName" 
+        name="@propertyName" 
+        class="form-select my-select2 d-none" 
+        @(Model.Select2ConfigurationCallback != null ? $"ajax-callback={Model.Select2ConfigurationCallback}" : "") 
+        @(Model.Select2ListenerCallback != null ? $"select2-listener-callback={Model.Select2ListenerCallback}" : "") 
+        @(isDisabledField ? "disabled" : String.Empty) @(Model.AllowMultiple == true ? "multiple" : String.Empty)
+        @(Model.Select2TemplateCallback != null ? $"select2-template-callback={Model.Select2TemplateCallback}" : "") 
+     >
+            <option value="">@dataFieldPlaceholder</option>
+            @foreach (var item in selectList)
+            {   
+                var isSelected =
+                (dataSelectedValues != null && dataSelectedValues.Contains(item.Value?.ToString()))
+                || (dataSelectedValue == item.Value?.ToString());
 
-            <option value="@item.Value" selected="@(isSelected ? "selected" : null)">
-                @item.Text
-            </option>
-        }
+                <option value="@item.Value" selected="@(isSelected ? "selected" : null)">
+                    @item.Text
+                </option>
+            }
     </select>
     <span class="text-danger field-validation-valid" data-valmsg-for="@propertyName" data-valmsg-replace="true"></span>
 </div>

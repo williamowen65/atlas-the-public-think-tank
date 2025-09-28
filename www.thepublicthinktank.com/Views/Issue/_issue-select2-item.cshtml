@@ -1,0 +1,36 @@
+﻿@using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common.ContentItemVote
+@using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue
+
+
+@*
+    Layout of the issue card select 2 item
+*@
+
+@model Issue_ReadVM
+
+
+
+<div class="card issue-card select2-item" id="@Model.IssueID" data-content-type="issue">
+    <div class="card-content position-relative  mb-2">
+        <div class="card-header  " style="border-left:var(--bs-card-border-width) solid var(--bs-card-border-color); border-top-left-radius: 0;">
+
+
+            <h5 class="mb-0">
+                @* Scope ribbon without extra stats like comments or sub issues or solutions*@
+                @await Html.PartialAsync("~/Views/Shared/Components/_scope-ribbon.cshtml", Model.Scope)
+                <span class="float-start me-2">
+                    @await Html.PartialAsync("~/Views/Shared/Icons/_SubIssues.cshtml")
+                </span>
+                @* Title and this float need to be next to each other for float styling to work. *@
+                <span class="card-title">@Model.Title</span>
+            </h5>
+            <small class="text-muted">Posted by @Model.Author?.UserName on @Model.CreatedAt.ToString("MMM dd, yyyy")</small>
+
+        </div>
+    </div>
+    @await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", Model.BreadcrumbTags,
+    new ViewDataDictionary(ViewData) { { "no-link", true } })
+
+</div>
+
+

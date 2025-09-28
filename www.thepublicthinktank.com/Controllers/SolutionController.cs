@@ -595,6 +595,22 @@ namespace atlas_the_public_think_tank.Controllers
 
 
 
+        [HttpGet]
+        [Route("/solution/get-solution-select2-template/{solutionId}")]
+        public async Task<IActionResult> GetSolutionSelect2Template(Guid solutionId)
+        {
+            Solution_ReadVM solution = await Read.Solution(solutionId, new ContentFilter());
+            string Select2Item = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Solution/_solution-select2-item.cshtml", solution);
+
+            return Json(new
+            {
+                Success = true,
+                Select2Item
+            });
+        }
+
+
+
         public PageInfo GetPageInfo(ContentFilter filter, Solution_ReadVM solution)
         {
 

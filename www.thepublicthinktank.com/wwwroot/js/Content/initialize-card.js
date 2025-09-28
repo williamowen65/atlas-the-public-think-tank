@@ -17,6 +17,12 @@
 function initializeCard(cardId) {
     const card = document.querySelector(`.card[id="${cardId}"]`)
 
+    scrollBreadcrumbToEnd(card)
+
+    if (card.classList.contains("select2-item")) {
+        return; // no action needed
+    }
+
     const isVersionHistoryModal = card.closest("#versionControlModal");
 
     if (!isVersionHistoryModal) {
@@ -25,7 +31,7 @@ function initializeCard(cardId) {
     }
     initializeCompositeScopeRibbonListener(cardId)
 
-    scrollBreadcrumbToEnd(card)
+    
    
 }
 
