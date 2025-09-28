@@ -30,10 +30,12 @@ namespace atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution
             modelBuilder.Entity<Solution>().ToTable(
                 "Solutions", 
                 "solutions",
-                 tb => tb.IsTemporal(temporal =>
-                 {
-                     temporal.UseHistoryTable("SolutionsHistory", "solutions");
-                 }));
+                 tb => {
+                     tb.IsTemporal(temporal =>
+                     {
+                         temporal.UseHistoryTable("SolutionsHistory", "solutions");
+                     });
+                 });
         }
 
         public static void Declare(ModelBuilder modelBuilder)
@@ -44,6 +46,8 @@ namespace atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution
                 entity.Property(e => e.Title).HasMaxLength(300).IsRequired();
                 entity.Property(e => e.Content).IsRequired();
                 entity.Property(e => e.ContentStatus).IsRequired();
+                // Generates a check constraint similar to DF__Issues__CreatedA__6EF57B66
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
 
                 entity.HasMany(e => e.ChildIssues)
                   .WithOne(e => e.ParentSolution)

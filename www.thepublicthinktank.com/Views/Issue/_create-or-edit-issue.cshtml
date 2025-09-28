@@ -15,7 +15,7 @@ Client side scripts tied to this view: ContentCreate.js
 
 
 @* Create new issue description  *@
-<form class="border-1 border card mb-3 issue-editor" data-content-type="issue" data-form-url="/edit-issue">
+<form class="border-1 border card mb-3 issue-editor" data-content-type="issue" data-content-id="@Model.Issue.IssueID" data-form-url="/edit-issue">
     @*
         asp-controller="Issue" asp-action="CreateIssue" method="post"
         These are controlled via the Ajax in ContentCreate.js
@@ -79,18 +79,20 @@ Client side scripts tied to this view: ContentCreate.js
         <div class=" ms-auto d-flex">
             @if (Model.Issue.ContentStatus == null)
             {
+                <button class="cancel-edit-issue-button btn btn-sm btn-secondary fw-bold" type="submit">Cancel</button>
                 <button class="create-issue-draft btn btn-sm btn-secondary fw-bold ms-auto" type="submit">Create as Draft</button>
-                <button class="publish-issue btn btn-sm btn-primary fw-bold ms-2" type="submit">Publish Issue</button>
+                @await Html.PartialAsync("~/Views/Issue/FormComponents/_PublishIssueButton.cshtml", Model)
             }
             @if (Model.Issue.ContentStatus == ContentStatus.Draft)
             {
+                <button class="cancel-edit-issue-button btn btn-sm btn-secondary fw-bold" type="submit">Cancel</button>
                 <button class="update-issue-draft btn btn-sm btn-secondary fw-bold ms-auto" type="submit">Update Draft</button>
-                <button class="publish-issue btn btn-sm btn-primary fw-bold ms-2" type="submit">Publish Issue</button>
+                @await Html.PartialAsync("~/Views/Issue/FormComponents/_PublishIssueButton.cshtml", Model)
             }
             @if (Model.Issue.ContentStatus == ContentStatus.Published)
             {
-
-                <button class="btn btn-primary btn-sm fw-bold ms-auto update-issue w-fit" type="submit">Update Issue Post</button>
+                <button class="cancel-edit-issue-button btn btn-sm btn-secondary fw-bold" type="submit">Cancel</button>
+                @await Html.PartialAsync("~/Views/Issue/FormComponents/_PublishIssueButton.cshtml", Model)
             }
         </div>
     </div>

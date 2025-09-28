@@ -22,10 +22,12 @@
 @if (doesUserOwnContent && user != null)
 {
     <div class="card mx-5 text-center border-info author-content-alert" data-content-type="solution" data-id="@Model.SolutionID" style="border-bottom:0px;border-bottom-left-radius: 0px; border-bottom-right-radius: 0px">
-        <div class="card-header" style="border-bottom:0px">
+        <div class="card-header d-flex justify-content-between align-items-center" style="border-bottom:0px">
+            <small>@Model.ContentStatus</small>
             You are the owner of this solution node.
-            <div class="float-end">
-                <button data-content-type="solution" data-content-id="@Model.SolutionID" class="edit-solution-button border-0 bg-transparent"> <i class="fa fa-edit"></i></button>
+            <div class="">
+                <button data-content-type="solution" data-content-id="@Model.SolutionID" class="edit-solution-button border-0 bg-transparent if-not-edit-mode"> <i class="fa fa-edit"></i></button>
+                <button data-content-type="solution" data-content-id="@Model.SolutionID" class="cancel-edit-solution-button border-0 bg-transparent if-edit-mode"> <i class="fa fa-xmark"></i></button>
             </div>
         </div>
     </div>

@@ -72,5 +72,18 @@ namespace atlas_the_public_think_tank.Controllers
             Console.WriteLine();
             return Ok();
         }
+
+        [Route("/401")]
+        public IActionResult Get401Page()
+        {
+            // this route is for observing this page, for making style updates.
+            return Unauthorized();
+        }
+        [Route("/404")]
+        public IActionResult Get404Page()
+        {
+            // this route is for observing this page, for making style updates.
+            return NotFound();
+        }
     }
 }

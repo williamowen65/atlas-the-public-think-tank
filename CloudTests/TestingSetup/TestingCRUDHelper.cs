@@ -1,4 +1,5 @@
 ﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Models.Enums;
 using atlas_the_public_think_tank.Models.ViewModel.AjaxVM;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;
 using System;
@@ -23,7 +24,7 @@ namespace CloudTests.TestingSetup
 
         #region Test Issue CRUD helpers
 
-        public async Task<(JsonDocument JsonDoc, string issueId, string title, string content, Scope scope)> CreateTestIssue()
+        public async Task<(JsonDocument JsonDoc, string issueId, string title, string content, Scope scope)> CreateTestIssue(ContentStatus contentStatus)
         {
             string title = "This is a title for a test issue";
             string content = "This is a content for a test issue";
@@ -31,14 +32,15 @@ namespace CloudTests.TestingSetup
             {
                 Scales = { Scale.Global }
             };
-            var (jsonDoc, issueId, scopeId) = await CreateIssue(title, content, scope);
+            var (jsonDoc, issueId, scopeId) = await CreateIssue(title, content, scope, contentStatus);
             scope.ScopeID = new Guid(scopeId);
             return (jsonDoc, issueId, title, content, scope);
         }
 
         public async Task<(JsonDocument JsonDoc, string issueId, string title, string content, Scope scope)> EditTestIssue(
             string issueId,
-            Guid scopeId
+            Guid scopeId,
+            ContentStatus contentStatus
          )
         {
             string title = "This is an updated title for a test issue";
@@ -49,11 +51,11 @@ namespace CloudTests.TestingSetup
                 Scales = { Scale.Global, Scale.National },
                 Domains = { Domain.Social }
             };
-            var (jsonDoc, _issueId, _scopeId) = await EditIssue(issueId, title, content, scope);
+            var (jsonDoc, _issueId, _scopeId) = await EditIssue(issueId, title, content, scope, contentStatus);
             return (jsonDoc, issueId, title, content, scope);
         }
 
-        public async Task<(JsonDocument JsonDoc, string issueId, string title, string content, Scope scope)> CreateTestSubIssue(Guid? parentIssueId = null, Guid? parentSolutionId = null)
+        public async Task<(JsonDocument JsonDoc, string issueId, string title, string content, Scope scope)> CreateTestSubIssue(ContentStatus contentStatus, Guid? parentIssueId = null, Guid? parentSolutionId = null)
         {
             string title = "This is a title for a test sub-issue";
             string content = "This is a content for a test sub-issue";
@@ -61,7 +63,7 @@ namespace CloudTests.TestingSetup
             {
                 Scales = { Scale.Global }
             };
-            var (jsonDoc, issueId, scopeId) = await CreateIssue(title, content, scope, parentIssueId, parentSolutionId);
+            var (jsonDoc, issueId, scopeId) = await CreateIssue(title, content, scope, contentStatus, parentIssueId, parentSolutionId);
             scope.ScopeID = new Guid(scopeId);
             return (jsonDoc, issueId, title, content, scope);
         }
@@ -71,6 +73,7 @@ namespace CloudTests.TestingSetup
             string title,
             string content,
             Scope scope,
+            ContentStatus contentStatus,
             Guid? parentIssueId = null,
             Guid? parentSolutionId = null
          )
@@ -83,6 +86,7 @@ namespace CloudTests.TestingSetup
                 new("__RequestVerificationToken", tokenValue!),
                 new("Title", title),
                 new("Content", content),
+                new("ContentStatus", contentStatus.ToString())
             };
 
             AttachScopeToFormData(scope, formData);
@@ -116,7 +120,8 @@ namespace CloudTests.TestingSetup
             string issueId,
             string title,
             string content,
-            Scope scope
+            Scope scope,
+            ContentStatus contentStatus
        )
         {
             string url = $"/edit-issue?issueId={issueId}";
@@ -130,6 +135,8 @@ namespace CloudTests.TestingSetup
                 new KeyValuePair<string, string>("Title", title),
                 new KeyValuePair<string, string>("Content", content),
                 new KeyValuePair<string, string>("IssueID", issueId),
+                new KeyValuePair<string, string>("ContentStatus", contentStatus.ToString()),
+                
 
             };
 
@@ -164,7 +171,9 @@ namespace CloudTests.TestingSetup
             string parentIssueId,
             string title,
             string content,
-            Scope scope)
+            Scope scope,
+            ContentStatus contentStatus
+            )
         {
 
             var (jsonDoc1, title1, content1) = await CreateIssue(
@@ -174,6 +183,7 @@ namespace CloudTests.TestingSetup
               {
                   Scales = { Scale.Global, Scale.National }
               },
+              contentStatus,
               new Guid(parentIssueId));
 
             var rootElement1 = jsonDoc1.RootElement;
@@ -215,7 +225,7 @@ namespace CloudTests.TestingSetup
 
         #region Test Solution CRUD helpers
 
-        public async Task<(JsonDocument JsonDoc, string solutionId, string title, string content, Scope scope)> CreateTestSolution(string parentIssueId)
+        public async Task<(JsonDocument JsonDoc, string solutionId, string title, string content, Scope scope)> CreateTestSolution(string parentIssueId, ContentStatus contentStatus)
         {
             string title = "This is a title for a test solution";
             string content = "This is a content for a test solution";
@@ -223,7 +233,7 @@ namespace CloudTests.TestingSetup
             {
                 Scales = { Scale.Global }
             };
-            var (jsonDoc, solutionId, scopeId) = await CreateSolution(title, content, scope, parentIssueId);
+            var (jsonDoc, solutionId, scopeId) = await CreateSolution(title, content, scope, parentIssueId, contentStatus);
             scope.ScopeID = new Guid(scopeId);
             return (jsonDoc, solutionId, title, content, scope);
         }
@@ -231,7 +241,8 @@ namespace CloudTests.TestingSetup
         public async Task<(JsonDocument JsonDoc, string solutionId, string title, string content, Scope scope)> EditTestSolution(
            string solutionId,
            Guid scopeId,
-           string parentIssueId
+           string parentIssueId,
+           ContentStatus contentStatus
         )
         {
             string title = "This is an updated title for a test solution";
@@ -242,7 +253,7 @@ namespace CloudTests.TestingSetup
                 Scales = { Scale.Global, Scale.National },
                 Domains = { Domain.Social }
             };
-            var (jsonDoc, _solutionId, _scopeId) = await EditSolution(solutionId, title, content, parentIssueId, scope);
+            var (jsonDoc, _solutionId, _scopeId) = await EditSolution(solutionId, title, content, parentIssueId, scope, contentStatus);
             return (jsonDoc, solutionId, title, content, scope);
         }
 
@@ -250,11 +261,12 @@ namespace CloudTests.TestingSetup
           string title,
           string content,
           Scope scope,
-          string parentIssueId
+          string parentIssueId,
+          ContentStatus contentStatus
          )
         {
             // 1. GET page to obtain antiforgery cookie + hidden token
-            string tokenValue = await GetAntiForgeryToken("/create-solution");
+            string tokenValue = await GetAntiForgeryToken($"/create-solution?parentIssueID={parentIssueId}");
             //string scopeId = await GetScopeIDFromPage(_env, "/create-solution");
 
 
@@ -264,7 +276,9 @@ namespace CloudTests.TestingSetup
                 new KeyValuePair<string, string>("__RequestVerificationToken", tokenValue!),
                 new KeyValuePair<string, string>("Title", title),
                 new KeyValuePair<string, string>("Content", content),
-                new KeyValuePair<string, string>("ParentIssueID", parentIssueId)
+                new KeyValuePair<string, string>("ParentIssueID", parentIssueId),
+                new KeyValuePair<string, string>("ContentStatus", contentStatus.ToString()),
+
             };
 
             AttachScopeToFormData(scope, formData);
@@ -289,7 +303,8 @@ namespace CloudTests.TestingSetup
           string title,
           string content,
           string parentIssueId,
-          Scope scope
+          Scope scope,
+          ContentStatus contentStatus
          )
         {
             string url = $"/edit-solution?solutionId={solutionId}";
@@ -303,7 +318,8 @@ namespace CloudTests.TestingSetup
                 new KeyValuePair<string, string>("Title", title),
                 new KeyValuePair<string, string>("Content", content),
                 new KeyValuePair<string, string>("SolutionID", solutionId),
-                new KeyValuePair<string, string>("ParentIssueID", parentIssueId)
+                new KeyValuePair<string, string>("ParentIssueID", parentIssueId),
+                new KeyValuePair<string, string>("ContentStatus", contentStatus.ToString())
             };
 
             AttachScopeToFormData(scope, formData);

@@ -39,10 +39,21 @@ namespace atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue
             modelBuilder.Entity<Issue>().ToTable(
                 "Issues",
                 "issues",
-                tb => tb.IsTemporal(temporal =>
-                {
-                    temporal.UseHistoryTable("IssuesHistory", "issues");
-                }));
+                tb => {
+                    tb.IsTemporal(temporal =>
+                    {
+                        temporal.UseHistoryTable("IssuesHistory", "issues");
+                    });
+
+                    // Added in Issue_CanPublish_Constraint.cs
+                    // Prevent publishing a sub-issue unless its parent (issue or solution) is published
+                    // Enum mapping: Draft = 0, Published = 1, Archived = 2
+                    //tb.HasCheckConstraint(
+                    //    "CK_Issues_PublishRequiresPublishedParent",
+                    //    "([ContentStatus] <> 1) OR ([issues].[fn_Issue_CanPublish]([IssueID]) = 1)"
+                    //);
+
+                });
         }
         public static void Build(ModelBuilder modelBuilder)
         {
@@ -51,6 +62,7 @@ namespace atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue
                 entity.HasKey(e => e.IssueID);
                 entity.Property(e => e.Title).HasMaxLength(200).IsRequired();
                 entity.Property(e => e.Content).IsRequired();
+                // Generates a check constraint similar to DF__Issues__CreatedA__6EF57B66
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
 
                 // Self-referencing relationship

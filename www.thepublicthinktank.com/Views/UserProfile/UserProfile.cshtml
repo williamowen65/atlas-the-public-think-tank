@@ -9,7 +9,7 @@
 @{
     ViewData["Title"] = "User Profile";
 }
- 
+
 
 <div class="container profile-page py-4">
     <div class="profile-header mb-5">
@@ -21,12 +21,12 @@
                             <button type="button" class="user-profile-action-btn">
                                 @* Send mail to @Model.appUserVM.email *@
                                 @await Html.PartialAsync("~/Views/Shared/Icons/_send-message-icon.cshtml")
-                            </button> 
+                            </button>
                             <img class="profile-avatar" src="https://github.com/mdo.png" alt="User avatar" />
                             <button type="button" class="user-profile-action-btn">
                                 @await Html.PartialAsync("~/Views/Shared/Icons/_follow-user-icon.cshtml")
-                             </button>  
-                        </div> 
+                            </button>
+                        </div>
                         <div class="profile-identity">
                             <h1>@Model.appUserVM.UserName</h1>
                             <div class="handle">@Model.appUserVM.email</div>
@@ -35,7 +35,7 @@
                     </div>
                 </div>
             </div>
-             
+
             <div class="profile-stats-bar">
                 <div class="stat-items text-center" aria-label="User statistics">
                     <div class="stat"><strong>@Model.userStats.Followers</strong>Followers</div>
@@ -60,28 +60,78 @@
                 </button>
             }
         </div>
-    </div>     
-     
+    </div>
+
 
 
     <section class="profile-tabs" data-profile-tabs>
-        <ul class="tab-list" role="tablist">
-            <li>
-                <button class="position-relative" role="tab" aria-selected="true" aria-controls="panel-issue" id="tab-issue">Issues 
+        <ul class="tab-list nav nav-tabs" id="profileTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active position-relative"
+                        id="tab-issue"
+                        data-bs-toggle="tab"
+                        data-bs-target="#panel-issue"
+                        type="button"
+                        role="tab"
+                        aria-controls="panel-issue"
+                        aria-selected="true">
+                    Issues
                     <strong class="content-count">@Model.paginatedUserIssues.ContentCount.FilteredCount</strong>
                 </button>
             </li>
-            <li>
-                <button class="position-relative" role="tab" aria-selected="false" aria-controls="panel-solution" id="tab-solution">Solutions 
+            <li class="nav-item" role="presentation">
+                <button class="nav-link position-relative"
+                        id="tab-solution"
+                        data-bs-toggle="tab"
+                        data-bs-target="#panel-solution"
+                        type="button"
+                        role="tab"
+                        aria-controls="panel-solution"
+                        aria-selected="false">
+                    Solutions
                     <strong class="content-count">@Model.paginatedUserSolutions.ContentCount.FilteredCount</strong>
                 </button>
             </li>
-            <li><button role="tab" aria-selected="false" aria-controls="panel-projects" id="tab-projects">Projects</button></li>
-            <li><button role="tab" aria-selected="false" aria-controls="panel-history" id="tab-history">History</button></li>
-            <li><button role="tab" aria-selected="false" aria-controls="panel-stats" id="tab-stats">Stats</button></li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link"
+                        id="tab-projects"
+                        data-bs-toggle="tab"
+                        data-bs-target="#panel-projects"
+                        type="button"
+                        role="tab"
+                        aria-controls="panel-projects"
+                        aria-selected="false">
+                    Projects
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link"
+                        id="tab-history"
+                        data-bs-toggle="tab"
+                        data-bs-target="#panel-history"
+                        type="button"
+                        role="tab"
+                        aria-controls="panel-history"
+                        aria-selected="false">
+                    History
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link"
+                        id="tab-stats"
+                        data-bs-toggle="tab"
+                        data-bs-target="#panel-stats"
+                        type="button"
+                        role="tab"
+                        aria-controls="panel-stats"
+                        aria-selected="false">
+                    Stats
+                </button>
+            </li>
         </ul>
-        <div class="tab-panels">
-            <div id="panel-issue" class="tab-panel active" role="tabpanel" aria-labelledby="tab-issue">
+
+        <div class="tab-panels tab-content" id="profileTabsContent">
+            <div id="panel-issue" class="tab-panel tab-pane fade show active" role="tabpanel" aria-labelledby="tab-issue" tabindex="0">
                 <div class="feed" data-feed="issue">
                     <div id="user-issue-content">
 
@@ -97,20 +147,20 @@
                         }
                     </div>
 
-                    
+
                     @await Html.PartialAsync("~/Views/Shared/Components/_pagination-button.cshtml", new PaginationButton_VM
                     {
                         ElementId = "fetchPaginatedUserIssues",
-                        ContentType = "user issues",
-                        Target = "#user-issue-content",
-                        Url = "/user-profile/getPaginatedUserIssues/" + @Model.appUserVM.Id,
-                        CurrentPage = Model.paginatedUserIssues.ContentCount.FilteredCount,
-                        PageSize = Model.paginatedUserIssues.PageSize,
-                        TotalCount = Model.paginatedUserIssues.ContentCount.FilteredCount,
-                     })
-                </div>   
+                                        ContentType = "user issues",
+                                        Target = "#user-issue-content",
+                                        Url = "/user-profile/getPaginatedUserIssues/" + @Model.appUserVM.Id,
+                                        CurrentPage = Model.paginatedUserIssues.ContentCount.FilteredCount,
+                                        PageSize = Model.paginatedUserIssues.PageSize,
+                                        TotalCount = Model.paginatedUserIssues.ContentCount.FilteredCount,
+                                        })
+                </div>
             </div>
-            <div id="panel-solution" class="tab-panel" role="tabpanel" aria-labelledby="tab-solution">
+            <div id="panel-solution" class="tab-panel tab-pane fade" role="tabpanel" aria-labelledby="tab-solution" tabindex="0">
                 <div class="feed" data-feed="solution">
                     <div id="user-solution-content">
 
@@ -129,23 +179,23 @@
                     @await Html.PartialAsync("~/Views/Shared/Components/_pagination-button.cshtml", new PaginationButton_VM
                     {
                         ElementId = "fetchPaginatedUserSolutions",
-                        ContentType = "user solutions",
-                        Target = "#user-solution-content",
-                        Url = "/user-profile/getPaginatedUserSolutions/" + @Model.appUserVM.Id,
-                        CurrentPage = Model.paginatedUserSolutions.ContentCount.FilteredCount,
-                        PageSize = Model.paginatedUserSolutions.PageSize,
-                        TotalCount = Model.paginatedUserSolutions.ContentCount.FilteredCount,
-                    })
+                                        ContentType = "user solutions",
+                                        Target = "#user-solution-content",
+                                        Url = "/user-profile/getPaginatedUserSolutions/" + @Model.appUserVM.Id,
+                                        CurrentPage = Model.paginatedUserSolutions.ContentCount.FilteredCount,
+                                        PageSize = Model.paginatedUserSolutions.PageSize,
+                                        TotalCount = Model.paginatedUserSolutions.ContentCount.FilteredCount,
+                                        })
                 </div>
             </div>
-            <div id="panel-projects" class="tab-panel" role="tabpanel" aria-labelledby="tab-projects">
+            <div id="panel-projects" class="tab-panel tab-pane fade" role="tabpanel" aria-labelledby="tab-projects" tabindex="0">
                 <h2 class="h5">Projects</h2>
                 <p class="text-muted">Collaborative or owned research projects.</p>
                 <div class="feed" data-feed="projects">
                     <p>(Projects grid placeholder)</p>
                 </div>
             </div>
-            <div id="panel-history" class="tab-panel" role="tabpanel" aria-labelledby="tab-history">
+            <div id="panel-history" class="tab-panel tab-pane fade" role="tabpanel" aria-labelledby="tab-history" tabindex="0">
                 <h2 class="h5">Revision / Participation History</h2>
                 <div class="feed" data-feed="history">
                     @foreach (var entry in Model.userHistory)
@@ -154,7 +204,7 @@
                     }
                 </div>
             </div>
-            <div id="panel-stats" class="tab-panel" role="tabpanel" aria-labelledby="tab-stats">
+            <div id="panel-stats" class="tab-panel tab-pane fade" role="tabpanel" aria-labelledby="tab-stats" tabindex="0">
                 <h2 class="h5">Engagement & Impact</h2>
                 <div class="feed" data-feed="stats">
                     <p>(Charts / metrics placeholder)</p>
@@ -165,64 +215,15 @@
 </div>
 
 <script>
-       document.addEventListener("DOMContentLoaded", function() {
-    (function() {
-         const paginationButton = document.getElementById("fetchPaginatedUserIssues")
-        if (paginationButton) {
-            setPaginationButtonListener(paginationButton)
-        }
+document.addEventListener("DOMContentLoaded", function() {
+    initTabbedForum({
+        paginationButtonId: "fetchPaginatedUserIssues",
+        tabId: 'tab-issue'
+    });
+    initTabbedForum({
+        paginationButtonId: "fetchPaginatedUserSolutions",
+        tabId: 'tab-solution'
+    });       
+})
 
-        const solutionsPaginationButton = document.getElementById("fetchPaginatedUserSolutions")
-        if (solutionsPaginationButton) {
-            setPaginationButtonListener(solutionsPaginationButton)
-        }
-
-
-        const tabsRoot = document.querySelector('[data-profile-tabs]');
-        if (!tabsRoot) return;
-        const tabs = Array.from(tabsRoot.querySelectorAll('[role="tab"]'));
-        const panels = Array.from(tabsRoot.querySelectorAll('[role="tabpanel"]'));
-
-        // Reinitialize vote dials for the active tab panel
-        function reinitializeVoteDialsForActivePanel() {
-            const activePanel = panels.find(p => p.classList.contains('active'));
-            if (!activePanel) return;
-            const cards = activePanel.querySelectorAll('.issue-card, .solution-card');
-            cards.forEach(card => {
-                const cardId = card.id;
-                const dialContainer = card.querySelector('.dial-container');
-                if (dialContainer && dialContainer.children.length > 0) {
-                    const voteContainer = document.getElementById(`vote-toggle-container-${cardId}`);
-                    if (voteContainer) {
-                        setTimeout(() => {
-                            initializeCard(cardId);
-                        }, 50);
-                    }
-                }
-            });
-        }
-
-        function activate(tab) {
-            tabs.forEach(t => { const sel = t === tab; t.setAttribute('aria-selected', sel); });
-            panels.forEach(p => p.classList.toggle('active', p.id === tab.getAttribute('aria-controls')));
-            // Reinitialize dials after tab is activated and visible
-            setTimeout(reinitializeVoteDialsForActivePanel, 60);
-        }
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => activate(tab));
-            tab.addEventListener('keydown', e => {
-                const idx = tabs.indexOf(document.activeElement);
-                if (idx < 0) return;
-                if (['ArrowRight','ArrowLeft','Home','End'].includes(e.key)) { e.preventDefault(); }
-                let nextIdx = idx;
-                if (e.key === 'ArrowRight') nextIdx = (idx + 1) % tabs.length;
-                if (e.key === 'ArrowLeft') nextIdx = (idx - 1 + tabs.length) % tabs.length;
-                if (e.key === 'Home') nextIdx = 0;
-                if (e.key === 'End') nextIdx = tabs.length - 1;
-                if (nextIdx !== idx) { tabs[nextIdx].focus(); activate(tabs[nextIdx]); }
-            });
-        });
-
-    })();
-    })
 </script>

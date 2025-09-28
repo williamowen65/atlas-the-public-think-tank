@@ -1,12 +1,13 @@
-﻿using atlas_the_public_think_tank.Models.ViewModel;
+﻿using atlas_the_public_think_tank.Data.CRUD;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+using atlas_the_public_think_tank.Data.DbContext;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
+using atlas_the_public_think_tank.Models.Enums;
+using atlas_the_public_think_tank.Models.ViewModel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
-using atlas_the_public_think_tank.Data.CRUD;
-using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
-using atlas_the_public_think_tank.Data.DbContext;
 
 
 namespace atlas_the_public_think_tank.Controllers
@@ -84,6 +85,7 @@ namespace atlas_the_public_think_tank.Controllers
         {
             try
             {
+                filter.ContentStatus = ContentStatus.Published;
 
                 bool fetchParent = true;
 
@@ -102,6 +104,8 @@ namespace atlas_the_public_think_tank.Controllers
         {
             try
             {
+                filter.ContentStatus = ContentStatus.Published;
+
                 bool fetchParent = true;
                 var solution = await Read.Solution(solutionId, filter, fetchParent);
                 return Json(solution);
@@ -119,6 +123,9 @@ namespace atlas_the_public_think_tank.Controllers
         {
             try
             {
+
+                filter.ContentStatus = ContentStatus.Published;
+
                 var contentItems = await Read.PaginatedMainContentFeed(filter, pageNumber);
                 return Json(contentItems);
             }

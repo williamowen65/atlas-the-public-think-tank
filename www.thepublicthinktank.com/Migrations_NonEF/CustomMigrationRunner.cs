@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace atlas_the_public_think_tank.Migrations_NonEF
 {
@@ -15,11 +15,10 @@ namespace atlas_the_public_think_tank.Migrations_NonEF
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var migrationBuilder = new MigrationBuilder(context.Database.ProviderName);
 
-            // Add your custom migrations here
             var migrations = new ICustomMigration[]
             {
-                new AddFullTextSearch()
-                // Add more custom migrations as needed
+                new AddFullTextSearch(),
+                new Issue_CanPublish_Constraint()
             };
 
             foreach (var migration in migrations)
@@ -27,23 +26,40 @@ namespace atlas_the_public_think_tank.Migrations_NonEF
                 migration.Up(migrationBuilder);
             }
 
-            // Confirms the database is created first
-            // This needs to be called for the testing environment.
-            // It is called by the TestEnvironment constructor, but not soon enough. 
-            // The migration needs to be applied at runtime. Not after the app has been built.
-            
-
-            // Replace the selected line with the following
             var env = scope.ServiceProvider.GetRequiredService<IHostEnvironment>();
             if (env.IsEnvironment("Testing"))
             {
                 context.Database.Migrate();
             }
 
-            // Apply SQL commands to the database
-            foreach (var command in migrationBuilder.Operations.OfType<SqlOperation>())
+            // Generate SQL for ALL operations (not only SqlOperation) and execute them
+            var sqlGenerator = context.GetService<IMigrationsSqlGenerator>();
+            var commands = sqlGenerator.Generate(migrationBuilder.Operations, context.Model);
+
+            IDbContextTransaction? tx = null;
+            try
             {
-                context.Database.ExecuteSqlRaw(command.Sql);
+                tx = context.Database.BeginTransaction();
+
+                foreach (var command in commands)
+                {
+                    if (command.TransactionSuppressed)
+                    {
+                        tx.Commit();
+                        context.Database.ExecuteSqlRaw(command.CommandText);
+                        tx = context.Database.BeginTransaction();
+                    }
+                    else
+                    {
+                        context.Database.ExecuteSqlRaw(command.CommandText);
+                    }
+                }
+
+                tx.Commit();
+            }
+            finally
+            {
+                tx?.Dispose();
             }
         }
 
@@ -55,8 +71,8 @@ namespace atlas_the_public_think_tank.Migrations_NonEF
 
             var migrations = new ICustomMigration[]
             {
-                new AddFullTextSearch()
-                // Add more custom migrations as needed
+                new AddFullTextSearch(),
+                new Issue_CanPublish_Constraint()
             };
 
             foreach (var migration in migrations)
@@ -64,9 +80,33 @@ namespace atlas_the_public_think_tank.Migrations_NonEF
                 migration.Down(migrationBuilder);
             }
 
-            foreach (var command in migrationBuilder.Operations.OfType<SqlOperation>())
+            var sqlGenerator = context.GetService<IMigrationsSqlGenerator>();
+            var commands = sqlGenerator.Generate(migrationBuilder.Operations, context.Model);
+
+            IDbContextTransaction? tx = null;
+            try
             {
-                context.Database.ExecuteSqlRaw(command.Sql);
+                tx = context.Database.BeginTransaction();
+
+                foreach (var command in commands)
+                {
+                    if (command.TransactionSuppressed)
+                    {
+                        tx.Commit();
+                        context.Database.ExecuteSqlRaw(command.CommandText);
+                        tx = context.Database.BeginTransaction();
+                    }
+                    else
+                    {
+                        context.Database.ExecuteSqlRaw(command.CommandText);
+                    }
+                }
+
+                tx.Commit();
+            }
+            finally
+            {
+                tx?.Dispose();
             }
         }
     }

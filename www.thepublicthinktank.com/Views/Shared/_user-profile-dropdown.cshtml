@@ -1,0 +1,54 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using atlas_the_public_think_tank.Data.CRUD
+@using atlas_the_public_think_tank.Data.DatabaseEntities.Users
+@using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
+@inject SignInManager<AppUser> SignInManager
+@inject UserManager<AppUser> UserManager
+
+@if (SignInManager.IsSignedIn(User))
+{
+    
+
+<ul class="dropdown-menu user-actions-dropdown fs-5 text-small shadow p-0" style="">
+    <li><a class="dropdown-item" href="#">New project...</a></li>
+    <li>
+        <a class="dropdown-item" href="@Url.Action("UserProfile", "UserProfile", new { userId = UserManager.GetUserId(User) })">
+            @await Html.PartialAsync("~/Views/Shared/Icons/_profile-icon.cshtml")
+            Profile
+        </a>
+    </li>
+    <li>
+
+        @{
+            var userId = Guid.Parse(UserManager.GetUserId(User)!);
+            var userDrafts_pageVM = await Read.PaginatedUserDrafts(userId, new ContentFilter());
+
+            var draftContentCount = userDrafts_pageVM.paginatedUserIssuesDrafts.Issues.Count + userDrafts_pageVM.paginatedUserSolutionsDrafts.Solutions.Count;
+        }       
+        
+        <a class="dropdown-item" href="@Url.Action("Drafts", "UserProfile")">
+            <div class="position-relative">
+                <span class="draft-count position-absolute">@draftContentCount</span>
+                @await Html.PartialAsync("~/Views/Shared/Icons/_draft-icon.cshtml")
+            </div>
+            Drafts
+        </a>
+    </li>
+    <li>
+        <a class="dropdown-item" asp-area="Identity" asp-page="/Account/Manage/Index">
+            @await Html.PartialAsync("~/Views/Shared/Icons/_settings-icon.cshtml")
+            Settings
+        </a>
+    </li>
+    <li><hr class="dropdown-divider m-0  "></li>
+    <li>
+        <form class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("HomePage", "Home")">
+            <button type="submit" class="dropdown-item">
+                @await Html.PartialAsync("~/Views/Shared/Icons/_logout-icon.cshtml")
+                Logout
+            </button>
+        </form>
+    </li>
+
+</ul>
+}

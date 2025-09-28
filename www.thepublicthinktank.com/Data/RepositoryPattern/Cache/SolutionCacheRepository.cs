@@ -74,7 +74,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         /// </remarks>
         public async Task<Solution_ReadVM> AddSolutionAsync(Solution solution)
         {
-
+            // TODO Improve cache validation on a per ContentStatus basis (draft, published, etc)
             #region cache invalidation
 
             CacheHelper.ClearSolutionFeedIdsForIssue((Guid)solution.ParentIssueID);
@@ -84,6 +84,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             CacheHelper.ClearContentCountForMainPage();
             CacheHelper.ClearMainPageFeedIds();
 
+            // User profile page
             CacheHelper.ClearSolutionFeedIdsForUser(solution.AuthorID);
             CacheHelper.ClearContentCountSolutionsForUser(solution.AuthorID);
 
@@ -107,11 +108,15 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 return await _inner.UpdateSolutionAsync(solution);
             }
 
+            #region cache invalidation
+
             var cacheKey = $"{CacheKeyPrefix.Solution}:{solution.SolutionID}";
 
             // Convert solution to SolutionRepositoryViewModel
             SolutionRepositoryViewModel cacheableSolution = Converter.ConvertSolutionToSolutionRepositoryViewModel(solution);
 
+
+            // TODO Move this to cache helper
             // Update Cache
             _cache.Set(cacheKey, cacheableSolution, new MemoryCacheEntryOptions
             {
@@ -119,9 +124,24 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             });
 
 
+            // Content Version History
             // Note: This method may be better suited to be Update instead of clear.
             CacheHelper.ClearSolutionContentVersionHistoryCache(solution.SolutionID);
 
+            // User Profile Page
+            //If the user updates a post from Draft to Published the feed should be updated
+            CacheHelper.ClearSolutionFeedIdsForUser(solution.AuthorID);
+            CacheHelper.ClearContentCountSolutionsForUser(solution.AuthorID);
+
+            // Main Page
+            CacheHelper.ClearContentCountForMainPage();
+            CacheHelper.ClearMainPageFeedIds();
+
+            // Read Issue Page
+            CacheHelper.ClearSubIssueFeedIdsForIssue((Guid)solution.ParentIssueID);
+            CacheHelper.ClearContentCountSubIssuesForIssue((Guid)solution.ParentIssueID);
+
+            #endregion
 
             return await _inner.UpdateSolutionAsync(solution);
 

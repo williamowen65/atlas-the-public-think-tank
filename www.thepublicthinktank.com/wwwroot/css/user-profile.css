@@ -1,7 +1,18 @@
-﻿ul.dropdown-menu.user-actions-dropdown.show {
+﻿.draft-count {
+    top: -19px;
+    right: 12px;
+    transform: scale(0.7);
+}
+
+ul.dropdown-menu.user-actions-dropdown.show {
     width: 380px;
     transform: translate(0,0) !important;
     top: var(--header-height) !important;
+    /* margin left auto & right: 0 required for landscape mode placement of dropdown*/
+    margin-left: auto !important;
+    right: 0 !important;
+    max-height: calc(100vh - var(--header-height));
+    overflow-y: scroll;
 }
 
 .user-actions-dropdown .dropdown-item {
@@ -9,6 +20,14 @@
     display: flex;
     align-items: center;
     font-weight: bold;
+  
+}
+
+.user-actions-dropdown {
+    /*    margin: initial !important;*/
+/*    position: absolute;*/
+/*    margin-inline: 50px 0 !important;*/
+/*    right: 0 !important;*/
 }
 
 .user-actions-dropdown i {

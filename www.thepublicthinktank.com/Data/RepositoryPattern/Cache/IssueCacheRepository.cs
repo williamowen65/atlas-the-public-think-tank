@@ -90,6 +90,8 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         /// </remarks>
         public async Task<Issue_ReadVM> AddIssueAsync(Issue issue)
         {
+
+            // TODO Improve cache validation on a per ContentStatus basis (draft, published, etc)
             #region cache invalidation
             // When creating an issue invalidate all related filterIdSets in the cache
             // This can later be optimized
@@ -129,26 +131,57 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         /// </remarks>
         public async Task<Issue_ReadVM?> UpdateIssueAsync(Issue issue)
         {
+            if (_configuration.GetValue<bool>("Caching:Enabled") == false)
+            {
+                _cacheLogger.LogInformation($"[~] Cache skip for updating issue {issue.IssueID}");
+                return await _inner.UpdateIssueAsync(issue);
+            }
+
+            #region cache invalidation
+
             var cacheKey = $"{CacheKeyPrefix.Issue}:{issue.IssueID}";
 
             //convert issue to IssueRepositoryViewModel
             IssueRepositoryViewModel cacheableIssue = Converter.ConvertIssueToIssueRepositoryViewModel(issue);
+            
+            // TODO: Create cache helper method for this.
             // Update Cache
             _cache.Set(cacheKey, cacheableIssue, new MemoryCacheEntryOptions
             {
                 AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10)
             });
 
-            Issue_ReadVM? updatedIssueVM = await _inner.UpdateIssueAsync(issue);
 
-            var cacheKeyIssueVersionHistory = $"{CacheKeyPrefix.IssueVersionHistory}:{issue.IssueID}";
-
+            // Content Version History
             // Note: This method may be better suited to be Update instead of clear.
             CacheHelper.ClearIssueContentVersionHistoryCache(issue.IssueID);
 
+            // User Profile Page
+            //If the user updates a post from Draft to Published the feed should be updated
+            CacheHelper.ClearIssueFeedIdsForUser(issue.AuthorID);
+            CacheHelper.ClearContentCountIssuesForUser(issue.AuthorID);
 
-            // Why is this not calling _inner.UpdateIssueAsync?
-            return updatedIssueVM;
+            // Main Page
+            CacheHelper.ClearContentCountForMainPage(); 
+            CacheHelper.ClearMainPageFeedIds();
+
+            // Read Issue Page
+            if (issue.ParentIssueID != null)
+            { 
+                // Clear CacheHelper.CacheKeysPrefix.FeedIds.SubIssueOfIssue cache for parent issue
+                CacheHelper.ClearSubIssueFeedIdsForIssue((Guid)issue.ParentIssueID);
+                CacheHelper.ClearContentCountSubIssuesForIssue((Guid)issue.ParentIssueID);
+            }
+
+            // Read Solution Page
+            if (issue.ParentSolutionID != null)
+            {
+                CacheHelper.ClearSubIssueFeedIdsForSolution((Guid)issue.ParentSolutionID);
+                CacheHelper.ClearContentCountSubIssuesForSolution((Guid)issue.ParentSolutionID);
+            }
+            #endregion
+
+            return await _inner.UpdateIssueAsync(issue);
         }
 
         public async Task<int> GetIssueVersionHistoryCount(Guid issueID)

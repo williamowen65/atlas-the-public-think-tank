@@ -47,6 +47,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
             return query
                 .Select(entry => new ContentIndexEntry
                 {
+                    ContentStatus = entry.ContentStatus,
                     ContentId = entry.ContentId,
                     ContentType = entry.ContentType,
                     CreatedAt = entry.CreatedAt,

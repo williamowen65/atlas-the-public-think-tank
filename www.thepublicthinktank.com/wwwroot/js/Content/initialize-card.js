@@ -25,7 +25,21 @@ function initializeCard(cardId) {
     }
     initializeCompositeScopeRibbonListener(cardId)
 
-    //card.classList.add("initialized")
+    scrollBreadcrumbToEnd(card)
+   
+}
+
+function scrollBreadcrumbToEnd(card) {
+    const scrollableBreadcrumb = card.querySelector(".breadcrumb-ribbon-custom")
+    if (scrollableBreadcrumb) {
+        const breadcrumbWidth = scrollableBreadcrumb.getBoundingClientRect().width * 3
+
+        if (typeof scrollableBreadcrumb.scrollTo === 'function') {
+            scrollableBreadcrumb.scrollTo({ left: breadcrumbWidth, behavior: 'instant' });
+        } else {
+            scrollableBreadcrumb.scrollLeft = breadcrumbWidth;
+        }
+    }
 }
 
 
@@ -950,6 +964,63 @@ function initializeCompositeScopeRibbonListener(cardId) {
     ribbon.addEventListener("click", () => {
         card.classList.toggle("show-composite-scope")
     })
+}
+
+
+function initTabbedForum(config) {
+
+    reinitializeVoteDials();
+
+    if (config.paginationButtonId) {
+        const paginationButton = document.getElementById(config.paginationButtonId)
+        if (paginationButton) {
+            setPaginationButtonListener(paginationButton)
+        } else {
+            throw new Error("Pagination button not found")
+        }
+    }
+
+    const forumTabEl = document.getElementById(config.tabId);
+
+    if (forumTabEl) {
+        forumTabEl.addEventListener('click', function (e) {
+            reinitializeVoteDials();
+        });
+    } else {
+       throw new Error("forum tab element not found")
+    }
+
+    // Function to find all issue cards in a tab and reinitialize vote dials
+    function reinitializeVoteDials() {
+
+        const contentCards = document.querySelectorAll('.issue-card, .solution-card');
+
+        contentCards.forEach(card => {
+            // Extract the issue ID from the card's ID attribute
+            const contentId = card.id
+            console.log(`Reinitializing vote dial for content ${contentId}`);
+
+            const dialContainer = card.querySelector('.dial-container');
+            if (dialContainer) {
+                // Check if dial content already exists
+                if (dialContainer.children.length > 0) {
+                    // If vote container exists, just reinitialize it
+                    const voteContainer = document.getElementById(`vote-toggle-container-${contentId}`);
+                    if (voteContainer) {
+                        setTimeout(() => {
+                            // Reinitialize with a slight delay to ensure proper rendering
+                            initializeCard(contentId);
+                        }, 50);
+                    } else {
+                        console.error("Content missing vote dial")
+                    }
+                } else {
+                    console.error("Content missing vote dial")
+                }
+            }
+        });
+    }
+
 }
 
 

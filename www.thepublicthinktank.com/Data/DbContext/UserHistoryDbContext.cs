@@ -138,6 +138,9 @@ namespace atlas_the_public_think_tank.Data.DbContext
                     Timestamp = now
                 };
             }
+            else if (entry.Entity is AppUser) { 
+                userId = ((AppUser)entry.Entity).Id;
+            }
 
             if (entry.Entity is IssueVote)
             {
