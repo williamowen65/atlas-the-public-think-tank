@@ -229,7 +229,7 @@ namespace atlas_the_public_think_tank.Migrations
                         .Annotation("SqlServer:TemporalIsPeriodStartColumn", true),
                     ContentStatus = table.Column<int>(type: "int", nullable: false),
                     AuthorID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
                     ModifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     BlockedContentID = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
@@ -279,6 +279,7 @@ namespace atlas_the_public_think_tank.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_CommentVotes", x => x.VoteID);
+                    table.CheckConstraint("CK_CommentVote_VoteValue_Range", "[VoteValue] >= 0 AND [VoteValue] <= 10");
                     table.ForeignKey(
                         name: "FK_CommentVotes_AspNetUsers_AppUserId",
                         column: x => x.AppUserId,
@@ -395,6 +396,7 @@ namespace atlas_the_public_think_tank.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_IssueVotes", x => x.VoteID);
+                    table.CheckConstraint("CK_IssueVote_VoteValue_Range", "[VoteValue] >= 0 AND [VoteValue] <= 10");
                     table.ForeignKey(
                         name: "FK_IssueVotes_AspNetUsers_AppUserId",
                         column: x => x.AppUserId,
@@ -428,7 +430,7 @@ namespace atlas_the_public_think_tank.Migrations
                         .Annotation("SqlServer:TemporalIsPeriodStartColumn", true),
                     ContentStatus = table.Column<int>(type: "int", nullable: false),
                     AuthorID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
                     ModifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     BlockedContentID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     Title = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: false),
@@ -509,6 +511,7 @@ namespace atlas_the_public_think_tank.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_SolutionVotes", x => x.VoteID);
+                    table.CheckConstraint("CK_SolutionVote_VoteValue_Range", "[VoteValue] >= 0 AND [VoteValue] <= 10");
                     table.ForeignKey(
                         name: "FK_SolutionVotes_AspNetUsers_AppUserId",
                         column: x => x.AppUserId,

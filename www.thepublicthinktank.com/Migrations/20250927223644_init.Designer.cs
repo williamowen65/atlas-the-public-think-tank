@@ -12,7 +12,7 @@ using atlas_the_public_think_tank.Data.DbContext;
 namespace atlas_the_public_think_tank.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250920235429_init")]
+    [Migration("20250927223644_init")]
     partial class init
     {
         /// <inheritdoc />
@@ -181,7 +181,9 @@ namespace atlas_the_public_think_tank.Migrations
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
 
                     b.Property<Guid?>("IssueID")
                         .HasColumnType("uniqueidentifier");
@@ -264,7 +266,10 @@ namespace atlas_the_public_think_tank.Migrations
                     b.HasIndex("CommentID", "UserID")
                         .IsUnique();
 
-                    b.ToTable("CommentVotes", "comments");
+                    b.ToTable("CommentVotes", "comments", t =>
+                        {
+                            t.HasCheckConstraint("CK_CommentVote_VoteValue_Range", "[VoteValue] >= 0 AND [VoteValue] <= 10");
+                        });
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common.Scope", b =>
@@ -456,7 +461,10 @@ namespace atlas_the_public_think_tank.Migrations
                     b.HasIndex("IssueID", "UserID")
                         .IsUnique();
 
-                    b.ToTable("IssueVotes", "issues");
+                    b.ToTable("IssueVotes", "issues", t =>
+                        {
+                            t.HasCheckConstraint("CK_IssueVote_VoteValue_Range", "[VoteValue] >= 0 AND [VoteValue] <= 10");
+                        });
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.Solution", b =>
@@ -479,7 +487,9 @@ namespace atlas_the_public_think_tank.Migrations
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
 
                     b.Property<DateTime?>("ModifiedAt")
                         .HasColumnType("datetime2");
@@ -584,7 +594,10 @@ namespace atlas_the_public_think_tank.Migrations
                     b.HasIndex("SolutionID", "UserID")
                         .IsUnique();
 
-                    b.ToTable("SolutionVotes", "solutions");
+                    b.ToTable("SolutionVotes", "solutions", t =>
+                        {
+                            t.HasCheckConstraint("CK_SolutionVote_VoteValue_Range", "[VoteValue] >= 0 AND [VoteValue] <= 10");
+                        });
                 });
 
             modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.History.UserHistory", b =>

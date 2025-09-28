@@ -1,0 +1,107 @@
+﻿@using atlas_the_public_think_tank.Models.ViewModel.PageVM
+@model UserDraft_PageVM
+
+@{
+    ViewData["Title"] = "Drafts";
+}
+
+<div class="container py-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h1 class="h3 mb-0">Your Drafts</h1>
+        <small class="text-muted">Work-in-progress issues and solutions</small>
+    </div>
+
+    <ul class="nav nav-tabs" id="nav-tabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active"
+                    id="issues-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#issues-pane"
+                    type="button"
+                    role="tab"
+                    aria-controls="issues-pane"
+                    aria-selected="true">
+                Issues
+                <span class="badge bg-secondary ms-1 issue-draft-count">
+                    @Model.paginatedUserIssuesDrafts.Issues.Count()
+                </span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link"
+                    id="solutions-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#solutions-pane"
+                    type="button"
+                    role="tab"
+                    aria-controls="solutions-pane"
+                    aria-selected="false">
+                Solutions
+                <span class="badge bg-secondary ms-1 solution-draft-count">
+                    @Model.paginatedUserSolutionsDrafts.Solutions.Count()
+                </span>
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content pt-3" id="draftsTabContent">
+        <!-- Issue Drafts -->
+        <div class="tab-pane fade show active"
+             id="issues-pane"
+             role="tabpanel"
+             aria-labelledby="issues-tab">
+            <div class="feed" data-feed="issue-drafts">
+                <div id="draft-issue-content">
+                    @if (Model.paginatedUserIssuesDrafts?.Issues != null && Model.paginatedUserIssuesDrafts.Issues.Any())
+                    {
+                        @await Html.PartialAsync("~/Views/Issue/_issue-cards.cshtml", Model.paginatedUserIssuesDrafts.Issues)
+                    }
+                    else
+                    {
+                        <div class="empty-feed text-muted">
+                            You don't have any issue drafts yet.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Solution Drafts -->
+        <div class="tab-pane fade"
+             id="solutions-pane"
+             role="tabpanel"
+             aria-labelledby="solutions-tab">
+            <div class="feed" data-feed="solution-drafts">
+                <div id="draft-solution-content">
+                    @if (Model.paginatedUserSolutionsDrafts?.Solutions != null && Model.paginatedUserSolutionsDrafts.Solutions.Any())
+                    {
+                        @await Html.PartialAsync("~/Views/Solution/_solution-cards.cshtml", Model.paginatedUserSolutionsDrafts.Solutions)
+                    }
+                    else
+                    {
+                        <div class="empty-feed text-muted">
+                            You don't have any solution drafts yet.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        initTabbedForum({
+            // paginationButtonId: "fetchPaginatedDraftIssues",
+            tabId: 'issues-tab'
+        });
+        initTabbedForum({
+            // paginationButtonId: "fetchPaginatedDraftSolutions",
+            tabId: 'solutions-tab' 
+        });
+    })
+
+</script>
+
+<script src="~/js/Site/remember-tab.js" asp-append-version="true"></script> 

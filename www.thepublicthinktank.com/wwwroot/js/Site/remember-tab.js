@@ -7,8 +7,8 @@
 
 document.addEventListener("DOMContentLoaded", function () {
     // Only run on pages with tab system
-    const tabContainer = document.getElementById('nav-tab');
-    if (!tabContainer) return;
+    const tabContainer = document.getElementById('nav-tabs');
+    if (!tabContainer) return console.warn("Could not find nav-tab for remember-tab.js");
 
     // Use a global storage key for all issues
     const storageKey = `lastActiveTab-global`;

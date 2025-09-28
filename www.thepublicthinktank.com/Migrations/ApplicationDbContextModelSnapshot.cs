@@ -178,7 +178,9 @@ namespace atlas_the_public_think_tank.Migrations
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
 
                     b.Property<Guid?>("IssueID")
                         .HasColumnType("uniqueidentifier");
@@ -482,7 +484,9 @@ namespace atlas_the_public_think_tank.Migrations
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
 
                     b.Property<DateTime?>("ModifiedAt")
                         .HasColumnType("datetime2");

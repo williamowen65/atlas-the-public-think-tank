@@ -198,3 +198,10 @@
     background: linear-gradient(to bottom, var(--bs-body-bg) 0%, var(--bs-body-bg) 70%, rgba(255,255,255,0) 100%);
 }
 
+
+.author-content-alert.edit-mode .if-not-edit-mode {
+    display: none;
+}
+.author-content-alert:not(.edit-mode) .if-edit-mode {
+    display: none;
+}

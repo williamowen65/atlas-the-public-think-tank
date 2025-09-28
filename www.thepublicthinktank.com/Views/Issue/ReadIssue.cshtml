@@ -27,7 +27,7 @@
     <nav class="sub-content-tab-bar position-sticky bg-body" style="top:var(--header-height); z-index:11">
         <div class="d-flex">
 
-        <div class="nav nav-tabs flex-grow-1 text-nowrap overflow-x-scroll overflow-y-hidden" style="flex-wrap: revert;" id="nav-tab" role="tablist">
+        <div class="nav nav-tabs flex-grow-1 text-nowrap overflow-x-scroll overflow-y-hidden" style="flex-wrap: revert;" id="nav-tabs" role="tablist">
             <button class="nav-link active" id="solutions-tab" data-bs-toggle="tab" data-bs-target="#solutions" type="button" role="tab" aria-controls="nav-home" aria-selected="true">
                 <div class="content-count">@Model.Issue.PaginatedSolutions.ContentCount.FilteredCount</div>
                 @await Html.PartialAsync("~/Views/Shared/Icons/_Solutions.cshtml")
@@ -214,141 +214,32 @@
             }
         </div>
     </div>
-</div>
+</div> 
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        dynamicDropdownContent();
-        initializeDialsForTabbedLayout();
-
-        
-        const paginationButton = document.getElementById("fetchPaginatedSubIssues")
-        if (paginationButton) {
-            setPaginationButtonListener(paginationButton)
-        }
-        
-        const solutionsPaginationButton = document.getElementById("fetchPaginatedSolutions")
-        if (solutionsPaginationButton) {
-            setPaginationButtonListener(solutionsPaginationButton)
-        }
-    });
-
-    function initializeDialsForTabbedLayout() {
-        // Initialize vote dials on tab show event
-        const subIssuesTab = document.getElementById('sub-issues-tab');
-        const parentPostTab = document.getElementById('parent-post-tab');
-        const solutionsTab = document.getElementById('solutions-tab');
-
-        if (subIssuesTab) {
-            subIssuesTab.addEventListener('shown.bs.tab', function (e) {
-                console.log('Sub-issues tab activated - reinitializing vote dials');
-                reinitializeVoteDials('sub-issues');
-            });
-        }
-
-        if (parentPostTab) {
-            parentPostTab.addEventListener('shown.bs.tab', function (e) {
-                const tabText = parentPostTab.querySelector(".tab-label").textContent.trim();
-                console.log(`${tabText} tab activated - reinitializing vote dials`);
-                reinitializeVoteDials('parent-post');
-            });
-        }
-
-        if (solutionsTab) {
-            solutionsTab.addEventListener('shown.bs.tab', function (e) {
-                console.log('Solutions tab activated - reinitializing vote dials');
-                reinitializeVoteDials('solutions');
-            });
-        } else {
-            console.error("Solution tab not found")
-        }
-
-        // Function to find all issue cards in a tab and reinitialize vote dials
-        function reinitializeVoteDials(tabId) {
-            const tabPane = document.getElementById(tabId);
-            if (!tabPane) return;
-
-            const issueCards = tabPane.querySelectorAll('.issue-card, .solution-card');
-
-            issueCards.forEach(card => {
-                // Extract the issue ID from the card's ID attribute
-                const issueId = card.id
-                console.log(`Reinitializing vote dial for issue ${issueId}`);
-
-                const dialContainer = card.querySelector('.dial-container');
-                if (dialContainer) {
-                    // Check if dial content already exists
-                    if (dialContainer.children.length > 0) {
-                        // If vote container exists, just reinitialize it
-                        const voteContainer = document.getElementById(`vote-toggle-container-${issueId}`);
-                        if (voteContainer) {
-                            setTimeout(() => {
-                                // Reinitialize with a slight delay to ensure proper rendering
-                                initializeCard(issueId);
-                            }, 50);
-                        } else {
-                            // If vote container doesn't exist, need to fetch the dial
-                            // fetchAndInitializeCard(issueId, dialContainer);
-                            console.error("Content missing vote dial")
-                        }
-                    } else {
-                        // If no dial content, fetch it
-                        // fetchAndInitializeIssueVoteDial(issueId, dialContainer);
-
-                        console.error("Content missing vote dial")
-                    }
-                }
-            });
-        }
-
-       
-    }
-
-    function dynamicDropdownContent(){
-        const dropdownMenu = document.getElementById('dynamic-actions');
-
-        // Menu content templates for each tab
-        const menuTemplates = {
-            'solutions-tab': `
-                <li><a class="dropdown-item" href="@Url.Action("CreateSolutionPost", "Solution", new { parentIssueID = Model.Issue.IssueID })">Create Solution</a></li>
-            `,
-            'comments-tab': `
-                <li><a class="dropdown-item" href="#">Create Discussion</a></li>
-            `,
-            'sub-issues-tab': `
-                <li><a class="dropdown-item" href="@Url.Action("CreateIssue", "Issue", new { parentIssueID = Model.Issue.IssueID })">Create Sub-Issue</a></li>
-            `,
-            'parent-post-tab': `
-                @if (Model.Issue.ParentIssue != null)
-                {
-                            <li><a class="dropdown-item" href="@Url.Action("ReadIssue", "Issue", new { id = Model.Issue.ParentIssue.IssueID })">Go to Parent Issue</a></li>
-                }
-                @if (Model.Issue.ParentSolution != null)
-                {
-                            <li><a class="dropdown-item" href="@Url.Action("ReadSolution", "Solution", new { id = Model.Issue.ParentSolution.SolutionID })">Go to Parent Solution</a></li>
-                }
-            `
-        };
-
-        // Function to update dropdown content based on active tab
-        // Make this function available globally
-        window.updateDropdownContent = function(activeTabId) {
-            if (dropdownMenu && menuTemplates[activeTabId]) {
-                dropdownMenu.innerHTML = menuTemplates[activeTabId];
-            }
-        }
-
-        // Initialize with default tab content
-        updateDropdownContent('solutions-tab');
-
-        // Add event listeners to all tabs
-        const tabs = document.querySelectorAll('[data-bs-toggle="tab"]');
-        tabs.forEach(tab => {
-            tab.addEventListener('shown.bs.tab', function(event) {
-                updateDropdownContent(event.target.id);
-            });
+        initTabbedForum({
+            paginationButtonId: "fetchPaginatedSubIssues",
+            tabId: 'sub-issues-tab'
         });
-    }
+        initTabbedForum({
+            paginationButtonId: "fetchPaginatedSolutions",
+            tabId: 'solutions-tab'
+        });
+        initTabbedForum({
+            tabId: 'parent-post-tab'
+        });
+        dynamicDropdownContent({
+            defaultTab: 'solutions-tab',
+            parentContentType: "Issue",
+            issueId: "@Model.Issue.IssueID",
+            parentIssueId: "@Model.Issue.ParentIssueID",
+            parentSolutionId: "@Model.Issue.ParentSolutionID"
+        });
+    })
+
+     
 </script>
 
-<script src="~/js/Site/remember-tab.js"></script>
+<script src="~/js/Content/Read.js" asp-append-version="true"></script>
+<script src="~/js/Site/remember-tab.js" asp-append-version="true"></script>

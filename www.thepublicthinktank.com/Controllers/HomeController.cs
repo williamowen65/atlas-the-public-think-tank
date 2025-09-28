@@ -68,7 +68,9 @@ public class HomeController : Controller
             filter = ContentFilter.FromJson(cookieValue);
         }
 
-   
+        filter.ContentStatus = ContentStatus.Published;
+
+
         // Create a view model to hold both issues and categories
         var viewModel = new Home_PageVM();
         viewModel.Sidebar.PageInfo = GetPageInfo(filter);

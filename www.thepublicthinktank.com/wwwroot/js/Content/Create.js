@@ -30,10 +30,14 @@ function initListenersForContentCreateForm(form) {
         submitContentCreateForm(e, ContentStatus.Draft);
     });
 
-    // Handler for Publish button
-    publishButton.addEventListener("click", (e) => {
-        submitContentCreateForm(e, ContentStatus.Published);
-    });
+    if (publishButton) {
+        // Handler for Publish button
+        publishButton.addEventListener("click", (e) => {
+            submitContentCreateForm(e, ContentStatus.Published);
+        });
+    } else {
+        console.warn("Publish button not found, publish listener not set. This is the expected behavior if the parent content isn't published")
+    }
 
     function submitContentCreateForm(e, contentStatus) {
 

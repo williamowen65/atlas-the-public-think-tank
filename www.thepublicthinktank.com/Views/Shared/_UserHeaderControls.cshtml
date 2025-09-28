@@ -7,7 +7,6 @@
 @using Microsoft.AspNetCore.Identity
 @using atlas_the_public_think_tank.Data.DatabaseEntities.Users
 @inject SignInManager<AppUser> SignInManager
-@inject UserManager<AppUser> UserManager
 
 <span id="user-header-controls" class="d-flex">
 
@@ -24,41 +23,20 @@ else
 {
 
     <button class="transparent-btn general-btn hoverable">
-     <a class="anchor-btn-wrapper" href="@Url.Action("CreateIssue", "Issue")">
-            <i class="fa fa-plus"></i>
-                Create
-    </a>
+         <a class="anchor-btn-wrapper" href="@Url.Action("CreateIssue", "Issue")">
+             <i class="fa fa-plus"></i>
+             Create
+        </a>
     </button>
 
-        <div class="flex-shrink-0 dropdown d-flex align-items-center" style="position: revert !important; ">
-    <a href="#" class="d-block link-body-emphasis text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false">
-        <img src="https://github.com/mdo.png" alt="mdo" width="32" height="32" class="rounded-circle">
-    </a>
-
-            <ul class="dropdown-menu user-actions-dropdown fs-5 text-small shadow p-0" style="">
-        <li><a class="dropdown-item" href="#">New project...</a></li>
-        <li>
-                    <a class="dropdown-item" href="@Url.Action("UserProfile", "UserProfile", new { userId = UserManager.GetUserId(User) })">
-                 @await Html.PartialAsync("~/Views/Shared/Icons/_profile-icon.cshtml")
-                 Profile
-            </a>
-        </li>
-        <li>
-            <a class="dropdown-item" asp-area="Identity" asp-page="/Account/Manage/Index">
-                @await Html.PartialAsync("~/Views/Shared/Icons/_settings-icon.cshtml")
-                Settings
-            </a>
-        </li>
-        <li><hr class="dropdown-divider m-0  "></li>
-        <li>
-            <form class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("HomePage", "Home")">
-                <button type="submit" class="dropdown-item">
-                    @await Html.PartialAsync("~/Views/Shared/Icons/_logout-icon.cshtml")
-                    Logout</button>
-            </form>
-        </li>   
+    <div class="flex-shrink-0 dropdown d-flex align-items-center" style="position: revert !important; ">
+        <a href="#" class="d-block link-body-emphasis text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false">
+            <img src="https://github.com/mdo.png" alt="mdo" width="32" height="32" class="rounded-circle">
+        </a>
         
-    </ul>
-</div>
+        @await Html.PartialAsync("~/Views/Shared/_user-profile-dropdown.cshtml")
+    </div>
 } 
 </span>
+
+

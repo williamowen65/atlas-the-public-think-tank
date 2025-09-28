@@ -1,0 +1,32 @@
+﻿@using atlas_the_public_think_tank.Models.Enums
+@using atlas_the_public_think_tank.Models.ViewModel.AjaxVM
+@model Solution_CreateOrEdit_AjaxVM
+
+@*
+    The create solution page can be viewed before it is known what parentIssueID relates to it. 
+    ParentIssue may be null
+
+*@
+@{
+    bool isParentPostPublic = false;
+    bool parentIssueExists = Model.Solution!.ParentIssue != null;
+    if (parentIssueExists && Model.Solution!.ParentIssue!.ContentStatus == ContentStatus.Published)
+    {
+        isParentPostPublic = true;    
+    }
+
+}
+
+@* // Publish button depends on parent content being public first *@
+
+@if (!isParentPostPublic)
+{
+    <button class="btn btn-sm btn-warning fw-bold ms-2 awaiting-parent-publish" disabled>
+        Awaiting parent publish
+    </button>
+}
+else
+{
+    <button class="publish-solution btn btn-sm btn-primary fw-bold ms-2" type="submit">Publish Solution
+    </button>
+}

@@ -10,6 +10,7 @@ using atlas_the_public_think_tank.Data.SeedData.SeedIssues;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data;
 using atlas_the_public_think_tank.Data.SeedData.SeedSolutions.Data;
 using atlas_the_public_think_tank.Models;
+using atlas_the_public_think_tank.Models.Enums;
 using atlas_the_public_think_tank.Models.ViewModel.AjaxVM;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue;
@@ -76,7 +77,7 @@ namespace CloudTests.CacheTests
         [TestMethod]
         public async Task CacheTestingHomePage_AddingNew_Issues_Solutions_PagedContentShouldBeUpToDate()
         {
-            var (jsonDoc, issueId1, title, content, scope) = await _testingCRUDHelper.CreateTestIssue();
+            var (jsonDoc, issueId1, title, content, scope) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Published);
 
             // Common filter
             ContentFilter filter = new ContentFilter();
@@ -95,7 +96,7 @@ namespace CloudTests.CacheTests
 
             // Test issue 2
 
-            var (jsonDoc2, issueId2, title2, content2, scope2) = await _testingCRUDHelper.CreateTestIssue();
+            var (jsonDoc2, issueId2, title2, content2, scope2) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Published);
             
             // Visit the home page to populate the cache
             await _env.fetchHTML("/");

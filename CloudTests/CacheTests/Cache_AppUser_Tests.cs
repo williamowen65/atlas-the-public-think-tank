@@ -10,6 +10,7 @@ using atlas_the_public_think_tank.Data.SeedData.SeedIssues;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data;
 using atlas_the_public_think_tank.Data.SeedData.SeedSolutions.Data;
 using atlas_the_public_think_tank.Models;
+using atlas_the_public_think_tank.Models.Enums;
 using atlas_the_public_think_tank.Models.ViewModel.AjaxVM;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common;
 using CloudTests.TestingSetup;
@@ -100,7 +101,7 @@ namespace CloudTests.CacheTests
 
             // Create issue
             var testHelper = new TestingCRUDHelper(_env);
-            var (jsonDoc, issueId, title, content, scope) = await testHelper.CreateTestIssue();
+            var (jsonDoc, issueId, title, content, scope) = await testHelper.CreateTestIssue(ContentStatus.Published);
             await _env.fetchHTML(profileUrl);
 
             var cacheEntry2 = await _env.fetchJson<CacheUserHistoryEntry>(cacheUrl);

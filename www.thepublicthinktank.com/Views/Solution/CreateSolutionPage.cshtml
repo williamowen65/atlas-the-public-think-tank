@@ -32,9 +32,8 @@
 
         @await Html.PartialAsync("~/Views/Solution/_create-or-edit-solution.cshtml", new Solution_CreateOrEdit_AjaxVM
         {
-            Solution = Model.Solution,
-                Scopes = Model.Scopes,
-                })
+            Solution = Model.Solution
+        })
     </div>
 
   

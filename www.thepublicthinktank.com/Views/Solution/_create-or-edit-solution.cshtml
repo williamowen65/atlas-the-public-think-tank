@@ -12,7 +12,7 @@
 }
 
 
-<form class="border-1 border card mb-3 solution-editor" data-content-type="solution" data-form-url="/edit-solution">
+<form class="border-1 border card mb-3 solution-editor" data-content-type="solution" data-content-id="@Model.Solution.SolutionID" data-form-url="/edit-solution">
     @*
         asp-controller="Solution" asp-action="CreateSolution" method="post"
         These are controlled via the Ajax in ContentCreate.js
@@ -101,18 +101,21 @@
         <div class=" ms-auto d-flex">
             @if (Model.Solution.ContentStatus == null)
             {
+                <button class="cancel-edit-solution-button btn btn-sm btn-secondary fw-bold" type="submit">Cancel</button>
+
                 <button class="create-solution-draft btn btn-sm btn-secondary fw-bold ms-auto" type="submit">Save as Draft</button>
-            <button class="publish-solution btn btn-sm btn-primary fw-bold ms-2" type="submit">Publish Solution</button>
+                @await Html.PartialAsync("~/Views/Solution/FormComponents/_PublishSolutionButton.cshtml", Model)
             }
             @if (Model.Solution.ContentStatus == ContentStatus.Draft)
             {
+                <button class="cancel-edit-solution-button btn btn-sm btn-secondary fw-bold" type="submit">Cancel</button>
                 <button class="update-solution-draft btn btn-sm btn-secondary fw-bold ms-auto" type="submit">Update Draft</button>
-                <button class="publish-solution btn btn-sm btn-primary fw-bold ms-2" type="submit">Publish Solution</button>
+                @await Html.PartialAsync("~/Views/Solution/FormComponents/_PublishSolutionButton.cshtml", Model)
             }
             @if (Model.Solution.ContentStatus == ContentStatus.Published)
             {
-
-                <button class="btn btn-primary btn-sm fw-bold ms-auto update-solution w-fit" type="submit">Update Solution Post</button>
+                <button class="cancel-edit-solution-button btn btn-sm btn-secondary fw-bold" type="submit">Cancel</button>
+                @await Html.PartialAsync("~/Views/Solution/FormComponents/_PublishSolutionButton.cshtml", Model)
             }
         </div>
         </div>

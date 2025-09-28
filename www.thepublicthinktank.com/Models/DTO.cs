@@ -6,6 +6,8 @@ namespace atlas_the_public_think_tank.Models
     public class ContentIndexEntry
     {
         public Guid ContentId { get; set; }
+
+        public required ContentStatus ContentStatus { get; set; }
         public ContentType ContentType { get; set; }
 
         // The below properties are filterable properties.

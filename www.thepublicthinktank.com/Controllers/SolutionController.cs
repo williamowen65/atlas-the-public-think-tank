@@ -35,13 +35,13 @@ namespace atlas_the_public_think_tank.Controllers
     [Authorize]
     public class SolutionController : Controller
     {
-        private readonly ApplicationDbContext _context;
         private readonly UserManager<AppUser> _userManager;
+        private readonly SignInManager<AppUser> _signInManager;
 
-        public SolutionController(ApplicationDbContext context, UserManager<AppUser> userManager)
+        public SolutionController(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager)
         {
-            _context = context;
             _userManager = userManager;
+            _signInManager = signInManager;
         }
 
 
@@ -70,14 +70,43 @@ namespace atlas_the_public_think_tank.Controllers
             }
 
             bool fetchParent = true;
+            Solution_ReadVM? solution = null;
 
-            var solution = await Read.Solution(id, filter, fetchParent);
+            try
+            {
+                solution = await Read.Solution(id, filter, fetchParent);
+            }
+            catch (Exception ex) {
+                if (ex.Message != "Solution not found")
+                {
+                    throw;
+                }
+            }
 
 
             if (solution == null)
             {
                 return NotFound();
             }
+
+
+            bool isDraft = solution.ContentStatus == ContentStatus.Draft;
+            if (isDraft)
+            {
+                // Must be signed in
+                if (!_signInManager.IsSignedIn(User))
+                {
+                    return Unauthorized();
+                }
+
+                // Safely parse the user ID; treat invalid/missing as unauthorized
+                string? userIdStr = _userManager.GetUserId(User);
+                if (!Guid.TryParse(userIdStr, out Guid userId) || userId != solution.Author.Id)
+                {
+                    return Unauthorized();
+                }
+            }
+
 
             solution_PageVM.Solution = solution;
             solution_PageVM.Sidebar.PageInfo = GetPageInfo(filter, solution);
@@ -207,7 +236,7 @@ namespace atlas_the_public_think_tank.Controllers
             }
             catch (Exception ex)
             {
-                contentCreationResponse.Success = false;
+                throw;
             }
 
             return Json(contentCreationResponse);
@@ -217,6 +246,10 @@ namespace atlas_the_public_think_tank.Controllers
         /// <summary>
         /// This method serves the "create solution" page
         /// </summary>
+        /// <remarks>
+        /// When a create solution page is rendered, the user has the option to render the page not knowing what parent issue
+        /// they will choose. For this reason Guid? is the type for parentIssueID
+        /// </remarks>
         [Route("/create-solution")]
         public async Task<IActionResult> CreateSolutionPage(Guid? parentIssueID = null)
         {
@@ -252,6 +285,39 @@ namespace atlas_the_public_think_tank.Controllers
 
         #region Edit Solution
 
+
+        [Route("/cancel-edit-solution/{solutionId}")]
+        public async Task<IActionResult> CancelEditSolutionPartialView(Guid solutionId)
+        {
+
+            ContentCreationResponse_JsonVM contentCreationResponse = new ContentCreationResponse_JsonVM();
+            Solution_ReadVM? solution = await Read.Solution(solutionId, new ContentFilter());
+            var user = await _userManager.GetUserAsync(User);
+            if (solution == null)
+            {
+                throw new Exception("Solution doesn't exist for GET CancelEditIssuePartialView");
+            }
+            // Confirm this user owns this content
+            if (user.Id != solution.Author.Id)
+            {
+                contentCreationResponse.Success = false;
+                var errorEntry = new List<string>();
+                errorEntry.Add("Error Message");
+                errorEntry.Add($"You are not the author of the solution with the id {solution.SolutionID}");
+                contentCreationResponse.Errors.Add(errorEntry);
+                return Json(contentCreationResponse);
+            }
+
+
+            string html = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Solution/_solution-card.cshtml", solution);
+            contentCreationResponse.Success = true;
+            contentCreationResponse.Content = html;
+            contentCreationResponse.ContentId = solutionId;
+
+            return Json(contentCreationResponse);
+        }
+
+
         /// <summary>
         /// This method is used to return the partial for editing a solution
         /// </summary>
@@ -281,7 +347,6 @@ namespace atlas_the_public_think_tank.Controllers
             }
 
 
-
             Solution_CreateOrEdit_AjaxVM solutionWrapper = new Solution_CreateOrEdit_AjaxVM()
             {
                 Solution = new Solution_CreateOrEditVM()
@@ -301,8 +366,7 @@ namespace atlas_the_public_think_tank.Controllers
                     Title = solution.Title,
                     ParentIssue = await Read.Issue(solution.ParentIssueID, new ContentFilter()),
                     ParentIssueID = solution.ParentIssueID,
-                },
-                Scopes = await _context.Scopes.ToListAsync()
+                }
             };
 
             // render Partial view and return json
@@ -350,7 +414,8 @@ namespace atlas_the_public_think_tank.Controllers
 
             // pull issue from DAL
             // Also to get the created at value
-            Solution_ReadVM? solutionRef = await Read.Solution((Guid)model.SolutionID!, new ContentFilter());
+            bool fetchParent = true;
+            Solution_ReadVM? solutionRef = await Read.Solution((Guid)model.SolutionID!, new ContentFilter(), fetchParent);
 
             // Confirm this user owns this content
             if (user.Id != solutionRef.Author.Id)
@@ -361,6 +426,19 @@ namespace atlas_the_public_think_tank.Controllers
                 errorEntry.Add($"You are not the author of the solution with the id {solutionRef.SolutionID}");
                 contentCreationResponse.Errors.Add(errorEntry);
                 return Json(contentCreationResponse);
+            }
+
+
+            // If issue is draft and incoming issue is to publish, confirm parent is published
+            bool isPreUpdateSolutionDraft = solutionRef.ContentStatus == ContentStatus.Draft;
+            bool isIncomingSolutionPublish = model.ContentStatus == ContentStatus.Published;
+            if (isPreUpdateSolutionDraft && isIncomingSolutionPublish)
+            {
+                ContentItem_ReadVM parentContent = Converter.ConvertIssue_ReadVMToContentItem_ReadVM(solutionRef.ParentIssue!);
+                if (parentContent.ContentStatus == ContentStatus.Draft)
+                {
+                    throw new Exception("awaiting parent publish");
+                }
             }
 
 

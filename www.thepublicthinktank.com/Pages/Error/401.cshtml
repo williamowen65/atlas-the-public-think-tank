@@ -1,0 +1,21 @@
+﻿@page
+@model atlas_the_public_think_tank.Pages.Error.UnauthorizedModel
+@{
+    Response.StatusCode = 401;
+    ViewData["Title"] = "Not Authorized";
+}
+
+<section class="container mt-4">
+    <h1>Unauthorized</h1>
+    <p>You do not have permissions to view this content.</p>
+    <p>This content may be in Draft mode.</p>
+
+    @if (!string.IsNullOrWhiteSpace(Model.OriginalPath))
+    {
+        <p><small>Requested URL: <code>@Model.OriginalPath</code></small></p>
+    }
+
+    <p>
+        <a href="/" class="btn btn-primary">Go home<a>
+    </p>
+</section>

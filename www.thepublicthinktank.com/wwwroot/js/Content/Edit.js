@@ -33,6 +33,11 @@ function initEditContentButtonObserver(node) {
             // These buttons render ask the server for the edit form
             initListenerOnEditButton(button)
         });
+        const cancelEditButtons = node.querySelectorAll('.cancel-edit-issue-button, .cancel-edit-solution-button');
+        cancelEditButtons.forEach(button => {
+            // These buttons render ask the server for the edit form
+            initListenerOnCloseEditButton(button)
+        });
     }
 }
 
@@ -44,10 +49,69 @@ document.addEventListener("DOMContentLoaded", () => {
     Array.from(document.querySelectorAll(".edit-issue-button, .edit-solution-button")).forEach((button) => {
         initListenerOnEditButton(button)
     });
+    Array.from(document.querySelectorAll(".cancel-edit-issue-button, .cancel-edit-solution-button")).forEach((button) => {
+        initListenerOnCloseEditButton(button)
+    });
 });
 
 function initListenerOnEditButton(button) {
     button.addEventListener("click", fetchRelatedEditForm)
+}
+function initListenerOnCloseEditButton(button) {
+    button.addEventListener("click", closeEditForm)
+}
+
+function closeEditForm(e) {
+
+    const isAuthorAlertCancelButton = Boolean(e.target.closest(".author-content-alert"))
+    const isEditFormCancelButton = Boolean(e.target.closest(".issue-editor, .solution-editor"))
+    let contentType;
+    if (isAuthorAlertCancelButton) contentType = e.target.closest(".cancel-edit-issue-button, .cancel-edit-solution-button").getAttribute("data-content-type")
+    if (isEditFormCancelButton) contentType = e.target.closest(".issue-editor, .solution-editor").getAttribute("data-content-type")
+    let contentId;
+    if (isAuthorAlertCancelButton) contentId = e.target.closest(".cancel-edit-issue-button, .cancel-edit-solution-button").getAttribute("data-content-id")
+    if (isEditFormCancelButton) contentId = e.target.closest(".issue-editor, .solution-editor")
+        .querySelector(`input[name=${contentType[0].toUpperCase() + contentType.slice(1)}ID]`)
+        .getAttribute("value")
+
+    const editor = document.querySelector(`.issue-editor[data-content-id='${contentId}'], .solution-editor[data-content-id='${contentId}']`)
+
+
+    const url = `/cancel-edit-${contentType}/${contentId}`
+     
+    console.log("CLose form.... fetch the issue and put it back in its place",
+        {
+            isAuthorAlertCancelButton,
+            isEditFormCancelButton,
+            contentType,
+            url
+        })
+
+    fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(html => {
+
+            // Toggle class on related contnet author tag to display a cancel button 
+            const authorContentAlert = editor.parentNode.querySelector(`.author-content-alert[data-id='${contentId}']`);
+            authorContentAlert.classList.remove("edit-mode")
+
+            console.log("cancel edit", {html})
+
+            const tempContainer = document.createElement('div');
+            tempContainer.innerHTML = html.content;
+            const contentCard = tempContainer.querySelector(".issue-card, .solution-card"); 
+            editor.replaceWith(contentCard);
+
+        })
+        .catch(error => {
+            console.error(`Error fetching ${contentType} editor:`, error);
+        });
+
 }
 
 /**
@@ -74,6 +138,11 @@ function fetchRelatedEditForm(e) {
             return response.json();
         })
         .then(html => {
+
+            // Toggle class on related contnet author tag to display a cancel button 
+            const authorContentAlert = contentCard.parentNode.querySelector(`.author-content-alert[data-id='${contentId}']`);
+            authorContentAlert.classList.add("edit-mode")
+
             const tempContainer = document.createElement('div');
             tempContainer.innerHTML = html.content;
             const editIssueTemplate = tempContainer.firstElementChild;

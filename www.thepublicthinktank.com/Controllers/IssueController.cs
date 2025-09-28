@@ -26,6 +26,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Text;
+using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 
 namespace atlas_the_public_think_tank.Controllers
 {
@@ -37,25 +38,16 @@ namespace atlas_the_public_think_tank.Controllers
     [Authorize]
     public class IssueController : Controller
     {
-        private readonly ApplicationDbContext _context;
         private readonly UserManager<AppUser> _userManager;
-        private readonly IWebHostEnvironment _environment;
-        private readonly IBreadcrumbRepository _breadcrumbRepository;
-        private readonly IAppUserRepository _appUserRepository;
+        private readonly SignInManager<AppUser> _signInManager;
 
         public IssueController(
-            ApplicationDbContext context,
             UserManager<AppUser> userManager,
-            IWebHostEnvironment env,
-            IBreadcrumbRepository breadcrumbRepository,
-            IAppUserRepository appUserRepository
+            SignInManager<AppUser> signInManager
             )
         {
-            _context = context;
             _userManager = userManager;
-            _environment = env;
-            _breadcrumbRepository = breadcrumbRepository;
-            _appUserRepository = appUserRepository;
+            _signInManager = signInManager;
         }
 
         #region Issue Page
@@ -79,15 +71,46 @@ namespace atlas_the_public_think_tank.Controllers
                 filter = ContentFilter.FromJson(cookieValue);
             }
 
-            bool fetchParent = true;
+            // TODO Prevent reading of Draft issue unless you have permissions
+            // Try Catch the Read issue
 
-            var issue = await Read.Issue(id, filter, fetchParent);
+
+            bool fetchParent = true;
+            Issue_ReadVM? issue = null;
+            try
+            {
+               issue = await Read.Issue(id, filter, fetchParent);
+            }
+            catch(Exception ex) {
+                if (ex.Message != "Issue not found") {
+                    throw;
+                }
+            }
+                       
+            
             // This retrieves the first set of paginated sub-issues and paginated solutions
 
             if (issue == null)
             {
                 return NotFound();
             }
+
+            bool isDraft = issue.ContentStatus == ContentStatus.Draft;
+            if (isDraft) {
+                // Must be signed in
+                if (!_signInManager.IsSignedIn(User))
+                {
+                    return Unauthorized();
+                }
+
+                // Safely parse the user ID; treat invalid/missing as unauthorized
+                string? userIdStr = _userManager.GetUserId(User);
+                if (!Guid.TryParse(userIdStr, out Guid userId) || userId != issue.Author.Id)
+                {
+                    return Unauthorized();
+                }
+            }
+
 
             issue_PageVM.Issue = issue;
             issue_PageVM.Sidebar.PageInfo = GetPageInfo(filter, issue);
@@ -309,10 +332,7 @@ namespace atlas_the_public_think_tank.Controllers
             }
             catch (Exception ex)
             {
-                contentCreationResponse.Success = false;
-                List<string> errorEntry = new List<string>();
-                errorEntry.Add(ex.Message);
-                contentCreationResponse.Errors.Add(errorEntry);
+                throw;
             }
 
             return Json(contentCreationResponse);
@@ -321,6 +341,37 @@ namespace atlas_the_public_think_tank.Controllers
         #endregion
 
         #region edit issue
+
+        [Route("/cancel-edit-issue/{issueId}")]
+        public async Task<IActionResult> CancelEditIssuePartialView(Guid issueId)
+        {
+
+            ContentCreationResponse_JsonVM contentCreationResponse = new ContentCreationResponse_JsonVM();
+            Issue_ReadVM? issue = await Read.Issue(issueId, new ContentFilter());
+            var user = await _userManager.GetUserAsync(User);
+            if (issue == null)
+            {
+                throw new Exception("Issue doesn't exist for GET CancelEditIssuePartialView");
+            }
+            // Confirm this user owns this content
+            if (user.Id != issue.Author.Id)
+            {
+                contentCreationResponse.Success = false;
+                var errorEntry = new List<string>();
+                errorEntry.Add("Error Message");
+                errorEntry.Add($"You are not the author of the issue with the id {issue.IssueID}");
+                contentCreationResponse.Errors.Add(errorEntry);
+                return Json(contentCreationResponse);
+            }
+
+
+            string html = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Issue/_issue-card.cshtml", issue);
+            contentCreationResponse.Success = true;
+            contentCreationResponse.Content = html;
+            contentCreationResponse.ContentId = issueId;
+
+            return Json(contentCreationResponse);
+        }
 
         /// <summary>
         /// This method is used to return the create issue page.
@@ -421,7 +472,8 @@ namespace atlas_the_public_think_tank.Controllers
 
             // pull issue from DAL -- This is for confirming some info before making the update
             // Also get the createdAt value
-            Issue_ReadVM? issueRef = await Read.Issue((Guid)model.IssueID!, new ContentFilter());
+            bool fetchParent = true;
+            Issue_ReadVM? issueRef = await Read.Issue((Guid)model.IssueID!, new ContentFilter(), fetchParent);
             // Confirm this user owns this content
             if (user.Id != issueRef.Author.Id)
             {
@@ -433,8 +485,25 @@ namespace atlas_the_public_think_tank.Controllers
                 return Json(contentCreationResponse);
             }
 
-            // Diff check between issueRef.Scope & incomingScope before trying to make an update
 
+            // If issue is draft and incoming issue is to publish, confirm parent is published
+            bool isPreUpdateIssueDraft = issueRef.ContentStatus == ContentStatus.Draft;
+            bool isIncomingIssuePublish = model.ContentStatus == ContentStatus.Published;
+            if (isPreUpdateIssueDraft && isIncomingIssuePublish)
+            { 
+                bool hasParentContent = issueRef.ParentIssue != null || issueRef.ParentSolution != null;
+                if (hasParentContent)
+                {
+                    ContentItem_ReadVM parentContent = issueRef.ParentIssue != null ? Converter.ConvertIssue_ReadVMToContentItem_ReadVM(issueRef.ParentIssue) : Converter.ConvertSolution_ReadVMToContentItem_ReadVM(issueRef.ParentSolution!);
+                    if (parentContent.ContentStatus == ContentStatus.Draft)
+                    {
+                        throw new Exception("awaiting parent publish");
+                    }
+                }
+            }
+
+
+            // Diff check between issueRef.Scope & incomingScope before trying to make an update
             Scope incomingScope = new Scope()
             {
                 ScopeID = (Guid)model.Scope.ScopeID!,

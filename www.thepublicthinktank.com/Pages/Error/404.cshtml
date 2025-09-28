@@ -1,0 +1,20 @@
+﻿@page
+@model atlas_the_public_think_tank.Pages.Error.NotFoundModel
+@{
+    Response.StatusCode = 404;
+    ViewData["Title"] = "Page Not Found";
+}
+
+<section class="container mt-4">
+    <h1>Page not found</h1>
+    <p>We couldn't find the page you were looking for.</p>
+
+    @if (!string.IsNullOrWhiteSpace(Model.OriginalPath))
+    {
+        <p><small>Requested URL: <code>@Model.OriginalPath</code></small></p>
+    }
+
+    <p>
+        <a href="/" class="btn btn-primary">Go home</a>
+    </p>
+</section>

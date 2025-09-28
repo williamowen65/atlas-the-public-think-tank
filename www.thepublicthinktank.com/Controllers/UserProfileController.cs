@@ -1,6 +1,7 @@
 ﻿using atlas_the_public_think_tank.Data.CRUD;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
+using atlas_the_public_think_tank.Models.Enums;
 using atlas_the_public_think_tank.Models.ViewModel.AjaxVM;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution;
@@ -11,6 +12,7 @@ using atlas_the_public_think_tank.Models.ViewModel.PageVM;
 using atlas_the_public_think_tank.Models.ViewModel.UI_VM;
 using atlas_the_public_think_tank.Utilities;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
@@ -18,6 +20,13 @@ namespace atlas_the_public_think_tank.Controllers
 {
     public class UserProfileController : Controller
     {
+
+        public readonly UserManager<AppUser> _userManager;
+
+        public UserProfileController(UserManager<AppUser> userManager)
+        {
+            _userManager = userManager;
+        }
 
         [Route("/user-profile")]
         public async Task<IActionResult> UserProfile([FromQuery][BindRequired] Guid userId)
@@ -39,7 +48,6 @@ namespace atlas_the_public_think_tank.Controllers
 
 
             Issues_Paginated_ReadVM usersIssues = (await Read.PaginatedUsersIssues(userId, filter))!;
-            ContentCount_VM usersIssueCounts = (await Read.UsersIssueCounts(userId, filter))!;
             Solutions_Paginated_ReadVM usersSolutions = (await Read.PaginatedUsersSolutions(userId, filter))!;
 
             UserProfile_PageVM userProfile_PageVM = new UserProfile_PageVM()
@@ -56,6 +64,34 @@ namespace atlas_the_public_think_tank.Controllers
             };
 
             return View(userProfile_PageVM);
+        }
+
+        [Authorize]
+        [Route("/drafts")]
+        public async Task<IActionResult> Drafts()
+        {
+            ViewData["FilterPanelMode"] = "Drafts";
+
+            // The user must be logged in to view this page
+            // No url params needed. Will load user content. 
+
+            // Fetch user Drafts
+            ContentFilter filter = new ContentFilter();
+            if (Request.Cookies.TryGetValue("contentFilter", out string? cookieValue) && cookieValue != null)
+            {
+                filter = ContentFilter.FromJson(cookieValue);
+            }
+
+            // get userId from User
+            var userId = _userManager.GetUserId(User);
+            if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out Guid userGuid))
+            {
+                return Unauthorized();
+            }
+
+            var userDraft_pageVM = await Read.PaginatedUserDrafts(userGuid, filter);
+
+            return View(userDraft_pageVM);
         }
 
 

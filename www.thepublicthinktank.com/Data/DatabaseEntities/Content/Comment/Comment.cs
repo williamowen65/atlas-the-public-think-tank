@@ -46,6 +46,8 @@ namespace atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment
             {
                 entity.HasKey(e => e.CommentID);
                 entity.Property(e => e.Content).HasMaxLength(3000).IsRequired();
+                // Generates a check constraint similar to DF__Issues__CreatedA__6EF57B66
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
 
                 // Self-referencing relationship
                 entity.HasOne(e => e.ParentComment)

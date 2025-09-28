@@ -7,7 +7,7 @@ using atlas_the_public_think_tank.Data.DbContext;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues;
 using atlas_the_public_think_tank.Data.SeedData.SeedSolutions;
-
+using atlas_the_public_think_tank.Models.Enums;
 using atlas_the_public_think_tank.Models.ViewModel;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution;
@@ -87,7 +87,7 @@ namespace CloudTests.UserTests
             // Create a new issue
 
             var testHelper = new TestingCRUDHelper(_env);
-            var (jsonDoc, issueId, title, content, scope) = await testHelper.CreateTestIssue();
+            var (jsonDoc, issueId, title, content, scope) = await testHelper.CreateTestIssue(ContentStatus.Published);
 
             // Revisit the user page
             var userProfilePage2 = await _env.fetchHTML(url);
@@ -106,7 +106,7 @@ namespace CloudTests.UserTests
   
             // Create a new issue
             var testHelper = new TestingCRUDHelper(_env);
-            var (jsonDoc, parentIssueId, title, content, scope) = await testHelper.CreateTestIssue();
+            var (jsonDoc, parentIssueId, title, content, scope) = await testHelper.CreateTestIssue(ContentStatus.Published);
 
             // Visit the user page to populate cache
             var userProfilePage = await _env.fetchHTML(url);
@@ -115,7 +115,7 @@ namespace CloudTests.UserTests
             var userProfileSolutionContentCount = int.Parse(userProfileSolutionContentCountEl!.InnerHtml);
             Assert.IsTrue(userProfileSolutionContentCount == 0, "User solution count should start at 0");
 
-            var (_jsonDoc, solutionId, solutionTitle, solutionContent, solutionScope) = await testHelper.CreateTestSolution(parentIssueId);
+            var (_jsonDoc, solutionId, solutionTitle, solutionContent, solutionScope) = await testHelper.CreateTestSolution(parentIssueId, ContentStatus.Published);
 
             // Revisit the user page
             var userProfilePage2 = await _env.fetchHTML(url);
@@ -141,7 +141,7 @@ namespace CloudTests.UserTests
         public async Task UserProfile_GetsUpdatedWhenIssue_Updated()
         {
             var (issueId, scope) = await UserCreatesFirstIssue();
-            var (jsonDoc, _issueId, title, content, _scope) = await _testingCRUDHelper.EditTestIssue(issueId, scope!.ScopeID);
+            var (jsonDoc, _issueId, title, content, _scope) = await _testingCRUDHelper.EditTestIssue(issueId, scope!.ScopeID, ContentStatus.Published);
             string url = $"/user-profile?userId={TestUserProfileUser.Id.ToString()}";
             // Visit the user page to populate cache
             var userProfilePage = await _env.fetchHTML(url);
@@ -168,7 +168,7 @@ namespace CloudTests.UserTests
         public async Task UserProfile_GetsUpdatedWhenSolution_Updated()
         {
             var (solutionId, scope, parentIssueId) = await UserCreatesFirstSolution();
-            var (jsonDoc, _issueId, title, content, _scope) = await _testingCRUDHelper.EditTestSolution(solutionId, scope!.ScopeID, parentIssueId);
+            var (jsonDoc, _issueId, title, content, _scope) = await _testingCRUDHelper.EditTestSolution(solutionId, scope!.ScopeID, parentIssueId, ContentStatus.Published);
             string url = $"/user-profile?userId={TestUserProfileUser.Id.ToString()}";
             // Visit the user page to populate cache
             var userProfilePage = await _env.fetchHTML(url);
@@ -193,10 +193,10 @@ namespace CloudTests.UserTests
         [DataRow(3, 6.7)]
         public async Task UserProfile_FilterLogic_CanUpdate_UserIssueFeed(double min, double max)
         {
-            var (jsonDoc1, issueId1, title1, content1, scope1) = await _testingCRUDHelper.CreateTestIssue();
-            var (jsonDoc2, issueId2, title2, content2, scope2) = await _testingCRUDHelper.CreateTestIssue();
-            var (jsonDoc3, issueId3, title3, content3, scope3) = await _testingCRUDHelper.CreateTestIssue();
-            var (jsonDoc4, issueId4, title4, content4, scope4) = await _testingCRUDHelper.CreateTestIssue();
+            var (jsonDoc1, issueId1, title1, content1, scope1) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Published);
+            var (jsonDoc2, issueId2, title2, content2, scope2) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Published);
+            var (jsonDoc3, issueId3, title3, content3, scope3) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Published);
+            var (jsonDoc4, issueId4, title4, content4, scope4) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Published);
 
             await _testingCRUDHelper.CreateTestVoteOnIssue(issueId1, 3);
             await _testingCRUDHelper.CreateTestVoteOnIssue(issueId2, 4);
@@ -241,11 +241,11 @@ namespace CloudTests.UserTests
         [DataRow(3, 6.7)]
         public async Task UserProfile_FilterLogic_CanUpdate_UserSolutionFeed(double min, double max)
         {
-            var (_jsonDoc1, parentIssueId1, _title1, _content1, _scope1) = await _testingCRUDHelper.CreateTestIssue();
-            var(jsonDoc1, solutionId1, title1, content1, scope1) = await _testingCRUDHelper.CreateTestSolution(parentIssueId1);
-            var(jsonDoc2, solutionId2, title2, content2, scope2) = await _testingCRUDHelper.CreateTestSolution(parentIssueId1);
-            var(jsonDoc3, solutionId3, title3, content3, scope3) = await _testingCRUDHelper.CreateTestSolution(parentIssueId1);
-            var(jsonDoc4, solutionId4, title4, content4, scope4) = await _testingCRUDHelper.CreateTestSolution(parentIssueId1);
+            var (_jsonDoc1, parentIssueId1, _title1, _content1, _scope1) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Published);
+            var(jsonDoc1, solutionId1, title1, content1, scope1) = await _testingCRUDHelper.CreateTestSolution(parentIssueId1, ContentStatus.Published);
+            var(jsonDoc2, solutionId2, title2, content2, scope2) = await _testingCRUDHelper.CreateTestSolution(parentIssueId1, ContentStatus.Published);
+            var(jsonDoc3, solutionId3, title3, content3, scope3) = await _testingCRUDHelper.CreateTestSolution(parentIssueId1, ContentStatus.Published);
+            var(jsonDoc4, solutionId4, title4, content4, scope4) = await _testingCRUDHelper.CreateTestSolution(parentIssueId1, ContentStatus.Published);
 
             await _testingCRUDHelper.CreateTestVoteOnSolution(solutionId1, 3);
             await _testingCRUDHelper.CreateTestVoteOnSolution(solutionId2, 6);
