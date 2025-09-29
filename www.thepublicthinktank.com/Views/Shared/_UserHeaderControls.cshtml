@@ -22,12 +22,28 @@
 else
 {
 
-    <button class="transparent-btn general-btn hoverable">
-         <a class="anchor-btn-wrapper" href="@Url.Action("CreateIssue", "Issue")">
-             <i class="fa fa-plus"></i>
-             Create
-        </a>
-    </button>
+        <div class="dropdown" style="position:initial">
+            <button class="transparent-btn general-btn hoverable " type="button" id="createDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fa fa-plus"></i>
+                Create
+            </button>
+            <ul class="dropdown-menu p-0 create-content-dropdown overflow-hidden fs-5" aria-labelledby="createDropdown">
+                <li style="border-right: 3px solid powderblue">
+                    <a class="dropdown-item" href="@Url.Action("CreateIssue", "Issue")" style="background: var(--issue-bg)">
+                       <span class="pe-2">
+                            @await Html.PartialAsync("~/Views/Shared/Icons/_SubIssues.cshtml")
+                       </span>
+                        New Issue</a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="@Url.Action("CreateSolutionPost", "Solution")" style="background: var(--solution-bg)">
+                        <span class="pe-2">
+                            @await Html.PartialAsync("~/Views/Shared/Icons/_Solutions.cshtml")
+                        </span>
+                        New Solution</a>
+                </li>
+            </ul>
+        </div>
 
     <div class="flex-shrink-0 dropdown d-flex align-items-center" style="position: revert !important; ">
         <a href="#" class="d-block link-body-emphasis text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false">
