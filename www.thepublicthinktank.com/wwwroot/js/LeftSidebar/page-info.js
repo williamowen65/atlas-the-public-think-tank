@@ -3,7 +3,7 @@
     const LS_KEY = "globalCompositeScopesEnabled";
 
     function applyGlobalCompositeScopeToCards(enabled) {
-        const allVisibleCards = document.querySelectorAll(".card.issue-card, .card.solution-card");
+        const allVisibleCards = document.querySelectorAll(".card.issue-card:not(.select2-item), .card.solution-card:not(.select2-item)");
         allVisibleCards.forEach(card => {
             if (enabled) {
                 card.classList.add("show-composite-scope");
@@ -47,12 +47,12 @@
         if (!currentScopeSetting) return;
 
         // If node itself is a card, apply the class
-        if (node.classList && (node.classList.contains('issue-card') || node.classList.contains('solution-card'))) {
+        if (node.classList && (node.classList.contains('issue-card:not(.select2-item)') || node.classList.contains('solution-card:not(.select2-item)'))) {
             node.classList.add('show-composite-scope');
         }
 
         // Also apply to any child cards
-        const childCards = node.querySelectorAll('.issue-card, .solution-card');
+        const childCards = node.querySelectorAll('.issue-card:not(.select2-item), .solution-card:not(.select2-item)');
         childCards.forEach(child => {
             child.classList.add('show-composite-scope');
         });

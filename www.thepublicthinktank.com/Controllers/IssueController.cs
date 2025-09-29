@@ -659,7 +659,19 @@ namespace atlas_the_public_think_tank.Controllers
         #endregion
 
 
+        [HttpGet]
+        [Route("/issue/get-issue-select2-template/{issueId}")]
+        public async Task<IActionResult> GetIssueSelect2Template(Guid issueId)
+        {
+            Issue_ReadVM? issue = await Read.Issue(issueId, new ContentFilter());
+            string Select2Item = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Issue/_issue-select2-item.cshtml", issue);
 
+            return Json(new
+            {
+                Success = true,
+                Select2Item
+            });
+        }
 
         public PageInfo GetPageInfo(ContentFilter filter, Issue_ReadVM issue)
         {

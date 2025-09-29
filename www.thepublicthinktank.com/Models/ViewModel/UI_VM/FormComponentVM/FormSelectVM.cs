@@ -24,6 +24,13 @@ namespace atlas_the_public_think_tank.Models.ViewModel.UI_VM.FormComponentVM
         public string? Select2ConfigurationCallback { get; set; }
 
         public string? Select2ListenerCallback { get; set; }
+
+        /// <summary>
+        /// If custom html is being used to render the items
+        /// and you have an item selected by default, you may need to fetch
+        /// the related html from the server
+        /// </summary>
+        public string? Select2TemplateCallback { get; set; }
     }
 
 

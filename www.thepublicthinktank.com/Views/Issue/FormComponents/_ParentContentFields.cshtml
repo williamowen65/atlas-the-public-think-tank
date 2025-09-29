@@ -9,10 +9,14 @@
     {
         List<object> issueIdList = new List<object>();
         string? selectedParentIssueValue = null;
+        string? select2TemplateCallback = null;
+        string? parentIssueIdFromQuery = Context.Request.Query["parentIssueID"].FirstOrDefault();
+        bool hasParentIssueIdQuery = !string.IsNullOrEmpty(parentIssueIdFromQuery);
         if (Model.Issue.ParentIssue != null)
         {
             issueIdList.Add(Model.Issue.ParentIssue);
             selectedParentIssueValue = Model.Issue.ParentIssue.IssueID.ToString();
+            select2TemplateCallback = $"/issue/get-issue-select2-template/{selectedParentIssueValue}";
 
         }
 
@@ -28,9 +32,10 @@
                     PropertyName = "ParentIssueID",
                     TextField = "Title",
                     ValueField = "IssueID",
-                    DisabledField = selectedParentIssueValue != null ? true : false,
+                    DisabledField = hasParentIssueIdQuery,
                     ListItems = issueIdList,
                     SelectedValue = selectedParentIssueValue,
+                    Select2TemplateCallback = select2TemplateCallback,
                     Select2ConfigurationCallback = "getParentIssueSelect2Config",
                     Select2ListenerCallback = "setParentIssueSelect2Listener"
                 })
@@ -43,10 +48,14 @@
     {
         List<object> solutionIdList = new List<object>();
         string? selectedParentSolutionValue = null;
+        string? select2TemplateCallback = null;
+        string? parentSolutionIdFromQuery = Context.Request.Query["parentSolutionID"].FirstOrDefault();
+        bool hasParentSolutionIdQuery = !string.IsNullOrEmpty(parentSolutionIdFromQuery);
         if (Model.Issue.ParentSolution != null)
         {
             solutionIdList.Add(Model.Issue.ParentSolution);
             selectedParentSolutionValue = Model.Issue.ParentSolution.SolutionID.ToString();
+            select2TemplateCallback = $"/solution/get-solution-select2-template/{selectedParentSolutionValue}";
         }
         <div class="parentSolutionSelectContainer">
 
@@ -55,13 +64,14 @@
         {
             Model = Model.Issue.ParentSolution,
             FieldLabel = "Parent Solution",
-            FieldPlaceholder = "-- Select a Parent Solution--",
+            FieldPlaceholder = "-- Select a Parent Solution --",
             PropertyName = "ParentSolutionID",
             TextField = "Title",
             ValueField = "SolutionID",
             ListItems = solutionIdList,
             SelectedValue = selectedParentSolutionValue,
-            DisabledField = selectedParentSolutionValue != null ? true : false,
+            DisabledField = hasParentSolutionIdQuery,
+            Select2TemplateCallback = select2TemplateCallback,
             Select2ConfigurationCallback = "getParentSolutionSelect2Config",
             Select2ListenerCallback = "setParentSolutionSelect2Listener"
         })

@@ -14,6 +14,9 @@ namespace atlas_the_public_think_tank.Data.RawSQL
         public int Rank { get; set; } 
 
         public string SearchMethod { get; set; }
+
+        public string? Select2Item { get; set; }
+
     }
 
     public class SearchContentItems

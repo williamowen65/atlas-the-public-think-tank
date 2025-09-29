@@ -362,16 +362,78 @@ const parentContentAjaxConfigBase = (node) => ({
     processResults: function (data) {
         return {
             results: data.map(e => ({
-                id: e.id,
-                text: e.title
+                text: e.title,
+                ...e
             }))
         };
     }
 })
 
+
+function renderContentItemForSelect2(contentData, node) {
+
+    console.log("renderContentItemForSelect2", { contentData, node })
+    if (contentData.disabled == true) {
+        return contentData.text;
+    }
+    // These placeholders are set withing the cshtml. If they get updated, this needs to be updated or the code will break
+    const placeholders = ["-- Select a Parent Solution --", "-- Select a Parent Issue --"]
+    if (placeholders.includes(contentData.text)) {
+        return contentData.text;
+    }
+
+    if (!contentData.select2Item && !node.hasAttribute("select2-template-callback")) {
+        throw new Error("contentData missing required attribute 'select2Item'")
+    }
+
+    if (contentData.select2Item) {
+        return $(contentData.select2Item)
+    }
+
+    if (node.hasAttribute("select2-template-callback")) {
+        const url = node.getAttribute("select2-template-callback")
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Network response was not ok");
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    contentData.select2Item = data.select2Item;
+                    const selectionEl = $(node).data("select2").$selection[0]
+                    //// Target this nested select2-selection__rendered element to preserve the cancel button
+                    const selectedEl = selectionEl.querySelector(".select2-selection__rendered")
+                    const div = document.createElement("div")
+                    div.innerHTML = contentData.select2Item
+
+                    selectedEl.innerHTML = ""
+                    // Replace the selected element with all children of the div
+                    while (div.firstChild) {
+                        selectedEl.appendChild(div.firstChild);
+                    }
+
+                    const contentId = selectionEl.querySelector(".card.select2-item").getAttribute("id")
+
+                    //console.log("setting value", { data, contentId })
+                        $(node).val(contentId).trigger("select2:select")
+
+
+                } else {
+                    throw new Error("contentData missing required attribute 'select2Item'")
+                }
+            })
+
+    }
+
+  
+}
+
 // Global method for select2 ajax
 window.getParentIssueSelect2Config = function (node) {
     return {
+        dropdownCssClass: "parent-content-dropdown",
         language: {
             noResults: function () {
                 setTimeout(() => {
@@ -385,14 +447,19 @@ window.getParentIssueSelect2Config = function (node) {
         allowClear: true,
         ajax: {
             ...parentContentAjaxConfigBase(node),
-            url: "/search?showRanks=true&contentType=issue"
-        }
+            url: "/search?showRanks=true&contentType=issue&getSelect2Item=true"
+        },
+        templateSelection:  (contentData) => renderContentItemForSelect2(contentData, node),
+        templateResult:  (contentData) => renderContentItemForSelect2(contentData, node)
     }
 }
 
 // Global method for select2 ajax
 window.getParentSolutionSelect2Config = function (node) {
+
+
     return {
+        dropdownCssClass: "parent-content-dropdown",
         language: {
             noResults: function () {
                 setTimeout(() => {
@@ -406,12 +473,14 @@ window.getParentSolutionSelect2Config = function (node) {
         allowClear: true,
         ajax: {
             ...parentContentAjaxConfigBase(node),
-            url: "/search?showRanks=true&contentType=solution"
-        }
+            url: "/search?showRanks=true&contentType=solution&getSelect2Item=true"
+        },
+        templateSelection: (contentData) => renderContentItemForSelect2(contentData, node),
+        templateResult: (contentData) => renderContentItemForSelect2(contentData, node)
     }
 }
 
-window.setParentIssueSelect2Listener = function (node) {
+function select2ClearButtonUpdate(node, selector) {
     const select2Instance = $(node).data('select2');
     // updating the classname of the clear button to not use the broken select 2 clear listener (delegated listener)
     // Styles were copied to the select2 css to keep the layout
@@ -419,48 +488,38 @@ window.setParentIssueSelect2Listener = function (node) {
     clearButton.classList.remove('select2-selection__clear')
     clearButton.classList.add('select2-selection__clear-custom')
     clearButton.classList.add('d-none')
+    clearButton.innerHTML = '×'
 
-
-    const solutionSelectContainer = document.querySelector(".parentSolutionSelectContainer")
+    const selectContainer = document.querySelector(selector)
     select2Instance.$element.on("select2:select", (e) => {
-        if (solutionSelectContainer) {
-            solutionSelectContainer.classList.add("d-none")
+        const isSelectDisabled = node.hasAttribute("disabled")
+
+        if (selectContainer) {
+            // Hides the opposite parent content type select
+            selectContainer.classList.add("d-none")
         }
-        clearButton.classList.remove("d-none")
+        if (!isSelectDisabled) {
+            clearButton.classList.remove("d-none")
+        }
     })
 
 
     clearButton.addEventListener("click", (e) => {
         e.stopPropagation();
-        solutionSelectContainer.classList.remove("d-none")
+        if (selectContainer) {
+            // This container is not present when on the create/edit solution view
+            selectContainer.classList.remove("d-none")
+        }
         $(node).val(null).trigger("change")
         clearButton.classList.add("d-none")
         $(node).select2('close');
     })
 }
 
+window.setParentIssueSelect2Listener = function (node) {
+    select2ClearButtonUpdate(node, ".parentSolutionSelectContainer")
+}
+
 window.setParentSolutionSelect2Listener = function (node) {
-    const select2Instance = $(node).data('select2');
-    // updating the classname of the clear button to not use the broken select 2 clear listener (delegated listener)
-    // Styles were copied to the select2 css to keep the layout
-    const clearButton = select2Instance.$container[0].querySelector(".select2-selection__clear")
-    clearButton.classList.remove('select2-selection__clear')
-    clearButton.classList.add('select2-selection__clear-custom')
-    clearButton.classList.add('d-none')
-
-
-    const issueSelectContainer = document.querySelector(".parentIssueSelectContainer")
-    select2Instance.$element.on("select2:select", (e) => {
-        issueSelectContainer.classList.add("d-none")
-        clearButton.classList.remove("d-none")
-    })
-
-
-    clearButton.addEventListener("click", (e) => {
-        e.stopPropagation();
-        issueSelectContainer.classList.remove("d-none")
-        $(node).val(null).trigger("change")
-        clearButton.classList.add("d-none")
-        $(node).select2('close');
-    })
+    select2ClearButtonUpdate(node, ".parentIssueSelectContainer")
 }

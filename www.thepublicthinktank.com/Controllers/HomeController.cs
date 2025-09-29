@@ -131,10 +131,32 @@ public class HomeController : Controller
 
     [HttpPost]
     [Route("/search")]
-    public async Task<IActionResult> Search([FromBody] SearchRequest searchRequest, [FromQuery] bool showRanks, [FromQuery] double rankCutOffPercent, [FromQuery] string contentType = "both")
+    public async Task<IActionResult> Search([FromBody] SearchRequest searchRequest, [FromQuery] bool showRanks, [FromQuery] double rankCutOffPercent, [FromQuery] bool getSelect2Item, [FromQuery] string contentType = "both")
     {
 
+
         List<SearchResult> searchResult = await SearchContentItems.SearchAsync(searchRequest.SearchString, _context, rankCutOffPercent, contentType);
+
+        if (getSelect2Item) {
+            // add a rendering of the content item to each entry
+            // loop over searchResult
+            // for each type solution, 
+            foreach (SearchResult result in searchResult)
+            {
+                if (result.Type == "Solution")
+                {
+                    Solution_ReadVM solution = await Read.Solution(result.Id, new ContentFilter());
+                    result.Select2Item = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Solution/_solution-select2-item.cshtml", solution);
+                }
+                if (result.Type == "Issue")
+                {
+                    Issue_ReadVM? issue = await Read.Issue(result.Id, new ContentFilter());
+                    result.Select2Item = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Issue/_issue-select2-item.cshtml", issue);
+                }
+            };
+
+
+        }
 
         if (showRanks)
         {

@@ -187,9 +187,44 @@
 
 .issue-card .card-header,
 .solution-card .card-header {
-    margin-left: var(--dial-width);
     z-index: 2;
     position: relative; /* So that the z-index can be applied... relative, not absoltue to maintain width*/
+}
+.issue-card:not(.select2-item) .card-header,
+.solution-card:not(.select2-item) .card-header {
+    margin-left: var(--dial-width);
+}
+
+.parent-fieldset .select2-container .select2-selection--single {
+    height: initial;
+}
+.select2-item .scope-ribbon,
+.parent-content-dropdown .scope-ribbon {
+    margin-top: 0;
+}
+.select2-item h5,
+.parent-content-dropdown h5 {
+    text-wrap: auto;
+    margin-right: 27px;
+}
+
+/*  x (clear button) for select 2*/
+.parent-fieldset .select2-container--default .select2-selection--single .select2-selection__clear-custom {
+    height: 41px;
+    top: -40px;
+    position: absolute;
+    right: -19px;
+    z-index: 1052; /* step above select2 dropdown*/
+    padding: 10px; /* increase clickable area*/
+}
+/* the x icon*/
+/*.parent-fieldset .select2-container--default .select2-selection--single .select2-selection__clear-custom span {
+    height:0;
+    width: 0;
+}*/
+.parent-fieldset .select2-container .select2-selection--single .select2-selection__rendered {
+    padding-left: 0;
+    padding-right: 0;
 }
 
 .dial-container {
