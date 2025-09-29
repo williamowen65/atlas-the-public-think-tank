@@ -65,7 +65,7 @@
 
 
     <section class="profile-tabs" data-profile-tabs>
-        <ul class="tab-list nav nav-tabs" id="profileTabs" role="tablist">
+        <ul class="tab-list nav nav-tabs justify-content-center" id="profileTabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active position-relative"
                         id="tab-issue"
@@ -133,7 +133,7 @@
         <div class="tab-panels tab-content" id="profileTabsContent">
             <div id="panel-issue" class="tab-panel tab-pane fade show active" role="tabpanel" aria-labelledby="tab-issue" tabindex="0">
                 <div class="feed" data-feed="issue">
-                    <div id="user-issue-content">
+                    <div id="user-issue-content" class="pt-3">
 
                         @if (Model.paginatedUserIssues.Issues != null && Model.paginatedUserIssues.Issues.Any())
                         {
@@ -151,18 +151,18 @@
                     @await Html.PartialAsync("~/Views/Shared/Components/_pagination-button.cshtml", new PaginationButton_VM
                     {
                         ElementId = "fetchPaginatedUserIssues",
-                                        ContentType = "user issues",
-                                        Target = "#user-issue-content",
-                                        Url = "/user-profile/getPaginatedUserIssues/" + @Model.appUserVM.Id,
-                                        CurrentPage = Model.paginatedUserIssues.ContentCount.FilteredCount,
-                                        PageSize = Model.paginatedUserIssues.PageSize,
-                                        TotalCount = Model.paginatedUserIssues.ContentCount.FilteredCount,
-                                        })
+                        ContentType = "user issues",
+                        Target = "#user-issue-content",
+                        Url = "/user-profile/getPaginatedUserIssues/" + @Model.appUserVM.Id,
+                        CurrentPage = Model.paginatedUserIssues.ContentCount.FilteredCount,
+                        PageSize = Model.paginatedUserIssues.PageSize,
+                        TotalCount = Model.paginatedUserIssues.ContentCount.FilteredCount,
+                    })
                 </div>
             </div>
             <div id="panel-solution" class="tab-panel tab-pane fade" role="tabpanel" aria-labelledby="tab-solution" tabindex="0">
                 <div class="feed" data-feed="solution">
-                    <div id="user-solution-content">
+                    <div id="user-solution-content" class="pt-3">
 
                         @if (Model.paginatedUserSolutions.Solutions != null && Model.paginatedUserSolutions.Solutions.Any())
                         {
@@ -179,13 +179,13 @@
                     @await Html.PartialAsync("~/Views/Shared/Components/_pagination-button.cshtml", new PaginationButton_VM
                     {
                         ElementId = "fetchPaginatedUserSolutions",
-                                        ContentType = "user solutions",
-                                        Target = "#user-solution-content",
-                                        Url = "/user-profile/getPaginatedUserSolutions/" + @Model.appUserVM.Id,
-                                        CurrentPage = Model.paginatedUserSolutions.ContentCount.FilteredCount,
-                                        PageSize = Model.paginatedUserSolutions.PageSize,
-                                        TotalCount = Model.paginatedUserSolutions.ContentCount.FilteredCount,
-                                        })
+                        ContentType = "user solutions",
+                        Target = "#user-solution-content",
+                        Url = "/user-profile/getPaginatedUserSolutions/" + @Model.appUserVM.Id,
+                        CurrentPage = Model.paginatedUserSolutions.ContentCount.FilteredCount,
+                        PageSize = Model.paginatedUserSolutions.PageSize,
+                        TotalCount = Model.paginatedUserSolutions.ContentCount.FilteredCount,
+                    })
                 </div>
             </div>
             <div id="panel-projects" class="tab-panel tab-pane fade" role="tabpanel" aria-labelledby="tab-projects" tabindex="0">

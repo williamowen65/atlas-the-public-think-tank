@@ -4,7 +4,7 @@
     transform: scale(0.7);
 }
 
-ul.dropdown-menu.user-actions-dropdown.show {
+ul.dropdown-menu.user-actions-dropdown.show{
     width: 380px;
     transform: translate(0,0) !important;
     top: var(--header-height) !important;
@@ -15,19 +15,40 @@ ul.dropdown-menu.user-actions-dropdown.show {
     overflow-y: scroll;
 }
 
-.user-actions-dropdown .dropdown-item {
+ul.dropdown-menu.create-content-dropdown.show {
+    transform: translate(0,0) !important;
+    top: var(--header-height) !important;
+    /* margin left auto & right: 0 required for landscape mode placement of dropdown*/
+/*    margin-left: auto !important;*/
+/*    right: 0 !important;*/
+}
+
+.user-actions-dropdown .dropdown-item,
+.create-content-dropdown .dropdown-item {
     height: 60px;
     display: flex;
     align-items: center;
-    font-weight: bold;
-  
+    font-weight: bold; 
+}
+.create-content-dropdown .dropdown-item:hover {
+    filter: sepia(0.5);
+}
+.create-content-dropdown {
+    border: 1.6px solid powderblue;
+}
+.create-content-dropdown li:first-child {      
+    border-right: 3px solid powderblue;
+}
+
+.dropdown-menu.create-content-dropdown.show {
+    display: flex;
 }
 
 .user-actions-dropdown {
     /*    margin: initial !important;*/
-/*    position: absolute;*/
-/*    margin-inline: 50px 0 !important;*/
-/*    right: 0 !important;*/
+    /*    position: absolute;*/
+    /*    margin-inline: 50px 0 !important;*/
+    /*    right: 0 !important;*/
 }
 
 .user-actions-dropdown i {
@@ -250,7 +271,7 @@ button.user-profile-action-btn {
 
 .tab-panels {
     background: var(--bs-body-bg,#fff);
-    border: 1px solid #e3e6eb;
+/*    border: 1px solid #e3e6eb;*/
     border-top: none;
     border-radius: 0 0px 12px 12px;
     min-height: 300px;
