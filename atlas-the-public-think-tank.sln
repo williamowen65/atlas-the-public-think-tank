@@ -5,8 +5,6 @@ VisualStudioVersion = 17.13.35828.75
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "www.thepublicthinktank.com", "www.thepublicthinktank.com\www.thepublicthinktank.com.csproj", "{D0587ED8-7D90-4C4F-A6C1-52CFD875CF46}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CloudTests", "CloudTests\CloudTests.csproj", "{F58050E7-20DE-4654-8B09-79AF5739EEE8}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "GitHubActions", "GitHubActions", "{8EC462FD-D22E-90A8-E5CE-7E832BA40C5D}"
 	ProjectSection(SolutionItems) = preProject
 		.github\workflows\SQLServerTest.yml = .github\workflows\SQLServerTest.yml
@@ -27,6 +25,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		guid-to-clipboard-script-nodejs.txt = guid-to-clipboard-script-nodejs.txt
 		README.md = README.md
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CloudTests", "CloudTests\CloudTests.csproj", "{689BB7B7-1A8D-0EC8-249F-DC954538CF0C}"
 EndProject
 Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "pre-launch-landing-page", "pre-launch-landing-page\", "{EED2838B-BDE7-DB37-97E1-DA60BF5955DB}"
 	ProjectSection(WebsiteProperties) = preProject
@@ -59,10 +59,10 @@ Global
 		{D0587ED8-7D90-4C4F-A6C1-52CFD875CF46}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D0587ED8-7D90-4C4F-A6C1-52CFD875CF46}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D0587ED8-7D90-4C4F-A6C1-52CFD875CF46}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F58050E7-20DE-4654-8B09-79AF5739EEE8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F58050E7-20DE-4654-8B09-79AF5739EEE8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F58050E7-20DE-4654-8B09-79AF5739EEE8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F58050E7-20DE-4654-8B09-79AF5739EEE8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{689BB7B7-1A8D-0EC8-249F-DC954538CF0C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{689BB7B7-1A8D-0EC8-249F-DC954538CF0C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{689BB7B7-1A8D-0EC8-249F-DC954538CF0C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{689BB7B7-1A8D-0EC8-249F-DC954538CF0C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EED2838B-BDE7-DB37-97E1-DA60BF5955DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{EED2838B-BDE7-DB37-97E1-DA60BF5955DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EED2838B-BDE7-DB37-97E1-DA60BF5955DB}.Release|Any CPU.ActiveCfg = Debug|Any CPU

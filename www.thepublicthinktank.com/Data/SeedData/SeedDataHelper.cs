@@ -14,6 +14,7 @@ public static class SeedDataHelper
     {
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var cacheHelper = scope.ServiceProvider.GetRequiredService<CacheHelper>();
 
         // Only seed if database is created and empty (customize as needed)
         context.Database.Migrate();
@@ -30,7 +31,7 @@ public static class SeedDataHelper
         context.SaveChanges(); // Save votes
 
         // If running seed data clear the cache after creating seed data so I can populate on its own with app functionality
-        CacheHelper.ClearEntireCache();
+        cacheHelper.ClearEntireCache();
         // this is important for testing
     }
 }

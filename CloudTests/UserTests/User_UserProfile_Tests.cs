@@ -22,10 +22,11 @@ namespace CloudTests.UserTests
     [TestClass]
     public class User_UserProfile_Tests
     {
-        private static HttpClient _client;
-        private static ApplicationDbContext _db;
-        private static TestEnvironment _env;
+        private HttpClient _client;
+        private ApplicationDbContext _db;
+        private TestEnvironment _env;
         private TestingCRUDHelper _testingCRUDHelper;
+        private Read _read;
 
 
         [TestInitialize]
@@ -43,6 +44,7 @@ namespace CloudTests.UserTests
             _db = _env._db;
             _client = _env._client;
             _testingCRUDHelper = new TestingCRUDHelper(_env);
+            _read = _env._read;
 
             // Create and login user
             AppUser testUser = Users.CreateTestUser(_db, TestUserProfileUser, TestUserProfilePassword);
@@ -217,10 +219,10 @@ namespace CloudTests.UserTests
             var buttonText = paginationButton.TextContent;
 
             Issue_ReadVM[] AllIssuesOfUser = [
-                    await Read.Issue(new Guid(issueId1), new ContentFilter())!,
-                    await Read.Issue(new Guid(issueId2), new ContentFilter())!,
-                    await Read.Issue(new Guid(issueId3), new ContentFilter())!,
-                    await Read.Issue(new Guid(issueId4), new ContentFilter())!,
+                    await _read.Issue(new Guid(issueId1), new ContentFilter())!,
+                    await _read.Issue(new Guid(issueId2), new ContentFilter())!,
+                    await _read.Issue(new Guid(issueId3), new ContentFilter())!,
+                    await _read.Issue(new Guid(issueId4), new ContentFilter())!,
                 ];
             int expectedCount = TestingUtilityMethods.filterByAvgVoteRange(AllIssuesOfUser, min, max).Count();
 
@@ -266,10 +268,10 @@ namespace CloudTests.UserTests
             var buttonText = paginationButton.TextContent;
 
             Solution_ReadVM[] AllSolutionsOfUser = [
-                    await Read.Solution(new Guid(solutionId1), new ContentFilter())!,
-                    await Read.Solution(new Guid(solutionId2), new ContentFilter())!,
-                    await Read.Solution(new Guid(solutionId3), new ContentFilter())!,
-                    await Read.Solution(new Guid(solutionId4), new ContentFilter())!,
+                    await _read.Solution(new Guid(solutionId1), new ContentFilter())!,
+                    await _read.Solution(new Guid(solutionId2), new ContentFilter())!,
+                    await _read.Solution(new Guid(solutionId3), new ContentFilter())!,
+                    await _read.Solution(new Guid(solutionId4), new ContentFilter())!,
                 ];
             int expectedCount = TestingUtilityMethods.filterByAvgVoteRange(AllSolutionsOfUser, min, max).Count();
 

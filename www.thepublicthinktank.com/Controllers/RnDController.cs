@@ -9,11 +9,17 @@ using atlas_the_public_think_tank.Models.ViewModel.PageVM;
 using atlas_the_public_think_tank.Models.ViewModel.UI_VM;
 using Microsoft.AspNetCore.Mvc;
 
+
 namespace atlas_the_public_think_tank.Controllers
 {
     public class RnDController : Controller
     {
-    
+
+        private readonly Read _read;
+        public RnDController(Read read) 
+        {
+            _read = read;
+        }
 
         public IActionResult RnDCreateIssue()
         {
@@ -29,7 +35,7 @@ namespace atlas_the_public_think_tank.Controllers
         {
            
 
-            Issue_ReadVM? issue = await Read.Issue(issueId, new ContentFilter());
+            Issue_ReadVM? issue = await _read.Issue(issueId, new ContentFilter());
 
 
             if (issue == null)

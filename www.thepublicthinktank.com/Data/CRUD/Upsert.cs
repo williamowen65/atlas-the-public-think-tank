@@ -11,18 +11,18 @@ using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.Solution.SolutionVote
 
 namespace atlas_the_public_think_tank.Data.CRUD
 {
-    public static class Upsert
+    public class Upsert
     {
-        private static IServiceProvider? _serviceProvider;
+        private IServiceProvider? _serviceProvider;
 
         // Initialize method to be called at startup
-        public static void Initialize(IServiceProvider serviceProvider)
+        public Upsert(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
         }
 
 
-        public static async Task<VoteResponse_AjaxVM?> IssueVote(IssueVote_UpsertVM model, AppUser user)
+        public async Task<VoteResponse_AjaxVM?> IssueVote(IssueVote_UpsertVM model, AppUser user)
         {
             if (_serviceProvider == null)
             { 
@@ -61,7 +61,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
 
         }
 
-        internal static async Task<VoteResponse_AjaxVM?> SolutionVote(SolutionVote_UpsertVM model, AppUser user)
+        internal async Task<VoteResponse_AjaxVM?> SolutionVote(SolutionVote_UpsertVM model, AppUser user)
         {
             if (_serviceProvider == null)
             {

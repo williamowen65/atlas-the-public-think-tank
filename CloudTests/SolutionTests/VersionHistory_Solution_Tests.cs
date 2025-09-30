@@ -14,13 +14,14 @@ namespace CloudTests.SolutionTests
     [TestClass]
     public class VersionHistory_Solution_Tests
     {
-        private static HttpClient _client;
-        private static ApplicationDbContext _db;
-        private static TestEnvironment _env;
-        private static string editedSolutionId;
+        private HttpClient _client;
+        private ApplicationDbContext _db;
+        private TestEnvironment _env;
+        private string editedSolutionId;
 
-        [ClassInitialize]
-        public static async Task ClassInit(TestContext context)
+
+        [TestInitialize]
+        public async Task Setup()
         {
             // Arrange environment
             _env = new TestEnvironment();
@@ -28,18 +29,22 @@ namespace CloudTests.SolutionTests
             _client = _env._client;
 
             editedSolutionId = await CreateDemoData();
-
         }
 
-        public static async Task<string> CreateDemoData()
+        [TestCleanup]
+        public async Task ClassCleanup()
+        {
+            await TestingUtilityMethods.deleteDatabase(_client, _db);
+        }
+
+
+        public async Task<string> CreateDemoData()
         {
 
             // Create and login user
-            string email = Users.TestUser1.Email!;
-            string password = Users.TestUser1Password;
-            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
-
-            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
+            var (user, password) = Users.GetRandomAppUser();
+            AppUser testUser = Users.CreateTestUser(_db, user, password);
+            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
 
             var (jsonDoc1, title1, content1) = await TestingCRUDHelpers.CreateIssue(_env,
@@ -86,14 +91,6 @@ namespace CloudTests.SolutionTests
 
             return newSolutionId;
         }
-
-
-        [ClassCleanup]
-        public static async Task ClassCleanup()
-        {
-            await TestingUtilityMethods.deleteDatabase(_client, _db);
-        }
-
 
         [TestMethod]
         public async Task VersionHistoryIcon_DisplaysAfterUser1_CreatesAnIssue_CreatesASolution_AndEditsSolution()

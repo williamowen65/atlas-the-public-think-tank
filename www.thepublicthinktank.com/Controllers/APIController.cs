@@ -24,11 +24,13 @@ namespace atlas_the_public_think_tank.Controllers
 
         private readonly ApplicationDbContext _context;
         private readonly UserManager<AppUser> _userManager;
+        private readonly Read _read;
 
-        public APIController(ApplicationDbContext context, UserManager<AppUser> userManager)
+        public APIController(ApplicationDbContext context, UserManager<AppUser> userManager, Read read)
         {
             _context = context;
             _userManager = userManager;
+            _read = read;
         }
 
         #region Api Docs
@@ -89,7 +91,7 @@ namespace atlas_the_public_think_tank.Controllers
 
                 bool fetchParent = true;
 
-                var issue = await Read.Issue(issueId, filter, fetchParent);
+                var issue = await _read.Issue(issueId, filter, fetchParent);
                 return Json(issue);
             }
             catch (Exception ex)
@@ -107,7 +109,7 @@ namespace atlas_the_public_think_tank.Controllers
                 filter.ContentStatus = ContentStatus.Published;
 
                 bool fetchParent = true;
-                var solution = await Read.Solution(solutionId, filter, fetchParent);
+                var solution = await _read.Solution(solutionId, filter, fetchParent);
                 return Json(solution);
             }
             catch (Exception ex)
@@ -126,7 +128,7 @@ namespace atlas_the_public_think_tank.Controllers
 
                 filter.ContentStatus = ContentStatus.Published;
 
-                var contentItems = await Read.PaginatedMainContentFeed(filter, pageNumber);
+                var contentItems = await _read.PaginatedMainContentFeed(filter, pageNumber);
                 return Json(contentItems);
             }
             catch (Exception ex)

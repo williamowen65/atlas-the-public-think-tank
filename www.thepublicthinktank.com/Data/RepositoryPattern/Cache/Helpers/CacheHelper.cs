@@ -10,11 +10,11 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers
 {
 
 
-    public static class CacheHelper
+    public class CacheHelper
     {
-        private static IMemoryCache _cache;
+        private IMemoryCache _cache;
 
-        public static void Initialize(IMemoryCache cache)
+        public CacheHelper(IMemoryCache cache)
         {
             _cache = cache;
         }
@@ -24,7 +24,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers
         /// <summary>
         /// For debugging: Get all cached keys
         /// </summary>
-        public static List<string> GetAllCacheKeys()
+        public List<string> GetAllCacheKeys()
         {
             if (_cache is MemoryCache memoryCache)
             {
@@ -33,7 +33,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers
             return new List<string>();
         }
 
-        public static void ClearAllFeedIdSets()
+        public void ClearAllFeedIdSets()
         {
             // When creating an issue invalidate all filterIdSets in the cache
             List<string> keys = GetAllCacheKeys();
@@ -47,7 +47,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers
             }
         }
 
-        public static void ClearEntireCache()
+        public void ClearEntireCache()
         {
             List<string> keys = GetAllCacheKeys();
             foreach (var key in keys)
@@ -55,7 +55,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers
                 _cache.Remove(key);
             }
         }
-        public static void ClearSubIssueFeedIdsForIssue(Guid issueId)
+        public void ClearSubIssueFeedIdsForIssue(Guid issueId)
         {
             List<string> keys = GetAllCacheKeys();
             foreach (var key in keys)
@@ -68,7 +68,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers
             }
         }
 
-        public static void ClearIssueFeedIdsForUser(Guid userId)
+        public void ClearIssueFeedIdsForUser(Guid userId)
         {
             List<string> keys = GetAllCacheKeys();
             foreach (var key in keys)
@@ -81,7 +81,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers
             }
         }
 
-        public static void ClearSubIssueFeedIdsForSolution(Guid solutionId)
+        public void ClearSubIssueFeedIdsForSolution(Guid solutionId)
         {
             List<string> keys = GetAllCacheKeys();
             foreach (var key in keys)
@@ -93,7 +93,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers
                 }
             }
         }
-        public static void ClearSolutionFeedIdsForIssue(Guid issueId)
+        public void ClearSolutionFeedIdsForIssue(Guid issueId)
         {
             List<string> keys = GetAllCacheKeys();
             foreach (var key in keys)
@@ -105,7 +105,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers
                 }
             }
         }
-        public static void ClearSolutionFeedIdsForUser(Guid userId)
+        public void ClearSolutionFeedIdsForUser(Guid userId)
         {
             List<string> keys = GetAllCacheKeys();
             foreach (var key in keys)
@@ -117,7 +117,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers
                 }
             }
         }
-        public static void ClearContentCountSubIssuesForIssue(Guid issueId)
+        public void ClearContentCountSubIssuesForIssue(Guid issueId)
         {
             List<string> keys = GetAllCacheKeys();
             foreach (var key in keys)
@@ -130,7 +130,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers
             }
         }
 
-        public static void ClearContentCountIssuesForUser(Guid userId)
+        public void ClearContentCountIssuesForUser(Guid userId)
         {
             List<string> keys = GetAllCacheKeys();
             foreach (var key in keys)
@@ -142,7 +142,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers
                 }
             }
         }
-        public static void ClearContentCountSolutionsForUser(Guid userId)
+        public void ClearContentCountSolutionsForUser(Guid userId)
         {
             List<string> keys = GetAllCacheKeys();
             foreach (var key in keys)
@@ -154,7 +154,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers
                 }
             }
         }
-        public static void ClearContentCountSubIssuesForSolution(Guid solutionId)
+        public void ClearContentCountSubIssuesForSolution(Guid solutionId)
         {
             List<string> keys = GetAllCacheKeys();
             foreach (var key in keys)
@@ -166,7 +166,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers
                 }
             }
         }
-        public static void ClearContentCountSolutionsForIssue(Guid issueId)
+        public void ClearContentCountSolutionsForIssue(Guid issueId)
         {
             List<string> keys = GetAllCacheKeys();
             foreach (var key in keys)
@@ -179,7 +179,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers
             }
         }
 
-        public static void ClearMainPageFeedIds()
+        public void ClearMainPageFeedIds()
         {
             List<string> keys = GetAllCacheKeys();
             foreach (var key in keys)
@@ -192,7 +192,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers
             }
         }
 
-        public static void ClearContentCountForMainPage()
+        public void ClearContentCountForMainPage()
         {
             List<string> keys = GetAllCacheKeys();
             foreach (var key in keys)
@@ -205,7 +205,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers
             }
         }
 
-        public static void ClearIssueContentVersionHistoryCache(Guid issueId)
+        public void ClearIssueContentVersionHistoryCache(Guid issueId)
         {
             List<string> keys = GetAllCacheKeys();
             foreach (var key in keys)
@@ -218,7 +218,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers
             }
         }
 
-        public static void ClearSolutionContentVersionHistoryCache(Guid solutionId)
+        public void ClearSolutionContentVersionHistoryCache(Guid solutionId)
         {
             List<string> keys = GetAllCacheKeys();
             foreach (var key in keys)
@@ -231,7 +231,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers
             }
         }
 
-        public static void ClearUserHistoryCache(Guid userId)
+        public void ClearUserHistoryCache(Guid userId)
         {
             List<string> keys = GetAllCacheKeys();
             foreach (var key in keys)
@@ -251,7 +251,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers
         /// Updates the "vote-stats" cache <br/>
         /// See <see cref="IssueVotes_Cacheable_ReadVM"/>
         /// </summary>
-        public static void UpdateCache_IssueVoteStats(Vote_Cacheable? newOrUpdateVote, IssueVote_UpsertVM model, AppUser user)
+        public void UpdateCache_IssueVoteStats(Vote_Cacheable? newOrUpdateVote, IssueVote_UpsertVM model, AppUser user)
         {
             if (newOrUpdateVote != null)
             {
@@ -288,7 +288,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers
         /// Updates the "vote-stats" cache <br/>
         /// See <see cref="IssueVotes_Cacheable_ReadVM"/>
         /// </summary>
-        public static void UpdateCache_SolutionVoteStats(Vote_Cacheable? newVote, SolutionVote_UpsertVM model, AppUser user)
+        public void UpdateCache_SolutionVoteStats(Vote_Cacheable? newVote, SolutionVote_UpsertVM model, AppUser user)
         {
 
             if (newVote != null)

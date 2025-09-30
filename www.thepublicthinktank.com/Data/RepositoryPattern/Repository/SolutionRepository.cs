@@ -18,11 +18,13 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
     {
 
         private ApplicationDbContext _context;
-        private static IServiceProvider? _serviceProvider;
-        public SolutionRepository(ApplicationDbContext context, IServiceProvider serviceProvider)
+        private IServiceProvider? _serviceProvider;
+        private readonly Read _read;
+        public SolutionRepository(ApplicationDbContext context, IServiceProvider serviceProvider, Read read)
         {
             _context = context;
             _serviceProvider = serviceProvider;
+            _read = read;
         }
         public async Task<SolutionRepositoryViewModel?> GetSolutionById(Guid id)
         {
@@ -53,7 +55,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             await _context.SaveChangesAsync();
 
             // Create and return the view model
-            return await Read.Solution(solution.SolutionID, new ContentFilter());
+            return await _read.Solution(solution.SolutionID, new ContentFilter());
 
         }
 
@@ -62,7 +64,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             _context.Solutions.Update(solution);
             await _context.SaveChangesAsync();
 
-            return await Read.Solution(solution.SolutionID, new ContentFilter());
+            return await _read.Solution(solution.SolutionID, new ContentFilter());
         }
 
         public async Task<int> GetSolutionVersionHistoryCount(Guid solutionID)

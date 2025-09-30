@@ -22,10 +22,12 @@ namespace atlas_the_public_think_tank.Controllers
     {
 
         public readonly UserManager<AppUser> _userManager;
+        public readonly Read _read;
 
-        public UserProfileController(UserManager<AppUser> userManager)
+        public UserProfileController(UserManager<AppUser> userManager, Read read)
         {
             _userManager = userManager;
+            _read = read;
         }
 
         [Route("/user-profile")]
@@ -47,13 +49,13 @@ namespace atlas_the_public_think_tank.Controllers
             }
 
 
-            Issues_Paginated_ReadVM usersIssues = (await Read.PaginatedUsersIssues(userId, filter))!;
-            Solutions_Paginated_ReadVM usersSolutions = (await Read.PaginatedUsersSolutions(userId, filter))!;
+            Issues_Paginated_ReadVM usersIssues = (await _read.PaginatedUsersIssues(userId, filter))!;
+            Solutions_Paginated_ReadVM usersSolutions = (await _read.PaginatedUsersSolutions(userId, filter))!;
 
             UserProfile_PageVM userProfile_PageVM = new UserProfile_PageVM()
             {
-                appUserVM = (await Read.AppUser(userId))!,
-                userHistory = (await Read.UserHistory(userId))!,
+                appUserVM = (await _read.AppUser(userId))!,
+                userHistory = (await _read.UserHistory(userId))!,
                 paginatedUserIssues = usersIssues,
                 paginatedUserSolutions = usersSolutions,
                 userStats = new UserStats() { 
@@ -89,7 +91,7 @@ namespace atlas_the_public_think_tank.Controllers
                 return Unauthorized();
             }
 
-            var userDraft_pageVM = await Read.PaginatedUserDrafts(userGuid, filter);
+            var userDraft_pageVM = await _read.PaginatedUserDrafts(userGuid, filter);
 
             return View(userDraft_pageVM);
         }
@@ -111,7 +113,7 @@ namespace atlas_the_public_think_tank.Controllers
             }
 
 
-            Issues_Paginated_ReadVM paginatedIssues = await Read.PaginatedUsersIssues(userId, filter, currentPage);
+            Issues_Paginated_ReadVM paginatedIssues = await _read.PaginatedUsersIssues(userId, filter, currentPage);
 
             string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Issue/_issue-cards.cshtml", paginatedIssues.Issues);
 
@@ -146,7 +148,7 @@ namespace atlas_the_public_think_tank.Controllers
             }
 
 
-            Solutions_Paginated_ReadVM paginatedSolutions = await Read.PaginatedUsersSolutions(userId, filter, currentPage);
+            Solutions_Paginated_ReadVM paginatedSolutions = await _read.PaginatedUsersSolutions(userId, filter, currentPage);
 
             string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Solution/_solution-cards.cshtml", paginatedSolutions.Solutions);
 

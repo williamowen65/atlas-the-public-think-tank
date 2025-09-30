@@ -25,10 +25,11 @@ namespace CloudTests.UserTests
     {
         #region Test setup
 
-        private static HttpClient _client;
-        private static ApplicationDbContext _db;
-        private static TestEnvironment _env;
+        private HttpClient _client;
+        private ApplicationDbContext _db;
+        private TestEnvironment _env;
         private TestingCRUDHelper _testingCRUDHelper;
+        private Read _read;
 
 
         [TestInitialize]
@@ -46,6 +47,7 @@ namespace CloudTests.UserTests
             _db = _env._db;
             _client = _env._client;
             _testingCRUDHelper = new TestingCRUDHelper(_env);
+            _read = _env._read;
 
             // Create and login user
             AppUser testUser = Users.CreateTestUser(_db, TestDraftUser, TestDraftPassword);
@@ -104,7 +106,7 @@ namespace CloudTests.UserTests
                 ContentType = "solution"
             };
 
-            ContentItems_Paginated_ReadVM paginatedResponse = await Read.PaginatedMainContentFeed(contentFilter);
+            ContentItems_Paginated_ReadVM paginatedResponse = await _read.PaginatedMainContentFeed(contentFilter);
             Assert.IsTrue(paginatedResponse.TotalCount == 0, "There should be no main content items");
         }
 
@@ -175,7 +177,7 @@ namespace CloudTests.UserTests
             var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Draft);
             // Create a proper solution as a draft
             var (_jsonDoc, solutionId, _title, _content, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId, ContentStatus.Draft);
-            ContentItems_Paginated_ReadVM paginatedResponse = await Read.PaginatedMainContentFeed(new ContentFilter());
+            ContentItems_Paginated_ReadVM paginatedResponse = await _read.PaginatedMainContentFeed(new ContentFilter());
             Assert.IsTrue(paginatedResponse.TotalCount == 0, "There should be no main content items");
 
             // Content Counts in drafts should be accurate

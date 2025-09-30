@@ -22,18 +22,20 @@ namespace CloudTests.IssueTests
     public class Scope_Issue_Tests
 
     {
-        private static string _baseUrl;
-        private static HttpClient _client;
-        private static TestEnvironment _env;
-        private static ApplicationDbContext _db;
+        private string _baseUrl;
+        private HttpClient _client;
+        private TestEnvironment _env;
+        private ApplicationDbContext _db;
+        private Read _read;
 
         [TestInitialize]
-        public async Task Setup()
+        public void Setup()
         {
             // Use the utility class to configure the test environment
             _env = new TestEnvironment();
             _db = _env._db;
             _client = _env._client;
+            _read = _env._read;
         }
 
         [TestCleanup]
@@ -49,7 +51,7 @@ namespace CloudTests.IssueTests
         public async Task MainIssue_ShouldContainCorrectCompositeScopes(Issue issue)
         {
             string url = "/issue/" + issue.IssueID;
-            Issue_ReadVM? issueResponse = await Read.Issue(issue.IssueID, new ContentFilter());
+            Issue_ReadVM? issueResponse = await _read.Issue(issue.IssueID, new ContentFilter());
             var document = await _env.fetchHTML(url);
 
             var contentCard = document.QuerySelector($".card[id='{issue.IssueID}']");

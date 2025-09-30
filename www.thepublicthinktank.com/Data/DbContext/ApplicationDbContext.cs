@@ -5,6 +5,7 @@ using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
 using atlas_the_public_think_tank.Data.DatabaseEntities.History;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Moderation;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers;
 using atlas_the_public_think_tank.Data.SeedData;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues;
 using atlas_the_public_think_tank.Data.SeedData.SeedSolutions;
@@ -34,8 +35,8 @@ public interface IModelComposer
 /// </summary>
 public class ApplicationDbContext : UserHistoryDbContext
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IServiceProvider serviceProvider)
-        : base(options, serviceProvider)
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IServiceProvider serviceProvider, CacheHelper cacheHelper)
+        : base(options, serviceProvider, cacheHelper)
     {
     }
 

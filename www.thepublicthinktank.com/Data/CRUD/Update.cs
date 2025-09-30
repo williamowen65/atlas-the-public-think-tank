@@ -9,17 +9,17 @@ using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.ContentItem_Common;
 
 namespace atlas_the_public_think_tank.Data.CRUD
 {
-    public static class Update
+    public class Update
     {
-        private static IServiceProvider? _serviceProvider;
+        private IServiceProvider? _serviceProvider;
 
         // Initialize method to be called at startup
-        public static void Initialize(IServiceProvider serviceProvider)
+        public Update(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
         }
 
-        public async static Task<Solution_ReadVM> Solution(Solution solution) {
+        public async Task<Solution_ReadVM> Solution(Solution solution) {
             if (_serviceProvider == null)
                 throw new InvalidOperationException("Read class has not been initialized with a service provider.");
 
@@ -33,7 +33,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
             return solutionVM;
         }
         
-        public async static Task<Issue_ReadVM?> Issue(Issue issue) {
+        public async Task<Issue_ReadVM?> Issue(Issue issue) {
             if (_serviceProvider == null)
                 throw new InvalidOperationException("Read class has not been initialized with a service provider.");
 
@@ -47,7 +47,7 @@ namespace atlas_the_public_think_tank.Data.CRUD
             return issueVM;
         }
 
-        public async static Task<Scope_ReadVM?> Scope(Scope scope) {
+        public async Task<Scope_ReadVM?> Scope(Scope scope) {
             if (_serviceProvider == null)
                 throw new InvalidOperationException("Read class has not been initialized with a service provider.");
 

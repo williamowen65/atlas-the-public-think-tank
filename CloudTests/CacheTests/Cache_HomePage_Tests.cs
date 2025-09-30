@@ -58,11 +58,11 @@ namespace CloudTests.CacheTests
 
 
             // Create and login user
-            string email = Users.TestUser1.Email!;
-            string password = Users.TestUser1Password;
-            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
+            var (user, password) = Users.GetRandomAppUser();
 
-            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
+            AppUser testUser = Users.CreateTestUser(_db, user, password);
+
+            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
 
         }

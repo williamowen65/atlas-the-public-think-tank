@@ -18,12 +18,13 @@ namespace CloudTests.UserTests
     [TestClass]
     public class User_ContentCreation_Tests
     {
-        private static HttpClient _client;
-        private static ApplicationDbContext _db;
-        private static TestEnvironment _env;
+        private HttpClient _client;
+        private ApplicationDbContext _db;
+        private TestEnvironment _env;
 
-        [ClassInitialize]
-        public static async Task ClassInit(TestContext context)
+
+        [TestInitialize]
+        public async Task Setup()
         {
             // Arrange environment
             _env = new TestEnvironment();
@@ -31,19 +32,19 @@ namespace CloudTests.UserTests
             _client = _env._client;
 
             // Create and login user
-            string email = Users.TestUser1.Email!;
-            string password = Users.TestUser1Password;
-            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
-
-            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
+            var (user, password) = Users.GetRandomAppUser();
+            AppUser testUser = Users.CreateTestUser(_db, user, password);
+            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
         }
 
-        [ClassCleanup]
-        public static async Task ClassCleanup()
+        [TestCleanup]
+        public async Task ClassCleanup()
         {
             await TestingUtilityMethods.deleteDatabase(_client, _db);
         }
+
+
 
         [DataTestMethod]
         [DataRow("/create-issue")]

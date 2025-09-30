@@ -24,12 +24,16 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         private readonly IMemoryCache _cache;
         private readonly ILogger _cacheLogger;
         private readonly IConfiguration _configuration;
-        public VoteStatsCacheRepository(IVoteStatsRepository inner, IMemoryCache cache, ILoggerFactory loggerFactory, IConfiguration configuration)
+        private readonly CacheHelper _cacheHelper;
+        private readonly Read _read;
+        public VoteStatsCacheRepository(IVoteStatsRepository inner, IMemoryCache cache, ILoggerFactory loggerFactory, IConfiguration configuration, CacheHelper cacheHelper, Read read)
         {
             _cache = cache;
             _inner = inner;
             _cacheLogger = loggerFactory.CreateLogger("CacheLog");
             _configuration = configuration;
+            _cacheHelper = cacheHelper;
+            _read = read;
         }
 
 
@@ -111,23 +115,23 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             #region cache invalidation
 
             // Update the vote stats in the cache
-            CacheHelper.UpdateCache_IssueVoteStats(result, model, user);
+            _cacheHelper.UpdateCache_IssueVoteStats(result, model, user);
 
-            Issue_ReadVM? issue = await Read.Issue(model.IssueID, new ContentFilter());
+            Issue_ReadVM? issue = await _read.Issue(model.IssueID, new ContentFilter());
 
             if (issue!.ParentIssueID != null) {
-                CacheHelper.ClearSubIssueFeedIdsForIssue((Guid)issue.ParentIssueID!);
-                CacheHelper.ClearContentCountSubIssuesForIssue((Guid)issue.ParentIssueID);
+                _cacheHelper.ClearSubIssueFeedIdsForIssue((Guid)issue.ParentIssueID!);
+                _cacheHelper.ClearContentCountSubIssuesForIssue((Guid)issue.ParentIssueID);
             }
             if (issue!.ParentSolutionID != null)
             { 
-                CacheHelper.ClearSubIssueFeedIdsForSolution((Guid)issue.ParentSolutionID!);
-                CacheHelper.ClearContentCountSubIssuesForSolution((Guid)issue.ParentSolutionID!);
+                _cacheHelper.ClearSubIssueFeedIdsForSolution((Guid)issue.ParentSolutionID!);
+                _cacheHelper.ClearContentCountSubIssuesForSolution((Guid)issue.ParentSolutionID!);
             }
 
             // Main page
-            CacheHelper.ClearContentCountForMainPage();
-            CacheHelper.ClearMainPageFeedIds();
+            _cacheHelper.ClearContentCountForMainPage();
+            _cacheHelper.ClearMainPageFeedIds();
 
             #endregion
 
@@ -151,16 +155,16 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             #region cache invalidation
 
             // Update the vote stats in the cache
-            CacheHelper.UpdateCache_SolutionVoteStats(result, model, user);
+            _cacheHelper.UpdateCache_SolutionVoteStats(result, model, user);
 
-            Solution_ReadVM? solution = await Read.Solution(model.SolutionID, new ContentFilter());
+            Solution_ReadVM? solution = await _read.Solution(model.SolutionID, new ContentFilter());
 
-            CacheHelper.ClearSolutionFeedIdsForIssue((Guid)solution.ParentIssueID!);
-            CacheHelper.ClearContentCountSolutionsForIssue((Guid)solution.ParentIssueID);
+            _cacheHelper.ClearSolutionFeedIdsForIssue((Guid)solution.ParentIssueID!);
+            _cacheHelper.ClearContentCountSolutionsForIssue((Guid)solution.ParentIssueID);
 
             // Main page
-            CacheHelper.ClearContentCountForMainPage();
-            CacheHelper.ClearMainPageFeedIds();
+            _cacheHelper.ClearContentCountForMainPage();
+            _cacheHelper.ClearMainPageFeedIds();
 
             #endregion
 

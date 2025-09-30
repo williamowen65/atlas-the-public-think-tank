@@ -18,13 +18,13 @@ namespace CloudTests.LayoutTests
     [TestClass]
     public class Scope_Layout_Tests
     {
-        private static string _baseUrl;
-        private static HttpClient _client;
-        private static TestEnvironment _env;
-        private static ApplicationDbContext _db;
+        private string _baseUrl;
+        private HttpClient _client;
+        private TestEnvironment _env;
+        private ApplicationDbContext _db;
 
         [TestInitialize]
-        public async Task Setup()
+        public void Setup()
         {
             _env = new TestEnvironment();
             _db = _env._db;

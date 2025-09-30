@@ -27,7 +27,7 @@ namespace CloudTests.CacheTests
         private static HttpClient _client;
         private static ApplicationDbContext _db;
         private static TestEnvironment _env;
-
+        private Read _read;
 
         [TestInitialize]
         public async Task Setup()
@@ -43,6 +43,7 @@ namespace CloudTests.CacheTests
             _env = new TestEnvironment(appSettings);
             _db = _env._db;
             _client = _env._client;
+            _read = _env._read;
         }
 
 
@@ -56,7 +57,7 @@ namespace CloudTests.CacheTests
         public async Task CacheTesting_Environment_ShouldHaveNoSeedData() 
         {
             // Read main page content and count should be 0
-            ContentItems_Paginated_ReadVM paginatedResponse = await Read.PaginatedMainContentFeed(new ContentFilter());
+            ContentItems_Paginated_ReadVM paginatedResponse = await _read.PaginatedMainContentFeed(new ContentFilter());
             Assert.IsTrue(paginatedResponse.TotalCount == 0, "Total Count should be 0");
         }
 

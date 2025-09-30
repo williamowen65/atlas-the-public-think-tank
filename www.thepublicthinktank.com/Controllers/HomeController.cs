@@ -48,8 +48,9 @@ public class HomeController : Controller
     private readonly IVoteStatsRepository _voteStatsRepository;
     private readonly IAppUserRepository _appUserRepository;
     private readonly IIssueRepository _issueRepository;
+    private readonly Read _read;
 
-    public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, UserManager<AppUser> userManager, IVoteStatsRepository voteStatsRepository, IAppUserRepository appUserRepository, IIssueRepository issueRepository)
+    public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, UserManager<AppUser> userManager, IVoteStatsRepository voteStatsRepository, IAppUserRepository appUserRepository, IIssueRepository issueRepository, Read read)
     {
         _logger = logger;
         _context = context;
@@ -57,6 +58,7 @@ public class HomeController : Controller
         _voteStatsRepository = voteStatsRepository;
         _appUserRepository = appUserRepository;
         _issueRepository = issueRepository;
+        _read = read;
     }
 
     #region Serve the home page
@@ -74,7 +76,7 @@ public class HomeController : Controller
         // Create a view model to hold both issues and categories
         var viewModel = new Home_PageVM();
         viewModel.Sidebar.PageInfo = GetPageInfo(filter);
-        viewModel.PaginatedContent = await Read.PaginatedMainContentFeed(filter);
+        viewModel.PaginatedContent = await _read.PaginatedMainContentFeed(filter);
 
         //viewModel.Categories = new List<Category_ReadVM>();
         return View(viewModel);
@@ -99,7 +101,7 @@ public class HomeController : Controller
             filter = ContentFilter.FromJson(cookieValue);
         }
 
-        ContentItems_Paginated_ReadVM paginatedContentItems = await Read.PaginatedMainContentFeed(filter, currentPage);
+        ContentItems_Paginated_ReadVM paginatedContentItems = await _read.PaginatedMainContentFeed(filter, currentPage);
 
         // Render the partial view to a string
         string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Home/_content-item-cards.cshtml", paginatedContentItems.ContentItems);
@@ -145,12 +147,12 @@ public class HomeController : Controller
             {
                 if (result.Type == "Solution")
                 {
-                    Solution_ReadVM solution = await Read.Solution(result.Id, new ContentFilter());
+                    Solution_ReadVM solution = await _read.Solution(result.Id, new ContentFilter());
                     result.Select2Item = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Solution/_solution-select2-item.cshtml", solution);
                 }
                 if (result.Type == "Issue")
                 {
-                    Issue_ReadVM? issue = await Read.Issue(result.Id, new ContentFilter());
+                    Issue_ReadVM? issue = await _read.Issue(result.Id, new ContentFilter());
                     result.Select2Item = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Issue/_issue-select2-item.cshtml", issue);
                 }
             };
@@ -236,12 +238,12 @@ public class HomeController : Controller
 
         if (confirmVoteRequestDTO.ContentType == "issue")
         {
-            Issue_ReadVM?  issue =  await Read.Issue(confirmVoteRequestDTO.ContentID, new ContentFilter());
+            Issue_ReadVM?  issue =  await _read.Issue(confirmVoteRequestDTO.ContentID, new ContentFilter());
             confirmVoteVM.ContentItem = Converter.ConvertIssue_ReadVMToContentItem_ReadVM(issue!);
         }
         else if (confirmVoteRequestDTO.ContentType == "solution")
         { 
-            Solution_ReadVM? solution = await Read.Solution(confirmVoteRequestDTO.ContentID, new ContentFilter());
+            Solution_ReadVM? solution = await _read.Solution(confirmVoteRequestDTO.ContentID, new ContentFilter());
             confirmVoteVM.ContentItem = Converter.ConvertSolution_ReadVMToContentItem_ReadVM(solution!);
         }
 
@@ -284,7 +286,7 @@ public class HomeController : Controller
         {
 
             // Get info about the content
-            Issue_ReadVM? issue_ReadVM = await Read.Issue(userVoteModalRequest.ContentId, new ContentFilter());
+            Issue_ReadVM? issue_ReadVM = await _read.Issue(userVoteModalRequest.ContentId, new ContentFilter());
             if (issue_ReadVM != null)
             {
                 userVoteModalVM.content = Converter.ConvertIssue_ReadVMToContentItem_ReadVM(issue_ReadVM);
@@ -294,7 +296,7 @@ public class HomeController : Controller
                 {
                     var userId = kvp.Key;
                     var vote = kvp.Value;
-                    var userVM = await Read.AppUser(userId);
+                    var userVM = await _read.AppUser(userId);
                     if (userVM != null)
                     {
                         userVoteModalVM.ContentVotesWithUserKey[userVM] = vote;
@@ -306,7 +308,7 @@ public class HomeController : Controller
         }
         else if (userVoteModalRequest.ContentType == ContentType.Solution)
         {
-            Solution_ReadVM? solution_ReadVM = await Read.Solution(userVoteModalRequest.ContentId, new ContentFilter());
+            Solution_ReadVM? solution_ReadVM = await _read.Solution(userVoteModalRequest.ContentId, new ContentFilter());
             if (solution_ReadVM != null)
             {
                 userVoteModalVM.content = Converter.ConvertSolution_ReadVMToContentItem_ReadVM(solution_ReadVM);
@@ -315,7 +317,7 @@ public class HomeController : Controller
                 {
                     var userId = kvp.Key;
                     var vote = kvp.Value;
-                    var userVM = await Read.AppUser(userId);
+                    var userVM = await _read.AppUser(userId);
                     if (userVM != null)
                     {
                         userVoteModalVM.ContentVotesWithUserKey[userVM] = vote;

@@ -20,18 +20,20 @@ namespace CloudTests.HomePageTests
     public class Scope_HomePage_Tests
 
     {
-        private static string _baseUrl;
-        private static HttpClient _client;
-        private static TestEnvironment _env;
-        private static ApplicationDbContext _db;
+        private string _baseUrl;
+        private HttpClient _client;
+        private TestEnvironment _env;
+        private ApplicationDbContext _db;
+        private Read _read;
 
         [TestInitialize]
-        public async Task Setup()
+        public void setup()
         {
             // Use the utility class to configure the test environment
             _env = new TestEnvironment();
             _db = _env._db;
             _client = _env._client;
+            _read = _env._read;
         }
 
         [TestCleanup]
@@ -44,7 +46,7 @@ namespace CloudTests.HomePageTests
         [DataTestMethod]
         public async Task ContentFeedItems_ShouldContainCorrectCompositeScopes()
         {
-            ContentItems_Paginated_ReadVM paginatedResponse = await Read.PaginatedMainContentFeed(new ContentFilter());
+            ContentItems_Paginated_ReadVM paginatedResponse = await _read.PaginatedMainContentFeed(new ContentFilter());
             var document = await _env.fetchHTML("/");
             var mainContent = document.QuerySelector("#main-content");
 

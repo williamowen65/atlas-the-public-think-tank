@@ -18,13 +18,13 @@ namespace CloudTests.LayoutTests
     [TestClass]
     public class Layout_Tests
     {
-        private static string _baseUrl;
-        private static HttpClient _client;
-        private static TestEnvironment _env;
-        private static ApplicationDbContext _db;
+        private string _baseUrl;
+        private HttpClient _client;
+        private TestEnvironment _env;
+        private ApplicationDbContext _db;
 
         [TestInitialize]
-        public async Task Setup()
+        public void Setup()
         {
             _env = new TestEnvironment();
             _db = _env._db;
@@ -93,11 +93,9 @@ namespace CloudTests.LayoutTests
         public async Task CreateForm_ShouldHave_SpecificAttributes(string url)
         {
             // Create and login user
-            string email = Users.TestUser1.Email!;
-            string password = Users.TestUser1Password;
-            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
-
-            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
+            var (user, password) = Users.GetRandomAppUser();
+            AppUser testUser = Users.CreateTestUser(_db, user, password);
+            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
 
           
@@ -114,11 +112,9 @@ namespace CloudTests.LayoutTests
         public async Task EditIssueForm_ShouldHave_SpecificAttributes()
         {
             // Create and login user
-            string email = Users.TestUser1.Email!;
-            string password = Users.TestUser1Password;
-            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
-
-            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
+            var (user, password) = Users.GetRandomAppUser();
+            AppUser testUser = Users.CreateTestUser(_db, user, password);
+            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
 
             var (jsonDoc1, title1, content1) = await TestingCRUDHelpers.CreateIssue(_env,
@@ -147,11 +143,9 @@ namespace CloudTests.LayoutTests
         public async Task EditSolutionForm_ShouldHave_SpecificAttributes()
         {
             // Create and login user
-            string email = Users.TestUser1.Email!;
-            string password = Users.TestUser1Password;
-            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
-
-            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
+            var (user, password) = Users.GetRandomAppUser();
+            AppUser testUser = Users.CreateTestUser(_db, user, password);
+            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
 
 

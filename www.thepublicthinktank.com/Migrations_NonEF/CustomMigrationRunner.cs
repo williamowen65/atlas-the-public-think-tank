@@ -7,9 +7,16 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace atlas_the_public_think_tank.Migrations_NonEF
 {
-    public static class CustomMigrationRunner
+    public class CustomMigrationRunner
     {
-        public static void RunUp(IServiceProvider serviceProvider)
+        private readonly IServiceProvider serviceProvider;
+
+        public CustomMigrationRunner(IServiceProvider serviceProvider)
+        {
+            this.serviceProvider = serviceProvider;
+        }
+
+        public void RunUp()
         {
             using var scope = serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -63,7 +70,7 @@ namespace atlas_the_public_think_tank.Migrations_NonEF
             }
         }
 
-        public static void RunDown(IServiceProvider serviceProvider)
+        public void RunDown(IServiceProvider serviceProvider)
         {
             using var scope = serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();

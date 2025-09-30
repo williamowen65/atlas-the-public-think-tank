@@ -19,18 +19,20 @@ namespace CloudTests.HomePageTests
     [TestClass]
     public class UnitTests_HomePage
     {
-        private static string _baseUrl;
-        private static HttpClient _client;
-        private static TestEnvironment _env;
-        private static ApplicationDbContext _db;
+        private string _baseUrl;
+        private HttpClient _client;
+        private TestEnvironment _env;
+        private ApplicationDbContext _db;
+        private Read _read;
 
         [TestInitialize]
-        public async Task Setup()
+        public void Setup()
         {
             // Use the utility class to configure the test environment
             _env = new TestEnvironment();
             _db = _env._db;
             _client = _env._client;
+            _read = _env._read;
         }
 
         [TestCleanup]
@@ -43,7 +45,7 @@ namespace CloudTests.HomePageTests
         public async Task ReadContentItems_ShouldReturn_OnlyThreePosts()
         {
             // Get the response
-             ContentItems_Paginated_ReadVM paginatedResponse = await Read.PaginatedMainContentFeed(new ContentFilter());
+             ContentItems_Paginated_ReadVM paginatedResponse = await _read.PaginatedMainContentFeed(new ContentFilter());
             // Assert that the response is not null
             Assert.IsNotNull(paginatedResponse, "Paginated response should not be null");
 

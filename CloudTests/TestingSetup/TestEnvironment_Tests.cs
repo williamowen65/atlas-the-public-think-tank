@@ -17,14 +17,14 @@ namespace CloudTests.TestingSetup
     [TestClass]
     public class TestEnvironment_Tests
     {
-        private static HttpClient _client;
-        private static ApplicationDbContext _db;
-        private static TestEnvironment _env;
+        private HttpClient _client;
+        private ApplicationDbContext _db;
+        private TestEnvironment _env;
 
 
 
         [TestInitialize]
-        public async Task Setup()
+        public void Setup()
         {
 
             _env = new TestEnvironment();
@@ -89,14 +89,9 @@ namespace CloudTests.TestingSetup
         public async Task A_User_Can_Login_Via_Helper_Methods()
         {
             // Arrange
-            string email = Users.TestUser1.Email!;
-            string password = Users.TestUser1Password;
-            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
-
-            // Act - Attempt to login via the endpoint
-            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
-
-            // Assert - Verify login was successful
+            var (user, password) = Users.GetRandomAppUser();
+            AppUser testUser = Users.CreateTestUser(_db, user, password);
+            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
 
             var requestMessage = new HttpRequestMessage(HttpMethod.Get, "/api/debug/cookies");
@@ -111,23 +106,17 @@ namespace CloudTests.TestingSetup
         public async Task A_User_Can_Be_Created_LoggedIn_AndThen_Later_Another_User_Can_Be_Created_LoggedIn()
         {
             // Arrange
-            string email = Users.TestUser1.Email!;
-            string password = Users.TestUser1Password;
-            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
-            // Act - Attempt to login via the endpoint
-            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
-            // Assert - Verify login was successful
+            var (user, password) = Users.GetRandomAppUser();
+            AppUser testUser = Users.CreateTestUser(_db, user, password);
+            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
 
 
             // Arrange
-            string email2 = Users.TestUser2.Email!;
-            string password2 = Users.TestUser2Password;
-            AppUser testUser2 = Users.CreateTestUser(_db, Users.TestUser2, password2);
-            // Act - Attempt to login via the endpoint
-            bool loginSuccess2 = await Users.LoginUserViaEndpoint(_env, email2, password2);
-            // Assert - Verify login was successful
-            Assert.IsTrue(loginSuccess2, "Login should be successful");
+            var (user2, password2) = Users.GetRandomAppUser();
+            AppUser testUser2 = Users.CreateTestUser(_db, user2, password2);
+            bool loginSuccess2 = await Users.LoginUserViaEndpoint(_env, user2.Email!, password2);
+            Assert.IsTrue(loginSuccess2, "Login 2 should be successful");
 
         }
     }
