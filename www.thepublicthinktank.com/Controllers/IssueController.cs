@@ -40,14 +40,26 @@ namespace atlas_the_public_think_tank.Controllers
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly SignInManager<AppUser> _signInManager;
+        private readonly Create _create;
+        private readonly Read _read;
+        private readonly Upsert _upsert;
+        private readonly Update _update;
 
         public IssueController(
             UserManager<AppUser> userManager,
-            SignInManager<AppUser> signInManager
+            SignInManager<AppUser> signInManager,
+            Create create,
+            Read read,
+            Upsert upsert,
+            Update update
             )
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _create = create;
+            _read = read;
+            _upsert = upsert;
+            _update = update;
         }
 
         #region Issue Page
@@ -79,7 +91,7 @@ namespace atlas_the_public_think_tank.Controllers
             Issue_ReadVM? issue = null;
             try
             {
-               issue = await Read.Issue(id, filter, fetchParent);
+               issue = await _read.Issue(id, filter, fetchParent);
             }
             catch(Exception ex) {
                 if (ex.Message != "Issue not found") {
@@ -138,7 +150,7 @@ namespace atlas_the_public_think_tank.Controllers
             }
 
 
-            Issues_Paginated_ReadVM paginatedIssues = await Read.PaginatedSubIssueFeedForIssue(issueId, filter, currentPage);
+            Issues_Paginated_ReadVM paginatedIssues = await _read.PaginatedSubIssueFeedForIssue(issueId, filter, currentPage);
 
             string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Issue/_issue-cards.cshtml", paginatedIssues.Issues);
 
@@ -179,9 +191,9 @@ namespace atlas_the_public_think_tank.Controllers
                 filter = ContentFilter.FromJson(cookieValue);
             }
 
-            Issue_ReadVM? issue = await Read.Issue(issueId, filter);
+            Issue_ReadVM? issue = await _read.Issue(issueId, filter);
 
-            Solutions_Paginated_ReadVM paginatedSolutions = await Read.PaginatedSolutionFeedForIssue(issueId, filter, currentPage);
+            Solutions_Paginated_ReadVM paginatedSolutions = await _read.PaginatedSolutionFeedForIssue(issueId, filter, currentPage);
 
             string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Solution/_solution-cards.cshtml", paginatedSolutions.Solutions);
 
@@ -218,14 +230,14 @@ namespace atlas_the_public_think_tank.Controllers
             if (parentIssueID.HasValue)
             {
                 model.MainIssue.ParentIssueID = parentIssueID;
-                Issue_ReadVM? parentIssue = await Read.Issue((Guid)model.MainIssue.ParentIssueID!, new ContentFilter());
+                Issue_ReadVM? parentIssue = await _read.Issue((Guid)model.MainIssue.ParentIssueID!, new ContentFilter());
                 model.MainIssue.ParentIssue = parentIssue;
             }
 
             if (parentSolutionID.HasValue)
             {
                 model.MainIssue.ParentSolutionID = parentSolutionID;
-                Solution_ReadVM? parentSolution = await Read.Solution((Guid)model.MainIssue.ParentSolutionID!, new ContentFilter());
+                Solution_ReadVM? parentSolution = await _read.Solution((Guid)model.MainIssue.ParentSolutionID!, new ContentFilter());
                 model.MainIssue.ParentSolution = parentSolution;
             }
 
@@ -302,7 +314,7 @@ namespace atlas_the_public_think_tank.Controllers
 
                 /// Convert Scope_CreateVM to Scope
                 /// You must save the scope first to get an ID
-                Scope_ReadVM scopeVM = await Create.Scope(new Scope()
+                Scope_ReadVM scopeVM = await _create.Scope(new Scope()
                 {
                     Boundaries = model.Scope.Boundaries,
                     Domains = model.Scope.Domains,
@@ -312,7 +324,7 @@ namespace atlas_the_public_think_tank.Controllers
                 });
 
                 // Create new solution via repository pattern (cache)
-                Issue_ReadVM issue = await Create.Issue(new Issue()
+                Issue_ReadVM issue = await _create.Issue(new Issue()
                 {
                     ParentIssueID = model.ParentIssueID,
                     ParentSolutionID = model.ParentSolutionID,
@@ -347,7 +359,7 @@ namespace atlas_the_public_think_tank.Controllers
         {
 
             ContentCreationResponse_JsonVM contentCreationResponse = new ContentCreationResponse_JsonVM();
-            Issue_ReadVM? issue = await Read.Issue(issueId, new ContentFilter());
+            Issue_ReadVM? issue = await _read.Issue(issueId, new ContentFilter());
             var user = await _userManager.GetUserAsync(User);
             if (issue == null)
             {
@@ -380,7 +392,7 @@ namespace atlas_the_public_think_tank.Controllers
         public async Task<IActionResult> EditIssuePartialView(Guid issueId)
         {
             ContentCreationResponse_JsonVM contentCreationResponse = new ContentCreationResponse_JsonVM();
-            Issue_ReadVM? issue = await Read.Issue(issueId, new ContentFilter());
+            Issue_ReadVM? issue = await _read.Issue(issueId, new ContentFilter());
 
             var user = await _userManager.GetUserAsync(User);
 
@@ -423,11 +435,11 @@ namespace atlas_the_public_think_tank.Controllers
 
             if (issue.ParentIssueID != null)
             {
-                issueWrapper.Issue.ParentIssue = await Read.Issue((Guid)issue.ParentIssueID!, new ContentFilter());
+                issueWrapper.Issue.ParentIssue = await _read.Issue((Guid)issue.ParentIssueID!, new ContentFilter());
             }
             if (issue.ParentSolutionID != null)
             {
-                issueWrapper.Issue.ParentSolution = await Read.Solution((Guid)issue.ParentSolutionID!, new ContentFilter());
+                issueWrapper.Issue.ParentSolution = await _read.Solution((Guid)issue.ParentSolutionID!, new ContentFilter());
             }
 
             // render Partial view and return json
@@ -473,7 +485,7 @@ namespace atlas_the_public_think_tank.Controllers
             // pull issue from DAL -- This is for confirming some info before making the update
             // Also get the createdAt value
             bool fetchParent = true;
-            Issue_ReadVM? issueRef = await Read.Issue((Guid)model.IssueID!, new ContentFilter(), fetchParent);
+            Issue_ReadVM? issueRef = await _read.Issue((Guid)model.IssueID!, new ContentFilter(), fetchParent);
             // Confirm this user owns this content
             if (user.Id != issueRef.Author.Id)
             {
@@ -519,7 +531,7 @@ namespace atlas_the_public_think_tank.Controllers
             if (scopeDiff) 
             {
                 // Update the Scope
-                Scope_ReadVM? scopeVM = await Update.Scope(incomingScope);
+                Scope_ReadVM? scopeVM = await _update.Scope(incomingScope);
             }
 
 
@@ -544,11 +556,11 @@ namespace atlas_the_public_think_tank.Controllers
             {
                 // Update Issue
                 // TODO: An issues content and title should be versioned as separate entities to remove duplication
-                issue = await Update.Issue(incomingIssue);
+                issue = await _update.Issue(incomingIssue);
             }
             else if (scopeDiff == true && issueDiff != true) { 
                 // Update Issue So that the scope it versioned as a new issue
-                issue = await Update.Issue(incomingIssue);
+                issue = await _update.Issue(incomingIssue);
             }
           
 
@@ -606,7 +618,7 @@ namespace atlas_the_public_think_tank.Controllers
 
             try
             {
-                VoteResponse_AjaxVM? voteResponse = await Upsert.IssueVote(model, user);
+                VoteResponse_AjaxVM? voteResponse = await _upsert.IssueVote(model, user);
                 // Successful path
                 return Json(voteResponse);
             }
@@ -631,7 +643,7 @@ namespace atlas_the_public_think_tank.Controllers
             ContentCreationResponse_JsonVM contentCreationResponse = new ContentCreationResponse_JsonVM();
 
             // check if issue exists
-            Issue_ReadVM? issue = await Read.Issue(issueId, new ContentFilter());
+            Issue_ReadVM? issue = await _read.Issue(issueId, new ContentFilter());
             if (issue == null)
             {
                 contentCreationResponse.Success = false;
@@ -640,7 +652,7 @@ namespace atlas_the_public_think_tank.Controllers
                 return Json(contentCreationResponse);
             }
 
-            List<ContentItem_ReadVM> contentItemVersions = await Read.IssueVersionHistory(issue);
+            List<ContentItem_ReadVM> contentItemVersions = await _read.IssueVersionHistory(issue);
 
             string html = await ControllerExtensions.RenderViewToStringAsync(
                 this,
@@ -663,7 +675,7 @@ namespace atlas_the_public_think_tank.Controllers
         [Route("/issue/get-issue-select2-template/{issueId}")]
         public async Task<IActionResult> GetIssueSelect2Template(Guid issueId)
         {
-            Issue_ReadVM? issue = await Read.Issue(issueId, new ContentFilter());
+            Issue_ReadVM? issue = await _read.Issue(issueId, new ContentFilter());
             string Select2Item = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Issue/_issue-select2-item.cshtml", issue);
 
             return Json(new

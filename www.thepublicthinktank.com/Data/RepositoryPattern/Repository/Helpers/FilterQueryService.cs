@@ -6,19 +6,19 @@ using atlas_the_public_think_tank.Models.Enums;
 
 namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
 {
-    public static class FilterQueryService
+    public class FilterQueryService
     {
 
-        private static IConfiguration _config;
+        private IConfiguration _config;
 
-        public static void Initialize(IConfiguration config)
+        public FilterQueryService(IConfiguration config)
         {
             _config = config;
         }
         /// <summary>
         /// Applies common filtering logic to a query of Issues
         /// </summary>
-        public static IQueryable<Issue> ApplyIssueFilters(IQueryable<Issue> query, ContentFilter filter)
+        public IQueryable<Issue> ApplyIssueFilters(IQueryable<Issue> query, ContentFilter filter)
         {
             if (filter == null)
                 return query;
@@ -80,7 +80,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
         /// <summary>
         /// Applies common filtering logic to a query of Solutions
         /// </summary>
-        public static IQueryable<Solution> ApplySolutionFilters(IQueryable<Solution> query, ContentFilter filter)
+        public IQueryable<Solution> ApplySolutionFilters(IQueryable<Solution> query, ContentFilter filter)
         {
             if (filter == null)
                 return query;
@@ -142,7 +142,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
         /// <summary>
         /// Applies filtering to ContentIndexEntry queries that combine both issues and solutions
         /// </summary>
-        public static IQueryable<ContentIndexEntry> ApplyCombinedContentFilters(
+        public IQueryable<ContentIndexEntry> ApplyCombinedContentFilters(
             IQueryable<ContentIndexEntry> query,
             ContentFilter filter)
         {

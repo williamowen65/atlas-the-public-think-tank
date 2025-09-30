@@ -1,5 +1,6 @@
 ﻿using AngleSharp;
 using AngleSharp.Dom;
+using atlas_the_public_think_tank.Data.CRUD;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
 using atlas_the_public_think_tank.Data.DbContext;
 using Microsoft.AspNetCore.Builder;
@@ -32,6 +33,7 @@ namespace CloudTests.TestingSetup
         public ApplicationDbContext _db;
         public CookieContainer _cookieContainer;
         public string _connectionString; // dynamic testing connection string
+        public Read _read;
 
         public TestEnvironment() : this(null)
         { 
@@ -50,6 +52,8 @@ namespace CloudTests.TestingSetup
 
             // Apply migrations to the test database (safe if already applied)
             _db.Database.Migrate();
+
+            _read = _scope.ServiceProvider.GetRequiredService<Read>();
         }
 
         public async Task<TResult> fetchPost<TResult, TPayload>(string url, TPayload payload)
@@ -222,19 +226,31 @@ namespace CloudTests.TestingSetup
         }
     }
 
+   
     public static class TestEnvironmentUtility
     {
+        public static int GetFreeTcpPort()
+        {
+            var listener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
+            listener.Start();
+            int port = ((System.Net.IPEndPoint)listener.LocalEndpoint).Port;
+            listener.Stop();
+            return port;
+        }
+
+
         public static (WebApplicationFactory<atlas_the_public_think_tank.Program> factory, HttpClient client, string baseUrl, string connectionString)
             ConfigureTestEnvironment(string appSettingsOverride, CookieContainer cookieContainer = null)
         {
-            string baseUrl = "https://localhost:5501";
+            int port = GetFreeTcpPort();
+            string baseUrl = $"https://localhost:{port}";
 
             // Build dynamic database name per test run
             var dbName = $"atlas_the_public_think_tank-testing-{Guid.NewGuid()}";
 
             // Local default (LocalDB, Windows auth)
             //var localConnection = $"Server=DESKTOP-COPKNK8\\SQLEXPRESS;Database={dbName};User Id=FFalk;Password=P@55w0rd!Q9zL#;MultipleActiveResultSets=true;Encrypt=True;TrustServerCertificate=True;";
-            var localConnection = $"Server=DESKTOP-COPKNK8\\SQLEXPRESS;Database={dbName};Trusted_Connection=True;MultipleActiveResultSets=true;Encrypt=True;TrustServerCertificate=True;";
+            var localConnection = $"Server=DESKTOP-COPKNK8\\SQLEXPRESS;Database={dbName};Trusted_Connection=True;MultipleActiveResultSets=true;Encrypt=True;TrustServerCertificate=True;Max Pool Size=1500;";
           
             // GitHub Actions / container SQL (SA user)
             var actionsPassword = Environment.GetEnvironmentVariable("TEST_SQL_SA_PASSWORD") ?? "Aa123456!";

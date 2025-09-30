@@ -19,13 +19,16 @@ namespace atlas_the_public_think_tank.Data.DbContext
     public class UserHistoryDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>
     {
         private readonly IServiceProvider _serviceProvider;
+        private readonly CacheHelper _cacheHelper;
 
         public UserHistoryDbContext(
             DbContextOptions<ApplicationDbContext> options,
-            IServiceProvider serviceProvider)
+            IServiceProvider serviceProvider,
+            CacheHelper cacheHelper)
             : base(options)
         {
             _serviceProvider = serviceProvider;
+            _cacheHelper = cacheHelper;
         }
 
         public DbSet<UserHistory> UserHistory { get; set; }
@@ -112,10 +115,14 @@ namespace atlas_the_public_think_tank.Data.DbContext
     public class UserHistoryProcessor
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly CacheHelper _cacheHelper;
+        private readonly Read _read;
 
-        public UserHistoryProcessor(IHttpContextAccessor httpContextAccessor) {
+        public UserHistoryProcessor(IHttpContextAccessor httpContextAccessor, CacheHelper cacheHelper, Read read)
+        {
             _httpContextAccessor = httpContextAccessor;
-        
+            _cacheHelper = cacheHelper;
+            _read = read;
         }
 
         public async Task<UserHistory?> CreateHistoryEntry(EntityEntry entry)
@@ -147,7 +154,7 @@ namespace atlas_the_public_think_tank.Data.DbContext
                 userId = ExtractUserId(entry, ((IssueVote)entry.Entity).UserID);
 
                 Guid issueId = ((IssueVote)entry.Entity).IssueID;
-                var issue = await Read.Issue(issueId, new ContentFilter());
+                var issue = await _read.Issue(issueId, new ContentFilter());
 
                 int voteValue = ((IssueVote)entry.Entity).VoteValue;
 
@@ -167,7 +174,7 @@ namespace atlas_the_public_think_tank.Data.DbContext
                 userId = ExtractUserId(entry, ((SolutionVote)entry.Entity).UserID);
 
                 Guid solutionId = ((SolutionVote)entry.Entity).SolutionID;
-                var solution = await Read.Solution(solutionId, new ContentFilter());
+                var solution = await _read.Solution(solutionId, new ContentFilter());
 
                 int voteValue = ((SolutionVote)entry.Entity).VoteValue;
 
@@ -216,7 +223,7 @@ namespace atlas_the_public_think_tank.Data.DbContext
 
             }
 
-            CacheHelper.ClearUserHistoryCache((Guid)userId!);
+            _cacheHelper.ClearUserHistoryCache((Guid)userId!);
 
             return userHistory;
            

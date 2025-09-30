@@ -37,11 +37,19 @@ namespace atlas_the_public_think_tank.Controllers
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly SignInManager<AppUser> _signInManager;
+        private readonly Create _create;
+        private readonly Read _read;
+        private readonly Upsert _upsert;
+        private readonly Update _update;
 
-        public SolutionController(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager)
+        public SolutionController(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager, Create create, Read read, Upsert upsert, Update update)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _create = create;
+            _read = read;
+            _upsert = upsert;
+            _update = update;
         }
 
 
@@ -74,7 +82,7 @@ namespace atlas_the_public_think_tank.Controllers
 
             try
             {
-                solution = await Read.Solution(id, filter, fetchParent);
+                solution = await _read.Solution(id, filter, fetchParent);
             }
             catch (Exception ex) {
                 if (ex.Message != "Solution not found")
@@ -137,9 +145,9 @@ namespace atlas_the_public_think_tank.Controllers
                 filter = ContentFilter.FromJson(cookieValue);
             }
 
-            Solution_ReadVM? solution = await Read.Solution(solutionId, filter);
+            Solution_ReadVM? solution = await _read.Solution(solutionId, filter);
 
-            Issues_Paginated_ReadVM paginatedIssues = await Read.PaginatedSubIssueFeedForSolution(solutionId, filter, currentPage);
+            Issues_Paginated_ReadVM paginatedIssues = await _read.PaginatedSubIssueFeedForSolution(solutionId, filter, currentPage);
 
             string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Issue/_issue-cards.cshtml", paginatedIssues.Issues);
 
@@ -203,7 +211,7 @@ namespace atlas_the_public_think_tank.Controllers
                 var user = await _userManager.GetUserAsync(User);
 
 
-                Scope_ReadVM scopeVM = await Create.Scope(new Scope()
+                Scope_ReadVM scopeVM = await _create.Scope(new Scope()
                 {
                     Boundaries = model.Scope.Boundaries,
                     Domains = model.Scope.Domains,
@@ -214,7 +222,7 @@ namespace atlas_the_public_think_tank.Controllers
 
 
                 // Create new solution via repository pattern (cache)
-                Solution_ReadVM solution = await Create.Solution(new Solution()
+                Solution_ReadVM solution = await _create.Solution(new Solution()
                 { 
                     ParentIssueID = (Guid)model.ParentIssueID!,
                     AuthorID = user.Id,
@@ -260,7 +268,7 @@ namespace atlas_the_public_think_tank.Controllers
             if (parentIssueID.HasValue)
             {
                 model.Solution.ParentIssueID = parentIssueID;
-                Issue_ReadVM? parentIssue = await Read.Issue((Guid)model.Solution.ParentIssueID!, new ContentFilter());
+                Issue_ReadVM? parentIssue = await _read.Issue((Guid)model.Solution.ParentIssueID!, new ContentFilter());
                 model.Solution.ParentIssue = parentIssue;
             }
 
@@ -291,7 +299,7 @@ namespace atlas_the_public_think_tank.Controllers
         {
 
             ContentCreationResponse_JsonVM contentCreationResponse = new ContentCreationResponse_JsonVM();
-            Solution_ReadVM? solution = await Read.Solution(solutionId, new ContentFilter());
+            Solution_ReadVM? solution = await _read.Solution(solutionId, new ContentFilter());
             var user = await _userManager.GetUserAsync(User);
             if (solution == null)
             {
@@ -327,7 +335,7 @@ namespace atlas_the_public_think_tank.Controllers
 
             ContentCreationResponse_JsonVM contentCreationResponse = new ContentCreationResponse_JsonVM();
 
-            Solution_ReadVM? solution = await Read.Solution(solutionId, new ContentFilter());
+            Solution_ReadVM? solution = await _read.Solution(solutionId, new ContentFilter());
 
             var user = await _userManager.GetUserAsync(User);
 
@@ -364,7 +372,7 @@ namespace atlas_the_public_think_tank.Controllers
                         Timeframes = solution.Scope.Timeframes
                     },
                     Title = solution.Title,
-                    ParentIssue = await Read.Issue(solution.ParentIssueID, new ContentFilter()),
+                    ParentIssue = await _read.Issue(solution.ParentIssueID, new ContentFilter()),
                     ParentIssueID = solution.ParentIssueID,
                 }
             };
@@ -415,7 +423,7 @@ namespace atlas_the_public_think_tank.Controllers
             // pull issue from DAL
             // Also to get the created at value
             bool fetchParent = true;
-            Solution_ReadVM? solutionRef = await Read.Solution((Guid)model.SolutionID!, new ContentFilter(), fetchParent);
+            Solution_ReadVM? solutionRef = await _read.Solution((Guid)model.SolutionID!, new ContentFilter(), fetchParent);
 
             // Confirm this user owns this content
             if (user.Id != solutionRef.Author.Id)
@@ -457,7 +465,7 @@ namespace atlas_the_public_think_tank.Controllers
             if (scopeDiff)
             {
                 // Update the Scope
-                Scope_ReadVM? scopeVM = await Update.Scope(incomingScope);
+                Scope_ReadVM? scopeVM = await _update.Scope(incomingScope);
             }
 
             Solution incomingSolution = new Solution()
@@ -479,12 +487,12 @@ namespace atlas_the_public_think_tank.Controllers
             Solution_ReadVM? solution = solutionRef;
             if (solutionDiff) { 
                 
-                solution = await Update.Solution(incomingSolution);
+                solution = await _update.Solution(incomingSolution);
             }
             else if (scopeDiff == true && solutionDiff != true)
             {
                 // Update solution so that the scope it versioned as a new issue
-                solution = await Update.Solution(incomingSolution);
+                solution = await _update.Solution(incomingSolution);
             }
 
 
@@ -541,7 +549,7 @@ namespace atlas_the_public_think_tank.Controllers
 
             try
             {
-                VoteResponse_AjaxVM? voteResponse = await Upsert.SolutionVote(model, user);
+                VoteResponse_AjaxVM? voteResponse = await _upsert.SolutionVote(model, user);
                 // Successful path
                 return Json(voteResponse);
             }
@@ -566,7 +574,7 @@ namespace atlas_the_public_think_tank.Controllers
             ContentCreationResponse_JsonVM contentCreationResponse = new ContentCreationResponse_JsonVM();
 
             // check if issue exists
-            Solution_ReadVM? solution = await Read.Solution(solutionId, new ContentFilter());
+            Solution_ReadVM? solution = await _read.Solution(solutionId, new ContentFilter());
             if (solution == null)
             {
                 contentCreationResponse.Success = false;
@@ -575,7 +583,7 @@ namespace atlas_the_public_think_tank.Controllers
                 return Json(contentCreationResponse);
             }
 
-            List<ContentItem_ReadVM> contentItemVersions = await Read.SolutionVersionHistory(solution);
+            List<ContentItem_ReadVM> contentItemVersions = await _read.SolutionVersionHistory(solution);
 
             string html = await ControllerExtensions.RenderViewToStringAsync(
                 this,
@@ -599,7 +607,7 @@ namespace atlas_the_public_think_tank.Controllers
         [Route("/solution/get-solution-select2-template/{solutionId}")]
         public async Task<IActionResult> GetSolutionSelect2Template(Guid solutionId)
         {
-            Solution_ReadVM solution = await Read.Solution(solutionId, new ContentFilter());
+            Solution_ReadVM solution = await _read.Solution(solutionId, new ContentFilter());
             string Select2Item = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Solution/_solution-select2-item.cshtml", solution);
 
             return Json(new

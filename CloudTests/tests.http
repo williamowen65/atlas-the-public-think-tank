@@ -37,8 +37,9 @@ Content-Type: application/json
 }
 
 ###
+# POST https://localhost:5501/search?showRanks=true&contentType=solution
 
-POST https://localhost:5501/search?showRanks=true&contentType=solution
+POST https://localhost:5501/search
 Content-Type: application/json
 
 {

@@ -16,34 +16,7 @@ namespace CloudTests.TestingSetup.TestingData
 {
     public static class Users
     {
-        public static AppUser TestUser1 { get; } = new AppUser
-        {
-            Id = Guid.NewGuid(),
-            UserName = "testuser@example.com",
-            NormalizedUserName = "TESTUSER@EXAMPLE.COM",
-            Email = "testuser@example.com",
-            NormalizedEmail = "TESTUSER@EXAMPLE.COM",
-            EmailConfirmed = true,
-            SecurityStamp = Guid.NewGuid().ToString(),
-            ConcurrencyStamp = Guid.NewGuid().ToString(),
-            LockoutEnabled = false
-        };
-        public static string TestUser1Password = "Password123!";
-
-        public static AppUser TestUser2 { get; } = new AppUser
-        {
-            Id = Guid.NewGuid(),
-            UserName = "testuser2@example.com",
-            NormalizedUserName = "TESTUSER2@EXAMPLE.COM",
-            Email = "testuser2@example.com",
-            NormalizedEmail = "TESTUSER2@EXAMPLE.COM",
-            EmailConfirmed = true,
-            SecurityStamp = Guid.NewGuid().ToString(),
-            ConcurrencyStamp = Guid.NewGuid().ToString(),
-            LockoutEnabled = false
-        };
-        public static string TestUser2Password = "Password1234!";
-     
+       
 
         public static AppUser CreateTestUser(ApplicationDbContext db, AppUser user, string password)
         {
@@ -56,6 +29,54 @@ namespace CloudTests.TestingSetup.TestingData
             db.SaveChanges();
 
             return user;
+        }
+
+        public static (AppUser appUser, string password) GetRandomAppUser()
+        {
+            var guid = Guid.NewGuid();
+            var email = $"testuser_{guid}@example.com";
+            var password = GenerateRandomPassword(12);
+
+            var user = new AppUser
+            {
+                Id = guid,
+                UserName = email,
+                NormalizedUserName = email.ToUpperInvariant(),
+                Email = email,
+                NormalizedEmail = email.ToUpperInvariant(),
+                EmailConfirmed = true,
+                SecurityStamp = Guid.NewGuid().ToString(),
+                ConcurrencyStamp = Guid.NewGuid().ToString(),
+                LockoutEnabled = false
+            };
+
+            return (user, password);
+        }
+
+        public static string GenerateRandomPassword(int length = 12)
+        {
+            const string upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            const string lower = "abcdefghijklmnopqrstuvwxyz";
+            const string digits = "0123456789";
+            const string special = "!@#$%^&*()-_=+[]{}|;:,.<>?";
+
+            var random = new Random();
+            var chars = new List<char>
+            {
+                upper[random.Next(upper.Length)],
+                lower[random.Next(lower.Length)],
+                digits[random.Next(digits.Length)],
+                special[random.Next(special.Length)]
+            };
+
+            string allChars = upper + lower + digits + special;
+            for (int i = chars.Count; i < length; i++)
+            {
+                chars.Add(allChars[random.Next(allChars.Length)]);
+            }
+
+            // Shuffle to avoid predictable positions
+            return new string(chars.OrderBy(_ => random.Next()).ToArray());
         }
 
 

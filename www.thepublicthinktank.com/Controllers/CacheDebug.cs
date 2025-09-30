@@ -19,10 +19,12 @@ namespace repository_pattern_experiment.Controllers
     public class CacheDebug : Controller
     {
         private readonly IMemoryCache _cache;
+        private readonly CacheHelper _cacheHelper;
 
-        public CacheDebug(IMemoryCache cache)
+        public CacheDebug(IMemoryCache cache, CacheHelper cacheHelper)
         {
             _cache = cache;
+            _cacheHelper = cacheHelper;
         }
 
         #region Cache Api Routes
@@ -30,7 +32,7 @@ namespace repository_pattern_experiment.Controllers
         [Route("api/cache-log/keys")]
         public IActionResult GetKeys()
         {
-            List<string> CacheKeys = CacheHelper.GetAllCacheKeys();
+            List<string> CacheKeys = _cacheHelper.GetAllCacheKeys();
             CacheKeys.Sort();
             return Json(CacheKeys); // <--- Json serialized the keys, and confused interpretation by changing + to ascii
             //return Content(string.Join("\n", CacheKeys));
@@ -39,7 +41,7 @@ namespace repository_pattern_experiment.Controllers
         [Route("api/cache-log/entries")]
         public IActionResult GetEntries()
         {
-            var cacheEntries = CacheHelper.GetAllCacheKeys();
+            var cacheEntries = _cacheHelper.GetAllCacheKeys();
             cacheEntries.Sort();
             var cacheItems = new List<CacheItem>();
 

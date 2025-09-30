@@ -4,6 +4,7 @@
 @using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
 @inject SignInManager<AppUser> SignInManager
 @inject UserManager<AppUser> UserManager
+@inject Read _read;
 
 @if (SignInManager.IsSignedIn(User))
 {
@@ -21,7 +22,7 @@
 
         @{
             var userId = Guid.Parse(UserManager.GetUserId(User)!);
-            var userDrafts_pageVM = await Read.PaginatedUserDrafts(userId, new ContentFilter());
+            var userDrafts_pageVM = await _read.PaginatedUserDrafts(userId, new ContentFilter());
 
             var draftContentCount = userDrafts_pageVM.paginatedUserIssuesDrafts.Issues.Count + userDrafts_pageVM.paginatedUserSolutionsDrafts.Solutions.Count;
         }       

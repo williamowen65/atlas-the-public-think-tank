@@ -24,9 +24,9 @@ namespace CloudTests.IssueTests
     [TestClass]
     public class ContentVoting_Issue_Tests
     {
-        private static HttpClient _client;
-        private static ApplicationDbContext _db;
-        private static TestEnvironment _env;
+        private HttpClient _client;
+        private ApplicationDbContext _db;
+        private TestEnvironment _env;
 
 
         [TestInitialize]
@@ -126,9 +126,9 @@ namespace CloudTests.IssueTests
         public async Task AuthorizedVote_MissingVoteData_Returns_ErrorResponses()
         {
 
-            string email = Users.TestUser1.Email!;
-            string password = Users.TestUser1Password;
-            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
+            var (user, password) = Users.GetRandomAppUser();
+            AppUser testUser = Users.CreateTestUser(_db, user, password);
+            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password);
             Users.LoginUser(_env, testUser);
 
             string url = "/issue/vote";
@@ -161,9 +161,9 @@ namespace CloudTests.IssueTests
         public async Task AuthorizedVote_VotesOutOfRange_Returns_ErrorResponses(int voteValue)
         {
 
-            string email = Users.TestUser1.Email!;
-            string password = Users.TestUser1Password;
-            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
+            var (user, password) = Users.GetRandomAppUser();
+            AppUser testUser = Users.CreateTestUser(_db, user, password);
+            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password);
             Users.LoginUser(_env, testUser);
 
             string url = "/issue/vote";
@@ -191,13 +191,10 @@ namespace CloudTests.IssueTests
         public async Task AuthorizedVote_SuccessfulVote_Returns_SuccessResponse()
         {
             // Arrange
-            string email = Users.TestUser1.Email!;
-            string password = Users.TestUser1Password;
-            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
-          
-
+            var (user, password) = Users.GetRandomAppUser();
+            AppUser testUser = Users.CreateTestUser(_db, user, password);
             // Act - Attempt to login via the endpoint
-            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
+            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password); ;
 
             // Assert - Verify login was successful
             Assert.IsTrue(loginSuccess, "Login should be successful");
@@ -222,12 +219,11 @@ namespace CloudTests.IssueTests
         public async Task AuthorizedVote_InvalidIssueId_Returns_ErrorResponse()
         {
             // Arrange
-            string email = Users.TestUser1.Email!;
-            string password = Users.TestUser1Password;
-            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
+            var (user, password) = Users.GetRandomAppUser();
+            AppUser testUser = Users.CreateTestUser(_db, user, password);
 
             // Act - Attempt to login via the endpoint
-            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
+            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password);
 
             // Assert - Verify login was successful
             Assert.IsTrue(loginSuccess, "Login should be successful");

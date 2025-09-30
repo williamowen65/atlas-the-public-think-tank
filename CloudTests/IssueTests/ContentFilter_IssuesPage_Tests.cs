@@ -10,18 +10,13 @@ namespace CloudTests.IssueTests
     [TestClass]
     public class ContentFilter_IssuesPage_Tests
     {
-        private static HttpClient _client;
-        private static ApplicationDbContext _db;
-        private static TestEnvironment _env;
+        private HttpClient _client;
+        private ApplicationDbContext _db;
+        private TestEnvironment _env;
+
 
         [TestInitialize]
-        public async Task Setup()
-        {
-
-        }
-
-        [ClassInitialize]
-        public static void ClassInit(TestContext context)
+        public void Setup()
         {
             // Use the utility class to configure the test environment
             _env = new TestEnvironment();
@@ -29,11 +24,12 @@ namespace CloudTests.IssueTests
             _client = _env._client;
         }
 
-        [ClassCleanup]
-        public static async Task ClassCleanup()
+        [TestCleanup]
+        public async Task ClassCleanup()
         {
             await TestingUtilityMethods.deleteDatabase(_client, _db);
         }
+
 
 
 

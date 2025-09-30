@@ -18,14 +18,16 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         private readonly ILogger _cacheLogger;
         private readonly IFilterIdSetRepository _filterIdSetRepository;
         private readonly IConfiguration _configuration;
+        private readonly CacheHelper _cacheHelper;
 
-        public IssueCacheRepository(IIssueRepository inner, IMemoryCache cache, ILoggerFactory loggerFactory, IFilterIdSetRepository filterIdSetRepository, IConfiguration configuration)
+        public IssueCacheRepository(IIssueRepository inner, IMemoryCache cache, ILoggerFactory loggerFactory, IFilterIdSetRepository filterIdSetRepository, IConfiguration configuration, CacheHelper cacheHelper)
         {
             _cache = cache;
             _inner = inner;
             _cacheLogger = loggerFactory.CreateLogger("CacheLog");
             _filterIdSetRepository = filterIdSetRepository;
             _configuration = configuration;
+            _cacheHelper = cacheHelper;
         }
 
 
@@ -98,23 +100,23 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
             if (issue.ParentIssueID != null) {
                 // Clear CacheHelper.CacheKeysPrefix.FeedIds.SubIssueOfIssue cache for parent issue
-                CacheHelper.ClearSubIssueFeedIdsForIssue((Guid)issue.ParentIssueID);
-                CacheHelper.ClearContentCountSubIssuesForIssue((Guid)issue.ParentIssueID);
+                _cacheHelper.ClearSubIssueFeedIdsForIssue((Guid)issue.ParentIssueID);
+                _cacheHelper.ClearContentCountSubIssuesForIssue((Guid)issue.ParentIssueID);
             }
             if(issue.ParentSolutionID != null)
             { 
-                CacheHelper.ClearSubIssueFeedIdsForSolution((Guid)issue.ParentSolutionID);
-                CacheHelper.ClearContentCountSubIssuesForSolution((Guid)issue.ParentSolutionID);
+                _cacheHelper.ClearSubIssueFeedIdsForSolution((Guid)issue.ParentSolutionID);
+                _cacheHelper.ClearContentCountSubIssuesForSolution((Guid)issue.ParentSolutionID);
             }
 
             // Main page
-            CacheHelper.ClearContentCountForMainPage();
-            CacheHelper.ClearMainPageFeedIds();
+            _cacheHelper.ClearContentCountForMainPage();
+            _cacheHelper.ClearMainPageFeedIds();
 
             // User Profile FeedId
-            CacheHelper.ClearIssueFeedIdsForUser(issue.AuthorID);
+            _cacheHelper.ClearIssueFeedIdsForUser(issue.AuthorID);
             // User Profile Content count
-            CacheHelper.ClearContentCountIssuesForUser(issue.AuthorID);
+            _cacheHelper.ClearContentCountIssuesForUser(issue.AuthorID);
             #endregion
 
             return await _inner.AddIssueAsync(issue);
@@ -154,30 +156,30 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
             // Content Version History
             // Note: This method may be better suited to be Update instead of clear.
-            CacheHelper.ClearIssueContentVersionHistoryCache(issue.IssueID);
+            _cacheHelper.ClearIssueContentVersionHistoryCache(issue.IssueID);
 
             // User Profile Page
             //If the user updates a post from Draft to Published the feed should be updated
-            CacheHelper.ClearIssueFeedIdsForUser(issue.AuthorID);
-            CacheHelper.ClearContentCountIssuesForUser(issue.AuthorID);
+            _cacheHelper.ClearIssueFeedIdsForUser(issue.AuthorID);
+            _cacheHelper.ClearContentCountIssuesForUser(issue.AuthorID);
 
             // Main Page
-            CacheHelper.ClearContentCountForMainPage(); 
-            CacheHelper.ClearMainPageFeedIds();
+            _cacheHelper.ClearContentCountForMainPage(); 
+            _cacheHelper.ClearMainPageFeedIds();
 
             // Read Issue Page
             if (issue.ParentIssueID != null)
             { 
                 // Clear CacheHelper.CacheKeysPrefix.FeedIds.SubIssueOfIssue cache for parent issue
-                CacheHelper.ClearSubIssueFeedIdsForIssue((Guid)issue.ParentIssueID);
-                CacheHelper.ClearContentCountSubIssuesForIssue((Guid)issue.ParentIssueID);
+                _cacheHelper.ClearSubIssueFeedIdsForIssue((Guid)issue.ParentIssueID);
+                _cacheHelper.ClearContentCountSubIssuesForIssue((Guid)issue.ParentIssueID);
             }
 
             // Read Solution Page
             if (issue.ParentSolutionID != null)
             {
-                CacheHelper.ClearSubIssueFeedIdsForSolution((Guid)issue.ParentSolutionID);
-                CacheHelper.ClearContentCountSubIssuesForSolution((Guid)issue.ParentSolutionID);
+                _cacheHelper.ClearSubIssueFeedIdsForSolution((Guid)issue.ParentSolutionID);
+                _cacheHelper.ClearContentCountSubIssuesForSolution((Guid)issue.ParentSolutionID);
             }
             #endregion
 

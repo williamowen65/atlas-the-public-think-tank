@@ -27,10 +27,11 @@ namespace CloudTests.UserTests
     {
         #region Test setup
 
-        private static HttpClient _client;
-        private static ApplicationDbContext _db;
-        private static TestEnvironment _env;
+        private HttpClient _client;
+        private ApplicationDbContext _db;
+        private TestEnvironment _env;
         private TestingCRUDHelper _testingCRUDHelper;
+        private Read _read;
 
 
         [TestInitialize]
@@ -48,6 +49,7 @@ namespace CloudTests.UserTests
             _db = _env._db;
             _client = _env._client;
             _testingCRUDHelper = new TestingCRUDHelper(_env);
+            _read = _env._read;
 
             // Create and login user
             AppUser testUser = Users.CreateTestUser(_db, TestDraftUser, TestDraftPassword);
@@ -99,7 +101,7 @@ namespace CloudTests.UserTests
         public async Task User_CanCreateDraftIssue_AndThatDraftIsNotInMainFeed()
         {
             var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Draft);
-            ContentItems_Paginated_ReadVM paginatedResponse = await Read.PaginatedMainContentFeed(new ContentFilter());
+            ContentItems_Paginated_ReadVM paginatedResponse = await _read.PaginatedMainContentFeed(new ContentFilter());
             Assert.IsTrue(paginatedResponse.TotalCount == 0, "There should be no main content items");
 
         }
@@ -180,7 +182,7 @@ namespace CloudTests.UserTests
         {
             // Create draft issue
             var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Draft);
-            ContentItems_Paginated_ReadVM paginatedResponse = await Read.PaginatedMainContentFeed(new ContentFilter());
+            ContentItems_Paginated_ReadVM paginatedResponse = await _read.PaginatedMainContentFeed(new ContentFilter());
             Assert.IsTrue(paginatedResponse.TotalCount == 0, "There should be no main content items");
 
             // Content Counts in drafts should be accurate
@@ -200,7 +202,7 @@ namespace CloudTests.UserTests
             
             
             // Content can be viewed in main content
-            ContentItems_Paginated_ReadVM paginatedResponse2 = await Read.PaginatedMainContentFeed(new ContentFilter());
+            ContentItems_Paginated_ReadVM paginatedResponse2 = await _read.PaginatedMainContentFeed(new ContentFilter());
             Assert.IsTrue(paginatedResponse2.TotalCount == 1, "There should be one main content items");
 
             // Content Counts in drafts should be accurate

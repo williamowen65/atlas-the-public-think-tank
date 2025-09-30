@@ -3,6 +3,7 @@
 @using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue
 @using atlas_the_public_think_tank.Data.CRUD
 @using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution
+@inject Read _read;
 
 @model List<SearchResult>
 
@@ -14,12 +15,12 @@
         {
             @if (result.Type == "Issue")
             {
-                Issue_ReadVM? issue = await Read.Issue(result.Id, new ContentFilter());
+                Issue_ReadVM? issue = await _read.Issue(result.Id, new ContentFilter());
                 @await Html.PartialAsync("~/Views/Issue/_issue-card.cshtml", issue)
             } else
             {
 
-                Solution_ReadVM? solution = await Read.Solution(result.Id, new ContentFilter());
+                Solution_ReadVM? solution = await _read.Solution(result.Id, new ContentFilter());
                 @await Html.PartialAsync("~/Views/Solution/_solution-card.cshtml", solution)
             }
         }

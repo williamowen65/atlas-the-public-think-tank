@@ -13,32 +13,26 @@ namespace CloudTests.IssueTests
     [TestClass]
     public class SeedData_Issue_Tests
     {
-        private static HttpClient _client;
-        private static ApplicationDbContext _db;
-        private static TestEnvironment _env;
+        private HttpClient _client;
+        private ApplicationDbContext _db;
+        private TestEnvironment _env;
+
 
         [TestInitialize]
-        public async Task Setup()
+        public void Setup()
         {
-
-        }
-
-        [ClassInitialize]
-        public static void ClassInit(TestContext context)
-        {
-
             // Use the utility class to configure the test environment
             _env = new TestEnvironment();
             _db = _env._db;
             _client = _env._client;
-
         }
 
-        [ClassCleanup]
-        public static async Task ClassCleanup()
+        [TestCleanup]
+        public async Task ClassCleanup()
         {
             await TestingUtilityMethods.deleteDatabase(_client, _db);
         }
+
 
 
         [DataTestMethod]

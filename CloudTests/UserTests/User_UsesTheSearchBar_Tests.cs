@@ -21,14 +21,13 @@ namespace CloudTests.UserTests
     [TestClass]
     public class User_UsesTheSearchBar_Tests
     {
-        private static HttpClient _client;
-        private static ApplicationDbContext _db;
-        private static TestEnvironment _env;
+        private HttpClient _client;
+        private ApplicationDbContext _db;
+        private TestEnvironment _env;
 
-        [ClassInitialize]
-        public static async Task ClassInit(TestContext context)
+        [TestInitialize]
+        public void Setup()
         {
-
             string appSettings = @"
             {
                 ""ApplySeedData"": true,
@@ -40,14 +39,14 @@ namespace CloudTests.UserTests
             _env = new TestEnvironment(appSettings);
             _db = _env._db;
             _client = _env._client;
-
         }
 
-        [ClassCleanup]
-        public static async Task ClassCleanup()
+        [TestCleanup]
+        public async Task ClassCleanup()
         {
             await TestingUtilityMethods.deleteDatabase(_client, _db);
         }
+
 
         [TestMethod]
         public async Task User_CanSeeA_SearchBar()
@@ -93,8 +92,8 @@ namespace CloudTests.UserTests
             throw new TimeoutException("Full-text index was not ready within the timeout period.");
         }
 
-        // Usage in the test method
         [TestMethod]
+        //[DoNotParallelize]
         public async Task User_Searching_ReturnsDropdown()
         {
 

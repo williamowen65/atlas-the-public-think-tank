@@ -17,10 +17,12 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
     public class IssueRepository : IIssueRepository
     {
         private ApplicationDbContext _context;
-        private static IServiceProvider? _serviceProvider;
-        public IssueRepository(ApplicationDbContext context, IServiceProvider serviceProvider) { 
+        private IServiceProvider? _serviceProvider;
+        private readonly Read _read;
+        public IssueRepository(ApplicationDbContext context, IServiceProvider serviceProvider, Read read) { 
             _context = context;
             _serviceProvider = serviceProvider;
+            _read = read;
         }
 
         /// <summary>
@@ -62,7 +64,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             await _context.SaveChangesAsync();
 
             // Create and return the view model (also sets the cache)
-            return await Read.Issue(issue.IssueID, new ContentFilter());
+            return await _read.Issue(issue.IssueID, new ContentFilter());
         }
 
         public async Task<Issue_ReadVM?> UpdateIssueAsync(Issue issue)
@@ -70,7 +72,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             _context.Issues.Update(issue);
             await _context.SaveChangesAsync();
 
-            return await Read.Issue(issue.IssueID, new ContentFilter());
+            return await _read.Issue(issue.IssueID, new ContentFilter());
         }
 
         public async Task<int> GetIssueVersionHistoryCount(Guid issueID)

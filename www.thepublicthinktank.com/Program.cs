@@ -107,25 +107,29 @@ public class Program
         });
 
         builder.Services.AddScoped<UserHistoryProcessor>();
+        builder.Services.AddScoped<CacheHelper>();
+        builder.Services.AddScoped<Create>();
+        builder.Services.AddScoped<Read>();
+        builder.Services.AddScoped<Upsert>();
+        builder.Services.AddScoped<Update>();
+
+        builder.Services.AddScoped<FilterQueryService>();
+        builder.Services.AddScoped<CustomMigrationRunner>();
+
+
 
         var app = builder.Build();
 
-
-
         
-        // Initialize the static Read class with the service provider
-        Create.Initialize(app.Services);
-        Read.Initialize(app.Services);
-        Upsert.Initialize(app.Services);
-        Update.Initialize(app.Services);
-        // Get the IMemoryCache service from the service provider
-        var memoryCache = app.Services.GetRequiredService<IMemoryCache>();
-        // Initialize the CacheHelper with the memory cache
-        CacheHelper.Initialize(memoryCache);
+        
         // Add custom migrations (Full Text Search)
-        CustomMigrationRunner.RunUp(app.Services);
+        using (var scope = app.Services.CreateScope())
+        {
+            var migrationRunner = scope.ServiceProvider.GetRequiredService<CustomMigrationRunner>();
+            migrationRunner.RunUp();
+        }
 
-        FilterQueryService.Initialize(builder.Configuration);
+        //FilterQueryService.Initialize(builder.Configuration);
 
 
         // Apply seed data needs to be after the CRUD Initializers

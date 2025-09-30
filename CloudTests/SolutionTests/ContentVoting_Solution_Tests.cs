@@ -26,13 +26,13 @@ namespace CloudTests.SolutionTests
     [TestClass]
     public class ContentVoting_Solution_Tests
     {
-        private static HttpClient _client;
-        private static ApplicationDbContext _db;
-        private static TestEnvironment _env;
+        private HttpClient _client;
+        private ApplicationDbContext _db;
+        private TestEnvironment _env;
 
 
         [TestInitialize]
-        public async Task Setup()
+        public void Setup()
         {
             // Use the utility class to configure the test environment
             _env = new TestEnvironment();
@@ -128,14 +128,9 @@ namespace CloudTests.SolutionTests
         public async Task AuthorizedVote_MissingVoteData_Returns_ErrorResponses()
         {
 
-            string email = Users.TestUser1.Email!;
-            string password = Users.TestUser1Password;
-            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
-
-            // Act - Attempt to login via the endpoint
-            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
-
-            // Assert - Verify login was successful
+            var (user, password) = Users.GetRandomAppUser();
+            AppUser testUser = Users.CreateTestUser(_db, user, password);
+            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
 
             string url = "/solution/vote";
@@ -168,10 +163,10 @@ namespace CloudTests.SolutionTests
         public async Task AuthorizedVote_VotesOutOfRange_Returns_ErrorResponses(int voteValue)
         {
 
-            string email = Users.TestUser1.Email!;
-            string password = Users.TestUser1Password;
-            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
-            Users.LoginUser(_env, testUser);
+            var (user, password) = Users.GetRandomAppUser();
+            AppUser testUser = Users.CreateTestUser(_db, user, password);
+            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password);
+            Assert.IsTrue(loginSuccess, "Login should be successful");
 
             string url = "/solution/vote";
             // Create a payload with vote data
@@ -198,14 +193,9 @@ namespace CloudTests.SolutionTests
         public async Task AuthorizedVote_SuccessfulVote_Returns_SuccessResponse()
         {
             // Arrange
-            string email = Users.TestUser1.Email!;
-            string password = Users.TestUser1Password;
-            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
-
-            // Act - Attempt to login via the endpoint
-            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
-
-            // Assert - Verify login was successful
+            var (user, password) = Users.GetRandomAppUser();
+            AppUser testUser = Users.CreateTestUser(_db, user, password);
+            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
 
             string url = "/solution/vote";
@@ -228,14 +218,9 @@ namespace CloudTests.SolutionTests
         public async Task AuthorizedVote_InvalidSolutionId_Returns_ErrorResponse()
         {
             // Arrange
-            string email = Users.TestUser1.Email!;
-            string password = Users.TestUser1Password;
-            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
-
-            // Act - Attempt to login via the endpoint
-            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
-
-            // Assert - Verify login was successful
+            var (user, password) = Users.GetRandomAppUser();
+            AppUser testUser = Users.CreateTestUser(_db, user, password);
+            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
 
             string url = "/solution/vote";

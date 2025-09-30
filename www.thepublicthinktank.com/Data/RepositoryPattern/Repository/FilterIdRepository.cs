@@ -13,9 +13,11 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
     {
 
         private ApplicationDbContext _context;
-        public FilterIdRepository(ApplicationDbContext context)
+        private readonly FilterQueryService _filterQueryService;
+        public FilterIdRepository(ApplicationDbContext context, FilterQueryService filterQueryService)
         {
             _context = context;
+            _filterQueryService = filterQueryService;
         }
 
         public async Task<List<Guid>?> GetPagedSolutionIdsOfIssueById(Guid issueId, ContentFilter filter, int pageNumber = 1, int pageSize = 3)
@@ -24,7 +26,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
                .Where(i => i.ParentIssueID == issueId);
 
             // TODO Apply Filter
-            var filteredQuery = FilterQueryService.ApplySolutionFilters(query, filter);
+            var filteredQuery = _filterQueryService.ApplySolutionFilters(query, filter);
             // TODO Apply Weighted Score  / Sorting
             var sortedQuery = SortQueryService.ApplyWeightedScoreSorting(filteredQuery);
 
@@ -42,7 +44,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
                 .Where(i => i.ParentIssueID == issueId);
 
             // TODO Apply Filter / Sorting
-            var filteredQuery = FilterQueryService.ApplyIssueFilters(query, filter);
+            var filteredQuery = _filterQueryService.ApplyIssueFilters(query, filter);
             // TODO Apply Weighted Score
             var sortedQuery = SortQueryService.ApplyWeightedScoreSorting(filteredQuery);
 
@@ -61,7 +63,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
                 .Where(i => i.ParentSolutionID == solutionId);
 
             // TODO Apply Filter / Sorting (NOTE: Using Issue filters because working with sub issues)
-            var filteredQuery = FilterQueryService.ApplyIssueFilters(query, filter);
+            var filteredQuery = _filterQueryService.ApplyIssueFilters(query, filter);
             // TODO Apply Weighted Score
             var sortedQuery = SortQueryService.ApplyWeightedScoreSorting(filteredQuery);
 
@@ -80,7 +82,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
 
             var query = _context.Issues
                 .Where(i => i.ParentIssueID == issueId);
-            var filteredQuery = FilterQueryService.ApplyIssueFilters(query, filter);
+            var filteredQuery = _filterQueryService.ApplyIssueFilters(query, filter);
 
             counts.AbsoluteCount = await query.CountAsync();
             counts.FilteredCount = await filteredQuery.CountAsync();
@@ -93,7 +95,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             var query = _context.Issues
                 .Where(i => i.ParentSolutionID == solutionId);
             // Note: Using issue filter since this is for sub issues
-            var filteredQuery = FilterQueryService.ApplyIssueFilters(query, filter);
+            var filteredQuery = _filterQueryService.ApplyIssueFilters(query, filter);
 
             counts.AbsoluteCount = await query.CountAsync();
             counts.FilteredCount  = await filteredQuery.CountAsync();
@@ -105,7 +107,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             ContentCount_VM counts = new ContentCount_VM();
             var query = _context.Solutions
                 .Where(i => i.ParentIssueID == solutionId);
-            var filteredQuery = FilterQueryService.ApplySolutionFilters(query, filter);
+            var filteredQuery = _filterQueryService.ApplySolutionFilters(query, filter);
 
             counts.AbsoluteCount = await query.CountAsync();
             counts.FilteredCount = await filteredQuery.CountAsync();
@@ -142,7 +144,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             // Combine queries
             var combinedQuery = issuesIndexQuery.Union(solutionsIndexQuery);
 
-            var filteredQuery = FilterQueryService.ApplyCombinedContentFilters(combinedQuery, filter);
+            var filteredQuery = _filterQueryService.ApplyCombinedContentFilters(combinedQuery, filter);
             var sortedQuery = SortQueryService.ApplyCombinedContentSorting(filteredQuery);
 
 
@@ -187,7 +189,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
 
             // Combine queries
             var combinedQuery = issuesIndexQuery.Union(solutionsIndexQuery);
-            var filteredQuery = FilterQueryService.ApplyCombinedContentFilters(combinedQuery, filter);
+            var filteredQuery = _filterQueryService.ApplyCombinedContentFilters(combinedQuery, filter);
 
             counts.AbsoluteCount = await combinedQuery.CountAsync();
             counts.FilteredCount = await filteredQuery.CountAsync();
@@ -201,7 +203,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             .Where(i => i.AuthorID == userId);
 
             // TODO Apply Filter / Sorting
-            var filteredQuery = FilterQueryService.ApplyIssueFilters(query, filter);
+            var filteredQuery = _filterQueryService.ApplyIssueFilters(query, filter);
             // TODO Apply Weighted Score
             var sortedQuery = SortQueryService.ApplyWeightedScoreSorting(filteredQuery);
 
@@ -219,7 +221,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             var query = _context.Issues
                 .Where(i => i.AuthorID == userId);
             // Note: Using issue filter since this is for sub issues
-            var filteredQuery = FilterQueryService.ApplyIssueFilters(query, filter);
+            var filteredQuery = _filterQueryService.ApplyIssueFilters(query, filter);
 
             counts.AbsoluteCount = await query.CountAsync();
             counts.FilteredCount = await filteredQuery.CountAsync();
@@ -233,7 +235,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             .Where(i => i.AuthorID == userId);
 
             // TODO Apply Filter / Sorting
-            var filteredQuery = FilterQueryService.ApplySolutionFilters(query, filter);
+            var filteredQuery = _filterQueryService.ApplySolutionFilters(query, filter);
             // TODO Apply Weighted Score
             var sortedQuery = SortQueryService.ApplyWeightedScoreSorting(filteredQuery);
 
@@ -251,7 +253,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Repository
             var query = _context.Solutions
                 .Where(i => i.AuthorID == userId);
             // Note: Using issue filter since this is for sub issues
-            var filteredQuery = FilterQueryService.ApplySolutionFilters(query, filter);
+            var filteredQuery = _filterQueryService.ApplySolutionFilters(query, filter);
 
             counts.AbsoluteCount = await query.CountAsync();
             counts.FilteredCount = await filteredQuery.CountAsync();

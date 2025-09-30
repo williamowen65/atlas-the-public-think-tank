@@ -1,4 +1,5 @@
-﻿using atlas_the_public_think_tank.Data.DbContext;
+﻿using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+using atlas_the_public_think_tank.Data.DbContext;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues;
 using atlas_the_public_think_tank.Data.SeedData.SeedIssues.Data;
@@ -13,30 +14,27 @@ namespace CloudTests.HomePageTests
     [TestClass]
     public class ContentFilter_HomePage_Tests
     {
-        private static HttpClient _client;
-        private static ApplicationDbContext _db;
-        private static TestEnvironment _env;
+        private HttpClient _client;
+        private ApplicationDbContext _db;
+        private TestEnvironment _env;
+
 
         [TestInitialize]
-        public async Task Setup()
-        {
-
-        }
-
-        [ClassInitialize]
-        public static void ClassInit(TestContext context)
+        public void Setup()
         {
             // Use the utility class to configure the test environment
             _env = new TestEnvironment();
             _db = _env._db;
             _client = _env._client;
         }
+       
 
-        [ClassCleanup]
-        public static async Task ClassCleanup()
+        [TestCleanup]
+        public async Task TestCleanup()
         {
             await TestingUtilityMethods.deleteDatabase(_client, _db);
         }
+
 
 
         [TestMethod]
@@ -86,7 +84,7 @@ namespace CloudTests.HomePageTests
 
             string expectedCountDisplay = $"({Math.Min(3, expectedCount)}/{expectedCount})";
             Console.WriteLine($"AverageVote Filter Of {min} to {max}: {expectedCountDisplay}");
-            Assert.IsTrue(buttonText.Contains(expectedCountDisplay));
+            Assert.IsTrue(buttonText.Contains(expectedCountDisplay), $"expected {expectedCountDisplay}, but got button text with {buttonText}");
         }
 
 

@@ -23,6 +23,7 @@ using CloudTests.TestingSetup.TestingData;
 using Humanizer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.CodeAnalysis;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -37,10 +38,11 @@ namespace CloudTests.CacheTests
     [TestClass]
     public class Cache_Issue_Tests
     {
-        private static HttpClient _client;
-        private static ApplicationDbContext _db;
-        private static TestEnvironment _env;
+        private HttpClient _client;
+        private ApplicationDbContext _db;
+        private TestEnvironment _env;
         private TestingCRUDHelper _testingCRUDHelper;
+        private Read _read;
 
         [TestInitialize]
         public async Task Setup()
@@ -57,15 +59,16 @@ namespace CloudTests.CacheTests
             _db = _env._db;
             _client = _env._client;
             _testingCRUDHelper = new TestingCRUDHelper(_env);
+            _read = _env._read;
+            
 
 
-            // Create and login user
-            string email = Users.TestUser1.Email!;
-            string password = Users.TestUser1Password;
-            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser1, password);
-
-            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email, password);
+            var (user, password) = Users.GetRandomAppUser();
+            AppUser testUser = Users.CreateTestUser(_db, user, password);
+            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
+
+            Console.WriteLine($"\nusing Db {_env._connectionString}\n");
 
         }
 
@@ -145,13 +148,13 @@ namespace CloudTests.CacheTests
             var (jsonDoc, issueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Published);
 
             // Reading populates the cache with initial data
-            await Read.Issue(new Guid(issueId), new ContentFilter());
+            await _read.Issue(new Guid(issueId), new ContentFilter());
 
             // Updating an issue should update the cache
             var (updatedJsonDoc, _issueId, updatedTitle, updatedContent, updatedScope) = await _testingCRUDHelper.EditTestIssue(issueId, scope.ScopeID, ContentStatus.Published);
 
             // Shouldn't even need to re-read the issue
-            await Read.Issue(new Guid(issueId), new ContentFilter());
+            await _read.Issue(new Guid(issueId), new ContentFilter());
 
             string cacheKey = $"{CacheKeyPrefix.Issue}:{issueId}";
             string url = $"/api/cache-log/entry?key={cacheKey}";
@@ -168,9 +171,9 @@ namespace CloudTests.CacheTests
             var (jsonDoc, issueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Published);
 
             // Get an Issue_ReadVM object which is used by Read.IssueVersionHistory
-            Issue_ReadVM? issue = await Read.Issue(new Guid(issueId), new ContentFilter());
+            Issue_ReadVM? issue = await _read.Issue(new Guid(issueId), new ContentFilter());
             // Specifically populate the version history cache for the issue by reading
-            List<ContentItem_ReadVM> contentItemVersions = await Read.IssueVersionHistory(issue!);
+            List<ContentItem_ReadVM> contentItemVersions = await _read.IssueVersionHistory(issue!);
 
             // Assemble Cache key and fetch data
             string cacheKey = $"{CacheKeyPrefix.IssueVersionHistory}:{issueId}";
@@ -184,7 +187,7 @@ namespace CloudTests.CacheTests
             var (updatedJsonDoc, _issueId, updatedTitle, updatedContent, updatedScope) = await _testingCRUDHelper.EditTestIssue(issueId, scope.ScopeID, ContentStatus.Published);
             
             // Repopulate the version history cache by reading
-            List<ContentItem_ReadVM> contentItemVersions2 = await Read.IssueVersionHistory(issue!);
+            List<ContentItem_ReadVM> contentItemVersions2 = await _read.IssueVersionHistory(issue!);
 
             // Fetch Data
             var cacheEntry2 = await _env.fetchJson<CacheEntryIssueVersionHistoryDTO>(url);
@@ -234,11 +237,10 @@ namespace CloudTests.CacheTests
             Assert.IsTrue(voteStats2.IssueVotes.Values.Average(v => v.VoteValue) == voteResponse2.Average);
 
             //// Create and login user
-            string email2 = Users.TestUser2.Email!;
-            string password2 = Users.TestUser2Password;
-            AppUser testUser = Users.CreateTestUser(_db, Users.TestUser2, password2);
+            var (user, password) = Users.GetRandomAppUser();
+            AppUser testUser = Users.CreateTestUser(_db, user, password);
 
-            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, email2, password2);
+            bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
 
             // Updating a vote should update through the cache (No need to call Read.Issue to populate the cache)
@@ -268,7 +270,7 @@ namespace CloudTests.CacheTests
             var (subIssueJsonDoc, subIssueId, subIssueTitle, subIssueContent, subIssueScope) = await _testingCRUDHelper.CreateTestSubIssue(ContentStatus.Published, new Guid(parentIssueId));
            
             // Read this issue to repopulate cache
-            Issue_ReadVM? issueVM = await Read.Issue(new Guid(parentIssueId!), new ContentFilter());
+            Issue_ReadVM? issueVM = await _read.Issue(new Guid(parentIssueId!), new ContentFilter());
 
             // Assemble cache key for CacheHelper.CacheKeysPrefix.FeedIds.SubIssueOfIssue
             ContentFilter filter = new ContentFilter();
@@ -291,7 +293,7 @@ namespace CloudTests.CacheTests
             var (subIssueJsonDoc1, subIssueId1, subIssueTitle1, subIssueContent1, subIssueScope1) = await _testingCRUDHelper.CreateTestSubIssue(ContentStatus.Published, new Guid(parentIssueId));
 
             // Read this issue to repopulate cache
-            await Read.Issue(new Guid(parentIssueId!), new ContentFilter());
+            await _read.Issue(new Guid(parentIssueId!), new ContentFilter());
 
             // Assemble cache key for CacheKeyPrefix.SubIssueForIssueContentCount
             ContentFilter filter = new ContentFilter();
@@ -311,7 +313,7 @@ namespace CloudTests.CacheTests
             var (subIssueJsonDoc2, subIssueId2, subIssueTitle2, subIssueContent2, subIssueScope2) = await _testingCRUDHelper.CreateTestSubIssue(ContentStatus.Published, new Guid(parentIssueId));
           
             // Read this issue to repopulate cache
-            await Read.Issue(new Guid(parentIssueId!), new ContentFilter());
+            await _read.Issue(new Guid(parentIssueId!), new ContentFilter());
 
             // Fetch data
             var cacheEntry2 = await _env.fetchJson<CacheEntry_ContentCountDTO>(url);
@@ -331,7 +333,7 @@ namespace CloudTests.CacheTests
             var (subIssueJsonDoc1, subIssueId1, subIssueTitle1, subIssueContent1, subIssueScope1) = await _testingCRUDHelper.CreateTestSubIssue(ContentStatus.Published, new Guid(parentIssueId));
 
             // Read this issue to repopulate cache
-            await Read.Issue(new Guid(parentIssueId!), new ContentFilter());
+            await _read.Issue(new Guid(parentIssueId!), new ContentFilter());
 
             // Assemble key
             ContentFilter filter = new ContentFilter();
@@ -354,7 +356,7 @@ namespace CloudTests.CacheTests
             };
 
             // Read this issue to repopulate cache
-            await Read.Issue(new Guid(parentIssueId!), updatedFilter);
+            await _read.Issue(new Guid(parentIssueId!), updatedFilter);
 
             // Assemble new cache key with new filter
             string filterCacheString2 = updatedFilter.ToCacheString();
@@ -383,13 +385,13 @@ namespace CloudTests.CacheTests
 
             ContentFilter filter = new ContentFilter();
             // Read this issue to populate cache
-            await Read.Issue(new Guid(parentIssueId!), filter);
+            await _read.Issue(new Guid(parentIssueId!), filter);
 
             // Cast a vote on sub-issue 2 (This should clear CacheHelper.CacheKeysPrefix.FeedIds.SubIssueOfIssue for this the parent issue of this sub-issue)
             await _testingCRUDHelper.CreateTestVoteOnIssue(subIssueId2, 10);
 
             // Repopulate cache
-            await Read.Issue(new Guid(parentIssueId!), filter);
+            await _read.Issue(new Guid(parentIssueId!), filter);
 
             string filterCacheString = filter.ToCacheString();
             int pageNumber = 1;
@@ -415,7 +417,7 @@ namespace CloudTests.CacheTests
             var (solutionJsonDoc, solutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId, ContentStatus.Published);
 
             // Read this issue to repopulate cache
-            Issue_ReadVM? issueVM = await Read.Issue(new Guid(parentIssueId!), new ContentFilter());
+            Issue_ReadVM? issueVM = await _read.Issue(new Guid(parentIssueId!), new ContentFilter());
 
             // Assemble cache key for CacheKeyPrefix.SolutionsOfIssueFeedIds
             ContentFilter filter = new ContentFilter();
@@ -438,7 +440,7 @@ namespace CloudTests.CacheTests
             var (solutionJsonDoc1, solutionId1, solutionTitle1, solutionContent1, solutionScope1) = await _testingCRUDHelper.CreateTestSolution(parentIssueId, ContentStatus.Published);
 
             // Read this issue to repopulate cache
-            await Read.Issue(new Guid(parentIssueId!), new ContentFilter());
+            await _read.Issue(new Guid(parentIssueId!), new ContentFilter());
 
             // Assemble cache key for CacheKeyPrefix.SolutionForIssueContentCount
             ContentFilter filter = new ContentFilter();
@@ -458,7 +460,7 @@ namespace CloudTests.CacheTests
             var (solutionJsonDoc2, solutionId2, solutionTitle2, solutionContent2, solutionScope2) = await _testingCRUDHelper.CreateTestSolution(parentIssueId, ContentStatus.Published);
 
             // Read this issue to repopulate cache
-            await Read.Issue(new Guid(parentIssueId!), new ContentFilter());
+            await _read.Issue(new Guid(parentIssueId!), new ContentFilter());
 
             // Fetch data
             var cacheEntry2 = await _env.fetchJson<CacheEntry_ContentCountDTO>(url);
@@ -477,7 +479,7 @@ namespace CloudTests.CacheTests
             var (subIssueJsonDoc1, subIssueId1, subIssueTitle1, subIssueContent1, subIssueScope1) = await _testingCRUDHelper.CreateTestSolution(parentIssueId, ContentStatus.Published);
 
             // Read this issue to repopulate cache
-            await Read.Issue(new Guid(parentIssueId!), new ContentFilter());
+            await _read.Issue(new Guid(parentIssueId!), new ContentFilter());
 
             // Assemble key
             ContentFilter filter = new ContentFilter();
@@ -499,7 +501,7 @@ namespace CloudTests.CacheTests
             };
 
             // Read this issue to repopulate cache
-            await Read.Issue(new Guid(parentIssueId!), updatedFilter);
+            await _read.Issue(new Guid(parentIssueId!), updatedFilter);
 
             // Assemble new cache key with new filter
             string filterCacheString2 = updatedFilter.ToCacheString();
@@ -526,13 +528,13 @@ namespace CloudTests.CacheTests
 
             ContentFilter filter = new ContentFilter();
             // Read this issue to populate cache
-            await Read.Issue(new Guid(parentIssueId!), filter);
+            await _read.Issue(new Guid(parentIssueId!), filter);
 
             // Cast a vote on sub-issue 2 (This should clear CacheHelper.CacheKeysPrefix.FeedIds.SubIssueOfIssue for this the parent issue of this sub-issue)
             await _testingCRUDHelper.CreateTestVoteOnSolution(solutionId2, 10);
 
             // Repopulate cache
-            await Read.Issue(new Guid(parentIssueId!), filter);
+            await _read.Issue(new Guid(parentIssueId!), filter);
 
             string filterCacheString = filter.ToCacheString();
             int pageNumber = 1;

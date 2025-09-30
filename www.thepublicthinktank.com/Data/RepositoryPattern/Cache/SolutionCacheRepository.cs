@@ -21,14 +21,16 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
         private readonly ILogger _cacheLogger;
         private readonly IFilterIdSetRepository _filterIdSetRepository;
         private readonly IConfiguration _configuration;
+        private readonly CacheHelper _cacheHelper;
 
-        public SolutionCacheRepository(ISolutionRepository inner, IMemoryCache cache, ILoggerFactory loggerFactory, IFilterIdSetRepository filterIdSetRepository, IConfiguration configuration)
+        public SolutionCacheRepository(ISolutionRepository inner, IMemoryCache cache, ILoggerFactory loggerFactory, IFilterIdSetRepository filterIdSetRepository, IConfiguration configuration, CacheHelper cacheHelper)
         {
             _cache = cache;
             _inner = inner;
             _cacheLogger = loggerFactory.CreateLogger("CacheLog");
             _filterIdSetRepository = filterIdSetRepository;
             _configuration = configuration;
+            _cacheHelper = cacheHelper;
         }
 
         /// <summary>
@@ -77,16 +79,16 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
             // TODO Improve cache validation on a per ContentStatus basis (draft, published, etc)
             #region cache invalidation
 
-            CacheHelper.ClearSolutionFeedIdsForIssue((Guid)solution.ParentIssueID);
-            CacheHelper.ClearContentCountSolutionsForIssue((Guid)solution.ParentIssueID);
+            _cacheHelper.ClearSolutionFeedIdsForIssue((Guid)solution.ParentIssueID);
+            _cacheHelper.ClearContentCountSolutionsForIssue((Guid)solution.ParentIssueID);
 
             // Main page
-            CacheHelper.ClearContentCountForMainPage();
-            CacheHelper.ClearMainPageFeedIds();
+            _cacheHelper.ClearContentCountForMainPage();
+            _cacheHelper.ClearMainPageFeedIds();
 
             // User profile page
-            CacheHelper.ClearSolutionFeedIdsForUser(solution.AuthorID);
-            CacheHelper.ClearContentCountSolutionsForUser(solution.AuthorID);
+            _cacheHelper.ClearSolutionFeedIdsForUser(solution.AuthorID);
+            _cacheHelper.ClearContentCountSolutionsForUser(solution.AuthorID);
 
             #endregion
 
@@ -126,20 +128,20 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
 
             // Content Version History
             // Note: This method may be better suited to be Update instead of clear.
-            CacheHelper.ClearSolutionContentVersionHistoryCache(solution.SolutionID);
+            _cacheHelper.ClearSolutionContentVersionHistoryCache(solution.SolutionID);
 
             // User Profile Page
             //If the user updates a post from Draft to Published the feed should be updated
-            CacheHelper.ClearSolutionFeedIdsForUser(solution.AuthorID);
-            CacheHelper.ClearContentCountSolutionsForUser(solution.AuthorID);
+            _cacheHelper.ClearSolutionFeedIdsForUser(solution.AuthorID);
+            _cacheHelper.ClearContentCountSolutionsForUser(solution.AuthorID);
 
             // Main Page
-            CacheHelper.ClearContentCountForMainPage();
-            CacheHelper.ClearMainPageFeedIds();
+            _cacheHelper.ClearContentCountForMainPage();
+            _cacheHelper.ClearMainPageFeedIds();
 
             // Read Issue Page
-            CacheHelper.ClearSubIssueFeedIdsForIssue((Guid)solution.ParentIssueID);
-            CacheHelper.ClearContentCountSubIssuesForIssue((Guid)solution.ParentIssueID);
+            _cacheHelper.ClearSubIssueFeedIdsForIssue((Guid)solution.ParentIssueID);
+            _cacheHelper.ClearContentCountSubIssuesForIssue((Guid)solution.ParentIssueID);
 
             #endregion
 
