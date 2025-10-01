@@ -7,6 +7,7 @@ using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.ContentItem_Common;
 using atlas_the_public_think_tank.Models.ViewModel.PageVM;
 using atlas_the_public_think_tank.Models.ViewModel.UI_VM;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 
 
@@ -16,9 +17,11 @@ namespace atlas_the_public_think_tank.Controllers
     {
 
         private readonly Read _read;
-        public RnDController(Read read) 
+        private readonly IEmailSender _emailSender;
+        public RnDController(Read read, IEmailSender emailSender) 
         {
             _read = read;
+            _emailSender = emailSender;
         }
 
         public IActionResult RnDCreateIssue()
@@ -90,6 +93,29 @@ namespace atlas_the_public_think_tank.Controllers
         {
             // this route is for observing this page, for making style updates.
             return NotFound();
+        }
+
+
+        [HttpPost]
+        [Route("/test-email")]
+        public async Task<IActionResult> TestEmail([FromBody] TestEmailRequest request)
+        {
+            try
+            {
+                await _emailSender.SendEmailAsync(request.To, request.Subject, request.Body);
+                return Ok(new { success = true, message = "Email sent successfully." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Failed to send email: {ex.Message}" });
+            }
+        }
+
+        public class TestEmailRequest
+        {
+            public string To { get; set; }
+            public string Subject { get; set; }
+            public string Body { get; set; }
         }
     }
 }

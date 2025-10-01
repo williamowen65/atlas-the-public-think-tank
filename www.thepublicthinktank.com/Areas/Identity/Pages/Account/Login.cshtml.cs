@@ -153,11 +153,6 @@ namespace atlas_the_public_think_tank.Areas.Identity.Pages.Account
                 {
                     _logger.LogInformation("User logged in.");
 
-                    //bool isTesting = _hostEnvironment.EnvironmentName == "Testing";
-                    //if (isTesting) {
-                    //    return Content("Logged in");
-                    //}
-
                     return LocalRedirect(returnUrl);
                 }
                 if (result.RequiresTwoFactor)

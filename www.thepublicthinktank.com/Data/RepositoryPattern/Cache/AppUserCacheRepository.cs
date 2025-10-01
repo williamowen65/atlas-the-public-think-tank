@@ -30,7 +30,7 @@ namespace atlas_the_public_think_tank.Data.RepositoryPattern.Cache
                 return await _inner.GetAppUser(UserId);
             }
 
-            var cacheKey = $"{CacheKeyPrefix.Solution}:{UserId}";
+            var cacheKey = $"{CacheKeyPrefix.AppUser}:{UserId}";
 
             if (_cache.TryGetValue(cacheKey, out AppUser_ReadVM? cachedAppUser))
             {

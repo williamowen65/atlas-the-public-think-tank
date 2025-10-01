@@ -2,15 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #nullable disable
 
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Text.Encodings.Web;
-using System.Threading;
-using System.Threading.Tasks;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+using atlas_the_public_think_tank.Email.Models;
+using atlas_the_public_think_tank.Utilities;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -19,6 +13,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Text.Encodings.Web;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace atlas_the_public_think_tank.Areas.Identity.Pages.Account
 {
@@ -140,8 +142,15 @@ namespace atlas_the_public_think_tank.Areas.Identity.Pages.Account
                         values: new { area = "Identity", userId = userId, code = code, returnUrl = returnUrl },
                         protocol: Request.Scheme);
 
-                    await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",
-                        $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+                    WelcomeEmailModel welcomeEmailModel = new WelcomeEmailModel()
+                    { 
+                        ConfirmationLink = callbackUrl,
+                        UserName = Input.UserName
+                    };
+
+                    string welcomeEmail = await RazorPageExtensions.RenderViewToStringAsync(this, "~/Email/Templates/WelcomeEmail.cshtml", welcomeEmailModel);
+
+                    await _emailSender.SendEmailAsync(Input.Email, "Confirm your email", welcomeEmail);
 
                     if (_userManager.Options.SignIn.RequireConfirmedAccount)
                     {
