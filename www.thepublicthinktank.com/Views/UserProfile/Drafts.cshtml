@@ -1,8 +1,16 @@
-﻿@using atlas_the_public_think_tank.Models.ViewModel.PageVM
+﻿@using Microsoft.AspNetCore.Identity
+@inject UserManager<AppUser> UserManager
+@using atlas_the_public_think_tank.Data.DatabaseEntities.Users
+@using atlas_the_public_think_tank.Models.ViewModel.PageVM
+@using atlas_the_public_think_tank.Models.ViewModel.UI_VM
 @model UserDraft_PageVM
 
 @{
     ViewData["Title"] = "Drafts";
+
+    // The user must be signed in already to be viewing this pages (safe to assume User is logged in)
+    string userId = UserManager.GetUserId(User)!;
+
 }
 
 <div class="container py-4">
@@ -23,7 +31,8 @@
                     aria-selected="true">
                 Issues
                 <span class="badge bg-secondary ms-1 issue-draft-count">
-                    @Model.paginatedUserIssuesDrafts.Issues.Count()
+                    @* Note that FilteredCount is used here, not AbsoluteCount *@
+                    @Model.paginatedUserIssuesDrafts.ContentCount.FilteredCount
                 </span>
             </button>
         </li>
@@ -38,7 +47,8 @@
                     aria-selected="false">
                 Solutions
                 <span class="badge bg-secondary ms-1 solution-draft-count">
-                    @Model.paginatedUserSolutionsDrafts.Solutions.Count()
+                    @* Note that FilteredCount is used here, not AbsoluteCount *@
+                    @Model.paginatedUserSolutionsDrafts.ContentCount.FilteredCount
                 </span>
             </button>
         </li>
@@ -63,6 +73,18 @@
                         </div>
                     }
                 </div>
+
+                @await Html.PartialAsync("~/Views/Shared/Components/_pagination-button.cshtml", new PaginationButton_VM
+                {
+                    ElementId = "fetchPaginatedDraftUserIssues",
+                    ContentType = "draft issues",
+                    Target = "#draft-issue-content",
+                    Url = "/user-profile/getPaginatedUserDraftIssues/" + @userId,
+                    CurrentPage = Model.paginatedUserIssuesDrafts.CurrentPage,
+                    PageSize = Model.paginatedUserIssuesDrafts.PageSize,
+                    @* Note that FilteredCount is used here, not AbsoluteCount *@
+                    TotalCount = Model.paginatedUserIssuesDrafts.ContentCount.FilteredCount,
+                })
             </div>
         </div>
 
@@ -84,6 +106,18 @@
                         </div>
                     }
                 </div>
+
+                @await Html.PartialAsync("~/Views/Shared/Components/_pagination-button.cshtml", new PaginationButton_VM
+                {
+                    ElementId = "fetchPaginatedDraftUserSolutions",
+                    ContentType = "draft solutions",
+                    Target = "#draft-solution-content",
+                    Url = "/user-profile/getPaginatedUserDraftSolutions/" + @userId,
+                    CurrentPage = Model.paginatedUserSolutionsDrafts.CurrentPage,
+                    PageSize = Model.paginatedUserSolutionsDrafts.PageSize,
+                @* Note that FilteredCount is used here, not AbsoluteCount *@
+                    TotalCount = Model.paginatedUserSolutionsDrafts.ContentCount.FilteredCount,
+                })
             </div>
         </div>
     </div>
@@ -93,11 +127,11 @@
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         initTabbedForum({
-            // paginationButtonId: "fetchPaginatedDraftIssues",
+            paginationButtonId: "fetchPaginatedDraftUserIssues",
             tabId: 'issues-tab'
         });
         initTabbedForum({
-            // paginationButtonId: "fetchPaginatedDraftSolutions",
+            paginationButtonId: "fetchPaginatedDraftUserSolutions",
             tabId: 'solutions-tab' 
         });
     })

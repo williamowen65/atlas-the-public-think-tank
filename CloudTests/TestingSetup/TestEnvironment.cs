@@ -250,7 +250,7 @@ namespace CloudTests.TestingSetup
 
             // Local default (LocalDB, Windows auth)
             //var localConnection = $"Server=DESKTOP-COPKNK8\\SQLEXPRESS;Database={dbName};User Id=FFalk;Password=P@55w0rd!Q9zL#;MultipleActiveResultSets=true;Encrypt=True;TrustServerCertificate=True;";
-            var localConnection = $"Server=DESKTOP-COPKNK8\\SQLEXPRESS;Database={dbName};Trusted_Connection=True;MultipleActiveResultSets=true;Encrypt=True;TrustServerCertificate=True;Max Pool Size=1500;";
+            var localConnection = $"Server=DESKTOP-COPKNK8\\SQLEXPRESS;Database={dbName};Trusted_Connection=True;MultipleActiveResultSets=true;Encrypt=True;TrustServerCertificate=True;";
           
             // GitHub Actions / container SQL (SA user)
             var actionsPassword = Environment.GetEnvironmentVariable("TEST_SQL_SA_PASSWORD") ?? "Aa123456!";

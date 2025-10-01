@@ -98,6 +98,80 @@ namespace atlas_the_public_think_tank.Controllers
 
 
         /// <summary>
+        /// This method is used to return paginated issue draft posts.
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [AllowAnonymous]
+        [Route("/user-profile/getPaginatedUserDraftIssues/{userId}")]
+        public async Task<IActionResult> GetPaginatedUserDraftIssues(Guid userId, int currentPage = 1)
+        {
+            ContentFilter filter = new ContentFilter();
+            if (Request.Cookies.TryGetValue("contentFilter", out string? cookieValue) && cookieValue != null)
+            {
+                filter = ContentFilter.FromJson(cookieValue);
+            }
+            filter.ContentStatus = ContentStatus.Draft;
+
+            Issues_Paginated_ReadVM paginatedUsersDraftIssues = (await _read.PaginatedUsersIssues(userId, filter, currentPage))!;
+
+            string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Issue/_issue-cards.cshtml", paginatedUsersDraftIssues.Issues);
+
+            var response = new ContentItems_Paginated_AjaxVM
+            {
+                html = partialViewHtml,
+                pagination = new PaginationStats_VM
+                {
+                    TotalCount = paginatedUsersDraftIssues.ContentCount.FilteredCount,
+                    PageSize = paginatedUsersDraftIssues.PageSize,
+                    CurrentPage = paginatedUsersDraftIssues.CurrentPage,
+                    TotalPages = (int)Math.Ceiling(paginatedUsersDraftIssues.ContentCount.FilteredCount / (double)paginatedUsersDraftIssues.PageSize)
+                }
+            };
+
+            return Json(response);
+        }
+
+
+        /// <summary>
+        /// This method is used to return paginated solution draft posts.
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [AllowAnonymous]
+        [Route("/user-profile/getPaginatedUserDraftSolutions/{userId}")]
+        public async Task<IActionResult> GetPaginatedUserDraftSolutions(Guid userId, int currentPage = 1)
+        {
+            ContentFilter filter = new ContentFilter();
+            if (Request.Cookies.TryGetValue("contentFilter", out string? cookieValue) && cookieValue != null)
+            {
+                filter = ContentFilter.FromJson(cookieValue);
+            }
+            filter.ContentStatus = ContentStatus.Draft;
+
+            Solutions_Paginated_ReadVM paginatedUsersDraftSolutions = (await _read.PaginatedUsersSolutions(userId, filter, currentPage))!;
+
+            string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Solution/_solution-cards.cshtml", paginatedUsersDraftSolutions.Solutions);
+
+            var response = new ContentItems_Paginated_AjaxVM
+            {
+                html = partialViewHtml,
+                pagination = new PaginationStats_VM
+                {
+                    TotalCount = paginatedUsersDraftSolutions.ContentCount.FilteredCount,
+                    PageSize = paginatedUsersDraftSolutions.PageSize,
+                    CurrentPage = paginatedUsersDraftSolutions.CurrentPage,
+                    TotalPages = (int)Math.Ceiling(paginatedUsersDraftSolutions.ContentCount.FilteredCount / (double)paginatedUsersDraftSolutions.PageSize)
+                }
+            };
+
+            return Json(response);
+        }
+
+
+        #region User profile pagination (Published user content)
+
+        /// <summary>
         /// This method is used to return paginated issue posts.
         /// </summary>
         /// <returns></returns>
@@ -111,7 +185,6 @@ namespace atlas_the_public_think_tank.Controllers
             {
                 filter = ContentFilter.FromJson(cookieValue);
             }
-
 
             Issues_Paginated_ReadVM paginatedIssues = await _read.PaginatedUsersIssues(userId, filter, currentPage);
 
@@ -147,7 +220,6 @@ namespace atlas_the_public_think_tank.Controllers
                 filter = ContentFilter.FromJson(cookieValue);
             }
 
-
             Solutions_Paginated_ReadVM paginatedSolutions = await _read.PaginatedUsersSolutions(userId, filter, currentPage);
 
             string partialViewHtml = await ControllerExtensions.RenderViewToStringAsync(this, "~/Views/Solution/_solution-cards.cshtml", paginatedSolutions.Solutions);
@@ -166,6 +238,8 @@ namespace atlas_the_public_think_tank.Controllers
 
             return Json(response);
         }
+
+        #endregion
 
 
 
