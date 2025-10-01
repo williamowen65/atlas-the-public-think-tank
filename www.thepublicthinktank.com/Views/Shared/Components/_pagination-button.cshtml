@@ -13,7 +13,7 @@
         data-url="@Model.Url?currentPage=@NextPageNumber"
         data-target="@Model.Target"
         data-content-type="@Model.ContentType"
-        class="mx-auto d-block btn btn-primary">
+        class="mx-auto d-block btn btn-primary pagination-button">
     <span class="button-text">@(isMorePosts ? "Fetch more "+ @Model.ContentType : "No more " + @Model.ContentType)</span>
     <span class="fullPaginatedCount">
         @* Format == "(NumberOfVisiblePost/TotalNumberOfPost)" *@

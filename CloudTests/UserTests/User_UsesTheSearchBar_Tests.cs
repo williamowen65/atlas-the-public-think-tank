@@ -92,13 +92,16 @@ namespace CloudTests.UserTests
             throw new TimeoutException("Full-text index was not ready within the timeout period.");
         }
 
+        /// <remarks>
+        /// This test method is finicky. I've witnessed it randomly stop passing 
+        /// and then after some time start passing again.
+        /// </remarks>
         [TestMethod]
-        //[DoNotParallelize]
         public async Task User_Searching_ReturnsDropdown()
         {
 
-            //await WaitForFullTextIndexAsync(_db);
-            await Task.Delay(10000);
+            //await WaitForFullTextIndexAsync(_db); // <--- this method doesn't seem to work 
+            await Task.Delay(10000); // <-- fallback to waiting 10 seconds seems to work.
 
             var payload = new { searchString = "Homelessness " };
             var result = await _env.fetchPost<SearchResult, object>("/search", payload);

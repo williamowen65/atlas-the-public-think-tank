@@ -2,6 +2,7 @@
 @using atlas_the_public_think_tank.Data.CRUD
 @using atlas_the_public_think_tank.Data.DatabaseEntities.Users
 @using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
+@using atlas_the_public_think_tank.Models.Enums
 @inject SignInManager<AppUser> SignInManager
 @inject UserManager<AppUser> UserManager
 @inject Read _read;
@@ -20,11 +21,14 @@
     </li>
     <li>
 
-        @{
-            var userId = Guid.Parse(UserManager.GetUserId(User)!);
-            var userDrafts_pageVM = await _read.PaginatedUserDrafts(userId, new ContentFilter());
-
-            var draftContentCount = userDrafts_pageVM.paginatedUserIssuesDrafts.Issues.Count + userDrafts_pageVM.paginatedUserSolutionsDrafts.Solutions.Count;
+            @{
+                var userId = Guid.Parse(UserManager.GetUserId(User)!);
+                var userDrafts_pageVM = await _read.PaginatedUserDrafts(userId, new ContentFilter()
+                {
+                    ContentStatus = ContentStatus.Draft   @* <-- This is redundant, but added for clarity *@
+                });
+            @* Note that FilterCount is used instead of AbsoluteCount *@
+            var draftContentCount = userDrafts_pageVM.paginatedUserIssuesDrafts.ContentCount.FilteredCount + userDrafts_pageVM.paginatedUserSolutionsDrafts.ContentCount.FilteredCount;
         }       
         
         <a class="dropdown-item" href="@Url.Action("Drafts", "UserProfile")">

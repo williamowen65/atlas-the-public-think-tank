@@ -3,13 +3,18 @@
 
 This file manages the client-side logic for pagination
 
+The pagination button is getting an update (10/1/2025)
+- It will now trigger on scroll. Users won't have to manually click it.
 
-
-
-The pagination setup also requires .NET entities to contain paginated content.
+pre-conditions:
+- Controller action endpoints for the paginated content.
+- Adding the pagination button partial to the UI where it is needed
 
 */
 
+document.addEventListener("DOMContentLoaded", () => {
+    setPaginationIntersectionObserver();
+})
 
 function setPaginationButtonListener(paginationButtonElement) {
     if (paginationButtonElement) {
@@ -86,4 +91,36 @@ function setPaginationButtonListener(paginationButtonElement) {
 
         }));
     }
+}
+
+/**
+ * Watches for the pagination button to enter the bottom of the screen
+ * - Enter the screen in general
+ * - Plus extra half screen width below
+ */
+function setPaginationIntersectionObserver() {
+    const paginationButtons = document.querySelectorAll(".pagination-button");
+    if (!paginationButtons.length) return;
+
+    const rootMargin = `0px 0px ${window.innerHeight / 2}px 0px`;
+
+    const observer = new IntersectionObserver((entries, obs) => {
+        entries.forEach(entry => {
+            const button = entry.target;
+            if (entry.isIntersecting && !button.disabled) {
+                button.click();
+            }
+            if (button.disabled) {
+                obs.unobserve(button);
+            }
+        });
+    }, {
+        root: null,
+        threshold: 0,
+        rootMargin: rootMargin
+    });
+
+    paginationButtons.forEach(button => {
+        observer.observe(button);
+    });
 }
