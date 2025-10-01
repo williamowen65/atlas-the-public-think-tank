@@ -27,6 +27,12 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
 
 
+        if (builder.Configuration.GetValue<bool>("Caching:Enabled") == false)
+        {
+            var logger = builder.Logging.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
+            logger.LogWarning("Caching is disabled.");
+        }
+
         /* See information on appsettings and environment variables: https://github.com/williamowen65/atlas-the-public-think-tank/wiki/3.2.%20Appsettings%20and%20Environment%20Variables */
         Console.WriteLine($"Using environment: {builder.Environment.EnvironmentName}");
 

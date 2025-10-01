@@ -122,7 +122,7 @@
                         ContentType = "solutions",
                         Target = "#solution-content",
                         Url = "/issue/getPaginatedSolutions/" + @Model.Issue.IssueID,
-                        CurrentPage = Model.Issue.PaginatedSolutions.ContentCount.FilteredCount,
+                        CurrentPage = Model.Issue.PaginatedSolutions.CurrentPage,
                         PageSize = Model.Issue.PaginatedSolutions.PageSize,
                         TotalCount = Model.Issue.PaginatedSolutions.ContentCount.FilteredCount,
                         // TotalPages = Model.PaginatedSolutions.TotalPages
@@ -180,7 +180,7 @@
                 ContentType = "sub-issues",
                 Target = "#sub-issue-content",
                         Url = "/issue/getPaginatedSubIssues/" + @Model.Issue.IssueID,
-                        CurrentPage = Model.Issue.PaginatedSubIssues.ContentCount.FilteredCount,
+                        CurrentPage = Model.Issue.PaginatedSubIssues.CurrentPage,
                         PageSize = Model.Issue.PaginatedSubIssues.PageSize,
                         TotalCount = Model.Issue.PaginatedSubIssues.ContentCount.FilteredCount,
                 // TotalPages = Model.PaginatedSubIssues.TotalPages
