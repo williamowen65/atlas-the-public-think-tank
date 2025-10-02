@@ -1,5 +1,6 @@
 ﻿using atlas_the_public_think_tank.Data.CRUD;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
+using atlas_the_public_think_tank.Email.Models;
 using atlas_the_public_think_tank.Models.Enums;
 using atlas_the_public_think_tank.Models.ViewModel.AjaxVM;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue;
@@ -7,6 +8,7 @@ using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution;
 using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.ContentItem_Common;
 using atlas_the_public_think_tank.Models.ViewModel.PageVM;
 using atlas_the_public_think_tank.Models.ViewModel.UI_VM;
+using atlas_the_public_think_tank.Utilities;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -98,11 +100,39 @@ namespace atlas_the_public_think_tank.Controllers
 
         [HttpPost]
         [Route("/test-email")]
-        public async Task<IActionResult> TestEmail([FromBody] TestEmailRequest request)
+        public async Task<IActionResult> TestEmail([FromBody] TestEmailRequest<ConfirmationEmailModel> request, [FromQuery] string emailTemplate)
         {
+            if (string.IsNullOrWhiteSpace(emailTemplate))
+            {
+                return BadRequest(new { success = false, message = "The 'emailTemplate' query parameter is required." });
+            }
+
+            if (!ModelState.IsValid)
+            {
+                // Return model validation errors as JSON
+                return BadRequest(new
+                {
+                    success = false,
+                    errors = ModelState.Where(x => x.Value.Errors.Count > 0)
+                                      .ToDictionary(
+                                          kvp => kvp.Key,
+                                          kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                                      )
+                });
+            }
+
+
             try
             {
-                await _emailSender.SendEmailAsync(request.To, request.Subject, request.Body);
+                // Render the specified Razor email template with the provided model
+                string emailTemplateRendered = await ControllerExtensions.RenderViewToStringAsync(
+                    this,
+                    $"~/Email/Templates/{emailTemplate}.cshtml",
+                    request.BodyModel
+                );
+
+                // Send the rendered email
+                await _emailSender.SendEmailAsync(request.To, request.Subject, emailTemplateRendered);
                 return Ok(new { success = true, message = "Email sent successfully." });
             }
             catch (Exception ex)
@@ -111,11 +141,11 @@ namespace atlas_the_public_think_tank.Controllers
             }
         }
 
-        public class TestEmailRequest
+        public class TestEmailRequest<TModel>
         {
             public string To { get; set; }
             public string Subject { get; set; }
-            public string Body { get; set; }
+            public TModel BodyModel { get; set; }
         }
     }
 }
