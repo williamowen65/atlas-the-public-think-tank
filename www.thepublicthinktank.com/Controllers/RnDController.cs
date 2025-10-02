@@ -11,6 +11,7 @@ using atlas_the_public_think_tank.Models.ViewModel.UI_VM;
 using atlas_the_public_think_tank.Utilities;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 
 namespace atlas_the_public_think_tank.Controllers
@@ -100,7 +101,7 @@ namespace atlas_the_public_think_tank.Controllers
 
         [HttpPost]
         [Route("/test-email")]
-        public async Task<IActionResult> TestEmail([FromBody] TestEmailRequest<ConfirmationEmailModel> request, [FromQuery] string emailTemplate)
+        public async Task<IActionResult> TestEmail([FromBody] TestEmailRequest request, [FromQuery] string emailTemplate)
         {
             if (string.IsNullOrWhiteSpace(emailTemplate))
             {
@@ -114,21 +115,34 @@ namespace atlas_the_public_think_tank.Controllers
                 {
                     success = false,
                     errors = ModelState.Where(x => x.Value.Errors.Count > 0)
-                                      .ToDictionary(
-                                          kvp => kvp.Key,
-                                          kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
-                                      )
+                      .ToDictionary(
+                          kvp => kvp.Key,
+                          kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                      )
                 });
             }
 
 
             try
             {
+
+                string modelTypeName = $"atlas_the_public_think_tank.Email.Models.{emailTemplate}Model";
+                Type modelType = Type.GetType(modelTypeName);
+
+                if (modelType == null)
+                {
+                    return BadRequest(new { success = false, message = $"Model type '{modelTypeName}' not found." });
+                }
+
+                var json = JsonSerializer.Serialize(request.BodyModel);
+                var model = JsonSerializer.Deserialize(json, modelType);
+
+
                 // Render the specified Razor email template with the provided model
                 string emailTemplateRendered = await ControllerExtensions.RenderViewToStringAsync(
                     this,
                     $"~/Email/Templates/{emailTemplate}.cshtml",
-                    request.BodyModel
+                    model
                 );
 
                 // Send the rendered email
@@ -141,11 +155,11 @@ namespace atlas_the_public_think_tank.Controllers
             }
         }
 
-        public class TestEmailRequest<TModel>
+        public class TestEmailRequest
         {
             public string To { get; set; }
             public string Subject { get; set; }
-            public TModel BodyModel { get; set; }
+            public object BodyModel { get; set; }
         }
     }
 }
