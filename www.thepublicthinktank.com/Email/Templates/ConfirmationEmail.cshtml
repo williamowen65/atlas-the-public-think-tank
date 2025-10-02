@@ -1,5 +1,5 @@
 ﻿@using atlas_the_public_think_tank.Email.Models
-@model WelcomeEmailModel
+@model ConfirmationEmailModel
 @{
     Layout = "/Email/Templates/EmailLayout.cshtml";
     ViewData["Title"] = "Welcome to The Public Think Tank!";
@@ -10,4 +10,13 @@
 <p>
     Thanks for joining <strong>The Public Think Tank</strong>.
     We’re excited to have you on board.
+</p>
+<p>
+    To get started, confirm your email by clicking the button below:
+</p>
+<p>
+    <a href="@Model.ConfirmationLink" class="btn">Confirm Email</a>
+</p>
+<p>
+    If you didn’t sign up, you can safely ignore this email.
 </p>

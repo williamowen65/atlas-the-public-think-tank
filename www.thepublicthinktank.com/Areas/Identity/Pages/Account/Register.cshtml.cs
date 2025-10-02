@@ -142,15 +142,15 @@ namespace atlas_the_public_think_tank.Areas.Identity.Pages.Account
                         values: new { area = "Identity", userId = userId, code = code, returnUrl = returnUrl },
                         protocol: Request.Scheme);
 
-                    WelcomeEmailModel welcomeEmailModel = new WelcomeEmailModel()
+                    ConfirmationEmailModel confirmationEmailModel = new ConfirmationEmailModel()
                     { 
                         ConfirmationLink = callbackUrl,
                         UserName = Input.UserName
                     };
 
-                    string welcomeEmail = await RazorPageExtensions.RenderViewToStringAsync(this, "~/Email/Templates/WelcomeEmail.cshtml", welcomeEmailModel);
+                    string confirmationEmail = await RazorPageExtensions.RenderViewToStringAsync(this, "~/Email/Templates/ConfirmationEmail.cshtml", confirmationEmailModel);
 
-                    await _emailSender.SendEmailAsync(Input.Email, "Confirm your email", welcomeEmail);
+                    await _emailSender.SendEmailAsync(Input.Email, "Confirm your email", confirmationEmail);
 
                     if (_userManager.Options.SignIn.RequireConfirmedAccount)
                     {
