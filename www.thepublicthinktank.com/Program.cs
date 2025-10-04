@@ -5,17 +5,21 @@ using atlas_the_public_think_tank.Data.RawSQL;
 using atlas_the_public_think_tank.Data.RepositoryPattern;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
+using atlas_the_public_think_tank.Email;
+using atlas_the_public_think_tank.Email.Infrastructure;
+using atlas_the_public_think_tank.Email.Models;
 using atlas_the_public_think_tank.Middleware;
 using atlas_the_public_think_tank.Migrations_NonEF;
 using atlas_the_public_think_tank.Models;
-
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using repository_pattern_experiment.Controllers;
 using System;
+using System.Diagnostics;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace atlas_the_public_think_tank;
@@ -40,14 +44,14 @@ public class Program
         Console.WriteLine($"Connection string being used: {connString}");
 
         // When running the test project, TestEnvironmentUtility intercepts the builder and sets the Environment to testing
-        var isTesting = builder.Environment.EnvironmentName == "Testing"
-            || builder.Configuration["ASPNETCORE_ENVIRONMENT"] == "Testing";
+        var isCICDTesting = builder.Environment.EnvironmentName == "CICDTesting"
+            || builder.Configuration["ASPNETCORE_ENVIRONMENT"] == "CICDTesting";
 
         // =====================================
         // Dependency Injection (Service Setup)
         // =====================================
 
-        if (!isTesting)
+        if (!isCICDTesting)
         { 
             // Retrieve the connection string from appsettings.json
              var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -66,6 +70,7 @@ public class Program
 
         }
 
+        builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
 
         builder.Services.AddDefaultIdentity<AppUser>(options =>
             options.SignIn.RequireConfirmedAccount = true)
@@ -123,11 +128,30 @@ public class Program
         builder.Services.AddScoped<CustomMigrationRunner>();
 
 
+        if (builder.Environment.EnvironmentName == "Development")
+        {
+            // In development
+            builder.Services.AddScoped<IEmailSender, MailHogEmailSender>();
+        }
+        else if(
+            builder.Environment.EnvironmentName == "Production" || 
+            builder.Environment.EnvironmentName == "Staging" || 
+            builder.Environment.EnvironmentName == "Testing"
+         )
+        {
+            builder.Services.AddScoped<IEmailSender, SMTPEmailSender>();
+        }
+
+
+        builder.Services.AddScoped<EmailQueue>();
 
         var app = builder.Build();
 
-        
-        
+
+        // When "shutting down" the app, run ctrl+c in the terminal instead of the VS stop button.
+        // This will trigger lifecycle event for closing the development email server
+        MailHogHelper.StartMailHogIfDevelopment(app); // open the server at http://localhost:8025
+
         // Add custom migrations (Full Text Search)
         using (var scope = app.Services.CreateScope())
         {
@@ -144,6 +168,7 @@ public class Program
         if (applySeedData)
         {
             SeedDataHelper.SeedDatabase(app.Services);
+            Console.WriteLine("seed data applied");
         }
 
         // =====================================
@@ -204,6 +229,7 @@ public class Program
 
         app.UseStatusCodePagesWithReExecute("/Error/{0}");
 
+        Console.WriteLine("App about to start");
         // Start the application and begin listening for incoming HTTP requests
         app.Run();
     }

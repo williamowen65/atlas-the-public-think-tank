@@ -272,7 +272,7 @@ namespace CloudTests.TestingSetup
                 .WithWebHostBuilder(builder =>
                 {
                     builder.UseUrls(baseUrl);
-                    builder.UseEnvironment("Testing");
+                    builder.UseEnvironment("CICDTesting");
 
 
                     // Set the builder.Configuration variable based on applySeedData arg

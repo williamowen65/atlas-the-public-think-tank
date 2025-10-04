@@ -51,6 +51,8 @@ public class ApplicationDbContext : UserHistoryDbContext
     public DbSet<SolutionVote> SolutionVotes { get; set; }
     public DbSet<SolutionTag> SolutionTags { get; set; }
     public DbSet<CommentVote> CommentVotes { get; set; }
+
+    public DbSet<EmailLog> EmailLog { get; set; }
     
 
     /// <summary>
@@ -76,6 +78,7 @@ public class ApplicationDbContext : UserHistoryDbContext
         IssueTagModel.Declare(modelBuilder);
         SolutionTagModel.Declare(modelBuilder);
         UserHistoryModel.Declare(modelBuilder);
+        EmailLogModel.Declare(modelBuilder);
 
         IssueModel.Build(modelBuilder);
         SolutionModel.Build(modelBuilder);
@@ -86,6 +89,7 @@ public class ApplicationDbContext : UserHistoryDbContext
         IssueTagModel.Build(modelBuilder);
         SolutionTagModel.Build(modelBuilder);
         UserHistoryModel.Build(modelBuilder);
+        EmailLogModel.Build(modelBuilder);
 
     }
 

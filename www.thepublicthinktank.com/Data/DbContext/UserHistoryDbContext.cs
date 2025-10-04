@@ -59,6 +59,7 @@ namespace atlas_the_public_think_tank.Data.DbContext
             {
                 if (entry.Entity is UserHistory) continue;
                 if (entry.Entity is Scope) continue;
+                if (entry.Entity is EmailLog) continue;
 
                 using var scope = _serviceProvider.CreateScope();
                 var services = scope.ServiceProvider;
@@ -92,6 +93,7 @@ namespace atlas_the_public_think_tank.Data.DbContext
             {
                 if (entry.Entity is UserHistory) continue;
                 if (entry.Entity is Scope) continue;
+                if (entry.Entity is EmailLog) continue;
 
                 using var scope = _serviceProvider.CreateScope();
                 var services = scope.ServiceProvider;

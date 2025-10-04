@@ -18,6 +18,10 @@ namespace CloudTests.TestingSetup.TestingData
     {
        
 
+        /// <remarks>
+        /// This pattern directly creates a user in the DB
+        /// and not via register process, -- so confirmation email is skipped
+        /// </remarks>
         public static AppUser CreateTestUser(ApplicationDbContext db, AppUser user, string password)
         {
             // Hash the password

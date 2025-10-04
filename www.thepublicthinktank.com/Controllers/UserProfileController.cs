@@ -168,6 +168,14 @@ namespace atlas_the_public_think_tank.Controllers
             return Json(response);
         }
 
+        //[HttpGet]
+        //[AllowAnonymous]
+        //[Route("/email/unsubscribe")]
+        //public async Task<IActionResult> UnsubscribeFromEmails(string token)
+        //{ 
+                
+        //}
+
 
         #region User profile pagination (Published user content)
 

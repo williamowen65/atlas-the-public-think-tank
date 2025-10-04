@@ -34,7 +34,7 @@ namespace atlas_the_public_think_tank.Migrations_NonEF
             }
 
             var env = scope.ServiceProvider.GetRequiredService<IHostEnvironment>();
-            if (env.IsEnvironment("Testing"))
+            if (env.IsEnvironment("CICDTesting"))
             {
                 context.Database.Migrate();
             }

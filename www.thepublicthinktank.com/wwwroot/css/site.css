@@ -152,6 +152,14 @@ svg.parent-issue-icon {
     border-bottom-right-radius: var(--bs-border-radius-lg);
 }
 
+.environment-label {
+    top: -7px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+}
+
+
 @media (min-width: 768px) {
     #header-search-bar-results {
         width: 83%;
