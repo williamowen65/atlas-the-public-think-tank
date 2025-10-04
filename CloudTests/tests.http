@@ -54,3 +54,17 @@ Content-Type: application/json
 {
   "searchString": "Homele remains a pervasive and complex "
 }
+
+###
+
+### Test sending email
+POST https://localhost:5501/test-email?emailTemplate=WelcomeEmail
+Content-Type: application/json
+
+{
+  "to": "recipient@example.com",
+  "subject": "Test Email",
+  "bodyModel": {
+      "userName": "test user name"
+  }
+}
