@@ -7,11 +7,23 @@
 @inject UserManager<AppUser> UserManager
 @inject Read _read;
 
+
+
 @if (SignInManager.IsSignedIn(User))
 {
+
+<style>
+ .signedInAs {
+     filter: brightness(0.5);
+     padding: var(--bs-dropdown-item-padding-y) var(--bs-dropdown-item-padding-x);
+     text-align: center;
+ }
+</style>
     
 
 <ul class="dropdown-menu user-actions-dropdown fs-5 text-small shadow p-0" style="">
+    <li class="signedInAs" style="padding: var(--bs-dropdown-item-padding-y) var(--bs-dropdown-item-padding-x);">Signed in as @UserManager.GetUserName(User)</li>
+    <li><hr class="dropdown-divider m-0  "></li>
     <li><a class="dropdown-item" href="#">New project...</a></li>
     <li>
         <a class="dropdown-item" href="@Url.Action("UserProfile", "UserProfile", new { userId = UserManager.GetUserId(User) })">

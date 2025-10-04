@@ -38,5 +38,8 @@ namespace atlas_the_public_think_tank.Data.DatabaseEntities.Users
         public virtual ICollection<CommentVote> CommentVotes { get; set; }
         [JsonIgnore]
         public virtual ICollection<UserHistory> UserHistory { get; set; }
+
+        [JsonIgnore]
+        public virtual ICollection<EmailLog> EmailLog { get; set; }
     }
 }
