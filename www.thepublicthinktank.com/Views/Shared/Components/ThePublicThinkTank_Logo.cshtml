@@ -1,0 +1,28 @@
+﻿@inject IWebHostEnvironment env
+
+<div id="large-logo" class="text-center mx-auto ">
+    <span class="site-name position-relative">
+        <span class="fs-2 position-relative">
+            Atlas
+
+
+            @if (env.EnvironmentName != "Production")
+            {
+                @* Add a label to the logo to make that clear *@    
+    
+            <p class="position-absolute environment-label">
+                    @(env.EnvironmentName == "Development" ? "DEV" : "")
+                    @(env.EnvironmentName == "Staging" ? "Stage" : "")
+                    @(env.EnvironmentName == "Testing" ? "Test" : "")
+                </p>
+            }
+
+        </span>
+        <br>
+        <small class="position-absolute text-nowrap" style="top:15px; left:-36px">The Public Think Tank</small>
+    </span>
+
+    
+   
+
+</div>

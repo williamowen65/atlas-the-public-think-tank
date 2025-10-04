@@ -1,0 +1,13 @@
+﻿@using atlas_the_public_think_tank.Email.Models
+@model WelcomeEmailModel
+@{
+    Layout = "/Email/Templates/EmailLayout.cshtml";
+    ViewData["Title"] = "Welcome to The Public Think Tank!";
+}
+
+
+<h1>Welcome, @Model.UserName!</h1>
+<p>
+    Thanks for joining <strong>The Public Think Tank</strong>.
+    We’re excited to have you on board.
+</p>
