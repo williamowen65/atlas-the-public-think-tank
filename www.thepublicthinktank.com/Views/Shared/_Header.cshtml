@@ -1,6 +1,9 @@
 ﻿
 <style>
 
+    #header-logo {
+        transform: translateY(0);
+    }
 
     #topbar-layout {
         grid-template-columns: 126px 1fr;
@@ -10,14 +13,18 @@
         #topbar-layout {
             grid-template-columns: calc(var(--left-sidebar-container-width) - 36px) 1fr;
         }
+
+        #header-logo {
+            transform: translateY(-10px)
+        }
     }
 </style>
 
 
-<header class="py-3 main-header border-bottom sticky-top bg-body" style="z-index: 1060">
+<header class="py-3 main-header border-bottom sticky-top bg-body d-flex" style="z-index: 1060">
     <div id="topbar-layout" class="container-fluid d-grid gap-3 align-items-center" style="">
 
-        <a asp-area="" asp-controller="Home" asp-action="HomePage" id="header-logo" class="ff-consolas d-flex align-items-center col-lg-4 mb-2 mb-lg-0 link-body-emphasis text-decoration-none fw-bold w-100" style="transform: translateY(-10px)">
+        <a asp-area="" asp-controller="Home" asp-action="HomePage" id="header-logo" class="ff-consolas d-flex align-items-center col-lg-4 mb-2 mb-lg-0 link-body-emphasis text-decoration-none fw-bold w-100">
             @await Html.PartialAsync("~/Views/Shared/Components/ThePublicThinkTank_Logo.cshtml")
         </a>
 
@@ -29,9 +36,9 @@
 
         </div>
     </div>
-    
 
-    
+
+
 </header>
 @* The alert is place outside the header because it needs to escape the header and be on top of the search bar results *@
 <div id="header-alert-target" class="position-fixed w-100" style="z-index:1000000000; left: 50%; transform: translateX(-50%);"></div>

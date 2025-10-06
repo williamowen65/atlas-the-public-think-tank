@@ -1,0 +1,107 @@
+﻿#orientation-modal {
+    top: 50%;
+    left: 50%;
+    max-width: 500px;
+    transform: translate(-50%, -50%);
+    z-index: 1062;
+    width: 100%;
+    /* 
+        min-width:300px;
+        The min width on this element is important becuase the relative parent element, 
+        which can have a very small width. 
+       
+        but the width also has to be aware of the window size.
+
+        So the min-width is managed by js in method: handleTooltipMode
+
+    */
+    position: fixed;
+    max-height: 79vh;
+    /* height: 100%;*/
+    height: fit-content;
+    opacity: 0;
+    animation: fadeInOverlay 1s ease forwards;
+    pointer-events: auto;
+}
+    #orientation-modal.tooltip-mode {
+        position: absolute;
+    }
+
+    #orientation-backdrop {
+        width: 100vw;
+        height: 100vh;
+        background: #0d0d4e61;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 1061;
+        pointer-events: none;
+    }
+
+#orientation-container {
+    position: fixed; /* or absolute */
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999; /* or higher */
+    pointer-events: none;
+}
+
+#orientation-container #orientation-button-container > div {
+    display: none;
+}
+
+#orientation-container[data-step="start"] #orientation-button-container .start-orientation-buttons {
+    display: flex;
+}
+#orientation-container[data-step="mid"] #orientation-button-container .mid-orientation-buttons {
+    display: flex;
+}
+#orientation-container[data-step="end"] #orientation-button-container .end-orientation-buttons {
+    display: flex;
+}
+#orientation-container[data-step="isDeadEndStep"] #orientation-button-container .dead-end-step-orientation-button {
+    display: flex;
+}
+#orientation-container[data-step="workflow"] #orientation-button-container .workflow-step-orientation-button {
+    display: flex;
+}
+
+/* Added combined fade + blur animations */
+#orientation-container[data-step="start"] #orientation-backdrop {
+    pointer-events: auto;
+    opacity: 0;
+    backdrop-filter: blur(0px);
+    animation: fadeInOverlay 1s ease forwards, blurSurface 0.2s ease forwards;
+}
+
+
+@keyframes fadeInOverlay {
+    from {
+        opacity:0;
+    }
+
+    to {
+        opacity:1;
+    }
+}
+@keyframes blurSurface {
+    from {
+        backdrop-filter: blur(0px);
+    }
+
+    to {
+        backdrop-filter: blur(48px);
+    }
+}
+
+#orientation-button-container > div {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+#orientation-target-focus {
+
+}

@@ -87,8 +87,10 @@ document.addEventListener('DOMContentLoaded', async function () {
         // Close sidebar when clicking outside on mobile
         document.addEventListener('click', function (event) {
 
+            const isOrientationModalClick = Boolean(event.target.closest("#orientation-modal"))
             const isCalendarClick = Boolean(event.target.closest(".mc-calendar"))
-            if (isCalendarClick) return;
+            if (isCalendarClick || isOrientationModalClick) return;
+
       
 
             const isMobile = window.innerWidth <= 768;
