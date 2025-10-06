@@ -35,6 +35,8 @@ namespace atlas_the_public_think_tank.Controllers
 
         #region Api Docs
 
+        [Route("/api")]
+
         [AllowAnonymous]
         public JsonResult Index()
         {
@@ -81,7 +83,7 @@ namespace atlas_the_public_think_tank.Controllers
         /// Ex:    {endpoint}?AvgVoteRange.Min=2.5&AvgVoteRange.Max=9.5&TotalVoteCount.Min=10&TotalVoteCount.Max=&DateRange.Start=2025-01-01&DateRange.End=2025-05-01&Tags=bug&Tags=urgent
         /// </para>
         /// </remarks>
-        [Route("api/issue/{issueId}")]
+        [Route("/api/issue/{issueId}")]
         [AllowAnonymous]
         public async Task<JsonResult> GetIssueById(Guid issueId, [FromQuery] ContentFilter filter)
         {
@@ -100,7 +102,7 @@ namespace atlas_the_public_think_tank.Controllers
             }
         }
 
-        [Route("api/solution/{solutionId}")]
+        [Route("/api/solution/{solutionId}")]
         [AllowAnonymous]
         public async Task<JsonResult> GetSolutionById(Guid solutionId, [FromQuery] ContentFilter filter)
         {
@@ -119,7 +121,7 @@ namespace atlas_the_public_think_tank.Controllers
         }
 
 
-        [Route("api/content-feed")]
+        [Route("/api/content-feed")]
         [AllowAnonymous]
         public async Task<JsonResult> GetContentFeed([FromQuery] ContentFilter filter, int pageNumber = 1)
         {
@@ -139,6 +141,14 @@ namespace atlas_the_public_think_tank.Controllers
 
         #endregion
 
+        [Route("/ping")]
+        [AllowAnonymous]
+        public IActionResult PingKeepAppAlive()
+        {
+            return Json(new { 
+                success = true
+            });
+        }
 
     }
 }

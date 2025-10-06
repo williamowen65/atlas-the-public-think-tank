@@ -13,6 +13,11 @@ namespace atlas_the_public_think_tank.Data.DatabaseEntities.Users
     public class AppUser : IdentityUser<Guid>
     {
 
+        /// <summary>
+        /// Once an email is confirmed, the use will be subscribed to emails (see ConfirmEmail.cshtml.cs)
+        /// </summary>
+        public bool SubscribedToEmail { get; set; } = false;
+
         public AppUser()
         {
             Issues = new List<Issue>();
@@ -38,5 +43,8 @@ namespace atlas_the_public_think_tank.Data.DatabaseEntities.Users
         public virtual ICollection<CommentVote> CommentVotes { get; set; }
         [JsonIgnore]
         public virtual ICollection<UserHistory> UserHistory { get; set; }
+
+        [JsonIgnore]
+        public virtual ICollection<EmailLog> EmailLog { get; set; }
     }
 }

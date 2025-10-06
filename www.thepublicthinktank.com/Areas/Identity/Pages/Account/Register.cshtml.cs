@@ -2,15 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #nullable disable
 
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Text.Encodings.Web;
-using System.Threading;
-using System.Threading.Tasks;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+using atlas_the_public_think_tank.Email;
+using atlas_the_public_think_tank.Email.Models;
+using atlas_the_public_think_tank.Utilities;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -19,6 +14,16 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Text.Encodings.Web;
+using System.Threading;
+using System.Threading.Tasks;
+using static atlas_the_public_think_tank.Email.EmailQueue;
 
 namespace atlas_the_public_think_tank.Areas.Identity.Pages.Account
 {
@@ -29,21 +34,25 @@ namespace atlas_the_public_think_tank.Areas.Identity.Pages.Account
         private readonly IUserStore<AppUser> _userStore;
         private readonly IUserEmailStore<AppUser> _emailStore;
         private readonly ILogger<RegisterModel> _logger;
-        private readonly IEmailSender _emailSender;
+        private readonly EmailQueue _emailQueue;
+        private readonly IOptions<EmailSettings> _emailSettings;
 
         public RegisterModel(
             UserManager<AppUser> userManager,
             IUserStore<AppUser> userStore,
             SignInManager<AppUser> signInManager,
             ILogger<RegisterModel> logger,
-            IEmailSender emailSender)
+            IEmailSender emailSender,
+            EmailQueue emailQueue,
+            IOptions<EmailSettings> EmailSettings)
         {
             _userManager = userManager;
             _userStore = userStore;
             _emailStore = GetEmailStore();
             _signInManager = signInManager;
             _logger = logger;
-            _emailSender = emailSender;
+            _emailQueue = emailQueue;
+            _emailSettings = EmailSettings;
         }
 
         /// <summary>
@@ -138,10 +147,19 @@ namespace atlas_the_public_think_tank.Areas.Identity.Pages.Account
                         "/Account/ConfirmEmail",
                         pageHandler: null,
                         values: new { area = "Identity", userId = userId, code = code, returnUrl = returnUrl },
-                        protocol: Request.Scheme);
+                        protocol: Request.Scheme,
+                        host: _emailSettings.Value.BaseUrl);
 
-                    await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",
-                        $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+                    ConfirmationEmailModel confirmationEmailModel = new ConfirmationEmailModel()
+                    {
+                        ConfirmationLink = callbackUrl,
+                        UserName = Input.UserName
+                    };
+
+                    EmailInfo emailInfo = new Emails.ConfirmationEmail(user, confirmationEmailModel);
+
+                    await _emailQueue.Send(Input.Email, emailInfo);
+
 
                     if (_userManager.Options.SignIn.RequireConfirmedAccount)
                     {

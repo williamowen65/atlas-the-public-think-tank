@@ -702,6 +702,9 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("SubscribedToEmail")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("bit");
 
@@ -720,6 +723,34 @@ namespace atlas_the_public_think_tank.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Users.EmailLog", b =>
+                {
+                    b.Property<Guid>("EmailLogID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("EmailID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("EmailStatus")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Retries")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("EmailLogID");
+
+                    b.HasIndex("UserID");
+
+                    b.ToTable("EmailLog", "users");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -1005,6 +1036,17 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Users.EmailLog", b =>
+                {
+                    b.HasOne("atlas_the_public_think_tank.Data.DatabaseEntities.Users.AppUser", "User")
+                        .WithMany("EmailLog")
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("atlas_the_public_think_tank.Data.DatabaseEntities.Content.Comment.Comment", b =>
                 {
                     b.Navigation("ChildComments");
@@ -1050,6 +1092,8 @@ namespace atlas_the_public_think_tank.Migrations
                     b.Navigation("CommentVotes");
 
                     b.Navigation("Comments");
+
+                    b.Navigation("EmailLog");
 
                     b.Navigation("IssueVotes");
 

@@ -49,6 +49,22 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "pre-launch-landing-page", "
 		SlnRelativePath = "pre-launch-landing-page\"
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "development-email-setup", "development-email-setup", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "executables", "executables", "{A1151252-3B7E-452F-BB53-703950125B75}"
+	ProjectSection(SolutionItems) = preProject
+		development-email-setup\executables\MailHog_windows_amd64.exe = development-email-setup\executables\MailHog_windows_amd64.exe
+		development-email-setup\executables\README.md = development-email-setup\executables\README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "reverse-proxies", "reverse-proxies", "{3A469EE8-73CA-429D-B5C5-C99F265F93B5}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "testing", "testing", "{C7651547-7B56-4800-9617-AA3AB9C7EB7F}"
+	ProjectSection(SolutionItems) = preProject
+		reverse-proxies\testing\index.html = reverse-proxies\testing\index.html
+		reverse-proxies\testing\_redirects = reverse-proxies\testing\_redirects
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -70,6 +86,10 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{A1151252-3B7E-452F-BB53-703950125B75} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{C7651547-7B56-4800-9617-AA3AB9C7EB7F} = {3A469EE8-73CA-429D-B5C5-C99F265F93B5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {91FBCB71-A526-4836-AC90-535593188277}

@@ -1,0 +1,31 @@
+﻿@page "/email/unsubscribe"
+@model UnsubscribeFromEmailsModel
+@{
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <h1 class="mb-4">Unsubscribe</h1>
+
+            <p class="lead">
+                @if (Model.SubscriptionStatus == false)
+                {
+                     <p>
+                         The email: @Model.Email will no longer receive emails from us.
+                     </p>
+                     <p>If this is a mistake, you can log in to your account and resubscribe via user settings</p>
+                
+                }
+              
+            </p>
+
+            @if (Model.ErrorMessage != null)
+            {
+                <p>There was an error while unsubscribing: @Model.ErrorMessage</p>
+            }
+
+           
+        </div>
+    </div>
+</div>
