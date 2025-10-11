@@ -1,0 +1,51 @@
+@*
+    Contains the DOM elements for the orientation
+*@
+
+@*
+    The Modal
+*@
+<div id="orientation-container" class="d-none" data-step="start">
+    <div class="card" id="orientation-modal" >
+        <div class="card-header"> 
+             @*Dynamic header title from JS *@
+        </div> 
+        <div class="card-body">
+            <div class="orientation-content">
+
+                @*Dynamic content from JS *@
+      
+            </div>
+            <div class="w-100 mt-1" id="orientation-button-container">
+                <div class="start-orientation-buttons">
+                    <button class="btn btn-secondary" id="skip-orientation-btn">Skip</button>
+                    <button class="btn btn-primary" id="start-orientation-btn">Start orientation</button>
+                </div>
+                <div class="mid-orientation-buttons">
+                    <button class="btn btn-secondary step-back-orientation-btn">Back</button>
+                    <button class="btn btn-primary" id="step-forward-orientation-btn">Next</button>
+                </div>
+                <div class="end-orientation-buttons">
+                    <button class="btn btn-secondary step-back-orientation-btn">Back</button>
+                    <button class="btn btn-primary" id="finish-orientation-btn">Done</button>
+                </div>
+                <div class="dead-end-step-orientation-button">
+                        <button id="go-back-to-orientation-btn" class="btn btn-secondary m-auto">
+                        Go Back to Orientation
+                     </button>
+                </div>
+                <div class="workflow-step-orientation-button">
+                    <button class="btn btn-secondary" id="workflow-back-orientation-btn">Back</button>
+                    <button class="btn btn-primary" id="workflow-forward-orientation-btn">Next</button>
+                </div>
+            </div>
+        </div>
+
+            <div id="orientationTooltipArrow" class="position-absolute"></div>
+    </div>
+    <div id="orientation-target-focus"></div>
+    <div id="orientation-backdrop">
+
+    </div>
+</div>
+

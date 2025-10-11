@@ -18,6 +18,8 @@ namespace atlas_the_public_think_tank.Data.DatabaseEntities.Users
         /// </summary>
         public bool SubscribedToEmail { get; set; } = false;
 
+        public DateTime? OrientationCompletedAt { get; set; }
+
         public AppUser()
         {
             Issues = new List<Issue>();

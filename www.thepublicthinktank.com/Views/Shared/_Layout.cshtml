@@ -5,10 +5,19 @@
 @using Microsoft.AspNetCore.Identity
 @using atlas_the_public_think_tank.Models.ViewModel.UI_VM
 @inject SignInManager<AppUser> SignInManager
+@inject UserManager<AppUser> UserManager
+
 @model dynamic
 
-@{
 
+@{
+    AppUser? currentUser = null;
+    if (SignInManager.IsSignedIn(User))
+    {
+        // Async call (no .Result / .Wait() to avoid deadlocks)
+        currentUser = await UserManager.GetUserAsync(User);
+        // Example: var orientationCompletedAt = currentUser?.OrientationCompletedAt;
+    }
 }
 
 <!DOCTYPE html>
@@ -47,6 +56,14 @@
   
     <script src="~/js/Content/initialize-card.js" asp-append-version="true"></script>
     <script src="https://kit.fontawesome.com/16aebb51db.js" crossorigin="anonymous"></script>
+
+
+
+    @if (currentUser != null && currentUser.OrientationCompletedAt == null)
+    {
+        @* include orientation logic in the html *@
+        <link rel="stylesheet" href="~/css/orientation.css" asp-append-version="true" />
+    }
 </head>
 <body>
   
@@ -116,7 +133,15 @@
 
     <script src="~/js/Forms/InitSelect2.js" asp-append-version="true"></script>
     <script src="~/js/Site/InitSearchBar.js" asp-append-version="true"></script>
-
+    
+    
+    @if (currentUser != null && currentUser.OrientationCompletedAt == null)
+    {
+        @* include orientation logic in the html *@
+        @await Html.PartialAsync("~/Views/Orientation/orientation-initialize.cshtml")
+        <script src="~/js/Site/orientation/orientation-steps.js" asp-append-version="true"></script>
+        <script src="~/js/Site/orientation/orientation-logic.js" asp-append-version="true"></script>
+    }
 
     <script>
 

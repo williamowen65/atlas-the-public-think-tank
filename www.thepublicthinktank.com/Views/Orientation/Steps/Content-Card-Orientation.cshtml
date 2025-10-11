@@ -1,0 +1,22 @@
+﻿@* 
+    Title set in JS
+    "This is in an issue or a solution card"
+*@
+
+<div class="my-auto">
+       
+<div align="center">
+    You can tell which it is based on the icon in the title
+</div>
+
+<div class="d-flex justify-content-around" style="height: 60px">
+    <div class="d-flex flex-column justify-content-center align-items-center flex-grow-1" style="background:var(--issue-bg)">
+        Issue
+        @await Html.PartialAsync("~/Views/Shared/Icons/_SubIssues.cshtml")
+    </div>
+    <div class="d-flex flex-column justify-content-center align-items-center flex-grow-1" style="background:var(--solution-bg)">
+        Solution
+        @await Html.PartialAsync("~/Views/Shared/Icons/_Solutions.cshtml")
+    </div>
+</div>
+</div>

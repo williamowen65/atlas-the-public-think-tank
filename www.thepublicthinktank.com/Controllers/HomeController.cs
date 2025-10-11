@@ -336,6 +336,101 @@ public class HomeController : Controller
 
 
 
+    /// <summary>
+    /// If no step is passed, it will just check if orientation is needed
+    /// If a step is passed, it'll return html with a check on orientation status
+    /// </summary>
+    /// <param name="step"></param>
+    /// <returns></returns>
+    [Route("/orientation")]
+    public async Task<IActionResult> Orientation([FromQuery] string? step, [FromQuery] bool? complete, [FromQuery] bool? restart)
+    {
+        // Check if user is signed in with sign in manager
+        if (User.Identity != null && User.Identity.IsAuthenticated)
+        {
+            // User is signed in
+            // You can get the user object if needed:
+            AppUser? user = await _userManager.GetUserAsync(User);
+
+
+            if (complete == true)
+            {
+                try
+                {
+                    // Attach user entity to current context (in case it's not tracked)
+                    _context.Attach(user!);
+                    user!.OrientationCompletedAt = DateTime.UtcNow;
+                    _context.Entry(user).Property(u => u.OrientationCompletedAt).IsModified = true;
+                    await _context.SaveChangesAsync();
+                    return Ok();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to set OrientationCompletedAt for user {UserId}", user.Id);
+                    return Json(new { todoOrientation = true, error = "Failed to complete orientation. Please try again." });
+                }
+            }
+
+            if (restart == true)
+            {
+                try
+                {
+                    // Attach user entity to current context (in case it's not tracked)
+                    _context.Attach(user!);
+                    user!.OrientationCompletedAt = null;
+                    _context.Entry(user).Property(u => u.OrientationCompletedAt).IsModified = true;
+                    await _context.SaveChangesAsync();
+                    return Ok();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to set OrientationCompletedAt for user {UserId}", user.Id);
+                    return Json(new { todoOrientation = true, error = "Failed to restart orientation. Please try again." });
+                }
+            }
+
+
+
+            if (user.OrientationCompletedAt != null)
+            {
+                return (Json(new
+                {
+                    todoOrientation = false
+                }));
+            }
+
+
+            if (step != null)
+            {
+                return (Json(new
+                {
+                    todoOrientation = true,
+                    html = await ControllerExtensions.RenderViewToStringAsync(this, $"~/Views/Orientation/Steps/{step}.cshtml", new { })
+                }));
+            }
+
+            return Json(new
+            {
+                todoOrientation = true
+            });
+
+
+        }
+
+        // User is not signed in
+        // Redirect or show a message as needed
+        return (Json(new
+        {
+            todoOrientation = false
+        }));
+
+    }
+
+
+
+
+
+
     #region Routes that could be in a MiscellenousController
 
     /// <summary>
