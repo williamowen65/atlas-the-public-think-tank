@@ -1,0 +1,25 @@
+﻿@using atlas_the_public_think_tank.Email.Models
+@using atlas_the_public_think_tank.Utilities
+@using Microsoft.Extensions.Options
+@inject IOptions<EmailSettings> EmailSettings
+@model AccessibilityEmailModel
+@{
+    Layout = "/Email/Templates/EmailLayout.cshtml";
+}
+
+
+<p>
+    @Model.Message
+</p>
+
+<div style="text-align: center">
+@if (Model.AppUser != null)
+{    
+    <p>
+        Sent from a logged in user - <a href="@UrlHelpers.EnsureProtocol(EmailSettings.Value.BaseUrl + $"/user-profile?userId={Model.AppUser.Id}")">@Model.AppUser.UserName - @Model.AppUser.Email</a>
+    </p>
+} else
+{
+    <p>Sent from anonymous user</p>    
+}
+</div>

@@ -1,0 +1,91 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+
+<style>
+    #accessibility-tab{
+        position: fixed;
+        top: 0;
+        z-index: 100000000000;
+        background: var(--bs-body-bg);
+        /* Overrides .card css value which upset the card width */
+        container-type: initial !important;
+        opacity: 0;             /* invisible but still focusable */
+        pointer-events: none;    /* ignore clicks while hidden */
+        transition: opacity 0.2s;
+    }
+    #accessibility-tab:focus,
+    #accessibility-tab:focus-within {
+        opacity: 1;
+        pointer-events: auto;    /* enable interaction */
+    }
+    .text-button {
+        background: none; /* remove default background */
+        border: none; /* remove default border */
+        padding: 0; /* remove extra padding */
+        margin: 0; /* optional, align with text flow */
+        font: inherit; /* inherit font styles from parent */
+        color: #007bff; /* optional: match link or text color */
+        cursor: pointer; /* show pointer on hover */
+        text-decoration: underline; /* optional: like a link */
+        padding: 3px 5px;
+    }
+    .accessibility-entry {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+</style>
+
+<div id="accessibility-tab" class="card" tabindex="0">
+    <div class="card-body">
+        <div class="accessibility-entry"><h5 class="card-title">Accessibility tab</h5> <span class="ms-2 mb-2">(alt + a)</span></div>
+        <div class="accessibility-menu">
+            <button id="go-to" class="text-button" aria-label="Go to a specific part of the website">Go to...</button>
+            <br />
+            <button class="text-button" data-bs-toggle="modal" data-bs-target="#provide-accessibility-feedback-modal">
+                Provide Accessibility Feedback
+            </button>
+            <br />
+            <button id="exit-accessibility-tab-button" class="text-button">Exit</button>
+        </div>
+        <div class="go-to-menu d-none">
+            <h6 class="card-subtitle mb-2 text-body-secondary">Go to...</h6>
+            <div class="accessibility-entry"><button id="go-to-header" class="text-button">Header</button> (alt + h) </div>
+            <div class="accessibility-entry"><button id="go-to-sidebar" class="text-button">Sidebar</button> (alt + s) </div>
+            
+            <div class="accessibility-entry"><button id="go-to-main-section" class="text-button">Main Content</button> (alt + m)</div>
+            <div class="accessibility-entry"><button id="go-to-footer" class="text-button">Footer</button>(alt + b)</div>
+            <div class="accessibility-entry"><button id="go-to-utility-dock" class="text-button">Utility Dock</button>(alt + u)</div>
+            <button id="go-back-from-go-to-menu" class="text-button">Go back...</button>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap Modal for Accessibility Feedback -->
+<div class="modal fade" id="provide-accessibility-feedback-modal" tabindex="-1" aria-labelledby="accessibilityFeedbackModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" id="provide-accessibility-feedback-form">
+      <div class="modal-header">
+        <h5 class="modal-title" id="accessibilityFeedbackModalLabel">Accessibility Feedback</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+          <div class="mb-3">
+            <label for="accessibilityFeedbackText" class="form-label">Your feedback</label>
+            <textarea class="form-control" id="accessibilityFeedbackText" rows="4"></textarea>
+          </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="submit" class="btn btn-primary">Submit Feedback</button>
+                <div id="accessibility-feedback-error"></div>
+      </div>
+    </form>
+  </div>
+</div>
+
+

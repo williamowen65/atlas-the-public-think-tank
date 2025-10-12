@@ -94,7 +94,7 @@
 
     </nav>
     <div class="tab-content" id="nav-tabContent">
-        <div class="tab-pane fade show active border border-1 border-top-0" id="solutions" role="tabpanel" aria-labelledby="solutions-tab" tabindex="0">
+        <div class="tab-pane fade show active border border-1 border-top-0" id="solutions" role="tabpanel" aria-labelledby="solutions-tab" >
 
                 <div id="solution-content">
                 @if (Model.Issue.PaginatedSolutions != null && Model.Issue.PaginatedSolutions.Solutions.Any())
@@ -129,7 +129,7 @@
                  })
 
         </div>
-        <div class="tab-pane fade border border-1 border-top-0" id="issue-comments" role="tabpanel" aria-labelledby="comments-tab" tabindex="0">
+        <div class="tab-pane fade border border-1 border-top-0" id="issue-comments" role="tabpanel" aria-labelledby="comments-tab">
 
             @if (Model.Issue.Comments.Count() == 0)
             {
@@ -148,9 +148,7 @@
                 <p>Comment feed for this issue</p>
             }
         </div>
-        <div class="tab-pane fade border border-1 border-top-0" id="sub-issues" role="tabpanel" aria-labelledby="sub-issues-tab" tabindex="0">
-       
-
+        <div class="tab-pane fade border border-1 border-top-0" id="sub-issues" role="tabpanel" aria-labelledby="sub-issues-tab">
 
             <div id="sub-issue-content">
 
@@ -187,7 +185,7 @@
             })
             
         </div>
-        <div class="tab-pane fade border border-1 border-top-0" id="parent-post" role="tabpanel" aria-labelledby="parent-post-tab" tabindex="0">
+        <div class="tab-pane fade border border-1 border-top-0" id="parent-post" role="tabpanel" aria-labelledby="parent-post-tab">
             @if (Model.Issue.ParentIssue != null && Model.Issue.ParentSolution != null)
             {
                 <h5 class="mt-3 mb-3">Parent Issue</h5>

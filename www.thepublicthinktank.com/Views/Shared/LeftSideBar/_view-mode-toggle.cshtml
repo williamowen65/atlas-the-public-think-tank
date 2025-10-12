@@ -19,13 +19,13 @@
 
         <div id="view-toggle-outline" class="outline"></div>
 
-        <label role="button" for="tree" class="fs-3 toggle-option left-option ">
+        <label role="button" for="tree" tabindex="0" class="fs-3 toggle-option left-option ">
             <i class="fa-solid fa-sitemap " style="color:var(--bs-emphasis-color)"></i>
         </label>
-        <label role="button" for="info" class="fs-3 toggle-option middle-option">
+        <label role="button" for="info" tabindex="0" class="fs-3 toggle-option middle-option">
             <i class="fa-solid fa-info-circle " style="color:var(--bs-emphasis-color)"></i>
         </label>       
-        <label role="button" for="filter" class="fs-3 toggle-option right-option">
+        <label role="button" for="filter" tabindex="0" class="fs-3 toggle-option right-option">
             @await Html.PartialAsync("~/Views/Shared/Icons/_filter-icon.cshtml")
         </label>
     </div>

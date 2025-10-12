@@ -21,6 +21,12 @@
 
 else
 {
+    <style>
+            .create-content-dropdown a:focus,
+            .create-content-dropdown li:focus {
+                text-decoration: underline
+            }
+    </style>
 
         <div class="dropdown" style="position:initial">
             <button class="transparent-btn general-btn hoverable " type="button" id="createDropdown" data-bs-toggle="dropdown" aria-expanded="false">
@@ -28,7 +34,7 @@ else
                 Create
             </button>
             <ul class="dropdown-menu p-0 create-content-dropdown overflow-hidden fs-5" aria-labelledby="createDropdown">
-                <li style="border-right: 3px solid powderblue">
+                <li style="border-right: 3px solid transparent">
                     <a class="dropdown-item" href="@Url.Action("CreateIssue", "Issue")" style="background: var(--issue-bg)">
                        <span class="pe-2">
                             @await Html.PartialAsync("~/Views/Shared/Icons/_SubIssues.cshtml")

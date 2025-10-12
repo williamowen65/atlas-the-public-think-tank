@@ -14,7 +14,7 @@ using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static atlas_the_public_think_tank.Email.EmailQueue;
+using static atlas_the_public_think_tank.Email.EmailLogger;
 
 namespace atlas_the_public_think_tank.Areas.Identity.Pages.Account
 {
@@ -23,8 +23,8 @@ namespace atlas_the_public_think_tank.Areas.Identity.Pages.Account
         private readonly UserManager<AppUser> _userManager;
         private readonly SignInManager<AppUser> _signInManager; 
         private readonly IEmailSender _emailSender;
-        private readonly EmailQueue _emailQueue;
-        public ConfirmEmailModel(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager, IEmailSender emailSender, EmailQueue emailQueue) 
+        private readonly EmailLogger _emailQueue;
+        public ConfirmEmailModel(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager, IEmailSender emailSender, EmailLogger emailQueue) 
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -64,7 +64,7 @@ namespace atlas_the_public_think_tank.Areas.Identity.Pages.Account
 
             EmailInfo emailInfo = new Emails.WelcomeEmail(user, welcomeEmailModel);
 
-            await _emailQueue.Send(user.Email, emailInfo);
+            await _emailQueue.SendEmailToUser(user.Email, emailInfo);
 
 
             StatusMessage = result.Succeeded ? "Thank you for confirming your email." : "Error confirming your email.";

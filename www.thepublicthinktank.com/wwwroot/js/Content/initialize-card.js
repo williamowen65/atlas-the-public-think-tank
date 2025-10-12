@@ -975,6 +975,8 @@ function initializeCompositeScopeRibbonListener(cardId) {
 
 function initTabbedForum(config) {
 
+
+
     reinitializeVoteDials();
 
     if (config.paginationButtonId) {
@@ -991,7 +993,18 @@ function initTabbedForum(config) {
     if (forumTabEl) {
         forumTabEl.addEventListener('click', function (e) {
             reinitializeVoteDials();
+
+            // All tabs should keep a tabindex="0"
+            // BS likes to update them to tabindex="-1"
+            const siblingTabs = Array.from(forumTabEl.parentNode.children)
+            siblingTabs.forEach(tab => tab.setAttribute("tabindex", 0))
+
         });
+
+        setTimeout(() => {
+            const siblingTabs = Array.from(forumTabEl.parentNode.children)
+            siblingTabs.forEach(tab => tab.setAttribute("tabindex", 0))
+        }, 0)
     } else {
        throw new Error("forum tab element not found")
     }

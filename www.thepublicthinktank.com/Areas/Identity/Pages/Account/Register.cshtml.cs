@@ -23,7 +23,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading;
 using System.Threading.Tasks;
-using static atlas_the_public_think_tank.Email.EmailQueue;
+using static atlas_the_public_think_tank.Email.EmailLogger;
 
 namespace atlas_the_public_think_tank.Areas.Identity.Pages.Account
 {
@@ -34,7 +34,7 @@ namespace atlas_the_public_think_tank.Areas.Identity.Pages.Account
         private readonly IUserStore<AppUser> _userStore;
         private readonly IUserEmailStore<AppUser> _emailStore;
         private readonly ILogger<RegisterModel> _logger;
-        private readonly EmailQueue _emailQueue;
+        private readonly EmailLogger _emailLogger;
         private readonly IOptions<EmailSettings> _emailSettings;
 
         public RegisterModel(
@@ -43,7 +43,7 @@ namespace atlas_the_public_think_tank.Areas.Identity.Pages.Account
             SignInManager<AppUser> signInManager,
             ILogger<RegisterModel> logger,
             IEmailSender emailSender,
-            EmailQueue emailQueue,
+            EmailLogger emailQueue,
             IOptions<EmailSettings> EmailSettings)
         {
             _userManager = userManager;
@@ -51,7 +51,7 @@ namespace atlas_the_public_think_tank.Areas.Identity.Pages.Account
             _emailStore = GetEmailStore();
             _signInManager = signInManager;
             _logger = logger;
-            _emailQueue = emailQueue;
+            _emailLogger = emailQueue;
             _emailSettings = EmailSettings;
         }
 
@@ -158,7 +158,7 @@ namespace atlas_the_public_think_tank.Areas.Identity.Pages.Account
 
                     EmailInfo emailInfo = new Emails.ConfirmationEmail(user, confirmationEmailModel);
 
-                    await _emailQueue.Send(Input.Email, emailInfo);
+                    await _emailLogger.SendEmailToUser(Input.Email, emailInfo);
 
 
                     if (_userManager.Options.SignIn.RequireConfirmedAccount)

@@ -15,7 +15,7 @@
 @await Html.PartialAsync("~/Views/Solution/_solution-author-tag.cshtml", Model)
 
 
-<div class="card mb-3 solution-card @(isDefaultExpand ? "expanded-by-default expanded" : "")" id="@Model.SolutionID" data-content-type="solution">
+<div tabindex="0" class="card mb-3 solution-card @(isDefaultExpand ? "expanded-by-default expanded" : "")" id="@Model.SolutionID" data-content-type="solution">
     <div class="card-content position-relative mb-2">
         @await Html.PartialAsync("~/Views/Solution/_solution-card-sticky-header.cshtml", Model)
         <div class="dial-container" style="float:left">

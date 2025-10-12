@@ -7,7 +7,7 @@
 @{
 }
 
-<div class="vote-count" style="position: relative;    cursor: pointer;">
+<div class="vote-count" style="position: relative;    cursor: pointer;" tabindex="0" role="button">
 
   
 @* THE VOTE DIAL *@
@@ -19,6 +19,7 @@ position: absolute;
     transform: translate(-50%, -24%);
     z-index:10;
 "
+
     
 >
 @Model.TotalVotes

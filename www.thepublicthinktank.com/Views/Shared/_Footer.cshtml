@@ -1,11 +1,9 @@
-﻿<footer class="border-top footer ">
+﻿<footer class="border-top footer" tabindex="0">
     <div class="container d-flex justify-content-between flex-column" style="width: 326px; transform: translateY(31px)">
 
         <div>
             <div class="ff-consolas col-lg-4 mb-2 text-body-emphasis text-decoration-none fw-bold w-100" style="transform: translateY(-10px)">
                 @await Html.PartialAsync("~/Views/Shared/Components/ThePublicThinkTank_Logo.cshtml")
-
-
             </div>
         </div>
         <div class="d-flex align-items-center  justify-content-between w-fit m-auto">
@@ -16,11 +14,11 @@
             </div>
             <div class="mx-2">-</div>
             <div>
-                <a asp-area="" asp-controller="Home" style="text-decoration:none" asp-action="Privacy">Privacy</a>
+                <a tabindex="0" asp-area="" asp-controller="Home" style="text-decoration:none" asp-action="Privacy">Privacy</a>
             </div>
             <div class="mx-2">-</div>
             <div>
-                <a style="text-decoration: none" target="_blank" href="https://github.com/williamowen65/atlas-the-public-think-tank">
+                <a tabindex="0" style="text-decoration: none" target="_blank" href="https://github.com/williamowen65/atlas-the-public-think-tank">
                     @Html.Partial("~/Views/Shared/Icons/_Github-logo.cshtml") Github
                 </a>
             </div>

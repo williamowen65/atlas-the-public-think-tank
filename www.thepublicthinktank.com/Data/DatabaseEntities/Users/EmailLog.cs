@@ -13,7 +13,7 @@ namespace atlas_the_public_think_tank.Data.DatabaseEntities.Users
         /// <summary>
         /// A foreign key
         /// </summary>
-        public Guid UserID { get; set; }
+        public Guid? UserID { get; set; } = null;
 
         /// <summary>
         /// This EmailID points to an hard coded email in the codebase.

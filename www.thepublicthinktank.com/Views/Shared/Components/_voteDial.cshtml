@@ -50,7 +50,7 @@
     @await Html.PartialAsync("~/Views/Shared/Components/_voteAverage.cshtml") 
     
     <div class="vote-dial-toggle @(userVote.HasValue ? "user-voted" : "") mb-1">
-        <div id="vote-toggle-container-@Model.ContentID" class="vote-toggle-container">
+        <div tabindex="0" id="vote-toggle-container-@Model.ContentID" class="vote-toggle-container">
             @* 
                 The invisible inputs that are used behind scenes of a dial 
                 Conditionally "Checks" the users vote value or falls back to 5
