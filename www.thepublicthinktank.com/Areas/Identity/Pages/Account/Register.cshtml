@@ -69,4 +69,10 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const firstFormField = document.querySelector("form#registerForm input")
+            firstFormField.focus()
+        })
+    </script>
 }

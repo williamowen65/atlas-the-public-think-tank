@@ -143,7 +143,7 @@ public class Program
         }
 
 
-        builder.Services.AddScoped<EmailQueue>();
+        builder.Services.AddScoped<EmailLogger>();
 
         var app = builder.Build();
 

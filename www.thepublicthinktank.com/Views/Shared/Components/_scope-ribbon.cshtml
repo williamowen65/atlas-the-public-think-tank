@@ -17,41 +17,41 @@
     // Assumes Model and Model.Scales are non-null and contain at least one element.
 }
 
-<div class="scope-ribbon" data-scope-id="@Model.ScopeID" >
+<div class="scope-ribbon" data-scope-id="@Model.ScopeID">
     @switch (Model.Scales.Max())
     {
         case Scale.Individual:
-            <div class="ribbon individual">
+            <div class="ribbon individual" tabindex="0" role="button">
                 <text>👤</text>
             </div>
             break;
         case Scale.Household:
-            <div class="ribbon household">
+            <div class="ribbon household" tabindex="0" role="button">
                 <text>🏠</text>
             </div>
             break;
         case Scale.National:
-            <div class="ribbon national">
+            <div class="ribbon national" tabindex="0" role="button">
                 <text>🏛️</text>
             </div>
             break;
         case Scale.Regional:
-            <div class="ribbon local">
+            <div class="ribbon local" tabindex="0" role="button">
                 <text>📍</text>
             </div>
             break;
         case Scale.Community:
-            <div class="ribbon community">
+            <div class="ribbon community" tabindex="0" role="button">
                 <text>🤝</text>
             </div>
             break;
         case Scale.Global:
-            <div class="ribbon global">
+            <div class="ribbon global" tabindex="0" role="button">
                 <text>🌍</text>
             </div>
             break;
         default:
-            <div class="ribbon">
+            <div class="ribbon" tabindex="0" role="button">
                 <text>❓</text>
             </div>
             break;

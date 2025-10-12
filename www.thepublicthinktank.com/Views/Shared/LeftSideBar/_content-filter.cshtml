@@ -20,26 +20,21 @@
             @if (mode == "Home")
             {
 
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" id="show-both" name="contentTypeFilter" value="both" checked @(mode == "ContentItem" ? "disabled" : "")>
-                    <label class="form-check-label" for="show-both">
+                <label role="button" tabindex="0" class="form-check-label form-check" for="show-both">
+                    <input tabindex="-1" class="form-check-input" type="radio" id="show-both" name="contentTypeFilter" value="both" checked @(mode == "ContentItem" ? "disabled" : "")>
                         Issues & Solutions
-                    </label>
-                </div>
+                </label>
 
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" id="show-issues-only" name="contentTypeFilter" value="issues" @(mode == "ContentItem" ? "disabled" : "")>
-                    <label class="form-check-label" for="show-issues-only">
+                <label role="button" tabindex="0" class="form-check-label form-check" for="show-issues-only">
+                    <input tabindex="-1" class="form-check-input " type="radio" id="show-issues-only" name="contentTypeFilter" value="issues" @(mode == "ContentItem" ? "disabled" : "")>
                         Just Issues
-                    </label>
-                </div>
+                </label>
 
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" id="show-solutions-only" name="contentTypeFilter" value="solutions" @(mode == "ContentItem" ? "disabled" : "")>
-                    <label class="form-check-label" for="show-solutions-only">
+                <label role="button" tabindex="0" class="form-check-label form-check" for="show-solutions-only">
+                    <input tabindex="-1" class="form-check-input" type="radio" id="show-solutions-only" name="contentTypeFilter" value="solutions" @(mode == "ContentItem" ? "disabled" : "")>
                         Just Solutions
-                    </label>
-                </div>
+                </label>
+                
             }
             else
             {
@@ -67,8 +62,8 @@
         </div>
 
         <div class="sliders_control">
-            <input class="fromSlider" id="fromSlider-average-score-filter" type="range" value="0" min="0" max="10" step="0.1" />
-            <input id="toSlider-average-score-filter" type="range" value="10" min="0" max="10" step="0.1" />
+            <input tabindex="-1" class="fromSlider" id="fromSlider-average-score-filter" type="range" value="0" min="0" max="10" step="0.1" />
+            <input tabindex="-1" id="toSlider-average-score-filter" type="range" value="10" min="0" max="10" step="0.1" />
         </div>
     </div>
     <div class="range_container filter-group" id="total-votes-filter">

@@ -166,7 +166,6 @@ async function moveOrientationToStep(
 
     handleTooltipMode()
 
-    manageAccessibility()
 
     scrollToModal()
 
@@ -179,17 +178,10 @@ async function moveOrientationToStep(
         stepEntry.customLogic(context)
     }
 
-
-
-
-    /**
-     * The tab index should be trapped within a loop
-     * The first tab should go to the orientation modals "next" btn (shift/tab goes to back)
-     * But if the user continues to tab, the tab should lead to the focused element, and then loop back to the orientation modal.
-     */
-    function manageAccessibility() {
-       console.warn("TODO: Manage Accessibility of orientation... This will be done in another git branch")
+    if (stepEntry.accessibility) {
+        stepEntry.accessibility()
     }
+
 
     function scrollToModal() {
         const modal = orientationModal.getBoundingClientRect()

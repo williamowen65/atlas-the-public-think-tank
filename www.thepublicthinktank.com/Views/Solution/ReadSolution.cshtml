@@ -65,7 +65,7 @@
     </nav>
     <div class="tab-content" id="nav-tabContent">
 
-        <div class="tab-pane show active fade border border-1 border-top-0" id="issue-comments" role="tabpanel" aria-labelledby="comments-tab" tabindex="0">
+        <div class="tab-pane show active fade border border-1 border-top-0" id="issue-comments" role="tabpanel" aria-labelledby="comments-tab">
 
             @if (Model.Solution.Comments.Count() == 0)
             {
@@ -84,7 +84,7 @@
                 <p>Comment feed for this issue</p>
             }
         </div>
-        <div class="tab-pane fade border border-1 border-top-0" id="sub-issues" role="tabpanel" aria-labelledby="sub-issues-tab" tabindex="0">
+        <div class="tab-pane fade border border-1 border-top-0" id="sub-issues" role="tabpanel" aria-labelledby="sub-issues-tab">
            
                 <div id="sub-issue-content">
                     @if (Model.Solution.PaginatedSubIssues != null && Model.Solution.PaginatedSubIssues.Issues.Any())
@@ -123,7 +123,7 @@
 
         </div>
 
-        <div class="tab-pane fade border border-1 border-top-0" id="parent-post" role="tabpanel" aria-labelledby="parent-post-tab" tabindex="0">
+        <div class="tab-pane fade border border-1 border-top-0" id="parent-post" role="tabpanel" aria-labelledby="parent-post-tab">
             @if (Model.Solution.ParentIssue != null)
             {
                 @Html.Partial("~/Views/Issue/_issue-card.cshtml", Model.Solution.ParentIssue)

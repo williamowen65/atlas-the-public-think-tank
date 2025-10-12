@@ -5,6 +5,9 @@ using atlas_the_public_think_tank.Data.DbContext;
 using atlas_the_public_think_tank.Data.RawSQL;
 using atlas_the_public_think_tank.Data.RepositoryPattern.IRepository;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
+using atlas_the_public_think_tank.Email;
+using atlas_the_public_think_tank.Email.Models;
+using atlas_the_public_think_tank.Migrations;
 using atlas_the_public_think_tank.Models.Cacheable;
 using atlas_the_public_think_tank.Models.Enums;
 using atlas_the_public_think_tank.Models.ViewModel;
@@ -23,14 +26,17 @@ using atlas_the_public_think_tank.Utilities;
 using Azure.Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
-using NuGet.Protocol;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Diagnostics;
+using System.Net.Mail;
 using System.Text;
 using System.Text.Json;
 using System.Web;
 using static atlas_the_public_think_tank.Data.SeedData.SeedIds;
+using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 using ContentType = atlas_the_public_think_tank.Models.Enums.ContentType;
 
 namespace atlas_the_public_think_tank.Controllers;
@@ -49,8 +55,11 @@ public class HomeController : Controller
     private readonly IAppUserRepository _appUserRepository;
     private readonly IIssueRepository _issueRepository;
     private readonly Read _read;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    public readonly IServiceProvider _serviceProvider;
+    public readonly IEmailSender _emailSender;
 
-    public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, UserManager<AppUser> userManager, IVoteStatsRepository voteStatsRepository, IAppUserRepository appUserRepository, IIssueRepository issueRepository, Read read)
+    public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, UserManager<AppUser> userManager, IVoteStatsRepository voteStatsRepository, IAppUserRepository appUserRepository, IIssueRepository issueRepository, Read read, IHttpContextAccessor httpContextAccessor, IServiceProvider serviceProvider, IEmailSender emailSender)
     {
         _logger = logger;
         _context = context;
@@ -59,6 +68,9 @@ public class HomeController : Controller
         _appUserRepository = appUserRepository;
         _issueRepository = issueRepository;
         _read = read;
+        _httpContextAccessor = httpContextAccessor;
+        _serviceProvider = serviceProvider;
+        _emailSender = emailSender;
     }
 
     #region Serve the home page
@@ -426,20 +438,50 @@ public class HomeController : Controller
 
     }
 
+    /// <summary>
+    /// Sends an email to atlas@thepublicthinktank.com
+    /// with a message from a user about their accessibility experience
+    /// </summary>
+    /// <remarks>
+    /// This email pattern does not user the EmailLogger because is not an email sent to the user.
+    /// The EmailLog don't contain the actual email content, because that can be references from the app and would bloat the db. Since there was no content column in the db for the actual email, no reason to send this email via the EmailLogger. 
+    /// </remarks>
+    [Route("/accessibility-feedback")]
+    [HttpPost]
+    public async Task<IActionResult> AccessibilityFeedback([FromBody] AccessibilityEmailModel model) {
+        try
+        {
+            // Check if user is logged in and add to model
+            if (User?.Identity != null && User.Identity.IsAuthenticated)
+            {
+                var user = await _userManager.GetUserAsync(User);
+                model.AppUser = user;
+            }
+             
+            // Construct the email from the cshtml and send the email
+            HttpContext? httpContext = _httpContextAccessor.HttpContext;
+            string emailRendered = await ViewRenderService.RenderViewToStringAsync(_serviceProvider, httpContext, "Email/Templates/AccessibilityFeedbackEmail.cshtml", model);
+            await _emailSender.SendEmailAsync("atlas@thepublicthinktank.com", "Accessibility feedback from a user", emailRendered);
 
+            return Json(new { success = true });
+        }
+        catch (Exception err) { 
+            return StatusCode(500, new { success = false, message = "An error occurred while sending accessibility feedback." });
+        }
+    }
 
 
 
 
     #region Routes that could be in a MiscellenousController
 
-    /// <summary>
-    /// This method is used to return a partial view for displaying alerts.
-    /// </summary>
-    /// <param name="alertType"></param>
-    /// <param name="message"></param>
+   /// <summary>
+   /// This method is used to return a partial view for displaying alerts.
+   /// </summary>
+   /// <param name="alertType"></param>
+   /// <param name="message"></param>
 
-    [HttpGet]
+   [HttpGet]
     [Route("Shared/_Alert")]
     public IActionResult Alert(string type, string message = null, bool? dismissible = null, int? timeout = null)
     {

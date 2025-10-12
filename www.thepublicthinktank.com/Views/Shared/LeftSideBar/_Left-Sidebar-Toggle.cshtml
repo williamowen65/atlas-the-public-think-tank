@@ -7,10 +7,10 @@
 *@
 
 <!-- Add this after the header section -->
-<button class="transparent-btn left-sidebar-toggle" aria-label="Toggle sidebar">
+<button tabindex="0" class="transparent-btn left-sidebar-toggle" aria-label="Toggle sidebar">
     <i class="fa-solid fa-bars"></i>
 </button>
-<div id="left-sidebar-container" class="" style="user-select:none" >
+<div id="left-sidebar-container" class="" style="user-select:none" tabindex="0" aria-label="Sidebar container has multiple views. You can toggle forward to the view mode toggles. You can tab + shift to move focus backwards to the sidebar toggle">
     <!-- Sidebar content will be loaded here via AJAX (js file fetches it from APIController) -->
     @await Html.PartialAsync("~/Views/Shared/LeftSideBar/_left-sidebar-container.cshtml", Model)
 </div>

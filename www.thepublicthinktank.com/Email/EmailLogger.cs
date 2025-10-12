@@ -11,13 +11,13 @@ using System.Runtime.Serialization;
 
 namespace atlas_the_public_think_tank.Email
 {
-    public class EmailQueue
+    public class EmailLogger
     {
         public readonly IEmailSender _emailSender;
         public readonly IServiceProvider _serviceProvider;
         public readonly IHttpContextAccessor _httpContextAccessor;
         public readonly ApplicationDbContext _context;
-        public EmailQueue(IEmailSender emailSender, IServiceProvider serviceProvider, ApplicationDbContext context, IHttpContextAccessor httpContextAccessor = null)
+        public EmailLogger(IEmailSender emailSender, IServiceProvider serviceProvider, ApplicationDbContext context, IHttpContextAccessor httpContextAccessor = null)
         {
 
             // Confirm IEmailService is not NoOpEmailSender
@@ -39,7 +39,7 @@ namespace atlas_the_public_think_tank.Email
         /// It wraps the IEmailService logic and is used to keep track of emails sent
         /// and prevent accidental duplicate emails
         /// </summary>
-        public async Task Send(string emailAddress, EmailInfo emailInfo) {
+        public async Task SendEmailToUser(string emailAddress, EmailInfo emailInfo) {
 
             // Check if the email has already been sent
             var alreadySent = await _context.EmailLog
@@ -81,14 +81,14 @@ namespace atlas_the_public_think_tank.Email
             }
 
 
-
+            // Construct the email from the cshtml and send the email
             HttpContext? httpContext = _httpContextAccessor.HttpContext;
             string emailRendered = await ViewRenderService.RenderViewToStringAsync(_serviceProvider, httpContext, emailInfo.TemplatePath, emailInfo.Model);
             await _emailSender.SendEmailAsync(emailAddress, emailInfo.Subject, emailRendered);
 
             // Log the email sent in the email log
-            _context.EmailLog.Add(new EmailLog() 
-            { 
+            _context.EmailLog.Add(new EmailLog()
+            {
                 EmailID = emailInfo.EmailID,
                 UserID = emailInfo.User.Id,
                 SentAt = DateTime.UtcNow,
@@ -98,10 +98,16 @@ namespace atlas_the_public_think_tank.Email
             await _context.SaveChangesAsync();
         }
 
+
+        /// <summary>
+        /// Provides info for creating specific emails for the EmailLoggerClass
+        /// </summary>
+        /// <remarks>
+        /// Not all emails sent from the app are here. Ex: Accessibility email)
+        /// </remarks>
         public static class Emails
         {
-
-
+           
             public class WelcomeEmail : EmailInfo
             {
                 public WelcomeEmail(AppUser user, dynamic model)
@@ -135,8 +141,7 @@ namespace atlas_the_public_think_tank.Email
             public string TemplatePath { get; set; }
 
             public Guid EmailID { get; set; }
-
-            public AppUser User { get; set; }
+            public AppUser? User { get; set; }
             public dynamic Model { get; set; }
 
 

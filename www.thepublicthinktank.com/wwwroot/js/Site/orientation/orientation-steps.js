@@ -24,7 +24,8 @@
         async () => ({
             headerText: "Orientation: Intro",
             content: await fetchOrientationStep("Intro-To-Orientation"),
-            customLogic: animateIntroInspirationLink
+            customLogic: animateIntroInspirationLink,
+            accessibility: orientationIntroAccessibility
         }),
         async () => ({
             headerText: "Orientation: Issue & Solution Cards",
@@ -33,6 +34,7 @@
             element: '.issue-card:nth-child(2), .solution-card:nth-child(2)',
             position: modalPosition.top,
             arrow: arrowPosition.downMiddle,
+            accessibility: IssueSolutionCard
         }),
         async () => ({
             headerText: "This is the vote dial",
@@ -41,7 +43,8 @@
             content: await fetchOrientationStep("Vote-Component-Orientation"),
             position: modalPosition.right,
             arrow: arrowPosition.leftMiddle,
-            widthAlignment: widthAlignmentEnum.right 
+            widthAlignment: widthAlignmentEnum.right,
+            accessibility: VoteDialContainer,
         }),
         async () => ({
             headerText: "The average of all votes",
@@ -50,7 +53,8 @@
             content: await fetchOrientationStep("Vote-Average-Orientation"),
             position: modalPosition.rightAdjusted,
             arrow: arrowPosition.leftMiddle,
-            widthAlignment: widthAlignmentEnum.right
+            widthAlignment: widthAlignmentEnum.right,
+            accessibility: MidModalTrapOnly,
         }),
         async () => ({
             headerText: "The vote dial",
@@ -59,7 +63,8 @@
             content: await fetchOrientationStep("Vote-Dial-Orientation"),
             position: modalPosition.rightAdjusted,
             arrow: arrowPosition.leftMiddle,
-            widthAlignment: widthAlignmentEnum.right
+            widthAlignment: widthAlignmentEnum.right,
+            accessibility: VoteDial,
         }),
         async () => ({
             headerText: "The vote count",
@@ -68,7 +73,8 @@
             content: await fetchOrientationStep("Vote-TotalVotes-Orientation"),
             position: modalPosition.rightAdjusted,
             arrow: arrowPosition.leftMiddle,
-            widthAlignment: widthAlignmentEnum.right
+            widthAlignment: widthAlignmentEnum.right,
+            accessibility: VoteCount,
         }),
         async () => ({
             headerText: "This is a scope ribbon",
@@ -84,7 +90,8 @@
                 top: "66%"
             },
             widthAlignment: widthAlignmentEnum.left,
-            desiredWidth: 600
+            desiredWidth: 600,
+            accessibility: ScopeRibbon,
         }),
         async () => ({
             headerText: "Quick Links / Info Counts",
@@ -97,7 +104,8 @@
             },
             arrow: arrowPosition.rightMiddle,
             widthAlignment: widthAlignmentEnum.left,
-            desiredWidth: 600
+            desiredWidth: 600,
+            accessibility: QuickLinkInfoCounts
         }),
         async () => ({
             headerText: "This is a breadcrumb",
@@ -105,7 +113,8 @@
             element: "nav[aria-label=breadcrumb]",
             content: await fetchOrientationStep("Breadcrumb-Orientation"),
             position: modalPosition.top,
-            arrow: arrowPosition.downMiddle
+            arrow: arrowPosition.downMiddle,
+            accessibility: breadcrumbAccessibility
         }),
         async () => ({
             headerText: "Left Side bar",
@@ -119,6 +128,7 @@
             },
             arrow: arrowPosition.leftMiddle,
             widthAlignment: widthAlignmentEnum.right,
+            accessibility: leftSidebarToggle
         }),
         async () => ({
             headerText: "Sidebar Views",
@@ -142,7 +152,8 @@
             },
             customLogic: () => {
                 setListenerOnSideBarToggles()
-            }
+            },
+            accessibility: sidebarViews
         }),
         async () => ({
             headerText: "Content Filter / Sort",
@@ -161,13 +172,15 @@
                 confirmContentFilterSelected()
             },
             customLogic: () => {
-            }
+            },
+            accessibility: contentFilter
         }),
         async () => ({
             //headerText: "Creating Issues and Solutions",
             headerText: "There are 2 general ways to create new issues and/or solutions",
             content: await fetchOrientationStep("Create-Issues-And-Solutions-Orientation"),
             customLogic: setListenersForCreateIssueAndSolutionStep,
+            accessibility: createIssuesAndSolutions1,
             /**
              * 2 sub workflows triggered from modal
              * customLogic is used to set in motion these workflows
@@ -190,7 +203,8 @@
                     },
                     customLogic: (context) => {
                         setCreateButtonOrientationListener()
-                    }
+                    },
+                    accessibility: createIssuesAndSolutions2,
                 }),
                 async () => ({
                     headerText: "Navigate to a create page",
@@ -206,15 +220,16 @@
                     preConditionLogic: () => {
                         confirmCreateDropdownOpen()
                     },
-                    customLogic: navigateToACreatePageLogic
+                    customLogic: navigateToACreatePageLogic,
+                    accessibility: createBtnDropdown
                 }),
                 async () => ({
                     headerText: "This is a create page",
                     content: await fetchOrientationStep("Create-Page-Navigated-To-Orientation"),
                     isDeadEndStep: true,
                     elements: ['#createDropdown', ".parent-fieldset"], // <-- not valid. Was attempting to be able to have two "windows" in the backdrop, but was too complicated
-                    customLogic: createContentPageLogic
-
+                    customLogic: createContentPageLogic,
+                    accessibility: focusGoBackToOrientationBtn
                 })
             ],
             userClicksShowHow_CreateViaContentPageWorkflow: [
@@ -236,7 +251,8 @@
                     },
                     customLogic: () => {
                         setListenersOnViewContentPageLinks()
-                    }
+                    },
+                    accessibility: viewContentBtnStep
                 }),
                 async () => ({
                     headerText: "The tab bar offers a way to navigate sub content",
@@ -250,7 +266,8 @@
                     },
                     customLogic: () => {
                         setListenerOnVisitCreatePageViaContentPage()
-                    }
+                    },
+                    accessibility: tabbarNavigation
                 }),
                 //async () => ({
                 //    headerText: "Here is an example Action button",
@@ -283,14 +300,16 @@
                     arrow: isMobile() ? arrowPosition.downMiddle : arrowPosition.rightMiddle,
                     element: ".parent-fieldset",
                     desiredWidth: 300,
-                    isDeadEndStep: true
+                    isDeadEndStep: true,
+                    accessibility: focusGoBackToOrientationBtn
 
                 })
             ]
         }),
         async () => ({
             headerText: "Thank you for completing the orientation!",
-            content: await fetchOrientationStep("End-Of-Orientation")
+            content: await fetchOrientationStep("End-Of-Orientation"),
+            accessibility: lastStep
         })
     ]
 
@@ -564,7 +583,8 @@
             content: await fetchOrientationStep("Vote-Cast-During-Orientation"),
             position: modalPosition.top,
             arrow: arrowPosition.downMiddle,
-            isDeadEndStep: true
+            isDeadEndStep: true,
+            accessibility: userVotedDuringOrientationAccessibility
         }),
         userOpensContentVoteModal: async () => ({
             element: "#userVoteModal .modal-content",

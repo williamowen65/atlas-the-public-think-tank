@@ -104,6 +104,37 @@ function initializeDatePickers() {
     let fromDatePicker = createFromDatePicker();
     let toDatePicker = createToDatePicker();
 
+
+    // Helper to close pickers only if focus leaves both fields
+    function setupBlurHandler() {
+        const fromField = document.querySelector("#datepicker-from");
+        const toField = document.querySelector("#datepicker-to");
+
+        function isInDatepickerPopup(element) {
+            // MCDatepicker uses .mc-datepicker as its popup class
+            return element && element.closest && element.closest('.mc-calendar');
+        }
+
+        [fromField, toField].forEach(field => {
+            field.addEventListener("blur", (e) => {
+                setTimeout(() => {
+                    const active = document.activeElement;
+                    // Only close if focus is NOT in either input or the datepicker popup
+                    if (
+                        active !== fromField &&
+                        active !== toField &&
+                        !isInDatepickerPopup(active)
+                    ) {
+                        if (fromField.datepicker) fromField.datepicker.close();
+                        if (toField.datepicker) toField.datepicker.close();
+                    }
+                }, 0);
+            });
+        });
+    }
+
+    setupBlurHandler();
+
     function createFromDatePicker(maxDate = null) {
         const config = maxDate ? { ...configBase, maxDate } : configBase;
         const datepickerConfig = {
@@ -152,6 +183,8 @@ function initializeDatePickers() {
             toDatePicker = createToDatePicker();
             debouncedFilterTrigger()
         });
+
+
     }
 
     function addToDateListeners(picker) {

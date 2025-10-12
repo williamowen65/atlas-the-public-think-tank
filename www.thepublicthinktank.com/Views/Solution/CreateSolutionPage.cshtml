@@ -36,12 +36,18 @@
             Solution = Model.Solution
         })
     </div>
-
-  
-
 </div>
 
 
 
 @* Todo: update this js form*@
 <script src="~/js/Content/Create.js"></script>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const firstFormField = document.querySelector("form.solution-editor #Title")
+        firstFormField.focus()
+        firstFormField.closest(".form-input").classList.add("active")
+    })
+</script>

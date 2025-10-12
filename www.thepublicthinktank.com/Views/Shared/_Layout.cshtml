@@ -67,6 +67,7 @@
 </head>
 <body>
   
+    @await Html.PartialAsync("~/Views/Shared/Components/_accessibility_tab.cshtml")
 
     <partial name="_ColorMode" />
 
@@ -133,7 +134,7 @@
 
     <script src="~/js/Forms/InitSelect2.js" asp-append-version="true"></script>
     <script src="~/js/Site/InitSearchBar.js" asp-append-version="true"></script>
-    
+    <script src="~/js/Site/accessibility.js" asp-append-version="true"></script>
     
     @if (currentUser != null && currentUser.OrientationCompletedAt == null)
     {
@@ -141,6 +142,7 @@
         @await Html.PartialAsync("~/Views/Orientation/orientation-initialize.cshtml")
         <script src="~/js/Site/orientation/orientation-steps.js" asp-append-version="true"></script>
         <script src="~/js/Site/orientation/orientation-logic.js" asp-append-version="true"></script>
+        <script src="~/js/Site/orientation/orientation-accessibility.js" asp-append-version="true"></script>
     }
 
     <script>
