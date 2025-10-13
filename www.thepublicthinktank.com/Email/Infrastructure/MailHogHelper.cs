@@ -15,7 +15,7 @@ namespace atlas_the_public_think_tank.Email.Infrastructure
         public static void StartMailHogIfDevelopment(WebApplication app)
         {
             bool isTestRunner = app.Environment.EnvironmentName == "CICDTesting";
-            bool isGitHubActionsTestRunner = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == null;
+            bool isGitHubActionsTestRunner = Environment.GetEnvironmentVariable("GITHUB_ACTIONS");
             if (!app.Environment.IsDevelopment() && !isTestRunner && !isGitHubActionsTestRunner) 
                 return; 
             // If the app is is dev, continue. if app is a test runner, continue if no github actions test runner. 
