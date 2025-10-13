@@ -1,5 +1,7 @@
 ﻿using atlas_the_public_think_tank.Data.CRUD;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
+using atlas_the_public_think_tank.Email;
 using atlas_the_public_think_tank.Email.Infrastructure;
 using atlas_the_public_think_tank.Email.Models;
 using atlas_the_public_think_tank.Models.Enums;
@@ -10,9 +12,13 @@ using atlas_the_public_think_tank.Models.ViewModel.CRUD_VM.ContentItem_Common;
 using atlas_the_public_think_tank.Models.ViewModel.PageVM;
 using atlas_the_public_think_tank.Models.ViewModel.UI_VM;
 using atlas_the_public_think_tank.Utilities;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using static atlas_the_public_think_tank.Email.EmailLogger;
+using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
 
 
 namespace atlas_the_public_think_tank.Controllers
@@ -23,11 +29,15 @@ namespace atlas_the_public_think_tank.Controllers
         private readonly Read _read;
         private readonly IEmailSender _emailSender;
         private readonly IConfiguration _configuration;
-        public RnDController(Read read, IEmailSender emailSender, IConfiguration configuration) 
+        private readonly EmailLogger _emailLogger;
+        private readonly UserManager<AppUser> _userManager;
+        public RnDController(Read read, IEmailSender emailSender, IConfiguration configuration, EmailLogger emailLogger, UserManager<AppUser> userManager)
         {
             _read = read;
             _emailSender = emailSender;
             _configuration = configuration;
+            _emailLogger = emailLogger;
+            _userManager = userManager;
         }
 
         public IActionResult RnDCreateIssue()
@@ -107,6 +117,44 @@ namespace atlas_the_public_think_tank.Controllers
             await emailSender.SendEmailAsync("william.owen.career@gmail.com", "Test from the app", "hello world");
 
             return Ok();
+        }
+
+
+        /// <summary>
+        /// This route is currently used in CICD test for proof of concept email testing.
+        /// </summary>
+        /// <returns></returns>
+        [Route("github-actions-test-email")]
+        [Authorize]
+        public async Task<IActionResult> TestGitHubActionsEmail() {
+
+            try
+            {
+                // Get the current user from the request
+                var user = await _userManager.GetUserAsync(User);
+
+                WelcomeEmailModel welcomeEmailModel = new WelcomeEmailModel()
+                {
+                    UserName = user.UserName
+                };
+
+                // Replace 'user' with your actual user object if needed
+                EmailInfo emailInfo = new Emails.WelcomeEmail(user, welcomeEmailModel);
+
+                // Replace 'user.Email' with the actual email address if needed
+                await _emailLogger.SendEmailToUser(user.Email, emailInfo);
+
+                return Json(new
+                {
+                    success = true
+                });
+            }
+            catch (Exception ex) {
+                return Json(new
+                {
+                    success = false
+                });
+            }
         }
 
 

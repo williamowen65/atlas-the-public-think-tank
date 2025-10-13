@@ -22,7 +22,7 @@ namespace CloudTests.TestingSetup.TestingData
         /// This pattern directly creates a user in the DB
         /// and not via register process, -- so confirmation email is skipped
         /// </remarks>
-        public static AppUser CreateTestUser(ApplicationDbContext db, AppUser user, string password)
+        public static AppUser CreateTestUser_ViaDbDirectly(ApplicationDbContext db, AppUser user, string password)
         {
             // Hash the password
             var passwordHasher = new PasswordHasher<AppUser>();
@@ -35,28 +35,52 @@ namespace CloudTests.TestingSetup.TestingData
             return user;
         }
 
+
+
+        /// <summary>
+        ///  Creates a random user
+        /// </summary>
+        /// <remarks>
+        /// Many of the test workflows that create users this way also use <see cref=""></see> users by pass that actaul login process
+        /// </remarks>
         public static (AppUser appUser, string password) GetRandomAppUser()
         {
             var guid = Guid.NewGuid();
             var email = $"testuser_{guid}@example.com";
             var password = GenerateRandomPassword(12);
+            var username = GenerateRandomAnimalUserName();
 
             var user = new AppUser
             {
                 Id = guid,
-                UserName = email,
-                NormalizedUserName = email.ToUpperInvariant(),
+                UserName = username,
+                NormalizedUserName = username.ToUpperInvariant(),
                 Email = email,
                 NormalizedEmail = email.ToUpperInvariant(),
                 EmailConfirmed = true,
                 SecurityStamp = Guid.NewGuid().ToString(),
                 ConcurrencyStamp = Guid.NewGuid().ToString(),
-                LockoutEnabled = false
+                LockoutEnabled = false,
+                SubscribedToEmail = true
             };
 
             return (user, password);
         }
 
+
+        private static readonly string[] Animals = new[]
+        {
+            "Lion", "Tiger", "Bear", "Wolf", "Fox", "Eagle", "Shark", "Otter", "Panda", "Falcon",
+            "Leopard", "Cheetah", "Hawk", "Rabbit", "Koala", "Penguin", "Dolphin", "Moose", "Bison", "Lynx"
+        };
+
+        public static string GenerateRandomAnimalUserName()
+        {
+            var random = new Random();
+            var animal = Animals[random.Next(Animals.Length)];
+            var number = random.Next(1000, 9999);
+            return $"{animal}{number}";
+        }
         public static string GenerateRandomPassword(int length = 12)
         {
             const string upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";

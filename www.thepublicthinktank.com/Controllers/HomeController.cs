@@ -58,8 +58,9 @@ public class HomeController : Controller
     private readonly IHttpContextAccessor _httpContextAccessor;
     public readonly IServiceProvider _serviceProvider;
     public readonly IEmailSender _emailSender;
+    public readonly EmailLogger _emailLogger;
 
-    public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, UserManager<AppUser> userManager, IVoteStatsRepository voteStatsRepository, IAppUserRepository appUserRepository, IIssueRepository issueRepository, Read read, IHttpContextAccessor httpContextAccessor, IServiceProvider serviceProvider, IEmailSender emailSender)
+    public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, UserManager<AppUser> userManager, IVoteStatsRepository voteStatsRepository, IAppUserRepository appUserRepository, IIssueRepository issueRepository, Read read, IHttpContextAccessor httpContextAccessor, IServiceProvider serviceProvider, IEmailSender emailSender, EmailLogger emailLogger)
     {
         _logger = logger;
         _context = context;
@@ -71,6 +72,7 @@ public class HomeController : Controller
         _httpContextAccessor = httpContextAccessor;
         _serviceProvider = serviceProvider;
         _emailSender = emailSender;
+        _emailLogger = emailLogger;
     }
 
     #region Serve the home page

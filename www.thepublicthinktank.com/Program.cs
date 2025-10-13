@@ -67,6 +67,7 @@ public class Program
 
             // Add OpenTelemetry and configure it to use Azure Monitor.
             builder.Services.AddOpenTelemetry().UseAzureMonitor();
+            // Note: In development, you can connect to an azure app insights instance and test setting up insights
 
         }
 
@@ -128,7 +129,8 @@ public class Program
         builder.Services.AddScoped<CustomMigrationRunner>();
 
 
-        if (builder.Environment.EnvironmentName == "Development")
+        if (builder.Environment.EnvironmentName == "Development" ||
+            builder.Environment.EnvironmentName == "CICDTesting")
         {
             // In development
             builder.Services.AddScoped<IEmailSender, MailHogEmailSender>();

@@ -47,7 +47,7 @@ namespace CloudTests.UserTests
             _read = _env._read;
 
             // Create and login user
-            AppUser testUser = Users.CreateTestUser(_db, TestUserProfileUser, TestUserProfilePassword);
+            AppUser testUser = Users.CreateTestUser_ViaDbDirectly(_db, TestUserProfileUser, TestUserProfilePassword);
 
             bool loginSuccess = await Users.LoginUserViaEndpoint(_env, TestUserProfileUser.Email!, TestUserProfilePassword);
         }

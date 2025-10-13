@@ -33,7 +33,7 @@ namespace CloudTests.UserTests
 
             // Create and login user
             var (user, password) = Users.GetRandomAppUser();
-            AppUser testUser = Users.CreateTestUser(_db, user, password);
+            AppUser testUser = Users.CreateTestUser_ViaDbDirectly(_db, user, password);
             bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
         }

@@ -17,6 +17,11 @@ jobs:
           - 1433:1433
         options: >-
           --name mssql
+      mailhog:
+        image: mailhog/mailhog:latest
+        ports:
+          - 1025:1025
+          - 8025:8025
 
     steps:
       - uses: actions/checkout@v4

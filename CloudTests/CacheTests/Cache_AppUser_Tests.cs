@@ -52,7 +52,7 @@ namespace CloudTests.CacheTests
             _client = _env._client;
 
             // Create and login user
-            AppUser testUser = Users.CreateTestUser(_db, TestAppUser, TestAppUserPassword);
+            AppUser testUser = Users.CreateTestUser_ViaDbDirectly(_db, TestAppUser, TestAppUserPassword);
 
             bool loginSuccess = await Users.LoginUserViaEndpoint(_env, TestAppUser.Email!, TestAppUserPassword);
         }

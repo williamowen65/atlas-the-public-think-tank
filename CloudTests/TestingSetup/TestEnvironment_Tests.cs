@@ -90,7 +90,7 @@ namespace CloudTests.TestingSetup
         {
             // Arrange
             var (user, password) = Users.GetRandomAppUser();
-            AppUser testUser = Users.CreateTestUser(_db, user, password);
+            AppUser testUser = Users.CreateTestUser_ViaDbDirectly(_db, user, password);
             bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
 
@@ -107,14 +107,14 @@ namespace CloudTests.TestingSetup
         {
             // Arrange
             var (user, password) = Users.GetRandomAppUser();
-            AppUser testUser = Users.CreateTestUser(_db, user, password);
+            AppUser testUser = Users.CreateTestUser_ViaDbDirectly(_db, user, password);
             bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
 
 
             // Arrange
             var (user2, password2) = Users.GetRandomAppUser();
-            AppUser testUser2 = Users.CreateTestUser(_db, user2, password2);
+            AppUser testUser2 = Users.CreateTestUser_ViaDbDirectly(_db, user2, password2);
             bool loginSuccess2 = await Users.LoginUserViaEndpoint(_env, user2.Email!, password2);
             Assert.IsTrue(loginSuccess2, "Login 2 should be successful");
 

@@ -52,7 +52,7 @@ namespace CloudTests.UserTests
             _read = _env._read;
 
             // Create and login user
-            AppUser testUser = Users.CreateTestUser(_db, TestDraftUser, TestDraftPassword);
+            AppUser testUser = Users.CreateTestUser_ViaDbDirectly(_db, TestDraftUser, TestDraftPassword);
 
             bool loginSuccess = await Users.LoginUserViaEndpoint(_env, TestDraftUser.Email!, TestDraftPassword);
         }
@@ -121,7 +121,7 @@ namespace CloudTests.UserTests
             var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Draft);
 
             // Log a random user in
-            AppUser testUser = Users.CreateTestUser(_db, TestRandomUser, TestRandomPassword);
+            AppUser testUser = Users.CreateTestUser_ViaDbDirectly(_db, TestRandomUser, TestRandomPassword);
             bool loginSuccess = await Users.LoginUserViaEndpoint(_env, TestRandomUser.Email!, TestRandomPassword);
 
             await Assert.ThrowsExceptionAsync<System.Net.Http.HttpRequestException>(async () =>

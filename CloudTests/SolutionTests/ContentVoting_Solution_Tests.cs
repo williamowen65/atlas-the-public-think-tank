@@ -91,7 +91,7 @@ namespace CloudTests.SolutionTests
         [DataRow(100)]
         public async Task CheckConstraint_SolutionVote_VoteValue_Range(int voteValue)
         {
-            AppUser testUser = Users.CreateTestUser(_db, TestSolutionVote, TestSolutionVotePassword);
+            AppUser testUser = Users.CreateTestUser_ViaDbDirectly(_db, TestSolutionVote, TestSolutionVotePassword);
 
             bool loginSuccess = await Users.LoginUserViaEndpoint(_env, TestSolutionVote.Email!, TestSolutionVotePassword);
 
@@ -129,7 +129,7 @@ namespace CloudTests.SolutionTests
         {
 
             var (user, password) = Users.GetRandomAppUser();
-            AppUser testUser = Users.CreateTestUser(_db, user, password);
+            AppUser testUser = Users.CreateTestUser_ViaDbDirectly(_db, user, password);
             bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
 
@@ -164,7 +164,7 @@ namespace CloudTests.SolutionTests
         {
 
             var (user, password) = Users.GetRandomAppUser();
-            AppUser testUser = Users.CreateTestUser(_db, user, password);
+            AppUser testUser = Users.CreateTestUser_ViaDbDirectly(_db, user, password);
             bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
 
@@ -194,7 +194,7 @@ namespace CloudTests.SolutionTests
         {
             // Arrange
             var (user, password) = Users.GetRandomAppUser();
-            AppUser testUser = Users.CreateTestUser(_db, user, password);
+            AppUser testUser = Users.CreateTestUser_ViaDbDirectly(_db, user, password);
             bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
 
@@ -219,7 +219,7 @@ namespace CloudTests.SolutionTests
         {
             // Arrange
             var (user, password) = Users.GetRandomAppUser();
-            AppUser testUser = Users.CreateTestUser(_db, user, password);
+            AppUser testUser = Users.CreateTestUser_ViaDbDirectly(_db, user, password);
             bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password);
             Assert.IsTrue(loginSuccess, "Login should be successful");
 
