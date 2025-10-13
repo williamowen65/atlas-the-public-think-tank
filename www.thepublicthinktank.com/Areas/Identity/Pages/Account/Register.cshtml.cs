@@ -131,6 +131,23 @@ namespace atlas_the_public_think_tank.Areas.Identity.Pages.Account
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
             if (ModelState.IsValid)
             {
+                // Check for existing username
+                var existingUserByName = await _userManager.FindByNameAsync(Input.UserName);
+                if (existingUserByName != null)
+                {
+                    ModelState.AddModelError("Input.UserName", "Username is already taken.");
+                }
+                // Check for existing email
+                var existingUserByEmail = await _userManager.FindByEmailAsync(Input.Email);
+                if (existingUserByEmail != null)
+                {
+                    ModelState.AddModelError("Input.Email", "Email is already registered.");
+                }
+                if (!ModelState.IsValid)
+                {
+                    return Page();
+                }
+
                 var user = CreateUser();
                 await _userStore.SetUserNameAsync(user, Input.UserName, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
