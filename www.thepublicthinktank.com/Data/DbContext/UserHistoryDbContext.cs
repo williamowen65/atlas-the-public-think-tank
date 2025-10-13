@@ -47,6 +47,15 @@ namespace atlas_the_public_think_tank.Data.DbContext
             return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
         }
 
+        private static bool IsHistoryTrackableEntity(object entity)
+        {
+            return entity is AppUser
+                || entity is IssueVote
+                || entity is SolutionVote
+                || entity is Issue
+                || entity is Solution;
+        }
+
         // Synchronous version for SaveChanges
         private void AddUserHistoryEntriesSync()
         {
@@ -57,9 +66,7 @@ namespace atlas_the_public_think_tank.Data.DbContext
                                      e.State == EntityState.Modified ||
                                      e.State == EntityState.Deleted))
             {
-                if (entry.Entity is UserHistory) continue;
-                if (entry.Entity is Scope) continue;
-                if (entry.Entity is EmailLog) continue;
+                if (!IsHistoryTrackableEntity(entry.Entity)) continue;
 
                 using var scope = _serviceProvider.CreateScope();
                 var services = scope.ServiceProvider;
@@ -91,9 +98,7 @@ namespace atlas_the_public_think_tank.Data.DbContext
                                      e.State == EntityState.Modified ||
                                      e.State == EntityState.Deleted))
             {
-                if (entry.Entity is UserHistory) continue;
-                if (entry.Entity is Scope) continue;
-                if (entry.Entity is EmailLog) continue;
+                if (!IsHistoryTrackableEntity(entry.Entity)) continue;
 
                 using var scope = _serviceProvider.CreateScope();
                 var services = scope.ServiceProvider;

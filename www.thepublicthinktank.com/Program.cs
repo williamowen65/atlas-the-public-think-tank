@@ -21,6 +21,7 @@ using repository_pattern_experiment.Controllers;
 using System;
 using System.Diagnostics;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
+using Microsoft.AspNetCore.Authentication.Google;
 
 namespace atlas_the_public_think_tank;
 
@@ -29,6 +30,12 @@ public class Program
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+
+        builder.Services.AddAuthentication().AddGoogle(googleOptions =>
+        {
+            googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"];
+            googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+        });
 
 
         if (builder.Configuration.GetValue<bool>("Caching:Enabled") == false)

@@ -105,6 +105,12 @@ resource "azurerm_linux_web_app" "web-app-testing" {
     "SMTP_HOST" = var.smtp_host
     "SMTP_USERNAME" = var.smtp_username
     "SMTP_PASSWORD" = var.smtp_password
+    "Authentication" = jsonencode({
+      Google = {
+        ClientId     = var.google_oauth_clientId
+        ClientSecret = var.google_oauth_secret
+      }
+    })
   }
 
   connection_string {
