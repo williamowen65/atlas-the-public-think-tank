@@ -14,10 +14,11 @@ namespace atlas_the_public_think_tank.Email.Infrastructure
         /// </remarks>
         public static void StartMailHogIfDevelopment(WebApplication app)
         {
-            bool isTestRunner = app.Environment.EnvironmentName != "CICDTesting";
+            bool isTestRunner = app.Environment.EnvironmentName == "CICDTesting";
             bool isGitHubActionsTestRunner = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") != null;
-            if (!app.Environment.IsDevelopment() && isTestRunner && !isGitHubActionsTestRunner) 
-                return;
+            if (!app.Environment.IsDevelopment() && !isTestRunner && !isGitHubActionsTestRunner) 
+                return; 
+            // If the app is is dev, continue. if app is a test runner, continue if no github actions test runner. 
 
             Console.WriteLine("Turning on development email server: http://localhost:8025/. When done developing, stop app with ctrl+c to also stop this service, or stop it manually in task manager.");
 
