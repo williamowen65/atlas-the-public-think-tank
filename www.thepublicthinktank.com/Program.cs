@@ -31,12 +31,6 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        builder.Services.AddAuthentication().AddGoogle(googleOptions =>
-        {
-            googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"];
-            googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
-        });
-
 
         if (builder.Configuration.GetValue<bool>("Caching:Enabled") == false)
         {
@@ -60,6 +54,8 @@ public class Program
 
         if (!isCICDTesting)
         { 
+            // The code in this block applies to env: Development, Testing, Staging, Production
+
             // Retrieve the connection string from appsettings.json
              var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
@@ -73,7 +69,15 @@ public class Program
 
 
             // Add OpenTelemetry and configure it to use Azure Monitor.
-            builder.Services.AddOpenTelemetry().UseAzureMonitor();
+            builder.Services.AddOpenTelemetry().UseAzureMonitor(); 
+
+
+            builder.Services.AddAuthentication().AddGoogle(googleOptions =>
+            {
+                googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"];
+                googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+            });
+
 
         }
 
