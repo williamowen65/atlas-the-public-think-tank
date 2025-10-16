@@ -1,5 +1,4 @@
-﻿
-/*
+﻿/*
 
 This file manages the client-side logic for pagination
 
@@ -19,6 +18,15 @@ document.addEventListener("DOMContentLoaded", () => {
 function setPaginationButtonListener(paginationButtonElement) {
     if (paginationButtonElement) {
         paginationButtonElement.addEventListener("click", (e => {
+
+            // Disable button, Add Spinner
+            paginationButtonElement.disabled = true;
+
+            const spinner = document.createElement("span");
+            spinner.className = "spinner-border spinner-border-sm ms-2 pagination-spinner";
+            spinner.setAttribute("role", "status");
+            spinner.setAttribute("aria-hidden", "true");
+            paginationButtonElement.insertAdjacentElement("beforeend", spinner)
 
 
             const paginationUrl = paginationButtonElement.getAttribute("data-url")
@@ -71,6 +79,9 @@ function setPaginationButtonListener(paginationButtonElement) {
 
                         const newCount = Array.from(domTarget.querySelectorAll(".issue-card, .solution-card")).length
 
+                        // During the normal workflow, reenable the button after paginated data is retrieved. 
+                        paginationButtonElement.disabled = false;
+                        paginationButtonElement.querySelector(".pagination-spinner").remove()
 
                         // Update the pagination button count
                         paginatedCountElement.innerText = `(${newCount}/${data.pagination.totalCount})`;
@@ -79,9 +90,12 @@ function setPaginationButtonListener(paginationButtonElement) {
                             paginationButtonElement.disabled = true;
                             paginatedButtonText.innerText = `No more ${paginationContentType}`;
                         }
+
                     })
                     .catch(error => {
                         console.error('Error fetching issues:', error);
+                        paginationButtonElement.querySelector(".pagination-spinner").remove()
+                        paginationButtonElement.disabled = false;
                     });
 
             } else {
@@ -109,9 +123,6 @@ function setPaginationIntersectionObserver() {
             const button = entry.target;
             if (entry.isIntersecting && !button.disabled) {
                 button.click();
-            }
-            if (button.disabled) {
-                obs.unobserve(button);
             }
         });
     }, {
