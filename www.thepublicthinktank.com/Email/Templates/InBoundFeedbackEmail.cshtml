@@ -2,15 +2,17 @@
 @using atlas_the_public_think_tank.Utilities
 @using Microsoft.Extensions.Options
 @inject IOptions<EmailSettings> EmailSettings
-@model AccessibilityEmailModel
+@model InBoundEmailModel
 @{
     Layout = "/Email/Templates/EmailLayout.cshtml";
 }
 
 
 <p>
-    @Model.Message
+    @* Multiline support for a simple textarea field *@
+    @Html.Raw(Model.Message?.Replace("\r\n", "<br>").Replace("\n", "<br>").Replace("\r", "<br>"))
 </p>
+
 
 <div style="text-align: center">
 @if (Model.AppUser != null)
@@ -18,8 +20,19 @@
     <p>
         Sent from a logged in user - <a href="@UrlHelpers.EnsureProtocol(EmailSettings.Value.BaseUrl + $"/user-profile?userId={Model.AppUser.Id}")">@Model.AppUser.UserName - @Model.AppUser.Email</a>
     </p>
+
 } else
 {
     <p>Sent from anonymous user</p>    
 }
 </div>
+@if (Model.ImageCids != null && Model.ImageCids.Any())
+{
+    <div>
+        <p>Attached Images:</p>
+        @foreach (var cid in Model.ImageCids)
+        {
+            <img src="cid:@cid" style="max-width: 100%; max-height: 400px; margin: 10px 0;" alt="Attached image" />
+        }
+    </div>
+}

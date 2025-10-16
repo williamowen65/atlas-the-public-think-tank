@@ -1,5 +1,6 @@
 ﻿ 
 using atlas_the_public_think_tank.Models.Enums;
+using Microsoft.EntityFrameworkCore;
 
 namespace atlas_the_public_think_tank.Models
 {
@@ -54,5 +55,24 @@ namespace atlas_the_public_think_tank.Models
         public bool EnableSendBeacon { get; set; } = true;
     }
 
-  
+    public class AuthenticationOptions
+    {
+        public GoogleOptions Google { get; set; }
+    }
+
+    public class GoogleOptions
+    {
+        public string ClientId { get; set; }
+        public string ClientSecret { get; set; }
+    }
+
+
+    public class ChangeTrackerEntryDTO
+    {
+
+        public object Entity { get; set; }
+        public EntityState State { get; set; }
+        public Dictionary<string, object?> OriginalValues { get; set; }
+    }
+
 }

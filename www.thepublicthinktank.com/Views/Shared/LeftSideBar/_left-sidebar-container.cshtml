@@ -10,6 +10,21 @@
 *@
 
 
+<script>
+    /*
+    This script needs to be loaded with the DOM, not with fetched js file.
+    */
+
+
+    const sidebarState = localStorage.getItem('sidebarState');
+    const isMobile = window.innerWidth <= 768;
+
+    if (!isMobile && sidebarState === 'closed') {
+      document.documentElement.classList.add('sidebar-initial-closed');
+    }
+</script>
+
+
 <header class="pt-3">
     <div class="d-flex justify-content-between  px-3  align-items-center pb-2">
 

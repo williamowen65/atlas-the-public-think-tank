@@ -1,4 +1,5 @@
 ﻿@page "/login"
+@using atlas_the_public_think_tank.Models.ViewModel.UI_VM.ThirdPartyAuthButtonVMs
 
 @model LoginModel
 
@@ -68,7 +69,18 @@
                             <p>
                                 @foreach (var provider in Model.ExternalLogins!)
                                 {
-                                    <button type="submit" class="btn btn-primary" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account">@provider.DisplayName</button>
+                                    @if (provider.DisplayName == "Google")
+                                    {
+                                        @await Html.PartialAsync("~/Views/Shared/3rdPartyBranding/Google.cshtml", new GoogleAuthButtonModel()
+                                        {
+                                            isLogin = true,
+                                            provider = provider
+                                        });
+                                    }
+                                    else
+                                    {
+                                        <button type="submit" class="btn btn-primary" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account">@provider.DisplayName</button>
+                                    }
                                 }
                             </p>
                         </div>

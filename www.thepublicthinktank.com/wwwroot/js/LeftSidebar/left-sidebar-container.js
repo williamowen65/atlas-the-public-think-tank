@@ -10,7 +10,12 @@
 
 
 
+
+
 document.addEventListener('DOMContentLoaded', async function () {
+
+
+
     // Load sidebar content via AJAX
     await loadSidebarContent();
 
@@ -45,7 +50,6 @@ document.addEventListener('DOMContentLoaded', async function () {
             const toggleIcon = sidebarToggle.querySelector('i');
             if (!toggleIcon) return;
 
-            const isMobile = window.innerWidth <= 768;
             const isSidebarVisible = isMobile
                 ? sidebar.classList.contains('sidebar-open')
                 : !sidebar.classList.contains('sidebar-closed');

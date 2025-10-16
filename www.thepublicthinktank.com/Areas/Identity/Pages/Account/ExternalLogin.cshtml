@@ -1,0 +1,44 @@
+﻿@page "/external-login"
+@model ExternalLoginModel
+@{
+    ViewData["Title"] = "Register";
+}
+
+<h1>@ViewData["Title"]</h1>
+<h2 id="external-login-title">Associate your @Model.ProviderDisplayName account.</h2>
+<hr />
+
+<div id="external-login-description" class="text-info">
+    You've successfully authenticated @Model.Email with <strong>@Model.ProviderDisplayName</strong>.
+    
+    <p>Before your account is officially created, you have two more steps</p>
+    <ol>
+        <li>You must choose a username now. You can't change it later, so choose carefully.</li>
+        <li>After choosing a username, you will need to confirm your email within 24 hrs.</li>
+    </ol>
+
+    <p>Optionally, after your email is confirmed and account is created, you can create still your own password for Atlas in addition to your 3rd party sign-on.</p>
+</div>
+
+
+<div class="row">
+    <div class="col-md-4">
+        @if (Model.ErrorMessage != null)
+        {
+            <p>@Model.ErrorMessage</p>    
+        }
+        <form asp-page-handler="Confirmation" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+            <div class="form-floating mb-3">
+                <input asp-for="Input.UserName" class="form-control" placeholder="Choose Wisely" />
+                <label asp-for="Input.UserName" class="form-label">Username</label>
+                <span asp-validation-for="Input.UserName" class="text-danger"></span>
+            </div>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">Register Username</button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

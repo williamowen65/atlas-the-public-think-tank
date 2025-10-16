@@ -9,7 +9,7 @@
 
 @model Alert_VM
 
-<div id="alert-container" class="container alert-container d-flex flex-column align-items-center" style="">
+<div id="alert-container" class="container alert-container d-flex flex-column align-items-center @(Model.IsFullWidth ? "w-100" : "")" style="">
     @{
         string alertClass = Model.Type switch
         {
@@ -20,7 +20,8 @@
             AlertType.plaintext => "plain-text-alert", // No background class for plain-text
             _ => "bg-info text-dark"
         };
-    }    <div class="alert @alertClass w-auto d-flex align-items-center" 
+    }
+    <div class="alert @alertClass d-flex align-items-center @(Model.IsFullWidth ? "w-100" : "w-auto")"
          role="alert" 
          id="@Model.Id"
 
@@ -34,10 +35,10 @@
          created by this application. But maybe this isn't a good idea 
          *@
 
-        <div>@Html.Raw(Model.Message)</div>
+        <div class="flex-grow-1">@Html.Raw(Model.Message)</div>
         @if (Model.Dismissible)
         {
-            <button type="button" class="btn-close ms-3"
+            <button type="button" class="btn-close ms-3 mb-auto"
                     onclick="dismissAlert('@Model.Id')"
                     aria-label="Close"></button>
         }

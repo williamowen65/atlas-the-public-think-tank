@@ -23,6 +23,8 @@
 
 }
 
+
+
 /* Custom light / dark themeing */
 
 html {
@@ -160,6 +162,8 @@ svg.parent-issue-icon {
 }
 
 
+
+
 @media (min-width: 768px) {
     #header-search-bar-results {
         width: 83%;
@@ -199,3 +203,20 @@ svg.parent-issue-icon {
     header.small-screen-search-bar #user-header-controls {
         display: none !important;
     }
+
+
+
+.text-button {
+    background: none; /* remove default background */
+    border: none; /* remove default border */
+    padding: 0; /* remove extra padding */
+    margin: 0; /* optional, align with text flow */
+    font: inherit; /* inherit font styles from parent */
+    color: rgba(var(--bs-link-color-rgb)); /* optional: match link or text color */
+    cursor: pointer; /* show pointer on hover */
+    padding: 3px 5px;
+}
+
+.text-button:hover {
+    text-decoration: underline;
+}

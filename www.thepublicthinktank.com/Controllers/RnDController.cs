@@ -17,6 +17,11 @@ using System.Text.Json;
 
 namespace atlas_the_public_think_tank.Controllers
 {
+    /// <summary>
+    /// This controller if just for testing out things.
+    /// It shouldn't be shipped with the app, but currently is shipped.
+    /// ToDo: Create a appsettings.Development flag for adding/excluding this in program cs.
+    /// </summary>
     public class RnDController : Controller
     {
 
@@ -107,6 +112,16 @@ namespace atlas_the_public_think_tank.Controllers
             await emailSender.SendEmailAsync("william.owen.career@gmail.com", "Test from the app", "hello world");
 
             return Ok();
+        }
+
+
+        [Route("/error")]
+        public async Task<IActionResult> TestErrorPage()
+        {
+            // Create an inner exception to provide additional context
+            var innerException = new InvalidOperationException("This is the root cause");
+            // Throw the main exception with the inner exception
+            throw new Exception("Something terrible happened", innerException);
         }
 
 
