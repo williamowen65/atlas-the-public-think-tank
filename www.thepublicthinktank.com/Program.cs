@@ -12,6 +12,9 @@ using atlas_the_public_think_tank.Middleware;
 using atlas_the_public_think_tank.Migrations_NonEF;
 using atlas_the_public_think_tank.Models;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
@@ -20,7 +23,10 @@ using Microsoft.Extensions.DependencyInjection;
 using repository_pattern_experiment.Controllers;
 using System;
 using System.Diagnostics;
+using System.Net;
+using System.Text.Json;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
+
 
 namespace atlas_the_public_think_tank;
 
@@ -53,6 +59,8 @@ public class Program
 
         if (!isCICDTesting)
         { 
+            // The code in this block applies to env: Development, Testing, Staging, Production
+
             // Retrieve the connection string from appsettings.json
              var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
@@ -67,6 +75,35 @@ public class Program
 
             // Add OpenTelemetry and configure it to use Azure Monitor.
             builder.Services.AddOpenTelemetry().UseAzureMonitor();
+
+
+
+            AuthenticationOptions? authenticationOptions = null;
+
+            if (builder.Environment.IsDevelopment())
+            {
+                authenticationOptions = builder.Configuration.GetSection("Authentication").Get<AuthenticationOptions>();
+            }
+            else { 
+            
+                // Read the JSON string from configuration (Azure stores the json as a flat string)
+                var authenticationJson = builder.Configuration["Authentication"];
+
+                // Deserialize into DTO
+                if (!string.IsNullOrWhiteSpace(authenticationJson))
+                {
+                    authenticationOptions = JsonSerializer.Deserialize<AuthenticationOptions>(authenticationJson);
+                }
+
+            }
+
+            if (authenticationOptions != null) { 
+                builder.Services.AddAuthentication().AddGoogle(googleOptions =>
+                {
+                    googleOptions.ClientId = authenticationOptions.Google.ClientId;
+                    googleOptions.ClientSecret = authenticationOptions.Google.ClientSecret;
+                });
+            }
 
         }
 
@@ -147,7 +184,6 @@ public class Program
 
         var app = builder.Build();
 
-
         // When "shutting down" the app, run ctrl+c in the terminal instead of the VS stop button.
         // This will trigger lifecycle event for closing the development email server
         MailHogHelper.StartMailHogIfDevelopment(app); // open the server at http://localhost:8025
@@ -188,13 +224,19 @@ public class Program
             // you'll get up button to apply migrations
             // https://stackoverflow.com/questions/65389260/what-app-usemigrationsendpoint-does-in-net-core-web-application-startup-class#:~:text=This%20app.UseMigrationsEndPoint()%20is%20actually%20a%20very%20handy%20tool%20in%20development.
 
-            // In development, show detailed database errors and exception pages
-            app.UseDeveloperExceptionPage();
+            if (builder.Configuration.GetValue<bool>("UseDeveloperExceptionPage"))
+            {
+                app.UseDeveloperExceptionPage();
+            }
+            else
+            {
+                app.UseExceptionHandler("/Error/ExceptionHandler");
+            }
         }
         else
         {
             // In production, use a generic error handler and enable HSTS (HTTP Strict Transport Security)
-            app.UseExceptionHandler("/Home/Error");
+            app.UseExceptionHandler("/Error/ExceptionHandler");
             app.UseHsts(); // Enforce HTTPS with a 30-day default duration
         }
 

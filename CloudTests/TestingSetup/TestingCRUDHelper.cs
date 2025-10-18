@@ -24,7 +24,7 @@ namespace CloudTests.TestingSetup
 
         #region Test Issue CRUD helpers
 
-        public async Task<(JsonDocument JsonDoc, string issueId, string title, string content, Scope scope)> CreateTestIssue(ContentStatus contentStatus)
+        public async Task<(JsonDocument JsonDoc, string issueId, string title, string content, Scope scope)> CreateTestIssue_ViaWebApp(ContentStatus contentStatus)
         {
             string title = "This is a title for a test issue";
             string content = "This is a content for a test issue";
@@ -32,12 +32,12 @@ namespace CloudTests.TestingSetup
             {
                 Scales = { Scale.Global }
             };
-            var (jsonDoc, issueId, scopeId) = await CreateIssue(title, content, scope, contentStatus);
+            var (jsonDoc, issueId, scopeId) = await CreateIssue_ViaWebApp(title, content, scope, contentStatus);
             scope.ScopeID = new Guid(scopeId);
             return (jsonDoc, issueId, title, content, scope);
         }
 
-        public async Task<(JsonDocument JsonDoc, string issueId, string title, string content, Scope scope)> EditTestIssue(
+        public async Task<(JsonDocument JsonDoc, string issueId, string title, string content, Scope scope)> EditTestIssue_ViaWebApp(
             string issueId,
             Guid scopeId,
             ContentStatus contentStatus
@@ -55,7 +55,7 @@ namespace CloudTests.TestingSetup
             return (jsonDoc, issueId, title, content, scope);
         }
 
-        public async Task<(JsonDocument JsonDoc, string issueId, string title, string content, Scope scope)> CreateTestSubIssue(ContentStatus contentStatus, Guid? parentIssueId = null, Guid? parentSolutionId = null)
+        public async Task<(JsonDocument JsonDoc, string issueId, string title, string content, Scope scope)> CreateTestSubIssue_ViaWebApp(ContentStatus contentStatus, Guid? parentIssueId = null, Guid? parentSolutionId = null)
         {
             string title = "This is a title for a test sub-issue";
             string content = "This is a content for a test sub-issue";
@@ -63,13 +63,13 @@ namespace CloudTests.TestingSetup
             {
                 Scales = { Scale.Global }
             };
-            var (jsonDoc, issueId, scopeId) = await CreateIssue(title, content, scope, contentStatus, parentIssueId, parentSolutionId);
+            var (jsonDoc, issueId, scopeId) = await CreateIssue_ViaWebApp(title, content, scope, contentStatus, parentIssueId, parentSolutionId);
             scope.ScopeID = new Guid(scopeId);
             return (jsonDoc, issueId, title, content, scope);
         }
 
 
-        public async Task<(JsonDocument JsonDoc, string issueId, string scopeId)> CreateIssue(
+        public async Task<(JsonDocument JsonDoc, string issueId, string scopeId)> CreateIssue_ViaWebApp(
             string title,
             string content,
             Scope scope,
@@ -167,7 +167,7 @@ namespace CloudTests.TestingSetup
         /// <param name="content"></param>
         /// <param name="scope"></param>
         /// <returns></returns>
-        public async Task<(string content, string issueId, string scopeId)> CreateSubIssue(
+        public async Task<(string content, string issueId, string scopeId)> CreateSubIssue_ViaWebApp(
             string parentIssueId,
             string title,
             string content,
@@ -176,7 +176,7 @@ namespace CloudTests.TestingSetup
             )
         {
 
-            var (jsonDoc1, title1, content1) = await CreateIssue(
+            var (jsonDoc1, title1, content1) = await CreateIssue_ViaWebApp(
               title,
               content,
               new Scope()
@@ -195,7 +195,7 @@ namespace CloudTests.TestingSetup
             return (content, issueId, scopeId);
         }
 
-        public async Task<VoteResponse_AjaxVM> CreateTestVoteOnIssue(string issueId, int voteValue)
+        public async Task<VoteResponse_AjaxVM> CreateTestVoteOnIssue_ViaWebApp(string issueId, int voteValue)
         {
             string url = "/issue/vote";
             // Create a payload with vote data
@@ -207,7 +207,7 @@ namespace CloudTests.TestingSetup
 
             return await _env.fetchPost<VoteResponse_AjaxVM, object>(url, votePayload);
         }
-        public async Task<VoteResponse_AjaxVM> CreateTestVoteOnSolution(string solutionId, int voteValue)
+        public async Task<VoteResponse_AjaxVM> CreateTestVoteOnSolution_ViaWebApp(string solutionId, int voteValue)
         {
             string url = "/solution/vote";
             // Create a payload with vote data
@@ -225,7 +225,7 @@ namespace CloudTests.TestingSetup
 
         #region Test Solution CRUD helpers
 
-        public async Task<(JsonDocument JsonDoc, string solutionId, string title, string content, Scope scope)> CreateTestSolution(string parentIssueId, ContentStatus contentStatus)
+        public async Task<(JsonDocument JsonDoc, string solutionId, string title, string content, Scope scope)> CreateTestSolution_ViaWebApp(string parentIssueId, ContentStatus contentStatus)
         {
             string title = "This is a title for a test solution";
             string content = "This is a content for a test solution";
@@ -233,7 +233,7 @@ namespace CloudTests.TestingSetup
             {
                 Scales = { Scale.Global }
             };
-            var (jsonDoc, solutionId, scopeId) = await CreateSolution(title, content, scope, parentIssueId, contentStatus);
+            var (jsonDoc, solutionId, scopeId) = await CreateSolution_ViaWebApp(title, content, scope, parentIssueId, contentStatus);
             scope.ScopeID = new Guid(scopeId);
             return (jsonDoc, solutionId, title, content, scope);
         }
@@ -253,11 +253,11 @@ namespace CloudTests.TestingSetup
                 Scales = { Scale.Global, Scale.National },
                 Domains = { Domain.Social }
             };
-            var (jsonDoc, _solutionId, _scopeId) = await EditSolution(solutionId, title, content, parentIssueId, scope, contentStatus);
+            var (jsonDoc, _solutionId, _scopeId) = await EditSolution_ViaWebApp(solutionId, title, content, parentIssueId, scope, contentStatus);
             return (jsonDoc, solutionId, title, content, scope);
         }
 
-        public async Task<(JsonDocument JsonDoc, string solutionId, string scopeId)> CreateSolution(
+        public async Task<(JsonDocument JsonDoc, string solutionId, string scopeId)> CreateSolution_ViaWebApp(
           string title,
           string content,
           Scope scope,
@@ -298,7 +298,7 @@ namespace CloudTests.TestingSetup
 
 
       
-        public async Task<(JsonDocument JsonDoc, string Title, string Content)> EditSolution(
+        public async Task<(JsonDocument JsonDoc, string Title, string Content)> EditSolution_ViaWebApp(
           string solutionId,
           string title,
           string content,

@@ -33,3 +33,15 @@ variable "smtp_password" {
   type        = string
   sensitive   = true
 }
+
+variable "google_oauth_clientId" {
+	description = "Oauth ClientId for Google"
+	type = string
+	sensitive = true
+}
+
+variable "google_oauth_secret" {
+	description = "Oauth Secret for Google"
+	type = string
+	sensitive = true
+}

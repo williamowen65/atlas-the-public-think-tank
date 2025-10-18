@@ -57,12 +57,18 @@
             Settings
         </a>
     </li>
-        <li>
-            <button class="dropdown-item" id="restart-orientation">
-                @await Html.PartialAsync("~/Views/Shared/Icons/_OrientationIcon.cshtml")
-                Restart Orientation
-            </button>
-        </li>
+    <li>
+        <button class="dropdown-item" id="restart-orientation">
+            @await Html.PartialAsync("~/Views/Shared/Icons/_OrientationIcon.cshtml")
+            Restart Orientation
+        </button>
+    </li>
+    <li>
+            <button class=" dropdown-item open-general-feedback-form"> 
+                @await Html.PartialAsync("~/Views/Shared/Icons/_FeedbackIcon.cshtml")
+                Feedback Form Link</button>
+    </li>
+
     <li><hr class="dropdown-divider m-0  "></li>
     <li>
         <form class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("HomePage", "Home")">
@@ -72,6 +78,7 @@
             </button>
         </form>
     </li>
+
 
 </ul>
 }

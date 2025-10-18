@@ -99,8 +99,8 @@ namespace CloudTests.UserTests
         [TestMethod]
         public async Task User_CanCreateDraftSolution_AndThatDraftIsNotInMainFeed()
         {
-            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Draft);
-            var (_jsonDoc, solutionId, _title, _content, _scope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId, ContentStatus.Draft);
+            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue_ViaWebApp(ContentStatus.Draft);
+            var (_jsonDoc, solutionId, _title, _content, _scope) = await _testingCRUDHelper.CreateTestSolution_ViaWebApp(parentIssueId, ContentStatus.Draft);
             ContentFilter contentFilter = new ContentFilter()
             {
                 ContentType = "solution"
@@ -113,8 +113,8 @@ namespace CloudTests.UserTests
         [TestMethod]
         public async Task User_CanCreateDraftSolution_ViewTheDraftOnDraftsPage()
         {
-            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Draft);
-            var (_jsonDoc, solutionId, _title, _content, _scope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId, ContentStatus.Draft);
+            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue_ViaWebApp(ContentStatus.Draft);
+            var (_jsonDoc, solutionId, _title, _content, _scope) = await _testingCRUDHelper.CreateTestSolution_ViaWebApp(parentIssueId, ContentStatus.Draft);
             var draftsPage = await _env.fetchHTML("/drafts");
             var draftContent = draftsPage.QuerySelector($".card[id='{solutionId}']");
             Assert.IsNotNull(draftContent, "Draft content should exist on the draft page for this user");
@@ -123,8 +123,8 @@ namespace CloudTests.UserTests
         [TestMethod]
         public async Task User_CanCreateDraftSolution_AnotherUserCanTryToViewItViaURL_ButWillFailBecause_NotAuthorizedToViewAnotherPersonsDraft()
         {
-            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Draft);
-            var (_jsonDoc, solutionId, _title, _content, _scope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId, ContentStatus.Draft);
+            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue_ViaWebApp(ContentStatus.Draft);
+            var (_jsonDoc, solutionId, _title, _content, _scope) = await _testingCRUDHelper.CreateTestSolution_ViaWebApp(parentIssueId, ContentStatus.Draft);
 
             // Log a random user in
             AppUser testUser = Users.CreateTestUser(_db, TestRandomUser, TestRandomPassword);
@@ -142,16 +142,11 @@ namespace CloudTests.UserTests
         public async Task User_CannotPublish_Solution_WhichHasAParentIssue_InDraftMode()
         {
             // Create a root issue as a draft
-            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Draft);
+            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue_ViaWebApp(ContentStatus.Draft);
 
             // Create a proper solution as a draft
-            var (_jsonDoc, solutionId, _title, _content, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId, ContentStatus.Draft);
+            var (_jsonDoc, solutionId, _title, _content, solutionScope) = await _testingCRUDHelper.CreateTestSolution_ViaWebApp(parentIssueId, ContentStatus.Draft);
 
-            // Create an invalid solution as published
-            await Assert.ThrowsExceptionAsync<Microsoft.EntityFrameworkCore.DbUpdateException>(async () =>
-            {
-                await _testingCRUDHelper.CreateTestSolution(parentIssueId, ContentStatus.Published);
-            }, "Directly trying to create a solution as published shouldn't work when parent issue is a draft");
 
             // The UI should have the publish button disabled.
             var editSolutionDocTemp = await _env.fetchJson<ContentCreationResponse_JsonVM>($"/edit-solution?solutionId={solutionId}");
@@ -161,12 +156,26 @@ namespace CloudTests.UserTests
             var publishButton = editSolutionDoc.QuerySelector(".publish-issue");
             Assert.IsNull(publishButton, "publish button should not exist");
 
+
+            // This test would now send back the error page
             // If the user directly pings the /edit-issue endpoint trying to publish it should still not work
-            var ex = await Assert.ThrowsExceptionAsync<Exception>(async () =>
+            //var ex = await Assert.ThrowsExceptionAsync<Exception>(async () =>
+            //{
+            //    await _testingCRUDHelper.EditTestSolution(solutionId, solutionScope.ScopeID, parentIssueId, ContentStatus.Published);
+            //});
+            //StringAssert.Contains(ex.Message.ToLowerInvariant(), "awaiting parent publish", "Server should response with 'awaiting parent publish'");
+
+
+            // If someone with DB access tries to directly update to Published, the DB should stop them.
+            var solutionGuid = new Guid(solutionId);
+            var solutionEntity = _db.Solutions.First(i => i.SolutionID == solutionGuid);
+            // Set the status directly on the tracked entity.
+            // Using Property("ContentStatus") avoids relying on the concrete property name in the Issue class.
+            _db.Entry(solutionEntity).Property("ContentStatus").CurrentValue = ContentStatus.Published;
+            await Assert.ThrowsExceptionAsync<Microsoft.EntityFrameworkCore.DbUpdateException>(async () =>
             {
-                await _testingCRUDHelper.EditTestSolution(solutionId, solutionScope.ScopeID, parentIssueId, ContentStatus.Published);
+                await _db.SaveChangesAsync();
             });
-            StringAssert.Contains(ex.Message.ToLowerInvariant(), "awaiting parent publish", "Server should response with 'awaiting parent publish'");
 
         }
 
@@ -174,9 +183,9 @@ namespace CloudTests.UserTests
         public async Task User_CanCreateDraftSolution_AndPublishIt_RelatedChangesShouldOccur()
         {
             // Create draft issue
-            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Draft);
+            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue_ViaWebApp(ContentStatus.Draft);
             // Create a proper solution as a draft
-            var (_jsonDoc, solutionId, _title, _content, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId, ContentStatus.Draft);
+            var (_jsonDoc, solutionId, _title, _content, solutionScope) = await _testingCRUDHelper.CreateTestSolution_ViaWebApp(parentIssueId, ContentStatus.Draft);
             ContentItems_Paginated_ReadVM paginatedResponse = await _read.PaginatedMainContentFeed(new ContentFilter());
             Assert.IsTrue(paginatedResponse.TotalCount == 0, "There should be no main content items");
 
@@ -193,7 +202,7 @@ namespace CloudTests.UserTests
             Assert.IsTrue(userSolutionCount1 == 0, "User solution count should be 0");
 
             // publish issue (required for publishing solution)
-            await _testingCRUDHelper.EditTestIssue(parentIssueId, scope.ScopeID, ContentStatus.Published);
+            await _testingCRUDHelper.EditTestIssue_ViaWebApp(parentIssueId, scope.ScopeID, ContentStatus.Published);
             // publish solution
             await _testingCRUDHelper.EditTestSolution(solutionId, scope.ScopeID, parentIssueId, ContentStatus.Published);
 

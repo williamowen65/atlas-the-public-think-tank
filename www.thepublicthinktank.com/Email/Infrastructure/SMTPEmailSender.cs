@@ -6,7 +6,7 @@ using System.Net.Mail;
 
 namespace atlas_the_public_think_tank.Email.Infrastructure
 {
-    public class SMTPEmailSender : IEmailSender
+    public class SMTPEmailSender : IEmailSender, IAppEmailSender
     {
 
         private readonly IConfiguration _configuration;
@@ -55,6 +55,35 @@ namespace atlas_the_public_think_tank.Email.Infrastructure
                 IsBodyHtml = true
             };
             message.To.Add(email);
+
+            await smtp.SendMailAsync(message);
+        }
+
+        public async Task SendEmailWithAttachmentsAsync(string email, string subject, string htmlMessage, IEnumerable<Attachment> attachments)
+        {
+            var smtp = new SmtpClient(_smtp_host, 587)
+            {
+                Credentials = new NetworkCredential(_smtp_username, _smtp_password),
+                EnableSsl = true
+            };
+
+            var message = new MailMessage
+            {
+                From = new MailAddress("atlas@thepublicthinktank.com", "Atlas: The Public Think Tank"),
+                Subject = subject,
+                Body = htmlMessage,
+                IsBodyHtml = true
+            };
+            message.To.Add(email);
+
+
+            if (attachments != null)
+            {
+                foreach (var attachment in attachments)
+                {
+                    message.Attachments.Add(attachment);
+                }
+            }
 
             await smtp.SendMailAsync(message);
         }

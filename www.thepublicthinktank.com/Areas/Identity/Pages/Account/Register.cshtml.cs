@@ -5,6 +5,7 @@
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
 using atlas_the_public_think_tank.Email;
 using atlas_the_public_think_tank.Email.Models;
+using atlas_the_public_think_tank.Models.ViewModel.UI_VM;
 using atlas_the_public_think_tank.Utilities;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -36,6 +37,7 @@ namespace atlas_the_public_think_tank.Areas.Identity.Pages.Account
         private readonly ILogger<RegisterModel> _logger;
         private readonly EmailLogger _emailLogger;
         private readonly IOptions<EmailSettings> _emailSettings;
+        private readonly IWebHostEnvironment _env;
 
         public RegisterModel(
             UserManager<AppUser> userManager,
@@ -44,7 +46,8 @@ namespace atlas_the_public_think_tank.Areas.Identity.Pages.Account
             ILogger<RegisterModel> logger,
             IEmailSender emailSender,
             EmailLogger emailQueue,
-            IOptions<EmailSettings> EmailSettings)
+            IOptions<EmailSettings> EmailSettings,
+            IWebHostEnvironment env)
         {
             _userManager = userManager;
             _userStore = userStore;
@@ -53,6 +56,46 @@ namespace atlas_the_public_think_tank.Areas.Identity.Pages.Account
             _logger = logger;
             _emailLogger = emailQueue;
             _emailSettings = EmailSettings;
+            _env = env;
+        }
+
+        public Alert_VM? RegistrationEnvironmentAlert
+        {
+            get
+            {
+                // Get access to the environment name 
+                if (_env.EnvironmentName == "Testing")
+                {
+                    return new Alert_VM()
+                    { 
+                        Message = "<div class='flex-column d-flex justify-content-center align-items-center'>By signing up, you are becoming a tester of this app.  <a href='/how-to-be-a-tester' class='btn btn-primary mt-2'>Learn about being a tester</a></div>",
+                        Type = Models.Enums.AlertType.warning,
+                        IsFullWidth = true
+                    };
+                }
+                if (_env.EnvironmentName == "Development")
+                {
+                    return new Alert_VM()
+                    {
+                        Message = "<div class='flex-column d-flex justify-content-center align-items-center'>This is a development version of the app on your local machine<a href='/how-to-be-a-tester' class='btn btn-primary mt-2'>Learn about being a tester</a></div>",
+                        Type = Models.Enums.AlertType.warning,
+                        IsFullWidth = true
+                    };
+                }
+                if (_env.EnvironmentName == "Staging")
+                {
+                    return new Alert_VM()
+                    { 
+                        Message = "This is a staging version of the app.",
+                        Type = Models.Enums.AlertType.warning,
+                        IsFullWidth = true
+                    };
+                }
+
+
+                return null;
+            }
+            set { } // Empty setter to satisfy property syntax
         }
 
         /// <summary>
@@ -131,6 +174,23 @@ namespace atlas_the_public_think_tank.Areas.Identity.Pages.Account
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
             if (ModelState.IsValid)
             {
+                // Check for existing username
+                var existingUserByName = await _userManager.FindByNameAsync(Input.UserName);
+                if (existingUserByName != null)
+                {
+                    ModelState.AddModelError("Input.UserName", "Username is already taken.");
+                }
+                // Check for existing email
+                var existingUserByEmail = await _userManager.FindByEmailAsync(Input.Email);
+                if (existingUserByEmail != null)
+                {
+                    ModelState.AddModelError("Input.Email", "Email is already registered.");
+                }
+                if (!ModelState.IsValid)
+                {
+                    return Page();
+                }
+
                 var user = CreateUser();
                 await _userStore.SetUserNameAsync(user, Input.UserName, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);

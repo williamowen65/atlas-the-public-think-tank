@@ -27,7 +27,7 @@
     background: inherit;
 }
 
-main {
+main, footer {
     margin-left: calc(var(--left-sidebar-container-width) + 0px);
     transition: margin-left 0.3s ease-in-out;
 }

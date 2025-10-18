@@ -95,9 +95,9 @@ namespace CloudTests.CacheTests
         public async Task CacheTestingSolution_AddingNewSolution_CreatesCacheKeyForSolution() 
         {
             // Create Issue
-            var (issueJsonDoc, parentIssueId, issuetitle, issueContent, issueScope) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Published);
+            var (issueJsonDoc, parentIssueId, issuetitle, issueContent, issueScope) = await _testingCRUDHelper.CreateTestIssue_ViaWebApp(ContentStatus.Published);
             // Create Solution
-            var (solutionJsonDoc, solutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId, ContentStatus.Published);
+            var (solutionJsonDoc, solutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution_ViaWebApp(parentIssueId, ContentStatus.Published);
             // Create Cache Key
             string expectedCacheKey = $"{CacheKeyPrefix.Solution}:{solutionId}";
             // Fetch data
@@ -112,9 +112,9 @@ namespace CloudTests.CacheTests
         public async Task CacheTestingSolution_AddingNewSolution_CreatesCacheEntryForSolution()
         {
             // Create Issue
-            var (issueJsonDoc, parentIssueId, issuetitle, issueContent, issueScope) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Published);
+            var (issueJsonDoc, parentIssueId, issuetitle, issueContent, issueScope) = await _testingCRUDHelper.CreateTestIssue_ViaWebApp(ContentStatus.Published);
            // Create solution
-            var (solutionJsonDoc, solutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId, ContentStatus.Published);
+            var (solutionJsonDoc, solutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution_ViaWebApp(parentIssueId, ContentStatus.Published);
 
             string url = $"/api/cache-log/entry?key=solution:{solutionId}";
             var cacheEntry = await _env.fetchJson<CacheSolutionEntry>(url);
@@ -129,9 +129,9 @@ namespace CloudTests.CacheTests
         public async Task CacheTestingSolution_UpdatingSolution_CreatesAndOverwritesCacheEntryForSolution()
         {
             // Create Issue
-            var (issueJsonDoc, parentIssueId, issuetitle, issueContent, issueScope) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Published);
+            var (issueJsonDoc, parentIssueId, issuetitle, issueContent, issueScope) = await _testingCRUDHelper.CreateTestIssue_ViaWebApp(ContentStatus.Published);
             // Create solution
-            var (solutionJsonDoc, solutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId, ContentStatus.Published);
+            var (solutionJsonDoc, solutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution_ViaWebApp(parentIssueId, ContentStatus.Published);
             // Edit Solution
             var (updatedSolutionJsonDoc, updatedSolutionId, updatedSolutionTitle, updatedSolutionContent, updatedSolutionScope) = await _testingCRUDHelper.EditTestSolution(solutionId, solutionScope.ScopeID, parentIssueId, ContentStatus.Published);
 
@@ -144,8 +144,8 @@ namespace CloudTests.CacheTests
         public async Task CacheTestingSolution_UpdatingSolution_UpdatesSolutionVersionHistoryCache()
         {
 
-            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Published);
-            var (solutionJsonDoc, solutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId, ContentStatus.Published);
+            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue_ViaWebApp(ContentStatus.Published);
+            var (solutionJsonDoc, solutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution_ViaWebApp(parentIssueId, ContentStatus.Published);
 
             // Get an Issue_ReadVM object which is used by Read.IssueVersionHistory
             Solution_ReadVM? solution = await _read.Solution(new Guid(solutionId), new ContentFilter());
@@ -177,8 +177,8 @@ namespace CloudTests.CacheTests
         public async Task CacheTestingSolution_VotingOnSolution_UpdatesVoteStats()
         {
             // Create issue
-            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Published);
-            var (solutionJsonDoc, solutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId, ContentStatus.Published);
+            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue_ViaWebApp(ContentStatus.Published);
+            var (solutionJsonDoc, solutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution_ViaWebApp(parentIssueId, ContentStatus.Published);
 
             var cacheKey = $"{CacheKeyPrefix.VoteStats}:{solutionId}";
 
@@ -191,7 +191,7 @@ namespace CloudTests.CacheTests
             Assert.IsTrue(voteStats0.SolutionVotes.Count == 0);
 
             // Updating a vote should update through the cache (No need to call Read.Issue to populate the cache)
-            VoteResponse_AjaxVM voteResponse1 =  await _testingCRUDHelper.CreateTestVoteOnSolution(solutionId, 10);
+            VoteResponse_AjaxVM voteResponse1 =  await _testingCRUDHelper.CreateTestVoteOnSolution_ViaWebApp(solutionId, 10);
 
             var cacheEntry1 = await _env.fetchJson<CacheEntry_SolutionVoteStatsDTO>(url);
             SolutionVotes_Cacheable_ReadVM voteStats1 = cacheEntry1.Value;
@@ -201,7 +201,7 @@ namespace CloudTests.CacheTests
             Assert.IsTrue(voteStats1.SolutionVotes.Values.Average(v => v.VoteValue) == voteResponse1.Average);
 
             // Updating a vote should update through the cache (No need to call Read.Issue to populate the cache)
-            VoteResponse_AjaxVM voteResponse2 =  await _testingCRUDHelper.CreateTestVoteOnSolution(solutionId, 6);
+            VoteResponse_AjaxVM voteResponse2 =  await _testingCRUDHelper.CreateTestVoteOnSolution_ViaWebApp(solutionId, 6);
 
             var cacheEntry2 = await _env.fetchJson<CacheEntry_SolutionVoteStatsDTO>(url);
             SolutionVotes_Cacheable_ReadVM voteStats2 = cacheEntry2.Value;
@@ -217,7 +217,7 @@ namespace CloudTests.CacheTests
             bool loginSuccess = await Users.LoginUserViaEndpoint(_env, user.Email!, password);
 
             // Updating a vote should update through the cache (No need to call Read.Issue to populate the cache)
-            VoteResponse_AjaxVM voteResponse3 = await _testingCRUDHelper.CreateTestVoteOnSolution(solutionId, 7);
+            VoteResponse_AjaxVM voteResponse3 = await _testingCRUDHelper.CreateTestVoteOnSolution_ViaWebApp(solutionId, 7);
 
             var cacheEntry3 = await _env.fetchJson<CacheEntry_SolutionVoteStatsDTO>(url);
             SolutionVotes_Cacheable_ReadVM voteStats3 = cacheEntry3.Value;
@@ -237,9 +237,9 @@ namespace CloudTests.CacheTests
         public async Task CacheTestingSolution_PagedSubIssues_ShouldBeUpToDate()
         {
             // Create issue
-            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Published);
+            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue_ViaWebApp(ContentStatus.Published);
             // Create sub-issue
-            var (solutionJsonDoc, parentSolutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId, ContentStatus.Published);
+            var (solutionJsonDoc, parentSolutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution_ViaWebApp(parentIssueId, ContentStatus.Published);
             // This is the solution being testing... 
             // Note it has no sub-issues at creation
 
@@ -260,7 +260,7 @@ namespace CloudTests.CacheTests
             Assert.IsTrue(cacheEntry.Value.Count() == 0);
 
             //// Create a new sub-issue for the the solution
-            var (subIssueJsonDoc1, subIssueId1, subIssueTitle1, subIssueContent1, subIssueScope1) = await _testingCRUDHelper.CreateTestSubIssue(ContentStatus.Published, null, new Guid(parentSolutionId));
+            var (subIssueJsonDoc1, subIssueId1, subIssueTitle1, subIssueContent1, subIssueScope1) = await _testingCRUDHelper.CreateTestSubIssue_ViaWebApp(ContentStatus.Published, null, new Guid(parentSolutionId));
             // Repopulate cache
             var solutionVM = await _read.Solution(new Guid(parentSolutionId!), new ContentFilter());
 
@@ -273,9 +273,9 @@ namespace CloudTests.CacheTests
         public async Task CacheTestingSolution_SubIssues_ContentCounts_ShouldBeUpToDate()
         {
             // Create issue
-            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Published);
+            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue_ViaWebApp(ContentStatus.Published);
             // Create sub-issue
-            var (solutionJsonDoc, parentSolutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId, ContentStatus.Published);
+            var (solutionJsonDoc, parentSolutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution_ViaWebApp(parentIssueId, ContentStatus.Published);
             // This is the solution being testing... 
             // Note it has no sub-issues at creation
             // Assemble cache key for CacheKeyPrefix.SubIssueForIssueContentCount
@@ -291,28 +291,28 @@ namespace CloudTests.CacheTests
             Assert.IsTrue(cacheEntry.Value.FilteredCount == 0);
 
 
-            var (subIssueJsonDoc1, subIssueId1, subIssueTitle1, subIssueContent1, subIssueScope1) = await _testingCRUDHelper.CreateTestSubIssue(ContentStatus.Published, null, new Guid(parentSolutionId));
+            var (subIssueJsonDoc1, subIssueId1, subIssueTitle1, subIssueContent1, subIssueScope1) = await _testingCRUDHelper.CreateTestSubIssue_ViaWebApp(ContentStatus.Published, null, new Guid(parentSolutionId));
             await _read.Solution(new Guid(parentSolutionId!), new ContentFilter());
 
             var cacheEntry2 = await _env.fetchJson<CacheEntry_ContentCountDTO>(url);
             Assert.IsTrue(cacheEntry2.Value.AbsoluteCount == 1);
             Assert.IsTrue(cacheEntry2.Value.FilteredCount == 1);
 
-            var (subIssueJsonDoc2, subIssueId2, subIssueTitle2, subIssueContent2, subIssueScope2) = await _testingCRUDHelper.CreateTestSubIssue(ContentStatus.Published, null, new Guid(parentSolutionId));
+            var (subIssueJsonDoc2, subIssueId2, subIssueTitle2, subIssueContent2, subIssueScope2) = await _testingCRUDHelper.CreateTestSubIssue_ViaWebApp(ContentStatus.Published, null, new Guid(parentSolutionId));
             await _read.Solution(new Guid(parentSolutionId!), new ContentFilter());
 
             var cacheEntry3 = await _env.fetchJson<CacheEntry_ContentCountDTO>(url);
             Assert.IsTrue(cacheEntry3.Value.AbsoluteCount == 2);
             Assert.IsTrue(cacheEntry3.Value.FilteredCount == 2);
 
-            var (subIssueJsonDoc3, subIssueId3, subIssueTitle3, subIssueContent3, subIssueScope3) = await _testingCRUDHelper.CreateTestSubIssue(ContentStatus.Published, null, new Guid(parentSolutionId));
+            var (subIssueJsonDoc3, subIssueId3, subIssueTitle3, subIssueContent3, subIssueScope3) = await _testingCRUDHelper.CreateTestSubIssue_ViaWebApp(ContentStatus.Published, null, new Guid(parentSolutionId));
             await _read.Solution(new Guid(parentSolutionId!), new ContentFilter());
 
             var cacheEntry4 = await _env.fetchJson<CacheEntry_ContentCountDTO>(url);
             Assert.IsTrue(cacheEntry4.Value.AbsoluteCount == 3);
             Assert.IsTrue(cacheEntry4.Value.FilteredCount == 3);
 
-            var (subIssueJsonDoc4, subIssueId4, subIssueTitle4, subIssueContent4, subIssueScope4) = await _testingCRUDHelper.CreateTestSubIssue(ContentStatus.Published, null, new Guid(parentSolutionId));
+            var (subIssueJsonDoc4, subIssueId4, subIssueTitle4, subIssueContent4, subIssueScope4) = await _testingCRUDHelper.CreateTestSubIssue_ViaWebApp(ContentStatus.Published, null, new Guid(parentSolutionId));
             await _read.Solution(new Guid(parentSolutionId!), new ContentFilter());
 
             var cacheEntry5 = await _env.fetchJson<CacheEntry_ContentCountDTO>(url);
@@ -325,17 +325,17 @@ namespace CloudTests.CacheTests
         public async Task CacheTestingSolution_SubIssues_UpdatingFilter_ContentCounts_ShouldBeUpToDate()
         {
             // Create issue
-            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Published);
+            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue_ViaWebApp(ContentStatus.Published);
             // Create sub-issue
-            var (solutionJsonDoc, parentSolutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId, ContentStatus.Published);
+            var (solutionJsonDoc, parentSolutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution_ViaWebApp(parentIssueId, ContentStatus.Published);
             // This is the solution being tested... 
 
-            var (subIssueJsonDoc1, subIssueId1, subIssueTitle1, subIssueContent1, subIssueScope1) = await _testingCRUDHelper.CreateTestSubIssue(ContentStatus.Published, null, new Guid(parentSolutionId));
-            var (subIssueJsonDoc2, subIssueId2, subIssueTitle2, subIssueContent2, subIssueScope2) = await _testingCRUDHelper.CreateTestSubIssue(ContentStatus.Published, null, new Guid(parentSolutionId));
-            var (subIssueJsonDoc3, subIssueId3, subIssueTitle3, subIssueContent3, subIssueScope3) = await _testingCRUDHelper.CreateTestSubIssue(ContentStatus.Published, null, new Guid(parentSolutionId));
-            var (subIssueJsonDoc4, subIssueId4, subIssueTitle4, subIssueContent4, subIssueScope4) = await _testingCRUDHelper.CreateTestSubIssue(ContentStatus.Published, null, new Guid(parentSolutionId));
+            var (subIssueJsonDoc1, subIssueId1, subIssueTitle1, subIssueContent1, subIssueScope1) = await _testingCRUDHelper.CreateTestSubIssue_ViaWebApp(ContentStatus.Published, null, new Guid(parentSolutionId));
+            var (subIssueJsonDoc2, subIssueId2, subIssueTitle2, subIssueContent2, subIssueScope2) = await _testingCRUDHelper.CreateTestSubIssue_ViaWebApp(ContentStatus.Published, null, new Guid(parentSolutionId));
+            var (subIssueJsonDoc3, subIssueId3, subIssueTitle3, subIssueContent3, subIssueScope3) = await _testingCRUDHelper.CreateTestSubIssue_ViaWebApp(ContentStatus.Published, null, new Guid(parentSolutionId));
+            var (subIssueJsonDoc4, subIssueId4, subIssueTitle4, subIssueContent4, subIssueScope4) = await _testingCRUDHelper.CreateTestSubIssue_ViaWebApp(ContentStatus.Published, null, new Guid(parentSolutionId));
 
-            await _testingCRUDHelper.CreateTestVoteOnIssue(subIssueId2, 8);
+            await _testingCRUDHelper.CreateTestVoteOnIssue_ViaWebApp(subIssueId2, 8);
 
             
 
@@ -383,9 +383,9 @@ namespace CloudTests.CacheTests
         public async Task CacheTestingSolutions_SubIssueVote_ReordersContent_PagedSubIssues_ShouldBeUpToDate()
         {
             // Create issue
-            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue(ContentStatus.Published);
+            var (jsonDoc, parentIssueId, title, content, scope) = await _testingCRUDHelper.CreateTestIssue_ViaWebApp(ContentStatus.Published);
             // Create sub-issue
-            var (solutionJsonDoc, parentSolutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution(parentIssueId, ContentStatus.Published);
+            var (solutionJsonDoc, parentSolutionId, solutionTitle, solutionContent, solutionScope) = await _testingCRUDHelper.CreateTestSolution_ViaWebApp(parentIssueId, ContentStatus.Published);
 
             ContentFilter filter = new ContentFilter();
             string filterCacheString = filter.ToCacheString();
@@ -396,29 +396,29 @@ namespace CloudTests.CacheTests
 
 
             // Create sub issues for a solution (all with no votes)
-            var (subIssueJsonDoc1, subIssueId1, subIssueTitle1, subIssueContent1, subIssueScope1) = await _testingCRUDHelper.CreateTestSubIssue(ContentStatus.Published, null, new Guid(parentSolutionId));
-            var (subIssueJsonDoc2, subIssueId2, subIssueTitle2, subIssueContent2, subIssueScope2) = await _testingCRUDHelper.CreateTestSubIssue(ContentStatus.Published, null, new Guid(parentSolutionId));
-            var (subIssueJsonDoc3, subIssueId3, subIssueTitle3, subIssueContent3, subIssueScope3) = await _testingCRUDHelper.CreateTestSubIssue(ContentStatus.Published, null, new Guid(parentSolutionId));
+            var (subIssueJsonDoc1, subIssueId1, subIssueTitle1, subIssueContent1, subIssueScope1) = await _testingCRUDHelper.CreateTestSubIssue_ViaWebApp(ContentStatus.Published, null, new Guid(parentSolutionId));
+            var (subIssueJsonDoc2, subIssueId2, subIssueTitle2, subIssueContent2, subIssueScope2) = await _testingCRUDHelper.CreateTestSubIssue_ViaWebApp(ContentStatus.Published, null, new Guid(parentSolutionId));
+            var (subIssueJsonDoc3, subIssueId3, subIssueTitle3, subIssueContent3, subIssueScope3) = await _testingCRUDHelper.CreateTestSubIssue_ViaWebApp(ContentStatus.Published, null, new Guid(parentSolutionId));
 
             // populate cache
             await _read.Solution(new Guid(parentSolutionId!), new ContentFilter());
 
             // VOTE 1
             // Cast a vote on sub-issue 2 (This should clear CacheHelper.CacheKeysPrefix.FeedIds.SubIssueOfIssue for this the parent solution of this sub-issue)
-            await _testingCRUDHelper.CreateTestVoteOnIssue(subIssueId2, 8);
+            await _testingCRUDHelper.CreateTestVoteOnIssue_ViaWebApp(subIssueId2, 8);
             await _read.Solution(new Guid(parentSolutionId!), new ContentFilter());
             var cacheEntry = await _env.fetchJson<CacheEntryIdsDTO>(url);
             Assert.IsTrue(cacheEntry.Value[0] == subIssueId2);
 
             // VOTE 2
-            await _testingCRUDHelper.CreateTestVoteOnIssue(subIssueId3, 9);
+            await _testingCRUDHelper.CreateTestVoteOnIssue_ViaWebApp(subIssueId3, 9);
             await _read.Solution(new Guid(parentSolutionId!), new ContentFilter());
             var cacheEntry2 = await _env.fetchJson<CacheEntryIdsDTO>(url);
             Assert.IsTrue(cacheEntry2.Value[0] == subIssueId3);
             Assert.IsTrue(cacheEntry2.Value[1] == subIssueId2);
 
             // VOTE 3
-            await _testingCRUDHelper.CreateTestVoteOnIssue(subIssueId1, 10);
+            await _testingCRUDHelper.CreateTestVoteOnIssue_ViaWebApp(subIssueId1, 10);
             await _read.Solution(new Guid(parentSolutionId!), new ContentFilter());
             var cacheEntry3 = await _env.fetchJson<CacheEntryIdsDTO>(url);
             Assert.IsTrue(cacheEntry3.Value[0] == subIssueId1);

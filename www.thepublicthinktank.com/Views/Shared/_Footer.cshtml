@@ -1,27 +1,48 @@
-﻿<footer class="border-top footer" tabindex="0">
-    <div class="container d-flex justify-content-between flex-column" style="width: 326px; transform: translateY(31px)">
+﻿@inject IWebHostEnvironment env;
+
+@{
+    bool isTestOrDev = env.EnvironmentName == "Testing" || env.EnvironmentName == "Development";
+}
+
+<footer class="border-top footer" tabindex="0">
+    <div class="container d-flex justify-content-between flex-column" style="width: fit-content; transform: translateY(31px)">
 
         <div>
             <div class="ff-consolas col-lg-4 mb-2 text-body-emphasis text-decoration-none fw-bold w-100" style="transform: translateY(-10px)">
                 @await Html.PartialAsync("~/Views/Shared/Components/ThePublicThinkTank_Logo.cshtml")
             </div>
         </div>
-        <div class="d-flex align-items-center  justify-content-between w-fit m-auto">
+        <div class="d-flex align-items-center flex-column  justify-content-between w-fit m-auto text-nowrap">
+            
+            <div class="d-flex align-items-center  justify-content-between">
+                <div>
+                    &copy; @DateTime.Now.Year
+                </div>
+                <div class="mx-2">-</div>
+                <div>
+                    <a tabindex="0" asp-area="" asp-controller="Home" style="text-decoration:none" asp-action="Privacy">Privacy</a>
+                </div>
+                <div class="mx-2">-</div>
+                <div>
+                    <a tabindex="0" style="text-decoration: none" target="_blank" href="https://github.com/williamowen65/atlas-the-public-think-tank">
+                        @Html.Partial("~/Views/Shared/Icons/_Github-logo.cshtml") Github
+                    </a>
+                </div>
+                @if (!isTestOrDev)
+                {
+                    <div class="mx-2">-</div>
+                    <button class="text-button  open-general-feedback-form">Feedback Form Link</button>
+                }
 
-
-            <div>
-                &copy; @DateTime.Now.Year
             </div>
-            <div class="mx-2">-</div>
-            <div>
-                <a tabindex="0" asp-area="" asp-controller="Home" style="text-decoration:none" asp-action="Privacy">Privacy</a>
+            @if (isTestOrDev)
+            {    
+            <div class="d-flex align-items-center  justify-content-between">
+                <a tabindex="0" asp-area="" asp-controller="Home" style="text-decoration:none" asp-action="WelcomeTesters">Become a Tester</a>
+                <div class="mx-2">-</div>
+                <button class="text-button  open-general-feedback-form">Feedback Form Link</button>
             </div>
-            <div class="mx-2">-</div>
-            <div>
-                <a tabindex="0" style="text-decoration: none" target="_blank" href="https://github.com/williamowen65/atlas-the-public-think-tank">
-                    @Html.Partial("~/Views/Shared/Icons/_Github-logo.cshtml") Github
-                </a>
-            </div>
+            }
         </div>
       
     </div>

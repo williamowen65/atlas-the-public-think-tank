@@ -85,7 +85,7 @@ resource "azurerm_service_plan" "service_plan_testing" {
   resource_group_name = azurerm_resource_group.rg_testing.name
   location            = azurerm_resource_group.rg_testing.location
   os_type             = "Linux"
-  sku_name            = "F1" # Free tier
+  sku_name            = "B1" # Basic tier ..... F1 == free tier but has limits
 }
 
 
@@ -105,6 +105,12 @@ resource "azurerm_linux_web_app" "web-app-testing" {
     "SMTP_HOST" = var.smtp_host
     "SMTP_USERNAME" = var.smtp_username
     "SMTP_PASSWORD" = var.smtp_password
+    "Authentication" = jsonencode({
+      Google = {
+        ClientId     = var.google_oauth_clientId
+        ClientSecret = var.google_oauth_secret
+      }
+    })
   }
 
   connection_string {

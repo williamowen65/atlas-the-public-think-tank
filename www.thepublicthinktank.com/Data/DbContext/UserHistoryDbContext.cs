@@ -6,11 +6,13 @@ using atlas_the_public_think_tank.Data.DatabaseEntities.History;
 using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers;
 using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
+using atlas_the_public_think_tank.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Mono.TextTemplating;
 using System.Security.Claims;
 using Solution = atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.Solution;
 
@@ -33,33 +35,89 @@ namespace atlas_the_public_think_tank.Data.DbContext
 
         public DbSet<UserHistory> UserHistory { get; set; }
 
+   
+
         public override int SaveChanges()
         {
-            AddUserHistoryEntriesSync();
-            return base.SaveChanges();
+            try
+            {
+                // Clone the entries before SaveChanges
+                var clonedEntries = ChangeTracker.Entries()
+                    .Select(e => new ChangeTrackerEntryDTO
+                    {
+                        Entity = e.Entity,
+                        State = e.State,
+                        OriginalValues = e.OriginalValues.Properties.ToDictionary(
+                            p => p.Name,
+                            p => e.OriginalValues[p])
+                    })
+                    .ToList();
+
+                int result = base.SaveChanges();
+                if (result > 0)
+                {
+                    AddUserHistoryEntriesSync(clonedEntries);
+                }
+                return result;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
 
         public override async Task<int> SaveChangesAsync(
             bool acceptAllChangesOnSuccess,
             CancellationToken cancellationToken = default)
         {
-            await AddUserHistoryEntriesAsync();
-            return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+            try
+            {
+                // Clone the entries before SaveChanges
+                var clonedEntries = ChangeTracker.Entries()
+                    .Select(e => new ChangeTrackerEntryDTO
+                    {
+                        Entity = e.Entity,
+                        State = e.State,
+                        OriginalValues = e.OriginalValues.Properties.ToDictionary(
+                            p => p.Name,
+                            p => e.OriginalValues[p])
+                    })
+                    .ToList();
+
+                int result = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+                if (result > 0) { 
+                    await AddUserHistoryEntriesAsync(clonedEntries);
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+
+           
+        }
+
+        private static bool IsHistoryTrackableEntity(object entity)
+        {
+            return entity is AppUser
+                || entity is IssueVote
+                || entity is SolutionVote
+                || entity is Issue
+                || entity is Solution;
         }
 
         // Synchronous version for SaveChanges
-        private void AddUserHistoryEntriesSync()
+        private void AddUserHistoryEntriesSync(IEnumerable<ChangeTrackerEntryDTO> changeTrackerEntries)
         {
             var historyEntries = new List<UserHistory>();
 
-            foreach (var entry in ChangeTracker.Entries()
+            foreach (var entry in changeTrackerEntries
                          .Where(e => e.State == EntityState.Added ||
                                      e.State == EntityState.Modified ||
                                      e.State == EntityState.Deleted))
             {
-                if (entry.Entity is UserHistory) continue;
-                if (entry.Entity is Scope) continue;
-                if (entry.Entity is EmailLog) continue;
+                if (!IsHistoryTrackableEntity(entry.Entity)) continue;
 
                 using var scope = _serviceProvider.CreateScope();
                 var services = scope.ServiceProvider;
@@ -78,22 +136,21 @@ namespace atlas_the_public_think_tank.Data.DbContext
 
             UserHistory.AddRange(historyEntries);
 
+            SaveChanges();
             
         }
 
         // Async version for SaveChangesAsync
-        private async Task AddUserHistoryEntriesAsync()
+        private async Task AddUserHistoryEntriesAsync(IEnumerable<ChangeTrackerEntryDTO> changeTrackerEntries)
         {
             var historyEntries = new List<UserHistory>();
 
-            foreach (var entry in ChangeTracker.Entries()
+            foreach (var entry in changeTrackerEntries
                          .Where(e => e.State == EntityState.Added ||
                                      e.State == EntityState.Modified ||
                                      e.State == EntityState.Deleted))
             {
-                if (entry.Entity is UserHistory) continue;
-                if (entry.Entity is Scope) continue;
-                if (entry.Entity is EmailLog) continue;
+                if (!IsHistoryTrackableEntity(entry.Entity)) continue;
 
                 using var scope = _serviceProvider.CreateScope();
                 var services = scope.ServiceProvider;
@@ -108,6 +165,8 @@ namespace atlas_the_public_think_tank.Data.DbContext
             }
 
             UserHistory.AddRange(historyEntries);
+
+            await SaveChangesAsync();
         }
     }
 
@@ -127,7 +186,7 @@ namespace atlas_the_public_think_tank.Data.DbContext
             _read = read;
         }
 
-        public async Task<UserHistory?> CreateHistoryEntry(EntityEntry entry)
+        public async Task<UserHistory?> CreateHistoryEntry(ChangeTrackerEntryDTO entry)
         {
             var now = DateTime.UtcNow;
 
@@ -231,7 +290,7 @@ namespace atlas_the_public_think_tank.Data.DbContext
            
         }
 
-        public Guid? ExtractUserId(EntityEntry entry, Guid fallbackGuid)
+        public Guid? ExtractUserId(ChangeTrackerEntryDTO entry, Guid fallbackGuid)
         {
             HttpContext? httpContext = _httpContextAccessor.HttpContext;
             Guid? userId = null;
@@ -252,7 +311,7 @@ namespace atlas_the_public_think_tank.Data.DbContext
         /// <summary>
         /// Language = "an issue" or "a solution"
         /// </summary>
-        public string ContentItemSwitch(EntityEntry entry, string language)
+        public string ContentItemSwitch(ChangeTrackerEntryDTO entry, string language)
         {
             string actionText;
 
@@ -275,7 +334,7 @@ namespace atlas_the_public_think_tank.Data.DbContext
             return actionText;
         }
 
-        public string VoteSwitch(int voteValue, EntityEntry entry)
+        public string VoteSwitch(int voteValue, ChangeTrackerEntryDTO entry)
         {
 
             string actionText;

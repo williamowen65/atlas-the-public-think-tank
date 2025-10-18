@@ -1,15 +1,21 @@
 ﻿document.addEventListener("DOMContentLoaded", () => {
+
+    // Shortcuts are used to get focus to somewhere in the web app
     keyboardShortcut_alt_a()
     keyboardShortcut_alt_m()
     keyboardShortcut_alt_h()
     keyboardShortcut_alt_s()
     keyboardShortcut_alt_b()
     keyboardShortcut_alt_u()
+
+    // Focus Traps are used to keep focus locked in an area
     focusTrap_BySelector('#accessibility-tab')
     arrowKeyFocusNavigation("#accessibility-tab button:visible")
-    focusTrap_BySelector('body')
+    focusTrap_BySelector('body') // <-- This doesn't seem to work because the browser still gets focus after the last elements
+
+    // These are all actions in the accessibility table
     userSelectsGoTo()
-    userSelectsProvideAccessibilityFeedback()
+    userSelectsProvideAccessibilityFeedback() // Opens form
     userSelectsExitButton()
     userSelectsGoBackBtn()
     userSelectsGoToMainSection()
@@ -17,9 +23,11 @@
     userSelectsGoToSidebar()
     userSelectsGoToFooter()
     userSelectsGoToUtilityDock()
-    keyboardShortcut_alt_down_and_up_for_content_cards()
-    userSendsAccessibilityFeedback()
-    addEnterSupportToLabels()
+
+    // These are general accesibility logic 
+    keyboardShortcut_alt_down_and_up_for_content_cards() // A quick way to move focus between content cards (issues/solutions)
+    addEnterSupportToLabels() // Clicking focusable elements with enter
+    userSelectsProvideGeneralFeedback() // On open of a form, focus input area
 })
 
 
@@ -98,51 +106,6 @@ function keyboardShortcut_alt_m() {
         if (e.altKey && e.key === 'm') { // alt + m
             goToMainContent()
         }
-    });
-}
-
-function userSendsAccessibilityFeedback() {
-    const form = document.querySelector("#provide-accessibility-feedback-form");
-    const accessibilityMessageEl = document.querySelector("#accessibilityFeedbackText");
-
-    form.addEventListener("submit", (e) => {
-        e.preventDefault();
-
-        // check for min text
-        const feedback = accessibilityMessageEl.value.trim();
-        if (!feedback) {
-            alert("requires more data");
-            return;
-        }
-
-        fetch("/accessibility-feedback", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                Message: feedback,
-                AppUser: null // <-- this is set on server side if the user is logged in
-            })
-        })
-            .then(res => res.json()) // ✅ fixed parentheses
-            .then(res => {
-                if (res.success == false) {
-                    const errorContainer = document.querySelector("#accessibility-feedback-error")
-                    errorContainer.innerText = res.message
-                }
-                if (res.success == true) {
-                    const accessibilityFeedbackModal = document.querySelector("#provide-accessibility-feedback-modal")
-                    accessibilityMessageEl.value = ""
-                    // Close the modal using Bootstrap's modal API
-                    const modalInstance = window.bootstrap.Modal.getOrCreateInstance(accessibilityFeedbackModal);
-                    modalInstance.hide();
-                  
-                }
-            })
-            .catch(err => {
-                console.log({ err });
-            });
     });
 }
 
@@ -275,13 +238,29 @@ function userSelectsExitButton() {
     })
 }
 
+/**
+ * This form uses bootstrap attributes to open the modal (bs-target)
+ * InBoundEmail.js is used for the actual feedback form
+ */
 function userSelectsProvideAccessibilityFeedback() {
     // The html element use bootstrap attributes to open the modal
-    const accessibilityFeedbackModal = document.querySelector("#provide-accessibility-feedback-modal")
+    const accessibilityFeedbackModal = document.querySelector("#accessibility-feedback-modal")
     accessibilityFeedbackModal.addEventListener("shown.bs.modal", () => {
-        document.querySelector("#accessibilityFeedbackText").focus();
+        accessibilityFeedbackModal.querySelector("#Message").focus();
     })
 }
+
+
+/**
+ * This form is opened via JS in InBoundEmail.js
+ */
+function userSelectsProvideGeneralFeedback() {
+    const generalFeedbackModal = document.querySelector("#general-feedback-modal");
+    generalFeedbackModal.addEventListener("shown.bs.modal", () => {
+        generalFeedbackModal.querySelector("#Message").focus();
+    })
+}
+
 
 function userSelectsGoTo() {
     const goToButton = document.querySelector("#go-to")

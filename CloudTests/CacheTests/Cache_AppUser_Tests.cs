@@ -101,7 +101,7 @@ namespace CloudTests.CacheTests
 
             // Create issue
             var testHelper = new TestingCRUDHelper(_env);
-            var (jsonDoc, issueId, title, content, scope) = await testHelper.CreateTestIssue(ContentStatus.Published);
+            var (jsonDoc, issueId, title, content, scope) = await testHelper.CreateTestIssue_ViaWebApp(ContentStatus.Published);
             await _env.fetchHTML(profileUrl);
 
             var cacheEntry2 = await _env.fetchJson<CacheUserHistoryEntry>(cacheUrl);

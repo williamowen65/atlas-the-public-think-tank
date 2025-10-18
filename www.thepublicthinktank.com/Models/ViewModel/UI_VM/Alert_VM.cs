@@ -17,5 +17,7 @@ namespace atlas_the_public_think_tank.Models.ViewModel.UI_VM
         public string Id { get; set; } = Guid.NewGuid().ToString();
 
         public AlertType Type { get; set; } = AlertType.info;
+
+        public bool IsFullWidth { get; set; } = false;
     }
 }

@@ -1,0 +1,121 @@
+﻿@{
+    ViewData["Title"] = "Become a Tester | App Testing Guide";
+}
+
+<div class="container">
+    <div class="card mt-4">
+        <header class="card-header text-center">
+           <h1>🧪 Become a Tester</h1>
+           <p>Help improve our app by exploring, experimenting, and sharing your feedback.</p>
+        </header>
+
+            <style>
+                section.cross {
+                    border-color:var(--bs-border-color) !important;
+                    border-width: 1px;
+                    padding: 10px;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                }
+
+                .divider{
+                    border-color: var(--bs-border-color) !important;
+                    border-width: 1px;
+                    border-bottom: solid;
+                }
+                section.cross:nth-of-type(1) {
+                    border-right: solid;
+                    border-bottom: solid;
+                }
+                section.cross:nth-of-type(2) {
+                    border-bottom: solid;
+                }
+                section.cross:nth-of-type(3) {
+                    border-right: solid;
+                }
+                @@media (max-width: 768px) {
+                    /* When the screen is smaller */
+                    section.cross:nth-of-type(1) {
+                        border-right: none;
+                        border-bottom: solid;
+                    }
+
+                    section.cross:nth-of-type(2) {
+                        border-bottom: solid;
+                    }
+
+                    section.cross:nth-of-type(3) {
+                        border-right: none;
+                        border-bottom: solid; 
+                    }
+                   
+                }
+            </style>
+
+        <div class="row card-body">
+
+            <section class="col-12 col-md-6 cross">
+                <h2>🎯 Your Mission</h2>
+                <p>Explore the app like a real user — and also like a curious hacker. Your goal is to:</p>
+                <ul>
+                    <li>Try every feature and setting.</li>
+                    <li>Use the app as it’s intended.</li>
+                    <li>Try to <strong>break</strong> it — push buttons, test weird inputs, explore edge cases.</li>
+                    <li>Share your thoughts on what works well and what could be improved.</li>
+                </ul>
+            </section>
+
+            <section class="col-12 col-md-6 cross">
+                <h2>🧩 What to Test</h2>
+                <ul>
+                    <li><strong>Core Features:</strong> Do they work as expected?</li>
+                    <li><strong>User Interface:</strong> Is everything clear, consistent, and easy to use?</li>
+                    <li><strong>Performance:</strong> Does anything feel slow or glitchy?</li>
+                    <li><strong>Accessibility:</strong> Can everyone use it comfortably (keyboard, screen reader, etc.)?</li>
+                    <li><strong>Errors & Bugs:</strong> Do you find anything that doesn’t behave right?</li>
+                </ul>
+            </section>
+            <section class="col-12 col-md-6 cross">
+                <h2>💬 How to Give Feedback</h2>
+                <p>Please include:</p>
+                <ul>
+                    <li>A short description of what you were doing</li>
+                    <li>What you expected to happen</li>
+                    <li>What actually happened</li>
+                    <li>(Optional) Screenshots, screen recordings, or console logs</li>
+                </ul>
+                <p class="text-center">
+                    You can submit feedback here:<br />
+                    👉 <button class="text-button open-general-feedback-form">Feedback Form Link</button> <br />
+                    <small>This form is can be accessed via the user account dropdown menu and the footer</small>
+                </p>
+            </section>
+
+            <section class="col-12 col-md-6 cross">
+                <h2>⚙️ Tips for Great Testing</h2>
+                <div class="tip">
+                    <ul>
+                        <li>Test on different devices and browsers if possible.</li>
+                        <li>Refresh between sessions to check persistence.</li>
+                        <li>Keep notes of what you notice.</li>
+                        <li>Don’t worry about being too detailed — more info helps!</li>
+                    </ul>
+                </div>
+            </section>
+            <div class="col-12 divider"></div>
+        </div>
+        <div class="card-body col-md-6 col-12 m-auto">
+            <section>
+                <h2>🧠 Reminder</h2>
+                <p>This is a <strong>testing environment</strong>, not the final version. Some things might look unfinished or behave unexpectedly — and that’s exactly what you’re here to find!</p>
+            </section>
+            <div class="text-center">
+                <p>Thank you for testing and helping us make the app better! 💙</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+

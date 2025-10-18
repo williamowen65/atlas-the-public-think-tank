@@ -1,5 +1,6 @@
 ﻿@using Microsoft.Extensions.Options
 @using atlas_the_public_think_tank.Data.DatabaseEntities.Users
+@using atlas_the_public_think_tank.Email.Models
 @using atlas_the_public_think_tank.Models
 @inject IOptions<ApplicationInsightsSettings> AppInsightsSettings
 @using Microsoft.AspNetCore.Identity
@@ -69,6 +70,11 @@
   
     @await Html.PartialAsync("~/Views/Shared/Components/_accessibility_tab.cshtml")
 
+    @await Html.PartialAsync("~/Views/Shared/_FeedbackForm.cshtml", new InBoundEmailModel()
+    {
+        MessageType = "general"
+    })
+
     <partial name="_ColorMode" />
 
     <partial name="_Header" />
@@ -134,12 +140,15 @@
 
     <script src="~/js/Forms/InitSelect2.js" asp-append-version="true"></script>
     <script src="~/js/Site/InitSearchBar.js" asp-append-version="true"></script>
-    <script src="~/js/Site/accessibility.js" asp-append-version="true"></script>
     
+    <script src="~/js/Site/accessibility.js" asp-append-version="true"></script>
+    <script src="~/js/Site/InBoundEmail.js" asp-append-version="true"></script>
+
+    <script src="~/js/Site/orientation/orientation-restart.js" asp-append-version="true"></script>
     @if (currentUser != null && currentUser.OrientationCompletedAt == null)
     {
         @* include orientation logic in the html *@
-        @await Html.PartialAsync("~/Views/Orientation/orientation-initialize.cshtml")
+        @await Html.PartialAsync("~/Views/Orientation/orientation-modal.cshtml")
         <script src="~/js/Site/orientation/orientation-steps.js" asp-append-version="true"></script>
         <script src="~/js/Site/orientation/orientation-logic.js" asp-append-version="true"></script>
         <script src="~/js/Site/orientation/orientation-accessibility.js" asp-append-version="true"></script>
