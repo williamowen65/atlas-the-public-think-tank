@@ -110,7 +110,8 @@ resource "azurerm_linux_web_app" "web-app-testing" {
         ClientId     = var.google_oauth_clientId
         ClientSecret = var.google_oauth_secret
       }
-    })
+    }),
+   "BLOB_STORAGE_CONNECTION_STRING" = azurerm_storage_account.blob_storage_testing.primary_connection_string
   }
 
   connection_string {
@@ -136,3 +137,17 @@ output "web_app_connection_string" {
 }
 
 
+resource "azurerm_storage_account" "blob_storage_testing" {
+  name                     = "atlasblobstorage"        # no dashes allowed
+  resource_group_name      = azurerm_resource_group.rg_testing.name
+  location                 = azurerm_resource_group.rg_testing.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+  min_tls_version          = "TLS1_2"
+}
+
+resource "azurerm_storage_container" "images" {
+  name                  = "images"
+  storage_account_id  = azurerm_storage_account.blob_storage_testing.id
+  container_access_type = "private"
+}

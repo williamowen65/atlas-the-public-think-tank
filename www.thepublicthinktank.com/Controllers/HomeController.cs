@@ -372,7 +372,6 @@ public class HomeController : Controller
             image = await _imageProvider.GetImageAsync(imagePath);
         }
 
-
         return File(image!, "image/jpeg");
     }
 
