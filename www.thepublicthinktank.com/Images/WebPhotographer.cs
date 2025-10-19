@@ -20,7 +20,7 @@ namespace atlas_the_public_think_tank.Images
 
             // Adds helper methods to get the picture correct
             var scriptPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "js", "Site", "web-photographer.js");
-            await context.AddInitScriptAsync(scriptPath: scriptPath);
+            await context.AddInitScriptAsync(scriptPath: scriptPath); // It doesn't actually add the script, just runs it.
 
             var page = await context.NewPageAsync();
 
@@ -50,15 +50,11 @@ namespace atlas_the_public_think_tank.Images
 
             if (contentType == "issue" || contentType == "solution")
             {
-                selector = $".card.{contentType}-card";
-
+                selector = $".photographer-card-wrapper";
                 await page.GotoAsync(baseUrl + $"/{contentType}/" + imageName);
-
                 await SetColorThemeDark(page);
+                await page.EvaluateAsync("PrepContentCard()");
 
-                // For content cards
-                await page.EvalOnSelectorAsync(selector, @"el => { el.style.width = '400px'; el.style.height = '240px'; }");
-               
             }
 
             if (contentType == "homePage")
@@ -67,7 +63,6 @@ namespace atlas_the_public_think_tank.Images
                 await page.GotoAsync(baseUrl);
                 await SetColorThemeDark(page);
                 await page.EvaluateAsync("PrepHomePage()");
-                //await page.EvaluateAsync("console.log('hi from playwright')");
             }
 
 

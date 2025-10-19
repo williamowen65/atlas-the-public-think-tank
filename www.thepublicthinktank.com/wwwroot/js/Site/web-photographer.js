@@ -5,9 +5,79 @@
 // Ex: When photoing the body of the site, the site dimensions should be not scrollable, cutoff.
 // Ex: the content cards should have a share friendly look to them
 
-//document.addEventListener("DOMContentLoaded", () => {
-//    PrepHomePage()
-//})
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    PrepContentCard();
+})
+
+
+/**
+ * This will be ran on the issue or solution read pages.
+ * 
+ * 
+ */
+function PrepContentCard() {
+    const selector = ".card.issue-card, .card.solution-card"
+
+    const element = document.querySelector(selector)
+
+    const contentEl = element.querySelector(".issue-content, .solution-content, .text-collapsible-target")
+
+    contentEl.classList.add("truncate-multiline")
+
+    // For content cards
+    // set dimensions 600 × 315 pixel
+
+    //element.style.height = "315px"
+
+    // Wrap the card in a div
+    const wrapper = document.createElement("div");
+    wrapper.className = "photographer-card-wrapper";
+    element.parentNode.insertBefore(wrapper, element);
+    wrapper.appendChild(element);
+    wrapper.style.width = "600px"
+
+    element.insertAdjacentHTML("beforebegin", `
+        <div class='text-center '>
+            <h1>Is this a good solution?</h1>
+            <h4 class="position-relative d-flex">
+
+            <div class="flex-grow-1"
+                style="
+                    border: 1px solid white;
+                    margin-left: 50px;
+                    border-bottom: none;
+                    border-right: none;
+                    transform: translate(-5px, 50%)
+                "
+            ></div>
+
+            Cast your vote
+
+            <div class="flex-grow-1"
+                style="margin-right: 50px;"
+            ></div>
+           
+            </h4>
+             
+        </div>
+    `)
+
+
+
+    
+}
+window.PrepContentCard = PrepContentCard;
+
+
+
+
+
+
+/**
+ * This will be ran against the home page screen
+ */
 function PrepHomePage() {
     // Apply to body
     document.body.style.height = "100vh";
