@@ -5,7 +5,13 @@ namespace atlas_the_public_think_tank.Images
 {
     public class WebPhotographer
     {
-        public async Task TakeElementScreenshotAsync(string baseUrl, string contentType, string imageName, string outputPath)
+        private readonly IImageProvider _imageProvider;
+        public WebPhotographer(IImageProvider imageProvider)
+        {
+            _imageProvider = imageProvider;
+        }
+
+        public async Task TakeElementScreenshotAsync(string baseUrl, string contentType, string imageName, string relativePath)
         {
             string? selector = null;
 
@@ -13,20 +19,19 @@ namespace atlas_the_public_think_tank.Images
             var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions { Headless = true });
             var context = await browser.NewContextAsync(new BrowserNewContextOptions
             {
-                ViewportSize = new ViewportSize { Width = 1200, Height = 630 }, // <-- based on the ideal dimensions of og:image
-                DeviceScaleFactor = 4, // Increase for sharper images (2 = "retina")
-                //ColorScheme = ColorScheme.Dark // <-- this doesn't seem to be working. Instead it need to be set on per page basis 
+                ViewportSize = new ViewportSize { Width = 1200, Height = 630 },
+                DeviceScaleFactor = 4,
             });
 
-            // Adds helper methods to get the picture correct
             var scriptPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "js", "Site", "web-photographer.js");
-            await context.AddInitScriptAsync(scriptPath: scriptPath); // It doesn't actually add the script, just runs it.
+            await context.AddInitScriptAsync(scriptPath: scriptPath);
 
             var page = await context.NewPageAsync();
 
             selector = await ContentTypeHandler(page, baseUrl, contentType, imageName);
 
-            if (selector == null) {
+            if (selector == null)
+            {
                 await browser.CloseAsync();
                 return;
             }
@@ -34,7 +39,10 @@ namespace atlas_the_public_think_tank.Images
             var element = await page.QuerySelectorAsync(selector!);
             if (element != null)
             {
-                await element.ScreenshotAsync(new ElementHandleScreenshotOptions { Path = outputPath + $"\\{imageName}.jpg" });
+                var screenshotBytes = await element.ScreenshotAsync(new ElementHandleScreenshotOptions { Path = null, Type = ScreenshotType.Jpeg, Quality = 90, OmitBackground = false });
+                using var imageStream = new MemoryStream(screenshotBytes);
+                imageStream.Position = 0;
+                await _imageProvider.SaveImageAsync(relativePath, imageStream);
             }
 
             await browser.CloseAsync();

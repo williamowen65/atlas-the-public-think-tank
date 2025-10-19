@@ -64,8 +64,8 @@ public class HomeController : Controller
     public readonly IServiceProvider _serviceProvider;
     public readonly IEmailSender _emailSender;
     public readonly IImageProvider _imageProvider;
-
-    public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, UserManager<AppUser> userManager, IVoteStatsRepository voteStatsRepository, IAppUserRepository appUserRepository, IIssueRepository issueRepository, Read read, IHttpContextAccessor httpContextAccessor, IServiceProvider serviceProvider, IEmailSender emailSender, IImageProvider imageProvider)
+    public readonly WebPhotographer _webPhotographer;
+    public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, UserManager<AppUser> userManager, IVoteStatsRepository voteStatsRepository, IAppUserRepository appUserRepository, IIssueRepository issueRepository, Read read, IHttpContextAccessor httpContextAccessor, IServiceProvider serviceProvider, IEmailSender emailSender, IImageProvider imageProvider, WebPhotographer webPhotographer)
     {
         _logger = logger;
         _context = context;
@@ -78,6 +78,7 @@ public class HomeController : Controller
         _serviceProvider = serviceProvider;
         _emailSender = emailSender;
         _imageProvider = imageProvider;
+        _webPhotographer = webPhotographer;
     }
 
     #region Serve the home page
@@ -361,13 +362,11 @@ public class HomeController : Controller
         var imagePath = Path.Combine("og-images", $"{imageName}.jpg");
         var image = await _imageProvider.GetImageAsync(imagePath);
         if (image == null) {
-            WebPhotographer webPhotographer = new WebPhotographer();
-            await webPhotographer.TakeElementScreenshotAsync(
+            await _webPhotographer.TakeElementScreenshotAsync(
                 $"{Request.Scheme}://{Request.Host}",
-              
                 contentType,
                 imageName,
-                $"C:\\development-atlas-public-think-tank-blog-storage\\og-images"
+                $"og-images\\{imageName}.jpg    " // <-- relative path (IImageProvider handles saving the image)
             );
             // Create new image
             image = await _imageProvider.GetImageAsync(imagePath);

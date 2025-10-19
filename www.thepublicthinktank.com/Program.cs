@@ -182,6 +182,7 @@ public class Program
            builder.Services.AddSingleton<IImageProvider, BlobImageProvider>();
         }
 
+        builder.Services.AddTransient<WebPhotographer>();
 
         builder.Services.AddScoped<EmailLogger>();
 

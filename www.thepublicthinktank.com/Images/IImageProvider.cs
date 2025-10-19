@@ -3,6 +3,7 @@
     public interface IImageProvider
     {
         Task<Stream?> GetImageAsync(string imageName);
+
         Task SaveImageAsync(string relativePath, Stream imageStream);
     }
 }
