@@ -7,9 +7,9 @@
 
 
 
-document.addEventListener("DOMContentLoaded", () => {
-    PrepContentCard();
-})
+//document.addEventListener("DOMContentLoaded", () => {
+//    PrepContentCard();
+//})
 
 
 /**
@@ -36,17 +36,28 @@ function PrepContentCard() {
     wrapper.className = "photographer-card-wrapper";
     element.parentNode.insertBefore(wrapper, element);
     wrapper.appendChild(element);
-    wrapper.style.width = "600px"
+    wrapper.style.width = "670px"
+
+    const statIcons = element.querySelector(".issue-card-stat-icons")
+    const wbr = statIcons.querySelector("wbr");
+    if (wbr) {
+        // Solution cards don't have the wbr
+        const br = document.createElement("br");
+        wbr.replaceWith(br);
+    }
+
+    const isIssue = element.classList.contains("issue-card")
+    const text = isIssue ? "Does this issue matter to you?" : "Is this a good solution?"
 
     element.insertAdjacentHTML("beforebegin", `
         <div class='text-center '>
-            <h1>Is this a good solution?</h1>
+            <h1>${text}</h1>
             <h4 class="position-relative d-flex">
 
-            <div class="flex-grow-1"
+            <div class="flex-grow-1 arrow-to-dial"
                 style="
                     border: 1px solid white;
-                    margin-left: 50px;
+                    margin-left: 55px;
                     border-bottom: none;
                     border-right: none;
                     transform: translate(-5px, 50%)
@@ -56,7 +67,7 @@ function PrepContentCard() {
             Cast your vote
 
             <div class="flex-grow-1"
-                style="margin-right: 50px;"
+                style="margin-right: 55px;"
             ></div>
            
             </h4>

@@ -240,3 +240,17 @@
 .author-content-alert:not(.edit-mode) .if-edit-mode {
     display: none;
 }
+
+
+/* Style for web-photographer*/
+.arrow-to-dial::after {
+    content: "";
+    position: absolute;
+    bottom: 5px;
+    left: -11px;
+    width: 0;
+    height: 0;
+    border-left: 11px solid transparent;
+    border-right: 11px solid transparent;
+    border-top: 13px solid #fff;
+}
