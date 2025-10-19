@@ -15,7 +15,8 @@ namespace atlas_the_public_think_tank.Images
             var context = await browser.NewContextAsync(new BrowserNewContextOptions
             {
                 ViewportSize = new ViewportSize { Width = 1200, Height = 800 },
-                DeviceScaleFactor = 4 // Increase for sharper images (2 = "retina")
+                DeviceScaleFactor = 4, // Increase for sharper images (2 = "retina")
+                ColorScheme = ColorScheme.Dark // <-- this doesn't seem to be working. 
             });
 
             var page = await context.NewPageAsync();
@@ -46,6 +47,8 @@ namespace atlas_the_public_think_tank.Images
 
                 await page.GotoAsync(baseUrl + $"/{contentType}/" + imageName);
 
+                await page.EvalOnSelectorAsync("html", @"el => el.setAttribute('data-bs-theme', 'dark')");
+
                 // For content cards
                 await page.EvalOnSelectorAsync(selector, @"el => { el.style.width = '400px'; el.style.height = '240px'; }");
                
@@ -55,6 +58,7 @@ namespace atlas_the_public_think_tank.Images
             {
                 selector = "body";
                 await page.GotoAsync(baseUrl);
+                await page.EvalOnSelectorAsync("html", @"el => el.setAttribute('data-bs-theme', 'dark')");
             }
 
 
