@@ -9,15 +9,18 @@ namespace atlas_the_public_think_tank.Images
         {
             string? selector = null;
 
-
             using var playwright = await Playwright.CreateAsync();
             var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions { Headless = true });
             var context = await browser.NewContextAsync(new BrowserNewContextOptions
             {
-                ViewportSize = new ViewportSize { Width = 1200, Height = 800 },
+                ViewportSize = new ViewportSize { Width = 1200, Height = 630 }, // <-- based on the ideal dimensions of og:image
                 DeviceScaleFactor = 4, // Increase for sharper images (2 = "retina")
-                ColorScheme = ColorScheme.Dark // <-- this doesn't seem to be working. 
+                //ColorScheme = ColorScheme.Dark // <-- this doesn't seem to be working. Instead it need to be set on per page basis 
             });
+
+            // Adds helper methods to get the picture correct
+            var scriptPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "js", "Site", "web-photographer.js");
+            await context.AddInitScriptAsync(scriptPath: scriptPath);
 
             var page = await context.NewPageAsync();
 
@@ -37,6 +40,10 @@ namespace atlas_the_public_think_tank.Images
             await browser.CloseAsync();
         }
 
+        public async Task SetColorThemeDark(IPage page) {
+            await page.EvalOnSelectorAsync("html", @"el => el.setAttribute('data-bs-theme', 'dark')");
+        }
+
         public async Task<string?> ContentTypeHandler(IPage page, string baseUrl, string contentType, string imageName) {
 
             string? selector = null;
@@ -47,7 +54,7 @@ namespace atlas_the_public_think_tank.Images
 
                 await page.GotoAsync(baseUrl + $"/{contentType}/" + imageName);
 
-                await page.EvalOnSelectorAsync("html", @"el => el.setAttribute('data-bs-theme', 'dark')");
+                await SetColorThemeDark(page);
 
                 // For content cards
                 await page.EvalOnSelectorAsync(selector, @"el => { el.style.width = '400px'; el.style.height = '240px'; }");
@@ -58,7 +65,9 @@ namespace atlas_the_public_think_tank.Images
             {
                 selector = "body";
                 await page.GotoAsync(baseUrl);
-                await page.EvalOnSelectorAsync("html", @"el => el.setAttribute('data-bs-theme', 'dark')");
+                await SetColorThemeDark(page);
+                await page.EvaluateAsync("PrepHomePage()");
+                //await page.EvaluateAsync("console.log('hi from playwright')");
             }
 
 
