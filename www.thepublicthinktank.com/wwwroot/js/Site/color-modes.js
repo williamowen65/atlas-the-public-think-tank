@@ -9,10 +9,7 @@
 (() => {
     'use strict'
 
-    // Set initial theme based on stored preference or default to dark
-     const savedTheme = localStorage.getItem('theme') || 'dark';
-     document.documentElement.setAttribute('data-bs-theme', savedTheme);
-
+   
 
     const getStoredTheme = () => localStorage.getItem('theme')
     const setStoredTheme = theme => localStorage.setItem('theme', theme)
