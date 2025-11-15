@@ -14,6 +14,22 @@
  *
  */
 
+document.addEventListener("click", (e) => {
+    if (e.target.closest(".share-btn")) {
+        const shareBtn = e.target.closest(".share-btn")
+        const url = window.location.origin + shareBtn.getAttribute("data-url")
+        navigator.clipboard.writeText(url).then(function () {
+            shareBtn.textContent = 'Copied!';
+            setTimeout(() => shareBtn.textContent = 'Share', 1500);
+        }, function (err) {
+            shareBtn.textContent = 'Failed to Copy';
+            setTimeout(() => shareBtn.textContent = 'Share', 1500);
+            console.log("Failed to Copy: ", err)
+        });
+
+    }
+})
+
 function initializeCard(cardId) {
     const card = document.querySelector(`.card[id="${cardId}"]`)
 
@@ -30,9 +46,6 @@ function initializeCard(cardId) {
          // TBD - More initializations are possible
     }
     initializeCompositeScopeRibbonListener(cardId)
-
-    
-   
 }
 
 function scrollBreadcrumbToEnd(card) {
