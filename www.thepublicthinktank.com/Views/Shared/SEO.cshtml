@@ -1,0 +1,43 @@
+﻿@* SEO *@
+
+@{
+    string title = $"{(ViewData["Title"] != null ? ViewData["Title"] + " | Shared on " : "")}Atlas: The Public Think Tank";
+
+    string description = ViewData["Description"] as string ?? "A social media driven mind map of issues and solutions";
+
+    string keywords = ViewData["Keywords"] as string ?? "issues, solutions, problem solving, social, voting";
+
+    string linkToImage = ViewData["og:image"] as string ?? $"{Context.Request.Scheme}://{Context.Request.Host}/og-images/home.jpg?contentType=homePage";
+}
+
+<title>@title</title>
+<meta property="og:title" content="@title">
+
+<meta name="description" content="@description">
+<meta property="og:description" content="@description">
+
+<meta name="keywords" content="@keywords">
+
+<meta property="og:image" content="@linkToImage">
+<meta property="og:image:alt" content="Preview of @title">
+
+<meta property="og:url" content="@Context.Request.Scheme://@Context.Request.Host@Context.Request.Path@Context.Request.QueryString">
+
+@if (ViewData["Author"] != null)
+{
+    <meta name="author" content="@ViewData["Author"]">
+}
+
+@* Social Media *@
+
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Atlas: The Public Think Tank">
+
+
+
+@* <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="My Awesome Project">
+<meta name="twitter:description" content="A modern web project exploring creativity and code.">
+<meta name="twitter:image" content="https://example.com/preview.jpg">
+<meta name="twitter:creator" content="@WilliamOwen"> *@

@@ -8,6 +8,7 @@ using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Email;
 using atlas_the_public_think_tank.Email.Infrastructure;
 using atlas_the_public_think_tank.Email.Models;
+using atlas_the_public_think_tank.Images;
 using atlas_the_public_think_tank.Middleware;
 using atlas_the_public_think_tank.Migrations_NonEF;
 using atlas_the_public_think_tank.Models;
@@ -169,6 +170,7 @@ public class Program
         {
             // In development
             builder.Services.AddScoped<IEmailSender, MailHogEmailSender>();
+            builder.Services.AddSingleton<IImageProvider, LocalImageProvider>();
         }
         else if(
             builder.Environment.EnvironmentName == "Production" || 
@@ -177,8 +179,10 @@ public class Program
          )
         {
             builder.Services.AddScoped<IEmailSender, SMTPEmailSender>();
+           builder.Services.AddSingleton<IImageProvider, BlobImageProvider>();
         }
 
+        builder.Services.AddTransient<WebPhotographer>();
 
         builder.Services.AddScoped<EmailLogger>();
 

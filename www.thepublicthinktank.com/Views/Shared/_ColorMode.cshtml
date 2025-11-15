@@ -6,7 +6,13 @@
 @{
 }
 
+<script>
+    @* This needs to be loaded with the DOM and not with fetch js *@
+    // Set initial theme based on stored preference or default to dark
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-bs-theme', savedTheme);
 
+</script>
 
 @* Definition for svg graphics *@
 <svg xmlns="http://www.w3.org/2000/svg" class="d-none">

@@ -11,7 +11,7 @@
 
 @model Home_PageVM
 @{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = null; // Falls back to the main app name
 
     int NextPageNumber = Model.PaginatedContent.CurrentPage + 1;
     Boolean isMorePosts = Model.PaginatedContent.PageSize < Model.PaginatedContent.TotalCount;

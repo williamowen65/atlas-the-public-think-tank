@@ -8,6 +8,7 @@ using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
 using atlas_the_public_think_tank.Email;
 using atlas_the_public_think_tank.Email.Infrastructure;
 using atlas_the_public_think_tank.Email.Models;
+using atlas_the_public_think_tank.Images;
 using atlas_the_public_think_tank.Migrations;
 using atlas_the_public_think_tank.Models.Cacheable;
 using atlas_the_public_think_tank.Models.Enums;
@@ -37,6 +38,7 @@ using System.Net.Mail;
 using System.Net.Mime;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 using System.Web;
 using static atlas_the_public_think_tank.Data.SeedData.SeedIds;
 using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
@@ -61,8 +63,9 @@ public class HomeController : Controller
     private readonly IHttpContextAccessor _httpContextAccessor;
     public readonly IServiceProvider _serviceProvider;
     public readonly IEmailSender _emailSender;
-
-    public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, UserManager<AppUser> userManager, IVoteStatsRepository voteStatsRepository, IAppUserRepository appUserRepository, IIssueRepository issueRepository, Read read, IHttpContextAccessor httpContextAccessor, IServiceProvider serviceProvider, IEmailSender emailSender)
+    public readonly IImageProvider _imageProvider;
+    public readonly WebPhotographer _webPhotographer;
+    public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, UserManager<AppUser> userManager, IVoteStatsRepository voteStatsRepository, IAppUserRepository appUserRepository, IIssueRepository issueRepository, Read read, IHttpContextAccessor httpContextAccessor, IServiceProvider serviceProvider, IEmailSender emailSender, IImageProvider imageProvider, WebPhotographer webPhotographer)
     {
         _logger = logger;
         _context = context;
@@ -74,6 +77,8 @@ public class HomeController : Controller
         _httpContextAccessor = httpContextAccessor;
         _serviceProvider = serviceProvider;
         _emailSender = emailSender;
+        _imageProvider = imageProvider;
+        _webPhotographer = webPhotographer;
     }
 
     #region Serve the home page
@@ -208,6 +213,7 @@ public class HomeController : Controller
 
     #endregion
 
+    #region Vote related
 
     /// <summary>
     /// This method is used to request to vote
@@ -347,6 +353,27 @@ public class HomeController : Controller
         });
     }
 
+    #endregion
+
+    [Route("/og-images/{imageName}.jpg")]
+    public async Task<IActionResult> GetImage(string imageName, [FromQuery] string contentType)
+    {
+        // Example: Serve a static file from wwwroot/og-images
+        var imagePath = Path.Combine("og-images", $"{imageName}.jpg");
+        var image = await _imageProvider.GetImageAsync(imagePath);
+        if (image == null) {
+            await _webPhotographer.TakeElementScreenshotAsync(
+                $"{Request.Scheme}://{Request.Host}",
+                contentType,
+                imageName,
+                $"og-images\\{imageName}.jpg    " // <-- relative path (IImageProvider handles saving the image)
+            );
+            // Create new image
+            image = await _imageProvider.GetImageAsync(imagePath);
+        }
+
+        return File(image!, "image/jpeg");
+    }
 
 
 
@@ -510,6 +537,9 @@ public class HomeController : Controller
     {
         return View("~/Views/Home/WelcomeTesters.cshtml");
     }
+
+
+
 
 
     #region Routes that could be in a MiscellenousController

@@ -8,7 +8,8 @@
 
 @model Solution_PageVM;
 @{
-    ViewData["Title"] = Model.Solution.Title;
+    ViewData["Title"] = "Solution: " + Model.Solution.Title;
+    ViewData["og:image"] = $"{Context.Request.Scheme}://{Context.Request.Host}/og-images/{Model.Solution.SolutionID}.jpg?contentType=solution";
 }
 
 <div class="container mt-3  ">

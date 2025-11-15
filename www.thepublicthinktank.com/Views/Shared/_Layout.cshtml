@@ -26,7 +26,9 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Atlas: The Public Think Tank</title>
+
+    @await Html.PartialAsync("~/Views/Shared/SEO.cshtml")
+    
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     @* Select2 CSS *@
@@ -65,6 +67,8 @@
         @* include orientation logic in the html *@
         <link rel="stylesheet" href="~/css/orientation.css" asp-append-version="true" />
     }
+
+   
 </head>
 <body>
   
@@ -153,6 +157,9 @@
         <script src="~/js/Site/orientation/orientation-logic.js" asp-append-version="true"></script>
         <script src="~/js/Site/orientation/orientation-accessibility.js" asp-append-version="true"></script>
     }
+
+    @*  This file (web-photographer.js) is only uncommented while testing. It is not meant for the public app.  *@
+    @* <script src="~/js/Site/web-photographer.js" asp-append-version="true"> </script> *@
 
     <script>
 
