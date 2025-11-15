@@ -366,7 +366,7 @@ public class HomeController : Controller
                 $"{Request.Scheme}://{Request.Host}",
                 contentType,
                 imageName,
-                $"og-images\\{imageName}.jpg    " // <-- relative path (IImageProvider handles saving the image)
+                $"og-images\\{imageName}.jpg" // <-- relative path (IImageProvider handles saving the image)
             );
             // Create new image
             image = await _imageProvider.GetImageAsync(imagePath);

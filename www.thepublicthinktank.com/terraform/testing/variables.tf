@@ -45,3 +45,9 @@ variable "google_oauth_secret" {
 	type = string
 	sensitive = true
 }
+
+variable "BROWSERLESS_IO_API_KEY" {
+	description = "API Key for connecting to playwright via browserless.io"
+	type = string
+	sensitive = true
+}

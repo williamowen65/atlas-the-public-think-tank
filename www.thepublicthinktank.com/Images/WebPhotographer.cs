@@ -1,4 +1,5 @@
 ﻿using Microsoft.Playwright;
+using NuGet.Common;
 using System.Buffers.Text;
 
 namespace atlas_the_public_think_tank.Images
@@ -6,17 +7,38 @@ namespace atlas_the_public_think_tank.Images
     public class WebPhotographer
     {
         private readonly IImageProvider _imageProvider;
-        public WebPhotographer(IImageProvider imageProvider)
+        private readonly IWebHostEnvironment _env;
+        private readonly IConfiguration _configuration;
+
+        public WebPhotographer(IImageProvider imageProvider, IWebHostEnvironment env, IConfiguration configuration)
         {
             _imageProvider = imageProvider;
+            _env = env;
+            _configuration = configuration;
         }
 
         public async Task TakeElementScreenshotAsync(string baseUrl, string contentType, string imageName, string relativePath)
         {
+
             string? selector = null;
 
             using var playwright = await Playwright.CreateAsync();
-            var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions { Headless = true });
+
+            IBrowser browser = null;
+
+            if (_env.IsDevelopment())
+            {
+                // In development
+                browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions { Headless = true });
+            }
+            else
+            {
+                // in production, testing, staging env
+                browser = await playwright.Chromium.ConnectOverCDPAsync(
+                    $"wss://production-sfo.browserless.io?token={_configuration["BROWSERLESS_IO_API_KEY"]}"
+                );
+            }
+
             var context = await browser.NewContextAsync(new BrowserNewContextOptions
             {
                 ViewportSize = new ViewportSize { Width = 1200, Height = 630 },
