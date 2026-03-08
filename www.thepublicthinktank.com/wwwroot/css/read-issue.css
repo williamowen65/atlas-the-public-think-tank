@@ -250,10 +250,11 @@
     .card-header-spacer-for-mobile {
         height: var(--card-header-height);
     }
-    .card-header {
-        width:100%;
+    .issue-card .card-header,
+    .solution-card .card-header {
+        width: 100%;
         position: absolute !important;
-        margin-left:0 !important;
+        margin-left: 0 !important;
     }
 }
 
