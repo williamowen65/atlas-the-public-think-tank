@@ -105,7 +105,7 @@
 .composite-scope {
     display: none;
     max-width: 230px;
-    max-height: 100px;
+    max-height: 170px;
     overflow-y: scroll;
 }
 .show-composite-scope .composite-scope {
