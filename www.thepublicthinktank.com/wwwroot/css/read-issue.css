@@ -90,6 +90,13 @@
     overflow: hidden; 
 }
 
+@media (max-width: 768px) {
+    .truncate-multiline {
+        -webkit-line-clamp: 8;
+    }
+
+}
+
 .expanded 
 .expand-button-spacer {
     display: none;
@@ -183,6 +190,10 @@
     background: var(--issue-bg);
 }
 
+.issue-card, .solution-card {
+    --card-header-height: 0px;
+}
+
 
 
 .issue-card .card-header,
@@ -231,6 +242,19 @@
     z-index: 1;
     position: relative;
     background: linear-gradient(to bottom, var(--bs-body-bg) 0%, var(--bs-body-bg) 70%, rgba(255,255,255,0) 100%);
+}
+@media (max-width: 768px) {
+    .dial-container {
+        margin-top: var(--card-header-height);
+    }
+    .card-header-spacer-for-mobile {
+        height: var(--card-header-height);
+    }
+    .card-header {
+        width:100%;
+        position: absolute !important;
+        margin-left:0 !important;
+    }
 }
 
 
