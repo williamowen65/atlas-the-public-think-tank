@@ -46,6 +46,7 @@
         </div>
 
         @await Html.PartialAsync("~/Views/Shared/Components/_scope-composite.cshtml", Model.Scope)
+        <div class="card-header-spacer-for-mobile"></div>
         <p class="mx-2 mb-2 @(isDefaultExpand ? "" : "truncate-multiline") text-collapsible-target" style="white-space: pre-wrap">@Model.Content</p>
 
         @* @if (Model.Categories != null && Model.Categories.Any())
