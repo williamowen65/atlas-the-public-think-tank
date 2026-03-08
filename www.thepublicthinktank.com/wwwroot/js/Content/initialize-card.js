@@ -17,6 +17,8 @@
 function initializeCard(cardId) {
     const card = document.querySelector(`.card[id="${cardId}"]`)
 
+    updateCardHeaderHeight(card)
+
     scrollBreadcrumbToEnd(card)
 
     if (card.classList.contains("select2-item")) {
@@ -947,6 +949,7 @@ function initInitializeCardObserver(node) {
             try {
                 const contentId = node.id;
                 initializeCard(contentId);
+
             } catch (initError) {
                 console.error("Error in initializeVoteDial:", initError);
             }
@@ -972,10 +975,29 @@ function initializeCompositeScopeRibbonListener(cardId) {
     })
 }
 
+// Global screen width Listener
+function updateCardHeaderHeights() {
+    Array.from(document.querySelectorAll(".issue-card, .solution-card")).forEach(card => {
+        updateCardHeaderHeight(card)
+    });
+}
+
+function updateCardHeaderHeight(card) {
+    const cardHeaderHeight = card
+        .querySelector(".card-header")
+        .getBoundingClientRect().height;
+
+    card.style.setProperty("--card-header-height", cardHeaderHeight + "px");
+}
+
+// Run when page loads
+window.addEventListener("DOMContentLoaded", updateCardHeaderHeights);
+
+// Run when window resizes
+window.addEventListener("resize", updateCardHeaderHeights);
+
 
 function initTabbedForum(config) {
-
-
 
     reinitializeVoteDials();
 
