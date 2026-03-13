@@ -512,6 +512,13 @@ public class HomeController : Controller
     }
 
 
+    [Route("/about")]
+    public IActionResult About() 
+    {
+        return View("~/Views/Home/AboutPage.cshtml");    
+    }
+
+
     #region Routes that could be in a MiscellenousController
 
     /// <summary>
