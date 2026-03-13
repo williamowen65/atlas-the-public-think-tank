@@ -1,4 +1,5 @@
-﻿@*
+﻿@using atlas_the_public_think_tank.Models.ViewModel.UI_VM
+@*
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
 @{
@@ -18,8 +19,18 @@
             A social media platform connecting innovative thinkers with keen problem-solvers.
         </p>
 
+        <div class="d-flex justify-content-center mb-3">
+            @await Html.PartialAsync(
+            "~/Views/Shared/Components/_gradient-border.cshtml",
+            new GradientBorder_VM()
+            {
+                Link = "https://www.youtube.com/watch?v=ULjr4gNmb9s",
+                LinkText = "Click here to view inspiration for this website"
+            })
+        </div>
+
         <div class="px-4 py-5">
-            <div class="row  align-items-center g-5 py-5">
+            <div class="row flex-column flex-md-row  align-items-center g-5 py-5">
                 <div class="col">
                     <p class="mb-4">This website is currently in development. </p>
                     <div id="link-container" class="d-flex justify-content-center mb-4 px-lg-0 px-1"></div>
@@ -36,7 +47,6 @@
                          alt="Example image"
                          width="700"
                          height="500"
-                         style="min-width: 300px;"
                          loading="lazy" />
                 </div>
             </div>

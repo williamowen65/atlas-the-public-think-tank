@@ -23,20 +23,14 @@
     <div class="row">
         <!-- Main content with issues -->
         <div class="col-lg-9 px-0">
-            <div class="my-3">
+
+            @* Create Issue and Solution buttons will only appear when logged in *@
+            @* <div class="my-3">
                 <a href="@Url.Action("CreateIssue", "Issue")" class="btn btn-primary fw-bold outlined-text fs-5 mb-1 mb-md-0" styfs-5" style="color:var(--call-to-action-theme-color)">Create New Issue</a>
                 <a href="@Url.Action("CreateSolutionPage", "Solution")" class="btn btn-primary fw-bold outlined-text fs-5 mb-1 mb-md-0" styfs-5" style="color:var(--call-to-action-theme-color)">Create New Solution</a>
-            </div>
+            </div> *@
 
-            <div class="d-flex justify-content-center mb-3">
-                @await Html.PartialAsync(
-                "~/Views/Shared/Components/_gradient-border.cshtml",
-                new GradientBorder_VM()
-                {
-                    Link = "https://www.youtube.com/watch?v=ULjr4gNmb9s",
-                    LinkText = "Click here to view inspiration for this website"
-                })          
-            </div>
+            
             <div id="main-content">
 
                 @if (Model.PaginatedContent != null && Model.PaginatedContent.ContentItems != null && Model.PaginatedContent.ContentItems.Any())
@@ -55,14 +49,14 @@
             @await Html.PartialAsync("~/Views/Shared/Components/_pagination-button.cshtml", new PaginationButton_VM
             {
                 ElementId = "fetchPaginatedContent",
-                        ContentType = "posts",
-                        Target = "#main-content",
-                        Url = "/getPaginatedMainContentFeed",
-                        CurrentPage = Model.PaginatedContent.TotalCount,
-                        PageSize = Model.PaginatedContent.PageSize,
-                        TotalCount = Model.PaginatedContent.TotalCount,
-                        TotalPages = Model.PaginatedContent.TotalPages
-                        })
+                ContentType = "posts",
+                Target = "#main-content",
+                Url = "/getPaginatedMainContentFeed",
+                CurrentPage = Model.PaginatedContent.TotalCount,
+                PageSize = Model.PaginatedContent.PageSize,
+                TotalCount = Model.PaginatedContent.TotalCount,
+                TotalPages = Model.PaginatedContent.TotalPages
+            })
 
 
 
