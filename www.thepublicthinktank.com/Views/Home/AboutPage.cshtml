@@ -55,5 +55,7 @@
         </div>
 
         <div id="faq-container" class="px-2 mx-auto" style="max-width: 1000px;">
-            @Html.RenderPartialAsync("~/Views/Home/_FAQ.cshtml")
+            @await Html.PartialAsync("~/Views/Home/_FAQ.cshtml")
         </div>
+    </div>
+</div>
