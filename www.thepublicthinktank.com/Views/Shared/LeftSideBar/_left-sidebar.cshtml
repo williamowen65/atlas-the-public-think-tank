@@ -1,0 +1,18 @@
+﻿@using atlas_the_public_think_tank.Models.ViewModel.UI_VM
+@model SideBar_VM
+
+
+<script>
+    /*
+    This script needs to be loaded with the DOM, not with fetched js file.
+    */
+
+    const sidebarState = localStorage.getItem('sidebarState');
+    const isMobile = window.innerWidth <= 768;
+    if (!isMobile && sidebarState === 'closed') {
+      document.documentElement.classList.add('sidebar-initial-closed');
+    }
+</script>
+
+@await Html.PartialAsync("~/Views/Shared/LeftSideBar/_left-sidebar-toggle.cshtml")
+@await Html.PartialAsync("~/Views/Shared/LeftSideBar/_left-sidebar-content-container.cshtml", Model)

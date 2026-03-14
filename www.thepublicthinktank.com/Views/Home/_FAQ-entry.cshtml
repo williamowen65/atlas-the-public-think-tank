@@ -1,0 +1,21 @@
+﻿@using atlas_the_public_think_tank.Models.ViewModel.UI_VM
+@model FaqEntry_VM
+
+@{
+    string collapseId = "collapse" + Model.Id;
+    string headingId = "heading" + Model.Id;
+}
+
+<div class="accordion-item">
+    <h2 class="accordion-header" id="@headingId">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId">
+            @Html.Raw(Model.Question)
+        </button>
+    </h2>
+    <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="@headingId" data-bs-parent="#faqAccordion">
+        <div class="accordion-body">
+            @Html.Raw(Model.Answer)
+        </div>
+    </div>
+</div>

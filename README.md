@@ -7,6 +7,8 @@
 [![Community Contributions](https://img.shields.io/github/milestones/progress/williamowen65/atlas-the-public-think-tank/9)](https://github.com/williamowen65/atlas-the-public-think-tank/milestone/9)
 <br>
 [Pre-Launch Landing Page](https://atlas.thepublicthinktank.com/) / [GoFundMe](https://www.gofundme.com/f/fund-william-owens-innovative-social-media-project?attribution_id=sl%3A941d2104-ef5c-4c33-b0b0-8bb291918c80&utm_campaign=unknown&utm_medium=undefined&utm_source=undefined) / [The Wiki](https://github.com/williamowen65/atlas-the-public-think-tank/wiki)
+<br>
+[Activities & Calendar](https://calendar.google.com/calendar/embed?src=4d3403e1dfc85a29c26f4b572c2207ce86fd02b8d0c761dd63ea6b685b32af7f%40group.calendar.google.com&ctz=America%2FLos_Angeles)
 </div>
 
 # Atlas - The Public Think Tank  

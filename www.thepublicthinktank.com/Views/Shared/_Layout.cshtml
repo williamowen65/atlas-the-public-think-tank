@@ -10,7 +10,6 @@
 
 @model dynamic
 
-
 @{
     AppUser? currentUser = null;
     if (SignInManager.IsSignedIn(User))
@@ -58,8 +57,6 @@
     <script src="~/js/Content/initialize-card.js" asp-append-version="true"></script>
     <script src="https://kit.fontawesome.com/16aebb51db.js" crossorigin="anonymous"></script>
 
-
-
     @if (currentUser != null && currentUser.OrientationCompletedAt == null)
     {
         @* include orientation logic in the html *@
@@ -106,8 +103,7 @@
     }
 
 
-
-    @await Component.InvokeAsync("Sidebar", sidebar_VM)
+    <partial name="LeftSideBar/_left-sidebar" model="sidebar_VM" />
 
     @await Html.PartialAsync("~/Views/Shared/_SearchBarResults.cshtml")
     
@@ -115,7 +111,6 @@
     <main role="main" class="pb-3 px-md-3">
         @RenderBody()
     </main>
-
 
     <partial name="_Footer" /> 
 

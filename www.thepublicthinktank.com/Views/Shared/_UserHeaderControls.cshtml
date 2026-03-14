@@ -10,55 +10,55 @@
 
 <span id="user-header-controls" class="d-flex">
 
+   
+    @if (!SignInManager.IsSignedIn(User))
+    {
+        <a class="nav-link me-3" asp-controller="Home" asp-action="about">About</a>
+        <a class="nav-link" asp-area="Identity" asp-page="/Account/Register">Register</a>
+        <span>/</span>
+        <a class="nav-link" asp-area="Identity" asp-page="/Account/Login">Login</a>
+    }
 
+    else
+    {
+        <style>
+                .create-content-dropdown a:focus,
+                .create-content-dropdown li:focus {
+                    text-decoration: underline
+                }
+        </style>
 
-@if (!SignInManager.IsSignedIn(User))
-{
-    <a class="nav-link" asp-area="Identity" asp-page="/Account/Register">Register</a>
-    <span>/</span>
-    <a class="nav-link" asp-area="Identity" asp-page="/Account/Login">Login</a>
-}
+            <div class="dropdown" style="position:initial">
+                <button class="transparent-btn general-btn hoverable " type="button" id="createDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fa fa-plus"></i>
+                    Create
+                </button>
+                <ul class="dropdown-menu p-0 create-content-dropdown overflow-hidden fs-5" aria-labelledby="createDropdown">
+                    <li style="border-right: 3px solid transparent">
+                        <a class="dropdown-item" href="@Url.Action("CreateIssue", "Issue")" style="background: var(--issue-bg)">
+                           <span class="pe-2">
+                                @await Html.PartialAsync("~/Views/Shared/Icons/_SubIssues.cshtml")
+                           </span>
+                            New Issue</a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="@Url.Action("CreateSolutionPost", "Solution")" style="background: var(--solution-bg)">
+                            <span class="pe-2">
+                                @await Html.PartialAsync("~/Views/Shared/Icons/_Solutions.cshtml")
+                            </span>
+                            New Solution</a>
+                    </li>
+                </ul>
+            </div>
 
-else
-{
-    <style>
-            .create-content-dropdown a:focus,
-            .create-content-dropdown li:focus {
-                text-decoration: underline
-            }
-    </style>
-
-        <div class="dropdown" style="position:initial">
-            <button class="transparent-btn general-btn hoverable " type="button" id="createDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="fa fa-plus"></i>
-                Create
-            </button>
-            <ul class="dropdown-menu p-0 create-content-dropdown overflow-hidden fs-5" aria-labelledby="createDropdown">
-                <li style="border-right: 3px solid transparent">
-                    <a class="dropdown-item" href="@Url.Action("CreateIssue", "Issue")" style="background: var(--issue-bg)">
-                       <span class="pe-2">
-                            @await Html.PartialAsync("~/Views/Shared/Icons/_SubIssues.cshtml")
-                       </span>
-                        New Issue</a>
-                </li>
-                <li>
-                    <a class="dropdown-item" href="@Url.Action("CreateSolutionPost", "Solution")" style="background: var(--solution-bg)">
-                        <span class="pe-2">
-                            @await Html.PartialAsync("~/Views/Shared/Icons/_Solutions.cshtml")
-                        </span>
-                        New Solution</a>
-                </li>
-            </ul>
-        </div>
-
-    <div class="flex-shrink-0 dropdown d-flex align-items-center" style="position: revert !important; ">
-        <a href="#" class="d-block link-body-emphasis text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false">
-            <img src="https://github.com/mdo.png" alt="mdo" width="32" height="32" class="rounded-circle">
-        </a>
+        <div class="flex-shrink-0 dropdown d-flex align-items-center" style="position: revert !important; ">
+            <a href="#" class="d-block link-body-emphasis text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false">
+                <img src="https://github.com/mdo.png" alt="mdo" width="32" height="32" class="rounded-circle">
+            </a>
         
-        @await Html.PartialAsync("~/Views/Shared/_user-profile-dropdown.cshtml")
-    </div>
-} 
+            @await Html.PartialAsync("~/Views/Shared/_user-profile-dropdown.cshtml")
+        </div>
+    } 
 </span>
 
 
