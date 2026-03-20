@@ -1,0 +1,198 @@
+﻿@using atlas_the_public_think_tank.Models.ViewModel.UI_VM
+
+
+<div class=" my-5">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4 text-center">Learn about this project</h1>
+
+            <div class="accordion mt-5" id="faqAccordion" style="text-align: left;">
+                @await Html.PartialAsync("~/Views/About/_FAQ-entry.cshtml",
+                new FaqEntry_VM
+                {
+                    Id = "entry1",
+                    Question = @"
+                        <div class=""question"">
+                            <div class=""title"">Origin Story</div>
+                            <div class=""desc""> Why and how this site came to be</div>
+                        </div>
+                    ",
+                        Answer = @"
+                    <p>
+                    This idea started while I was studying social work and thinking about real-world problems—mental health, housing, finances, relationships.
+                    </p>
+
+                    <p>
+                    I realized many solutions already exist, but they’re scattered, hard to find, or buried in noise.
+                    </p>
+
+                    <p>
+                    What if social platforms could help <b>solve problems</b> instead of just scroll past them?
+                    </p>
+
+                    <p>
+                    I decided to learn how to build it myself. <b>This site is the result.</b>
+                    </p>
+                    "
+                })
+
+              
+                @await Html.PartialAsync("~/Views/About/_FAQ-entry.cshtml",
+                new FaqEntry_VM
+                {
+                    Id = "entry2",
+                    Question = @"
+                    <div class=""question"">
+                        <div class=""title d-flex flex-column align-items-center"">Purpose<div>&</div> Philosophy</div>
+                        <div class=""desc"">What you’re trying to do, and why it matters</div>
+                    </div>
+                ",
+                    Answer = @"
+                <p>
+                This platform exists to <b>organize problems and solutions</b> in a structured, collaborative way.
+                </p>
+
+                <p>
+                Complex issues become easier to work on when they’re broken into smaller parts—and people can contribute where they have insight.
+                </p>
+
+                <p>
+                It’s also a space for <b>anyone to share meaningful ideas</b>, regardless of background or experience.
+                </p>
+
+                <p>
+                The project is open, evolving, and designed to improve over time—with transparency, collaboration, and thoughtful moderation.
+                </p>
+                "
+                })
+
+                @await Html.PartialAsync("~/Views/About/_FAQ-entry.cshtml",
+                new FaqEntry_VM
+                {
+                    Id = "entry3",
+                    Question = @"
+                    <div class=""question"">
+                        <div class=""title"">How It Works</div> 
+                        <div class=""desc"">Brief Overview</div>
+                    </div>
+                ",
+                    Answer = @"
+                <p>
+                All content is rated on a <b>0–10 scale</b>, allowing more nuance than simple upvotes.
+                </p>
+
+                <ul>
+                <li><b>0</b> = not useful or not important</li>
+                <li><b>10</b> = highly valuable or worth attention</li>
+                </ul>
+
+                <p>
+                Each item shows:
+                </p>
+
+                <ul>
+                <li>Average score</li>
+                <li>Your score</li>
+                <li>Total votes</li>
+                </ul>
+
+                <p>
+                This helps prioritize ideas based on <b>quality, impact, and relevance</b>.
+                </p>
+                "
+                })
+                @await Html.PartialAsync("~/Views/About/_FAQ-entry.cshtml",
+                new FaqEntry_VM
+                {
+                    Id = "entry4",
+                    Question = @"
+                        <div class='question'>
+                            <div class=""title"">What's On the Site</div>
+                            <div class=""desc"">Issues, Solutions, and Comments</div>
+                        </div>
+                ",
+                    Answer = @"
+                <p>
+                This platform is built around <b>issues and solutions</b>.
+                </p>
+
+                <p>
+                They can be:
+                </p>
+
+                <ul>
+                <li>Global (climate change, public policy)</li>
+                <li>Local (community needs, infrastructure)</li>
+                <li>Personal (health, education, daily life)</li>
+                <li>Creative (projects, ideas, experiments)</li>
+                </ul>
+
+                <p>
+                If it matters to someone, it belongs here.
+                </p>
+                "
+                })
+                @await Html.PartialAsync("~/Views/About/_FAQ-entry.cshtml",
+                                new FaqEntry_VM
+                                {
+                                    Id = "entry5",
+                                    Question = @"
+                                    <div class='question'>
+                                        <div class='title'>Who It's For</div>
+                                        <div class='desc'>Audience and ideal users/customers</div> 
+                                    </div>
+                                ",
+                                    Answer = @"
+                                <p>
+                                This platform is for <b>anyone who wants to think, question, or contribute</b>.
+                                </p>
+
+                                <p>
+                                You don’t need to be an expert—just have an idea or a desire to help.
+                                </p>
+
+                                <p>
+                                It’s built for people today, and for future generations who will inherit the problems we’re working on.
+                                </p>
+
+                                <p>
+                                <b>Your voice can contribute to real solutions.</b>
+                                </p>
+                                "
+                                })
+                @await Html.PartialAsync("~/Views/About/_FAQ-entry.cshtml",
+                                new FaqEntry_VM
+                                {
+                                    Id = "entry6",
+                                    Question = @"
+                                    <div class='question'>
+                                         <div class='title'>How to Get Involved</div>
+                                         <div class='desc'>Ways to contribute, share, or support this project</div>
+                                    </div>
+                                ",
+                                    Answer = @"
+                                <p><b>You can help in a few ways:</b></p>
+
+                                <ul>
+                                <li><b>Support the project</b> — funding helps development</li>
+                                <li><b>Join the community</b> — collaborate and contribute ideas</li>
+                                <li><b>Become a tester</b> — help shape the platform early</li>
+                                </ul>
+
+                                <p>
+                                Every contribution—time, feedback, or support—moves this forward.
+                                </p>
+                                "
+                                })
+               
+
+            </div>
+
+            <div class="mt-5 text-center">
+                <h3>Still have questions?</h3>
+                <p>Feel free to contact me for any additional information or specific inquiries about this project.</p>
+                <div class="btn btn-primary mt-2" style="cursor:default; user-select:auto">Contact Me - william.owen.career@gmail.com</div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -505,18 +505,7 @@ public class HomeController : Controller
     }
 
 
-    [Route("/how-to-be-a-tester")]
-    public IActionResult WelcomeTesters()
-    {
-        return View("~/Views/Home/WelcomeTesters.cshtml");
-    }
 
-
-    [Route("/about")]
-    public IActionResult About() 
-    {
-        return View("~/Views/Home/AboutPage.cshtml");    
-    }
 
 
     #region Routes that could be in a MiscellenousController

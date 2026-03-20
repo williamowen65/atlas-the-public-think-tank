@@ -5,54 +5,57 @@
 <div class="container">
     <div class="card mt-4">
         <header class="card-header text-center">
-           <h1>🧪 Become a Tester</h1>
-           <p>Help improve our app by exploring, experimenting, and sharing your feedback.</p>
+            <h1>🧪 Become a Tester</h1>
+            <p>Help improve our app by exploring, experimenting, and sharing your feedback.</p>
         </header>
 
-            <style>
-                section.cross {
-                    border-color:var(--bs-border-color) !important;
-                    border-width: 1px;
-                    padding: 10px;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                    align-items: center;
+        <style>
+            section.cross {
+                border-color: var(--bs-border-color) !important;
+                border-width: 1px;
+                padding: 10px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .divider {
+                border-color: var(--bs-border-color) !important;
+                border-width: 1px;
+                border-bottom: solid;
+            }
+
+            section.cross:nth-of-type(1) {
+                border-right: solid;
+                border-bottom: solid;
+            }
+
+            section.cross:nth-of-type(2) {
+                border-bottom: solid;
+            }
+
+            section.cross:nth-of-type(3) {
+                border-right: solid;
+            }
+
+            @@media (max-width: 768px) {
+                /* When the screen is smaller */
+                section.cross:nth-of-type(1) {
+                    border-right: none;
+                    border-bottom: solid;
                 }
 
-                .divider{
-                    border-color: var(--bs-border-color) !important;
-                    border-width: 1px;
-                    border-bottom: solid;
-                }
-                section.cross:nth-of-type(1) {
-                    border-right: solid;
-                    border-bottom: solid;
-                }
                 section.cross:nth-of-type(2) {
                     border-bottom: solid;
                 }
+
                 section.cross:nth-of-type(3) {
-                    border-right: solid;
+                    border-right: none;
+                    border-bottom: solid;
                 }
-                @@media (max-width: 768px) {
-                    /* When the screen is smaller */
-                    section.cross:nth-of-type(1) {
-                        border-right: none;
-                        border-bottom: solid;
-                    }
-
-                    section.cross:nth-of-type(2) {
-                        border-bottom: solid;
-                    }
-
-                    section.cross:nth-of-type(3) {
-                        border-right: none;
-                        border-bottom: solid; 
-                    }
-                   
-                }
-            </style>
+            }
+        </style>
 
         <div class="row card-body">
 
