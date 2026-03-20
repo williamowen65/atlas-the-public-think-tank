@@ -3,9 +3,19 @@
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
 @{
+    ViewData["Title"] = "About";
 }
 
+
+@section Styles {
+    <link rel="stylesheet" href="~/about/css/faq.css" />
+}
+
+
+
+
 <div class="px-lg-4 px-0  my-5 text-center border-bottom">
+
     <div id="large-logo" class="text-center mx-auto" style="height: 128px;">
         <span class="site-name position-relative d-flex flex-column ">
             <span style="font-size: 70px;">Atlas</span>
@@ -22,11 +32,11 @@
         <div class="d-flex justify-content-center mb-3">
             @await Html.PartialAsync(
             "~/Views/Shared/Components/_gradient-border.cshtml",
-            new GradientBorder_VM()
-            {
-                Link = "https://www.youtube.com/watch?v=ULjr4gNmb9s",
-                LinkText = "Click here to view inspiration for this website"
-            })
+                        new GradientBorder_VM()
+                        {
+                            Link = "https://www.youtube.com/watch?v=ULjr4gNmb9s",
+                            LinkText = "Click here to view inspiration for this website"
+                        })
         </div>
 
         <div class="px-4 py-5">
@@ -38,8 +48,6 @@
                         The Public Think Tank is an open-source project that is seeking code contributions and monetary donations.
                     </p>
                     <a href="https://github.com/williamowen65/atlas-the-public-think-tank">Contribute to the codebase via GitHub</a>
-
-
                 </div>
                 <div class="col">
                     <img src="about/img/screenshot-1.png"
@@ -57,15 +65,8 @@
                     <iframe sandbox="allow-scripts allow-same-origin allow-presentation"
                             width="560" height="315" src="https://www.youtube.com/embed/2ju6jrOl5y8?si=phL1HB2X59i__enp" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
                 </div>
-                <div class="align-items-center col-12 col-md-6 d-flex">
-                    <div style="width: fit-content; margin: auto;" class="gfm-embed" data-url="https://www.gofundme.com/f/fund-william-owens-innovative-social-media-project/widget/medium?sharesheet=undefined&attribution_id=sl:941d2104-ef5c-4c33-b0b0-8bb291918c80"></div>
-                    <script defer src="https://www.gofundme.com/static/js/embed.js"></script>
-                </div>
             </div>
+      </div>        
         </div>
 
-        <div id="faq-container" class="px-2 mx-auto" style="max-width: 1000px;">
-            @await Html.PartialAsync("~/Views/Home/_FAQ.cshtml")
-        </div>
-    </div>
 </div>

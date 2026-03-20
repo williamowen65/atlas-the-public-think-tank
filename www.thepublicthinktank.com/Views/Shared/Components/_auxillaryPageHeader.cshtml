@@ -1,0 +1,31 @@
+﻿@using atlas_the_public_think_tank.Models.ViewModel.UI_VM
+@model AuxPageHeader_VM
+
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    var auxModel = Model ?? new AuxPageHeader_VM();
+}
+
+
+<link rel="stylesheet" href="~/site/components/auxillaryPageHeader/auxillaryPageHeader.css" />
+
+
+<div id="aux-page-header" class="@auxModel.Class">
+    <div class="container">
+        <div class="row">
+            <div class="col col-md col-sm-12">
+                <h1>@auxModel.Header</h1>
+                <p class="subheader">@auxModel.SubHeader</p>
+            </div>
+            @if (auxModel.Content.Length > 0)
+            {
+                <div class="col col-md col-sm-12">
+                    @Html.Raw(auxModel.Content)
+                </div>
+            }
+        </div>
+    </div>
+</div>
+

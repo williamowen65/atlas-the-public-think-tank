@@ -1,0 +1,50 @@
+﻿/* Custom accordion styling */
+.accordion-item {
+    /* margin-bottom: 1rem; */
+}
+
+.accordion-header .accordion-button {
+    border: 1px solid rgba(0,0,0,0.125);
+    /* border-radius: 5px; */
+}
+
+.accordion-button:not(.collapsed) {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.accordion-collapse {
+    border-left: 1px solid rgba(0,0,0,0.125);
+    border-right: 1px solid rgba(0,0,0,0.125);
+    border-bottom: 1px solid rgba(0,0,0,0.125);
+    /* border-bottom-left-radius: 5px; */
+    /* border-bottom-right-radius: 5px; */
+}
+
+[data-bs-theme="dark"] .accordion-header .accordion-button {
+    border-color: rgba(255,255,255,0.15);
+}
+
+[data-bs-theme="dark"] .accordion-collapse {
+    border-color: rgba(255,255,255,0.15);
+}
+
+.question {
+    display: flex;
+    flex-wrap: wrap; /* allows responsive stacking on small screens */
+    align-items: center;
+    gap: 1rem; /* better spacing than padding */
+    width: 100%;
+    max-width: 800px; /* or match your page layout max width */
+    margin: 0 auto; /* center the container itself */
+}
+
+    .question .title {
+        font-weight: bold;
+        white-space: nowrap; /* prevents title wrapping */
+    }
+
+    .question .desc {
+        flex-grow: 1;
+        text-align: left; /* aligns with natural flow of most content */
+    }

@@ -1,0 +1,16 @@
+﻿#support-page {
+    --theme-background: green;
+    --invert-theme-text-color: white;
+}  
+
+html[data-bs-theme="dark"] #support-page {
+    --theme-background: lightblue;
+    --invert-theme-text-color: black;
+}
+
+#ways-to-help {
+    background: var(--theme-background);
+    color: var(--invert-theme-text-color);
+}
+
+

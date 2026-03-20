@@ -5,45 +5,72 @@
 }
 
 <footer class="border-top footer" tabindex="0">
-    <div class="container d-flex justify-content-between flex-column" style="width: fit-content; transform: translateY(31px)">
+    <div class="container d-flex justify-content-between flex-column" style="transform: translateY(31px)">
+
+        <div class="d-grid text-nowrap" id="footer-content">
+
+                <div class="col">
+                        <div>
+                            <a tabindex="0" asp-area="" asp-controller="About" style="text-decoration:none" asp-action="AboutPage">About</a>
+                        </div>
+                        <div>
+                            <a tabindex="0" asp-area="" asp-controller="About" style="text-decoration:none" asp-action="MissionPage">Mission</a>
+                        </div>
+                        <div>
+                            <a tabindex="0" asp-area="" asp-controller="About" style="text-decoration:none" asp-action="HowItWorksPage">How It Works</a>
+                        </div>
+                        <div>
+                            <a tabindex="0" style="text-decoration: none" target="_blank" href="https://github.com/williamowen65/atlas-the-public-think-tank">
+                                @Html.Partial("~/Views/Shared/Icons/_Github-logo.cshtml") Github
+                            </a>
+                        </div>
+                   
+                </div>
+                <div class="col">
+                    <div>
+                        <a tabindex="0" asp-area="" asp-controller="Guides" style="text-decoration:none" asp-action="GuidesPage">Guides</a>
+                    </div>
+                    <div>
+                        <a tabindex="0" asp-area="" asp-controller="Guides" style="text-decoration:none" asp-action="CreatingIssuesGuide">Creating Issues</a>
+                    </div>
+                    <div>
+                        <a tabindex="0" asp-area="" asp-controller="Guides" style="text-decoration:none" asp-action="CreatingSolutionsGuide">Creating Solutions</a>
+                    </div>
+                </div>
+                <div class="col">
+                    <div>
+                        <a tabindex="0" asp-area="" asp-controller="Support" style="text-decoration:none" asp-action="SupportPage">Support</a>
+                    </div>
+                    <div>
+                        <a tabindex="0" asp-area="" asp-controller="Support" style="text-decoration:none" asp-action="DonatePage">Donate</a>
+                    </div>
+                    <div>
+                        <a tabindex="0" asp-area="" asp-controller="Support" style="text-decoration:none" asp-action="FeedbackPage">Provide Feedback</a>
+                    </div>
+                    <div>
+                        <a tabindex="0" asp-area="" asp-controller="Guides" style="text-decoration:none" asp-action="Testing">Become a Tester</a>
+                    </div>
+                </div>
+                <div class="col">
+                    <div>
+                        Other
+                    </div>
+                    <div>
+                        <a tabindex="0" asp-area="" asp-controller="Home" style="text-decoration:none" asp-action="Privacy">Privacy Policy</a>
+                    </div>
+                    <div>
+                        <a tabindex="0" asp-area="" asp-controller="Home" style="text-decoration:none" asp-action="TermsPage">Terms of Use</a>
+                    </div>
+            </div>
+        </div>
 
         <div>
-            <div class="ff-consolas col-lg-4 mb-2 text-body-emphasis text-decoration-none fw-bold w-100" style="transform: translateY(-10px)">
+            <div class="ff-consolas col-lg-4 mb-2 text-body-emphasis text-decoration-none fw-bold w-100" style="margin-top: 50px;">
                 @await Html.PartialAsync("~/Views/Shared/Components/ThePublicThinkTank_Logo.cshtml")
-            </div>
         </div>
-        <div class="d-flex align-items-center flex-column  justify-content-between w-fit m-auto text-nowrap">
-            
-            <div class="d-flex align-items-center  justify-content-between">
-                <div>
-                    &copy; @DateTime.Now.Year
-                </div>
-                <div class="mx-2">-</div>
-                <div>
-                    <a tabindex="0" asp-area="" asp-controller="Home" style="text-decoration:none" asp-action="Privacy">Privacy</a>
-                </div>
-                <div class="mx-2">-</div>
-                <div>
-                    <a tabindex="0" style="text-decoration: none" target="_blank" href="https://github.com/williamowen65/atlas-the-public-think-tank">
-                        @Html.Partial("~/Views/Shared/Icons/_Github-logo.cshtml") Github
-                    </a>
-                </div>
-                @if (!isTestOrDev)
-                {
-                    <div class="mx-2">-</div>
-                    <button class="text-button  open-general-feedback-form">Feedback Form Link</button>
-                }
-
-            </div>
-            @if (isTestOrDev)
-            {    
-            <div class="d-flex align-items-center  justify-content-between">
-                <a tabindex="0" asp-area="" asp-controller="Home" style="text-decoration:none" asp-action="WelcomeTesters">Become a Tester</a>
-                <div class="mx-2">-</div>
-                <button class="text-button  open-general-feedback-form">Feedback Form Link</button>
-            </div>
-            }
-        </div>
-      
+        <center style="font-size: 12px"> 
+            &copy; @DateTime.Now.Year
+        </center>
+ 
     </div>
 </footer>

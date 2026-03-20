@@ -1,0 +1,27 @@
+﻿@using atlas_the_public_think_tank.Models.ViewModel.UI_VM
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+
+    ViewData["Title"] = "Donate";
+    var header = new AuxPageHeader_VM()
+    {
+        Header = "Donate Funds",
+        SubHeader = "Become a Sponsor!",
+        Class = "donate-page-header",
+        Content = @"
+            <div class=""gfm-embed medium"" data-url=""https://www.gofundme.com/f/fund-william-owens-innovative-social-media-project/widget/medium?sharesheet=undefined&amp;attribution_id=sl:941d2104-ef5c-4c33-b0b0-8bb291918c80""></div>
+             <script defer src=""https://www.gofundme.com/static/js/embed.js""></script>
+            "
+    };
+}
+
+<link rel="stylesheet" href="~/support/donate/donate.css" />
+
+<partial name="Components/_auxillaryPageHeader" model="header" />
+
+<a target="_blank" href="https://www.gofundme.com/f/fund-william-owens-innovative-social-media-project/donate?source=the-public-think-tank" class="donate-link">
+    Donate now
+</a>
+@* <div class="gfm-embed small" data-url="https://www.gofundme.com/f/fund-william-owens-innovative-social-media-project/widget/small?sharesheet=undefined&attribution_id=sl:941d2104-ef5c-4c33-b0b0-8bb291918c80"></div><script defer src="https://www.gofundme.com/static/js/embed.js"></script> *@

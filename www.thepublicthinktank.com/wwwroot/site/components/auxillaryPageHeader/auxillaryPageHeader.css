@@ -1,0 +1,16 @@
+﻿body {
+}
+
+
+#aux-page-header {
+    min-height: 240px;
+    display: flex;
+    flex-direction:column;
+    justify-content: center;
+    width:100%;
+}
+
+#aux-page-header .subheader {
+    font-size: 21px;
+
+}

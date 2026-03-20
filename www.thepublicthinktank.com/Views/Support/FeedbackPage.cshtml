@@ -1,0 +1,72 @@
+﻿@using atlas_the_public_think_tank.Models.ViewModel.UI_VM
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    ViewData["Title"] = "Provide Feedback for The Public Think Tank";
+
+
+    var header = new AuxPageHeader_VM()
+    {
+        Header = "Provide Feedback / Express Your Opinion",
+        SubHeader = "Learn about a feature and provide feedback about what you think",
+        Class = "feedback-page-header"
+    };
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/support/feedback/feedback.css" />
+}
+
+<partial name="Components/_auxillaryPageHeader" model="header" />
+
+
+
+@{
+    var customHtml1 = @"
+        <div class=""voting-dial-feedback"">
+            <img src=""feedback/imgs/vote-dial.png"" alt=""Vote dial screenshot"" />
+            <div>arrow</div>
+            <div>What do you think about the voting dial?</div>
+        </div>
+    ";
+    var customHtml2 = @"
+        <div class=""mind-map-concept-feedback"">
+            <img alt=""Image of mindmap concept"" />
+            <div>The concept of a mind map social media structure </div>
+        </div>
+    ";
+    var customHtml3 = @"
+        <div class=""issues-and-solutions-concept-feedback"">
+            <div>The concept of <br/>
+                Issues and Solutions <br/>
+                as content  </div>
+        </div>
+    ";
+}
+
+<div class="container">
+    <ul id="feedback-loop-blog">
+        <li>
+            <a target="_blank" href="https://docs.google.com/forms/d/e/1FAIpQLSedP4UxmjgZNoerXinDmxx9MTd3TUKElOzvQh-woJz2NXHHKg/viewform?usp=publish-editor">
+                @Html.Raw(customHtml1)
+            </a>
+        </li>
+        <li>
+            <a target="_blank" href="https://docs.google.com/forms/d/e/1FAIpQLSfhvUEjWyAtvIBfyubVFN20Oqsn1x0kiKHbS6MjZmxnJiprDQ/viewform?usp=publish-editor">
+                @Html.Raw(customHtml2)
+            </a>
+        </li>
+        <li>
+            <a target="_blank" href="https://docs.google.com/forms/d/e/1FAIpQLSfhvUEjWyAtvIBfyubVFN20Oqsn1x0kiKHbS6MjZmxnJiprDQ/viewform?usp=publish-editor">
+                @Html.Raw(customHtml3)
+            </a>
+        </li>
+    </ul>
+</div>
+
+<div class="container">
+    Blog where the entries are google forms. <br />
+    Each google form has a video at the top talking about the feature.  <br />
+    The form has questions specific to the feature for feedback.
+</div>

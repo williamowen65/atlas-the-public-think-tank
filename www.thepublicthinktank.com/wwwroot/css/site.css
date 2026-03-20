@@ -30,11 +30,13 @@
 html {
     --filter-group-theme-color: lightgray;
     --filter-label-theme-color: #bfbfc2;
+    --bs-card-border-color: rgba(0, 0, 0, 0.175);
 }
 
 html[data-bs-theme="dark"] {
     --filter-group-theme-color: #353439;
-    --filter-label-theme-color: #586e58
+    --filter-label-theme-color: #586e58;
+    --bs-card-border-color: rgba(255, 255, 255, 0.15);
 }
 
 
@@ -161,6 +163,9 @@ svg.parent-issue-icon {
     font-size: 10px;
 }
 
+.w-fit {
+    width: fit-content;
+}
 
 
 
@@ -204,6 +209,16 @@ svg.parent-issue-icon {
         display: none !important;
     }
 
+    #application-version {
+        position: absolute;
+        top: -32px;
+        font-weight: bold;
+        letter-spacing: 0.9px;
+        left: -18px;
+        opacity: 0.3;
+        white-space: nowrap;
+    }
+
 
 
 .text-button {
@@ -219,4 +234,24 @@ svg.parent-issue-icon {
 
 .text-button:hover {
     text-decoration: underline;
+}
+
+footer #footer-content .col {
+    width: 177px;
+    margin-left: 50%;
+    transform: translateX(-50%);
+}
+
+footer #footer-content .col > div:first-child {
+    border-bottom: 1px solid var(--filter-label-theme-color);
+    margin-bottom: 4px;
+    padding-bottom: 5px;
+    font-weight: 700;
+    font-size: 20px;
+}
+
+footer .d-grid {
+    display: grid;
+    gap: 5rem;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 }

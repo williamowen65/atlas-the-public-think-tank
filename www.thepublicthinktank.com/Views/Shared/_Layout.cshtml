@@ -7,6 +7,7 @@
 @using atlas_the_public_think_tank.Models.ViewModel.UI_VM
 @inject SignInManager<AppUser> SignInManager
 @inject UserManager<AppUser> UserManager
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
 
 @model dynamic
 
@@ -49,6 +50,8 @@
     <link href="https://cdn.jsdelivr.net/npm/mc-datepicker/dist/mc-calendar.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/mc-datepicker/dist/mc-calendar.min.js"></script>
 
+    @RenderSection("Styles", required: false)
+
     @* <link rel="stylesheet" href="~/atlas_the_public_think_tank.styles.css" asp-append-version="true" /> *@
 
     <script src="~/js/Site/DocumentObserver.js"></script>
@@ -72,7 +75,11 @@
         MessageType = "general"
     })
 
-    <partial name="_ColorMode" />
+    <div class="position-fixed bottom-0 end-0" style="z-index:1000000">
+        <span id="application-version">@Configuration["version"]</span>
+        <partial name="_ColorMode" /> 
+
+    </div>
 
     <partial name="_Header" />
 
@@ -108,7 +115,7 @@
     @await Html.PartialAsync("~/Views/Shared/_SearchBarResults.cshtml")
     
    
-    <main role="main" class="pb-3 px-md-3">
+    <main role="main" class="pb-3">
         @RenderBody()
     </main>
 

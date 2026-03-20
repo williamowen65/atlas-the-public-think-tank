@@ -1,0 +1,33 @@
+﻿
+.donate-page-header {
+    background: green;
+}
+
+.donate-page-header .col {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.gfm-embed.medium {
+    width: fit-content;
+    height: 230px;
+}
+
+.gfm-embed.small {
+    margin: 50px auto;
+    width: fit-content;
+}
+
+.donate-link {
+    background: #38623a;
+    padding: 14px 26px;
+    margin: 50px auto;
+    width: fit-content;
+    display: block;
+    border-radius: 50px;
+    font-weight: bold;
+    color: #d3f691;
+    text-decoration: none;
+}

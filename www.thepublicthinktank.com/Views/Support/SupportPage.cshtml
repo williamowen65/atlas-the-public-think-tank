@@ -1,0 +1,38 @@
+﻿@using atlas_the_public_think_tank.Models.ViewModel.PageVM.Common
+@using atlas_the_public_think_tank.Models.ViewModel.UI_VM
+@model PageVM
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    ViewData["Title"] = "Support This Website";
+
+    var header = new AuxPageHeader_VM()
+            {
+                Header = "Support The Public Think Tank",
+                SubHeader = "This project needs help in order to be successful",
+                Class = "support-page-header"
+            };
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/support/support.css"/>
+}
+
+<div id="support-page">
+    <partial name="Components/_auxillaryPageHeader" model="header" />
+
+    <div class="m-auto w-fit p-3 px-5" id="ways-to-help">
+    <p><b>You can help in a few ways:</b></p>
+
+    <ul>
+        <li><b>Support the project</b> — funding helps development</li>
+        <li><b>Join the community</b> — collaborate and contribute ideas</li>
+        <li><b>Become a tester</b> — help shape the platform early</li>
+    </ul>
+
+    <p>
+        Every contribution—time, feedback, or support—moves this forward.
+    </p>
+    </div>
+</div>
