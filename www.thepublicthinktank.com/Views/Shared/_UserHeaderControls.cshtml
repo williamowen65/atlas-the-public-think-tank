@@ -14,6 +14,7 @@
     @if (!SignInManager.IsSignedIn(User))
     {
         <a class="nav-link me-3" asp-controller="Home" asp-action="about">About</a>
+        <a class="nav-link me-3" asp-controller="Guides" asp-action="GuidesPage">Guides</a>
         <a class="nav-link" asp-area="Identity" asp-page="/Account/Register">Register</a>
         <span>/</span>
         <a class="nav-link" asp-area="Identity" asp-page="/Account/Login">Login</a>
