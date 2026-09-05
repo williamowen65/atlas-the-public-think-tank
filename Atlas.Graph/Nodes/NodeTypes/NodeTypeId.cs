@@ -1,4 +1,4 @@
-﻿namespace Atlas.Graph.NodeTypes;
+﻿namespace Atlas.Graph.Nodes.NodeTypes;
 
 public readonly record struct NodeTypeId(Guid Value)
 {

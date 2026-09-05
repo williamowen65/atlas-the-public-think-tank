@@ -1,10 +1,12 @@
-﻿namespace Atlas.Graph.Nodes;
+﻿using Atlas.Graph.NodeTypes;
+
+namespace Atlas.Graph.Nodes;
 
 public sealed class Node
 {
     public NodeId Id { get; }
     public NodeTitle Title { get; private set; }
-    public NodeType Type { get; private set; }
+    public NodeTypeId TypeId { get; private set; }
     public NodeStatus Status { get; private set; }
 
     public DateTimeOffset CreatedAt { get; }
