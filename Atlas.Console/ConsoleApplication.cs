@@ -43,28 +43,24 @@ public sealed class ConsoleApplication
                     break;
 
                 case "2":
-                    ListNodes();
-                    break;
-
-                case "3":
                     BrowseNodes();
                     break;
 
-                case "4":
+                case "3":
                     ListNodeTypes();
                     break;
 
-                case "5":
+                case "4":
                     ShowDataFiles();
                     break;
 
-                case "6":
+                case "5":
                     running = false;
                     break;
 
                 default:
                     ConsoleUi.Pause(
-                        "Please select an option from 1 through 6.");
+                        "Please select an option from 1 through 5.");
                     break;
             }
         }
@@ -75,11 +71,10 @@ public sealed class ConsoleApplication
         Console.WriteLine("ATLAS");
         Console.WriteLine("-----");
         Console.WriteLine("1. Create node");
-        Console.WriteLine("2. List nodes");
-        Console.WriteLine("3. Browse nodes");
-        Console.WriteLine("4. List node types");
-        Console.WriteLine("5. Show data files");
-        Console.WriteLine("6. Exit");
+        Console.WriteLine("2. Browse nodes");
+        Console.WriteLine("3. List node types");
+        Console.WriteLine("4. Show data files");
+        Console.WriteLine("5. Exit");
         Console.WriteLine();
     }
 
@@ -120,31 +115,6 @@ public sealed class ConsoleApplication
         }
     }
 
-    private void ListNodes()
-    {
-        Console.Clear();
-        Console.WriteLine("ATLAS NODES");
-        Console.WriteLine("-----------");
-
-        var nodes = _nodes.GetAll().ToList();
-
-        if (nodes.Count == 0)
-        {
-            ConsoleUi.Pause("No nodes have been created.");
-            return;
-        }
-
-        for (var index = 0; index < nodes.Count; index++)
-        {
-            NodeDisplay.WriteSummary(
-                nodes[index],
-                _nodeTypes,
-                index + 1);
-        }
-
-        ConsoleUi.Pause();
-    }
-
     private void BrowseNodes()
     {
         var browsing = true;
@@ -163,9 +133,11 @@ public sealed class ConsoleApplication
                 return;
             }
 
+            NodeDisplay.WriteTableHeader();
+
             for (var index = 0; index < nodes.Count; index++)
             {
-                NodeDisplay.WriteSummary(
+                NodeDisplay.WriteTableRow(
                     nodes[index],
                     _nodeTypes,
                     index + 1);
