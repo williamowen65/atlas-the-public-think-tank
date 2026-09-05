@@ -1,4 +1,4 @@
-﻿using Atlas.Graph.NodeTypes;
+﻿using Atlas.Graph.Nodes.NodeTypes;
 
 namespace Atlas.Graph.Nodes;
 
@@ -19,7 +19,7 @@ public sealed class Node
     {
         Id = NodeId.New();
         Title = title;
-        Type = type;
+        TypeId = typeId;
         Status = NodeStatus.Active;
         CreatedAt = createdAt;
         UpdatedAt = createdAt;
@@ -29,7 +29,7 @@ public sealed class Node
     private Node(
         NodeId id,
         NodeTitle title,
-        NodeType type,
+        NodeTypeId typeId,
         NodeStatus status,
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt)
@@ -42,7 +42,7 @@ public sealed class Node
 
         Id = id;
         Title = title;
-        Type = type;
+        TypeId = typeId;
         Status = status;
         CreatedAt = createdAt;
         UpdatedAt = updatedAt;
@@ -52,7 +52,7 @@ public sealed class Node
     public static Node Reconstitute(
         NodeId id,
         NodeTitle title,
-        NodeType type,
+        NodeTypeId typeId,
         NodeStatus status,
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt)
@@ -60,7 +60,7 @@ public sealed class Node
         return new Node(
             id,
             title,
-            type,
+            typeId,
             status,
             createdAt,
             updatedAt);
@@ -80,15 +80,15 @@ public sealed class Node
     }
 
     public void ChangeType(
-        NodeType newType,
+        NodeTypeID newTypeId,
         DateTimeOffset changedAt)
     {
-        if (Type == newType)
+        if (TypeId == newTypeId)
         {
             return;
         }
 
-        Type = newType;
+        TypeId = newTypeId;
         UpdatedAt = changedAt;
     }
 
