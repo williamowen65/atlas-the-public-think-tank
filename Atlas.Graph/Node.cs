@@ -11,12 +11,11 @@ public sealed class Node
     public DateTimeOffset UpdatedAt { get; private set; }
 
     public Node(
-        NodeId id,
         NodeTitle title,
         NodeType type,
         DateTimeOffset createdAt)
     {
-        Id = id;
+        Id = NodeId.New();
         Title = title;
         Type = type;
         Status = NodeStatus.Active;

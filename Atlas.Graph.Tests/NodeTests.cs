@@ -11,7 +11,6 @@ public class NodeTests
     public void Constructor_SetsTitle()
     {
         var node = new Node(
-            NodeId.New(),
             new NodeTitle("Climate adaption"),
             NodeType.Question,
             DateTimeOffset.UtcNow);
@@ -23,7 +22,6 @@ public class NodeTests
     public void Rename_WithValidTitle_ChangesTitle()
     {
         var node = new Node(
-        NodeId.New(),
         new NodeTitle("Climate adaption"),
         NodeType.Question,
         DateTimeOffset.UtcNow);
@@ -40,7 +38,6 @@ public class NodeTests
     public void Rename_WithBlankTitle_ThrowsArgumentException()
     {
         var node = new Node(
-            NodeId.New(),
             new NodeTitle("Climate adaption"),
             NodeType.Question,
             DateTimeOffset.UtcNow);
