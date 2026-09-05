@@ -1,5 +1,8 @@
 using Atlas.ConsoleApp;
+using Atlas.ConsoleApp.Content;
+using Atlas.ConsoleApp.Eventing;
 using Atlas.ConsoleApp.Storage;
+using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 
@@ -32,9 +35,22 @@ INodeRepository nodeRepository =
         nodeDataFilePath,
         nodeTypeRepository);
 
+IDocumentRepository documentRepository =
+    new InMemoryDocumentRepository();
+
+var eventPublisher = new InMemoryEventPublisher();
+
+var contentSubscriber =
+    new CreateDocumentWhenNodeCreated(documentRepository);
+
+eventPublisher.Subscribe<NodeCreated>(
+    contentSubscriber.Handle);
+
 var application = new ConsoleApplication(
     nodeRepository,
     nodeTypeRepository,
+    documentRepository,
+    eventPublisher,
     ConsoleActorId,
     nodeDataFilePath,
     nodeTypeDataFilePath);
