@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Atlas.Content\Atlas.Content.csproj" />
     <ProjectReference Include="..\Atlas.Graph\Atlas.Graph.csproj" />
   </ItemGroup>
 
