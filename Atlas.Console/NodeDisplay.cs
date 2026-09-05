@@ -36,17 +36,19 @@ public static class NodeDisplay
         Node node,
         INodeTypeRepository nodeTypes,
         int number,
-        string? description = null,
         int? voteCount = null,
         double? averageVote = null)
     {
         var typeName = ResolveTypeName(node, nodeTypes);
+        var description = string.IsNullOrWhiteSpace(node.Description.Value)
+            ? "—"
+            : node.Description.Value;
 
         Console.WriteLine(
             $"{number,3}  " +
             $"{Truncate(node.Title.Value, TitleWidth),-TitleWidth}  " +
             $"{Truncate(typeName, TypeWidth),-TypeWidth}  " +
-            $"{Truncate(description ?? "—", DescriptionWidth),-DescriptionWidth}  " +
+            $"{Truncate(description, DescriptionWidth),-DescriptionWidth}  " +
             $"{FormatVoteCount(voteCount),5}  " +
             $"{FormatAverageVote(averageVote),5}  " +
             node.Status);
@@ -55,7 +57,6 @@ public static class NodeDisplay
     public static void WriteDetails(
         Node node,
         INodeTypeRepository nodeTypes,
-        string? description = null,
         int? voteCount = null,
         double? averageVote = null)
     {
@@ -75,9 +76,9 @@ public static class NodeDisplay
         Console.WriteLine("Description");
         Console.WriteLine("-----------");
         Console.WriteLine(
-            string.IsNullOrWhiteSpace(description)
-                ? "Description is not available yet."
-                : description);
+            string.IsNullOrWhiteSpace(node.Description.Value)
+                ? "No description has been provided."
+                : node.Description.Value);
     }
 
     private static string ResolveTypeName(
