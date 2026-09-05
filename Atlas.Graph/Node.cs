@@ -1,10 +1,17 @@
-﻿using Atlas.Graph.Nodes.NodeTypes;
-using System.Reflection.Metadata;
+﻿using Atlas.Graph.NodeLifecycle;
+using Atlas.Graph.Nodes.NodeTypes;
 
 namespace Atlas.Graph.Nodes;
 
 public sealed class Node
 {
+
+    private readonly List<object> _domainEvents = [];
+
+    public IReadOnlyCollection<object> DomainEvents =>
+     _domainEvents.AsReadOnly();
+
+
     public NodeId Id { get; }
     public NodeTitle Title { get; private set; }
     public NodeTypeId TypeId { get; private set; }
@@ -40,6 +47,12 @@ public sealed class Node
         Status = NodeStatus.Active;
         CreatedAt = createdAt;
         UpdatedAt = createdAt;
+
+        _domainEvents.Add(
+          new NodeCreated(
+              Id.Value,
+              Description.Value,
+              createdAt));
     }
 
     // create a new node
@@ -146,5 +159,10 @@ public sealed class Node
 
         Description = newDescription;
         UpdatedAt = changedAt;
+    }
+
+    public void ClearDomainEvents()
+    {
+        _domainEvents.Clear();
     }
 }
