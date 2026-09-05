@@ -9,16 +9,20 @@ public sealed class Node
     public NodeTypeId TypeId { get; private set; }
     public NodeStatus Status { get; private set; }
 
+    public NodeDescription Description { get; private set; }
+
     public DateTimeOffset CreatedAt { get; }
     public DateTimeOffset UpdatedAt { get; private set; }
 
     public Node(
         NodeTitle title,
+        NodeDescription description,
         NodeTypeId typeId,
         DateTimeOffset createdAt)
     {
         Id = NodeId.New();
         Title = title;
+        Description = description;
         TypeId = typeId;
         Status = NodeStatus.Active;
         CreatedAt = createdAt;
@@ -112,5 +116,18 @@ public sealed class Node
 
         Status = NodeStatus.Active;
         UpdatedAt = restoredAt;
+    }
+
+    public void ChangeDescription(
+        NodeDescription newDescription,
+        DateTimeOffset changedAt)
+    {
+        if (Description == newDescription)
+        {
+            return;
+        }
+
+        Description = newDescription;
+        UpdatedAt = changedAt;
     }
 }
