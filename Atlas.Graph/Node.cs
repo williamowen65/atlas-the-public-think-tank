@@ -23,6 +23,47 @@ public sealed class Node
         UpdatedAt = createdAt;
     }
 
+    // create a new node
+    private Node(
+        NodeId id,
+        NodeTitle title,
+        NodeType type,
+        NodeStatus status,
+        DateTimeOffset createdAt,
+        DateTimeOffset updatedAt)
+    {
+        if (updatedAt < createdAt)
+        {
+            throw new ArgumentException(
+                "Updated time cannot precede created time.");
+        }
+
+        Id = id;
+        Title = title;
+        Type = type;
+        Status = status;
+        CreatedAt = createdAt;
+        UpdatedAt = updatedAt;
+    }
+
+    // restore an existing node
+    public static Node Reconstitute(
+        NodeId id,
+        NodeTitle title,
+        NodeType type,
+        NodeStatus status,
+        DateTimeOffset createdAt,
+        DateTimeOffset updatedAt)
+    {
+        return new Node(
+            id,
+            title,
+            type,
+            status,
+            createdAt,
+            updatedAt);
+    }
+
     public void Rename(
         NodeTitle newTitle,
         DateTimeOffset changedAt)

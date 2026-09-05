@@ -1,14 +1,38 @@
-﻿using Atlas.Graph;
+﻿using Atlas.ConsoleApp.Storage;
 using Atlas.Graph.Nodes;
 
-//One caveat: don’t put business logic into Program.cs. It should merely construct objects, call their public operations, and show the results. Its job is to demonstrate the architecture—not become another version of Atlas.
 
-// The console app is worthwhile for this particular rewrite, even though production Atlas will ultimately be driven by the web/API host.
+var dataFilePath = Path.GetFullPath(
+    Path.Combine(
+        AppContext.BaseDirectory,
+        "..",
+        "..",
+        "..",
+        "nodes.json"));
 
-var node = new Node(
-    new NodeTitle("How can coastal communities adapt?"),
-    NodeType.Question,
-    DateTimeOffset.UtcNow);
+Console.WriteLine($"Working directory: {Directory.GetCurrentDirectory()}");
+Console.WriteLine($"JSON path: {dataFilePath}");
+
+INodeRepository nodeRepository =
+    new JsonNodeRepository(dataFilePath);
+
+var node = nodeRepository
+    .GetAll()
+    .FirstOrDefault();
+
+if (node is null)
+{
+    node = new Node(
+        new NodeTitle("How can coastal communities adapt?"),
+        NodeType.Question,
+        DateTimeOffset.UtcNow);
+
+    nodeRepository.Save(node);
+
+    Console.WriteLine("A new node was created.");
+    Console.WriteLine($"Data saved to: {dataFilePath}");
+    Pause();
+}
 
 var running = true;
 
@@ -24,7 +48,8 @@ while (running)
     Console.WriteLine("2. Change node type");
     Console.WriteLine("3. Archive node");
     Console.WriteLine("4. Restore node");
-    Console.WriteLine("5. Exit");
+    Console.WriteLine("5. Show data file location");
+    Console.WriteLine("6. Exit");
     Console.WriteLine();
 
     Console.Write("Selection: ");
@@ -38,37 +63,54 @@ while (running)
         {
             case "1":
                 RenameNode(node);
+                nodeRepository.Save(node);
                 break;
 
             case "2":
-                ChangeNodeType(node);
+                if (ChangeNodeType(node))
+                {
+                    nodeRepository.Save(node);
+                }
+
                 break;
 
             case "3":
                 node.Archive(DateTimeOffset.UtcNow);
-                Console.WriteLine("Node archived.");
+                nodeRepository.Save(node);
+
+                Console.WriteLine("Node archived and saved.");
                 Pause();
                 break;
 
             case "4":
                 node.Restore(DateTimeOffset.UtcNow);
-                Console.WriteLine("Node restored.");
+                nodeRepository.Save(node);
+
+                Console.WriteLine("Node restored and saved.");
                 Pause();
                 break;
 
             case "5":
+                ShowDataFileLocation(dataFilePath);
+                break;
+
+            case "6":
                 running = false;
                 break;
 
             default:
-                Console.WriteLine("Please select an option from 1 through 5.");
+                Console.WriteLine(
+                    "Please select an option from 1 through 6.");
+
                 Pause();
                 break;
         }
     }
     catch (ArgumentException exception)
     {
-        Console.WriteLine($"Unable to update node: {exception.Message}");
+        Console.WriteLine(
+            $"Unable to update node: {exception.Message}");
+
         Pause();
     }
 }
@@ -82,11 +124,11 @@ static void RenameNode(Node node)
         new NodeTitle(title ?? string.Empty),
         DateTimeOffset.UtcNow);
 
-    Console.WriteLine("Node renamed.");
+    Console.WriteLine("Node renamed and saved.");
     Pause();
 }
 
-static void ChangeNodeType(Node node)
+static bool ChangeNodeType(Node node)
 {
     Console.WriteLine("Available node types:");
 
@@ -100,20 +142,27 @@ static void ChangeNodeType(Node node)
 
     var input = Console.ReadLine();
 
-    if (!Enum.TryParse<NodeType>(
+    if (!Enum.TryParse(
             input,
             ignoreCase: true,
-            out var newType))
+            out NodeType newType))
     {
-        Console.WriteLine("That is not a recognized node type.");
+        Console.WriteLine(
+            "That is not a recognized node type.");
+
         Pause();
-        return;
+        return false;
     }
 
-    node.ChangeType(newType, DateTimeOffset.UtcNow);
+    node.ChangeType(
+        newType,
+        DateTimeOffset.UtcNow);
 
-    Console.WriteLine($"Node type changed to {newType}.");
+    Console.WriteLine(
+        $"Node type changed to {newType} and saved.");
+
     Pause();
+    return true;
 }
 
 static void DisplayNode(Node node)
@@ -124,8 +173,31 @@ static void DisplayNode(Node node)
     Console.WriteLine($"Title:   {node.Title}");
     Console.WriteLine($"Type:    {node.Type}");
     Console.WriteLine($"Status:  {node.Status}");
-    Console.WriteLine($"Created: {node.CreatedAt.LocalDateTime}");
-    Console.WriteLine($"Updated: {node.UpdatedAt.LocalDateTime}");
+    Console.WriteLine(
+        $"Created: {node.CreatedAt.LocalDateTime}");
+    Console.WriteLine(
+        $"Updated: {node.UpdatedAt.LocalDateTime}");
+}
+
+static void ShowDataFileLocation(string dataFilePath)
+{
+    Console.WriteLine("Node data is stored at:");
+    Console.WriteLine(dataFilePath);
+    Console.WriteLine();
+
+    if (File.Exists(dataFilePath))
+    {
+        Console.WriteLine("Current JSON:");
+        Console.WriteLine("-------------");
+        Console.WriteLine(File.ReadAllText(dataFilePath));
+    }
+    else
+    {
+        Console.WriteLine(
+            "The data file has not been created yet.");
+    }
+
+    Pause();
 }
 
 static void Pause()
