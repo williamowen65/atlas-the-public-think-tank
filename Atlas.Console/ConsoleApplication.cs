@@ -100,6 +100,7 @@ public sealed class ConsoleApplication
         {
             var node = new Node(
                 new NodeTitle(title ?? string.Empty),
+                new NodeDescription(""),
                 nodeType.Id,
                 DateTimeOffset.UtcNow);
 

@@ -56,6 +56,7 @@ public sealed class Node
     public static Node Reconstitute(
         NodeId id,
         NodeTitle title,
+        NodeDescription description,
         NodeTypeId typeId,
         NodeStatus status,
         DateTimeOffset createdAt,
@@ -64,6 +65,7 @@ public sealed class Node
         return new Node(
             id,
             title,
+            description,
             typeId,
             status,
             createdAt,
