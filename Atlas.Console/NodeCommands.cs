@@ -21,10 +21,11 @@ public static class NodeCommands
             Console.WriteLine();
             Console.WriteLine("Choose an action:");
             Console.WriteLine("1. Rename");
-            Console.WriteLine("2. Change type");
-            Console.WriteLine("3. Archive");
-            Console.WriteLine("4. Restore");
-            Console.WriteLine("5. Return to node browser");
+            Console.WriteLine("2. Change description");
+            Console.WriteLine("3. Change type");
+            Console.WriteLine("4. Archive");
+            Console.WriteLine("5. Restore");
+            Console.WriteLine("6. Return to node browser");
             Console.WriteLine();
 
             Console.Write("Selection: ");
@@ -38,6 +39,10 @@ public static class NodeCommands
                         break;
 
                     case "2":
+                        ChangeDescription(node, nodes);
+                        break;
+
+                    case "3":
                         ChangeType(
                             node,
                             nodes,
@@ -45,19 +50,19 @@ public static class NodeCommands
                             actorId);
                         break;
 
-                    case "3":
+                    case "4":
                         node.Archive(DateTimeOffset.UtcNow);
                         nodes.Save(node);
                         ConsoleUi.Pause("Node archived and saved.");
                         break;
 
-                    case "4":
+                    case "5":
                         node.Restore(DateTimeOffset.UtcNow);
                         nodes.Save(node);
                         ConsoleUi.Pause("Node restored and saved.");
                         break;
 
-                    case "5":
+                    case "6":
                         viewingNode = false;
                         break;
 
@@ -85,6 +90,27 @@ public static class NodeCommands
 
         nodes.Save(node);
         ConsoleUi.Pause("Node renamed and saved.");
+    }
+
+    private static void ChangeDescription(
+        Node node,
+        INodeRepository nodes)
+    {
+        Console.WriteLine("Current description:");
+        Console.WriteLine(
+            string.IsNullOrWhiteSpace(node.Description.Value)
+                ? "(none)"
+                : node.Description.Value);
+        Console.WriteLine();
+        Console.Write("New description (blank clears it): ");
+        var description = Console.ReadLine();
+
+        node.ChangeDescription(
+            new NodeDescription(description ?? string.Empty),
+            DateTimeOffset.UtcNow);
+
+        nodes.Save(node);
+        ConsoleUi.Pause("Node description updated and saved.");
     }
 
     private static void ChangeType(
