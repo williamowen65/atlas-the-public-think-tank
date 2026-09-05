@@ -14,7 +14,7 @@ public sealed class Node
 
     public Node(
         NodeTitle title,
-        NodeType type,
+        NodeTypeId typeId,
         DateTimeOffset createdAt)
     {
         Id = NodeId.New();
@@ -80,7 +80,7 @@ public sealed class Node
     }
 
     public void ChangeType(
-        NodeTypeID newTypeId,
+        NodeTypeId newTypeId,
         DateTimeOffset changedAt)
     {
         if (TypeId == newTypeId)
