@@ -1,20 +1,27 @@
-﻿using System.Text.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Atlas.Graph.Nodes;
+using Atlas.Graph.Nodes.NodeTypes;
 
 namespace Atlas.ConsoleApp.Storage;
 
 public sealed class JsonNodeRepository : INodeRepository
 {
     private readonly string _filePath;
+    private readonly INodeTypeRepository _nodeTypes;
 
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
-        WriteIndented = true
+        WriteIndented = true,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    public JsonNodeRepository(string filePath)
+    public JsonNodeRepository(
+        string filePath,
+        INodeTypeRepository nodeTypes)
     {
         _filePath = filePath;
+        _nodeTypes = nodeTypes;
     }
 
     public IReadOnlyCollection<Node> GetAll()
@@ -29,9 +36,7 @@ public sealed class JsonNodeRepository : INodeRepository
         var storedNode = ReadStoredNodes()
             .SingleOrDefault(node => node.Id == id.Value);
 
-        return storedNode is null
-            ? null
-            : ToDomain(storedNode);
+        return storedNode is null ? null : ToDomain(storedNode);
     }
 
     public void Save(Node node)
@@ -85,7 +90,6 @@ public sealed class JsonNodeRepository : INodeRepository
         }
 
         var json = JsonSerializer.Serialize(nodes, _jsonOptions);
-
         File.WriteAllText(_filePath, json);
     }
 
@@ -95,19 +99,16 @@ public sealed class JsonNodeRepository : INodeRepository
         {
             Id = node.Id.Value,
             Title = node.Title.Value,
-            Type = node.Type.ToString(),
+            TypeId = node.TypeId.Value,
+            Type = null,
             Status = node.Status.ToString(),
             CreatedAt = node.CreatedAt,
             UpdatedAt = node.UpdatedAt
         };
     }
 
-    private static Node ToDomain(StoredNode storedNode)
+    private Node ToDomain(StoredNode storedNode)
     {
-        var type = Enum.Parse<NodeType>(
-            storedNode.Type,
-            ignoreCase: true);
-
         var status = Enum.Parse<NodeStatus>(
             storedNode.Status,
             ignoreCase: true);
@@ -115,9 +116,30 @@ public sealed class JsonNodeRepository : INodeRepository
         return Node.Reconstitute(
             new NodeId(storedNode.Id),
             new NodeTitle(storedNode.Title),
-            type,
+            ResolveTypeId(storedNode),
             status,
             storedNode.CreatedAt,
             storedNode.UpdatedAt);
+    }
+
+    private NodeTypeId ResolveTypeId(StoredNode storedNode)
+    {
+        if (storedNode.TypeId is Guid typeId &&
+            typeId != Guid.Empty)
+        {
+            return new NodeTypeId(typeId);
+        }
+
+        var legacyType = _nodeTypes
+            .GetAll()
+            .SingleOrDefault(type =>
+                string.Equals(
+                    type.Name,
+                    storedNode.Type,
+                    StringComparison.OrdinalIgnoreCase));
+
+        return legacyType?.Id
+            ?? throw new InvalidDataException(
+                $"The stored node type '{storedNode.Type}' was not found.");
     }
 }
