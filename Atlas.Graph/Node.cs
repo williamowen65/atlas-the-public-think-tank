@@ -33,6 +33,7 @@ public sealed class Node
     private Node(
         NodeId id,
         NodeTitle title,
+        NodeDescription description,
         NodeTypeId typeId,
         NodeStatus status,
         DateTimeOffset createdAt,
@@ -46,6 +47,7 @@ public sealed class Node
 
         Id = id;
         Title = title;
+        Description = description;
         TypeId = typeId;
         Status = status;
         CreatedAt = createdAt;
