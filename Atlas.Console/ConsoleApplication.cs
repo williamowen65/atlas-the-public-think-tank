@@ -1,18 +1,28 @@
 using Atlas.Graph.Nodes;
+using Atlas.Graph.Nodes.NodeTypes;
 
 namespace Atlas.ConsoleApp;
 
 public sealed class ConsoleApplication
 {
     private readonly INodeRepository _nodes;
-    private readonly string _dataFilePath;
+    private readonly INodeTypeRepository _nodeTypes;
+    private readonly string _actorId;
+    private readonly string _nodeDataFilePath;
+    private readonly string _nodeTypeDataFilePath;
 
     public ConsoleApplication(
         INodeRepository nodes,
-        string dataFilePath)
+        INodeTypeRepository nodeTypes,
+        string actorId,
+        string nodeDataFilePath,
+        string nodeTypeDataFilePath)
     {
         _nodes = nodes;
-        _dataFilePath = dataFilePath;
+        _nodeTypes = nodeTypes;
+        _actorId = actorId;
+        _nodeDataFilePath = nodeDataFilePath;
+        _nodeTypeDataFilePath = nodeTypeDataFilePath;
     }
 
     public void Run()
@@ -41,16 +51,20 @@ public sealed class ConsoleApplication
                     break;
 
                 case "4":
-                    ShowDataFile();
+                    ListNodeTypes();
                     break;
 
                 case "5":
+                    ShowDataFiles();
+                    break;
+
+                case "6":
                     running = false;
                     break;
 
                 default:
                     ConsoleUi.Pause(
-                        "Please select an option from 1 through 5.");
+                        "Please select an option from 1 through 6.");
                     break;
             }
         }
@@ -63,8 +77,9 @@ public sealed class ConsoleApplication
         Console.WriteLine("1. Create node");
         Console.WriteLine("2. List nodes");
         Console.WriteLine("3. Browse nodes");
-        Console.WriteLine("4. Show data file");
-        Console.WriteLine("5. Exit");
+        Console.WriteLine("4. List node types");
+        Console.WriteLine("5. Show data files");
+        Console.WriteLine("6. Exit");
         Console.WriteLine();
     }
 
@@ -77,7 +92,9 @@ public sealed class ConsoleApplication
         Console.Write("Title: ");
         var title = Console.ReadLine();
 
-        var nodeType = ConsoleUi.ReadNodeType();
+        var nodeType = ConsoleUi.ReadNodeType(
+            _nodeTypes,
+            _actorId);
 
         if (nodeType is null)
         {
@@ -88,12 +105,13 @@ public sealed class ConsoleApplication
         {
             var node = new Node(
                 new NodeTitle(title ?? string.Empty),
-                nodeType.Value,
+                nodeType.Id,
                 DateTimeOffset.UtcNow);
 
             _nodes.Save(node);
 
-            ConsoleUi.Pause($"Node created: {node.Title}");
+            ConsoleUi.Pause(
+                $"Node created as {nodeType.Name}: {node.Title}");
         }
         catch (ArgumentException exception)
         {
@@ -118,7 +136,10 @@ public sealed class ConsoleApplication
 
         for (var index = 0; index < nodes.Count; index++)
         {
-            NodeDisplay.WriteSummary(nodes[index], index + 1);
+            NodeDisplay.WriteSummary(
+                nodes[index],
+                _nodeTypes,
+                index + 1);
         }
 
         ConsoleUi.Pause();
@@ -144,7 +165,10 @@ public sealed class ConsoleApplication
 
             for (var index = 0; index < nodes.Count; index++)
             {
-                NodeDisplay.WriteSummary(nodes[index], index + 1);
+                NodeDisplay.WriteSummary(
+                    nodes[index],
+                    _nodeTypes,
+                    index + 1);
             }
 
             Console.WriteLine();
@@ -171,27 +195,69 @@ public sealed class ConsoleApplication
                 continue;
             }
 
-            NodeCommands.Run(nodes[selection - 1], _nodes);
+            NodeCommands.Run(
+                nodes[selection - 1],
+                _nodes,
+                _nodeTypes,
+                _actorId);
         }
     }
 
-    private void ShowDataFile()
+    private void ListNodeTypes()
     {
         Console.Clear();
-        Console.WriteLine("NODE DATA");
-        Console.WriteLine("---------");
-        Console.WriteLine(_dataFilePath);
+        Console.WriteLine("NODE TYPES");
+        Console.WriteLine("----------");
+
+        var nodeTypes = _nodeTypes
+            .GetAll()
+            .OrderBy(type => type.Name)
+            .ToList();
+
+        foreach (var nodeType in nodeTypes)
+        {
+            var kind = nodeType.IsSystemDefined
+                ? "system"
+                : $"custom, owner: {nodeType.OwnerId}";
+
+            var status = nodeType.IsArchived
+                ? "archived"
+                : "active";
+
+            Console.WriteLine(
+                $"- {nodeType.Name} ({kind}, {status})");
+
+            if (!string.IsNullOrWhiteSpace(nodeType.Description))
+            {
+                Console.WriteLine($"  {nodeType.Description}");
+            }
+
+            Console.WriteLine($"  ID: {nodeType.Id}");
+        }
+
+        ConsoleUi.Pause();
+    }
+
+    private void ShowDataFiles()
+    {
+        ShowDataFile("NODE DATA", _nodeDataFilePath);
+        ShowDataFile("NODE TYPE DATA", _nodeTypeDataFilePath);
+    }
+
+    private static void ShowDataFile(
+        string heading,
+        string filePath)
+    {
+        Console.Clear();
+        Console.WriteLine(heading);
+        Console.WriteLine(new string('-', heading.Length));
+        Console.WriteLine(filePath);
         Console.WriteLine();
 
-        if (File.Exists(_dataFilePath))
-        {
-            Console.WriteLine(File.ReadAllText(_dataFilePath));
-        }
-        else
-        {
-            Console.WriteLine(
-                "The data file has not been created yet.");
-        }
+        Console.WriteLine(
+            File.Exists(filePath)
+                ? File.ReadAllText(filePath)
+                : "The data file has not been created yet.");
 
         ConsoleUi.Pause();
     }
