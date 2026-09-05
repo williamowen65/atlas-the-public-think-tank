@@ -87,6 +87,9 @@ public sealed class ConsoleApplication
         Console.Write("Title: ");
         var title = Console.ReadLine();
 
+        Console.Write("Description (optional): ");
+        var description = Console.ReadLine();
+
         var nodeType = ConsoleUi.ReadNodeType(
             _nodeTypes,
             _actorId);
@@ -100,7 +103,7 @@ public sealed class ConsoleApplication
         {
             var node = new Node(
                 new NodeTitle(title ?? string.Empty),
-                new NodeDescription(""),
+                new NodeDescription(description ?? string.Empty),
                 nodeType.Id,
                 DateTimeOffset.UtcNow);
 
