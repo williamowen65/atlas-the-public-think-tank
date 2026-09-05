@@ -1,17 +1,22 @@
 using Atlas.Graph.Nodes;
+using Atlas.Graph.Nodes.NodeTypes;
 
 namespace Atlas.ConsoleApp;
 
 public static class NodeCommands
 {
-    public static void Run(Node node, INodeRepository nodes)
+    public static void Run(
+        Node node,
+        INodeRepository nodes,
+        INodeTypeRepository nodeTypes,
+        string actorId)
     {
         var viewingNode = true;
 
         while (viewingNode)
         {
             Console.Clear();
-            NodeDisplay.WriteDetails(node);
+            NodeDisplay.WriteDetails(node, nodeTypes);
 
             Console.WriteLine();
             Console.WriteLine("Choose an action:");
@@ -33,7 +38,11 @@ public static class NodeCommands
                         break;
 
                     case "2":
-                        ChangeType(node, nodes);
+                        ChangeType(
+                            node,
+                            nodes,
+                            nodeTypes,
+                            actorId);
                         break;
 
                     case "3":
@@ -59,7 +68,8 @@ public static class NodeCommands
             }
             catch (ArgumentException exception)
             {
-                ConsoleUi.Pause($"Unable to update node: {exception.Message}");
+                ConsoleUi.Pause(
+                    $"Unable to update node: {exception.Message}");
             }
         }
     }
@@ -77,19 +87,28 @@ public static class NodeCommands
         ConsoleUi.Pause("Node renamed and saved.");
     }
 
-    private static void ChangeType(Node node, INodeRepository nodes)
+    private static void ChangeType(
+        Node node,
+        INodeRepository nodes,
+        INodeTypeRepository nodeTypes,
+        string actorId)
     {
-        var nodeType = ConsoleUi.ReadNodeType();
+        var nodeType = ConsoleUi.ReadNodeType(
+            nodeTypes,
+            actorId);
 
         if (nodeType is null)
         {
             return;
         }
 
-        node.ChangeType(nodeType.Value, DateTimeOffset.UtcNow);
+        node.ChangeType(
+            nodeType.Id,
+            DateTimeOffset.UtcNow);
+
         nodes.Save(node);
 
         ConsoleUi.Pause(
-            $"Node type changed to {nodeType.Value} and saved.");
+            $"Node type changed to {nodeType.Name} and saved.");
     }
 }
