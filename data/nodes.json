@@ -14,5 +14,21 @@
     "Status": "Active",
     "CreatedAt": "2026-09-05T19:29:01.8072604+00:00",
     "UpdatedAt": "2026-09-05T19:29:01.8072604+00:00"
+  },
+  {
+    "Id": "d91d959f-81ba-4cd1-999d-7bd39bf8156d",
+    "Title": "How to solve homelessness crisis?",
+    "TypeId": "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
+    "Status": "Active",
+    "CreatedAt": "2026-09-05T20:06:53.4492315+00:00",
+    "UpdatedAt": "2026-09-05T20:06:53.4492315+00:00"
+  },
+  {
+    "Id": "37092242-ad4b-4069-a225-ebf58e3ef862",
+    "Title": "Can you Solve This?",
+    "TypeId": "1f3779e4-78df-4982-a706-b8b401dbdbb5",
+    "Status": "Active",
+    "CreatedAt": "2026-09-05T20:08:02.7370217+00:00",
+    "UpdatedAt": "2026-09-05T20:08:02.7370217+00:00"
   }
 ]
