@@ -99,6 +99,7 @@ public sealed class JsonNodeRepository : INodeRepository
         {
             Id = node.Id.Value,
             Title = node.Title.Value,
+            Description = node.Description.Value,
             TypeId = node.TypeId.Value,
             Type = null,
             Status = node.Status.ToString(),
@@ -116,6 +117,7 @@ public sealed class JsonNodeRepository : INodeRepository
         return Node.Reconstitute(
             new NodeId(storedNode.Id),
             new NodeTitle(storedNode.Title),
+            new NodeDescription(storedNode.Description),
             ResolveTypeId(storedNode),
             status,
             storedNode.CreatedAt,
