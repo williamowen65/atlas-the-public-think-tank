@@ -1,4 +1,5 @@
 ﻿using Atlas.Graph.Nodes.NodeTypes;
+using System.Reflection.Metadata;
 
 namespace Atlas.Graph.Nodes;
 
@@ -10,6 +11,18 @@ public sealed class Node
     public NodeStatus Status { get; private set; }
 
     public NodeDescription Description { get; private set; }
+
+    /*
+     The interaction might be:
+
+        Graph creates a node.
+        Content creates a description document associated with that node.
+        Content returns or publishes the document ID.
+        Graph records that ID as its description reference.
+        A UI-facing composition layer requests the node from Graph and its document from Content.
+        The composition layer combines them into one screen model.
+     */
+    //public DocumentId DescriptionId { get; private set; }
 
     public DateTimeOffset CreatedAt { get; }
     public DateTimeOffset UpdatedAt { get; private set; }
