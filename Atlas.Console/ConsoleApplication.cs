@@ -1,3 +1,5 @@
+using Atlas.ConsoleApp.Eventing;
+using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 
@@ -7,6 +9,8 @@ public sealed class ConsoleApplication
 {
     private readonly INodeRepository _nodes;
     private readonly INodeTypeRepository _nodeTypes;
+    private readonly IDocumentRepository _documents;
+    private readonly InMemoryEventPublisher _eventPublisher;
     private readonly string _actorId;
     private readonly string _nodeDataFilePath;
     private readonly string _nodeTypeDataFilePath;
@@ -14,12 +18,16 @@ public sealed class ConsoleApplication
     public ConsoleApplication(
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
+        IDocumentRepository documents,
+        InMemoryEventPublisher eventPublisher,
         string actorId,
         string nodeDataFilePath,
         string nodeTypeDataFilePath)
     {
         _nodes = nodes;
         _nodeTypes = nodeTypes;
+        _documents = documents;
+        _eventPublisher = eventPublisher;
         _actorId = actorId;
         _nodeDataFilePath = nodeDataFilePath;
         _nodeTypeDataFilePath = nodeTypeDataFilePath;
@@ -55,12 +63,16 @@ public sealed class ConsoleApplication
                     break;
 
                 case "5":
+                    ListContentDocuments();
+                    break;
+
+                case "6":
                     running = false;
                     break;
 
                 default:
                     ConsoleUi.Pause(
-                        "Please select an option from 1 through 5.");
+                        "Please select an option from 1 through 6.");
                     break;
             }
         }
@@ -74,7 +86,8 @@ public sealed class ConsoleApplication
         Console.WriteLine("2. Browse nodes");
         Console.WriteLine("3. List node types");
         Console.WriteLine("4. Show data files");
-        Console.WriteLine("5. Exit");
+        Console.WriteLine("5. List Content documents");
+        Console.WriteLine("6. Exit");
         Console.WriteLine();
     }
 
@@ -108,6 +121,16 @@ public sealed class ConsoleApplication
                 DateTimeOffset.UtcNow);
 
             _nodes.Save(node);
+
+            Console.WriteLine();
+            Console.WriteLine(
+                $"[ATLAS.GRAPH] Saved node {node.Id}.");
+
+            _eventPublisher.Publish(
+                new NodeCreated(
+                    node.Id.Value,
+                    node.Description.Value,
+                    node.CreatedAt));
 
             ConsoleUi.Pause(
                 $"Node created as {nodeType.Name}: {node.Title}");
@@ -209,6 +232,37 @@ public sealed class ConsoleApplication
             }
 
             Console.WriteLine($"  ID: {nodeType.Id}");
+        }
+
+        ConsoleUi.Pause();
+    }
+
+    private void ListContentDocuments()
+    {
+        Console.Clear();
+        Console.WriteLine("ATLAS.CONTENT DOCUMENTS");
+        Console.WriteLine("-----------------------");
+
+        var documents = _documents.GetAll();
+
+        if (documents.Count == 0)
+        {
+            Console.WriteLine(
+                "No Content documents have been created during this run.");
+            Console.WriteLine();
+            Console.WriteLine(
+                "Create a node to publish a NodeCreated event.");
+            ConsoleUi.Pause();
+            return;
+        }
+
+        foreach (var document in documents)
+        {
+            Console.WriteLine($"Document ID: {document.Id}");
+            Console.WriteLine($"Node ID:     {document.NodeId}");
+            Console.WriteLine($"Created:     {document.CreatedAt.LocalDateTime}");
+            Console.WriteLine($"Content:     {document.Content}");
+            Console.WriteLine();
         }
 
         ConsoleUi.Pause();
