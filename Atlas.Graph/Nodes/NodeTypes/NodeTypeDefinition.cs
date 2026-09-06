@@ -14,6 +14,8 @@ public sealed class NodeTypeDefinition
 
     public bool IsArchived { get; private set; }
 
+    public bool AutoPluralize { get; private set; }
+
     public DateTimeOffset CreatedAt { get; }
 
     public DateTimeOffset UpdatedAt { get; private set; }
@@ -25,6 +27,7 @@ public sealed class NodeTypeDefinition
         string? ownerId,
         bool isSystemDefined,
         bool isArchived,
+        bool autoPluralize,
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt)
     {
@@ -34,6 +37,7 @@ public sealed class NodeTypeDefinition
         OwnerId = ownerId;
         IsSystemDefined = isSystemDefined;
         IsArchived = isArchived;
+        AutoPluralize = autoPluralize;
         CreatedAt = createdAt;
         UpdatedAt = updatedAt;
     }
@@ -42,7 +46,8 @@ public sealed class NodeTypeDefinition
         string name,
         string description,
         string ownerId,
-        DateTimeOffset createdAt)
+        DateTimeOffset createdAt,
+        bool autoPluralize = true)
     {
         if (string.IsNullOrWhiteSpace(ownerId))
         {
@@ -58,6 +63,7 @@ public sealed class NodeTypeDefinition
             ownerId,
             isSystemDefined: false,
             isArchived: false,
+            autoPluralize,
             createdAt,
             createdAt);
     }
@@ -65,7 +71,8 @@ public sealed class NodeTypeDefinition
     public static NodeTypeDefinition CreateSystemDefined(
         string name,
         string description,
-        DateTimeOffset createdAt)
+        DateTimeOffset createdAt,
+        bool autoPluralize = true)
     {
         return new NodeTypeDefinition(
             NodeTypeId.New(),
@@ -74,6 +81,7 @@ public sealed class NodeTypeDefinition
             ownerId: null,
             isSystemDefined: true,
             isArchived: false,
+            autoPluralize,
             createdAt,
             createdAt);
     }
@@ -86,7 +94,8 @@ public sealed class NodeTypeDefinition
         bool isSystemDefined,
         bool isArchived,
         DateTimeOffset createdAt,
-        DateTimeOffset updatedAt)
+        DateTimeOffset updatedAt,
+        bool autoPluralize = true)
     {
         if (updatedAt < createdAt)
         {
@@ -101,6 +110,7 @@ public sealed class NodeTypeDefinition
             ownerId,
             isSystemDefined,
             isArchived,
+            autoPluralize,
             createdAt,
             updatedAt);
     }
@@ -141,6 +151,24 @@ public sealed class NodeTypeDefinition
         }
 
         Description = validatedDescription;
+        UpdatedAt = changedAt;
+    }
+
+
+    public void ChangeAutoPluralize(
+        bool autoPluralize,
+        string actorId,
+        bool actorIsModerator,
+        DateTimeOffset changedAt)
+    {
+        EnsureCanEdit(actorId, actorIsModerator);
+
+        if (AutoPluralize == autoPluralize)
+        {
+            return;
+        }
+
+        AutoPluralize = autoPluralize;
         UpdatedAt = changedAt;
     }
 
