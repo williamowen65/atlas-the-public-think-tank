@@ -92,9 +92,12 @@ public static class NodeCommands
         Node node,
         InMemoryEventPublisher eventPublisher)
     {
-        foreach (var domainEvent in node.DomainEvents)
+        foreach (var domainEvent in
+                 node.DomainEvents.OfType<Atlas.Graph.NodeLifecycleEvent>())
         {
-            eventPublisher.Publish(domainEvent);
+            eventPublisher.Publish(
+                GraphEventContractMapper.ToIntegrationContract(
+                    domainEvent));
         }
 
         node.ClearDomainEvents();
