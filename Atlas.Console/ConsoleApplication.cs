@@ -287,6 +287,7 @@ public sealed class ConsoleApplication
             {
                 NodeDisplay.WriteTableRow(
                     nodes[index],
+                    _nodes,
                     _nodeTypes,
                     _documents,
                     _participants,
