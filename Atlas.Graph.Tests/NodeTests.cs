@@ -1,4 +1,4 @@
-using Atlas.Graph;
+using Atlas.Contracts.Graph.V1;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -103,7 +103,7 @@ public class NodeTests
         node.Archive(archivedAt);
 
         var domainEvent = node.DomainEvents
-            .OfType<NodeArchived>()
+            .OfType<NodeArchivedV1>()
             .Single();
 
         Assert.AreEqual(node.Id.Value, domainEvent.NodeId);
@@ -125,6 +125,73 @@ public class NodeTests
         node.Archive(DateTimeOffset.UtcNow.AddMinutes(1));
 
         Assert.AreEqual(0, node.DomainEvents.Count);
+    }
+
+
+    [TestMethod]
+    public void Constructor_SetsRequestedSubNodeTypes()
+    {
+        var commentTypeId = NodeTypeId.New();
+        var evidenceTypeId = NodeTypeId.New();
+
+        var node = new Node(
+            new NodeTitle("Climate adaptation"),
+            new NodeDescriptionId(Guid.NewGuid()),
+            NodeTypeId.New(),
+            new NodeAuthorId(Guid.NewGuid()),
+            [commentTypeId, evidenceTypeId],
+            DateTimeOffset.UtcNow);
+
+        CollectionAssert.AreEquivalent(
+            new[] { commentTypeId, evidenceTypeId },
+            node.RequestedSubNodeTypes
+                .Select(request => request.TypeId)
+                .ToArray());
+    }
+
+    [TestMethod]
+    public void RequestSubNodeType_DoesNotAddDuplicate()
+    {
+        var node = CreateNode("Climate adaptation");
+        var commentTypeId = NodeTypeId.New();
+
+        node.RequestSubNodeType(
+            commentTypeId,
+            DateTimeOffset.UtcNow);
+
+        node.RequestSubNodeType(
+            commentTypeId,
+            DateTimeOffset.UtcNow.AddMinutes(1));
+
+        Assert.AreEqual(1, node.RequestedSubNodeTypes.Count);
+    }
+
+    [TestMethod]
+    public void StopRequestingSubNodeType_RemovesRequest()
+    {
+        var node = CreateNode("Climate adaptation");
+        var commentTypeId = NodeTypeId.New();
+
+        node.RequestSubNodeType(
+            commentTypeId,
+            DateTimeOffset.UtcNow);
+
+        node.StopRequestingSubNodeType(
+            commentTypeId,
+            DateTimeOffset.UtcNow.AddMinutes(1));
+
+        Assert.AreEqual(0, node.RequestedSubNodeTypes.Count);
+    }
+
+    [TestMethod]
+    public void RequestSubNodeType_WithEmptyGuid_Throws()
+    {
+        var node = CreateNode("Climate adaptation");
+
+        Assert.Throws<ArgumentException>(
+            () => node.RequestSubNodeType(
+                new NodeTypeId(Guid.Empty),
+                DateTimeOffset.UtcNow));
     }
 
     private static Node CreateNode(string title)
