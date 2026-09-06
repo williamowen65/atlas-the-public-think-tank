@@ -1,8 +1,10 @@
 ﻿namespace Atlas.Graph.Nodes;
 
-public sealed record NodeDescriptionId(Guid Value)
+public sealed record NodeDescriptionId
 {
-    public NodeDescriptionId(Guid value) : this()
+    public Guid Value { get; }
+
+    public NodeDescriptionId(Guid value)
     {
         if (value == Guid.Empty)
         {
@@ -14,8 +16,5 @@ public sealed record NodeDescriptionId(Guid Value)
         Value = value;
     }
 
-    public override string ToString()
-    {
-        return Value.ToString();
-    }
+    public override string ToString() => Value.ToString();
 }

@@ -133,7 +133,7 @@ public sealed class ConsoleApplication
             _eventPublisher.Publish(
                 new NodeCreated(
                     node.Id.Value,
-                    node.Description.Value,
+                    node.DescriptionId.Value,
                     node.CreatedAt));
 
             ConsoleUi.Pause(
