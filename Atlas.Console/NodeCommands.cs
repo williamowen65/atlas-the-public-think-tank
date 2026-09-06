@@ -84,7 +84,8 @@ public static class NodeCommands
                         ChangeRequestedSubNodeTypes(
                             node,
                             nodes,
-                            nodeTypes);
+                            nodeTypes,
+                            currentParticipant.Id.Value.ToString());
                         break;
 
                     case "7":
@@ -512,10 +513,13 @@ public static class NodeCommands
     private static void ChangeRequestedSubNodeTypes(
         Node node,
         INodeRepository nodes,
-        INodeTypeRepository nodeTypes)
+        INodeTypeRepository nodeTypes,
+        string ownerId)
     {
         var selectedTypes =
-            ConsoleUi.ReadRequestedSubNodeTypes(nodeTypes);
+            ConsoleUi.ReadRequestedSubNodeTypes(
+                nodeTypes,
+                ownerId);
 
         if (selectedTypes.Count == 0)
         {
