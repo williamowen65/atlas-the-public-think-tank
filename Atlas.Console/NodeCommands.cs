@@ -2,6 +2,7 @@ using Atlas.ConsoleApp.Eventing;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
+using Atlas.Participants.Participants;
 
 namespace Atlas.ConsoleApp;
 
@@ -12,6 +13,7 @@ public static class NodeCommands
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
+        IParticipantRepository participants,
         InMemoryEventPublisher eventPublisher,
         string actorId)
     {
@@ -20,7 +22,7 @@ public static class NodeCommands
         while (viewingNode)
         {
             Console.Clear();
-            NodeDisplay.WriteDetails(node, nodeTypes, documents);
+            NodeDisplay.WriteDetails(node, nodeTypes, documents, participants);
 
             Console.WriteLine();
             Console.WriteLine("Choose an action:");
