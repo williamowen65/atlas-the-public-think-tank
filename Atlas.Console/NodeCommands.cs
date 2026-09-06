@@ -174,7 +174,10 @@ public static class NodeCommands
 
             Console.WriteLine(
                 $"{index + 1}. " +
-                NodeDisplay.FormatTypeCount(type.Name, count));
+                NodeDisplay.FormatTypeCount(
+                    type.Name,
+                    count,
+                    type.AutoPluralize));
         }
 
         var createTypeSelection = availableTypes.Count + 1;
@@ -261,6 +264,9 @@ public static class NodeCommands
                 TypeId = group.Key,
                 TypeName = nodeTypes.GetById(group.Key)?.Name
                     ?? $"Unknown ({group.Key})",
+                AutoPluralize =
+                    nodeTypes.GetById(group.Key)?.AutoPluralize
+                    ?? true,
                 Children = group
                     .OrderBy(child => child.Title.Value)
                     .ToList()
@@ -283,7 +289,8 @@ public static class NodeCommands
                 $"{index + 1}. " +
                 NodeDisplay.FormatTypeCount(
                     childGroups[index].TypeName,
-                    childGroups[index].Children.Count));
+                    childGroups[index].Children.Count,
+                    childGroups[index].AutoPluralize));
         }
 
         Console.WriteLine("0. Cancel");
