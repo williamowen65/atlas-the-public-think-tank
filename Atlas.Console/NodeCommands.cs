@@ -282,11 +282,8 @@ public static class NodeCommands
         for (var index = 0; index < childGroups.Count; index++)
         {
             Console.WriteLine(
-                $"{index + 1}. " +
-                NodeDisplay.FormatTypeCount(
-                    childGroups[index].TypeName,
-                    childGroups[index].Children.Count,
-                    childGroups[index].AutoPluralize));
+                $"{index + 1}. {childGroups[index].TypeName} " +
+                $"({childGroups[index].Children.Count})");
         }
 
         Console.WriteLine("0. Cancel");
