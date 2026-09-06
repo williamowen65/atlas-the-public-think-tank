@@ -6,6 +6,7 @@ using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Graph;
+using Atlas.Participants.Participants;
 
 const string ConsoleActorId = "console-user";
 
@@ -30,6 +31,10 @@ var documentDataFilePath = Path.Combine(
     dataDirectory,
     "documents.json");
 
+var participantDataFilePath = Path.Combine(
+    dataDirectory,
+    "participants.json");
+
 INodeTypeRepository nodeTypeRepository =
     new JsonNodeTypeRepository(nodeTypeDataFilePath);
 
@@ -38,11 +43,18 @@ SeedSystemNodeTypes(nodeTypeRepository);
 IDocumentRepository documentRepository =
     new JsonDocumentRepository(documentDataFilePath);
 
+IParticipantRepository participantRepository =
+    new JsonParticipantRepository(participantDataFilePath);
+
+var legacyParticipant =
+    EnsureLegacyParticipant(participantRepository);
+
 INodeRepository nodeRepository =
     new JsonNodeRepository(
         nodeDataFilePath,
         nodeTypeRepository,
-        documentRepository);
+        documentRepository,
+        new NodeAuthorId(legacyParticipant.Id.Value));
 
 var eventPublisher = new InMemoryEventPublisher();
 
@@ -59,11 +71,14 @@ var application = new ConsoleApplication(
     nodeRepository,
     nodeTypeRepository,
     documentRepository,
+    participantRepository,
     eventPublisher,
     ConsoleActorId,
     nodeDataFilePath,
     nodeTypeDataFilePath,
-    documentDataFilePath);
+    documentDataFilePath,
+    participantDataFilePath,
+    legacyParticipant);
 
 application.Run();
 
@@ -95,4 +110,28 @@ static void SeedSystemNodeTypes(
                 description,
                 createdAt));
     }
+}
+
+static Participant EnsureLegacyParticipant(
+    IParticipantRepository participants)
+{
+    var existing = participants
+        .GetAll()
+        .FirstOrDefault(participant =>
+            string.Equals(
+                participant.DisplayName,
+                "Legacy Console User",
+                StringComparison.OrdinalIgnoreCase));
+
+    if (existing is not null)
+    {
+        return existing;
+    }
+
+    var participant = new Participant(
+        "Legacy Console User",
+        DateTimeOffset.UtcNow);
+
+    participants.Save(participant);
+    return participant;
 }
