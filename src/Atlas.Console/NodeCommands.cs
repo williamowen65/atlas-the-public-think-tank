@@ -1,4 +1,5 @@
 using Atlas.ConsoleApp.Eventing;
+using Atlas.ConsoleApp.Participants;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
@@ -41,7 +42,8 @@ public static class NodeCommands
             Console.WriteLine("8. Add sub-node");
             Console.WriteLine("9. Attach to parent");
             Console.WriteLine("10. Detach from parent");
-            Console.WriteLine("11. Return to node browser");
+            Console.WriteLine("11. View author profile");
+            Console.WriteLine("12. Return to node browser");
             Console.WriteLine();
 
             Console.Write("Selection: ");
@@ -123,6 +125,14 @@ public static class NodeCommands
                         break;
 
                     case "11":
+                        ViewAuthorProfile(
+                            node,
+                            nodes,
+                            participants,
+                            currentParticipant);
+                        break;
+
+                    case "12":
                         viewingNode = false;
                         break;
 
@@ -402,6 +412,31 @@ public static class NodeCommands
         return nodeSelection == 0
             ? null
             : selectedGroup.Children[nodeSelection - 1];
+    }
+
+    private static void ViewAuthorProfile(
+        Node node,
+        INodeRepository nodes,
+        IParticipantRepository participants,
+        Participant currentParticipant)
+    {
+        var author = participants.GetById(
+            new ParticipantId(node.AuthorId.Value));
+
+        if (author is null)
+        {
+            ConsoleUi.Pause(
+                "The participant profile for this author was not found.");
+            return;
+        }
+
+        Console.Clear();
+        ParticipantDisplay.WriteProfile(
+            author,
+            nodes.GetAll(),
+            currentParticipant);
+
+        ConsoleUi.Pause();
     }
 
     private static void PublishDomainEvents(

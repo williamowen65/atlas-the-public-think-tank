@@ -277,19 +277,10 @@ public sealed class ConsoleApplication
                 .ToList();
 
             Console.Clear();
-            Console.WriteLine("PARTICIPANT PROFILE");
-            Console.WriteLine("-------------------");
-            Console.WriteLine($"Display name: {participant.DisplayName}");
-            Console.WriteLine(
-                $"Bio:          " +
-                $"{(string.IsNullOrWhiteSpace(participant.Bio) ? "-" : participant.Bio)}");
-            Console.WriteLine(
-                $"Joined:       {participant.CreatedAt.LocalDateTime}");
-            Console.WriteLine(
-                $"Status:       {(participant.IsActive ? "Active" : "Inactive")}");
-            Console.WriteLine($"Authored nodes: {authoredNodes.Count}");
-            Console.WriteLine(
-                $"Viewing as:   {_currentParticipant.DisplayName}");
+            ParticipantDisplay.WriteProfile(
+                participant,
+                _nodes.GetAll(),
+                _currentParticipant);
             Console.WriteLine();
             Console.WriteLine("1. Edit profile");
             Console.WriteLine("2. View authored nodes");

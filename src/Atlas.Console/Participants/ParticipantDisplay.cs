@@ -40,6 +40,29 @@ public static class ParticipantDisplay
             $"{status}");
     }
 
+    public static void WriteProfile(
+        Participant participant,
+        IReadOnlyCollection<Node> nodes,
+        Participant currentParticipant)
+    {
+        var authoredNodeCount = nodes.Count(
+            node => node.AuthorId.Value == participant.Id.Value);
+
+        Console.WriteLine("PARTICIPANT PROFILE");
+        Console.WriteLine("-------------------");
+        Console.WriteLine($"Display name: {participant.DisplayName}");
+        Console.WriteLine(
+            $"Bio:          " +
+            $"{(string.IsNullOrWhiteSpace(participant.Bio) ? "-" : participant.Bio)}");
+        Console.WriteLine(
+            $"Joined:       {participant.CreatedAt.LocalDateTime}");
+        Console.WriteLine(
+            $"Status:       {(participant.IsActive ? "Active" : "Inactive")}");
+        Console.WriteLine($"Authored nodes: {authoredNodeCount}");
+        Console.WriteLine(
+            $"Viewing as:   {currentParticipant.DisplayName}");
+    }
+
     private static string Truncate(string value, int maximumLength)
     {
         if (string.IsNullOrWhiteSpace(value))
