@@ -82,10 +82,10 @@ application.Run();
 static void SeedSystemNodeTypes(
     INodeTypeRepository nodeTypes)
 {
-    if (nodeTypes.GetAll().Count > 0)
-    {
-        return;
-    }
+    var existingNames = nodeTypes
+        .GetAll()
+        .Select(type => type.Name)
+        .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
     var createdAt = DateTimeOffset.UtcNow;
 
@@ -96,11 +96,18 @@ static void SeedSystemNodeTypes(
         ("Idea", "A proposed concept or possibility."),
         ("Solution", "A proposed response to a problem."),
         ("Evidence", "Information supporting or challenging a claim."),
-        ("Relationship", "A connection involving multiple nodes.")
+        ("Relationship", "A connection involving multiple nodes."),
+        ("Comment", "A response or observation about another node."),
+        ("Location", "A place associated with another node.")
     };
 
     foreach (var (name, description) in systemTypes)
     {
+        if (existingNames.Contains(name))
+        {
+            continue;
+        }
+
         nodeTypes.Save(
             NodeTypeDefinition.CreateSystemDefined(
                 name,
