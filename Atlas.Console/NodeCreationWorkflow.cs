@@ -17,6 +17,21 @@ public static class NodeCreationWorkflow
         NodeTypeDefinition? preselectedType = null,
         Node? parent = null)
     {
+        if (preselectedType is not null)
+        {
+            Console.WriteLine($"Type:   {preselectedType.Name}");
+        }
+
+        if (parent is not null)
+        {
+            Console.WriteLine($"Parent: {parent.Title}");
+        }
+
+        if (preselectedType is not null || parent is not null)
+        {
+            Console.WriteLine();
+        }
+
         Console.Write("Title: ");
         var title = Console.ReadLine();
 
@@ -31,16 +46,6 @@ public static class NodeCreationWorkflow
         if (nodeType is null)
         {
             return null;
-        }
-
-        if (preselectedType is not null)
-        {
-            Console.WriteLine($"Type: {nodeType.Name}");
-        }
-
-        if (parent is not null)
-        {
-            Console.WriteLine($"Parent: {parent.Title}");
         }
 
         var requestedSubNodeTypes =
