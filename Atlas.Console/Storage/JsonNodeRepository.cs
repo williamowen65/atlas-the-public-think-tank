@@ -93,6 +93,21 @@ public sealed class JsonNodeRepository : INodeRepository
                 storedNode.AuthorId = _legacyAuthorId.Value;
                 migrated = true;
             }
+
+            if (storedNode.RequestedSubNodeTypeIds is null)
+            {
+                var commentType = _nodeTypes
+                    .GetAll()
+                    .Single(type =>
+                        string.Equals(
+                            type.Name,
+                            "Comment",
+                            StringComparison.OrdinalIgnoreCase));
+
+                storedNode.RequestedSubNodeTypeIds =
+                    [commentType.Id.Value];
+                migrated = true;
+            }
         }
 
         if (migrated)
