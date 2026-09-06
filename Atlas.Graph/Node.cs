@@ -154,6 +154,13 @@ public sealed class Node
 
         Status = NodeStatus.Active;
         UpdatedAt = restoredAt;
+
+        _domainEvents.Add(
+        new NodeRestored(
+            Id.Value,
+            DescriptionId.Value,
+            restoredAt
+            ));
     }
 
     public void ReplaceDescriptionReference(

@@ -12,10 +12,10 @@
     "Id": "d80f9799-98ff-49bc-b4db-3d412c786b34",
     "Title": "Ideas to Improve Something",
     "DescriptionId": "a10ac7b0-69b2-4260-8b65-0b885d5949e9",
-    "Type": "Question",
+    "TypeId": "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
     "Status": "Active",
     "CreatedAt": "2026-09-05T19:29:01.8072604+00:00",
-    "UpdatedAt": "2026-09-05T19:29:01.8072604+00:00"
+    "UpdatedAt": "2026-09-06T02:54:02.8220165+00:00"
   },
   {
     "Id": "d91d959f-81ba-4cd1-999d-7bd39bf8156d",
