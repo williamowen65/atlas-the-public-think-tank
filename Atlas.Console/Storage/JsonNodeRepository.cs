@@ -165,6 +165,9 @@ public sealed class JsonNodeRepository : INodeRepository
             RequestedSubNodeTypeIds = node.RequestedSubNodeTypes
                 .Select(request => request.TypeId.Value)
                 .ToList(),
+            ParentNodeIds = node.ParentNodeIds
+                .Select(parentId => parentId.Value)
+                .ToList(),
             Status = node.Status.ToString(),
             CreatedAt = node.CreatedAt,
             UpdatedAt = node.UpdatedAt
@@ -194,6 +197,8 @@ public sealed class JsonNodeRepository : INodeRepository
             status,
             (storedNode.RequestedSubNodeTypeIds ?? [])
                 .Select(id => new NodeTypeId(id)),
+            (storedNode.ParentNodeIds ?? [])
+                .Select(id => new NodeId(id)),
             storedNode.CreatedAt,
             storedNode.UpdatedAt);
     }
