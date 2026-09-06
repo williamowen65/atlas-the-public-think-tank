@@ -194,6 +194,110 @@ public class NodeTests
                 DateTimeOffset.UtcNow));
     }
 
+
+    [TestMethod]
+    public void AttachToParent_AddsParentAndRecordsEvent()
+    {
+        var node = CreateNode("Climate adaptation");
+        node.ClearDomainEvents();
+        var parentId = NodeId.New();
+        var attachedAt = DateTimeOffset.UtcNow;
+
+        node.AttachToParent(parentId, attachedAt);
+
+        CollectionAssert.Contains(
+            node.ParentNodeIds.ToList(),
+            parentId);
+
+        var domainEvent = node.DomainEvents
+            .OfType<NodeParentAttachedV1>()
+            .Single();
+
+        Assert.AreEqual(node.Id.Value, domainEvent.NodeId);
+        Assert.AreEqual(parentId.Value, domainEvent.ParentNodeId);
+        Assert.AreEqual(attachedAt, domainEvent.OccurredAt);
+    }
+
+    [TestMethod]
+    public void AttachToParent_WhenAlreadyAttached_DoesNotDuplicate()
+    {
+        var node = CreateNode("Climate adaptation");
+        var parentId = NodeId.New();
+
+        node.AttachToParent(parentId, DateTimeOffset.UtcNow);
+        node.ClearDomainEvents();
+
+        node.AttachToParent(
+            parentId,
+            DateTimeOffset.UtcNow.AddMinutes(1));
+
+        Assert.AreEqual(1, node.ParentNodeIds.Count);
+        Assert.AreEqual(0, node.DomainEvents.Count);
+    }
+
+    [TestMethod]
+    public void AttachToParent_WhenParentIsSelf_Throws()
+    {
+        var node = CreateNode("Climate adaptation");
+
+        Assert.Throws<InvalidOperationException>(
+            () => node.AttachToParent(
+                node.Id,
+                DateTimeOffset.UtcNow));
+    }
+
+    [TestMethod]
+    public void AttachToParent_WithEmptyGuid_Throws()
+    {
+        var node = CreateNode("Climate adaptation");
+
+        Assert.Throws<ArgumentException>(
+            () => node.AttachToParent(
+                new NodeId(Guid.Empty),
+                DateTimeOffset.UtcNow));
+    }
+
+    [TestMethod]
+    public void DetachFromParent_RemovesParentAndRecordsEvent()
+    {
+        var node = CreateNode("Climate adaptation");
+        var parentId = NodeId.New();
+        node.AttachToParent(parentId, DateTimeOffset.UtcNow);
+        node.ClearDomainEvents();
+        var detachedAt = DateTimeOffset.UtcNow.AddMinutes(1);
+
+        node.DetachFromParent(parentId, detachedAt);
+
+        Assert.AreEqual(0, node.ParentNodeIds.Count);
+
+        var domainEvent = node.DomainEvents
+            .OfType<NodeParentDetachedV1>()
+            .Single();
+
+        Assert.AreEqual(parentId.Value, domainEvent.ParentNodeId);
+        Assert.AreEqual(detachedAt, domainEvent.OccurredAt);
+    }
+
+    [TestMethod]
+    public void Constructor_AllowsMultipleParents()
+    {
+        var firstParentId = NodeId.New();
+        var secondParentId = NodeId.New();
+
+        var node = new Node(
+            new NodeTitle("Relationship"),
+            new NodeDescriptionId(Guid.NewGuid()),
+            NodeTypeId.New(),
+            new NodeAuthorId(Guid.NewGuid()),
+            [],
+            [firstParentId, secondParentId],
+            DateTimeOffset.UtcNow);
+
+        CollectionAssert.AreEquivalent(
+            new[] { firstParentId, secondParentId },
+            node.ParentNodeIds.ToArray());
+    }
+
     private static Node CreateNode(string title)
     {
         return new Node(
