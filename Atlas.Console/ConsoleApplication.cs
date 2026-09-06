@@ -15,6 +15,7 @@ public sealed class ConsoleApplication
     private readonly string _actorId;
     private readonly string _nodeDataFilePath;
     private readonly string _nodeTypeDataFilePath;
+    private readonly string _documentDataFilePath;
 
     public ConsoleApplication(
         INodeRepository nodes,
@@ -23,7 +24,8 @@ public sealed class ConsoleApplication
         InMemoryEventPublisher eventPublisher,
         string actorId,
         string nodeDataFilePath,
-        string nodeTypeDataFilePath)
+        string nodeTypeDataFilePath,
+        string documentDataFilePath)
     {
         _nodes = nodes;
         _nodeTypes = nodeTypes;
@@ -32,6 +34,7 @@ public sealed class ConsoleApplication
         _actorId = actorId;
         _nodeDataFilePath = nodeDataFilePath;
         _nodeTypeDataFilePath = nodeTypeDataFilePath;
+        _documentDataFilePath = documentDataFilePath;
     }
 
     public void Run()
@@ -249,7 +252,7 @@ public sealed class ConsoleApplication
         if (documents.Count == 0)
         {
             Console.WriteLine(
-                "No Content documents have been created during this run.");
+                "No Content documents have been created.");
             Console.WriteLine();
             Console.WriteLine(
                 "Create a node to publish a NodeCreated event.");
@@ -273,6 +276,7 @@ public sealed class ConsoleApplication
     {
         ShowDataFile("NODE DATA", _nodeDataFilePath);
         ShowDataFile("NODE TYPE DATA", _nodeTypeDataFilePath);
+        ShowDataFile("CONTENT DOCUMENT DATA", _documentDataFilePath);
     }
 
     private static void ShowDataFile(
