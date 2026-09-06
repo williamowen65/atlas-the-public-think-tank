@@ -134,9 +134,10 @@ public static class NodeDisplay
             var matchingChildren = children
                 .Where(child => child.TypeId == typeId)
                 .ToList();
-            var heading =
-                $"{typeName.ToUpperInvariant()} SUB-NODES " +
-                $"({matchingChildren.Count})";
+            var heading = FormatTypeCount(
+                    typeName,
+                    matchingChildren.Count)
+                .ToUpperInvariant();
 
             Console.WriteLine();
             Console.WriteLine(heading);
@@ -146,7 +147,7 @@ public static class NodeDisplay
             if (matchingChildren.Count == 0)
             {
                 Console.WriteLine(
-                    $"No {typeName} sub-nodes have been added yet.");
+                    $"No {PluralizeTypeName(typeName)} have been added yet.");
                 continue;
             }
 
@@ -202,7 +203,7 @@ public static class NodeDisplay
                 var count = children.Count(
                     child => child.TypeId == typeId);
 
-                return $"{name} {count}";
+                return FormatTypeCount(name, count);
             }));
     }
 
@@ -268,6 +269,64 @@ public static class NodeDisplay
     {
         return nodeTypes.GetById(node.TypeId)?.Name
             ?? $"Unknown ({node.TypeId})";
+    }
+
+
+    public static string FormatTypeCount(
+        string singularTypeName,
+        int count)
+    {
+        var displayedName = count == 1
+            ? singularTypeName
+            : PluralizeTypeName(singularTypeName);
+
+        return $"{count} {displayedName}";
+    }
+
+    private static string PluralizeTypeName(string singularTypeName)
+    {
+        if (singularTypeName.EndsWith(
+                "Evidence",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return singularTypeName;
+        }
+
+        var finalWordStart =
+            singularTypeName.LastIndexOf(' ') + 1;
+        var prefix = singularTypeName[..finalWordStart];
+        var finalWord = singularTypeName[finalWordStart..];
+
+        if (finalWord.EndsWith(
+                "y",
+                StringComparison.OrdinalIgnoreCase) &&
+            finalWord.Length > 1 &&
+            !"aeiou".Contains(
+                char.ToLowerInvariant(finalWord[^2])))
+        {
+            return prefix + finalWord[..^1] + "ies";
+        }
+
+        if (finalWord.EndsWith(
+                "s",
+                StringComparison.OrdinalIgnoreCase) ||
+            finalWord.EndsWith(
+                "x",
+                StringComparison.OrdinalIgnoreCase) ||
+            finalWord.EndsWith(
+                "z",
+                StringComparison.OrdinalIgnoreCase) ||
+            finalWord.EndsWith(
+                "ch",
+                StringComparison.OrdinalIgnoreCase) ||
+            finalWord.EndsWith(
+                "sh",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return prefix + finalWord + "es";
+        }
+
+        return prefix + finalWord + "s";
     }
 
     private static string Truncate(string value, int maximumLength)
