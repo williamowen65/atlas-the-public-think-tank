@@ -11,7 +11,8 @@ public static class NodeDisplay
     private const int TypeWidth = 14;
     private const int AuthorWidth = 20;
     private const int DescriptionWidth = 32;
-    private const int SubNodesWidth = 36;
+    private const int StatusWidth = 10;
+    private const int SubNodesMinimumWidth = 36;
 
     public static void WriteTableHeader()
     {
@@ -21,10 +22,10 @@ public static class NodeDisplay
             $"{"Type",-TypeWidth}  " +
             $"{"Authored By",-AuthorWidth}  " +
             $"{"Description",-DescriptionWidth}  " +
-            $"{"Sub-nodes",-SubNodesWidth}  " +
             $"{"Votes",5}  " +
             $"{"Avg",5}  " +
-            "Status");
+            $"{"Status",-StatusWidth}  " +
+            "Sub-nodes");
 
         Console.WriteLine(
             new string(
@@ -34,10 +35,10 @@ public static class NodeDisplay
                 TypeWidth + 2 +
                 AuthorWidth + 2 +
                 DescriptionWidth + 2 +
-                SubNodesWidth + 2 +
                 5 + 2 +
                 5 + 2 +
-                10));
+                StatusWidth + 2 +
+                SubNodesMinimumWidth));
     }
 
     public static void WriteTableRow(
@@ -61,10 +62,10 @@ public static class NodeDisplay
             $"{Truncate(typeName, TypeWidth),-TypeWidth}  " +
             $"{Truncate(authorName, AuthorWidth),-AuthorWidth}  " +
             $"{Truncate(description, DescriptionWidth),-DescriptionWidth}  " +
-            $"{Truncate(subNodeSummary, SubNodesWidth),-SubNodesWidth}  " +
             $"{FormatVoteCount(voteCount),5}  " +
             $"{FormatAverageVote(averageVote),5}  " +
-            node.Status);
+            $"{node.Status,-StatusWidth}  " +
+            subNodeSummary);
     }
 
     public static void WriteDetails(
