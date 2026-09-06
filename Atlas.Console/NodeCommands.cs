@@ -31,7 +31,8 @@ public static class NodeCommands
             Console.WriteLine("3. Change type");
             Console.WriteLine("4. Archive");
             Console.WriteLine("5. Restore");
-            Console.WriteLine("6. Return to node browser");
+            Console.WriteLine("6. Change requested sub-node types");
+            Console.WriteLine("7. Return to node browser");
             Console.WriteLine();
 
             Console.Write("Selection: ");
@@ -71,6 +72,13 @@ public static class NodeCommands
                         break;
 
                     case "6":
+                        ChangeRequestedSubNodeTypes(
+                            node,
+                            nodes,
+                            nodeTypes);
+                        break;
+
+                    case "7":
                         viewingNode = false;
                         break;
 
@@ -98,6 +106,48 @@ public static class NodeCommands
         }
 
         node.ClearDomainEvents();
+    }
+
+
+    private static void ChangeRequestedSubNodeTypes(
+        Node node,
+        INodeRepository nodes,
+        INodeTypeRepository nodeTypes)
+    {
+        var selectedTypes =
+            ConsoleUi.ReadRequestedSubNodeTypes(nodeTypes);
+
+        if (selectedTypes.Count == 0)
+        {
+            return;
+        }
+
+        var selectedTypeIds = selectedTypes
+            .Select(type => type.Id)
+            .ToHashSet();
+        var changedAt = DateTimeOffset.UtcNow;
+
+        foreach (var existingRequest in
+                 node.RequestedSubNodeTypes.ToList())
+        {
+            if (!selectedTypeIds.Contains(existingRequest.TypeId))
+            {
+                node.StopRequestingSubNodeType(
+                    existingRequest.TypeId,
+                    changedAt);
+            }
+        }
+
+        foreach (var selectedTypeId in selectedTypeIds)
+        {
+            node.RequestSubNodeType(
+                selectedTypeId,
+                changedAt);
+        }
+
+        nodes.Save(node);
+        ConsoleUi.Pause(
+            "Requested sub-node types updated and saved.");
     }
 
     private static void Rename(Node node, INodeRepository nodes)
