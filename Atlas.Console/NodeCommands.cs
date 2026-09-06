@@ -156,13 +156,6 @@ public static class NodeCommands
             .OrderBy(type => type.Name)
             .ToList();
 
-        if (availableTypes.Count == 0)
-        {
-            ConsoleUi.Pause(
-                "This node does not request any available sub-node types.");
-            return;
-        }
-
         var existingChildren = nodes
             .GetAll()
             .Where(candidate =>
@@ -182,12 +175,16 @@ public static class NodeCommands
                 $"{index + 1}. {type.Name} ({count})");
         }
 
+        var createTypeSelection = availableTypes.Count + 1;
+
+        Console.WriteLine(
+            $"{createTypeSelection}. Create a custom sub-node type");
         Console.WriteLine("0. Cancel");
         Console.Write("Type: ");
 
         if (!int.TryParse(Console.ReadLine(), out var selection) ||
             selection < 0 ||
-            selection > availableTypes.Count)
+            selection > createTypeSelection)
         {
             ConsoleUi.Pause("That is not a valid type selection.");
             return;
@@ -198,10 +195,38 @@ public static class NodeCommands
             return;
         }
 
-        var selectedType = availableTypes[selection - 1];
+        NodeTypeDefinition? selectedType;
+
+        if (selection == createTypeSelection)
+        {
+            selectedType = ConsoleUi.CreateCustomNodeType(
+                nodeTypes,
+                author.Id.Value.ToString());
+
+            if (selectedType is null)
+            {
+                return;
+            }
+
+            parent.RequestSubNodeType(
+                selectedType.Id,
+                DateTimeOffset.UtcNow);
+
+            nodes.Save(parent);
+
+            Console.WriteLine();
+            Console.WriteLine(
+                $"{selectedType.Name} is now globally available " +
+                $"and requested by {parent.Title}.");
+        }
+        else
+        {
+            selectedType = availableTypes[selection - 1];
+        }
 
         Console.Clear();
-        Console.WriteLine($"ADD {selectedType.Name.ToUpperInvariant()} SUB-NODE");
+        Console.WriteLine(
+            $"ADD {selectedType.Name.ToUpperInvariant()} SUB-NODE");
         Console.WriteLine(
             new string(
                 '-',
