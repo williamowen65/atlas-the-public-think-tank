@@ -129,14 +129,18 @@ public static class NodeDisplay
 
         foreach (var typeId in typeIds)
         {
-            var typeName = nodeTypes.GetById(typeId)?.Name
+            var nodeType = nodeTypes.GetById(typeId);
+            var typeName = nodeType?.Name
                 ?? $"Unknown ({typeId})";
+            var autoPluralize =
+                nodeType?.AutoPluralize ?? true;
             var matchingChildren = children
                 .Where(child => child.TypeId == typeId)
                 .ToList();
             var heading = FormatTypeCount(
                     typeName,
-                    matchingChildren.Count)
+                    matchingChildren.Count,
+                    autoPluralize)
                 .ToUpperInvariant();
 
             Console.WriteLine();
@@ -147,7 +151,8 @@ public static class NodeDisplay
             if (matchingChildren.Count == 0)
             {
                 Console.WriteLine(
-                    $"No {PluralizeTypeName(typeName)} have been added yet.");
+                    $"No {PluralizeTypeName(typeName, autoPluralize)} " +
+                    "have been added yet.");
                 continue;
             }
 
@@ -198,12 +203,16 @@ public static class NodeDisplay
             " · ",
             typeIds.Select(typeId =>
             {
-                var name = nodeTypes.GetById(typeId)?.Name
+                var nodeType = nodeTypes.GetById(typeId);
+                var name = nodeType?.Name
                     ?? "Unknown";
                 var count = children.Count(
                     child => child.TypeId == typeId);
 
-                return FormatTypeCount(name, count);
+                return FormatTypeCount(
+                    name,
+                    count,
+                    nodeType?.AutoPluralize ?? true);
             }));
     }
 
@@ -274,20 +283,23 @@ public static class NodeDisplay
 
     public static string FormatTypeCount(
         string singularTypeName,
-        int count)
+        int count,
+        bool autoPluralize)
     {
         var displayedName = count == 1
             ? singularTypeName
-            : PluralizeTypeName(singularTypeName);
+            : PluralizeTypeName(
+                singularTypeName,
+                autoPluralize);
 
         return $"{count} {displayedName}";
     }
 
-    private static string PluralizeTypeName(string singularTypeName)
+    private static string PluralizeTypeName(
+        string singularTypeName,
+        bool autoPluralize)
     {
-        if (singularTypeName.EndsWith(
-                "Evidence",
-                StringComparison.OrdinalIgnoreCase))
+        if (!autoPluralize)
         {
             return singularTypeName;
         }
