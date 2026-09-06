@@ -284,14 +284,14 @@ public class NodeTests
         var firstParentId = NodeId.New();
         var secondParentId = NodeId.New();
 
-        var node = new Node(
-            new NodeTitle("Relationship"),
-            new NodeDescriptionId(Guid.NewGuid()),
-            NodeTypeId.New(),
-            new NodeAuthorId(Guid.NewGuid()),
-            [],
-            [firstParentId, secondParentId],
+        var node = CreateNode("Relationship");
+
+        node.AttachToParent(
+            firstParentId,
             DateTimeOffset.UtcNow);
+        node.AttachToParent(
+            secondParentId,
+            DateTimeOffset.UtcNow.AddMinutes(1));
 
         CollectionAssert.AreEquivalent(
             new[] { firstParentId, secondParentId },
