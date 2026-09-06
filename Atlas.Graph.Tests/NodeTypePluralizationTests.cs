@@ -43,7 +43,7 @@ public class NodeTypePluralizationTests
             false,
             "participant-id",
             actorIsModerator: false,
-            DateTimeOffset.UtcNow.AddMinutes(1));
+            changedAt: DateTimeOffset.UtcNow.AddMinutes(1));
 
         Assert.IsFalse(nodeType.AutoPluralize);
     }
