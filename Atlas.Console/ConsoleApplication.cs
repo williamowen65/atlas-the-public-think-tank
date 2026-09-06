@@ -3,6 +3,7 @@ using Atlas.Content.Documents;
 using Atlas.Graph;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
+using Atlas.Participants.Participants;
 
 namespace Atlas.ConsoleApp;
 
@@ -11,30 +12,39 @@ public sealed class ConsoleApplication
     private readonly INodeRepository _nodes;
     private readonly INodeTypeRepository _nodeTypes;
     private readonly IDocumentRepository _documents;
+    private readonly IParticipantRepository _participants;
     private readonly InMemoryEventPublisher _eventPublisher;
+    private Participant _currentParticipant;
     private readonly string _actorId;
     private readonly string _nodeDataFilePath;
     private readonly string _nodeTypeDataFilePath;
     private readonly string _documentDataFilePath;
+    private readonly string _participantDataFilePath;
 
     public ConsoleApplication(
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
+        IParticipantRepository participants,
         InMemoryEventPublisher eventPublisher,
         string actorId,
         string nodeDataFilePath,
         string nodeTypeDataFilePath,
-        string documentDataFilePath)
+        string documentDataFilePath,
+        string participantDataFilePath,
+        Participant initialParticipant)
     {
         _nodes = nodes;
         _nodeTypes = nodeTypes;
         _documents = documents;
+        _participants = participants;
         _eventPublisher = eventPublisher;
+        _currentParticipant = initialParticipant;
         _actorId = actorId;
         _nodeDataFilePath = nodeDataFilePath;
         _nodeTypeDataFilePath = nodeTypeDataFilePath;
         _documentDataFilePath = documentDataFilePath;
+        _participantDataFilePath = participantDataFilePath;
     }
 
     public void Run()
@@ -51,48 +61,134 @@ public sealed class ConsoleApplication
             switch (Console.ReadLine())
             {
                 case "1":
-                    CreateNode();
+                    SelectParticipant();
                     break;
 
                 case "2":
-                    BrowseNodes();
+                    CreateParticipant();
                     break;
 
                 case "3":
-                    ListNodeTypes();
+                    CreateNode();
                     break;
 
                 case "4":
-                    ShowDataFiles();
+                    BrowseNodes();
                     break;
 
                 case "5":
-                    ListContentDocuments();
+                    ListNodeTypes();
                     break;
 
                 case "6":
+                    ShowDataFiles();
+                    break;
+
+                case "7":
+                    ListContentDocuments();
+                    break;
+
+                case "8":
                     running = false;
                     break;
 
                 default:
                     ConsoleUi.Pause(
-                        "Please select an option from 1 through 6.");
+                        "Please select an option from 1 through 8.");
                     break;
             }
         }
     }
 
-    private static void WriteMainMenu()
+    private void WriteMainMenu()
     {
         Console.WriteLine("ATLAS");
         Console.WriteLine("-----");
-        Console.WriteLine("1. Create node");
-        Console.WriteLine("2. Browse nodes");
-        Console.WriteLine("3. List node types");
-        Console.WriteLine("4. Show data files");
-        Console.WriteLine("5. List Content documents");
-        Console.WriteLine("6. Exit");
+        Console.WriteLine(
+            $"Current participant: {_currentParticipant.DisplayName}");
         Console.WriteLine();
+        Console.WriteLine("1. Select participant");
+        Console.WriteLine("2. Create participant");
+        Console.WriteLine("3. Create node");
+        Console.WriteLine("4. Browse nodes");
+        Console.WriteLine("5. List node types");
+        Console.WriteLine("6. Show data files");
+        Console.WriteLine("7. List Content documents");
+        Console.WriteLine("8. Exit");
+        Console.WriteLine();
+    }
+
+
+    private void SelectParticipant()
+    {
+        Console.Clear();
+        Console.WriteLine("SELECT PARTICIPANT");
+        Console.WriteLine("------------------");
+
+        var participants = _participants
+            .GetAll()
+            .Where(participant => participant.IsActive)
+            .OrderBy(participant => participant.DisplayName)
+            .ToList();
+
+        for (var index = 0; index < participants.Count; index++)
+        {
+            Console.WriteLine(
+                $"{index + 1}. {participants[index].DisplayName}");
+        }
+
+        Console.WriteLine();
+        Console.Write("Selection (0 cancels): ");
+
+        if (!int.TryParse(Console.ReadLine(), out var selection) ||
+            selection < 0 ||
+            selection > participants.Count)
+        {
+            ConsoleUi.Pause("That is not a valid selection.");
+            return;
+        }
+
+        if (selection == 0)
+        {
+            return;
+        }
+
+        _currentParticipant = participants[selection - 1];
+
+        ConsoleUi.Pause(
+            $"Current participant: {_currentParticipant.DisplayName}");
+    }
+
+    private void CreateParticipant()
+    {
+        Console.Clear();
+        Console.WriteLine("CREATE PARTICIPANT");
+        Console.WriteLine("------------------");
+        Console.Write("Display name: ");
+        var displayName = Console.ReadLine();
+
+        try
+        {
+            var participant = new Participant(
+                displayName ?? string.Empty,
+                DateTimeOffset.UtcNow);
+
+            _participants.Save(participant);
+            _currentParticipant = participant;
+
+            ConsoleUi.Pause(
+                $"Created and selected {participant.DisplayName}.");
+        }
+        catch (ArgumentException exception)
+        {
+            ConsoleUi.Pause(
+                $"Unable to create participant: {exception.Message}");
+        }
+        catch (InvalidOperationException exception)
+        {
+            ConsoleUi.Pause(
+                $"Unable to create participant: {exception.Message}");
+        }
     }
 
     private void CreateNode()
@@ -136,6 +232,7 @@ public sealed class ConsoleApplication
                 nodeTitle,
                 new NodeDescriptionId(document.Id.Value),
                 nodeType.Id,
+                new NodeAuthorId(_currentParticipant.Id.Value),
                 now);
 
             _nodes.Save(node);
@@ -188,6 +285,7 @@ public sealed class ConsoleApplication
                     nodes[index],
                     _nodeTypes,
                     _documents,
+                    _participants,
                     index + 1);
             }
 
@@ -220,6 +318,7 @@ public sealed class ConsoleApplication
                 _nodes,
                 _nodeTypes,
                 _documents,
+                _participants,
                 _eventPublisher,
                 _actorId);
         }
@@ -295,6 +394,7 @@ public sealed class ConsoleApplication
         ShowDataFile("NODE DATA", _nodeDataFilePath);
         ShowDataFile("NODE TYPE DATA", _nodeTypeDataFilePath);
         ShowDataFile("CONTENT DOCUMENT DATA", _documentDataFilePath);
+        ShowDataFile("PARTICIPANT DATA", _participantDataFilePath);
     }
 
     private static void ShowDataFile(
