@@ -173,7 +173,8 @@ public static class NodeCommands
                 child => child.TypeId == type.Id);
 
             Console.WriteLine(
-                $"{index + 1}. {type.Name} ({count})");
+                $"{index + 1}. " +
+                NodeDisplay.FormatTypeCount(type.Name, count));
         }
 
         var createTypeSelection = availableTypes.Count + 1;
@@ -279,8 +280,10 @@ public static class NodeCommands
         for (var index = 0; index < childGroups.Count; index++)
         {
             Console.WriteLine(
-                $"{index + 1}. {childGroups[index].TypeName} " +
-                $"({childGroups[index].Children.Count})");
+                $"{index + 1}. " +
+                NodeDisplay.FormatTypeCount(
+                    childGroups[index].TypeName,
+                    childGroups[index].Children.Count));
         }
 
         Console.WriteLine("0. Cancel");
