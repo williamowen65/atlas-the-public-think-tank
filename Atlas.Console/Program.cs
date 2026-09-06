@@ -26,6 +26,10 @@ var nodeTypeDataFilePath = Path.Combine(
     dataDirectory,
     "node-types.json");
 
+var documentDataFilePath = Path.Combine(
+    dataDirectory,
+    "documents.json");
+
 INodeTypeRepository nodeTypeRepository =
     new JsonNodeTypeRepository(nodeTypeDataFilePath);
 
@@ -37,7 +41,7 @@ INodeRepository nodeRepository =
         nodeTypeRepository);
 
 IDocumentRepository documentRepository =
-    new InMemoryDocumentRepository();
+    new JsonDocumentRepository(documentDataFilePath);
 
 var eventPublisher = new InMemoryEventPublisher();
 
@@ -54,7 +58,8 @@ var application = new ConsoleApplication(
     eventPublisher,
     ConsoleActorId,
     nodeDataFilePath,
-    nodeTypeDataFilePath);
+    nodeTypeDataFilePath,
+    documentDataFilePath);
 
 application.Run();
 
