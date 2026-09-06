@@ -49,7 +49,9 @@ public static class NodeCreationWorkflow
         }
 
         var requestedSubNodeTypes =
-            ConsoleUi.ReadRequestedSubNodeTypes(nodeTypes);
+            ConsoleUi.ReadRequestedSubNodeTypes(
+                nodeTypes,
+                author.Id.Value.ToString());
 
         if (requestedSubNodeTypes.Count == 0)
         {
