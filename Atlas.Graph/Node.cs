@@ -1,37 +1,25 @@
-﻿using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Contracts.Graph.V1;
+using Atlas.Graph.Nodes.NodeTypes;
 
 namespace Atlas.Graph.Nodes;
 
 public sealed class Node
 {
-
     private readonly List<object> _domainEvents = [];
+    private readonly List<RequestedSubNodeType> _requestedSubNodeTypes;
 
     public IReadOnlyCollection<object> DomainEvents =>
-     _domainEvents.AsReadOnly();
+        _domainEvents.AsReadOnly();
 
+    public IReadOnlyCollection<RequestedSubNodeType> RequestedSubNodeTypes =>
+        _requestedSubNodeTypes.AsReadOnly();
 
     public NodeId Id { get; }
     public NodeTitle Title { get; private set; }
     public NodeTypeId TypeId { get; private set; }
     public NodeStatus Status { get; private set; }
-
     public NodeDescriptionId DescriptionId { get; private set; }
     public NodeAuthorId AuthorId { get; }
-
-    /*
-     The interaction might be:
-
-        Graph creates a node.
-        Content creates a description document associated with that node.
-        Content returns or publishes the document ID.
-        Graph records that ID as its description reference.
-        A UI-facing composition layer requests the node from Graph and its document from Content.
-        The composition layer combines them into one screen model.
-     */
-    //public DocumentId DescriptionId { get; private set; }
-
     public DateTimeOffset CreatedAt { get; }
     public DateTimeOffset UpdatedAt { get; private set; }
 
@@ -40,6 +28,23 @@ public sealed class Node
         NodeDescriptionId descriptionId,
         NodeTypeId typeId,
         NodeAuthorId authorId,
+        DateTimeOffset createdAt)
+        : this(
+            title,
+            descriptionId,
+            typeId,
+            authorId,
+            [],
+            createdAt)
+    {
+    }
+
+    public Node(
+        NodeTitle title,
+        NodeDescriptionId descriptionId,
+        NodeTypeId typeId,
+        NodeAuthorId authorId,
+        IEnumerable<NodeTypeId> requestedSubNodeTypeIds,
         DateTimeOffset createdAt)
     {
         Id = NodeId.New();
@@ -50,16 +55,17 @@ public sealed class Node
         Status = NodeStatus.Active;
         CreatedAt = createdAt;
         UpdatedAt = createdAt;
+        _requestedSubNodeTypes =
+            CreateRequestedSubNodeTypes(requestedSubNodeTypeIds);
 
         _domainEvents.Add(
-          new NodeCreatedV1(
-              Id.Value,
-              DescriptionId.Value,
-              AuthorId.Value,
-              createdAt));
+            new NodeCreatedV1(
+                Id.Value,
+                DescriptionId.Value,
+                AuthorId.Value,
+                createdAt));
     }
 
-    // create a new node
     private Node(
         NodeId id,
         NodeTitle title,
@@ -67,6 +73,7 @@ public sealed class Node
         NodeTypeId typeId,
         NodeAuthorId authorId,
         NodeStatus status,
+        IEnumerable<NodeTypeId> requestedSubNodeTypeIds,
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt)
     {
@@ -84,9 +91,10 @@ public sealed class Node
         Status = status;
         CreatedAt = createdAt;
         UpdatedAt = updatedAt;
+        _requestedSubNodeTypes =
+            CreateRequestedSubNodeTypes(requestedSubNodeTypeIds);
     }
 
-    // restore an existing node
     public static Node Reconstitute(
         NodeId id,
         NodeTitle title,
@@ -97,6 +105,29 @@ public sealed class Node
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt)
     {
+        return Reconstitute(
+            id,
+            title,
+            descriptionId,
+            typeId,
+            authorId,
+            status,
+            [],
+            createdAt,
+            updatedAt);
+    }
+
+    public static Node Reconstitute(
+        NodeId id,
+        NodeTitle title,
+        NodeDescriptionId descriptionId,
+        NodeTypeId typeId,
+        NodeAuthorId authorId,
+        NodeStatus status,
+        IEnumerable<NodeTypeId> requestedSubNodeTypeIds,
+        DateTimeOffset createdAt,
+        DateTimeOffset updatedAt)
+    {
         return new Node(
             id,
             title,
@@ -104,6 +135,7 @@ public sealed class Node
             typeId,
             authorId,
             status,
+            requestedSubNodeTypeIds,
             createdAt,
             updatedAt);
     }
@@ -119,8 +151,6 @@ public sealed class Node
 
         Title = newTitle;
         UpdatedAt = changedAt;
-
- 
     }
 
     public void ChangeType(
@@ -136,6 +166,35 @@ public sealed class Node
         UpdatedAt = changedAt;
     }
 
+    public void RequestSubNodeType(
+        NodeTypeId typeId,
+        DateTimeOffset changedAt)
+    {
+        var requestedType = new RequestedSubNodeType(typeId);
+
+        if (_requestedSubNodeTypes.Contains(requestedType))
+        {
+            return;
+        }
+
+        _requestedSubNodeTypes.Add(requestedType);
+        UpdatedAt = changedAt;
+    }
+
+    public void StopRequestingSubNodeType(
+        NodeTypeId typeId,
+        DateTimeOffset changedAt)
+    {
+        var requestedType = new RequestedSubNodeType(typeId);
+
+        if (!_requestedSubNodeTypes.Remove(requestedType))
+        {
+            return;
+        }
+
+        UpdatedAt = changedAt;
+    }
+
     public void Archive(DateTimeOffset archivedAt)
     {
         if (Status == NodeStatus.Archived)
@@ -147,12 +206,11 @@ public sealed class Node
         UpdatedAt = archivedAt;
 
         _domainEvents.Add(
-           new NodeArchivedV1(
-               Id.Value,
-               DescriptionId.Value,
-               AuthorId.Value,
-               archivedAt
-               ));
+            new NodeArchivedV1(
+                Id.Value,
+                DescriptionId.Value,
+                AuthorId.Value,
+                archivedAt));
     }
 
     public void Restore(DateTimeOffset restoredAt)
@@ -166,12 +224,11 @@ public sealed class Node
         UpdatedAt = restoredAt;
 
         _domainEvents.Add(
-        new NodeRestoredV1(
-            Id.Value,
-            DescriptionId.Value,
-            AuthorId.Value,
-            restoredAt
-            ));
+            new NodeRestoredV1(
+                Id.Value,
+                DescriptionId.Value,
+                AuthorId.Value,
+                restoredAt));
     }
 
     public void ReplaceDescriptionReference(
@@ -190,5 +247,17 @@ public sealed class Node
     public void ClearDomainEvents()
     {
         _domainEvents.Clear();
+    }
+
+    private static List<RequestedSubNodeType>
+        CreateRequestedSubNodeTypes(
+            IEnumerable<NodeTypeId> typeIds)
+    {
+        ArgumentNullException.ThrowIfNull(typeIds);
+
+        return typeIds
+            .Select(typeId => new RequestedSubNodeType(typeId))
+            .Distinct()
+            .ToList();
     }
 }
