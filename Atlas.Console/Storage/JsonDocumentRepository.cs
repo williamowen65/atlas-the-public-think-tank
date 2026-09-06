@@ -34,16 +34,6 @@ public sealed class JsonDocumentRepository : IDocumentRepository
             : ToDomain(storedDocument);
     }
 
-    public Document? GetByNodeId(Guid nodeId)
-    {
-        var storedDocument = ReadStoredDocuments()
-            .SingleOrDefault(document => document.NodeId == nodeId);
-
-        return storedDocument is null
-            ? null
-            : ToDomain(storedDocument);
-    }
-
     public void Save(Document document)
     {
         ArgumentNullException.ThrowIfNull(document);
@@ -52,15 +42,6 @@ public sealed class JsonDocumentRepository : IDocumentRepository
 
         var existingIndex = storedDocuments.FindIndex(
             storedDocument => storedDocument.Id == document.Id.Value);
-
-        var nodeDocumentIndex = storedDocuments.FindIndex(
-            storedDocument => storedDocument.NodeId == document.NodeId);
-
-        if (nodeDocumentIndex >= 0 && nodeDocumentIndex != existingIndex)
-        {
-            throw new InvalidOperationException(
-                $"Node {document.NodeId} already has a content document.");
-        }
 
         var replacement = ToStorage(document);
 
@@ -115,7 +96,6 @@ public sealed class JsonDocumentRepository : IDocumentRepository
         return new StoredDocument
         {
             Id = document.Id.Value,
-            NodeId = document.NodeId,
             Content = document.Content,
             CreatedAt = document.CreatedAt
         };
@@ -125,7 +105,6 @@ public sealed class JsonDocumentRepository : IDocumentRepository
     {
         return Document.Reconstitute(
             new DocumentId(storedDocument.Id),
-            storedDocument.NodeId,
             storedDocument.Content,
             storedDocument.CreatedAt);
     }
