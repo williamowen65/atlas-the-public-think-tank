@@ -1,4 +1,5 @@
 ﻿using Atlas.Graph.Nodes.NodeTypes;
+using Atlas.Contracts.Graph;
 
 namespace Atlas.Graph.Nodes;
 
@@ -51,7 +52,7 @@ public sealed class Node
         UpdatedAt = createdAt;
 
         _domainEvents.Add(
-          new NodeCreated(
+          new NodeCreatedV1(
               Id.Value,
               DescriptionId.Value,
               AuthorId.Value,
@@ -146,7 +147,7 @@ public sealed class Node
         UpdatedAt = archivedAt;
 
         _domainEvents.Add(
-           new NodeArchived(
+           new NodeArchivedV1(
                Id.Value,
                DescriptionId.Value,
                AuthorId.Value,
@@ -165,7 +166,7 @@ public sealed class Node
         UpdatedAt = restoredAt;
 
         _domainEvents.Add(
-        new NodeRestored(
+        new NodeRestoredV1(
             Id.Value,
             AuthorId.Value,
             DescriptionId.Value,
