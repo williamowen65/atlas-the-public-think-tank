@@ -1,3 +1,4 @@
+using Atlas.ConsoleApp.Eventing;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
@@ -11,6 +12,7 @@ public static class NodeCommands
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
+        InMemoryEventPublisher eventPublisher,
         string actorId)
     {
         var viewingNode = true;
@@ -55,12 +57,14 @@ public static class NodeCommands
                     case "4":
                         node.Archive(DateTimeOffset.UtcNow);
                         nodes.Save(node);
+                        PublishDomainEvents(node, eventPublisher);
                         ConsoleUi.Pause("Node archived and saved.");
                         break;
 
                     case "5":
                         node.Restore(DateTimeOffset.UtcNow);
                         nodes.Save(node);
+                        PublishDomainEvents(node, eventPublisher);
                         ConsoleUi.Pause("Node restored and saved.");
                         break;
 
@@ -79,6 +83,19 @@ public static class NodeCommands
                     $"Unable to update node: {exception.Message}");
             }
         }
+    }
+
+
+    private static void PublishDomainEvents(
+        Node node,
+        InMemoryEventPublisher eventPublisher)
+    {
+        foreach (var domainEvent in node.DomainEvents)
+        {
+            eventPublisher.Publish(domainEvent);
+        }
+
+        node.ClearDomainEvents();
     }
 
     private static void Rename(Node node, INodeRepository nodes)
