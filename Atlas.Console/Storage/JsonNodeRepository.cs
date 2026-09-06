@@ -11,6 +11,7 @@ public sealed class JsonNodeRepository : INodeRepository
     private readonly string _filePath;
     private readonly INodeTypeRepository _nodeTypes;
     private readonly IDocumentRepository _documents;
+    private readonly NodeAuthorId _legacyAuthorId;
 
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
@@ -21,11 +22,13 @@ public sealed class JsonNodeRepository : INodeRepository
     public JsonNodeRepository(
         string filePath,
         INodeTypeRepository nodeTypes,
-        IDocumentRepository documents)
+        IDocumentRepository documents,
+        NodeAuthorId legacyAuthorId)
     {
         _filePath = filePath;
         _nodeTypes = nodeTypes;
         _documents = documents;
+        _legacyAuthorId = legacyAuthorId;
     }
 
     public IReadOnlyCollection<Node> GetAll()
@@ -71,20 +74,25 @@ public sealed class JsonNodeRepository : INodeRepository
 
         foreach (var storedNode in storedNodes)
         {
-            if (storedNode.DescriptionId is Guid descriptionId &&
-                descriptionId != Guid.Empty)
+            if (storedNode.DescriptionId is not Guid descriptionId ||
+                descriptionId == Guid.Empty)
             {
-                continue;
+                var document = new Document(
+                    storedNode.Description ?? string.Empty,
+                    storedNode.CreatedAt);
+
+                _documents.Save(document);
+                storedNode.DescriptionId = document.Id.Value;
+                storedNode.Description = null;
+                migrated = true;
             }
 
-            var document = new Document(
-                storedNode.Description ?? string.Empty,
-                storedNode.CreatedAt);
-
-            _documents.Save(document);
-            storedNode.DescriptionId = document.Id.Value;
-            storedNode.Description = null;
-            migrated = true;
+            if (storedNode.AuthorId is not Guid authorId ||
+                authorId == Guid.Empty)
+            {
+                storedNode.AuthorId = _legacyAuthorId.Value;
+                migrated = true;
+            }
         }
 
         if (migrated)
@@ -138,6 +146,7 @@ public sealed class JsonNodeRepository : INodeRepository
             Description = null,
             TypeId = node.TypeId.Value,
             Type = null,
+            AuthorId = node.AuthorId.Value,
             Status = node.Status.ToString(),
             CreatedAt = node.CreatedAt,
             UpdatedAt = node.UpdatedAt
@@ -154,11 +163,16 @@ public sealed class JsonNodeRepository : INodeRepository
             ?? throw new InvalidDataException(
                 $"Node {storedNode.Id} has no description ID.");
 
+        var authorId = storedNode.AuthorId
+            ?? throw new InvalidDataException(
+                $"Node {storedNode.Id} has no author ID.");
+
         return Node.Reconstitute(
             new NodeId(storedNode.Id),
             new NodeTitle(storedNode.Title),
             new NodeDescriptionId(descriptionId),
             ResolveTypeId(storedNode),
+            new NodeAuthorId(authorId),
             status,
             storedNode.CreatedAt,
             storedNode.UpdatedAt);
