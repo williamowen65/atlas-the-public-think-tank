@@ -6,6 +6,7 @@
     "OwnerId": null,
     "IsSystemDefined": true,
     "IsArchived": false,
+    "AutoPluralize": true,
     "CreatedAt": "2026-09-05T20:05:52.2412336+00:00",
     "UpdatedAt": "2026-09-05T20:05:52.2412336+00:00"
   },
@@ -16,6 +17,7 @@
     "OwnerId": null,
     "IsSystemDefined": true,
     "IsArchived": false,
+    "AutoPluralize": true,
     "CreatedAt": "2026-09-05T20:05:52.2412336+00:00",
     "UpdatedAt": "2026-09-05T20:05:52.2412336+00:00"
   },
@@ -26,6 +28,7 @@
     "OwnerId": null,
     "IsSystemDefined": true,
     "IsArchived": false,
+    "AutoPluralize": true,
     "CreatedAt": "2026-09-05T20:05:52.2412336+00:00",
     "UpdatedAt": "2026-09-05T20:05:52.2412336+00:00"
   },
@@ -36,6 +39,7 @@
     "OwnerId": null,
     "IsSystemDefined": true,
     "IsArchived": false,
+    "AutoPluralize": true,
     "CreatedAt": "2026-09-05T20:05:52.2412336+00:00",
     "UpdatedAt": "2026-09-05T20:05:52.2412336+00:00"
   },
@@ -46,8 +50,9 @@
     "OwnerId": null,
     "IsSystemDefined": true,
     "IsArchived": false,
+    "AutoPluralize": false,
     "CreatedAt": "2026-09-05T20:05:52.2412336+00:00",
-    "UpdatedAt": "2026-09-05T20:05:52.2412336+00:00"
+    "UpdatedAt": "2026-09-06T17:47:54.206973+00:00"
   },
   {
     "Id": "d0ac2786-c2a4-407c-9b7c-6e82fd8121c9",
@@ -56,6 +61,7 @@
     "OwnerId": null,
     "IsSystemDefined": true,
     "IsArchived": false,
+    "AutoPluralize": true,
     "CreatedAt": "2026-09-05T20:05:52.2412336+00:00",
     "UpdatedAt": "2026-09-05T20:05:52.2412336+00:00"
   },
@@ -66,7 +72,30 @@
     "OwnerId": "console-user",
     "IsSystemDefined": false,
     "IsArchived": false,
+    "AutoPluralize": null,
     "CreatedAt": "2026-09-05T20:08:02.7354505+00:00",
     "UpdatedAt": "2026-09-05T20:08:02.7354505+00:00"
+  },
+  {
+    "Id": "a253f4b5-1cf9-4da7-9a55-807cf1cb64b8",
+    "Name": "Comment",
+    "Description": "A response or observation about another node.",
+    "OwnerId": null,
+    "IsSystemDefined": true,
+    "IsArchived": false,
+    "AutoPluralize": true,
+    "CreatedAt": "2026-09-06T16:47:27.223827+00:00",
+    "UpdatedAt": "2026-09-06T16:47:27.223827+00:00"
+  },
+  {
+    "Id": "01659fa4-84b0-4d6e-89c0-2c964132f5c3",
+    "Name": "Location",
+    "Description": "A place associated with another node.",
+    "OwnerId": null,
+    "IsSystemDefined": true,
+    "IsArchived": false,
+    "AutoPluralize": true,
+    "CreatedAt": "2026-09-06T16:47:27.223827+00:00",
+    "UpdatedAt": "2026-09-06T16:47:27.223827+00:00"
   }
 ]
