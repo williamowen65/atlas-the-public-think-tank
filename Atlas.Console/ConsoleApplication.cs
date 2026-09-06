@@ -220,6 +220,7 @@ public sealed class ConsoleApplication
                 _nodes,
                 _nodeTypes,
                 _documents,
+                _eventPublisher,
                 _actorId);
         }
     }
