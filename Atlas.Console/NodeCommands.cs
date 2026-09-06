@@ -37,9 +37,10 @@ public static class NodeCommands
             Console.WriteLine("4. Archive");
             Console.WriteLine("5. Restore");
             Console.WriteLine("6. Change requested sub-node types");
-            Console.WriteLine("7. Attach to parent");
-            Console.WriteLine("8. Detach from parent");
-            Console.WriteLine("9. Return to node browser");
+            Console.WriteLine("7. Select sub-node");
+            Console.WriteLine("8. Attach to parent");
+            Console.WriteLine("9. Detach from parent");
+            Console.WriteLine("10. Return to node browser");
             Console.WriteLine();
 
             Console.Write("Selection: ");
@@ -86,20 +87,30 @@ public static class NodeCommands
                         break;
 
                     case "7":
+                        node = SelectSubNode(
+                                   node,
+                                   nodes,
+                                   nodeTypes,
+                                   documents,
+                                   participants)
+                               ?? node;
+                        break;
+
+                    case "8":
                         AttachToParent(
                             node,
                             nodes,
                             eventPublisher);
                         break;
 
-                    case "8":
+                    case "9":
                         DetachFromParent(
                             node,
                             nodes,
                             eventPublisher);
                         break;
 
-                    case "9":
+                    case "10":
                         viewingNode = false;
                         break;
 
@@ -116,6 +127,101 @@ public static class NodeCommands
         }
     }
 
+
+
+    private static Node? SelectSubNode(
+        Node parent,
+        INodeRepository nodes,
+        INodeTypeRepository nodeTypes,
+        IDocumentRepository documents,
+        IParticipantRepository participants)
+    {
+        var childGroups = nodes
+            .GetAll()
+            .Where(candidate =>
+                candidate.ParentNodeIds.Contains(parent.Id))
+            .GroupBy(child => child.TypeId)
+            .Select(group => new
+            {
+                TypeId = group.Key,
+                TypeName = nodeTypes.GetById(group.Key)?.Name
+                    ?? $"Unknown ({group.Key})",
+                Children = group
+                    .OrderBy(child => child.Title.Value)
+                    .ToList()
+            })
+            .OrderBy(group => group.TypeName)
+            .ToList();
+
+        if (childGroups.Count == 0)
+        {
+            ConsoleUi.Pause("This node has no sub-nodes to select.");
+            return null;
+        }
+
+        Console.WriteLine();
+        Console.WriteLine("Select a sub-node type:");
+
+        for (var index = 0; index < childGroups.Count; index++)
+        {
+            Console.WriteLine(
+                $"{index + 1}. {childGroups[index].TypeName} " +
+                $"({childGroups[index].Children.Count})");
+        }
+
+        Console.WriteLine("0. Cancel");
+        Console.Write("Type: ");
+
+        if (!int.TryParse(Console.ReadLine(), out var typeSelection) ||
+            typeSelection < 0 ||
+            typeSelection > childGroups.Count)
+        {
+            ConsoleUi.Pause("That is not a valid type selection.");
+            return null;
+        }
+
+        if (typeSelection == 0)
+        {
+            return null;
+        }
+
+        var selectedGroup = childGroups[typeSelection - 1];
+
+        Console.WriteLine();
+        Console.WriteLine(
+            $"{selectedGroup.TypeName.ToUpperInvariant()} SUB-NODES");
+        Console.WriteLine();
+        NodeDisplay.WriteTableHeader();
+
+        for (var index = 0;
+             index < selectedGroup.Children.Count;
+             index++)
+        {
+            NodeDisplay.WriteTableRow(
+                selectedGroup.Children[index],
+                nodes,
+                nodeTypes,
+                documents,
+                participants,
+                index + 1);
+        }
+
+        Console.WriteLine();
+        Console.WriteLine("0. Cancel");
+        Console.Write("Sub-node: ");
+
+        if (!int.TryParse(Console.ReadLine(), out var nodeSelection) ||
+            nodeSelection < 0 ||
+            nodeSelection > selectedGroup.Children.Count)
+        {
+            ConsoleUi.Pause("That is not a valid sub-node selection.");
+            return null;
+        }
+
+        return nodeSelection == 0
+            ? null
+            : selectedGroup.Children[nodeSelection - 1];
+    }
 
     private static void PublishDomainEvents(
         Node node,
