@@ -167,17 +167,21 @@ The shared profile workflow offers:
 
 The Edit action remains visible for someone else's profile so the authorization rejection can be observed. Hiding the action in a future UI may improve usability, but server-side or application-layer authorization must remain even if the UI hides it.
 
-## Current safeguard and possible refinement
+## Enforced profile-update route
 
-`Participant.UpdateProfile()` is currently public. Code could bypass authorization by calling it directly instead of using `UpdateParticipantProfile.Execute()`.
+The profile-content mutation methods `Rename`, `ChangeBio`, and `UpdateProfile` are internal to Atlas.Participants. External hosts cannot call them directly and bypass the ownership check.
 
-The intended route is:
+The enforced compile-time route is:
 
 ```text
 External host → UpdateParticipantProfile → Participant.UpdateProfile
 ```
 
-A future refinement could make the entity method `internal`, or introduce a command handler/API surface that is the only externally accessible mutation path. That decision should account for tests and other legitimate workflows inside the Participants boundary.
+`UpdateParticipantProfile.Execute()` remains public. It checks that the actor owns the target profile before invoking the internal entity behavior.
+
+The test assembly receives explicit internal visibility through `InternalsVisibleTo`. This keeps low-level domain behavior directly testable without exposing it to Console or future API hosts.
+
+`Deactivate()` remains public for now because protected deactivation has not yet been designed. It should receive its own application use case before user-facing deactivation is exposed.
 
 ## Tests
 

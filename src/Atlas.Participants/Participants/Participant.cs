@@ -70,7 +70,7 @@ public sealed class Participant
             updatedAt);
     }
 
-    public void Rename(
+    internal void Rename(
         string newDisplayName,
         DateTimeOffset changedAt)
     {
@@ -85,7 +85,7 @@ public sealed class Participant
         UpdatedAt = changedAt;
     }
 
-    public void ChangeBio(
+    internal void ChangeBio(
         string newBio,
         DateTimeOffset changedAt)
     {
@@ -100,7 +100,7 @@ public sealed class Participant
         UpdatedAt = changedAt;
     }
 
-    public void UpdateProfile(
+    internal void UpdateProfile(
         string newDisplayName,
         string newBio,
         DateTimeOffset changedAt)
