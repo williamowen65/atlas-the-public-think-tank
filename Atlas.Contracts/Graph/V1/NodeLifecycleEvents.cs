@@ -38,3 +38,27 @@ public sealed record NodeRestoredV1(
         DescriptionId,
         AuthorId,
         OccurredAt);
+
+public sealed record NodeParentAttachedV1(
+    Guid NodeId,
+    Guid ParentNodeId,
+    Guid DescriptionId,
+    Guid AuthorId,
+    DateTimeOffset OccurredAt)
+    : NodeLifecycleEventV1(
+        NodeId,
+        DescriptionId,
+        AuthorId,
+        OccurredAt);
+
+public sealed record NodeParentDetachedV1(
+    Guid NodeId,
+    Guid ParentNodeId,
+    Guid DescriptionId,
+    Guid AuthorId,
+    DateTimeOffset OccurredAt)
+    : NodeLifecycleEventV1(
+        NodeId,
+        DescriptionId,
+        AuthorId,
+        OccurredAt);
