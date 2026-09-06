@@ -20,11 +20,11 @@ public sealed class InMemoryEventPublisher
             $"[EVENT BUS] Registered subscriber for {eventType.Name}.");
     }
 
-    public void Publish<TEvent>(TEvent message)
+    public void Publish(object message)
     {
         ArgumentNullException.ThrowIfNull(message);
 
-        var eventType = typeof(TEvent);
+        var eventType = message.GetType();
 
         Console.WriteLine();
         Console.WriteLine(
