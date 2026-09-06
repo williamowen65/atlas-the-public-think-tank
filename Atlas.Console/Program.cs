@@ -3,9 +3,9 @@ using Atlas.ConsoleApp.Content;
 using Atlas.ConsoleApp.Eventing;
 using Atlas.ConsoleApp.Storage;
 using Atlas.Content.Documents;
+using Atlas.Contracts.Graph.V1;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
-using Atlas.Graph;
 using Atlas.Participants.Participants;
 
 var dataDirectory = Path.GetFullPath(
@@ -59,10 +59,10 @@ var eventPublisher = new InMemoryEventPublisher();
 var contentSubscriber =
     new ObserveNodeLifecycleInContent(documentRepository);
 
-eventPublisher.Subscribe<NodeCreated>(
+eventPublisher.Subscribe<NodeCreatedV1>(
     contentSubscriber.Handle);
 
-eventPublisher.Subscribe<NodeArchived>(
+eventPublisher.Subscribe<NodeArchivedV1>(
     contentSubscriber.Handle);
 
 var application = new ConsoleApplication(
