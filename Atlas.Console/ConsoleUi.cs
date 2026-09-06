@@ -144,7 +144,7 @@ public static class ConsoleUi
         Console.ReadLine();
     }
 
-    private static NodeTypeDefinition? CreateCustomNodeType(
+    public static NodeTypeDefinition? CreateCustomNodeType(
         INodeTypeRepository nodeTypes,
         string ownerId)
     {
