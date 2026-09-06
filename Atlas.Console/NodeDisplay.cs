@@ -1,6 +1,7 @@
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
+using Atlas.Participants.Participants;
 
 namespace Atlas.ConsoleApp;
 
@@ -8,6 +9,7 @@ public static class NodeDisplay
 {
     private const int TitleWidth = 28;
     private const int TypeWidth = 14;
+    private const int AuthorWidth = 20;
     private const int DescriptionWidth = 32;
 
     public static void WriteTableHeader()
@@ -16,6 +18,7 @@ public static class NodeDisplay
             $"{"#",3}  " +
             $"{"Title",-TitleWidth}  " +
             $"{"Type",-TypeWidth}  " +
+            $"{"Authored By",-AuthorWidth}  " +
             $"{"Description",-DescriptionWidth}  " +
             $"{"Votes",5}  " +
             $"{"Avg",5}  " +
@@ -27,6 +30,7 @@ public static class NodeDisplay
                 3 + 2 +
                 TitleWidth + 2 +
                 TypeWidth + 2 +
+                AuthorWidth + 2 +
                 DescriptionWidth + 2 +
                 5 + 2 +
                 5 + 2 +
@@ -37,17 +41,20 @@ public static class NodeDisplay
         Node node,
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
+        IParticipantRepository participants,
         int number,
         int? voteCount = null,
         double? averageVote = null)
     {
         var typeName = ResolveTypeName(node, nodeTypes);
         var description = ResolveDescription(node, documents);
+        var authorName = ResolveAuthorName(node, participants);
 
         Console.WriteLine(
             $"{number,3}  " +
             $"{Truncate(node.Title.Value, TitleWidth),-TitleWidth}  " +
             $"{Truncate(typeName, TypeWidth),-TypeWidth}  " +
+            $"{Truncate(authorName, AuthorWidth),-AuthorWidth}  " +
             $"{Truncate(description, DescriptionWidth),-DescriptionWidth}  " +
             $"{FormatVoteCount(voteCount),5}  " +
             $"{FormatAverageVote(averageVote),5}  " +
@@ -58,10 +65,12 @@ public static class NodeDisplay
         Node node,
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
+        IParticipantRepository participants,
         int? voteCount = null,
         double? averageVote = null)
     {
         var description = ResolveDescription(node, documents);
+        var authorName = ResolveAuthorName(node, participants);
 
         Console.WriteLine("ATLAS NODE");
         Console.WriteLine("----------");
@@ -71,6 +80,8 @@ public static class NodeDisplay
             $"Type:           {ResolveTypeName(node, nodeTypes)}");
         Console.WriteLine($"Type ID:        {node.TypeId}");
         Console.WriteLine($"Description ID: {node.DescriptionId}");
+        Console.WriteLine($"Author ID:      {node.AuthorId}");
+        Console.WriteLine($"Authored By:    {authorName}");
         Console.WriteLine($"Status:         {node.Status}");
         Console.WriteLine($"Votes:          {FormatVoteCount(voteCount)}");
         Console.WriteLine($"Average:        {FormatAverageVote(averageVote)}");
@@ -97,6 +108,17 @@ public static class NodeDisplay
         return string.IsNullOrWhiteSpace(document.Content)
             ? "No description has been provided."
             : document.Content;
+    }
+
+
+    private static string ResolveAuthorName(
+        Node node,
+        IParticipantRepository participants)
+    {
+        return participants.GetById(
+                   new ParticipantId(node.AuthorId.Value))
+               ?.DisplayName
+            ?? $"Unknown ({node.AuthorId})";
     }
 
     private static string ResolveTypeName(
