@@ -241,7 +241,9 @@ public sealed class ConsoleApplication
             foreach (var domainEvent in
                      node.DomainEvents.OfType<NodeLifecycleEvent>())
             {
-                _eventPublisher.Publish(domainEvent);
+                _eventPublisher.Publish(
+                    GraphEventContractMapper.ToIntegrationContract(
+                        domainEvent));
             }
 
             node.ClearDomainEvents();
