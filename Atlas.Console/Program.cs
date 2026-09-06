@@ -35,18 +35,19 @@ INodeTypeRepository nodeTypeRepository =
 
 SeedSystemNodeTypes(nodeTypeRepository);
 
+IDocumentRepository documentRepository =
+    new JsonDocumentRepository(documentDataFilePath);
+
 INodeRepository nodeRepository =
     new JsonNodeRepository(
         nodeDataFilePath,
-        nodeTypeRepository);
-
-IDocumentRepository documentRepository =
-    new JsonDocumentRepository(documentDataFilePath);
+        nodeTypeRepository,
+        documentRepository);
 
 var eventPublisher = new InMemoryEventPublisher();
 
 var contentSubscriber =
-    new CreateDocumentWhenNodeCreated(documentRepository);
+    new ObserveNodeCreatedInContent(documentRepository);
 
 eventPublisher.Subscribe<NodeCreated>(
     contentSubscriber.Handle);
