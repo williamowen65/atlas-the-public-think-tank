@@ -24,4 +24,29 @@ public sealed class Document
         Content = initialContent?.Trim() ?? string.Empty;
         CreatedAt = createdAt;
     }
+
+    private Document(
+        DocumentId id,
+        Guid nodeId,
+        string content,
+        DateTimeOffset createdAt)
+    {
+        Id = id;
+        NodeId = nodeId;
+        Content = content?.Trim() ?? string.Empty;
+        CreatedAt = createdAt;
+    }
+
+    public static Document Reconstitute(
+        DocumentId id,
+        Guid nodeId,
+        string content,
+        DateTimeOffset createdAt)
+    {
+        return new Document(
+            id,
+            nodeId,
+            content,
+            createdAt);
+    }
 }
