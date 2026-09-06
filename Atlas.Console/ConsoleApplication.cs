@@ -208,6 +208,14 @@ public sealed class ConsoleApplication
             return;
         }
 
+        var requestedSubNodeTypes =
+            ConsoleUi.ReadRequestedSubNodeTypes(_nodeTypes);
+
+        if (requestedSubNodeTypes.Count == 0)
+        {
+            return;
+        }
+
         try
         {
             var now = DateTimeOffset.UtcNow;
@@ -229,6 +237,7 @@ public sealed class ConsoleApplication
                 new NodeDescriptionId(document.Id.Value),
                 nodeType.Id,
                 new NodeAuthorId(_currentParticipant.Id.Value),
+                requestedSubNodeTypes.Select(type => type.Id),
                 now);
 
             _nodes.Save(node);
