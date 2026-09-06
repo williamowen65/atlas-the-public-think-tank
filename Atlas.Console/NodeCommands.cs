@@ -173,11 +173,7 @@ public static class NodeCommands
                 child => child.TypeId == type.Id);
 
             Console.WriteLine(
-                $"{index + 1}. " +
-                NodeDisplay.FormatTypeCount(
-                    type.Name,
-                    count,
-                    type.AutoPluralize));
+                $"{index + 1}. {type.Name} ({count})");
         }
 
         var createTypeSelection = availableTypes.Count + 1;
