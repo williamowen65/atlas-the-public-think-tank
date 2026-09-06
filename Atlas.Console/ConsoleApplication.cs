@@ -1,7 +1,5 @@
 using Atlas.ConsoleApp.Eventing;
 using Atlas.Content.Documents;
-using Atlas.Graph;
-using Atlas.Contracts.Graph.V1;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Participants.Participants;
@@ -239,12 +237,9 @@ public sealed class ConsoleApplication
                 $"[ATLAS.GRAPH] Saved node {node.Id} with " +
                 $"description reference {node.DescriptionId}.");
 
-            foreach (var domainEvent in
-                     node.DomainEvents.OfType<NodeLifecycleEventV1>())
+            foreach (var domainEvent in node.DomainEvents)
             {
-                _eventPublisher.Publish(
-                    GraphEventContractMapper.ToIntegrationContract(
-                        domainEvent));
+                _eventPublisher.Publish(domainEvent);
             }
 
             node.ClearDomainEvents();
