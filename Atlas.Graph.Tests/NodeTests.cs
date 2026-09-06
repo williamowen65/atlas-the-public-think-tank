@@ -1,3 +1,4 @@
+using Atlas.Graph;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -72,6 +73,40 @@ public class NodeTests
             DateTimeOffset.UtcNow);
 
         Assert.AreEqual(replacementId, node.DescriptionId);
+    }
+
+
+    [TestMethod]
+    public void Archive_RecordsNodeArchivedEvent()
+    {
+        var node = CreateNode("Climate adaptation");
+        node.ClearDomainEvents();
+        var archivedAt = DateTimeOffset.UtcNow;
+
+        node.Archive(archivedAt);
+
+        var domainEvent = node.DomainEvents
+            .OfType<NodeArchived>()
+            .Single();
+
+        Assert.AreEqual(node.Id.Value, domainEvent.NodeId);
+        Assert.AreEqual(
+            node.DescriptionId.Value,
+            domainEvent.DescriptionId);
+        Assert.AreEqual(archivedAt, domainEvent.OccurredAt);
+    }
+
+    [TestMethod]
+    public void Archive_WhenAlreadyArchived_DoesNotRecordAnotherEvent()
+    {
+        var node = CreateNode("Climate adaptation");
+
+        node.Archive(DateTimeOffset.UtcNow);
+        node.ClearDomainEvents();
+
+        node.Archive(DateTimeOffset.UtcNow.AddMinutes(1));
+
+        Assert.AreEqual(0, node.DomainEvents.Count);
     }
 
     private static Node CreateNode(string title)
