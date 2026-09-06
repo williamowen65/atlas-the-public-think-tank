@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Atlas.Content\Atlas.Content.csproj" />
+    <ProjectReference Include="..\Atlas.Contracts\Atlas.Contracts.csproj" />
     <ProjectReference Include="..\Atlas.Graph\Atlas.Graph.csproj" />
     <ProjectReference Include="..\Atlas.Participants\Atlas.Participants.csproj" />
   </ItemGroup>
