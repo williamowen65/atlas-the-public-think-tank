@@ -15,7 +15,6 @@ public sealed class ConsoleApplication
     private readonly IParticipantRepository _participants;
     private readonly InMemoryEventPublisher _eventPublisher;
     private Participant _currentParticipant;
-    private readonly string _actorId;
     private readonly string _nodeDataFilePath;
     private readonly string _nodeTypeDataFilePath;
     private readonly string _documentDataFilePath;
@@ -27,7 +26,6 @@ public sealed class ConsoleApplication
         IDocumentRepository documents,
         IParticipantRepository participants,
         InMemoryEventPublisher eventPublisher,
-        string actorId,
         string nodeDataFilePath,
         string nodeTypeDataFilePath,
         string documentDataFilePath,
@@ -40,7 +38,6 @@ public sealed class ConsoleApplication
         _participants = participants;
         _eventPublisher = eventPublisher;
         _currentParticipant = initialParticipant;
-        _actorId = actorId;
         _nodeDataFilePath = nodeDataFilePath;
         _nodeTypeDataFilePath = nodeTypeDataFilePath;
         _documentDataFilePath = documentDataFilePath;
@@ -205,7 +202,7 @@ public sealed class ConsoleApplication
 
         var nodeType = ConsoleUi.ReadNodeType(
             _nodeTypes,
-            _actorId);
+            _currentParticipant.Id.Value.ToString());
 
         if (nodeType is null)
         {
@@ -320,7 +317,7 @@ public sealed class ConsoleApplication
                 _documents,
                 _participants,
                 _eventPublisher,
-                _actorId);
+                _currentParticipant.Id.Value.ToString());
         }
     }
 
