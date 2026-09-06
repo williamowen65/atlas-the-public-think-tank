@@ -19,7 +19,7 @@ flowchart TB
     end
 
     subgraph boundaries["Domain boundaries"]
-        graph["Atlas.Graph — nodes and node types"]
+        graphDomain["Atlas.Graph — nodes and node types"]
         content["Atlas.Content — description documents"]
         participants["Atlas.Participants — profiles and profile authorization"]
         contracts["Atlas.Contracts — integration-event payloads"]
@@ -34,13 +34,13 @@ flowchart TB
     program --> eventBus
     program --> adapters
     app --> workflows
-    workflows --> graph
+    workflows --> graphDomain
     workflows --> content
     workflows --> participants
-    graph --> contracts
+    graphDomain --> contracts
     eventBus --> contracts
     eventBus --> content
-    adapters --> graph
+    adapters --> graphDomain
     adapters --> content
     adapters --> participants
     adapters --> files
