@@ -8,8 +8,6 @@ using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Graph;
 using Atlas.Participants.Participants;
 
-const string ConsoleActorId = "console-user";
-
 var dataDirectory = Path.GetFullPath(
     Path.Combine(
         AppContext.BaseDirectory,
@@ -73,7 +71,6 @@ var application = new ConsoleApplication(
     documentRepository,
     participantRepository,
     eventPublisher,
-    ConsoleActorId,
     nodeDataFilePath,
     nodeTypeDataFilePath,
     documentDataFilePath,
