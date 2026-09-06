@@ -9,7 +9,7 @@ namespace Atlas.ConsoleApp;
 
 public static class NodeCommands
 {
-    public static void Run(
+    public static Participant Run(
         Node node,
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
@@ -125,9 +125,11 @@ public static class NodeCommands
                         break;
 
                     case "11":
-                        ViewAuthorProfile(
+                        currentParticipant = ViewAuthorProfile(
                             node,
                             nodes,
+                            nodeTypes,
+                            documents,
                             participants,
                             currentParticipant);
                         break;
@@ -147,6 +149,8 @@ public static class NodeCommands
                     $"Unable to update node: {exception.Message}");
             }
         }
+
+        return currentParticipant;
     }
 
 
@@ -414,29 +418,30 @@ public static class NodeCommands
             : selectedGroup.Children[nodeSelection - 1];
     }
 
-    private static void ViewAuthorProfile(
+    private static Participant ViewAuthorProfile(
         Node node,
         INodeRepository nodes,
+        INodeTypeRepository nodeTypes,
+        IDocumentRepository documents,
         IParticipantRepository participants,
         Participant currentParticipant)
     {
-        var author = participants.GetById(
-            new ParticipantId(node.AuthorId.Value));
+        var authorId = new ParticipantId(node.AuthorId.Value);
 
-        if (author is null)
+        if (participants.GetById(authorId) is null)
         {
             ConsoleUi.Pause(
                 "The participant profile for this author was not found.");
-            return;
+            return currentParticipant;
         }
 
-        Console.Clear();
-        ParticipantDisplay.WriteProfile(
-            author,
-            nodes.GetAll(),
+        return ParticipantCommands.Run(
+            authorId,
+            participants,
+            nodes,
+            nodeTypes,
+            documents,
             currentParticipant);
-
-        ConsoleUi.Pause();
     }
 
     private static void PublishDomainEvents(
