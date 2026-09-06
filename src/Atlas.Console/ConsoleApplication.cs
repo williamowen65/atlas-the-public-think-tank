@@ -226,6 +226,7 @@ public sealed class ConsoleApplication
                 ParticipantDisplay.WriteTableRow(
                     participants[index],
                     nodes,
+                    _nodeTypes,
                     index + 1);
             }
 
