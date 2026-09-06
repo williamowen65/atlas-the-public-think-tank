@@ -51,7 +51,7 @@ public sealed class Node
         _domainEvents.Add(
           new NodeCreated(
               Id.Value,
-              DescriptionId.ToString(),
+              DescriptionId.Value,
               createdAt));
     }
 
