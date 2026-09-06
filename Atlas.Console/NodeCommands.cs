@@ -22,7 +22,12 @@ public static class NodeCommands
         while (viewingNode)
         {
             Console.Clear();
-            NodeDisplay.WriteDetails(node, nodeTypes, documents, participants);
+            NodeDisplay.WriteDetails(
+                node,
+                nodes,
+                nodeTypes,
+                documents,
+                participants);
 
             Console.WriteLine();
             Console.WriteLine("Choose an action:");
@@ -32,7 +37,9 @@ public static class NodeCommands
             Console.WriteLine("4. Archive");
             Console.WriteLine("5. Restore");
             Console.WriteLine("6. Change requested sub-node types");
-            Console.WriteLine("7. Return to node browser");
+            Console.WriteLine("7. Attach to parent");
+            Console.WriteLine("8. Detach from parent");
+            Console.WriteLine("9. Return to node browser");
             Console.WriteLine();
 
             Console.Write("Selection: ");
@@ -79,6 +86,20 @@ public static class NodeCommands
                         break;
 
                     case "7":
+                        AttachToParent(
+                            node,
+                            nodes,
+                            eventPublisher);
+                        break;
+
+                    case "8":
+                        DetachFromParent(
+                            node,
+                            nodes,
+                            eventPublisher);
+                        break;
+
+                    case "9":
                         viewingNode = false;
                         break;
 
@@ -108,6 +129,166 @@ public static class NodeCommands
         node.ClearDomainEvents();
     }
 
+
+
+    private static void AttachToParent(
+        Node node,
+        INodeRepository nodes,
+        InMemoryEventPublisher eventPublisher)
+    {
+        var candidates = nodes
+            .GetAll()
+            .Where(candidate =>
+                candidate.Id != node.Id &&
+                !node.ParentNodeIds.Contains(candidate.Id))
+            .OrderBy(candidate => candidate.Title.Value)
+            .ToList();
+
+        if (candidates.Count == 0)
+        {
+            ConsoleUi.Pause("No available parent nodes were found.");
+            return;
+        }
+
+        Console.WriteLine();
+        Console.WriteLine("Available parent nodes:");
+
+        for (var index = 0; index < candidates.Count; index++)
+        {
+            Console.WriteLine(
+                $"{index + 1}. {candidates[index].Title}");
+        }
+
+        Console.WriteLine("0. Cancel");
+        Console.Write("Parent: ");
+
+        if (!int.TryParse(Console.ReadLine(), out var selection) ||
+            selection < 0 ||
+            selection > candidates.Count)
+        {
+            ConsoleUi.Pause("That is not a valid parent selection.");
+            return;
+        }
+
+        if (selection == 0)
+        {
+            return;
+        }
+
+        var parent = candidates[selection - 1];
+
+        if (WouldCreateCycle(node.Id, parent, nodes))
+        {
+            ConsoleUi.Pause(
+                "That link would create a circular parent chain.");
+            return;
+        }
+
+        node.AttachToParent(
+            parent.Id,
+            DateTimeOffset.UtcNow);
+
+        nodes.Save(node);
+        PublishDomainEvents(node, eventPublisher);
+
+        ConsoleUi.Pause(
+            $"Attached {node.Title} to parent {parent.Title}.");
+    }
+
+    private static void DetachFromParent(
+        Node node,
+        INodeRepository nodes,
+        InMemoryEventPublisher eventPublisher)
+    {
+        var parents = node.ParentNodeIds
+            .Select(parentId => nodes.GetById(parentId))
+            .Where(parent => parent is not null)
+            .Cast<Node>()
+            .OrderBy(parent => parent.Title.Value)
+            .ToList();
+
+        if (parents.Count == 0)
+        {
+            ConsoleUi.Pause("This node has no parents to detach.");
+            return;
+        }
+
+        Console.WriteLine();
+        Console.WriteLine("Current parents:");
+
+        for (var index = 0; index < parents.Count; index++)
+        {
+            Console.WriteLine(
+                $"{index + 1}. {parents[index].Title}");
+        }
+
+        Console.WriteLine("0. Cancel");
+        Console.Write("Parent to detach: ");
+
+        if (!int.TryParse(Console.ReadLine(), out var selection) ||
+            selection < 0 ||
+            selection > parents.Count)
+        {
+            ConsoleUi.Pause("That is not a valid parent selection.");
+            return;
+        }
+
+        if (selection == 0)
+        {
+            return;
+        }
+
+        var parent = parents[selection - 1];
+
+        node.DetachFromParent(
+            parent.Id,
+            DateTimeOffset.UtcNow);
+
+        nodes.Save(node);
+        PublishDomainEvents(node, eventPublisher);
+
+        ConsoleUi.Pause(
+            $"Detached {node.Title} from parent {parent.Title}.");
+    }
+
+    private static bool WouldCreateCycle(
+        NodeId childNodeId,
+        Node proposedParent,
+        INodeRepository nodes)
+    {
+        var pending = new Stack<NodeId>(
+            proposedParent.ParentNodeIds);
+        var visited = new HashSet<NodeId>();
+
+        while (pending.Count > 0)
+        {
+            var currentId = pending.Pop();
+
+            if (currentId == childNodeId)
+            {
+                return true;
+            }
+
+            if (!visited.Add(currentId))
+            {
+                continue;
+            }
+
+            var current = nodes.GetById(currentId);
+
+            if (current is null)
+            {
+                continue;
+            }
+
+            foreach (var parentId in current.ParentNodeIds)
+            {
+                pending.Push(parentId);
+            }
+        }
+
+        return false;
+    }
 
     private static void ChangeRequestedSubNodeTypes(
         Node node,
