@@ -1,8 +1,8 @@
 using Atlas.ConsoleApp.Eventing;
 using Atlas.Content.Documents;
+using Atlas.Graph;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
-using Atlas.Graph.NodeLifecycle;
 
 namespace Atlas.ConsoleApp;
 
@@ -145,7 +145,7 @@ public sealed class ConsoleApplication
                 $"description reference {node.DescriptionId}.");
 
             foreach (var domainEvent in
-                     node.DomainEvents.OfType<NodeCreated>())
+                     node.DomainEvents.OfType<NodeLifecycleEvent>())
             {
                 _eventPublisher.Publish(domainEvent);
             }

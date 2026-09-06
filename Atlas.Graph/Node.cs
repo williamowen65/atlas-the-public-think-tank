@@ -1,5 +1,4 @@
-﻿using Atlas.Graph.NodeLifecycle;
-using Atlas.Graph.Nodes.NodeTypes;
+﻿using Atlas.Graph.Nodes.NodeTypes;
 
 namespace Atlas.Graph.Nodes;
 
@@ -111,6 +110,8 @@ public sealed class Node
 
         Title = newTitle;
         UpdatedAt = changedAt;
+
+ 
     }
 
     public void ChangeType(
@@ -135,6 +136,13 @@ public sealed class Node
 
         Status = NodeStatus.Archived;
         UpdatedAt = archivedAt;
+
+        _domainEvents.Add(
+           new NodeArchived(
+               Id.Value,
+               DescriptionId.Value,
+               archivedAt
+               ));
     }
 
     public void Restore(DateTimeOffset restoredAt)
