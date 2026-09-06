@@ -43,6 +43,7 @@ public static class NodeDisplay
 
     public static void WriteTableRow(
         Node node,
+        INodeRepository nodes,
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
         IParticipantRepository participants,
@@ -54,7 +55,7 @@ public static class NodeDisplay
         var description = ResolveDescription(node, documents);
         var authorName = ResolveAuthorName(node, participants);
         var subNodeSummary =
-            ResolveRequestedSubNodeSummary(node, nodeTypes);
+            ResolveSubNodeSummary(node, nodes, nodeTypes);
 
         Console.WriteLine(
             $"{number,3}  " +
@@ -70,6 +71,7 @@ public static class NodeDisplay
 
     public static void WriteDetails(
         Node node,
+        INodeRepository nodes,
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
         IParticipantRepository participants,
@@ -99,55 +101,119 @@ public static class NodeDisplay
         Console.WriteLine("-----------");
         Console.WriteLine(description);
 
-        WriteRequestedSubNodeTables(node, nodeTypes);
+        WriteSubNodeTables(
+            node,
+            nodes,
+            nodeTypes,
+            documents,
+            participants);
     }
 
-    private static void WriteRequestedSubNodeTables(
+    private static void WriteSubNodeTables(
         Node node,
-        INodeTypeRepository nodeTypes)
+        INodeRepository nodes,
+        INodeTypeRepository nodeTypes,
+        IDocumentRepository documents,
+        IParticipantRepository participants)
     {
-        foreach (var request in node.RequestedSubNodeTypes)
+        var children = FindChildren(node, nodes);
+        var typeIds = node.RequestedSubNodeTypes
+            .Select(request => request.TypeId)
+            .Concat(children.Select(child => child.TypeId))
+            .Distinct()
+            .OrderBy(typeId =>
+                nodeTypes.GetById(typeId)?.Name ?? string.Empty)
+            .ToList();
+
+        foreach (var typeId in typeIds)
         {
-            var typeName = nodeTypes.GetById(request.TypeId)?.Name
-                ?? $"Unknown ({request.TypeId})";
-            var heading = $"{typeName.ToUpperInvariant()} SUB-NODES (0)";
+            var typeName = nodeTypes.GetById(typeId)?.Name
+                ?? $"Unknown ({typeId})";
+            var matchingChildren = children
+                .Where(child => child.TypeId == typeId)
+                .ToList();
+            var heading =
+                $"{typeName.ToUpperInvariant()} SUB-NODES " +
+                $"({matchingChildren.Count})";
 
             Console.WriteLine();
             Console.WriteLine(heading);
             Console.WriteLine(new string('-', heading.Length));
             WriteTableHeader();
-            Console.WriteLine(
-                $"No {typeName} sub-nodes have been added yet.");
+
+            if (matchingChildren.Count == 0)
+            {
+                Console.WriteLine(
+                    $"No {typeName} sub-nodes have been added yet.");
+                continue;
+            }
+
+            for (var index = 0;
+                 index < matchingChildren.Count;
+                 index++)
+            {
+                WriteTableRow(
+                    matchingChildren[index],
+                    nodes,
+                    nodeTypes,
+                    documents,
+                    participants,
+                    index + 1);
+            }
         }
 
-        if (node.RequestedSubNodeTypes.Count == 0)
+        if (typeIds.Count == 0)
         {
             Console.WriteLine();
             Console.WriteLine("SUB-NODES");
             Console.WriteLine("---------");
             Console.WriteLine(
-                "This node does not currently request any sub-node types.");
+                "This node does not request or contain any sub-nodes.");
         }
     }
 
-    private static string ResolveRequestedSubNodeSummary(
+    private static string ResolveSubNodeSummary(
         Node node,
+        INodeRepository nodes,
         INodeTypeRepository nodeTypes)
     {
-        if (node.RequestedSubNodeTypes.Count == 0)
+        var children = FindChildren(node, nodes);
+        var typeIds = node.RequestedSubNodeTypes
+            .Select(request => request.TypeId)
+            .Concat(children.Select(child => child.TypeId))
+            .Distinct()
+            .OrderBy(typeId =>
+                nodeTypes.GetById(typeId)?.Name ?? string.Empty)
+            .ToList();
+
+        if (typeIds.Count == 0)
         {
             return "None";
         }
 
         return string.Join(
             " · ",
-            node.RequestedSubNodeTypes.Select(request =>
+            typeIds.Select(typeId =>
             {
-                var name = nodeTypes.GetById(request.TypeId)?.Name
+                var name = nodeTypes.GetById(typeId)?.Name
                     ?? "Unknown";
+                var count = children.Count(
+                    child => child.TypeId == typeId);
 
-                return $"{name} 0";
+                return $"{name} {count}";
             }));
+    }
+
+    private static List<Node> FindChildren(
+        Node node,
+        INodeRepository nodes)
+    {
+        return nodes
+            .GetAll()
+            .Where(candidate =>
+                candidate.ParentNodeIds.Contains(node.Id))
+            .OrderBy(candidate => candidate.Title.Value)
+            .ToList();
     }
 
     private static string ResolveDescription(
