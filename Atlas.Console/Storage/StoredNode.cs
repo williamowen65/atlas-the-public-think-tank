@@ -14,6 +14,7 @@ public sealed class StoredNode
     // Retained temporarily so existing enum-based JSON can be read.
     public string? Type { get; set; }
 
+    public Guid? AuthorId { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }

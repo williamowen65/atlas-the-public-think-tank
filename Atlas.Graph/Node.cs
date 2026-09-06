@@ -17,6 +17,7 @@ public sealed class Node
     public NodeStatus Status { get; private set; }
 
     public NodeDescriptionId DescriptionId { get; private set; }
+    public NodeAuthorId AuthorId { get; }
 
     /*
      The interaction might be:
@@ -37,12 +38,14 @@ public sealed class Node
         NodeTitle title,
         NodeDescriptionId descriptionId,
         NodeTypeId typeId,
+        NodeAuthorId authorId,
         DateTimeOffset createdAt)
     {
         Id = NodeId.New();
         Title = title;
         DescriptionId = descriptionId;
         TypeId = typeId;
+        AuthorId = authorId;
         Status = NodeStatus.Active;
         CreatedAt = createdAt;
         UpdatedAt = createdAt;
@@ -51,6 +54,7 @@ public sealed class Node
           new NodeCreated(
               Id.Value,
               DescriptionId.Value,
+              AuthorId.Value,
               createdAt));
     }
 
@@ -60,6 +64,7 @@ public sealed class Node
         NodeTitle title,
         NodeDescriptionId descriptionId,
         NodeTypeId typeId,
+        NodeAuthorId authorId,
         NodeStatus status,
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt)
@@ -74,6 +79,7 @@ public sealed class Node
         Title = title;
         DescriptionId = descriptionId;
         TypeId = typeId;
+        AuthorId = authorId;
         Status = status;
         CreatedAt = createdAt;
         UpdatedAt = updatedAt;
@@ -85,6 +91,7 @@ public sealed class Node
         NodeTitle title,
         NodeDescriptionId descriptionId,
         NodeTypeId typeId,
+        NodeAuthorId authorId,
         NodeStatus status,
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt)
@@ -94,6 +101,7 @@ public sealed class Node
             title,
             descriptionId,
             typeId,
+            authorId,
             status,
             createdAt,
             updatedAt);
@@ -141,6 +149,7 @@ public sealed class Node
            new NodeArchived(
                Id.Value,
                DescriptionId.Value,
+               AuthorId.Value,
                archivedAt
                ));
     }

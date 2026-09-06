@@ -27,9 +27,26 @@ public class NodeTests
             new NodeTitle("Climate adaptation"),
             descriptionId,
             NodeTypeId.New(),
+            new NodeAuthorId(Guid.NewGuid()),
             DateTimeOffset.UtcNow);
 
         Assert.AreEqual(descriptionId, node.DescriptionId);
+    }
+
+
+    [TestMethod]
+    public void Constructor_SetsAuthorReference()
+    {
+        var authorId = new NodeAuthorId(Guid.NewGuid());
+
+        var node = new Node(
+            new NodeTitle("Climate adaptation"),
+            new NodeDescriptionId(Guid.NewGuid()),
+            NodeTypeId.New(),
+            authorId,
+            DateTimeOffset.UtcNow);
+
+        Assert.AreEqual(authorId, node.AuthorId);
     }
 
     [TestMethod]
@@ -93,6 +110,7 @@ public class NodeTests
         Assert.AreEqual(
             node.DescriptionId.Value,
             domainEvent.DescriptionId);
+        Assert.AreEqual(node.AuthorId.Value, domainEvent.AuthorId);
         Assert.AreEqual(archivedAt, domainEvent.OccurredAt);
     }
 
@@ -115,6 +133,7 @@ public class NodeTests
             new NodeTitle(title),
             new NodeDescriptionId(Guid.NewGuid()),
             NodeTypeId.New(),
+            new NodeAuthorId(Guid.NewGuid()),
             DateTimeOffset.UtcNow);
     }
 }
