@@ -39,7 +39,6 @@ public sealed class Node
             typeId,
             authorId,
             [],
-            [],
             createdAt)
     {
     }
@@ -50,25 +49,6 @@ public sealed class Node
         NodeTypeId typeId,
         NodeAuthorId authorId,
         IEnumerable<NodeTypeId> requestedSubNodeTypeIds,
-        DateTimeOffset createdAt)
-        : this(
-            title,
-            descriptionId,
-            typeId,
-            authorId,
-            requestedSubNodeTypeIds,
-            [],
-            createdAt)
-    {
-    }
-
-    public Node(
-        NodeTitle title,
-        NodeDescriptionId descriptionId,
-        NodeTypeId typeId,
-        NodeAuthorId authorId,
-        IEnumerable<NodeTypeId> requestedSubNodeTypeIds,
-        IEnumerable<NodeId> parentNodeIds,
         DateTimeOffset createdAt)
     {
         Id = NodeId.New();
@@ -81,7 +61,7 @@ public sealed class Node
         UpdatedAt = createdAt;
         _requestedSubNodeTypes =
             CreateRequestedSubNodeTypes(requestedSubNodeTypeIds);
-        _parentNodeIds = CreateParentNodeIds(parentNodeIds, Id);
+        _parentNodeIds = [];
 
         _domainEvents.Add(
             new NodeCreatedV1(
