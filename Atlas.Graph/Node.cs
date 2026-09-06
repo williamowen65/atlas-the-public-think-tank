@@ -36,13 +36,13 @@ public sealed class Node
 
     public Node(
         NodeTitle title,
-        NodeDescriptionId description,
+        NodeDescriptionId descriptionId,
         NodeTypeId typeId,
         DateTimeOffset createdAt)
     {
         Id = NodeId.New();
         Title = title;
-        NodeDescriptionId = descriptionId;
+        DescriptionId = descriptionId;
         TypeId = typeId;
         Status = NodeStatus.Active;
         CreatedAt = createdAt;
@@ -51,7 +51,7 @@ public sealed class Node
         _domainEvents.Add(
           new NodeCreated(
               Id.Value,
-              Description.Value,
+              DescriptionId.ToString(),
               createdAt));
     }
 
