@@ -15,7 +15,7 @@ public static class NodeCommands
         IDocumentRepository documents,
         IParticipantRepository participants,
         InMemoryEventPublisher eventPublisher,
-        string actorId)
+        Participant currentParticipant)
     {
         var viewingNode = true;
 
@@ -38,9 +38,10 @@ public static class NodeCommands
             Console.WriteLine("5. Restore");
             Console.WriteLine("6. Change requested sub-node types");
             Console.WriteLine("7. Select sub-node");
-            Console.WriteLine("8. Attach to parent");
-            Console.WriteLine("9. Detach from parent");
-            Console.WriteLine("10. Return to node browser");
+            Console.WriteLine("8. Add sub-node");
+            Console.WriteLine("9. Attach to parent");
+            Console.WriteLine("10. Detach from parent");
+            Console.WriteLine("11. Return to node browser");
             Console.WriteLine();
 
             Console.Write("Selection: ");
@@ -62,7 +63,7 @@ public static class NodeCommands
                             node,
                             nodes,
                             nodeTypes,
-                            actorId);
+                            currentParticipant.Id.Value.ToString());
                         break;
 
                     case "4":
@@ -97,20 +98,30 @@ public static class NodeCommands
                         break;
 
                     case "8":
+                        AddSubNode(
+                            node,
+                            nodes,
+                            nodeTypes,
+                            documents,
+                            currentParticipant,
+                            eventPublisher);
+                        break;
+
+                    case "9":
                         AttachToParent(
                             node,
                             nodes,
                             eventPublisher);
                         break;
 
-                    case "9":
+                    case "10":
                         DetachFromParent(
                             node,
                             nodes,
                             eventPublisher);
                         break;
 
-                    case "10":
+                    case "11":
                         viewingNode = false;
                         break;
 
@@ -128,6 +139,83 @@ public static class NodeCommands
     }
 
 
+
+
+    private static void AddSubNode(
+        Node parent,
+        INodeRepository nodes,
+        INodeTypeRepository nodeTypes,
+        IDocumentRepository documents,
+        Participant author,
+        InMemoryEventPublisher eventPublisher)
+    {
+        var availableTypes = parent.RequestedSubNodeTypes
+            .Select(request => nodeTypes.GetById(request.TypeId))
+            .Where(type => type is not null && !type.IsArchived)
+            .Cast<NodeTypeDefinition>()
+            .OrderBy(type => type.Name)
+            .ToList();
+
+        if (availableTypes.Count == 0)
+        {
+            ConsoleUi.Pause(
+                "This node does not request any available sub-node types.");
+            return;
+        }
+
+        var existingChildren = nodes
+            .GetAll()
+            .Where(candidate =>
+                candidate.ParentNodeIds.Contains(parent.Id))
+            .ToList();
+
+        Console.WriteLine();
+        Console.WriteLine("Select the type of sub-node to add:");
+
+        for (var index = 0; index < availableTypes.Count; index++)
+        {
+            var type = availableTypes[index];
+            var count = existingChildren.Count(
+                child => child.TypeId == type.Id);
+
+            Console.WriteLine(
+                $"{index + 1}. {type.Name} ({count})");
+        }
+
+        Console.WriteLine("0. Cancel");
+        Console.Write("Type: ");
+
+        if (!int.TryParse(Console.ReadLine(), out var selection) ||
+            selection < 0 ||
+            selection > availableTypes.Count)
+        {
+            ConsoleUi.Pause("That is not a valid type selection.");
+            return;
+        }
+
+        if (selection == 0)
+        {
+            return;
+        }
+
+        var selectedType = availableTypes[selection - 1];
+
+        Console.Clear();
+        Console.WriteLine($"ADD {selectedType.Name.ToUpperInvariant()} SUB-NODE");
+        Console.WriteLine(
+            new string(
+                '-',
+                $"ADD {selectedType.Name} SUB-NODE".Length));
+
+        NodeCreationWorkflow.Create(
+            nodes,
+            nodeTypes,
+            documents,
+            author,
+            eventPublisher,
+            selectedType,
+            parent);
+    }
 
     private static Node? SelectSubNode(
         Node parent,
