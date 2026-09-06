@@ -168,8 +168,8 @@ public sealed class Node
         _domainEvents.Add(
         new NodeRestoredV1(
             Id.Value,
-            AuthorId.Value,
             DescriptionId.Value,
+            AuthorId.Value,
             restoredAt
             ));
     }
