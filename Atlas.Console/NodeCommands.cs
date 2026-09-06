@@ -3,6 +3,7 @@ using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Participants.Participants;
+using Atlas.Contracts.Graph.V1;
 
 namespace Atlas.ConsoleApp;
 
@@ -93,7 +94,7 @@ public static class NodeCommands
         InMemoryEventPublisher eventPublisher)
     {
         foreach (var domainEvent in
-                 node.DomainEvents.OfType<Atlas.Graph.NodeLifecycleEvent>())
+                 node.DomainEvents.OfType<NodeLifecycleEventV1>())
         {
             eventPublisher.Publish(
                 GraphEventContractMapper.ToIntegrationContract(

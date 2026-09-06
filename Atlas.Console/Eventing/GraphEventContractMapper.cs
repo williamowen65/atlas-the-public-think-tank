@@ -6,23 +6,23 @@ namespace Atlas.ConsoleApp.Eventing;
 public static class GraphEventContractMapper
 {
     public static NodeLifecycleEventV1 ToIntegrationContract(
-        NodeLifecycleEvent domainEvent)
+        NodeLifecycleEventV1 domainEvent)
     {
         return domainEvent switch
         {
-            NodeCreated message => new NodeCreatedV1(
+            NodeCreatedV1 message => new NodeCreatedV1(
                 message.NodeId,
                 message.DescriptionId,
                 message.AuthorId,
                 message.OccurredAt),
 
-            NodeArchived message => new NodeArchivedV1(
+            NodeArchivedV1 message => new NodeArchivedV1(
                 message.NodeId,
                 message.DescriptionId,
                 message.AuthorId,
                 message.OccurredAt),
 
-            NodeRestored message => new NodeRestoredV1(
+            NodeRestoredV1 message => new NodeRestoredV1(
                 message.NodeId,
                 message.DescriptionId,
                 message.AuthorId,

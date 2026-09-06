@@ -1,5 +1,5 @@
 ﻿using Atlas.Graph.Nodes.NodeTypes;
-using Atlas.Contracts.Graph;
+using Atlas.Contracts.Graph.V1;
 
 namespace Atlas.Graph.Nodes;
 
