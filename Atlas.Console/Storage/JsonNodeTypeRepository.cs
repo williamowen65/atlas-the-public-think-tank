@@ -97,6 +97,7 @@ public sealed class JsonNodeTypeRepository : INodeTypeRepository
             OwnerId = nodeType.OwnerId,
             IsSystemDefined = nodeType.IsSystemDefined,
             IsArchived = nodeType.IsArchived,
+            AutoPluralize = nodeType.AutoPluralize,
             CreatedAt = nodeType.CreatedAt,
             UpdatedAt = nodeType.UpdatedAt
         };
@@ -113,6 +114,7 @@ public sealed class JsonNodeTypeRepository : INodeTypeRepository
             storedType.IsSystemDefined,
             storedType.IsArchived,
             storedType.CreatedAt,
-            storedType.UpdatedAt);
+            storedType.UpdatedAt,
+            storedType.AutoPluralize ?? true);
     }
 }
