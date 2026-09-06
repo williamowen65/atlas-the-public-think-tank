@@ -110,6 +110,7 @@ public sealed class JsonParticipantRepository : IParticipantRepository
         {
             Id = participant.Id.Value,
             DisplayName = participant.DisplayName,
+            Bio = participant.Bio,
             IsActive = participant.IsActive,
             CreatedAt = participant.CreatedAt,
             UpdatedAt = participant.UpdatedAt
@@ -121,6 +122,7 @@ public sealed class JsonParticipantRepository : IParticipantRepository
         return Participant.Reconstitute(
             new ParticipantId(storedParticipant.Id),
             storedParticipant.DisplayName,
+            storedParticipant.Bio,
             storedParticipant.IsActive,
             storedParticipant.CreatedAt,
             storedParticipant.UpdatedAt);

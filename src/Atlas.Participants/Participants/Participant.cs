@@ -2,8 +2,11 @@ namespace Atlas.Participants.Participants;
 
 public sealed class Participant
 {
+    public const int MaximumBioLength = 500;
+
     public ParticipantId Id { get; }
     public string DisplayName { get; private set; }
+    public string Bio { get; private set; }
     public bool IsActive { get; private set; }
     public DateTimeOffset CreatedAt { get; }
     public DateTimeOffset UpdatedAt { get; private set; }
@@ -11,9 +14,18 @@ public sealed class Participant
     public Participant(
         string displayName,
         DateTimeOffset createdAt)
+        : this(displayName, string.Empty, createdAt)
+    {
+    }
+
+    public Participant(
+        string displayName,
+        string bio,
+        DateTimeOffset createdAt)
     {
         Id = ParticipantId.New();
         DisplayName = ValidateDisplayName(displayName);
+        Bio = ValidateBio(bio);
         IsActive = true;
         CreatedAt = createdAt;
         UpdatedAt = createdAt;
@@ -22,6 +34,7 @@ public sealed class Participant
     private Participant(
         ParticipantId id,
         string displayName,
+        string bio,
         bool isActive,
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt)
@@ -34,6 +47,7 @@ public sealed class Participant
 
         Id = id;
         DisplayName = ValidateDisplayName(displayName);
+        Bio = ValidateBio(bio);
         IsActive = isActive;
         CreatedAt = createdAt;
         UpdatedAt = updatedAt;
@@ -42,6 +56,7 @@ public sealed class Participant
     public static Participant Reconstitute(
         ParticipantId id,
         string displayName,
+        string bio,
         bool isActive,
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt)
@@ -49,6 +64,7 @@ public sealed class Participant
         return new Participant(
             id,
             displayName,
+            bio,
             isActive,
             createdAt,
             updatedAt);
@@ -66,6 +82,40 @@ public sealed class Participant
         }
 
         DisplayName = validatedName;
+        UpdatedAt = changedAt;
+    }
+
+    public void ChangeBio(
+        string newBio,
+        DateTimeOffset changedAt)
+    {
+        var validatedBio = ValidateBio(newBio);
+
+        if (Bio == validatedBio)
+        {
+            return;
+        }
+
+        Bio = validatedBio;
+        UpdatedAt = changedAt;
+    }
+
+    public void UpdateProfile(
+        string newDisplayName,
+        string newBio,
+        DateTimeOffset changedAt)
+    {
+        var validatedName = ValidateDisplayName(newDisplayName);
+        var validatedBio = ValidateBio(newBio);
+
+        if (DisplayName == validatedName &&
+            Bio == validatedBio)
+        {
+            return;
+        }
+
+        DisplayName = validatedName;
+        Bio = validatedBio;
         UpdatedAt = changedAt;
     }
 
@@ -99,5 +149,20 @@ public sealed class Participant
         }
 
         return trimmedName;
+    }
+
+    private static string ValidateBio(string bio)
+    {
+        var trimmedBio = bio?.Trim() ?? string.Empty;
+
+        if (trimmedBio.Length > MaximumBioLength)
+        {
+            throw new ArgumentException(
+                $"A participant bio cannot exceed " +
+                $"{MaximumBioLength} characters.",
+                nameof(bio));
+        }
+
+        return trimmedBio;
     }
 }

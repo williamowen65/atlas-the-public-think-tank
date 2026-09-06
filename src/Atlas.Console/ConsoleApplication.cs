@@ -1,8 +1,10 @@
 using Atlas.ConsoleApp.Eventing;
+using Atlas.ConsoleApp.Participants;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Participants.Participants;
+using Atlas.Participants.Profiles;
 
 namespace Atlas.ConsoleApp;
 
@@ -65,32 +67,36 @@ public sealed class ConsoleApplication
                     break;
 
                 case "3":
-                    CreateNode();
+                    BrowseParticipants();
                     break;
 
                 case "4":
-                    BrowseNodes();
+                    CreateNode();
                     break;
 
                 case "5":
-                    ListNodeTypes();
+                    BrowseNodes();
                     break;
 
                 case "6":
-                    ShowDataFiles();
+                    ListNodeTypes();
                     break;
 
                 case "7":
-                    ListContentDocuments();
+                    ShowDataFiles();
                     break;
 
                 case "8":
+                    ListContentDocuments();
+                    break;
+
+                case "9":
                     running = false;
                     break;
 
                 default:
                     ConsoleUi.Pause(
-                        "Please select an option from 1 through 8.");
+                        "Please select an option from 1 through 9.");
                     break;
             }
         }
@@ -105,12 +111,13 @@ public sealed class ConsoleApplication
         Console.WriteLine();
         Console.WriteLine("1. Select participant");
         Console.WriteLine("2. Create participant");
-        Console.WriteLine("3. Create node");
-        Console.WriteLine("4. Browse nodes");
-        Console.WriteLine("5. List node types");
-        Console.WriteLine("6. Show data files");
-        Console.WriteLine("7. List Content documents");
-        Console.WriteLine("8. Exit");
+        Console.WriteLine("3. Browse participants");
+        Console.WriteLine("4. Create node");
+        Console.WriteLine("5. Browse nodes");
+        Console.WriteLine("6. List node types");
+        Console.WriteLine("7. Show data files");
+        Console.WriteLine("8. List Content documents");
+        Console.WriteLine("9. Exit");
         Console.WriteLine();
     }
 
@@ -162,11 +169,14 @@ public sealed class ConsoleApplication
         Console.WriteLine("------------------");
         Console.Write("Display name: ");
         var displayName = Console.ReadLine();
+        Console.Write("Short bio (optional): ");
+        var bio = Console.ReadLine();
 
         try
         {
             var participant = new Participant(
                 displayName ?? string.Empty,
+                bio ?? string.Empty,
                 DateTimeOffset.UtcNow);
 
             _participants.Save(participant);
@@ -185,6 +195,242 @@ public sealed class ConsoleApplication
             ConsoleUi.Pause(
                 $"Unable to create participant: {exception.Message}");
         }
+    }
+
+    private void BrowseParticipants()
+    {
+        var browsing = true;
+
+        while (browsing)
+        {
+            Console.Clear();
+            Console.WriteLine("BROWSE PARTICIPANTS");
+            Console.WriteLine("-------------------");
+
+            var participants = _participants
+                .GetAll()
+                .OrderBy(participant => participant.DisplayName)
+                .ToList();
+
+            if (participants.Count == 0)
+            {
+                ConsoleUi.Pause("No participants have been created.");
+                return;
+            }
+
+            var nodes = _nodes.GetAll();
+
+            ParticipantDisplay.WriteTableHeader();
+
+            for (var index = 0; index < participants.Count; index++)
+            {
+                ParticipantDisplay.WriteTableRow(
+                    participants[index],
+                    nodes,
+                    index + 1);
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("Enter a participant number to view their profile.");
+            Console.WriteLine("Enter 0 to return to the main menu.");
+            Console.WriteLine();
+            Console.Write("Selection: ");
+
+            if (!int.TryParse(Console.ReadLine(), out var selection) ||
+                selection < 0 ||
+                selection > participants.Count)
+            {
+                ConsoleUi.Pause("That is not a valid selection.");
+                continue;
+            }
+
+            if (selection == 0)
+            {
+                browsing = false;
+                continue;
+            }
+
+            ViewParticipantProfile(
+                participants[selection - 1].Id);
+        }
+    }
+
+    private void ViewParticipantProfile(
+        ParticipantId participantId)
+    {
+        var viewing = true;
+
+        while (viewing)
+        {
+            var participant = _participants.GetById(participantId);
+
+            if (participant is null)
+            {
+                ConsoleUi.Pause("That participant no longer exists.");
+                return;
+            }
+
+            var authoredNodes = _nodes
+                .GetAll()
+                .Where(node =>
+                    node.AuthorId.Value == participant.Id.Value)
+                .ToList();
+
+            Console.Clear();
+            Console.WriteLine("PARTICIPANT PROFILE");
+            Console.WriteLine("-------------------");
+            Console.WriteLine($"Display name: {participant.DisplayName}");
+            Console.WriteLine(
+                $"Bio:          " +
+                $"{(string.IsNullOrWhiteSpace(participant.Bio) ? "-" : participant.Bio)}");
+            Console.WriteLine(
+                $"Joined:       {participant.CreatedAt.LocalDateTime}");
+            Console.WriteLine(
+                $"Status:       {(participant.IsActive ? "Active" : "Inactive")}");
+            Console.WriteLine($"Authored nodes: {authoredNodes.Count}");
+            Console.WriteLine(
+                $"Viewing as:   {_currentParticipant.DisplayName}");
+            Console.WriteLine();
+            Console.WriteLine("1. Edit profile");
+            Console.WriteLine("2. View authored nodes");
+            Console.WriteLine("3. Select as current participant");
+            Console.WriteLine("4. Return to participant browser");
+            Console.WriteLine();
+            Console.Write("Selection: ");
+
+            switch (Console.ReadLine())
+            {
+                case "1":
+                    EditParticipantProfile(participant);
+                    break;
+
+                case "2":
+                    ViewAuthoredNodes(participant, authoredNodes);
+                    break;
+
+                case "3":
+                    if (!participant.IsActive)
+                    {
+                        ConsoleUi.Pause(
+                            "An inactive participant cannot be selected.");
+                        break;
+                    }
+
+                    _currentParticipant = participant;
+                    ConsoleUi.Pause(
+                        $"Current participant: {participant.DisplayName}");
+                    break;
+
+                case "4":
+                    viewing = false;
+                    break;
+
+                default:
+                    ConsoleUi.Pause(
+                        "Please select an option from 1 through 4.");
+                    break;
+            }
+        }
+    }
+
+    private void EditParticipantProfile(Participant participant)
+    {
+        Console.Clear();
+        Console.WriteLine("EDIT PARTICIPANT PROFILE");
+        Console.WriteLine("------------------------");
+        Console.WriteLine(
+            $"Editing {participant.DisplayName} " +
+            $"as {_currentParticipant.DisplayName}.");
+        Console.WriteLine();
+        Console.Write(
+            $"Display name ({participant.DisplayName}): ");
+        var displayName = Console.ReadLine();
+
+        Console.WriteLine(
+            "Bio (blank keeps the current bio; /clear removes it):");
+        Console.Write("> ");
+        var bio = Console.ReadLine();
+
+        var requestedDisplayName =
+            string.IsNullOrWhiteSpace(displayName)
+                ? participant.DisplayName
+                : displayName;
+
+        var requestedBio = bio switch
+        {
+            null or "" => participant.Bio,
+            "/clear" => string.Empty,
+            _ => bio
+        };
+
+        try
+        {
+            var workflow =
+                new UpdateParticipantProfile(_participants);
+
+            var updatedParticipant = workflow.Execute(
+                _currentParticipant.Id,
+                participant.Id,
+                requestedDisplayName,
+                requestedBio,
+                DateTimeOffset.UtcNow);
+
+            if (_currentParticipant.Id == updatedParticipant.Id)
+            {
+                _currentParticipant = updatedParticipant;
+            }
+
+            ConsoleUi.Pause("Profile updated.");
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            ConsoleUi.Pause($"Permission denied: {exception.Message}");
+        }
+        catch (ArgumentException exception)
+        {
+            ConsoleUi.Pause($"Unable to update profile: {exception.Message}");
+        }
+        catch (InvalidOperationException exception)
+        {
+            ConsoleUi.Pause($"Unable to update profile: {exception.Message}");
+        }
+    }
+
+    private void ViewAuthoredNodes(
+        Participant participant,
+        IReadOnlyCollection<Node> authoredNodes)
+    {
+        Console.Clear();
+        Console.WriteLine(
+            $"NODES AUTHORED BY {participant.DisplayName.ToUpperInvariant()}");
+        Console.WriteLine(
+            new string('-', 18 + participant.DisplayName.Length));
+
+        if (authoredNodes.Count == 0)
+        {
+            Console.WriteLine("No authored nodes.");
+            ConsoleUi.Pause();
+            return;
+        }
+
+        NodeDisplay.WriteTableHeader();
+
+        var index = 1;
+
+        foreach (var node in authoredNodes)
+        {
+            NodeDisplay.WriteTableRow(
+                node,
+                _nodes,
+                _nodeTypes,
+                _documents,
+                _participants,
+                index);
+
+            index++;
+        }
+
+        ConsoleUi.Pause();
     }
 
     private void CreateNode()
