@@ -91,6 +91,8 @@ public static class NodeDisplay
         Console.WriteLine($"Description ID: {node.DescriptionId}");
         Console.WriteLine($"Author ID:      {node.AuthorId}");
         Console.WriteLine($"Authored By:    {authorName}");
+        Console.WriteLine(
+            $"Parents:        {ResolveParentSummary(node, nodes)}");
         Console.WriteLine($"Status:         {node.Status}");
         Console.WriteLine($"Votes:          {FormatVoteCount(voteCount)}");
         Console.WriteLine($"Average:        {FormatAverageVote(averageVote)}");
@@ -214,6 +216,23 @@ public static class NodeDisplay
                 candidate.ParentNodeIds.Contains(node.Id))
             .OrderBy(candidate => candidate.Title.Value)
             .ToList();
+    }
+
+
+    private static string ResolveParentSummary(
+        Node node,
+        INodeRepository nodes)
+    {
+        if (node.ParentNodeIds.Count == 0)
+        {
+            return "Root node";
+        }
+
+        return string.Join(
+            " · ",
+            node.ParentNodeIds.Select(parentId =>
+                nodes.GetById(parentId)?.Title.Value
+                ?? $"Unknown ({parentId})"));
     }
 
     private static string ResolveDescription(
