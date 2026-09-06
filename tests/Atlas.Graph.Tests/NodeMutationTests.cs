@@ -102,7 +102,7 @@ public class NodeMutationTests
 
         node.RequestSubNodeType(typeId, originalUpdatedAt.AddMinutes(1));
 
-        Assert.AreEqual(1, node.RequestedSubNodeTypes.Count);
+        Assert.HasCount(1, node.RequestedSubNodeTypes);
         Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);
     }
 
@@ -116,7 +116,7 @@ public class NodeMutationTests
 
         node.StopRequestingSubNodeType(typeId, changedAt);
 
-        Assert.AreEqual(0, node.RequestedSubNodeTypes.Count);
+        Assert.IsEmpty(node.RequestedSubNodeTypes);
         Assert.AreEqual(changedAt, node.UpdatedAt);
     }
 

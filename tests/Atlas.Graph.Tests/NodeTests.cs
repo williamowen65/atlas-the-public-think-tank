@@ -124,7 +124,7 @@ public class NodeTests
 
         node.Archive(DateTimeOffset.UtcNow.AddMinutes(1));
 
-        Assert.AreEqual(0, node.DomainEvents.Count);
+        Assert.IsEmpty(node.DomainEvents);
     }
 
 
@@ -163,7 +163,7 @@ public class NodeTests
             commentTypeId,
             DateTimeOffset.UtcNow.AddMinutes(1));
 
-        Assert.AreEqual(1, node.RequestedSubNodeTypes.Count);
+        Assert.HasCount(1, node.RequestedSubNodeTypes);
     }
 
     [TestMethod]
@@ -180,7 +180,7 @@ public class NodeTests
             commentTypeId,
             DateTimeOffset.UtcNow.AddMinutes(1));
 
-        Assert.AreEqual(0, node.RequestedSubNodeTypes.Count);
+        Assert.IsEmpty(node.RequestedSubNodeTypes);
     }
 
     [TestMethod]
@@ -231,8 +231,8 @@ public class NodeTests
             parentId,
             DateTimeOffset.UtcNow.AddMinutes(1));
 
-        Assert.AreEqual(1, node.ParentNodeIds.Count);
-        Assert.AreEqual(0, node.DomainEvents.Count);
+        Assert.HasCount(1, node.ParentNodeIds);
+        Assert.IsEmpty(node.DomainEvents);
     }
 
     [TestMethod]
@@ -268,7 +268,7 @@ public class NodeTests
 
         node.DetachFromParent(parentId, detachedAt);
 
-        Assert.AreEqual(0, node.ParentNodeIds.Count);
+        Assert.IsEmpty(node.ParentNodeIds);
 
         var domainEvent = node.DomainEvents
             .OfType<NodeParentDetachedV1>()

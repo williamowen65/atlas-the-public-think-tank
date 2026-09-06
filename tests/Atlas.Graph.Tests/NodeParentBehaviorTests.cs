@@ -41,7 +41,7 @@ public class NodeParentBehaviorTests
         node.AttachToParent(parentId, originalUpdatedAt.AddMinutes(1));
 
         Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);
-        Assert.AreEqual(0, node.DomainEvents.Count);
+        Assert.IsEmpty(node.DomainEvents);
     }
 
     [TestMethod]
@@ -80,7 +80,7 @@ public class NodeParentBehaviorTests
             originalUpdatedAt.AddMinutes(1));
 
         Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);
-        Assert.AreEqual(0, node.DomainEvents.Count);
+        Assert.IsEmpty(node.DomainEvents);
     }
 
     [TestMethod]

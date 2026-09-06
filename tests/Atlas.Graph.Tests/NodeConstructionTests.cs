@@ -25,8 +25,8 @@ public class NodeConstructionTests
         Assert.AreEqual(NodeStatus.Active, node.Status);
         Assert.AreEqual(createdAt, node.CreatedAt);
         Assert.AreEqual(createdAt, node.UpdatedAt);
-        Assert.AreEqual(0, node.ParentNodeIds.Count);
-        Assert.AreEqual(0, node.RequestedSubNodeTypes.Count);
+        Assert.IsEmpty(node.ParentNodeIds);
+        Assert.IsEmpty(node.RequestedSubNodeTypes);
     }
 
     [TestMethod]
@@ -58,7 +58,7 @@ public class NodeConstructionTests
             [typeId, typeId],
             DateTimeOffset.UtcNow);
 
-        Assert.AreEqual(1, node.RequestedSubNodeTypes.Count);
+        Assert.HasCount(1, node.RequestedSubNodeTypes);
         Assert.AreEqual(typeId, node.RequestedSubNodeTypes.Single().TypeId);
     }
 
@@ -82,6 +82,6 @@ public class NodeConstructionTests
 
         node.ClearDomainEvents();
 
-        Assert.AreEqual(0, node.DomainEvents.Count);
+        Assert.IsEmpty(node.DomainEvents);
     }
 }

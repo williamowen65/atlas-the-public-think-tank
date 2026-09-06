@@ -46,7 +46,7 @@ public class NodeReconstitutionTests
     {
         var node = NodeTestFactory.Reconstitute();
 
-        Assert.AreEqual(0, node.DomainEvents.Count);
+        Assert.IsEmpty(node.DomainEvents);
     }
 
     [TestMethod]
@@ -59,8 +59,8 @@ public class NodeReconstitutionTests
             requestedTypeIds: [requestedTypeId, requestedTypeId],
             parentIds: [parentId, parentId]);
 
-        Assert.AreEqual(1, node.RequestedSubNodeTypes.Count);
-        Assert.AreEqual(1, node.ParentNodeIds.Count);
+        Assert.HasCount(1, node.RequestedSubNodeTypes);
+        Assert.HasCount(1, node.ParentNodeIds);
     }
 
     [TestMethod]
