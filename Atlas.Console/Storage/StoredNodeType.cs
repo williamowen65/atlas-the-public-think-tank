@@ -8,6 +8,7 @@ public sealed class StoredNodeType
     public string? OwnerId { get; set; }
     public bool IsSystemDefined { get; set; }
     public bool IsArchived { get; set; }
+    public bool? AutoPluralize { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 }
