@@ -148,16 +148,16 @@ public sealed class Node
         UpdatedAt = restoredAt;
     }
 
-    public void ChangeDescription(
-        NodeDescriptionId targetDescriptionId,
+    public void ReplaceDescriptionReference(
+        NodeDescriptionId newDescriptionId,
         DateTimeOffset changedAt)
     {
-        if (DescriptionId == targetDescriptionId)
+        if (DescriptionId == newDescriptionId)
         {
             return;
         }
 
-        DescriptionId = targetDescriptionId;
+        DescriptionId = newDescriptionId;
         UpdatedAt = changedAt;
     }
 
