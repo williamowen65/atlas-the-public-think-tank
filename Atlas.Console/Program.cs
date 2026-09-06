@@ -5,6 +5,7 @@ using Atlas.ConsoleApp.Storage;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
+using Atlas.Graph.NodeLifecycle;
 
 const string ConsoleActorId = "console-user";
 

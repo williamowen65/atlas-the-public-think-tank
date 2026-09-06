@@ -1,4 +1,5 @@
 using Atlas.Content.Documents;
+using Atlas.Graph.NodeLifecycle;
 
 namespace Atlas.ConsoleApp.Content;
 

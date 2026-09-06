@@ -2,6 +2,7 @@ using Atlas.ConsoleApp.Eventing;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
+using Atlas.Graph.NodeLifecycle;
 
 namespace Atlas.ConsoleApp;
 
