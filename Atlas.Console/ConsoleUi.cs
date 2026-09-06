@@ -177,13 +177,48 @@ public static class ConsoleUi
         Console.Write("Description: ");
         var description = Console.ReadLine();
 
+        Console.Write("Automatically pluralize this type? (Y/n): ");
+        var pluralizeResponse = Console.ReadLine()?.Trim();
+
+        bool autoPluralize;
+
+        if (string.IsNullOrWhiteSpace(pluralizeResponse) ||
+            string.Equals(
+                pluralizeResponse,
+                "y",
+                StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(
+                pluralizeResponse,
+                "yes",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            autoPluralize = true;
+        }
+        else if (string.Equals(
+                     pluralizeResponse,
+                     "n",
+                     StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(
+                     pluralizeResponse,
+                     "no",
+                     StringComparison.OrdinalIgnoreCase))
+        {
+            autoPluralize = false;
+        }
+        else
+        {
+            Pause("Please enter Y or N for automatic pluralization.");
+            return null;
+        }
+
         try
         {
             var nodeType = NodeTypeDefinition.CreateCustom(
                 name ?? string.Empty,
                 description ?? string.Empty,
                 ownerId,
-                DateTimeOffset.UtcNow);
+                DateTimeOffset.UtcNow,
+                autoPluralize);
 
             nodeTypes.Save(nodeType);
             return nodeType;
