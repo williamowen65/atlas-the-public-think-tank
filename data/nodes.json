@@ -4,6 +4,7 @@
     "Title": "How can coastal communities adapt?",
     "DescriptionId": "6753c9e1-7e32-4c87-bc39-3854ff4ee93a",
     "Type": "Question",
+    "AuthorId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
     "Status": "Active",
     "CreatedAt": "2026-09-05T19:10:46.9350296+00:00",
     "UpdatedAt": "2026-09-05T19:10:46.9350296+00:00"
@@ -13,6 +14,7 @@
     "Title": "Ideas to Improve Something",
     "DescriptionId": "a10ac7b0-69b2-4260-8b65-0b885d5949e9",
     "TypeId": "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
+    "AuthorId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
     "Status": "Active",
     "CreatedAt": "2026-09-05T19:29:01.8072604+00:00",
     "UpdatedAt": "2026-09-06T02:54:02.8220165+00:00"
@@ -22,6 +24,7 @@
     "Title": "How to solve homelessness crisis?",
     "DescriptionId": "a05c4f61-fb26-4759-8c3f-02c4344866e2",
     "TypeId": "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
+    "AuthorId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
     "Status": "Active",
     "CreatedAt": "2026-09-05T20:06:53.4492315+00:00",
     "UpdatedAt": "2026-09-05T20:06:53.4492315+00:00"
@@ -31,6 +34,7 @@
     "Title": "Can you Solve This?",
     "DescriptionId": "ba69b0af-d10f-48d7-be87-08e76dd2a63d",
     "TypeId": "1f3779e4-78df-4982-a706-b8b401dbdbb5",
+    "AuthorId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
     "Status": "Active",
     "CreatedAt": "2026-09-05T20:08:02.7370217+00:00",
     "UpdatedAt": "2026-09-05T20:08:02.7370217+00:00"
@@ -40,6 +44,7 @@
     "Title": "dfsdf",
     "DescriptionId": "41f38d08-371a-4fdd-be06-c9d34c207101",
     "TypeId": "0328981f-7b76-4bcb-ad04-99b4ed74fd23",
+    "AuthorId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
     "Status": "Active",
     "CreatedAt": "2026-09-05T23:04:49.6143348+00:00",
     "UpdatedAt": "2026-09-05T23:04:49.6143348+00:00"
@@ -49,6 +54,7 @@
     "Title": "TEst",
     "DescriptionId": "c33ad870-bb05-4c3e-9f78-0510f84ec0ae",
     "TypeId": "0328981f-7b76-4bcb-ad04-99b4ed74fd23",
+    "AuthorId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
     "Status": "Active",
     "CreatedAt": "2026-09-05T23:11:24.1208946+00:00",
     "UpdatedAt": "2026-09-05T23:11:24.1208946+00:00"
@@ -58,6 +64,7 @@
     "Title": "tesssst",
     "DescriptionId": "ea86426a-1f0b-4b19-bc35-47b254ad71e8",
     "TypeId": "53057519-9a26-4b02-a884-56dcf82159ed",
+    "AuthorId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
     "Status": "Active",
     "CreatedAt": "2026-09-05T23:57:48.95945+00:00",
     "UpdatedAt": "2026-09-05T23:57:48.95945+00:00"
@@ -67,6 +74,7 @@
     "Title": "sfsfsd",
     "DescriptionId": "37396ac5-2c69-4eca-a5fa-cf055e9469ac",
     "TypeId": "53057519-9a26-4b02-a884-56dcf82159ed",
+    "AuthorId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
     "Status": "Active",
     "CreatedAt": "2026-09-06T00:00:25.9593112+00:00",
     "UpdatedAt": "2026-09-06T00:00:25.9593112+00:00"
@@ -76,6 +84,7 @@
     "Title": "NEW NODE",
     "DescriptionId": "069c7366-16c6-4365-8aef-c1af55b745cb",
     "TypeId": "0328981f-7b76-4bcb-ad04-99b4ed74fd23",
+    "AuthorId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
     "Status": "Active",
     "CreatedAt": "2026-09-06T00:16:05.9446639+00:00",
     "UpdatedAt": "2026-09-06T00:16:05.9446639+00:00"
@@ -85,6 +94,7 @@
     "Title": "TESTING",
     "DescriptionId": "6fe80436-9e8b-4f14-a5dc-91cd5b86b1d3",
     "TypeId": "d0ac2786-c2a4-407c-9b7c-6e82fd8121c9",
+    "AuthorId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
     "Status": "Active",
     "CreatedAt": "2026-09-06T00:44:46.9860459+00:00",
     "UpdatedAt": "2026-09-06T00:44:46.9860459+00:00"
@@ -94,8 +104,19 @@
     "Title": "NEWEST NODE",
     "DescriptionId": "6e673951-47ca-4aee-91c1-5bd730f2c17c",
     "TypeId": "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
+    "AuthorId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
     "Status": "Active",
     "CreatedAt": "2026-09-06T02:26:27.0802402+00:00",
     "UpdatedAt": "2026-09-06T02:26:27.0802402+00:00"
+  },
+  {
+    "Id": "bfc5119e-c47b-4da3-9c64-89b15b73e7c9",
+    "Title": "Combat Homelessness",
+    "DescriptionId": "b02a7382-7774-4342-97e8-727057a0fd9e",
+    "TypeId": "53057519-9a26-4b02-a884-56dcf82159ed",
+    "AuthorId": "6ae1fb84-3842-4caf-a114-7c3411f24665",
+    "Status": "Active",
+    "CreatedAt": "2026-09-06T03:16:39.9921534+00:00",
+    "UpdatedAt": "2026-09-06T03:16:39.9921534+00:00"
   }
 ]
