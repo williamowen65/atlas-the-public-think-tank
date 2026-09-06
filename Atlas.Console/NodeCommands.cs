@@ -1,3 +1,4 @@
+using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 
@@ -9,6 +10,7 @@ public static class NodeCommands
         Node node,
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
+        IDocumentRepository documents,
         string actorId)
     {
         var viewingNode = true;
@@ -16,7 +18,7 @@ public static class NodeCommands
         while (viewingNode)
         {
             Console.Clear();
-            NodeDisplay.WriteDetails(node, nodeTypes);
+            NodeDisplay.WriteDetails(node, nodeTypes, documents);
 
             Console.WriteLine();
             Console.WriteLine("Choose an action:");
@@ -39,7 +41,7 @@ public static class NodeCommands
                         break;
 
                     case "2":
-                        ChangeDescription(node, nodes);
+                        ChangeDescription(node, nodes, documents);
                         break;
 
                     case "3":
@@ -94,23 +96,36 @@ public static class NodeCommands
 
     private static void ChangeDescription(
         Node node,
-        INodeRepository nodes)
+        INodeRepository nodes,
+        IDocumentRepository documents)
     {
+        var currentDocument = documents.GetById(
+            new DocumentId(node.DescriptionId.Value));
+
         Console.WriteLine("Current description:");
         Console.WriteLine(
-            string.IsNullOrWhiteSpace(node.Description.Value)
+            string.IsNullOrWhiteSpace(currentDocument?.Content)
                 ? "(none)"
-                : node.Description.Value);
+                : currentDocument.Content);
         Console.WriteLine();
         Console.Write("New description (blank clears it): ");
         var description = Console.ReadLine();
+        var changedAt = DateTimeOffset.UtcNow;
 
-        node.ChangeDescription(
-            new NodeDescriptionId(description ?? string.Empty),
-            DateTimeOffset.UtcNow);
+        var replacement = new Document(
+            description ?? string.Empty,
+            changedAt);
+
+        documents.Save(replacement);
+
+        node.ReplaceDescriptionReference(
+            new NodeDescriptionId(replacement.Id.Value),
+            changedAt);
 
         nodes.Save(node);
-        ConsoleUi.Pause("Node description updated and saved.");
+
+        ConsoleUi.Pause(
+            $"Description replaced with document {replacement.Id}.");
     }
 
     private static void ChangeType(
