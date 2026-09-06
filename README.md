@@ -91,3 +91,16 @@ This project seeks contributions from the community. If you are interested in co
 
 -->
 
+
+
+## Repository layout
+
+The physical repository layout mirrors the main Visual Studio solution:
+
+- `src/` contains the current Atlas boundaries and Console host.
+- `tests/` contains tests for the current boundaries.
+- `legacy/` contains the previous web application, its cloud tests, and the pre-launch site.
+- `infrastructure/` contains local development and reverse-proxy support.
+- `docs/sql/` contains the legacy SQL reference scripts.
+- `data/` contains the Console host's file-system data.
+- `.github/`, `Atlas.sln`, and repository-level files remain at the root.

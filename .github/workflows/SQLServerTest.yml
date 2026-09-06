@@ -12,7 +12,7 @@ jobs:
         image: visuasoft/mssql-2022-full-text
         env:
           ACCEPT_EULA: Y
-          SA_PASSWORD: "Aa123456!" # must meet SQL Server complexity requirements
+          SA_PASSWORD: "Aa123456!"
         ports:
           - 1433:1433
         options: >-
@@ -27,7 +27,7 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Build CloudTests project (and dependencies)
-        run: dotnet build CloudTests/CloudTests.csproj --configuration Debug
+        run: dotnet build legacy/CloudTests/CloudTests.csproj --configuration Debug
 
       - name: Wait for SQL Server to be ready
         run: |
@@ -37,31 +37,25 @@ jobs:
             echo "SQL Server not ready yet... ($i)"
             sleep 5
           done
-      
+
       - name: Run CloudTest project tests
         id: run-tests
         run: |
-          # run tests, capture output and exit code
           set +e
-          dotnet test CloudTests/CloudTests.csproj --no-build --verbosity normal > test_output.txt 2>&1
+          dotnet test legacy/CloudTests/CloudTests.csproj --no-build --verbosity normal > test_output.txt 2>&1
           EXIT_CODE=$?
           set -e
-      
-          # parse results
+
           PASSED=$(grep -oP 'Passed:\s+\K[0-9]+' test_output.txt | tail -1 || echo 0)
           FAILED=$(grep -oP 'Failed:\s+\K[0-9]+' test_output.txt | tail -1 || echo 0)
           FAILED=${FAILED:-0}
-      
-          # always show the full output
+
           cat test_output.txt
-      
-          # export numbers for later steps
+
           echo "passed=$PASSED" >> "$GITHUB_OUTPUT"
           echo "failed=$FAILED" >> "$GITHUB_OUTPUT"
-      
-          # finally return the real test exit code so the job still fails
-          exit $EXIT_CODE
 
+          exit $EXIT_CODE
 
       - name: Update test badge in Gist if testing on main branch
         if: always() && github.ref == 'refs/heads/main'
@@ -69,7 +63,6 @@ jobs:
           GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
           GIST_ID: 4ac1300861898e7568dbec51c70bd24b
         run: |
-          # Create badge JSON locally (example)
           if [ "${{ steps.run-tests.outputs.failed }}" -eq "0" ]; then
             COLOR="green"
           else
@@ -78,11 +71,9 @@ jobs:
           MESSAGE="${{ steps.run-tests.outputs.passed }} passed, ${{ steps.run-tests.outputs.failed }} failed"
           echo "{\"schemaVersion\":1,\"label\":\"GitHub Action Tests\",\"message\":\"$MESSAGE\",\"color\":\"$COLOR\"}" > test-badge.json
 
-          # Prepare JSON payload for updating the gist
           GIST_PAYLOAD=$(jq -n --arg content "$(cat test-badge.json)" \
             '{ files: { "test-badge.json": { "content": $content } } }')
 
-          # Update the Gist
           curl -s -X PATCH \
             -H "Authorization: token $GIST_TOKEN" \
             -H "Accept: application/vnd.github+json" \

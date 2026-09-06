@@ -15,6 +15,7 @@ var dataDirectory = Path.GetFullPath(
         "..",
         "..",
         "..",
+        "..",
         "data"));
 
 var nodeDataFilePath = Path.Combine(
