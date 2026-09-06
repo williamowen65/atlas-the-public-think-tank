@@ -7,12 +7,16 @@ public sealed class Node
 {
     private readonly List<object> _domainEvents = [];
     private readonly List<RequestedSubNodeType> _requestedSubNodeTypes;
+    private readonly List<NodeId> _parentNodeIds;
 
     public IReadOnlyCollection<object> DomainEvents =>
         _domainEvents.AsReadOnly();
 
     public IReadOnlyCollection<RequestedSubNodeType> RequestedSubNodeTypes =>
         _requestedSubNodeTypes.AsReadOnly();
+
+    public IReadOnlyCollection<NodeId> ParentNodeIds =>
+        _parentNodeIds.AsReadOnly();
 
     public NodeId Id { get; }
     public NodeTitle Title { get; private set; }
@@ -35,6 +39,7 @@ public sealed class Node
             typeId,
             authorId,
             [],
+            [],
             createdAt)
     {
     }
@@ -45,6 +50,25 @@ public sealed class Node
         NodeTypeId typeId,
         NodeAuthorId authorId,
         IEnumerable<NodeTypeId> requestedSubNodeTypeIds,
+        DateTimeOffset createdAt)
+        : this(
+            title,
+            descriptionId,
+            typeId,
+            authorId,
+            requestedSubNodeTypeIds,
+            [],
+            createdAt)
+    {
+    }
+
+    public Node(
+        NodeTitle title,
+        NodeDescriptionId descriptionId,
+        NodeTypeId typeId,
+        NodeAuthorId authorId,
+        IEnumerable<NodeTypeId> requestedSubNodeTypeIds,
+        IEnumerable<NodeId> parentNodeIds,
         DateTimeOffset createdAt)
     {
         Id = NodeId.New();
@@ -57,6 +81,7 @@ public sealed class Node
         UpdatedAt = createdAt;
         _requestedSubNodeTypes =
             CreateRequestedSubNodeTypes(requestedSubNodeTypeIds);
+        _parentNodeIds = CreateParentNodeIds(parentNodeIds, Id);
 
         _domainEvents.Add(
             new NodeCreatedV1(
@@ -74,6 +99,7 @@ public sealed class Node
         NodeAuthorId authorId,
         NodeStatus status,
         IEnumerable<NodeTypeId> requestedSubNodeTypeIds,
+        IEnumerable<NodeId> parentNodeIds,
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt)
     {
@@ -93,6 +119,7 @@ public sealed class Node
         UpdatedAt = updatedAt;
         _requestedSubNodeTypes =
             CreateRequestedSubNodeTypes(requestedSubNodeTypeIds);
+        _parentNodeIds = CreateParentNodeIds(parentNodeIds, Id);
     }
 
     public static Node Reconstitute(
@@ -113,6 +140,7 @@ public sealed class Node
             authorId,
             status,
             [],
+            [],
             createdAt,
             updatedAt);
     }
@@ -128,6 +156,31 @@ public sealed class Node
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt)
     {
+        return Reconstitute(
+            id,
+            title,
+            descriptionId,
+            typeId,
+            authorId,
+            status,
+            requestedSubNodeTypeIds,
+            [],
+            createdAt,
+            updatedAt);
+    }
+
+    public static Node Reconstitute(
+        NodeId id,
+        NodeTitle title,
+        NodeDescriptionId descriptionId,
+        NodeTypeId typeId,
+        NodeAuthorId authorId,
+        NodeStatus status,
+        IEnumerable<NodeTypeId> requestedSubNodeTypeIds,
+        IEnumerable<NodeId> parentNodeIds,
+        DateTimeOffset createdAt,
+        DateTimeOffset updatedAt)
+    {
         return new Node(
             id,
             title,
@@ -136,6 +189,7 @@ public sealed class Node
             authorId,
             status,
             requestedSubNodeTypeIds,
+            parentNodeIds,
             createdAt,
             updatedAt);
     }
@@ -193,6 +247,51 @@ public sealed class Node
         }
 
         UpdatedAt = changedAt;
+    }
+
+    public void AttachToParent(
+        NodeId parentNodeId,
+        DateTimeOffset attachedAt)
+    {
+        EnsureValidParentNodeId(parentNodeId, Id);
+
+        if (_parentNodeIds.Contains(parentNodeId))
+        {
+            return;
+        }
+
+        _parentNodeIds.Add(parentNodeId);
+        UpdatedAt = attachedAt;
+
+        _domainEvents.Add(
+            new NodeParentAttachedV1(
+                Id.Value,
+                parentNodeId.Value,
+                DescriptionId.Value,
+                AuthorId.Value,
+                attachedAt));
+    }
+
+    public void DetachFromParent(
+        NodeId parentNodeId,
+        DateTimeOffset detachedAt)
+    {
+        EnsureValidParentNodeId(parentNodeId, Id);
+
+        if (!_parentNodeIds.Remove(parentNodeId))
+        {
+            return;
+        }
+
+        UpdatedAt = detachedAt;
+
+        _domainEvents.Add(
+            new NodeParentDetachedV1(
+                Id.Value,
+                parentNodeId.Value,
+                DescriptionId.Value,
+                AuthorId.Value,
+                detachedAt));
     }
 
     public void Archive(DateTimeOffset archivedAt)
@@ -259,5 +358,39 @@ public sealed class Node
             .Select(typeId => new RequestedSubNodeType(typeId))
             .Distinct()
             .ToList();
+    }
+
+    private static List<NodeId> CreateParentNodeIds(
+        IEnumerable<NodeId> parentNodeIds,
+        NodeId nodeId)
+    {
+        ArgumentNullException.ThrowIfNull(parentNodeIds);
+
+        var parents = parentNodeIds.Distinct().ToList();
+
+        foreach (var parentNodeId in parents)
+        {
+            EnsureValidParentNodeId(parentNodeId, nodeId);
+        }
+
+        return parents;
+    }
+
+    private static void EnsureValidParentNodeId(
+        NodeId parentNodeId,
+        NodeId nodeId)
+    {
+        if (parentNodeId.Value == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "A parent node ID is required.",
+                nameof(parentNodeId));
+        }
+
+        if (parentNodeId == nodeId)
+        {
+            throw new InvalidOperationException(
+                "A node cannot be its own parent.");
+        }
     }
 }
