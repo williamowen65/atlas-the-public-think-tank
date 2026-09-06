@@ -174,6 +174,22 @@ public static class ConsoleUi
         Console.Write("Custom type name: ");
         var name = Console.ReadLine();
 
+        var existingType = nodeTypes
+            .GetAll()
+            .FirstOrDefault(type =>
+                string.Equals(
+                    type.Name,
+                    name?.Trim(),
+                    StringComparison.OrdinalIgnoreCase));
+
+        if (existingType is not null)
+        {
+            Pause(
+                $"The type '{existingType.Name}' already exists. " +
+                "Select it from the known types instead.");
+            return null;
+        }
+
         Console.Write("Description: ");
         var description = Console.ReadLine();
 
