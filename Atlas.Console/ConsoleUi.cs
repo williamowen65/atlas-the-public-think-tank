@@ -60,10 +60,12 @@ public static class ConsoleUi
 
     public static IReadOnlyCollection<NodeTypeDefinition>
         ReadRequestedSubNodeTypes(
-            INodeTypeRepository nodeTypes)
+            INodeTypeRepository nodeTypes,
+            string ownerId)
     {
-        var availableTypes = nodeTypes
-            .GetAll()
+        var allTypes = nodeTypes.GetAll();
+
+        var availableTypes = allTypes
             .Where(type =>
                 !type.IsArchived &&
                 !string.Equals(
@@ -73,8 +75,7 @@ public static class ConsoleUi
             .OrderBy(type => type.Name)
             .ToList();
 
-        var commentType = nodeTypes
-            .GetAll()
+        var commentType = allTypes
             .Single(type =>
                 string.Equals(
                     type.Name,
@@ -93,6 +94,10 @@ public static class ConsoleUi
                 $"{index + 1}. {availableTypes[index].Name}");
         }
 
+        var createTypeSelection = availableTypes.Count + 1;
+
+        Console.WriteLine(
+            $"{createTypeSelection}. Create a custom type");
         Console.WriteLine();
         Console.Write(
             "Selections (comma-separated, blank for Comment only): ");
@@ -104,10 +109,7 @@ public static class ConsoleUi
             return [commentType];
         }
 
-        var selectedTypes = new List<NodeTypeDefinition>
-        {
-            commentType
-        };
+        var selections = new List<int>();
 
         foreach (var value in input.Split(
                      ',',
@@ -116,14 +118,34 @@ public static class ConsoleUi
         {
             if (!int.TryParse(value, out var selection) ||
                 selection < 1 ||
-                selection > availableTypes.Count)
+                selection > createTypeSelection)
             {
                 Pause(
                     $"'{value}' is not a valid sub-node type selection.");
                 return [];
             }
 
-            selectedTypes.Add(availableTypes[selection - 1]);
+            selections.Add(selection);
+        }
+
+        var selectedTypes = selections
+            .Where(selection => selection != createTypeSelection)
+            .Select(selection => availableTypes[selection - 1])
+            .Prepend(commentType)
+            .ToList();
+
+        if (selections.Contains(createTypeSelection))
+        {
+            var customType = CreateCustomNodeType(
+                nodeTypes,
+                ownerId);
+
+            if (customType is null)
+            {
+                return [];
+            }
+
+            selectedTypes.Add(customType);
         }
 
         return selectedTypes
