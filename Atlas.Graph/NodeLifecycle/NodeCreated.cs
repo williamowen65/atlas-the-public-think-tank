@@ -2,5 +2,5 @@
 
 public sealed record NodeCreated(
     Guid NodeId,
-    string InitialDescription,
+    Guid DescriptionId,
     DateTimeOffset OccurredAt);
