@@ -193,74 +193,12 @@ public sealed class ConsoleApplication
         Console.WriteLine("CREATE NODE");
         Console.WriteLine("-----------");
 
-        Console.Write("Title: ");
-        var title = Console.ReadLine();
-
-        Console.Write("Description (optional): ");
-        var description = Console.ReadLine();
-
-        var nodeType = ConsoleUi.ReadNodeType(
+        NodeCreationWorkflow.Create(
+            _nodes,
             _nodeTypes,
-            _currentParticipant.Id.Value.ToString());
-
-        if (nodeType is null)
-        {
-            return;
-        }
-
-        var requestedSubNodeTypes =
-            ConsoleUi.ReadRequestedSubNodeTypes(_nodeTypes);
-
-        if (requestedSubNodeTypes.Count == 0)
-        {
-            return;
-        }
-
-        try
-        {
-            var now = DateTimeOffset.UtcNow;
-            var nodeTitle = new NodeTitle(title ?? string.Empty);
-
-            var document = new Document(
-                description ?? string.Empty,
-                now);
-
-            _documents.Save(document);
-
-            Console.WriteLine();
-            Console.WriteLine(
-                $"[ATLAS.CONTENT] Saved description document " +
-                $"{document.Id}.");
-
-            var node = new Node(
-                nodeTitle,
-                new NodeDescriptionId(document.Id.Value),
-                nodeType.Id,
-                new NodeAuthorId(_currentParticipant.Id.Value),
-                requestedSubNodeTypes.Select(type => type.Id),
-                now);
-
-            _nodes.Save(node);
-
-            Console.WriteLine(
-                $"[ATLAS.GRAPH] Saved node {node.Id} with " +
-                $"description reference {node.DescriptionId}.");
-
-            foreach (var domainEvent in node.DomainEvents)
-            {
-                _eventPublisher.Publish(domainEvent);
-            }
-
-            node.ClearDomainEvents();
-
-            ConsoleUi.Pause(
-                $"Node created as {nodeType.Name}: {node.Title}");
-        }
-        catch (ArgumentException exception)
-        {
-            ConsoleUi.Pause(
-                $"Unable to create node: {exception.Message}");
-        }
+            _documents,
+            _currentParticipant,
+            _eventPublisher);
     }
 
     private void BrowseNodes()
@@ -325,7 +263,7 @@ public sealed class ConsoleApplication
                 _documents,
                 _participants,
                 _eventPublisher,
-                _currentParticipant.Id.Value.ToString());
+                _currentParticipant);
         }
     }
 
