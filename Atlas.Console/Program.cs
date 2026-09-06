@@ -82,29 +82,38 @@ application.Run();
 static void SeedSystemNodeTypes(
     INodeTypeRepository nodeTypes)
 {
-    var existingNames = nodeTypes
-        .GetAll()
-        .Select(type => type.Name)
-        .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
+    var existingTypes = nodeTypes.GetAll();
     var createdAt = DateTimeOffset.UtcNow;
 
     var systemTypes = new[]
     {
-        ("Issue", "A problem or concern to investigate."),
-        ("Question", "A question that invites answers."),
-        ("Idea", "A proposed concept or possibility."),
-        ("Solution", "A proposed response to a problem."),
-        ("Evidence", "Information supporting or challenging a claim."),
-        ("Relationship", "A connection involving multiple nodes."),
-        ("Comment", "A response or observation about another node."),
-        ("Location", "A place associated with another node.")
+        ("Issue", "A problem or concern to investigate.", true),
+        ("Question", "A question that invites answers.", true),
+        ("Idea", "A proposed concept or possibility.", true),
+        ("Solution", "A proposed response to a problem.", true),
+        ("Evidence", "Information supporting or challenging a claim.", false),
+        ("Relationship", "A connection involving multiple nodes.", true),
+        ("Comment", "A response or observation about another node.", true),
+        ("Location", "A place associated with another node.", true)
     };
 
-    foreach (var (name, description) in systemTypes)
+    foreach (var (name, description, autoPluralize) in systemTypes)
     {
-        if (existingNames.Contains(name))
+        var existingType = existingTypes.SingleOrDefault(type =>
+            string.Equals(
+                type.Name,
+                name,
+                StringComparison.OrdinalIgnoreCase));
+
+        if (existingType is not null)
         {
+            existingType.ChangeAutoPluralize(
+                autoPluralize,
+                actorId: "system",
+                actorIsModerator: true,
+                changedAt: createdAt);
+
+            nodeTypes.Save(existingType);
             continue;
         }
 
@@ -112,7 +121,8 @@ static void SeedSystemNodeTypes(
             NodeTypeDefinition.CreateSystemDefined(
                 name,
                 description,
-                createdAt));
+                createdAt,
+                autoPluralize));
     }
 }
 
