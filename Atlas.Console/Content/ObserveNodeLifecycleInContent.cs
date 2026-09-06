@@ -1,5 +1,5 @@
 using Atlas.Content.Documents;
-using Atlas.Graph;
+using Atlas.Contracts.Graph.V1;
 
 namespace Atlas.ConsoleApp.Content;
 
@@ -13,19 +13,19 @@ public sealed class ObserveNodeLifecycleInContent
         _documents = documents;
     }
 
-    public void Handle(NodeCreated message)
+    public void Handle(NodeCreatedV1 message)
     {
         Console.WriteLine(
-            $"[ATLAS.CONTENT] Heard NodeCreated for node " +
+            $"[ATLAS.CONTENT] Heard NodeCreatedV1 for node " +
             $"{message.NodeId}.");
 
         ConfirmDescriptionDocument(message.DescriptionId);
     }
 
-    public void Handle(NodeArchived message)
+    public void Handle(NodeArchivedV1 message)
     {
         Console.WriteLine(
-            $"[ATLAS.CONTENT] Heard NodeArchived for node " +
+            $"[ATLAS.CONTENT] Heard NodeArchivedV1 for node " +
             $"{message.NodeId}; no Content state change required.");
 
         ConfirmDescriptionDocument(message.DescriptionId);
