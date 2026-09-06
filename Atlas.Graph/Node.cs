@@ -167,6 +167,7 @@ public sealed class Node
         _domainEvents.Add(
         new NodeRestored(
             Id.Value,
+            AuthorId.Value,
             DescriptionId.Value,
             restoredAt
             ));
