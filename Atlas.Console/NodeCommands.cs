@@ -150,10 +150,22 @@ public static class NodeCommands
         Participant author,
         InMemoryEventPublisher eventPublisher)
     {
-        var availableTypes = parent.RequestedSubNodeTypes
+        var requestedTypes = parent.RequestedSubNodeTypes
             .Select(request => nodeTypes.GetById(request.TypeId))
             .Where(type => type is not null && !type.IsArchived)
             .Cast<NodeTypeDefinition>()
+            .OrderBy(type => type.Name)
+            .ToList();
+
+        var requestedTypeIds = requestedTypes
+            .Select(type => type.Id)
+            .ToHashSet();
+
+        var otherKnownTypes = nodeTypes
+            .GetAll()
+            .Where(type =>
+                !type.IsArchived &&
+                !requestedTypeIds.Contains(type.Id))
             .OrderBy(type => type.Name)
             .ToList();
 
@@ -164,11 +176,11 @@ public static class NodeCommands
             .ToList();
 
         Console.WriteLine();
-        Console.WriteLine("Select the type of sub-node to add:");
+        Console.WriteLine("Requested sub-node types:");
 
-        for (var index = 0; index < availableTypes.Count; index++)
+        for (var index = 0; index < requestedTypes.Count; index++)
         {
-            var type = availableTypes[index];
+            var type = requestedTypes[index];
             var count = existingChildren.Count(
                 child => child.TypeId == type.Id);
 
@@ -176,8 +188,16 @@ public static class NodeCommands
                 $"{index + 1}. {type.Name} ({count})");
         }
 
-        var createTypeSelection = availableTypes.Count + 1;
+        if (requestedTypes.Count == 0)
+        {
+            Console.WriteLine("(none)");
+        }
 
+        var knownTypeSelection = requestedTypes.Count + 1;
+        var createTypeSelection = requestedTypes.Count + 2;
+
+        Console.WriteLine(
+            $"{knownTypeSelection}. Use another known node type");
         Console.WriteLine(
             $"{createTypeSelection}. Create a custom sub-node type");
         Console.WriteLine("0. Cancel");
@@ -198,7 +218,18 @@ public static class NodeCommands
 
         NodeTypeDefinition? selectedType;
 
-        if (selection == createTypeSelection)
+        if (selection == knownTypeSelection)
+        {
+            selectedType = SelectOtherKnownType(
+                otherKnownTypes,
+                existingChildren);
+
+            if (selectedType is null)
+            {
+                return;
+            }
+        }
+        else if (selection == createTypeSelection)
         {
             selectedType = ConsoleUi.CreateCustomNodeType(
                 nodeTypes,
@@ -209,20 +240,13 @@ public static class NodeCommands
                 return;
             }
 
-            parent.RequestSubNodeType(
-                selectedType.Id,
-                DateTimeOffset.UtcNow);
-
-            nodes.Save(parent);
-
             Console.WriteLine();
             Console.WriteLine(
-                $"{selectedType.Name} is now globally available " +
-                $"and requested by {parent.Title}.");
+                $"{selectedType.Name} is now globally available.");
         }
         else
         {
-            selectedType = availableTypes[selection - 1];
+            selectedType = requestedTypes[selection - 1];
         }
 
         Console.Clear();
@@ -241,6 +265,46 @@ public static class NodeCommands
             eventPublisher,
             selectedType,
             parent);
+    }
+
+    private static NodeTypeDefinition? SelectOtherKnownType(
+        IReadOnlyList<NodeTypeDefinition> knownTypes,
+        IReadOnlyCollection<Node> existingChildren)
+    {
+        if (knownTypes.Count == 0)
+        {
+            ConsoleUi.Pause(
+                "There are no other known node types available.");
+            return null;
+        }
+
+        Console.WriteLine();
+        Console.WriteLine("Other known node types:");
+
+        for (var index = 0; index < knownTypes.Count; index++)
+        {
+            var type = knownTypes[index];
+            var count = existingChildren.Count(
+                child => child.TypeId == type.Id);
+
+            Console.WriteLine(
+                $"{index + 1}. {type.Name} ({count})");
+        }
+
+        Console.WriteLine("0. Cancel");
+        Console.Write("Type: ");
+
+        if (!int.TryParse(Console.ReadLine(), out var selection) ||
+            selection < 0 ||
+            selection > knownTypes.Count)
+        {
+            ConsoleUi.Pause("That is not a valid type selection.");
+            return null;
+        }
+
+        return selection == 0
+            ? null
+            : knownTypes[selection - 1];
     }
 
     private static Node? SelectSubNode(
