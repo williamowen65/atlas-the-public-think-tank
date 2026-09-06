@@ -118,23 +118,39 @@ public sealed class ConsoleApplication
 
         try
         {
-            var node = new Node(
-                new NodeTitle(title ?? string.Empty),
-                new NodeDescriptionId(description ?? string.Empty),
-                nodeType.Id,
-                DateTimeOffset.UtcNow);
+            var now = DateTimeOffset.UtcNow;
+            var nodeTitle = new NodeTitle(title ?? string.Empty);
 
-            _nodes.Save(node);
+            var document = new Document(
+                description ?? string.Empty,
+                now);
+
+            _documents.Save(document);
 
             Console.WriteLine();
             Console.WriteLine(
-                $"[ATLAS.GRAPH] Saved node {node.Id}.");
+                $"[ATLAS.CONTENT] Saved description document " +
+                $"{document.Id}.");
 
-            _eventPublisher.Publish(
-                new NodeCreated(
-                    node.Id.Value,
-                    node.DescriptionId.Value,
-                    node.CreatedAt));
+            var node = new Node(
+                nodeTitle,
+                new NodeDescriptionId(document.Id.Value),
+                nodeType.Id,
+                now);
+
+            _nodes.Save(node);
+
+            Console.WriteLine(
+                $"[ATLAS.GRAPH] Saved node {node.Id} with " +
+                $"description reference {node.DescriptionId}.");
+
+            foreach (var domainEvent in
+                     node.DomainEvents.OfType<NodeCreated>())
+            {
+                _eventPublisher.Publish(domainEvent);
+            }
+
+            node.ClearDomainEvents();
 
             ConsoleUi.Pause(
                 $"Node created as {nodeType.Name}: {node.Title}");
@@ -171,6 +187,7 @@ public sealed class ConsoleApplication
                 NodeDisplay.WriteTableRow(
                     nodes[index],
                     _nodeTypes,
+                    _documents,
                     index + 1);
             }
 
@@ -202,6 +219,7 @@ public sealed class ConsoleApplication
                 nodes[selection - 1],
                 _nodes,
                 _nodeTypes,
+                _documents,
                 _actorId);
         }
     }
@@ -255,7 +273,7 @@ public sealed class ConsoleApplication
                 "No Content documents have been created.");
             Console.WriteLine();
             Console.WriteLine(
-                "Create a node to publish a NodeCreated event.");
+                "Create a node to create a Content document.");
             ConsoleUi.Pause();
             return;
         }
@@ -263,7 +281,6 @@ public sealed class ConsoleApplication
         foreach (var document in documents)
         {
             Console.WriteLine($"Document ID: {document.Id}");
-            Console.WriteLine($"Node ID:     {document.NodeId}");
             Console.WriteLine($"Created:     {document.CreatedAt.LocalDateTime}");
             Console.WriteLine($"Content:     {document.Content}");
             Console.WriteLine();
