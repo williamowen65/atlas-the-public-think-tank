@@ -26,6 +26,8 @@
 
 ### Documentation
 
+- [Atlas.Console architecture and workflow diagrams](src/Atlas.Console/README.md)
+
 Contributors, maintainers, and curious readers can find all documentation for on [the Wiki](https://github.com/williamowen65/atlas-the-public-think-tank/wiki).
 
 
