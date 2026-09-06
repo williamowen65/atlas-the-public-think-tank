@@ -70,5 +70,14 @@
     "Status": "Active",
     "CreatedAt": "2026-09-06T00:00:25.9593112+00:00",
     "UpdatedAt": "2026-09-06T00:00:25.9593112+00:00"
+  },
+  {
+    "Id": "37bfd40d-8cf6-42c1-b0b9-8fbd2380dff2",
+    "Title": "NEW NODE",
+    "Description": "My Desc",
+    "TypeId": "0328981f-7b76-4bcb-ad04-99b4ed74fd23",
+    "Status": "Active",
+    "CreatedAt": "2026-09-06T00:16:05.9446639+00:00",
+    "UpdatedAt": "2026-09-06T00:16:05.9446639+00:00"
   }
 ]

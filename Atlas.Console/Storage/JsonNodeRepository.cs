@@ -117,7 +117,7 @@ public sealed class JsonNodeRepository : INodeRepository
         return Node.Reconstitute(
             new NodeId(storedNode.Id),
             new NodeTitle(storedNode.Title),
-            new NodeDescription(storedNode.Description),
+            new NodeDescriptionId(storedNode.Description),
             ResolveTypeId(storedNode),
             status,
             storedNode.CreatedAt,

@@ -106,7 +106,7 @@ public static class NodeCommands
         var description = Console.ReadLine();
 
         node.ChangeDescription(
-            new NodeDescription(description ?? string.Empty),
+            new NodeDescriptionId(description ?? string.Empty),
             DateTimeOffset.UtcNow);
 
         nodes.Save(node);

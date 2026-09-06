@@ -17,7 +17,7 @@ public sealed class Node
     public NodeTypeId TypeId { get; private set; }
     public NodeStatus Status { get; private set; }
 
-    public NodeDescription Description { get; private set; }
+    public NodeDescriptionId DescriptionId { get; private set; }
 
     /*
      The interaction might be:
@@ -36,13 +36,13 @@ public sealed class Node
 
     public Node(
         NodeTitle title,
-        NodeDescription description,
+        NodeDescriptionId description,
         NodeTypeId typeId,
         DateTimeOffset createdAt)
     {
         Id = NodeId.New();
         Title = title;
-        Description = description;
+        NodeDescriptionId = descriptionId;
         TypeId = typeId;
         Status = NodeStatus.Active;
         CreatedAt = createdAt;
@@ -59,7 +59,7 @@ public sealed class Node
     private Node(
         NodeId id,
         NodeTitle title,
-        NodeDescription description,
+        NodeDescriptionId descriptionId,
         NodeTypeId typeId,
         NodeStatus status,
         DateTimeOffset createdAt,
@@ -73,7 +73,7 @@ public sealed class Node
 
         Id = id;
         Title = title;
-        Description = description;
+        DescriptionId = descriptionId;
         TypeId = typeId;
         Status = status;
         CreatedAt = createdAt;
@@ -84,7 +84,7 @@ public sealed class Node
     public static Node Reconstitute(
         NodeId id,
         NodeTitle title,
-        NodeDescription description,
+        NodeDescriptionId descriptionId,
         NodeTypeId typeId,
         NodeStatus status,
         DateTimeOffset createdAt,
@@ -93,7 +93,7 @@ public sealed class Node
         return new Node(
             id,
             title,
-            description,
+            descriptionId,
             typeId,
             status,
             createdAt,
@@ -149,15 +149,15 @@ public sealed class Node
     }
 
     public void ChangeDescription(
-        NodeDescription newDescription,
+        NodeDescriptionId targetDescriptionId,
         DateTimeOffset changedAt)
     {
-        if (Description == newDescription)
+        if (DescriptionId == targetDescriptionId)
         {
             return;
         }
 
-        Description = newDescription;
+        DescriptionId = targetDescriptionId;
         UpdatedAt = changedAt;
     }
 

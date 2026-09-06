@@ -120,7 +120,7 @@ public sealed class ConsoleApplication
         {
             var node = new Node(
                 new NodeTitle(title ?? string.Empty),
-                new NodeDescription(description ?? string.Empty),
+                new NodeDescriptionId(description ?? string.Empty),
                 nodeType.Id,
                 DateTimeOffset.UtcNow);
 
