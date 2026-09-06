@@ -47,9 +47,12 @@ INodeRepository nodeRepository =
 var eventPublisher = new InMemoryEventPublisher();
 
 var contentSubscriber =
-    new ObserveNodeCreatedInContent(documentRepository);
+    new ObserveNodeLifecycleInContent(documentRepository);
 
 eventPublisher.Subscribe<NodeCreated>(
+    contentSubscriber.Handle);
+
+eventPublisher.Subscribe<NodeArchived>(
     contentSubscriber.Handle);
 
 var application = new ConsoleApplication(
