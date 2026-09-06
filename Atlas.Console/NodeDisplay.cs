@@ -11,6 +11,7 @@ public static class NodeDisplay
     private const int TypeWidth = 14;
     private const int AuthorWidth = 20;
     private const int DescriptionWidth = 32;
+    private const int SubNodesWidth = 36;
 
     public static void WriteTableHeader()
     {
@@ -20,6 +21,7 @@ public static class NodeDisplay
             $"{"Type",-TypeWidth}  " +
             $"{"Authored By",-AuthorWidth}  " +
             $"{"Description",-DescriptionWidth}  " +
+            $"{"Sub-nodes",-SubNodesWidth}  " +
             $"{"Votes",5}  " +
             $"{"Avg",5}  " +
             "Status");
@@ -32,6 +34,7 @@ public static class NodeDisplay
                 TypeWidth + 2 +
                 AuthorWidth + 2 +
                 DescriptionWidth + 2 +
+                SubNodesWidth + 2 +
                 5 + 2 +
                 5 + 2 +
                 10));
@@ -49,6 +52,8 @@ public static class NodeDisplay
         var typeName = ResolveTypeName(node, nodeTypes);
         var description = ResolveDescription(node, documents);
         var authorName = ResolveAuthorName(node, participants);
+        var subNodeSummary =
+            ResolveRequestedSubNodeSummary(node, nodeTypes);
 
         Console.WriteLine(
             $"{number,3}  " +
@@ -56,6 +61,7 @@ public static class NodeDisplay
             $"{Truncate(typeName, TypeWidth),-TypeWidth}  " +
             $"{Truncate(authorName, AuthorWidth),-AuthorWidth}  " +
             $"{Truncate(description, DescriptionWidth),-DescriptionWidth}  " +
+            $"{Truncate(subNodeSummary, SubNodesWidth),-SubNodesWidth}  " +
             $"{FormatVoteCount(voteCount),5}  " +
             $"{FormatAverageVote(averageVote),5}  " +
             node.Status);
@@ -91,6 +97,56 @@ public static class NodeDisplay
         Console.WriteLine("Description");
         Console.WriteLine("-----------");
         Console.WriteLine(description);
+
+        WriteRequestedSubNodeTables(node, nodeTypes);
+    }
+
+    private static void WriteRequestedSubNodeTables(
+        Node node,
+        INodeTypeRepository nodeTypes)
+    {
+        foreach (var request in node.RequestedSubNodeTypes)
+        {
+            var typeName = nodeTypes.GetById(request.TypeId)?.Name
+                ?? $"Unknown ({request.TypeId})";
+            var heading = $"{typeName.ToUpperInvariant()} SUB-NODES (0)";
+
+            Console.WriteLine();
+            Console.WriteLine(heading);
+            Console.WriteLine(new string('-', heading.Length));
+            WriteTableHeader();
+            Console.WriteLine(
+                $"No {typeName} sub-nodes have been added yet.");
+        }
+
+        if (node.RequestedSubNodeTypes.Count == 0)
+        {
+            Console.WriteLine();
+            Console.WriteLine("SUB-NODES");
+            Console.WriteLine("---------");
+            Console.WriteLine(
+                "This node does not currently request any sub-node types.");
+        }
+    }
+
+    private static string ResolveRequestedSubNodeSummary(
+        Node node,
+        INodeTypeRepository nodeTypes)
+    {
+        if (node.RequestedSubNodeTypes.Count == 0)
+        {
+            return "None";
+        }
+
+        return string.Join(
+            " · ",
+            node.RequestedSubNodeTypes.Select(request =>
+            {
+                var name = nodeTypes.GetById(request.TypeId)?.Name
+                    ?? "Unknown";
+
+                return $"{name} 0";
+            }));
     }
 
     private static string ResolveDescription(
@@ -109,7 +165,6 @@ public static class NodeDisplay
             ? "No description has been provided."
             : document.Content;
     }
-
 
     private static string ResolveAuthorName(
         Node node,
