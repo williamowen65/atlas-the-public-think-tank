@@ -10,6 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Atlas.Content\Atlas.Content.csproj" />
     <ProjectReference Include="..\Atlas.Graph\Atlas.Graph.csproj" />
+    <ProjectReference Include="..\Atlas.Participants\Atlas.Participants.csproj" />
   </ItemGroup>
 
 </Project>
