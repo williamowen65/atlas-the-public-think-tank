@@ -1,3 +1,4 @@
+using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 
@@ -35,14 +36,13 @@ public static class NodeDisplay
     public static void WriteTableRow(
         Node node,
         INodeTypeRepository nodeTypes,
+        IDocumentRepository documents,
         int number,
         int? voteCount = null,
         double? averageVote = null)
     {
         var typeName = ResolveTypeName(node, nodeTypes);
-        var description = string.IsNullOrWhiteSpace(node.Description.Value)
-            ? "—"
-            : node.Description.Value;
+        var description = ResolveDescription(node, documents);
 
         Console.WriteLine(
             $"{number,3}  " +
@@ -57,28 +57,46 @@ public static class NodeDisplay
     public static void WriteDetails(
         Node node,
         INodeTypeRepository nodeTypes,
+        IDocumentRepository documents,
         int? voteCount = null,
         double? averageVote = null)
     {
+        var description = ResolveDescription(node, documents);
+
         Console.WriteLine("ATLAS NODE");
         Console.WriteLine("----------");
-        Console.WriteLine($"ID:          {node.Id}");
-        Console.WriteLine($"Title:       {node.Title}");
+        Console.WriteLine($"ID:             {node.Id}");
+        Console.WriteLine($"Title:          {node.Title}");
         Console.WriteLine(
-            $"Type:        {ResolveTypeName(node, nodeTypes)}");
-        Console.WriteLine($"Type ID:     {node.TypeId}");
-        Console.WriteLine($"Status:      {node.Status}");
-        Console.WriteLine($"Votes:       {FormatVoteCount(voteCount)}");
-        Console.WriteLine($"Average:     {FormatAverageVote(averageVote)}");
-        Console.WriteLine($"Created:     {node.CreatedAt.LocalDateTime}");
-        Console.WriteLine($"Updated:     {node.UpdatedAt.LocalDateTime}");
+            $"Type:           {ResolveTypeName(node, nodeTypes)}");
+        Console.WriteLine($"Type ID:        {node.TypeId}");
+        Console.WriteLine($"Description ID: {node.DescriptionId}");
+        Console.WriteLine($"Status:         {node.Status}");
+        Console.WriteLine($"Votes:          {FormatVoteCount(voteCount)}");
+        Console.WriteLine($"Average:        {FormatAverageVote(averageVote)}");
+        Console.WriteLine($"Created:        {node.CreatedAt.LocalDateTime}");
+        Console.WriteLine($"Updated:        {node.UpdatedAt.LocalDateTime}");
         Console.WriteLine();
         Console.WriteLine("Description");
         Console.WriteLine("-----------");
-        Console.WriteLine(
-            string.IsNullOrWhiteSpace(node.Description.Value)
-                ? "No description has been provided."
-                : node.Description.Value);
+        Console.WriteLine(description);
+    }
+
+    private static string ResolveDescription(
+        Node node,
+        IDocumentRepository documents)
+    {
+        var document = documents.GetById(
+            new DocumentId(node.DescriptionId.Value));
+
+        if (document is null)
+        {
+            return "Description document not found.";
+        }
+
+        return string.IsNullOrWhiteSpace(document.Content)
+            ? "No description has been provided."
+            : document.Content;
     }
 
     private static string ResolveTypeName(
