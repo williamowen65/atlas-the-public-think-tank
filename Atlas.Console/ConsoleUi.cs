@@ -57,6 +57,80 @@ public static class ConsoleUi
         return availableTypes[selection - 1];
     }
 
+
+    public static IReadOnlyCollection<NodeTypeDefinition>
+        ReadRequestedSubNodeTypes(
+            INodeTypeRepository nodeTypes)
+    {
+        var availableTypes = nodeTypes
+            .GetAll()
+            .Where(type =>
+                !type.IsArchived &&
+                !string.Equals(
+                    type.Name,
+                    "Comment",
+                    StringComparison.OrdinalIgnoreCase))
+            .OrderBy(type => type.Name)
+            .ToList();
+
+        var commentType = nodeTypes
+            .GetAll()
+            .Single(type =>
+                string.Equals(
+                    type.Name,
+                    "Comment",
+                    StringComparison.OrdinalIgnoreCase));
+
+        Console.WriteLine();
+        Console.WriteLine(
+            "Every node requests Comment sub-nodes by default.");
+        Console.WriteLine(
+            "Select any additional requested sub-node types:");
+
+        for (var index = 0; index < availableTypes.Count; index++)
+        {
+            Console.WriteLine(
+                $"{index + 1}. {availableTypes[index].Name}");
+        }
+
+        Console.WriteLine();
+        Console.Write(
+            "Selections (comma-separated, blank for Comment only): ");
+
+        var input = Console.ReadLine();
+
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return [commentType];
+        }
+
+        var selectedTypes = new List<NodeTypeDefinition>
+        {
+            commentType
+        };
+
+        foreach (var value in input.Split(
+                     ',',
+                     StringSplitOptions.RemoveEmptyEntries |
+                     StringSplitOptions.TrimEntries))
+        {
+            if (!int.TryParse(value, out var selection) ||
+                selection < 1 ||
+                selection > availableTypes.Count)
+            {
+                Pause(
+                    $"'{value}' is not a valid sub-node type selection.");
+                return [];
+            }
+
+            selectedTypes.Add(availableTypes[selection - 1]);
+        }
+
+        return selectedTypes
+            .DistinctBy(type => type.Id)
+            .ToList();
+    }
+
     public static void Pause(string? message = null)
     {
         if (!string.IsNullOrWhiteSpace(message))
