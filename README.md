@@ -28,6 +28,8 @@
 
 - [Atlas.Console architecture and workflow diagrams](src/Atlas.Console/README.md)
 - [Atlas.Participants model and authorization diagrams](src/Atlas.Participants/README.md)
+- [Requirements baseline and traceability](docs/requirements/README.md)
+- [Requirements Traceability Matrix](docs/requirements/TRACEABILITY.md)
 
 Contributors, maintainers, and curious readers can find all documentation for on [the Wiki](https://github.com/williamowen65/atlas-the-public-think-tank/wiki).
 

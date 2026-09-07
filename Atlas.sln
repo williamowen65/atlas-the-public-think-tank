@@ -84,6 +84,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sql", "sql", "{88888888-888
 		docs\sql\TestDataCleanUp-ByIssueID.sql = docs\sql\TestDataCleanUp-ByIssueID.sql
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "requirements", "requirements", "{9C01D8BE-79A9-4FAF-9A21-C452508327A4}"
+	ProjectSection(SolutionItems) = preProject
+		docs\requirements\README.md = docs\requirements\README.md
+		docs\requirements\REQUIREMENTS.md = docs\requirements\REQUIREMENTS.md
+		docs\requirements\TRACEABILITY.md = docs\requirements\TRACEABILITY.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -148,6 +155,7 @@ Global
 		{02EA681E-C7D8-13C7-8484-4AC65E1B71E8} = {44444444-4444-4444-8444-444444444444}
 		{3A469EE8-73CA-429D-B5C5-C99F265F93B5} = {44444444-4444-4444-8444-444444444444}
 		{88888888-8888-4888-8888-888888888888} = {55555555-5555-4555-8555-555555555555}
+		{9C01D8BE-79A9-4FAF-9A21-C452508327A4} = {55555555-5555-4555-8555-555555555555}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {91FBCB71-A526-4836-AC90-535593188277}
