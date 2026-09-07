@@ -26,6 +26,7 @@
 
 ### Documentation
 
+- [Documentation index](docs/README.md)
 - [Atlas.Console architecture and workflow diagrams](src/Atlas.Console/README.md)
 - [Atlas.Participants model and authorization diagrams](src/Atlas.Participants/README.md)
 - [Requirements baseline and traceability](docs/requirements/README.md)
@@ -106,6 +107,6 @@ The physical repository layout mirrors the main Visual Studio solution:
 - `tests/` contains tests for the current boundaries.
 - `legacy/` contains the previous web application, its cloud tests, and the pre-launch site.
 - `infrastructure/` contains local development and reverse-proxy support.
-- `docs/sql/` contains the legacy SQL reference scripts.
+- `docs/` contains requirements, architecture decisions, workflows, contracts, testing guidance, the glossary, and legacy SQL references.
 - `data/` contains the Console host's file-system data.
 - `.github/`, `Atlas.sln`, and repository-level files remain at the root.

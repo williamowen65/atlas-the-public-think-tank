@@ -91,6 +91,48 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "requirements", "requirement
 		docs\requirements\TRACEABILITY.md = docs\requirements\TRACEABILITY.md
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "architecture", "architecture", "{A1111111-1111-4111-8111-111111111111}"
+	ProjectSection(SolutionItems) = preProject
+		docs\architecture\README.md = docs\architecture\README.md
+		docs\architecture\CONTEXT-MAP.md = docs\architecture\CONTEXT-MAP.md
+		docs\architecture\DATA-OWNERSHIP.md = docs\architecture\DATA-OWNERSHIP.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "decisions", "decisions", "{A2222222-2222-4222-8222-222222222222}"
+	ProjectSection(SolutionItems) = preProject
+		docs\architecture\decisions\README.md = docs\architecture\decisions\README.md
+		docs\architecture\decisions\ADR-0001-use-bounded-contexts.md = docs\architecture\decisions\ADR-0001-use-bounded-contexts.md
+		docs\architecture\decisions\ADR-0002-reference-boundaries-by-id.md = docs\architecture\decisions\ADR-0002-reference-boundaries-by-id.md
+		docs\architecture\decisions\ADR-0003-use-versioned-integration-contracts.md = docs\architecture\decisions\ADR-0003-use-versioned-integration-contracts.md
+		docs\architecture\decisions\ADR-0004-start-with-json-persistence.md = docs\architecture\decisions\ADR-0004-start-with-json-persistence.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "testing", "testing", "{A3333333-3333-4333-8333-333333333333}"
+	ProjectSection(SolutionItems) = preProject
+		docs\testing\TEST-STRATEGY.md = docs\testing\TEST-STRATEGY.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{A4444444-4444-4444-8444-444444444444}"
+	ProjectSection(SolutionItems) = preProject
+		docs\workflows\README.md = docs\workflows\README.md
+		docs\workflows\NODE-LIFECYCLE.md = docs\workflows\NODE-LIFECYCLE.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "glossary", "glossary", "{A5555555-5555-4555-8555-555555555555}"
+	ProjectSection(SolutionItems) = preProject
+		docs\glossary\GLOSSARY.md = docs\glossary\GLOSSARY.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "contracts", "contracts", "{A6666666-6666-4666-8666-666666666666}"
+	ProjectSection(SolutionItems) = preProject
+		docs\contracts\README.md = docs\contracts\README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "documentation-index", "documentation-index", "{B7777777-7777-4777-8777-777777777777}"
+	ProjectSection(SolutionItems) = preProject
+		docs\README.md = docs\README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -156,6 +198,13 @@ Global
 		{3A469EE8-73CA-429D-B5C5-C99F265F93B5} = {44444444-4444-4444-8444-444444444444}
 		{88888888-8888-4888-8888-888888888888} = {55555555-5555-4555-8555-555555555555}
 		{9C01D8BE-79A9-4FAF-9A21-C452508327A4} = {55555555-5555-4555-8555-555555555555}
+		{A1111111-1111-4111-8111-111111111111} = {55555555-5555-4555-8555-555555555555}
+		{A2222222-2222-4222-8222-222222222222} = {A1111111-1111-4111-8111-111111111111}
+		{A3333333-3333-4333-8333-333333333333} = {55555555-5555-4555-8555-555555555555}
+		{A4444444-4444-4444-8444-444444444444} = {55555555-5555-4555-8555-555555555555}
+		{A5555555-5555-4555-8555-555555555555} = {55555555-5555-4555-8555-555555555555}
+		{A6666666-6666-4666-8666-666666666666} = {55555555-5555-4555-8555-555555555555}
+		{B7777777-7777-4777-8777-777777777777} = {55555555-5555-4555-8555-555555555555}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {91FBCB71-A526-4836-AC90-535593188277}
