@@ -19,7 +19,7 @@ This glossary defines shared product language. Code names may be more specific, 
 | Participant | A person represented inside the Participants boundary by a public profile and stable ID. Authentication credentials are not currently part of this model. |
 | Requested sub-node type | A type of response the node author invites. It does not prove that a child of that type exists and does not prevent other valid response types. |
 | Relationship node | A node whose meaning connects multiple parents. Future rules may require at least two parents for particular relationship types. |
-| Reconstitution | Rebuilding a domain object from persisted state without replaying creation behavior or generating new identities. |
+| Reconstitution | Rebuilding a domain object from its saved, data-only state. The repository reads stored values and supplies them to the domain model, producing an in-memory object that again has its methods and can enforce its invariants. Reconstitution preserves the original identity, status, relationships, and timestamps without replaying creation behavior or raising a new creation event. This resembles the hydration performed by an ORM, although Atlas currently maps its JSON records to domain objects explicitly rather than using an ORM. |
 | Subscriber | A handler registered to receive one event type. The publisher does not require every possible consumer to subscribe. |
 | Type pluralization | Presentation behavior that uses a counted plural label when enabled while leaving mass nouns such as Evidence unchanged. |
 
