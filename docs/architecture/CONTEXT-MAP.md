@@ -45,14 +45,14 @@ the JSON implementations belong to the Console host.
 |---|---|
 | **Kind** | Domain boundary |
 | **Responsibility** | Model typed nodes and the directed parent graph. |
-| **Implemented behaviors** | Create and reconstitute nodes.<br>Rename, change type, and replace description references.<br>Archive and restore.<br>Request response types.<br>Attach and detach parents.<br>Create, edit, and archive node types.<br>Enforce local invariants. |
-| **Owns** | Nodes and node IDs.<br>Node types and requested sub-node types.<br>Parent IDs on the child.<br>Graph lifecycle state. |
-| **References** | `NodeAuthorId` corresponding to a Participant ID.<br>`NodeDescriptionId` corresponding to a Document ID.<br>Contracts event records. |
-| **Does not own** | Profiles and credentials.<br>Documents.<br>Votes.<br>JSON persistence. |
+| **Implemented behaviors** | Create and reconstitute nodes. • Rename, change type, and replace description references. • Archive and restore. • Request response types. • Attach and detach parents. • Create, edit, and archive node types. • Enforce local invariants. |
+| **Owns** | Nodes and node IDs. • Node types and requested sub-node types. • Parent IDs on the child. • Graph lifecycle state. |
+| **References** | `NodeAuthorId` corresponding to a Participant ID. • `NodeDescriptionId` corresponding to a Document ID. • Contracts event records. |
+| **Does not own** | Profiles and credentials. • Documents. • Votes. • JSON persistence. |
 | **Publishes** | Records `NodeCreatedV1`, `NodeArchivedV1`, `NodeRestoredV1`, `NodeParentAttachedV1`, and `NodeParentDetachedV1` on `Node`. |
 | **Subscribes** | None. |
-| **Documentation** | [Graph README](../../src/Atlas.Graph/README.md)<br>[Requirements](../requirements/REQUIREMENTS.md)<br>[RTM](../requirements/TRACEABILITY.md)<br>ADRs 1–3 |
-| **Gaps or open questions** | Cycle prevention and default Comment policy are host-local.<br>Most node mutations lack authorization.<br>Relationship-node minimum-parent rules are not enforced.<br>Global type-name uniqueness is host-local.<br>Several mutations have no events.<br>Graph directly references Contracts; the desired long-term dependency direction remains open. |
+| **Documentation** | [Graph README](../../src/Atlas.Graph/README.md) • [Requirements](../requirements/REQUIREMENTS.md) • [RTM](../requirements/TRACEABILITY.md) • ADRs 1–3 |
+| **Gaps or open questions** | Cycle prevention and default Comment policy are host-local. • Most node mutations lack authorization. • Relationship-node minimum-parent rules are not enforced. • Global type-name uniqueness is host-local. • Several mutations have no events. • Graph directly references Contracts; the desired long-term dependency direction remains open. |
 
 ### Content
 
@@ -60,14 +60,14 @@ the JSON implementations belong to the Console host.
 |---|---|
 | **Kind** | Domain boundary |
 | **Responsibility** | Hold separately identified description documents. |
-| **Implemented behaviors** | Create and reconstitute a document.<br>Normalize initial document text.<br>Define document repository needs. |
-| **Owns** | Documents and document IDs.<br>Document text and creation time. |
+| **Implemented behaviors** | Create and reconstitute a document. • Normalize initial document text. • Define document repository needs. |
+| **Owns** | Documents and document IDs. • Document text and creation time. |
 | **References** | No foreign IDs in the current model. |
-| **Does not own** | Nodes.<br>Profiles.<br>Votes.<br>Event dispatch.<br>JSON persistence. |
+| **Does not own** | Nodes. • Profiles. • Votes. • Event dispatch. • JSON persistence. |
 | **Publishes** | None. |
 | **Subscribes** | None inside `Atlas.Content`. A Console-owned observer is registered for `NodeCreatedV1` and `NodeArchivedV1` and queries the Content repository. |
-| **Documentation** | [Data ownership](DATA-OWNERSHIP.md)<br>[Node lifecycle workflow](../workflows/NODE-LIFECYCLE.md)<br>CON requirements and RTM rows |
-| **Gaps or open questions** | No document-edit behavior or updated timestamp.<br>No Content tests or application use case.<br>The observer's placement makes Content subscription structurally ambiguous.<br>Creation can leave an orphaned document. |
+| **Documentation** | [Data ownership](DATA-OWNERSHIP.md) • [Node lifecycle workflow](../workflows/NODE-LIFECYCLE.md) • CON requirements and RTM rows |
+| **Gaps or open questions** | No document-edit behavior or updated timestamp. • No Content tests or application use case. • The observer's placement makes Content subscription structurally ambiguous. • Creation can leave an orphaned document. |
 
 ### Participants
 
@@ -75,14 +75,14 @@ the JSON implementations belong to the Console host.
 |---|---|
 | **Kind** | Domain boundary |
 | **Responsibility** | Model public participant profiles and profile lifecycle. |
-| **Implemented behaviors** | Create and reconstitute participants.<br>Update an owner's display name and bio through an authorized use case.<br>Deactivate participants.<br>Define participant repository needs. |
-| **Owns** | Participant IDs.<br>Display name and bio.<br>Active state and timestamps.<br>Self-edit policy. |
+| **Implemented behaviors** | Create and reconstitute participants. • Update an owner's display name and bio through an authorized use case. • Deactivate participants. • Define participant repository needs. |
+| **Owns** | Participant IDs. • Display name and bio. • Active state and timestamps. • Self-edit policy. |
 | **References** | Nothing from Graph in its core model. |
-| **Does not own** | Nodes and authored contributions.<br>Credentials and login tokens.<br>Documents.<br>Graph authorization rules.<br>JSON persistence. |
+| **Does not own** | Nodes and authored contributions. • Credentials and login tokens. • Documents. • Graph authorization rules. • JSON persistence. |
 | **Publishes** | None. |
 | **Subscribes** | None. |
-| **Documentation** | [Participants README](../../src/Atlas.Participants/README.md)<br>PAR/AUT requirements and RTM rows |
-| **Gaps or open questions** | Deactivation lacks an authorized use case.<br>Reactivation and moderator policy are undefined.<br>No lifecycle events.<br>Profile browsing and contribution composition live in Console. |
+| **Documentation** | [Participants README](../../src/Atlas.Participants/README.md) • PAR/AUT requirements and RTM rows |
+| **Gaps or open questions** | Deactivation lacks an authorized use case. • Reactivation and moderator policy are undefined. • No lifecycle events. • Profile browsing and contribution composition live in Console. |
 
 ### Contracts
 
@@ -91,13 +91,13 @@ the JSON implementations belong to the Console host.
 | **Kind** | Shared contract package |
 | **Responsibility** | Supply versioned payload types for cross-boundary messages. |
 | **Implemented behaviors** | Define Graph V1 lifecycle record shapes. |
-| **Owns** | Payload definitions.<br>Version namespaces. |
+| **Owns** | Payload definitions. • Version namespaces. |
 | **References** | Primitive wire values supplied by Graph. |
-| **Does not own** | Domain rules and entities.<br>Event dispatch.<br>Persistence.<br>Consumer reactions. |
+| **Does not own** | Domain rules and entities. • Event dispatch. • Persistence. • Consumer reactions. |
 | **Publishes** | None by itself. |
 | **Subscribes** | None. |
-| **Documentation** | [Contracts catalog](../contracts/README.md)<br>[ADR-0003](decisions/ADR-0003-use-versioned-integration-contracts.md) |
-| **Gaps or open questions** | No serialization compatibility tests.<br>No event ID, correlation, or causation metadata.<br>The package is described beside bounded contexts although it is not a domain boundary. |
+| **Documentation** | [Contracts catalog](../contracts/README.md) • [ADR-0003](decisions/ADR-0003-use-versioned-integration-contracts.md) |
+| **Gaps or open questions** | No serialization compatibility tests. • No event ID, correlation, or causation metadata. • The package is described beside bounded contexts although it is not a domain boundary. |
 
 ### Console
 
@@ -105,14 +105,14 @@ the JSON implementations belong to the Console host.
 |---|---|
 | **Kind** | Host and composition root |
 | **Responsibility** | Compose workflows and reads; provide the UI, session actor, persistence adapters, seeding, and synchronous event dispatch. |
-| **Implemented behaviors** | Create and browse participants and nodes.<br>Edit profiles.<br>Compose author, document, and type data for display.<br>Check graph cycles.<br>Seed system types.<br>Save JSON.<br>Register and dispatch event handlers. |
-| **Owns** | Current-participant session state.<br>Host workflow sequencing.<br>User interface.<br>JSON adapter implementations.<br>In-memory subscriber registry. |
-| **References** | Public APIs and repository contracts from all implemented boundaries.<br>Contracts payloads. |
-| **Does not own** | Domain invariants.<br>Nodes, documents, and profiles.<br>Contract meanings. |
+| **Implemented behaviors** | Create and browse participants and nodes. • Edit profiles. • Compose author, document, and type data for display. • Check graph cycles. • Seed system types. • Save JSON. • Register and dispatch event handlers. |
+| **Owns** | Current-participant session state. • Host workflow sequencing. • User interface. • JSON adapter implementations. • In-memory subscriber registry. |
+| **References** | Public APIs and repository contracts from all implemented boundaries. • Contracts payloads. |
+| **Does not own** | Domain invariants. • Nodes, documents, and profiles. • Contract meanings. |
 | **Publishes or dispatches** | Dispatches Graph-recorded events after saves; it is not the semantic producer. |
 | **Subscribes** | Registers its Content observer for `NodeCreatedV1` and `NodeArchivedV1`. |
-| **Documentation** | [Console README](../../src/Atlas.Console/README.md)<br>[Node lifecycle workflow](../workflows/NODE-LIFECYCLE.md)<br>EVT/PER requirements and RTM rows |
-| **Gaps or open questions** | Some policies may belong behind boundary APIs.<br>No transaction across document and node saves.<br>No durable delivery, retries, idempotency, or failure isolation.<br>Synchronous handler failures can interrupt dispatch.<br>Restore and parent events have no registered handlers. |
+| **Documentation** | [Console README](../../src/Atlas.Console/README.md) • [Node lifecycle workflow](../workflows/NODE-LIFECYCLE.md) • EVT/PER requirements and RTM rows |
+| **Gaps or open questions** | Some policies may belong behind boundary APIs. • No transaction across document and node saves. • No durable delivery, retries, idempotency, or failure isolation. • Synchronous handler failures can interrupt dispatch. • Restore and parent events have no registered handlers. |
 
 ### Voting
 
@@ -123,10 +123,10 @@ the JSON implementations belong to the Console host.
 | **Implemented behaviors** | None. |
 | **Owns** | No current data. |
 | **References** | Candidate references to Node and Participant IDs are documented. |
-| **Does not own** | Nodes.<br>Profiles.<br>Documents. |
+| **Does not own** | Nodes. • Profiles. • Documents. |
 | **Publishes** | None. |
 | **Subscribes** | None. |
-| **Documentation** | VOT-001 in [requirements](../requirements/REQUIREMENTS.md) and [RTM](../requirements/TRACEABILITY.md)<br>Future row in [data ownership](DATA-OWNERSHIP.md) |
+| **Documentation** | VOT-001 in [requirements](../requirements/REQUIREMENTS.md) and [RTM](../requirements/TRACEABILITY.md) • Future row in [data ownership](DATA-OWNERSHIP.md) |
 | **Gaps or open questions** | Boundary, ballot model, rating scale, eligibility, aggregation, persistence, and events all require later design. |
 
 ## Implemented event flow
