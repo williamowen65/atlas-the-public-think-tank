@@ -35,7 +35,7 @@ Documentation should remain usable from a phone:
   heading and use a two-column `Attribute | Current state` table.
 - Keep the same attribute order across related record tables so they still act
   as one logical matrix.
-- Use short phrases or controlled `<br>` breaks inside long cells.
+- Use short phrases or semicolon-separated sentences inside long cells.
 - Do not rely on HTML width attributes or custom CSS; GitHub's mobile renderer
   may ignore them.
 - Preserve a genuinely wide matrix only when side-by-side comparison is more
