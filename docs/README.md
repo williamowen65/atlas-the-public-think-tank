@@ -10,6 +10,7 @@ This directory records what Atlas must do, how its boundaries fit together, why 
 | [Workflows](workflows/README.md) | Multi-boundary behavior, sequencing, and failure paths |
 | [Testing](testing/TEST-STRATEGY.md) | Test levels, responsibilities, and verification standards |
 | [Glossary](glossary/GLOSSARY.md) | Shared Atlas domain language |
+| [Blackboards](blackboards/README.md) | Exploratory architecture visuals linked to authoritative documentation |
 | [Legacy SQL](sql/) | Reference material from the earlier application |
 
 ## How the documents connect
@@ -35,7 +36,7 @@ Documentation should remain usable from a phone:
   heading and use a two-column `Attribute | Current state` table.
 - Keep the same attribute order across related record tables so they still act
   as one logical matrix.
-- Use short phrases or semicolon-separated sentences inside long cells.
+- Use short phrases or controlled `<br>` breaks inside long cells.
 - Do not rely on HTML width attributes or custom CSS; GitHub's mobile renderer
   may ignore them.
 - Preserve a genuinely wide matrix only when side-by-side comparison is more
