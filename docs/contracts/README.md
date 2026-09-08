@@ -6,8 +6,8 @@ Atlas.Contracts is the single source of truth for payload shapes exchanged acros
 
 | Contract | Producer | Known consumer | Trigger |
 |---|---|---|---|
-| `NodeCreatedV1` | Graph | Content observer through Console | Successful node creation |
-| `NodeArchivedV1` | Graph | Content observer through Console | Active node archived |
+| `NodeCreatedV1` | Graph | Console-owned Content observer | Successful node creation |
+| `NodeArchivedV1` | Graph | Console-owned Content observer | Active node archived |
 | `NodeRestoredV1` | Graph | Available for subscribers | Archived node restored |
 | `NodeParentAttachedV1` | Graph | No required consumer yet | Parent attached |
 | `NodeParentDetachedV1` | Graph | No required consumer yet | Parent detached |
