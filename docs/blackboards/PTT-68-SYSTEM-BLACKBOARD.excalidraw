@@ -292,10 +292,10 @@
     {
       "id": "console_boundary",
       "type": "ellipse",
-      "x": 1925,
-      "y": 1155,
-      "width": 1100,
-      "height": 1100,
+      "x": 2115,
+      "y": 1410,
+      "width": 720,
+      "height": 590,
       "angle": 0,
       "strokeColor": "#1971c2",
       "backgroundColor": "#e7f5ff",
@@ -321,7 +321,7 @@
       "id": "console_label",
       "type": "text",
       "x": 2231,
-      "y": 1470,
+      "y": 1530,
       "width": 488,
       "height": 88,
       "angle": 0,
@@ -358,7 +358,7 @@
       "id": "console_desc",
       "type": "text",
       "x": 2180.5,
-      "y": 1580,
+      "y": 1640,
       "width": 589,
       "height": 109,
       "angle": 0,
@@ -394,10 +394,10 @@
     {
       "id": "content_boundary",
       "type": "ellipse",
-      "x": 3430,
-      "y": 440,
-      "width": 880,
-      "height": 880,
+      "x": 3560,
+      "y": 600,
+      "width": 620,
+      "height": 520,
       "angle": 0,
       "strokeColor": "#2b8a3e",
       "backgroundColor": "#ebfbee",
@@ -423,7 +423,7 @@
       "id": "content_label",
       "type": "text",
       "x": 3727.5,
-      "y": 690,
+      "y": 735,
       "width": 285,
       "height": 88,
       "angle": 0,
@@ -459,8 +459,8 @@
     {
       "id": "content_desc",
       "type": "text",
-      "x": 3575,
-      "y": 800,
+      "x": 3575.5,
+      "y": 845,
       "width": 589,
       "height": 73,
       "angle": 0,
@@ -496,10 +496,10 @@
     {
       "id": "participants_boundary",
       "type": "ellipse",
-      "x": 365,
-      "y": 2115,
-      "width": 920,
-      "height": 920,
+      "x": 500,
+      "y": 2305,
+      "width": 650,
+      "height": 540,
       "angle": 0,
       "strokeColor": "#e67700",
       "backgroundColor": "#fff9db",
@@ -525,7 +525,7 @@
       "id": "participants_label",
       "type": "text",
       "x": 609,
-      "y": 2375,
+      "y": 2415,
       "width": 432,
       "height": 78,
       "angle": 0,
@@ -562,7 +562,7 @@
       "id": "participants_desc",
       "type": "text",
       "x": 589.5,
-      "y": 2480,
+      "y": 2520,
       "width": 471,
       "height": 109,
       "angle": 0,
@@ -1411,8 +1411,8 @@
     {
       "id": "c_create",
       "type": "rectangle",
-      "x": 3250,
-      "y": 550,
+      "x": 3370,
+      "y": 700,
       "width": 330,
       "height": 72,
       "angle": 0,
@@ -1443,8 +1443,8 @@
     {
       "id": "c_create_t",
       "type": "text",
-      "x": 3310,
-      "y": 562,
+      "x": 3430,
+      "y": 712,
       "width": 210,
       "height": 48,
       "angle": 0,
@@ -1482,8 +1482,8 @@
     {
       "id": "c_read",
       "type": "rectangle",
-      "x": 3230,
-      "y": 920,
+      "x": 3370,
+      "y": 900,
       "width": 330,
       "height": 72,
       "angle": 0,
@@ -1514,8 +1514,8 @@
     {
       "id": "c_read_t",
       "type": "text",
-      "x": 3290,
-      "y": 932,
+      "x": 3430,
+      "y": 912,
       "width": 210,
       "height": 48,
       "angle": 0,
@@ -1553,8 +1553,8 @@
     {
       "id": "c_reconstitute",
       "type": "rectangle",
-      "x": 3970,
-      "y": 1160,
+      "x": 3980,
+      "y": 970,
       "width": 360,
       "height": 54,
       "angle": 0,
@@ -1585,8 +1585,8 @@
     {
       "id": "c_reconstitute_t",
       "type": "text",
-      "x": 4012,
-      "y": 1175,
+      "x": 4022,
+      "y": 985,
       "width": 276,
       "height": 24,
       "angle": 0,
@@ -1624,8 +1624,8 @@
     {
       "id": "c_no_events",
       "type": "rectangle",
-      "x": 3930,
-      "y": 330,
+      "x": 3675,
+      "y": 570,
       "width": 390,
       "height": 54,
       "angle": 0,
@@ -1656,8 +1656,8 @@
     {
       "id": "c_no_events_t",
       "type": "text",
-      "x": 4003.5,
-      "y": 345,
+      "x": 3748.5,
+      "y": 585,
       "width": 243,
       "height": 24,
       "angle": 0,
@@ -1695,8 +1695,8 @@
     {
       "id": "p_create",
       "type": "rectangle",
-      "x": 150,
-      "y": 2220,
+      "x": 335,
+      "y": 2390,
       "width": 330,
       "height": 54,
       "angle": 0,
@@ -1727,8 +1727,8 @@
     {
       "id": "p_create_t",
       "type": "text",
-      "x": 193.5,
-      "y": 2235,
+      "x": 378.5,
+      "y": 2405,
       "width": 243,
       "height": 24,
       "angle": 0,
@@ -1766,8 +1766,8 @@
     {
       "id": "p_update",
       "type": "rectangle",
-      "x": 160,
-      "y": 2780,
+      "x": 320,
+      "y": 2600,
       "width": 390,
       "height": 72,
       "angle": 0,
@@ -1798,8 +1798,8 @@
     {
       "id": "p_update_t",
       "type": "text",
-      "x": 200.5,
-      "y": 2792,
+      "x": 360.5,
+      "y": 2612,
       "width": 309,
       "height": 48,
       "angle": 0,
@@ -1837,8 +1837,8 @@
     {
       "id": "p_deactivate",
       "type": "rectangle",
-      "x": 950,
-      "y": 2830,
+      "x": 850,
+      "y": 2800,
       "width": 330,
       "height": 54,
       "angle": 0,
@@ -1869,8 +1869,8 @@
     {
       "id": "p_deactivate_t",
       "type": "text",
-      "x": 1037.5,
-      "y": 2845,
+      "x": 937.5,
+      "y": 2815,
       "width": 155,
       "height": 24,
       "angle": 0,
@@ -1908,8 +1908,8 @@
     {
       "id": "p_repo",
       "type": "rectangle",
-      "x": 1000,
-      "y": 2160,
+      "x": 980,
+      "y": 2390,
       "width": 330,
       "height": 54,
       "angle": 0,
@@ -1940,8 +1940,8 @@
     {
       "id": "p_repo_t",
       "type": "text",
-      "x": 1021.5,
-      "y": 2175,
+      "x": 1001.5,
+      "y": 2405,
       "width": 287,
       "height": 24,
       "angle": 0,
@@ -1979,8 +1979,8 @@
     {
       "id": "p_no_events",
       "type": "rectangle",
-      "x": 620,
-      "y": 1980,
+      "x": 635,
+      "y": 2275,
       "width": 380,
       "height": 54,
       "angle": 0,
@@ -2011,8 +2011,8 @@
     {
       "id": "p_no_events_t",
       "type": "text",
-      "x": 688.5,
-      "y": 1995,
+      "x": 703.5,
+      "y": 2290,
       "width": 243,
       "height": 24,
       "angle": 0,
@@ -2050,8 +2050,8 @@
     {
       "id": "h_node_workflow",
       "type": "rectangle",
-      "x": 1690,
-      "y": 1260,
+      "x": 1980,
+      "y": 1490,
       "width": 360,
       "height": 54,
       "angle": 0,
@@ -2082,8 +2082,8 @@
     {
       "id": "h_node_workflow_t",
       "type": "text",
-      "x": 1759.5,
-      "y": 1275,
+      "x": 2049.5,
+      "y": 1505,
       "width": 221,
       "height": 24,
       "angle": 0,
@@ -2121,7 +2121,7 @@
     {
       "id": "h_node_commands",
       "type": "rectangle",
-      "x": 1680,
+      "x": 1980,
       "y": 1810,
       "width": 330,
       "height": 54,
@@ -2153,7 +2153,7 @@
     {
       "id": "h_node_commands_t",
       "type": "text",
-      "x": 1778.5,
+      "x": 2078.5,
       "y": 1825,
       "width": 133,
       "height": 24,
@@ -2192,8 +2192,8 @@
     {
       "id": "h_part_commands",
       "type": "rectangle",
-      "x": 2270,
-      "y": 2250,
+      "x": 2290,
+      "y": 1970,
       "width": 370,
       "height": 54,
       "angle": 0,
@@ -2224,8 +2224,8 @@
     {
       "id": "h_part_commands_t",
       "type": "text",
-      "x": 2350,
-      "y": 2265,
+      "x": 2370,
+      "y": 1985,
       "width": 210,
       "height": 24,
       "angle": 0,
@@ -2263,8 +2263,8 @@
     {
       "id": "h_bus",
       "type": "rectangle",
-      "x": 2790,
-      "y": 1300,
+      "x": 2730,
+      "y": 1450,
       "width": 390,
       "height": 72,
       "angle": 0,
@@ -2295,8 +2295,8 @@
     {
       "id": "h_bus_t",
       "type": "text",
-      "x": 2863.5,
-      "y": 1312,
+      "x": 2803.5,
+      "y": 1462,
       "width": 243,
       "height": 48,
       "angle": 0,
@@ -2334,8 +2334,8 @@
     {
       "id": "h_observer",
       "type": "rectangle",
-      "x": 2990,
-      "y": 1760,
+      "x": 2760,
+      "y": 1770,
       "width": 470,
       "height": 72,
       "angle": 0,
@@ -2366,8 +2366,8 @@
     {
       "id": "h_observer_t",
       "type": "text",
-      "x": 3065,
-      "y": 1772,
+      "x": 2835,
+      "y": 1782,
       "width": 320,
       "height": 48,
       "angle": 0,
@@ -2405,8 +2405,8 @@
     {
       "id": "h_adapters",
       "type": "rectangle",
-      "x": 2610,
-      "y": 2380,
+      "x": 2520,
+      "y": 1975,
       "width": 400,
       "height": 54,
       "angle": 0,
@@ -2437,8 +2437,8 @@
     {
       "id": "h_adapters_t",
       "type": "text",
-      "x": 2677.5,
-      "y": 2395,
+      "x": 2587.5,
+      "y": 1990,
       "width": 265,
       "height": 24,
       "angle": 0,
@@ -2476,10 +2476,10 @@
     {
       "id": "call_create_doc",
       "type": "arrow",
-      "x": 2050,
-      "y": 1320,
-      "width": 1200,
-      "height": 420,
+      "x": 2160,
+      "y": 1490,
+      "width": 1210,
+      "height": 754,
       "angle": 0,
       "strokeColor": "#2b8a3e",
       "backgroundColor": "transparent",
@@ -2506,12 +2506,12 @@
           0
         ],
         [
-          900,
-          -420
+          690,
+          -410
         ],
         [
-          1200,
-          -420
+          1210,
+          -754
         ]
       ],
       "startBinding": null,
@@ -2561,10 +2561,10 @@
     {
       "id": "call_create_node",
       "type": "arrow",
-      "x": 1742.52759480523,
-      "y": 1749.207952079082,
-      "width": 1040,
-      "height": 420,
+      "x": 1980,
+      "y": 1517,
+      "width": 1336,
+      "height": 779,
       "angle": 0,
       "strokeColor": "#364fc7",
       "backgroundColor": "transparent",
@@ -2591,12 +2591,12 @@
           0
         ],
         [
-          -620,
-          -420
+          -530,
+          -237
         ],
         [
-          -1040,
-          -420
+          -1336,
+          -779
         ]
       ],
       "startBinding": null,
@@ -2646,10 +2646,10 @@
     {
       "id": "call_save_node",
       "type": "arrow",
-      "x": 1780,
-      "y": 1500,
-      "width": 660,
-      "height": 1040,
+      "x": 2160,
+      "y": 1544,
+      "width": 390,
+      "height": 1046,
       "angle": 0,
       "strokeColor": "#495057",
       "backgroundColor": "transparent",
@@ -2676,12 +2676,12 @@
           0
         ],
         [
-          -140,
-          700
+          -350,
+          576
         ],
         [
-          520,
-          1040
+          40,
+          1046
         ]
       ],
       "startBinding": null,
@@ -2731,10 +2731,10 @@
     {
       "id": "call_event_to_bus",
       "type": "arrow",
-      "x": 1190,
-      "y": 340,
-      "width": 1600,
-      "height": 1000,
+      "x": 790,
+      "y": 556,
+      "width": 1940,
+      "height": 930,
       "angle": 0,
       "strokeColor": "#6741d9",
       "backgroundColor": "transparent",
@@ -2761,8 +2761,12 @@
           0
         ],
         [
-          1600,
-          1000
+          1060,
+          324
+        ],
+        [
+          1940,
+          930
         ]
       ],
       "startBinding": null,
@@ -2849,10 +2853,10 @@
     {
       "id": "bus_to_observer",
       "type": "arrow",
-      "x": 3180,
-      "y": 1370,
-      "width": 30,
-      "height": 390,
+      "x": 2925,
+      "y": 1522,
+      "width": 70,
+      "height": 248,
       "angle": 0,
       "strokeColor": "#6741d9",
       "backgroundColor": "transparent",
@@ -2879,8 +2883,8 @@
           0
         ],
         [
-          30,
-          390
+          70,
+          248
         ]
       ],
       "startBinding": null,
@@ -2930,10 +2934,10 @@
     {
       "id": "observer_to_content",
       "type": "arrow",
-      "x": 3370,
-      "y": 1800,
-      "width": 320,
-      "height": 550,
+      "x": 3230,
+      "y": 1806,
+      "width": 640,
+      "height": 686,
       "angle": 0,
       "strokeColor": "#2b8a3e",
       "backgroundColor": "transparent",
@@ -2960,8 +2964,12 @@
           0
         ],
         [
-          320,
-          -550
+          280,
+          -546
+        ],
+        [
+          640,
+          -686
         ]
       ],
       "startBinding": null,
@@ -3011,10 +3019,10 @@
     {
       "id": "host_to_participants",
       "type": "arrow",
-      "x": 1850,
-      "y": 2020,
-      "width": 700,
-      "height": 480,
+      "x": 2115,
+      "y": 1850,
+      "width": 965,
+      "height": 630,
       "angle": 0,
       "strokeColor": "#e67700",
       "backgroundColor": "transparent",
@@ -3041,8 +3049,12 @@
           0
         ],
         [
-          -700,
-          480
+          -615,
+          350
+        ],
+        [
+          -965,
+          630
         ]
       ],
       "startBinding": null,
@@ -3092,10 +3104,10 @@
     {
       "id": "adapters_to_storage",
       "type": "arrow",
-      "x": 2810,
-      "y": 2450,
-      "width": 80,
-      "height": 160,
+      "x": 2720,
+      "y": 2029,
+      "width": 10,
+      "height": 561,
       "angle": 0,
       "strokeColor": "#495057",
       "backgroundColor": "transparent",
@@ -3122,8 +3134,8 @@
           0
         ],
         [
-          -80,
-          160
+          10,
+          561
         ]
       ],
       "startBinding": null,
@@ -3136,10 +3148,10 @@
     {
       "id": "content_to_storage",
       "type": "arrow",
-      "x": 3650,
-      "y": 1260,
-      "width": 950,
-      "height": 1350,
+      "x": 3870,
+      "y": 1120,
+      "width": 1170,
+      "height": 1470,
       "angle": 0,
       "strokeColor": "#495057",
       "backgroundColor": "transparent",
@@ -3166,8 +3178,12 @@
           0
         ],
         [
-          -950,
-          1350
+          -420,
+          780
+        ],
+        [
+          -1170,
+          1470
         ]
       ],
       "startBinding": null,
@@ -3180,10 +3196,10 @@
     {
       "id": "graph_to_storage",
       "type": "arrow",
-      "x": 900,
-      "y": 1650,
-      "width": 1300,
-      "height": 960,
+      "x": 875,
+      "y": 1155,
+      "width": 1325,
+      "height": 1435,
       "angle": 0,
       "strokeColor": "#495057",
       "backgroundColor": "transparent",
@@ -3210,8 +3226,12 @@
           0
         ],
         [
-          1300,
-          960
+          425,
+          745
+        ],
+        [
+          1325,
+          1435
         ]
       ],
       "startBinding": null,
@@ -3224,10 +3244,10 @@
     {
       "id": "participants_to_storage",
       "type": "arrow",
-      "x": 1100,
-      "y": 2780,
-      "width": 700,
-      "height": 0,
+      "x": 1150,
+      "y": 2700,
+      "width": 650,
+      "height": 80,
       "angle": 0,
       "strokeColor": "#495057",
       "backgroundColor": "transparent",
@@ -3254,8 +3274,8 @@
           0
         ],
         [
-          700,
-          0
+          650,
+          80
         ]
       ],
       "startBinding": null,
@@ -3886,10 +3906,10 @@
     {
       "id": "voting",
       "type": "ellipse",
-      "x": 3530,
-      "y": 1750,
-      "width": 520,
-      "height": 420,
+      "x": 3590,
+      "y": 1810,
+      "width": 400,
+      "height": 300,
       "angle": 0,
       "strokeColor": "#9775fa",
       "backgroundColor": "#f8f7ff",
@@ -3915,7 +3935,7 @@
       "id": "voting_l",
       "type": "text",
       "x": 3727,
-      "y": 1820,
+      "y": 1865,
       "width": 126,
       "height": 45,
       "angle": 0,
@@ -3952,7 +3972,7 @@
       "id": "voting_d",
       "type": "text",
       "x": 3650.5,
-      "y": 1885,
+      "y": 1935,
       "width": 279,
       "height": 50,
       "angle": 0,
@@ -3988,10 +4008,10 @@
     {
       "id": "identity",
       "type": "ellipse",
-      "x": 4170,
-      "y": 1750,
-      "width": 520,
-      "height": 420,
+      "x": 4230,
+      "y": 1810,
+      "width": 400,
+      "height": 300,
       "angle": 0,
       "strokeColor": "#9775fa",
       "backgroundColor": "#f8f7ff",
@@ -4017,7 +4037,7 @@
       "id": "identity_l",
       "type": "text",
       "x": 4273,
-      "y": 1820,
+      "y": 1865,
       "width": 314,
       "height": 45,
       "angle": 0,
@@ -4054,7 +4074,7 @@
       "id": "identity_d",
       "type": "text",
       "x": 4285,
-      "y": 1885,
+      "y": 1935,
       "width": 290,
       "height": 50,
       "angle": 0,
@@ -4090,10 +4110,10 @@
     {
       "id": "moderation",
       "type": "ellipse",
-      "x": 3520,
-      "y": 2290,
-      "width": 520,
-      "height": 420,
+      "x": 3580,
+      "y": 2350,
+      "width": 400,
+      "height": 300,
       "angle": 0,
       "strokeColor": "#9775fa",
       "backgroundColor": "#f8f7ff",
@@ -4119,7 +4139,7 @@
       "id": "moderation_l",
       "type": "text",
       "x": 3675.5,
-      "y": 2360,
+      "y": 2405,
       "width": 209,
       "height": 45,
       "angle": 0,
@@ -4156,7 +4176,7 @@
       "id": "moderation_d",
       "type": "text",
       "x": 3617.5,
-      "y": 2425,
+      "y": 2475,
       "width": 325,
       "height": 50,
       "angle": 0,
@@ -4192,10 +4212,10 @@
     {
       "id": "search",
       "type": "ellipse",
-      "x": 4160,
-      "y": 2290,
-      "width": 520,
-      "height": 420,
+      "x": 4220,
+      "y": 2350,
+      "width": 400,
+      "height": 300,
       "angle": 0,
       "strokeColor": "#9775fa",
       "backgroundColor": "#f8f7ff",
@@ -4221,7 +4241,7 @@
       "id": "search_l",
       "type": "text",
       "x": 4357,
-      "y": 2360,
+      "y": 2405,
       "width": 126,
       "height": 45,
       "angle": 0,
@@ -4258,7 +4278,7 @@
       "id": "search_d",
       "type": "text",
       "x": 4292,
-      "y": 2425,
+      "y": 2475,
       "width": 256,
       "height": 50,
       "angle": 0,
@@ -4294,10 +4314,10 @@
     {
       "id": "activity",
       "type": "ellipse",
-      "x": 3400,
-      "y": 2830,
-      "width": 380,
-      "height": 300,
+      "x": 3430,
+      "y": 2860,
+      "width": 320,
+      "height": 240,
       "angle": 0,
       "strokeColor": "#9775fa",
       "backgroundColor": "#f8f7ff",
@@ -4323,7 +4343,7 @@
       "id": "activity_l",
       "type": "text",
       "x": 3506,
-      "y": 2900,
+      "y": 2915,
       "width": 168,
       "height": 45,
       "angle": 0,
@@ -4360,7 +4380,7 @@
       "id": "activity_d",
       "type": "text",
       "x": 3450.5,
-      "y": 2965,
+      "y": 2985,
       "width": 279,
       "height": 25,
       "angle": 0,
@@ -4396,10 +4416,10 @@
     {
       "id": "notifications",
       "type": "ellipse",
-      "x": 3830,
-      "y": 2830,
-      "width": 420,
-      "height": 300,
+      "x": 3880,
+      "y": 2860,
+      "width": 320,
+      "height": 240,
       "angle": 0,
       "strokeColor": "#9775fa",
       "backgroundColor": "#f8f7ff",
@@ -4425,7 +4445,7 @@
       "id": "notifications_l",
       "type": "text",
       "x": 3904,
-      "y": 2900,
+      "y": 2915,
       "width": 272,
       "height": 45,
       "angle": 0,
@@ -4462,7 +4482,7 @@
       "id": "notifications_d",
       "type": "text",
       "x": 3900.5,
-      "y": 2965,
+      "y": 2985,
       "width": 279,
       "height": 25,
       "angle": 0,
@@ -4498,10 +4518,10 @@
     {
       "id": "analytics",
       "type": "ellipse",
-      "x": 4300,
-      "y": 2830,
-      "width": 380,
-      "height": 300,
+      "x": 4330,
+      "y": 2860,
+      "width": 320,
+      "height": 240,
       "angle": 0,
       "strokeColor": "#9775fa",
       "backgroundColor": "#f8f7ff",
@@ -4527,7 +4547,7 @@
       "id": "analytics_l",
       "type": "text",
       "x": 4396,
-      "y": 2900,
+      "y": 2915,
       "width": 188,
       "height": 45,
       "angle": 0,
@@ -4564,7 +4584,7 @@
       "id": "analytics_d",
       "type": "text",
       "x": 4350.5,
-      "y": 2965,
+      "y": 2985,
       "width": 279,
       "height": 25,
       "angle": 0,
@@ -4813,10 +4833,10 @@
     {
       "id": "future_graph_vote",
       "type": "arrow",
-      "x": 1490,
-      "y": 1100,
-      "width": 1960,
-      "height": 850,
+      "x": 1211,
+      "y": 940,
+      "width": 2379,
+      "height": 1020,
       "angle": 0,
       "strokeColor": "#9775fa",
       "backgroundColor": "transparent",
@@ -4843,8 +4863,12 @@
           0
         ],
         [
-          1960,
-          850
+          1139,
+          560
+        ],
+        [
+          2379,
+          1020
         ]
       ],
       "startBinding": null,
@@ -4894,10 +4918,10 @@
     {
       "id": "future_part_vote",
       "type": "arrow",
-      "x": 1350,
-      "y": 2500,
-      "width": 2500,
-      "height": 430,
+      "x": 1150,
+      "y": 2580,
+      "width": 2640,
+      "height": 490,
       "angle": 0,
       "strokeColor": "#9775fa",
       "backgroundColor": "transparent",
@@ -4924,8 +4948,12 @@
           0
         ],
         [
-          2500,
-          -430
+          1250,
+          20
+        ],
+        [
+          2640,
+          -470
         ]
       ],
       "startBinding": null,
@@ -4938,10 +4966,10 @@
     {
       "id": "future_identity_part",
       "type": "arrow",
-      "x": 4170,
-      "y": 2070,
-      "width": 2850,
-      "height": 500,
+      "x": 4230,
+      "y": 2010,
+      "width": 3080,
+      "height": 540,
       "angle": 0,
       "strokeColor": "#9775fa",
       "backgroundColor": "transparent",
@@ -4968,8 +4996,12 @@
           0
         ],
         [
-          -2850,
-          500
+          -1430,
+          250
+        ],
+        [
+          -3080,
+          540
         ]
       ],
       "startBinding": null,
@@ -4982,10 +5014,10 @@
     {
       "id": "future_events_consumers",
       "type": "arrow",
-      "x": 2790,
-      "y": 1400,
-      "width": 1200,
-      "height": 1600,
+      "x": 2925,
+      "y": 1522,
+      "width": 1115,
+      "height": 1458,
       "angle": 0,
       "strokeColor": "#9775fa",
       "backgroundColor": "transparent",
@@ -5012,8 +5044,12 @@
           0
         ],
         [
-          1200,
-          1600
+          375,
+          878
+        ],
+        [
+          1115,
+          1458
         ]
       ],
       "startBinding": null,
