@@ -152,38 +152,165 @@ sequenceDiagram
     Host->>Graph: Clear recorded events
 ```
 
-| Event | Semantic producer | Recorded by | Dispatched by | Registered subscriber | Current reaction |
-|---|---|---|---|---|---|
-| `NodeCreatedV1` | Graph | `Node` constructor | Console after node save | `ObserveNodeLifecycleInContent` in Console | Log receipt and confirm the referenced document exists |
-| `NodeArchivedV1` | Graph | `Node.Archive` | Console after node save | `ObserveNodeLifecycleInContent` in Console | Log receipt, confirm the document exists, and make no Content state change |
-| `NodeRestoredV1` | Graph | `Node.Restore` | Console after node save | None | Publisher logs that no subscriber accepted it |
-| `NodeParentAttachedV1` | Graph | `Node.AttachToParent` | Console after node save | None | Publisher logs that no subscriber accepted it |
-| `NodeParentDetachedV1` | Graph | `Node.DetachFromParent` | Console after node save | None | Publisher logs that no subscriber accepted it |
+### `NodeCreatedV1`
+
+| Attribute | Current state |
+|---|---|
+| **Semantic producer** | Graph |
+| **Recorded by** | `Node` constructor |
+| **Dispatched by** | Console after the node is saved |
+| **Registered subscriber** | `ObserveNodeLifecycleInContent` in Console |
+| **Current reaction** | Log receipt and confirm that the referenced document exists. |
+
+### `NodeArchivedV1`
+
+| Attribute | Current state |
+|---|---|
+| **Semantic producer** | Graph |
+| **Recorded by** | `Node.Archive` |
+| **Dispatched by** | Console after the node is saved |
+| **Registered subscriber** | `ObserveNodeLifecycleInContent` in Console |
+| **Current reaction** | Log receipt, confirm that the document exists, and make no Content state change. |
+
+### `NodeRestoredV1`
+
+| Attribute | Current state |
+|---|---|
+| **Semantic producer** | Graph |
+| **Recorded by** | `Node.Restore` |
+| **Dispatched by** | Console after the node is saved |
+| **Registered subscriber** | None. |
+| **Current reaction** | Publisher logs that no subscriber accepted it. |
+
+### `NodeParentAttachedV1`
+
+| Attribute | Current state |
+|---|---|
+| **Semantic producer** | Graph |
+| **Recorded by** | `Node.AttachToParent` |
+| **Dispatched by** | Console after the node is saved |
+| **Registered subscriber** | None. |
+| **Current reaction** | Publisher logs that no subscriber accepted it. |
+
+### `NodeParentDetachedV1`
+
+| Attribute | Current state |
+|---|---|
+| **Semantic producer** | Graph |
+| **Recorded by** | `Node.DetachFromParent` |
+| **Dispatched by** | Console after the node is saved |
+| **Registered subscriber** | None. |
+| **Current reaction** | Publisher logs that no subscriber accepted it. |
 
 Graph records the facts but does not dispatch them. The Console publishes them synchronously only along the workflows that explicitly call its publishing helper. Reconstituted nodes do not recreate past events.
 
 ## Existing cross-boundary workflows
 
-| Workflow | Boundaries/components involved | Current coordination | Known failure or ownership gap |
-|---|---|---|---|
-| Create node with description | Console, Content, Graph, Contracts | Console saves a new Content document, constructs and saves the Graph node with its ID, then dispatches recorded events | A failed node creation/save can leave an orphaned document; no transaction or compensation |
-| Display node | Console, Graph, Content, Participants | Console joins records in memory using description and author GUID values | Missing references are presentation concerns; no explicit cross-boundary read model or missing-reference policy |
-| Edit participant profile | Console, Participants | Console calls `UpdateParticipantProfile`, which authorizes self-edit and persists through the Participants repository | This protected route exists for profiles but not for most Graph mutations |
-| Add or link sub-node | Console, Graph | Console traverses loaded nodes to reject cycles, invokes Graph behavior, saves, then dispatches events | Cycle invariant is not guaranteed for another host; relationship-node cardinality is not enforced |
-| Seed system node types | Console, Graph | Console creates or adjusts well-known types at startup | Stable semantic identity and global uniqueness are not enforced by Graph |
+### Create node with description
+
+| Attribute | Current state |
+|---|---|
+| **Participants** | Console, Content, Graph, and Contracts |
+| **Coordination** | Console saves a new Content document, constructs and saves the Graph node with its ID, then dispatches recorded events. |
+| **Failure or ownership gap** | A failed node creation or save can leave an orphaned document. There is no transaction or compensation. |
+
+### Display node
+
+| Attribute | Current state |
+|---|---|
+| **Participants** | Console, Graph, Content, and Participants |
+| **Coordination** | Console joins records in memory using description and author GUID values. |
+| **Failure or ownership gap** | Missing references are presentation concerns. There is no explicit cross-boundary read model or missing-reference policy. |
+
+### Edit participant profile
+
+| Attribute | Current state |
+|---|---|
+| **Participants** | Console and Participants |
+| **Coordination** | Console calls `UpdateParticipantProfile`, which authorizes self-edit and persists through the Participants repository. |
+| **Failure or ownership gap** | This protected route exists for profiles but not for most Graph mutations. |
+
+### Add or link sub-node
+
+| Attribute | Current state |
+|---|---|
+| **Participants** | Console and Graph |
+| **Coordination** | Console traverses loaded nodes to reject cycles, invokes Graph behavior, saves, and then dispatches events. |
+| **Failure or ownership gap** | The cycle invariant is not guaranteed for another host. Relationship-node cardinality is not enforced. |
+
+### Seed system node types
+
+| Attribute | Current state |
+|---|---|
+| **Participants** | Console and Graph |
+| **Coordination** | Console creates or adjusts well-known types at startup. |
+| **Failure or ownership gap** | Stable semantic identity and global uniqueness are not enforced by Graph. |
 
 ## Documentation authority and overlap
 
-| Document | Authoritative purpose | PTT-68 finding |
-|---|---|---|
-| **This context map** | Boundary/component inventory, responsibilities, ownership summary, relationships, event flow, and current gaps | Keep as the single architectural overview. Do not create a second boundary-definition document for PTT-68. |
-| [Data ownership](DATA-OWNERSHIP.md) | Record-level authority, ID generation, storage location, and consistency rules | Keep as the detailed ownership register. It should link here instead of redefining whole boundary responsibilities. |
-| [Requirements](../requirements/REQUIREMENTS.md) | Committed/proposed behavior and acceptance criteria | Keep; it describes intent, not proof that behavior exists. |
-| [Traceability](../requirements/TRACEABILITY.md) | Requirement-to-code/test evidence and requirement-level gaps | Keep; some gap text overlaps this map and should be linked when practical rather than independently expanded. |
-| [Contracts catalog](../contracts/README.md) | Payload catalog, producer/consumer meaning, and compatibility policy | Keep; C# records remain the executable payload definitions. Correct the “known consumer” language if the observer remains host-owned. |
-| [Node lifecycle workflow](../workflows/NODE-LIFECYCLE.md) | Cross-boundary sequence, persistence result, and failure path | Keep; update when workflow sequencing changes. |
-| Boundary project READMEs | Boundary-specific model and implementation detail | Keep; they provide depth, but responsibility summaries should agree with this map. |
-| ADRs | Rationale for accepted architectural decisions | Keep immutable; supersede with a new ADR when a decision changes. |
+### Current context map
+
+| Attribute | Current state |
+|---|---|
+| **Document** | This document |
+| **Authoritative purpose** | Boundary and component inventory, responsibility and ownership summaries, relationships, event flow, and current gaps. |
+| **PTT-68 finding** | Keep as the single architectural overview. Do not create a second boundary-definition document for PTT-68. |
+
+### Data ownership
+
+| Attribute | Current state |
+|---|---|
+| **Document** | [DATA-OWNERSHIP.md](DATA-OWNERSHIP.md) |
+| **Authoritative purpose** | Record-level authority, ID generation, storage location, and consistency rules. |
+| **PTT-68 finding** | Keep as the detailed ownership register. Link here instead of redefining whole boundary responsibilities. |
+
+### Requirements
+
+| Attribute | Current state |
+|---|---|
+| **Document** | [REQUIREMENTS.md](../requirements/REQUIREMENTS.md) |
+| **Authoritative purpose** | Committed or proposed behavior and acceptance criteria. |
+| **PTT-68 finding** | Keep. It describes intent, not proof that behavior exists. |
+
+### Traceability
+
+| Attribute | Current state |
+|---|---|
+| **Document** | [TRACEABILITY.md](../requirements/TRACEABILITY.md) |
+| **Authoritative purpose** | Requirement-to-code and requirement-to-test evidence, including requirement-level gaps. |
+| **PTT-68 finding** | Keep. Link overlapping gap text when practical rather than expanding it independently. |
+
+### Contracts catalog
+
+| Attribute | Current state |
+|---|---|
+| **Document** | [Contracts README](../contracts/README.md) |
+| **Authoritative purpose** | Payload catalog, producer and consumer meaning, and compatibility policy. |
+| **PTT-68 finding** | Keep. C# records remain the executable payload definitions. Correct “known consumer” language if the observer remains host-owned. |
+
+### Node lifecycle workflow
+
+| Attribute | Current state |
+|---|---|
+| **Document** | [NODE-LIFECYCLE.md](../workflows/NODE-LIFECYCLE.md) |
+| **Authoritative purpose** | Cross-boundary sequence, persistence result, and failure path. |
+| **PTT-68 finding** | Keep and update when workflow sequencing changes. |
+
+### Boundary project READMEs
+
+| Attribute | Current state |
+|---|---|
+| **Documents** | Project-level README files |
+| **Authoritative purpose** | Boundary-specific model and implementation detail. |
+| **PTT-68 finding** | Keep. They provide depth, but their responsibility summaries should agree with this context map. |
+
+### Architecture decision records
+
+| Attribute | Current state |
+|---|---|
+| **Documents** | [ADRs](decisions/README.md) |
+| **Authoritative purpose** | Rationale for accepted architectural decisions. |
+| **PTT-68 finding** | Keep immutable. Supersede an earlier decision with a new ADR when it changes. |
 
 ## Gap summary for PTT-65
 
