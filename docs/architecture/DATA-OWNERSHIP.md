@@ -1,6 +1,6 @@
 # Data ownership and consistency
 
-This document records which boundary is authoritative for each kind of data. It should be updated before adding a new cross-boundary write.
+This document is the detailed record-level ownership register. The [current-state context map](CONTEXT-MAP.md) is authoritative for boundary responsibilities, relationships, event flow, and boundary-level gaps. This register should be updated before adding a new cross-boundary write.
 
 ## Ownership table
 
