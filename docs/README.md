@@ -24,3 +24,20 @@ A useful review path is:
 6. Use the glossary when a domain term could be interpreted more than one way.
 
 Documents should link rather than repeat authoritative definitions. Requirements own committed behavior, ADRs own decisions, contracts own payload descriptions, and code remains the executable implementation.
+
+## Mobile-friendly tables
+
+Documentation should remain usable from a phone:
+
+- Use a conventional table when it has two or three concise columns and its
+  value comes from scanning or comparing rows.
+- When one record has several descriptive attributes, give that record its own
+  heading and use a two-column `Attribute | Current state` table.
+- Keep the same attribute order across related record tables so they still act
+  as one logical matrix.
+- Use short phrases or controlled `<br>` breaks inside long cells.
+- Do not rely on HTML width attributes or custom CSS; GitHub's mobile renderer
+  may ignore them.
+- Preserve a genuinely wide matrix only when side-by-side comparison is more
+  important than mobile readability, such as a requirements traceability
+  matrix.
