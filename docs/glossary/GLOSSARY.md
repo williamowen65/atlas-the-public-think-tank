@@ -12,6 +12,7 @@ This glossary defines shared product language. Code names may be more specific, 
 | Contract | A versioned cross-boundary communication payload. It contains data, not domain behavior. |
 | Domain event | A fact recorded by domain behavior about something that occurred. The current code keeps the name `DomainEvents` even when the public record is also used as an integration contract. |
 | Integration event | A published, versioned fact that another boundary may consume or ignore. |
+| Invariant | A rule that must always remain true for a domain object or boundary to be in a valid state, regardless of which screen, host, or workflow caused the change. For example, a node cannot be its own parent, and `UpdatedAt` cannot precede `CreatedAt`. A rule checked only by the Console is not yet a Graph invariant because another host could bypass it. |
 | Node | The primary Graph entity representing a question, idea, issue, comment, or another typed contribution. |
 | Node type | A globally reusable Graph definition identified by GUID. It controls classification and display behavior such as pluralization. |
 | Parent | A node referenced by a child node's parent-ID collection. A node may have zero or multiple parents. |
