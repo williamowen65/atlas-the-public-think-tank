@@ -30,16 +30,57 @@ The final dashed relationship is documented intent, not a claim that Voting exis
 
 ## Boundary coverage matrix
 
-“References” means an ID or public API used across an ownership boundary. Repository interfaces belong to the domain that defines its persistence needs; the JSON implementations belong to the Console host.
+GitHub does not support fixed widths for Markdown table columns. To keep the
+inventory readable, the coverage matrix is divided into four focused views.
+Together, they form one inventory keyed by component.
 
-| Component | Kind | Current responsibility | Implemented behaviors | Owns | References | Does not own | Publishes | Subscribes | Existing documentation | Gaps or open questions |
-|---|---|---|---|---|---|---|---|---|---|---|
-| **Graph** | Domain boundary | Model typed nodes and the directed parent graph | Create/reconstitute nodes; rename; change type; replace description reference; archive/restore; request/stop requesting response types; attach/detach parents; create/edit/archive node types; enforce local invariants | Nodes, node IDs, node types, requested sub-node types, parent IDs on the child, Graph lifecycle state | `NodeAuthorId` corresponding to a Participant ID; `NodeDescriptionId` corresponding to a Document ID; Contracts event records | Profiles, credentials, documents, votes, JSON persistence | `NodeCreatedV1`, `NodeArchivedV1`, `NodeRestoredV1`, `NodeParentAttachedV1`, `NodeParentDetachedV1` are recorded on `Node` | None | [Graph README](../../src/Atlas.Graph/README.md); [requirements](../requirements/REQUIREMENTS.md); [RTM](../requirements/TRACEABILITY.md); ADRs 1–3 | Cycle prevention and default Comment policy are host-local; most node mutations lack authorization; relationship-node minimum-parent rule is not enforced; global type-name uniqueness is host-local; several mutations have no events; Graph directly references the shared Contracts project, and whether that dependency is the desired long-term direction remains an architectural question |
-| **Content** | Domain boundary | Hold separately identified description documents | Create/reconstitute a document and normalize its initial text; define document repository needs | Documents, document IDs, document text, creation time | No foreign IDs in the current model | Nodes, profiles, votes, event dispatch, JSON persistence | None | None inside `Atlas.Content`; a Console-owned observer is registered for `NodeCreatedV1` and `NodeArchivedV1` and queries the Content repository | [data ownership](DATA-OWNERSHIP.md); [node lifecycle workflow](../workflows/NODE-LIFECYCLE.md); CON requirements and RTM rows | No document-edit behavior or updated timestamp; no Content tests; no application use case; observer placement makes “Content subscribes” conceptually true but structurally ambiguous; creation can leave an orphaned document |
-| **Participants** | Domain boundary | Model public participant profiles and profile lifecycle | Create/reconstitute participant; update own display name and bio through an authorized use case; deactivate entity; query/save through repository contract | Participant IDs, display name, bio, active state, timestamps, self-edit policy | Nothing from Graph in its core model | Nodes/authored contributions, credentials/login tokens, documents, Graph authorization rules, JSON persistence | None | None | [Participants README](../../src/Atlas.Participants/README.md); PAR/AUT requirements and RTM rows | Deactivation is public and lacks an authorized use case; reactivation and moderator policy are undefined; no lifecycle events; profile browsing and authored-node composition live in Console |
-| **Contracts** | Shared contract package | Supply versioned payload types used for cross-boundary messages | Define Graph V1 lifecycle record shapes | Payload definitions and version namespaces | Primitive wire values supplied by Graph | Domain rules, entities, event dispatch, persistence, consumer reactions | None by itself | None | [contracts catalog](../contracts/README.md); [ADR-0003](decisions/ADR-0003-use-versioned-integration-contracts.md) | No serialization compatibility tests; no event ID, correlation, or causation metadata; shared package is currently described beside bounded contexts even though it is not itself a domain boundary |
-| **Console** | Host / composition root | Compose workflows and reads; provide the interactive UI, session actor, persistence adapters, seeding, and synchronous event dispatch | Create/browse participants and nodes; edit profiles; compose author/document/type data for display; check graph cycles; seed system types; save JSON; register and dispatch event handlers | Current-participant session state, host workflow sequencing, UI, JSON adapter implementations, in-memory subscriber registry | Public APIs and repository contracts from all implemented boundaries; Contracts payloads | Domain invariants, nodes, documents, profiles, contract meanings | Dispatches Graph-recorded events after saves; it is not the semantic event producer | Registers a Console-owned observer for `NodeCreatedV1` and `NodeArchivedV1` | [Console README](../../src/Atlas.Console/README.md); [node lifecycle workflow](../workflows/NODE-LIFECYCLE.md); EVT/PER requirements and RTM rows | Host contains policies that may belong behind boundary APIs; no transaction across document/node saves; no durable delivery, retries, idempotency, or failure isolation; handlers run synchronously and exceptions can interrupt dispatch; restore and parent events have no registered handlers |
-| **Voting** | Candidate domain; not implemented | A vote total and average are displayed as placeholders | None | No current data | Candidate references to Node and Participant IDs are documented | Nodes, profiles, documents | None | None | VOT-001 in [requirements](../requirements/REQUIREMENTS.md) and [RTM](../requirements/TRACEABILITY.md); future row in [data ownership](DATA-OWNERSHIP.md) | Boundary, ballot model, rating scale, eligibility, aggregation, persistence, and events all require later design |
+“References” means an ID or public API used across an ownership boundary.
+Repository interfaces belong to the domain that defines its persistence needs;
+the JSON implementations belong to the Console host.
+
+### Responsibilities and behavior
+
+| Component | Kind | Current responsibility | Implemented behaviors |
+|---|---|---|---|
+| **Graph** | Domain boundary | Model typed nodes and the directed parent graph | Create and reconstitute nodes.<br>Rename, change type, and replace description references.<br>Archive and restore.<br>Request response types.<br>Attach and detach parents.<br>Create, edit, and archive node types.<br>Enforce local invariants. |
+| **Content** | Domain boundary | Hold separately identified description documents | Create and reconstitute a document.<br>Normalize initial document text.<br>Define document repository needs. |
+| **Participants** | Domain boundary | Model public participant profiles and profile lifecycle | Create and reconstitute participants.<br>Update an owner's display name and bio through an authorized use case.<br>Deactivate participants.<br>Define participant repository needs. |
+| **Contracts** | Shared contract package | Supply versioned payload types for cross-boundary messages | Define Graph V1 lifecycle record shapes. |
+| **Console** | Host and composition root | Compose workflows and reads; provide the UI, session actor, persistence adapters, seeding, and synchronous event dispatch | Create and browse participants and nodes.<br>Edit profiles.<br>Compose author, document, and type data for display.<br>Check graph cycles.<br>Seed system types.<br>Save JSON.<br>Register and dispatch event handlers. |
+| **Voting** | Candidate domain; not implemented | Reserve vote-total and average placeholders in node displays | None. |
+
+### Ownership
+
+| Component | Owns | References | Does not own |
+|---|---|---|---|
+| **Graph** | Nodes and node IDs.<br>Node types and requested sub-node types.<br>Parent IDs on the child.<br>Graph lifecycle state. | `NodeAuthorId` corresponding to a Participant ID.<br>`NodeDescriptionId` corresponding to a Document ID.<br>Contracts event records. | Profiles and credentials.<br>Documents.<br>Votes.<br>JSON persistence. |
+| **Content** | Documents and document IDs.<br>Document text and creation time. | No foreign IDs in the current model. | Nodes.<br>Profiles.<br>Votes.<br>Event dispatch.<br>JSON persistence. |
+| **Participants** | Participant IDs.<br>Display name and bio.<br>Active state and timestamps.<br>Self-edit policy. | Nothing from Graph in its core model. | Nodes and authored contributions.<br>Credentials and login tokens.<br>Documents.<br>Graph authorization rules.<br>JSON persistence. |
+| **Contracts** | Payload definitions.<br>Version namespaces. | Primitive wire values supplied by Graph. | Domain rules and entities.<br>Event dispatch.<br>Persistence.<br>Consumer reactions. |
+| **Console** | Current-participant session state.<br>Host workflow sequencing.<br>User interface.<br>JSON adapter implementations.<br>In-memory subscriber registry. | Public APIs and repository contracts from all implemented boundaries.<br>Contracts payloads. | Domain invariants.<br>Nodes, documents, and profiles.<br>Contract meanings. |
+| **Voting** | No current data. | Candidate references to Node and Participant IDs are documented. | Nodes.<br>Profiles.<br>Documents. |
+
+### Event coverage
+
+| Component | Publishes or dispatches | Subscribes |
+|---|---|---|
+| **Graph** | Records `NodeCreatedV1`, `NodeArchivedV1`, `NodeRestoredV1`, `NodeParentAttachedV1`, and `NodeParentDetachedV1` on `Node`. | None. |
+| **Content** | None. | None inside `Atlas.Content`. A Console-owned observer is registered for `NodeCreatedV1` and `NodeArchivedV1` and queries the Content repository. |
+| **Participants** | None. | None. |
+| **Contracts** | None by itself. | None. |
+| **Console** | Dispatches Graph-recorded events after saves; it is not the semantic producer. | Registers its Content observer for `NodeCreatedV1` and `NodeArchivedV1`. |
+| **Voting** | None. | None. |
+
+### Documentation and gaps
+
+| Component | Existing documentation | Gaps or open questions |
+|---|---|---|
+| **Graph** | [Graph README](../../src/Atlas.Graph/README.md)<br>[Requirements](../requirements/REQUIREMENTS.md)<br>[RTM](../requirements/TRACEABILITY.md)<br>ADRs 1–3 | Cycle prevention and default Comment policy are host-local.<br>Most node mutations lack authorization.<br>Relationship-node minimum-parent rules are not enforced.<br>Global type-name uniqueness is host-local.<br>Several mutations have no events.<br>Graph directly references Contracts; the desired long-term dependency direction remains open. |
+| **Content** | [Data ownership](DATA-OWNERSHIP.md)<br>[Node lifecycle workflow](../workflows/NODE-LIFECYCLE.md)<br>CON requirements and RTM rows | No document-edit behavior or updated timestamp.<br>No Content tests or application use case.<br>The observer's placement makes Content subscription structurally ambiguous.<br>Creation can leave an orphaned document. |
+| **Participants** | [Participants README](../../src/Atlas.Participants/README.md)<br>PAR/AUT requirements and RTM rows | Deactivation lacks an authorized use case.<br>Reactivation and moderator policy are undefined.<br>No lifecycle events.<br>Profile browsing and contribution composition live in Console. |
+| **Contracts** | [Contracts catalog](../contracts/README.md)<br>[ADR-0003](decisions/ADR-0003-use-versioned-integration-contracts.md) | No serialization compatibility tests.<br>No event ID, correlation, or causation metadata.<br>The package is described beside bounded contexts although it is not a domain boundary. |
+| **Console** | [Console README](../../src/Atlas.Console/README.md)<br>[Node lifecycle workflow](../workflows/NODE-LIFECYCLE.md)<br>EVT/PER requirements and RTM rows | Some policies may belong behind boundary APIs.<br>No transaction across document and node saves.<br>No durable delivery, retries, idempotency, or failure isolation.<br>Synchronous handler failures can interrupt dispatch.<br>Restore and parent events have no registered handlers. |
+| **Voting** | VOT-001 in [requirements](../requirements/REQUIREMENTS.md) and [RTM](../requirements/TRACEABILITY.md)<br>Future row in [data ownership](DATA-OWNERSHIP.md) | Boundary, ballot model, rating scale, eligibility, aggregation, persistence, and events all require later design. |
 
 ## Implemented event flow
 
