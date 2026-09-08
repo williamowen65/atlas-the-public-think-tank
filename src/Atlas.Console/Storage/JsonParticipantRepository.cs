@@ -3,6 +3,7 @@ using Atlas.Participants.Participants;
 
 namespace Atlas.ConsoleApp.Storage;
 
+/// <summary>Persists participant profiles as JSON and reconstitutes them as domain objects.</summary>
 public sealed class JsonParticipantRepository : IParticipantRepository
 {
     private readonly string _filePath;
@@ -12,11 +13,13 @@ public sealed class JsonParticipantRepository : IParticipantRepository
         WriteIndented = true
     };
 
+    /// <summary>Initializes the JSON adapter and ensures its backing file is available.</summary>
     public JsonParticipantRepository(string filePath)
     {
         _filePath = filePath;
     }
 
+    /// <summary>Loads all persisted domain objects.</summary>
     public IReadOnlyCollection<Participant> GetAll()
     {
         return ReadStoredParticipants()
@@ -24,6 +27,7 @@ public sealed class JsonParticipantRepository : IParticipantRepository
             .ToList();
     }
 
+    /// <summary>Loads a domain object by its boundary-owned identifier.</summary>
     public Participant? GetById(ParticipantId id)
     {
         var storedParticipant = ReadStoredParticipants()
@@ -34,6 +38,7 @@ public sealed class JsonParticipantRepository : IParticipantRepository
             : ToDomain(storedParticipant);
     }
 
+    /// <summary>Persists the current domain-object state.</summary>
     public void Save(Participant participant)
     {
         ArgumentNullException.ThrowIfNull(participant);
@@ -70,6 +75,7 @@ public sealed class JsonParticipantRepository : IParticipantRepository
         WriteStoredParticipants(storedParticipants);
     }
 
+    /// <summary>Reads participant persistence records from JSON.</summary>
     private List<StoredParticipant> ReadStoredParticipants()
     {
         if (!File.Exists(_filePath))
@@ -90,6 +96,7 @@ public sealed class JsonParticipantRepository : IParticipantRepository
                ?? [];
     }
 
+    /// <summary>Writes participant persistence records to JSON.</summary>
     private void WriteStoredParticipants(
         List<StoredParticipant> participants)
     {
@@ -104,6 +111,7 @@ public sealed class JsonParticipantRepository : IParticipantRepository
         File.WriteAllText(_filePath, json);
     }
 
+    /// <summary>Maps a domain object to its data-only persistence representation.</summary>
     private static StoredParticipant ToStorage(Participant participant)
     {
         return new StoredParticipant
@@ -117,6 +125,7 @@ public sealed class JsonParticipantRepository : IParticipantRepository
         };
     }
 
+    /// <summary>Reconstitutes a domain object from its data-only persistence representation.</summary>
     private static Participant ToDomain(StoredParticipant storedParticipant)
     {
         return Participant.Reconstitute(

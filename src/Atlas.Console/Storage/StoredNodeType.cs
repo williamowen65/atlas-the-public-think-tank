@@ -1,5 +1,6 @@
 namespace Atlas.ConsoleApp.Storage;
 
+/// <summary>Defines the data-only JSON representation of a Graph node type.</summary>
 public sealed class StoredNodeType
 {
     public Guid Id { get; set; }

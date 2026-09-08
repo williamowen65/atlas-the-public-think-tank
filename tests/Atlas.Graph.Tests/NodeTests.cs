@@ -5,9 +5,11 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Atlas.Graph.Tests;
 
+/// <summary>Verifies node behavior and boundary rules.</summary>
 [TestClass]
 public class NodeTests
 {
+    /// <summary>Verifies that constructor sets title.</summary>
     [TestMethod]
     public void Constructor_SetsTitle()
     {
@@ -18,6 +20,7 @@ public class NodeTests
             node.Title);
     }
 
+    /// <summary>Verifies that constructor sets description reference.</summary>
     [TestMethod]
     public void Constructor_SetsDescriptionReference()
     {
@@ -34,6 +37,7 @@ public class NodeTests
     }
 
 
+    /// <summary>Verifies that constructor sets author reference.</summary>
     [TestMethod]
     public void Constructor_SetsAuthorReference()
     {
@@ -49,6 +53,7 @@ public class NodeTests
         Assert.AreEqual(authorId, node.AuthorId);
     }
 
+    /// <summary>Verifies that rename with valid title changes title.</summary>
     [TestMethod]
     public void Rename_WithValidTitle_ChangesTitle()
     {
@@ -63,6 +68,7 @@ public class NodeTests
             node.Title);
     }
 
+    /// <summary>Verifies that rename with blank title throws argument exception.</summary>
     [TestMethod]
     public void Rename_WithBlankTitle_ThrowsArgumentException()
     {
@@ -78,6 +84,7 @@ public class NodeTests
             node.Title);
     }
 
+    /// <summary>Verifies that replace description reference changes reference.</summary>
     [TestMethod]
     public void ReplaceDescriptionReference_ChangesReference()
     {
@@ -93,6 +100,7 @@ public class NodeTests
     }
 
 
+    /// <summary>Verifies that archive records node archived event.</summary>
     [TestMethod]
     public void Archive_RecordsNodeArchivedEvent()
     {
@@ -114,6 +122,7 @@ public class NodeTests
         Assert.AreEqual(archivedAt, domainEvent.OccurredAt);
     }
 
+    /// <summary>Verifies that archive when already archived does not record another event.</summary>
     [TestMethod]
     public void Archive_WhenAlreadyArchived_DoesNotRecordAnotherEvent()
     {
@@ -128,6 +137,7 @@ public class NodeTests
     }
 
 
+    /// <summary>Verifies that constructor sets requested sub node types.</summary>
     [TestMethod]
     public void Constructor_SetsRequestedSubNodeTypes()
     {
@@ -149,6 +159,7 @@ public class NodeTests
                 .ToArray());
     }
 
+    /// <summary>Verifies that request sub node type does not add duplicate.</summary>
     [TestMethod]
     public void RequestSubNodeType_DoesNotAddDuplicate()
     {
@@ -166,6 +177,7 @@ public class NodeTests
         Assert.HasCount(1, node.RequestedSubNodeTypes);
     }
 
+    /// <summary>Verifies that stop requesting sub node type removes request.</summary>
     [TestMethod]
     public void StopRequestingSubNodeType_RemovesRequest()
     {
@@ -183,6 +195,7 @@ public class NodeTests
         Assert.IsEmpty(node.RequestedSubNodeTypes);
     }
 
+    /// <summary>Verifies that request sub node type with empty guid throws.</summary>
     [TestMethod]
     public void RequestSubNodeType_WithEmptyGuid_Throws()
     {
@@ -195,6 +208,7 @@ public class NodeTests
     }
 
 
+    /// <summary>Verifies that attach to parent adds parent and records event.</summary>
     [TestMethod]
     public void AttachToParent_AddsParentAndRecordsEvent()
     {
@@ -218,6 +232,7 @@ public class NodeTests
         Assert.AreEqual(attachedAt, domainEvent.OccurredAt);
     }
 
+    /// <summary>Verifies that attach to parent when already attached does not duplicate.</summary>
     [TestMethod]
     public void AttachToParent_WhenAlreadyAttached_DoesNotDuplicate()
     {
@@ -235,6 +250,7 @@ public class NodeTests
         Assert.IsEmpty(node.DomainEvents);
     }
 
+    /// <summary>Verifies that attach to parent when parent is self throws.</summary>
     [TestMethod]
     public void AttachToParent_WhenParentIsSelf_Throws()
     {
@@ -246,6 +262,7 @@ public class NodeTests
                 DateTimeOffset.UtcNow));
     }
 
+    /// <summary>Verifies that attach to parent with empty guid throws.</summary>
     [TestMethod]
     public void AttachToParent_WithEmptyGuid_Throws()
     {
@@ -257,6 +274,7 @@ public class NodeTests
                 DateTimeOffset.UtcNow));
     }
 
+    /// <summary>Verifies that detach from parent removes parent and records event.</summary>
     [TestMethod]
     public void DetachFromParent_RemovesParentAndRecordsEvent()
     {
@@ -278,6 +296,7 @@ public class NodeTests
         Assert.AreEqual(detachedAt, domainEvent.OccurredAt);
     }
 
+    /// <summary>Verifies that constructor allows multiple parents.</summary>
     [TestMethod]
     public void Constructor_AllowsMultipleParents()
     {
@@ -298,6 +317,7 @@ public class NodeTests
             node.ParentNodeIds.ToArray());
     }
 
+    /// <summary>Creates node during the current workflow.</summary>
     private static Node CreateNode(string title)
     {
         return new Node(

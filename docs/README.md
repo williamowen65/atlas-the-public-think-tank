@@ -26,6 +26,17 @@ A useful review path is:
 
 Documents should link rather than repeat authoritative definitions. Requirements own committed behavior, ADRs own decisions, contracts own payload descriptions, and code remains the executable implementation.
 
+## Code documentation
+
+- Give classes, records, interfaces, and methods concise XML summaries so their
+  responsibilities appear in IntelliSense.
+- Describe the boundary responsibility, lifecycle transition, workflow step,
+  or invariant a member supports rather than restating its signature.
+- State the protected behavior in test documentation so the suite also serves
+  as a readable inventory of expectations.
+- Keep comments synchronized with behavior and link to authoritative documents
+  instead of copying detailed rules into code.
+
 ## Mobile-friendly tables
 
 Documentation should remain usable from a phone:

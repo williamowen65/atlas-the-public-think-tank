@@ -3,6 +3,7 @@ using Atlas.Content.Documents;
 
 namespace Atlas.ConsoleApp.Storage;
 
+/// <summary>Persists Content documents as JSON and reconstitutes them as domain objects.</summary>
 public sealed class JsonDocumentRepository : IDocumentRepository
 {
     private readonly string _filePath;
@@ -12,11 +13,13 @@ public sealed class JsonDocumentRepository : IDocumentRepository
         WriteIndented = true
     };
 
+    /// <summary>Initializes the JSON adapter and ensures its backing file is available.</summary>
     public JsonDocumentRepository(string filePath)
     {
         _filePath = filePath;
     }
 
+    /// <summary>Loads all persisted domain objects.</summary>
     public IReadOnlyCollection<Document> GetAll()
     {
         return ReadStoredDocuments()
@@ -24,6 +27,7 @@ public sealed class JsonDocumentRepository : IDocumentRepository
             .ToList();
     }
 
+    /// <summary>Loads a domain object by its boundary-owned identifier.</summary>
     public Document? GetById(DocumentId id)
     {
         var storedDocument = ReadStoredDocuments()
@@ -34,6 +38,7 @@ public sealed class JsonDocumentRepository : IDocumentRepository
             : ToDomain(storedDocument);
     }
 
+    /// <summary>Persists the current domain-object state.</summary>
     public void Save(Document document)
     {
         ArgumentNullException.ThrowIfNull(document);
@@ -57,6 +62,7 @@ public sealed class JsonDocumentRepository : IDocumentRepository
         WriteStoredDocuments(storedDocuments);
     }
 
+    /// <summary>Reads document persistence records from JSON.</summary>
     private List<StoredDocument> ReadStoredDocuments()
     {
         if (!File.Exists(_filePath))
@@ -77,6 +83,7 @@ public sealed class JsonDocumentRepository : IDocumentRepository
                ?? [];
     }
 
+    /// <summary>Writes document persistence records to JSON.</summary>
     private void WriteStoredDocuments(
         List<StoredDocument> documents)
     {
@@ -91,6 +98,7 @@ public sealed class JsonDocumentRepository : IDocumentRepository
         File.WriteAllText(_filePath, json);
     }
 
+    /// <summary>Maps a domain object to its data-only persistence representation.</summary>
     private static StoredDocument ToStorage(Document document)
     {
         return new StoredDocument
@@ -101,6 +109,7 @@ public sealed class JsonDocumentRepository : IDocumentRepository
         };
     }
 
+    /// <summary>Reconstitutes a domain object from its data-only persistence representation.</summary>
     private static Document ToDomain(StoredDocument storedDocument)
     {
         return Document.Reconstitute(

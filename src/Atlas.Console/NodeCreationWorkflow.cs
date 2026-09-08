@@ -6,8 +6,10 @@ using Atlas.Participants.Participants;
 
 namespace Atlas.ConsoleApp;
 
+/// <summary>Coordinates document-first creation across Content, Graph, persistence, and event publication.</summary>
 public static class NodeCreationWorkflow
 {
+    /// <summary>Coordinates creation and persistence for this workflow.</summary>
     public static Node? Create(
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,

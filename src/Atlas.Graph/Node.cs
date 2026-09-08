@@ -3,6 +3,7 @@ using Atlas.Graph.Nodes.NodeTypes;
 
 namespace Atlas.Graph.Nodes;
 
+/// <summary>Represents the Graph aggregate that owns node identity, lifecycle, relationships, and recorded domain events.</summary>
 public sealed class Node
 {
     private readonly List<object> _domainEvents = [];
@@ -27,6 +28,7 @@ public sealed class Node
     public DateTimeOffset CreatedAt { get; }
     public DateTimeOffset UpdatedAt { get; private set; }
 
+    /// <summary>Creates a validated node instance.</summary>
     public Node(
         NodeTitle title,
         NodeDescriptionId descriptionId,
@@ -43,6 +45,7 @@ public sealed class Node
     {
     }
 
+    /// <summary>Creates a validated node instance.</summary>
     public Node(
         NodeTitle title,
         NodeDescriptionId descriptionId,
@@ -71,6 +74,7 @@ public sealed class Node
                 createdAt));
     }
 
+    /// <summary>Creates a validated node instance.</summary>
     private Node(
         NodeId id,
         NodeTitle title,
@@ -102,6 +106,7 @@ public sealed class Node
         _parentNodeIds = CreateParentNodeIds(parentNodeIds, Id);
     }
 
+    /// <summary>Rebuilds the domain object from persisted state without replaying creation behavior.</summary>
     public static Node Reconstitute(
         NodeId id,
         NodeTitle title,
@@ -125,6 +130,7 @@ public sealed class Node
             updatedAt);
     }
 
+    /// <summary>Rebuilds the domain object from persisted state without replaying creation behavior.</summary>
     public static Node Reconstitute(
         NodeId id,
         NodeTitle title,
@@ -149,6 +155,7 @@ public sealed class Node
             updatedAt);
     }
 
+    /// <summary>Rebuilds the domain object from persisted state without replaying creation behavior.</summary>
     public static Node Reconstitute(
         NodeId id,
         NodeTitle title,
@@ -174,6 +181,7 @@ public sealed class Node
             updatedAt);
     }
 
+    /// <summary>Changes the validated name and advances the modification timestamp when the value differs.</summary>
     public void Rename(
         NodeTitle newTitle,
         DateTimeOffset changedAt)
@@ -187,6 +195,7 @@ public sealed class Node
         UpdatedAt = changedAt;
     }
 
+    /// <summary>Changes the node type and advances the modification timestamp when the value differs.</summary>
     public void ChangeType(
         NodeTypeId newTypeId,
         DateTimeOffset changedAt)
@@ -200,6 +209,7 @@ public sealed class Node
         UpdatedAt = changedAt;
     }
 
+    /// <summary>Adds a requested response type when it is not already present.</summary>
     public void RequestSubNodeType(
         NodeTypeId typeId,
         DateTimeOffset changedAt)
@@ -215,6 +225,7 @@ public sealed class Node
         UpdatedAt = changedAt;
     }
 
+    /// <summary>Removes a requested response type when it is present.</summary>
     public void StopRequestingSubNodeType(
         NodeTypeId typeId,
         DateTimeOffset changedAt)
@@ -229,6 +240,7 @@ public sealed class Node
         UpdatedAt = changedAt;
     }
 
+    /// <summary>Attaches a parent relationship and records the corresponding integration event.</summary>
     public void AttachToParent(
         NodeId parentNodeId,
         DateTimeOffset attachedAt)
@@ -252,6 +264,7 @@ public sealed class Node
                 attachedAt));
     }
 
+    /// <summary>Detaches a parent relationship and records the corresponding integration event.</summary>
     public void DetachFromParent(
         NodeId parentNodeId,
         DateTimeOffset detachedAt)
@@ -274,6 +287,7 @@ public sealed class Node
                 detachedAt));
     }
 
+    /// <summary>Moves the aggregate into its archived lifecycle state and records the transition when applicable.</summary>
     public void Archive(DateTimeOffset archivedAt)
     {
         if (Status == NodeStatus.Archived)
@@ -292,6 +306,7 @@ public sealed class Node
                 archivedAt));
     }
 
+    /// <summary>Returns the aggregate to its active lifecycle state and records the transition when applicable.</summary>
     public void Restore(DateTimeOffset restoredAt)
     {
         if (Status == NodeStatus.Active)
@@ -310,6 +325,7 @@ public sealed class Node
                 restoredAt));
     }
 
+    /// <summary>Replaces the node's Content reference and advances its modification timestamp.</summary>
     public void ReplaceDescriptionReference(
         NodeDescriptionId newDescriptionId,
         DateTimeOffset changedAt)
@@ -323,6 +339,7 @@ public sealed class Node
         UpdatedAt = changedAt;
     }
 
+    /// <summary>Clears recorded events after the host has dispatched them.</summary>
     public void ClearDomainEvents()
     {
         _domainEvents.Clear();
@@ -340,6 +357,7 @@ public sealed class Node
             .ToList();
     }
 
+    /// <summary>Creates parent node ids during the current workflow.</summary>
     private static List<NodeId> CreateParentNodeIds(
         IEnumerable<NodeId> parentNodeIds,
         NodeId nodeId)
@@ -356,6 +374,7 @@ public sealed class Node
         return parents;
     }
 
+    /// <summary>Enforces valid parent node id before the operation continues.</summary>
     private static void EnsureValidParentNodeId(
         NodeId parentNodeId,
         NodeId nodeId)

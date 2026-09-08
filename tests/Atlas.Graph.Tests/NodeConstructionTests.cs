@@ -4,9 +4,11 @@ using Atlas.Graph.Nodes.NodeTypes;
 
 namespace Atlas.Graph.Tests;
 
+/// <summary>Verifies node construction behavior and boundary rules.</summary>
 [TestClass]
 public class NodeConstructionTests
 {
+    /// <summary>Verifies that constructor initializes complete active node.</summary>
     [TestMethod]
     public void Constructor_InitializesCompleteActiveNode()
     {
@@ -29,6 +31,7 @@ public class NodeConstructionTests
         Assert.IsEmpty(node.RequestedSubNodeTypes);
     }
 
+    /// <summary>Verifies that constructor records complete node created event.</summary>
     [TestMethod]
     public void Constructor_RecordsCompleteNodeCreatedEvent()
     {
@@ -45,6 +48,7 @@ public class NodeConstructionTests
         Assert.AreEqual(createdAt, message.OccurredAt);
     }
 
+    /// <summary>Verifies that constructor deduplicates requested sub node types.</summary>
     [TestMethod]
     public void Constructor_DeduplicatesRequestedSubNodeTypes()
     {
@@ -62,6 +66,7 @@ public class NodeConstructionTests
         Assert.AreEqual(typeId, node.RequestedSubNodeTypes.Single().TypeId);
     }
 
+    /// <summary>Verifies that constructor with null requested sub node types throws.</summary>
     [TestMethod]
     public void Constructor_WithNullRequestedSubNodeTypes_Throws()
     {
@@ -75,6 +80,7 @@ public class NodeConstructionTests
                 DateTimeOffset.UtcNow));
     }
 
+    /// <summary>Verifies that clear domain events removes recorded events.</summary>
     [TestMethod]
     public void ClearDomainEvents_RemovesRecordedEvents()
     {

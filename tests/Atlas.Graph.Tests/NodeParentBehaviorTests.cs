@@ -3,9 +3,11 @@ using Atlas.Graph.Nodes;
 
 namespace Atlas.Graph.Tests;
 
+/// <summary>Verifies node parent behavior behavior and boundary rules.</summary>
 [TestClass]
 public class NodeParentBehaviorTests
 {
+    /// <summary>Verifies that attach to parent updates timestamp and records complete event.</summary>
     [TestMethod]
     public void AttachToParent_UpdatesTimestampAndRecordsCompleteEvent()
     {
@@ -29,6 +31,7 @@ public class NodeParentBehaviorTests
         Assert.AreEqual(attachedAt, message.OccurredAt);
     }
 
+    /// <summary>Verifies that attach to parent when already attached preserves timestamp.</summary>
     [TestMethod]
     public void AttachToParent_WhenAlreadyAttached_PreservesTimestamp()
     {
@@ -44,6 +47,7 @@ public class NodeParentBehaviorTests
         Assert.IsEmpty(node.DomainEvents);
     }
 
+    /// <summary>Verifies that detach from parent updates timestamp and records complete event.</summary>
     [TestMethod]
     public void DetachFromParent_UpdatesTimestampAndRecordsCompleteEvent()
     {
@@ -68,6 +72,7 @@ public class NodeParentBehaviorTests
         Assert.AreEqual(detachedAt, message.OccurredAt);
     }
 
+    /// <summary>Verifies that detach from parent when not attached is no op.</summary>
     [TestMethod]
     public void DetachFromParent_WhenNotAttached_IsNoOp()
     {
@@ -83,6 +88,7 @@ public class NodeParentBehaviorTests
         Assert.IsEmpty(node.DomainEvents);
     }
 
+    /// <summary>Verifies that detach from parent with empty id throws.</summary>
     [TestMethod]
     public void DetachFromParent_WithEmptyId_Throws()
     {
@@ -94,6 +100,7 @@ public class NodeParentBehaviorTests
                 DateTimeOffset.UtcNow));
     }
 
+    /// <summary>Verifies that detach from parent with own id throws.</summary>
     [TestMethod]
     public void DetachFromParent_WithOwnId_Throws()
     {

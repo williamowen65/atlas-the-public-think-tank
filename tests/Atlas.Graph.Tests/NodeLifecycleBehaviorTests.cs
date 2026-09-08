@@ -3,9 +3,11 @@ using Atlas.Graph.Nodes;
 
 namespace Atlas.Graph.Tests;
 
+/// <summary>Verifies node lifecycle behavior behavior and boundary rules.</summary>
 [TestClass]
 public class NodeLifecycleBehaviorTests
 {
+    /// <summary>Verifies that archive changes status and timestamp.</summary>
     [TestMethod]
     public void Archive_ChangesStatusAndTimestamp()
     {
@@ -18,6 +20,7 @@ public class NodeLifecycleBehaviorTests
         Assert.AreEqual(archivedAt, node.UpdatedAt);
     }
 
+    /// <summary>Verifies that archive when already archived preserves timestamp.</summary>
     [TestMethod]
     public void Archive_WhenAlreadyArchived_PreservesTimestamp()
     {
@@ -32,6 +35,7 @@ public class NodeLifecycleBehaviorTests
         Assert.IsEmpty(node.DomainEvents);
     }
 
+    /// <summary>Verifies that restore changes status and records complete event.</summary>
     [TestMethod]
     public void Restore_ChangesStatusAndRecordsCompleteEvent()
     {
@@ -55,6 +59,7 @@ public class NodeLifecycleBehaviorTests
         Assert.AreEqual(restoredAt, message.OccurredAt);
     }
 
+    /// <summary>Verifies that restore when already active is no op.</summary>
     [TestMethod]
     public void Restore_WhenAlreadyActive_IsNoOp()
     {

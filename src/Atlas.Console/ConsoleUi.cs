@@ -2,8 +2,10 @@ using Atlas.Graph.Nodes.NodeTypes;
 
 namespace Atlas.ConsoleApp;
 
+/// <summary>Provides reusable console input and node-type selection interactions.</summary>
 public static class ConsoleUi
 {
+    /// <summary>Reads node type from the console interaction.</summary>
     public static NodeTypeDefinition? ReadNodeType(
         INodeTypeRepository nodeTypes,
         string ownerId)
@@ -153,6 +155,7 @@ public static class ConsoleUi
             .ToList();
     }
 
+    /// <summary>Pauses the console workflow after optionally displaying a status message.</summary>
     public static void Pause(string? message = null)
     {
         if (!string.IsNullOrWhiteSpace(message))
@@ -166,6 +169,7 @@ public static class ConsoleUi
         Console.ReadLine();
     }
 
+    /// <summary>Creates custom node type during the current workflow.</summary>
     public static NodeTypeDefinition? CreateCustomNodeType(
         INodeTypeRepository nodeTypes,
         string ownerId)

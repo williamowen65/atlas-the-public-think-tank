@@ -1,5 +1,6 @@
 namespace Atlas.Participants.Participants;
 
+/// <summary>Represents a participant profile and its lifecycle within the Participants boundary.</summary>
 public sealed class Participant
 {
     public const int MaximumBioLength = 500;
@@ -11,6 +12,7 @@ public sealed class Participant
     public DateTimeOffset CreatedAt { get; }
     public DateTimeOffset UpdatedAt { get; private set; }
 
+    /// <summary>Creates a validated participant instance.</summary>
     public Participant(
         string displayName,
         DateTimeOffset createdAt)
@@ -18,6 +20,7 @@ public sealed class Participant
     {
     }
 
+    /// <summary>Creates a validated participant instance.</summary>
     public Participant(
         string displayName,
         string bio,
@@ -31,6 +34,7 @@ public sealed class Participant
         UpdatedAt = createdAt;
     }
 
+    /// <summary>Creates a validated participant instance.</summary>
     private Participant(
         ParticipantId id,
         string displayName,
@@ -53,6 +57,7 @@ public sealed class Participant
         UpdatedAt = updatedAt;
     }
 
+    /// <summary>Rebuilds the domain object from persisted state without replaying creation behavior.</summary>
     public static Participant Reconstitute(
         ParticipantId id,
         string displayName,
@@ -70,6 +75,7 @@ public sealed class Participant
             updatedAt);
     }
 
+    /// <summary>Changes the validated name and advances the modification timestamp when the value differs.</summary>
     internal void Rename(
         string newDisplayName,
         DateTimeOffset changedAt)
@@ -85,6 +91,7 @@ public sealed class Participant
         UpdatedAt = changedAt;
     }
 
+    /// <summary>Changes the validated participant biography when the value differs.</summary>
     internal void ChangeBio(
         string newBio,
         DateTimeOffset changedAt)
@@ -100,6 +107,7 @@ public sealed class Participant
         UpdatedAt = changedAt;
     }
 
+    /// <summary>Applies an atomic profile update after validating all proposed values.</summary>
     internal void UpdateProfile(
         string newDisplayName,
         string newBio,
@@ -119,6 +127,7 @@ public sealed class Participant
         UpdatedAt = changedAt;
     }
 
+    /// <summary>Moves the participant into the inactive lifecycle state.</summary>
     public void Deactivate(DateTimeOffset deactivatedAt)
     {
         if (!IsActive)
@@ -130,6 +139,7 @@ public sealed class Participant
         UpdatedAt = deactivatedAt;
     }
 
+    /// <summary>Validates and normalizes display name.</summary>
     private static string ValidateDisplayName(string displayName)
     {
         if (string.IsNullOrWhiteSpace(displayName))
@@ -151,6 +161,7 @@ public sealed class Participant
         return trimmedName;
     }
 
+    /// <summary>Validates and normalizes bio.</summary>
     private static string ValidateBio(string bio)
     {
         var trimmedBio = bio?.Trim() ?? string.Empty;

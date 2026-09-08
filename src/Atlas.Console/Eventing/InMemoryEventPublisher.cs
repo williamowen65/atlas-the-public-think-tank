@@ -1,5 +1,6 @@
 namespace Atlas.ConsoleApp.Eventing;
 
+/// <summary>Dispatches integration events synchronously to handlers registered by the console host.</summary>
 public sealed class InMemoryEventPublisher
 {
     private readonly Dictionary<Type, List<Action<object>>> _subscribers = [];
@@ -20,6 +21,7 @@ public sealed class InMemoryEventPublisher
             $"[EVENT BUS] Registered subscriber for {eventType.Name}.");
     }
 
+    /// <summary>Synchronously dispatches a recorded event to its registered handlers.</summary>
     public void Publish(object message)
     {
         ArgumentNullException.ThrowIfNull(message);

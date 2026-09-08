@@ -1,5 +1,6 @@
 namespace Atlas.ConsoleApp.Storage;
 
+/// <summary>Defines the data-only JSON representation of a participant profile.</summary>
 public sealed class StoredParticipant
 {
     public Guid Id { get; set; }

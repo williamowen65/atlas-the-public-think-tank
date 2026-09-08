@@ -4,6 +4,7 @@ using Atlas.Participants.Participants;
 
 namespace Atlas.ConsoleApp.Participants;
 
+/// <summary>Formats participant profiles and authored-node summaries for the console host.</summary>
 public static class ParticipantDisplay
 {
     private const int NameWidth = 24;
@@ -11,6 +12,7 @@ public static class ParticipantDisplay
     private const int StatusWidth = 8;
     private const int NodesMinimumWidth = 36;
 
+    /// <summary>Writes table header to the console display.</summary>
     public static void WriteTableHeader()
     {
         Console.WriteLine(
@@ -30,6 +32,7 @@ public static class ParticipantDisplay
                 NodesMinimumWidth));
     }
 
+    /// <summary>Writes table row to the console display.</summary>
     public static void WriteTableRow(
         Participant participant,
         IReadOnlyCollection<Node> nodes,
@@ -53,6 +56,7 @@ public static class ParticipantDisplay
             nodeSummary);
     }
 
+    /// <summary>Writes profile to the console display.</summary>
     public static void WriteProfile(
         Participant participant,
         IReadOnlyCollection<Node> nodes,
@@ -76,6 +80,7 @@ public static class ParticipantDisplay
             $"Viewing as:   {currentParticipant.DisplayName}");
     }
 
+    /// <summary>Resolves node summary for the current console view.</summary>
     private static string ResolveNodeSummary(
         Participant participant,
         IReadOnlyCollection<Node> nodes,
@@ -114,6 +119,7 @@ public static class ParticipantDisplay
                     group.AutoPluralize)));
     }
 
+    /// <summary>Shortens text to the requested display width.</summary>
     private static string Truncate(string value, int maximumLength)
     {
         if (string.IsNullOrWhiteSpace(value))

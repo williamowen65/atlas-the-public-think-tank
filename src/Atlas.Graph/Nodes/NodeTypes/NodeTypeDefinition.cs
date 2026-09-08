@@ -1,5 +1,6 @@
 ﻿namespace Atlas.Graph.Nodes.NodeTypes;
 
+/// <summary>Defines a governed Graph node type, including naming, pluralization, ownership, and lifecycle rules.</summary>
 public sealed class NodeTypeDefinition
 {
     public NodeTypeId Id { get; }
@@ -20,6 +21,7 @@ public sealed class NodeTypeDefinition
 
     public DateTimeOffset UpdatedAt { get; private set; }
 
+    /// <summary>Creates a validated node type definition instance.</summary>
     private NodeTypeDefinition(
         NodeTypeId id,
         string name,
@@ -42,6 +44,7 @@ public sealed class NodeTypeDefinition
         UpdatedAt = updatedAt;
     }
 
+    /// <summary>Creates custom during the current workflow.</summary>
     public static NodeTypeDefinition CreateCustom(
         string name,
         string description,
@@ -68,6 +71,7 @@ public sealed class NodeTypeDefinition
             createdAt);
     }
 
+    /// <summary>Creates system defined during the current workflow.</summary>
     public static NodeTypeDefinition CreateSystemDefined(
         string name,
         string description,
@@ -86,6 +90,7 @@ public sealed class NodeTypeDefinition
             createdAt);
     }
 
+    /// <summary>Rebuilds the domain object from persisted state without replaying creation behavior.</summary>
     public static NodeTypeDefinition Reconstitute(
         NodeTypeId id,
         string name,
@@ -115,6 +120,7 @@ public sealed class NodeTypeDefinition
             updatedAt);
     }
 
+    /// <summary>Changes the validated name and advances the modification timestamp when the value differs.</summary>
     public void Rename(
         string newName,
         string actorId,
@@ -134,6 +140,7 @@ public sealed class NodeTypeDefinition
         UpdatedAt = changedAt;
     }
 
+    /// <summary>Changes the description while enforcing node-type editing rules.</summary>
     public void ChangeDescription(
         string newDescription,
         string actorId,
@@ -155,6 +162,7 @@ public sealed class NodeTypeDefinition
     }
 
 
+    /// <summary>Changes automatic pluralization while enforcing node-type editing rules.</summary>
     public void ChangeAutoPluralize(
         bool autoPluralize,
         string actorId,
@@ -172,6 +180,7 @@ public sealed class NodeTypeDefinition
         UpdatedAt = changedAt;
     }
 
+    /// <summary>Moves the aggregate into its archived lifecycle state and records the transition when applicable.</summary>
     public void Archive(
         string actorId,
         bool actorIsModerator,
@@ -188,6 +197,7 @@ public sealed class NodeTypeDefinition
         UpdatedAt = archivedAt;
     }
 
+    /// <summary>Enforces can edit before the operation continues.</summary>
     private void EnsureCanEdit(
         string actorId,
         bool actorIsModerator)
@@ -205,6 +215,7 @@ public sealed class NodeTypeDefinition
         }
     }
 
+    /// <summary>Validates and normalizes name.</summary>
     private static string ValidateName(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -226,6 +237,7 @@ public sealed class NodeTypeDefinition
         return name;
     }
 
+    /// <summary>Validates and normalizes description.</summary>
     private static string ValidateDescription(
         string description)
     {

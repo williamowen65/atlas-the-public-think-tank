@@ -3,8 +3,10 @@ using Atlas.Graph.Nodes.NodeTypes;
 
 namespace Atlas.Graph.Tests;
 
+/// <summary>Creates Graph aggregates in consistent states for focused tests.</summary>
 internal static class NodeTestFactory
 {
+    /// <summary>Coordinates creation and persistence for this workflow.</summary>
     public static Node Create(
         string title = "Climate adaptation",
         DateTimeOffset? createdAt = null)
@@ -17,6 +19,7 @@ internal static class NodeTestFactory
             createdAt ?? DateTimeOffset.UtcNow);
     }
 
+    /// <summary>Rebuilds the domain object from persisted state without replaying creation behavior.</summary>
     public static Node Reconstitute(
         NodeId? id = null,
         IEnumerable<NodeTypeId>? requestedTypeIds = null,

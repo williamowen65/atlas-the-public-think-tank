@@ -3,6 +3,7 @@ using Atlas.Graph.Nodes.NodeTypes;
 
 namespace Atlas.ConsoleApp.Storage;
 
+/// <summary>Persists Graph node-type definitions as JSON and reconstitutes them as domain objects.</summary>
 public sealed class JsonNodeTypeRepository : INodeTypeRepository
 {
     private readonly string _filePath;
@@ -12,11 +13,13 @@ public sealed class JsonNodeTypeRepository : INodeTypeRepository
         WriteIndented = true
     };
 
+    /// <summary>Initializes the JSON adapter and ensures its backing file is available.</summary>
     public JsonNodeTypeRepository(string filePath)
     {
         _filePath = filePath;
     }
 
+    /// <summary>Loads all persisted domain objects.</summary>
     public IReadOnlyCollection<NodeTypeDefinition> GetAll()
     {
         return ReadStoredTypes()
@@ -24,6 +27,7 @@ public sealed class JsonNodeTypeRepository : INodeTypeRepository
             .ToList();
     }
 
+    /// <summary>Loads a domain object by its boundary-owned identifier.</summary>
     public NodeTypeDefinition? GetById(NodeTypeId id)
     {
         var storedType = ReadStoredTypes()
@@ -32,6 +36,7 @@ public sealed class JsonNodeTypeRepository : INodeTypeRepository
         return storedType is null ? null : ToDomain(storedType);
     }
 
+    /// <summary>Persists the current domain-object state.</summary>
     public void Save(NodeTypeDefinition nodeType)
     {
         var storedTypes = ReadStoredTypes();
@@ -53,6 +58,7 @@ public sealed class JsonNodeTypeRepository : INodeTypeRepository
         WriteStoredTypes(storedTypes);
     }
 
+    /// <summary>Reads node-type persistence records from JSON.</summary>
     private List<StoredNodeType> ReadStoredTypes()
     {
         if (!File.Exists(_filePath))
@@ -73,6 +79,7 @@ public sealed class JsonNodeTypeRepository : INodeTypeRepository
                ?? [];
     }
 
+    /// <summary>Writes node-type persistence records to JSON.</summary>
     private void WriteStoredTypes(List<StoredNodeType> nodeTypes)
     {
         var directory = Path.GetDirectoryName(_filePath);
@@ -86,6 +93,7 @@ public sealed class JsonNodeTypeRepository : INodeTypeRepository
         File.WriteAllText(_filePath, json);
     }
 
+    /// <summary>Maps a domain object to its data-only persistence representation.</summary>
     private static StoredNodeType ToStorage(
         NodeTypeDefinition nodeType)
     {
@@ -103,6 +111,7 @@ public sealed class JsonNodeTypeRepository : INodeTypeRepository
         };
     }
 
+    /// <summary>Reconstitutes a domain object from its data-only persistence representation.</summary>
     private static NodeTypeDefinition ToDomain(
         StoredNodeType storedType)
     {

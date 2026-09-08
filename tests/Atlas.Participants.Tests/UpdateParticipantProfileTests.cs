@@ -3,9 +3,11 @@ using Atlas.Participants.Profiles;
 
 namespace Atlas.Participants.Tests;
 
+/// <summary>Verifies update participant profile behavior and boundary rules.</summary>
 [TestClass]
 public class UpdateParticipantProfileTests
 {
+    /// <summary>Verifies that execute when actor owns profile updates and saves.</summary>
     [TestMethod]
     public void Execute_WhenActorOwnsProfile_UpdatesAndSaves()
     {
@@ -31,6 +33,7 @@ public class UpdateParticipantProfileTests
         Assert.AreEqual(2, repository.SaveCount);
     }
 
+    /// <summary>Verifies that execute when actor does not own profile throws without saving.</summary>
     [TestMethod]
     public void Execute_WhenActorDoesNotOwnProfile_ThrowsWithoutSaving()
     {
@@ -55,6 +58,7 @@ public class UpdateParticipantProfileTests
         Assert.AreEqual(1, repository.SaveCount);
     }
 
+    /// <summary>Verifies that execute when profile does not exist throws.</summary>
     [TestMethod]
     public void Execute_WhenProfileDoesNotExist_Throws()
     {
@@ -73,6 +77,7 @@ public class UpdateParticipantProfileTests
         Assert.AreEqual(0, repository.SaveCount);
     }
 
+    /// <summary>Provides an in-memory participant repository for authorization workflow tests.</summary>
     private sealed class FakeParticipantRepository
         : IParticipantRepository
     {
@@ -81,16 +86,19 @@ public class UpdateParticipantProfileTests
 
         public int SaveCount { get; private set; }
 
+        /// <summary>Loads all persisted domain objects.</summary>
         public IReadOnlyCollection<Participant> GetAll()
         {
             return _participants.Values.ToList();
         }
 
+        /// <summary>Loads a domain object by its boundary-owned identifier.</summary>
         public Participant? GetById(ParticipantId id)
         {
             return _participants.GetValueOrDefault(id);
         }
 
+        /// <summary>Persists the current domain-object state.</summary>
         public void Save(Participant participant)
         {
             _participants[participant.Id] = participant;

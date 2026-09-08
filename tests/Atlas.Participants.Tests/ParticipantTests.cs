@@ -2,9 +2,11 @@ using Atlas.Participants.Participants;
 
 namespace Atlas.Participants.Tests;
 
+/// <summary>Verifies participant behavior and boundary rules.</summary>
 [TestClass]
 public class ParticipantTests
 {
+    /// <summary>Verifies that constructor initializes profile.</summary>
     [TestMethod]
     public void Constructor_InitializesProfile()
     {
@@ -25,6 +27,7 @@ public class ParticipantTests
         Assert.AreEqual(createdAt, participant.UpdatedAt);
     }
 
+    /// <summary>Verifies that constructor without bio defaults to empty.</summary>
     [TestMethod]
     public void Constructor_WithoutBio_DefaultsToEmpty()
     {
@@ -35,6 +38,7 @@ public class ParticipantTests
         Assert.AreEqual(string.Empty, participant.Bio);
     }
 
+    /// <summary>Verifies that constructor with bio over maximum length throws.</summary>
     [TestMethod]
     public void Constructor_WithBioOverMaximumLength_Throws()
     {
@@ -45,6 +49,7 @@ public class ParticipantTests
                 DateTimeOffset.UtcNow));
     }
 
+    /// <summary>Verifies that update profile changes name bio and timestamp.</summary>
     [TestMethod]
     public void UpdateProfile_ChangesNameBioAndTimestamp()
     {
@@ -64,6 +69,7 @@ public class ParticipantTests
         Assert.AreEqual(changedAt, participant.UpdatedAt);
     }
 
+    /// <summary>Verifies that update profile with unchanged values is no op.</summary>
     [TestMethod]
     public void UpdateProfile_WithUnchangedValues_IsNoOp()
     {
@@ -81,6 +87,7 @@ public class ParticipantTests
         Assert.AreEqual(originalUpdatedAt, participant.UpdatedAt);
     }
 
+    /// <summary>Verifies that update profile with invalid bio does not partially rename.</summary>
     [TestMethod]
     public void UpdateProfile_WithInvalidBio_DoesNotPartiallyRename()
     {
@@ -99,6 +106,7 @@ public class ParticipantTests
         Assert.AreEqual("Bio", participant.Bio);
     }
 
+    /// <summary>Verifies that reconstitute restores bio.</summary>
     [TestMethod]
     public void Reconstitute_RestoresBio()
     {

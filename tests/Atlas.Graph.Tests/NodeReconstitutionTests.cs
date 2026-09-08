@@ -3,9 +3,11 @@ using Atlas.Graph.Nodes.NodeTypes;
 
 namespace Atlas.Graph.Tests;
 
+/// <summary>Verifies node reconstitution behavior and boundary rules.</summary>
 [TestClass]
 public class NodeReconstitutionTests
 {
+    /// <summary>Verifies that reconstitute restores complete persisted state.</summary>
     [TestMethod]
     public void Reconstitute_RestoresCompletePersistedState()
     {
@@ -41,6 +43,7 @@ public class NodeReconstitutionTests
         Assert.AreEqual(parentId, node.ParentNodeIds.Single());
     }
 
+    /// <summary>Verifies that reconstitute does not record domain events.</summary>
     [TestMethod]
     public void Reconstitute_DoesNotRecordDomainEvents()
     {
@@ -49,6 +52,7 @@ public class NodeReconstitutionTests
         Assert.IsEmpty(node.DomainEvents);
     }
 
+    /// <summary>Verifies that reconstitute deduplicates requested types and parents.</summary>
     [TestMethod]
     public void Reconstitute_DeduplicatesRequestedTypesAndParents()
     {
@@ -63,6 +67,7 @@ public class NodeReconstitutionTests
         Assert.HasCount(1, node.ParentNodeIds);
     }
 
+    /// <summary>Verifies that reconstitute when updated precedes created throws.</summary>
     [TestMethod]
     public void Reconstitute_WhenUpdatedPrecedesCreated_Throws()
     {
@@ -74,6 +79,7 @@ public class NodeReconstitutionTests
                 updatedAt: createdAt.AddTicks(-1)));
     }
 
+    /// <summary>Verifies that reconstitute with null requested types throws.</summary>
     [TestMethod]
     public void Reconstitute_WithNullRequestedTypes_Throws()
     {
@@ -91,6 +97,7 @@ public class NodeReconstitutionTests
                 DateTimeOffset.UtcNow));
     }
 
+    /// <summary>Verifies that reconstitute with null parents throws.</summary>
     [TestMethod]
     public void Reconstitute_WithNullParents_Throws()
     {
@@ -108,6 +115,7 @@ public class NodeReconstitutionTests
                 DateTimeOffset.UtcNow));
     }
 
+    /// <summary>Verifies that reconstitute with self as parent throws.</summary>
     [TestMethod]
     public void Reconstitute_WithSelfAsParent_Throws()
     {
@@ -119,6 +127,7 @@ public class NodeReconstitutionTests
                 parentIds: [id]));
     }
 
+    /// <summary>Verifies that reconstitute with empty parent id throws.</summary>
     [TestMethod]
     public void Reconstitute_WithEmptyParentId_Throws()
     {

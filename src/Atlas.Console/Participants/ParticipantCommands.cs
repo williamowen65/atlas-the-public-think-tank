@@ -6,8 +6,10 @@ using Atlas.Participants.Profiles;
 
 namespace Atlas.ConsoleApp.Participants;
 
+/// <summary>Coordinates participant profile and authored-node interactions in the console host.</summary>
 public static class ParticipantCommands
 {
+    /// <summary>Runs the interactive participant commands workflow.</summary>
     public static Participant Run(
         ParticipantId participantId,
         IParticipantRepository participants,
@@ -93,6 +95,7 @@ public static class ParticipantCommands
         return currentParticipant;
     }
 
+    /// <summary>Edits profile through the authorized workflow.</summary>
     private static Participant EditProfile(
         Participant participant,
         IParticipantRepository participants,
@@ -160,6 +163,7 @@ public static class ParticipantCommands
         return currentParticipant;
     }
 
+    /// <summary>Displays authored nodes in the console workflow.</summary>
     private static void ViewAuthoredNodes(
         Participant participant,
         IReadOnlyCollection<Node> authoredNodes,

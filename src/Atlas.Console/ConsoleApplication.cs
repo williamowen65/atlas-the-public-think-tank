@@ -7,6 +7,7 @@ using Atlas.Participants.Participants;
 
 namespace Atlas.ConsoleApp;
 
+/// <summary>Runs the console host and coordinates user-facing workflows across Atlas boundaries.</summary>
 public sealed class ConsoleApplication
 {
     private readonly INodeRepository _nodes;
@@ -20,6 +21,7 @@ public sealed class ConsoleApplication
     private readonly string _documentDataFilePath;
     private readonly string _participantDataFilePath;
 
+    /// <summary>Creates a validated console application instance.</summary>
     public ConsoleApplication(
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
@@ -44,6 +46,7 @@ public sealed class ConsoleApplication
         _participantDataFilePath = participantDataFilePath;
     }
 
+    /// <summary>Runs the interactive console application workflow.</summary>
     public void Run()
     {
         var running = true;
@@ -101,6 +104,7 @@ public sealed class ConsoleApplication
         }
     }
 
+    /// <summary>Writes main menu to the console display.</summary>
     private void WriteMainMenu()
     {
         Console.WriteLine("ATLAS");
@@ -121,6 +125,7 @@ public sealed class ConsoleApplication
     }
 
 
+    /// <summary>Selects participant for the current console workflow.</summary>
     private void SelectParticipant()
     {
         Console.Clear();
@@ -161,6 +166,7 @@ public sealed class ConsoleApplication
             $"Current participant: {_currentParticipant.DisplayName}");
     }
 
+    /// <summary>Creates participant during the current workflow.</summary>
     private void CreateParticipant()
     {
         Console.Clear();
@@ -196,6 +202,7 @@ public sealed class ConsoleApplication
         }
     }
 
+    /// <summary>Displays participants in the console workflow.</summary>
     private void BrowseParticipants()
     {
         var browsing = true;
@@ -255,6 +262,7 @@ public sealed class ConsoleApplication
         }
     }
 
+    /// <summary>Displays participant profile in the console workflow.</summary>
     private void ViewParticipantProfile(
         ParticipantId participantId)
     {
@@ -267,6 +275,7 @@ public sealed class ConsoleApplication
             _currentParticipant);
     }
 
+    /// <summary>Creates node during the current workflow.</summary>
     private void CreateNode()
     {
         Console.Clear();
@@ -281,6 +290,7 @@ public sealed class ConsoleApplication
             _eventPublisher);
     }
 
+    /// <summary>Displays nodes in the console workflow.</summary>
     private void BrowseNodes()
     {
         var browsing = true;
@@ -347,6 +357,7 @@ public sealed class ConsoleApplication
         }
     }
 
+    /// <summary>Displays node types in the console workflow.</summary>
     private void ListNodeTypes()
     {
         Console.Clear();
@@ -382,6 +393,7 @@ public sealed class ConsoleApplication
         ConsoleUi.Pause();
     }
 
+    /// <summary>Displays content documents in the console workflow.</summary>
     private void ListContentDocuments()
     {
         Console.Clear();
@@ -412,6 +424,7 @@ public sealed class ConsoleApplication
         ConsoleUi.Pause();
     }
 
+    /// <summary>Displays data files in the console workflow.</summary>
     private void ShowDataFiles()
     {
         ShowDataFile("NODE DATA", _nodeDataFilePath);
@@ -420,6 +433,7 @@ public sealed class ConsoleApplication
         ShowDataFile("PARTICIPANT DATA", _participantDataFilePath);
     }
 
+    /// <summary>Displays data file in the console workflow.</summary>
     private static void ShowDataFile(
         string heading,
         string filePath)

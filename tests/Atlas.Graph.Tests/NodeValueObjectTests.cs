@@ -3,9 +3,11 @@ using Atlas.Graph.Nodes.NodeTypes;
 
 namespace Atlas.Graph.Tests;
 
+/// <summary>Verifies node value object behavior and boundary rules.</summary>
 [TestClass]
 public class NodeValueObjectTests
 {
+    /// <summary>Verifies that node title when blank throws.</summary>
     [TestMethod]
     [DataRow("")]
     [DataRow("   ")]
@@ -14,6 +16,7 @@ public class NodeValueObjectTests
         Assert.Throws<ArgumentException>(() => new NodeTitle(value));
     }
 
+    /// <summary>Verifies that node title trims value.</summary>
     [TestMethod]
     public void NodeTitle_TrimsValue()
     {
@@ -23,6 +26,7 @@ public class NodeValueObjectTests
         Assert.AreEqual("Climate adaptation", title.ToString());
     }
 
+    /// <summary>Verifies that node title at maximum length is accepted.</summary>
     [TestMethod]
     public void NodeTitle_AtMaximumLength_IsAccepted()
     {
@@ -33,6 +37,7 @@ public class NodeValueObjectTests
         Assert.AreEqual(value, title.Value);
     }
 
+    /// <summary>Verifies that node title over maximum length throws.</summary>
     [TestMethod]
     public void NodeTitle_OverMaximumLength_Throws()
     {
@@ -41,6 +46,7 @@ public class NodeValueObjectTests
         Assert.Throws<ArgumentException>(() => new NodeTitle(value));
     }
 
+    /// <summary>Verifies that node description id when empty throws.</summary>
     [TestMethod]
     public void NodeDescriptionId_WhenEmpty_Throws()
     {
@@ -48,6 +54,7 @@ public class NodeValueObjectTests
             () => new NodeDescriptionId(Guid.Empty));
     }
 
+    /// <summary>Verifies that node author id when empty throws.</summary>
     [TestMethod]
     public void NodeAuthorId_WhenEmpty_Throws()
     {
@@ -55,6 +62,7 @@ public class NodeValueObjectTests
             () => new NodeAuthorId(Guid.Empty));
     }
 
+    /// <summary>Verifies that requested sub node type when type id is empty throws.</summary>
     [TestMethod]
     public void RequestedSubNodeType_WhenTypeIdIsEmpty_Throws()
     {

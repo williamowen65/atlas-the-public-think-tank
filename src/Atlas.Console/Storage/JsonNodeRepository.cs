@@ -6,6 +6,7 @@ using Atlas.Graph.Nodes.NodeTypes;
 
 namespace Atlas.ConsoleApp.Storage;
 
+/// <summary>Persists Graph nodes as JSON and reconstitutes them as domain aggregates.</summary>
 public sealed class JsonNodeRepository : INodeRepository
 {
     private readonly string _filePath;
@@ -19,6 +20,7 @@ public sealed class JsonNodeRepository : INodeRepository
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
+    /// <summary>Initializes the JSON adapter and ensures its backing file is available.</summary>
     public JsonNodeRepository(
         string filePath,
         INodeTypeRepository nodeTypes,
@@ -31,6 +33,7 @@ public sealed class JsonNodeRepository : INodeRepository
         _legacyAuthorId = legacyAuthorId;
     }
 
+    /// <summary>Loads all persisted domain objects.</summary>
     public IReadOnlyCollection<Node> GetAll()
     {
         return ReadAndMigrateStoredNodes()
@@ -38,6 +41,7 @@ public sealed class JsonNodeRepository : INodeRepository
             .ToList();
     }
 
+    /// <summary>Loads a domain object by its boundary-owned identifier.</summary>
     public Node? GetById(NodeId id)
     {
         var storedNode = ReadAndMigrateStoredNodes()
@@ -46,6 +50,7 @@ public sealed class JsonNodeRepository : INodeRepository
         return storedNode is null ? null : ToDomain(storedNode);
     }
 
+    /// <summary>Persists the current domain-object state.</summary>
     public void Save(Node node)
     {
         var storedNodes = ReadAndMigrateStoredNodes();
@@ -67,6 +72,7 @@ public sealed class JsonNodeRepository : INodeRepository
         WriteStoredNodes(storedNodes);
     }
 
+    /// <summary>Loads stored nodes and applies the host's compatibility migration before reconstitution.</summary>
     private List<StoredNode> ReadAndMigrateStoredNodes()
     {
         var storedNodes = ReadStoredNodes();
@@ -118,6 +124,7 @@ public sealed class JsonNodeRepository : INodeRepository
         return storedNodes;
     }
 
+    /// <summary>Reads node persistence records from JSON.</summary>
     private List<StoredNode> ReadStoredNodes()
     {
         if (!File.Exists(_filePath))
@@ -138,6 +145,7 @@ public sealed class JsonNodeRepository : INodeRepository
                ?? [];
     }
 
+    /// <summary>Writes node persistence records to JSON.</summary>
     private void WriteStoredNodes(List<StoredNode> nodes)
     {
         var directory = Path.GetDirectoryName(_filePath);
@@ -151,6 +159,7 @@ public sealed class JsonNodeRepository : INodeRepository
         File.WriteAllText(_filePath, json);
     }
 
+    /// <summary>Maps a domain object to its data-only persistence representation.</summary>
     private static StoredNode ToStorage(Node node)
     {
         return new StoredNode
@@ -174,6 +183,7 @@ public sealed class JsonNodeRepository : INodeRepository
         };
     }
 
+    /// <summary>Reconstitutes a domain object from its data-only persistence representation.</summary>
     private Node ToDomain(StoredNode storedNode)
     {
         var status = Enum.Parse<NodeStatus>(
@@ -203,6 +213,7 @@ public sealed class JsonNodeRepository : INodeRepository
             storedNode.UpdatedAt);
     }
 
+    /// <summary>Resolves a stored node's current node-type identifier during migration.</summary>
     private NodeTypeId ResolveTypeId(StoredNode storedNode)
     {
         if (storedNode.TypeId is Guid typeId &&

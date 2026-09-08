@@ -2,16 +2,19 @@ using Atlas.Participants.Participants;
 
 namespace Atlas.Participants.Profiles;
 
+/// <summary>Authorizes and coordinates the participant self-edit workflow.</summary>
 public sealed class UpdateParticipantProfile
 {
     private readonly IParticipantRepository _participants;
 
+    /// <summary>Creates a validated update participant profile instance.</summary>
     public UpdateParticipantProfile(
         IParticipantRepository participants)
     {
         _participants = participants;
     }
 
+    /// <summary>Authorizes and executes the participant profile update use case.</summary>
     public Participant Execute(
         ParticipantId actorId,
         ParticipantId profileId,

@@ -7,8 +7,10 @@ using Atlas.Participants.Participants;
 
 namespace Atlas.ConsoleApp;
 
+/// <summary>Coordinates interactive node commands without moving domain rules out of Graph.</summary>
 public static class NodeCommands
 {
+    /// <summary>Runs the interactive node commands workflow.</summary>
     public static Participant Run(
         Node node,
         INodeRepository nodes,
@@ -156,6 +158,7 @@ public static class NodeCommands
 
 
 
+    /// <summary>Adds sub node during the current workflow.</summary>
     private static void AddSubNode(
         Node parent,
         INodeRepository nodes,
@@ -281,6 +284,7 @@ public static class NodeCommands
             parent);
     }
 
+    /// <summary>Selects other known type for the current console workflow.</summary>
     private static NodeTypeDefinition? SelectOtherKnownType(
         IReadOnlyList<NodeTypeDefinition> knownTypes,
         IReadOnlyCollection<Node> existingChildren)
@@ -321,6 +325,7 @@ public static class NodeCommands
             : knownTypes[selection - 1];
     }
 
+    /// <summary>Selects sub node for the current console workflow.</summary>
     private static Node? SelectSubNode(
         Node parent,
         INodeRepository nodes,
@@ -418,6 +423,7 @@ public static class NodeCommands
             : selectedGroup.Children[nodeSelection - 1];
     }
 
+    /// <summary>Displays author profile in the console workflow.</summary>
     private static Participant ViewAuthorProfile(
         Node node,
         INodeRepository nodes,
@@ -444,6 +450,7 @@ public static class NodeCommands
             currentParticipant);
     }
 
+    /// <summary>Publishes recorded domain events and clears them after dispatch.</summary>
     private static void PublishDomainEvents(
         Node node,
         InMemoryEventPublisher eventPublisher)
@@ -458,6 +465,7 @@ public static class NodeCommands
 
 
 
+    /// <summary>Attaches a parent relationship and records the corresponding integration event.</summary>
     private static void AttachToParent(
         Node node,
         INodeRepository nodes,
@@ -522,6 +530,7 @@ public static class NodeCommands
             $"Attached {node.Title} to parent {parent.Title}.");
     }
 
+    /// <summary>Detaches a parent relationship and records the corresponding integration event.</summary>
     private static void DetachFromParent(
         Node node,
         INodeRepository nodes,
@@ -578,6 +587,7 @@ public static class NodeCommands
             $"Detached {node.Title} from parent {parent.Title}.");
     }
 
+    /// <summary>Checks the current graph before a host-coordinated parent attachment.</summary>
     private static bool WouldCreateCycle(
         NodeId childNodeId,
         Node proposedParent,
@@ -617,6 +627,7 @@ public static class NodeCommands
         return false;
     }
 
+    /// <summary>Changes requested sub node types during the current workflow.</summary>
     private static void ChangeRequestedSubNodeTypes(
         Node node,
         INodeRepository nodes,
@@ -661,6 +672,7 @@ public static class NodeCommands
             "Requested sub-node types updated and saved.");
     }
 
+    /// <summary>Changes the validated name and advances the modification timestamp when the value differs.</summary>
     private static void Rename(Node node, INodeRepository nodes)
     {
         Console.Write("New title: ");
@@ -674,6 +686,7 @@ public static class NodeCommands
         ConsoleUi.Pause("Node renamed and saved.");
     }
 
+    /// <summary>Changes the description while enforcing node-type editing rules.</summary>
     private static void ChangeDescription(
         Node node,
         INodeRepository nodes,
@@ -708,6 +721,7 @@ public static class NodeCommands
             $"Description replaced with document {replacement.Id}.");
     }
 
+    /// <summary>Changes the node type and advances the modification timestamp when the value differs.</summary>
     private static void ChangeType(
         Node node,
         INodeRepository nodes,

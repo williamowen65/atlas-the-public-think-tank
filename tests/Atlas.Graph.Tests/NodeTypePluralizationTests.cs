@@ -2,9 +2,11 @@ using Atlas.Graph.Nodes.NodeTypes;
 
 namespace Atlas.Graph.Tests;
 
+/// <summary>Verifies node type pluralization behavior and boundary rules.</summary>
 [TestClass]
 public class NodeTypePluralizationTests
 {
+    /// <summary>Verifies that create custom defaults auto pluralize to true.</summary>
     [TestMethod]
     public void CreateCustom_DefaultsAutoPluralizeToTrue()
     {
@@ -17,6 +19,7 @@ public class NodeTypePluralizationTests
         Assert.IsTrue(nodeType.AutoPluralize);
     }
 
+    /// <summary>Verifies that create custom can disable auto pluralize.</summary>
     [TestMethod]
     public void CreateCustom_CanDisableAutoPluralize()
     {
@@ -30,6 +33,7 @@ public class NodeTypePluralizationTests
         Assert.IsFalse(nodeType.AutoPluralize);
     }
 
+    /// <summary>Verifies that change auto pluralize updates setting.</summary>
     [TestMethod]
     public void ChangeAutoPluralize_UpdatesSetting()
     {
@@ -48,6 +52,7 @@ public class NodeTypePluralizationTests
         Assert.IsFalse(nodeType.AutoPluralize);
     }
 
+    /// <summary>Verifies that change auto pluralize by different owner throws.</summary>
     [TestMethod]
     public void ChangeAutoPluralize_ByDifferentOwner_Throws()
     {

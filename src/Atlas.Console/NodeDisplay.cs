@@ -5,6 +5,7 @@ using Atlas.Participants.Participants;
 
 namespace Atlas.ConsoleApp;
 
+/// <summary>Formats Graph nodes and their referenced data for the console host.</summary>
 public static class NodeDisplay
 {
     private const int TitleWidth = 28;
@@ -14,6 +15,7 @@ public static class NodeDisplay
     private const int StatusWidth = 10;
     private const int SubNodesMinimumWidth = 36;
 
+    /// <summary>Writes table header to the console display.</summary>
     public static void WriteTableHeader()
     {
         Console.WriteLine(
@@ -41,6 +43,7 @@ public static class NodeDisplay
                 SubNodesMinimumWidth));
     }
 
+    /// <summary>Writes table row to the console display.</summary>
     public static void WriteTableRow(
         Node node,
         INodeRepository nodes,
@@ -69,6 +72,7 @@ public static class NodeDisplay
             subNodeSummary);
     }
 
+    /// <summary>Writes details to the console display.</summary>
     public static void WriteDetails(
         Node node,
         INodeRepository nodes,
@@ -111,6 +115,7 @@ public static class NodeDisplay
             participants);
     }
 
+    /// <summary>Writes sub node tables to the console display.</summary>
     private static void WriteSubNodeTables(
         Node node,
         INodeRepository nodes,
@@ -180,6 +185,7 @@ public static class NodeDisplay
         }
     }
 
+    /// <summary>Resolves sub node summary for the current console view.</summary>
     private static string ResolveSubNodeSummary(
         Node node,
         INodeRepository nodes,
@@ -216,6 +222,7 @@ public static class NodeDisplay
             }));
     }
 
+    /// <summary>Finds nodes that directly reference the selected node as a parent.</summary>
     private static List<Node> FindChildren(
         Node node,
         INodeRepository nodes)
@@ -229,6 +236,7 @@ public static class NodeDisplay
     }
 
 
+    /// <summary>Resolves parent summary for the current console view.</summary>
     private static string ResolveParentSummary(
         Node node,
         INodeRepository nodes)
@@ -245,6 +253,7 @@ public static class NodeDisplay
                 ?? $"Unknown ({parentId})"));
     }
 
+    /// <summary>Resolves description for the current console view.</summary>
     private static string ResolveDescription(
         Node node,
         IDocumentRepository documents)
@@ -262,6 +271,7 @@ public static class NodeDisplay
             : document.Content;
     }
 
+    /// <summary>Resolves author name for the current console view.</summary>
     private static string ResolveAuthorName(
         Node node,
         IParticipantRepository participants)
@@ -272,6 +282,7 @@ public static class NodeDisplay
             ?? $"Unknown ({node.AuthorId})";
     }
 
+    /// <summary>Resolves type name for the current console view.</summary>
     private static string ResolveTypeName(
         Node node,
         INodeTypeRepository nodeTypes)
@@ -281,6 +292,7 @@ public static class NodeDisplay
     }
 
 
+    /// <summary>Formats type count for display.</summary>
     public static string FormatTypeCount(
         string singularTypeName,
         int count,
@@ -295,6 +307,7 @@ public static class NodeDisplay
         return $"{count} {displayedName}";
     }
 
+    /// <summary>Pluralizes a node-type name for count-aware console output.</summary>
     private static string PluralizeTypeName(
         string singularTypeName,
         bool autoPluralize)
@@ -341,6 +354,7 @@ public static class NodeDisplay
         return prefix + finalWord + "s";
     }
 
+    /// <summary>Shortens text to the requested display width.</summary>
     private static string Truncate(string value, int maximumLength)
     {
         if (value.Length <= maximumLength)
@@ -353,11 +367,13 @@ public static class NodeDisplay
             : $"{value[..(maximumLength - 3)]}...";
     }
 
+    /// <summary>Formats vote count for display.</summary>
     private static string FormatVoteCount(int? voteCount)
     {
         return voteCount?.ToString() ?? "—";
     }
 
+    /// <summary>Formats average vote for display.</summary>
     private static string FormatAverageVote(double? averageVote)
     {
         return averageVote?.ToString("0.0") ?? "—";

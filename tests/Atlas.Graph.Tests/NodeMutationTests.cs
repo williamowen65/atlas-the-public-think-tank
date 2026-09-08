@@ -3,9 +3,11 @@ using Atlas.Graph.Nodes.NodeTypes;
 
 namespace Atlas.Graph.Tests;
 
+/// <summary>Verifies node mutation behavior and boundary rules.</summary>
 [TestClass]
 public class NodeMutationTests
 {
+    /// <summary>Verifies that rename updates title and timestamp.</summary>
     [TestMethod]
     public void Rename_UpdatesTitleAndTimestamp()
     {
@@ -18,6 +20,7 @@ public class NodeMutationTests
         Assert.AreEqual(changedAt, node.UpdatedAt);
     }
 
+    /// <summary>Verifies that rename to same title is no op.</summary>
     [TestMethod]
     public void Rename_ToSameTitle_IsNoOp()
     {
@@ -29,6 +32,7 @@ public class NodeMutationTests
         Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);
     }
 
+    /// <summary>Verifies that change type updates type and timestamp.</summary>
     [TestMethod]
     public void ChangeType_UpdatesTypeAndTimestamp()
     {
@@ -42,6 +46,7 @@ public class NodeMutationTests
         Assert.AreEqual(changedAt, node.UpdatedAt);
     }
 
+    /// <summary>Verifies that change type to same type is no op.</summary>
     [TestMethod]
     public void ChangeType_ToSameType_IsNoOp()
     {
@@ -53,6 +58,7 @@ public class NodeMutationTests
         Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);
     }
 
+    /// <summary>Verifies that replace description reference updates reference and timestamp.</summary>
     [TestMethod]
     public void ReplaceDescriptionReference_UpdatesReferenceAndTimestamp()
     {
@@ -66,6 +72,7 @@ public class NodeMutationTests
         Assert.AreEqual(changedAt, node.UpdatedAt);
     }
 
+    /// <summary>Verifies that replace description reference with same reference is no op.</summary>
     [TestMethod]
     public void ReplaceDescriptionReference_WithSameReference_IsNoOp()
     {
@@ -79,6 +86,7 @@ public class NodeMutationTests
         Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);
     }
 
+    /// <summary>Verifies that request sub node type adds request and updates timestamp.</summary>
     [TestMethod]
     public void RequestSubNodeType_AddsRequestAndUpdatesTimestamp()
     {
@@ -92,6 +100,7 @@ public class NodeMutationTests
         Assert.AreEqual(changedAt, node.UpdatedAt);
     }
 
+    /// <summary>Verifies that request sub node type when already requested is no op.</summary>
     [TestMethod]
     public void RequestSubNodeType_WhenAlreadyRequested_IsNoOp()
     {
@@ -106,6 +115,7 @@ public class NodeMutationTests
         Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);
     }
 
+    /// <summary>Verifies that stop requesting sub node type removes request and updates timestamp.</summary>
     [TestMethod]
     public void StopRequestingSubNodeType_RemovesRequestAndUpdatesTimestamp()
     {
@@ -120,6 +130,7 @@ public class NodeMutationTests
         Assert.AreEqual(changedAt, node.UpdatedAt);
     }
 
+    /// <summary>Verifies that stop requesting sub node type when not requested is no op.</summary>
     [TestMethod]
     public void StopRequestingSubNodeType_WhenNotRequested_IsNoOp()
     {
