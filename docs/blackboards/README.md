@@ -6,7 +6,7 @@ Markdown documentation.
 - [PTT-68 current-state architecture](PTT-68-CURRENT-STATE.excalidraw) visualizes
   the implemented system, current interactions, boundary gaps, and candidate
   future domains discovered during PTT-68.
-- [PTT-68 system blackboard](PTT-68-SYSTEM-BLACKBOARD.excalidraw) is the larger
+- [PTT-68 system blackboard](SYSTEM-BLACKBOARD.excalidraw) is the larger
   zoomable system graph. It places commands, use cases, event ports, current
   interactions, gaps, and candidate domains around their related boundaries.
 - [The current-state context map](../architecture/CONTEXT-MAP.md) remains the
