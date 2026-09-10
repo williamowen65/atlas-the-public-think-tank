@@ -133,6 +133,36 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "documentation-index", "docu
 		docs\README.md = docs\README.md
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "blackboards", "blackboards", "{C1111111-1111-4111-8111-111111111111}"
+	ProjectSection(SolutionItems) = preProject
+		docs\blackboards\README.md = docs\blackboards\README.md
+		docs\blackboards\PTT-68-CURRENT-STATE.excalidraw = docs\blackboards\PTT-68-CURRENT-STATE.excalidraw
+		docs\blackboards\SYSTEM-BLACKBOARD.excalidraw = docs\blackboards\SYSTEM-BLACKBOARD.excalidraw
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{C2222222-2222-4222-8222-222222222222}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NodeTypes", "NodeTypes", "{C3333333-3333-4333-8333-333333333333}"
+	ProjectSection(SolutionItems) = preProject
+		docs\blackboards\workflows\NodeTypes\NodeTypeLifecycle.excalidraw = docs\blackboards\workflows\NodeTypes\NodeTypeLifecycle.excalidraw
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Nodes", "Nodes", "{C4444444-4444-4444-8444-444444444444}"
+	ProjectSection(SolutionItems) = preProject
+		docs\blackboards\workflows\Nodes\NodeCreation.excalidraw = docs\blackboards\workflows\Nodes\NodeCreation.excalidraw
+		docs\blackboards\workflows\Nodes\NodeLifecycle.excalidraw = docs\blackboards\workflows\Nodes\NodeLifecycle.excalidraw
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Participants", "Participants", "{C5555555-5555-4555-8555-555555555555}"
+	ProjectSection(SolutionItems) = preProject
+		docs\blackboards\workflows\Participants\ParticipantLifecycle.excalidraw = docs\blackboards\workflows\Participants\ParticipantLifecycle.excalidraw
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "System", "System", "{C6666666-6666-4666-8666-666666666666}"
+	ProjectSection(SolutionItems) = preProject
+		docs\blackboards\workflows\System\AppStartupAndWiring.excalidraw = docs\blackboards\workflows\System\AppStartupAndWiring.excalidraw
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -205,6 +235,12 @@ Global
 		{A5555555-5555-4555-8555-555555555555} = {55555555-5555-4555-8555-555555555555}
 		{A6666666-6666-4666-8666-666666666666} = {55555555-5555-4555-8555-555555555555}
 		{B7777777-7777-4777-8777-777777777777} = {55555555-5555-4555-8555-555555555555}
+		{C1111111-1111-4111-8111-111111111111} = {55555555-5555-4555-8555-555555555555}
+		{C2222222-2222-4222-8222-222222222222} = {C1111111-1111-4111-8111-111111111111}
+		{C3333333-3333-4333-8333-333333333333} = {C2222222-2222-4222-8222-222222222222}
+		{C4444444-4444-4444-8444-444444444444} = {C2222222-2222-4222-8222-222222222222}
+		{C5555555-5555-4555-8555-555555555555} = {C2222222-2222-4222-8222-222222222222}
+		{C6666666-6666-4666-8666-666666666666} = {C2222222-2222-4222-8222-222222222222}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {91FBCB71-A526-4836-AC90-535593188277}
