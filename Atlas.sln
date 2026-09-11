@@ -149,7 +149,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NodeTypes", "NodeTypes", "{
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Nodes", "Nodes", "{C4444444-4444-4444-8444-444444444444}"
 	ProjectSection(SolutionItems) = preProject
-		LifeCycle.md = LifeCycle.md
 		docs\blackboards\workflows\Nodes\NodeCreation.excalidraw = docs\blackboards\workflows\Nodes\NodeCreation.excalidraw
 		docs\blackboards\workflows\Nodes\NodeLifecycle.excalidraw = docs\blackboards\workflows\Nodes\NodeLifecycle.excalidraw
 	EndProjectSection
