@@ -28,7 +28,17 @@ This RTM provides the broad implementation and verification view. Follow a requi
 | [EVT-002](REQUIREMENTS.md#evt-002) | The host broadcasts events to interested subscribers | Should | **Implemented** | [InMemoryEventPublisher.cs](../../src/Atlas.Console/Eventing/InMemoryEventPublisher.cs)<br>[Program.cs](../../src/Atlas.Console/Program.cs)<br>[ObserveNodeLifecycleInContent.cs](../../src/Atlas.Console/Content/ObserveNodeLifecycleInContent.cs) | — |
 | [PER-001](REQUIREMENTS.md#per-001) | Prototype boundary data is stored in separate files | Must | **Implemented** | [JsonNodeRepository.cs](../../src/Atlas.Console/Storage/JsonNodeRepository.cs)<br>[JsonNodeTypeRepository.cs](../../src/Atlas.Console/Storage/JsonNodeTypeRepository.cs)<br>[JsonDocumentRepository.cs](../../src/Atlas.Console/Storage/JsonDocumentRepository.cs)<br>[JsonParticipantRepository.cs](../../src/Atlas.Console/Storage/JsonParticipantRepository.cs) | — |
 | [PER-002](REQUIREMENTS.md#per-002) | Legacy node records migrate without losing descriptions | Should | **Implemented** | [JsonNodeRepository.cs](../../src/Atlas.Console/Storage/JsonNodeRepository.cs) | — |
-| [VOT-001](REQUIREMENTS.md#vot-001) | Node views report vote totals and averages | Should | **Approved** | [NodeDisplay.cs](../../src/Atlas.Console/NodeDisplay.cs) | — |
+| [VOT-001](REQUIREMENTS.md#vot-001) | Node views report vote totals and averages | Must | **Approved** | [NodeDisplay.cs](../../src/Atlas.Console/NodeDisplay.cs) contains placeholders; [Voting boundary](../architecture/VOTING.md) defines the intended summary | — |
+| [VOT-002](REQUIREMENTS.md#vot-002) | Voting is the single authority for vote behavior | Must | **Approved** | Not implemented; [boundary definition](../architecture/VOTING.md#boundary-definition) | — |
+| [VOT-003](REQUIREMENTS.md#vot-003) | Only authenticated participants may vote | Must | **Approved** | Not implemented; [authorization decision](../architecture/VOTING.md#authorization-and-target-availability) | — |
+| [VOT-004](REQUIREMENTS.md#vot-004) | One current vote per participant and target | Must | **Approved** | Not implemented; [universal invariants](../architecture/VOTING.md#universal-invariants) | — |
+| [VOT-005](REQUIREMENTS.md#vot-005) | Participants can change or undo their votes | Must | **Approved** | Not implemented; [removal decision](../architecture/VOTING.md#removal-and-history) | — |
+| [VOT-006](REQUIREMENTS.md#vot-006) | Node votes use a 1–10 general rating | Must | **Approved** | Not implemented; [Node rating policy](../architecture/VOTING.md#node-rating-policy) | — |
+| [VOT-007](REQUIREMENTS.md#vot-007) | NodeTag votes measure node-specific applicability | Must | **Approved** | Not implemented; [NodeTag applicability policy](../architecture/VOTING.md#nodetag-applicability-policy) | — |
+| [VOT-008](REQUIREMENTS.md#vot-008) | Current Node votes are publicly auditable | Must | **Approved** | Not implemented; [public transparency decision](../architecture/VOTING.md#public-transparency) | — |
+| [VOT-009](REQUIREMENTS.md#vot-009) | Archived targets reject voting interaction | Must | **Approved** | Not implemented; [target availability decision](../architecture/VOTING.md#authorization-and-target-availability) | — |
+| [VOT-010](REQUIREMENTS.md#vot-010) | Aggregates remain correct under concurrent voting | Must | **Approved** | Not implemented; [boundary definition](../architecture/VOTING.md#purpose) | — |
+| [VOT-011](REQUIREMENTS.md#vot-011) | Votes retain audit and lifecycle fields | Must | **Approved** | Not implemented; [initial vote record](../architecture/VOTING.md#initial-vote-record) | — |
 | [NFR-001](REQUIREMENTS.md#nfr-001) | Boundaries communicate through identifiers and contracts | Must | **Partial** | [NodeLifecycleEvents.cs](../../src/Atlas.Contracts/Graph/V1/NodeLifecycleEvents.cs)<br>[Program.cs](../../src/Atlas.Console/Program.cs) | — |
 | [NFR-002](REQUIREMENTS.md#nfr-002) | Integration events survive process failure | Should | **Deferred** | — | — |
 
@@ -55,9 +65,11 @@ Nodes retain an AuthorId, but most Console node mutations currently call Graph b
 The synchronous in-memory publisher demonstrates subscription and broadcast clearly. It does not survive a crash, cross a process boundary, retry delivery, or provide idempotency. Those are deliberately deferred until Atlas adopts durable transport.
 
 <a id="vot-001"></a>
-### VOT-001 — Presentation placeholder only
+### VOT-001 through VOT-011 — Voting is specified but not implemented
 
-The Console already reserves vote-count and average columns. No Voting boundary or aggregation implementation exists yet, so the requirement is Approved rather than Implemented.
+The Console reserves vote-count and average columns, but it has no Voting model, persistence, application API, aggregation, concurrency protection, target validation, or automated verification. PTT-76 defines the accepted requirements and [Voting boundary](../architecture/VOTING.md); all Voting rows therefore remain Approved rather than Implemented.
+
+The physical-deletion policy for undone votes, archived-target read/undo behavior, inter-service availability mechanism, projection strategy, and post-extraction real-time consistency window remain explicit open decisions.
 
 ## Suggested review order
 
@@ -65,6 +77,6 @@ The Console already reserves vote-count and average columns. No Voting boundary 
 2. Trace type and relationship rules through TYP-001 through REL-004.
 3. Verify the Content reference and separate persistence through CON-001 and CON-002.
 4. Walk through participant profile ownership using PAR-001, PAR-002, and AUT-001.
-5. Review the known architectural gaps: REL-003, AUT-002, EVT-002, VOT-001, and NFR-002.
+5. Review the known architectural gaps: REL-003, AUT-002, EVT-002, the VOT requirement area, and NFR-002.
 
 During manual review, change a status only when all acceptance criteria support the new value. Add a missing test link when evidence exists; do not treat a Console demonstration as automated verification.
