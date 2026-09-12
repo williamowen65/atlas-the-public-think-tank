@@ -163,6 +163,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "System", "System", "{C66666
 		docs\blackboards\workflows\System\AppStartupAndWiring.excalidraw = docs\blackboards\workflows\System\AppStartupAndWiring.excalidraw
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Voting", "Atlas.Voting\Atlas.Voting.csproj", "{935FE0CF-44C5-40FA-88ED-96C9B0A9B0D9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Voting.Tests", "Atlas.Voting.Tests\Atlas.Voting.Tests.csproj", "{E536EA50-0130-4A49-BA2C-F41153B41CAE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -209,6 +213,14 @@ Global
 		{EED2838B-BDE7-DB37-97E1-DA60BF5955DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EED2838B-BDE7-DB37-97E1-DA60BF5955DB}.Release|Any CPU.ActiveCfg = Debug|Any CPU
 		{EED2838B-BDE7-DB37-97E1-DA60BF5955DB}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{935FE0CF-44C5-40FA-88ED-96C9B0A9B0D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{935FE0CF-44C5-40FA-88ED-96C9B0A9B0D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{935FE0CF-44C5-40FA-88ED-96C9B0A9B0D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{935FE0CF-44C5-40FA-88ED-96C9B0A9B0D9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E536EA50-0130-4A49-BA2C-F41153B41CAE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E536EA50-0130-4A49-BA2C-F41153B41CAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E536EA50-0130-4A49-BA2C-F41153B41CAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E536EA50-0130-4A49-BA2C-F41153B41CAE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -241,6 +253,8 @@ Global
 		{C4444444-4444-4444-8444-444444444444} = {C2222222-2222-4222-8222-222222222222}
 		{C5555555-5555-4555-8555-555555555555} = {C2222222-2222-4222-8222-222222222222}
 		{C6666666-6666-4666-8666-666666666666} = {C2222222-2222-4222-8222-222222222222}
+		{935FE0CF-44C5-40FA-88ED-96C9B0A9B0D9} = {11111111-1111-4111-8111-111111111111}
+		{E536EA50-0130-4A49-BA2C-F41153B41CAE} = {22222222-2222-4222-8222-222222222222}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {91FBCB71-A526-4836-AC90-535593188277}
