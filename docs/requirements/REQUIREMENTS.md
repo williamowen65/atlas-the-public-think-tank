@@ -454,7 +454,7 @@ This document is the authoritative catalog of requirement statements and accepta
 
 ### Acceptance criteria
 
-- Node voting accepts whole-number values from 1 through 10.
+- Node voting accepts whole-number values from 0 through 10.
 - Browse and detail views show the number of current votes.
 - The arithmetic mean is displayed to two decimal places.
 - A dedicated Voting boundary owns vote records and aggregation.
@@ -540,9 +540,9 @@ This document is the authoritative catalog of requirement statements and accepta
 [View traceability](TRACEABILITY.md#vot-005)
 
 <a id="vot-006"></a>
-## VOT-006 — Node votes use a 1–10 general rating
+## VOT-006 — Node votes use a 0–10 general rating
 
-**Statement:** The system shall allow an eligible participant to assign a Node one whole-number general rating from 1 through 10.
+**Statement:** The system shall allow an eligible participant to assign a Node one whole-number general rating from 0 through 10.
 
 **Rationale:** Atlas initially relies on the Node's human-readable context rather than prescribing that every rating means only agreement, truth, importance, or quality.
 
@@ -551,8 +551,8 @@ This document is the authoritative catalog of requirement statements and accepta
 
 ### Acceptance criteria
 
-- Values below 1, above 10, and non-whole-number values are rejected.
-- A value from 1 through 10 is accepted for an eligible Node.
+- Values below 0, above 10, and non-whole-number values are rejected.
+- A value from 0 through 10 is accepted for an eligible Node.
 - Changing and undoing the rating follow the universal vote lifecycle.
 - Any future narrowing or specialization of rating meaning is defined within Voting.
 
