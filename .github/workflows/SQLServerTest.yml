@@ -7,6 +7,9 @@ on:
 
 jobs:
   build-and-test:
+    # Disabled while Atlas uses the new architecture. Remove this condition only
+    # when the legacy CloudTests workflow is intentionally restored.
+    if: ${{ false }}
     runs-on: ubuntu-latest
 
     services:
