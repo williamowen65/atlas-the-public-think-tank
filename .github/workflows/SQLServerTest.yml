@@ -1,7 +1,9 @@
 name: .NET Tests with MSSQL
 
+# Legacy application workflow retained for manual runs only.
+# The current Atlas rewrite no longer uses the CloudTests project.
 on:
-  push:
+  workflow_dispatch:
 
 jobs:
   build-and-test:
