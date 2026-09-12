@@ -33,7 +33,7 @@ This RTM provides the broad implementation and verification view. Follow a requi
 | [VOT-003](REQUIREMENTS.md#vot-003) | Only authenticated participants may vote | Must | **Approved** | Not implemented; [authorization decision](../architecture/VOTING.md#authorization-and-target-availability) | — |
 | [VOT-004](REQUIREMENTS.md#vot-004) | One current vote per participant and target | Must | **Approved** | Not implemented; [universal invariants](../architecture/VOTING.md#universal-invariants) | — |
 | [VOT-005](REQUIREMENTS.md#vot-005) | Participants can change or undo their votes | Must | **Approved** | Not implemented; [removal decision](../architecture/VOTING.md#removal-and-history) | — |
-| [VOT-006](REQUIREMENTS.md#vot-006) | Node votes use a 1–10 general rating | Must | **Approved** | Not implemented; [Node rating policy](../architecture/VOTING.md#node-rating-policy) | — |
+| [VOT-006](REQUIREMENTS.md#vot-006) | Node votes use a 0–10 general rating | Must | **Approved** | Not implemented; [Node rating policy](../architecture/VOTING.md#node-rating-policy) | — |
 | [VOT-007](REQUIREMENTS.md#vot-007) | NodeTag votes measure node-specific applicability | Must | **Approved** | Not implemented; [NodeTag applicability policy](../architecture/VOTING.md#nodetag-applicability-policy) | — |
 | [VOT-008](REQUIREMENTS.md#vot-008) | Current Node votes are publicly auditable | Must | **Approved** | Not implemented; [public transparency decision](../architecture/VOTING.md#public-transparency) | — |
 | [VOT-009](REQUIREMENTS.md#vot-009) | Archived targets reject voting interaction | Must | **Approved** | Not implemented; [target availability decision](../architecture/VOTING.md#authorization-and-target-availability) | — |
