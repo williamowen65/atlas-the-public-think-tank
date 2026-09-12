@@ -5,7 +5,7 @@ Atlas is currently a modular application hosted by Atlas.Console. Its projects a
 ## Documents
 
 - [Context map](CONTEXT-MAP.md) describes the boundaries and their relationships.
-- [Data ownership](DATA-OWNERSHIP.md) identifies the authoritative owner of records and identifiers.
+- [Data ownership](DATA-OWNERSHIP.md) identifies the authoritative owner of records and identifiers.\n- [Voting boundary](VOTING.md) defines the approved ownership, policies, integration needs, and open decisions for the future Voting implementation.
 - [Architecture decisions](decisions/README.md) preserve the reasoning behind consequential choices.
 
 ## Architectural principles
