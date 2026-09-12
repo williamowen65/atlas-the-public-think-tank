@@ -12,7 +12,7 @@ This document is the detailed record-level ownership register. The [current-stat
 | Description document | Content | Content | `data/documents.json` | Graph via `DescriptionId` |
 | Participant profile | Participants | Participants | `data/participants.json` | Graph via `AuthorId` |
 | Integration-event shape | Contracts | Producer supplies event data | In memory today | Registered consumers |
-| Vote and summary | Voting — future | Voting | Not implemented | Node views by node ID |
+| Vote record | Voting — designed, not implemented | Voting | Not implemented | Voting summaries and public vote details by target ID |\n| Vote summary | Voting — designed, not implemented | Voting derives it from current vote records | Not implemented | Node and NodeTag views by target ID |
 
 ## Rules
 
@@ -27,7 +27,7 @@ This document is the detailed record-level ownership register. The [current-stat
 
 The Console currently creates and saves a Content document before creating its Graph node. If node creation fails, an orphaned document can remain. That is acceptable for the prototype but should eventually be addressed by an application workflow, cleanup policy, or durable process manager.
 
-## Questions to resolve before service extraction
+Voting references participant and target identifiers without owning the corresponding Participant, Node, NodeTag, or TagDefinition. See the [Voting boundary](VOTING.md) for policy and open decisions.\n\n## Questions to resolve before service extraction
 
 - Which references require immediate validation?
 - May consumers cache public data, and how is it invalidated?
