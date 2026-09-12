@@ -445,20 +445,217 @@ This document is the authoritative catalog of requirement statements and accepta
 <a id="vot-001"></a>
 ## VOT-001 — Node views report vote totals and averages
 
-**Statement:** The system shall display the number of votes and average rating for each node without placing voting behavior in the Graph domain.
+**Statement:** The system shall display the number of current votes and the average rating for each node without placing voting behavior in the Graph domain.
 
-**Rationale:** Voting is part of the product experience but has an independent lifecycle and rule set.
+**Rationale:** Voting is part of the product experience but has an independent lifecycle, load profile, and rule set.
 
-**Priority:** Should  
+**Priority:** Must  
 **Status:** Approved
 
 ### Acceptance criteria
 
-- Browse and detail views show total votes and average rating.
-- A dedicated voting boundary owns ballots and aggregation.
+- Node voting accepts whole-number values from 1 through 10.
+- Browse and detail views show the number of current votes.
+- The arithmetic mean is displayed to two decimal places.
+- A dedicated Voting boundary owns vote records and aggregation.
 - The composition layer joins voting summaries to nodes by identifier.
 
 [View traceability](TRACEABILITY.md#vot-001)
+
+<a id="vot-002"></a>
+## VOT-002 — Voting is the single authority for vote behavior
+
+**Statement:** The Voting boundary shall own vote records, voting-policy validation, vote lifecycle rules, and aggregate calculations for every supported vote target.
+
+**Rationale:** Central ownership gives developers one authoritative location for vote behavior and permits voting traffic to scale without scaling unrelated boundaries.
+
+**Priority:** Must  
+**Status:** Approved
+
+### Acceptance criteria
+
+- Graph, Participants, hosts, and target-specific features do not persist or enforce their own vote records.
+- Voting identifies foreign participants and targets by stable identifiers rather than importing their domain entities.
+- Voting can be separated behind an application or service API without moving vote rules from another boundary.
+- Voting supports different target-specific value policies under the same ownership boundary.
+
+[View traceability](TRACEABILITY.md#vot-002)
+
+<a id="vot-003"></a>
+## VOT-003 — Only authenticated participants may vote
+
+**Statement:** The system shall accept a vote only for an authenticated, eligible Atlas participant account.
+
+**Rationale:** Each vote must be attributable to one accountable online identity even when the participant's public persona differs from their legal identity.
+
+**Priority:** Must  
+**Status:** Approved
+
+### Acceptance criteria
+
+- An anonymous browser session cannot cast, change, or remove a vote.
+- An accepted vote records the acting participant identifier.
+- The initial eligibility policy allows every authenticated active participant to vote.
+- The initial policy adds no reputation, contribution, or per-account voting quota beyond one vote per target.
+
+[View traceability](TRACEABILITY.md#vot-003)
+
+<a id="vot-004"></a>
+## VOT-004 — A participant has at most one current vote per target
+
+**Statement:** The Voting boundary shall maintain no more than one current vote for the same participant and target.
+
+**Rationale:** Participant-to-target uniqueness prevents duplicate influence while allowing independent votes on different targets.
+
+**Priority:** Must  
+**Status:** Approved
+
+### Acceptance criteria
+
+- Casting an initial vote creates one current participant-target record.
+- Repeating a create request cannot produce a second current record for the same participant and target.
+- The uniqueness rule holds when concurrent requests target the same participant-target pair.
+- The same participant may vote independently on other targets.
+
+[View traceability](TRACEABILITY.md#vot-004)
+
+<a id="vot-005"></a>
+## VOT-005 — Participants can change or undo their votes
+
+**Statement:** The system shall allow the participant who owns a current vote to replace its value or remove it from current voting results.
+
+**Rationale:** Participants need to correct mistakes and revise or retract their judgment.
+
+**Priority:** Must  
+**Status:** Approved
+
+### Acceptance criteria
+
+- Changing a vote updates the existing current participant-target vote rather than adding another current vote.
+- A changed vote preserves its creation time and records a later update time.
+- Undoing a vote removes its contribution from all current aggregates.
+- An undone vote no longer appears in the public current-vote list.
+- Whether the underlying removed record is physically deleted or privately retained remains a separate retention decision.
+
+[View traceability](TRACEABILITY.md#vot-005)
+
+<a id="vot-006"></a>
+## VOT-006 — Node votes use a 1–10 general rating
+
+**Statement:** The system shall allow an eligible participant to assign a Node one whole-number general rating from 1 through 10.
+
+**Rationale:** Atlas initially relies on the Node's human-readable context rather than prescribing that every rating means only agreement, truth, importance, or quality.
+
+**Priority:** Must  
+**Status:** Approved
+
+### Acceptance criteria
+
+- Values below 1, above 10, and non-whole-number values are rejected.
+- A value from 1 through 10 is accepted for an eligible Node.
+- Changing and undoing the rating follow the universal vote lifecycle.
+- Any future narrowing or specialization of rating meaning is defined within Voting.
+
+[View traceability](TRACEABILITY.md#vot-006)
+
+<a id="vot-007"></a>
+## VOT-007 — NodeTag votes measure node-specific applicability
+
+**Statement:** The system shall represent a NodeTag vote as an upvote or downvote on whether one TagDefinition applies to one specific Node.
+
+**Rationale:** A tag may be appropriate for one Node and inappropriate for another; the vote must not become a global rating of the TagDefinition.
+
+**Priority:** Must  
+**Status:** Approved
+
+### Acceptance criteria
+
+- The vote target identifies the NodeTag association, not only its TagDefinition.
+- An upvote contributes +1 and a downvote contributes -1.
+- The displayed aggregate is a signed whole-number sum that may be negative, zero, or positive.
+- A participant may change direction or undo the vote.
+- Participant and timestamp data are recorded even if the first NodeTag interface displays only the aggregate.
+
+[View traceability](TRACEABILITY.md#vot-007)
+
+<a id="vot-008"></a>
+## VOT-008 — Current Node votes are publicly auditable
+
+**Statement:** The system shall allow any viewer of a Node's voting details to inspect the participant account and current value associated with each current Node vote.
+
+**Rationale:** Public vote attribution supports transparency and helps participants discover others who share interest in a contribution and may wish to collaborate.
+
+**Priority:** Must  
+**Status:** Approved
+
+### Acceptance criteria
+
+- A current Node vote can be traced to its public participant profile.
+- The current value cast by that participant is visible.
+- An undone vote is absent from the public current-vote list.
+- Public attribution reveals the Atlas account identity and does not require disclosure of a participant's legal identity.
+
+[View traceability](TRACEABILITY.md#vot-008)
+
+<a id="vot-009"></a>
+## VOT-009 — Archived or unavailable targets reject voting interaction
+
+**Statement:** The system shall reject new and changed votes when the target-owning boundary reports that the target is archived or otherwise unavailable for interaction.
+
+**Rationale:** Archiving a Node stops direct interaction beneath that Node without transferring lifecycle ownership to Voting.
+
+**Priority:** Must  
+**Status:** Approved
+
+### Acceptance criteria
+
+- Voting checks authoritative target availability before accepting a new or changed vote.
+- A Node archived by Graph cannot receive a new or changed rating.
+- A directly dependent NodeTag target beneath an archived Node cannot receive a new or changed vote.
+- Existing vote-read and undo behavior for archived targets is explicitly resolved before this requirement is implemented.
+
+[View traceability](TRACEABILITY.md#vot-009)
+
+<a id="vot-010"></a>
+## VOT-010 — Aggregates remain correct under concurrent voting
+
+**Statement:** The Voting boundary shall produce current aggregates without losing accepted votes or violating uniqueness when participants vote concurrently.
+
+**Rationale:** Voting may be one of Atlas's highest-volume activities and must remain correct when many participants act at the same time.
+
+**Priority:** Must  
+**Status:** Approved
+
+### Acceptance criteria
+
+- Concurrent votes from different participants are all reflected in the resulting aggregate.
+- Concurrent requests for one participant-target pair do not create duplicate current votes.
+- A Node summary reports the current vote count and arithmetic mean.
+- A NodeTag summary reports the current signed whole-number total.
+- Accepted changes are reflected to users in real time under the current product expectation.
+- The allowed consistency window after independent service deployment is documented before implementation.
+
+[View traceability](TRACEABILITY.md#vot-010)
+
+<a id="vot-011"></a>
+## VOT-011 — Votes retain participant, target, value, and timestamps
+
+**Statement:** Each current vote shall retain the identifiers and timestamps needed to identify who voted, what received the vote, the current value, and when it was created or last changed.
+
+**Rationale:** These fields support uniqueness, aggregation, public transparency, debugging, and future policy decisions.
+
+**Priority:** Must  
+**Status:** Approved
+
+### Acceptance criteria
+
+- Each current vote has a stable vote identifier.
+- Each current vote records one participant identifier and one target identity and type.
+- Each current vote records a value valid for its voting policy.
+- Each current vote records creation and last-updated timestamps.
+- NodeTag votes retain this information even when their initial UI exposes only the aggregate.
+
+[View traceability](TRACEABILITY.md#vot-011)
 
 <a id="nfr-001"></a>
 ## NFR-001 — Boundaries communicate through identifiers and contracts
