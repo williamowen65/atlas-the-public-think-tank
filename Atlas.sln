@@ -163,9 +163,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "System", "System", "{C66666
 		docs\blackboards\workflows\System\AppStartupAndWiring.excalidraw = docs\blackboards\workflows\System\AppStartupAndWiring.excalidraw
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Voting", "Atlas.Voting\Atlas.Voting.csproj", "{935FE0CF-44C5-40FA-88ED-96C9B0A9B0D9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Voting", "src\Atlas.Voting\Atlas.Voting.csproj", "{935FE0CF-44C5-40FA-88ED-96C9B0A9B0D9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Voting.Tests", "Atlas.Voting.Tests\Atlas.Voting.Tests.csproj", "{E536EA50-0130-4A49-BA2C-F41153B41CAE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Voting.Tests", "tests\Atlas.Voting.Tests\Atlas.Voting.Tests.csproj", "{E536EA50-0130-4A49-BA2C-F41153B41CAE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
