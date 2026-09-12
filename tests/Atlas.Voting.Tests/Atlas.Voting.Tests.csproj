@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Atlas.Voting\Atlas.Voting.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Voting\Atlas.Voting.csproj" />
   </ItemGroup>
 
   <ItemGroup>
