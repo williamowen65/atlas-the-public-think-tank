@@ -6,6 +6,6 @@ namespace Atlas.Voting.Votes.Value
 {
     public interface IVoteValue
     {
-        int Value { get; set; } 
+        int Value { get; } 
     }
 }

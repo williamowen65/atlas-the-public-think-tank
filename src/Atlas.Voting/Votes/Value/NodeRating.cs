@@ -6,7 +6,7 @@ namespace Atlas.Voting.Votes.Value
 {
     public class NodeRating : IVoteValue
     {
-        public int Value { get; set;  }
+        public int Value { get;}
 
         public NodeRating(int value) {
 
@@ -14,10 +14,12 @@ namespace Atlas.Voting.Votes.Value
             {
                 Value = value;
             }
-            else { 
+            else
+            {
                 throw new ArgumentOutOfRangeException("Node rating was out of range");
             }
-        
         }
+
+
     }
 }
