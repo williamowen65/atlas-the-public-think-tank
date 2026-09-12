@@ -12,7 +12,7 @@ namespace Atlas.Voting.Tests
         [DataRow(3)]
         [DataRow(4)]
         [DataRow(10)]
-        public void public void NodeRating_CanOnlyBeBetween0to10Inclusive(int value)
+        public void NodeRating_CanOnlyBeBetween0to10Inclusive(int value)
         {
             var nodeRating = new NodeRating(value);
 
@@ -22,11 +22,13 @@ namespace Atlas.Voting.Tests
         [TestMethod]
         [DataRow(-1)]
         [DataRow(11)]
-        public void public void NodeRating_FailsOutside0to10Inclusive(int value)
+        public void NodeRating_FailsOutside0to10Inclusive(int value)
         {
-            var nodeRating = new NodeRating(value);
-
-            Assert.IsNull(nodeRating);
+           
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                var nodeRating = new NodeRating(value);
+            });
         }
     }
 }

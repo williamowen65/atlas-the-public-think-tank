@@ -10,7 +10,7 @@ namespace Atlas.Voting.Votes.Value
 
         public NodeRating(int value) {
 
-            if (value > 0 && value < 11)
+            if (0 <= value && value <= 10)
             {
                 Value = value;
             }
