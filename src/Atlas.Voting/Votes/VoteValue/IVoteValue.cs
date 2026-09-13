@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Atlas.Voting.Votes.Value
+namespace Atlas.Voting.Value
 {
     public interface IVoteValue
     {

@@ -1,4 +1,4 @@
-﻿using Atlas.Voting.Votes.Value;
+﻿using Atlas.Voting.Value;
 using Newtonsoft.Json.Linq;
 
 namespace Atlas.Voting.Tests

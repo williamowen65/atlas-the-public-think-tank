@@ -1,5 +1,7 @@
 ﻿using Atlas.Voting.Votes;
-using Atlas.Voting.Votes.Value;
+using Atlas.Voting.Value;
+using Atlas.Voting.Target;
+
 namespace Atlas.Voting
 {
     public class Vote
@@ -28,10 +30,16 @@ namespace Atlas.Voting
             Target = target;
 
 
-            // if ( target is a Node)
+            if (target.GetType() == typeof(NodeVoteTarget)) 
+            {
                 Value = new NodeRating(voteValue);
-            // else if target is a NodeTag
-                // Value = new NodeTagRating(voteValue)
+            }
+            else
+            {
+                throw new ArgumentException(
+                    "Unsupported vote target type.",
+                    nameof(target));
+            }
         }
 
 
