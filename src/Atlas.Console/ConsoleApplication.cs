@@ -377,6 +377,8 @@ public sealed class ConsoleApplication
                 _nodeTypeRepository,
                 _documentRepository,
                 _participantRepository,
+                _voteRepository,
+                _castVote,
                 _eventPublisher,
                 _currentParticipant);
         }

@@ -4,7 +4,9 @@ using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Participants.Participants;
+using Atlas.Voting;
 using Atlas.Voting.Data;
+using Atlas.Voting.Target;
 
 namespace Atlas.ConsoleApp;
 
@@ -18,6 +20,8 @@ public static class NodeCommands
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
         IParticipantRepository participants,
+        IVoteRepository votes,
+        CastVote castVote,
         InMemoryEventPublisher eventPublisher,
         Participant currentParticipant)
     {
@@ -26,12 +30,24 @@ public static class NodeCommands
         while (viewingNode)
         {
             Console.Clear();
+
+            var voteTarget = new NodeVoteTarget(node.Id.Value);
+            var nodeVotes = votes.GetTargetVotes(voteTarget);
+
+            var voteCount = nodeVotes.Count;
+
+            var averageRating = nodeVotes.Count == 0
+                ? (double?)null
+                : nodeVotes.Average(vote => vote.Value.Value);
+
             NodeDisplay.WriteDetails(
                 node,
                 nodes,
                 nodeTypes,
                 documents,
-                participants);
+                participants,
+                voteCount,
+                averageRating);
 
             Console.WriteLine();
             Console.WriteLine("Choose an action:");
@@ -46,7 +62,8 @@ public static class NodeCommands
             Console.WriteLine("9. Attach to parent");
             Console.WriteLine("10. Detach from parent");
             Console.WriteLine("11. View author profile");
-            Console.WriteLine("12. Return to node browser");
+            Console.WriteLine("12. Vote on node");
+            Console.WriteLine("13. Return to node browser");
             Console.WriteLine();
 
             Console.Write("Selection: ");
@@ -138,6 +155,13 @@ public static class NodeCommands
                         break;
 
                     case "12":
+                        VoteOnNode(
+                            node,
+                            currentParticipant,
+                            castVote);
+                        break;
+
+                    case "13":
                         viewingNode = false;
                         break;
 
