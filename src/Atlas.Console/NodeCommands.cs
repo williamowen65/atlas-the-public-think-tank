@@ -34,6 +34,15 @@ public static class NodeCommands
             var voteTarget = new NodeVoteTarget(node.Id.Value);
             var nodeVotes = votes.GetTargetVotes(voteTarget);
 
+            var votingParticipantId = new Atlas.Voting.Votes.ParticipantId(currentParticipant.Id.Value);
+
+            var currentParticipantVote = votes.GetByParticipantAndTarget(
+                                                votingParticipantId,
+                                                voteTarget);
+
+            var myVote =
+                currentParticipantVote?.Value.Value;
+
             var voteCount = nodeVotes.Count;
 
             var averageRating = nodeVotes.Count == 0
@@ -47,7 +56,8 @@ public static class NodeCommands
                 documents,
                 participants,
                 voteCount,
-                averageRating);
+                averageRating,
+                myVote);
 
             Console.WriteLine();
             Console.WriteLine("Choose an action:");

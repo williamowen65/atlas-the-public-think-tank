@@ -90,7 +90,8 @@ public static class NodeDisplay
         IDocumentRepository documents,
         IParticipantRepository participants,
         int? voteCount = null,
-        double? averageVote = null)
+        double? averageVote = null,
+        int? currentParticipantVote = null)
     {
         var description = ResolveDescription(node, documents);
         var authorName = ResolveAuthorName(node, participants);
@@ -110,6 +111,7 @@ public static class NodeDisplay
         Console.WriteLine($"Status:         {node.Status}");
         Console.WriteLine($"Votes:          {FormatVoteCount(voteCount)}");
         Console.WriteLine($"Average:        {FormatAverageVote(averageVote)}");
+        Console.WriteLine($"My Vote:        {FormatCurrentParticipantVote(currentParticipantVote)}");
         Console.WriteLine($"Created:        {node.CreatedAt.LocalDateTime}");
         Console.WriteLine($"Updated:        {node.UpdatedAt.LocalDateTime}");
         Console.WriteLine();
