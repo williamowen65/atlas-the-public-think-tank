@@ -15,30 +15,36 @@ public static class NodeDisplay
     private const int StatusWidth = 10;
     private const int SubNodesMinimumWidth = 36;
 
+    private const int VoteCountWidth = 5;
+    private const int AverageVoteWidth = 5;
+    private const int CurrentVoteWidth = 7;
+
     /// <summary>Writes table header to the console display.</summary>
     public static void WriteTableHeader()
     {
         Console.WriteLine(
-            $"{"#",3}  " +
-            $"{"Title",-TitleWidth}  " +
-            $"{"Type",-TypeWidth}  " +
-            $"{"Authored By",-AuthorWidth}  " +
-            $"{"Description",-DescriptionWidth}  " +
-            $"{"Votes",5}  " +
-            $"{"Avg",5}  " +
-            $"{"Status",-StatusWidth}  " +
-            "Sub-nodes");
+           $"{"#",3}  " +
+           $"{Center("Votes", VoteCountWidth)}  " +
+           $"{Center("Avg", AverageVoteWidth)}  " +
+           $"{Center("My Vote", CurrentVoteWidth)}  " +
+           $"{"Title",-TitleWidth}  " +
+           $"{"Type",-TypeWidth}  " +
+           $"{"Authored By",-AuthorWidth}  " +
+           $"{"Description",-DescriptionWidth}  " +
+           $"{"Status",-StatusWidth}  " +
+           "Sub-nodes");
 
         Console.WriteLine(
             new string(
                 '-',
                 3 + 2 +
+                5 + 2 +
+                5 + 2 +
+                7 + 2 +
                 TitleWidth + 2 +
                 TypeWidth + 2 +
                 AuthorWidth + 2 +
                 DescriptionWidth + 2 +
-                5 + 2 +
-                5 + 2 +
                 StatusWidth + 2 +
                 SubNodesMinimumWidth));
     }
@@ -52,7 +58,8 @@ public static class NodeDisplay
         IParticipantRepository participants,
         int number,
         int? voteCount = null,
-        double? averageVote = null)
+        double? averageVote = null,
+        int? currentParticipantVote = null)
     {
         var typeName = ResolveTypeName(node, nodeTypes);
         var description = ResolveDescription(node, documents);
@@ -62,12 +69,15 @@ public static class NodeDisplay
 
         Console.WriteLine(
             $"{number,3}  " +
+            $"{Center(FormatVoteCount(voteCount), VoteCountWidth)}  " +
+            $"{Center(FormatAverageVote(averageVote), AverageVoteWidth)}  " +
+            $"{Center(
+                FormatCurrentParticipantVote(currentParticipantVote),
+                CurrentVoteWidth)}  " +
             $"{Truncate(node.Title.Value, TitleWidth),-TitleWidth}  " +
             $"{Truncate(typeName, TypeWidth),-TypeWidth}  " +
             $"{Truncate(authorName, AuthorWidth),-AuthorWidth}  " +
             $"{Truncate(description, DescriptionWidth),-DescriptionWidth}  " +
-            $"{FormatVoteCount(voteCount),5}  " +
-            $"{FormatAverageVote(averageVote),5}  " +
             $"{node.Status,-StatusWidth}  " +
             subNodeSummary);
     }
@@ -377,5 +387,29 @@ public static class NodeDisplay
     private static string FormatAverageVote(double? averageVote)
     {
         return averageVote?.ToString("0.0") ?? "—";
+    }
+
+    private static string FormatCurrentParticipantVote(
+    int? currentParticipantVote)
+    {
+        return currentParticipantVote?.ToString() ?? "—";
+    }
+
+    private static string Center(
+    string value,
+    int width)
+    {
+        if (value.Length >= width)
+        {
+            return value;
+        }
+
+        var totalPadding = width - value.Length;
+        var leftPadding = totalPadding / 2;
+        var rightPadding = totalPadding - leftPadding;
+
+        return new string(' ', leftPadding) +
+               value +
+               new string(' ', rightPadding);
     }
 }

@@ -7,6 +7,7 @@ using Atlas.Participants.Participants;
 using Atlas.Voting;
 using Atlas.Voting.Data;
 using Atlas.Voting.Target;
+using VotingParticipantId = Atlas.Voting.Votes.ParticipantId;
 
 namespace Atlas.ConsoleApp;
 
@@ -322,6 +323,7 @@ public sealed class ConsoleApplication
             }
 
             NodeDisplay.WriteTableHeader();
+            var votingParticipantId = new VotingParticipantId(_currentParticipant.Id.Value);
 
             for (var index = 0; index < nodes.Count; index++)
             {
@@ -330,11 +332,17 @@ public sealed class ConsoleApplication
 
                 var voteTarget = new NodeVoteTarget(node.Id.Value);
                 var votes = _voteRepository.GetTargetVotes(voteTarget);
+                var currentParticipantVote =
+                    _voteRepository.GetByParticipantAndTarget(
+                        votingParticipantId,
+                        voteTarget);
+
 
                 var voteCount = votes.Count;
                 var averageRating = votes.Count == 0
                     ? (double?)null
                     : votes.Average(vote => vote.Value.Value);
+                var myVote = currentParticipantVote?.Value.Value;
 
                 NodeDisplay.WriteTableRow(
                     node,
@@ -344,7 +352,8 @@ public sealed class ConsoleApplication
                     _participantRepository,
                     index + 1,
                     voteCount,
-                    averageRating);
+                    averageRating,
+                    myVote);
             }
 
             Console.WriteLine();
