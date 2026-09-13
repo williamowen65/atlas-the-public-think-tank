@@ -23,13 +23,7 @@ namespace Atlas.Voting
             int voteValue
         )
         {
-            Id = VoteId.New();
-            ParticipantId = pId;
-            CreatedAt = DateTimeOffset.UtcNow;
-            UpdatedAt = CreatedAt;
-            Target = target;
-
-
+  
             if (target is NodeVoteTarget) 
             {
                 Value = new NodeRating(voteValue);
@@ -40,6 +34,67 @@ namespace Atlas.Voting
                     "Unsupported vote target type.",
                     nameof(target));
             }
+
+            Id = VoteId.New();
+            ParticipantId = pId;
+            CreatedAt = DateTimeOffset.UtcNow;
+            UpdatedAt = CreatedAt;
+            Target = target;
+
+
+        }
+
+        private Vote(
+            VoteId id,
+            VoteTarget target,
+            ParticipantId pId,
+            int voteValue,
+            string targetType,
+            DateTimeOffset createdAt,
+            DateTimeOffset updatedAt
+            )
+        {
+            if (updatedAt < createdAt)
+            {
+                throw new ArgumentException(
+                    "Updated time cannot precede created time.");
+            }
+            Id = id;
+            Target = target;
+            ParticipantId = pId;
+            CreatedAt = createdAt;
+            UpdatedAt = updatedAt;
+            if (target is NodeVoteTarget)
+            {
+                Value = new NodeRating(voteValue);
+            }
+            else
+            {
+                throw new ArgumentException(
+                    "Unsupported vote target type.",
+                    nameof(target));
+            }
+        }
+
+        public static Vote Reconstitute(
+            VoteId id,
+            VoteTarget target,
+            ParticipantId pId,
+            int voteValue,
+            string targetType,
+            DateTimeOffset createdAt,
+            DateTimeOffset updatedAt
+            ) 
+        {
+            return new Vote(
+                id,
+                target,
+                pId,
+                voteValue,
+                targetType,
+                createdAt,
+                updatedAt
+                );
         }
 
 

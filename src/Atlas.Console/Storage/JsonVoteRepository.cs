@@ -3,12 +3,9 @@ using Atlas.Voting;
 using Atlas.Voting.Data;
 using Atlas.Voting.Target;
 using Atlas.Voting.Votes;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Text.Json;
 
-namespace Atlas.Console.Storage
+namespace Atlas.ConsoleApp.Storage
 {
     public sealed class JsonVoteRepository : IVoteRepository
     {
@@ -26,8 +23,8 @@ namespace Atlas.Console.Storage
             _filePath = filePath;
         }
 
-        /// <summary>Reads participant persistence records from JSON.</summary>
-        private List<StoredParticipant> ReadStoredParticipants()
+        /// <summary>Reads Vote persistence records from JSON.</summary>
+        private List<StoredVote> ReadStoredVotes()
         {
             if (!File.Exists(_filePath))
             {
@@ -41,15 +38,15 @@ namespace Atlas.Console.Storage
                 return [];
             }
 
-            return JsonSerializer.Deserialize<List<StoredParticipant>>(
+            return JsonSerializer.Deserialize<List<StoredVote>>(
                        json,
                        _jsonOptions)
                    ?? [];
         }
 
-        /// <summary>Writes participant persistence records to JSON.</summary>
-        private void WriteStoredParticipants(
-            List<StoredParticipant> participants)
+        /// <summary>Writes Vote persistence records to JSON.</summary>
+        private void WriteStoredVotes(
+            List<StoredVote> votes)
         {
             var directory = Path.GetDirectoryName(_filePath);
 
@@ -58,8 +55,30 @@ namespace Atlas.Console.Storage
                 Directory.CreateDirectory(directory);
             }
 
-            var json = JsonSerializer.Serialize(participants, _jsonOptions);
+            var json = JsonSerializer.Serialize(votes, _jsonOptions);
             File.WriteAllText(_filePath, json);
+        }
+
+        private static StoredVote ToStorage(Vote vote)
+        {
+            return new StoredVote
+            {
+                Id = vote.Id.Value,
+                ParticipantId = vote.ParticipantId.Id,
+                TargetId = vote.Target.Id,
+
+                TargetType = vote.Target switch
+                {
+                    NodeVoteTarget => "Node",
+
+                    _ => throw new InvalidOperationException(
+                        "Unsupported vote target type.")
+                },
+
+                Value = vote.Value.Value,
+                CreatedAt = vote.CreatedAt,
+                UpdatedAt = vote.UpdatedAt
+            };
         }
 
         public Vote? GetById(VoteId id)
