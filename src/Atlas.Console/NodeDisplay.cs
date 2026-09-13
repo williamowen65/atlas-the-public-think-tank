@@ -38,9 +38,9 @@ public static class NodeDisplay
             new string(
                 '-',
                 3 + 2 +
-                5 + 2 +
-                5 + 2 +
-                7 + 2 +
+                VoteCountWidth + 2 +
+                AverageVoteWidth + 2 +
+                CurrentVoteWidth + 2 +
                 TitleWidth + 2 +
                 TypeWidth + 2 +
                 AuthorWidth + 2 +
