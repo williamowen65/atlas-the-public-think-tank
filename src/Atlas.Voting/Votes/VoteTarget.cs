@@ -4,7 +4,11 @@ using System.Text;
 
 namespace Atlas.Voting.Votes
 {
-    public class VoteTarget
+    public readonly record struct VoteTarget(Guid id)
     {
+        public static VoteTarget New()
+        {
+            return new VoteTarget(Guid.NewGuid());
+        }
     }
 }

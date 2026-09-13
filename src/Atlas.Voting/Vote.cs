@@ -8,7 +8,7 @@ namespace Atlas.Voting
 
         public IVoteValue Value { get; }
 
-        public VoteTarget Target { get; private set; }
+        public VoteTarget Target { get; }
 
         public ParticipantId ParticipantId { get; }
 

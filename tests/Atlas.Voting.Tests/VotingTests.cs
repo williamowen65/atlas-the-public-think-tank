@@ -1,4 +1,5 @@
 ﻿using Atlas.Voting.Votes.Value;
+using Newtonsoft.Json.Linq;
 
 namespace Atlas.Voting.Tests
 {
@@ -14,9 +15,10 @@ namespace Atlas.Voting.Tests
         [DataRow(10)]
         public void NodeRating_CanOnlyBeBetween0to10Inclusive(int value)
         {
-            var nodeRating = new NodeRating(value);
+            NodeRating nodeRating = new NodeRating(value);
 
-            Assert.IsNotNull(nodeRating);
+            Assert.AreEqual(value,nodeRating.Value);
+
         }
 
         [TestMethod]
@@ -27,8 +29,19 @@ namespace Atlas.Voting.Tests
            
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
-                var nodeRating = new NodeRating(value);
+                NodeRating nodeRating = new NodeRating(value);
             });
         }
+
+        [TestMethod]
+        public void NodeRating_ValueHasNoSetter()
+        {
+            var valueProperty = typeof(NodeRating)
+                .GetProperty(nameof(NodeRating.Value));
+
+            Assert.IsNotNull(valueProperty);
+            Assert.IsNull(valueProperty.GetSetMethod(nonPublic: true));
+        }
+
     }
 }

@@ -16,7 +16,10 @@ namespace Atlas.Voting.Votes.Value
             }
             else
             {
-                throw new ArgumentOutOfRangeException("Node rating was out of range");
+                throw new ArgumentOutOfRangeException(
+                        nameof(value),
+                        value,
+                        "Node rating must be between 0 and 10.");
             }
         }
 
