@@ -431,4 +431,32 @@ public static class NodeDisplay
                value +
                new string(' ', rightPadding);
     }
+
+    /// <summary>Writes the voter-list table heading.</summary>
+    public static void WriteVoterListHeader()
+    {
+        Console.WriteLine(
+            $"{"#",3}  " +
+            $"{Center("Vote", 6)}  " +
+            "Participant");
+
+        Console.WriteLine(
+            new string(
+                '-',
+                3 + 2 +
+                6 + 2 +
+                30));
+    }
+
+    /// <summary>Writes one voter-list table row.</summary>
+    public static void WriteVoterListRow(
+        int number,
+        string participantName,
+        int rating)
+    {
+        Console.WriteLine(
+            $"{number,3}  " +
+            $"{Center(rating.ToString(), 6)}  " +
+            participantName);
+    }
 }
