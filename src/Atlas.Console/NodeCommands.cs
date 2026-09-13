@@ -4,6 +4,7 @@ using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Participants.Participants;
+using Atlas.Voting.Data;
 
 namespace Atlas.ConsoleApp;
 
@@ -331,7 +332,8 @@ public static class NodeCommands
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
-        IParticipantRepository participants)
+        IParticipantRepository participants,
+        IVoteRepository voteRepository)
     {
         var childGroups = nodes
             .GetAll()

@@ -51,8 +51,8 @@ public static class NodeDisplay
         IDocumentRepository documents,
         IParticipantRepository participants,
         int number,
-        int? voteCount = null,
-        double? averageVote = null)
+        int voteCount,
+        double averageVote)
     {
         var typeName = ResolveTypeName(node, nodeTypes);
         var description = ResolveDescription(node, documents);

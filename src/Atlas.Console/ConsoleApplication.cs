@@ -6,17 +6,18 @@ using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Participants.Participants;
 using Atlas.Voting;
 using Atlas.Voting.Data;
+using Atlas.Voting.Target;
 
 namespace Atlas.ConsoleApp;
 
 /// <summary>Runs the console host and coordinates user-facing workflows across Atlas boundaries.</summary>
 public sealed class ConsoleApplication
 {
-    private readonly INodeRepository _nodes;
-    private readonly INodeTypeRepository _nodeTypes;
-    private readonly IDocumentRepository _documents;
-    private readonly IParticipantRepository _participants;
-    private readonly IVoteRepository _votes;
+    private readonly INodeRepository _nodeRepository;
+    private readonly INodeTypeRepository _nodeTypeRepository;
+    private readonly IDocumentRepository _documentRepository;
+    private readonly IParticipantRepository _participantRepository;
+    private readonly IVoteRepository _voteRepository;
     private readonly CastVote _castVote;
     private readonly InMemoryEventPublisher _eventPublisher;
     private Participant _currentParticipant;
@@ -42,11 +43,11 @@ public sealed class ConsoleApplication
         string voteDataFilePath,
         Participant initialParticipant)
     {
-        _nodes = nodes;
-        _nodeTypes = nodeTypes;
-        _documents = documents;
-        _participants = participants;
-        _votes = votes;
+        _nodeRepository = nodes;
+        _nodeTypeRepository = nodeTypes;
+        _documentRepository = documents;
+        _participantRepository = participants;
+        _voteRepository = votes;
         _castVote = castVote;
         _eventPublisher = eventPublisher;
         _currentParticipant = initialParticipant;
@@ -143,7 +144,7 @@ public sealed class ConsoleApplication
         Console.WriteLine("SELECT PARTICIPANT");
         Console.WriteLine("------------------");
 
-        var participants = _participants
+        var participants = _participantRepository
             .GetAll()
             .Where(participant => participant.IsActive)
             .OrderBy(participant => participant.DisplayName)
@@ -195,7 +196,7 @@ public sealed class ConsoleApplication
                 bio ?? string.Empty,
                 DateTimeOffset.UtcNow);
 
-            _participants.Save(participant);
+            _participantRepository.Save(participant);
             _currentParticipant = participant;
 
             ConsoleUi.Pause(
@@ -224,7 +225,7 @@ public sealed class ConsoleApplication
             Console.WriteLine("BROWSE PARTICIPANTS");
             Console.WriteLine("-------------------");
 
-            var participants = _participants
+            var participants = _participantRepository
                 .GetAll()
                 .OrderBy(participant => participant.DisplayName)
                 .ToList();
@@ -235,7 +236,7 @@ public sealed class ConsoleApplication
                 return;
             }
 
-            var nodes = _nodes.GetAll();
+            var nodes = _nodeRepository.GetAll();
 
             ParticipantDisplay.WriteTableHeader();
 
@@ -244,7 +245,7 @@ public sealed class ConsoleApplication
                 ParticipantDisplay.WriteTableRow(
                     participants[index],
                     nodes,
-                    _nodeTypes,
+                    _nodeTypeRepository,
                     index + 1);
             }
 
@@ -279,10 +280,10 @@ public sealed class ConsoleApplication
     {
         _currentParticipant = ParticipantCommands.Run(
             participantId,
-            _participants,
-            _nodes,
-            _nodeTypes,
-            _documents,
+            _participantRepository,
+            _nodeRepository,
+            _nodeTypeRepository,
+            _documentRepository,
             _currentParticipant);
     }
 
@@ -294,9 +295,9 @@ public sealed class ConsoleApplication
         Console.WriteLine("-----------");
 
         NodeCreationWorkflow.Create(
-            _nodes,
-            _nodeTypes,
-            _documents,
+            _nodeRepository,
+            _nodeTypeRepository,
+            _documentRepository,
             _currentParticipant,
             _eventPublisher);
     }
@@ -312,7 +313,7 @@ public sealed class ConsoleApplication
             Console.WriteLine("BROWSE NODES");
             Console.WriteLine("------------");
 
-            var nodes = _nodes.GetAll().ToList();
+            var nodes = _nodeRepository.GetAll().ToList();
 
             if (nodes.Count == 0)
             {
@@ -324,13 +325,26 @@ public sealed class ConsoleApplication
 
             for (var index = 0; index < nodes.Count; index++)
             {
+
+                Node node = nodes[index];
+
+                var voteTarget = new NodeVoteTarget(node.Id.Value);
+                var votes = _voteRepository.GetTargetVotes(voteTarget);
+
+                var voteCount = votes.Count;
+                var averageRating = votes.Count == 0
+                    ? (double?)null
+                    : votes.Average(vote => vote.Value.Value);
+
                 NodeDisplay.WriteTableRow(
-                    nodes[index],
-                    _nodes,
-                    _nodeTypes,
-                    _documents,
-                    _participants,
-                    index + 1);
+                    node,
+                    _nodeRepository,
+                    _nodeTypeRepository,
+                    _documentRepository,
+                    _participantRepository,
+                    index + 1,
+                    voteCount,
+                    averageRating);
             }
 
             Console.WriteLine();
@@ -359,10 +373,10 @@ public sealed class ConsoleApplication
 
             _currentParticipant = NodeCommands.Run(
                 nodes[selection - 1],
-                _nodes,
-                _nodeTypes,
-                _documents,
-                _participants,
+                _nodeRepository,
+                _nodeTypeRepository,
+                _documentRepository,
+                _participantRepository,
                 _eventPublisher,
                 _currentParticipant);
         }
@@ -375,7 +389,7 @@ public sealed class ConsoleApplication
         Console.WriteLine("NODE TYPES");
         Console.WriteLine("----------");
 
-        var nodeTypes = _nodeTypes
+        var nodeTypes = _nodeTypeRepository
             .GetAll()
             .OrderBy(type => type.Name)
             .ToList();
@@ -411,7 +425,7 @@ public sealed class ConsoleApplication
         Console.WriteLine("ATLAS.CONTENT DOCUMENTS");
         Console.WriteLine("-----------------------");
 
-        var documents = _documents.GetAll();
+        var documents = _documentRepository.GetAll();
 
         if (documents.Count == 0)
         {
