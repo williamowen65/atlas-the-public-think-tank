@@ -17,7 +17,7 @@ public sealed class ConsoleApplication
     private readonly IDocumentRepository _documents;
     private readonly IParticipantRepository _participants;
     private readonly IVoteRepository _votes;
-    private CastVote _castVote;
+    private readonly CastVote _castVote;
     private readonly InMemoryEventPublisher _eventPublisher;
     private Participant _currentParticipant;
     private readonly string _nodeDataFilePath;
@@ -442,6 +442,7 @@ public sealed class ConsoleApplication
         ShowDataFile("NODE TYPE DATA", _nodeTypeDataFilePath);
         ShowDataFile("CONTENT DOCUMENT DATA", _documentDataFilePath);
         ShowDataFile("PARTICIPANT DATA", _participantDataFilePath);
+        ShowDataFile("VOTE DATA", _voteDataFilePath);
     }
 
     /// <summary>Displays data file in the console workflow.</summary>
