@@ -8,8 +8,16 @@ namespace Atlas.Voting.Target
     {
         public Guid Id { get;}
         public VoteTarget(Guid id)
-        { 
-          Id = id;  
+        {
+
+            if (id == Guid.Empty)
+            {
+                throw new ArgumentException(
+                    "Vote target ID cannot be empty.",
+                    nameof(id));
+            }
+
+            Id = id;  
         }
     }
 }

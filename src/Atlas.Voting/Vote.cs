@@ -30,7 +30,7 @@ namespace Atlas.Voting
             Target = target;
 
 
-            if (target.GetType() == typeof(NodeVoteTarget)) 
+            if (target is NodeVoteTarget) 
             {
                 Value = new NodeRating(voteValue);
             }

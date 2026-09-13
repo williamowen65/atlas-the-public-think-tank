@@ -1,4 +1,6 @@
-﻿using Atlas.Voting.Value;
+﻿using Atlas.Voting.Target;
+using Atlas.Voting.Value;
+using Atlas.Voting.Votes;
 using Newtonsoft.Json.Linq;
 
 namespace Atlas.Voting.Tests
@@ -6,6 +8,47 @@ namespace Atlas.Voting.Tests
     [TestClass]
     public sealed class VotingTests
     {
+
+
+        [TestMethod]
+        public void Vote_WithNodeTarget_CreatesNodeRating()
+        {
+            var target = new NodeVoteTarget(Guid.NewGuid());
+            var participantId = new ParticipantId(Guid.NewGuid());
+
+            var vote = new Vote(target, participantId, 7);
+
+            Assert.IsInstanceOfType<NodeRating>(vote.Value);
+            Assert.AreEqual(7, vote.Value.Value);
+        }
+
+        [TestMethod]
+        public void Vote_WithUnsupportedTarget_ThrowsException()
+        {
+            var unsupportedTarget = new VoteTarget(Guid.NewGuid());
+            var participantId = new ParticipantId(Guid.NewGuid());
+
+            Assert.Throws<ArgumentException>(() =>
+            {
+                new Vote(unsupportedTarget, participantId, 7);
+            });
+        }
+
+
+        [TestMethod]
+        public void Vote_WithEmptyGuid_ThrowsException()
+        {
+            Assert.Throws<ArgumentException>(() =>
+            {
+                var target = new NodeVoteTarget(Guid.Empty);
+            });
+
+            Assert.Throws<ArgumentException>(() =>
+            {
+                var participantId = new ParticipantId(Guid.Empty);
+            });
+        }
+
         [TestMethod]
         [DataRow(0)]
         [DataRow(1)]
