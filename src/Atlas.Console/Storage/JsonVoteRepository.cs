@@ -81,24 +81,80 @@ namespace Atlas.ConsoleApp.Storage
             };
         }
 
-        public Vote? GetById(VoteId id)
+        private static Vote ToDomain(StoredVote storedVote)
         {
-            throw new NotImplementedException();
-        }
+            VoteTarget target = storedVote.TargetType switch
+            {
+                "Node" => new NodeVoteTarget(
+                    storedVote.TargetId),
 
-        public Vote? GetByParticipantAndTarget(ParticipantId participantId, VoteTarget voteTarget)
-        {
-            throw new NotImplementedException();
-        }
+                _ => throw new InvalidDataException(
+                    $"Unsupported stored vote target type " +
+                    $"'{storedVote.TargetType}'.")
+            };
 
-        public IReadOnlyCollection<Vote> GetTargetVotes(VoteTarget target)
-        {
-            throw new NotImplementedException();
+            return Vote.Reconstitute(
+                new VoteId(storedVote.Id),
+                target,
+                new ParticipantId(storedVote.ParticipantId),
+                storedVote.Value,
+                storedVote.CreatedAt,
+                storedVote.UpdatedAt);
         }
 
         public void Save(Vote vote)
         {
-            throw new NotImplementedException();
+            ArgumentNullException.ThrowIfNull(vote);
+
+            var storedVotes = ReadStoredVotes();
+
+            var existingIndex = storedVotes.FindIndex(
+                storedVote => storedVote.Id == vote.Id.Value);
+
+            var replacement = ToStorage(vote);
+
+            if (existingIndex >= 0)
+            {
+                storedVotes[existingIndex] = replacement;
+            }
+            else
+            {
+                storedVotes.Add(replacement);
+            }
+
+            WriteStoredVotes(storedVotes);
+        }
+
+
+        public Vote? GetById(VoteId id)
+        {
+            return ReadStoredVotes()
+                .Select(ToDomain)
+                .SingleOrDefault(
+                vote => vote.Id == id);
+        }
+
+        public IReadOnlyCollection<Vote> GetTargetVotes(
+        VoteTarget target)
+        {
+            return ReadStoredVotes()
+                .Select(ToDomain)
+                .Where(vote =>
+                    vote.Target.Id == target.Id &&
+                    vote.Target.GetType() == target.GetType())
+                .ToArray();
+        }
+
+        public Vote? GetByParticipantAndTarget(
+            ParticipantId participantId,
+            VoteTarget voteTarget)
+        {
+            return ReadStoredVotes()
+                .Select(ToDomain)
+                .SingleOrDefault(vote =>
+                vote.ParticipantId.Id == participantId.Id &&
+                vote.Target.Id == voteTarget.Id &&
+                vote.Target.GetType() == voteTarget.GetType());
         }
     }
 }

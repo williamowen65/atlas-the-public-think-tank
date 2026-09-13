@@ -49,7 +49,6 @@ namespace Atlas.Voting
             VoteTarget target,
             ParticipantId pId,
             int voteValue,
-            string targetType,
             DateTimeOffset createdAt,
             DateTimeOffset updatedAt
             )
@@ -81,7 +80,6 @@ namespace Atlas.Voting
             VoteTarget target,
             ParticipantId pId,
             int voteValue,
-            string targetType,
             DateTimeOffset createdAt,
             DateTimeOffset updatedAt
             ) 
@@ -91,7 +89,6 @@ namespace Atlas.Voting
                 target,
                 pId,
                 voteValue,
-                targetType,
                 createdAt,
                 updatedAt
                 );
