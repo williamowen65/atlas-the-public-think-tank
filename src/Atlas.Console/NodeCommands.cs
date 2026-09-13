@@ -175,6 +175,11 @@ public static class NodeCommands
                 ConsoleUi.Pause(
                     $"Unable to update node: {exception.Message}");
             }
+            catch (InvalidOperationException exception)
+            {
+                ConsoleUi.Pause(
+                    $"Unable to complete action: {exception.Message}");
+            }
         }
 
         return currentParticipant;
