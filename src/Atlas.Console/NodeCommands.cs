@@ -860,6 +860,13 @@ public static class NodeCommands
         Participant currentParticipant,
         CastVote castVote)
     {
+        if (node.Status == NodeStatus.Archived)
+        {
+            ConsoleUi.Pause(
+                "Archived nodes cannot receive votes.");
+            return;
+        }
+
         Console.Write("Rating from 0 through 10: ");
 
         if (!int.TryParse(Console.ReadLine(), out var rating) ||
