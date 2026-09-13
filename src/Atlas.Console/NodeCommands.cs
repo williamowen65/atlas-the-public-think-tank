@@ -332,8 +332,7 @@ public static class NodeCommands
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
-        IParticipantRepository participants,
-        IVoteRepository voteRepository)
+        IParticipantRepository participants)
     {
         var childGroups = nodes
             .GetAll()
