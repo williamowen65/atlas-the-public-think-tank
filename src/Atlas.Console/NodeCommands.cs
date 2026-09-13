@@ -771,4 +771,35 @@ public static class NodeCommands
         ConsoleUi.Pause(
             $"Node type changed to {nodeType.Name} and saved.");
     }
+
+    /// <summary>Reads and casts the current participant's rating for a node.</summary>
+    private static void VoteOnNode(
+        Node node,
+        Participant currentParticipant,
+        CastVote castVote)
+    {
+        Console.Write("Rating from 0 through 10: ");
+
+        if (!int.TryParse(Console.ReadLine(), out var rating) ||
+            rating < 0 ||
+            rating > 10)
+        {
+            ConsoleUi.Pause(
+                "Please enter a whole number from 0 through 10.");
+            return;
+        }
+
+        var voteTarget = new NodeVoteTarget(node.Id.Value);
+
+        var votingParticipantId =
+            new Atlas.Voting.Votes.ParticipantId(
+                currentParticipant.Id.Value);
+
+        castVote.Execute(
+            voteTarget,
+            votingParticipantId,
+            rating);
+
+        ConsoleUi.Pause("Vote saved.");
+    }
 }

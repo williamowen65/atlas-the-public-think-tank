@@ -1,0 +1,11 @@
+[
+  {
+    "Id": "601bf485-7b1e-4b5d-b55e-837852947b1f",
+    "ParticipantId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
+    "TargetId": "90d09c16-60c6-4018-8b0b-1b335d0d8e89",
+    "TargetType": "Node",
+    "Value": 4,
+    "CreatedAt": "2026-09-13T20:36:04.5129091+00:00",
+    "UpdatedAt": "2026-09-13T20:36:04.5129091+00:00"
+  }
+]
