@@ -1,14 +1,31 @@
 ﻿using Atlas.Voting.Target;
 using Atlas.Voting.Value;
 using Atlas.Voting.Votes;
-using Newtonsoft.Json.Linq;
+using Atlas.Voting.Data;
 
 namespace Atlas.Voting.Tests
 {
     [TestClass]
     public sealed class VotingTests
     {
+        [TestMethod]
+        public void CastVote_SavesValidVote()
+        {
+            var repository = new InMemoryVoteRepository();
+            var castVote = new CastVote(repository);
 
+            var target = new NodeVoteTarget(Guid.NewGuid());
+            var participantId = new ParticipantId(Guid.NewGuid());
+
+            var vote = castVote.Execute(
+                target,
+                participantId,
+                7);
+
+            Assert.AreSame(
+                vote,
+                repository.GetById(vote.Id));
+        }
 
         [TestMethod]
         public void Vote_WithNodeTarget_CreatesNodeRating()
