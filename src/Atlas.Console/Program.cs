@@ -83,11 +83,14 @@ var application = new ConsoleApplication(
     nodeTypeRepository,
     documentRepository,
     participantRepository,
+    voteRepository,
+    castVote,
     eventPublisher,
     nodeDataFilePath,
     nodeTypeDataFilePath,
     documentDataFilePath,
     participantDataFilePath,
+    voteDataFilePath,
     legacyParticipant);
 
 application.Run();

@@ -4,6 +4,8 @@ using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Participants.Participants;
+using Atlas.Voting;
+using Atlas.Voting.Data;
 
 namespace Atlas.ConsoleApp;
 
@@ -14,12 +16,15 @@ public sealed class ConsoleApplication
     private readonly INodeTypeRepository _nodeTypes;
     private readonly IDocumentRepository _documents;
     private readonly IParticipantRepository _participants;
+    private readonly IVoteRepository _votes;
+    private CastVote _castVote;
     private readonly InMemoryEventPublisher _eventPublisher;
     private Participant _currentParticipant;
     private readonly string _nodeDataFilePath;
     private readonly string _nodeTypeDataFilePath;
     private readonly string _documentDataFilePath;
     private readonly string _participantDataFilePath;
+    private readonly string _voteDataFilePath;
 
     /// <summary>Creates a validated console application instance.</summary>
     public ConsoleApplication(
@@ -27,23 +32,29 @@ public sealed class ConsoleApplication
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
         IParticipantRepository participants,
+        IVoteRepository votes,
+        CastVote castVote,
         InMemoryEventPublisher eventPublisher,
         string nodeDataFilePath,
         string nodeTypeDataFilePath,
         string documentDataFilePath,
         string participantDataFilePath,
+        string voteDataFilePath,
         Participant initialParticipant)
     {
         _nodes = nodes;
         _nodeTypes = nodeTypes;
         _documents = documents;
         _participants = participants;
+        _votes = votes;
+        _castVote = castVote;
         _eventPublisher = eventPublisher;
         _currentParticipant = initialParticipant;
         _nodeDataFilePath = nodeDataFilePath;
         _nodeTypeDataFilePath = nodeTypeDataFilePath;
         _documentDataFilePath = documentDataFilePath;
         _participantDataFilePath = participantDataFilePath;
+        _voteDataFilePath = voteDataFilePath;
     }
 
     /// <summary>Runs the interactive console application workflow.</summary>
