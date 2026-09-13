@@ -49,6 +49,40 @@ public static class NodeCommands
                 ? (double?)null
                 : nodeVotes.Average(vote => vote.Value.Value);
 
+            var children = nodes
+                .GetAll()
+                .Where(candidate =>
+                    candidate.ParentNodeIds.Contains(node.Id))
+                .ToList();
+
+            var childVoteSummaries =
+                new Dictionary<NodeId, NodeVoteSummary>();
+
+            foreach (var child in children)
+            {
+                var childVoteTarget =
+                    new NodeVoteTarget(child.Id.Value);
+
+                var childVotes =
+                    votes.GetTargetVotes(childVoteTarget);
+
+                var currentParticipantChildVote =
+                    votes.GetByParticipantAndTarget(
+                        votingParticipantId,
+                        childVoteTarget);
+
+                var childAverage = childVotes.Count == 0
+                    ? (double?)null
+                    : childVotes.Average(
+                        vote => vote.Value.Value);
+
+                childVoteSummaries[child.Id] =
+                    new NodeVoteSummary(
+                        childVotes.Count,
+                        childAverage,
+                        currentParticipantChildVote?.Value.Value);
+            }
+
             NodeDisplay.WriteDetails(
                 node,
                 nodes,
@@ -57,7 +91,8 @@ public static class NodeCommands
                 participants,
                 voteCount,
                 averageRating,
-                myVote);
+                myVote,
+                childVoteSummaries);
 
             Console.WriteLine();
             Console.WriteLine("Choose an action:");
@@ -126,7 +161,9 @@ public static class NodeCommands
                                    nodes,
                                    nodeTypes,
                                    documents,
-                                   participants)
+                                   participants,
+                                   votes,
+                                   currentParticipant)
                                ?? node;
                         break;
 
@@ -371,7 +408,9 @@ public static class NodeCommands
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
-        IParticipantRepository participants)
+        IParticipantRepository participants,
+        IVoteRepository votes,
+        Participant currentParticipant)
     {
         var childGroups = nodes
             .GetAll()
@@ -433,17 +472,45 @@ public static class NodeCommands
         Console.WriteLine();
         NodeDisplay.WriteTableHeader();
 
+        var votingParticipantId =  new Atlas.Voting.Votes.ParticipantId(currentParticipant.Id.Value);
+
         for (var index = 0;
              index < selectedGroup.Children.Count;
              index++)
         {
+            var child = selectedGroup.Children[index];
+
+            var voteTarget =
+                new NodeVoteTarget(child.Id.Value);
+
+            var childVotes =
+                votes.GetTargetVotes(voteTarget);
+
+            var currentParticipantVote =
+                votes.GetByParticipantAndTarget(
+                    votingParticipantId,
+                    voteTarget);
+
+            var voteCount = childVotes.Count;
+
+            var averageRating = childVotes.Count == 0
+                ? (double?)null
+                : childVotes.Average(
+                    vote => vote.Value.Value);
+
+            var myVote =
+                currentParticipantVote?.Value.Value;
+
             NodeDisplay.WriteTableRow(
-                selectedGroup.Children[index],
+                child,
                 nodes,
                 nodeTypes,
                 documents,
                 participants,
-                index + 1);
+                index + 1,
+                voteCount,
+                averageRating,
+                myVote);
         }
 
         Console.WriteLine();

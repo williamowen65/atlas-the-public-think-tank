@@ -91,7 +91,8 @@ public static class NodeDisplay
         IParticipantRepository participants,
         int? voteCount = null,
         double? averageVote = null,
-        int? currentParticipantVote = null)
+        int? currentParticipantVote = null,
+        IReadOnlyDictionary<NodeId, NodeVoteSummary>? childVoteSummaries = null)
     {
         var description = ResolveDescription(node, documents);
         var authorName = ResolveAuthorName(node, participants);
@@ -124,7 +125,8 @@ public static class NodeDisplay
             nodes,
             nodeTypes,
             documents,
-            participants);
+            participants,
+            childVoteSummaries);
     }
 
     /// <summary>Writes sub node tables to the console display.</summary>
@@ -133,7 +135,8 @@ public static class NodeDisplay
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
-        IParticipantRepository participants)
+        IParticipantRepository participants,
+        IReadOnlyDictionary<NodeId, NodeVoteSummary>? childVoteSummaries)
     {
         var children = FindChildren(node, nodes);
         var typeIds = node.RequestedSubNodeTypes
@@ -174,16 +177,30 @@ public static class NodeDisplay
             }
 
             for (var index = 0;
-                 index < matchingChildren.Count;
-                 index++)
+                index < matchingChildren.Count;
+                index++)
             {
+                var child = matchingChildren[index];
+
+                NodeVoteSummary? voteSummary = null;
+
+                if (childVoteSummaries is not null)
+                {
+                    childVoteSummaries.TryGetValue(
+                        child.Id,
+                        out voteSummary);
+                }
+
                 WriteTableRow(
-                    matchingChildren[index],
+                    child,
                     nodes,
                     nodeTypes,
                     documents,
                     participants,
-                    index + 1);
+                    index + 1,
+                    voteSummary?.VoteCount,
+                    voteSummary?.AverageVote,
+                    voteSummary?.CurrentParticipantVote);
             }
         }
 

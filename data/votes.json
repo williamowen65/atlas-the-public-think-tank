@@ -25,5 +25,14 @@
     "Value": 10,
     "CreatedAt": "2026-09-13T21:27:39.0222243+00:00",
     "UpdatedAt": "2026-09-13T21:27:39.0222243+00:00"
+  },
+  {
+    "Id": "affcefa9-2604-42ba-92a1-6aeaa4a9da9e",
+    "ParticipantId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
+    "TargetId": "37092242-ad4b-4069-a225-ebf58e3ef862",
+    "TargetType": "Node",
+    "Value": 5,
+    "CreatedAt": "2026-09-13T22:20:31.0046657+00:00",
+    "UpdatedAt": "2026-09-13T22:20:31.0046657+00:00"
   }
 ]
