@@ -405,7 +405,7 @@ public static class NodeDisplay
     /// <summary>Formats average vote for display.</summary>
     private static string FormatAverageVote(double? averageVote)
     {
-        return averageVote?.ToString("0.0") ?? "—";
+        return averageVote?.ToString("0.00") ?? "—";
     }
 
     private static string FormatCurrentParticipantVote(
