@@ -43,6 +43,10 @@ namespace Atlas.Voting
         }
 
 
+        public void CastVote(Vote theVote) 
+        { 
+          
+        }
 
     }
 
