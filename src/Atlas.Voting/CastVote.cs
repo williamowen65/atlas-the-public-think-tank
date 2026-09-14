@@ -12,17 +12,14 @@ namespace Atlas.Voting
     public sealed class CastVote
     {
         private readonly IVoteRepository _voteRepository;
-        private readonly IVotingParticipantEligibility _participantEligibility;
-        private readonly IVoteTargetAvailability _targetAvailability;
+        private readonly VoteMutationPolicy _mutationPolicy;
 
         public CastVote(
             IVoteRepository voteRepository,
-            IVotingParticipantEligibility participantEligibility,
-            IVoteTargetAvailability targetAvailability)
+            VoteMutationPolicy mutationPolicy)
         {
             _voteRepository = voteRepository;
-            _participantEligibility = participantEligibility;
-            _targetAvailability = targetAvailability;
+            _mutationPolicy = mutationPolicy;
         }
 
         public Vote Execute(
@@ -30,10 +27,7 @@ namespace Atlas.Voting
             ParticipantId participantId,
             int voteValue)
         {
-            ArgumentNullException.ThrowIfNull(target);
-            ArgumentNullException.ThrowIfNull(participantId);
-
-            EnsureMutationIsAllowed(
+            _mutationPolicy.EnsureAllowed(
                 target,
                 participantId);
 
@@ -70,21 +64,5 @@ namespace Atlas.Voting
             return existingVote;
         }
 
-        private void EnsureMutationIsAllowed(
-            VoteTarget target,
-            ParticipantId participantId)
-        {
-            if (!_participantEligibility.IsEligible(participantId))
-            {
-                throw new InvalidOperationException(
-                    "The acting participant is not eligible to vote.");
-            }
-
-            if (!_targetAvailability.IsAvailable(target))
-            {
-                throw new InvalidOperationException(
-                    "The vote target is unavailable for interaction.");
-            }
-        }
     }
 }
