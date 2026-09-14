@@ -31,23 +31,26 @@ public static class NodeCommands
         {
             Console.Clear();
 
-            var voteTarget = new NodeVoteTarget(node.Id.Value);
-            var nodeVotes = votes.GetTargetVotes(voteTarget);
+            var voteTarget =
+                new NodeVoteTarget(node.Id.Value);
 
-            var votingParticipantId = new Atlas.Voting.Votes.ParticipantId(currentParticipant.Id.Value);
+            var votingParticipantId =
+                new Atlas.Voting.Votes.ParticipantId(
+                    currentParticipant.Id.Value);
 
-            var currentParticipantVote = votes.GetByParticipantAndTarget(
-                                                votingParticipantId,
-                                                voteTarget);
+            var voteSummary =
+                new GetVoteSummary(votes).Execute(
+                    voteTarget,
+                    votingParticipantId);
+
+            var voteCount =
+                voteSummary.VoteCount;
+
+            var averageRating =
+                voteSummary.AverageVote;
 
             var myVote =
-                currentParticipantVote?.Value.Value;
-
-            var voteCount = nodeVotes.Count;
-
-            var averageRating = nodeVotes.Count == 0
-                ? (double?)null
-                : nodeVotes.Average(vote => vote.Value.Value);
+                voteSummary.CurrentParticipantVote;
 
             var children = nodes
                 .GetAll()
@@ -63,24 +66,16 @@ public static class NodeCommands
                 var childVoteTarget =
                     new NodeVoteTarget(child.Id.Value);
 
-                var childVotes =
-                    votes.GetTargetVotes(childVoteTarget);
-
-                var currentParticipantChildVote =
-                    votes.GetByParticipantAndTarget(
-                        votingParticipantId,
-                        childVoteTarget);
-
-                var childAverage = childVotes.Count == 0
-                    ? (double?)null
-                    : childVotes.Average(
-                        vote => vote.Value.Value);
+                var childSummary =
+                    new GetVoteSummary(votes).Execute(
+                        childVoteTarget,
+                        votingParticipantId);
 
                 childVoteSummaries[child.Id] =
                     new NodeVoteSummary(
-                        childVotes.Count,
-                        childAverage,
-                        currentParticipantChildVote?.Value.Value);
+                        childSummary.VoteCount,
+                        childSummary.AverageVote,
+                        childSummary.CurrentParticipantVote);
             }
 
             NodeDisplay.WriteDetails(
@@ -495,23 +490,19 @@ public static class NodeCommands
             var voteTarget =
                 new NodeVoteTarget(child.Id.Value);
 
-            var childVotes =
-                votes.GetTargetVotes(voteTarget);
+            var voteSummary =
+                new GetVoteSummary(votes).Execute(
+                    voteTarget,
+                    votingParticipantId);
 
-            var currentParticipantVote =
-                votes.GetByParticipantAndTarget(
-                    votingParticipantId,
-                    voteTarget);
+            var voteCount =
+                voteSummary.VoteCount;
 
-            var voteCount = childVotes.Count;
-
-            var averageRating = childVotes.Count == 0
-                ? (double?)null
-                : childVotes.Average(
-                    vote => vote.Value.Value);
+            var averageRating =
+                voteSummary.AverageVote;
 
             var myVote =
-                currentParticipantVote?.Value.Value;
+                voteSummary.CurrentParticipantVote;
 
             NodeDisplay.WriteTableRow(
                 child,
