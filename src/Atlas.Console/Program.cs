@@ -10,6 +10,7 @@ using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Participants.Participants;
 using Atlas.Voting;
 using Atlas.Voting.Data;
+using Atlas.Voting.Eligibility;
 
 var dataDirectory = Path.GetFullPath(
     Path.Combine(
