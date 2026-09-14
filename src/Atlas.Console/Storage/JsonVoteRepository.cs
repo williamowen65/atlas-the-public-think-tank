@@ -126,6 +126,20 @@ namespace Atlas.ConsoleApp.Storage
         }
 
 
+        /// <summary>Physically removes a vote from current JSON persistence.</summary>
+        public void Delete(VoteId id)
+        {
+            var storedVotes = ReadStoredVotes();
+
+            var removedCount = storedVotes.RemoveAll(
+                storedVote => storedVote.Id == id.Value);
+
+            if (removedCount > 0)
+            {
+                WriteStoredVotes(storedVotes);
+            }
+        }
+
         public Vote? GetById(VoteId id)
         {
             return ReadStoredVotes()
