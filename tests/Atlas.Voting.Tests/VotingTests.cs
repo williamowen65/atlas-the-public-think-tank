@@ -28,11 +28,11 @@ namespace Atlas.Voting.Tests
         }
 
         /// <summary>
-        /// Verifies that one participant cannot cast multiple votes
-        /// against the same target.
+        /// Verifies that casting again changes the existing current vote
+        /// without creating duplicate participant-target influence.
         /// </summary>
         [TestMethod]
-        public void CastVote_WhenParticipantAlreadyVoted_ThrowsException()
+        public void CastVote_WhenParticipantAlreadyVoted_ChangesExistingVote()
         {
             var repository = new InMemoryVoteRepository();
             var castVote = new CastVote(repository);
@@ -43,24 +43,37 @@ namespace Atlas.Voting.Tests
             var participantId =
                 new ParticipantId(Guid.NewGuid());
 
-            castVote.Execute(
+            var originalVote = castVote.Execute(
                 target,
                 participantId,
                 7);
 
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                castVote.Execute(
-                    target,
-                    participantId,
-                    9);
-            });
+            var originalCreatedAt = originalVote.CreatedAt;
+            var originalUpdatedAt = originalVote.UpdatedAt;
 
-            var targetVotes =  repository.GetTargetVotes(target);
+            var changedVote = castVote.Execute(
+                target,
+                participantId,
+                9);
+
+            Assert.AreEqual(
+                originalVote.Id,
+                changedVote.Id);
+
+            Assert.AreEqual(
+                9,
+                changedVote.Value.Value);
+
+            Assert.AreEqual(
+                originalCreatedAt,
+                changedVote.CreatedAt);
+
+            Assert.IsTrue(
+                changedVote.UpdatedAt > originalUpdatedAt);
 
             Assert.HasCount(
                 1,
-                targetVotes);
+                repository.GetTargetVotes(target));
         }
 
         /// <summary>
@@ -339,6 +352,151 @@ namespace Atlas.Voting.Tests
 
             Assert.IsNotNull(valueProperty);
             Assert.IsNull(valueProperty.GetSetMethod(nonPublic: true));
+        }
+
+        /// <summary>
+        /// Verifies that only the acting participant's vote is removed
+        /// and that current aggregates immediately exclude it.
+        /// </summary>
+        [TestMethod]
+        public void UndoVote_WhenOwnedVoteExists_RemovesItFromCurrentResults()
+        {
+            var repository = new InMemoryVoteRepository();
+            var castVote = new CastVote(repository);
+            var undoVote = new UndoVote(repository);
+            var getVoteSummary = new GetVoteSummary(repository);
+
+            var target =
+                new NodeVoteTarget(Guid.NewGuid());
+
+            var participantId =
+                new ParticipantId(Guid.NewGuid());
+
+            castVote.Execute(
+                target,
+                participantId,
+                8);
+
+            castVote.Execute(
+                target,
+                new ParticipantId(Guid.NewGuid()),
+                4);
+
+            var removed = undoVote.Execute(
+                target,
+                participantId);
+
+            var summary = getVoteSummary.Execute(
+                target,
+                participantId);
+
+            Assert.IsTrue(removed);
+
+            Assert.AreEqual(
+                1,
+                summary.VoteCount);
+
+            Assert.AreEqual(
+                4.0,
+                summary.AverageVote);
+
+            Assert.IsNull(
+                summary.CurrentParticipantVote);
+
+            Assert.HasCount(
+                1,
+                repository.GetTargetVotes(target));
+        }
+
+        /// <summary>
+        /// Verifies that a participant cannot undo another
+        /// participant's current vote.
+        /// </summary>
+        [TestMethod]
+        public void UndoVote_WhenParticipantDoesNotOwnVote_LeavesVoteUnchanged()
+        {
+            var repository = new InMemoryVoteRepository();
+            var castVote = new CastVote(repository);
+            var undoVote = new UndoVote(repository);
+
+            var target =
+                new NodeVoteTarget(Guid.NewGuid());
+
+            castVote.Execute(
+                target,
+                new ParticipantId(Guid.NewGuid()),
+                6);
+
+            var removed = undoVote.Execute(
+                target,
+                new ParticipantId(Guid.NewGuid()));
+
+            Assert.IsFalse(removed);
+
+            Assert.HasCount(
+                1,
+                repository.GetTargetVotes(target));
+        }
+
+        /// <summary>
+        /// Verifies that undo is idempotent when no current vote exists.
+        /// </summary>
+        [TestMethod]
+        public void UndoVote_WhenVoteDoesNotExist_ReturnsFalse()
+        {
+            var repository = new InMemoryVoteRepository();
+            var undoVote = new UndoVote(repository);
+
+            var removed = undoVote.Execute(
+                new NodeVoteTarget(Guid.NewGuid()),
+                new ParticipantId(Guid.NewGuid()));
+
+            Assert.IsFalse(removed);
+        }
+
+        [TestMethod]
+        public void CastVote_WhenVoteChanges_RecalculatesSummary()
+        {
+            var repository =
+                new InMemoryVoteRepository();
+
+            var castVote =
+                new CastVote(repository);
+
+            var getVoteSummary =
+                new GetVoteSummary(repository);
+
+            var target =
+                new NodeVoteTarget(Guid.NewGuid());
+
+            var changingParticipant =
+                new ParticipantId(Guid.NewGuid());
+
+            castVote.Execute(
+                target,
+                changingParticipant,
+                8);
+
+            castVote.Execute(
+                target,
+                new ParticipantId(Guid.NewGuid()),
+                4);
+
+            castVote.Execute(
+                target,
+                changingParticipant,
+                10);
+
+            var summary =
+                getVoteSummary.Execute(target);
+
+            Assert.AreEqual(
+                2,
+                summary.VoteCount);
+
+            Assert.AreEqual(
+                7.0,
+                summary.AverageVote);
         }
 
     }

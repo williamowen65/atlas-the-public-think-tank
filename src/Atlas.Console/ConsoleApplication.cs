@@ -20,6 +20,7 @@ public sealed class ConsoleApplication
     private readonly IParticipantRepository _participantRepository;
     private readonly IVoteRepository _voteRepository;
     private readonly CastVote _castVote;
+    private readonly UndoVote _undoVote;
     private readonly InMemoryEventPublisher _eventPublisher;
     private Participant _currentParticipant;
     private readonly string _nodeDataFilePath;
@@ -36,6 +37,7 @@ public sealed class ConsoleApplication
         IParticipantRepository participants,
         IVoteRepository votes,
         CastVote castVote,
+        UndoVote undoVote,
         InMemoryEventPublisher eventPublisher,
         string nodeDataFilePath,
         string nodeTypeDataFilePath,
@@ -50,6 +52,7 @@ public sealed class ConsoleApplication
         _participantRepository = participants;
         _voteRepository = votes;
         _castVote = castVote;
+        _undoVote = undoVote;
         _eventPublisher = eventPublisher;
         _currentParticipant = initialParticipant;
         _nodeDataFilePath = nodeDataFilePath;
@@ -391,6 +394,7 @@ public sealed class ConsoleApplication
                 _participantRepository,
                 _voteRepository,
                 _castVote,
+                _undoVote,
                 _eventPublisher,
                 _currentParticipant);
         }
