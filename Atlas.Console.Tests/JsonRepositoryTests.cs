@@ -90,5 +90,66 @@ namespace Atlas.Console.Tests
                 }
             }
         }
+
+        /// <summary>
+        /// Verifies that participant-target lookup works after votes
+        /// are loaded by a new JSON repository instance.
+        /// </summary>
+        [TestMethod]
+        public void JsonVoteRepository_ReloadedVoteCanBeFoundByParticipantAndTarget()
+        {
+            var temporaryDirectory = Path.Combine(
+                Path.GetTempPath(),
+                "AtlasVotingTests",
+                Guid.NewGuid().ToString());
+
+            var filePath = Path.Combine(
+                temporaryDirectory,
+                "votes.json");
+
+            try
+            {
+                var participantId =
+                    new ParticipantId(Guid.NewGuid());
+
+                var target =
+                    new NodeVoteTarget(Guid.NewGuid());
+
+                var originalRepository =
+                    new JsonVoteRepository(filePath);
+
+                var originalVote =
+                    new Vote(target, participantId, 7);
+
+                originalRepository.Save(originalVote);
+
+                var reloadedRepository =
+                    new JsonVoteRepository(filePath);
+
+                var reloadedVote =
+                    reloadedRepository.GetByParticipantAndTarget(
+                        participantId,
+                        target);
+
+                Assert.IsNotNull(reloadedVote);
+
+                Assert.AreEqual(
+                    originalVote.Id,
+                    reloadedVote.Id);
+
+                Assert.AreEqual(
+                    7,
+                    reloadedVote.Value.Value);
+            }
+            finally
+            {
+                if (Directory.Exists(temporaryDirectory))
+                {
+                    Directory.Delete(
+                        temporaryDirectory,
+                        recursive: true);
+                }
+            }
+        }
     }
 }
