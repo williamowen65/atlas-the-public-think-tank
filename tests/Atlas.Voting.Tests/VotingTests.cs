@@ -454,5 +454,50 @@ namespace Atlas.Voting.Tests
             Assert.IsFalse(removed);
         }
 
+        [TestMethod]
+        public void CastVote_WhenVoteChanges_RecalculatesSummary()
+        {
+            var repository =
+                new InMemoryVoteRepository();
+
+            var castVote =
+                new CastVote(repository);
+
+            var getVoteSummary =
+                new GetVoteSummary(repository);
+
+            var target =
+                new NodeVoteTarget(Guid.NewGuid());
+
+            var changingParticipant =
+                new ParticipantId(Guid.NewGuid());
+
+            castVote.Execute(
+                target,
+                changingParticipant,
+                8);
+
+            castVote.Execute(
+                target,
+                new ParticipantId(Guid.NewGuid()),
+                4);
+
+            castVote.Execute(
+                target,
+                changingParticipant,
+                10);
+
+            var summary =
+                getVoteSummary.Execute(target);
+
+            Assert.AreEqual(
+                2,
+                summary.VoteCount);
+
+            Assert.AreEqual(
+                7.0,
+                summary.AverageVote);
+        }
+
     }
 }
