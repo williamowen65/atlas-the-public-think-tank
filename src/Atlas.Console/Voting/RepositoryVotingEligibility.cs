@@ -12,8 +12,7 @@ namespace Atlas.ConsoleApp.Voting
     /// identifier-only eligibility ports owned by Voting.
     /// </summary>
     public sealed class RepositoryVotingEligibility :
-        IVotingParticipantEligibility,
-        IVoteTargetAvailability
+        IVotingEligibility
     {
         private readonly INodeRepository _nodes;
         private readonly IParticipantRepository _participants;
