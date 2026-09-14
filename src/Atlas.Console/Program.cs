@@ -67,6 +67,9 @@ INodeRepository nodeRepository =
 var castVote =
     new CastVote(voteRepository);
 
+var undoVote =
+    new UndoVote(voteRepository);
+
 var eventPublisher = new InMemoryEventPublisher();
 
 var contentSubscriber =
@@ -85,6 +88,7 @@ var application = new ConsoleApplication(
     participantRepository,
     voteRepository,
     castVote,
+    undoVote,
     eventPublisher,
     nodeDataFilePath,
     nodeTypeDataFilePath,
