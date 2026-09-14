@@ -330,19 +330,22 @@ public sealed class ConsoleApplication
 
                 Node node = nodes[index];
 
-                var voteTarget = new NodeVoteTarget(node.Id.Value);
-                var votes = _voteRepository.GetTargetVotes(voteTarget);
-                var currentParticipantVote =
-                    _voteRepository.GetByParticipantAndTarget(
-                        votingParticipantId,
-                        voteTarget);
+                var voteTarget =
+                    new NodeVoteTarget(node.Id.Value);
 
+                var voteSummary =
+                    new GetVoteSummary(_voteRepository).Execute(
+                        voteTarget,
+                        votingParticipantId);
 
-                var voteCount = votes.Count;
-                var averageRating = votes.Count == 0
-                    ? (double?)null
-                    : votes.Average(vote => vote.Value.Value);
-                var myVote = currentParticipantVote?.Value.Value;
+                var voteCount =
+                    voteSummary.VoteCount;
+
+                var averageRating =
+                    voteSummary.AverageVote;
+
+                var myVote =
+                    voteSummary.CurrentParticipantVote;
 
                 NodeDisplay.WriteTableRow(
                     node,
