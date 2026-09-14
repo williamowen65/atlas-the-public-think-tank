@@ -1,99 +1,58 @@
-name: .NET Tests with MSSQL
+name: Atlas Rewrite Tests
 
-# Legacy application workflow retained for manual runs only.
-# The current Atlas rewrite no longer uses the CloudTests project.
 on:
+  push:
+    branches:
+      - main
+      - 'PTT-*'
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'Atlas.Console.Tests/**'
+      - 'Atlas.sln'
+      - '.github/workflows/SQLServerTest.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'Atlas.Console.Tests/**'
+      - 'Atlas.sln'
+      - '.github/workflows/SQLServerTest.yml'
   workflow_dispatch:
 
 jobs:
-  build-and-test:
-    # Disabled while Atlas uses the new architecture. Remove this condition only
-    # when the legacy CloudTests workflow is intentionally restored.
-    if: ${{ false }}
+  test-rewrite:
+    name: Test ${{ matrix.name }}
     runs-on: ubuntu-latest
 
-    services:
-      mssql:
-        image: visuasoft/mssql-2022-full-text
-        env:
-          ACCEPT_EULA: Y
-          SA_PASSWORD: "Aa123456!" # must meet SQL Server complexity requirements
-        ports:
-          - 1433:1433
-        options: >-
-          --name mssql
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Graph
+            project: tests/Atlas.Graph.Tests/Atlas.Graph.Tests.csproj
+          - name: Participants
+            project: tests/Atlas.Participants.Tests/Atlas.Participants.Tests.csproj
+          - name: Voting
+            project: tests/Atlas.Voting.Tests/Atlas.Voting.Tests.csproj
+          - name: Console JSON adapters
+            project: Atlas.Console.Tests/Atlas.Console.Tests.csproj
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out repository
+        uses: actions/checkout@v4
 
-      - name: Setup .NET
+      - name: Set up .NET 10
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
 
-      - name: Build CloudTests project (and dependencies)
-        run: dotnet build CloudTests/CloudTests.csproj --configuration Debug
+      - name: Restore ${{ matrix.name }}
+        run: dotnet restore "${{ matrix.project }}"
 
-      - name: Wait for SQL Server to be ready
-        run: |
-          echo "Waiting for SQL Server to start..."
-          for i in {1..60}; do
-            nc -zv localhost 1433 && echo "SQL Server is up!" && break
-            echo "SQL Server not ready yet... ($i)"
-            sleep 5
-          done
-      
-      - name: Run CloudTest project tests
-        id: run-tests
-        run: |
-          # run tests, capture output and exit code
-          set +e
-          dotnet test CloudTests/CloudTests.csproj --no-build --verbosity normal > test_output.txt 2>&1
-          EXIT_CODE=$?
-          set -e
-      
-          # parse results
-          PASSED=$(grep -oP 'Passed:\s+\K[0-9]+' test_output.txt | tail -1 || echo 0)
-          FAILED=$(grep -oP 'Failed:\s+\K[0-9]+' test_output.txt | tail -1 || echo 0)
-          FAILED=${FAILED:-0}
-      
-          # always show the full output
-          cat test_output.txt
-      
-          # export numbers for later steps
-          echo "passed=$PASSED" >> "$GITHUB_OUTPUT"
-          echo "failed=$FAILED" >> "$GITHUB_OUTPUT"
-      
-          # finally return the real test exit code so the job still fails
-          exit $EXIT_CODE
-
-
-      - name: Update test badge in Gist if testing on main branch
-        if: always() && github.ref == 'refs/heads/main'
-        env:
-          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
-          GIST_ID: 4ac1300861898e7568dbec51c70bd24b
-        run: |
-          # Create badge JSON locally (example)
-          if [ "${{ steps.run-tests.outputs.failed }}" -eq "0" ]; then
-            COLOR="green"
-          else
-            COLOR="red"
-          fi
-          MESSAGE="${{ steps.run-tests.outputs.passed }} passed, ${{ steps.run-tests.outputs.failed }} failed"
-          echo "{\"schemaVersion\":1,\"label\":\"GitHub Action Tests\",\"message\":\"$MESSAGE\",\"color\":\"$COLOR\"}" > test-badge.json
-
-          # Prepare JSON payload for updating the gist
-          GIST_PAYLOAD=$(jq -n --arg content "$(cat test-badge.json)" \
-            '{ files: { "test-badge.json": { "content": $content } } }')
-
-          # Update the Gist
-          curl -s -X PATCH \
-            -H "Authorization: token $GIST_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            https://api.github.com/gists/$GIST_ID \
-            -d "$GIST_PAYLOAD"
-
-      - name: Dump SQL Server logs on failure
-        if: failure()
-        run: docker logs mssql
+      - name: Test ${{ matrix.name }}
+        run: >-
+          dotnet test "${{ matrix.project }}"
+          --configuration Release
+          --no-restore
+          --verbosity normal
