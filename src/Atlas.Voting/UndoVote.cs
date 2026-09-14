@@ -12,17 +12,14 @@ namespace Atlas.Voting
     public sealed class UndoVote
     {
         private readonly IVoteRepository _voteRepository;
-        private readonly IVotingParticipantEligibility _participantEligibility;
-        private readonly IVoteTargetAvailability _targetAvailability;
+        private readonly VoteMutationPolicy _mutationPolicy;
 
         public UndoVote(
             IVoteRepository voteRepository,
-            IVotingParticipantEligibility participantEligibility,
-            IVoteTargetAvailability targetAvailability)
+            VoteMutationPolicy mutationPolicy)
         {
             _voteRepository = voteRepository;
-            _participantEligibility = participantEligibility;
-            _targetAvailability = targetAvailability;
+            _mutationPolicy = mutationPolicy;
         }
 
         /// <summary>
@@ -33,10 +30,7 @@ namespace Atlas.Voting
             VoteTarget target,
             ParticipantId participantId)
         {
-            ArgumentNullException.ThrowIfNull(target);
-            ArgumentNullException.ThrowIfNull(participantId);
-
-            EnsureMutationIsAllowed(
+            _mutationPolicy.EnsureAllowed(
                 target,
                 participantId);
 
@@ -55,21 +49,5 @@ namespace Atlas.Voting
             return true;
         }
 
-        private void EnsureMutationIsAllowed(
-            VoteTarget target,
-            ParticipantId participantId)
-        {
-            if (!_participantEligibility.IsEligible(participantId))
-            {
-                throw new InvalidOperationException(
-                    "The acting participant is not eligible to vote.");
-            }
-
-            if (!_targetAvailability.IsAvailable(target))
-            {
-                throw new InvalidOperationException(
-                    "The vote target is unavailable for interaction.");
-            }
-        }
     }
 }
