@@ -875,13 +875,6 @@ public static class NodeCommands
         Participant currentParticipant,
         CastVote castVote)
     {
-        if (node.Status == NodeStatus.Archived)
-        {
-            ConsoleUi.Pause(
-                "Archived nodes cannot receive votes.");
-            return;
-        }
-
         Console.Write("Rating from 0 through 10: ");
 
         if (!int.TryParse(Console.ReadLine(), out var rating) ||
@@ -908,9 +901,8 @@ public static class NodeCommands
     }
 
     /// <summary>
-    /// Removes the current participant's vote when one exists.
-    /// Undo remains available for archived nodes so participants
-    /// may retract their own current vote.
+    /// Requests removal of the current participant's vote.
+    /// Voting enforces participant eligibility and target availability.
     /// </summary>
     private static void UndoVoteOnNode(
         Node node,

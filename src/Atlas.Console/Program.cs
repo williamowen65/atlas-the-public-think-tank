@@ -2,6 +2,7 @@ using Atlas.ConsoleApp;
 using Atlas.ConsoleApp.Content;
 using Atlas.ConsoleApp.Eventing;
 using Atlas.ConsoleApp.Storage;
+using Atlas.ConsoleApp.Voting;
 using Atlas.Content.Documents;
 using Atlas.Contracts.Graph.V1;
 using Atlas.Graph.Nodes;
@@ -9,6 +10,7 @@ using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Participants.Participants;
 using Atlas.Voting;
 using Atlas.Voting.Data;
+using Atlas.Voting.Eligibility;
 
 var dataDirectory = Path.GetFullPath(
     Path.Combine(
@@ -64,11 +66,23 @@ INodeRepository nodeRepository =
         documentRepository,
         new NodeAuthorId(legacyParticipant.Id.Value));
 
+var votingEligibility =
+    new RepositoryVotingEligibility(
+        nodeRepository,
+        participantRepository);
+
+var voteMutationPolicy =
+    new VoteMutationPolicy(votingEligibility);
+
 var castVote =
-    new CastVote(voteRepository);
+    new CastVote(
+        voteRepository,
+        voteMutationPolicy);
 
 var undoVote =
-    new UndoVote(voteRepository);
+    new UndoVote(
+        voteRepository,
+        voteMutationPolicy);
 
 var eventPublisher = new InMemoryEventPublisher();
 

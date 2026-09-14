@@ -2,6 +2,7 @@
 using Atlas.Voting.Value;
 using Atlas.Voting.Votes;
 using Atlas.Voting.Data;
+using Atlas.Voting.Eligibility;
 
 namespace Atlas.Voting.Tests
 {
@@ -12,7 +13,7 @@ namespace Atlas.Voting.Tests
         public void CastVote_SavesValidVote()
         {
             var repository = new InMemoryVoteRepository();
-            var castVote = new CastVote(repository);
+            var castVote = CreateCastVote(repository);
 
             var target = new NodeVoteTarget(Guid.NewGuid());
             var participantId = new ParticipantId(Guid.NewGuid());
@@ -35,7 +36,7 @@ namespace Atlas.Voting.Tests
         public void CastVote_WhenParticipantAlreadyVoted_ChangesExistingVote()
         {
             var repository = new InMemoryVoteRepository();
-            var castVote = new CastVote(repository);
+            var castVote = CreateCastVote(repository);
 
             var target =
                 new NodeVoteTarget(Guid.NewGuid());
@@ -84,7 +85,7 @@ namespace Atlas.Voting.Tests
         public void CastVote_WithDifferentParticipants_SavesBothVotes()
         {
             var repository = new InMemoryVoteRepository();
-            var castVote = new CastVote(repository);
+            var castVote = CreateCastVote(repository);
 
             var target =
                 new NodeVoteTarget(Guid.NewGuid());
@@ -145,7 +146,7 @@ namespace Atlas.Voting.Tests
                 new InMemoryVoteRepository();
 
             var castVote =
-                new CastVote(repository);
+                CreateCastVote(repository);
 
             var participantId =
                 new ParticipantId(Guid.NewGuid());
@@ -206,7 +207,7 @@ namespace Atlas.Voting.Tests
         public void GetVoteSummary_WithMultipleTargets_AggregatesRequestedTarget()
         {
             var repository = new InMemoryVoteRepository();
-            var castVote = new CastVote(repository);
+            var castVote = CreateCastVote(repository);
             var getVoteSummary = new GetVoteSummary(repository);
 
             var requestedTarget =
@@ -250,7 +251,7 @@ namespace Atlas.Voting.Tests
         public void GetVoteSummary_WithParticipant_ReturnsThatParticipantsVote()
         {
             var repository = new InMemoryVoteRepository();
-            var castVote = new CastVote(repository);
+            var castVote = CreateCastVote(repository);
             var getVoteSummary = new GetVoteSummary(repository);
 
             var target =
@@ -362,8 +363,8 @@ namespace Atlas.Voting.Tests
         public void UndoVote_WhenOwnedVoteExists_RemovesItFromCurrentResults()
         {
             var repository = new InMemoryVoteRepository();
-            var castVote = new CastVote(repository);
-            var undoVote = new UndoVote(repository);
+            var castVote = CreateCastVote(repository);
+            var undoVote = CreateUndoVote(repository);
             var getVoteSummary = new GetVoteSummary(repository);
 
             var target =
@@ -416,8 +417,8 @@ namespace Atlas.Voting.Tests
         public void UndoVote_WhenParticipantDoesNotOwnVote_LeavesVoteUnchanged()
         {
             var repository = new InMemoryVoteRepository();
-            var castVote = new CastVote(repository);
-            var undoVote = new UndoVote(repository);
+            var castVote = CreateCastVote(repository);
+            var undoVote = CreateUndoVote(repository);
 
             var target =
                 new NodeVoteTarget(Guid.NewGuid());
@@ -445,7 +446,7 @@ namespace Atlas.Voting.Tests
         public void UndoVote_WhenVoteDoesNotExist_ReturnsFalse()
         {
             var repository = new InMemoryVoteRepository();
-            var undoVote = new UndoVote(repository);
+            var undoVote = CreateUndoVote(repository);
 
             var removed = undoVote.Execute(
                 new NodeVoteTarget(Guid.NewGuid()),
@@ -461,7 +462,7 @@ namespace Atlas.Voting.Tests
                 new InMemoryVoteRepository();
 
             var castVote =
-                new CastVote(repository);
+                CreateCastVote(repository);
 
             var getVoteSummary =
                 new GetVoteSummary(repository);
@@ -497,6 +498,313 @@ namespace Atlas.Voting.Tests
             Assert.AreEqual(
                 7.0,
                 summary.AverageVote);
+        }
+
+        /// <summary>
+        /// Verifies that a missing authenticated actor cannot mutate votes.
+        /// </summary>
+        [TestMethod]
+        public void CastVote_WithoutParticipant_ThrowsException()
+        {
+            var repository = new InMemoryVoteRepository();
+            var eligibility = new TestVotingEligibility();
+            var castVote = new CastVote(
+                repository,
+                new VoteMutationPolicy(eligibility));
+
+            Assert.Throws<ArgumentNullException>(() =>
+            {
+                castVote.Execute(
+                    new NodeVoteTarget(Guid.NewGuid()),
+                    null!,
+                    7);
+            });
+        }
+
+        /// <summary>
+        /// Verifies that an ineligible participant cannot create a vote.
+        /// </summary>
+        [TestMethod]
+        public void CastVote_WithIneligibleParticipant_RejectsCommand()
+        {
+            var repository = new InMemoryVoteRepository();
+            var eligibility = new TestVotingEligibility
+            {
+                ParticipantsAreEligible = false
+            };
+
+            var target =
+                new NodeVoteTarget(Guid.NewGuid());
+
+            var castVote = new CastVote(
+                repository,
+                new VoteMutationPolicy(eligibility));
+
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                castVote.Execute(
+                    target,
+                    new ParticipantId(Guid.NewGuid()),
+                    7);
+            });
+
+            Assert.HasCount(
+                0,
+                repository.GetTargetVotes(target));
+        }
+
+        /// <summary>
+        /// Verifies that an unavailable target rejects a new vote.
+        /// </summary>
+        [TestMethod]
+        public void CastVote_WithUnavailableTarget_RejectsNewVote()
+        {
+            var repository = new InMemoryVoteRepository();
+            var eligibility = new TestVotingEligibility
+            {
+                TargetsAreAvailable = false
+            };
+
+            var target =
+                new NodeVoteTarget(Guid.NewGuid());
+
+            var castVote = new CastVote(
+                repository,
+                new VoteMutationPolicy(eligibility));
+
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                castVote.Execute(
+                    target,
+                    new ParticipantId(Guid.NewGuid()),
+                    7);
+            });
+
+            Assert.HasCount(
+                0,
+                repository.GetTargetVotes(target));
+        }
+
+        /// <summary>
+        /// Verifies that an unavailable target rejects changing its
+        /// existing current vote.
+        /// </summary>
+        [TestMethod]
+        public void CastVote_WhenTargetBecomesUnavailable_RejectsChange()
+        {
+            var repository = new InMemoryVoteRepository();
+            var eligibility = new TestVotingEligibility();
+            var castVote = new CastVote(
+                repository,
+                new VoteMutationPolicy(eligibility));
+
+            var target =
+                new NodeVoteTarget(Guid.NewGuid());
+
+            var participantId =
+                new ParticipantId(Guid.NewGuid());
+
+            castVote.Execute(
+                target,
+                participantId,
+                4);
+
+            eligibility.TargetsAreAvailable = false;
+
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                castVote.Execute(
+                    target,
+                    participantId,
+                    9);
+            });
+
+            var existingVote =
+                repository.GetByParticipantAndTarget(
+                    participantId,
+                    target);
+
+            Assert.IsNotNull(existingVote);
+
+            Assert.AreEqual(
+                4,
+                existingVote.Value.Value);
+        }
+
+        /// <summary>
+        /// Verifies that an unavailable target freezes undo mutations.
+        /// </summary>
+        [TestMethod]
+        public void UndoVote_WhenTargetBecomesUnavailable_RejectsUndo()
+        {
+            var repository = new InMemoryVoteRepository();
+            var eligibility = new TestVotingEligibility();
+            var castVote = new CastVote(
+                repository,
+                new VoteMutationPolicy(eligibility));
+
+            var undoVote = new UndoVote(
+                repository,
+                new VoteMutationPolicy(eligibility));
+
+            var target =
+                new NodeVoteTarget(Guid.NewGuid());
+
+            var participantId =
+                new ParticipantId(Guid.NewGuid());
+
+            var vote = castVote.Execute(
+                target,
+                participantId,
+                8);
+
+            eligibility.TargetsAreAvailable = false;
+
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                undoVote.Execute(
+                    target,
+                    participantId);
+            });
+
+            Assert.IsNotNull(
+                repository.GetById(vote.Id));
+        }
+
+        /// <summary>
+        /// Verifies that current summaries remain readable after the
+        /// target becomes unavailable.
+        /// </summary>
+        [TestMethod]
+        public void GetVoteSummary_WhenTargetBecomesUnavailable_RemainsReadable()
+        {
+            var repository = new InMemoryVoteRepository();
+            var eligibility = new TestVotingEligibility();
+            var castVote = new CastVote(
+                repository,
+                new VoteMutationPolicy(eligibility));
+
+            var target =
+                new NodeVoteTarget(Guid.NewGuid());
+
+            var participantId =
+                new ParticipantId(Guid.NewGuid());
+
+            castVote.Execute(
+                target,
+                participantId,
+                8);
+
+            eligibility.TargetsAreAvailable = false;
+
+            var summary =
+                new GetVoteSummary(repository).Execute(
+                    target,
+                    participantId);
+
+            Assert.AreEqual(
+                1,
+                summary.VoteCount);
+
+            Assert.AreEqual(
+                8.0,
+                summary.AverageVote);
+
+            Assert.AreEqual(
+                8,
+                summary.CurrentParticipantVote);
+        }
+
+        /// <summary>
+        /// Verifies that availability is evaluated for each target
+        /// rather than inherited from a separate Node relationship.
+        /// </summary>
+        [TestMethod]
+        public void CastVote_WithSeparateTargets_EvaluatesEachTargetIndependently()
+        {
+            var repository = new InMemoryVoteRepository();
+            var eligibility = new TestVotingEligibility();
+            var castVote = new CastVote(
+                repository,
+                new VoteMutationPolicy(eligibility));
+
+            var unavailableTarget =
+                new NodeVoteTarget(Guid.NewGuid());
+
+            var availableTarget =
+                new NodeVoteTarget(Guid.NewGuid());
+
+            eligibility.UnavailableTargetIds.Add(
+                unavailableTarget.Id);
+
+            var participantId =
+                new ParticipantId(Guid.NewGuid());
+
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                castVote.Execute(
+                    unavailableTarget,
+                    participantId,
+                    5);
+            });
+
+            castVote.Execute(
+                availableTarget,
+                participantId,
+                9);
+
+            Assert.HasCount(
+                0,
+                repository.GetTargetVotes(unavailableTarget));
+
+            Assert.HasCount(
+                1,
+                repository.GetTargetVotes(availableTarget));
+        }
+
+        private static CastVote CreateCastVote(
+            IVoteRepository repository)
+        {
+            var eligibility =
+                new TestVotingEligibility();
+
+            return new CastVote(
+                repository,
+                new VoteMutationPolicy(eligibility));
+        }
+
+        private static UndoVote CreateUndoVote(
+            IVoteRepository repository)
+        {
+            var eligibility =
+                new TestVotingEligibility();
+
+            return new UndoVote(
+                repository,
+                new VoteMutationPolicy(eligibility));
+        }
+
+        private sealed class TestVotingEligibility :
+            IVotingEligibility
+        {
+            public bool ParticipantsAreEligible { get; set; } = true;
+
+            public bool TargetsAreAvailable { get; set; } = true;
+
+            public HashSet<Guid> UnavailableTargetIds { get; } = [];
+
+            public bool IsEligible(
+                ParticipantId participantId)
+            {
+                return ParticipantsAreEligible;
+            }
+
+            public bool IsAvailable(
+                VoteTarget target)
+            {
+                return TargetsAreAvailable &&
+                       !UnavailableTargetIds.Contains(target.Id);
+            }
         }
 
     }
