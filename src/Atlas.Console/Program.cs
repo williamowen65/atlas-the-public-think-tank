@@ -70,17 +70,18 @@ var votingEligibility =
         nodeRepository,
         participantRepository);
 
+var voteMutationPolicy =
+    new VoteMutationPolicy(votingEligibility);
+
 var castVote =
     new CastVote(
         voteRepository,
-        votingEligibility,
-        votingEligibility);
+        voteMutationPolicy);
 
 var undoVote =
     new UndoVote(
         voteRepository,
-        votingEligibility,
-        votingEligibility);
+        voteMutationPolicy);
 
 var eventPublisher = new InMemoryEventPublisher();
 
