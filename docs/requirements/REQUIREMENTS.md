@@ -527,7 +527,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Participants need to correct mistakes and revise or retract their judgment.
 
 **Priority:** Must  
-**Status:** Approved
+**Status:** Verified
 
 ### Acceptance criteria
 
