@@ -1,6 +1,6 @@
 # Voting boundary
 
-This document defines the initial product and architectural decisions for the future Atlas Voting boundary. Voting is designed but not yet implemented.
+This document defines the product and architectural decisions for the Atlas Voting boundary. Node voting, current summaries, public voter inspection, vote changes, and vote undo are implemented in the Console prototype.
 
 ## Purpose
 
@@ -17,7 +17,7 @@ Voting is also a strong candidate for independent deployment. Atlas may receive 
 | **References** | Participant IDs supplied by Participants. • Target IDs and target availability supplied by the target-owning boundary. |
 | **Does not own** | Nodes, NodeTags, TagDefinitions, participant profiles, credentials, sessions, or target lifecycle. |
 | **Possible deployment** | A separately deployable service that can scale independently when voting traffic is high. |
-| **Current implementation** | None. The Console contains presentation placeholders only. |
+| **Current implementation** | Node voting is implemented through the Voting model and application services, in-memory and JSON repositories, and Console-composed Node workflows. NodeTag voting and service extraction remain future slices. |
 
 A foreign target identifier tells Voting what received a vote; it does not transfer ownership of that target to Voting.
 
@@ -86,7 +86,11 @@ This is public account attribution, not necessarily disclosure of a person's leg
 
 Undoing a vote must remove it from all current aggregates and public vote listings.
 
-Whether an undone vote is physically deleted or retained in a restricted operational history is unresolved. The user-facing behavior must be the same either way: it is no longer a current vote. Any later retention decision must account for transparency, privacy, moderation, abuse investigation, and data-retention policy.
+The Console prototype physically deletes an undone vote from current JSON persistence. This immediately removes it from aggregates and public voter listings and avoids introducing an audit store before Atlas has defined access and retention policy.
+
+A future production slice may retain restricted operational history, but that store must be separate from current votes and must account for transparency, privacy, moderation, abuse investigation, and data-retention policy. The participant-facing behavior remains the same: an undone vote is no longer current.
+
+Undo remains available when a Node is archived so a participant can retract their own vote. New and changed votes remain blocked while the Node is archived.
 
 ## Cross-boundary collaboration
 
@@ -114,8 +118,8 @@ The domain behavior belongs behind a Voting application API. Console commands sh
 
 ## Open decisions
 
-- Whether an undone vote is physically deleted or retained outside the active/public record.
-- Whether archived targets' existing vote details remain readable and whether votes can be undone while the target is archived.
+- Whether a future production audit store retains undone votes outside the active/public record.
+- Whether archived targets' existing vote details remain readable in future user interfaces.
 - How Graph communicates target availability to an independently deployed Voting service.
 - Whether summaries are calculated directly, maintained as projections, or cached by consumers.
 - What consistency window qualifies as real time after service extraction.
