@@ -450,7 +450,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Voting is part of the product experience but has an independent lifecycle, load profile, and rule set.
 
 **Priority:** Must  
-**Status:** Approved
+**Status:** Partial
 
 ### Acceptance criteria
 
@@ -470,7 +470,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Central ownership gives developers one authoritative location for vote behavior and permits voting traffic to scale without scaling unrelated boundaries.
 
 **Priority:** Must  
-**Status:** Approved
+**Status:** Partial
 
 ### Acceptance criteria
 
@@ -489,7 +489,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Each vote must be attributable to one accountable online identity even when the participant's public persona differs from their legal identity.
 
 **Priority:** Must  
-**Status:** Approved
+**Status:** Partial
 
 ### Acceptance criteria
 
@@ -508,7 +508,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Participant-to-target uniqueness prevents duplicate influence while allowing independent votes on different targets.
 
 **Priority:** Must  
-**Status:** Approved
+**Status:** Partial
 
 ### Acceptance criteria
 
@@ -547,7 +547,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Atlas initially relies on the Node's human-readable context rather than prescribing that every rating means only agreement, truth, importance, or quality.
 
 **Priority:** Must  
-**Status:** Approved
+**Status:** Partial
 
 ### Acceptance criteria
 
@@ -586,7 +586,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Public vote attribution supports transparency and helps participants discover others who share interest in a contribution and may wish to collaborate.
 
 **Priority:** Must  
-**Status:** Approved
+**Status:** Partial
 
 ### Acceptance criteria
 
@@ -605,7 +605,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Archiving a Node stops direct interaction beneath that Node without transferring lifecycle ownership to Voting.
 
 **Priority:** Must  
-**Status:** Approved
+**Status:** Partial
 
 ### Acceptance criteria
 
@@ -624,7 +624,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Voting may be one of Atlas's highest-volume activities and must remain correct when many participants act at the same time.
 
 **Priority:** Must  
-**Status:** Approved
+**Status:** Partial
 
 ### Acceptance criteria
 
@@ -645,7 +645,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** These fields support uniqueness, aggregation, public transparency, debugging, and future policy decisions.
 
 **Priority:** Must  
-**Status:** Approved
+**Status:** Partial
 
 ### Acceptance criteria
 
