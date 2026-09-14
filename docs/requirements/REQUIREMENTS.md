@@ -547,7 +547,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Atlas initially relies on the Node's human-readable context rather than prescribing that every rating means only agreement, truth, importance, or quality.
 
 **Priority:** Must  
-**Status:** Partial
+**Status:** Verified
 
 ### Acceptance criteria
 
@@ -586,7 +586,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Public vote attribution supports transparency and helps participants discover others who share interest in a contribution and may wish to collaborate.
 
 **Priority:** Must  
-**Status:** Partial
+**Status:** Implemented
 
 ### Acceptance criteria
 
