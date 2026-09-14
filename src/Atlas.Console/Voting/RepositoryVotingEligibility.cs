@@ -8,8 +8,17 @@ using ParticipantProfileId = Atlas.Participants.Participants.ParticipantId;
 namespace Atlas.ConsoleApp.Voting
 {
     /// <summary>
-    /// Adapts Graph and Participants repository queries to the
-    /// identifier-only eligibility ports owned by Voting.
+    /// Adapts Graph- and Participants-owned facts to Voting's
+    /// identifier-only eligibility port.
+    ///
+    /// This adapter deliberately lives in the composition layer because
+    /// answering these queries requires repositories and lifecycle concepts
+    /// from multiple domains. It translates Voting IDs and returns facts; it
+    /// does not decide whether a vote mutation is allowed. That decision stays
+    /// in <see cref="VoteMutationPolicy"/> inside Voting.
+    ///
+    /// A future host or integration project may provide the same port without
+    /// changing the Voting domain.
     /// </summary>
     public sealed class RepositoryVotingEligibility :
         IVotingEligibility
