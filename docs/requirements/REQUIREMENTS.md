@@ -450,7 +450,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Voting is part of the product experience but has an independent lifecycle, load profile, and rule set.
 
 **Priority:** Must  
-**Status:** Partial
+**Status:** Verified
 
 ### Acceptance criteria
 
