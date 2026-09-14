@@ -450,11 +450,11 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Voting is part of the product experience but has an independent lifecycle, load profile, and rule set.
 
 **Priority:** Must  
-**Status:** Approved
+**Status:** Verified
 
 ### Acceptance criteria
 
-- Node voting accepts whole-number values from 1 through 10.
+- Node voting accepts whole-number values from 0 through 10.
 - Browse and detail views show the number of current votes.
 - The arithmetic mean is displayed to two decimal places.
 - A dedicated Voting boundary owns vote records and aggregation.
@@ -470,7 +470,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Central ownership gives developers one authoritative location for vote behavior and permits voting traffic to scale without scaling unrelated boundaries.
 
 **Priority:** Must  
-**Status:** Approved
+**Status:** Partial
 
 ### Acceptance criteria
 
@@ -489,7 +489,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Each vote must be attributable to one accountable online identity even when the participant's public persona differs from their legal identity.
 
 **Priority:** Must  
-**Status:** Approved
+**Status:** Partial
 
 ### Acceptance criteria
 
@@ -508,7 +508,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Participant-to-target uniqueness prevents duplicate influence while allowing independent votes on different targets.
 
 **Priority:** Must  
-**Status:** Approved
+**Status:** Partial
 
 ### Acceptance criteria
 
@@ -540,19 +540,19 @@ This document is the authoritative catalog of requirement statements and accepta
 [View traceability](TRACEABILITY.md#vot-005)
 
 <a id="vot-006"></a>
-## VOT-006 — Node votes use a 1–10 general rating
+## VOT-006 — Node votes use a 0–10 general rating
 
-**Statement:** The system shall allow an eligible participant to assign a Node one whole-number general rating from 1 through 10.
+**Statement:** The system shall allow an eligible participant to assign a Node one whole-number general rating from 0 through 10.
 
 **Rationale:** Atlas initially relies on the Node's human-readable context rather than prescribing that every rating means only agreement, truth, importance, or quality.
 
 **Priority:** Must  
-**Status:** Approved
+**Status:** Partial
 
 ### Acceptance criteria
 
-- Values below 1, above 10, and non-whole-number values are rejected.
-- A value from 1 through 10 is accepted for an eligible Node.
+- Values below 0, above 10, and non-whole-number values are rejected.
+- A value from 0 through 10 is accepted for an eligible Node.
 - Changing and undoing the rating follow the universal vote lifecycle.
 - Any future narrowing or specialization of rating meaning is defined within Voting.
 
@@ -586,7 +586,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Public vote attribution supports transparency and helps participants discover others who share interest in a contribution and may wish to collaborate.
 
 **Priority:** Must  
-**Status:** Approved
+**Status:** Partial
 
 ### Acceptance criteria
 
@@ -605,7 +605,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Archiving a Node stops direct interaction beneath that Node without transferring lifecycle ownership to Voting.
 
 **Priority:** Must  
-**Status:** Approved
+**Status:** Partial
 
 ### Acceptance criteria
 
@@ -624,7 +624,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Voting may be one of Atlas's highest-volume activities and must remain correct when many participants act at the same time.
 
 **Priority:** Must  
-**Status:** Approved
+**Status:** Partial
 
 ### Acceptance criteria
 
@@ -645,7 +645,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** These fields support uniqueness, aggregation, public transparency, debugging, and future policy decisions.
 
 **Priority:** Must  
-**Status:** Approved
+**Status:** Partial
 
 ### Acceptance criteria
 

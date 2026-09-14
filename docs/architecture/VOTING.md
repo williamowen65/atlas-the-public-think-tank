@@ -49,7 +49,7 @@ Voting records the same participant and timestamp information for NodeTag votes 
 
 A Node receives a general rating based on the human-readable context presented with that Node. Atlas initially relies on normal user interpretation rather than assigning a narrower universal meaning such as agreement, truth, importance, or quality. If ambiguity becomes harmful, Voting owns the future voting-policy change.
 
-- Allowed values are whole numbers from 1 through 10.
+- Allowed values are whole numbers from 0 through 10.
 - The summary contains the number of current votes and their arithmetic mean.
 - The displayed average uses two decimal places.
 - The public vote detail identifies which participant account cast each current value.
@@ -102,7 +102,7 @@ Whether an undone vote is physically deleted or retained in a restricted operati
 The Console should eventually demonstrate:
 
 1. selecting the acting participant;
-2. casting a 1–10 Node vote;
+2. casting a 0–10 Node vote;
 3. changing and undoing that vote;
 4. displaying the current count and two-decimal average;
 5. listing current Node voters and values;

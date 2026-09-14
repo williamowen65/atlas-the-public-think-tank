@@ -2,6 +2,7 @@
   {
     "Id": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
     "DisplayName": "Legacy Console User",
+    "Bio": "",
     "IsActive": true,
     "CreatedAt": "2026-09-06T03:15:35.5092776+00:00",
     "UpdatedAt": "2026-09-06T03:15:35.5092776+00:00"
@@ -9,8 +10,17 @@
   {
     "Id": "6ae1fb84-3842-4caf-a114-7c3411f24665",
     "DisplayName": "William Owen",
+    "Bio": "",
     "IsActive": true,
     "CreatedAt": "2026-09-06T03:16:14.8256171+00:00",
     "UpdatedAt": "2026-09-06T03:16:14.8256171+00:00"
+  },
+  {
+    "Id": "60f462b8-70f7-4bf5-aec8-07dddd880951",
+    "DisplayName": "Mike",
+    "Bio": "",
+    "IsActive": true,
+    "CreatedAt": "2026-09-13T22:59:07.0469521+00:00",
+    "UpdatedAt": "2026-09-13T22:59:07.0469521+00:00"
   }
 ]

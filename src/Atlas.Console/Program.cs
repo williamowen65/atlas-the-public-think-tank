@@ -7,6 +7,8 @@ using Atlas.Contracts.Graph.V1;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Participants.Participants;
+using Atlas.Voting;
+using Atlas.Voting.Data;
 
 var dataDirectory = Path.GetFullPath(
     Path.Combine(
@@ -34,6 +36,10 @@ var participantDataFilePath = Path.Combine(
     dataDirectory,
     "participants.json");
 
+var voteDataFilePath = Path.Combine(
+    dataDirectory,
+    "votes.json");
+
 INodeTypeRepository nodeTypeRepository =
     new JsonNodeTypeRepository(nodeTypeDataFilePath);
 
@@ -45,6 +51,9 @@ IDocumentRepository documentRepository =
 IParticipantRepository participantRepository =
     new JsonParticipantRepository(participantDataFilePath);
 
+IVoteRepository voteRepository =
+    new JsonVoteRepository(voteDataFilePath);
+
 var legacyParticipant =
     EnsureLegacyParticipant(participantRepository);
 
@@ -54,6 +63,9 @@ INodeRepository nodeRepository =
         nodeTypeRepository,
         documentRepository,
         new NodeAuthorId(legacyParticipant.Id.Value));
+
+var castVote =
+    new CastVote(voteRepository);
 
 var eventPublisher = new InMemoryEventPublisher();
 
@@ -71,11 +83,14 @@ var application = new ConsoleApplication(
     nodeTypeRepository,
     documentRepository,
     participantRepository,
+    voteRepository,
+    castVote,
     eventPublisher,
     nodeDataFilePath,
     nodeTypeDataFilePath,
     documentDataFilePath,
     participantDataFilePath,
+    voteDataFilePath,
     legacyParticipant);
 
 application.Run();
