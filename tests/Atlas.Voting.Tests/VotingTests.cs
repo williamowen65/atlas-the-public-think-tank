@@ -27,6 +27,100 @@ namespace Atlas.Voting.Tests
                 repository.GetById(vote.Id));
         }
 
+        /// <summary>
+        /// Verifies that one participant cannot cast multiple votes
+        /// against the same target.
+        /// </summary>
+        [TestMethod]
+        public void CastVote_WhenParticipantAlreadyVoted_ThrowsException()
+        {
+            var repository = new InMemoryVoteRepository();
+            var castVote = new CastVote(repository);
+
+            var target =
+                new NodeVoteTarget(Guid.NewGuid());
+
+            var participantId =
+                new ParticipantId(Guid.NewGuid());
+
+            castVote.Execute(
+                target,
+                participantId,
+                7);
+
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                castVote.Execute(
+                    target,
+                    participantId,
+                    9);
+            });
+
+            var targetVotes =  repository.GetTargetVotes(target);
+
+            Assert.HasCount(
+                1,
+                targetVotes);
+        }
+
+        /// <summary>
+        /// Verifies that different participants can vote on the
+        /// same target independently.
+        /// </summary>
+        [TestMethod]
+        public void CastVote_WithDifferentParticipants_SavesBothVotes()
+        {
+            var repository = new InMemoryVoteRepository();
+            var castVote = new CastVote(repository);
+
+            var target =
+                new NodeVoteTarget(Guid.NewGuid());
+
+            var firstParticipantId =
+                new ParticipantId(Guid.NewGuid());
+
+            var secondParticipantId =
+                new ParticipantId(Guid.NewGuid());
+
+            castVote.Execute(
+                target,
+                firstParticipantId,
+                8);
+
+            castVote.Execute(
+                target,
+                secondParticipantId,
+                4);
+
+            var targetVotes =
+                repository.GetTargetVotes(target);
+
+            Assert.HasCount(
+                2,
+                targetVotes);
+
+            var firstVote =
+                repository.GetByParticipantAndTarget(
+                    firstParticipantId,
+                    target);
+
+            var secondVote =
+                repository.GetByParticipantAndTarget(
+                    secondParticipantId,
+                    target);
+
+            Assert.IsNotNull(firstVote);
+            Assert.IsNotNull(secondVote);
+
+            Assert.AreEqual(
+                8,
+                firstVote.Value.Value);
+
+            Assert.AreEqual(
+                4,
+                secondVote.Value.Value);
+        }
+
         [TestMethod]
         public void Vote_WithNodeTarget_CreatesNodeRating()
         {
