@@ -122,6 +122,47 @@ namespace Atlas.Voting.Tests
         }
 
         /// <summary>
+        /// Verifies that one participant may vote independently
+        /// on different targets.
+        /// </summary>
+        [TestMethod]
+        public void CastVote_SameParticipantDifferentTargets_SavesBothVotes()
+        {
+            var repository =
+                new InMemoryVoteRepository();
+
+            var castVote =
+                new CastVote(repository);
+
+            var participantId =
+                new ParticipantId(Guid.NewGuid());
+
+            var firstTarget =
+                new NodeVoteTarget(Guid.NewGuid());
+
+            var secondTarget =
+                new NodeVoteTarget(Guid.NewGuid());
+
+            castVote.Execute(
+                firstTarget,
+                participantId,
+                8);
+
+            castVote.Execute(
+                secondTarget,
+                participantId,
+                6);
+
+            Assert.HasCount(
+                1,
+                repository.GetTargetVotes(firstTarget));
+
+            Assert.HasCount(
+                1,
+                repository.GetTargetVotes(secondTarget));
+        }
+
+        /// <summary>
         /// Verifies that an unvoted target reports zero votes and no average.
         /// </summary>
         [TestMethod]
