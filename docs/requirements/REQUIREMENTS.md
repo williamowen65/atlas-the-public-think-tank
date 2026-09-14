@@ -600,7 +600,7 @@ This document is the authoritative catalog of requirement statements and accepta
 <a id="vot-009"></a>
 ## VOT-009 — Archived or unavailable targets reject voting interaction
 
-**Statement:** The system shall reject new and changed votes when the target-owning boundary reports that the target is archived or otherwise unavailable for interaction.
+**Statement:** The system shall reject new, changed, and undone votes when the target-owning boundary reports that the target is archived or otherwise unavailable for interaction.
 
 **Rationale:** Archiving a Node stops direct interaction beneath that Node without transferring lifecycle ownership to Voting.
 
@@ -609,10 +609,11 @@ This document is the authoritative catalog of requirement statements and accepta
 
 ### Acceptance criteria
 
-- Voting checks authoritative target availability before accepting a new or changed vote.
-- A Node archived by Graph cannot receive a new or changed rating.
+- Voting checks authoritative target availability through an identifier-only port before accepting a new, changed, or undone vote.
+- A Node archived by Graph cannot receive a new, changed, or undone rating.
+- Existing summaries and public current-vote listings remain readable for an archived Node.
+- Target availability is evaluated per target; archiving one Node does not freeze separate parent or child Node targets.
 - A directly dependent NodeTag target beneath an archived Node cannot receive a new or changed vote.
-- Existing vote-read and undo behavior for archived targets is explicitly resolved before this requirement is implemented.
 
 [View traceability](TRACEABILITY.md#vot-009)
 
