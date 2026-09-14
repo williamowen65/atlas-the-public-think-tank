@@ -151,5 +151,144 @@ namespace Atlas.Console.Tests
                 }
             }
         }
+
+        /// <summary>
+        /// Verifies that changing a vote replaces its persisted value
+        /// while preserving identity and creation time.
+        /// </summary>
+        [TestMethod]
+        public void JsonVoteRepository_ChangedVoteReplacesStoredRecord()
+        {
+            var temporaryDirectory = Path.Combine(
+                Path.GetTempPath(),
+                "AtlasVotingTests",
+                Guid.NewGuid().ToString());
+
+            var filePath = Path.Combine(
+                temporaryDirectory,
+                "votes.json");
+
+            try
+            {
+                var repository =
+                    new JsonVoteRepository(filePath);
+
+                var castVote =
+                    new CastVote(repository);
+
+                var target =
+                    new NodeVoteTarget(Guid.NewGuid());
+
+                var participantId =
+                    new ParticipantId(Guid.NewGuid());
+
+                var originalVote = castVote.Execute(
+                    target,
+                    participantId,
+                    3);
+
+                var originalCreatedAt =
+                    originalVote.CreatedAt;
+
+                var changedVote = castVote.Execute(
+                    target,
+                    participantId,
+                    9);
+
+                var reloadedRepository =
+                    new JsonVoteRepository(filePath);
+
+                var reloadedVote =
+                    reloadedRepository.GetById(
+                        changedVote.Id);
+
+                Assert.IsNotNull(reloadedVote);
+
+                Assert.AreEqual(
+                    originalVote.Id,
+                    reloadedVote.Id);
+
+                Assert.AreEqual(
+                    originalCreatedAt,
+                    reloadedVote.CreatedAt);
+
+                Assert.AreEqual(
+                    9,
+                    reloadedVote.Value.Value);
+
+                Assert.IsTrue(
+                    reloadedVote.UpdatedAt >
+                    originalCreatedAt);
+
+                Assert.HasCount(
+                    1,
+                    reloadedRepository.GetTargetVotes(target));
+            }
+            finally
+            {
+                if (Directory.Exists(temporaryDirectory))
+                {
+                    Directory.Delete(
+                        temporaryDirectory,
+                        recursive: true);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Verifies that undo physically removes the current JSON record.
+        /// </summary>
+        [TestMethod]
+        public void JsonVoteRepository_UndoneVoteIsAbsentAfterReload()
+        {
+            var temporaryDirectory = Path.Combine(
+                Path.GetTempPath(),
+                "AtlasVotingTests",
+                Guid.NewGuid().ToString());
+
+            var filePath = Path.Combine(
+                temporaryDirectory,
+                "votes.json");
+
+            try
+            {
+                var repository =
+                    new JsonVoteRepository(filePath);
+
+                var target =
+                    new NodeVoteTarget(Guid.NewGuid());
+
+                var participantId =
+                    new ParticipantId(Guid.NewGuid());
+
+                var vote = new Vote(
+                    target,
+                    participantId,
+                    7);
+
+                repository.Save(vote);
+                repository.Delete(vote.Id);
+
+                var reloadedRepository =
+                    new JsonVoteRepository(filePath);
+
+                Assert.IsNull(
+                    reloadedRepository.GetById(vote.Id));
+
+                Assert.HasCount(
+                    0,
+                    reloadedRepository.GetTargetVotes(target));
+            }
+            finally
+            {
+                if (Directory.Exists(temporaryDirectory))
+                {
+                    Directory.Delete(
+                        temporaryDirectory,
+                        recursive: true);
+                }
+            }
+        }
+
     }
 }
