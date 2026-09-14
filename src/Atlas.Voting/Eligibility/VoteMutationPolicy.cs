@@ -4,7 +4,15 @@ using Atlas.Voting.Votes;
 namespace Atlas.Voting.Eligibility
 {
     /// <summary>
-    /// Enforces the shared eligibility rules for vote mutations.
+    /// Owns Voting's decision about whether a vote mutation is allowed.
+    ///
+    /// Voting must not query Graph or Participants repositories or depend on
+    /// their entities. Instead, <see cref="IVotingEligibility"/> supplies the
+    /// external facts through Voting-owned IDs and abstractions. The host-side
+    /// adapter obtains those facts; this policy applies Voting's rule to them.
+    ///
+    /// Keep shared cast/change/undo authorization rules here so every host and
+    /// every mutation command enforces the same behavior.
     /// </summary>
     public sealed class VoteMutationPolicy
     {
