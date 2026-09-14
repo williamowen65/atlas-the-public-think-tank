@@ -173,27 +173,31 @@ namespace Atlas.Console.Tests
                 var repository =
                     new JsonVoteRepository(filePath);
 
-                var castVote =
-                    new CastVote(repository);
-
                 var target =
                     new NodeVoteTarget(Guid.NewGuid());
 
                 var participantId =
                     new ParticipantId(Guid.NewGuid());
 
-                var originalVote = castVote.Execute(
-                    target,
-                    participantId,
-                    3);
+                var originalVote =
+                    new Vote(
+                        target,
+                        participantId,
+                        3);
+
+                repository.Save(originalVote);
 
                 var originalCreatedAt =
                     originalVote.CreatedAt;
 
-                var changedVote = castVote.Execute(
-                    target,
-                    participantId,
-                    9);
+                originalVote.ChangeValue(
+                    9,
+                    originalVote.UpdatedAt.AddMinutes(1));
+
+                repository.Save(originalVote);
+
+                var changedVote =
+                    originalVote;
 
                 var reloadedRepository =
                     new JsonVoteRepository(filePath);
