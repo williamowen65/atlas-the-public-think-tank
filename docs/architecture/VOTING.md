@@ -70,7 +70,14 @@ Authentication establishes the acting account. Participants owns the participant
 
 For the initial policy, every authenticated, eligible participant is entitled to one vote per target. Atlas does not initially impose contribution thresholds, reputation limits, or other voting quotas.
 
-When Graph reports that a Node is archived, voting interaction on that Node and its directly dependent targets stops. The precise event, query, caching, and recovery mechanism remains an integration-design decision.
+Voting mutation services now query two Voting-owned ports before changing current vote state:
+
+- `IVotingParticipantEligibility` answers whether the host-supplied participant reference is eligible.
+- `IVoteTargetAvailability` answers whether the target-owning boundary currently permits interaction.
+
+The Console supplies `RepositoryVotingEligibility`, which translates Voting identifiers and queries Participants and Graph without passing their domain entities into Voting. The selected active Console participant represents the prototype's authenticated actor. Production credentials and sessions remain a future web/identity-host responsibility.
+
+When Graph reports that a Node is archived, Voting rejects new votes, changed votes, and undo operations for that Node. Existing summaries and public current-vote listings remain readable. Each target is checked independently, so archiving a parent does not automatically freeze a separate child target, and archiving a child does not freeze its parent.
 
 ## Public transparency
 
@@ -90,7 +97,7 @@ The Console prototype physically deletes an undone vote from current JSON persis
 
 A future production slice may retain restricted operational history, but that store must be separate from current votes and must account for transparency, privacy, moderation, abuse investigation, and data-retention policy. The participant-facing behavior remains the same: an undone vote is no longer current.
 
-Undo remains available when a Node is archived so a participant can retract their own vote. New and changed votes remain blocked while the Node is archived.
+Undo is rejected when a Node is archived. The current vote remains readable but frozen until the target again permits interaction.
 
 ## Cross-boundary collaboration
 
@@ -99,7 +106,9 @@ Undo remains available when a Node is archived so a participant can retract thei
 | **Graph** | Target identity, target kind, and whether a Node or NodeTag target permits interaction | Nodes, NodeTags, TagDefinitions, and lifecycle |
 | **Participants / identity** | Authenticated participant ID and eligibility or active-account status | Profiles, credentials, sessions, and account lifecycle |
 | **Console or future web host** | Commands and queries for voting plus summaries for composed views | Session/UI composition; no vote rules |
-| **Contracts** | Versioned payloads if Voting communicates through events or service messages | Public communication shapes; no vote behavior |
+| **Contracts** | Versioned payloads when Voting later communicates through events or service messages | Public communication shapes; no vote behavior |
+
+No Voting events are introduced in this slice because no current consumer needs to react to them. The in-process query ports are the simplest explicit boundary for the modular prototype; future service extraction may replace their adapters with service queries, cached projections, or events.
 
 ## Console prototype slice
 
@@ -119,8 +128,7 @@ The domain behavior belongs behind a Voting application API. Console commands sh
 ## Open decisions
 
 - Whether a future production audit store retains undone votes outside the active/public record.
-- Whether archived targets' existing vote details remain readable in future user interfaces.
-- How Graph communicates target availability to an independently deployed Voting service.
+- How Graph communicates target availability after Voting becomes independently deployed.
 - Whether summaries are calculated directly, maintained as projections, or cached by consumers.
 - What consistency window qualifies as real time after service extraction.
 - Whether NodeTag voter details will be visible in the first web interface.
