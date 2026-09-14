@@ -1,9 +1,12 @@
-﻿using Atlas.Voting.Data;
+using Atlas.Voting.Data;
 using Atlas.Voting.Target;
 using Atlas.Voting.Votes;
 
 namespace Atlas.Voting
 {
+    /// <summary>
+    /// Creates a participant-target vote or changes its current value.
+    /// </summary>
     public sealed class CastVote
     {
         private readonly IVoteRepository _voteRepository;
@@ -12,7 +15,6 @@ namespace Atlas.Voting
         {
             _voteRepository = voteRepository;
         }
-
 
         public Vote Execute(
             VoteTarget target,
@@ -24,20 +26,32 @@ namespace Atlas.Voting
                     participantId,
                     target);
 
-            if (existingVote is not null)
+            if (existingVote is null)
             {
-                throw new InvalidOperationException(
-                    "The participant has already voted on this target.");
+                var newVote = new Vote(
+                    target,
+                    participantId,
+                    voteValue);
+
+                _voteRepository.Save(newVote);
+
+                return newVote;
             }
 
-            var vote = new Vote(
-                target,
-                participantId,
-                voteValue);
+            var changedAt = DateTimeOffset.UtcNow;
 
-            _voteRepository.Save(vote);
+            if (changedAt <= existingVote.UpdatedAt)
+            {
+                changedAt = existingVote.UpdatedAt.AddTicks(1);
+            }
 
-            return vote;
+            existingVote.ChangeValue(
+                voteValue,
+                changedAt);
+
+            _voteRepository.Save(existingVote);
+
+            return existingVote;
         }
     }
 }
