@@ -121,6 +121,109 @@ namespace Atlas.Voting.Tests
                 secondVote.Value.Value);
         }
 
+        /// <summary>
+        /// Verifies that an unvoted target reports zero votes and no average.
+        /// </summary>
+        [TestMethod]
+        public void GetVoteSummary_WithNoVotes_ReturnsEmptySummary()
+        {
+            var repository = new InMemoryVoteRepository();
+            var getVoteSummary = new GetVoteSummary(repository);
+
+            var summary = getVoteSummary.Execute(
+                new NodeVoteTarget(Guid.NewGuid()));
+
+            Assert.AreEqual(
+                0,
+                summary.VoteCount);
+
+            Assert.IsNull(
+                summary.AverageVote);
+
+            Assert.IsNull(
+                summary.CurrentParticipantVote);
+        }
+
+        /// <summary>
+        /// Verifies that the summary includes only votes belonging
+        /// to the requested target.
+        /// </summary>
+        [TestMethod]
+        public void GetVoteSummary_WithMultipleTargets_AggregatesRequestedTarget()
+        {
+            var repository = new InMemoryVoteRepository();
+            var castVote = new CastVote(repository);
+            var getVoteSummary = new GetVoteSummary(repository);
+
+            var requestedTarget =
+                new NodeVoteTarget(Guid.NewGuid());
+
+            var otherTarget =
+                new NodeVoteTarget(Guid.NewGuid());
+
+            castVote.Execute(
+                requestedTarget,
+                new ParticipantId(Guid.NewGuid()),
+                8);
+
+            castVote.Execute(
+                requestedTarget,
+                new ParticipantId(Guid.NewGuid()),
+                4);
+
+            castVote.Execute(
+                otherTarget,
+                new ParticipantId(Guid.NewGuid()),
+                10);
+
+            var summary =
+                getVoteSummary.Execute(requestedTarget);
+
+            Assert.AreEqual(
+                2,
+                summary.VoteCount);
+
+            Assert.AreEqual(
+                6.0,
+                summary.AverageVote);
+        }
+
+        /// <summary>
+        /// Verifies that the summary reports only the requested
+        /// participant's current vote.
+        /// </summary>
+        [TestMethod]
+        public void GetVoteSummary_WithParticipant_ReturnsThatParticipantsVote()
+        {
+            var repository = new InMemoryVoteRepository();
+            var castVote = new CastVote(repository);
+            var getVoteSummary = new GetVoteSummary(repository);
+
+            var target =
+                new NodeVoteTarget(Guid.NewGuid());
+
+            var requestedParticipant =
+                new ParticipantId(Guid.NewGuid());
+
+            castVote.Execute(
+                target,
+                requestedParticipant,
+                8);
+
+            castVote.Execute(
+                target,
+                new ParticipantId(Guid.NewGuid()),
+                4);
+
+            var summary = getVoteSummary.Execute(
+                target,
+                requestedParticipant);
+
+            Assert.AreEqual(
+                8,
+                summary.CurrentParticipantVote);
+        }
+
         [TestMethod]
         public void Vote_WithNodeTarget_CreatesNodeRating()
         {
