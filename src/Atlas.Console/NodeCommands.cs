@@ -22,6 +22,7 @@ public static class NodeCommands
         IParticipantRepository participants,
         IVoteRepository votes,
         CastVote castVote,
+        UndoVote undoVote,
         InMemoryEventPublisher eventPublisher,
         Participant currentParticipant)
     {
@@ -102,9 +103,13 @@ public static class NodeCommands
             Console.WriteLine("9. Attach to parent");
             Console.WriteLine("10. Detach from parent");
             Console.WriteLine("11. View author profile");
-            Console.WriteLine("12. Vote on node");
-            Console.WriteLine("13. View votes");
-            Console.WriteLine("14. Return to node browser");
+            Console.WriteLine(
+                myVote is null
+                    ? "12. Vote on node"
+                    : "12. Change your vote");
+            Console.WriteLine("13. Undo your vote");
+            Console.WriteLine("14. View votes");
+            Console.WriteLine("15. Return to node browser");
             Console.WriteLine();
 
             Console.Write("Selection: ");
@@ -205,6 +210,13 @@ public static class NodeCommands
                         break;
 
                     case "13":
+                        UndoVoteOnNode(
+                            node,
+                            currentParticipant,
+                            undoVote);
+                        break;
+
+                    case "14":
                         currentParticipant = ViewNodeVotes(
                             node,
                             nodes,
@@ -215,7 +227,7 @@ public static class NodeCommands
                             currentParticipant);
                         break;
 
-                    case "14":
+                    case "15":
                         viewingNode = false;
                         break;
 
@@ -893,6 +905,33 @@ public static class NodeCommands
             rating);
 
         ConsoleUi.Pause("Vote saved.");
+    }
+
+    /// <summary>
+    /// Removes the current participant's vote when one exists.
+    /// Undo remains available for archived nodes so participants
+    /// may retract their own current vote.
+    /// </summary>
+    private static void UndoVoteOnNode(
+        Node node,
+        Participant currentParticipant,
+        UndoVote undoVote)
+    {
+        var voteTarget =
+            new NodeVoteTarget(node.Id.Value);
+
+        var votingParticipantId =
+            new Atlas.Voting.Votes.ParticipantId(
+                currentParticipant.Id.Value);
+
+        var removed = undoVote.Execute(
+            voteTarget,
+            votingParticipantId);
+
+        ConsoleUi.Pause(
+            removed
+                ? "Your vote was removed."
+                : "You do not have a current vote on this node.");
     }
 
     /// <summary>
