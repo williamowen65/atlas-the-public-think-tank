@@ -510,8 +510,7 @@ namespace Atlas.Voting.Tests
             var eligibility = new TestVotingEligibility();
             var castVote = new CastVote(
                 repository,
-                eligibility,
-                eligibility);
+                new VoteMutationPolicy(eligibility));
 
             Assert.Throws<ArgumentNullException>(() =>
             {
@@ -539,8 +538,7 @@ namespace Atlas.Voting.Tests
 
             var castVote = new CastVote(
                 repository,
-                eligibility,
-                eligibility);
+                new VoteMutationPolicy(eligibility));
 
             Assert.Throws<InvalidOperationException>(() =>
             {
@@ -572,8 +570,7 @@ namespace Atlas.Voting.Tests
 
             var castVote = new CastVote(
                 repository,
-                eligibility,
-                eligibility);
+                new VoteMutationPolicy(eligibility));
 
             Assert.Throws<InvalidOperationException>(() =>
             {
@@ -599,8 +596,7 @@ namespace Atlas.Voting.Tests
             var eligibility = new TestVotingEligibility();
             var castVote = new CastVote(
                 repository,
-                eligibility,
-                eligibility);
+                new VoteMutationPolicy(eligibility));
 
             var target =
                 new NodeVoteTarget(Guid.NewGuid());
@@ -645,13 +641,11 @@ namespace Atlas.Voting.Tests
             var eligibility = new TestVotingEligibility();
             var castVote = new CastVote(
                 repository,
-                eligibility,
-                eligibility);
+                new VoteMutationPolicy(eligibility));
 
             var undoVote = new UndoVote(
                 repository,
-                eligibility,
-                eligibility);
+                new VoteMutationPolicy(eligibility));
 
             var target =
                 new NodeVoteTarget(Guid.NewGuid());
@@ -688,8 +682,7 @@ namespace Atlas.Voting.Tests
             var eligibility = new TestVotingEligibility();
             var castVote = new CastVote(
                 repository,
-                eligibility,
-                eligibility);
+                new VoteMutationPolicy(eligibility));
 
             var target =
                 new NodeVoteTarget(Guid.NewGuid());
@@ -733,8 +726,7 @@ namespace Atlas.Voting.Tests
             var eligibility = new TestVotingEligibility();
             var castVote = new CastVote(
                 repository,
-                eligibility,
-                eligibility);
+                new VoteMutationPolicy(eligibility));
 
             var unavailableTarget =
                 new NodeVoteTarget(Guid.NewGuid());
@@ -778,8 +770,7 @@ namespace Atlas.Voting.Tests
 
             return new CastVote(
                 repository,
-                eligibility,
-                eligibility);
+                new VoteMutationPolicy(eligibility));
         }
 
         private static UndoVote CreateUndoVote(
@@ -790,13 +781,11 @@ namespace Atlas.Voting.Tests
 
             return new UndoVote(
                 repository,
-                eligibility,
-                eligibility);
+                new VoteMutationPolicy(eligibility));
         }
 
         private sealed class TestVotingEligibility :
-            IVotingParticipantEligibility,
-            IVoteTargetAvailability
+            IVotingEligibility
         {
             public bool ParticipantsAreEligible { get; set; } = true;
 
