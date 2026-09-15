@@ -82,8 +82,7 @@ namespace Atlas.Voting.Tests
 
             var summary =
                 new GetVoteSummary(repository).Execute(
-                    target,
-                    participantId);
+                    target);
 
             Assert.AreEqual(
                 1,
