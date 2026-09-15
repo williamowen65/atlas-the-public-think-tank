@@ -144,6 +144,7 @@ namespace Atlas.Voting.Tests
             private readonly object _gate = new();
             private readonly List<Vote> _votes = [];
             private readonly Barrier _competingLookups = new(2);
+            private int _lookupCount;
 
             public Vote? GetByParticipantAndTarget(
                 ParticipantId participantId,
@@ -159,7 +160,11 @@ namespace Atlas.Voting.Tests
                         vote.Target.GetType() == voteTarget.GetType());
                 }
 
-                if (!_competingLookups.SignalAndWait(
+                var lookupNumber =
+                    Interlocked.Increment(ref _lookupCount);
+
+                if (lookupNumber <= 2 &&
+                    !_competingLookups.SignalAndWait(
                         TimeSpan.FromSeconds(10)))
                 {
                     throw new TimeoutException(
