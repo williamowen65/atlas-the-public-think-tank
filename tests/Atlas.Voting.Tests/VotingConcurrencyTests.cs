@@ -8,22 +8,27 @@ namespace Atlas.Voting.Tests
     /// <summary>
     /// Verifies that competing vote commands using the same CastVote
     /// operation preserve one current vote per participant-target pair.
+    ///
+    /// These tests model concurrent callers inside one application process
+    /// that share one CastVote instance and therefore one operation gate.
+    /// Separate service-instance behavior is covered by
+    /// VotingServiceInstanceConcurrencyTests.
     /// </summary>
     [TestClass]
     public sealed class VotingConcurrencyTests
     {
         /// <summary>
-        /// Models two request handlers casting a first vote for the same
-        /// participant and target.
+        /// Models two request handlers casting a first vote through the same
+        /// CastVote instance.
         ///
-        /// The coordinated repository pauses both commands after each has
-        /// observed that no vote exists. Both are then released to save. This
-        /// proves that application-level lookup followed by a separate save
-        /// cannot by itself enforce one current participant-target vote.
+        /// Both tasks are made ready before the starting gate opens. CastVote
+        /// must serialize its complete lookup-and-save operation so that the
+        /// second request observes and changes the first request's vote rather
+        /// than creating a second current vote.
         /// </summary>
         [TestMethod]
         [TestCategory("Concurrency")]
-        public async Task CastVote_CompetingFirstVotesForSameParticipantTarget_StoresOneCurrentVote()
+        public async Task CastVote_CompetingFirstVotesThroughSameInstance_StoresOneCurrentVote()
         {
             var repository =
                 new ThreadSafeTestVoteRepository();
@@ -49,16 +54,16 @@ namespace Atlas.Voting.Tests
         }
 
         /// <summary>
-        /// Models the aggregate consequence of the same race.
+        /// Verifies the aggregate consequence of protecting the shared
+        /// CastVote operation.
         ///
-        /// A participant should contribute one current rating to a target.
-        /// When both competing inserts survive, GetVoteSummary counts that
-        /// participant twice and averages two values instead of reporting the
-        /// single accepted current vote.
+        /// One participant must contribute one current rating even when two
+        /// calls begin together. The final value may be either competing
+        /// value because scheduling determines which request completes last.
         /// </summary>
         [TestMethod]
         [TestCategory("Concurrency")]
-        public async Task GetVoteSummary_AfterCompetingFirstVotes_CountsParticipantOnce()
+        public async Task GetVoteSummary_AfterCompetingVotesThroughSameInstance_CountsParticipantOnce()
         {
             var repository =
                 new ThreadSafeTestVoteRepository();
@@ -84,11 +89,11 @@ namespace Atlas.Voting.Tests
             Assert.AreEqual(
                 1,
                 summary.VoteCount,
-                "The duplicate race gave one participant more than one unit of influence.");
+                "One participant should contribute only one unit of influence.");
 
             Assert.IsTrue(
                 summary.AverageVote is 4.0 or 10.0,
-                "The summary should reflect whichever single competing vote was accepted.");
+                "The summary should reflect whichever competing vote completed last.");
         }
 
         private static CastVote CreateCastVote(
@@ -102,16 +107,26 @@ namespace Atlas.Voting.Tests
                 new VoteMutationPolicy(eligibility));
         }
 
+        /// <summary>
+        /// Makes both tasks ready before releasing them toward the same
+        /// CastVote instance. Coordination happens before Execute so the test
+        /// does not require both callers to enter a section that correct
+        /// synchronization intentionally allows only one caller to enter.
+        /// </summary>
         private static async Task CastCompetingVotes(
             CastVote castVote,
             VoteTarget target,
             ParticipantId participantId)
         {
+            using var ready =
+                new CountdownEvent(2);
+
             using var startGate =
                 new ManualResetEventSlim(false);
 
             var firstRequest = Task.Run(() =>
             {
+                ready.Signal();
                 startGate.Wait();
 
                 return castVote.Execute(
@@ -122,6 +137,7 @@ namespace Atlas.Voting.Tests
 
             var secondRequest = Task.Run(() =>
             {
+                ready.Signal();
                 startGate.Wait();
 
                 return castVote.Execute(
@@ -129,6 +145,12 @@ namespace Atlas.Voting.Tests
                     participantId,
                     10);
             });
+
+            if (!ready.Wait(TimeSpan.FromSeconds(10)))
+            {
+                throw new TimeoutException(
+                    "Both competing vote tasks did not become ready.");
+            }
 
             startGate.Set();
 
@@ -138,8 +160,10 @@ namespace Atlas.Voting.Tests
         }
 
         /// <summary>
-        /// Thread-safe test repository used to observe the result of competing
-        /// CastVote commands without introducing collection corruption.
+        /// Keeps the test collection structurally safe under concurrent
+        /// access without enforcing participant-target uniqueness itself.
+        /// The CastVote operation under test remains responsible for
+        /// serializing the check-and-save sequence in this scenario.
         /// </summary>
         private sealed class ThreadSafeTestVoteRepository :
             IVoteRepository
@@ -151,18 +175,13 @@ namespace Atlas.Voting.Tests
                 ParticipantId participantId,
                 VoteTarget voteTarget)
             {
-                Vote? existingVote;
-
                 lock (_gate)
                 {
-                    existingVote = _votes.SingleOrDefault(vote =>
+                    return _votes.SingleOrDefault(vote =>
                         vote.ParticipantId.Id == participantId.Id &&
                         vote.Target.Id == voteTarget.Id &&
                         vote.Target.GetType() == voteTarget.GetType());
                 }
-
-
-                return existingVote;
             }
 
             public void Save(Vote vote)
