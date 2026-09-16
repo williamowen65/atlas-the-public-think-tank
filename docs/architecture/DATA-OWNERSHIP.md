@@ -9,10 +9,13 @@ This document is the detailed record-level ownership register. The [current-stat
 | Node | Graph | Graph | `data/nodes.json` | Console and future consumers |
 | Node type | Graph | Graph | `data/node-types.json` | Nodes and Console presentation |
 | Parent relationship | Graph, on the child node | Graph behavior validates attachment | `data/nodes.json` | Graph navigation |
+| Tag definition | Graph | Graph | Not implemented | Node-tag workflows and autocomplete |
+| Node-tag association | Graph | Graph | Not implemented | Voting by `NodeTagId`; presentation |
 | Description document | Content | Content | `data/documents.json` | Graph via `DescriptionId` |
 | Participant profile | Participants | Participants | `data/participants.json` | Graph via `AuthorId` |
 | Integration-event shape | Contracts | Producer supplies event data | In memory today | Registered consumers |
 | Vote and summary | Voting — future | Voting | Not implemented | Node views by node ID |
+| Node-tag ballot and summary | Voting — future | Voting | Not implemented | Node-tag presentation by `NodeTagId` |
 
 ## Rules
 

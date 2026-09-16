@@ -44,14 +44,14 @@ the JSON implementations belong to the Console host.
 | Attribute | Current state |
 |---|---|
 | **Kind** | Domain boundary |
-| **Responsibility** | Model typed nodes and the directed parent graph. |
+| **Responsibility** | Model typed nodes, the directed parent graph, and approved reusable-tag vocabulary and associations. |
 | **Implemented behaviors** | Create and reconstitute nodes. • Rename, change type, and replace description references. • Archive and restore. • Request response types. • Attach and detach parents. • Create, edit, and archive node types. • Enforce local invariants. |
-| **Owns** | Nodes and node IDs. • Node types and requested sub-node types. • Parent IDs on the child. • Graph lifecycle state. |
+| **Owns** | Nodes and node IDs. • Node types and requested sub-node types. • Parent IDs on the child. • Graph lifecycle state. • Future `TagDefinition` and `NodeTag` records. |
 | **References** | `NodeAuthorId` corresponding to a Participant ID. • `NodeDescriptionId` corresponding to a Document ID. • Contracts event records. |
-| **Does not own** | Profiles and credentials. • Documents. • Votes. • JSON persistence. |
+| **Does not own** | Profiles and credentials. • Documents. • Votes or NodeTag vote summaries. • JSON persistence. |
 | **Publishes** | Records `NodeCreatedV1`, `NodeArchivedV1`, `NodeRestoredV1`, `NodeParentAttachedV1`, and `NodeParentDetachedV1` on `Node`. |
 | **Subscribes** | None. |
-| **Documentation** | [Graph README](../../src/Atlas.Graph/README.md) • [Requirements](../requirements/REQUIREMENTS.md) • [RTM](../requirements/TRACEABILITY.md) • ADRs 1–3 |
+| **Documentation** | [Graph README](../../src/Atlas.Graph/README.md) • [Requirements](../requirements/REQUIREMENTS.md) • [RTM](../requirements/TRACEABILITY.md) • [Reusable tags workflow](../workflows/REUSABLE-TAGS.md) • ADRs 1–3 |
 | **Gaps or open questions** | Cycle prevention and default Comment policy are host-local. • Most node mutations lack authorization. • Relationship-node minimum-parent rules are not enforced. • Global type-name uniqueness is host-local. • Several mutations have no events. • Graph directly references Contracts; the desired long-term dependency direction remains open. |
 
 ### Content
@@ -119,15 +119,15 @@ the JSON implementations belong to the Console host.
 | Attribute | Current state |
 |---|---|
 | **Kind** | Candidate domain; not implemented |
-| **Responsibility** | Reserve vote-total and average placeholders in node displays. |
+| **Responsibility** | Own ballots and aggregation for supported targets, including node-specific `NodeTagId` targets. |
 | **Implemented behaviors** | None. |
-| **Owns** | No current data. |
-| **References** | Candidate references to Node and Participant IDs are documented. |
-| **Does not own** | Nodes. • Profiles. • Documents. |
+| **Owns** | No current data. Approved direction assigns future Node and NodeTag ballots and summaries here. |
+| **References** | Candidate references to Node, NodeTag, and Participant IDs are documented. |
+| **Does not own** | Nodes. • Tag definitions or node-tag associations. • Profiles. • Documents. |
 | **Publishes** | None. |
 | **Subscribes** | None. |
-| **Documentation** | VOT-001 in [requirements](../requirements/REQUIREMENTS.md) and [RTM](../requirements/TRACEABILITY.md) • Future row in [data ownership](DATA-OWNERSHIP.md) |
-| **Gaps or open questions** | Boundary, ballot model, rating scale, eligibility, aggregation, persistence, and events all require later design. |
+| **Documentation** | VOT-001 and TAG-008/009 in [requirements](../requirements/REQUIREMENTS.md) and [RTM](../requirements/TRACEABILITY.md) • [Reusable tags workflow](../workflows/REUSABLE-TAGS.md) • Future rows in [data ownership](DATA-OWNERSHIP.md) |
+| **Gaps or open questions** | The NodeTag target direction is approved; implementation, persistence, events, and integration with the fuller Voting design remain future work. |
 
 ## Implemented event flow
 

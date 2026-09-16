@@ -28,6 +28,15 @@ This RTM provides the broad implementation and verification view. Follow a requi
 | [EVT-002](REQUIREMENTS.md#evt-002) | The host broadcasts events to interested subscribers | Should | **Implemented** | [InMemoryEventPublisher.cs](../../src/Atlas.Console/Eventing/InMemoryEventPublisher.cs)<br>[Program.cs](../../src/Atlas.Console/Program.cs)<br>[ObserveNodeLifecycleInContent.cs](../../src/Atlas.Console/Content/ObserveNodeLifecycleInContent.cs) | — |
 | [PER-001](REQUIREMENTS.md#per-001) | Prototype boundary data is stored in separate files | Must | **Implemented** | [JsonNodeRepository.cs](../../src/Atlas.Console/Storage/JsonNodeRepository.cs)<br>[JsonNodeTypeRepository.cs](../../src/Atlas.Console/Storage/JsonNodeTypeRepository.cs)<br>[JsonDocumentRepository.cs](../../src/Atlas.Console/Storage/JsonDocumentRepository.cs)<br>[JsonParticipantRepository.cs](../../src/Atlas.Console/Storage/JsonParticipantRepository.cs) | — |
 | [PER-002](REQUIREMENTS.md#per-002) | Legacy node records migrate without losing descriptions | Should | **Implemented** | [JsonNodeRepository.cs](../../src/Atlas.Console/Storage/JsonNodeRepository.cs) | — |
+| [TAG-001](REQUIREMENTS.md#tag-001) | Tag definitions form reusable vocabulary | Must | **Approved** | [Reusable tags workflow](../workflows/REUSABLE-TAGS.md#ownership) | — |
+| [TAG-002](REQUIREMENTS.md#tag-002) | Equivalent tag text resolves to one definition | Must | **Approved** | [Normalization baseline](../workflows/REUSABLE-TAGS.md#normalization-baseline) | — |
+| [TAG-003](REQUIREMENTS.md#tag-003) | Tags are applied through node-specific associations | Must | **Approved** | [Definition reuse and application](../workflows/REUSABLE-TAGS.md#definition-reuse-and-application) | — |
+| [TAG-004](REQUIREMENTS.md#tag-004) | Shared definitions are not renamed through a node | Must | **Approved** | [Replace or remove a tag](../workflows/REUSABLE-TAGS.md#replace-or-remove-a-tag) | — |
+| [TAG-005](REQUIREMENTS.md#tag-005) | Authorized actors manage node tags | Must | **Approved** | [Permissions baseline](../workflows/REUSABLE-TAGS.md#permissions-and-moderation-baseline) | — |
+| [TAG-006](REQUIREMENTS.md#tag-006) | Archived tag targets reject mutation | Must | **Approved** | [Failure outcomes](../workflows/REUSABLE-TAGS.md#failure-outcomes) | — |
+| [TAG-007](REQUIREMENTS.md#tag-007) | Tag suggestions reuse existing definitions | Should | **Approved** | [Definition reuse and application](../workflows/REUSABLE-TAGS.md#definition-reuse-and-application) | — |
+| [TAG-008](REQUIREMENTS.md#tag-008) | NodeTag votes are node-specific | Must | **Approved** | [Graph-to-Voting interaction](../workflows/REUSABLE-TAGS.md#graph-to-voting-interaction) | — |
+| [TAG-009](REQUIREMENTS.md#tag-009) | Node views show prominent and discoverable tags | Should | **Approved** | [Presentation baseline](../workflows/REUSABLE-TAGS.md#presentation-baseline) | — |
 | [VOT-001](REQUIREMENTS.md#vot-001) | Node views report vote totals and averages | Should | **Approved** | [NodeDisplay.cs](../../src/Atlas.Console/NodeDisplay.cs) | — |
 | [NFR-001](REQUIREMENTS.md#nfr-001) | Boundaries communicate through identifiers and contracts | Must | **Partial** | [NodeLifecycleEvents.cs](../../src/Atlas.Contracts/Graph/V1/NodeLifecycleEvents.cs)<br>[Program.cs](../../src/Atlas.Console/Program.cs) | — |
 | [NFR-002](REQUIREMENTS.md#nfr-002) | Integration events survive process failure | Should | **Deferred** | — | — |
@@ -59,12 +68,18 @@ The synchronous in-memory publisher demonstrates subscription and broadcast clea
 
 The Console already reserves vote-count and average columns. No Voting boundary or aggregation implementation exists yet, so the requirement is Approved rather than Implemented.
 
+<a id="tag-001"></a>
+### TAG-001 through TAG-009 — Approved design, not implementation
+
+PTT-74 defines the reusable-tag behavior and boundary ownership. No `TagDefinition`, `NodeTag`, tag repository, tag UI, or NodeTag voting target is implemented yet. The workflow document is design evidence; automated tests and code are still required before these entries can become Implemented or Verified.
+
 ## Suggested review order
 
 1. Start with the five Graph fundamentals: GRA-001 through GRA-005.
 2. Trace type and relationship rules through TYP-001 through REL-004.
 3. Verify the Content reference and separate persistence through CON-001 and CON-002.
 4. Walk through participant profile ownership using PAR-001, PAR-002, and AUT-001.
-5. Review the known architectural gaps: REL-003, AUT-002, EVT-002, VOT-001, and NFR-002.
+5. Review reusable-tag ownership and workflows through TAG-001 through TAG-009.
+6. Review the known architectural gaps: REL-003, AUT-002, EVT-002, VOT-001, and NFR-002.
 
 During manual review, change a status only when all acceptance criteria support the new value. Add a missing test link when evidence exists; do not treat a Console demonstration as automated verification.
