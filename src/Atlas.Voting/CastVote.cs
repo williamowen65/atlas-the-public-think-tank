@@ -14,6 +14,8 @@ namespace Atlas.Voting
         private readonly IVoteRepository _voteRepository;
         private readonly VoteMutationPolicy _mutationPolicy;
 
+        private readonly object _castVoteGate = new();
+
         public CastVote(
             IVoteRepository voteRepository,
             VoteMutationPolicy mutationPolicy)
@@ -31,37 +33,40 @@ namespace Atlas.Voting
                 target,
                 participantId);
 
-            var existingVote =
-                _voteRepository.GetByParticipantAndTarget(
-                    participantId,
-                    target);
-
-            if (existingVote is null)
+            lock (_castVoteGate)
             {
-                var newVote = new Vote(
-                    target,
-                    participantId,
-                    voteValue);
+                var existingVote =
+                    _voteRepository.GetByParticipantAndTarget(
+                        participantId,
+                        target);
 
-                _voteRepository.Save(newVote);
+                if (existingVote is null)
+                {
+                    var newVote = new Vote(
+                        target,
+                        participantId,
+                        voteValue);
 
-                return newVote;
+                    _voteRepository.Save(newVote);
+
+                    return newVote;
+                }
+
+                var changedAt = DateTimeOffset.UtcNow;
+
+                if (changedAt <= existingVote.UpdatedAt)
+                {
+                    changedAt = existingVote.UpdatedAt.AddTicks(1);
+                }
+
+                existingVote.ChangeValue(
+                    voteValue,
+                    changedAt);
+
+                _voteRepository.Save(existingVote);
+
+                return existingVote;
             }
-
-            var changedAt = DateTimeOffset.UtcNow;
-
-            if (changedAt <= existingVote.UpdatedAt)
-            {
-                changedAt = existingVote.UpdatedAt.AddTicks(1);
-            }
-
-            existingVote.ChangeValue(
-                voteValue,
-                changedAt);
-
-            _voteRepository.Save(existingVote);
-
-            return existingVote;
         }
 
     }
