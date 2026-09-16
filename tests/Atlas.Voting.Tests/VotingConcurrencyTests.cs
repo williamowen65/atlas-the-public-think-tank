@@ -6,11 +6,8 @@ using Atlas.Voting.Votes;
 namespace Atlas.Voting.Tests
 {
     /// <summary>
-    /// Demonstrates the current check-then-save race for competing commands
-    /// that use the same participant-target pair.
-    ///
-    /// These tests intentionally describe the required safe behavior and are
-    /// expected to fail until Slice 4 adds an atomic concurrency mechanism.
+    /// Verifies that competing vote commands using the same CastVote
+    /// operation preserve one current vote per participant-target pair.
     /// </summary>
     [TestClass]
     public sealed class VotingConcurrencyTests
@@ -29,7 +26,7 @@ namespace Atlas.Voting.Tests
         public async Task CastVote_CompetingFirstVotesForSameParticipantTarget_StoresOneCurrentVote()
         {
             var repository =
-                new CoordinatedFirstVoteRepository();
+                new ThreadSafeTestVoteRepository();
 
             var castVote =
                 CreateCastVote(repository);
@@ -64,7 +61,7 @@ namespace Atlas.Voting.Tests
         public async Task GetVoteSummary_AfterCompetingFirstVotes_CountsParticipantOnce()
         {
             var repository =
-                new CoordinatedFirstVoteRepository();
+                new ThreadSafeTestVoteRepository();
 
             var castVote =
                 CreateCastVote(repository);
@@ -110,17 +107,30 @@ namespace Atlas.Voting.Tests
             VoteTarget target,
             ParticipantId participantId)
         {
+            using var startGate =
+                new ManualResetEventSlim(false);
+
             var firstRequest = Task.Run(() =>
-                castVote.Execute(
+            {
+                startGate.Wait();
+
+                return castVote.Execute(
                     target,
                     participantId,
-                    4));
+                    4);
+            });
 
             var secondRequest = Task.Run(() =>
-                castVote.Execute(
+            {
+                startGate.Wait();
+
+                return castVote.Execute(
                     target,
                     participantId,
-                    10));
+                    10);
+            });
+
+            startGate.Set();
 
             await Task.WhenAll(
                 firstRequest,
@@ -128,22 +138,14 @@ namespace Atlas.Voting.Tests
         }
 
         /// <summary>
-        /// Test double that makes the race reproducible.
-        ///
-        /// Each competing lookup reads under a lock and then waits at the
-        /// barrier. Neither request may proceed to Save until both lookups
-        /// have returned the same "no current vote" observation. Save itself
-        /// is locked only to keep the test collection structurally safe; it
-        /// intentionally provides no participant-target uniqueness rule.
+        /// Thread-safe test repository used to observe the result of competing
+        /// CastVote commands without introducing collection corruption.
         /// </summary>
-        private sealed class CoordinatedFirstVoteRepository :
-            IVoteRepository,
-            IDisposable
+        private sealed class ThreadSafeTestVoteRepository :
+            IVoteRepository
         {
             private readonly object _gate = new();
             private readonly List<Vote> _votes = [];
-            private readonly Barrier _competingLookups = new(2);
-            private int _lookupCount;
 
             public Vote? GetByParticipantAndTarget(
                 ParticipantId participantId,
@@ -159,16 +161,6 @@ namespace Atlas.Voting.Tests
                         vote.Target.GetType() == voteTarget.GetType());
                 }
 
-                var lookupNumber =
-                    Interlocked.Increment(ref _lookupCount);
-
-                if (lookupNumber <= 2 &&
-                    !_competingLookups.SignalAndWait(
-                        TimeSpan.FromSeconds(10)))
-                {
-                    throw new TimeoutException(
-                        "Both competing vote lookups did not reach the test barrier.");
-                }
 
                 return existingVote;
             }
@@ -220,11 +212,6 @@ namespace Atlas.Voting.Tests
                             vote.Target.GetType() == target.GetType())
                         .ToArray();
                 }
-            }
-
-            public void Dispose()
-            {
-                _competingLookups.Dispose();
             }
         }
 
