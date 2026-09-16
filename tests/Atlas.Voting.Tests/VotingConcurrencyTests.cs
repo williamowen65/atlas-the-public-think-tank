@@ -1,6 +1,7 @@
 using Atlas.Voting.Data;
 using Atlas.Voting.Eligibility;
 using Atlas.Voting.Target;
+using Atlas.Voting.Votes;
 
 namespace Atlas.Voting.Tests
 {
