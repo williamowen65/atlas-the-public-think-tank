@@ -3,6 +3,7 @@ using Atlas.ConsoleApp.Participants;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
+using Atlas.Graph.Tags;
 using Atlas.Participants.Participants;
 
 namespace Atlas.ConsoleApp;
@@ -14,12 +15,16 @@ public sealed class ConsoleApplication
     private readonly INodeTypeRepository _nodeTypes;
     private readonly IDocumentRepository _documents;
     private readonly IParticipantRepository _participants;
+    private readonly ITagDefinitionRepository _tagDefinitions;
+    private readonly INodeTagRepository _nodeTags;
     private readonly InMemoryEventPublisher _eventPublisher;
     private Participant _currentParticipant;
     private readonly string _nodeDataFilePath;
     private readonly string _nodeTypeDataFilePath;
     private readonly string _documentDataFilePath;
     private readonly string _participantDataFilePath;
+    private readonly string _tagDefinitionDataFilePath;
+    private readonly string _nodeTagDataFilePath;
 
     /// <summary>Creates a validated console application instance.</summary>
     public ConsoleApplication(
@@ -27,23 +32,31 @@ public sealed class ConsoleApplication
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
         IParticipantRepository participants,
+        ITagDefinitionRepository tagDefinitions,
+        INodeTagRepository nodeTags,
         InMemoryEventPublisher eventPublisher,
         string nodeDataFilePath,
         string nodeTypeDataFilePath,
         string documentDataFilePath,
         string participantDataFilePath,
+        string tagDefinitionDataFilePath,
+        string nodeTagDataFilePath,
         Participant initialParticipant)
     {
         _nodes = nodes;
         _nodeTypes = nodeTypes;
         _documents = documents;
         _participants = participants;
+        _tagDefinitions = tagDefinitions;
+        _nodeTags = nodeTags;
         _eventPublisher = eventPublisher;
         _currentParticipant = initialParticipant;
         _nodeDataFilePath = nodeDataFilePath;
         _nodeTypeDataFilePath = nodeTypeDataFilePath;
         _documentDataFilePath = documentDataFilePath;
         _participantDataFilePath = participantDataFilePath;
+        _tagDefinitionDataFilePath = tagDefinitionDataFilePath;
+        _nodeTagDataFilePath = nodeTagDataFilePath;
     }
 
     /// <summary>Runs the interactive console application workflow.</summary>
@@ -319,7 +332,9 @@ public sealed class ConsoleApplication
                     _nodeTypes,
                     _documents,
                     _participants,
-                    index + 1);
+                    index + 1,
+                    nodeTags: _nodeTags,
+                    tagDefinitions: _tagDefinitions);
             }
 
             Console.WriteLine();
@@ -352,6 +367,8 @@ public sealed class ConsoleApplication
                 _nodeTypes,
                 _documents,
                 _participants,
+                _tagDefinitions,
+                _nodeTags,
                 _eventPublisher,
                 _currentParticipant);
         }
@@ -431,6 +448,8 @@ public sealed class ConsoleApplication
         ShowDataFile("NODE TYPE DATA", _nodeTypeDataFilePath);
         ShowDataFile("CONTENT DOCUMENT DATA", _documentDataFilePath);
         ShowDataFile("PARTICIPANT DATA", _participantDataFilePath);
+        ShowDataFile("TAG DEFINITION DATA", _tagDefinitionDataFilePath);
+        ShowDataFile("NODE TAG DATA", _nodeTagDataFilePath);
     }
 
     /// <summary>Displays data file in the console workflow.</summary>
