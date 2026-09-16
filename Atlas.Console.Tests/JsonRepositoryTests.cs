@@ -1,5 +1,7 @@
 ﻿using Atlas.ConsoleApp.Storage;
 using Atlas.Voting;
+using Atlas.Voting.Data;
+using Atlas.Voting.Eligibility;
 using Atlas.Voting.Target;
 using Atlas.Voting.Votes;
 
@@ -291,6 +293,186 @@ namespace Atlas.Console.Tests
                         temporaryDirectory,
                         recursive: true);
                 }
+            }
+        }
+
+
+        [TestMethod]
+        [TestCategory("Concurrency")]
+        public async Task JsonVoteRepository_SeparateAdapters_StoreOneCurrentVote()
+        {
+            var temporaryDirectory = Path.Combine(
+                Path.GetTempPath(),
+                "AtlasVotingTests",
+                Guid.NewGuid().ToString());
+
+            var filePath = Path.Combine(
+                temporaryDirectory,
+                "votes.json");
+
+            try
+            {
+                var firstRepository =
+                    new JsonVoteRepository(filePath);
+
+                var secondRepository =
+                    new JsonVoteRepository(filePath);
+
+                var target =
+                    new NodeVoteTarget(Guid.NewGuid());
+
+                var participantId =
+                    new ParticipantId(Guid.NewGuid());
+
+                await CastCompetingVotes(
+                    CreateCastVote(firstRepository),
+                    CreateCastVote(secondRepository),
+                    target,
+                    participantId);
+
+                var reloadedRepository =
+                    new JsonVoteRepository(filePath);
+
+                Assert.HasCount(
+                    1,
+                    reloadedRepository.GetTargetVotes(target));
+            }
+            finally
+            {
+                if (Directory.Exists(temporaryDirectory))
+                {
+                    Directory.Delete(
+                        temporaryDirectory,
+                        recursive: true);
+                }
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("Concurrency")]
+        public async Task JsonVoteRepository_AfterSeparateAdapterWrites_CountsParticipantOnce()
+        {
+            var temporaryDirectory = Path.Combine(
+                Path.GetTempPath(),
+                "AtlasVotingTests",
+                Guid.NewGuid().ToString());
+
+            var filePath = Path.Combine(
+                temporaryDirectory,
+                "votes.json");
+
+            try
+            {
+                var firstRepository =
+                    new JsonVoteRepository(filePath);
+
+                var secondRepository =
+                    new JsonVoteRepository(filePath);
+
+                var target =
+                    new NodeVoteTarget(Guid.NewGuid());
+
+                var participantId =
+                    new ParticipantId(Guid.NewGuid());
+
+                await CastCompetingVotes(
+                    CreateCastVote(firstRepository),
+                    CreateCastVote(secondRepository),
+                    target,
+                    participantId);
+
+                var summary =
+                    new GetVoteSummary(
+                        new JsonVoteRepository(filePath))
+                        .Execute(target);
+
+                Assert.AreEqual(
+                    1,
+                    summary.VoteCount);
+
+                Assert.IsTrue(
+                    summary.AverageVote is 4.0 or 10.0);
+            }
+            finally
+            {
+                if (Directory.Exists(temporaryDirectory))
+                {
+                    Directory.Delete(
+                        temporaryDirectory,
+                        recursive: true);
+                }
+            }
+        }
+
+        private static CastVote CreateCastVote(
+            IVoteRepository repository)
+        {
+            return new CastVote(
+                repository,
+                new VoteMutationPolicy(
+                    new AlwaysEligibleVotingContext()));
+        }
+
+        private static async Task CastCompetingVotes(
+            CastVote firstCastVote,
+            CastVote secondCastVote,
+            VoteTarget target,
+            ParticipantId participantId)
+        {
+            using var ready =
+                new CountdownEvent(2);
+
+            using var startGate =
+                new ManualResetEventSlim(false);
+
+            var firstRequest = Task.Run(() =>
+            {
+                ready.Signal();
+                startGate.Wait();
+
+                return firstCastVote.Execute(
+                    target,
+                    participantId,
+                    4);
+            });
+
+            var secondRequest = Task.Run(() =>
+            {
+                ready.Signal();
+                startGate.Wait();
+
+                return secondCastVote.Execute(
+                    target,
+                    participantId,
+                    10);
+            });
+
+            if (!ready.Wait(TimeSpan.FromSeconds(10)))
+            {
+                throw new TimeoutException(
+                    "Both JSON vote tasks did not become ready.");
+            }
+
+            startGate.Set();
+
+            await Task.WhenAll(
+                firstRequest,
+                secondRequest);
+        }
+
+        private sealed class AlwaysEligibleVotingContext :
+            IVotingEligibility
+        {
+            public bool IsEligible(
+                ParticipantId participantId)
+            {
+                return true;
+            }
+
+            public bool IsAvailable(
+                VoteTarget target)
+            {
+                return true;
             }
         }
 

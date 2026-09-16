@@ -14,8 +14,6 @@ namespace Atlas.Voting
         private readonly IVoteRepository _voteRepository;
         private readonly VoteMutationPolicy _mutationPolicy;
 
-        private readonly object _castVoteGate = new();
-
         public CastVote(
             IVoteRepository voteRepository,
             VoteMutationPolicy mutationPolicy)
@@ -24,6 +22,10 @@ namespace Atlas.Voting
             _mutationPolicy = mutationPolicy;
         }
 
+        /// <summary>
+        /// Validates whether the mutation is allowed and delegates the complete
+        /// participant-target mutation to the repository's atomic operation.
+        /// </summary>
         public Vote Execute(
             VoteTarget target,
             ParticipantId participantId,
@@ -33,41 +35,10 @@ namespace Atlas.Voting
                 target,
                 participantId);
 
-            lock (_castVoteGate)
-            {
-                var existingVote =
-                    _voteRepository.GetByParticipantAndTarget(
-                        participantId,
-                        target);
-
-                if (existingVote is null)
-                {
-                    var newVote = new Vote(
-                        target,
-                        participantId,
-                        voteValue);
-
-                    _voteRepository.Save(newVote);
-
-                    return newVote;
-                }
-
-                var changedAt = DateTimeOffset.UtcNow;
-
-                if (changedAt <= existingVote.UpdatedAt)
-                {
-                    changedAt = existingVote.UpdatedAt.AddTicks(1);
-                }
-
-                existingVote.ChangeValue(
-                    voteValue,
-                    changedAt);
-
-                _voteRepository.Save(existingVote);
-
-                return existingVote;
-            }
+            return _voteRepository.SetCurrentVote(
+                target,
+                participantId,
+                voteValue);
         }
-
     }
 }

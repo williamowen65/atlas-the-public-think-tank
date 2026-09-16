@@ -8,6 +8,20 @@ namespace Atlas.Voting.Data
     /// </summary>
     public interface IVoteRepository
     {
+        /// <summary>
+        /// Atomically creates or changes the one current vote owned by a
+        /// participant for a target.
+        /// </summary>
+        /// <remarks>
+        /// Implementations must treat participant ID, target type, and target
+        /// ID as one uniqueness key for the complete read-modify-write
+        /// operation.
+        /// </remarks>
+        Vote SetCurrentVote(
+            VoteTarget target,
+            ParticipantId participantId,
+            int voteValue);
+
         /// <summary>Loads all current votes for a domain vote target.</summary>
         IReadOnlyCollection<Vote> GetTargetVotes(VoteTarget target);
 
@@ -19,7 +33,11 @@ namespace Atlas.Voting.Data
         /// <summary>Loads a domain object by its boundary-owned identifier.</summary>
         Vote? GetById(VoteId id);
 
-        /// <summary>Creates or replaces the current state of a vote.</summary>
+        /// <summary>
+        /// Creates or replaces a record by VoteId for persistence support.
+        /// CastVote uses SetCurrentVote so participant-target uniqueness is
+        /// enforced atomically.
+        /// </summary>
         void Save(Vote vote);
 
         /// <summary>Physically removes a vote from current persistence.</summary>

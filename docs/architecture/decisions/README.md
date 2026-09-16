@@ -10,6 +10,7 @@ Architecture Decision Records explain why Atlas adopted a consequential design. 
 | [ADR-0002](ADR-0002-reference-boundaries-by-id.md) | Reference foreign resources by identifier | Accepted |
 | [ADR-0003](ADR-0003-use-versioned-integration-contracts.md) | Use versioned integration contracts | Accepted |
 | [ADR-0004](ADR-0004-start-with-json-persistence.md) | Start with JSON persistence adapters | Accepted |
+| [ADR-0005](ADR-0005-enforce-vote-uniqueness-at-persistence-boundary.md) | Enforce current-vote uniqueness at the persistence boundary | Accepted |
 
 ## Identifier and status rules
 
