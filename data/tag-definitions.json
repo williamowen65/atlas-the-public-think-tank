@@ -52,5 +52,14 @@
     "IsSuppressed": false,
     "CreatedAt": "2026-09-17T18:55:18.3895973+00:00",
     "UpdatedAt": "2026-09-17T18:55:18.3895973+00:00"
+  },
+  {
+    "Id": "60567d54-50b0-4fbf-b100-68a93b503374",
+    "Text": "BS",
+    "NormalizedText": "BS",
+    "CreatedByParticipantId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
+    "IsSuppressed": false,
+    "CreatedAt": "2026-09-17T19:08:29.1585667+00:00",
+    "UpdatedAt": "2026-09-17T19:08:29.1585667+00:00"
   }
 ]

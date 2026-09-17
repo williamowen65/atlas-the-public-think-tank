@@ -59,5 +59,15 @@
     "Disposition": "Endorsed",
     "CreatedAt": "2026-09-17T18:55:18.3895973+00:00",
     "RemovedAt": null
+  },
+  {
+    "Id": "b5ddf879-1370-4a0e-91d1-3bdbc7a232f7",
+    "NodeId": "bfc5119e-c47b-4da3-9c64-89b15b73e7c9",
+    "TagDefinitionId": "60567d54-50b0-4fbf-b100-68a93b503374",
+    "AppliedByParticipantId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
+    "LifecycleState": "Active",
+    "Disposition": "Community",
+    "CreatedAt": "2026-09-17T19:08:29.1585667+00:00",
+    "RemovedAt": null
   }
 ]
