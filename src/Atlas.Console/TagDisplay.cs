@@ -10,14 +10,17 @@ public static class TagDisplay
     public static string FormatCompact(
         Node node,
         INodeTagRepository nodeTags,
-        ITagDefinitionRepository definitions)
+        ITagDefinitionRepository definitions,
+        NodeTagDisposition disposition)
     {
         var labels = ResolveActive(node, nodeTags, definitions)
+            .Where(item => item.Association.Disposition == disposition)
             .Take(3)
             .Select(item => item.Definition.Text)
             .ToList();
 
-        var remaining = ResolveActive(node, nodeTags, definitions).Count - labels.Count;
+        var remaining = ResolveActive(node, nodeTags, definitions)
+            .Count(item => item.Association.Disposition == disposition) - labels.Count;
 
         if (labels.Count == 0)
         {
@@ -35,7 +38,9 @@ public static class TagDisplay
         INodeTagRepository nodeTags,
         ITagDefinitionRepository definitions)
     {
-        var active = ResolveActive(node, nodeTags, definitions);
+        var active = ResolveActive(node, nodeTags, definitions)
+            .Where(item => item.Association.Disposition is NodeTagDisposition.Endorsed or NodeTagDisposition.Community)
+            .ToList();
 
         Console.WriteLine();
         Console.WriteLine("TAGS");
@@ -47,9 +52,27 @@ public static class TagDisplay
             return;
         }
 
-        foreach (var item in active)
+        foreach (var group in active.GroupBy(item => item.Association.Disposition))
         {
-            Console.WriteLine($"- {item.Definition.Text}");
+            Console.WriteLine($"{group.Key}:");
+            foreach (var item in group)
+            {
+                Console.WriteLine($"- {item.Definition.Text}");
+            }
+        }
+    }
+
+    /// <summary>Writes author-hidden and disputed tags for an explicit review action.</summary>
+    public static void WriteHiddenAndDisputed(Node node, INodeTagRepository nodeTags,
+        ITagDefinitionRepository definitions)
+    {
+        var items = ResolveActive(node, nodeTags, definitions)
+            .Where(item => item.Association.Disposition is NodeTagDisposition.Hidden or NodeTagDisposition.Disputed)
+            .ToList();
+        Console.WriteLine(items.Count == 0 ? "No hidden or disputed tags." : "HIDDEN OR DISPUTED TAGS");
+        foreach (var item in items)
+        {
+            Console.WriteLine($"- {item.Definition.Text} ({item.Association.Disposition})");
         }
     }
 

@@ -521,7 +521,7 @@ This document is the authoritative catalog of requirement statements and accepta
 <a id="tag-005"></a>
 ## TAG-005 — Authorized actors manage node tags
 
-**Statement:** Active participants shall be able to apply tags, while removal and replacement shall be limited to the applying participant, the node author, or an authorized moderator.
+**Statement:** Active participants shall be able to apply tags. A proposer may withdraw or replace their own association; node authors manage its presentation; moderators perform policy actions.
 
 **Rationale:** Tagging should remain open to contribution without allowing unrelated participants to erase other contributions.
 
@@ -532,7 +532,8 @@ This document is the authoritative catalog of requirement statements and accepta
 
 - Applying a tag requires an active participant and active node.
 - The applying participant can remove or replace their association.
-- The node author or a moderator with the applicable capability can remove any association on that node.
+- The node author can endorse, hide, dispute, or return an active association to community presentation without deleting it.
+- A moderator with the applicable capability can administratively remove an association.
 - An unrelated participant cannot remove or replace another participant's association.
 
 [View traceability](TRACEABILITY.md#tag-005)
@@ -613,6 +614,42 @@ This document is the authoritative catalog of requirement statements and accepta
 - Graph does not store or cache vote summaries as authoritative state.
 
 [View traceability](TRACEABILITY.md#tag-009)
+
+<a id="tag-010"></a>
+## TAG-010 — Node-tag lifecycle preserves audit history
+
+**Statement:** Graph shall preserve a node-tag association and record why it became inactive rather than deleting it during ordinary workflows.
+
+**Rationale:** Tag proposals, corrections, disputes, and moderation actions must remain attributable and reviewable.
+
+**Priority:** Must
+**Status:** Partial
+
+### Acceptance criteria
+
+- Lifecycle values persist as readable strings: `Active`, `Withdrawn`, `Superseded`, and `AdministrativelyRemoved`.
+- Replacement creates or reuses a new association and marks the original `Superseded`.
+- Physical deletion is reserved for an exceptional future administrative process.
+- Archived nodes reject every tag mutation.
+- Proposer withdrawal after third-party voting is deferred until Voting supplies engagement information.
+
+<a id="tag-011"></a>
+## TAG-011 — Node authors control tag presentation
+
+**Statement:** Graph shall record each active node tag as `Community`, `Endorsed`, `Hidden`, or `Disputed`, with disposition controlled by the node author.
+
+**Rationale:** Authors need protection from unwanted primary presentation without gaining the power to erase community characterization.
+
+**Priority:** Must
+**Status:** Implemented
+
+### Acceptance criteria
+
+- A tag applied by the node author begins `Endorsed`; other applications begin `Community`.
+- Only the node author can change disposition.
+- `Hidden` and `Disputed` tags are excluded from normal presentation but remain explicitly reviewable.
+- `Disputed` records the author's request for a future moderation workflow.
+- Disposition values persist as readable strings.
 
 <a id="vot-001"></a>
 ## VOT-001 — Node views report vote totals and averages

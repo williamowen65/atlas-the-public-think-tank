@@ -133,9 +133,9 @@ public class ReusableTagTests
                 DateTimeOffset.UtcNow.AddMinutes(1)));
     }
 
-    /// <summary>Verifies that a node author may remove another participant's application.</summary>
+    /// <summary>Verifies that a node author cannot erase another participant's application.</summary>
     [TestMethod]
-    public void Remove_ByNodeAuthor_Succeeds()
+    public void Remove_ByNodeAuthor_Throws()
     {
         var fixture = new TagFixture();
         var node = NodeTestFactory.Create();
@@ -146,15 +146,9 @@ public class ReusableTagTests
             actorIsActive: true,
             DateTimeOffset.UtcNow);
 
-        fixture.Service.Remove(
-            node,
-            applied.Id,
-            node.AuthorId.Value,
-            actorIsActive: true,
-            actorIsModerator: false,
-            DateTimeOffset.UtcNow.AddMinutes(1));
-
-        Assert.IsTrue(fixture.NodeTags.GetById(applied.Id)!.IsRemoved);
+        Assert.Throws<UnauthorizedAccessException>(() => fixture.Service.Remove(
+            node, applied.Id, node.AuthorId.Value, actorIsActive: true,
+            actorIsModerator: false, DateTimeOffset.UtcNow.AddMinutes(1)));
     }
 
     /// <summary>Verifies that moderator capability permits removal by a different participant.</summary>
@@ -212,6 +206,60 @@ public class ReusableTagTests
                 node.AuthorId.Value,
                 actorIsActive: true,
                 DateTimeOffset.UtcNow.AddMinutes(1)));
+    }
+
+    /// <summary>Verifies that an author's own application begins as endorsed.</summary>
+    [TestMethod]
+    public void Apply_ByNodeAuthor_IsEndorsed()
+    {
+        var fixture = new TagFixture();
+        var node = NodeTestFactory.Create();
+        var applied = fixture.Service.Apply(node, "Useful", node.AuthorId.Value, true, DateTimeOffset.UtcNow);
+
+        Assert.AreEqual(NodeTagDisposition.Endorsed, applied.Disposition);
+        Assert.AreEqual(NodeTagLifecycleState.Active, applied.LifecycleState);
+    }
+
+    /// <summary>Verifies that only the node author may hide a community application.</summary>
+    [TestMethod]
+    public void SetDisposition_ByNodeAuthor_HidesWithoutRemoving()
+    {
+        var fixture = new TagFixture();
+        var node = NodeTestFactory.Create();
+        var applied = fixture.Service.Apply(node, "Unflattering", Guid.NewGuid(), true, DateTimeOffset.UtcNow);
+
+        fixture.Service.SetDisposition(node, applied.Id, NodeTagDisposition.Hidden,
+            node.AuthorId.Value, true);
+
+        Assert.AreEqual(NodeTagDisposition.Hidden, applied.Disposition);
+        Assert.IsFalse(applied.IsRemoved);
+    }
+
+    /// <summary>Verifies that a third party cannot decide how an author's node presents a tag.</summary>
+    [TestMethod]
+    public void SetDisposition_ByOtherParticipant_Throws()
+    {
+        var fixture = new TagFixture();
+        var node = NodeTestFactory.Create();
+        var applied = fixture.Service.Apply(node, "Questionable", Guid.NewGuid(), true, DateTimeOffset.UtcNow);
+
+        Assert.Throws<UnauthorizedAccessException>(() => fixture.Service.SetDisposition(
+            node, applied.Id, NodeTagDisposition.Disputed, Guid.NewGuid(), true));
+    }
+
+    /// <summary>Verifies replacement records supersession rather than erasing history.</summary>
+    [TestMethod]
+    public void Replace_PreservesSupersededLifecycle()
+    {
+        var fixture = new TagFixture();
+        var node = NodeTestFactory.Create();
+        var original = fixture.Service.Apply(node, "Typoo", node.AuthorId.Value, true, DateTimeOffset.UtcNow);
+
+        fixture.Service.Replace(node, original.Id, "Typo", node.AuthorId.Value, true, false,
+            DateTimeOffset.UtcNow.AddMinutes(1));
+
+        Assert.AreEqual(NodeTagLifecycleState.Superseded,
+            fixture.NodeTags.GetById(original.Id)!.LifecycleState);
     }
 
     private sealed class TagFixture

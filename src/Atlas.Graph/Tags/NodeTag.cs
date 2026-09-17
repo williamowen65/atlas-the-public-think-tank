@@ -9,7 +9,9 @@ public sealed class NodeTag
     public NodeId NodeId { get; }
     public TagDefinitionId TagDefinitionId { get; }
     public Guid AppliedByParticipantId { get; }
-    public bool IsRemoved { get; private set; }
+    public NodeTagLifecycleState LifecycleState { get; private set; }
+    public NodeTagDisposition Disposition { get; private set; }
+    public bool IsRemoved => LifecycleState != NodeTagLifecycleState.Active;
     public DateTimeOffset CreatedAt { get; }
     public DateTimeOffset? RemovedAt { get; private set; }
 
@@ -18,7 +20,8 @@ public sealed class NodeTag
         NodeId nodeId,
         TagDefinitionId tagDefinitionId,
         Guid appliedByParticipantId,
-        bool isRemoved,
+        NodeTagLifecycleState lifecycleState,
+        NodeTagDisposition disposition,
         DateTimeOffset createdAt,
         DateTimeOffset? removedAt)
     {
@@ -42,7 +45,7 @@ public sealed class NodeTag
             throw new ArgumentException("An applying participant is required.", nameof(appliedByParticipantId));
         }
 
-        if (isRemoved != removedAt.HasValue)
+        if ((lifecycleState != NodeTagLifecycleState.Active) != removedAt.HasValue)
         {
             throw new ArgumentException("Removed state and removal time must agree.");
         }
@@ -51,7 +54,8 @@ public sealed class NodeTag
         NodeId = nodeId;
         TagDefinitionId = tagDefinitionId;
         AppliedByParticipantId = appliedByParticipantId;
-        IsRemoved = isRemoved;
+        LifecycleState = lifecycleState;
+        Disposition = disposition;
         CreatedAt = createdAt;
         RemovedAt = removedAt;
     }
@@ -61,14 +65,20 @@ public sealed class NodeTag
         NodeId nodeId,
         TagDefinitionId tagDefinitionId,
         Guid appliedByParticipantId,
+        Guid nodeAuthorParticipantId,
         DateTimeOffset createdAt)
     {
+        var disposition = appliedByParticipantId == nodeAuthorParticipantId
+            ? NodeTagDisposition.Endorsed
+            : NodeTagDisposition.Community;
+
         return new NodeTag(
             NodeTagId.New(),
             nodeId,
             tagDefinitionId,
             appliedByParticipantId,
-            isRemoved: false,
+            NodeTagLifecycleState.Active,
+            disposition,
             createdAt,
             removedAt: null);
     }
@@ -79,7 +89,8 @@ public sealed class NodeTag
         NodeId nodeId,
         TagDefinitionId tagDefinitionId,
         Guid appliedByParticipantId,
-        bool isRemoved,
+        NodeTagLifecycleState lifecycleState,
+        NodeTagDisposition disposition,
         DateTimeOffset createdAt,
         DateTimeOffset? removedAt)
     {
@@ -88,12 +99,13 @@ public sealed class NodeTag
             nodeId,
             tagDefinitionId,
             appliedByParticipantId,
-            isRemoved,
+            lifecycleState,
+            disposition,
             createdAt,
             removedAt);
     }
 
-    /// <summary>Removes the association when the actor owns the application, owns the node, or moderates tags.</summary>
+    /// <summary>Withdraws the association for its proposer or records administrative removal.</summary>
     public void Remove(
         Guid actorParticipantId,
         Guid nodeAuthorParticipantId,
@@ -117,8 +129,41 @@ public sealed class NodeTag
             throw new ArgumentException("Removal time cannot precede creation time.", nameof(removedAt));
         }
 
-        IsRemoved = true;
+        LifecycleState = actorIsModerator
+            ? NodeTagLifecycleState.AdministrativelyRemoved
+            : NodeTagLifecycleState.Withdrawn;
         RemovedAt = removedAt;
+    }
+
+    /// <summary>Records the node author's presentation decision without erasing the association.</summary>
+    public void SetDisposition(
+        NodeTagDisposition disposition,
+        Guid actorParticipantId,
+        Guid nodeAuthorParticipantId)
+    {
+        if (actorParticipantId != nodeAuthorParticipantId)
+        {
+            throw new UnauthorizedAccessException("Only the node author may change tag disposition.");
+        }
+
+        if (IsRemoved)
+        {
+            throw new InvalidOperationException("An inactive node tag cannot change disposition.");
+        }
+
+        Disposition = disposition;
+    }
+
+    /// <summary>Marks this association as replaced while preserving its audit record.</summary>
+    public void Supersede(DateTimeOffset supersededAt)
+    {
+        if (supersededAt < CreatedAt)
+        {
+            throw new ArgumentException("Supersession time cannot precede creation time.", nameof(supersededAt));
+        }
+
+        LifecycleState = NodeTagLifecycleState.Superseded;
+        RemovedAt = supersededAt;
     }
 
     /// <summary>Checks removal authority without changing the association.</summary>
@@ -133,12 +178,10 @@ public sealed class NodeTag
             throw new InvalidOperationException("An inactive participant cannot change node tags.");
         }
 
-        if (!actorIsModerator &&
-            actorParticipantId != AppliedByParticipantId &&
-            actorParticipantId != nodeAuthorParticipantId)
+        if (!actorIsModerator && actorParticipantId != AppliedByParticipantId)
         {
             throw new UnauthorizedAccessException(
-                "Only the applying participant, node author, or a moderator may remove this tag.");
+                "Only the applying participant or a moderator may remove this tag. The node author may hide or dispute it.");
         }
     }
 }

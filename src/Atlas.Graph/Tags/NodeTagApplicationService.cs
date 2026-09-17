@@ -44,6 +44,7 @@ public sealed class NodeTagApplicationService
             node.Id,
             definition.Id,
             actorParticipantId,
+            node.AuthorId.Value,
             appliedAt);
 
         _nodeTags.Save(nodeTag);
@@ -128,12 +129,8 @@ public sealed class NodeTagApplicationService
 
         var replacement = _nodeTags.GetActive(node.Id, replacementDefinition.Id);
 
-        existing.Remove(
-            actorParticipantId,
-            node.AuthorId.Value,
-            actorIsActive,
-            actorIsModerator,
-            replacedAt);
+        existing.EnsureCanRemove(actorParticipantId, node.AuthorId.Value, actorIsActive, actorIsModerator);
+        existing.Supersede(replacedAt);
         _nodeTags.Save(existing);
 
         if (replacement is not null)
@@ -145,9 +142,27 @@ public sealed class NodeTagApplicationService
             node.Id,
             replacementDefinition.Id,
             actorParticipantId,
+            node.AuthorId.Value,
             replacedAt);
         _nodeTags.Save(replacement);
         return replacement;
+    }
+
+    /// <summary>Changes how the node author presents one active tag.</summary>
+    public void SetDisposition(Node node, NodeTagId nodeTagId, NodeTagDisposition disposition,
+        Guid actorParticipantId, bool actorIsActive)
+    {
+        EnsureMutable(node, actorParticipantId, actorIsActive);
+        var nodeTag = _nodeTags.GetById(nodeTagId)
+            ?? throw new KeyNotFoundException("The node tag does not exist.");
+
+        if (nodeTag.NodeId != node.Id)
+        {
+            throw new InvalidOperationException("The node tag belongs to a different node.");
+        }
+
+        nodeTag.SetDisposition(disposition, actorParticipantId, node.AuthorId.Value);
+        _nodeTags.Save(nodeTag);
     }
 
     private TagDefinition ResolveDefinition(

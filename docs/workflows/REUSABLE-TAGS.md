@@ -57,11 +57,17 @@ A node-level edit never renames a shared definition. Replacement resolves a diff
 ## Permissions and moderation baseline
 
 - Any active participant may apply a tag to an active node.
-- The applying participant may remove or replace their own association.
-- The node author may remove any association from that node.
+- The applying participant may withdraw or replace their own association.
+- The node author may endorse, hide, or dispute an association but cannot erase a community contribution.
 - A moderator must hold an explicit tag-moderation capability to remove another participant's association or suppress a definition.
 - Suppressing a definition makes its associations unavailable for new activity without deleting historical identity or vote summaries.
 - Archived nodes are readable but reject tag mutations.
+
+## Lifecycle and author disposition
+
+`NodeTag` records two independent decisions. Lifecycle records whether the association is active and why it ended: `Active`, `Withdrawn`, `Superseded`, or `AdministrativelyRemoved`. Disposition records how the node author presents an active association: `Community`, `Endorsed`, `Hidden`, or `Disputed`.
+
+Hidden and disputed associations remain available through an explicit review view. A dispute is also the future handoff point to Moderation; this slice records the state but does not pretend the Moderation boundary already exists. Ordinary actions retain the original association, proposer, and timestamps for audit.
 
 ## Graph-to-Voting interaction
 

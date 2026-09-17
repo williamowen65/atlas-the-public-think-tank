@@ -14,7 +14,7 @@ public static class NodeDisplay
     private const int AuthorWidth = 20;
     private const int DescriptionWidth = 32;
     private const int StatusWidth = 10;
-    private const int TagsWidth = 30;
+    private const int TagsWidth = 24;
     private const int SubNodesMinimumWidth = 36;
 
     /// <summary>Writes table header to the console display.</summary>
@@ -28,7 +28,8 @@ public static class NodeDisplay
             $"{"Description",-DescriptionWidth}  " +
             $"{"Votes",5}  " +
             $"{"Avg",5}  " +
-            $"{"Tags",-TagsWidth}  " +
+            $"{"Author Tags",-TagsWidth}  " +
+            $"{"Community Tags",-TagsWidth}  " +
             $"{"Status",-StatusWidth}  " +
             "Sub-nodes");
 
@@ -42,6 +43,7 @@ public static class NodeDisplay
                 DescriptionWidth + 2 +
                 5 + 2 +
                 5 + 2 +
+                TagsWidth + 2 +
                 TagsWidth + 2 +
                 StatusWidth + 2 +
                 SubNodesMinimumWidth));
@@ -74,7 +76,8 @@ public static class NodeDisplay
             $"{Truncate(description, DescriptionWidth),-DescriptionWidth}  " +
             $"{FormatVoteCount(voteCount),5}  " +
             $"{FormatAverageVote(averageVote),5}  " +
-            $"{Truncate(ResolveTags(node, nodeTags, tagDefinitions), TagsWidth),-TagsWidth}  " +
+            $"{Truncate(ResolveTags(node, nodeTags, tagDefinitions, NodeTagDisposition.Endorsed), TagsWidth),-TagsWidth}  " +
+            $"{Truncate(ResolveTags(node, nodeTags, tagDefinitions, NodeTagDisposition.Community), TagsWidth),-TagsWidth}  " +
             $"{node.Status,-StatusWidth}  " +
             subNodeSummary);
     }
@@ -307,11 +310,12 @@ public static class NodeDisplay
     private static string ResolveTags(
         Node node,
         INodeTagRepository? nodeTags,
-        ITagDefinitionRepository? tagDefinitions)
+        ITagDefinitionRepository? tagDefinitions,
+        NodeTagDisposition disposition)
     {
         return nodeTags is null || tagDefinitions is null
             ? "—"
-            : TagDisplay.FormatCompact(node, nodeTags, tagDefinitions);
+            : TagDisplay.FormatCompact(node, nodeTags, tagDefinitions, disposition);
     }
 
 

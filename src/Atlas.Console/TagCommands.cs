@@ -27,7 +27,9 @@ public static class TagCommands
             Console.WriteLine("1. Apply tag");
             Console.WriteLine("2. Replace tag");
             Console.WriteLine("3. Remove tag");
-            Console.WriteLine("4. Return to node");
+            Console.WriteLine("4. Change author disposition");
+            Console.WriteLine("5. View hidden and disputed tags");
+            Console.WriteLine("6. Return to node");
             Console.Write("Selection: ");
 
             try
@@ -44,6 +46,13 @@ public static class TagCommands
                         Remove(node, service, nodeTags, definitions, currentParticipant);
                         break;
                     case "4":
+                        ChangeDisposition(node, service, nodeTags, definitions, currentParticipant);
+                        break;
+                    case "5":
+                        TagDisplay.WriteHiddenAndDisputed(node, nodeTags, definitions);
+                        ConsoleUi.Pause();
+                        break;
+                    case "6":
                         managing = false;
                         break;
                     default:
@@ -61,6 +70,24 @@ public static class TagCommands
                 ConsoleUi.Pause($"Unable to change tags: {exception.Message}");
             }
         }
+    }
+
+    private static void ChangeDisposition(Node node, NodeTagApplicationService service,
+        INodeTagRepository nodeTags, ITagDefinitionRepository definitions, Participant participant)
+    {
+        var selected = ReadNodeTag(node, nodeTags, definitions, "change");
+        if (selected is null) return;
+
+        Console.Write("Disposition (Community, Endorsed, Hidden, Disputed): ");
+        if (!Enum.TryParse<NodeTagDisposition>(Console.ReadLine(), true, out var disposition))
+        {
+            ConsoleUi.Pause("That is not a valid disposition.");
+            return;
+        }
+
+        service.SetDisposition(node, selected.Id, disposition,
+            participant.Id.Value, participant.IsActive);
+        ConsoleUi.Pause($"Tag disposition changed to {disposition}.");
     }
 
     private static void Apply(
