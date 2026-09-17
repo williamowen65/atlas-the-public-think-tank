@@ -352,7 +352,7 @@ This document is the authoritative catalog of requirement statements and accepta
 <a id="aut-002"></a>
 ## AUT-002 — Node management is limited to authorized actors
 
-**Statement:** The system shall allow node mutation and requested-type management only for the node author.
+**Statement:** The system shall allow node mutation and requested-type management only for the node author or an actor granted an applicable moderation capability.
 
 **Rationale:** Authorship is recorded, but recording an author is not itself authorization enforcement.
 
