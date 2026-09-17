@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Atlas.Console\Atlas.Console.csproj" />
+    <ProjectReference Include="..\..\src\Atlas.Console\Atlas.Console.csproj" />
   </ItemGroup>
 
   <ItemGroup>

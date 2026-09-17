@@ -167,7 +167,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Voting", "src\Atlas.V
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Voting.Tests", "tests\Atlas.Voting.Tests\Atlas.Voting.Tests.csproj", "{E536EA50-0130-4A49-BA2C-F41153B41CAE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Console.Tests", "Atlas.Console.Tests\Atlas.Console.Tests.csproj", "{9C371605-468F-435E-9CCE-E499E008DB59}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Console.Tests", "tests\Atlas.Console.Tests\Atlas.Console.Tests.csproj", "{9C371605-468F-435E-9CCE-E499E008DB59}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Voting", "Voting", "{2F264AFF-1E2B-4CBE-84DB-C1A067039CF5}"
 	ProjectSection(SolutionItems) = preProject
