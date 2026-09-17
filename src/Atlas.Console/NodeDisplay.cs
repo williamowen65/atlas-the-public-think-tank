@@ -86,6 +86,8 @@ public static class NodeDisplay
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
         IParticipantRepository participants,
+        INodeTagRepository nodeTags,
+        ITagDefinitionRepository tagDefinitions,
         int? voteCount = null,
         double? averageVote = null)
     {
@@ -109,6 +111,9 @@ public static class NodeDisplay
         Console.WriteLine($"Average:        {FormatAverageVote(averageVote)}");
         Console.WriteLine($"Created:        {node.CreatedAt.LocalDateTime}");
         Console.WriteLine($"Updated:        {node.UpdatedAt.LocalDateTime}");
+
+        TagDisplay.WriteDetails(node, nodeTags, tagDefinitions);
+
         Console.WriteLine();
         Console.WriteLine("Description");
         Console.WriteLine("-----------");

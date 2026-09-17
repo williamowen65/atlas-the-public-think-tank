@@ -33,9 +33,9 @@ public static class NodeCommands
                 nodes,
                 nodeTypes,
                 documents,
-                participants);
-
-            TagDisplay.WriteDetails(node, nodeTags, tagDefinitions);
+                participants,
+                nodeTags,
+                tagDefinitions);
 
             Console.WriteLine();
             Console.WriteLine("Choose an action:");
