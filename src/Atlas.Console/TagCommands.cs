@@ -85,21 +85,90 @@ public static class TagCommands
     private static void ManagePresentation(Node node, NodeTagApplicationService service,
         INodeTagRepository nodeTags, ITagDefinitionRepository definitions, Participant participant)
     {
-        var selected = ReadNodeTag(node, nodeTags, definitions, "manage", association =>
-            association.Disposition is NodeTagDisposition.Community or NodeTagDisposition.Endorsed
-                or NodeTagDisposition.Hidden or NodeTagDisposition.Disputed);
+        var selected = ReadNodeTagForPresentation(node, nodeTags, definitions);
         if (selected is null) return;
 
-        Console.Write("Show as (Community, Endorsed, Hidden, Disputed): ");
-        if (!Enum.TryParse<NodeTagDisposition>(Console.ReadLine(), true, out var disposition))
+        Console.WriteLine();
+        Console.WriteLine($"Selected: {selected.Value.Definition.Text}");
+        Console.WriteLine($"Current presentation: {selected.Value.Association.Disposition}");
+        Console.WriteLine();
+        Console.WriteLine("1. Community");
+        Console.WriteLine("2. Endorsed");
+        Console.WriteLine("3. Hidden");
+        Console.WriteLine("4. Disputed");
+        Console.WriteLine("0. Cancel");
+        Console.Write("New presentation: ");
+
+        if (!int.TryParse(Console.ReadLine(), out var selection) || selection < 0 || selection > 4)
         {
-            ConsoleUi.Pause("That is not a valid disposition.");
+            ConsoleUi.Pause("That is not a valid presentation selection.");
             return;
         }
 
-        service.SetDisposition(node, selected.Id, disposition,
+        if (selection == 0) return;
+
+        var disposition = selection switch
+        {
+            1 => NodeTagDisposition.Community,
+            2 => NodeTagDisposition.Endorsed,
+            3 => NodeTagDisposition.Hidden,
+            4 => NodeTagDisposition.Disputed,
+            _ => throw new InvalidOperationException("Unsupported presentation selection.")
+        };
+
+        service.SetDisposition(node, selected.Value.Association.Id, disposition,
             participant.Id.Value, participant.IsActive);
-        ConsoleUi.Pause($"Tag disposition changed to {disposition}.");
+        ConsoleUi.Pause($"'{selected.Value.Definition.Text}' now appears as {disposition}.");
+    }
+
+    private static (NodeTag Association, TagDefinition Definition)? ReadNodeTagForPresentation(
+        Node node,
+        INodeTagRepository nodeTags,
+        ITagDefinitionRepository definitions)
+    {
+        var tags = TagDisplay.ResolveActive(node, nodeTags, definitions)
+            .OrderBy(item => Array.IndexOf(
+                new[]
+                {
+                    NodeTagDisposition.Community,
+                    NodeTagDisposition.Endorsed,
+                    NodeTagDisposition.Hidden,
+                    NodeTagDisposition.Disputed
+                },
+                item.Association.Disposition))
+            .ThenBy(item => item.Association.CreatedAt)
+            .ToList();
+
+        if (tags.Count == 0)
+        {
+            ConsoleUi.Pause("There are no tags to manage.");
+            return null;
+        }
+
+        NodeTagDisposition? currentGroup = null;
+        for (var index = 0; index < tags.Count; index++)
+        {
+            var disposition = tags[index].Association.Disposition;
+            if (currentGroup != disposition)
+            {
+                if (currentGroup is not null) Console.WriteLine();
+                Console.WriteLine(disposition.ToString().ToUpperInvariant());
+                currentGroup = disposition;
+            }
+
+            Console.WriteLine($"{index + 1}. {tags[index].Definition.Text}");
+        }
+
+        Console.WriteLine();
+        Console.Write("Tag to manage (0 cancels): ");
+        if (!int.TryParse(Console.ReadLine(), out var selection) ||
+            selection < 0 || selection > tags.Count)
+        {
+            ConsoleUi.Pause("That is not a valid tag selection.");
+            return null;
+        }
+
+        return selection == 0 ? null : tags[selection - 1];
     }
 
     private static void Apply(
