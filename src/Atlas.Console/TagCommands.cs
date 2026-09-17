@@ -355,9 +355,12 @@ public static class TagCommands
         INodeTagRepository nodeTags,
         ITagDefinitionRepository definitions)
     {
-        var active = TagDisplay.ResolveActive(node, nodeTags, definitions)
+        var active = TagDisplay.ResolveActive(node, nodeTags, definitions);
+        var visible = active
             .Where(item => item.Association.Disposition is
-                NodeTagDisposition.Community or NodeTagDisposition.Endorsed)
+                NodeTagDisposition.Endorsed or NodeTagDisposition.Community)
+            .OrderBy(item => item.Association.Disposition == NodeTagDisposition.Endorsed ? 0 : 1)
+            .ThenBy(item => item.Association.CreatedAt)
             .ToList();
 
         if (active.Count == 0)
@@ -366,10 +369,23 @@ public static class TagCommands
             return;
         }
 
-        for (var index = 0; index < active.Count; index++)
+        NodeTagDisposition? currentGroup = null;
+        for (var index = 0; index < visible.Count; index++)
         {
-            Console.WriteLine($"{index + 1}. {active[index].Definition.Text}");
+            var disposition = visible[index].Association.Disposition;
+            if (currentGroup != disposition)
+            {
+                if (currentGroup is not null) Console.WriteLine();
+                Console.WriteLine(disposition.ToString().ToUpperInvariant());
+                currentGroup = disposition;
+            }
+
+            Console.WriteLine($"{index + 1}. {visible[index].Definition.Text}");
         }
+
+        if (visible.Count > 0) Console.WriteLine();
+        Console.WriteLine($"Hidden tags: {active.Count(item => item.Association.Disposition == NodeTagDisposition.Hidden)}");
+        Console.WriteLine($"Disputed tags: {active.Count(item => item.Association.Disposition == NodeTagDisposition.Disputed)}");
     }
 
     private static void WriteNumberedTags(
