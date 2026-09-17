@@ -22,12 +22,17 @@ public static class TagCommands
             Console.Clear();
             Console.WriteLine($"TAGS FOR {node.Title.Value.ToUpperInvariant()}");
             Console.WriteLine(new string('-', $"TAGS FOR {node.Title.Value}".Length));
+            Console.WriteLine($"Acting as: {currentParticipant.DisplayName}");
+            Console.WriteLine();
             WriteNumberedTags(node, nodeTags, definitions);
             Console.WriteLine();
             Console.WriteLine("1. Apply tag");
-            Console.WriteLine("2. Replace tag");
-            Console.WriteLine("3. Remove tag");
-            Console.WriteLine("4. Change author disposition");
+            Console.WriteLine("2. Correct or replace one of my tags");
+            Console.WriteLine("3. Withdraw one of my tags");
+            if (currentParticipant.Id.Value == node.AuthorId.Value)
+            {
+                Console.WriteLine("4. Manage how tags appear on my node");
+            }
             Console.WriteLine("5. View hidden and disputed tags");
             Console.WriteLine("6. Return to node");
             Console.Write("Selection: ");
@@ -46,7 +51,12 @@ public static class TagCommands
                         Remove(node, service, nodeTags, definitions, currentParticipant);
                         break;
                     case "4":
-                        ChangeDisposition(node, service, nodeTags, definitions, currentParticipant);
+                        if (currentParticipant.Id.Value != node.AuthorId.Value)
+                        {
+                            ConsoleUi.Pause("Only the node author can manage how tags appear on this node.");
+                            break;
+                        }
+                        ManagePresentation(node, service, nodeTags, definitions, currentParticipant);
                         break;
                     case "5":
                         TagDisplay.WriteHiddenAndDisputed(node, nodeTags, definitions);
@@ -72,13 +82,15 @@ public static class TagCommands
         }
     }
 
-    private static void ChangeDisposition(Node node, NodeTagApplicationService service,
+    private static void ManagePresentation(Node node, NodeTagApplicationService service,
         INodeTagRepository nodeTags, ITagDefinitionRepository definitions, Participant participant)
     {
-        var selected = ReadNodeTag(node, nodeTags, definitions, "change");
+        var selected = ReadNodeTag(node, nodeTags, definitions, "manage", association =>
+            association.Disposition is NodeTagDisposition.Community or NodeTagDisposition.Endorsed
+                or NodeTagDisposition.Hidden or NodeTagDisposition.Disputed);
         if (selected is null) return;
 
-        Console.Write("Disposition (Community, Endorsed, Hidden, Disputed): ");
+        Console.Write("Show as (Community, Endorsed, Hidden, Disputed): ");
         if (!Enum.TryParse<NodeTagDisposition>(Console.ReadLine(), true, out var disposition))
         {
             ConsoleUi.Pause("That is not a valid disposition.");
@@ -121,7 +133,8 @@ public static class TagCommands
         ITagDefinitionRepository definitions,
         Participant participant)
     {
-        var selected = ReadNodeTag(node, nodeTags, definitions, "replace");
+        var selected = ReadNodeTag(node, nodeTags, definitions, "replace",
+            association => association.AppliedByParticipantId == participant.Id.Value);
 
         if (selected is null)
         {
@@ -154,7 +167,8 @@ public static class TagCommands
         ITagDefinitionRepository definitions,
         Participant participant)
     {
-        var selected = ReadNodeTag(node, nodeTags, definitions, "remove");
+        var selected = ReadNodeTag(node, nodeTags, definitions, "withdraw",
+            association => association.AppliedByParticipantId == participant.Id.Value);
 
         if (selected is null)
         {
@@ -169,7 +183,7 @@ public static class TagCommands
             actorIsModerator: false,
             DateTimeOffset.UtcNow);
 
-        ConsoleUi.Pause("Tag removed from this node.");
+        ConsoleUi.Pause("Tag withdrawn from this node. Its history was preserved.");
     }
 
     private static string? ReadTagText(ITagDefinitionRepository definitions)
@@ -230,17 +244,20 @@ public static class TagCommands
         Node node,
         INodeTagRepository nodeTags,
         ITagDefinitionRepository definitions,
-        string action)
+        string action,
+        Func<NodeTag, bool>? predicate = null)
     {
-        var active = TagDisplay.ResolveActive(node, nodeTags, definitions);
+        var active = TagDisplay.ResolveActive(node, nodeTags, definitions)
+            .Where(item => predicate?.Invoke(item.Association) ?? true)
+            .ToList();
 
         if (active.Count == 0)
         {
-            ConsoleUi.Pause("This node has no active tags.");
+            ConsoleUi.Pause($"There are no tags you can {action}.");
             return null;
         }
 
-        WriteNumberedTags(node, nodeTags, definitions);
+        WriteNumberedTags(active);
         Console.Write($"Tag to {action} (0 cancels): ");
 
         if (!int.TryParse(Console.ReadLine(), out var selection) ||
@@ -259,7 +276,10 @@ public static class TagCommands
         INodeTagRepository nodeTags,
         ITagDefinitionRepository definitions)
     {
-        var active = TagDisplay.ResolveActive(node, nodeTags, definitions);
+        var active = TagDisplay.ResolveActive(node, nodeTags, definitions)
+            .Where(item => item.Association.Disposition is
+                NodeTagDisposition.Community or NodeTagDisposition.Endorsed)
+            .ToList();
 
         if (active.Count == 0)
         {
@@ -270,6 +290,15 @@ public static class TagCommands
         for (var index = 0; index < active.Count; index++)
         {
             Console.WriteLine($"{index + 1}. {active[index].Definition.Text}");
+        }
+    }
+
+    private static void WriteNumberedTags(
+        IReadOnlyList<(NodeTag Association, TagDefinition Definition)> tags)
+    {
+        for (var index = 0; index < tags.Count; index++)
+        {
+            Console.WriteLine($"{index + 1}. {tags[index].Definition.Text}");
         }
     }
 }

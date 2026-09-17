@@ -38,7 +38,7 @@ public static class NodeCommands
                 tagDefinitions);
 
             Console.WriteLine();
-            Console.WriteLine("Choose an action:");
+            Console.WriteLine($"Choose an action (as {currentParticipant.DisplayName}):");
             Console.WriteLine("1. Rename");
             Console.WriteLine("2. Change description");
             Console.WriteLine("3. Change type");

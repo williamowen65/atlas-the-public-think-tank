@@ -144,6 +144,7 @@ public sealed class ConsoleApplication
         Console.Clear();
         Console.WriteLine("SELECT PARTICIPANT");
         Console.WriteLine("------------------");
+        WriteActingAs();
 
         var participants = _participants
             .GetAll()
@@ -185,6 +186,7 @@ public sealed class ConsoleApplication
         Console.Clear();
         Console.WriteLine("CREATE PARTICIPANT");
         Console.WriteLine("------------------");
+        WriteActingAs();
         Console.Write("Display name: ");
         var displayName = Console.ReadLine();
         Console.Write("Short bio (optional): ");
@@ -225,6 +227,7 @@ public sealed class ConsoleApplication
             Console.Clear();
             Console.WriteLine("BROWSE PARTICIPANTS");
             Console.WriteLine("-------------------");
+            WriteActingAs();
 
             var participants = _participants
                 .GetAll()
@@ -294,6 +297,7 @@ public sealed class ConsoleApplication
         Console.Clear();
         Console.WriteLine("CREATE NODE");
         Console.WriteLine("-----------");
+        WriteActingAs();
 
         NodeCreationWorkflow.Create(
             _nodes,
@@ -313,6 +317,7 @@ public sealed class ConsoleApplication
             Console.Clear();
             Console.WriteLine("BROWSE NODES");
             Console.WriteLine("------------");
+            WriteActingAs();
 
             var nodes = _nodes.GetAll().ToList();
 
@@ -380,6 +385,7 @@ public sealed class ConsoleApplication
         Console.Clear();
         Console.WriteLine("NODE TYPES");
         Console.WriteLine("----------");
+        WriteActingAs();
 
         var nodeTypes = _nodeTypes
             .GetAll()
@@ -416,6 +422,7 @@ public sealed class ConsoleApplication
         Console.Clear();
         Console.WriteLine("ATLAS.CONTENT DOCUMENTS");
         Console.WriteLine("-----------------------");
+        WriteActingAs();
 
         var documents = _documents.GetAll();
 
@@ -453,13 +460,14 @@ public sealed class ConsoleApplication
     }
 
     /// <summary>Displays data file in the console workflow.</summary>
-    private static void ShowDataFile(
+    private void ShowDataFile(
         string heading,
         string filePath)
     {
         Console.Clear();
         Console.WriteLine(heading);
         Console.WriteLine(new string('-', heading.Length));
+        WriteActingAs();
         Console.WriteLine(filePath);
         Console.WriteLine();
 
@@ -469,5 +477,12 @@ public sealed class ConsoleApplication
                 : "The data file has not been created yet.");
 
         ConsoleUi.Pause();
+    }
+
+    /// <summary>Makes the simulated authenticated identity visible on Console screens.</summary>
+    private void WriteActingAs()
+    {
+        Console.WriteLine($"Acting as: {_currentParticipant.DisplayName}");
+        Console.WriteLine();
     }
 }
