@@ -39,25 +39,22 @@ public static class NodeCommands
             Console.WriteLine(
                 $"Choose an action (as {currentParticipant.DisplayName}):");
 
-            if (isAuthor)
-            {
-                Console.WriteLine("1. Rename");
-                Console.WriteLine("2. Change description");
-                Console.WriteLine("3. Change type");
-                Console.WriteLine("4. Archive");
-                Console.WriteLine("5. Restore");
-                Console.WriteLine("6. Change requested sub-node types");
-            }
+            var authorOnlyStatus = isAuthor
+                ? string.Empty
+                : " [disabled — requires node author]";
+
+            Console.WriteLine($"1. Rename{authorOnlyStatus}");
+            Console.WriteLine($"2. Change description{authorOnlyStatus}");
+            Console.WriteLine($"3. Change type{authorOnlyStatus}");
+            Console.WriteLine($"4. Archive{authorOnlyStatus}");
+            Console.WriteLine($"5. Restore{authorOnlyStatus}");
+            Console.WriteLine(
+                $"6. Change requested sub-node types{authorOnlyStatus}");
 
             Console.WriteLine("7. Select sub-node");
             Console.WriteLine("8. Add sub-node");
-
-            if (isAuthor)
-            {
-                Console.WriteLine("9. Attach to parent");
-                Console.WriteLine("10. Detach from parent");
-            }
-
+            Console.WriteLine($"9. Attach to parent{authorOnlyStatus}");
+            Console.WriteLine($"10. Detach from parent{authorOnlyStatus}");
             Console.WriteLine("11. View author profile");
             Console.WriteLine("12. Return to node browser");
             Console.WriteLine();
@@ -68,6 +65,13 @@ public static class NodeCommands
             {
                 switch (Console.ReadLine())
                 {
+                    case "1" or "2" or "3" or "4" or "5" or "6" or
+                        "9" or "10" when !isAuthor:
+                        ConsoleUi.Pause(
+                            "This action is disabled because it requires " +
+                            "the node author.");
+                        break;
+
                     case "1":
                         Rename(node, nodes, actorParticipantId);
                         break;
