@@ -1,0 +1,144 @@
+using System.Text.Json;
+using Atlas.Graph.Nodes;
+using Atlas.Graph.Tags;
+
+namespace Atlas.ConsoleApp.Storage;
+
+/// <summary>Persists Graph node-tag associations in a dedicated JSON file.</summary>
+public sealed class JsonNodeTagRepository : INodeTagRepository
+{
+    private readonly string _filePath;
+    private readonly object _gate = new();
+    private readonly JsonSerializerOptions _jsonOptions = new() { WriteIndented = true };
+
+    /// <summary>Initializes the adapter for its dedicated data file.</summary>
+    public JsonNodeTagRepository(string filePath)
+    {
+        _filePath = filePath;
+    }
+
+    /// <summary>Loads all associations, including removed history.</summary>
+    public IReadOnlyCollection<NodeTag> GetAll()
+    {
+        lock (_gate)
+        {
+            return ReadStored().Select(ToDomain).ToList();
+        }
+    }
+
+    /// <summary>Loads an association by identifier.</summary>
+    public NodeTag? GetById(NodeTagId id)
+    {
+        lock (_gate)
+        {
+            var stored = ReadStored().SingleOrDefault(item => item.Id == id.Value);
+            return stored is null ? null : ToDomain(stored);
+        }
+    }
+
+    /// <summary>Loads active associations for one node.</summary>
+    public IReadOnlyCollection<NodeTag> GetActiveForNode(NodeId nodeId)
+    {
+        lock (_gate)
+        {
+            return ReadStored()
+                .Where(item => item.NodeId == nodeId.Value && !item.IsRemoved)
+                .Select(ToDomain)
+                .ToList();
+        }
+    }
+
+    /// <summary>Loads the active association for one node and definition.</summary>
+    public NodeTag? GetActive(NodeId nodeId, TagDefinitionId tagDefinitionId)
+    {
+        lock (_gate)
+        {
+            var stored = ReadStored().SingleOrDefault(item =>
+                item.NodeId == nodeId.Value &&
+                item.TagDefinitionId == tagDefinitionId.Value &&
+                !item.IsRemoved);
+            return stored is null ? null : ToDomain(stored);
+        }
+    }
+
+    /// <summary>Saves an association while preventing duplicate active applications.</summary>
+    public void Save(NodeTag nodeTag)
+    {
+        lock (_gate)
+        {
+            var stored = ReadStored();
+
+            if (!nodeTag.IsRemoved && stored.Any(item =>
+                    item.Id != nodeTag.Id.Value &&
+                    item.NodeId == nodeTag.NodeId.Value &&
+                    item.TagDefinitionId == nodeTag.TagDefinitionId.Value &&
+                    !item.IsRemoved))
+            {
+                throw new InvalidOperationException(
+                    "That tag is already applied to this node.");
+            }
+
+            var index = stored.FindIndex(item => item.Id == nodeTag.Id.Value);
+            var replacement = ToStorage(nodeTag);
+
+            if (index >= 0)
+            {
+                stored[index] = replacement;
+            }
+            else
+            {
+                stored.Add(replacement);
+            }
+
+            WriteStored(stored);
+        }
+    }
+
+    private List<StoredNodeTag> ReadStored()
+    {
+        if (!File.Exists(_filePath))
+        {
+            return [];
+        }
+
+        var json = File.ReadAllText(_filePath);
+        return string.IsNullOrWhiteSpace(json)
+            ? []
+            : JsonSerializer.Deserialize<List<StoredNodeTag>>(json, _jsonOptions) ?? [];
+    }
+
+    private void WriteStored(List<StoredNodeTag> nodeTags)
+    {
+        var directory = Path.GetDirectoryName(_filePath);
+
+        if (!string.IsNullOrWhiteSpace(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        File.WriteAllText(
+            _filePath,
+            JsonSerializer.Serialize(nodeTags, _jsonOptions));
+    }
+
+    private static StoredNodeTag ToStorage(NodeTag nodeTag) => new()
+    {
+        Id = nodeTag.Id.Value,
+        NodeId = nodeTag.NodeId.Value,
+        TagDefinitionId = nodeTag.TagDefinitionId.Value,
+        AppliedByParticipantId = nodeTag.AppliedByParticipantId,
+        IsRemoved = nodeTag.IsRemoved,
+        CreatedAt = nodeTag.CreatedAt,
+        RemovedAt = nodeTag.RemovedAt
+    };
+
+    private static NodeTag ToDomain(StoredNodeTag stored) =>
+        NodeTag.Reconstitute(
+            new NodeTagId(stored.Id),
+            new NodeId(stored.NodeId),
+            new TagDefinitionId(stored.TagDefinitionId),
+            stored.AppliedByParticipantId,
+            stored.IsRemoved,
+            stored.CreatedAt,
+            stored.RemovedAt);
+}

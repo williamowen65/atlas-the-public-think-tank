@@ -450,7 +450,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Nodes should reuse one vocabulary entry instead of storing duplicate copies of the same wording.
 
 **Priority:** Must
-**Status:** Approved
+**Status:** Verified
 
 ### Acceptance criteria
 
@@ -469,7 +469,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Differences in capitalization or spacing should not create duplicate vocabulary entries.
 
 **Priority:** Must
-**Status:** Approved
+**Status:** Verified
 
 ### Acceptance criteria
 
@@ -488,7 +488,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Reusing a definition must not merge its meaning, lifecycle, or votes across nodes.
 
 **Priority:** Must
-**Status:** Approved
+**Status:** Verified
 
 ### Acceptance criteria
 
@@ -507,7 +507,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** A local edit must not unexpectedly rename the reusable definition everywhere.
 
 **Priority:** Must
-**Status:** Approved
+**Status:** Verified
 
 ### Acceptance criteria
 
@@ -526,7 +526,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Tagging should remain open to contribution without allowing unrelated participants to erase other contributions.
 
 **Priority:** Must
-**Status:** Approved
+**Status:** Partial
 
 ### Acceptance criteria
 
@@ -545,7 +545,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Historical context should remain visible while archived or moderated targets are frozen against new activity.
 
 **Priority:** Must
-**Status:** Approved
+**Status:** Partial
 
 ### Acceptance criteria
 
@@ -564,7 +564,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Discoverable reuse limits vocabulary fragmentation.
 
 **Priority:** Should
-**Status:** Approved
+**Status:** Implemented
 
 ### Acceptance criteria
 
@@ -602,7 +602,7 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Strongly supported characterizations should be visible without allowing a large tag set to overwhelm the node card.
 
 **Priority:** Should
-**Status:** Approved
+**Status:** Partial
 
 ### Acceptance criteria
 

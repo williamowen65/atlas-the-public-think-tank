@@ -105,8 +105,8 @@ The node detail view exposes the complete tag set. This is presentation logic ov
 
 ## Follow-up implementation slices
 
-- [PTT-88](https://thepublicthinktank.atlassian.net/browse/PTT-88): implement Graph tag entities, normalization, repositories, authorization workflow, and tests.
+- [PTT-88](https://thepublicthinktank.atlassian.net/browse/PTT-88): implement the combined Graph, persistence, autocomplete, and display vertical slice.
 - [PTT-90](https://thepublicthinktank.atlassian.net/browse/PTT-90): extend Voting with a signed `NodeTagId` target and target-availability adapter.
-- [PTT-89](https://thepublicthinktank.atlassian.net/browse/PTT-89): implement tag autocomplete, complete-tag display, and prominence composition.
+- [PTT-89](https://thepublicthinktank.atlassian.net/browse/PTT-89): combined into PTT-88; vote-based prominence remains in PTT-90.
 
 These are implementation slices, not evidence that PTT-74's approved requirements are already implemented.
