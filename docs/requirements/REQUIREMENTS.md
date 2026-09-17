@@ -531,8 +531,9 @@ This document is the authoritative catalog of requirement statements and accepta
 ### Acceptance criteria
 
 - Applying a tag requires an active participant and active node.
-- The applying participant can remove or replace their association.
+- The applying participant can remove or replace their association until the node author endorses it.
 - The node author can endorse, hide, dispute, or return an active association to community presentation without deleting it.
+- Endorsement transfers removal and replacement control from the proposer to the node author.
 - A moderator with the applicable capability can administratively remove an association.
 - An unrelated participant cannot remove or replace another participant's association.
 

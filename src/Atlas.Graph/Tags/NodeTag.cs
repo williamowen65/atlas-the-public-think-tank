@@ -178,10 +178,23 @@ public sealed class NodeTag
             throw new InvalidOperationException("An inactive participant cannot change node tags.");
         }
 
-        if (!actorIsModerator && actorParticipantId != AppliedByParticipantId)
+        if (actorIsModerator)
+        {
+            return;
+        }
+
+        if (Disposition == NodeTagDisposition.Endorsed &&
+            actorParticipantId != nodeAuthorParticipantId)
         {
             throw new UnauthorizedAccessException(
-                "Only the applying participant or a moderator may remove this tag. The node author may hide or dispute it.");
+                "Only the node author or a moderator may remove an endorsed tag.");
+        }
+
+        if (Disposition != NodeTagDisposition.Endorsed &&
+            actorParticipantId != AppliedByParticipantId)
+        {
+            throw new UnauthorizedAccessException(
+                "Only the applying participant or a moderator may remove this tag. The node author may manage its presentation.");
         }
     }
 }

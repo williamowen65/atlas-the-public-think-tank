@@ -59,6 +59,7 @@ A node-level edit never renames a shared definition. Replacement resolves a diff
 - Any active participant may apply a tag to an active node.
 - The applying participant may withdraw or replace their own association.
 - The node author may endorse, hide, or dispute an association but cannot erase a community contribution.
+- Once endorsed, only the node author or an authorized moderator may withdraw or replace the association; the original proposer retains attribution but no longer controls it.
 - A moderator must hold an explicit tag-moderation capability to remove another participant's association or suppress a definition.
 - Suppressing a definition makes its associations unavailable for new activity without deleting historical identity or vote summaries.
 - Archived nodes are readable but reject tag mutations.

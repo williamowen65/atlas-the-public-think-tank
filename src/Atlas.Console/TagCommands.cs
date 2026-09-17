@@ -27,8 +27,8 @@ public static class TagCommands
             WriteNumberedTags(node, nodeTags, definitions);
             Console.WriteLine();
             Console.WriteLine("1. Apply tag");
-            Console.WriteLine("2. Correct or replace one of my tags");
-            Console.WriteLine("3. Withdraw one of my tags");
+            Console.WriteLine("2. Correct or replace a tag I control");
+            Console.WriteLine("3. Withdraw a tag I control");
             if (currentParticipant.Id.Value == node.AuthorId.Value)
             {
                 Console.WriteLine("4. Manage how tags appear on my node");
@@ -203,7 +203,7 @@ public static class TagCommands
         Participant participant)
     {
         var selected = ReadNodeTag(node, nodeTags, definitions, "replace",
-            association => association.AppliedByParticipantId == participant.Id.Value);
+            association => CanParticipantModify(association, node, participant));
 
         if (selected is null)
         {
@@ -237,7 +237,7 @@ public static class TagCommands
         Participant participant)
     {
         var selected = ReadNodeTag(node, nodeTags, definitions, "withdraw",
-            association => association.AppliedByParticipantId == participant.Id.Value);
+            association => CanParticipantModify(association, node, participant));
 
         if (selected is null)
         {
@@ -253,6 +253,16 @@ public static class TagCommands
             DateTimeOffset.UtcNow);
 
         ConsoleUi.Pause("Tag withdrawn from this node. Its history was preserved.");
+    }
+
+    private static bool CanParticipantModify(
+        NodeTag association,
+        Node node,
+        Participant participant)
+    {
+        return association.Disposition == NodeTagDisposition.Endorsed
+            ? participant.Id.Value == node.AuthorId.Value
+            : association.AppliedByParticipantId == participant.Id.Value;
     }
 
     private static string? ReadTagText(ITagDefinitionRepository definitions)

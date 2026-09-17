@@ -247,6 +247,37 @@ public class ReusableTagTests
             node, applied.Id, NodeTagDisposition.Disputed, Guid.NewGuid(), true));
     }
 
+    /// <summary>Verifies endorsement transfers withdrawal control away from the proposer.</summary>
+    [TestMethod]
+    public void Remove_EndorsedTagByOriginalProposer_Throws()
+    {
+        var fixture = new TagFixture();
+        var node = NodeTestFactory.Create();
+        var proposerId = Guid.NewGuid();
+        var applied = fixture.Service.Apply(node, "Useful", proposerId, true, DateTimeOffset.UtcNow);
+        fixture.Service.SetDisposition(node, applied.Id, NodeTagDisposition.Endorsed,
+            node.AuthorId.Value, true);
+
+        Assert.Throws<UnauthorizedAccessException>(() => fixture.Service.Remove(
+            node, applied.Id, proposerId, true, false, DateTimeOffset.UtcNow.AddMinutes(1)));
+    }
+
+    /// <summary>Verifies the node author may withdraw an endorsed association.</summary>
+    [TestMethod]
+    public void Remove_EndorsedTagByNodeAuthor_Succeeds()
+    {
+        var fixture = new TagFixture();
+        var node = NodeTestFactory.Create();
+        var applied = fixture.Service.Apply(node, "Useful", Guid.NewGuid(), true, DateTimeOffset.UtcNow);
+        fixture.Service.SetDisposition(node, applied.Id, NodeTagDisposition.Endorsed,
+            node.AuthorId.Value, true);
+
+        fixture.Service.Remove(node, applied.Id, node.AuthorId.Value, true, false,
+            DateTimeOffset.UtcNow.AddMinutes(1));
+
+        Assert.AreEqual(NodeTagLifecycleState.Withdrawn, applied.LifecycleState);
+    }
+
     /// <summary>Verifies replacement records supersession rather than erasing history.</summary>
     [TestMethod]
     public void Replace_PreservesSupersededLifecycle()
