@@ -184,8 +184,11 @@ public sealed class Node
     /// <summary>Changes the validated name and advances the modification timestamp when the value differs.</summary>
     public void Rename(
         NodeTitle newTitle,
+        Guid actorParticipantId,
         DateTimeOffset changedAt)
     {
+        EnsureAuthoredBy(actorParticipantId);
+
         if (Title == newTitle)
         {
             return;
@@ -198,8 +201,11 @@ public sealed class Node
     /// <summary>Changes the node type and advances the modification timestamp when the value differs.</summary>
     public void ChangeType(
         NodeTypeId newTypeId,
+        Guid actorParticipantId,
         DateTimeOffset changedAt)
     {
+        EnsureAuthoredBy(actorParticipantId);
+
         if (TypeId == newTypeId)
         {
             return;
@@ -212,8 +218,11 @@ public sealed class Node
     /// <summary>Adds a requested response type when it is not already present.</summary>
     public void RequestSubNodeType(
         NodeTypeId typeId,
+        Guid actorParticipantId,
         DateTimeOffset changedAt)
     {
+        EnsureAuthoredBy(actorParticipantId);
+
         var requestedType = new RequestedSubNodeType(typeId);
 
         if (_requestedSubNodeTypes.Contains(requestedType))
@@ -228,8 +237,11 @@ public sealed class Node
     /// <summary>Removes a requested response type when it is present.</summary>
     public void StopRequestingSubNodeType(
         NodeTypeId typeId,
+        Guid actorParticipantId,
         DateTimeOffset changedAt)
     {
+        EnsureAuthoredBy(actorParticipantId);
+
         var requestedType = new RequestedSubNodeType(typeId);
 
         if (!_requestedSubNodeTypes.Remove(requestedType))
@@ -243,8 +255,10 @@ public sealed class Node
     /// <summary>Attaches a parent relationship and records the corresponding integration event.</summary>
     public void AttachToParent(
         NodeId parentNodeId,
+        Guid actorParticipantId,
         DateTimeOffset attachedAt)
     {
+        EnsureAuthoredBy(actorParticipantId);
         EnsureValidParentNodeId(parentNodeId, Id);
 
         if (_parentNodeIds.Contains(parentNodeId))
@@ -267,8 +281,10 @@ public sealed class Node
     /// <summary>Detaches a parent relationship and records the corresponding integration event.</summary>
     public void DetachFromParent(
         NodeId parentNodeId,
+        Guid actorParticipantId,
         DateTimeOffset detachedAt)
     {
+        EnsureAuthoredBy(actorParticipantId);
         EnsureValidParentNodeId(parentNodeId, Id);
 
         if (!_parentNodeIds.Remove(parentNodeId))
@@ -288,8 +304,12 @@ public sealed class Node
     }
 
     /// <summary>Moves the aggregate into its archived lifecycle state and records the transition when applicable.</summary>
-    public void Archive(DateTimeOffset archivedAt)
+    public void Archive(
+        Guid actorParticipantId,
+        DateTimeOffset archivedAt)
     {
+        EnsureAuthoredBy(actorParticipantId);
+
         if (Status == NodeStatus.Archived)
         {
             return;
@@ -307,8 +327,12 @@ public sealed class Node
     }
 
     /// <summary>Returns the aggregate to its active lifecycle state and records the transition when applicable.</summary>
-    public void Restore(DateTimeOffset restoredAt)
+    public void Restore(
+        Guid actorParticipantId,
+        DateTimeOffset restoredAt)
     {
+        EnsureAuthoredBy(actorParticipantId);
+
         if (Status == NodeStatus.Active)
         {
             return;
@@ -328,8 +352,11 @@ public sealed class Node
     /// <summary>Replaces the node's Content reference and advances its modification timestamp.</summary>
     public void ReplaceDescriptionReference(
         NodeDescriptionId newDescriptionId,
+        Guid actorParticipantId,
         DateTimeOffset changedAt)
     {
+        EnsureAuthoredBy(actorParticipantId);
+
         if (DescriptionId == newDescriptionId)
         {
             return;
@@ -337,6 +364,23 @@ public sealed class Node
 
         DescriptionId = newDescriptionId;
         UpdatedAt = changedAt;
+    }
+
+    /// <summary>Ensures an actor is the node author before an author-owned workflow continues.</summary>
+    public void EnsureAuthoredBy(Guid actorParticipantId)
+    {
+        if (actorParticipantId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "An acting participant ID is required.",
+                nameof(actorParticipantId));
+        }
+
+        if (actorParticipantId != AuthorId.Value)
+        {
+            throw new UnauthorizedAccessException(
+                "Only the node author may modify this node.");
+        }
     }
 
     /// <summary>Clears recorded events after the host has dispatched them.</summary>

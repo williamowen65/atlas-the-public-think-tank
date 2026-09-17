@@ -14,7 +14,7 @@ public class NodeLifecycleBehaviorTests
         var node = NodeTestFactory.Create();
         var archivedAt = node.CreatedAt.AddMinutes(1);
 
-        node.Archive(archivedAt);
+        node.Archive(node.AuthorId.Value, archivedAt);
 
         Assert.AreEqual(NodeStatus.Archived, node.Status);
         Assert.AreEqual(archivedAt, node.UpdatedAt);
@@ -25,11 +25,15 @@ public class NodeLifecycleBehaviorTests
     public void Archive_WhenAlreadyArchived_PreservesTimestamp()
     {
         var node = NodeTestFactory.Create();
-        node.Archive(node.CreatedAt.AddMinutes(1));
+        node.Archive(
+            node.AuthorId.Value,
+            node.CreatedAt.AddMinutes(1));
         var originalUpdatedAt = node.UpdatedAt;
         node.ClearDomainEvents();
 
-        node.Archive(originalUpdatedAt.AddMinutes(1));
+        node.Archive(
+            node.AuthorId.Value,
+            originalUpdatedAt.AddMinutes(1));
 
         Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);
         Assert.IsEmpty(node.DomainEvents);
@@ -40,11 +44,13 @@ public class NodeLifecycleBehaviorTests
     public void Restore_ChangesStatusAndRecordsCompleteEvent()
     {
         var node = NodeTestFactory.Create();
-        node.Archive(node.CreatedAt.AddMinutes(1));
+        node.Archive(
+            node.AuthorId.Value,
+            node.CreatedAt.AddMinutes(1));
         node.ClearDomainEvents();
         var restoredAt = node.UpdatedAt.AddMinutes(1);
 
-        node.Restore(restoredAt);
+        node.Restore(node.AuthorId.Value, restoredAt);
 
         Assert.AreEqual(NodeStatus.Active, node.Status);
         Assert.AreEqual(restoredAt, node.UpdatedAt);
@@ -67,7 +73,9 @@ public class NodeLifecycleBehaviorTests
         node.ClearDomainEvents();
         var originalUpdatedAt = node.UpdatedAt;
 
-        node.Restore(originalUpdatedAt.AddMinutes(1));
+        node.Restore(
+            node.AuthorId.Value,
+            originalUpdatedAt.AddMinutes(1));
 
         Assert.AreEqual(NodeStatus.Active, node.Status);
         Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);
