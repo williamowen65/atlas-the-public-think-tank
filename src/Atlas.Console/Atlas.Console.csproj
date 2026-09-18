@@ -12,6 +12,7 @@
     <ProjectReference Include="..\Atlas.Contracts\Atlas.Contracts.csproj" />
     <ProjectReference Include="..\Atlas.Graph\Atlas.Graph.csproj" />
     <ProjectReference Include="..\Atlas.Participants\Atlas.Participants.csproj" />
+    <ProjectReference Include="..\Atlas.Voting\Atlas.Voting.csproj" />
   </ItemGroup>
 
 </Project>

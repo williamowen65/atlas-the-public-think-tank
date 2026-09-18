@@ -5,6 +5,9 @@ using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Graph.Tags;
 using Atlas.Participants.Participants;
+using Atlas.Voting;
+using Atlas.Voting.Data;
+using Atlas.Voting.Target;
 
 namespace Atlas.ConsoleApp;
 
@@ -18,6 +21,9 @@ public static class NodeCommands
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
         IParticipantRepository participants,
+        IVoteRepository votes,
+        CastVote castVote,
+        UndoVote undoVote,
         ITagDefinitionRepository tagDefinitions,
         INodeTagRepository nodeTags,
         InMemoryEventPublisher eventPublisher,
@@ -31,6 +37,54 @@ public static class NodeCommands
             var isAuthor = actorParticipantId == node.AuthorId.Value;
 
             Console.Clear();
+
+            var voteTarget =
+                new NodeVoteTarget(node.Id.Value);
+
+            var votingParticipantId =
+                new Atlas.Voting.Votes.ParticipantId(
+                    currentParticipant.Id.Value);
+
+            var voteSummary =
+                new GetVoteSummary(votes).Execute(
+                    voteTarget,
+                    votingParticipantId);
+
+            var voteCount =
+                voteSummary.VoteCount;
+
+            var averageRating =
+                voteSummary.AverageVote;
+
+            var myVote =
+                voteSummary.CurrentParticipantVote;
+
+            var children = nodes
+                .GetAll()
+                .Where(candidate =>
+                    candidate.ParentNodeIds.Contains(node.Id))
+                .ToList();
+
+            var childVoteSummaries =
+                new Dictionary<NodeId, NodeVoteSummary>();
+
+            foreach (var child in children)
+            {
+                var childVoteTarget =
+                    new NodeVoteTarget(child.Id.Value);
+
+                var childSummary =
+                    new GetVoteSummary(votes).Execute(
+                        childVoteTarget,
+                        votingParticipantId);
+
+                childVoteSummaries[child.Id] =
+                    new NodeVoteSummary(
+                        childSummary.VoteCount,
+                        childSummary.AverageVote,
+                        childSummary.CurrentParticipantVote);
+            }
+
             NodeDisplay.WriteDetails(
                 node,
                 nodes,
@@ -38,7 +92,11 @@ public static class NodeCommands
                 documents,
                 participants,
                 nodeTags,
-                tagDefinitions);
+                tagDefinitions,
+                voteCount,
+                averageRating,
+                myVote,
+                childVoteSummaries);
 
             Console.WriteLine();
             Console.WriteLine(
@@ -62,7 +120,13 @@ public static class NodeCommands
             Console.WriteLine($"10. Detach from parent{authorOnlyStatus}");
             Console.WriteLine("11. View author profile");
             Console.WriteLine("12. Manage tags");
-            Console.WriteLine("13. Return to node browser");
+            Console.WriteLine(
+                myVote is null
+                    ? "13. Vote on node"
+                    : "13. Change your vote");
+            Console.WriteLine("14. Undo your vote");
+            Console.WriteLine("15. View votes");
+            Console.WriteLine("16. Return to node browser");
             Console.WriteLine();
 
             Console.Write("Selection: ");
@@ -130,7 +194,11 @@ public static class NodeCommands
                                    nodes,
                                    nodeTypes,
                                    documents,
-                                   participants)
+                                   participants,
+                                   votes,
+                                   nodeTags,
+                                   tagDefinitions,
+                                   currentParticipant)
                                ?? node;
                         break;
 
@@ -179,6 +247,31 @@ public static class NodeCommands
                         break;
 
                     case "13":
+                        VoteOnNode(
+                            node,
+                            currentParticipant,
+                            castVote);
+                        break;
+
+                    case "14":
+                        UndoVoteOnNode(
+                            node,
+                            currentParticipant,
+                            undoVote);
+                        break;
+
+                    case "15":
+                        currentParticipant = ViewNodeVotes(
+                            node,
+                            nodes,
+                            nodeTypes,
+                            documents,
+                            participants,
+                            votes,
+                            currentParticipant);
+                        break;
+
+                    case "16":
                         viewingNode = false;
                         break;
 
@@ -192,6 +285,11 @@ public static class NodeCommands
             {
                 ConsoleUi.Pause(
                     $"Unable to update node: {exception.Message}");
+            }
+            catch (InvalidOperationException exception)
+            {
+                ConsoleUi.Pause(
+                    $"Unable to complete action: {exception.Message}");
             }
         }
 
@@ -374,7 +472,11 @@ public static class NodeCommands
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
-        IParticipantRepository participants)
+        IParticipantRepository participants,
+        IVoteRepository votes,
+        INodeTagRepository nodeTags,
+        ITagDefinitionRepository tagDefinitions,
+        Participant currentParticipant)
     {
         var childGroups = nodes
             .GetAll()
@@ -436,17 +538,43 @@ public static class NodeCommands
         Console.WriteLine();
         NodeDisplay.WriteTableHeader();
 
+        var votingParticipantId =  new Atlas.Voting.Votes.ParticipantId(currentParticipant.Id.Value);
+
         for (var index = 0;
              index < selectedGroup.Children.Count;
              index++)
         {
+            var child = selectedGroup.Children[index];
+
+            var voteTarget =
+                new NodeVoteTarget(child.Id.Value);
+
+            var voteSummary =
+                new GetVoteSummary(votes).Execute(
+                    voteTarget,
+                    votingParticipantId);
+
+            var voteCount =
+                voteSummary.VoteCount;
+
+            var averageRating =
+                voteSummary.AverageVote;
+
+            var myVote =
+                voteSummary.CurrentParticipantVote;
+
             NodeDisplay.WriteTableRow(
-                selectedGroup.Children[index],
+                child,
                 nodes,
                 nodeTypes,
                 documents,
                 participants,
-                index + 1);
+                index + 1,
+                voteCount,
+                averageRating,
+                myVote,
+                nodeTags,
+                tagDefinitions);
         }
 
         Console.WriteLine();
@@ -804,4 +932,180 @@ public static class NodeCommands
         ConsoleUi.Pause(
             $"Node type changed to {nodeType.Name} and saved.");
     }
+
+    /// <summary>Reads and casts the current participant's rating for a node.</summary>
+    private static void VoteOnNode(
+        Node node,
+        Participant currentParticipant,
+        CastVote castVote)
+    {
+        Console.Write("Rating from 0 through 10: ");
+
+        if (!int.TryParse(Console.ReadLine(), out var rating) ||
+            rating < 0 ||
+            rating > 10)
+        {
+            ConsoleUi.Pause(
+                "Please enter a whole number from 0 through 10.");
+            return;
+        }
+
+        var voteTarget = new NodeVoteTarget(node.Id.Value);
+
+        var votingParticipantId =
+            new Atlas.Voting.Votes.ParticipantId(
+                currentParticipant.Id.Value);
+
+        castVote.Execute(
+            voteTarget,
+            votingParticipantId,
+            rating);
+
+        ConsoleUi.Pause("Vote saved.");
+    }
+
+    /// <summary>
+    /// Requests removal of the current participant's vote.
+    /// Voting enforces participant eligibility and target availability.
+    /// </summary>
+    private static void UndoVoteOnNode(
+        Node node,
+        Participant currentParticipant,
+        UndoVote undoVote)
+    {
+        var voteTarget =
+            new NodeVoteTarget(node.Id.Value);
+
+        var votingParticipantId =
+            new Atlas.Voting.Votes.ParticipantId(
+                currentParticipant.Id.Value);
+
+        var removed = undoVote.Execute(
+            voteTarget,
+            votingParticipantId);
+
+        ConsoleUi.Pause(
+            removed
+                ? "Your vote was removed."
+                : "You do not have a current vote on this node.");
+    }
+
+    /// <summary>
+    /// Displays the participants who voted on a node and allows
+    /// navigation to a selected participant profile.
+    /// </summary>
+    private static Participant ViewNodeVotes(
+        Node node,
+        INodeRepository nodes,
+        INodeTypeRepository nodeTypes,
+        IDocumentRepository documents,
+        IParticipantRepository participants,
+        IVoteRepository votes,
+        Participant currentParticipant)
+    {
+
+        // Fetch Votes
+        var voteTarget = new NodeVoteTarget(node.Id.Value);
+
+        var nodeVotes = votes
+            .GetTargetVotes(voteTarget)
+            .OrderByDescending(vote => vote.Value.Value)
+            .ToList();
+
+        if (nodeVotes.Count == 0)
+        {
+            ConsoleUi.Pause(
+                "No participants have voted on this node.");
+            return currentParticipant;
+        }
+
+        // Match votes to participants
+        var voterRows = nodeVotes
+            .Select(vote =>
+            {
+                var participantId =
+                    new ParticipantId(
+                        vote.ParticipantId.Id);
+
+                var participant =
+                    participants.GetById(participantId);
+
+                return new
+                {
+                    Vote = vote,
+                    Participant = participant
+                };
+            })
+            .ToList();
+
+        
+        // Add voter list heading
+        Console.Clear();
+        Console.WriteLine($"VOTES FOR: {node.Title}");
+        Console.WriteLine();
+
+        NodeDisplay.WriteVoterListHeader();
+
+        // Display each voter
+        for (var index = 0;
+            index < voterRows.Count;
+            index++)
+        {
+            var row = voterRows[index];
+
+            var participantName =
+                row.Participant?.DisplayName
+                ?? $"Unknown ({row.Vote.ParticipantId.Id})";
+
+            NodeDisplay.WriteVoterListRow(
+                index + 1,
+                participantName,
+                row.Vote.Value.Value);
+        }
+
+        // Prompt for a voter selection
+        Console.WriteLine();
+        Console.WriteLine(
+            "Select a voter to view their participant profile.");
+        Console.WriteLine(
+            "Enter 0 to return to the node.");
+        Console.WriteLine();
+        Console.Write("Selection: ");
+
+        // Validate Input
+        if (!int.TryParse(Console.ReadLine(), out var selection) ||
+            selection < 0 ||
+            selection > voterRows.Count)
+        {
+            ConsoleUi.Pause(
+                "That is not a valid voter selection.");
+
+            return currentParticipant;
+        }
+
+        if (selection == 0)
+        {
+            return currentParticipant;
+        }
+
+        // Get the selected voter
+        var selectedRow = voterRows[selection - 1];
+        if (selectedRow.Participant is null)
+        {
+            ConsoleUi.Pause(
+                "That participant profile could not be found.");
+
+            return currentParticipant;
+        }
+
+        // Open the participant profile
+        return ParticipantCommands.Run(
+            selectedRow.Participant.Id,
+            participants,
+            nodes,
+            nodeTypes,
+            documents,
+            currentParticipant);
+        }
+
 }

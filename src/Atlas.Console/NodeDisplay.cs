@@ -17,17 +17,22 @@ public static class NodeDisplay
     private const int TagsWidth = 24;
     private const int SubNodesMinimumWidth = 36;
 
+    private const int VoteCountWidth = 5;
+    private const int AverageVoteWidth = 5;
+    private const int CurrentVoteWidth = 7;
+
     /// <summary>Writes table header to the console display.</summary>
     public static void WriteTableHeader()
     {
         Console.WriteLine(
             $"{"#",3}  " +
+            $"{Center("Votes", VoteCountWidth)}  " +
+            $"{Center("Avg", AverageVoteWidth)}  " +
+            $"{Center("My Vote", CurrentVoteWidth)}  " +
             $"{"Title",-TitleWidth}  " +
             $"{"Type",-TypeWidth}  " +
             $"{"Authored By",-AuthorWidth}  " +
             $"{"Description",-DescriptionWidth}  " +
-            $"{"Votes",5}  " +
-            $"{"Avg",5}  " +
             $"{"Author Tags",-TagsWidth}  " +
             $"{"Community Tags",-TagsWidth}  " +
             $"{"Status",-StatusWidth}  " +
@@ -37,12 +42,13 @@ public static class NodeDisplay
             new string(
                 '-',
                 3 + 2 +
+                VoteCountWidth + 2 +
+                AverageVoteWidth + 2 +
+                CurrentVoteWidth + 2 +
                 TitleWidth + 2 +
                 TypeWidth + 2 +
                 AuthorWidth + 2 +
                 DescriptionWidth + 2 +
-                5 + 2 +
-                5 + 2 +
                 TagsWidth + 2 +
                 TagsWidth + 2 +
                 StatusWidth + 2 +
@@ -59,6 +65,7 @@ public static class NodeDisplay
         int number,
         int? voteCount = null,
         double? averageVote = null,
+        int? currentParticipantVote = null,
         INodeTagRepository? nodeTags = null,
         ITagDefinitionRepository? tagDefinitions = null)
     {
@@ -70,12 +77,15 @@ public static class NodeDisplay
 
         Console.WriteLine(
             $"{number,3}  " +
+            $"{Center(FormatVoteCount(voteCount), VoteCountWidth)}  " +
+            $"{Center(FormatAverageVote(averageVote), AverageVoteWidth)}  " +
+            $"{Center(
+                FormatCurrentParticipantVote(currentParticipantVote),
+                CurrentVoteWidth)}  " +
             $"{Truncate(node.Title.Value, TitleWidth),-TitleWidth}  " +
             $"{Truncate(typeName, TypeWidth),-TypeWidth}  " +
             $"{Truncate(authorName, AuthorWidth),-AuthorWidth}  " +
             $"{Truncate(description, DescriptionWidth),-DescriptionWidth}  " +
-            $"{FormatVoteCount(voteCount),5}  " +
-            $"{FormatAverageVote(averageVote),5}  " +
             $"{Truncate(ResolveTags(node, nodeTags, tagDefinitions, NodeTagDisposition.Endorsed), TagsWidth),-TagsWidth}  " +
             $"{Truncate(ResolveTags(node, nodeTags, tagDefinitions, NodeTagDisposition.Community), TagsWidth),-TagsWidth}  " +
             $"{node.Status,-StatusWidth}  " +
@@ -92,7 +102,9 @@ public static class NodeDisplay
         INodeTagRepository nodeTags,
         ITagDefinitionRepository tagDefinitions,
         int? voteCount = null,
-        double? averageVote = null)
+        double? averageVote = null,
+        int? currentParticipantVote = null,
+        IReadOnlyDictionary<NodeId, NodeVoteSummary>? childVoteSummaries = null)
     {
         var description = ResolveDescription(node, documents);
         var authorName = ResolveAuthorName(node, participants);
@@ -112,6 +124,7 @@ public static class NodeDisplay
         Console.WriteLine($"Status:         {node.Status}");
         Console.WriteLine($"Votes:          {FormatVoteCount(voteCount)}");
         Console.WriteLine($"Average:        {FormatAverageVote(averageVote)}");
+        Console.WriteLine($"My Vote:        {FormatCurrentParticipantVote(currentParticipantVote)}");
         Console.WriteLine($"Created:        {node.CreatedAt.LocalDateTime}");
         Console.WriteLine($"Updated:        {node.UpdatedAt.LocalDateTime}");
 
@@ -127,7 +140,10 @@ public static class NodeDisplay
             nodes,
             nodeTypes,
             documents,
-            participants);
+            participants,
+            nodeTags,
+            tagDefinitions,
+            childVoteSummaries);
     }
 
     /// <summary>Writes sub node tables to the console display.</summary>
@@ -136,7 +152,10 @@ public static class NodeDisplay
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
-        IParticipantRepository participants)
+        IParticipantRepository participants,
+        INodeTagRepository nodeTags,
+        ITagDefinitionRepository tagDefinitions,
+        IReadOnlyDictionary<NodeId, NodeVoteSummary>? childVoteSummaries)
     {
         var children = FindChildren(node, nodes);
         var typeIds = node.RequestedSubNodeTypes
@@ -177,16 +196,32 @@ public static class NodeDisplay
             }
 
             for (var index = 0;
-                 index < matchingChildren.Count;
-                 index++)
+                index < matchingChildren.Count;
+                index++)
             {
+                var child = matchingChildren[index];
+
+                NodeVoteSummary? voteSummary = null;
+
+                if (childVoteSummaries is not null)
+                {
+                    childVoteSummaries.TryGetValue(
+                        child.Id,
+                        out voteSummary);
+                }
+
                 WriteTableRow(
-                    matchingChildren[index],
+                    child,
                     nodes,
                     nodeTypes,
                     documents,
                     participants,
-                    index + 1);
+                    index + 1,
+                    voteSummary?.VoteCount,
+                    voteSummary?.AverageVote,
+                    voteSummary?.CurrentParticipantVote,
+                    nodeTags,
+                    tagDefinitions);
             }
         }
 
@@ -403,6 +438,58 @@ public static class NodeDisplay
     /// <summary>Formats average vote for display.</summary>
     private static string FormatAverageVote(double? averageVote)
     {
-        return averageVote?.ToString("0.0") ?? "—";
+        return averageVote?.ToString("0.00") ?? "—";
+    }
+
+    private static string FormatCurrentParticipantVote(
+    int? currentParticipantVote)
+    {
+        return currentParticipantVote?.ToString() ?? "—";
+    }
+
+    private static string Center(
+    string value,
+    int width)
+    {
+        if (value.Length >= width)
+        {
+            return value;
+        }
+
+        var totalPadding = width - value.Length;
+        var leftPadding = totalPadding / 2;
+        var rightPadding = totalPadding - leftPadding;
+
+        return new string(' ', leftPadding) +
+               value +
+               new string(' ', rightPadding);
+    }
+
+    /// <summary>Writes the voter-list table heading.</summary>
+    public static void WriteVoterListHeader()
+    {
+        Console.WriteLine(
+            $"{"#",3}  " +
+            $"{Center("Vote", 6)}  " +
+            "Participant");
+
+        Console.WriteLine(
+            new string(
+                '-',
+                3 + 2 +
+                6 + 2 +
+                30));
+    }
+
+    /// <summary>Writes one voter-list table row.</summary>
+    public static void WriteVoterListRow(
+        int number,
+        string participantName,
+        int rating)
+    {
+        Console.WriteLine(
+            $"{number,3}  " +
+            $"{Center(rating.ToString(), 6)}  " +
+            participantName);
     }
 }
