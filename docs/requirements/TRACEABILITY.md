@@ -23,7 +23,7 @@ This RTM provides the broad implementation and verification view. Follow a requi
 | [PAR-001](REQUIREMENTS.md#par-001) | Participants have validated public profiles | Must | **Verified** | [Participant.cs](../../src/Atlas.Participants/Participants/Participant.cs)<br>[ParticipantId.cs](../../src/Atlas.Participants/Participants/ParticipantId.cs) | [ParticipantTests.cs](../../tests/Atlas.Participants.Tests/ParticipantTests.cs) |
 | [PAR-002](REQUIREMENTS.md#par-002) | Users can browse participant profiles and contributions | Should | **Implemented** | [ParticipantCommands.cs](../../src/Atlas.Console/Participants/ParticipantCommands.cs)<br>[ParticipantDisplay.cs](../../src/Atlas.Console/Participants/ParticipantDisplay.cs) | — |
 | [AUT-001](REQUIREMENTS.md#aut-001) | Participants may edit only their own profiles | Must | **Verified** | [UpdateParticipantProfile.cs](../../src/Atlas.Participants/Profiles/UpdateParticipantProfile.cs)<br>[Participant.cs](../../src/Atlas.Participants/Participants/Participant.cs)<br>[AssemblyInfo.cs](../../src/Atlas.Participants/Properties/AssemblyInfo.cs) | [UpdateParticipantProfileTests.cs](../../tests/Atlas.Participants.Tests/UpdateParticipantProfileTests.cs) |
-| [AUT-002](REQUIREMENTS.md#aut-002) | Node management is limited to authorized actors | Must | **Proposed** | — | — |
+| [AUT-002](REQUIREMENTS.md#aut-002) | Node management is limited to authorized actors | Must | **Verified** | [Node.cs](../../src/Atlas.Graph/Node.cs)<br>[NodeCommands.cs](../../src/Atlas.Console/NodeCommands.cs) | [NodeAuthorizationTests.cs](../../tests/Atlas.Graph.Tests/NodeAuthorizationTests.cs) |
 | [EVT-001](REQUIREMENTS.md#evt-001) | Node creation records a versioned integration fact | Must | **Verified** | [Node.cs](../../src/Atlas.Graph/Node.cs)<br>[NodeLifecycleEvents.cs](../../src/Atlas.Contracts/Graph/V1/NodeLifecycleEvents.cs) | [NodeConstructionTests.cs](../../tests/Atlas.Graph.Tests/NodeConstructionTests.cs)<br>[NodeReconstitutionTests.cs](../../tests/Atlas.Graph.Tests/NodeReconstitutionTests.cs) |
 | [EVT-002](REQUIREMENTS.md#evt-002) | The host broadcasts events to interested subscribers | Should | **Implemented** | [InMemoryEventPublisher.cs](../../src/Atlas.Console/Eventing/InMemoryEventPublisher.cs)<br>[Program.cs](../../src/Atlas.Console/Program.cs)<br>[ObserveNodeLifecycleInContent.cs](../../src/Atlas.Console/Content/ObserveNodeLifecycleInContent.cs) | — |
 | [PER-001](REQUIREMENTS.md#per-001) | Prototype boundary data is stored in separate files | Must | **Implemented** | [JsonNodeRepository.cs](../../src/Atlas.Console/Storage/JsonNodeRepository.cs)<br>[JsonNodeTypeRepository.cs](../../src/Atlas.Console/Storage/JsonNodeTypeRepository.cs)<br>[JsonDocumentRepository.cs](../../src/Atlas.Console/Storage/JsonDocumentRepository.cs)<br>[JsonParticipantRepository.cs](../../src/Atlas.Console/Storage/JsonParticipantRepository.cs) | — |
@@ -54,9 +54,9 @@ The Console checks whether a proposed parent attachment would create a cycle, bu
 The Console creation workflow supplies Comment by default. If this is a universal product rule, it should move behind a Graph application API or another shared policy so a future web/API host cannot omit it accidentally.
 
 <a id="aut-002"></a>
-### AUT-002 — Authorship exists before node authorization
+### AUT-002 — Node authorization is domain-enforced
 
-Nodes retain an AuthorId, but most Console node mutations currently call Graph behavior without a boundary-owned authorization use case. The participant profile flow is the working example for the intended pattern.
+Graph requires and validates the acting participant for every author-owned node mutation. The Console also omits author-only choices for other participants, but that presentation behavior is not the security boundary. The description workflow validates authorization before creating a replacement Content document so a rejected attempt cannot leave an orphaned document.
 
 <a id="evt-002"></a>
 ### EVT-002 and NFR-002 — Demonstration versus durable messaging

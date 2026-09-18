@@ -27,6 +27,9 @@ public static class NodeCommands
 
         while (viewingNode)
         {
+            var actorParticipantId = currentParticipant.Id.Value;
+            var isAuthor = actorParticipantId == node.AuthorId.Value;
+
             Console.Clear();
             NodeDisplay.WriteDetails(
                 node,
@@ -38,17 +41,25 @@ public static class NodeCommands
                 tagDefinitions);
 
             Console.WriteLine();
-            Console.WriteLine("Choose an action:");
-            Console.WriteLine("1. Rename");
-            Console.WriteLine("2. Change description");
-            Console.WriteLine("3. Change type");
-            Console.WriteLine("4. Archive");
-            Console.WriteLine("5. Restore");
-            Console.WriteLine("6. Change requested sub-node types");
+            Console.WriteLine(
+                $"Choose an action (as {currentParticipant.DisplayName}):");
+
+            var authorOnlyStatus = isAuthor
+                ? string.Empty
+                : " [disabled — requires node author]";
+
+            Console.WriteLine($"1. Rename{authorOnlyStatus}");
+            Console.WriteLine($"2. Change description{authorOnlyStatus}");
+            Console.WriteLine($"3. Change type{authorOnlyStatus}");
+            Console.WriteLine($"4. Archive{authorOnlyStatus}");
+            Console.WriteLine($"5. Restore{authorOnlyStatus}");
+            Console.WriteLine(
+                $"6. Change requested sub-node types{authorOnlyStatus}");
+
             Console.WriteLine("7. Select sub-node");
             Console.WriteLine("8. Add sub-node");
-            Console.WriteLine("9. Attach to parent");
-            Console.WriteLine("10. Detach from parent");
+            Console.WriteLine($"9. Attach to parent{authorOnlyStatus}");
+            Console.WriteLine($"10. Detach from parent{authorOnlyStatus}");
             Console.WriteLine("11. View author profile");
             Console.WriteLine("12. Manage tags");
             Console.WriteLine("13. Return to node browser");
@@ -60,12 +71,23 @@ public static class NodeCommands
             {
                 switch (Console.ReadLine())
                 {
+                    case "1" or "2" or "3" or "4" or "5" or "6" or
+                        "9" or "10" when !isAuthor:
+                        ConsoleUi.Pause(
+                            "This action is disabled because it requires " +
+                            "the node author.");
+                        break;
+
                     case "1":
-                        Rename(node, nodes);
+                        Rename(node, nodes, actorParticipantId);
                         break;
 
                     case "2":
-                        ChangeDescription(node, nodes, documents);
+                        ChangeDescription(
+                            node,
+                            nodes,
+                            documents,
+                            actorParticipantId);
                         break;
 
                     case "3":
@@ -73,18 +95,22 @@ public static class NodeCommands
                             node,
                             nodes,
                             nodeTypes,
-                            currentParticipant.Id.Value.ToString());
+                            actorParticipantId);
                         break;
 
                     case "4":
-                        node.Archive(DateTimeOffset.UtcNow);
+                        node.Archive(
+                            actorParticipantId,
+                            DateTimeOffset.UtcNow);
                         nodes.Save(node);
                         PublishDomainEvents(node, eventPublisher);
                         ConsoleUi.Pause("Node archived and saved.");
                         break;
 
                     case "5":
-                        node.Restore(DateTimeOffset.UtcNow);
+                        node.Restore(
+                            actorParticipantId,
+                            DateTimeOffset.UtcNow);
                         nodes.Save(node);
                         PublishDomainEvents(node, eventPublisher);
                         ConsoleUi.Pause("Node restored and saved.");
@@ -95,7 +121,7 @@ public static class NodeCommands
                             node,
                             nodes,
                             nodeTypes,
-                            currentParticipant.Id.Value.ToString());
+                            actorParticipantId);
                         break;
 
                     case "7":
@@ -122,6 +148,7 @@ public static class NodeCommands
                         AttachToParent(
                             node,
                             nodes,
+                            actorParticipantId,
                             eventPublisher);
                         break;
 
@@ -129,6 +156,7 @@ public static class NodeCommands
                         DetachFromParent(
                             node,
                             nodes,
+                            actorParticipantId,
                             eventPublisher);
                         break;
 
@@ -159,7 +187,8 @@ public static class NodeCommands
                         break;
                 }
             }
-            catch (ArgumentException exception)
+            catch (Exception exception) when (
+                exception is ArgumentException or UnauthorizedAccessException)
             {
                 ConsoleUi.Pause(
                     $"Unable to update node: {exception.Message}");
@@ -483,6 +512,7 @@ public static class NodeCommands
     private static void AttachToParent(
         Node node,
         INodeRepository nodes,
+        Guid actorParticipantId,
         InMemoryEventPublisher eventPublisher)
     {
         var candidates = nodes
@@ -535,6 +565,7 @@ public static class NodeCommands
 
         node.AttachToParent(
             parent.Id,
+            actorParticipantId,
             DateTimeOffset.UtcNow);
 
         nodes.Save(node);
@@ -548,6 +579,7 @@ public static class NodeCommands
     private static void DetachFromParent(
         Node node,
         INodeRepository nodes,
+        Guid actorParticipantId,
         InMemoryEventPublisher eventPublisher)
     {
         var parents = node.ParentNodeIds
@@ -592,6 +624,7 @@ public static class NodeCommands
 
         node.DetachFromParent(
             parent.Id,
+            actorParticipantId,
             DateTimeOffset.UtcNow);
 
         nodes.Save(node);
@@ -646,12 +679,12 @@ public static class NodeCommands
         Node node,
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
-        string ownerId)
+        Guid actorParticipantId)
     {
         var selectedTypes =
             ConsoleUi.ReadRequestedSubNodeTypes(
                 nodeTypes,
-                ownerId);
+                actorParticipantId.ToString());
 
         if (selectedTypes.Count == 0)
         {
@@ -670,6 +703,7 @@ public static class NodeCommands
             {
                 node.StopRequestingSubNodeType(
                     existingRequest.TypeId,
+                    actorParticipantId,
                     changedAt);
             }
         }
@@ -678,6 +712,7 @@ public static class NodeCommands
         {
             node.RequestSubNodeType(
                 selectedTypeId,
+                actorParticipantId,
                 changedAt);
         }
 
@@ -687,13 +722,17 @@ public static class NodeCommands
     }
 
     /// <summary>Changes the validated name and advances the modification timestamp when the value differs.</summary>
-    private static void Rename(Node node, INodeRepository nodes)
+    private static void Rename(
+        Node node,
+        INodeRepository nodes,
+        Guid actorParticipantId)
     {
         Console.Write("New title: ");
         var title = Console.ReadLine();
 
         node.Rename(
             new NodeTitle(title ?? string.Empty),
+            actorParticipantId,
             DateTimeOffset.UtcNow);
 
         nodes.Save(node);
@@ -704,8 +743,11 @@ public static class NodeCommands
     private static void ChangeDescription(
         Node node,
         INodeRepository nodes,
-        IDocumentRepository documents)
+        IDocumentRepository documents,
+        Guid actorParticipantId)
     {
+        node.EnsureAuthoredBy(actorParticipantId);
+
         var currentDocument = documents.GetById(
             new DocumentId(node.DescriptionId.Value));
 
@@ -727,6 +769,7 @@ public static class NodeCommands
 
         node.ReplaceDescriptionReference(
             new NodeDescriptionId(replacement.Id.Value),
+            actorParticipantId,
             changedAt);
 
         nodes.Save(node);
@@ -740,11 +783,11 @@ public static class NodeCommands
         Node node,
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
-        string actorId)
+        Guid actorParticipantId)
     {
         var nodeType = ConsoleUi.ReadNodeType(
             nodeTypes,
-            actorId);
+            actorParticipantId.ToString());
 
         if (nodeType is null)
         {
@@ -753,6 +796,7 @@ public static class NodeCommands
 
         node.ChangeType(
             nodeType.Id,
+            actorParticipantId,
             DateTimeOffset.UtcNow);
 
         nodes.Save(node);

@@ -16,7 +16,10 @@ public class NodeParentBehaviorTests
         var parentId = NodeId.New();
         var attachedAt = node.CreatedAt.AddMinutes(1);
 
-        node.AttachToParent(parentId, attachedAt);
+        node.AttachToParent(
+            parentId,
+            node.AuthorId.Value,
+            attachedAt);
 
         Assert.AreEqual(attachedAt, node.UpdatedAt);
 
@@ -37,11 +40,17 @@ public class NodeParentBehaviorTests
     {
         var node = NodeTestFactory.Create();
         var parentId = NodeId.New();
-        node.AttachToParent(parentId, node.CreatedAt.AddMinutes(1));
+        node.AttachToParent(
+            parentId,
+            node.AuthorId.Value,
+            node.CreatedAt.AddMinutes(1));
         var originalUpdatedAt = node.UpdatedAt;
         node.ClearDomainEvents();
 
-        node.AttachToParent(parentId, originalUpdatedAt.AddMinutes(1));
+        node.AttachToParent(
+            parentId,
+            node.AuthorId.Value,
+            originalUpdatedAt.AddMinutes(1));
 
         Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);
         Assert.IsEmpty(node.DomainEvents);
@@ -53,11 +62,17 @@ public class NodeParentBehaviorTests
     {
         var node = NodeTestFactory.Create();
         var parentId = NodeId.New();
-        node.AttachToParent(parentId, node.CreatedAt.AddMinutes(1));
+        node.AttachToParent(
+            parentId,
+            node.AuthorId.Value,
+            node.CreatedAt.AddMinutes(1));
         node.ClearDomainEvents();
         var detachedAt = node.UpdatedAt.AddMinutes(1);
 
-        node.DetachFromParent(parentId, detachedAt);
+        node.DetachFromParent(
+            parentId,
+            node.AuthorId.Value,
+            detachedAt);
 
         Assert.AreEqual(detachedAt, node.UpdatedAt);
 
@@ -82,6 +97,7 @@ public class NodeParentBehaviorTests
 
         node.DetachFromParent(
             NodeId.New(),
+            node.AuthorId.Value,
             originalUpdatedAt.AddMinutes(1));
 
         Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);
@@ -97,6 +113,7 @@ public class NodeParentBehaviorTests
         Assert.Throws<ArgumentException>(
             () => node.DetachFromParent(
                 new NodeId(Guid.Empty),
+                node.AuthorId.Value,
                 DateTimeOffset.UtcNow));
     }
 
@@ -109,6 +126,7 @@ public class NodeParentBehaviorTests
         Assert.Throws<InvalidOperationException>(
             () => node.DetachFromParent(
                 node.Id,
+                node.AuthorId.Value,
                 DateTimeOffset.UtcNow));
     }
 }
