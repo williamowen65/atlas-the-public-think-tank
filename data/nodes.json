@@ -2,15 +2,16 @@
   {
     "Id": "90d09c16-60c6-4018-8b0b-1b335d0d8e89",
     "Title": "How can coastal communities adapt?",
-    "DescriptionId": "639346e4-4561-43e5-8b7a-c7792028db37",
+    "DescriptionId": "238a4eff-daad-47f7-99c1-401c4d1ae1dd",
     "TypeId": "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
     "AuthorId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
     "RequestedSubNodeTypeIds": [
       "a253f4b5-1cf9-4da7-9a55-807cf1cb64b8"
     ],
+    "ParentNodeIds": [],
     "Status": "Active",
     "CreatedAt": "2026-09-05T19:10:46.9350296+00:00",
-    "UpdatedAt": "2026-09-06T16:15:44.8510866+00:00"
+    "UpdatedAt": "2026-09-18T19:35:47.967899+00:00"
   },
   {
     "Id": "d80f9799-98ff-49bc-b4db-3d412c786b34",
