@@ -1,6 +1,11 @@
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Tags;
 using Atlas.Participants.Participants;
+using Atlas.Voting;
+using Atlas.Voting.Data;
+using Atlas.Voting.Target;
+using Atlas.Voting.Value;
+using VotingParticipantId = Atlas.Voting.Votes.ParticipantId;
 
 namespace Atlas.ConsoleApp;
 
@@ -12,6 +17,8 @@ public static class TagCommands
         Node node,
         ITagDefinitionRepository definitions,
         INodeTagRepository nodeTags,
+        IVoteRepository votes,
+        CastVote castVote,
         Participant currentParticipant)
     {
         var service = new NodeTagApplicationService(definitions, nodeTags);
@@ -24,7 +31,12 @@ public static class TagCommands
             Console.WriteLine(new string('-', $"TAGS FOR {node.Title.Value}".Length));
             Console.WriteLine($"Acting as: {currentParticipant.DisplayName}");
             Console.WriteLine();
-            WriteNumberedTags(node, nodeTags, definitions);
+            WriteNumberedTags(
+                node,
+                nodeTags,
+                definitions,
+                votes,
+                new VotingParticipantId(currentParticipant.Id.Value));
             Console.WriteLine();
             Console.WriteLine("1. Apply tag");
             Console.WriteLine("2. Correct or replace a tag I control");
@@ -34,7 +46,8 @@ public static class TagCommands
                 Console.WriteLine("4. Manage how tags appear on my node");
             }
             Console.WriteLine("5. View hidden and disputed tags");
-            Console.WriteLine("6. Return to node");
+            Console.WriteLine("6. Upvote or downvote a tag");
+            Console.WriteLine("7. Return to node");
             Console.Write("Selection: ");
 
             try
@@ -63,6 +76,14 @@ public static class TagCommands
                         ConsoleUi.Pause();
                         break;
                     case "6":
+                        VoteOnTag(
+                            node,
+                            nodeTags,
+                            definitions,
+                            currentParticipant,
+                            castVote);
+                        break;
+                    case "7":
                         managing = false;
                         break;
                     default:
@@ -217,7 +238,7 @@ public static class TagCommands
             return;
         }
 
-        service.Replace(
+        var replacement = service.Replace(
             node,
             selected.Id,
             text,
@@ -226,7 +247,16 @@ public static class TagCommands
             actorIsModerator: false,
             DateTimeOffset.UtcNow);
 
-        ConsoleUi.Pause("Tag replaced without renaming the shared definition.");
+        if (replacement.Id == selected.Id)
+        {
+            ConsoleUi.Pause("That tag already uses the selected name.");
+            return;
+        }
+
+        ConsoleUi.Pause(
+            "The replacement request was addressed. The previous tag and its score " +
+            "remain visible in the node's history. Votes from the previous tag will " +
+            "transfer only after a moderator approves the transfer.");
     }
 
     private static void Remove(
@@ -353,7 +383,9 @@ public static class TagCommands
     private static void WriteNumberedTags(
         Node node,
         INodeTagRepository nodeTags,
-        ITagDefinitionRepository definitions)
+        ITagDefinitionRepository definitions,
+        IVoteRepository votes,
+        VotingParticipantId participantId)
     {
         var active = TagDisplay.ResolveActive(node, nodeTags, definitions);
         var visible = active
@@ -380,7 +412,19 @@ public static class TagCommands
                 currentGroup = disposition;
             }
 
-            Console.WriteLine($"{index + 1}. {visible[index].Definition.Text}");
+            var summary = new GetNodeTagVoteSummary(votes).Execute(
+                new NodeTagVoteTarget(visible[index].Association.Id.Value),
+                participantId);
+            var myVote = summary.CurrentParticipantVote switch
+            {
+                NodeTagVote.Upvote => "up",
+                NodeTagVote.Downvote => "down",
+                _ => "—"
+            };
+
+            Console.WriteLine(
+                $"{index + 1}. {visible[index].Definition.Text} " +
+                $"(score: {summary.Score}, my vote: {myVote})");
         }
 
         if (visible.Count > 0) Console.WriteLine();
@@ -395,5 +439,51 @@ public static class TagCommands
         {
             Console.WriteLine($"{index + 1}. {tags[index].Definition.Text}");
         }
+    }
+
+    private static void VoteOnTag(
+        Node node,
+        INodeTagRepository nodeTags,
+        ITagDefinitionRepository definitions,
+        Participant participant,
+        CastVote castVote)
+    {
+        var selected = ReadNodeTag(
+            node,
+            nodeTags,
+            definitions,
+            "vote on");
+
+        if (selected is null)
+        {
+            return;
+        }
+
+        Console.WriteLine();
+        Console.WriteLine("1. Upvote");
+        Console.WriteLine("2. Downvote");
+        Console.WriteLine("0. Cancel");
+        Console.Write("Vote: ");
+
+        var value = Console.ReadLine() switch
+        {
+            "1" => NodeTagVote.Upvote,
+            "2" => NodeTagVote.Downvote,
+            "0" => (int?)null,
+            _ => null
+        };
+
+        if (value is null)
+        {
+            return;
+        }
+
+        castVote.Execute(
+            new NodeTagVoteTarget(selected.Id.Value),
+            new VotingParticipantId(participant.Id.Value),
+            value.Value);
+
+        var direction = value == NodeTagVote.Upvote ? "upvote" : "downvote";
+        ConsoleUi.Pause($"Your {direction} was saved.");
     }
 }

@@ -1,4 +1,5 @@
 using Atlas.Graph.Nodes;
+using Atlas.Graph.Tags;
 using Atlas.Participants.Participants;
 using Atlas.Voting.Eligibility;
 using Atlas.Voting.Target;
@@ -25,13 +26,16 @@ namespace Atlas.ConsoleApp.Voting
     {
         private readonly INodeRepository _nodes;
         private readonly IParticipantRepository _participants;
+        private readonly INodeTagRepository _nodeTags;
 
         public RepositoryVotingEligibility(
             INodeRepository nodes,
-            IParticipantRepository participants)
+            IParticipantRepository participants,
+            INodeTagRepository nodeTags)
         {
             _nodes = nodes;
             _participants = participants;
+            _nodeTags = nodeTags;
         }
 
         /// <summary>
@@ -56,16 +60,25 @@ namespace Atlas.ConsoleApp.Voting
         public bool IsAvailable(
             VoteTarget target)
         {
-            if (target is not NodeVoteTarget)
+            if (target is NodeVoteTarget)
             {
-                return false;
+                var node = _nodes.GetById(new NodeId(target.Id));
+                return node?.Status == NodeStatus.Active;
             }
 
-            var node =
-                _nodes.GetById(
-                    new NodeId(target.Id));
+            if (target is NodeTagVoteTarget)
+            {
+                var nodeTag = _nodeTags.GetById(new NodeTagId(target.Id));
+                if (nodeTag is null || nodeTag.IsRemoved)
+                {
+                    return false;
+                }
 
-            return node?.Status == NodeStatus.Active;
+                var node = _nodes.GetById(nodeTag.NodeId);
+                return node?.Status == NodeStatus.Active;
+            }
+
+            return false;
         }
     }
 }

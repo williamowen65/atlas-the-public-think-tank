@@ -70,6 +70,7 @@ namespace Atlas.ConsoleApp.Storage
                 TargetType = vote.Target switch
                 {
                     NodeVoteTarget => "Node",
+                    NodeTagVoteTarget => "NodeTag",
 
                     _ => throw new InvalidOperationException(
                         "Unsupported vote target type.")
@@ -86,6 +87,8 @@ namespace Atlas.ConsoleApp.Storage
             VoteTarget target = storedVote.TargetType switch
             {
                 "Node" => new NodeVoteTarget(
+                    storedVote.TargetId),
+                "NodeTag" => new NodeTagVoteTarget(
                     storedVote.TargetId),
 
                 _ => throw new InvalidDataException(

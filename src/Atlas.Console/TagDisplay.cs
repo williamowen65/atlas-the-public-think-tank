@@ -1,5 +1,9 @@
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Tags;
+using Atlas.Voting;
+using Atlas.Voting.Data;
+using Atlas.Voting.Target;
+using Atlas.Voting.Votes;
 
 namespace Atlas.ConsoleApp;
 
@@ -36,7 +40,9 @@ public static class TagDisplay
     public static void WriteDetails(
         Node node,
         INodeTagRepository nodeTags,
-        ITagDefinitionRepository definitions)
+        ITagDefinitionRepository definitions,
+        IVoteRepository votes,
+        ParticipantId? participantId = null)
     {
         var active = ResolveActive(node, nodeTags, definitions)
             .Where(item => item.Association.Disposition is NodeTagDisposition.Endorsed or NodeTagDisposition.Community)
@@ -49,15 +55,29 @@ public static class TagDisplay
         if (active.Count == 0)
         {
             Console.WriteLine("No tags have been applied.");
-            return;
+        }
+        else
+        {
+            foreach (var group in active.GroupBy(item => item.Association.Disposition))
+            {
+                Console.WriteLine($"{group.Key}:");
+                foreach (var item in group)
+                {
+                    WriteTagWithScore(item, votes, participantId);
+                }
+            }
         }
 
-        foreach (var group in active.GroupBy(item => item.Association.Disposition))
+        var superseded = ResolveAll(node, nodeTags, definitions)
+            .Where(item => item.Association.LifecycleState == NodeTagLifecycleState.Superseded)
+            .ToList();
+
+        if (superseded.Count > 0)
         {
-            Console.WriteLine($"{group.Key}:");
-            foreach (var item in group)
+            Console.WriteLine("Superseded (history):");
+            foreach (var item in superseded)
             {
-                Console.WriteLine($"- {item.Definition.Text}");
+                WriteTagWithScore(item, votes, participantId);
             }
         }
     }
@@ -94,5 +114,43 @@ public static class TagDisplay
             .ThenBy(item => item.Association.Id.Value)
             .Select(item => (item.Association, item.Definition!))
             .ToList();
+    }
+
+    /// <summary>Resolves active and historical associations for public history.</summary>
+    public static IReadOnlyList<(NodeTag Association, TagDefinition Definition)> ResolveAll(
+        Node node,
+        INodeTagRepository nodeTags,
+        ITagDefinitionRepository definitions)
+    {
+        return nodeTags.GetAll()
+            .Where(association => association.NodeId == node.Id)
+            .Select(association => new
+            {
+                Association = association,
+                Definition = definitions.GetById(association.TagDefinitionId)
+            })
+            .Where(item => item.Definition is not null)
+            .OrderBy(item => item.Association.CreatedAt)
+            .ThenBy(item => item.Association.Id.Value)
+            .Select(item => (item.Association, item.Definition!))
+            .ToList();
+    }
+
+    private static void WriteTagWithScore(
+        (NodeTag Association, TagDefinition Definition) item,
+        IVoteRepository votes,
+        ParticipantId? participantId)
+    {
+        var summary = new GetNodeTagVoteSummary(votes).Execute(
+            new NodeTagVoteTarget(item.Association.Id.Value),
+            participantId);
+        var myVote = summary.CurrentParticipantVote switch
+        {
+            1 => ", my vote: up",
+            -1 => ", my vote: down",
+            _ => string.Empty
+        };
+
+        Console.WriteLine($"- {item.Definition.Text} (score: {summary.Score}{myVote})");
     }
 }

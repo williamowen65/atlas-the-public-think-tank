@@ -3,6 +3,8 @@ using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Graph.Tags;
 using Atlas.Participants.Participants;
+using Atlas.Voting.Data;
+using VotingParticipantId = Atlas.Voting.Votes.ParticipantId;
 
 namespace Atlas.ConsoleApp;
 
@@ -101,6 +103,8 @@ public static class NodeDisplay
         IParticipantRepository participants,
         INodeTagRepository nodeTags,
         ITagDefinitionRepository tagDefinitions,
+        IVoteRepository votes,
+        VotingParticipantId? votingParticipantId = null,
         int? voteCount = null,
         double? averageVote = null,
         int? currentParticipantVote = null,
@@ -128,7 +132,12 @@ public static class NodeDisplay
         Console.WriteLine($"Created:        {node.CreatedAt.LocalDateTime}");
         Console.WriteLine($"Updated:        {node.UpdatedAt.LocalDateTime}");
 
-        TagDisplay.WriteDetails(node, nodeTags, tagDefinitions);
+        TagDisplay.WriteDetails(
+            node,
+            nodeTags,
+            tagDefinitions,
+            votes,
+            votingParticipantId);
 
         Console.WriteLine();
         Console.WriteLine("Description");
