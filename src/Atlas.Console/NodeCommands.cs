@@ -578,7 +578,8 @@ public static class NodeCommands
                 averageRating,
                 myVote,
                 nodeTags,
-                tagDefinitions);
+                tagDefinitions,
+                votes);
         }
 
         Console.WriteLine();

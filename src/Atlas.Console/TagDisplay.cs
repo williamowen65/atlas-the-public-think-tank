@@ -10,21 +10,30 @@ namespace Atlas.ConsoleApp;
 /// <summary>Composes Graph-owned tag definitions and node associations for display.</summary>
 public static class TagDisplay
 {
-    /// <summary>Returns up to three active tags in deterministic pre-voting order.</summary>
+    /// <summary>Returns up to three active tags with their current scores.</summary>
     public static string FormatCompact(
         Node node,
         INodeTagRepository nodeTags,
         ITagDefinitionRepository definitions,
+        IVoteRepository votes,
         NodeTagDisposition disposition)
     {
-        var labels = ResolveActive(node, nodeTags, definitions)
+        var matchingTags = ResolveActive(node, nodeTags, definitions)
             .Where(item => item.Association.Disposition == disposition)
-            .Take(3)
-            .Select(item => item.Definition.Text)
             .ToList();
 
-        var remaining = ResolveActive(node, nodeTags, definitions)
-            .Count(item => item.Association.Disposition == disposition) - labels.Count;
+        var labels = matchingTags
+            .Take(3)
+            .Select(item =>
+            {
+                var score = new GetNodeTagVoteSummary(votes).Execute(
+                    new NodeTagVoteTarget(item.Association.Id.Value)).Score;
+
+                return $"({score}) {item.Definition.Text}";
+            })
+            .ToList();
+
+        var remaining = matchingTags.Count - labels.Count;
 
         if (labels.Count == 0)
         {
