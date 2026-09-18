@@ -57,11 +57,20 @@ A node-level edit never renames a shared definition. Replacement resolves a diff
 ## Permissions and moderation baseline
 
 - Any active participant may apply a tag to an active node.
-- The applying participant may remove or replace their own association.
-- The node author may remove any association from that node.
+- The applying participant may withdraw or replace their own association.
+- The node author may endorse, hide, or dispute an association but cannot erase a community contribution.
+- Once endorsed, only the node author or an authorized moderator may withdraw or replace the association; the original proposer retains attribution but no longer controls it.
 - A moderator must hold an explicit tag-moderation capability to remove another participant's association or suppress a definition.
 - Suppressing a definition makes its associations unavailable for new activity without deleting historical identity or vote summaries.
 - Archived nodes are readable but reject tag mutations.
+
+## Lifecycle and author disposition
+
+`NodeTag` records two independent decisions. Lifecycle records whether the association is active and why it ended: `Active`, `Withdrawn`, `Superseded`, or `AdministrativelyRemoved`. Disposition records how the node author presents an active association: `Community`, `Endorsed`, `Hidden`, or `Disputed`.
+
+Hidden and disputed associations remain available through an explicit review view. A dispute is also the future handoff point to Moderation; this slice records the state but does not pretend the Moderation boundary already exists.
+
+Each association owns an append-only audit history. Application, disposition changes, withdrawal, supersession, and administrative removal record the acting participant, occurrence time, and resulting lifecycle/disposition. Supersession also records the replacement `NodeTagId`. Imported legacy records that lack reliable actor history use an explicit `LegacyImported` audit action rather than inventing an actor.
 
 ## Graph-to-Voting interaction
 
@@ -105,8 +114,8 @@ The node detail view exposes the complete tag set. This is presentation logic ov
 
 ## Follow-up implementation slices
 
-- [PTT-88](https://thepublicthinktank.atlassian.net/browse/PTT-88): implement Graph tag entities, normalization, repositories, authorization workflow, and tests.
+- [PTT-88](https://thepublicthinktank.atlassian.net/browse/PTT-88): implement the combined Graph, persistence, autocomplete, and display vertical slice.
 - [PTT-90](https://thepublicthinktank.atlassian.net/browse/PTT-90): extend Voting with a signed `NodeTagId` target and target-availability adapter.
-- [PTT-89](https://thepublicthinktank.atlassian.net/browse/PTT-89): implement tag autocomplete, complete-tag display, and prominence composition.
+- [PTT-89](https://thepublicthinktank.atlassian.net/browse/PTT-89): combined into PTT-88; vote-based prominence remains in PTT-90.
 
 These are implementation slices, not evidence that PTT-74's approved requirements are already implemented.

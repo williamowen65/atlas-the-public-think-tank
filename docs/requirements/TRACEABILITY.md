@@ -28,15 +28,17 @@ This RTM provides the broad implementation and verification view. Follow a requi
 | [EVT-002](REQUIREMENTS.md#evt-002) | The host broadcasts events to interested subscribers | Should | **Implemented** | [InMemoryEventPublisher.cs](../../src/Atlas.Console/Eventing/InMemoryEventPublisher.cs)<br>[Program.cs](../../src/Atlas.Console/Program.cs)<br>[ObserveNodeLifecycleInContent.cs](../../src/Atlas.Console/Content/ObserveNodeLifecycleInContent.cs) | — |
 | [PER-001](REQUIREMENTS.md#per-001) | Prototype boundary data is stored in separate files | Must | **Implemented** | [JsonNodeRepository.cs](../../src/Atlas.Console/Storage/JsonNodeRepository.cs)<br>[JsonNodeTypeRepository.cs](../../src/Atlas.Console/Storage/JsonNodeTypeRepository.cs)<br>[JsonDocumentRepository.cs](../../src/Atlas.Console/Storage/JsonDocumentRepository.cs)<br>[JsonParticipantRepository.cs](../../src/Atlas.Console/Storage/JsonParticipantRepository.cs) | — |
 | [PER-002](REQUIREMENTS.md#per-002) | Legacy node records migrate without losing descriptions | Should | **Implemented** | [JsonNodeRepository.cs](../../src/Atlas.Console/Storage/JsonNodeRepository.cs) | — |
-| [TAG-001](REQUIREMENTS.md#tag-001) | Tag definitions form reusable vocabulary | Must | **Approved** | [Reusable tags workflow](../workflows/REUSABLE-TAGS.md#ownership) | — |
-| [TAG-002](REQUIREMENTS.md#tag-002) | Equivalent tag text resolves to one definition | Must | **Approved** | [Normalization baseline](../workflows/REUSABLE-TAGS.md#normalization-baseline) | — |
-| [TAG-003](REQUIREMENTS.md#tag-003) | Tags are applied through node-specific associations | Must | **Approved** | [Definition reuse and application](../workflows/REUSABLE-TAGS.md#definition-reuse-and-application) | — |
-| [TAG-004](REQUIREMENTS.md#tag-004) | Shared definitions are not renamed through a node | Must | **Approved** | [Replace or remove a tag](../workflows/REUSABLE-TAGS.md#replace-or-remove-a-tag) | — |
-| [TAG-005](REQUIREMENTS.md#tag-005) | Authorized actors manage node tags | Must | **Approved** | [Permissions baseline](../workflows/REUSABLE-TAGS.md#permissions-and-moderation-baseline) | — |
-| [TAG-006](REQUIREMENTS.md#tag-006) | Archived tag targets reject mutation | Must | **Approved** | [Failure outcomes](../workflows/REUSABLE-TAGS.md#failure-outcomes) | — |
-| [TAG-007](REQUIREMENTS.md#tag-007) | Tag suggestions reuse existing definitions | Should | **Approved** | [Definition reuse and application](../workflows/REUSABLE-TAGS.md#definition-reuse-and-application) | — |
+| [TAG-001](REQUIREMENTS.md#tag-001) | Tag definitions form reusable vocabulary | Must | **Verified** | [TagDefinition.cs](../../src/Atlas.Graph/Tags/TagDefinition.cs)<br>[JsonTagDefinitionRepository.cs](../../src/Atlas.Console/Storage/JsonTagDefinitionRepository.cs) | [ReusableTagTests.cs](../../tests/Atlas.Graph.Tests/ReusableTagTests.cs) |
+| [TAG-002](REQUIREMENTS.md#tag-002) | Equivalent tag text resolves to one definition | Must | **Verified** | [TagDefinition.cs](../../src/Atlas.Graph/Tags/TagDefinition.cs)<br>[NodeTagApplicationService.cs](../../src/Atlas.Graph/Tags/NodeTagApplicationService.cs) | [ReusableTagTests.cs](../../tests/Atlas.Graph.Tests/ReusableTagTests.cs) |
+| [TAG-003](REQUIREMENTS.md#tag-003) | Tags are applied through node-specific associations | Must | **Verified** | [NodeTag.cs](../../src/Atlas.Graph/Tags/NodeTag.cs)<br>[JsonNodeTagRepository.cs](../../src/Atlas.Console/Storage/JsonNodeTagRepository.cs) | [ReusableTagTests.cs](../../tests/Atlas.Graph.Tests/ReusableTagTests.cs) |
+| [TAG-004](REQUIREMENTS.md#tag-004) | Shared definitions are not renamed through a node | Must | **Verified** | [NodeTagApplicationService.cs](../../src/Atlas.Graph/Tags/NodeTagApplicationService.cs) | [ReusableTagTests.cs](../../tests/Atlas.Graph.Tests/ReusableTagTests.cs) |
+| [TAG-005](REQUIREMENTS.md#tag-005) | Authorized actors manage node tags | Must | **Partial** | [NodeTag.cs](../../src/Atlas.Graph/Tags/NodeTag.cs)<br>[NodeTagApplicationService.cs](../../src/Atlas.Graph/Tags/NodeTagApplicationService.cs) | [ReusableTagTests.cs](../../tests/Atlas.Graph.Tests/ReusableTagTests.cs) |
+| [TAG-006](REQUIREMENTS.md#tag-006) | Archived tag targets reject mutation | Must | **Partial** | [NodeTagApplicationService.cs](../../src/Atlas.Graph/Tags/NodeTagApplicationService.cs) | [ReusableTagTests.cs](../../tests/Atlas.Graph.Tests/ReusableTagTests.cs) |
+| [TAG-007](REQUIREMENTS.md#tag-007) | Tag suggestions reuse existing definitions | Should | **Implemented** | [TagCommands.cs](../../src/Atlas.Console/TagCommands.cs) | — |
 | [TAG-008](REQUIREMENTS.md#tag-008) | NodeTag votes are node-specific | Must | **Approved** | [Graph-to-Voting interaction](../workflows/REUSABLE-TAGS.md#graph-to-voting-interaction) | — |
-| [TAG-009](REQUIREMENTS.md#tag-009) | Node views show prominent and discoverable tags | Should | **Approved** | [Presentation baseline](../workflows/REUSABLE-TAGS.md#presentation-baseline) | — |
+| [TAG-009](REQUIREMENTS.md#tag-009) | Node views show prominent and discoverable tags | Should | **Partial** | [TagDisplay.cs](../../src/Atlas.Console/TagDisplay.cs)<br>[NodeDisplay.cs](../../src/Atlas.Console/NodeDisplay.cs) | — |
+| [TAG-010](REQUIREMENTS.md#tag-010) | Node-tag lifecycle preserves audit history | Must | **Partial** | [NodeTag.cs](../../src/Atlas.Graph/Tags/NodeTag.cs)<br>[NodeTagAuditEntry.cs](../../src/Atlas.Graph/Tags/NodeTagAuditEntry.cs)<br>[JsonNodeTagRepository.cs](../../src/Atlas.Console/Storage/JsonNodeTagRepository.cs) | [ReusableTagTests.cs](../../tests/Atlas.Graph.Tests/ReusableTagTests.cs) |
+| [TAG-011](REQUIREMENTS.md#tag-011) | Node authors control tag presentation | Must | **Verified** | [NodeTag.cs](../../src/Atlas.Graph/Tags/NodeTag.cs)<br>[TagDisplay.cs](../../src/Atlas.Console/TagDisplay.cs) | [ReusableTagTests.cs](../../tests/Atlas.Graph.Tests/ReusableTagTests.cs) |
 | [VOT-001](REQUIREMENTS.md#vot-001) | Node views report vote totals and averages | Should | **Approved** | [NodeDisplay.cs](../../src/Atlas.Console/NodeDisplay.cs) | — |
 | [NFR-001](REQUIREMENTS.md#nfr-001) | Boundaries communicate through identifiers and contracts | Must | **Partial** | [NodeLifecycleEvents.cs](../../src/Atlas.Contracts/Graph/V1/NodeLifecycleEvents.cs)<br>[Program.cs](../../src/Atlas.Console/Program.cs) | — |
 | [NFR-002](REQUIREMENTS.md#nfr-002) | Integration events survive process failure | Should | **Deferred** | — | — |
@@ -69,9 +71,9 @@ The synchronous in-memory publisher demonstrates subscription and broadcast clea
 The Console already reserves vote-count and average columns. No Voting boundary or aggregation implementation exists yet, so the requirement is Approved rather than Implemented.
 
 <a id="tag-001"></a>
-### TAG-001 through TAG-009 — Approved design, not implementation
+### TAG-005, TAG-006, TAG-008, and TAG-009 — Remaining tag integration
 
-PTT-74 defines the reusable-tag behavior and boundary ownership. No `TagDefinition`, `NodeTag`, tag repository, tag UI, or NodeTag voting target is implemented yet. The workflow document is design evidence; automated tests and code are still required before these entries can become Implemented or Verified.
+The Graph model, JSON adapters, Console management flow, autocomplete, and pre-voting display are implemented. Moderator capability wiring remains future work. NodeTag voting and vote-ranked prominence remain in PTT-90, so archived-target voting and the final TAG-009 ranking cannot yet be verified.
 
 ## Suggested review order
 

@@ -44,9 +44,9 @@ the JSON implementations belong to the Console host.
 | Attribute | Current state |
 |---|---|
 | **Kind** | Domain boundary |
-| **Responsibility** | Model typed nodes, the directed parent graph, and approved reusable-tag vocabulary and associations. |
-| **Implemented behaviors** | Create and reconstitute nodes. • Rename, change type, and replace description references. • Archive and restore. • Request response types. • Attach and detach parents. • Create, edit, and archive node types. • Enforce local invariants. |
-| **Owns** | Nodes and node IDs. • Node types and requested sub-node types. • Parent IDs on the child. • Graph lifecycle state. • Future `TagDefinition` and `NodeTag` records. |
+| **Responsibility** | Model typed nodes, the directed parent graph, and reusable-tag vocabulary and associations. |
+| **Implemented behaviors** | Create and reconstitute nodes. • Rename, change type, and replace description references. • Archive and restore. • Request response types. • Attach and detach parents. • Create, edit, and archive node types. • Create reusable tag definitions. • Apply, replace, and remove node tags. • Enforce local invariants. |
+| **Owns** | Nodes and node IDs. • Node types and requested sub-node types. • Parent IDs on the child. • Graph lifecycle state. • `TagDefinition` and `NodeTag` records. |
 | **References** | `NodeAuthorId` corresponding to a Participant ID. • `NodeDescriptionId` corresponding to a Document ID. • Contracts event records. |
 | **Does not own** | Profiles and credentials. • Documents. • Votes or NodeTag vote summaries. • JSON persistence. |
 | **Publishes** | Records `NodeCreatedV1`, `NodeArchivedV1`, `NodeRestoredV1`, `NodeParentAttachedV1`, and `NodeParentDetachedV1` on `Node`. |
