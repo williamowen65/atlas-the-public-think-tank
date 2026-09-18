@@ -3,12 +3,20 @@
 These blackboards are exploratory visual companions to Atlas's authoritative
 Markdown documentation.
 
+- [Blackboard conventions](CONVENTIONS.md) describe the shared layout,
+  editability, connection, traceability, and visual-language rules to apply to
+  future workflow boards.
+
 - [PTT-68 current-state architecture](PTT-68-CURRENT-STATE.excalidraw) visualizes
   the implemented system, current interactions, boundary gaps, and candidate
   future domains discovered during PTT-68.
 - [PTT-68 system blackboard](SYSTEM-BLACKBOARD.excalidraw) is the larger
   zoomable system graph. It places commands, use cases, event ports, current
   interactions, gaps, and candidate domains around their related boundaries.
+- [Reusable Node Tags](workflows/Node%20Tags/NodeTags.excalidraw) maps tag
+  definition reuse, node-specific application, mutation authority, author
+  disposition, lifecycle audit history, persistence, display, and the future
+  Voting handoff.
 - [The current-state context map](../architecture/CONTEXT-MAP.md) remains the
   authoritative inventory when the blackboard and written documentation differ.
 

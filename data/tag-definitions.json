@@ -1,0 +1,74 @@
+[
+  {
+    "Id": "3b8508bd-49f3-4638-8efc-746190eac914",
+    "Text": "Stupid",
+    "NormalizedText": "STUPID",
+    "CreatedByParticipantId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
+    "IsSuppressed": false,
+    "CreatedAt": "2026-09-17T16:10:50.5924516+00:00",
+    "UpdatedAt": "2026-09-17T16:10:50.5924516+00:00"
+  },
+  {
+    "Id": "a5164bed-c498-4b45-b943-37585992ae54",
+    "Text": "Fun",
+    "NormalizedText": "FUN",
+    "CreatedByParticipantId": "6ae1fb84-3842-4caf-a114-7c3411f24665",
+    "IsSuppressed": false,
+    "CreatedAt": "2026-09-17T16:13:14.1130209+00:00",
+    "UpdatedAt": "2026-09-17T16:13:14.1130209+00:00"
+  },
+  {
+    "Id": "b43cc9f2-828d-4a85-b828-29eabfc6e3f3",
+    "Text": "Lovely",
+    "NormalizedText": "LOVELY",
+    "CreatedByParticipantId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
+    "IsSuppressed": false,
+    "CreatedAt": "2026-09-17T18:02:01.5380024+00:00",
+    "UpdatedAt": "2026-09-17T18:02:01.5380024+00:00"
+  },
+  {
+    "Id": "2bbe57b5-17de-4178-ba2a-dac34a38f97d",
+    "Text": "STUIPD",
+    "NormalizedText": "STUIPD",
+    "CreatedByParticipantId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
+    "IsSuppressed": false,
+    "CreatedAt": "2026-09-17T18:03:22.0314747+00:00",
+    "UpdatedAt": "2026-09-17T18:03:22.0314747+00:00"
+  },
+  {
+    "Id": "b98d9cce-3830-4762-9a15-04e69384a538",
+    "Text": "TESSSST TAG",
+    "NormalizedText": "TESSSST TAG",
+    "CreatedByParticipantId": "6ae1fb84-3842-4caf-a114-7c3411f24665",
+    "IsSuppressed": false,
+    "CreatedAt": "2026-09-17T18:25:41.4281898+00:00",
+    "UpdatedAt": "2026-09-17T18:25:41.4281898+00:00"
+  },
+  {
+    "Id": "1b3c4c66-8296-4ec7-92db-933ae3c99fe4",
+    "Text": "Basic Human Rights",
+    "NormalizedText": "BASIC HUMAN RIGHTS",
+    "CreatedByParticipantId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
+    "IsSuppressed": false,
+    "CreatedAt": "2026-09-17T18:55:18.3895973+00:00",
+    "UpdatedAt": "2026-09-17T18:55:18.3895973+00:00"
+  },
+  {
+    "Id": "60567d54-50b0-4fbf-b100-68a93b503374",
+    "Text": "BS",
+    "NormalizedText": "BS",
+    "CreatedByParticipantId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
+    "IsSuppressed": false,
+    "CreatedAt": "2026-09-17T19:08:29.1585667+00:00",
+    "UpdatedAt": "2026-09-17T19:08:29.1585667+00:00"
+  },
+  {
+    "Id": "d52f19eb-de33-41ec-8e64-b1a5e836160c",
+    "Text": "hello world",
+    "NormalizedText": "HELLO WORLD",
+    "CreatedByParticipantId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
+    "IsSuppressed": false,
+    "CreatedAt": "2026-09-18T16:37:14.5235878+00:00",
+    "UpdatedAt": "2026-09-18T16:37:14.5235878+00:00"
+  }
+]

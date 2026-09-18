@@ -6,6 +6,7 @@ using Atlas.Content.Documents;
 using Atlas.Contracts.Graph.V1;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
+using Atlas.Graph.Tags;
 using Atlas.Participants.Participants;
 
 var dataDirectory = Path.GetFullPath(
@@ -34,6 +35,14 @@ var participantDataFilePath = Path.Combine(
     dataDirectory,
     "participants.json");
 
+var tagDefinitionDataFilePath = Path.Combine(
+    dataDirectory,
+    "tag-definitions.json");
+
+var nodeTagDataFilePath = Path.Combine(
+    dataDirectory,
+    "node-tags.json");
+
 INodeTypeRepository nodeTypeRepository =
     new JsonNodeTypeRepository(nodeTypeDataFilePath);
 
@@ -44,6 +53,12 @@ IDocumentRepository documentRepository =
 
 IParticipantRepository participantRepository =
     new JsonParticipantRepository(participantDataFilePath);
+
+ITagDefinitionRepository tagDefinitionRepository =
+    new JsonTagDefinitionRepository(tagDefinitionDataFilePath);
+
+INodeTagRepository nodeTagRepository =
+    new JsonNodeTagRepository(nodeTagDataFilePath);
 
 var legacyParticipant =
     EnsureLegacyParticipant(participantRepository);
@@ -71,11 +86,15 @@ var application = new ConsoleApplication(
     nodeTypeRepository,
     documentRepository,
     participantRepository,
+    tagDefinitionRepository,
+    nodeTagRepository,
     eventPublisher,
     nodeDataFilePath,
     nodeTypeDataFilePath,
     documentDataFilePath,
     participantDataFilePath,
+    tagDefinitionDataFilePath,
+    nodeTagDataFilePath,
     legacyParticipant);
 
 application.Run();

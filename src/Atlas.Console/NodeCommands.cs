@@ -3,6 +3,7 @@ using Atlas.ConsoleApp.Participants;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
+using Atlas.Graph.Tags;
 using Atlas.Participants.Participants;
 
 namespace Atlas.ConsoleApp;
@@ -17,6 +18,8 @@ public static class NodeCommands
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
         IParticipantRepository participants,
+        ITagDefinitionRepository tagDefinitions,
+        INodeTagRepository nodeTags,
         InMemoryEventPublisher eventPublisher,
         Participant currentParticipant)
     {
@@ -33,7 +36,9 @@ public static class NodeCommands
                 nodes,
                 nodeTypes,
                 documents,
-                participants);
+                participants,
+                nodeTags,
+                tagDefinitions);
 
             Console.WriteLine();
             Console.WriteLine(
@@ -56,7 +61,8 @@ public static class NodeCommands
             Console.WriteLine($"9. Attach to parent{authorOnlyStatus}");
             Console.WriteLine($"10. Detach from parent{authorOnlyStatus}");
             Console.WriteLine("11. View author profile");
-            Console.WriteLine("12. Return to node browser");
+            Console.WriteLine("12. Manage tags");
+            Console.WriteLine("13. Return to node browser");
             Console.WriteLine();
 
             Console.Write("Selection: ");
@@ -165,6 +171,14 @@ public static class NodeCommands
                         break;
 
                     case "12":
+                        TagCommands.Run(
+                            node,
+                            tagDefinitions,
+                            nodeTags,
+                            currentParticipant);
+                        break;
+
+                    case "13":
                         viewingNode = false;
                         break;
 

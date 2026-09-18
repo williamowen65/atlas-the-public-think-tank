@@ -16,11 +16,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
 		data\documents.json = data\documents.json
+		data\node-tags.json = data\node-tags.json
 		data\node-types.json = data\node-types.json
 		data\nodes.json = data\nodes.json
 		data\participants.json = data\participants.json
 		README.md = README.md
 		.github\workflows\SQLServerTest.yml = .github\workflows\SQLServerTest.yml
+		data\tag-definitions.json = data\tag-definitions.json
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Contracts", "src\Atlas.Contracts\Atlas.Contracts.csproj", "{A2D46B6E-7512-4E62-8A84-1F37CF82D930}"
@@ -135,6 +137,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "documentation-index", "docu
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "blackboards", "blackboards", "{C1111111-1111-4111-8111-111111111111}"
 	ProjectSection(SolutionItems) = preProject
+		docs\blackboards\CONVENTIONS.md = docs\blackboards\CONVENTIONS.md
 		docs\blackboards\PTT-68-CURRENT-STATE.excalidraw = docs\blackboards\PTT-68-CURRENT-STATE.excalidraw
 		docs\blackboards\README.md = docs\blackboards\README.md
 		docs\blackboards\SYSTEM-BLACKBOARD.excalidraw = docs\blackboards\SYSTEM-BLACKBOARD.excalidraw
@@ -151,6 +154,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Nodes", "Nodes", "{C4444444
 	ProjectSection(SolutionItems) = preProject
 		docs\blackboards\workflows\Nodes\NodeCreation.excalidraw = docs\blackboards\workflows\Nodes\NodeCreation.excalidraw
 		docs\blackboards\workflows\Nodes\NodeLifecycle.excalidraw = docs\blackboards\workflows\Nodes\NodeLifecycle.excalidraw
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Node Tags", "Node Tags", "{C7777777-7777-4777-8777-777777777777}"
+	ProjectSection(SolutionItems) = preProject
+		docs\blackboards\workflows\Node Tags\NodeTags.excalidraw = docs\blackboards\workflows\Node Tags\NodeTags.excalidraw
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Participants", "Participants", "{C5555555-5555-4555-8555-555555555555}"
@@ -239,6 +247,7 @@ Global
 		{C2222222-2222-4222-8222-222222222222} = {C1111111-1111-4111-8111-111111111111}
 		{C3333333-3333-4333-8333-333333333333} = {C2222222-2222-4222-8222-222222222222}
 		{C4444444-4444-4444-8444-444444444444} = {C2222222-2222-4222-8222-222222222222}
+		{C7777777-7777-4777-8777-777777777777} = {C2222222-2222-4222-8222-222222222222}
 		{C5555555-5555-4555-8555-555555555555} = {C2222222-2222-4222-8222-222222222222}
 		{C6666666-6666-4666-8666-666666666666} = {C2222222-2222-4222-8222-222222222222}
 	EndGlobalSection
