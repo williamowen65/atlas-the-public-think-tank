@@ -14,7 +14,10 @@ public class NodeMutationTests
         var node = NodeTestFactory.Create();
         var changedAt = node.CreatedAt.AddMinutes(1);
 
-        node.Rename(new NodeTitle("Updated title"), changedAt);
+        node.Rename(
+            new NodeTitle("Updated title"),
+            node.AuthorId.Value,
+            changedAt);
 
         Assert.AreEqual(new NodeTitle("Updated title"), node.Title);
         Assert.AreEqual(changedAt, node.UpdatedAt);
@@ -27,7 +30,10 @@ public class NodeMutationTests
         var node = NodeTestFactory.Create();
         var originalUpdatedAt = node.UpdatedAt;
 
-        node.Rename(node.Title, originalUpdatedAt.AddMinutes(1));
+        node.Rename(
+            node.Title,
+            node.AuthorId.Value,
+            originalUpdatedAt.AddMinutes(1));
 
         Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);
     }
@@ -40,7 +46,7 @@ public class NodeMutationTests
         var typeId = NodeTypeId.New();
         var changedAt = node.CreatedAt.AddMinutes(1);
 
-        node.ChangeType(typeId, changedAt);
+        node.ChangeType(typeId, node.AuthorId.Value, changedAt);
 
         Assert.AreEqual(typeId, node.TypeId);
         Assert.AreEqual(changedAt, node.UpdatedAt);
@@ -53,7 +59,10 @@ public class NodeMutationTests
         var node = NodeTestFactory.Create();
         var originalUpdatedAt = node.UpdatedAt;
 
-        node.ChangeType(node.TypeId, originalUpdatedAt.AddMinutes(1));
+        node.ChangeType(
+            node.TypeId,
+            node.AuthorId.Value,
+            originalUpdatedAt.AddMinutes(1));
 
         Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);
     }
@@ -66,7 +75,10 @@ public class NodeMutationTests
         var descriptionId = new NodeDescriptionId(Guid.NewGuid());
         var changedAt = node.CreatedAt.AddMinutes(1);
 
-        node.ReplaceDescriptionReference(descriptionId, changedAt);
+        node.ReplaceDescriptionReference(
+            descriptionId,
+            node.AuthorId.Value,
+            changedAt);
 
         Assert.AreEqual(descriptionId, node.DescriptionId);
         Assert.AreEqual(changedAt, node.UpdatedAt);
@@ -81,6 +93,7 @@ public class NodeMutationTests
 
         node.ReplaceDescriptionReference(
             node.DescriptionId,
+            node.AuthorId.Value,
             originalUpdatedAt.AddMinutes(1));
 
         Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);
@@ -94,7 +107,10 @@ public class NodeMutationTests
         var typeId = NodeTypeId.New();
         var changedAt = node.CreatedAt.AddMinutes(1);
 
-        node.RequestSubNodeType(typeId, changedAt);
+        node.RequestSubNodeType(
+            typeId,
+            node.AuthorId.Value,
+            changedAt);
 
         Assert.AreEqual(typeId, node.RequestedSubNodeTypes.Single().TypeId);
         Assert.AreEqual(changedAt, node.UpdatedAt);
@@ -106,10 +122,16 @@ public class NodeMutationTests
     {
         var node = NodeTestFactory.Create();
         var typeId = NodeTypeId.New();
-        node.RequestSubNodeType(typeId, node.CreatedAt.AddMinutes(1));
+        node.RequestSubNodeType(
+            typeId,
+            node.AuthorId.Value,
+            node.CreatedAt.AddMinutes(1));
         var originalUpdatedAt = node.UpdatedAt;
 
-        node.RequestSubNodeType(typeId, originalUpdatedAt.AddMinutes(1));
+        node.RequestSubNodeType(
+            typeId,
+            node.AuthorId.Value,
+            originalUpdatedAt.AddMinutes(1));
 
         Assert.HasCount(1, node.RequestedSubNodeTypes);
         Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);
@@ -121,10 +143,16 @@ public class NodeMutationTests
     {
         var node = NodeTestFactory.Create();
         var typeId = NodeTypeId.New();
-        node.RequestSubNodeType(typeId, node.CreatedAt.AddMinutes(1));
+        node.RequestSubNodeType(
+            typeId,
+            node.AuthorId.Value,
+            node.CreatedAt.AddMinutes(1));
         var changedAt = node.UpdatedAt.AddMinutes(1);
 
-        node.StopRequestingSubNodeType(typeId, changedAt);
+        node.StopRequestingSubNodeType(
+            typeId,
+            node.AuthorId.Value,
+            changedAt);
 
         Assert.IsEmpty(node.RequestedSubNodeTypes);
         Assert.AreEqual(changedAt, node.UpdatedAt);
@@ -139,6 +167,7 @@ public class NodeMutationTests
 
         node.StopRequestingSubNodeType(
             NodeTypeId.New(),
+            node.AuthorId.Value,
             originalUpdatedAt.AddMinutes(1));
 
         Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);

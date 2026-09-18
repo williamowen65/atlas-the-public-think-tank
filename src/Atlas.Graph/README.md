@@ -196,7 +196,7 @@ global `NodeTypeDefinition`.
 
 ### Requested-type policy
 
-- Restrict changes to the node author, moderators, or another explicit policy.
+- Keep requested-type changes restricted to the node author through Graph authorization.
 - Record events when requested types are added or removed.
 - Decide whether Comment must always remain requested.
 - Support ordering, prompts, or display settings per requested type.

@@ -357,14 +357,15 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Authorship is recorded, but recording an author is not itself authorization enforcement.
 
 **Priority:** Must  
-**Status:** Proposed
+**Status:** Verified
 
 ### Acceptance criteria
 
 - The actor is checked before each protected node mutation.
 - A node author can perform allowed management actions.
 - An unrelated participant is denied.
-- Moderator authority is expressed as a capability rather than a UI-only Boolean.
+- Adding a sub-node remains available to a participant who is not the parent node's author.
+- Any future moderator override must be introduced as an explicit domain capability, not as a UI-only bypass.
 
 [View traceability](TRACEABILITY.md#aut-002)
 
