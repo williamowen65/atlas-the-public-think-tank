@@ -357,14 +357,15 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** Authorship is recorded, but recording an author is not itself authorization enforcement.
 
 **Priority:** Must  
-**Status:** Proposed
+**Status:** Verified
 
 ### Acceptance criteria
 
 - The actor is checked before each protected node mutation.
 - A node author can perform allowed management actions.
 - An unrelated participant is denied.
-- Moderator authority is expressed as a capability rather than a UI-only Boolean.
+- Adding a sub-node remains available to a participant who is not the parent node's author.
+- Any future moderator override must be introduced as an explicit domain capability, not as a UI-only bypass.
 
 [View traceability](TRACEABILITY.md#aut-002)
 
@@ -441,6 +442,219 @@ This document is the authoritative catalog of requirement statements and accepta
 - Migration does not regenerate identifiers on every load.
 
 [View traceability](TRACEABILITY.md#per-002)
+
+<a id="tag-001"></a>
+## TAG-001 — Tag definitions form reusable vocabulary
+
+**Statement:** The system shall represent tag wording as a reusable `TagDefinition` with a stable identifier, normalized text, creator identifier, and creation time.
+
+**Rationale:** Nodes should reuse one vocabulary entry instead of storing duplicate copies of the same wording.
+
+**Priority:** Must
+**Status:** Verified
+
+### Acceptance criteria
+
+- A new definition receives a stable GUID.
+- The original display text and normalized text are retained separately.
+- Later node workflows can select an existing definition.
+- Graph owns `TagDefinition` and its lifecycle.
+
+[View traceability](TRACEABILITY.md#tag-001)
+
+<a id="tag-002"></a>
+## TAG-002 — Equivalent tag text resolves to one definition
+
+**Statement:** The system shall normalize proposed tag text before duplicate detection.
+
+**Rationale:** Differences in capitalization or spacing should not create duplicate vocabulary entries.
+
+**Priority:** Must
+**Status:** Verified
+
+### Acceptance criteria
+
+- Input is trimmed, repeated whitespace is collapsed, Unicode text is normalized, and comparison is case-insensitive.
+- `Tunnel Vision`, `tunnel vision`, and `TUNNEL  VISION` resolve to the same definition.
+- Empty normalized text is rejected.
+- Punctuation remains meaningful unless a later policy explicitly changes that rule.
+
+[View traceability](TRACEABILITY.md#tag-002)
+
+<a id="tag-003"></a>
+## TAG-003 — Tags are applied through node-specific associations
+
+**Statement:** The system shall represent the application of a tag to a node as a distinct `NodeTag` identified by `NodeTagId`, `NodeId`, and `TagId`.
+
+**Rationale:** Reusing a definition must not merge its meaning, lifecycle, or votes across nodes.
+
+**Priority:** Must
+**Status:** Verified
+
+### Acceptance criteria
+
+- Applying a tag creates a node-specific association with its actor and creation time.
+- The same definition can be applied independently to multiple nodes.
+- A node cannot contain two active associations to the same definition.
+- Graph owns `NodeTag` and references the participant by identifier.
+
+[View traceability](TRACEABILITY.md#tag-003)
+
+<a id="tag-004"></a>
+## TAG-004 — Shared tag definitions are not renamed through a node
+
+**Statement:** Changing tag wording on one node shall select or create another `TagDefinition` and replace that node's association.
+
+**Rationale:** A local edit must not unexpectedly rename the reusable definition everywhere.
+
+**Priority:** Must
+**Status:** Verified
+
+### Acceptance criteria
+
+- Node-level editing never mutates an existing definition's text.
+- Replacement removes the old association and creates or selects the requested definition.
+- Other nodes using the original definition are unchanged.
+- Definition-level moderation is a separate privileged workflow.
+
+[View traceability](TRACEABILITY.md#tag-004)
+
+<a id="tag-005"></a>
+## TAG-005 — Authorized actors manage node tags
+
+**Statement:** Active participants shall be able to apply tags. A proposer may withdraw or replace their own association; node authors manage its presentation; moderators perform policy actions.
+
+**Rationale:** Tagging should remain open to contribution without allowing unrelated participants to erase other contributions.
+
+**Priority:** Must
+**Status:** Partial
+
+### Acceptance criteria
+
+- Applying a tag requires an active participant and active node.
+- The applying participant can remove or replace their association until the node author endorses it.
+- The node author can endorse, hide, dispute, or return an active association to community presentation without deleting it.
+- Endorsement transfers removal and replacement control from the proposer to the node author.
+- A moderator with the applicable capability can administratively remove an association.
+- An unrelated participant cannot remove or replace another participant's association.
+
+[View traceability](TRACEABILITY.md#tag-005)
+
+<a id="tag-006"></a>
+## TAG-006 — Archived tag targets reject mutation
+
+**Statement:** Archived nodes and moderated tag associations shall remain readable but reject tag application, replacement, removal, and voting.
+
+**Rationale:** Historical context should remain visible while archived or moderated targets are frozen against new activity.
+
+**Priority:** Must
+**Status:** Partial
+
+### Acceptance criteria
+
+- Existing tags remain visible after a node is archived.
+- Graph rejects tag mutations for an archived node.
+- Voting rejects casting, changing, or undoing a vote on an unavailable `NodeTag` target.
+- Existing vote summaries remain readable.
+
+[View traceability](TRACEABILITY.md#tag-006)
+
+<a id="tag-007"></a>
+## TAG-007 — Tag suggestions reuse existing definitions
+
+**Statement:** Tag entry shall suggest existing definitions by normalized prefix or text match before offering creation.
+
+**Rationale:** Discoverable reuse limits vocabulary fragmentation.
+
+**Priority:** Should
+**Status:** Implemented
+
+### Acceptance criteria
+
+- Suggestions display the stored presentation text.
+- Selecting a suggestion applies its existing `TagId`.
+- Creation is not offered when normalized text already exists.
+- No-result and lookup-failure states are distinguishable.
+
+[View traceability](TRACEABILITY.md#tag-007)
+
+<a id="tag-008"></a>
+## TAG-008 — NodeTag votes are node-specific
+
+**Statement:** Voting shall own one current signed vote per participant and `NodeTag`, representing whether that tag appropriately characterizes that node.
+
+**Rationale:** Approval of a reusable phrase in one context must not become global approval everywhere it appears.
+
+**Priority:** Must
+**Status:** Approved
+
+### Acceptance criteria
+
+- A ballot targets `NodeTagId`, not `TagId`.
+- A participant can hold at most one current vote for that target.
+- Casting, changing, and undoing a vote follow Voting-owned policy.
+- Applying the same definition to another node creates a separate voting target and summary.
+
+[View traceability](TRACEABILITY.md#tag-008)
+
+<a id="tag-009"></a>
+## TAG-009 — Node views show prominent and discoverable tags
+
+**Statement:** Node presentation shall show up to three prominent tags and provide access to the remaining tags.
+
+**Rationale:** Strongly supported characterizations should be visible without allowing a large tag set to overwhelm the node card.
+
+**Priority:** Should
+**Status:** Partial
+
+### Acceptance criteria
+
+- The composition layer joins Graph-owned `NodeTag` records with Voting-owned summaries by `NodeTagId`.
+- Prominence sorts by net score, then total ballots, then oldest association, then `NodeTagId` for a stable tie-break.
+- At most three tags appear on a compact node card.
+- All remaining tags are reachable from the node detail view.
+- Graph does not store or cache vote summaries as authoritative state.
+
+[View traceability](TRACEABILITY.md#tag-009)
+
+<a id="tag-010"></a>
+## TAG-010 — Node-tag lifecycle preserves audit history
+
+**Statement:** Graph shall preserve a node-tag association and record why it became inactive rather than deleting it during ordinary workflows.
+
+**Rationale:** Tag proposals, corrections, disputes, and moderation actions must remain attributable and reviewable.
+
+**Priority:** Must
+**Status:** Partial
+
+### Acceptance criteria
+
+- Lifecycle values persist as readable strings: `Active`, `Withdrawn`, `Superseded`, and `AdministrativelyRemoved`.
+- Replacement creates or reuses a new association and marks the original `Superseded`.
+- Each application, disposition change, withdrawal, supersession, and administrative removal appends an immutable audit entry containing the actor, time, and resulting state.
+- A supersession audit entry identifies the replacement `NodeTag` without rewriting the original association.
+- Legacy records without historical actor data are identified as imported rather than assigned an invented actor.
+- Physical deletion is reserved for an exceptional future administrative process.
+- Archived nodes reject every tag mutation.
+- Proposer withdrawal after third-party voting is deferred until Voting supplies engagement information.
+
+<a id="tag-011"></a>
+## TAG-011 — Node authors control tag presentation
+
+**Statement:** Graph shall record each active node tag as `Community`, `Endorsed`, `Hidden`, or `Disputed`, with disposition controlled by the node author.
+
+**Rationale:** Authors need protection from unwanted primary presentation without gaining the power to erase community characterization.
+
+**Priority:** Must
+**Status:** Implemented
+
+### Acceptance criteria
+
+- A tag applied by the node author begins `Endorsed`; other applications begin `Community`.
+- Only the node author can change disposition.
+- `Hidden` and `Disputed` tags are excluded from normal presentation but remain explicitly reviewable.
+- `Disputed` records the author's request for a future moderation workflow.
+- Disposition values persist as readable strings.
 
 <a id="vot-001"></a>
 ## VOT-001 — Node views report vote totals and averages
@@ -694,4 +908,3 @@ This document is the authoritative catalog of requirement statements and accepta
 - Failed deliveries can be retried and observed.
 
 [View traceability](TRACEABILITY.md#nfr-002)
-

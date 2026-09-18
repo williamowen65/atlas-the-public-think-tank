@@ -1,6 +1,7 @@
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
+using Atlas.Graph.Tags;
 using Atlas.Participants.Participants;
 
 namespace Atlas.ConsoleApp;
@@ -13,6 +14,7 @@ public static class NodeDisplay
     private const int AuthorWidth = 20;
     private const int DescriptionWidth = 32;
     private const int StatusWidth = 10;
+    private const int TagsWidth = 24;
     private const int SubNodesMinimumWidth = 36;
 
     private const int VoteCountWidth = 5;
@@ -23,16 +25,18 @@ public static class NodeDisplay
     public static void WriteTableHeader()
     {
         Console.WriteLine(
-           $"{"#",3}  " +
-           $"{Center("Votes", VoteCountWidth)}  " +
-           $"{Center("Avg", AverageVoteWidth)}  " +
-           $"{Center("My Vote", CurrentVoteWidth)}  " +
-           $"{"Title",-TitleWidth}  " +
-           $"{"Type",-TypeWidth}  " +
-           $"{"Authored By",-AuthorWidth}  " +
-           $"{"Description",-DescriptionWidth}  " +
-           $"{"Status",-StatusWidth}  " +
-           "Sub-nodes");
+            $"{"#",3}  " +
+            $"{Center("Votes", VoteCountWidth)}  " +
+            $"{Center("Avg", AverageVoteWidth)}  " +
+            $"{Center("My Vote", CurrentVoteWidth)}  " +
+            $"{"Title",-TitleWidth}  " +
+            $"{"Type",-TypeWidth}  " +
+            $"{"Authored By",-AuthorWidth}  " +
+            $"{"Description",-DescriptionWidth}  " +
+            $"{"Author Tags",-TagsWidth}  " +
+            $"{"Community Tags",-TagsWidth}  " +
+            $"{"Status",-StatusWidth}  " +
+            "Sub-nodes");
 
         Console.WriteLine(
             new string(
@@ -45,6 +49,8 @@ public static class NodeDisplay
                 TypeWidth + 2 +
                 AuthorWidth + 2 +
                 DescriptionWidth + 2 +
+                TagsWidth + 2 +
+                TagsWidth + 2 +
                 StatusWidth + 2 +
                 SubNodesMinimumWidth));
     }
@@ -59,7 +65,9 @@ public static class NodeDisplay
         int number,
         int? voteCount = null,
         double? averageVote = null,
-        int? currentParticipantVote = null)
+        int? currentParticipantVote = null,
+        INodeTagRepository? nodeTags = null,
+        ITagDefinitionRepository? tagDefinitions = null)
     {
         var typeName = ResolveTypeName(node, nodeTypes);
         var description = ResolveDescription(node, documents);
@@ -78,6 +86,8 @@ public static class NodeDisplay
             $"{Truncate(typeName, TypeWidth),-TypeWidth}  " +
             $"{Truncate(authorName, AuthorWidth),-AuthorWidth}  " +
             $"{Truncate(description, DescriptionWidth),-DescriptionWidth}  " +
+            $"{Truncate(ResolveTags(node, nodeTags, tagDefinitions, NodeTagDisposition.Endorsed), TagsWidth),-TagsWidth}  " +
+            $"{Truncate(ResolveTags(node, nodeTags, tagDefinitions, NodeTagDisposition.Community), TagsWidth),-TagsWidth}  " +
             $"{node.Status,-StatusWidth}  " +
             subNodeSummary);
     }
@@ -89,6 +99,8 @@ public static class NodeDisplay
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
         IParticipantRepository participants,
+        INodeTagRepository nodeTags,
+        ITagDefinitionRepository tagDefinitions,
         int? voteCount = null,
         double? averageVote = null,
         int? currentParticipantVote = null,
@@ -115,6 +127,9 @@ public static class NodeDisplay
         Console.WriteLine($"My Vote:        {FormatCurrentParticipantVote(currentParticipantVote)}");
         Console.WriteLine($"Created:        {node.CreatedAt.LocalDateTime}");
         Console.WriteLine($"Updated:        {node.UpdatedAt.LocalDateTime}");
+
+        TagDisplay.WriteDetails(node, nodeTags, tagDefinitions);
+
         Console.WriteLine();
         Console.WriteLine("Description");
         Console.WriteLine("-----------");
@@ -126,6 +141,8 @@ public static class NodeDisplay
             nodeTypes,
             documents,
             participants,
+            nodeTags,
+            tagDefinitions,
             childVoteSummaries);
     }
 
@@ -136,6 +153,8 @@ public static class NodeDisplay
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
         IParticipantRepository participants,
+        INodeTagRepository nodeTags,
+        ITagDefinitionRepository tagDefinitions,
         IReadOnlyDictionary<NodeId, NodeVoteSummary>? childVoteSummaries)
     {
         var children = FindChildren(node, nodes);
@@ -200,7 +219,9 @@ public static class NodeDisplay
                     index + 1,
                     voteSummary?.VoteCount,
                     voteSummary?.AverageVote,
-                    voteSummary?.CurrentParticipantVote);
+                    voteSummary?.CurrentParticipantVote,
+                    nodeTags,
+                    tagDefinitions);
             }
         }
 
@@ -318,6 +339,18 @@ public static class NodeDisplay
     {
         return nodeTypes.GetById(node.TypeId)?.Name
             ?? $"Unknown ({node.TypeId})";
+    }
+
+    /// <summary>Resolves a compact tag summary when tag repositories are available.</summary>
+    private static string ResolveTags(
+        Node node,
+        INodeTagRepository? nodeTags,
+        ITagDefinitionRepository? tagDefinitions,
+        NodeTagDisposition disposition)
+    {
+        return nodeTags is null || tagDefinitions is null
+            ? "—"
+            : TagDisplay.FormatCompact(node, nodeTags, tagDefinitions, disposition);
     }
 
 

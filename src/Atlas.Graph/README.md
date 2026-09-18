@@ -16,6 +16,7 @@ Graph owns:
 - Global system-defined and participant-defined node types
 - The node types a node requests from potential responders
 - Parent links between nodes
+- Reusable tag definitions and node-specific tag associations
 - Root, child, and multiple-parent graph structures
 - Local invariants for changing Graph state
 - Graph domain events expressed through versioned public contracts
@@ -25,6 +26,7 @@ Graph does not own:
 - Participant profiles or authentication
 - Description documents or content blocks
 - Voting and scoring
+- NodeTag ballots and vote summaries
 - Comments as a separate discussion entity
 
 In Atlas, a comment is currently modeled as a Graph node. This allows comments
@@ -194,7 +196,7 @@ global `NodeTypeDefinition`.
 
 ### Requested-type policy
 
-- Restrict changes to the node author, moderators, or another explicit policy.
+- Keep requested-type changes restricted to the node author through Graph authorization.
 - Record events when requested types are added or removed.
 - Decide whether Comment must always remain requested.
 - Support ordering, prompts, or display settings per requested type.

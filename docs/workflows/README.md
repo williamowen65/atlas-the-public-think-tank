@@ -5,6 +5,7 @@ Workflow documents describe behavior that crosses entities or bounded contexts. 
 ## Catalog
 
 - [Node lifecycle](NODE-LIFECYCLE.md) covers node creation, description ownership, event publication, archive, and restore.
+- [Reusable node tags](REUSABLE-TAGS.md) covers definition reuse, node-specific application, authorization, moderation, presentation, and Graph-to-Voting interaction.
 
 Future useful workflow documents include:
 

@@ -7,6 +7,7 @@ using Atlas.Content.Documents;
 using Atlas.Contracts.Graph.V1;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
+using Atlas.Graph.Tags;
 using Atlas.Participants.Participants;
 using Atlas.Voting;
 using Atlas.Voting.Data;
@@ -42,6 +43,14 @@ var voteDataFilePath = Path.Combine(
     dataDirectory,
     "votes.json");
 
+var tagDefinitionDataFilePath = Path.Combine(
+    dataDirectory,
+    "tag-definitions.json");
+
+var nodeTagDataFilePath = Path.Combine(
+    dataDirectory,
+    "node-tags.json");
+
 INodeTypeRepository nodeTypeRepository =
     new JsonNodeTypeRepository(nodeTypeDataFilePath);
 
@@ -55,6 +64,12 @@ IParticipantRepository participantRepository =
 
 IVoteRepository voteRepository =
     new JsonVoteRepository(voteDataFilePath);
+
+ITagDefinitionRepository tagDefinitionRepository =
+    new JsonTagDefinitionRepository(tagDefinitionDataFilePath);
+
+INodeTagRepository nodeTagRepository =
+    new JsonNodeTagRepository(nodeTagDataFilePath);
 
 var legacyParticipant =
     EnsureLegacyParticipant(participantRepository);
@@ -103,12 +118,16 @@ var application = new ConsoleApplication(
     voteRepository,
     castVote,
     undoVote,
+    tagDefinitionRepository,
+    nodeTagRepository,
     eventPublisher,
     nodeDataFilePath,
     nodeTypeDataFilePath,
     documentDataFilePath,
     participantDataFilePath,
     voteDataFilePath,
+    tagDefinitionDataFilePath,
+    nodeTagDataFilePath,
     legacyParticipant);
 
 application.Run();
