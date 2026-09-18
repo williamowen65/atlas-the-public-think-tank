@@ -86,7 +86,10 @@ public static class NodeCreationWorkflow
 
             if (parent is not null)
             {
-                node.AttachToParent(parent.Id, now);
+                node.AttachToParent(
+                    parent.Id,
+                    author.Id.Value,
+                    now);
             }
 
             nodes.Save(node);
