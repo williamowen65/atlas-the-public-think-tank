@@ -15,18 +15,19 @@ flowchart TD
     Content["Content boundary"]
     Participants["Participants boundary"]
     Contracts["Contracts package"]
-    Voting["Voting candidate"]
+    Voting["Voting boundary (designed)"]
 
     Console --> Graph
     Console --> Content
     Console --> Participants
     Console --> Contracts
     Graph --> Contracts
-    Console -.->|placeholder only| Voting
-    Voting -.->|Node and participant IDs| Graph
+    Console -.->|future commands and queries| Voting
+    Voting -.->|target IDs and availability| Graph
+    Voting -.->|participant ID and eligibility| Participants
 ```
 
-The final dashed relationship is documented intent, not a claim that Voting exists or that its design is settled.
+The dashed Voting relationships describe the PTT-76 boundary design, not implemented project references or deployed services.
 
 ## Boundary coverage matrix
 
@@ -116,18 +117,19 @@ the JSON implementations belong to the Console host.
 
 ### Voting
 
-| Attribute | Current state |
+| Attribute | Current state and approved direction |
 |---|---|
-| **Kind** | Candidate domain; not implemented |
-| **Responsibility** | Own ballots and aggregation for supported targets, including node-specific `NodeTagId` targets. |
-| **Implemented behaviors** | None. |
-| **Owns** | No current data. Approved direction assigns future Node and NodeTag ballots and summaries here. |
-| **References** | Candidate references to Node, NodeTag, and Participant IDs are documented. |
-| **Does not own** | Nodes. • Tag definitions or node-tag associations. • Profiles. • Documents. |
-| **Publishes** | None. |
-| **Subscribes** | None. |
-| **Documentation** | VOT-001 and TAG-008/009 in [requirements](../requirements/REQUIREMENTS.md) and [RTM](../requirements/TRACEABILITY.md) • [Reusable tags workflow](../workflows/REUSABLE-TAGS.md) • Future rows in [data ownership](DATA-OWNERSHIP.md) |
-| **Gaps or open questions** | The NodeTag target direction is approved; implementation, persistence, events, and integration with the fuller Voting design remain future work. |
+| **Kind** | Implemented domain boundary and candidate independently scalable service |
+| **Responsibility** | Accept, change, remove, query, and aggregate votes under target-specific policies, including the approved future `NodeTagId` target. |
+| **Implemented behaviors** | Node votes can be cast, changed, undone, queried, aggregated, persisted to JSON, and displayed through the Console. NodeTag voting is not yet implemented. |
+| **Owns** | Vote IDs and records. • Participant-to-target uniqueness. • Value validation. • Vote timestamps. • Current aggregates. • Voting policies. |
+| **References** | Participant IDs and eligibility from Participants/identity. • Target IDs, kinds, and availability from Graph or another target-owning boundary. |
+| **Does not own** | Nodes, NodeTags, TagDefinitions, participant profiles, credentials, sessions, or target lifecycle. |
+| **Publishes** | Undecided. Versioned vote and summary events may be required for independently deployed consumers. |
+| **Subscribes or queries** | Uses identifier-based eligibility and target-availability ports; the future cross-process event/query/caching mechanism remains unresolved. |
+| **Deployment direction** | Strong candidate for an independently scalable microservice because vote traffic may greatly exceed other site activity. The ownership boundary applies before extraction. |
+| **Documentation** | [Voting boundary](VOTING.md) • [VOT requirements](../requirements/REQUIREMENTS.md#vot-001) • [RTM](../requirements/TRACEABILITY.md#vot-001) • [Reusable tags workflow](../workflows/REUSABLE-TAGS.md) • [Data ownership](DATA-OWNERSHIP.md) |
+| **Gaps or open questions** | NodeTag vote policy and integration, database-backed concurrent uniqueness, events, projection strategy, and real-time consistency remain future work. |
 
 ## Implemented event flow
 
@@ -335,7 +337,7 @@ Graph records the facts but does not dispatch them. The Console publishes them s
 
 These are discoveries only, not designs:
 
-- Voting is already represented by an approved requirement and Console placeholders.
+- Voting now has an approved PTT-76 boundary definition and requirement area, but no implementation. See [Voting boundary](VOTING.md).
 - Search, Activity, Notifications, and Analytics are named as potential consumers in ADR-0003 but have no current boundary or implementation.
 - Authentication/identity is explicitly outside Participants, but no owning Atlas component is identified.
 - Moderation is referenced by node-type policy and future authorization needs, but no boundary is implemented.

@@ -2,12 +2,16 @@ using Atlas.ConsoleApp;
 using Atlas.ConsoleApp.Content;
 using Atlas.ConsoleApp.Eventing;
 using Atlas.ConsoleApp.Storage;
+using Atlas.ConsoleApp.Voting;
 using Atlas.Content.Documents;
 using Atlas.Contracts.Graph.V1;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Graph.Tags;
 using Atlas.Participants.Participants;
+using Atlas.Voting;
+using Atlas.Voting.Data;
+using Atlas.Voting.Eligibility;
 
 var dataDirectory = Path.GetFullPath(
     Path.Combine(
@@ -35,6 +39,10 @@ var participantDataFilePath = Path.Combine(
     dataDirectory,
     "participants.json");
 
+var voteDataFilePath = Path.Combine(
+    dataDirectory,
+    "votes.json");
+
 var tagDefinitionDataFilePath = Path.Combine(
     dataDirectory,
     "tag-definitions.json");
@@ -54,6 +62,9 @@ IDocumentRepository documentRepository =
 IParticipantRepository participantRepository =
     new JsonParticipantRepository(participantDataFilePath);
 
+IVoteRepository voteRepository =
+    new JsonVoteRepository(voteDataFilePath);
+
 ITagDefinitionRepository tagDefinitionRepository =
     new JsonTagDefinitionRepository(tagDefinitionDataFilePath);
 
@@ -69,6 +80,24 @@ INodeRepository nodeRepository =
         nodeTypeRepository,
         documentRepository,
         new NodeAuthorId(legacyParticipant.Id.Value));
+
+var votingEligibility =
+    new RepositoryVotingEligibility(
+        nodeRepository,
+        participantRepository);
+
+var voteMutationPolicy =
+    new VoteMutationPolicy(votingEligibility);
+
+var castVote =
+    new CastVote(
+        voteRepository,
+        voteMutationPolicy);
+
+var undoVote =
+    new UndoVote(
+        voteRepository,
+        voteMutationPolicy);
 
 var eventPublisher = new InMemoryEventPublisher();
 
@@ -86,6 +115,9 @@ var application = new ConsoleApplication(
     nodeTypeRepository,
     documentRepository,
     participantRepository,
+    voteRepository,
+    castVote,
+    undoVote,
     tagDefinitionRepository,
     nodeTagRepository,
     eventPublisher,
@@ -93,6 +125,7 @@ var application = new ConsoleApplication(
     nodeTypeDataFilePath,
     documentDataFilePath,
     participantDataFilePath,
+    voteDataFilePath,
     tagDefinitionDataFilePath,
     nodeTagDataFilePath,
     legacyParticipant);

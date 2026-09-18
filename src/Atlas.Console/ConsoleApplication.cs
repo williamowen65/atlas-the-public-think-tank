@@ -5,16 +5,23 @@ using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Graph.Tags;
 using Atlas.Participants.Participants;
+using Atlas.Voting;
+using Atlas.Voting.Data;
+using Atlas.Voting.Target;
+using VotingParticipantId = Atlas.Voting.Votes.ParticipantId;
 
 namespace Atlas.ConsoleApp;
 
 /// <summary>Runs the console host and coordinates user-facing workflows across Atlas boundaries.</summary>
 public sealed class ConsoleApplication
 {
-    private readonly INodeRepository _nodes;
-    private readonly INodeTypeRepository _nodeTypes;
-    private readonly IDocumentRepository _documents;
-    private readonly IParticipantRepository _participants;
+    private readonly INodeRepository _nodeRepository;
+    private readonly INodeTypeRepository _nodeTypeRepository;
+    private readonly IDocumentRepository _documentRepository;
+    private readonly IParticipantRepository _participantRepository;
+    private readonly IVoteRepository _voteRepository;
+    private readonly CastVote _castVote;
+    private readonly UndoVote _undoVote;
     private readonly ITagDefinitionRepository _tagDefinitions;
     private readonly INodeTagRepository _nodeTags;
     private readonly InMemoryEventPublisher _eventPublisher;
@@ -23,6 +30,7 @@ public sealed class ConsoleApplication
     private readonly string _nodeTypeDataFilePath;
     private readonly string _documentDataFilePath;
     private readonly string _participantDataFilePath;
+    private readonly string _voteDataFilePath;
     private readonly string _tagDefinitionDataFilePath;
     private readonly string _nodeTagDataFilePath;
 
@@ -32,6 +40,9 @@ public sealed class ConsoleApplication
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
         IParticipantRepository participants,
+        IVoteRepository votes,
+        CastVote castVote,
+        UndoVote undoVote,
         ITagDefinitionRepository tagDefinitions,
         INodeTagRepository nodeTags,
         InMemoryEventPublisher eventPublisher,
@@ -39,14 +50,18 @@ public sealed class ConsoleApplication
         string nodeTypeDataFilePath,
         string documentDataFilePath,
         string participantDataFilePath,
+        string voteDataFilePath,
         string tagDefinitionDataFilePath,
         string nodeTagDataFilePath,
         Participant initialParticipant)
     {
-        _nodes = nodes;
-        _nodeTypes = nodeTypes;
-        _documents = documents;
-        _participants = participants;
+        _nodeRepository = nodes;
+        _nodeTypeRepository = nodeTypes;
+        _documentRepository = documents;
+        _participantRepository = participants;
+        _voteRepository = votes;
+        _castVote = castVote;
+        _undoVote = undoVote;
         _tagDefinitions = tagDefinitions;
         _nodeTags = nodeTags;
         _eventPublisher = eventPublisher;
@@ -55,6 +70,7 @@ public sealed class ConsoleApplication
         _nodeTypeDataFilePath = nodeTypeDataFilePath;
         _documentDataFilePath = documentDataFilePath;
         _participantDataFilePath = participantDataFilePath;
+        _voteDataFilePath = voteDataFilePath;
         _tagDefinitionDataFilePath = tagDefinitionDataFilePath;
         _nodeTagDataFilePath = nodeTagDataFilePath;
     }
@@ -146,7 +162,7 @@ public sealed class ConsoleApplication
         Console.WriteLine("------------------");
         WriteActingAs();
 
-        var participants = _participants
+        var participants = _participantRepository
             .GetAll()
             .Where(participant => participant.IsActive)
             .OrderBy(participant => participant.DisplayName)
@@ -199,7 +215,7 @@ public sealed class ConsoleApplication
                 bio ?? string.Empty,
                 DateTimeOffset.UtcNow);
 
-            _participants.Save(participant);
+            _participantRepository.Save(participant);
             _currentParticipant = participant;
 
             ConsoleUi.Pause(
@@ -229,7 +245,7 @@ public sealed class ConsoleApplication
             Console.WriteLine("-------------------");
             WriteActingAs();
 
-            var participants = _participants
+            var participants = _participantRepository
                 .GetAll()
                 .OrderBy(participant => participant.DisplayName)
                 .ToList();
@@ -240,7 +256,7 @@ public sealed class ConsoleApplication
                 return;
             }
 
-            var nodes = _nodes.GetAll();
+            var nodes = _nodeRepository.GetAll();
 
             ParticipantDisplay.WriteTableHeader();
 
@@ -249,7 +265,7 @@ public sealed class ConsoleApplication
                 ParticipantDisplay.WriteTableRow(
                     participants[index],
                     nodes,
-                    _nodeTypes,
+                    _nodeTypeRepository,
                     index + 1);
             }
 
@@ -284,10 +300,10 @@ public sealed class ConsoleApplication
     {
         _currentParticipant = ParticipantCommands.Run(
             participantId,
-            _participants,
-            _nodes,
-            _nodeTypes,
-            _documents,
+            _participantRepository,
+            _nodeRepository,
+            _nodeTypeRepository,
+            _documentRepository,
             _currentParticipant);
     }
 
@@ -300,9 +316,9 @@ public sealed class ConsoleApplication
         WriteActingAs();
 
         NodeCreationWorkflow.Create(
-            _nodes,
-            _nodeTypes,
-            _documents,
+            _nodeRepository,
+            _nodeTypeRepository,
+            _documentRepository,
             _currentParticipant,
             _eventPublisher);
     }
@@ -319,7 +335,7 @@ public sealed class ConsoleApplication
             Console.WriteLine("------------");
             WriteActingAs();
 
-            var nodes = _nodes.GetAll().ToList();
+            var nodes = _nodeRepository.GetAll().ToList();
 
             if (nodes.Count == 0)
             {
@@ -328,16 +344,40 @@ public sealed class ConsoleApplication
             }
 
             NodeDisplay.WriteTableHeader();
+            var votingParticipantId = new VotingParticipantId(_currentParticipant.Id.Value);
 
             for (var index = 0; index < nodes.Count; index++)
             {
+
+                Node node = nodes[index];
+
+                var voteTarget =
+                    new NodeVoteTarget(node.Id.Value);
+
+                var voteSummary =
+                    new GetVoteSummary(_voteRepository).Execute(
+                        voteTarget,
+                        votingParticipantId);
+
+                var voteCount =
+                    voteSummary.VoteCount;
+
+                var averageRating =
+                    voteSummary.AverageVote;
+
+                var myVote =
+                    voteSummary.CurrentParticipantVote;
+
                 NodeDisplay.WriteTableRow(
-                    nodes[index],
-                    _nodes,
-                    _nodeTypes,
-                    _documents,
-                    _participants,
+                    node,
+                    _nodeRepository,
+                    _nodeTypeRepository,
+                    _documentRepository,
+                    _participantRepository,
                     index + 1,
+                    voteCount,
+                    averageRating,
+                    myVote,
                     nodeTags: _nodeTags,
                     tagDefinitions: _tagDefinitions);
             }
@@ -368,10 +408,13 @@ public sealed class ConsoleApplication
 
             _currentParticipant = NodeCommands.Run(
                 nodes[selection - 1],
-                _nodes,
-                _nodeTypes,
-                _documents,
-                _participants,
+                _nodeRepository,
+                _nodeTypeRepository,
+                _documentRepository,
+                _participantRepository,
+                _voteRepository,
+                _castVote,
+                _undoVote,
                 _tagDefinitions,
                 _nodeTags,
                 _eventPublisher,
@@ -387,7 +430,7 @@ public sealed class ConsoleApplication
         Console.WriteLine("----------");
         WriteActingAs();
 
-        var nodeTypes = _nodeTypes
+        var nodeTypes = _nodeTypeRepository
             .GetAll()
             .OrderBy(type => type.Name)
             .ToList();
@@ -424,7 +467,7 @@ public sealed class ConsoleApplication
         Console.WriteLine("-----------------------");
         WriteActingAs();
 
-        var documents = _documents.GetAll();
+        var documents = _documentRepository.GetAll();
 
         if (documents.Count == 0)
         {
@@ -455,6 +498,7 @@ public sealed class ConsoleApplication
         ShowDataFile("NODE TYPE DATA", _nodeTypeDataFilePath);
         ShowDataFile("CONTENT DOCUMENT DATA", _documentDataFilePath);
         ShowDataFile("PARTICIPANT DATA", _participantDataFilePath);
+        ShowDataFile("VOTE DATA", _voteDataFilePath);
         ShowDataFile("TAG DEFINITION DATA", _tagDefinitionDataFilePath);
         ShowDataFile("NODE TAG DATA", _nodeTagDataFilePath);
     }
