@@ -42,7 +42,9 @@ public sealed class JsonNodeTagRepository : INodeTagRepository
         lock (_gate)
         {
             return ReadStored()
-                .Where(item => item.NodeId == nodeId.Value && ResolveLifecycle(item) == NodeTagLifecycleState.Active)
+                .Where(item =>
+                    item.NodeId == nodeId.Value &&
+                    ParseLifecycle(item) == NodeTagLifecycleState.Active)
                 .Select(ToDomain)
                 .ToList();
         }
@@ -56,7 +58,7 @@ public sealed class JsonNodeTagRepository : INodeTagRepository
             var stored = ReadStored().SingleOrDefault(item =>
                 item.NodeId == nodeId.Value &&
                 item.TagDefinitionId == tagDefinitionId.Value &&
-                ResolveLifecycle(item) == NodeTagLifecycleState.Active);
+                ParseLifecycle(item) == NodeTagLifecycleState.Active);
             return stored is null ? null : ToDomain(stored);
         }
     }
@@ -72,7 +74,7 @@ public sealed class JsonNodeTagRepository : INodeTagRepository
                     item.Id != nodeTag.Id.Value &&
                     item.NodeId == nodeTag.NodeId.Value &&
                     item.TagDefinitionId == nodeTag.TagDefinitionId.Value &&
-                    ResolveLifecycle(item) == NodeTagLifecycleState.Active))
+                    ParseLifecycle(item) == NodeTagLifecycleState.Active))
             {
                 throw new InvalidOperationException(
                     "That tag is already applied to this node.");
@@ -150,7 +152,7 @@ public sealed class JsonNodeTagRepository : INodeTagRepository
             new NodeId(stored.NodeId),
             new TagDefinitionId(stored.TagDefinitionId),
             stored.AppliedByParticipantId,
-            ResolveLifecycle(stored),
+            ParseLifecycle(stored),
             Enum.Parse<NodeTagDisposition>(stored.Disposition),
             stored.CreatedAt,
             stored.RemovedAt,
@@ -165,15 +167,6 @@ public sealed class JsonNodeTagRepository : INodeTagRepository
                         ? new NodeTagId(entry.RelatedNodeTagId.Value)
                         : null)));
 
-    private static NodeTagLifecycleState ResolveLifecycle(StoredNodeTag stored)
-    {
-        if (!string.IsNullOrWhiteSpace(stored.LifecycleState))
-        {
-            return Enum.Parse<NodeTagLifecycleState>(stored.LifecycleState);
-        }
-
-        return stored.IsRemoved == true
-            ? NodeTagLifecycleState.Withdrawn
-            : NodeTagLifecycleState.Active;
-    }
+    private static NodeTagLifecycleState ParseLifecycle(StoredNodeTag stored) =>
+        Enum.Parse<NodeTagLifecycleState>(stored.LifecycleState);
 }
