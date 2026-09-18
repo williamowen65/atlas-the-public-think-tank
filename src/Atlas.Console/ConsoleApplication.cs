@@ -3,6 +3,7 @@ using Atlas.ConsoleApp.Participants;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
+using Atlas.Graph.Tags;
 using Atlas.Participants.Participants;
 using Atlas.Voting;
 using Atlas.Voting.Data;
@@ -21,6 +22,8 @@ public sealed class ConsoleApplication
     private readonly IVoteRepository _voteRepository;
     private readonly CastVote _castVote;
     private readonly UndoVote _undoVote;
+    private readonly ITagDefinitionRepository _tagDefinitions;
+    private readonly INodeTagRepository _nodeTags;
     private readonly InMemoryEventPublisher _eventPublisher;
     private Participant _currentParticipant;
     private readonly string _nodeDataFilePath;
@@ -28,6 +31,8 @@ public sealed class ConsoleApplication
     private readonly string _documentDataFilePath;
     private readonly string _participantDataFilePath;
     private readonly string _voteDataFilePath;
+    private readonly string _tagDefinitionDataFilePath;
+    private readonly string _nodeTagDataFilePath;
 
     /// <summary>Creates a validated console application instance.</summary>
     public ConsoleApplication(
@@ -38,12 +43,16 @@ public sealed class ConsoleApplication
         IVoteRepository votes,
         CastVote castVote,
         UndoVote undoVote,
+        ITagDefinitionRepository tagDefinitions,
+        INodeTagRepository nodeTags,
         InMemoryEventPublisher eventPublisher,
         string nodeDataFilePath,
         string nodeTypeDataFilePath,
         string documentDataFilePath,
         string participantDataFilePath,
         string voteDataFilePath,
+        string tagDefinitionDataFilePath,
+        string nodeTagDataFilePath,
         Participant initialParticipant)
     {
         _nodeRepository = nodes;
@@ -53,6 +62,8 @@ public sealed class ConsoleApplication
         _voteRepository = votes;
         _castVote = castVote;
         _undoVote = undoVote;
+        _tagDefinitions = tagDefinitions;
+        _nodeTags = nodeTags;
         _eventPublisher = eventPublisher;
         _currentParticipant = initialParticipant;
         _nodeDataFilePath = nodeDataFilePath;
@@ -60,6 +71,8 @@ public sealed class ConsoleApplication
         _documentDataFilePath = documentDataFilePath;
         _participantDataFilePath = participantDataFilePath;
         _voteDataFilePath = voteDataFilePath;
+        _tagDefinitionDataFilePath = tagDefinitionDataFilePath;
+        _nodeTagDataFilePath = nodeTagDataFilePath;
     }
 
     /// <summary>Runs the interactive console application workflow.</summary>
@@ -147,6 +160,7 @@ public sealed class ConsoleApplication
         Console.Clear();
         Console.WriteLine("SELECT PARTICIPANT");
         Console.WriteLine("------------------");
+        WriteActingAs();
 
         var participants = _participantRepository
             .GetAll()
@@ -188,6 +202,7 @@ public sealed class ConsoleApplication
         Console.Clear();
         Console.WriteLine("CREATE PARTICIPANT");
         Console.WriteLine("------------------");
+        WriteActingAs();
         Console.Write("Display name: ");
         var displayName = Console.ReadLine();
         Console.Write("Short bio (optional): ");
@@ -228,6 +243,7 @@ public sealed class ConsoleApplication
             Console.Clear();
             Console.WriteLine("BROWSE PARTICIPANTS");
             Console.WriteLine("-------------------");
+            WriteActingAs();
 
             var participants = _participantRepository
                 .GetAll()
@@ -297,6 +313,7 @@ public sealed class ConsoleApplication
         Console.Clear();
         Console.WriteLine("CREATE NODE");
         Console.WriteLine("-----------");
+        WriteActingAs();
 
         NodeCreationWorkflow.Create(
             _nodeRepository,
@@ -316,6 +333,7 @@ public sealed class ConsoleApplication
             Console.Clear();
             Console.WriteLine("BROWSE NODES");
             Console.WriteLine("------------");
+            WriteActingAs();
 
             var nodes = _nodeRepository.GetAll().ToList();
 
@@ -359,7 +377,9 @@ public sealed class ConsoleApplication
                     index + 1,
                     voteCount,
                     averageRating,
-                    myVote);
+                    myVote,
+                    nodeTags: _nodeTags,
+                    tagDefinitions: _tagDefinitions);
             }
 
             Console.WriteLine();
@@ -395,6 +415,8 @@ public sealed class ConsoleApplication
                 _voteRepository,
                 _castVote,
                 _undoVote,
+                _tagDefinitions,
+                _nodeTags,
                 _eventPublisher,
                 _currentParticipant);
         }
@@ -406,6 +428,7 @@ public sealed class ConsoleApplication
         Console.Clear();
         Console.WriteLine("NODE TYPES");
         Console.WriteLine("----------");
+        WriteActingAs();
 
         var nodeTypes = _nodeTypeRepository
             .GetAll()
@@ -442,6 +465,7 @@ public sealed class ConsoleApplication
         Console.Clear();
         Console.WriteLine("ATLAS.CONTENT DOCUMENTS");
         Console.WriteLine("-----------------------");
+        WriteActingAs();
 
         var documents = _documentRepository.GetAll();
 
@@ -475,16 +499,19 @@ public sealed class ConsoleApplication
         ShowDataFile("CONTENT DOCUMENT DATA", _documentDataFilePath);
         ShowDataFile("PARTICIPANT DATA", _participantDataFilePath);
         ShowDataFile("VOTE DATA", _voteDataFilePath);
+        ShowDataFile("TAG DEFINITION DATA", _tagDefinitionDataFilePath);
+        ShowDataFile("NODE TAG DATA", _nodeTagDataFilePath);
     }
 
     /// <summary>Displays data file in the console workflow.</summary>
-    private static void ShowDataFile(
+    private void ShowDataFile(
         string heading,
         string filePath)
     {
         Console.Clear();
         Console.WriteLine(heading);
         Console.WriteLine(new string('-', heading.Length));
+        WriteActingAs();
         Console.WriteLine(filePath);
         Console.WriteLine();
 
@@ -494,5 +521,12 @@ public sealed class ConsoleApplication
                 : "The data file has not been created yet.");
 
         ConsoleUi.Pause();
+    }
+
+    /// <summary>Makes the simulated authenticated identity visible on Console screens.</summary>
+    private void WriteActingAs()
+    {
+        Console.WriteLine($"Acting as: {_currentParticipant.DisplayName}");
+        Console.WriteLine();
     }
 }

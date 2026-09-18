@@ -61,6 +61,7 @@ public class NodeTests
 
         node.Rename(
             new NodeTitle("Updated title"),
+            node.AuthorId.Value,
             DateTimeOffset.UtcNow);
 
         Assert.AreEqual(
@@ -77,6 +78,7 @@ public class NodeTests
         Assert.Throws<ArgumentException>(
             () => node.Rename(
                 new NodeTitle("    "),
+                node.AuthorId.Value,
                 DateTimeOffset.UtcNow));
 
         Assert.AreEqual(
@@ -94,6 +96,7 @@ public class NodeTests
 
         node.ReplaceDescriptionReference(
             replacementId,
+            node.AuthorId.Value,
             DateTimeOffset.UtcNow);
 
         Assert.AreEqual(replacementId, node.DescriptionId);
@@ -108,7 +111,7 @@ public class NodeTests
         node.ClearDomainEvents();
         var archivedAt = DateTimeOffset.UtcNow;
 
-        node.Archive(archivedAt);
+        node.Archive(node.AuthorId.Value, archivedAt);
 
         var domainEvent = node.DomainEvents
             .OfType<NodeArchivedV1>()
@@ -128,10 +131,12 @@ public class NodeTests
     {
         var node = CreateNode("Climate adaptation");
 
-        node.Archive(DateTimeOffset.UtcNow);
+        node.Archive(node.AuthorId.Value, DateTimeOffset.UtcNow);
         node.ClearDomainEvents();
 
-        node.Archive(DateTimeOffset.UtcNow.AddMinutes(1));
+        node.Archive(
+            node.AuthorId.Value,
+            DateTimeOffset.UtcNow.AddMinutes(1));
 
         Assert.IsEmpty(node.DomainEvents);
     }
@@ -168,10 +173,12 @@ public class NodeTests
 
         node.RequestSubNodeType(
             commentTypeId,
+            node.AuthorId.Value,
             DateTimeOffset.UtcNow);
 
         node.RequestSubNodeType(
             commentTypeId,
+            node.AuthorId.Value,
             DateTimeOffset.UtcNow.AddMinutes(1));
 
         Assert.HasCount(1, node.RequestedSubNodeTypes);
@@ -186,10 +193,12 @@ public class NodeTests
 
         node.RequestSubNodeType(
             commentTypeId,
+            node.AuthorId.Value,
             DateTimeOffset.UtcNow);
 
         node.StopRequestingSubNodeType(
             commentTypeId,
+            node.AuthorId.Value,
             DateTimeOffset.UtcNow.AddMinutes(1));
 
         Assert.IsEmpty(node.RequestedSubNodeTypes);
@@ -204,6 +213,7 @@ public class NodeTests
         Assert.Throws<ArgumentException>(
             () => node.RequestSubNodeType(
                 new NodeTypeId(Guid.Empty),
+                node.AuthorId.Value,
                 DateTimeOffset.UtcNow));
     }
 
@@ -217,7 +227,10 @@ public class NodeTests
         var parentId = NodeId.New();
         var attachedAt = DateTimeOffset.UtcNow;
 
-        node.AttachToParent(parentId, attachedAt);
+        node.AttachToParent(
+            parentId,
+            node.AuthorId.Value,
+            attachedAt);
 
         CollectionAssert.Contains(
             node.ParentNodeIds.ToList(),
@@ -239,11 +252,15 @@ public class NodeTests
         var node = CreateNode("Climate adaptation");
         var parentId = NodeId.New();
 
-        node.AttachToParent(parentId, DateTimeOffset.UtcNow);
+        node.AttachToParent(
+            parentId,
+            node.AuthorId.Value,
+            DateTimeOffset.UtcNow);
         node.ClearDomainEvents();
 
         node.AttachToParent(
             parentId,
+            node.AuthorId.Value,
             DateTimeOffset.UtcNow.AddMinutes(1));
 
         Assert.HasCount(1, node.ParentNodeIds);
@@ -259,6 +276,7 @@ public class NodeTests
         Assert.Throws<InvalidOperationException>(
             () => node.AttachToParent(
                 node.Id,
+                node.AuthorId.Value,
                 DateTimeOffset.UtcNow));
     }
 
@@ -271,6 +289,7 @@ public class NodeTests
         Assert.Throws<ArgumentException>(
             () => node.AttachToParent(
                 new NodeId(Guid.Empty),
+                node.AuthorId.Value,
                 DateTimeOffset.UtcNow));
     }
 
@@ -280,11 +299,17 @@ public class NodeTests
     {
         var node = CreateNode("Climate adaptation");
         var parentId = NodeId.New();
-        node.AttachToParent(parentId, DateTimeOffset.UtcNow);
+        node.AttachToParent(
+            parentId,
+            node.AuthorId.Value,
+            DateTimeOffset.UtcNow);
         node.ClearDomainEvents();
         var detachedAt = DateTimeOffset.UtcNow.AddMinutes(1);
 
-        node.DetachFromParent(parentId, detachedAt);
+        node.DetachFromParent(
+            parentId,
+            node.AuthorId.Value,
+            detachedAt);
 
         Assert.IsEmpty(node.ParentNodeIds);
 
@@ -307,9 +332,11 @@ public class NodeTests
 
         node.AttachToParent(
             firstParentId,
+            node.AuthorId.Value,
             DateTimeOffset.UtcNow);
         node.AttachToParent(
             secondParentId,
+            node.AuthorId.Value,
             DateTimeOffset.UtcNow.AddMinutes(1));
 
         CollectionAssert.AreEquivalent(
