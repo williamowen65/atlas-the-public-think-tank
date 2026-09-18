@@ -137,6 +137,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "documentation-index", "docu
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "blackboards", "blackboards", "{C1111111-1111-4111-8111-111111111111}"
 	ProjectSection(SolutionItems) = preProject
+		docs\blackboards\CONVENTIONS.md = docs\blackboards\CONVENTIONS.md
 		docs\blackboards\PTT-68-CURRENT-STATE.excalidraw = docs\blackboards\PTT-68-CURRENT-STATE.excalidraw
 		docs\blackboards\README.md = docs\blackboards\README.md
 		docs\blackboards\SYSTEM-BLACKBOARD.excalidraw = docs\blackboards\SYSTEM-BLACKBOARD.excalidraw

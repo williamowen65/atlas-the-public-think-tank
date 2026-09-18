@@ -3,6 +3,10 @@
 These blackboards are exploratory visual companions to Atlas's authoritative
 Markdown documentation.
 
+- [Blackboard conventions](CONVENTIONS.md) describe the shared layout,
+  editability, connection, traceability, and visual-language rules to apply to
+  future workflow boards.
+
 - [PTT-68 current-state architecture](PTT-68-CURRENT-STATE.excalidraw) visualizes
   the implemented system, current interactions, boundary gaps, and candidate
   future domains discovered during PTT-68.
