@@ -157,6 +157,8 @@ public class ReusableTagTests
     {
         var fixture = new TagFixture();
         var node = NodeTestFactory.Create();
+        var moderatorId = Guid.NewGuid();
+        var removedAt = DateTimeOffset.UtcNow.AddMinutes(1);
         var applied = fixture.Service.Apply(
             node,
             "High Risk",
@@ -167,12 +169,16 @@ public class ReusableTagTests
         fixture.Service.Remove(
             node,
             applied.Id,
-            Guid.NewGuid(),
+            moderatorId,
             actorIsActive: true,
             actorIsModerator: true,
-            DateTimeOffset.UtcNow.AddMinutes(1));
+            removedAt);
 
         Assert.IsTrue(fixture.NodeTags.GetById(applied.Id)!.IsRemoved);
+        var audit = applied.AuditHistory.Last();
+        Assert.AreEqual(NodeTagAuditAction.AdministrativelyRemoved, audit.Action);
+        Assert.AreEqual<Guid?>(moderatorId, audit.ActorParticipantId);
+        Assert.AreEqual(removedAt, audit.OccurredAt);
     }
 
     /// <summary>Verifies that inactive participants cannot apply tags.</summary>
@@ -197,7 +203,9 @@ public class ReusableTagTests
     {
         var fixture = new TagFixture();
         var node = NodeTestFactory.Create();
-        node.Archive(DateTimeOffset.UtcNow);
+        node.Archive(
+            node.AuthorId.Value,
+            DateTimeOffset.UtcNow);
 
         Assert.Throws<InvalidOperationException>(() =>
             fixture.Service.Apply(
@@ -218,6 +226,11 @@ public class ReusableTagTests
 
         Assert.AreEqual(NodeTagDisposition.Endorsed, applied.Disposition);
         Assert.AreEqual(NodeTagLifecycleState.Active, applied.LifecycleState);
+        var audit = applied.AuditHistory.Single();
+        Assert.AreEqual(NodeTagAuditAction.Applied, audit.Action);
+        Assert.AreEqual<Guid?>(
+            node.AuthorId.Value,
+            audit.ActorParticipantId);
     }
 
     /// <summary>Verifies that only the node author may hide a community application.</summary>
@@ -227,12 +240,20 @@ public class ReusableTagTests
         var fixture = new TagFixture();
         var node = NodeTestFactory.Create();
         var applied = fixture.Service.Apply(node, "Unflattering", Guid.NewGuid(), true, DateTimeOffset.UtcNow);
+        var changedAt = DateTimeOffset.UtcNow.AddMinutes(1);
 
         fixture.Service.SetDisposition(node, applied.Id, NodeTagDisposition.Hidden,
-            node.AuthorId.Value, true);
+            node.AuthorId.Value, true, changedAt);
 
         Assert.AreEqual(NodeTagDisposition.Hidden, applied.Disposition);
         Assert.IsFalse(applied.IsRemoved);
+        var audit = applied.AuditHistory.Last();
+        Assert.AreEqual(NodeTagAuditAction.DispositionChanged, audit.Action);
+        Assert.AreEqual<Guid?>(
+            node.AuthorId.Value,
+            audit.ActorParticipantId);
+        Assert.AreEqual(changedAt, audit.OccurredAt);
+        Assert.AreEqual(NodeTagDisposition.Hidden, audit.Disposition);
     }
 
     /// <summary>Verifies that a third party cannot decide how an author's node presents a tag.</summary>
@@ -244,7 +265,8 @@ public class ReusableTagTests
         var applied = fixture.Service.Apply(node, "Questionable", Guid.NewGuid(), true, DateTimeOffset.UtcNow);
 
         Assert.Throws<UnauthorizedAccessException>(() => fixture.Service.SetDisposition(
-            node, applied.Id, NodeTagDisposition.Disputed, Guid.NewGuid(), true));
+            node, applied.Id, NodeTagDisposition.Disputed, Guid.NewGuid(), true,
+            DateTimeOffset.UtcNow.AddMinutes(1)));
     }
 
     /// <summary>Verifies endorsement transfers withdrawal control away from the proposer.</summary>
@@ -256,7 +278,7 @@ public class ReusableTagTests
         var proposerId = Guid.NewGuid();
         var applied = fixture.Service.Apply(node, "Useful", proposerId, true, DateTimeOffset.UtcNow);
         fixture.Service.SetDisposition(node, applied.Id, NodeTagDisposition.Endorsed,
-            node.AuthorId.Value, true);
+            node.AuthorId.Value, true, DateTimeOffset.UtcNow.AddMinutes(1));
 
         Assert.Throws<UnauthorizedAccessException>(() => fixture.Service.Remove(
             node, applied.Id, proposerId, true, false, DateTimeOffset.UtcNow.AddMinutes(1)));
@@ -270,12 +292,19 @@ public class ReusableTagTests
         var node = NodeTestFactory.Create();
         var applied = fixture.Service.Apply(node, "Useful", Guid.NewGuid(), true, DateTimeOffset.UtcNow);
         fixture.Service.SetDisposition(node, applied.Id, NodeTagDisposition.Endorsed,
-            node.AuthorId.Value, true);
+            node.AuthorId.Value, true, DateTimeOffset.UtcNow.AddMinutes(1));
 
+        var removedAt = DateTimeOffset.UtcNow.AddMinutes(2);
         fixture.Service.Remove(node, applied.Id, node.AuthorId.Value, true, false,
-            DateTimeOffset.UtcNow.AddMinutes(1));
+            removedAt);
 
         Assert.AreEqual(NodeTagLifecycleState.Withdrawn, applied.LifecycleState);
+        var audit = applied.AuditHistory.Last();
+        Assert.AreEqual(NodeTagAuditAction.Withdrawn, audit.Action);
+        Assert.AreEqual<Guid?>(
+            node.AuthorId.Value,
+            audit.ActorParticipantId);
+        Assert.AreEqual(removedAt, audit.OccurredAt);
     }
 
     /// <summary>Verifies replacement records supersession rather than erasing history.</summary>
@@ -286,11 +315,65 @@ public class ReusableTagTests
         var node = NodeTestFactory.Create();
         var original = fixture.Service.Apply(node, "Typoo", node.AuthorId.Value, true, DateTimeOffset.UtcNow);
 
-        fixture.Service.Replace(node, original.Id, "Typo", node.AuthorId.Value, true, false,
+        var replacement = fixture.Service.Replace(
+            node, original.Id, "Typo", node.AuthorId.Value, true, false,
             DateTimeOffset.UtcNow.AddMinutes(1));
 
         Assert.AreEqual(NodeTagLifecycleState.Superseded,
             fixture.NodeTags.GetById(original.Id)!.LifecycleState);
+        var audit = original.AuditHistory.Last();
+        Assert.AreEqual(NodeTagAuditAction.Superseded, audit.Action);
+        Assert.AreEqual<Guid?>(
+            node.AuthorId.Value,
+            audit.ActorParticipantId);
+        Assert.AreEqual<NodeTagId?>(
+            replacement.Id,
+            audit.RelatedNodeTagId);
+    }
+
+    /// <summary>Verifies that a no-op presentation choice does not create false audit history.</summary>
+    [TestMethod]
+    public void SetDisposition_ToCurrentValue_DoesNotAddAuditEntry()
+    {
+        var fixture = new TagFixture();
+        var node = NodeTestFactory.Create();
+        var applied = fixture.Service.Apply(
+            node,
+            "Useful",
+            node.AuthorId.Value,
+            true,
+            DateTimeOffset.UtcNow);
+
+        fixture.Service.SetDisposition(
+            node,
+            applied.Id,
+            NodeTagDisposition.Endorsed,
+            node.AuthorId.Value,
+            true,
+            DateTimeOffset.UtcNow.AddMinutes(1));
+
+        Assert.HasCount(1, applied.AuditHistory);
+    }
+
+    /// <summary>Verifies that legacy records gain an honest import marker without inventing an actor.</summary>
+    [TestMethod]
+    public void Reconstitute_WithoutAuditHistory_AddsLegacyImportEntry()
+    {
+        var createdAt = DateTimeOffset.UtcNow.AddMinutes(-1);
+        var nodeTag = NodeTag.Reconstitute(
+            NodeTagId.New(),
+            NodeId.New(),
+            TagDefinitionId.New(),
+            Guid.NewGuid(),
+            NodeTagLifecycleState.Active,
+            NodeTagDisposition.Community,
+            createdAt,
+            removedAt: null);
+
+        var audit = nodeTag.AuditHistory.Single();
+        Assert.AreEqual(NodeTagAuditAction.LegacyImported, audit.Action);
+        Assert.IsNull(audit.ActorParticipantId);
+        Assert.AreEqual(createdAt, audit.OccurredAt);
     }
 
     private sealed class TagFixture

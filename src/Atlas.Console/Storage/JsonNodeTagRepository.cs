@@ -130,7 +130,18 @@ public sealed class JsonNodeTagRepository : INodeTagRepository
         LifecycleState = nodeTag.LifecycleState.ToString(),
         Disposition = nodeTag.Disposition.ToString(),
         CreatedAt = nodeTag.CreatedAt,
-        RemovedAt = nodeTag.RemovedAt
+        RemovedAt = nodeTag.RemovedAt,
+        AuditHistory = nodeTag.AuditHistory
+            .Select(entry => new StoredNodeTagAuditEntry
+            {
+                Action = entry.Action.ToString(),
+                ActorParticipantId = entry.ActorParticipantId,
+                OccurredAt = entry.OccurredAt,
+                LifecycleState = entry.LifecycleState.ToString(),
+                Disposition = entry.Disposition.ToString(),
+                RelatedNodeTagId = entry.RelatedNodeTagId?.Value
+            })
+            .ToList()
     };
 
     private static NodeTag ToDomain(StoredNodeTag stored) =>
@@ -142,7 +153,17 @@ public sealed class JsonNodeTagRepository : INodeTagRepository
             ResolveLifecycle(stored),
             Enum.Parse<NodeTagDisposition>(stored.Disposition),
             stored.CreatedAt,
-            stored.RemovedAt);
+            stored.RemovedAt,
+            stored.AuditHistory.Select(entry =>
+                new NodeTagAuditEntry(
+                    Enum.Parse<NodeTagAuditAction>(entry.Action),
+                    entry.ActorParticipantId,
+                    entry.OccurredAt,
+                    Enum.Parse<NodeTagLifecycleState>(entry.LifecycleState),
+                    Enum.Parse<NodeTagDisposition>(entry.Disposition),
+                    entry.RelatedNodeTagId.HasValue
+                        ? new NodeTagId(entry.RelatedNodeTagId.Value)
+                        : null)));
 
     private static NodeTagLifecycleState ResolveLifecycle(StoredNodeTag stored)
     {

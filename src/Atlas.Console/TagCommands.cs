@@ -117,7 +117,7 @@ public static class TagCommands
         };
 
         service.SetDisposition(node, selected.Value.Association.Id, disposition,
-            participant.Id.Value, participant.IsActive);
+            participant.Id.Value, participant.IsActive, DateTimeOffset.UtcNow);
         ConsoleUi.Pause($"'{selected.Value.Definition.Text}' now appears as {disposition}.");
     }
 

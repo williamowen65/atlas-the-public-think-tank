@@ -129,28 +129,33 @@ public sealed class NodeTagApplicationService
 
         var replacement = _nodeTags.GetActive(node.Id, replacementDefinition.Id);
 
-        existing.EnsureCanRemove(actorParticipantId, node.AuthorId.Value, actorIsActive, actorIsModerator);
-        existing.Supersede(replacedAt);
-        _nodeTags.Save(existing);
-
-        if (replacement is not null)
+        if (replacement is null)
         {
-            return replacement;
+            replacement = NodeTag.Create(
+                node.Id,
+                replacementDefinition.Id,
+                actorParticipantId,
+                node.AuthorId.Value,
+                replacedAt);
+            _nodeTags.Save(replacement);
         }
 
-        replacement = NodeTag.Create(
-            node.Id,
-            replacementDefinition.Id,
+        existing.Supersede(
             actorParticipantId,
-            node.AuthorId.Value,
+            replacement.Id,
             replacedAt);
-        _nodeTags.Save(replacement);
+        _nodeTags.Save(existing);
         return replacement;
     }
 
     /// <summary>Changes how the node author presents one active tag.</summary>
-    public void SetDisposition(Node node, NodeTagId nodeTagId, NodeTagDisposition disposition,
-        Guid actorParticipantId, bool actorIsActive)
+    public void SetDisposition(
+        Node node,
+        NodeTagId nodeTagId,
+        NodeTagDisposition disposition,
+        Guid actorParticipantId,
+        bool actorIsActive,
+        DateTimeOffset changedAt)
     {
         EnsureMutable(node, actorParticipantId, actorIsActive);
         var nodeTag = _nodeTags.GetById(nodeTagId)
@@ -161,7 +166,11 @@ public sealed class NodeTagApplicationService
             throw new InvalidOperationException("The node tag belongs to a different node.");
         }
 
-        nodeTag.SetDisposition(disposition, actorParticipantId, node.AuthorId.Value);
+        nodeTag.SetDisposition(
+            disposition,
+            actorParticipantId,
+            node.AuthorId.Value,
+            changedAt);
         _nodeTags.Save(nodeTag);
     }
 

@@ -68,7 +68,9 @@ A node-level edit never renames a shared definition. Replacement resolves a diff
 
 `NodeTag` records two independent decisions. Lifecycle records whether the association is active and why it ended: `Active`, `Withdrawn`, `Superseded`, or `AdministrativelyRemoved`. Disposition records how the node author presents an active association: `Community`, `Endorsed`, `Hidden`, or `Disputed`.
 
-Hidden and disputed associations remain available through an explicit review view. A dispute is also the future handoff point to Moderation; this slice records the state but does not pretend the Moderation boundary already exists. Ordinary actions retain the original association, proposer, and timestamps for audit.
+Hidden and disputed associations remain available through an explicit review view. A dispute is also the future handoff point to Moderation; this slice records the state but does not pretend the Moderation boundary already exists.
+
+Each association owns an append-only audit history. Application, disposition changes, withdrawal, supersession, and administrative removal record the acting participant, occurrence time, and resulting lifecycle/disposition. Supersession also records the replacement `NodeTagId`. Imported legacy records that lack reliable actor history use an explicit `LegacyImported` audit action rather than inventing an actor.
 
 ## Graph-to-Voting interaction
 

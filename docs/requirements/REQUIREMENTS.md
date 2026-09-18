@@ -631,6 +631,9 @@ This document is the authoritative catalog of requirement statements and accepta
 
 - Lifecycle values persist as readable strings: `Active`, `Withdrawn`, `Superseded`, and `AdministrativelyRemoved`.
 - Replacement creates or reuses a new association and marks the original `Superseded`.
+- Each application, disposition change, withdrawal, supersession, and administrative removal appends an immutable audit entry containing the actor, time, and resulting state.
+- A supersession audit entry identifies the replacement `NodeTag` without rewriting the original association.
+- Legacy records without historical actor data are identified as imported rather than assigned an invented actor.
 - Physical deletion is reserved for an exceptional future administrative process.
 - Archived nodes reject every tag mutation.
 - Proposer withdrawal after third-party voting is deferred until Voting supplies engagement information.
