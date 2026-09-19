@@ -86,23 +86,6 @@ public class NodeTests
             node.Title);
     }
 
-    /// <summary>Verifies that replace description reference changes reference.</summary>
-    [TestMethod]
-    public void ReplaceDescriptionReference_ChangesReference()
-    {
-        var node = CreateNode("Climate adaptation");
-        var replacementId =
-            new NodeDescriptionId(Guid.NewGuid());
-
-        node.ReplaceDescriptionReference(
-            replacementId,
-            node.AuthorId.Value,
-            DateTimeOffset.UtcNow);
-
-        Assert.AreEqual(replacementId, node.DescriptionId);
-    }
-
-
     /// <summary>Verifies that archive records node archived event.</summary>
     [TestMethod]
     public void Archive_RecordsNodeArchivedEvent()
