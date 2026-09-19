@@ -1,5 +1,10 @@
 namespace Atlas.Content.Blocks;
 
+// Each sealed subtype defines its own payload and invariants. New construction
+// generates a stable BlockId; Reconstitute is the persistence-only path that
+// restores an existing identity and timestamps without treating it as new.
+
+/// <summary>Formatted prose stored as Markdown source.</summary>
 public sealed class MarkdownTextBlock : ContentBlock
 {
     public override string Kind => "markdown";
@@ -24,6 +29,7 @@ public sealed class MarkdownTextBlock : ContentBlock
         new(id, markdown, createdAt, updatedAt);
 }
 
+/// <summary>An image URL with required accessible alternative text and an optional caption.</summary>
 public sealed class ImageBlock : ContentBlock
 {
     public override string Kind => "image";
@@ -54,6 +60,7 @@ public sealed class ImageBlock : ContentBlock
         new(id, url, altText, caption, createdAt, updatedAt);
 }
 
+/// <summary>A video URL with an optional caption.</summary>
 public sealed class VideoBlock : ContentBlock
 {
     public override string Kind => "video";
@@ -81,6 +88,7 @@ public sealed class VideoBlock : ContentBlock
         new(id, url, caption, createdAt, updatedAt);
 }
 
+/// <summary>A validated web link and the presentation metadata used for its preview.</summary>
 public sealed class LinkPreviewBlock : ContentBlock
 {
     public override string Kind => "link-preview";
@@ -111,6 +119,7 @@ public sealed class LinkPreviewBlock : ContentBlock
         new(id, url, title, description, createdAt, updatedAt);
 }
 
+/// <summary>A stable reference to poll content that will be modeled separately.</summary>
 public sealed class PollReferenceBlock : ContentBlock
 {
     public override string Kind => "poll-reference";
@@ -138,6 +147,7 @@ public sealed class PollReferenceBlock : ContentBlock
         new(id, pollId, createdAt, updatedAt);
 }
 
+/// <summary>A stable reference to deferred chart content plus its optional display title.</summary>
 public sealed class ChartReferenceBlock : ContentBlock
 {
     public override string Kind => "chart-reference";

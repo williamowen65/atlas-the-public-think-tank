@@ -5,10 +5,16 @@ using Atlas.Content.Documents;
 
 namespace Atlas.ConsoleApp.Storage;
 
+/// <summary>
+/// JSON adapter for the Content repository boundary. Documents store ordered
+/// references; blocks are stored separately as discriminated records.
+/// </summary>
 public sealed class JsonDocumentRepository : IDocumentRepository
 {
     private readonly string _documentFilePath;
     private readonly string _blockFilePath;
+    // Omitting nulls prevents one block kind from storing empty fields that
+    // belong only to other block kinds.
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         WriteIndented = true,
@@ -51,6 +57,8 @@ public sealed class JsonDocumentRepository : IDocumentRepository
     public IReadOnlyCollection<ContentBlock> GetBlocks(Document document)
     {
         ArgumentNullException.ThrowIfNull(document);
+        // Resolve through BlockIds rather than file order because Document is
+        // the authority for presentation order.
         return document.BlockIds
             .Select(id => GetBlockById(id) ??
                 throw new InvalidOperationException($"Content block {id} was not found."))
@@ -110,6 +118,8 @@ public sealed class JsonDocumentRepository : IDocumentRepository
 
     private static StoredBlock ToStorage(ContentBlock block)
     {
+        // Kind is the discriminator; the switch adds only the selected
+        // subtype's payload to the common storage metadata.
         var stored = new StoredBlock
         {
             Id = block.Id.Value,
@@ -158,6 +168,8 @@ public sealed class JsonDocumentRepository : IDocumentRepository
     {
         var id = new BlockId(block.Id);
 
+        // Reconstitution preserves persisted identity and timestamps rather
+        // than running a public constructor that represents new creation.
         return block.Kind switch
         {
             "markdown" => MarkdownTextBlock.Reconstitute(id, block.Markdown ?? string.Empty, block.CreatedAt, block.UpdatedAt),

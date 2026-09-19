@@ -1,5 +1,10 @@
 namespace Atlas.ConsoleApp.Storage;
 
+/// <summary>
+/// Serialization DTO for heterogeneous block records. Nullable properties are
+/// omitted from JSON, so each stored record contains only its concrete payload.
+/// Domain validation remains in the Content block classes.
+/// </summary>
 public sealed class StoredBlock
 {
     public Guid Id { get; set; }

@@ -2,6 +2,10 @@ using Atlas.Content.Blocks;
 
 namespace Atlas.Content.Documents;
 
+/// <summary>
+/// Aggregate root for a description's composition. It owns block order and
+/// membership while block payloads remain independently persisted entities.
+/// </summary>
 public sealed class Document
 {
     private readonly List<BlockId> _blockIds;
@@ -42,6 +46,7 @@ public sealed class Document
         }
     }
 
+    /// <summary>Adds an existing block identity at a requested position or at the end.</summary>
     public void AddBlock(
         BlockId blockId,
         DateTimeOffset changedAt,
@@ -63,6 +68,7 @@ public sealed class Document
         ChangedAt(changedAt);
     }
 
+    /// <summary>Changes composition order without changing the block's stable identity.</summary>
     public void MoveBlock(
         BlockId blockId,
         int newIndex,
@@ -90,6 +96,7 @@ public sealed class Document
         ChangedAt(changedAt);
     }
 
+    /// <summary>Removes a block from this composition without deleting the block entity.</summary>
     public void RemoveBlock(BlockId blockId, DateTimeOffset changedAt)
     {
         if (!_blockIds.Remove(blockId))
@@ -100,6 +107,7 @@ public sealed class Document
         ChangedAt(changedAt);
     }
 
+    /// <summary>Restores persisted state without generating a new document identity.</summary>
     public static Document Reconstitute(
         DocumentId id,
         IEnumerable<BlockId> blockIds,

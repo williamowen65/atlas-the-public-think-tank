@@ -12,8 +12,10 @@ public static class DescriptionBlockCommands
         IDocumentRepository documents,
         Guid actorParticipantId)
     {
+        // Description composition can only be changed by the node's author.
         node.EnsureAuthoredBy(actorParticipantId);
 
+        // Graph owns only DescriptionId; Content owns and loads the document itself.
         var document = documents.GetById(
             new DocumentId(node.DescriptionId.Value))
             ?? throw new InvalidOperationException(
@@ -68,6 +70,8 @@ public static class DescriptionBlockCommands
         Document document,
         IDocumentRepository documents)
     {
+        // The repository resolves IDs in document order, so this list is the
+        // exact composition the eventual graphical UI will render.
         var blocks = documents.GetBlocks(document).ToList();
 
         if (blocks.Count == 0)
@@ -84,6 +88,7 @@ public static class DescriptionBlockCommands
         }
     }
 
+    // Pattern matching keeps console-only rendering outside the Content domain.
     private static string Summary(ContentBlock block) => block switch
     {
         MarkdownTextBlock text => Compact(text.Markdown),
@@ -153,6 +158,8 @@ public static class DescriptionBlockCommands
             index = position - 1;
         }
 
+        // Persist the payload first so a saved document never references a
+        // block that cannot be loaded.
         documents.SaveBlock(block);
         document.AddBlock(block.Id, DateTimeOffset.UtcNow, index);
         documents.Save(document);
@@ -235,6 +242,8 @@ public static class DescriptionBlockCommands
         var block = SelectBlock(document, documents, "Block to remove");
         if (block is null) return;
 
+        // Removal changes this document's composition only. The stored block is
+        // retained until orphan cleanup semantics are deliberately defined.
         document.RemoveBlock(block.Id, DateTimeOffset.UtcNow);
         documents.Save(document);
         ConsoleUi.Pause(
