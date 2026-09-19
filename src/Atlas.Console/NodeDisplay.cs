@@ -1,3 +1,4 @@
+using Atlas.Content.Blocks;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
@@ -73,7 +74,7 @@ public static class NodeDisplay
         IVoteRepository? votes = null)
     {
         var typeName = ResolveTypeName(node, nodeTypes);
-        var description = ResolveDescription(node, documents);
+        var description = ResolveDescription(node, documents, includeBlockDetails: false);
         var authorName = ResolveAuthorName(node, participants);
         var subNodeSummary =
             ResolveSubNodeSummary(node, nodes, nodeTypes);
@@ -111,7 +112,7 @@ public static class NodeDisplay
         int? currentParticipantVote = null,
         IReadOnlyDictionary<NodeId, NodeVoteSummary>? childVoteSummaries = null)
     {
-        var description = ResolveDescription(node, documents);
+        var description = ResolveDescription(node, documents, includeBlockDetails: true);
         var authorName = ResolveAuthorName(node, participants);
 
         Console.WriteLine("ATLAS NODE");
@@ -319,7 +320,8 @@ public static class NodeDisplay
     /// <summary>Resolves description for the current console view.</summary>
     private static string ResolveDescription(
         Node node,
-        IDocumentRepository documents)
+        IDocumentRepository documents,
+        bool includeBlockDetails)
     {
         var document = documents.GetById(
             new DocumentId(node.DescriptionId.Value));
@@ -329,9 +331,40 @@ public static class NodeDisplay
             return "Description document not found.";
         }
 
-        return string.IsNullOrWhiteSpace(document.Content)
-            ? "No description has been provided."
-            : document.Content;
+        var blocks = documents.GetBlocks(document);
+
+        if (blocks.Count == 0)
+        {
+            return "No description has been provided.";
+        }
+
+        if (!includeBlockDetails)
+        {
+            return string.Join(
+                " | ",
+                blocks.Select((block, index) =>
+                    $"{index + 1}:{block.Kind}"));
+        }
+
+        return string.Join(
+            Environment.NewLine + Environment.NewLine,
+            blocks.Select((block, index) =>
+                $"BLOCK {index + 1} · {block.Kind.ToUpperInvariant()} · {block.Id}" +
+                Environment.NewLine +
+                (block switch
+            {
+                MarkdownTextBlock text => text.Markdown,
+                ImageBlock image => $"URL: {image.Url}\nAlt: {image.AltText}\nCaption: {image.Caption}",
+                VideoBlock video => string.IsNullOrWhiteSpace(video.Caption)
+                    ? $"URL: {video.Url}"
+                    : $"URL: {video.Url}\nCaption: {video.Caption}",
+                LinkPreviewBlock link => $"{link.Title}\n{link.Url}\n{link.Description}",
+                PollReferenceBlock poll => $"Poll ID: {poll.PollId}",
+                ChartReferenceBlock chart => string.IsNullOrWhiteSpace(chart.Title)
+                    ? $"Chart ID: {chart.ChartId}"
+                    : $"Chart ID: {chart.ChartId}\nTitle: {chart.Title}",
+                _ => $"[{block.Kind}]"
+            })));
     }
 
     /// <summary>Resolves author name for the current console view.</summary>

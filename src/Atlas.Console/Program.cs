@@ -35,6 +35,10 @@ var documentDataFilePath = Path.Combine(
     dataDirectory,
     "documents.json");
 
+var blockDataFilePath = Path.Combine(
+    dataDirectory,
+    "blocks.json");
+
 var participantDataFilePath = Path.Combine(
     dataDirectory,
     "participants.json");
@@ -57,7 +61,9 @@ INodeTypeRepository nodeTypeRepository =
 SeedSystemNodeTypes(nodeTypeRepository);
 
 IDocumentRepository documentRepository =
-    new JsonDocumentRepository(documentDataFilePath);
+    new JsonDocumentRepository(
+        documentDataFilePath,
+        blockDataFilePath);
 
 IParticipantRepository participantRepository =
     new JsonParticipantRepository(participantDataFilePath);

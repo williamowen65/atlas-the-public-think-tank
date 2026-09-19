@@ -1,5 +1,7 @@
 using Atlas.ConsoleApp.Storage;
+using Atlas.Content.Blocks;
 using Atlas.Content.Documents;
+using System.Text.Json;
 
 namespace Atlas.ConsoleApp.Tests;
 
@@ -7,53 +9,162 @@ namespace Atlas.ConsoleApp.Tests;
 public sealed class DocumentPersistenceTests
 {
     [TestMethod]
-    public void UpdateContentPreservesDocumentIdentity()
+    public void NewBlocksReceiveDistinctGeneratedGuids()
     {
-        var createdAt = new DateTimeOffset(2026, 9, 19, 12, 0, 0, TimeSpan.Zero);
-        var document = new Document("Original description", createdAt);
-        var originalId = document.Id;
+        var now = DateTimeOffset.UtcNow;
 
-        document.UpdateContent("Updated description");
+        var first = new MarkdownTextBlock("First", now);
+        var second = new MarkdownTextBlock("Second", now);
 
-        Assert.AreEqual(originalId, document.Id);
-        Assert.AreEqual("Updated description", document.Content);
-        Assert.AreEqual(createdAt, document.CreatedAt);
+        Assert.AreNotEqual(Guid.Empty, first.Id.Value);
+        Assert.AreNotEqual(Guid.Empty, second.Id.Value);
+        Assert.AreNotEqual(first.Id, second.Id);
     }
 
     [TestMethod]
-    public void SaveUpdatedDocumentReplacesPersistedBodyWithoutChangingId()
+    public void PollAndChartReferenceIdsAreGeneratedByTheContentDomain()
     {
-        var directory = Path.Combine(
-            Path.GetTempPath(),
-            $"atlas-content-tests-{Guid.NewGuid():N}");
-        var filePath = Path.Combine(directory, "documents.json");
+        var now = DateTimeOffset.UtcNow;
+
+        var poll = new PollReferenceBlock(now);
+        var chart = new ChartReferenceBlock("Participation", now);
+
+        Assert.AreNotEqual(Guid.Empty, poll.PollId);
+        Assert.AreNotEqual(Guid.Empty, chart.ChartId);
+        Assert.AreNotEqual(poll.PollId, chart.ChartId);
+    }
+
+    [TestMethod]
+    public void DocumentCompositionPreservesStableBlockIdsWhenReordered()
+    {
+        var createdAt = new DateTimeOffset(2026, 9, 19, 12, 0, 0, TimeSpan.Zero);
+        var first = new MarkdownTextBlock("# Heading\n\nBody with **bold** text.", createdAt);
+        var second = new ImageBlock("media/image-1", "A coastal landscape", "Optional caption", createdAt);
+        var document = new Document([first.Id, second.Id], createdAt);
+        var originalDocumentId = document.Id;
+
+        var changedAt = createdAt.AddMinutes(1);
+        document.MoveBlock(second.Id, 0, changedAt);
+
+        Assert.AreEqual(originalDocumentId, document.Id);
+        Assert.AreEqual(changedAt, document.UpdatedAt);
+        CollectionAssert.AreEqual(
+            new[] { second.Id, first.Id },
+            document.BlockIds.ToArray());
+    }
+
+    [TestMethod]
+    public void MixedBlocksRoundTripThroughSeparateJsonFiles()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"atlas-content-tests-{Guid.NewGuid():N}");
+        var documentPath = Path.Combine(directory, "documents.json");
+        var blockPath = Path.Combine(directory, "blocks.json");
 
         try
         {
-            var repository = new JsonDocumentRepository(filePath);
-            var document = new Document(
-                "Original description",
-                new DateTimeOffset(2026, 9, 19, 12, 0, 0, TimeSpan.Zero));
-            var originalId = document.Id;
+            var createdAt = new DateTimeOffset(2026, 9, 19, 12, 0, 0, TimeSpan.Zero);
+            var blocks = new ContentBlock[]
+            {
+                new MarkdownTextBlock("## Markdown heading", createdAt),
+                new ImageBlock("media/image-1", "Alt text", "Caption", createdAt),
+                new VideoBlock("media/video-1", "Video caption", createdAt),
+                new LinkPreviewBlock("https://example.com/article", "Article", "Preview", createdAt),
+                new PollReferenceBlock(Guid.NewGuid(), createdAt),
+                new ChartReferenceBlock(Guid.NewGuid(), "Baseline chart", createdAt)
+            };
+            var document = new Document(blocks.Select(block => block.Id), createdAt);
+            var repository = new JsonDocumentRepository(documentPath, blockPath);
 
+            foreach (var block in blocks) repository.SaveBlock(block);
             repository.Save(document);
-            document.UpdateContent("Updated description");
-            repository.Save(document);
 
-            var reloadedRepository = new JsonDocumentRepository(filePath);
-            var reloaded = reloadedRepository.GetById(originalId);
+            var reloaded = new JsonDocumentRepository(documentPath, blockPath);
+            var reloadedDocument = reloaded.GetById(document.Id);
 
-            Assert.IsNotNull(reloaded);
-            Assert.AreEqual(originalId, reloaded.Id);
-            Assert.AreEqual("Updated description", reloaded.Content);
-            Assert.AreEqual(1, reloadedRepository.GetAll().Count);
+            Assert.IsNotNull(reloadedDocument);
+            CollectionAssert.AreEqual(document.BlockIds.ToArray(), reloadedDocument.BlockIds.ToArray());
+            Assert.AreEqual(document.UpdatedAt, reloadedDocument.UpdatedAt);
+            CollectionAssert.AreEqual(
+                blocks.Select(block => block.GetType()).ToArray(),
+                reloaded.GetBlocks(reloadedDocument).Select(block => block.GetType()).ToArray());
+            Assert.AreEqual(blocks[0].Id, reloaded.GetBlocks(reloadedDocument).First().Id);
         }
         finally
         {
-            if (Directory.Exists(directory))
-            {
-                Directory.Delete(directory, recursive: true);
-            }
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
         }
+    }
+
+    [TestMethod]
+    public void JsonStoresOnlyFieldsBelongingToEachBlockType()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"atlas-content-shapes-{Guid.NewGuid():N}");
+        var documentPath = Path.Combine(directory, "documents.json");
+        var blockPath = Path.Combine(directory, "blocks.json");
+
+        try
+        {
+            var now = DateTimeOffset.UtcNow;
+            var repository = new JsonDocumentRepository(documentPath, blockPath);
+            repository.SaveBlock(new MarkdownTextBlock("# Text", now));
+            repository.SaveBlock(new ImageBlock("https://example.com/image.jpg", "Coast", null, now));
+
+            using var json = JsonDocument.Parse(File.ReadAllText(blockPath));
+            var markdown = json.RootElement[0];
+            var image = json.RootElement[1];
+
+            CollectionAssert.AreEquivalent(
+                new[] { "Id", "Kind", "Markdown", "CreatedAt", "UpdatedAt" },
+                markdown.EnumerateObject().Select(property => property.Name).ToArray());
+            CollectionAssert.AreEquivalent(
+                new[] { "Id", "Kind", "AltText", "Url", "CreatedAt", "UpdatedAt" },
+                image.EnumerateObject().Select(property => property.Name).ToArray());
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void BlockTypesEnforceTheirOwnValidation()
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        Assert.Throws<ArgumentException>(() => new ImageBlock("", "Alt", null, now));
+        Assert.Throws<ArgumentException>(() => new ImageBlock("media/image", "", null, now));
+        Assert.Throws<ArgumentException>(() => new LinkPreviewBlock("relative/path", "Title", null, now));
+        Assert.Throws<ArgumentException>(() => new PollReferenceBlock(Guid.Empty, now));
+        Assert.Throws<ArgumentException>(() => new ChartReferenceBlock(Guid.Empty, null, now));
+    }
+
+    [TestMethod]
+    public void EditingMarkdownPreservesBlockIdentity()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var block = new MarkdownTextBlock("Original", now);
+        var id = block.Id;
+
+        block.Update("# Updated\n\n*Markdown*", now.AddMinutes(1));
+
+        Assert.AreEqual(id, block.Id);
+        Assert.AreEqual("# Updated\n\n*Markdown*", block.Markdown);
+    }
+
+    [TestMethod]
+    public void CompositionChangesAdvanceDocumentUpdatedAt()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var first = new MarkdownTextBlock("First", createdAt);
+        var second = new MarkdownTextBlock("Second", createdAt);
+        var document = new Document([first.Id], createdAt);
+
+        var addedAt = createdAt.AddMinutes(1);
+        document.AddBlock(second.Id, addedAt);
+        Assert.AreEqual(addedAt, document.UpdatedAt);
+
+        var removedAt = addedAt.AddMinutes(1);
+        document.RemoveBlock(first.Id, removedAt);
+        Assert.AreEqual(removedAt, document.UpdatedAt);
     }
 }

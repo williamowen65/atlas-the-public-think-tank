@@ -1,5 +1,6 @@
 using Atlas.ConsoleApp.Eventing;
 using Atlas.ConsoleApp.Participants;
+using Atlas.Content.Blocks;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
@@ -109,7 +110,7 @@ public static class NodeCommands
                 : " [disabled — requires node author]";
 
             Console.WriteLine($"1. Rename{authorOnlyStatus}");
-            Console.WriteLine($"2. Change description{authorOnlyStatus}");
+            Console.WriteLine($"2. Manage description blocks{authorOnlyStatus}");
             Console.WriteLine($"3. Change type{authorOnlyStatus}");
             Console.WriteLine($"4. Archive{authorOnlyStatus}");
             Console.WriteLine($"5. Restore{authorOnlyStatus}");
@@ -149,7 +150,7 @@ public static class NodeCommands
                         break;
 
                     case "2":
-                        ChangeDescription(
+                        DescriptionBlockCommands.Run(
                             node,
                             documents,
                             actorParticipantId);
@@ -869,35 +870,6 @@ public static class NodeCommands
 
         nodes.Save(node);
         ConsoleUi.Pause("Node renamed and saved.");
-    }
-
-    /// <summary>Changes the description while enforcing node-type editing rules.</summary>
-    private static void ChangeDescription(
-        Node node,
-        IDocumentRepository documents,
-        Guid actorParticipantId)
-    {
-        node.EnsureAuthoredBy(actorParticipantId);
-
-        var currentDocument = documents.GetById(
-            new DocumentId(node.DescriptionId.Value))
-            ?? throw new InvalidOperationException(
-                "The node's description document could not be found.");
-
-        Console.WriteLine("Current description:");
-        Console.WriteLine(
-            string.IsNullOrWhiteSpace(currentDocument.Content)
-                ? "(none)"
-                : currentDocument.Content);
-        Console.WriteLine();
-        Console.Write("New description (blank clears it): ");
-        var description = Console.ReadLine();
-
-        currentDocument.UpdateContent(description ?? string.Empty);
-        documents.Save(currentDocument);
-
-        ConsoleUi.Pause(
-            $"Description updated in document {currentDocument.Id}.");
     }
 
     /// <summary>Changes the node type and advances the modification timestamp when the value differs.</summary>
