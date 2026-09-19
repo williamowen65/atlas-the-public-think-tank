@@ -151,7 +151,6 @@ public static class NodeCommands
                     case "2":
                         ChangeDescription(
                             node,
-                            nodes,
                             documents,
                             actorParticipantId);
                         break;
@@ -875,40 +874,30 @@ public static class NodeCommands
     /// <summary>Changes the description while enforcing node-type editing rules.</summary>
     private static void ChangeDescription(
         Node node,
-        INodeRepository nodes,
         IDocumentRepository documents,
         Guid actorParticipantId)
     {
         node.EnsureAuthoredBy(actorParticipantId);
 
         var currentDocument = documents.GetById(
-            new DocumentId(node.DescriptionId.Value));
+            new DocumentId(node.DescriptionId.Value))
+            ?? throw new InvalidOperationException(
+                "The node's description document could not be found.");
 
         Console.WriteLine("Current description:");
         Console.WriteLine(
-            string.IsNullOrWhiteSpace(currentDocument?.Content)
+            string.IsNullOrWhiteSpace(currentDocument.Content)
                 ? "(none)"
                 : currentDocument.Content);
         Console.WriteLine();
         Console.Write("New description (blank clears it): ");
         var description = Console.ReadLine();
-        var changedAt = DateTimeOffset.UtcNow;
 
-        var replacement = new Document(
-            description ?? string.Empty,
-            changedAt);
-
-        documents.Save(replacement);
-
-        node.ReplaceDescriptionReference(
-            new NodeDescriptionId(replacement.Id.Value),
-            actorParticipantId,
-            changedAt);
-
-        nodes.Save(node);
+        currentDocument.UpdateContent(description ?? string.Empty);
+        documents.Save(currentDocument);
 
         ConsoleUi.Pause(
-            $"Description replaced with document {replacement.Id}.");
+            $"Description updated in document {currentDocument.Id}.");
     }
 
     /// <summary>Changes the node type and advances the modification timestamp when the value differs.</summary>
