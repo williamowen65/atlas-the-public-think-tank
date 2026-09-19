@@ -36,7 +36,7 @@ jobs:
           - name: Voting
             project: tests/Atlas.Voting.Tests/Atlas.Voting.Tests.csproj
           - name: Console JSON adapters
-            project: Atlas.Console.Tests/Atlas.Console.Tests.csproj
+            project: tests/Atlas.Console.Tests/Atlas.Console.Tests.csproj
 
     steps:
       - name: Check out repository
