@@ -1,120 +1,162 @@
 using System.Text.Json;
+using Atlas.Content.Blocks;
 using Atlas.Content.Documents;
 
 namespace Atlas.ConsoleApp.Storage;
 
-/// <summary>Persists Content documents as JSON and reconstitutes them as domain objects.</summary>
 public sealed class JsonDocumentRepository : IDocumentRepository
 {
-    private readonly string _filePath;
+    private readonly string _documentFilePath;
+    private readonly string _blockFilePath;
+    private readonly JsonSerializerOptions _jsonOptions = new() { WriteIndented = true };
 
-    private readonly JsonSerializerOptions _jsonOptions = new()
+    public JsonDocumentRepository(string documentFilePath, string blockFilePath)
     {
-        WriteIndented = true
-    };
-
-    /// <summary>Initializes the JSON adapter and ensures its backing file is available.</summary>
-    public JsonDocumentRepository(string filePath)
-    {
-        _filePath = filePath;
+        _documentFilePath = documentFilePath;
+        _blockFilePath = blockFilePath;
     }
 
-    /// <summary>Loads all persisted domain objects.</summary>
-    public IReadOnlyCollection<Document> GetAll()
-    {
-        return ReadStoredDocuments()
+    public IReadOnlyCollection<Document> GetAll() =>
+        Read<List<StoredDocument>>(_documentFilePath)
             .Select(ToDomain)
             .ToList();
-    }
 
-    /// <summary>Loads a domain object by its boundary-owned identifier.</summary>
     public Document? GetById(DocumentId id)
     {
-        var storedDocument = ReadStoredDocuments()
+        var stored = Read<List<StoredDocument>>(_documentFilePath)
             .SingleOrDefault(document => document.Id == id.Value);
-
-        return storedDocument is null
-            ? null
-            : ToDomain(storedDocument);
+        return stored is null ? null : ToDomain(stored);
     }
 
-    /// <summary>Persists the current domain-object state.</summary>
     public void Save(Document document)
     {
         ArgumentNullException.ThrowIfNull(document);
-
-        var storedDocuments = ReadStoredDocuments();
-
-        var existingIndex = storedDocuments.FindIndex(
-            storedDocument => storedDocument.Id == document.Id.Value);
-
-        var replacement = ToStorage(document);
-
-        if (existingIndex >= 0)
-        {
-            storedDocuments[existingIndex] = replacement;
-        }
-        else
-        {
-            storedDocuments.Add(replacement);
-        }
-
-        WriteStoredDocuments(storedDocuments);
+        var stored = Read<List<StoredDocument>>(_documentFilePath);
+        Upsert(stored, document.Id.Value, ToStorage(document), item => item.Id);
+        Write(_documentFilePath, stored);
     }
 
-    /// <summary>Reads document persistence records from JSON.</summary>
-    private List<StoredDocument> ReadStoredDocuments()
+    public ContentBlock? GetBlockById(BlockId id)
     {
-        if (!File.Exists(_filePath))
-        {
-            return [];
-        }
-
-        var json = File.ReadAllText(_filePath);
-
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return [];
-        }
-
-        return JsonSerializer.Deserialize<List<StoredDocument>>(
-                   json,
-                   _jsonOptions)
-               ?? [];
+        var stored = Read<List<StoredBlock>>(_blockFilePath)
+            .SingleOrDefault(block => block.Id == id.Value);
+        return stored is null ? null : ToDomain(stored);
     }
 
-    /// <summary>Writes document persistence records to JSON.</summary>
-    private void WriteStoredDocuments(
-        List<StoredDocument> documents)
+    public IReadOnlyCollection<ContentBlock> GetBlocks(Document document)
     {
-        var directory = Path.GetDirectoryName(_filePath);
+        ArgumentNullException.ThrowIfNull(document);
+        return document.BlockIds
+            .Select(id => GetBlockById(id) ??
+                throw new InvalidOperationException($"Content block {id} was not found."))
+            .ToList();
+    }
 
+    public void SaveBlock(ContentBlock block)
+    {
+        ArgumentNullException.ThrowIfNull(block);
+        var stored = Read<List<StoredBlock>>(_blockFilePath);
+        Upsert(stored, block.Id.Value, ToStorage(block), item => item.Id);
+        Write(_blockFilePath, stored);
+    }
+
+    private T Read<T>(string path) where T : new()
+    {
+        if (!File.Exists(path) || string.IsNullOrWhiteSpace(File.ReadAllText(path)))
+        {
+            return new T();
+        }
+
+        return JsonSerializer.Deserialize<T>(File.ReadAllText(path), _jsonOptions) ?? new T();
+    }
+
+    private void Write<T>(string path, T value)
+    {
+        var directory = Path.GetDirectoryName(path);
         if (!string.IsNullOrWhiteSpace(directory))
         {
             Directory.CreateDirectory(directory);
         }
 
-        var json = JsonSerializer.Serialize(documents, _jsonOptions);
-        File.WriteAllText(_filePath, json);
+        File.WriteAllText(path, JsonSerializer.Serialize(value, _jsonOptions));
     }
 
-    /// <summary>Maps a domain object to its data-only persistence representation.</summary>
-    private static StoredDocument ToStorage(Document document)
+    private static void Upsert<T>(List<T> items, Guid id, T replacement, Func<T, Guid> idSelector)
     {
-        return new StoredDocument
+        var index = items.FindIndex(item => idSelector(item) == id);
+        if (index >= 0) items[index] = replacement;
+        else items.Add(replacement);
+    }
+
+    private static StoredDocument ToStorage(Document document) => new()
+    {
+        Id = document.Id.Value,
+        BlockIds = document.BlockIds.Select(id => id.Value).ToList(),
+        CreatedAt = document.CreatedAt
+    };
+
+    private static Document ToDomain(StoredDocument document) =>
+        Document.Reconstitute(
+            new DocumentId(document.Id),
+            document.BlockIds.Select(id => new BlockId(id)),
+            document.CreatedAt);
+
+    private static StoredBlock ToStorage(ContentBlock block)
+    {
+        var stored = new StoredBlock
         {
-            Id = document.Id.Value,
-            Content = document.Content,
-            CreatedAt = document.CreatedAt
+            Id = block.Id.Value,
+            Kind = block.Kind,
+            CreatedAt = block.CreatedAt,
+            UpdatedAt = block.UpdatedAt
         };
+
+        switch (block)
+        {
+            case MarkdownTextBlock text:
+                stored.Markdown = text.Markdown;
+                break;
+            case ImageBlock image:
+                stored.ResourceId = image.ResourceId;
+                stored.AltText = image.AltText;
+                stored.Caption = image.Caption;
+                break;
+            case VideoBlock video:
+                stored.ResourceId = video.ResourceId;
+                stored.Caption = video.Caption;
+                break;
+            case LinkPreviewBlock link:
+                stored.Url = link.Url.ToString();
+                stored.Title = link.Title;
+                stored.Description = link.Description;
+                break;
+            case PollReferenceBlock poll:
+                stored.ReferenceId = poll.PollId;
+                break;
+            case ChartReferenceBlock chart:
+                stored.ReferenceId = chart.ChartId;
+                stored.Title = chart.Title;
+                break;
+            default:
+                throw new InvalidOperationException($"Unsupported block type {block.GetType().Name}.");
+        }
+
+        return stored;
     }
 
-    /// <summary>Reconstitutes a domain object from its data-only persistence representation.</summary>
-    private static Document ToDomain(StoredDocument storedDocument)
+    private static ContentBlock ToDomain(StoredBlock block)
     {
-        return Document.Reconstitute(
-            new DocumentId(storedDocument.Id),
-            storedDocument.Content,
-            storedDocument.CreatedAt);
+        var id = new BlockId(block.Id);
+
+        return block.Kind switch
+        {
+            "markdown" => MarkdownTextBlock.Reconstitute(id, block.Markdown ?? string.Empty, block.CreatedAt, block.UpdatedAt),
+            "image" => ImageBlock.Reconstitute(id, block.ResourceId ?? string.Empty, block.AltText ?? string.Empty, block.Caption, block.CreatedAt, block.UpdatedAt),
+            "video" => VideoBlock.Reconstitute(id, block.ResourceId ?? string.Empty, block.Caption, block.CreatedAt, block.UpdatedAt),
+            "link-preview" => LinkPreviewBlock.Reconstitute(id, block.Url ?? string.Empty, block.Title ?? string.Empty, block.Description, block.CreatedAt, block.UpdatedAt),
+            "poll-reference" => PollReferenceBlock.Reconstitute(id, block.ReferenceId ?? Guid.Empty, block.CreatedAt, block.UpdatedAt),
+            "chart-reference" => ChartReferenceBlock.Reconstitute(id, block.ReferenceId ?? Guid.Empty, block.Title, block.CreatedAt, block.UpdatedAt),
+            _ => throw new InvalidOperationException($"Unknown Content block kind '{block.Kind}'.")
+        };
     }
 }
