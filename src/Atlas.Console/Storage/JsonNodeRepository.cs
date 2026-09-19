@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Atlas.Content.Blocks;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
@@ -83,10 +84,14 @@ public sealed class JsonNodeRepository : INodeRepository
             if (storedNode.DescriptionId is not Guid descriptionId ||
                 descriptionId == Guid.Empty)
             {
-                var document = new Document(
+                var textBlock = new MarkdownTextBlock(
                     storedNode.Description ?? string.Empty,
                     storedNode.CreatedAt);
+                var document = new Document(
+                    [textBlock.Id],
+                    storedNode.CreatedAt);
 
+                _documents.SaveBlock(textBlock);
                 _documents.Save(document);
                 storedNode.DescriptionId = document.Id.Value;
                 storedNode.Description = null;
