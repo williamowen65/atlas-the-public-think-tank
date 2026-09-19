@@ -16,6 +16,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
 		.github\workflows\AtlasRewriteTests.yml = .github\workflows\AtlasRewriteTests.yml
+		data\blocks.json = data\blocks.json
 		data\documents.json = data\documents.json
 		data\node-tags.json = data\node-tags.json
 		data\node-types.json = data\node-types.json
@@ -117,6 +118,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "testing", "testing", "{A333
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{A4444444-4444-4444-8444-444444444444}"
 	ProjectSection(SolutionItems) = preProject
+		docs\workflows\CONTENT-BLOCKS.md = docs\workflows\CONTENT-BLOCKS.md
 		docs\workflows\NODE-LIFECYCLE.md = docs\workflows\NODE-LIFECYCLE.md
 		docs\workflows\README.md = docs\workflows\README.md
 	EndProjectSection
@@ -140,26 +142,38 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "blackboards", "blackboards"
 	ProjectSection(SolutionItems) = preProject
 		docs\blackboards\CONVENTIONS.md = docs\blackboards\CONVENTIONS.md
 		docs\blackboards\PTT-68-CURRENT-STATE.excalidraw = docs\blackboards\PTT-68-CURRENT-STATE.excalidraw
+		docs\blackboards\PTT-68-CURRENT-STATE.excalidraw.png = docs\blackboards\PTT-68-CURRENT-STATE.excalidraw.png
 		docs\blackboards\README.md = docs\blackboards\README.md
 		docs\blackboards\SYSTEM-BLACKBOARD.excalidraw = docs\blackboards\SYSTEM-BLACKBOARD.excalidraw
+		docs\blackboards\SYSTEM-BLACKBOARD.excalidraw.png = docs\blackboards\SYSTEM-BLACKBOARD.excalidraw.png
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{C2222222-2222-4222-8222-222222222222}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Content", "Content", "{C8888888-8888-4888-8888-888888888888}"
+	ProjectSection(SolutionItems) = preProject
+		docs\blackboards\workflows\Content\ContentBlocks.excalidraw = docs\blackboards\workflows\Content\ContentBlocks.excalidraw
+		docs\blackboards\workflows\Content\ContentBlocks.excalidraw.png = docs\blackboards\workflows\Content\ContentBlocks.excalidraw.png
+	EndProjectSection
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NodeTypes", "NodeTypes", "{C3333333-3333-4333-8333-333333333333}"
 	ProjectSection(SolutionItems) = preProject
 		docs\blackboards\workflows\NodeTypes\NodeTypeLifecycle.excalidraw = docs\blackboards\workflows\NodeTypes\NodeTypeLifecycle.excalidraw
+		docs\blackboards\workflows\NodeTypes\NodeTypeLifecycle.excalidraw.png = docs\blackboards\workflows\NodeTypes\NodeTypeLifecycle.excalidraw.png
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Nodes", "Nodes", "{C4444444-4444-4444-8444-444444444444}"
 	ProjectSection(SolutionItems) = preProject
 		docs\blackboards\workflows\Nodes\NodeCreation.excalidraw = docs\blackboards\workflows\Nodes\NodeCreation.excalidraw
+		docs\blackboards\workflows\Nodes\NodeCreation.excalidraw.png = docs\blackboards\workflows\Nodes\NodeCreation.excalidraw.png
 		docs\blackboards\workflows\Nodes\NodeLifecycle.excalidraw = docs\blackboards\workflows\Nodes\NodeLifecycle.excalidraw
+		docs\blackboards\workflows\Nodes\NodeLifecycle.excalidraw.png = docs\blackboards\workflows\Nodes\NodeLifecycle.excalidraw.png
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Node Tags", "Node Tags", "{C7777777-7777-4777-8777-777777777777}"
 	ProjectSection(SolutionItems) = preProject
 		docs\blackboards\workflows\Node Tags\NodeTags.excalidraw = docs\blackboards\workflows\Node Tags\NodeTags.excalidraw
+		docs\blackboards\workflows\Node Tags\NodeTags.excalidraw.png = docs\blackboards\workflows\Node Tags\NodeTags.excalidraw.png
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Participants", "Participants", "{C5555555-5555-4555-8555-555555555555}"
@@ -170,6 +184,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "System", "System", "{C6666666-6666-4666-8666-666666666666}"
 	ProjectSection(SolutionItems) = preProject
 		docs\blackboards\workflows\System\AppStartupAndWiring.excalidraw = docs\blackboards\workflows\System\AppStartupAndWiring.excalidraw
+		docs\blackboards\workflows\System\AppStartupAndWiring.excalidraw.png = docs\blackboards\workflows\System\AppStartupAndWiring.excalidraw.png
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Voting", "src\Atlas.Voting\Atlas.Voting.csproj", "{935FE0CF-44C5-40FA-88ED-96C9B0A9B0D9}"
@@ -181,7 +196,9 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Voting", "Voting", "{2F264AFF-1E2B-4CBE-84DB-C1A067039CF5}"
 	ProjectSection(SolutionItems) = preProject
 		docs\blackboards\workflows\Voting\VotingDomain.excalidraw = docs\blackboards\workflows\Voting\VotingDomain.excalidraw
+		docs\blackboards\workflows\Voting\VotingDomain.excalidraw.png = docs\blackboards\workflows\Voting\VotingDomain.excalidraw.png
 		docs\blackboards\workflows\Voting\NodeTagVoting.excalidraw = docs\blackboards\workflows\Voting\NodeTagVoting.excalidraw
+		docs\blackboards\workflows\Voting\NodeTagVoting.excalidraw.png = docs\blackboards\workflows\Voting\NodeTagVoting.excalidraw.png
 	EndProjectSection
 EndProject
 Global

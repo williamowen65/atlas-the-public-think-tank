@@ -1,9 +1,13 @@
 namespace Atlas.ConsoleApp.Storage;
 
-/// <summary>Defines the data-only JSON representation of a Content document.</summary>
+/// <summary>
+/// Serialization DTO containing document metadata and ordered block references;
+/// block payloads are deliberately stored in the separate block file.
+/// </summary>
 public sealed class StoredDocument
 {
     public Guid Id { get; set; }
-    public string Content { get; set; } = string.Empty;
+    public List<Guid> BlockIds { get; set; } = [];
     public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
 }

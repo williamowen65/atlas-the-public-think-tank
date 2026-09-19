@@ -1,4 +1,5 @@
 using Atlas.ConsoleApp.Eventing;
+using Atlas.Content.Blocks;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
@@ -65,10 +66,12 @@ public static class NodeCreationWorkflow
             var now = DateTimeOffset.UtcNow;
             var nodeTitle = new NodeTitle(title ?? string.Empty);
 
-            var document = new Document(
+            var textBlock = new MarkdownTextBlock(
                 description ?? string.Empty,
                 now);
+            var document = new Document([textBlock.Id], now);
 
+            documents.SaveBlock(textBlock);
             documents.Save(document);
 
             Console.WriteLine();

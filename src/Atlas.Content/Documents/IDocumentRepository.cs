@@ -1,12 +1,17 @@
-﻿namespace Atlas.Content.Documents;
+using Atlas.Content.Blocks;
 
-/// <summary>Defines the persistence operations required by the Content boundary.</summary>
+namespace Atlas.Content.Documents;
+
+/// <summary>
+/// Persistence boundary for document composition and independently stored block
+/// payloads. Implementations must return blocks in the document's ID order.
+/// </summary>
 public interface IDocumentRepository
 {
-    /// <summary>Loads all persisted domain objects.</summary>
     IReadOnlyCollection<Document> GetAll();
-    /// <summary>Loads a domain object by its boundary-owned identifier.</summary>
     Document? GetById(DocumentId id);
-    /// <summary>Persists the current domain-object state.</summary>
     void Save(Document document);
+    ContentBlock? GetBlockById(BlockId id);
+    IReadOnlyCollection<ContentBlock> GetBlocks(Document document);
+    void SaveBlock(ContentBlock block);
 }
