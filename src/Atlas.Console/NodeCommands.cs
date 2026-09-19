@@ -1,5 +1,6 @@
 using Atlas.ConsoleApp.Eventing;
 using Atlas.ConsoleApp.Participants;
+using Atlas.Content.Blocks;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
@@ -884,17 +885,34 @@ public static class NodeCommands
             ?? throw new InvalidOperationException(
                 "The node's description document could not be found.");
 
-        Console.WriteLine("Current description:");
-        Console.WriteLine(
-            string.IsNullOrWhiteSpace(currentDocument.Content)
-                ? "(none)"
-                : currentDocument.Content);
-        Console.WriteLine();
-        Console.Write("New description (blank clears it): ");
-        var description = Console.ReadLine();
+        var textBlock = documents.GetBlocks(currentDocument)
+            .OfType<MarkdownTextBlock>()
+            .FirstOrDefault();
 
-        currentDocument.UpdateContent(description ?? string.Empty);
-        documents.Save(currentDocument);
+        Console.WriteLine("Current Markdown description:");
+        Console.WriteLine(
+            string.IsNullOrWhiteSpace(textBlock?.Markdown)
+                ? "(none)"
+                : textBlock.Markdown);
+        Console.WriteLine();
+        Console.Write("New Markdown description (blank clears it): ");
+        var description = Console.ReadLine();
+        var changedAt = DateTimeOffset.UtcNow;
+
+        if (textBlock is null)
+        {
+            textBlock = new MarkdownTextBlock(
+                description ?? string.Empty,
+                changedAt);
+            currentDocument.AddBlock(textBlock.Id, index: 0);
+            documents.Save(currentDocument);
+        }
+        else
+        {
+            textBlock.Update(description ?? string.Empty, changedAt);
+        }
+
+        documents.SaveBlock(textBlock);
 
         ConsoleUi.Pause(
             $"Description updated in document {currentDocument.Id}.");
