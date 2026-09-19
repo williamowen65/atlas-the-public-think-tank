@@ -8,6 +8,19 @@ namespace Atlas.ConsoleApp.Tests;
 public sealed class DocumentPersistenceTests
 {
     [TestMethod]
+    public void NewBlocksReceiveDistinctGeneratedGuids()
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        var first = new MarkdownTextBlock("First", now);
+        var second = new MarkdownTextBlock("Second", now);
+
+        Assert.AreNotEqual(Guid.Empty, first.Id.Value);
+        Assert.AreNotEqual(Guid.Empty, second.Id.Value);
+        Assert.AreNotEqual(first.Id, second.Id);
+    }
+
+    [TestMethod]
     public void DocumentCompositionPreservesStableBlockIdsWhenReordered()
     {
         var createdAt = new DateTimeOffset(2026, 9, 19, 12, 0, 0, TimeSpan.Zero);
@@ -16,9 +29,11 @@ public sealed class DocumentPersistenceTests
         var document = new Document([first.Id, second.Id], createdAt);
         var originalDocumentId = document.Id;
 
-        document.MoveBlock(second.Id, 0);
+        var changedAt = createdAt.AddMinutes(1);
+        document.MoveBlock(second.Id, 0, changedAt);
 
         Assert.AreEqual(originalDocumentId, document.Id);
+        Assert.AreEqual(changedAt, document.UpdatedAt);
         CollectionAssert.AreEqual(
             new[] { second.Id, first.Id },
             document.BlockIds.ToArray());
@@ -54,6 +69,7 @@ public sealed class DocumentPersistenceTests
 
             Assert.IsNotNull(reloadedDocument);
             CollectionAssert.AreEqual(document.BlockIds.ToArray(), reloadedDocument.BlockIds.ToArray());
+            Assert.AreEqual(document.UpdatedAt, reloadedDocument.UpdatedAt);
             CollectionAssert.AreEqual(
                 blocks.Select(block => block.GetType()).ToArray(),
                 reloaded.GetBlocks(reloadedDocument).Select(block => block.GetType()).ToArray());
@@ -88,5 +104,22 @@ public sealed class DocumentPersistenceTests
 
         Assert.AreEqual(id, block.Id);
         Assert.AreEqual("# Updated\n\n*Markdown*", block.Markdown);
+    }
+
+    [TestMethod]
+    public void CompositionChangesAdvanceDocumentUpdatedAt()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var first = new MarkdownTextBlock("First", createdAt);
+        var second = new MarkdownTextBlock("Second", createdAt);
+        var document = new Document([first.Id], createdAt);
+
+        var addedAt = createdAt.AddMinutes(1);
+        document.AddBlock(second.Id, addedAt);
+        Assert.AreEqual(addedAt, document.UpdatedAt);
+
+        var removedAt = addedAt.AddMinutes(1);
+        document.RemoveBlock(first.Id, removedAt);
+        Assert.AreEqual(removedAt, document.UpdatedAt);
     }
 }
