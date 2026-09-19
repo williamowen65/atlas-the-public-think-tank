@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Atlas.Content.Blocks;
 using Atlas.Content.Documents;
 
@@ -8,7 +9,11 @@ public sealed class JsonDocumentRepository : IDocumentRepository
 {
     private readonly string _documentFilePath;
     private readonly string _blockFilePath;
-    private readonly JsonSerializerOptions _jsonOptions = new() { WriteIndented = true };
+    private readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        WriteIndented = true,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
 
     public JsonDocumentRepository(string documentFilePath, string blockFilePath)
     {
@@ -119,25 +124,25 @@ public sealed class JsonDocumentRepository : IDocumentRepository
                 stored.Markdown = text.Markdown;
                 break;
             case ImageBlock image:
-                stored.ResourceId = image.ResourceId;
+                stored.Url = image.Url;
                 stored.AltText = image.AltText;
-                stored.Caption = image.Caption;
+                stored.Caption = ForStorage(image.Caption);
                 break;
             case VideoBlock video:
-                stored.ResourceId = video.ResourceId;
-                stored.Caption = video.Caption;
+                stored.Url = video.Url;
+                stored.Caption = ForStorage(video.Caption);
                 break;
             case LinkPreviewBlock link:
                 stored.Url = link.Url.ToString();
                 stored.Title = link.Title;
-                stored.Description = link.Description;
+                stored.Description = ForStorage(link.Description);
                 break;
             case PollReferenceBlock poll:
                 stored.ReferenceId = poll.PollId;
                 break;
             case ChartReferenceBlock chart:
                 stored.ReferenceId = chart.ChartId;
-                stored.Title = chart.Title;
+                stored.Title = ForStorage(chart.Title);
                 break;
             default:
                 throw new InvalidOperationException($"Unsupported block type {block.GetType().Name}.");
@@ -146,6 +151,9 @@ public sealed class JsonDocumentRepository : IDocumentRepository
         return stored;
     }
 
+    private static string? ForStorage(string value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value;
+
     private static ContentBlock ToDomain(StoredBlock block)
     {
         var id = new BlockId(block.Id);
@@ -153,8 +161,8 @@ public sealed class JsonDocumentRepository : IDocumentRepository
         return block.Kind switch
         {
             "markdown" => MarkdownTextBlock.Reconstitute(id, block.Markdown ?? string.Empty, block.CreatedAt, block.UpdatedAt),
-            "image" => ImageBlock.Reconstitute(id, block.ResourceId ?? string.Empty, block.AltText ?? string.Empty, block.Caption, block.CreatedAt, block.UpdatedAt),
-            "video" => VideoBlock.Reconstitute(id, block.ResourceId ?? string.Empty, block.Caption, block.CreatedAt, block.UpdatedAt),
+            "image" => ImageBlock.Reconstitute(id, block.Url ?? string.Empty, block.AltText ?? string.Empty, block.Caption, block.CreatedAt, block.UpdatedAt),
+            "video" => VideoBlock.Reconstitute(id, block.Url ?? string.Empty, block.Caption, block.CreatedAt, block.UpdatedAt),
             "link-preview" => LinkPreviewBlock.Reconstitute(id, block.Url ?? string.Empty, block.Title ?? string.Empty, block.Description, block.CreatedAt, block.UpdatedAt),
             "poll-reference" => PollReferenceBlock.Reconstitute(id, block.ReferenceId ?? Guid.Empty, block.CreatedAt, block.UpdatedAt),
             "chart-reference" => ChartReferenceBlock.Reconstitute(id, block.ReferenceId ?? Guid.Empty, block.Title, block.CreatedAt, block.UpdatedAt),

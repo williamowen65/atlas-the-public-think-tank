@@ -87,8 +87,8 @@ public static class DescriptionBlockCommands
     private static string Summary(ContentBlock block) => block switch
     {
         MarkdownTextBlock text => Compact(text.Markdown),
-        ImageBlock image => $"{Compact(image.AltText)} ({image.ResourceId})",
-        VideoBlock video => $"{Compact(video.Caption)} ({video.ResourceId})",
+        ImageBlock image => $"{Compact(image.AltText)} ({image.Url})",
+        VideoBlock video => $"{Compact(video.Caption)} ({video.Url})",
         LinkPreviewBlock link => $"{Compact(link.Title)} ({link.Url})",
         PollReferenceBlock poll => poll.PollId.ToString(),
         ChartReferenceBlock chart => $"{Compact(chart.Title)} ({chart.ChartId})",
@@ -175,16 +175,16 @@ public static class DescriptionBlockCommands
                 text.Update(Console.ReadLine() ?? string.Empty, now);
                 break;
             case ImageBlock image:
-                Console.Write($"Resource ID ({image.ResourceId}): ");
-                var imageResource = Keep(Console.ReadLine(), image.ResourceId);
+                Console.Write($"Image URL ({image.Url}): ");
+                var imageResource = Keep(Console.ReadLine(), image.Url);
                 Console.Write($"Alt text ({image.AltText}): ");
                 var alt = Keep(Console.ReadLine(), image.AltText);
                 Console.Write($"Caption ({image.Caption}): ");
                 image.Update(imageResource, alt, Console.ReadLine(), now);
                 break;
             case VideoBlock video:
-                Console.Write($"Resource ID ({video.ResourceId}): ");
-                var videoResource = Keep(Console.ReadLine(), video.ResourceId);
+                Console.Write($"Video URL ({video.Url}): ");
+                var videoResource = Keep(Console.ReadLine(), video.Url);
                 Console.Write($"Caption ({video.Caption}): ");
                 video.Update(videoResource, Console.ReadLine(), now);
                 break;
@@ -196,15 +196,12 @@ public static class DescriptionBlockCommands
                 Console.Write($"Description ({link.Description}): ");
                 link.UpdatePreview(url, title, Console.ReadLine(), now);
                 break;
-            case PollReferenceBlock poll:
-                Console.Write($"Poll ID ({poll.PollId}): ");
-                poll.UpdateReference(ReadGuid(Console.ReadLine(), poll.PollId), now);
-                break;
+            case PollReferenceBlock:
+                ConsoleUi.Pause("This poll reference has no editable block content yet.");
+                return;
             case ChartReferenceBlock chart:
-                Console.Write($"Chart ID ({chart.ChartId}): ");
-                var chartId = ReadGuid(Console.ReadLine(), chart.ChartId);
                 Console.Write($"Title ({chart.Title}): ");
-                chart.Update(chartId, Console.ReadLine(), now);
+                chart.Update(chart.ChartId, Keep(Console.ReadLine(), chart.Title), now);
                 break;
         }
 
@@ -275,20 +272,20 @@ public static class DescriptionBlockCommands
 
     private static ImageBlock NewImage(DateTimeOffset now)
     {
-        Console.Write("Image resource ID: ");
-        var resourceId = Console.ReadLine();
+        Console.Write("Image URL: ");
+        var resourceUrl = Console.ReadLine();
         Console.Write("Alternative text: ");
         var altText = Console.ReadLine();
         Console.Write("Caption (optional): ");
-        return new ImageBlock(resourceId ?? string.Empty, altText ?? string.Empty, Console.ReadLine(), now);
+        return new ImageBlock(resourceUrl ?? string.Empty, altText ?? string.Empty, Console.ReadLine(), now);
     }
 
     private static VideoBlock NewVideo(DateTimeOffset now)
     {
-        Console.Write("Video resource ID: ");
-        var resourceId = Console.ReadLine();
+        Console.Write("Video URL: ");
+        var resourceUrl = Console.ReadLine();
         Console.Write("Caption (optional): ");
-        return new VideoBlock(resourceId ?? string.Empty, Console.ReadLine(), now);
+        return new VideoBlock(resourceUrl ?? string.Empty, Console.ReadLine(), now);
     }
 
     private static LinkPreviewBlock NewLinkPreview(DateTimeOffset now)
@@ -303,30 +300,16 @@ public static class DescriptionBlockCommands
 
     private static PollReferenceBlock NewPollReference(DateTimeOffset now)
     {
-        Console.Write("Poll ID: ");
-        return new PollReferenceBlock(ReadGuid(Console.ReadLine()), now);
+        return new PollReferenceBlock(now);
     }
 
     private static ChartReferenceBlock NewChartReference(DateTimeOffset now)
     {
-        Console.Write("Chart ID: ");
-        var chartId = ReadGuid(Console.ReadLine());
         Console.Write("Title (optional): ");
-        return new ChartReferenceBlock(chartId, Console.ReadLine(), now);
+        return new ChartReferenceBlock(Console.ReadLine(), now);
     }
 
     private static string Keep(string? replacement, string current) =>
         string.IsNullOrWhiteSpace(replacement) ? current : replacement;
 
-    private static Guid ReadGuid(string? value, Guid? current = null)
-    {
-        if (string.IsNullOrWhiteSpace(value) && current.HasValue)
-        {
-            return current.Value;
-        }
-
-        return Guid.TryParse(value, out var id) && id != Guid.Empty
-            ? id
-            : throw new ArgumentException("A non-empty GUID is required.");
-    }
 }

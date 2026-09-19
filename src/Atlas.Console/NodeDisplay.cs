@@ -354,10 +354,10 @@ public static class NodeDisplay
                 (block switch
             {
                 MarkdownTextBlock text => text.Markdown,
-                ImageBlock image => $"Resource: {image.ResourceId}\nAlt: {image.AltText}\nCaption: {image.Caption}",
+                ImageBlock image => $"URL: {image.Url}\nAlt: {image.AltText}\nCaption: {image.Caption}",
                 VideoBlock video => string.IsNullOrWhiteSpace(video.Caption)
-                    ? $"Resource: {video.ResourceId}"
-                    : $"Resource: {video.ResourceId}\nCaption: {video.Caption}",
+                    ? $"URL: {video.Url}"
+                    : $"URL: {video.Url}\nCaption: {video.Caption}",
                 LinkPreviewBlock link => $"{link.Title}\n{link.Url}\n{link.Description}",
                 PollReferenceBlock poll => $"Poll ID: {poll.PollId}",
                 ChartReferenceBlock chart => string.IsNullOrWhiteSpace(chart.Title)

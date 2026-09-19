@@ -9,7 +9,7 @@ This document is the authoritative catalog of requirement statements and accepta
 
 **Rationale:** Nodes must remain addressable across persistence, parent relationships, events, and future service boundaries.
 
-**Priority:** Must  
+**Priority:** Must
 **Status:** Verified
 
 ### Acceptance criteria
@@ -922,6 +922,7 @@ This document is the authoritative catalog of requirement statements and accepta
 
 - Every block receives a non-empty BlockId at creation.
 - Newly created BlockIds are generated GUIDs rather than ordered or derived identifiers.
+- The console does not ask a user to provide block or provisional reference identifiers.
 - Adding, moving, or removing a block preserves DocumentId.
 - Moving or editing a block preserves BlockId.
 - A document rejects duplicate block references.
@@ -955,8 +956,8 @@ This document is the authoritative catalog of requirement statements and accepta
 
 ### Acceptance criteria
 
-- Image references require resource identity and alternative text.
-- Video references require resource identity.
+- Image references require a URL and alternative text.
+- Video references require a URL.
 - Link previews require an absolute HTTP or HTTPS URL and title.
 - Poll and chart references require non-empty external identifiers.
 
@@ -993,3 +994,19 @@ This document is the authoritative catalog of requirement statements and accepta
 - The old plain-text document schema is not retained as an active format.
 
 [View traceability](TRACEABILITY.md#con-007)
+
+<a id="con-008"></a>
+## CON-008 — Persist only concrete block fields
+
+**Statement:** A stored Content block shall contain only shared metadata and payload fields belonging to its concrete block type.
+
+**Priority:** Must
+**Status:** Verified
+
+### Acceptance criteria
+
+- Markdown records do not store image, video, link, poll, or chart fields.
+- Image records store URL and alternative text, plus a caption only when supplied.
+- Null and empty optional payload properties are omitted from JSON.
+
+[View traceability](TRACEABILITY.md#con-008)

@@ -27,58 +27,58 @@ public sealed class MarkdownTextBlock : ContentBlock
 public sealed class ImageBlock : ContentBlock
 {
     public override string Kind => "image";
-    public string ResourceId { get; private set; }
+    public string Url { get; private set; }
     public string AltText { get; private set; }
     public string Caption { get; private set; }
 
-    public ImageBlock(string resourceId, string altText, string? caption, DateTimeOffset createdAt)
-        : this(BlockId.New(), resourceId, altText, caption, createdAt, createdAt) { }
+    public ImageBlock(string url, string altText, string? caption, DateTimeOffset createdAt)
+        : this(BlockId.New(), url, altText, caption, createdAt, createdAt) { }
 
-    private ImageBlock(BlockId id, string resourceId, string altText, string? caption, DateTimeOffset createdAt, DateTimeOffset updatedAt)
+    private ImageBlock(BlockId id, string url, string altText, string? caption, DateTimeOffset createdAt, DateTimeOffset updatedAt)
         : base(id, createdAt, updatedAt)
     {
-        ResourceId = Required(resourceId, nameof(resourceId), 500);
+        Url = Required(url, nameof(url), 500);
         AltText = Required(altText, nameof(altText), 2_000);
         Caption = Optional(caption, 2_000, nameof(caption));
     }
 
-    public void Update(string resourceId, string altText, string? caption, DateTimeOffset changedAt)
+    public void Update(string url, string altText, string? caption, DateTimeOffset changedAt)
     {
-        ResourceId = Required(resourceId, nameof(resourceId), 500);
+        Url = Required(url, nameof(url), 500);
         AltText = Required(altText, nameof(altText), 2_000);
         Caption = Optional(caption, 2_000, nameof(caption));
         ChangedAt(changedAt);
     }
 
-    public static ImageBlock Reconstitute(BlockId id, string resourceId, string altText, string? caption, DateTimeOffset createdAt, DateTimeOffset updatedAt) =>
-        new(id, resourceId, altText, caption, createdAt, updatedAt);
+    public static ImageBlock Reconstitute(BlockId id, string url, string altText, string? caption, DateTimeOffset createdAt, DateTimeOffset updatedAt) =>
+        new(id, url, altText, caption, createdAt, updatedAt);
 }
 
 public sealed class VideoBlock : ContentBlock
 {
     public override string Kind => "video";
-    public string ResourceId { get; private set; }
+    public string Url { get; private set; }
     public string Caption { get; private set; }
 
-    public VideoBlock(string resourceId, string? caption, DateTimeOffset createdAt)
-        : this(BlockId.New(), resourceId, caption, createdAt, createdAt) { }
+    public VideoBlock(string url, string? caption, DateTimeOffset createdAt)
+        : this(BlockId.New(), url, caption, createdAt, createdAt) { }
 
-    private VideoBlock(BlockId id, string resourceId, string? caption, DateTimeOffset createdAt, DateTimeOffset updatedAt)
+    private VideoBlock(BlockId id, string url, string? caption, DateTimeOffset createdAt, DateTimeOffset updatedAt)
         : base(id, createdAt, updatedAt)
     {
-        ResourceId = Required(resourceId, nameof(resourceId), 500);
+        Url = Required(url, nameof(url), 500);
         Caption = Optional(caption, 2_000, nameof(caption));
     }
 
-    public void Update(string resourceId, string? caption, DateTimeOffset changedAt)
+    public void Update(string url, string? caption, DateTimeOffset changedAt)
     {
-        ResourceId = Required(resourceId, nameof(resourceId), 500);
+        Url = Required(url, nameof(url), 500);
         Caption = Optional(caption, 2_000, nameof(caption));
         ChangedAt(changedAt);
     }
 
-    public static VideoBlock Reconstitute(BlockId id, string resourceId, string? caption, DateTimeOffset createdAt, DateTimeOffset updatedAt) =>
-        new(id, resourceId, caption, createdAt, updatedAt);
+    public static VideoBlock Reconstitute(BlockId id, string url, string? caption, DateTimeOffset createdAt, DateTimeOffset updatedAt) =>
+        new(id, url, caption, createdAt, updatedAt);
 }
 
 public sealed class LinkPreviewBlock : ContentBlock
@@ -119,6 +119,9 @@ public sealed class PollReferenceBlock : ContentBlock
     public PollReferenceBlock(Guid pollId, DateTimeOffset createdAt)
         : this(BlockId.New(), pollId, createdAt, createdAt) { }
 
+    public PollReferenceBlock(DateTimeOffset createdAt)
+        : this(BlockId.New(), Guid.NewGuid(), createdAt, createdAt) { }
+
     private PollReferenceBlock(BlockId id, Guid pollId, DateTimeOffset createdAt, DateTimeOffset updatedAt)
         : base(id, createdAt, updatedAt)
     {
@@ -143,6 +146,9 @@ public sealed class ChartReferenceBlock : ContentBlock
 
     public ChartReferenceBlock(Guid chartId, string? title, DateTimeOffset createdAt)
         : this(BlockId.New(), chartId, title, createdAt, createdAt) { }
+
+    public ChartReferenceBlock(string? title, DateTimeOffset createdAt)
+        : this(BlockId.New(), Guid.NewGuid(), title, createdAt, createdAt) { }
 
     private ChartReferenceBlock(BlockId id, Guid chartId, string? title, DateTimeOffset createdAt, DateTimeOffset updatedAt)
         : base(id, createdAt, updatedAt)

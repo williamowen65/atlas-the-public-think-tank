@@ -1,6 +1,7 @@
 using Atlas.ConsoleApp.Storage;
 using Atlas.Content.Blocks;
 using Atlas.Content.Documents;
+using System.Text.Json;
 
 namespace Atlas.ConsoleApp.Tests;
 
@@ -18,6 +19,19 @@ public sealed class DocumentPersistenceTests
         Assert.AreNotEqual(Guid.Empty, first.Id.Value);
         Assert.AreNotEqual(Guid.Empty, second.Id.Value);
         Assert.AreNotEqual(first.Id, second.Id);
+    }
+
+    [TestMethod]
+    public void PollAndChartReferenceIdsAreGeneratedByTheContentDomain()
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        var poll = new PollReferenceBlock(now);
+        var chart = new ChartReferenceBlock("Participation", now);
+
+        Assert.AreNotEqual(Guid.Empty, poll.PollId);
+        Assert.AreNotEqual(Guid.Empty, chart.ChartId);
+        Assert.AreNotEqual(poll.PollId, chart.ChartId);
     }
 
     [TestMethod]
@@ -74,6 +88,37 @@ public sealed class DocumentPersistenceTests
                 blocks.Select(block => block.GetType()).ToArray(),
                 reloaded.GetBlocks(reloadedDocument).Select(block => block.GetType()).ToArray());
             Assert.AreEqual(blocks[0].Id, reloaded.GetBlocks(reloadedDocument).First().Id);
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void JsonStoresOnlyFieldsBelongingToEachBlockType()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"atlas-content-shapes-{Guid.NewGuid():N}");
+        var documentPath = Path.Combine(directory, "documents.json");
+        var blockPath = Path.Combine(directory, "blocks.json");
+
+        try
+        {
+            var now = DateTimeOffset.UtcNow;
+            var repository = new JsonDocumentRepository(documentPath, blockPath);
+            repository.SaveBlock(new MarkdownTextBlock("# Text", now));
+            repository.SaveBlock(new ImageBlock("https://example.com/image.jpg", "Coast", null, now));
+
+            using var json = JsonDocument.Parse(File.ReadAllText(blockPath));
+            var markdown = json.RootElement[0];
+            var image = json.RootElement[1];
+
+            CollectionAssert.AreEquivalent(
+                new[] { "Id", "Kind", "Markdown", "CreatedAt", "UpdatedAt" },
+                markdown.EnumerateObject().Select(property => property.Name).ToArray());
+            CollectionAssert.AreEquivalent(
+                new[] { "Id", "Kind", "AltText", "Url", "CreatedAt", "UpdatedAt" },
+                image.EnumerateObject().Select(property => property.Name).ToArray());
         }
         finally
         {
