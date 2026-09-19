@@ -34,5 +34,14 @@
     "Value": 5,
     "CreatedAt": "2026-09-13T23:00:16.2175363+00:00",
     "UpdatedAt": "2026-09-13T23:00:16.2175363+00:00"
+  },
+  {
+    "Id": "19aa3476-4fa4-43b5-8c95-41bd8d4ef389",
+    "ParticipantId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
+    "TargetId": "31ea0dca-845b-42fc-ae24-60cfa35296e9",
+    "TargetType": "NodeTag",
+    "Value": 1,
+    "CreatedAt": "2026-09-18T21:21:50.4562543+00:00",
+    "UpdatedAt": "2026-09-18T21:21:50.4562543+00:00"
   }
 ]

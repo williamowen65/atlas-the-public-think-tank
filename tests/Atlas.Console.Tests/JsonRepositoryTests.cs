@@ -91,6 +91,40 @@ namespace Atlas.Console.Tests
             }
         }
 
+        /// <summary>Verifies that node-tag vote targets survive JSON persistence.</summary>
+        [TestMethod]
+        public void JsonVoteRepository_NodeTagVoteCanBeReloaded()
+        {
+            var temporaryDirectory = Path.Combine(
+                Path.GetTempPath(),
+                "AtlasVotingTests",
+                Guid.NewGuid().ToString());
+            var filePath = Path.Combine(temporaryDirectory, "votes.json");
+
+            try
+            {
+                var repository = new JsonVoteRepository(filePath);
+                var original = new Vote(
+                    new NodeTagVoteTarget(Guid.NewGuid()),
+                    new ParticipantId(Guid.NewGuid()),
+                    1);
+
+                repository.Save(original);
+                var reloaded = repository.GetById(original.Id);
+
+                Assert.IsNotNull(reloaded);
+                Assert.IsInstanceOfType<NodeTagVoteTarget>(reloaded.Target);
+                Assert.AreEqual(1, reloaded.Value.Value);
+            }
+            finally
+            {
+                if (Directory.Exists(temporaryDirectory))
+                {
+                    Directory.Delete(temporaryDirectory, recursive: true);
+                }
+            }
+        }
+
         /// <summary>
         /// Verifies that participant-target lookup works after votes
         /// are loaded by a new JSON repository instance.

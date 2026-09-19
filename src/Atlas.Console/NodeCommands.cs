@@ -93,6 +93,8 @@ public static class NodeCommands
                 participants,
                 nodeTags,
                 tagDefinitions,
+                votes,
+                votingParticipantId,
                 voteCount,
                 averageRating,
                 myVote,
@@ -243,6 +245,8 @@ public static class NodeCommands
                             node,
                             tagDefinitions,
                             nodeTags,
+                            votes,
+                            castVote,
                             currentParticipant);
                         break;
 
@@ -574,7 +578,8 @@ public static class NodeCommands
                 averageRating,
                 myVote,
                 nodeTags,
-                tagDefinitions);
+                tagDefinitions,
+                votes);
         }
 
         Console.WriteLine();

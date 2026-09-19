@@ -84,7 +84,8 @@ INodeRepository nodeRepository =
 var votingEligibility =
     new RepositoryVotingEligibility(
         nodeRepository,
-        participantRepository);
+        participantRepository,
+        nodeTagRepository);
 
 var voteMutationPolicy =
     new VoteMutationPolicy(votingEligibility);

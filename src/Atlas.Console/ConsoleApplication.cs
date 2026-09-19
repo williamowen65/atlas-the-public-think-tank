@@ -379,7 +379,8 @@ public sealed class ConsoleApplication
                     averageRating,
                     myVote,
                     nodeTags: _nodeTags,
-                    tagDefinitions: _tagDefinitions);
+                    tagDefinitions: _tagDefinitions,
+                    votes: _voteRepository);
             }
 
             Console.WriteLine();
