@@ -110,7 +110,7 @@ public static class NodeCommands
                 : " [disabled — requires node author]";
 
             Console.WriteLine($"1. Rename{authorOnlyStatus}");
-            Console.WriteLine($"2. Change description{authorOnlyStatus}");
+            Console.WriteLine($"2. Manage description blocks{authorOnlyStatus}");
             Console.WriteLine($"3. Change type{authorOnlyStatus}");
             Console.WriteLine($"4. Archive{authorOnlyStatus}");
             Console.WriteLine($"5. Restore{authorOnlyStatus}");
@@ -150,7 +150,7 @@ public static class NodeCommands
                         break;
 
                     case "2":
-                        ChangeDescription(
+                        DescriptionBlockCommands.Run(
                             node,
                             documents,
                             actorParticipantId);
@@ -870,52 +870,6 @@ public static class NodeCommands
 
         nodes.Save(node);
         ConsoleUi.Pause("Node renamed and saved.");
-    }
-
-    /// <summary>Changes the description while enforcing node-type editing rules.</summary>
-    private static void ChangeDescription(
-        Node node,
-        IDocumentRepository documents,
-        Guid actorParticipantId)
-    {
-        node.EnsureAuthoredBy(actorParticipantId);
-
-        var currentDocument = documents.GetById(
-            new DocumentId(node.DescriptionId.Value))
-            ?? throw new InvalidOperationException(
-                "The node's description document could not be found.");
-
-        var textBlock = documents.GetBlocks(currentDocument)
-            .OfType<MarkdownTextBlock>()
-            .FirstOrDefault();
-
-        Console.WriteLine("Current Markdown description:");
-        Console.WriteLine(
-            string.IsNullOrWhiteSpace(textBlock?.Markdown)
-                ? "(none)"
-                : textBlock.Markdown);
-        Console.WriteLine();
-        Console.Write("New Markdown description (blank clears it): ");
-        var description = Console.ReadLine();
-        var changedAt = DateTimeOffset.UtcNow;
-
-        if (textBlock is null)
-        {
-            textBlock = new MarkdownTextBlock(
-                description ?? string.Empty,
-                changedAt);
-            currentDocument.AddBlock(textBlock.Id, index: 0);
-            documents.Save(currentDocument);
-        }
-        else
-        {
-            textBlock.Update(description ?? string.Empty, changedAt);
-        }
-
-        documents.SaveBlock(textBlock);
-
-        ConsoleUi.Pause(
-            $"Description updated in document {currentDocument.Id}.");
     }
 
     /// <summary>Changes the node type and advances the modification timestamp when the value differs.</summary>
