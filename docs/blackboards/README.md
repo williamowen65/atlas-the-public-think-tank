@@ -17,6 +17,9 @@ Markdown documentation.
   definition reuse, node-specific application, mutation authority, author
   disposition, lifecycle audit history, persistence, display, and the future
   Voting handoff.
+- [Content Block Composition](workflows/Content/ContentBlocks.excalidraw) is a
+  dashboard of Content ownership, block creation and validation, ordered document
+  composition, type-specific payloads, JSON persistence, and reconstitution.
 - [Node Tag Voting](workflows/Voting/NodeTagVoting.excalidraw) maps PTT-84's
   console voting interaction, NodeTag target and -1/+1 value types, cumulative
   score aggregation, cross-domain eligibility checks, JSON persistence, and
