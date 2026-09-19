@@ -1,3 +1,4 @@
+using Atlas.Content.Blocks;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
@@ -329,9 +330,29 @@ public static class NodeDisplay
             return "Description document not found.";
         }
 
-        return string.IsNullOrWhiteSpace(document.Content)
-            ? "No description has been provided."
-            : document.Content;
+        var blocks = documents.GetBlocks(document);
+
+        if (blocks.Count == 0)
+        {
+            return "No description has been provided.";
+        }
+
+        return string.Join(
+            Environment.NewLine,
+            blocks.Select(block => block switch
+            {
+                MarkdownTextBlock text => text.Markdown,
+                ImageBlock image => $"[Image: {image.AltText}]",
+                VideoBlock video => string.IsNullOrWhiteSpace(video.Caption)
+                    ? "[Video]"
+                    : $"[Video: {video.Caption}]",
+                LinkPreviewBlock link => $"[{link.Title}]({link.Url})",
+                PollReferenceBlock poll => $"[Poll: {poll.PollId}]",
+                ChartReferenceBlock chart => string.IsNullOrWhiteSpace(chart.Title)
+                    ? $"[Chart: {chart.ChartId}]"
+                    : $"[Chart: {chart.Title}]",
+                _ => $"[{block.Kind}]"
+            }));
     }
 
     /// <summary>Resolves author name for the current console view.</summary>
