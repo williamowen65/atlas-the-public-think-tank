@@ -92,14 +92,16 @@ public sealed class JsonDocumentRepository : IDocumentRepository
     {
         Id = document.Id.Value,
         BlockIds = document.BlockIds.Select(id => id.Value).ToList(),
-        CreatedAt = document.CreatedAt
+        CreatedAt = document.CreatedAt,
+        UpdatedAt = document.UpdatedAt
     };
 
     private static Document ToDomain(StoredDocument document) =>
         Document.Reconstitute(
             new DocumentId(document.Id),
             document.BlockIds.Select(id => new BlockId(id)),
-            document.CreatedAt);
+            document.CreatedAt,
+            document.UpdatedAt);
 
     private static StoredBlock ToStorage(ContentBlock block)
     {
