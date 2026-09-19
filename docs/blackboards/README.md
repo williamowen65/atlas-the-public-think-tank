@@ -17,6 +17,10 @@ Markdown documentation.
   definition reuse, node-specific application, mutation authority, author
   disposition, lifecycle audit history, persistence, display, and the future
   Voting handoff.
+- [Node Tag Voting](workflows/Voting/NodeTagVoting.excalidraw) maps PTT-84's
+  console voting interaction, NodeTag target and -1/+1 value types, cumulative
+  score aggregation, cross-domain eligibility checks, JSON persistence, and
+  verification tests.
 - [The current-state context map](../architecture/CONTEXT-MAP.md) remains the
   authoritative inventory when the blackboard and written documentation differ.
 
