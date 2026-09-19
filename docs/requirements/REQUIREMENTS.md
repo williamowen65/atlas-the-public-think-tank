@@ -908,3 +908,86 @@ This document is the authoritative catalog of requirement statements and accepta
 - Failed deliveries can be retried and observed.
 
 [View traceability](TRACEABILITY.md#nfr-002)
+
+
+<a id="con-003"></a>
+## CON-003 — Documents compose ordered stable block references
+
+**Statement:** A Content document shall own an ordered collection of stable block identifiers.
+
+**Priority:** Must  
+**Status:** Verified
+
+### Acceptance criteria
+
+- Every block receives a non-empty BlockId at creation.
+- Adding, moving, or removing a block preserves DocumentId.
+- Moving or editing a block preserves BlockId.
+- A document rejects duplicate block references.
+
+[View traceability](TRACEABILITY.md#con-003)
+
+<a id="con-004"></a>
+## CON-004 — Text blocks use Markdown formatting
+
+**Statement:** Content shall represent formatted prose with a Markdown text block rather than separate heading or inline-format blocks.
+
+**Priority:** Must  
+**Status:** Verified
+
+### Acceptance criteria
+
+- Markdown source may contain headings, emphasis, lists, and links.
+- Editing Markdown preserves BlockId.
+- A separate Header block is not required.
+
+[View traceability](TRACEABILITY.md#con-004)
+
+<a id="con-005"></a>
+## CON-005 — Block types validate independently
+
+**Statement:** Each Content block type shall enforce validation appropriate to its own data.
+
+**Priority:** Must  
+**Status:** Verified
+
+### Acceptance criteria
+
+- Image references require resource identity and alternative text.
+- Video references require resource identity.
+- Link previews require an absolute HTTP or HTTPS URL and title.
+- Poll and chart references require non-empty external identifiers.
+
+[View traceability](TRACEABILITY.md#con-005)
+
+<a id="con-006"></a>
+## CON-006 — Documents and blocks persist separately
+
+**Statement:** The Console prototype shall persist document composition in documents.json and typed block state in blocks.json.
+
+**Priority:** Must  
+**Status:** Verified
+
+### Acceptance criteria
+
+- Documents store ordered BlockIds rather than block payloads.
+- Mixed concrete block types round-trip through JSON.
+- Reconstitution preserves DocumentId, BlockId, order, and concrete type.
+
+[View traceability](TRACEABILITY.md#con-006)
+
+<a id="con-007"></a>
+## CON-007 — Plain-text descriptions migrate to blocks
+
+**Statement:** Existing prototype descriptions shall be migrated into Markdown blocks as a one-way data migration.
+
+**Priority:** Must  
+**Status:** Implemented
+
+### Acceptance criteria
+
+- Checked-in documents use the block-reference schema.
+- Existing bodies become Markdown block payloads.
+- The old plain-text document schema is not retained as an active format.
+
+[View traceability](TRACEABILITY.md#con-007)
