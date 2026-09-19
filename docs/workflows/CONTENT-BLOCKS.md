@@ -8,13 +8,13 @@ Content owns documents, block identities, ordered composition, block payloads, a
 
 ## Composition lifecycle
 
-1. Create a concrete block; Content assigns its permanent BlockId.
+1. Create a concrete block; Content assigns its permanent, randomly generated GUID BlockId.
 2. Save the block to blocks.json.
-3. Add the BlockId to the document at the intended position.
+3. Add the BlockId to the document at the intended position and advance Document.UpdatedAt.
 4. Save the document's ordered BlockIds to documents.json.
 5. Edit the block through its type-specific behavior without changing BlockId.
-6. Move a block by changing only its position in the document.
-7. Remove a block reference from the document. Detached-block deletion or retention is deliberately deferred.
+6. Move a block by changing only its position in the document and advancing Document.UpdatedAt.
+7. Remove a block reference and advance Document.UpdatedAt. Detached-block deletion or retention is deliberately deferred.
 
 ## Implemented block types
 
