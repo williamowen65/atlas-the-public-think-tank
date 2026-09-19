@@ -42,8 +42,9 @@ public sealed class ImageBlock : ContentBlock
         Caption = Optional(caption, 2_000, nameof(caption));
     }
 
-    public void UpdatePresentation(string altText, string? caption, DateTimeOffset changedAt)
+    public void Update(string resourceId, string altText, string? caption, DateTimeOffset changedAt)
     {
+        ResourceId = Required(resourceId, nameof(resourceId), 500);
         AltText = Required(altText, nameof(altText), 2_000);
         Caption = Optional(caption, 2_000, nameof(caption));
         ChangedAt(changedAt);
@@ -56,7 +57,7 @@ public sealed class ImageBlock : ContentBlock
 public sealed class VideoBlock : ContentBlock
 {
     public override string Kind => "video";
-    public string ResourceId { get; }
+    public string ResourceId { get; private set; }
     public string Caption { get; private set; }
 
     public VideoBlock(string resourceId, string? caption, DateTimeOffset createdAt)
@@ -69,8 +70,9 @@ public sealed class VideoBlock : ContentBlock
         Caption = Optional(caption, 2_000, nameof(caption));
     }
 
-    public void UpdateCaption(string? caption, DateTimeOffset changedAt)
+    public void Update(string resourceId, string? caption, DateTimeOffset changedAt)
     {
+        ResourceId = Required(resourceId, nameof(resourceId), 500);
         Caption = Optional(caption, 2_000, nameof(caption));
         ChangedAt(changedAt);
     }
@@ -112,7 +114,7 @@ public sealed class LinkPreviewBlock : ContentBlock
 public sealed class PollReferenceBlock : ContentBlock
 {
     public override string Kind => "poll-reference";
-    public Guid PollId { get; }
+    public Guid PollId { get; private set; }
 
     public PollReferenceBlock(Guid pollId, DateTimeOffset createdAt)
         : this(BlockId.New(), pollId, createdAt, createdAt) { }
@@ -123,6 +125,12 @@ public sealed class PollReferenceBlock : ContentBlock
         PollId = pollId != Guid.Empty ? pollId : throw new ArgumentException("A poll ID is required.", nameof(pollId));
     }
 
+    public void UpdateReference(Guid pollId, DateTimeOffset changedAt)
+    {
+        PollId = pollId != Guid.Empty ? pollId : throw new ArgumentException("A poll ID is required.", nameof(pollId));
+        ChangedAt(changedAt);
+    }
+
     public static PollReferenceBlock Reconstitute(BlockId id, Guid pollId, DateTimeOffset createdAt, DateTimeOffset updatedAt) =>
         new(id, pollId, createdAt, updatedAt);
 }
@@ -130,7 +138,7 @@ public sealed class PollReferenceBlock : ContentBlock
 public sealed class ChartReferenceBlock : ContentBlock
 {
     public override string Kind => "chart-reference";
-    public Guid ChartId { get; }
+    public Guid ChartId { get; private set; }
     public string Title { get; private set; }
 
     public ChartReferenceBlock(Guid chartId, string? title, DateTimeOffset createdAt)
@@ -143,8 +151,9 @@ public sealed class ChartReferenceBlock : ContentBlock
         Title = Optional(title, 500, nameof(title));
     }
 
-    public void UpdateTitle(string? title, DateTimeOffset changedAt)
+    public void Update(Guid chartId, string? title, DateTimeOffset changedAt)
     {
+        ChartId = chartId != Guid.Empty ? chartId : throw new ArgumentException("A chart ID is required.", nameof(chartId));
         Title = Optional(title, 500, nameof(title));
         ChangedAt(changedAt);
     }
