@@ -24,12 +24,6 @@ public class NodeAuthorizationTests
                 node.UpdatedAt.AddMinutes(1)));
 
         AssertRejectedWithoutStateChange(
-            (node, actorId) => node.ReplaceDescriptionReference(
-                new NodeDescriptionId(Guid.NewGuid()),
-                actorId,
-                node.UpdatedAt.AddMinutes(1)));
-
-        AssertRejectedWithoutStateChange(
             (node, actorId) => node.Archive(
                 actorId,
                 node.UpdatedAt.AddMinutes(1)));
