@@ -485,7 +485,7 @@ public sealed class ConsoleApplication
         {
             Console.WriteLine($"Document ID: {document.Id}");
             Console.WriteLine($"Created:     {document.CreatedAt.LocalDateTime}");
-            Console.WriteLine($"Content:     {document.Content}");
+            Console.WriteLine($"Blocks:      {document.BlockIds.Count}");
             Console.WriteLine();
         }
 
