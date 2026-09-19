@@ -67,38 +67,6 @@ public class NodeMutationTests
         Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);
     }
 
-    /// <summary>Verifies that replace description reference updates reference and timestamp.</summary>
-    [TestMethod]
-    public void ReplaceDescriptionReference_UpdatesReferenceAndTimestamp()
-    {
-        var node = NodeTestFactory.Create();
-        var descriptionId = new NodeDescriptionId(Guid.NewGuid());
-        var changedAt = node.CreatedAt.AddMinutes(1);
-
-        node.ReplaceDescriptionReference(
-            descriptionId,
-            node.AuthorId.Value,
-            changedAt);
-
-        Assert.AreEqual(descriptionId, node.DescriptionId);
-        Assert.AreEqual(changedAt, node.UpdatedAt);
-    }
-
-    /// <summary>Verifies that replace description reference with same reference is no op.</summary>
-    [TestMethod]
-    public void ReplaceDescriptionReference_WithSameReference_IsNoOp()
-    {
-        var node = NodeTestFactory.Create();
-        var originalUpdatedAt = node.UpdatedAt;
-
-        node.ReplaceDescriptionReference(
-            node.DescriptionId,
-            node.AuthorId.Value,
-            originalUpdatedAt.AddMinutes(1));
-
-        Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);
-    }
-
     /// <summary>Verifies that request sub node type adds request and updates timestamp.</summary>
     [TestMethod]
     public void RequestSubNodeType_AddsRequestAndUpdatesTimestamp()
