@@ -17,6 +17,12 @@ public sealed class Document
         CreatedAt = createdAt;
     }
 
+    /// <summary>Changes the document body while preserving its Content-owned identity.</summary>
+    public void UpdateContent(string content)
+    {
+        Content = content?.Trim() ?? string.Empty;
+    }
+
     /// <summary>Creates a validated document instance.</summary>
     private Document(
         DocumentId id,
