@@ -23,7 +23,7 @@ public sealed class Node
     public NodeTitle Title { get; private set; }
     public NodeTypeId TypeId { get; private set; }
     public NodeStatus Status { get; private set; }
-    public NodeDescriptionId DescriptionId { get; private set; }
+    public NodeDescriptionId DescriptionId { get; }
     public NodeAuthorId AuthorId { get; }
     public DateTimeOffset CreatedAt { get; }
     public DateTimeOffset UpdatedAt { get; private set; }
@@ -347,23 +347,6 @@ public sealed class Node
                 DescriptionId.Value,
                 AuthorId.Value,
                 restoredAt));
-    }
-
-    /// <summary>Replaces the node's Content reference and advances its modification timestamp.</summary>
-    public void ReplaceDescriptionReference(
-        NodeDescriptionId newDescriptionId,
-        Guid actorParticipantId,
-        DateTimeOffset changedAt)
-    {
-        EnsureAuthoredBy(actorParticipantId);
-
-        if (DescriptionId == newDescriptionId)
-        {
-            return;
-        }
-
-        DescriptionId = newDescriptionId;
-        UpdatedAt = changedAt;
     }
 
     /// <summary>Ensures an actor is the node author before an author-owned workflow continues.</summary>
