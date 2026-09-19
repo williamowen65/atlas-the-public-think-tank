@@ -154,7 +154,7 @@ public static class DescriptionBlockCommands
         }
 
         documents.SaveBlock(block);
-        document.AddBlock(block.Id, index);
+        document.AddBlock(block.Id, DateTimeOffset.UtcNow, index);
         documents.Save(document);
         ConsoleUi.Pause($"Added {block.Kind} block {block.Id}.");
     }
@@ -225,7 +225,10 @@ public static class DescriptionBlockCommands
             return;
         }
 
-        document.MoveBlock(block.Id, position - 1);
+        document.MoveBlock(
+            block.Id,
+            position - 1,
+            DateTimeOffset.UtcNow);
         documents.Save(document);
         ConsoleUi.Pause($"Moved block {block.Id} to position {position}.");
     }
@@ -235,7 +238,7 @@ public static class DescriptionBlockCommands
         var block = SelectBlock(document, documents, "Block to remove");
         if (block is null) return;
 
-        document.RemoveBlock(block.Id);
+        document.RemoveBlock(block.Id, DateTimeOffset.UtcNow);
         documents.Save(document);
         ConsoleUi.Pause(
             $"Removed block {block.Id} from the description. Its stored record is retained.");
