@@ -1,45 +1,77 @@
-﻿namespace Atlas.Content.Documents;
+using Atlas.Content.Blocks;
 
-/// <summary>Represents a Content-owned description document referenced by a Graph node.</summary>
+namespace Atlas.Content.Documents;
+
 public sealed class Document
 {
+    private readonly List<BlockId> _blockIds;
+
     public DocumentId Id { get; }
-    public string Content { get; private set; }
+    public IReadOnlyList<BlockId> BlockIds => _blockIds.AsReadOnly();
     public DateTimeOffset CreatedAt { get; }
 
-    /// <summary>Creates a validated document instance.</summary>
-    public Document(
-        string initialContent,
-        DateTimeOffset createdAt)
+    public Document(IEnumerable<BlockId> blockIds, DateTimeOffset createdAt)
+        : this(DocumentId.New(), blockIds, createdAt)
     {
-        Id = DocumentId.New();
-        Content = initialContent?.Trim() ?? string.Empty;
-        CreatedAt = createdAt;
     }
 
-    /// <summary>Changes the document body while preserving its Content-owned identity.</summary>
-    public void UpdateContent(string content)
+    private Document(DocumentId id, IEnumerable<BlockId> blockIds, DateTimeOffset createdAt)
     {
-        Content = content?.Trim() ?? string.Empty;
-    }
+        ArgumentNullException.ThrowIfNull(blockIds);
 
-    /// <summary>Creates a validated document instance.</summary>
-    private Document(
-        DocumentId id,
-        string content,
-        DateTimeOffset createdAt)
-    {
         Id = id;
-        Content = content?.Trim() ?? string.Empty;
         CreatedAt = createdAt;
+        _blockIds = blockIds.ToList();
+
+        if (_blockIds.Count != _blockIds.Distinct().Count())
+        {
+            throw new ArgumentException("A document cannot contain the same block more than once.", nameof(blockIds));
+        }
     }
 
-    /// <summary>Rebuilds the domain object from persisted state without replaying creation behavior.</summary>
-    public static Document Reconstitute(
-        DocumentId id,
-        string content,
-        DateTimeOffset createdAt)
+    public void AddBlock(BlockId blockId, int? index = null)
     {
-        return new Document(id, content, createdAt);
+        if (_blockIds.Contains(blockId))
+        {
+            throw new InvalidOperationException("The document already contains this block.");
+        }
+
+        var insertionIndex = index ?? _blockIds.Count;
+
+        if (insertionIndex < 0 || insertionIndex > _blockIds.Count)
+        {
+            throw new ArgumentOutOfRangeException(nameof(index));
+        }
+
+        _blockIds.Insert(insertionIndex, blockId);
     }
+
+    public void MoveBlock(BlockId blockId, int newIndex)
+    {
+        var currentIndex = _blockIds.IndexOf(blockId);
+
+        if (currentIndex < 0)
+        {
+            throw new InvalidOperationException("The document does not contain this block.");
+        }
+
+        if (newIndex < 0 || newIndex >= _blockIds.Count)
+        {
+            throw new ArgumentOutOfRangeException(nameof(newIndex));
+        }
+
+        _blockIds.RemoveAt(currentIndex);
+        _blockIds.Insert(newIndex, blockId);
+    }
+
+    public void RemoveBlock(BlockId blockId)
+    {
+        if (!_blockIds.Remove(blockId))
+        {
+            throw new InvalidOperationException("The document does not contain this block.");
+        }
+    }
+
+    public static Document Reconstitute(DocumentId id, IEnumerable<BlockId> blockIds, DateTimeOffset createdAt) =>
+        new(id, blockIds, createdAt);
 }
