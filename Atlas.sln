@@ -181,6 +181,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Voting", "Voting", "{2F264AFF-1E2B-4CBE-84DB-C1A067039CF5}"
 	ProjectSection(SolutionItems) = preProject
 		docs\blackboards\workflows\Voting\VotingDomain.excalidraw = docs\blackboards\workflows\Voting\VotingDomain.excalidraw
+		docs\blackboards\workflows\Voting\NodeTagVoting.excalidraw = docs\blackboards\workflows\Voting\NodeTagVoting.excalidraw
 	EndProjectSection
 EndProject
 Global
