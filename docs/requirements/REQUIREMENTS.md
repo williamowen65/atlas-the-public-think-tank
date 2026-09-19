@@ -921,9 +921,11 @@ This document is the authoritative catalog of requirement statements and accepta
 ### Acceptance criteria
 
 - Every block receives a non-empty BlockId at creation.
+- Newly created BlockIds are generated GUIDs rather than ordered or derived identifiers.
 - Adding, moving, or removing a block preserves DocumentId.
 - Moving or editing a block preserves BlockId.
 - A document rejects duplicate block references.
+- Adding, moving, or removing a block advances the document UpdatedAt value.
 
 [View traceability](TRACEABILITY.md#con-003)
 
