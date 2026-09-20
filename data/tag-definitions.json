@@ -1,74 +1,13 @@
 [
-  {
-    "Id": "3b8508bd-49f3-4638-8efc-746190eac914",
-    "Text": "Stupid",
-    "NormalizedText": "STUPID",
-    "CreatedByParticipantId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
-    "IsSuppressed": false,
-    "CreatedAt": "2026-09-17T16:10:50.5924516+00:00",
-    "UpdatedAt": "2026-09-17T16:10:50.5924516+00:00"
-  },
-  {
-    "Id": "a5164bed-c498-4b45-b943-37585992ae54",
-    "Text": "Fun",
-    "NormalizedText": "FUN",
-    "CreatedByParticipantId": "6ae1fb84-3842-4caf-a114-7c3411f24665",
-    "IsSuppressed": false,
-    "CreatedAt": "2026-09-17T16:13:14.1130209+00:00",
-    "UpdatedAt": "2026-09-17T16:13:14.1130209+00:00"
-  },
-  {
-    "Id": "b43cc9f2-828d-4a85-b828-29eabfc6e3f3",
-    "Text": "Lovely",
-    "NormalizedText": "LOVELY",
-    "CreatedByParticipantId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
-    "IsSuppressed": false,
-    "CreatedAt": "2026-09-17T18:02:01.5380024+00:00",
-    "UpdatedAt": "2026-09-17T18:02:01.5380024+00:00"
-  },
-  {
-    "Id": "2bbe57b5-17de-4178-ba2a-dac34a38f97d",
-    "Text": "STUIPD",
-    "NormalizedText": "STUIPD",
-    "CreatedByParticipantId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
-    "IsSuppressed": false,
-    "CreatedAt": "2026-09-17T18:03:22.0314747+00:00",
-    "UpdatedAt": "2026-09-17T18:03:22.0314747+00:00"
-  },
-  {
-    "Id": "b98d9cce-3830-4762-9a15-04e69384a538",
-    "Text": "TESSSST TAG",
-    "NormalizedText": "TESSSST TAG",
-    "CreatedByParticipantId": "6ae1fb84-3842-4caf-a114-7c3411f24665",
-    "IsSuppressed": false,
-    "CreatedAt": "2026-09-17T18:25:41.4281898+00:00",
-    "UpdatedAt": "2026-09-17T18:25:41.4281898+00:00"
-  },
-  {
-    "Id": "1b3c4c66-8296-4ec7-92db-933ae3c99fe4",
-    "Text": "Basic Human Rights",
-    "NormalizedText": "BASIC HUMAN RIGHTS",
-    "CreatedByParticipantId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
-    "IsSuppressed": false,
-    "CreatedAt": "2026-09-17T18:55:18.3895973+00:00",
-    "UpdatedAt": "2026-09-17T18:55:18.3895973+00:00"
-  },
-  {
-    "Id": "60567d54-50b0-4fbf-b100-68a93b503374",
-    "Text": "BS",
-    "NormalizedText": "BS",
-    "CreatedByParticipantId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
-    "IsSuppressed": false,
-    "CreatedAt": "2026-09-17T19:08:29.1585667+00:00",
-    "UpdatedAt": "2026-09-17T19:08:29.1585667+00:00"
-  },
-  {
-    "Id": "d52f19eb-de33-41ec-8e64-b1a5e836160c",
-    "Text": "hello world",
-    "NormalizedText": "HELLO WORLD",
-    "CreatedByParticipantId": "61f491dd-d497-42c1-b1e5-edefe98aadfa",
-    "IsSuppressed": false,
-    "CreatedAt": "2026-09-18T16:37:14.5235878+00:00",
-    "UpdatedAt": "2026-09-18T16:37:14.5235878+00:00"
-  }
+  { "Id": "40000000-0000-4000-8000-000000000001", "Text": "Climate resilience", "NormalizedText": "CLIMATE RESILIENCE", "CreatedByParticipantId": "44444444-4444-4444-8444-444444444444", "IsSuppressed": false, "CreatedAt": "2026-08-22T17:00:00+00:00", "UpdatedAt": "2026-08-22T17:00:00+00:00" },
+  { "Id": "40000000-0000-4000-8000-000000000002", "Text": "Data and mapping", "NormalizedText": "DATA AND MAPPING", "CreatedByParticipantId": "22222222-2222-4222-8222-222222222222", "IsSuppressed": false, "CreatedAt": "2026-08-23T17:00:00+00:00", "UpdatedAt": "2026-08-23T17:00:00+00:00" },
+  { "Id": "40000000-0000-4000-8000-000000000003", "Text": "Emergency preparedness", "NormalizedText": "EMERGENCY PREPAREDNESS", "CreatedByParticipantId": "33333333-3333-4333-8333-333333333333", "IsSuppressed": false, "CreatedAt": "2026-08-22T17:05:00+00:00", "UpdatedAt": "2026-08-22T17:05:00+00:00" },
+  { "Id": "40000000-0000-4000-8000-000000000004", "Text": "Housing affordability", "NormalizedText": "HOUSING AFFORDABILITY", "CreatedByParticipantId": "22222222-2222-4222-8222-222222222222", "IsSuppressed": false, "CreatedAt": "2026-08-25T17:00:00+00:00", "UpdatedAt": "2026-08-25T17:00:00+00:00" },
+  { "Id": "40000000-0000-4000-8000-000000000005", "Text": "Permitting", "NormalizedText": "PERMITTING", "CreatedByParticipantId": "11111111-1111-4111-8111-111111111111", "IsSuppressed": false, "CreatedAt": "2026-08-26T17:00:00+00:00", "UpdatedAt": "2026-08-26T17:00:00+00:00" },
+  { "Id": "40000000-0000-4000-8000-000000000006", "Text": "Transit reliability", "NormalizedText": "TRANSIT RELIABILITY", "CreatedByParticipantId": "55555555-5555-4555-8555-555555555555", "IsSuppressed": false, "CreatedAt": "2026-08-27T17:00:00+00:00", "UpdatedAt": "2026-08-27T17:00:00+00:00" },
+  { "Id": "40000000-0000-4000-8000-000000000007", "Text": "Shift workers", "NormalizedText": "SHIFT WORKERS", "CreatedByParticipantId": "55555555-5555-4555-8555-555555555555", "IsSuppressed": false, "CreatedAt": "2026-08-27T17:05:00+00:00", "UpdatedAt": "2026-08-27T17:05:00+00:00" },
+  { "Id": "40000000-0000-4000-8000-000000000008", "Text": "Native plants", "NormalizedText": "NATIVE PLANTS", "CreatedByParticipantId": "55555555-5555-4555-8555-555555555555", "IsSuppressed": false, "CreatedAt": "2026-08-29T17:00:00+00:00", "UpdatedAt": "2026-08-29T17:00:00+00:00" },
+  { "Id": "40000000-0000-4000-8000-000000000009", "Text": "Pollinator habitat", "NormalizedText": "POLLINATOR HABITAT", "CreatedByParticipantId": "44444444-4444-4444-8444-444444444444", "IsSuppressed": false, "CreatedAt": "2026-08-29T17:05:00+00:00", "UpdatedAt": "2026-08-29T17:05:00+00:00" },
+  { "Id": "40000000-0000-4000-8000-000000000010", "Text": "Safe routes", "NormalizedText": "SAFE ROUTES", "CreatedByParticipantId": "22222222-2222-4222-8222-222222222222", "IsSuppressed": false, "CreatedAt": "2026-08-31T17:00:00+00:00", "UpdatedAt": "2026-08-31T17:00:00+00:00" },
+  { "Id": "40000000-0000-4000-8000-000000000011", "Text": "Cross-community", "NormalizedText": "CROSS-COMMUNITY", "CreatedByParticipantId": "22222222-2222-4222-8222-222222222222", "IsSuppressed": false, "CreatedAt": "2026-08-31T17:05:00+00:00", "UpdatedAt": "2026-08-31T17:05:00+00:00" }
 ]
