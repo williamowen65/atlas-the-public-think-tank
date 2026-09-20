@@ -1,4 +1,7 @@
 using Atlas.Content.Blocks;
+using Atlas.Communities.Communities;
+using Atlas.Communities.Nodes;
+using Atlas.ConsoleApp.Communities;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
@@ -18,6 +21,7 @@ public static class NodeDisplay
     private const int DescriptionWidth = 32;
     private const int StatusWidth = 10;
     private const int TagsWidth = 24;
+    private const int CommunitiesWidth = 24;
     private const int SubNodesMinimumWidth = 36;
 
     private const int VoteCountWidth = 5;
@@ -38,6 +42,7 @@ public static class NodeDisplay
             $"{"Description",-DescriptionWidth}  " +
             $"{"Author Tags",-TagsWidth}  " +
             $"{"Community Tags",-TagsWidth}  " +
+            $"{"Communities",-CommunitiesWidth}  " +
             $"{"Status",-StatusWidth}  " +
             "Sub-nodes");
 
@@ -53,6 +58,7 @@ public static class NodeDisplay
                 AuthorWidth + 2 +
                 DescriptionWidth + 2 +
                 TagsWidth + 2 +
+                CommunitiesWidth + 2 +
                 TagsWidth + 2 +
                 StatusWidth + 2 +
                 SubNodesMinimumWidth));
@@ -71,7 +77,9 @@ public static class NodeDisplay
         int? currentParticipantVote = null,
         INodeTagRepository? nodeTags = null,
         ITagDefinitionRepository? tagDefinitions = null,
-        IVoteRepository? votes = null)
+        IVoteRepository? votes = null,
+        ICommunityRepository? communities = null,
+        ICommunityNodeRepository? communityNodes = null)
     {
         var typeName = ResolveTypeName(node, nodeTypes);
         var description = ResolveDescription(node, documents, includeBlockDetails: false);
@@ -92,6 +100,7 @@ public static class NodeDisplay
             $"{Truncate(description, DescriptionWidth),-DescriptionWidth}  " +
             $"{Truncate(ResolveTags(node, nodeTags, tagDefinitions, votes, NodeTagDisposition.Endorsed), TagsWidth),-TagsWidth}  " +
             $"{Truncate(ResolveTags(node, nodeTags, tagDefinitions, votes, NodeTagDisposition.Community), TagsWidth),-TagsWidth}  " +
+            $"{Truncate(ResolveCommunities(node, communities, communityNodes), CommunitiesWidth),-CommunitiesWidth}  " +
             $"{node.Status,-StatusWidth}  " +
             subNodeSummary);
     }
@@ -106,6 +115,8 @@ public static class NodeDisplay
         INodeTagRepository nodeTags,
         ITagDefinitionRepository tagDefinitions,
         IVoteRepository votes,
+        ICommunityRepository? communities = null,
+        ICommunityNodeRepository? communityNodes = null,
         VotingParticipantId? votingParticipantId = null,
         int? voteCount = null,
         double? averageVote = null,
@@ -131,6 +142,7 @@ public static class NodeDisplay
         Console.WriteLine($"Votes:          {FormatVoteCount(voteCount)}");
         Console.WriteLine($"Average:        {FormatAverageVote(averageVote)}");
         Console.WriteLine($"My Vote:        {FormatCurrentParticipantVote(currentParticipantVote)}");
+        Console.WriteLine($"Communities:    {ResolveCommunities(node, communities, communityNodes)}");
         Console.WriteLine($"Created:        {node.CreatedAt.LocalDateTime}");
         Console.WriteLine($"Updated:        {node.UpdatedAt.LocalDateTime}");
 
@@ -156,6 +168,13 @@ public static class NodeDisplay
             tagDefinitions,
             votes,
             childVoteSummaries);
+    }
+
+    private static string ResolveCommunities(Node node, ICommunityRepository? communities, ICommunityNodeRepository? communityNodes)
+    {
+        if (communities is null || communityNodes is null) return "None";
+        var names = CommunityDisplay.NamesForNode(node.Id.Value, communityNodes, communities);
+        return string.IsNullOrWhiteSpace(names) ? "None" : names;
     }
 
     /// <summary>Writes sub node tables to the console display.</summary>

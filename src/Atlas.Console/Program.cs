@@ -1,4 +1,7 @@
 using Atlas.ConsoleApp;
+using Atlas.Communities.Communities;
+using Atlas.Communities.Memberships;
+using Atlas.Communities.Nodes;
 using Atlas.ConsoleApp.Content;
 using Atlas.ConsoleApp.Eventing;
 using Atlas.ConsoleApp.Storage;
@@ -55,6 +58,10 @@ var nodeTagDataFilePath = Path.Combine(
     dataDirectory,
     "node-tags.json");
 
+var communityDataFilePath = Path.Combine(dataDirectory, "communities.json");
+var communityMembershipDataFilePath = Path.Combine(dataDirectory, "community-memberships.json");
+var communityNodeDataFilePath = Path.Combine(dataDirectory, "community-nodes.json");
+
 INodeTypeRepository nodeTypeRepository =
     new JsonNodeTypeRepository(nodeTypeDataFilePath);
 
@@ -76,6 +83,11 @@ ITagDefinitionRepository tagDefinitionRepository =
 
 INodeTagRepository nodeTagRepository =
     new JsonNodeTagRepository(nodeTagDataFilePath);
+
+ICommunityRepository communityRepository = new JsonCommunityRepository(communityDataFilePath);
+ICommunityMembershipRepository communityMembershipRepository = new JsonCommunityMembershipRepository(communityMembershipDataFilePath);
+ICommunityNodeRepository communityNodeRepository = new JsonCommunityNodeRepository(communityNodeDataFilePath);
+var communityService = new CommunityService(communityRepository, communityMembershipRepository, communityNodeRepository);
 
 var legacyParticipant =
     EnsureLegacyParticipant(participantRepository);
@@ -135,6 +147,13 @@ var application = new ConsoleApplication(
     voteDataFilePath,
     tagDefinitionDataFilePath,
     nodeTagDataFilePath,
+    communityDataFilePath,
+    communityMembershipDataFilePath,
+    communityNodeDataFilePath,
+    communityRepository,
+    communityMembershipRepository,
+    communityNodeRepository,
+    communityService,
     legacyParticipant);
 
 application.Run();

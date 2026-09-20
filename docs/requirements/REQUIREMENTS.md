@@ -1010,3 +1010,126 @@ This document is the authoritative catalog of requirement statements and accepta
 - Null and empty optional payload properties are omitted from JSON.
 
 [View traceability](TRACEABILITY.md#con-008)
+
+<a id="communities"></a>
+# Communities
+
+<a id="com-001"></a>
+## COM-001 — Communities have stable identity and unique names
+
+**Statement:** The system shall identify each Community with a non-empty GUID and reject another Community with the same normalized name.
+
+**Priority:** Must
+
+**Status:** Verified
+
+### Acceptance criteria
+
+- Creation assigns a GUID and validates name and description lengths.
+- Name uniqueness is case-insensitive and repository-wide.
+- Reconstitution preserves identity and timestamps.
+
+<a id="com-002"></a>
+## COM-002 — The creator owns the Community
+
+**Statement:** The system shall establish the creator as owner and first active member and restrict metadata and lifecycle changes to that owner.
+
+**Priority:** Must
+
+**Status:** Verified
+
+### Acceptance criteria
+
+- Creation records a non-empty owner Participant ID and active membership.
+- Only the owner can rename, edit the description, archive, or restore.
+- The owner cannot leave while retaining ownership.
+
+<a id="com-003"></a>
+## COM-003 — Communities use an active/archive lifecycle
+
+**Statement:** Owners shall be able to archive and restore Communities without deleting their history or associations.
+
+**Priority:** Must
+
+**Status:** Verified
+
+### Acceptance criteria
+
+- New Communities are active.
+- Archived Communities remain readable.
+- Archived Communities reject new joins and Node associations.
+
+<a id="com-004"></a>
+## COM-004 — Eligible participants can join and leave public Communities
+
+**Statement:** The initial system shall expose Communities publicly and allow participants to join, leave, and rejoin.
+
+**Priority:** Must
+
+**Status:** Verified
+
+### Acceptance criteria
+
+- One Community/Participant pair has one membership record.
+- Leaving records when the participant left; rejoining reactivates the same pair.
+- Private, restricted, and invitation-only behavior is not implied by the model.
+
+<a id="com-005"></a>
+## COM-005 — Community membership is distinct from future moderation
+
+**Statement:** The initial Communities boundary shall not infer moderator authority from ordinary membership or introduce additional moderator roles.
+
+**Priority:** Must
+
+**Status:** Approved
+
+### Acceptance criteria
+
+- The initial model contains owner and member concepts only.
+- Moderator appointment, removal, reports, and review decisions remain assigned to PTT-101.
+
+<a id="com-006"></a>
+## COM-006 — Nodes optionally belong to multiple Communities
+
+**Statement:** The system shall allow a Node to have zero or many Community associations and a Community to organize many Nodes.
+
+**Priority:** Must
+
+**Status:** Verified
+
+### Acceptance criteria
+
+- A Community/Node pair is unique.
+- Multiple Communities may reference one Node without copying it.
+- The association does not modify Graph parents or children.
+
+<a id="com-007"></a>
+## COM-007 — Community content is discoverable and navigable
+
+**Statement:** The Console shall list Communities on the main menu, display Community associations beside Node tags, browse Nodes within a Community, and navigate between Nodes and Communities.
+
+**Priority:** Should
+
+**Status:** Implemented
+
+### Acceptance criteria
+
+- The main menu provides create and browse Community actions.
+- Node tables and detail views display associated Community names.
+- Community views list associated Nodes and open a selected Node.
+- Node views open a selected associated Community.
+
+<a id="com-008"></a>
+## COM-008 — Community records remain boundary-owned
+
+**Statement:** Communities shall store Participant and Node references by ID and persist its aggregates separately from Graph and Participants.
+
+**Priority:** Must
+
+**Status:** Implemented
+
+### Acceptance criteria
+
+- Community models do not depend on Graph or Participants projects.
+- Community, membership, and Node-association records use separate JSON files in the prototype.
+- Missing cross-boundary records do not alter Community-owned identities.

@@ -1,5 +1,7 @@
 # Atlas workflows
 
+- [Communities](COMMUNITIES.md) — lifecycle, membership decisions, and optional many-to-many Node organization.
+
 Workflow documents describe behavior that crosses entities or bounded contexts. They identify sequencing, responsibility, authorization, events, persistence, and failure handling without tying the behavior to a particular UI.
 
 ## Catalog
