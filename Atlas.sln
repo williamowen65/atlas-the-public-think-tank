@@ -21,13 +21,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		data\community-memberships.json = data\community-memberships.json
 		data\community-nodes.json = data\community-nodes.json
 		data\documents.json = data\documents.json
-		data\node-tags.json = data\node-tags.json
+		data\node-reactions.json = data\node-reactions.json
 		data\node-types.json = data\node-types.json
 		data\nodes.json = data\nodes.json
 		data\participants.json = data\participants.json
 		README.md = README.md
 		.github\workflows\SQLServerTest.yml = .github\workflows\SQLServerTest.yml
-		data\tag-definitions.json = data\tag-definitions.json
+		data\reaction-definitions.json = data\reaction-definitions.json
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Contracts", "src\Atlas.Contracts\Atlas.Contracts.csproj", "{A2D46B6E-7512-4E62-8A84-1F37CF82D930}"

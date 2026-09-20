@@ -4,11 +4,11 @@ using System.Text;
 
 namespace Atlas.Voting.Value
 {
-    public class NodeRating : IVoteValue
+    public class NodeImportanceRating : IVoteValue
     {
         public int Value { get;}
 
-        public NodeRating(int value) {
+        public NodeImportanceRating(int value) {
 
             if (0 <= value && value <= 10)
             {
@@ -19,7 +19,7 @@ namespace Atlas.Voting.Value
                 throw new ArgumentOutOfRangeException(
                         nameof(value),
                         value,
-                        "Node rating must be between 0 and 10.");
+                        "Node importance rating must be between 0 and 10.");
             }
         }
 

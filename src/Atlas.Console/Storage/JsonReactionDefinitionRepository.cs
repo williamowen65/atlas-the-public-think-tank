@@ -1,23 +1,23 @@
 using System.Text.Json;
-using Atlas.Graph.Tags;
+using Atlas.Graph.Reactions;
 
 namespace Atlas.ConsoleApp.Storage;
 
-/// <summary>Persists reusable Graph tag definitions in a dedicated JSON file.</summary>
-public sealed class JsonTagDefinitionRepository : ITagDefinitionRepository
+/// <summary>Persists reusable Graph reaction definitions in a dedicated JSON file.</summary>
+public sealed class JsonReactionDefinitionRepository : IReactionDefinitionRepository
 {
     private readonly string _filePath;
     private readonly object _gate = new();
     private readonly JsonSerializerOptions _jsonOptions = new() { WriteIndented = true };
 
     /// <summary>Initializes the adapter for its dedicated data file.</summary>
-    public JsonTagDefinitionRepository(string filePath)
+    public JsonReactionDefinitionRepository(string filePath)
     {
         _filePath = filePath;
     }
 
     /// <summary>Loads all reusable definitions.</summary>
-    public IReadOnlyCollection<TagDefinition> GetAll()
+    public IReadOnlyCollection<ReactionDefinition> GetAll()
     {
         lock (_gate)
         {
@@ -26,7 +26,7 @@ public sealed class JsonTagDefinitionRepository : ITagDefinitionRepository
     }
 
     /// <summary>Loads a definition by identifier.</summary>
-    public TagDefinition? GetById(TagDefinitionId id)
+    public ReactionDefinition? GetById(ReactionDefinitionId id)
     {
         lock (_gate)
         {
@@ -36,7 +36,7 @@ public sealed class JsonTagDefinitionRepository : ITagDefinitionRepository
     }
 
     /// <summary>Loads the unique definition matching normalized text.</summary>
-    public TagDefinition? GetByNormalizedText(string normalizedText)
+    public ReactionDefinition? GetByNormalizedText(string normalizedText)
     {
         lock (_gate)
         {
@@ -47,7 +47,7 @@ public sealed class JsonTagDefinitionRepository : ITagDefinitionRepository
     }
 
     /// <summary>Saves a definition while enforcing normalized uniqueness within this adapter.</summary>
-    public void Save(TagDefinition definition)
+    public void Save(ReactionDefinition definition)
     {
         lock (_gate)
         {
@@ -62,7 +62,7 @@ public sealed class JsonTagDefinitionRepository : ITagDefinitionRepository
             if (duplicate is not null)
             {
                 throw new InvalidOperationException(
-                    $"The tag '{duplicate.Text}' already exists.");
+                    $"The reaction '{duplicate.Text}' already exists.");
             }
 
             var index = stored.FindIndex(item => item.Id == definition.Id.Value);
@@ -81,7 +81,7 @@ public sealed class JsonTagDefinitionRepository : ITagDefinitionRepository
         }
     }
 
-    private List<StoredTagDefinition> ReadStored()
+    private List<StoredReactionDefinition> ReadStored()
     {
         if (!File.Exists(_filePath))
         {
@@ -91,10 +91,10 @@ public sealed class JsonTagDefinitionRepository : ITagDefinitionRepository
         var json = File.ReadAllText(_filePath);
         return string.IsNullOrWhiteSpace(json)
             ? []
-            : JsonSerializer.Deserialize<List<StoredTagDefinition>>(json, _jsonOptions) ?? [];
+            : JsonSerializer.Deserialize<List<StoredReactionDefinition>>(json, _jsonOptions) ?? [];
     }
 
-    private void WriteStored(List<StoredTagDefinition> definitions)
+    private void WriteStored(List<StoredReactionDefinition> definitions)
     {
         var directory = Path.GetDirectoryName(_filePath);
 
@@ -108,10 +108,12 @@ public sealed class JsonTagDefinitionRepository : ITagDefinitionRepository
             JsonSerializer.Serialize(definitions, _jsonOptions));
     }
 
-    private static StoredTagDefinition ToStorage(TagDefinition definition) => new()
+    private static StoredReactionDefinition ToStorage(ReactionDefinition definition) => new()
     {
         Id = definition.Id.Value,
         Text = definition.Text,
+        Emoji = definition.Emoji,
+        Description = definition.Description,
         NormalizedText = definition.NormalizedText,
         CreatedByParticipantId = definition.CreatedByParticipantId,
         IsSuppressed = definition.IsSuppressed,
@@ -119,10 +121,12 @@ public sealed class JsonTagDefinitionRepository : ITagDefinitionRepository
         UpdatedAt = definition.UpdatedAt
     };
 
-    private static TagDefinition ToDomain(StoredTagDefinition stored) =>
-        TagDefinition.Reconstitute(
-            new TagDefinitionId(stored.Id),
+    private static ReactionDefinition ToDomain(StoredReactionDefinition stored) =>
+        ReactionDefinition.Reconstitute(
+            new ReactionDefinitionId(stored.Id),
             stored.Text,
+            stored.Emoji,
+            stored.Description,
             stored.NormalizedText,
             stored.CreatedByParticipantId,
             stored.IsSuppressed,

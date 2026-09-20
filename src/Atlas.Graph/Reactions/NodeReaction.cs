@@ -1,38 +1,38 @@
 using Atlas.Graph.Nodes;
 
-namespace Atlas.Graph.Tags;
+namespace Atlas.Graph.Reactions;
 
-/// <summary>Represents one reusable tag definition applied to one node.</summary>
-public sealed class NodeTag
+/// <summary>Represents one reusable reaction definition applied to one node.</summary>
+public sealed class NodeReaction
 {
-    private readonly List<NodeTagAuditEntry> _auditHistory;
+    private readonly List<NodeReactionAuditEntry> _auditHistory;
 
-    public NodeTagId Id { get; }
+    public NodeReactionId Id { get; }
     public NodeId NodeId { get; }
-    public TagDefinitionId TagDefinitionId { get; }
+    public ReactionDefinitionId ReactionDefinitionId { get; }
     public Guid AppliedByParticipantId { get; }
-    public NodeTagLifecycleState LifecycleState { get; private set; }
-    public NodeTagDisposition Disposition { get; private set; }
-    public bool IsRemoved => LifecycleState != NodeTagLifecycleState.Active;
+    public NodeReactionLifecycleState LifecycleState { get; private set; }
+    public NodeReactionDisposition Disposition { get; private set; }
+    public bool IsRemoved => LifecycleState != NodeReactionLifecycleState.Active;
     public DateTimeOffset CreatedAt { get; }
     public DateTimeOffset? RemovedAt { get; private set; }
-    public IReadOnlyCollection<NodeTagAuditEntry> AuditHistory =>
+    public IReadOnlyCollection<NodeReactionAuditEntry> AuditHistory =>
         _auditHistory.AsReadOnly();
 
-    private NodeTag(
-        NodeTagId id,
+    private NodeReaction(
+        NodeReactionId id,
         NodeId nodeId,
-        TagDefinitionId tagDefinitionId,
+        ReactionDefinitionId tagDefinitionId,
         Guid appliedByParticipantId,
-        NodeTagLifecycleState lifecycleState,
-        NodeTagDisposition disposition,
+        NodeReactionLifecycleState lifecycleState,
+        NodeReactionDisposition disposition,
         DateTimeOffset createdAt,
         DateTimeOffset? removedAt,
-        IEnumerable<NodeTagAuditEntry> auditHistory)
+        IEnumerable<NodeReactionAuditEntry> auditHistory)
     {
         if (id.Value == Guid.Empty)
         {
-            throw new ArgumentException("A node-tag ID is required.", nameof(id));
+            throw new ArgumentException("A node-reaction ID is required.", nameof(id));
         }
 
         if (nodeId.Value == Guid.Empty)
@@ -50,14 +50,14 @@ public sealed class NodeTag
             throw new ArgumentException("An applying participant is required.", nameof(appliedByParticipantId));
         }
 
-        if ((lifecycleState != NodeTagLifecycleState.Active) != removedAt.HasValue)
+        if ((lifecycleState != NodeReactionLifecycleState.Active) != removedAt.HasValue)
         {
             throw new ArgumentException("Removed state and removal time must agree.");
         }
 
         Id = id;
         NodeId = nodeId;
-        TagDefinitionId = tagDefinitionId;
+        ReactionDefinitionId = tagDefinitionId;
         AppliedByParticipantId = appliedByParticipantId;
         LifecycleState = lifecycleState;
         Disposition = disposition;
@@ -68,7 +68,7 @@ public sealed class NodeTag
         if (_auditHistory.Any(entry => entry.OccurredAt < CreatedAt))
         {
             throw new ArgumentException(
-                "Audit entries cannot precede node-tag creation.",
+                "Audit entries cannot precede node-reaction creation.",
                 nameof(auditHistory));
         }
 
@@ -91,52 +91,52 @@ public sealed class NodeTag
                 latestAudit.Disposition != Disposition)
             {
                 throw new ArgumentException(
-                    "The latest audit entry must match the node tag's current state.",
+                    "The latest audit entry must match the node reaction's current state.",
                     nameof(auditHistory));
             }
         }
     }
 
     /// <summary>Creates an active node-specific tag association.</summary>
-    public static NodeTag Create(
+    public static NodeReaction Create(
         NodeId nodeId,
-        TagDefinitionId tagDefinitionId,
+        ReactionDefinitionId tagDefinitionId,
         Guid appliedByParticipantId,
         Guid nodeAuthorParticipantId,
         DateTimeOffset createdAt)
     {
         var disposition = appliedByParticipantId == nodeAuthorParticipantId
-            ? NodeTagDisposition.Endorsed
-            : NodeTagDisposition.Community;
+            ? NodeReactionDisposition.Endorsed
+            : NodeReactionDisposition.Community;
 
-        return new NodeTag(
-            NodeTagId.New(),
+        return new NodeReaction(
+            NodeReactionId.New(),
             nodeId,
             tagDefinitionId,
             appliedByParticipantId,
-            NodeTagLifecycleState.Active,
+            NodeReactionLifecycleState.Active,
             disposition,
             createdAt,
             removedAt: null,
-            [new NodeTagAuditEntry(
-                NodeTagAuditAction.Applied,
+            [new NodeReactionAuditEntry(
+                NodeReactionAuditAction.Applied,
                 appliedByParticipantId,
                 createdAt,
-                NodeTagLifecycleState.Active,
+                NodeReactionLifecycleState.Active,
                 disposition)]);
     }
 
     /// <summary>Rebuilds a persisted association without replaying creation behavior.</summary>
-    public static NodeTag Reconstitute(
-        NodeTagId id,
+    public static NodeReaction Reconstitute(
+        NodeReactionId id,
         NodeId nodeId,
-        TagDefinitionId tagDefinitionId,
+        ReactionDefinitionId tagDefinitionId,
         Guid appliedByParticipantId,
-        NodeTagLifecycleState lifecycleState,
-        NodeTagDisposition disposition,
+        NodeReactionLifecycleState lifecycleState,
+        NodeReactionDisposition disposition,
         DateTimeOffset createdAt,
         DateTimeOffset? removedAt,
-        IEnumerable<NodeTagAuditEntry>? auditHistory = null)
+        IEnumerable<NodeReactionAuditEntry>? auditHistory = null)
     {
         var restoredAuditHistory = auditHistory?.ToList();
 
@@ -144,8 +144,8 @@ public sealed class NodeTag
         {
             restoredAuditHistory =
             [
-                new NodeTagAuditEntry(
-                    NodeTagAuditAction.LegacyImported,
+                new NodeReactionAuditEntry(
+                    NodeReactionAuditAction.LegacyImported,
                     actorParticipantId: null,
                     removedAt ?? createdAt,
                     lifecycleState,
@@ -153,7 +153,7 @@ public sealed class NodeTag
             ];
         }
 
-        return new NodeTag(
+        return new NodeReaction(
             id,
             nodeId,
             tagDefinitionId,
@@ -187,15 +187,15 @@ public sealed class NodeTag
         EnsureAuditTime(removedAt, nameof(removedAt));
 
         LifecycleState = actorIsModerator
-            ? NodeTagLifecycleState.AdministrativelyRemoved
-            : NodeTagLifecycleState.Withdrawn;
+            ? NodeReactionLifecycleState.AdministrativelyRemoved
+            : NodeReactionLifecycleState.Withdrawn;
         RemovedAt = removedAt;
 
         _auditHistory.Add(
-            new NodeTagAuditEntry(
+            new NodeReactionAuditEntry(
                 actorIsModerator
-                    ? NodeTagAuditAction.AdministrativelyRemoved
-                    : NodeTagAuditAction.Withdrawn,
+                    ? NodeReactionAuditAction.AdministrativelyRemoved
+                    : NodeReactionAuditAction.Withdrawn,
                 actorParticipantId,
                 removedAt,
                 LifecycleState,
@@ -204,7 +204,7 @@ public sealed class NodeTag
 
     /// <summary>Records the node author's presentation decision without erasing the association.</summary>
     public void SetDisposition(
-        NodeTagDisposition disposition,
+        NodeReactionDisposition disposition,
         Guid actorParticipantId,
         Guid nodeAuthorParticipantId,
         DateTimeOffset changedAt)
@@ -216,7 +216,7 @@ public sealed class NodeTag
 
         if (IsRemoved)
         {
-            throw new InvalidOperationException("An inactive node tag cannot change disposition.");
+            throw new InvalidOperationException("An inactive node reaction cannot change disposition.");
         }
 
         if (Disposition == disposition)
@@ -227,8 +227,8 @@ public sealed class NodeTag
         EnsureAuditTime(changedAt, nameof(changedAt));
         Disposition = disposition;
         _auditHistory.Add(
-            new NodeTagAuditEntry(
-                NodeTagAuditAction.DispositionChanged,
+            new NodeReactionAuditEntry(
+                NodeReactionAuditAction.DispositionChanged,
                 actorParticipantId,
                 changedAt,
                 LifecycleState,
@@ -238,21 +238,21 @@ public sealed class NodeTag
     /// <summary>Marks this association as replaced while preserving its audit record.</summary>
     public void Supersede(
         Guid actorParticipantId,
-        NodeTagId replacementNodeTagId,
+        NodeReactionId replacementNodeReactionId,
         DateTimeOffset supersededAt)
     {
         EnsureAuditTime(supersededAt, nameof(supersededAt));
 
-        LifecycleState = NodeTagLifecycleState.Superseded;
+        LifecycleState = NodeReactionLifecycleState.Superseded;
         RemovedAt = supersededAt;
         _auditHistory.Add(
-            new NodeTagAuditEntry(
-                NodeTagAuditAction.Superseded,
+            new NodeReactionAuditEntry(
+                NodeReactionAuditAction.Superseded,
                 actorParticipantId,
                 supersededAt,
                 LifecycleState,
                 Disposition,
-                replacementNodeTagId));
+                replacementNodeReactionId));
     }
 
     /// <summary>Checks removal authority without changing the association.</summary>
@@ -264,7 +264,7 @@ public sealed class NodeTag
     {
         if (!actorIsActive)
         {
-            throw new InvalidOperationException("An inactive participant cannot change node tags.");
+            throw new InvalidOperationException("An inactive participant cannot change node reactions.");
         }
 
         if (actorIsModerator)
@@ -272,14 +272,14 @@ public sealed class NodeTag
             return;
         }
 
-        if (Disposition == NodeTagDisposition.Endorsed &&
+        if (Disposition == NodeReactionDisposition.Endorsed &&
             actorParticipantId != nodeAuthorParticipantId)
         {
             throw new UnauthorizedAccessException(
                 "Only the node author or a moderator may remove an endorsed tag.");
         }
 
-        if (Disposition != NodeTagDisposition.Endorsed &&
+        if (Disposition != NodeReactionDisposition.Endorsed &&
             actorParticipantId != AppliedByParticipantId)
         {
             throw new UnauthorizedAccessException(

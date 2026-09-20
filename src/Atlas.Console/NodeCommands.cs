@@ -8,7 +8,7 @@ using Atlas.Content.Blocks;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
-using Atlas.Graph.Tags;
+using Atlas.Graph.Reactions;
 using Atlas.Participants.Participants;
 using Atlas.Voting;
 using Atlas.Voting.Data;
@@ -29,8 +29,8 @@ public static class NodeCommands
         IVoteRepository votes,
         CastVote castVote,
         UndoVote undoVote,
-        ITagDefinitionRepository tagDefinitions,
-        INodeTagRepository nodeTags,
+        IReactionDefinitionRepository tagDefinitions,
+        INodeReactionRepository nodeTags,
         InMemoryEventPublisher eventPublisher,
         Participant currentParticipant,
         ICommunityRepository communities,
@@ -132,7 +132,7 @@ public static class NodeCommands
             Console.WriteLine($"9. Attach to parent{authorOnlyStatus}");
             Console.WriteLine($"10. Detach from parent{authorOnlyStatus}");
             Console.WriteLine("11. View author profile");
-            Console.WriteLine("12. Manage tags");
+            Console.WriteLine("12. Manage reactions");
             Console.WriteLine(
                 myVote is null
                     ? "13. Vote on node"
@@ -253,7 +253,7 @@ public static class NodeCommands
                         break;
 
                     case "12":
-                        TagCommands.Run(
+                        ReactionCommands.Run(
                             node,
                             tagDefinitions,
                             nodeTags,
@@ -501,8 +501,8 @@ public static class NodeCommands
         IDocumentRepository documents,
         IParticipantRepository participants,
         IVoteRepository votes,
-        INodeTagRepository nodeTags,
-        ITagDefinitionRepository tagDefinitions,
+        INodeReactionRepository nodeTags,
+        IReactionDefinitionRepository tagDefinitions,
         Participant currentParticipant)
     {
         var childGroups = nodes
@@ -1028,8 +1028,8 @@ public static class NodeCommands
         IVoteRepository votes,
         CastVote castVote,
         UndoVote undoVote,
-        ITagDefinitionRepository tagDefinitions,
-        INodeTagRepository nodeTags,
+        IReactionDefinitionRepository tagDefinitions,
+        INodeReactionRepository nodeTags,
         InMemoryEventPublisher eventPublisher,
         Participant currentParticipant)
     {

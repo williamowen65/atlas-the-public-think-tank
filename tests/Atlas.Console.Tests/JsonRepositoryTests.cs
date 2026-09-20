@@ -91,9 +91,9 @@ namespace Atlas.Console.Tests
             }
         }
 
-        /// <summary>Verifies that node-tag vote targets survive JSON persistence.</summary>
+        /// <summary>Verifies that node-reaction vote targets survive JSON persistence.</summary>
         [TestMethod]
-        public void JsonVoteRepository_NodeTagVoteCanBeReloaded()
+        public void JsonVoteRepository_NodeReactionVoteCanBeReloaded()
         {
             var temporaryDirectory = Path.Combine(
                 Path.GetTempPath(),
@@ -105,7 +105,7 @@ namespace Atlas.Console.Tests
             {
                 var repository = new JsonVoteRepository(filePath);
                 var original = new Vote(
-                    new NodeTagVoteTarget(Guid.NewGuid()),
+                    new NodeReactionVoteTarget(Guid.NewGuid()),
                     new ParticipantId(Guid.NewGuid()),
                     1);
 
@@ -113,7 +113,7 @@ namespace Atlas.Console.Tests
                 var reloaded = repository.GetById(original.Id);
 
                 Assert.IsNotNull(reloaded);
-                Assert.IsInstanceOfType<NodeTagVoteTarget>(reloaded.Target);
+                Assert.IsInstanceOfType<NodeReactionVoteTarget>(reloaded.Target);
                 Assert.AreEqual(1, reloaded.Value.Value);
             }
             finally

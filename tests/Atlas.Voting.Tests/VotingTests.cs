@@ -280,14 +280,14 @@ namespace Atlas.Voting.Tests
         }
 
         [TestMethod]
-        public void Vote_WithNodeTarget_CreatesNodeRating()
+        public void Vote_WithNodeTarget_CreatesNodeImportanceRating()
         {
             var target = new NodeVoteTarget(Guid.NewGuid());
             var participantId = new ParticipantId(Guid.NewGuid());
 
             var vote = new Vote(target, participantId, 7);
 
-            Assert.IsInstanceOfType<NodeRating>(vote.Value);
+            Assert.IsInstanceOfType<NodeImportanceRating>(vote.Value);
             Assert.AreEqual(7, vote.Value.Value);
         }
 
@@ -325,9 +325,9 @@ namespace Atlas.Voting.Tests
         [DataRow(3)]
         [DataRow(4)]
         [DataRow(10)]
-        public void NodeRating_CanOnlyBeBetween0to10Inclusive(int value)
+        public void NodeImportanceRating_CanOnlyBeBetween0to10Inclusive(int value)
         {
-            NodeRating nodeRating = new NodeRating(value);
+            NodeImportanceRating nodeRating = new NodeImportanceRating(value);
 
             Assert.AreEqual(value,nodeRating.Value);
 
@@ -336,20 +336,20 @@ namespace Atlas.Voting.Tests
         [TestMethod]
         [DataRow(-1)]
         [DataRow(11)]
-        public void NodeRating_FailsOutside0to10Inclusive(int value)
+        public void NodeImportanceRating_FailsOutside0to10Inclusive(int value)
         {
            
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
-                NodeRating nodeRating = new NodeRating(value);
+                NodeImportanceRating nodeRating = new NodeImportanceRating(value);
             });
         }
 
         [TestMethod]
-        public void NodeRating_ValueHasNoSetter()
+        public void NodeImportanceRating_ValueHasNoSetter()
         {
-            var valueProperty = typeof(NodeRating)
-                .GetProperty(nameof(NodeRating.Value));
+            var valueProperty = typeof(NodeImportanceRating)
+                .GetProperty(nameof(NodeImportanceRating.Value));
 
             Assert.IsNotNull(valueProperty);
             Assert.IsNull(valueProperty.GetSetMethod(nonPublic: true));

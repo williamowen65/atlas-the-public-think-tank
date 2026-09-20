@@ -19,7 +19,7 @@ Identifiers use the form `AREA-NNN`.
 | `AUT` | Authorization |
 | `EVT` | Events and cross-boundary communication |
 | `PER` | Persistence and migration |
-| `TAG` | Reusable node tags |
+| `TAG` | Reusable node reactions |
 | `VOT` | Voting |
 | `NFR` | Cross-cutting non-functional requirements |
 

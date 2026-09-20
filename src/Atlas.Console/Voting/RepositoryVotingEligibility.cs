@@ -1,5 +1,5 @@
 using Atlas.Graph.Nodes;
-using Atlas.Graph.Tags;
+using Atlas.Graph.Reactions;
 using Atlas.Participants.Participants;
 using Atlas.Voting.Eligibility;
 using Atlas.Voting.Target;
@@ -26,12 +26,12 @@ namespace Atlas.ConsoleApp.Voting
     {
         private readonly INodeRepository _nodes;
         private readonly IParticipantRepository _participants;
-        private readonly INodeTagRepository _nodeTags;
+        private readonly INodeReactionRepository _nodeTags;
 
         public RepositoryVotingEligibility(
             INodeRepository nodes,
             IParticipantRepository participants,
-            INodeTagRepository nodeTags)
+            INodeReactionRepository nodeTags)
         {
             _nodes = nodes;
             _participants = participants;
@@ -66,9 +66,9 @@ namespace Atlas.ConsoleApp.Voting
                 return node?.Status == NodeStatus.Active;
             }
 
-            if (target is NodeTagVoteTarget)
+            if (target is NodeReactionVoteTarget)
             {
-                var nodeTag = _nodeTags.GetById(new NodeTagId(target.Id));
+                var nodeTag = _nodeTags.GetById(new NodeReactionId(target.Id));
                 if (nodeTag is null || nodeTag.IsRemoved)
                 {
                     return false;

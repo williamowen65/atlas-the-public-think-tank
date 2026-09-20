@@ -1,36 +1,36 @@
 using Atlas.Graph.Nodes;
 
-namespace Atlas.Graph.Tags;
+namespace Atlas.Graph.Reactions;
 
-/// <summary>Coordinates reusable definition resolution and authorized node-tag mutations.</summary>
-public sealed class NodeTagApplicationService
+/// <summary>Coordinates reusable definition resolution and authorized node-reaction mutations.</summary>
+public sealed class NodeReactionApplicationService
 {
-    private readonly ITagDefinitionRepository _definitions;
-    private readonly INodeTagRepository _nodeTags;
+    private readonly IReactionDefinitionRepository _definitions;
+    private readonly INodeReactionRepository _nodeTags;
 
-    public NodeTagApplicationService(
-        ITagDefinitionRepository definitions,
-        INodeTagRepository nodeTags)
+    public NodeReactionApplicationService(
+        IReactionDefinitionRepository definitions,
+        INodeReactionRepository nodeTags)
     {
         _definitions = definitions;
         _nodeTags = nodeTags;
     }
 
-    /// <summary>Resolves reusable vocabulary and applies it once to an active node.</summary>
-    public NodeTag Apply(
+    /// <summary>Applies one curated reaction once to an active node.</summary>
+    public NodeReaction Apply(
         Node node,
-        string tagText,
+        string reactionText,
         Guid actorParticipantId,
         bool actorIsActive,
         DateTimeOffset appliedAt)
     {
         EnsureMutable(node, actorParticipantId, actorIsActive);
 
-        var definition = ResolveDefinition(tagText, actorParticipantId, appliedAt);
+        var definition = ResolveDefinition(reactionText);
 
         if (definition.IsSuppressed)
         {
-            throw new InvalidOperationException("A suppressed tag cannot be applied.");
+            throw new InvalidOperationException("A suppressed reaction cannot be applied.");
         }
 
         var existing = _nodeTags.GetActive(node.Id, definition.Id);
@@ -40,21 +40,21 @@ public sealed class NodeTagApplicationService
             return existing;
         }
 
-        var nodeTag = NodeTag.Create(
+        var nodeReaction = NodeReaction.Create(
             node.Id,
             definition.Id,
             actorParticipantId,
             node.AuthorId.Value,
             appliedAt);
 
-        _nodeTags.Save(nodeTag);
-        return nodeTag;
+        _nodeTags.Save(nodeReaction);
+        return nodeReaction;
     }
 
     /// <summary>Removes one node-specific association after checking node state and actor authority.</summary>
     public void Remove(
         Node node,
-        NodeTagId nodeTagId,
+        NodeReactionId nodeTagId,
         Guid actorParticipantId,
         bool actorIsActive,
         bool actorIsModerator,
@@ -63,11 +63,11 @@ public sealed class NodeTagApplicationService
         EnsureMutable(node, actorParticipantId, actorIsActive);
 
         var nodeTag = _nodeTags.GetById(nodeTagId)
-            ?? throw new KeyNotFoundException("The node tag does not exist.");
+            ?? throw new KeyNotFoundException("The node reaction does not exist.");
 
         if (nodeTag.NodeId != node.Id)
         {
-            throw new InvalidOperationException("The node tag belongs to a different node.");
+            throw new InvalidOperationException("The node reaction belongs to a different node.");
         }
 
         nodeTag.Remove(
@@ -81,9 +81,9 @@ public sealed class NodeTagApplicationService
     }
 
     /// <summary>Replaces one association without renaming its shared definition.</summary>
-    public NodeTag Replace(
+    public NodeReaction Replace(
         Node node,
-        NodeTagId existingNodeTagId,
+        NodeReactionId existingNodeReactionId,
         string replacementText,
         Guid actorParticipantId,
         bool actorIsActive,
@@ -92,17 +92,17 @@ public sealed class NodeTagApplicationService
     {
         EnsureMutable(node, actorParticipantId, actorIsActive);
 
-        var existing = _nodeTags.GetById(existingNodeTagId)
-            ?? throw new KeyNotFoundException("The node tag does not exist.");
+        var existing = _nodeTags.GetById(existingNodeReactionId)
+            ?? throw new KeyNotFoundException("The node reaction does not exist.");
 
         if (existing.NodeId != node.Id)
         {
-            throw new InvalidOperationException("The node tag belongs to a different node.");
+            throw new InvalidOperationException("The node reaction belongs to a different node.");
         }
 
         if (existing.IsRemoved)
         {
-            throw new InvalidOperationException("A removed node tag cannot be replaced.");
+            throw new InvalidOperationException("A removed node reaction cannot be replaced.");
         }
 
         existing.EnsureCanRemove(
@@ -111,18 +111,15 @@ public sealed class NodeTagApplicationService
             actorIsActive,
             actorIsModerator);
 
-        var replacementDefinition = ResolveDefinition(
-            replacementText,
-            actorParticipantId,
-            replacedAt);
+        var replacementDefinition = ResolveDefinition(replacementText);
 
         if (replacementDefinition.IsSuppressed)
         {
-            throw new InvalidOperationException("A suppressed tag cannot be applied.");
+            throw new InvalidOperationException("A suppressed reaction cannot be applied.");
         }
 
         if (!existing.IsRemoved &&
-            existing.TagDefinitionId == replacementDefinition.Id)
+            existing.ReactionDefinitionId == replacementDefinition.Id)
         {
             return existing;
         }
@@ -131,7 +128,7 @@ public sealed class NodeTagApplicationService
 
         if (replacement is null)
         {
-            replacement = NodeTag.Create(
+            replacement = NodeReaction.Create(
                 node.Id,
                 replacementDefinition.Id,
                 actorParticipantId,
@@ -151,19 +148,19 @@ public sealed class NodeTagApplicationService
     /// <summary>Changes how the node author presents one active tag.</summary>
     public void SetDisposition(
         Node node,
-        NodeTagId nodeTagId,
-        NodeTagDisposition disposition,
+        NodeReactionId nodeTagId,
+        NodeReactionDisposition disposition,
         Guid actorParticipantId,
         bool actorIsActive,
         DateTimeOffset changedAt)
     {
         EnsureMutable(node, actorParticipantId, actorIsActive);
         var nodeTag = _nodeTags.GetById(nodeTagId)
-            ?? throw new KeyNotFoundException("The node tag does not exist.");
+            ?? throw new KeyNotFoundException("The node reaction does not exist.");
 
         if (nodeTag.NodeId != node.Id)
         {
-            throw new InvalidOperationException("The node tag belongs to a different node.");
+            throw new InvalidOperationException("The node reaction belongs to a different node.");
         }
 
         nodeTag.SetDisposition(
@@ -174,22 +171,18 @@ public sealed class NodeTagApplicationService
         _nodeTags.Save(nodeTag);
     }
 
-    private TagDefinition ResolveDefinition(
-        string tagText,
-        Guid actorParticipantId,
-        DateTimeOffset createdAt)
+    private ReactionDefinition ResolveDefinition(string reactionText)
     {
-        var normalizedText = TagDefinition.Normalize(tagText);
+        var normalizedText = ReactionDefinition.Normalize(reactionText);
         var existing = _definitions.GetByNormalizedText(normalizedText);
 
-        if (existing is not null)
+        if (existing is null)
         {
-            return existing;
+            throw new InvalidOperationException(
+                "That reaction is not part of the curated reaction catalog.");
         }
 
-        var definition = TagDefinition.Create(tagText, actorParticipantId, createdAt);
-        _definitions.Save(definition);
-        return definition;
+        return existing;
     }
 
     private static void EnsureMutable(
@@ -204,12 +197,12 @@ public sealed class NodeTagApplicationService
 
         if (!actorIsActive)
         {
-            throw new InvalidOperationException("An inactive participant cannot change node tags.");
+            throw new InvalidOperationException("An inactive participant cannot change node reactions.");
         }
 
         if (node.Status == NodeStatus.Archived)
         {
-            throw new InvalidOperationException("Tags on an archived node cannot be changed.");
+            throw new InvalidOperationException("Reactions on an archived node cannot be changed.");
         }
     }
 }

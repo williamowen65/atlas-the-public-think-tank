@@ -8,27 +8,27 @@ namespace Atlas.Voting.Tests;
 
 /// <summary>Verifies the node-specific tag voting policy and score.</summary>
 [TestClass]
-public sealed class NodeTagVotingTests
+public sealed class NodeReactionVotingTests
 {
     [TestMethod]
-    public void CastVote_OnNodeTag_AcceptsUpvoteAndDownvote()
+    public void CastVote_OnNodeReaction_AcceptsUpvoteAndDownvote()
     {
         var repository = new InMemoryVoteRepository();
         var castVote = CreateCastVote(repository);
-        var target = new NodeTagVoteTarget(Guid.NewGuid());
+        var target = new NodeReactionVoteTarget(Guid.NewGuid());
 
         var upvote = castVote.Execute(
             target,
             new ParticipantId(Guid.NewGuid()),
-            NodeTagVote.Upvote);
+            NodeReactionVote.Upvote);
         var downvote = castVote.Execute(
             target,
             new ParticipantId(Guid.NewGuid()),
-            NodeTagVote.Downvote);
+            NodeReactionVote.Downvote);
 
-        Assert.IsInstanceOfType<NodeTagVote>(upvote.Value);
-        Assert.AreEqual(NodeTagVote.Upvote, upvote.Value.Value);
-        Assert.AreEqual(NodeTagVote.Downvote, downvote.Value.Value);
+        Assert.IsInstanceOfType<NodeReactionVote>(upvote.Value);
+        Assert.AreEqual(NodeReactionVote.Upvote, upvote.Value.Value);
+        Assert.AreEqual(NodeReactionVote.Downvote, downvote.Value.Value);
     }
 
     [TestMethod]
@@ -36,63 +36,63 @@ public sealed class NodeTagVotingTests
     [DataRow(0)]
     [DataRow(2)]
     [DataRow(10)]
-    public void CastVote_OnNodeTag_RejectsValuesOutsideUpOrDown(int value)
+    public void CastVote_OnNodeReaction_RejectsValuesOutsideUpOrDown(int value)
     {
         var repository = new InMemoryVoteRepository();
         var castVote = CreateCastVote(repository);
 
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             castVote.Execute(
-                new NodeTagVoteTarget(Guid.NewGuid()),
+                new NodeReactionVoteTarget(Guid.NewGuid()),
                 new ParticipantId(Guid.NewGuid()),
                 value));
     }
 
     [TestMethod]
-    public void GetNodeTagVoteSummary_ReturnsUpvotesMinusDownvotes()
+    public void GetNodeReactionVoteSummary_ReturnsUpvotesMinusDownvotes()
     {
         var repository = new InMemoryVoteRepository();
         var castVote = CreateCastVote(repository);
-        var target = new NodeTagVoteTarget(Guid.NewGuid());
+        var target = new NodeReactionVoteTarget(Guid.NewGuid());
 
-        castVote.Execute(target, new ParticipantId(Guid.NewGuid()), NodeTagVote.Upvote);
-        castVote.Execute(target, new ParticipantId(Guid.NewGuid()), NodeTagVote.Upvote);
-        castVote.Execute(target, new ParticipantId(Guid.NewGuid()), NodeTagVote.Upvote);
-        castVote.Execute(target, new ParticipantId(Guid.NewGuid()), NodeTagVote.Downvote);
+        castVote.Execute(target, new ParticipantId(Guid.NewGuid()), NodeReactionVote.Upvote);
+        castVote.Execute(target, new ParticipantId(Guid.NewGuid()), NodeReactionVote.Upvote);
+        castVote.Execute(target, new ParticipantId(Guid.NewGuid()), NodeReactionVote.Upvote);
+        castVote.Execute(target, new ParticipantId(Guid.NewGuid()), NodeReactionVote.Downvote);
 
-        var summary = new GetNodeTagVoteSummary(repository).Execute(target);
+        var summary = new GetNodeReactionVoteSummary(repository).Execute(target);
 
         Assert.AreEqual(2, summary.Score);
     }
 
     [TestMethod]
-    public void CastVote_AgainOnSameNodeTag_ChangesExistingVote()
+    public void CastVote_AgainOnSameNodeReaction_ChangesExistingVote()
     {
         var repository = new InMemoryVoteRepository();
         var castVote = CreateCastVote(repository);
-        var target = new NodeTagVoteTarget(Guid.NewGuid());
+        var target = new NodeReactionVoteTarget(Guid.NewGuid());
         var participantId = new ParticipantId(Guid.NewGuid());
 
-        var original = castVote.Execute(target, participantId, NodeTagVote.Upvote);
-        var changed = castVote.Execute(target, participantId, NodeTagVote.Downvote);
+        var original = castVote.Execute(target, participantId, NodeReactionVote.Upvote);
+        var changed = castVote.Execute(target, participantId, NodeReactionVote.Downvote);
 
         Assert.AreEqual(original.Id, changed.Id);
         Assert.HasCount(1, repository.GetTargetVotes(target));
-        Assert.AreEqual(-1, new GetNodeTagVoteSummary(repository).Execute(target).Score);
+        Assert.AreEqual(-1, new GetNodeReactionVoteSummary(repository).Execute(target).Score);
     }
 
     [TestMethod]
-    public void ReplacementNodeTag_StartsWithIndependentScore()
+    public void ReplacementNodeReaction_StartsWithIndependentScore()
     {
         var repository = new InMemoryVoteRepository();
         var castVote = CreateCastVote(repository);
-        var original = new NodeTagVoteTarget(Guid.NewGuid());
-        var replacement = new NodeTagVoteTarget(Guid.NewGuid());
+        var original = new NodeReactionVoteTarget(Guid.NewGuid());
+        var replacement = new NodeReactionVoteTarget(Guid.NewGuid());
 
-        castVote.Execute(original, new ParticipantId(Guid.NewGuid()), NodeTagVote.Upvote);
+        castVote.Execute(original, new ParticipantId(Guid.NewGuid()), NodeReactionVote.Upvote);
 
-        var originalSummary = new GetNodeTagVoteSummary(repository).Execute(original);
-        var replacementSummary = new GetNodeTagVoteSummary(repository).Execute(replacement);
+        var originalSummary = new GetNodeReactionVoteSummary(repository).Execute(original);
+        var replacementSummary = new GetNodeReactionVoteSummary(repository).Execute(replacement);
 
         Assert.AreEqual(1, originalSummary.Score);
         Assert.AreEqual(0, replacementSummary.Score);
@@ -101,7 +101,7 @@ public sealed class NodeTagVotingTests
     }
 
     [TestMethod]
-    public void NodeAndNodeTagTargets_WithSameId_RemainIndependent()
+    public void NodeAndNodeReactionTargets_WithSameId_RemainIndependent()
     {
         var repository = new InMemoryVoteRepository();
         var castVote = CreateCastVote(repository);
@@ -109,10 +109,10 @@ public sealed class NodeTagVotingTests
         var participantId = new ParticipantId(Guid.NewGuid());
 
         castVote.Execute(new NodeVoteTarget(sharedId), participantId, 8);
-        castVote.Execute(new NodeTagVoteTarget(sharedId), participantId, NodeTagVote.Upvote);
+        castVote.Execute(new NodeReactionVoteTarget(sharedId), participantId, NodeReactionVote.Upvote);
 
         Assert.HasCount(1, repository.GetTargetVotes(new NodeVoteTarget(sharedId)));
-        Assert.HasCount(1, repository.GetTargetVotes(new NodeTagVoteTarget(sharedId)));
+        Assert.HasCount(1, repository.GetTargetVotes(new NodeReactionVoteTarget(sharedId)));
     }
 
     private static CastVote CreateCastVote(IVoteRepository repository)
