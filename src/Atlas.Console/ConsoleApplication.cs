@@ -7,7 +7,7 @@ using Atlas.ConsoleApp.Participants;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
-using Atlas.Graph.Tags;
+using Atlas.Graph.Reactions;
 using Atlas.Participants.Participants;
 using Atlas.Voting;
 using Atlas.Voting.Data;
@@ -26,8 +26,8 @@ public sealed class ConsoleApplication
     private readonly IVoteRepository _voteRepository;
     private readonly CastVote _castVote;
     private readonly UndoVote _undoVote;
-    private readonly ITagDefinitionRepository _tagDefinitions;
-    private readonly INodeTagRepository _nodeTags;
+    private readonly IReactionDefinitionRepository _tagDefinitions;
+    private readonly INodeReactionRepository _nodeTags;
     private readonly InMemoryEventPublisher _eventPublisher;
     private readonly ICommunityRepository _communities;
     private readonly ICommunityMembershipRepository _communityMemberships;
@@ -54,8 +54,8 @@ public sealed class ConsoleApplication
         IVoteRepository votes,
         CastVote castVote,
         UndoVote undoVote,
-        ITagDefinitionRepository tagDefinitions,
-        INodeTagRepository nodeTags,
+        IReactionDefinitionRepository tagDefinitions,
+        INodeReactionRepository nodeTags,
         InMemoryEventPublisher eventPublisher,
         string nodeDataFilePath,
         string nodeTypeDataFilePath,
@@ -587,8 +587,8 @@ public sealed class ConsoleApplication
         ShowDataFile("CONTENT DOCUMENT DATA", _documentDataFilePath);
         ShowDataFile("PARTICIPANT DATA", _participantDataFilePath);
         ShowDataFile("VOTE DATA", _voteDataFilePath);
-        ShowDataFile("TAG DEFINITION DATA", _tagDefinitionDataFilePath);
-        ShowDataFile("NODE TAG DATA", _nodeTagDataFilePath);
+        ShowDataFile("REACTION DEFINITION DATA", _tagDefinitionDataFilePath);
+        ShowDataFile("NODE REACTION DATA", _nodeTagDataFilePath);
         ShowDataFile("COMMUNITY DATA", _communityDataFilePath);
         ShowDataFile("COMMUNITY MEMBERSHIP DATA", _communityMembershipDataFilePath);
         ShowDataFile("COMMUNITY NODE DATA", _communityNodeDataFilePath);

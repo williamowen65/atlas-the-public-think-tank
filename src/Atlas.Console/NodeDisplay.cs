@@ -5,7 +5,7 @@ using Atlas.ConsoleApp.Communities;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
-using Atlas.Graph.Tags;
+using Atlas.Graph.Reactions;
 using Atlas.Participants.Participants;
 using Atlas.Voting.Data;
 using VotingParticipantId = Atlas.Voting.Votes.ParticipantId;
@@ -20,7 +20,7 @@ public static class NodeDisplay
     private const int AuthorWidth = 20;
     private const int DescriptionWidth = 32;
     private const int StatusWidth = 10;
-    private const int TagsWidth = 24;
+    private const int TagsWidth = 28;
     private const int CommunitiesWidth = 24;
     private const int SubNodesMinimumWidth = 36;
 
@@ -40,8 +40,8 @@ public static class NodeDisplay
             $"{"Type",-TypeWidth}  " +
             $"{"Authored By",-AuthorWidth}  " +
             $"{"Description",-DescriptionWidth}  " +
-            $"{"Author Tags",-TagsWidth}  " +
-            $"{"Community Tags",-TagsWidth}  " +
+            $"{"Author Reactions",-TagsWidth}  " +
+            $"{"Community Reactions",-TagsWidth}  " +
             $"{"Communities",-CommunitiesWidth}  " +
             $"{"Status",-StatusWidth}  " +
             "Sub-nodes");
@@ -75,8 +75,8 @@ public static class NodeDisplay
         int? voteCount = null,
         double? averageVote = null,
         int? currentParticipantVote = null,
-        INodeTagRepository? nodeTags = null,
-        ITagDefinitionRepository? tagDefinitions = null,
+        INodeReactionRepository? nodeTags = null,
+        IReactionDefinitionRepository? tagDefinitions = null,
         IVoteRepository? votes = null,
         ICommunityRepository? communities = null,
         ICommunityNodeRepository? communityNodes = null)
@@ -98,8 +98,8 @@ public static class NodeDisplay
             $"{Truncate(typeName, TypeWidth),-TypeWidth}  " +
             $"{Truncate(authorName, AuthorWidth),-AuthorWidth}  " +
             $"{Truncate(description, DescriptionWidth),-DescriptionWidth}  " +
-            $"{Truncate(ResolveTags(node, nodeTags, tagDefinitions, votes, NodeTagDisposition.Endorsed), TagsWidth),-TagsWidth}  " +
-            $"{Truncate(ResolveTags(node, nodeTags, tagDefinitions, votes, NodeTagDisposition.Community), TagsWidth),-TagsWidth}  " +
+            $"{Truncate(ResolveTags(node, nodeTags, tagDefinitions, votes, NodeReactionDisposition.Endorsed), TagsWidth),-TagsWidth}  " +
+            $"{Truncate(ResolveTags(node, nodeTags, tagDefinitions, votes, NodeReactionDisposition.Community), TagsWidth),-TagsWidth}  " +
             $"{Truncate(ResolveCommunities(node, communities, communityNodes), CommunitiesWidth),-CommunitiesWidth}  " +
             $"{node.Status,-StatusWidth}  " +
             subNodeSummary);
@@ -112,8 +112,8 @@ public static class NodeDisplay
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
         IParticipantRepository participants,
-        INodeTagRepository nodeTags,
-        ITagDefinitionRepository tagDefinitions,
+        INodeReactionRepository nodeTags,
+        IReactionDefinitionRepository tagDefinitions,
         IVoteRepository votes,
         ICommunityRepository? communities = null,
         ICommunityNodeRepository? communityNodes = null,
@@ -146,7 +146,7 @@ public static class NodeDisplay
         Console.WriteLine($"Created:        {node.CreatedAt.LocalDateTime}");
         Console.WriteLine($"Updated:        {node.UpdatedAt.LocalDateTime}");
 
-        TagDisplay.WriteDetails(
+        ReactionDisplay.WriteDetails(
             node,
             nodeTags,
             tagDefinitions,
@@ -184,8 +184,8 @@ public static class NodeDisplay
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
         IParticipantRepository participants,
-        INodeTagRepository nodeTags,
-        ITagDefinitionRepository tagDefinitions,
+        INodeReactionRepository nodeTags,
+        IReactionDefinitionRepository tagDefinitions,
         IVoteRepository votes,
         IReadOnlyDictionary<NodeId, NodeVoteSummary>? childVoteSummaries)
     {
@@ -409,14 +409,14 @@ public static class NodeDisplay
     /// <summary>Resolves a compact tag summary when tag repositories are available.</summary>
     private static string ResolveTags(
         Node node,
-        INodeTagRepository? nodeTags,
-        ITagDefinitionRepository? tagDefinitions,
+        INodeReactionRepository? nodeTags,
+        IReactionDefinitionRepository? tagDefinitions,
         IVoteRepository? votes,
-        NodeTagDisposition disposition)
+        NodeReactionDisposition disposition)
     {
         return nodeTags is null || tagDefinitions is null || votes is null
             ? "—"
-            : TagDisplay.FormatCompact(node, nodeTags, tagDefinitions, votes, disposition);
+            : ReactionDisplay.FormatCompact(node, nodeTags, tagDefinitions, votes, disposition);
     }
 
 

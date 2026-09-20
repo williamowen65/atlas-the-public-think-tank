@@ -10,7 +10,7 @@ using Atlas.Content.Documents;
 using Atlas.Contracts.Graph.V1;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
-using Atlas.Graph.Tags;
+using Atlas.Graph.Reactions;
 using Atlas.Participants.Participants;
 using Atlas.Voting;
 using Atlas.Voting.Data;
@@ -52,11 +52,11 @@ var voteDataFilePath = Path.Combine(
 
 var tagDefinitionDataFilePath = Path.Combine(
     dataDirectory,
-    "tag-definitions.json");
+    "reaction-definitions.json");
 
 var nodeTagDataFilePath = Path.Combine(
     dataDirectory,
-    "node-tags.json");
+    "node-reactions.json");
 
 var communityDataFilePath = Path.Combine(dataDirectory, "communities.json");
 var communityMembershipDataFilePath = Path.Combine(dataDirectory, "community-memberships.json");
@@ -78,11 +78,11 @@ IParticipantRepository participantRepository =
 IVoteRepository voteRepository =
     new JsonVoteRepository(voteDataFilePath);
 
-ITagDefinitionRepository tagDefinitionRepository =
-    new JsonTagDefinitionRepository(tagDefinitionDataFilePath);
+IReactionDefinitionRepository tagDefinitionRepository =
+    new JsonReactionDefinitionRepository(tagDefinitionDataFilePath);
 
-INodeTagRepository nodeTagRepository =
-    new JsonNodeTagRepository(nodeTagDataFilePath);
+INodeReactionRepository nodeTagRepository =
+    new JsonNodeReactionRepository(nodeTagDataFilePath);
 
 ICommunityRepository communityRepository = new JsonCommunityRepository(communityDataFilePath);
 ICommunityMembershipRepository communityMembershipRepository = new JsonCommunityMembershipRepository(communityMembershipDataFilePath);

@@ -5,7 +5,7 @@ using Atlas.ConsoleApp.Eventing;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
-using Atlas.Graph.Tags;
+using Atlas.Graph.Reactions;
 using Atlas.Participants.Participants;
 using Atlas.Voting;
 using Atlas.Voting.Data;
@@ -27,8 +27,8 @@ public static class CommunityCommands
         IVoteRepository votes,
         CastVote castVote,
         UndoVote undoVote,
-        ITagDefinitionRepository tagDefinitions,
-        INodeTagRepository nodeTags,
+        IReactionDefinitionRepository tagDefinitions,
+        INodeReactionRepository nodeTags,
         InMemoryEventPublisher eventPublisher,
         Participant currentParticipant)
     {

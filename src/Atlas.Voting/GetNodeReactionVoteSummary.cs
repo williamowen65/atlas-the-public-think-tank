@@ -4,19 +4,19 @@ using Atlas.Voting.Votes;
 
 namespace Atlas.Voting;
 
-/// <summary>Calculates a node tag's upvotes-minus-downvotes score.</summary>
-public sealed class GetNodeTagVoteSummary
+/// <summary>Calculates a node reaction's upvotes-minus-downvotes score.</summary>
+public sealed class GetNodeReactionVoteSummary
 {
     private readonly IVoteRepository _votes;
 
-    public GetNodeTagVoteSummary(IVoteRepository votes)
+    public GetNodeReactionVoteSummary(IVoteRepository votes)
     {
         ArgumentNullException.ThrowIfNull(votes);
         _votes = votes;
     }
 
-    public NodeTagVoteSummary Execute(
-        NodeTagVoteTarget target,
+    public NodeReactionVoteSummary Execute(
+        NodeReactionVoteTarget target,
         ParticipantId? participantId = null)
     {
         ArgumentNullException.ThrowIfNull(target);
@@ -30,6 +30,6 @@ public sealed class GetNodeTagVoteSummary
             : _votes.GetByParticipantAndTarget(participantId, target)
                 ?.Value.Value;
 
-        return new NodeTagVoteSummary(score, currentParticipantVote);
+        return new NodeReactionVoteSummary(score, currentParticipantVote);
     }
 }

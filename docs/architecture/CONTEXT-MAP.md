@@ -49,14 +49,14 @@ the JSON implementations belong to the Console host.
 | Attribute | Current state |
 |---|---|
 | **Kind** | Domain boundary |
-| **Responsibility** | Model typed nodes, the directed parent graph, and reusable-tag vocabulary and associations. |
-| **Implemented behaviors** | Create and reconstitute nodes. • Rename, change type, and replace description references. • Archive and restore. • Request response types. • Attach and detach parents. • Create, edit, and archive node types. • Create reusable tag definitions. • Apply, replace, and remove node tags. • Enforce local invariants. |
-| **Owns** | Nodes and node IDs. • Node types and requested sub-node types. • Parent IDs on the child. • Graph lifecycle state. • `TagDefinition` and `NodeTag` records. |
+| **Responsibility** | Model typed nodes, the directed parent graph, and reusable-reaction vocabulary and associations. |
+| **Implemented behaviors** | Create and reconstitute nodes. • Rename, change type, and replace description references. • Archive and restore. • Request response types. • Attach and detach parents. • Create, edit, and archive node types. • Create reusable reaction definitions. • Apply, replace, and remove node reactions. • Enforce local invariants. |
+| **Owns** | Nodes and node IDs. • Node types and requested sub-node types. • Parent IDs on the child. • Graph lifecycle state. • `ReactionDefinition` and `NodeReaction` records. |
 | **References** | `NodeAuthorId` corresponding to a Participant ID. • `NodeDescriptionId` corresponding to a Document ID. • Contracts event records. |
-| **Does not own** | Profiles and credentials. • Documents. • Votes or NodeTag vote summaries. • JSON persistence. |
+| **Does not own** | Profiles and credentials. • Documents. • Votes or NodeReaction vote summaries. • JSON persistence. |
 | **Publishes** | Records `NodeCreatedV1`, `NodeArchivedV1`, `NodeRestoredV1`, `NodeParentAttachedV1`, and `NodeParentDetachedV1` on `Node`. |
 | **Subscribes** | None. |
-| **Documentation** | [Graph README](../../src/Atlas.Graph/README.md) • [Requirements](../requirements/REQUIREMENTS.md) • [RTM](../requirements/TRACEABILITY.md) • [Reusable tags workflow](../workflows/REUSABLE-TAGS.md) • ADRs 1–3 |
+| **Documentation** | [Graph README](../../src/Atlas.Graph/README.md) • [Requirements](../requirements/REQUIREMENTS.md) • [RTM](../requirements/TRACEABILITY.md) • [Reactions workflow](../workflows/REACTIONS.md) • ADRs 1–3 |
 | **Gaps or open questions** | Cycle prevention and default Comment policy are host-local. • Most node mutations lack authorization. • Relationship-node minimum-parent rules are not enforced. • Global type-name uniqueness is host-local. • Several mutations have no events. • Graph directly references Contracts; the desired long-term dependency direction remains open. |
 
 ### Content
@@ -124,16 +124,16 @@ the JSON implementations belong to the Console host.
 | Attribute | Current state and approved direction |
 |---|---|
 | **Kind** | Implemented domain boundary and candidate independently scalable service |
-| **Responsibility** | Accept, change, remove, query, and aggregate votes under target-specific policies, including the approved future `NodeTagId` target. |
-| **Implemented behaviors** | Node votes can be cast, changed, undone, queried, aggregated, persisted to JSON, and displayed through the Console. NodeTag voting is not yet implemented. |
+| **Responsibility** | Accept, change, remove, query, and aggregate votes under target-specific policies, including the approved future `NodeReactionId` target. |
+| **Implemented behaviors** | Node votes can be cast, changed, undone, queried, aggregated, persisted to JSON, and displayed through the Console. NodeReaction voting is not yet implemented. |
 | **Owns** | Vote IDs and records. • Participant-to-target uniqueness. • Value validation. • Vote timestamps. • Current aggregates. • Voting policies. |
 | **References** | Participant IDs and eligibility from Participants/identity. • Target IDs, kinds, and availability from Graph or another target-owning boundary. |
-| **Does not own** | Nodes, NodeTags, TagDefinitions, participant profiles, credentials, sessions, or target lifecycle. |
+| **Does not own** | Nodes, NodeReactions, ReactionDefinitions, participant profiles, credentials, sessions, or target lifecycle. |
 | **Publishes** | Undecided. Versioned vote and summary events may be required for independently deployed consumers. |
 | **Subscribes or queries** | Uses identifier-based eligibility and target-availability ports; the future cross-process event/query/caching mechanism remains unresolved. |
 | **Deployment direction** | Strong candidate for an independently scalable microservice because vote traffic may greatly exceed other site activity. The ownership boundary applies before extraction. |
-| **Documentation** | [Voting boundary](VOTING.md) • [VOT requirements](../requirements/REQUIREMENTS.md#vot-001) • [RTM](../requirements/TRACEABILITY.md#vot-001) • [Reusable tags workflow](../workflows/REUSABLE-TAGS.md) • [Data ownership](DATA-OWNERSHIP.md) |
-| **Gaps or open questions** | NodeTag vote policy and integration, database-backed concurrent uniqueness, events, projection strategy, and real-time consistency remain future work. |
+| **Documentation** | [Voting boundary](VOTING.md) • [VOT requirements](../requirements/REQUIREMENTS.md#vot-001) • [RTM](../requirements/TRACEABILITY.md#vot-001) • [Reactions workflow](../workflows/REACTIONS.md) • [Data ownership](DATA-OWNERSHIP.md) |
+| **Gaps or open questions** | NodeReaction vote policy and integration, database-backed concurrent uniqueness, events, projection strategy, and real-time consistency remain future work. |
 
 ### Communities
 

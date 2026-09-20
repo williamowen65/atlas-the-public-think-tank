@@ -107,7 +107,7 @@ namespace Atlas.Voting
             return target switch
             {
                 NodeVoteTarget => new NodeRating(voteValue),
-                NodeTagVoteTarget => new NodeTagVote(voteValue),
+                NodeReactionVoteTarget => new NodeReactionVote(voteValue),
 
                 _ => throw new ArgumentException(
                     "Unsupported vote target type.",

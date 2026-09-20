@@ -443,10 +443,10 @@ This document is the authoritative catalog of requirement statements and accepta
 
 [View traceability](TRACEABILITY.md#per-002)
 
-<a id="tag-001"></a>
-## TAG-001 — Tag definitions form reusable vocabulary
+<a id="rea-001"></a>
+## REA-001 — Reaction definitions form reusable vocabulary
 
-**Statement:** The system shall represent tag wording as a reusable `TagDefinition` with a stable identifier, normalized text, creator identifier, and creation time.
+**Statement:** The system shall represent each curated reaction as a reusable `ReactionDefinition` with a stable identifier, short label, emoji, accessible description, normalized text, curator identifier, and creation time.
 
 **Rationale:** Nodes should reuse one vocabulary entry instead of storing duplicate copies of the same wording.
 
@@ -455,17 +455,17 @@ This document is the authoritative catalog of requirement statements and accepta
 
 ### Acceptance criteria
 
-- A new definition receives a stable GUID.
-- The original display text and normalized text are retained separately.
+- A new curated definition receives a stable GUID.
+- The word, emoji, description, and normalized text are retained separately.
 - Later node workflows can select an existing definition.
-- Graph owns `TagDefinition` and its lifecycle.
+- Graph owns `ReactionDefinition` and its lifecycle.
 
-[View traceability](TRACEABILITY.md#tag-001)
+[View traceability](TRACEABILITY.md#rea-001)
 
-<a id="tag-002"></a>
-## TAG-002 — Equivalent tag text resolves to one definition
+<a id="rea-002"></a>
+## REA-002 — Equivalent reaction text resolves to one definition
 
-**Statement:** The system shall normalize proposed tag text before duplicate detection.
+**Statement:** The system shall normalize proposed reaction text before duplicate detection.
 
 **Rationale:** Differences in capitalization or spacing should not create duplicate vocabulary entries.
 
@@ -479,12 +479,12 @@ This document is the authoritative catalog of requirement statements and accepta
 - Empty normalized text is rejected.
 - Punctuation remains meaningful unless a later policy explicitly changes that rule.
 
-[View traceability](TRACEABILITY.md#tag-002)
+[View traceability](TRACEABILITY.md#rea-002)
 
-<a id="tag-003"></a>
-## TAG-003 — Tags are applied through node-specific associations
+<a id="rea-003"></a>
+## REA-003 — Reactions are applied through node-specific associations
 
-**Statement:** The system shall represent the application of a tag to a node as a distinct `NodeTag` identified by `NodeTagId`, `NodeId`, and `TagId`.
+**Statement:** The system shall represent the application of a reaction to a node as a distinct `NodeReaction` identified by `NodeReactionId`, `NodeId`, and `ReactionDefinitionId`.
 
 **Rationale:** Reusing a definition must not merge its meaning, lifecycle, or votes across nodes.
 
@@ -493,17 +493,17 @@ This document is the authoritative catalog of requirement statements and accepta
 
 ### Acceptance criteria
 
-- Applying a tag creates a node-specific association with its actor and creation time.
+- Applying a reaction creates a node-specific association with its actor and creation time.
 - The same definition can be applied independently to multiple nodes.
 - A node cannot contain two active associations to the same definition.
-- Graph owns `NodeTag` and references the participant by identifier.
+- Graph owns `NodeReaction` and references the participant by identifier.
 
-[View traceability](TRACEABILITY.md#tag-003)
+[View traceability](TRACEABILITY.md#rea-003)
 
-<a id="tag-004"></a>
-## TAG-004 — Shared tag definitions are not renamed through a node
+<a id="rea-004"></a>
+## REA-004 — Shared reaction definitions are not renamed through a node
 
-**Statement:** Changing tag wording on one node shall select or create another `TagDefinition` and replace that node's association.
+**Statement:** Participants shall select reaction wording from the curated catalog and shall not rename or create reaction definitions through a Node.
 
 **Rationale:** A local edit must not unexpectedly rename the reusable definition everywhere.
 
@@ -512,38 +512,36 @@ This document is the authoritative catalog of requirement statements and accepta
 
 ### Acceptance criteria
 
-- Node-level editing never mutates an existing definition's text.
-- Replacement removes the old association and creates or selects the requested definition.
-- Other nodes using the original definition are unchanged.
-- Definition-level moderation is a separate privileged workflow.
+- Node-level workflows never mutate a definition's word, emoji, or description.
+- Topic and category phrases are rejected unless they are deliberately added to the catalog by a curator.
+- Catalog maintenance is a separate privileged workflow.
 
-[View traceability](TRACEABILITY.md#tag-004)
+[View traceability](TRACEABILITY.md#rea-004)
 
-<a id="tag-005"></a>
-## TAG-005 — Authorized actors manage node tags
+<a id="rea-005"></a>
+## REA-005 — Authorized actors manage node reactions
 
-**Statement:** Active participants shall be able to apply tags. A proposer may withdraw or replace their own association; node authors manage its presentation; moderators perform policy actions.
+**Statement:** Active participants shall be able to apply curated reactions and withdraw reactions they applied; moderators may perform administrative removal.
 
-**Rationale:** Tagging should remain open to contribution without allowing unrelated participants to erase other contributions.
+**Rationale:** Reaction should remain open to contribution without allowing unrelated participants to erase other contributions.
 
 **Priority:** Must
 **Status:** Partial
 
 ### Acceptance criteria
 
-- Applying a tag requires an active participant and active node.
-- The applying participant can remove or replace their association until the node author endorses it.
-- The node author can endorse, hide, dispute, or return an active association to community presentation without deleting it.
-- Endorsement transfers removal and replacement control from the proposer to the node author.
+- Applying a reaction requires an active participant and active node.
+- The applying participant can withdraw their association.
+- Author and community presentation is derived from who applied the reaction.
 - A moderator with the applicable capability can administratively remove an association.
 - An unrelated participant cannot remove or replace another participant's association.
 
-[View traceability](TRACEABILITY.md#tag-005)
+[View traceability](TRACEABILITY.md#rea-005)
 
-<a id="tag-006"></a>
-## TAG-006 — Archived tag targets reject mutation
+<a id="rea-006"></a>
+## REA-006 — Archived reaction targets reject mutation
 
-**Statement:** Archived nodes and moderated tag associations shall remain readable but reject tag application, replacement, removal, and voting.
+**Statement:** Archived nodes and moderated reaction associations shall remain readable but reject reaction application, replacement, removal, and voting.
 
 **Rationale:** Historical context should remain visible while archived or moderated targets are frozen against new activity.
 
@@ -552,36 +550,35 @@ This document is the authoritative catalog of requirement statements and accepta
 
 ### Acceptance criteria
 
-- Existing tags remain visible after a node is archived.
-- Graph rejects tag mutations for an archived node.
-- Voting rejects casting, changing, or undoing a vote on an unavailable `NodeTag` target.
+- Existing reactions remain visible after a node is archived.
+- Graph rejects reaction mutations for an archived node.
+- Voting rejects casting, changing, or undoing a vote on an unavailable `NodeReaction` target.
 - Existing vote summaries remain readable.
 
-[View traceability](TRACEABILITY.md#tag-006)
+[View traceability](TRACEABILITY.md#rea-006)
 
-<a id="tag-007"></a>
-## TAG-007 — Tag suggestions reuse existing definitions
+<a id="rea-007"></a>
+## REA-007 — Reaction suggestions reuse existing definitions
 
-**Statement:** Tag entry shall suggest existing definitions by normalized prefix or text match before offering creation.
+**Statement:** Reaction entry shall present the curated catalog and never offer free-text creation.
 
-**Rationale:** Discoverable reuse limits vocabulary fragmentation.
+**Rationale:** A constrained vocabulary keeps reactions expressive while preventing topics and Node proposals from leaking into reaction behavior.
 
 **Priority:** Should
 **Status:** Implemented
 
 ### Acceptance criteria
 
-- Suggestions display the stored presentation text.
-- Selecting a suggestion applies its existing `TagId`.
-- Creation is not offered when normalized text already exists.
-- No-result and lookup-failure states are distinguishable.
+- Choices display the stored emoji, word, and accessible description.
+- Selecting a suggestion applies its existing `ReactionDefinitionId`.
+- Participant-created wording is not offered.
 
-[View traceability](TRACEABILITY.md#tag-007)
+[View traceability](TRACEABILITY.md#rea-007)
 
-<a id="tag-008"></a>
-## TAG-008 — NodeTag votes are node-specific
+<a id="rea-008"></a>
+## REA-008 — NodeReaction votes are node-specific
 
-**Statement:** Voting shall own one current signed vote per participant and `NodeTag`, representing whether that tag appropriately characterizes that node.
+**Statement:** Voting shall own one current signed vote per participant and `NodeReaction`, representing whether that reaction appropriately characterizes that node.
 
 **Rationale:** Approval of a reusable phrase in one context must not become global approval everywhere it appears.
 
@@ -590,39 +587,39 @@ This document is the authoritative catalog of requirement statements and accepta
 
 ### Acceptance criteria
 
-- A ballot targets `NodeTagId`, not `TagId`.
+- A ballot targets `NodeReactionId`, not `ReactionDefinitionId`.
 - A participant can hold at most one current vote for that target.
 - Casting, changing, and undoing a vote follow Voting-owned policy.
 - Applying the same definition to another node creates a separate voting target and summary.
 
-[View traceability](TRACEABILITY.md#tag-008)
+[View traceability](TRACEABILITY.md#rea-008)
 
-<a id="tag-009"></a>
-## TAG-009 — Node views show prominent and discoverable tags
+<a id="rea-009"></a>
+## REA-009 — Node views show prominent and discoverable reactions
 
-**Statement:** Node presentation shall show up to three prominent tags and provide access to the remaining tags.
+**Statement:** Node presentation shall show up to three prominent reactions and provide access to the remaining reactions.
 
-**Rationale:** Strongly supported characterizations should be visible without allowing a large tag set to overwhelm the node card.
+**Rationale:** Strongly supported characterizations should be visible without allowing a large reaction set to overwhelm the node card.
 
 **Priority:** Should
 **Status:** Partial
 
 ### Acceptance criteria
 
-- The composition layer joins Graph-owned `NodeTag` records with Voting-owned summaries by `NodeTagId`.
-- Prominence sorts by net score, then total ballots, then oldest association, then `NodeTagId` for a stable tie-break.
-- At most three tags appear on a compact node card.
-- All remaining tags are reachable from the node detail view.
+- The composition layer joins Graph-owned `NodeReaction` records with Voting-owned summaries by `NodeReactionId`.
+- Prominence sorts by net score, then total ballots, then oldest association, then `NodeReactionId` for a stable tie-break.
+- At most three reactions appear on a compact node card.
+- All remaining reactions are reachable from the node detail view.
 - Graph does not store or cache vote summaries as authoritative state.
 
-[View traceability](TRACEABILITY.md#tag-009)
+[View traceability](TRACEABILITY.md#rea-009)
 
-<a id="tag-010"></a>
-## TAG-010 — Node-tag lifecycle preserves audit history
+<a id="rea-010"></a>
+## REA-010 — Node-reaction lifecycle preserves audit history
 
-**Statement:** Graph shall preserve a node-tag association and record why it became inactive rather than deleting it during ordinary workflows.
+**Statement:** Graph shall preserve a node-reaction association and record why it became inactive rather than deleting it during ordinary workflows.
 
-**Rationale:** Tag proposals, corrections, disputes, and moderation actions must remain attributable and reviewable.
+**Rationale:** Reaction proposals, corrections, disputes, and moderation actions must remain attributable and reviewable.
 
 **Priority:** Must
 **Status:** Partial
@@ -632,29 +629,28 @@ This document is the authoritative catalog of requirement statements and accepta
 - Lifecycle values persist as readable strings: `Active`, `Withdrawn`, `Superseded`, and `AdministrativelyRemoved`.
 - Replacement creates or reuses a new association and marks the original `Superseded`.
 - Each application, disposition change, withdrawal, supersession, and administrative removal appends an immutable audit entry containing the actor, time, and resulting state.
-- A supersession audit entry identifies the replacement `NodeTag` without rewriting the original association.
+- A supersession audit entry identifies the replacement `NodeReaction` without rewriting the original association.
 - Legacy records without historical actor data are identified as imported rather than assigned an invented actor.
 - Physical deletion is reserved for an exceptional future administrative process.
-- Archived nodes reject every tag mutation.
+- Archived nodes reject every reaction mutation.
 - Proposer withdrawal after third-party voting is deferred until Voting supplies engagement information.
 
-<a id="tag-011"></a>
-## TAG-011 — Node authors control tag presentation
+<a id="rea-011"></a>
+## REA-011 — Author and community reactions remain distinguishable
 
-**Statement:** Graph shall record each active node tag as `Community`, `Endorsed`, `Hidden`, or `Disputed`, with disposition controlled by the node author.
+**Statement:** Graph shall distinguish reactions applied by the Node author from reactions applied by community participants.
 
-**Rationale:** Authors need protection from unwanted primary presentation without gaining the power to erase community characterization.
+**Rationale:** Readers should understand whether a reaction expresses the author's framing or a community response.
 
 **Priority:** Must
 **Status:** Implemented
 
 ### Acceptance criteria
 
-- A tag applied by the node author begins `Endorsed`; other applications begin `Community`.
-- Only the node author can change disposition.
-- `Hidden` and `Disputed` tags are excluded from normal presentation but remain explicitly reviewable.
-- `Disputed` records the author's request for a future moderation workflow.
-- Disposition values persist as readable strings.
+- A reaction applied by the Node author appears under Author reactions.
+- A reaction applied by another participant appears under Community reactions.
+- Curated reactions are not hidden or disputed through the participant-facing workflow.
+- Origin values persist as readable strings.
 
 <a id="vot-001"></a>
 ## VOT-001 — Node views report vote totals and averages
@@ -773,22 +769,22 @@ This document is the authoritative catalog of requirement statements and accepta
 [View traceability](TRACEABILITY.md#vot-006)
 
 <a id="vot-007"></a>
-## VOT-007 — NodeTag votes measure node-specific applicability
+## VOT-007 — NodeReaction votes measure node-specific applicability
 
-**Statement:** The system shall represent a NodeTag vote as an upvote or downvote on whether one TagDefinition applies to one specific Node.
+**Statement:** The system shall represent a NodeReaction vote as an upvote or downvote on whether one ReactionDefinition applies to one specific Node.
 
-**Rationale:** A tag may be appropriate for one Node and inappropriate for another; the vote must not become a global rating of the TagDefinition.
+**Rationale:** A reaction may be appropriate for one Node and inappropriate for another; the vote must not become a global rating of the ReactionDefinition.
 
 **Priority:** Must  
 **Status:** Approved
 
 ### Acceptance criteria
 
-- The vote target identifies the NodeTag association, not only its TagDefinition.
+- The vote target identifies the NodeReaction association, not only its ReactionDefinition.
 - An upvote contributes +1 and a downvote contributes -1.
 - The displayed aggregate is a signed whole-number sum that may be negative, zero, or positive.
 - A participant may change direction or undo the vote.
-- Participant and timestamp data are recorded even if the first NodeTag interface displays only the aggregate.
+- Participant and timestamp data are recorded even if the first NodeReaction interface displays only the aggregate.
 
 [View traceability](TRACEABILITY.md#vot-007)
 
@@ -827,7 +823,7 @@ This document is the authoritative catalog of requirement statements and accepta
 - A Node archived by Graph cannot receive a new, changed, or undone rating.
 - Existing summaries and public current-vote listings remain readable for an archived Node.
 - Target availability is evaluated per target; archiving one Node does not freeze separate parent or child Node targets.
-- A directly dependent NodeTag target beneath an archived Node cannot receive a new or changed vote.
+- A directly dependent NodeReaction target beneath an archived Node cannot receive a new or changed vote.
 
 [View traceability](TRACEABILITY.md#vot-009)
 
@@ -846,7 +842,7 @@ This document is the authoritative catalog of requirement statements and accepta
 - Concurrent votes from different participants are all reflected in the resulting aggregate.
 - Concurrent requests for one participant-target pair do not create duplicate current votes.
 - A Node summary reports the current vote count and arithmetic mean.
-- A NodeTag summary reports the current signed whole-number total.
+- A NodeReaction summary reports the current signed whole-number total.
 - Accepted changes are reflected to users in real time under the current product expectation.
 - The allowed consistency window after independent service deployment is documented before implementation.
 
@@ -868,7 +864,7 @@ This document is the authoritative catalog of requirement statements and accepta
 - Each current vote records one participant identifier and one target identity and type.
 - Each current vote records a value valid for its voting policy.
 - Each current vote records creation and last-updated timestamps.
-- NodeTag votes retain this information even when their initial UI exposes only the aggregate.
+- NodeReaction votes retain this information even when their initial UI exposes only the aggregate.
 
 [View traceability](TRACEABILITY.md#vot-011)
 
@@ -1106,7 +1102,7 @@ This document is the authoritative catalog of requirement statements and accepta
 <a id="com-007"></a>
 ## COM-007 — Community content is discoverable and navigable
 
-**Statement:** The Console shall list Communities on the main menu, display Community associations beside Node tags, browse Nodes within a Community, and navigate between Nodes and Communities.
+**Statement:** The Console shall list Communities on the main menu, display Community associations beside Node reactions, browse Nodes within a Community, and navigate between Nodes and Communities.
 
 **Priority:** Should
 

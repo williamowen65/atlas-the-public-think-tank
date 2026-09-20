@@ -1,5 +1,5 @@
 using Atlas.Graph.Nodes;
-using Atlas.Graph.Tags;
+using Atlas.Graph.Reactions;
 using Atlas.Voting;
 using Atlas.Voting.Data;
 using Atlas.Voting.Target;
@@ -7,16 +7,16 @@ using Atlas.Voting.Votes;
 
 namespace Atlas.ConsoleApp;
 
-/// <summary>Composes Graph-owned tag definitions and node associations for display.</summary>
-public static class TagDisplay
+/// <summary>Composes Graph-owned reaction definitions and node associations for display.</summary>
+public static class ReactionDisplay
 {
-    /// <summary>Returns up to three active tags with their current scores.</summary>
+    /// <summary>Returns up to three active reactions with their current scores.</summary>
     public static string FormatCompact(
         Node node,
-        INodeTagRepository nodeTags,
-        ITagDefinitionRepository definitions,
+        INodeReactionRepository nodeTags,
+        IReactionDefinitionRepository definitions,
         IVoteRepository votes,
-        NodeTagDisposition disposition)
+        NodeReactionDisposition disposition)
     {
         var matchingTags = ResolveActive(node, nodeTags, definitions)
             .Where(item => item.Association.Disposition == disposition)
@@ -26,10 +26,10 @@ public static class TagDisplay
             .Take(3)
             .Select(item =>
             {
-                var score = new GetNodeTagVoteSummary(votes).Execute(
-                    new NodeTagVoteTarget(item.Association.Id.Value)).Score;
+                var score = new GetNodeReactionVoteSummary(votes).Execute(
+                    new NodeReactionVoteTarget(item.Association.Id.Value)).Score;
 
-                return $"({score}) {item.Definition.Text}";
+                return $"{item.Definition.Emoji} {item.Definition.Text} ({score})";
             })
             .ToList();
 
@@ -45,31 +45,33 @@ public static class TagDisplay
             : string.Join(", ", labels);
     }
 
-    /// <summary>Writes the complete active tag set for a node detail view.</summary>
+    /// <summary>Writes the complete active reaction set for a node detail view.</summary>
     public static void WriteDetails(
         Node node,
-        INodeTagRepository nodeTags,
-        ITagDefinitionRepository definitions,
+        INodeReactionRepository nodeTags,
+        IReactionDefinitionRepository definitions,
         IVoteRepository votes,
         ParticipantId? participantId = null)
     {
         var active = ResolveActive(node, nodeTags, definitions)
-            .Where(item => item.Association.Disposition is NodeTagDisposition.Endorsed or NodeTagDisposition.Community)
+            .Where(item => item.Association.Disposition is NodeReactionDisposition.Endorsed or NodeReactionDisposition.Community)
             .ToList();
 
         Console.WriteLine();
-        Console.WriteLine("TAGS");
-        Console.WriteLine("----");
+        Console.WriteLine("REACTIONS");
+        Console.WriteLine("---------");
 
         if (active.Count == 0)
         {
-            Console.WriteLine("No tags have been applied.");
+            Console.WriteLine("No reactions yet.");
         }
         else
         {
             foreach (var group in active.GroupBy(item => item.Association.Disposition))
             {
-                Console.WriteLine($"{group.Key}:");
+                Console.WriteLine(group.Key == NodeReactionDisposition.Endorsed
+                    ? "Author reactions:"
+                    : "Community reactions:");
                 foreach (var item in group)
                 {
                     WriteTagWithScore(item, votes, participantId);
@@ -78,7 +80,7 @@ public static class TagDisplay
         }
 
         var superseded = ResolveAll(node, nodeTags, definitions)
-            .Where(item => item.Association.LifecycleState == NodeTagLifecycleState.Superseded)
+            .Where(item => item.Association.LifecycleState == NodeReactionLifecycleState.Superseded)
             .ToList();
 
         if (superseded.Count > 0)
@@ -92,11 +94,11 @@ public static class TagDisplay
     }
 
     /// <summary>Writes author-hidden and disputed tags for an explicit review action.</summary>
-    public static void WriteHiddenAndDisputed(Node node, INodeTagRepository nodeTags,
-        ITagDefinitionRepository definitions)
+    public static void WriteHiddenAndDisputed(Node node, INodeReactionRepository nodeTags,
+        IReactionDefinitionRepository definitions)
     {
         var items = ResolveActive(node, nodeTags, definitions)
-            .Where(item => item.Association.Disposition is NodeTagDisposition.Hidden or NodeTagDisposition.Disputed)
+            .Where(item => item.Association.Disposition is NodeReactionDisposition.Hidden or NodeReactionDisposition.Disputed)
             .ToList();
         Console.WriteLine(items.Count == 0 ? "No hidden or disputed tags." : "HIDDEN OR DISPUTED TAGS");
         foreach (var item in items)
@@ -106,17 +108,17 @@ public static class TagDisplay
     }
 
     /// <summary>Resolves active associations to active reusable definitions.</summary>
-    public static IReadOnlyList<(NodeTag Association, TagDefinition Definition)> ResolveActive(
+    public static IReadOnlyList<(NodeReaction Association, ReactionDefinition Definition)> ResolveActive(
         Node node,
-        INodeTagRepository nodeTags,
-        ITagDefinitionRepository definitions)
+        INodeReactionRepository nodeTags,
+        IReactionDefinitionRepository definitions)
     {
         return nodeTags
             .GetActiveForNode(node.Id)
             .Select(association => new
             {
                 Association = association,
-                Definition = definitions.GetById(association.TagDefinitionId)
+                Definition = definitions.GetById(association.ReactionDefinitionId)
             })
             .Where(item => item.Definition is not null && !item.Definition.IsSuppressed)
             .OrderBy(item => item.Association.CreatedAt)
@@ -126,17 +128,17 @@ public static class TagDisplay
     }
 
     /// <summary>Resolves active and historical associations for public history.</summary>
-    public static IReadOnlyList<(NodeTag Association, TagDefinition Definition)> ResolveAll(
+    public static IReadOnlyList<(NodeReaction Association, ReactionDefinition Definition)> ResolveAll(
         Node node,
-        INodeTagRepository nodeTags,
-        ITagDefinitionRepository definitions)
+        INodeReactionRepository nodeTags,
+        IReactionDefinitionRepository definitions)
     {
         return nodeTags.GetAll()
             .Where(association => association.NodeId == node.Id)
             .Select(association => new
             {
                 Association = association,
-                Definition = definitions.GetById(association.TagDefinitionId)
+                Definition = definitions.GetById(association.ReactionDefinitionId)
             })
             .Where(item => item.Definition is not null)
             .OrderBy(item => item.Association.CreatedAt)
@@ -146,12 +148,12 @@ public static class TagDisplay
     }
 
     private static void WriteTagWithScore(
-        (NodeTag Association, TagDefinition Definition) item,
+        (NodeReaction Association, ReactionDefinition Definition) item,
         IVoteRepository votes,
         ParticipantId? participantId)
     {
-        var summary = new GetNodeTagVoteSummary(votes).Execute(
-            new NodeTagVoteTarget(item.Association.Id.Value),
+        var summary = new GetNodeReactionVoteSummary(votes).Execute(
+            new NodeReactionVoteTarget(item.Association.Id.Value),
             participantId);
         var myVote = summary.CurrentParticipantVote switch
         {
@@ -160,6 +162,7 @@ public static class TagDisplay
             _ => string.Empty
         };
 
-        Console.WriteLine($"- {item.Definition.Text} (score: {summary.Score}{myVote})");
+        Console.WriteLine($"- {item.Definition.Emoji} {item.Definition.Text} " +
+            $"(score: {summary.Score}{myVote})");
     }
 }

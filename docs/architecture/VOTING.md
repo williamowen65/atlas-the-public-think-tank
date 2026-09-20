@@ -15,9 +15,9 @@ Voting is also a strong candidate for independent deployment. Atlas may receive 
 | **Responsibility** | Accept, change, remove, query, and aggregate votes under target-specific voting policies. |
 | **Owns** | Vote IDs and records. • The participant-to-target uniqueness rule. • Vote value validation. • Vote timestamps. • Vote totals, counts, and averages. • Voting policy selection. |
 | **References** | Participant IDs supplied by Participants. • Target IDs and target availability supplied by the target-owning boundary. |
-| **Does not own** | Nodes, NodeTags, TagDefinitions, participant profiles, credentials, sessions, or target lifecycle. |
+| **Does not own** | Nodes, NodeReactions, ReactionDefinitions, participant profiles, credentials, sessions, or target lifecycle. |
 | **Possible deployment** | A separately deployable service that can scale independently when voting traffic is high. |
-| **Current implementation** | Node voting is implemented through the Voting model and application services, in-memory and JSON repositories, and Console-composed Node workflows. NodeTag voting and service extraction remain future slices. |
+| **Current implementation** | Node voting is implemented through the Voting model and application services, in-memory and JSON repositories, and Console-composed Node workflows. NodeReaction voting and service extraction remain future slices. |
 
 A foreign target identifier tells Voting what received a vote; it does not transfer ownership of that target to Voting.
 
@@ -32,7 +32,7 @@ A persisted vote needs, at minimum:
 - the current value;
 - creation and last-updated timestamps.
 
-Voting records the same participant and timestamp information for NodeTag votes even if the first user interface does not expose the voter list for those votes.
+Voting records the same participant and timestamp information for NodeReaction votes even if the first user interface does not expose the voter list for those votes.
 
 ## Universal invariants
 
@@ -54,15 +54,15 @@ A Node receives a general rating based on the human-readable context presented w
 - The displayed average uses two decimal places.
 - The public vote detail identifies which participant account cast each current value.
 
-## NodeTag applicability policy
+## NodeReaction applicability policy
 
-A NodeTag vote evaluates whether one TagDefinition applies to one particular Node. It does not vote globally on the TagDefinition.
+A NodeReaction vote evaluates whether one ReactionDefinition applies to one particular Node. It does not vote globally on the ReactionDefinition.
 
 - A participant may cast an upvote or downvote.
 - Upvotes contribute +1 and downvotes contribute -1.
 - The displayed result is the signed whole-number sum and may be negative, zero, or positive.
 - A participant may change direction or undo the vote.
-- Voting retains participant and timestamp information even if the initial NodeTag interface shows only the aggregate.
+- Voting retains participant and timestamp information even if the initial NodeReaction interface shows only the aggregate.
 
 ## Authorization and target availability
 
@@ -103,7 +103,7 @@ Undo is rejected when a Node is archived. The current vote remains readable but 
 
 | Collaborator | Voting needs | Ownership retained by collaborator |
 |---|---|---|
-| **Graph** | Target identity, target kind, and whether a Node or NodeTag target permits interaction | Nodes, NodeTags, TagDefinitions, and lifecycle |
+| **Graph** | Target identity, target kind, and whether a Node or NodeReaction target permits interaction | Nodes, NodeReactions, ReactionDefinitions, and lifecycle |
 | **Participants / identity** | Authenticated participant ID and eligibility or active-account status | Profiles, credentials, sessions, and account lifecycle |
 | **Console or future web host** | Commands and queries for voting plus summaries for composed views | Session/UI composition; no vote rules |
 | **Contracts** | Versioned payloads when Voting later communicates through events or service messages | Public communication shapes; no vote behavior |
@@ -119,8 +119,8 @@ The Console should eventually demonstrate:
 3. changing and undoing that vote;
 4. displaying the current count and two-decimal average;
 5. listing current Node voters and values;
-6. casting, changing, and undoing a NodeTag upvote/downvote;
-7. showing the signed NodeTag total;
+6. casting, changing, and undoing a NodeReaction upvote/downvote;
+7. showing the signed NodeReaction total;
 8. rejecting voting against an archived or unavailable target.
 
 The domain behavior belongs behind a Voting application API. Console commands should coordinate interaction and presentation without becoming the only enforcement point.
@@ -131,6 +131,6 @@ The domain behavior belongs behind a Voting application API. Console commands sh
 - How Graph communicates target availability after Voting becomes independently deployed.
 - Whether summaries are calculated directly, maintained as projections, or cached by consumers.
 - What consistency window qualifies as real time after service extraction.
-- Whether NodeTag voter details will be visible in the first web interface.
+- Whether NodeReaction voter details will be visible in the first web interface.
 - Whether future abuse controls add eligibility rules, quotas, rate limits, or moderation capabilities.
 - Which versioned events and query contracts are required.
