@@ -106,7 +106,7 @@ namespace Atlas.Voting
         {
             return target switch
             {
-                NodeVoteTarget => new NodeRating(voteValue),
+                NodeVoteTarget => new NodeImportanceRating(voteValue),
                 NodeReactionVoteTarget => new NodeReactionVote(voteValue),
 
                 _ => throw new ArgumentException(
