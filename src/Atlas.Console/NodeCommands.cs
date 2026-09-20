@@ -1,4 +1,8 @@
 using Atlas.ConsoleApp.Eventing;
+using Atlas.ConsoleApp.Communities;
+using Atlas.Communities.Communities;
+using Atlas.Communities.Memberships;
+using Atlas.Communities.Nodes;
 using Atlas.ConsoleApp.Participants;
 using Atlas.Content.Blocks;
 using Atlas.Content.Documents;
@@ -28,7 +32,11 @@ public static class NodeCommands
         ITagDefinitionRepository tagDefinitions,
         INodeTagRepository nodeTags,
         InMemoryEventPublisher eventPublisher,
-        Participant currentParticipant)
+        Participant currentParticipant,
+        ICommunityRepository communities,
+        ICommunityMembershipRepository communityMemberships,
+        ICommunityNodeRepository communityNodes,
+        CommunityService communityService)
     {
         var viewingNode = true;
 
@@ -95,6 +103,8 @@ public static class NodeCommands
                 nodeTags,
                 tagDefinitions,
                 votes,
+                communities,
+                communityNodes,
                 votingParticipantId,
                 voteCount,
                 averageRating,
@@ -129,7 +139,9 @@ public static class NodeCommands
                     : "13. Change your vote");
             Console.WriteLine("14. Undo your vote");
             Console.WriteLine("15. View votes");
-            Console.WriteLine("16. Return to node browser");
+            Console.WriteLine($"16. Manage communities{authorOnlyStatus}");
+            Console.WriteLine("17. View communities");
+            Console.WriteLine("18. Return to node browser");
             Console.WriteLine();
 
             Console.Write("Selection: ");
@@ -139,7 +151,7 @@ public static class NodeCommands
                 switch (Console.ReadLine())
                 {
                     case "1" or "2" or "3" or "4" or "5" or "6" or
-                        "9" or "10" when !isAuthor:
+                        "9" or "10" or "16" when !isAuthor:
                         ConsoleUi.Pause(
                             "This action is disabled because it requires " +
                             "the node author.");
@@ -276,6 +288,17 @@ public static class NodeCommands
                         break;
 
                     case "16":
+                        ManageCommunities(node, communities, communityNodes, communityService, currentParticipant);
+                        break;
+
+                    case "17":
+                        currentParticipant = ViewCommunities(
+                            node, communities, communityMemberships, communityNodes, communityService,
+                            nodes, nodeTypes, documents, participants, votes, castVote, undoVote,
+                            tagDefinitions, nodeTags, eventPublisher, currentParticipant);
+                        break;
+
+                    case "18":
                         viewingNode = false;
                         break;
 
@@ -954,6 +977,74 @@ public static class NodeCommands
             removed
                 ? "Your vote was removed."
                 : "You do not have a current vote on this node.");
+    }
+
+    private static void ManageCommunities(
+        Node node,
+        ICommunityRepository communities,
+        ICommunityNodeRepository communityNodes,
+        CommunityService service,
+        Participant participant)
+    {
+        var available = communities.GetAll().OrderBy(x => x.Name).ToList();
+        if (available.Count == 0) { ConsoleUi.Pause("No communities have been created."); return; }
+
+        Console.Clear();
+        Console.WriteLine($"COMMUNITIES FOR: {node.Title}");
+        Console.WriteLine("Select a community to add or remove this node:");
+        for (var index = 0; index < available.Count; index++)
+        {
+            var associated = communityNodes.GetByNode(node.Id.Value).Any(x => x.CommunityId == available[index].Id);
+            Console.WriteLine($"{index + 1}. [{(associated ? "x" : " ")}] {available[index].Name}");
+        }
+        Console.Write("Selection (0 cancels): ");
+        if (!int.TryParse(Console.ReadLine(), out var selection) || selection == 0) return;
+        if (selection < 1 || selection > available.Count) { ConsoleUi.Pause("That is not a valid selection."); return; }
+
+        var community = available[selection - 1];
+        var exists = communityNodes.GetByNode(node.Id.Value).Any(x => x.CommunityId == community.Id);
+        if (exists)
+        {
+            communityNodes.Remove(community.Id, node.Id.Value);
+            ConsoleUi.Pause($"Removed this node from {community.Name}.");
+        }
+        else
+        {
+            service.AssociateNode(community, node.Id.Value, participant.Id.Value, DateTimeOffset.UtcNow);
+            ConsoleUi.Pause($"Added this node to {community.Name}.");
+        }
+    }
+
+    private static Participant ViewCommunities(
+        Node node,
+        ICommunityRepository communities,
+        ICommunityMembershipRepository memberships,
+        ICommunityNodeRepository communityNodes,
+        CommunityService service,
+        INodeRepository nodes,
+        INodeTypeRepository nodeTypes,
+        IDocumentRepository documents,
+        IParticipantRepository participants,
+        IVoteRepository votes,
+        CastVote castVote,
+        UndoVote undoVote,
+        ITagDefinitionRepository tagDefinitions,
+        INodeTagRepository nodeTags,
+        InMemoryEventPublisher eventPublisher,
+        Participant currentParticipant)
+    {
+        var associated = communityNodes.GetByNode(node.Id.Value)
+            .Select(x => communities.GetById(x.CommunityId))
+            .Where(x => x is not null).Cast<Community>().OrderBy(x => x.Name).ToList();
+        if (associated.Count == 0) { ConsoleUi.Pause("This node is not associated with any communities."); return currentParticipant; }
+        Console.Clear();
+        for (var index = 0; index < associated.Count; index++) Console.WriteLine($"{index + 1}. {associated[index].Name}");
+        Console.Write("Community number (0 cancels): ");
+        if (!int.TryParse(Console.ReadLine(), out var selection) || selection == 0) return currentParticipant;
+        if (selection < 1 || selection > associated.Count) { ConsoleUi.Pause("That is not a valid selection."); return currentParticipant; }
+        return CommunityCommands.Run(associated[selection - 1], communities, memberships, communityNodes, service,
+            nodes, nodeTypes, documents, participants, votes, castVote, undoVote, tagDefinitions, nodeTags,
+            eventPublisher, currentParticipant);
     }
 
     /// <summary>

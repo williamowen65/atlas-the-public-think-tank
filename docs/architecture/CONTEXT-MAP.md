@@ -16,15 +16,19 @@ flowchart TD
     Participants["Participants boundary"]
     Contracts["Contracts package"]
     Voting["Voting boundary (designed)"]
+    Communities["Communities boundary"]
 
     Console --> Graph
     Console --> Content
     Console --> Participants
     Console --> Contracts
+    Console --> Communities
     Graph --> Contracts
     Console -.->|future commands and queries| Voting
     Voting -.->|target IDs and availability| Graph
     Voting -.->|participant ID and eligibility| Participants
+    Communities -.->|participant IDs| Participants
+    Communities -.->|node IDs only| Graph
 ```
 
 The dashed Voting relationships describe the PTT-76 boundary design, not implemented project references or deployed services.
@@ -130,6 +134,21 @@ the JSON implementations belong to the Console host.
 | **Deployment direction** | Strong candidate for an independently scalable microservice because vote traffic may greatly exceed other site activity. The ownership boundary applies before extraction. |
 | **Documentation** | [Voting boundary](VOTING.md) • [VOT requirements](../requirements/REQUIREMENTS.md#vot-001) • [RTM](../requirements/TRACEABILITY.md#vot-001) • [Reusable tags workflow](../workflows/REUSABLE-TAGS.md) • [Data ownership](DATA-OWNERSHIP.md) |
 | **Gaps or open questions** | NodeTag vote policy and integration, database-backed concurrent uniqueness, events, projection strategy, and real-time consistency remain future work. |
+
+### Communities
+
+| Attribute | Current state |
+|---|---|
+| **Kind** | Domain boundary |
+| **Responsibility** | Model public Communities, owner-managed metadata/lifecycle, participant membership, and optional Node organization. |
+| **Implemented behaviors** | Create, rename, edit description, archive, and restore. • Join, leave, and rejoin. • Associate one Node with zero or many Communities. • Browse Community content and navigate between Nodes and Communities. |
+| **Owns** | Community identity and metadata. • Membership records. • Community-to-Node associations. |
+| **References** | Participant IDs for owners/members. • Node IDs for organizational associations. |
+| **Does not own** | Participant profiles. • Graph topology or Node content. • Moderation. • Notifications. • Visibility models beyond public/open. |
+| **Publishes** | None yet; versioned lifecycle and association events are follow-up work. |
+| **Subscribes** | None. |
+| **Documentation** | [Communities boundary](COMMUNITIES.md) • [Domain README](../../src/Atlas.Communities/README.md) • [Workflow](../workflows/COMMUNITIES.md) • COM requirements and RTM rows |
+| **Gaps or open questions** | Ownership transfer, member removal, private/restricted visibility, invitations, durable uniqueness, and integration events are deferred explicitly. |
 
 ## Implemented event flow
 

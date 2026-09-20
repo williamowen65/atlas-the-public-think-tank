@@ -1,4 +1,8 @@
 using Atlas.ConsoleApp.Eventing;
+using Atlas.ConsoleApp.Communities;
+using Atlas.Communities.Communities;
+using Atlas.Communities.Memberships;
+using Atlas.Communities.Nodes;
 using Atlas.ConsoleApp.Participants;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
@@ -25,6 +29,10 @@ public sealed class ConsoleApplication
     private readonly ITagDefinitionRepository _tagDefinitions;
     private readonly INodeTagRepository _nodeTags;
     private readonly InMemoryEventPublisher _eventPublisher;
+    private readonly ICommunityRepository _communities;
+    private readonly ICommunityMembershipRepository _communityMemberships;
+    private readonly ICommunityNodeRepository _communityNodes;
+    private readonly CommunityService _communityService;
     private Participant _currentParticipant;
     private readonly string _nodeDataFilePath;
     private readonly string _nodeTypeDataFilePath;
@@ -33,6 +41,9 @@ public sealed class ConsoleApplication
     private readonly string _voteDataFilePath;
     private readonly string _tagDefinitionDataFilePath;
     private readonly string _nodeTagDataFilePath;
+    private readonly string _communityDataFilePath;
+    private readonly string _communityMembershipDataFilePath;
+    private readonly string _communityNodeDataFilePath;
 
     /// <summary>Creates a validated console application instance.</summary>
     public ConsoleApplication(
@@ -53,6 +64,13 @@ public sealed class ConsoleApplication
         string voteDataFilePath,
         string tagDefinitionDataFilePath,
         string nodeTagDataFilePath,
+        string communityDataFilePath,
+        string communityMembershipDataFilePath,
+        string communityNodeDataFilePath,
+        ICommunityRepository communities,
+        ICommunityMembershipRepository communityMemberships,
+        ICommunityNodeRepository communityNodes,
+        CommunityService communityService,
         Participant initialParticipant)
     {
         _nodeRepository = nodes;
@@ -73,6 +91,13 @@ public sealed class ConsoleApplication
         _voteDataFilePath = voteDataFilePath;
         _tagDefinitionDataFilePath = tagDefinitionDataFilePath;
         _nodeTagDataFilePath = nodeTagDataFilePath;
+        _communityDataFilePath = communityDataFilePath;
+        _communityMembershipDataFilePath = communityMembershipDataFilePath;
+        _communityNodeDataFilePath = communityNodeDataFilePath;
+        _communities = communities;
+        _communityMemberships = communityMemberships;
+        _communityNodes = communityNodes;
+        _communityService = communityService;
     }
 
     /// <summary>Runs the interactive console application workflow.</summary>
@@ -110,24 +135,32 @@ public sealed class ConsoleApplication
                     break;
 
                 case "6":
-                    ListNodeTypes();
+                    CreateCommunity();
                     break;
 
                 case "7":
-                    ShowDataFiles();
+                    BrowseCommunities();
                     break;
 
                 case "8":
-                    ListContentDocuments();
+                    ListNodeTypes();
                     break;
 
                 case "9":
+                    ShowDataFiles();
+                    break;
+
+                case "10":
+                    ListContentDocuments();
+                    break;
+
+                case "11":
                     running = false;
                     break;
 
                 default:
                     ConsoleUi.Pause(
-                        "Please select an option from 1 through 9.");
+                        "Please select an option from 1 through 11.");
                     break;
             }
         }
@@ -146,10 +179,12 @@ public sealed class ConsoleApplication
         Console.WriteLine("3. Browse participants");
         Console.WriteLine("4. Create node");
         Console.WriteLine("5. Browse nodes");
-        Console.WriteLine("6. List node types");
-        Console.WriteLine("7. Show data files");
-        Console.WriteLine("8. List Content documents");
-        Console.WriteLine("9. Exit");
+        Console.WriteLine("6. Create community");
+        Console.WriteLine("7. Browse communities");
+        Console.WriteLine("8. List node types");
+        Console.WriteLine("9. Show data files");
+        Console.WriteLine("10. List Content documents");
+        Console.WriteLine("11. Exit");
         Console.WriteLine();
     }
 
@@ -380,7 +415,9 @@ public sealed class ConsoleApplication
                     myVote,
                     nodeTags: _nodeTags,
                     tagDefinitions: _tagDefinitions,
-                    votes: _voteRepository);
+                    votes: _voteRepository,
+                    communities: _communities,
+                    communityNodes: _communityNodes);
             }
 
             Console.WriteLine();
@@ -419,7 +456,56 @@ public sealed class ConsoleApplication
                 _tagDefinitions,
                 _nodeTags,
                 _eventPublisher,
-                _currentParticipant);
+                _currentParticipant,
+                _communities,
+                _communityMemberships,
+                _communityNodes,
+                _communityService);
+        }
+    }
+
+    private void CreateCommunity()
+    {
+        Console.Clear();
+        Console.WriteLine("CREATE COMMUNITY");
+        Console.WriteLine("----------------");
+        WriteActingAs();
+        Console.Write("Name: ");
+        var name = Console.ReadLine() ?? string.Empty;
+        Console.Write("Description: ");
+        var description = Console.ReadLine() ?? string.Empty;
+
+        try
+        {
+            var community = _communityService.Create(name, description, _currentParticipant.Id.Value, DateTimeOffset.UtcNow);
+            ConsoleUi.Pause($"Created {community.Name}. You are its owner and first member.");
+        }
+        catch (ArgumentException exception) { ConsoleUi.Pause(exception.Message); }
+        catch (InvalidOperationException exception) { ConsoleUi.Pause(exception.Message); }
+    }
+
+    private void BrowseCommunities()
+    {
+        while (true)
+        {
+            Console.Clear();
+            Console.WriteLine("BROWSE COMMUNITIES");
+            Console.WriteLine("------------------");
+            WriteActingAs();
+            var communities = _communities.GetAll().OrderBy(x => x.Name).ToList();
+            if (communities.Count == 0) { ConsoleUi.Pause("No communities have been created."); return; }
+            CommunityDisplay.WriteTableHeader();
+            for (var index = 0; index < communities.Count; index++)
+                CommunityDisplay.WriteTableRow(communities[index], _participantRepository, _communityMemberships, _communityNodes, index + 1);
+            Console.WriteLine();
+            Console.Write("Community number (0 returns): ");
+            if (!int.TryParse(Console.ReadLine(), out var selection) || selection < 0 || selection > communities.Count)
+            { ConsoleUi.Pause("That is not a valid selection."); continue; }
+            if (selection == 0) return;
+            _currentParticipant = CommunityCommands.Run(
+                communities[selection - 1], _communities, _communityMemberships, _communityNodes, _communityService,
+                _nodeRepository, _nodeTypeRepository, _documentRepository, _participantRepository,
+                _voteRepository, _castVote, _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, _currentParticipant);
         }
     }
 
@@ -503,6 +589,9 @@ public sealed class ConsoleApplication
         ShowDataFile("VOTE DATA", _voteDataFilePath);
         ShowDataFile("TAG DEFINITION DATA", _tagDefinitionDataFilePath);
         ShowDataFile("NODE TAG DATA", _nodeTagDataFilePath);
+        ShowDataFile("COMMUNITY DATA", _communityDataFilePath);
+        ShowDataFile("COMMUNITY MEMBERSHIP DATA", _communityMembershipDataFilePath);
+        ShowDataFile("COMMUNITY NODE DATA", _communityNodeDataFilePath);
     }
 
     /// <summary>Displays data file in the console workflow.</summary>

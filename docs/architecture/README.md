@@ -1,5 +1,7 @@
 # Atlas architecture
 
+- [Communities bounded context](COMMUNITIES.md)
+
 Atlas is currently a modular application hosted by Atlas.Console. Its projects are treated as bounded contexts so they can evolve toward independently deployed services without sharing domain entities.
 
 ## Documents
