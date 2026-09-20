@@ -15,11 +15,11 @@ public static class ReactionDisplay
         Node node,
         INodeReactionRepository nodeTags,
         IReactionDefinitionRepository definitions,
-        IVoteRepository votes,
-        NodeReactionDisposition disposition)
+        IVoteRepository votes)
     {
         var matchingTags = ResolveActive(node, nodeTags, definitions)
-            .Where(item => item.Association.Disposition == disposition)
+            .Where(item => votes.GetTargetVotes(
+                new NodeReactionVoteTarget(item.Association.Id.Value)).Count > 0)
             .ToList();
 
         var labels = matchingTags
@@ -54,7 +54,8 @@ public static class ReactionDisplay
         ParticipantId? participantId = null)
     {
         var active = ResolveActive(node, nodeTags, definitions)
-            .Where(item => item.Association.Disposition is NodeReactionDisposition.Endorsed or NodeReactionDisposition.Community)
+            .Where(item => votes.GetTargetVotes(
+                new NodeReactionVoteTarget(item.Association.Id.Value)).Count > 0)
             .ToList();
 
         Console.WriteLine();
@@ -67,15 +68,9 @@ public static class ReactionDisplay
         }
         else
         {
-            foreach (var group in active.GroupBy(item => item.Association.Disposition))
+            foreach (var item in active)
             {
-                Console.WriteLine(group.Key == NodeReactionDisposition.Endorsed
-                    ? "Author reactions:"
-                    : "Community reactions:");
-                foreach (var item in group)
-                {
-                    WriteTagWithScore(item, votes, participantId);
-                }
+                WriteTagWithScore(item, votes, participantId);
             }
         }
 

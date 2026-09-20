@@ -21,15 +21,14 @@ public sealed class GetNodeReactionVoteSummary
     {
         ArgumentNullException.ThrowIfNull(target);
 
-        var score = _votes
-            .GetTargetVotes(target)
-            .Sum(vote => vote.Value.Value);
+        var targetVotes = _votes.GetTargetVotes(target);
+        var score = targetVotes.Sum(vote => vote.Value.Value);
 
         var currentParticipantVote = participantId is null
             ? null
             : _votes.GetByParticipantAndTarget(participantId, target)
                 ?.Value.Value;
 
-        return new NodeReactionVoteSummary(score, currentParticipantVote);
+        return new NodeReactionVoteSummary(score, targetVotes.Count, currentParticipantVote);
     }
 }

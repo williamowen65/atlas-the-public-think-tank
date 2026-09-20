@@ -7,8 +7,8 @@ Reactions are short expressions of how a participant responds to a Node in conte
 | Node rating | A participant's 0–10 resonance with the Node itself |
 | Reaction | A curated word and emoji applied to one Node |
 | Reaction vote | +1 or −1 indicating whether that word resonates in the context of that Node |
-| Author reaction | A reaction applied by the Node author |
-| Community reaction | A reaction applied by another participant |
+| Reaction catalog | The complete curated vocabulary available to every Node |
+| Node reaction | A lazily created voting target for one Node and one ReactionDefinition |
 
 Examples include `🌱 Promising`, `❗ Important`, `🚨 Urgent`, `⚠️ Concerning`, and `🔎 Evidence-needed`. Topic phrases such as “Native plants,” “Pollinator habitat,” and “Safe routes” belong in Nodes or Communities rather than the reaction catalog.
 
@@ -17,16 +17,15 @@ Examples include `🌱 Promising`, `❗ Important`, `🚨 Urgent`, `⚠️ Conce
 ```mermaid
 flowchart TD
     A[Open Node reactions] --> B[Show curated catalog]
-    B --> C[Choose word and emoji]
-    C --> D{Already on Node?}
-    D -->|Yes| E[Return existing association]
-    D -->|No| F[Create NodeReaction]
-    F --> G{Applied by author?}
-    G -->|Yes| H[Show under Author reactions]
-    G -->|No| I[Show under Community reactions]
+    B --> C[Show every reaction and score]
+    C --> D[Choose word and vote]
+    D --> E{Voting target exists?}
+    E -->|Yes| F[Cast contextual vote]
+    E -->|No| G[Create NodeReaction lazily]
+    G --> F
 ```
 
-Participants cannot create reaction wording through the Node workflow. Graph owns the catalog and the Node–Reaction association. Applying the same definition to different Nodes creates independent `NodeReactionId` targets.
+Participants cannot create reaction wording through the Node workflow. Graph owns the catalog and the Node–Reaction association. The association is created only when the first vote is cast. Applying the same definition to different Nodes creates independent `NodeReactionId` targets.
 
 ## Vote on a reaction
 
@@ -47,9 +46,9 @@ Voting owns one current signed vote per participant and `NodeReactionId`. A posi
 
 ## Lifecycle and presentation
 
-- Active participants may add a catalog reaction to an active Node.
+- Active participants may vote on any catalog reaction for an active Node.
 - The same catalog entry can appear only once on a Node.
-- The participant who applied a reaction may withdraw it; moderators retain administrative removal capability.
 - Archived Nodes preserve reactions and votes for reading but reject mutation.
 - Curated wording removes the normal need for typo replacement, author hiding, disputes, and global suppression in the participant-facing workflow.
-- Compact and detail views show emoji, word, score, and whether the reaction came from the author or community.
+- The picker shows every catalog reaction, including zero-score choices.
+- Compact and detail views show only reactions with votes, using one unified Reactions presentation.

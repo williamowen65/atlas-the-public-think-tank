@@ -20,7 +20,7 @@ public static class NodeDisplay
     private const int AuthorWidth = 20;
     private const int DescriptionWidth = 32;
     private const int StatusWidth = 10;
-    private const int TagsWidth = 28;
+    private const int TagsWidth = 40;
     private const int CommunitiesWidth = 24;
     private const int SubNodesMinimumWidth = 36;
 
@@ -40,8 +40,7 @@ public static class NodeDisplay
             $"{"Type",-TypeWidth}  " +
             $"{"Authored By",-AuthorWidth}  " +
             $"{"Description",-DescriptionWidth}  " +
-            $"{"Author Reactions",-TagsWidth}  " +
-            $"{"Community Reactions",-TagsWidth}  " +
+            $"{"Reactions",-TagsWidth}  " +
             $"{"Communities",-CommunitiesWidth}  " +
             $"{"Status",-StatusWidth}  " +
             "Sub-nodes");
@@ -57,7 +56,6 @@ public static class NodeDisplay
                 TypeWidth + 2 +
                 AuthorWidth + 2 +
                 DescriptionWidth + 2 +
-                TagsWidth + 2 +
                 CommunitiesWidth + 2 +
                 TagsWidth + 2 +
                 StatusWidth + 2 +
@@ -98,8 +96,7 @@ public static class NodeDisplay
             $"{Truncate(typeName, TypeWidth),-TypeWidth}  " +
             $"{Truncate(authorName, AuthorWidth),-AuthorWidth}  " +
             $"{Truncate(description, DescriptionWidth),-DescriptionWidth}  " +
-            $"{Truncate(ResolveTags(node, nodeTags, tagDefinitions, votes, NodeReactionDisposition.Endorsed), TagsWidth),-TagsWidth}  " +
-            $"{Truncate(ResolveTags(node, nodeTags, tagDefinitions, votes, NodeReactionDisposition.Community), TagsWidth),-TagsWidth}  " +
+            $"{Truncate(ResolveTags(node, nodeTags, tagDefinitions, votes), TagsWidth),-TagsWidth}  " +
             $"{Truncate(ResolveCommunities(node, communities, communityNodes), CommunitiesWidth),-CommunitiesWidth}  " +
             $"{node.Status,-StatusWidth}  " +
             subNodeSummary);
@@ -411,12 +408,11 @@ public static class NodeDisplay
         Node node,
         INodeReactionRepository? nodeTags,
         IReactionDefinitionRepository? tagDefinitions,
-        IVoteRepository? votes,
-        NodeReactionDisposition disposition)
+        IVoteRepository? votes)
     {
         return nodeTags is null || tagDefinitions is null || votes is null
             ? "—"
-            : ReactionDisplay.FormatCompact(node, nodeTags, tagDefinitions, votes, disposition);
+            : ReactionDisplay.FormatCompact(node, nodeTags, tagDefinitions, votes);
     }
 
 

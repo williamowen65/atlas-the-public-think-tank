@@ -636,21 +636,22 @@ This document is the authoritative catalog of requirement statements and accepta
 - Proposer withdrawal after third-party voting is deferred until Voting supplies engagement information.
 
 <a id="rea-011"></a>
-## REA-011 — Author and community reactions remain distinguishable
+## REA-011 — Reactions use one shared presentation
 
-**Statement:** Graph shall distinguish reactions applied by the Node author from reactions applied by community participants.
+**Statement:** Node presentation shall show one unified set of contextual reactions regardless of who cast the first vote.
 
-**Rationale:** Readers should understand whether a reaction expresses the author's framing or a community response.
+**Rationale:** Reactions represent aggregate response to the Node rather than labels authored by one participant.
 
 **Priority:** Must
 **Status:** Implemented
 
 ### Acceptance criteria
 
-- A reaction applied by the Node author appears under Author reactions.
-- A reaction applied by another participant appears under Community reactions.
+- The Console displays one Reactions column.
+- The picker displays every catalog definition and its contextual score, including zero.
+- A NodeReaction association is created lazily when its first vote is cast.
+- Only reactions with votes appear in the Node's compact and detail presentation.
 - Curated reactions are not hidden or disputed through the participant-facing workflow.
-- Origin values persist as readable strings.
 
 <a id="vot-001"></a>
 ## VOT-001 — Node views report vote totals and averages
