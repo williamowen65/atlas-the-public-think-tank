@@ -555,9 +555,9 @@ public sealed class ConsoleApplication
     private static (int? Minimum, int? Maximum) ReadIntegerRange(string label, int minimum)
     {
         Console.Write($"Minimum {label} (blank for none): ");
-        var min = int.TryParse(Console.ReadLine(), out var parsedMin) && parsedMin >= minimum ? parsedMin : null;
+        int? min = int.TryParse(Console.ReadLine(), out var parsedMin) && parsedMin >= minimum ? parsedMin : null;
         Console.Write($"Maximum {label} (blank for none): ");
-        var max = int.TryParse(Console.ReadLine(), out var parsedMax) && parsedMax >= minimum ? parsedMax : null;
+        int? max = int.TryParse(Console.ReadLine(), out var parsedMax) && parsedMax >= minimum ? parsedMax : null;
         if (min.HasValue && max.HasValue && min.Value > max.Value) (min, max) = (max, min);
         return (min, max);
     }
@@ -565,9 +565,9 @@ public sealed class ConsoleApplication
     private static (double? Minimum, double? Maximum) ReadDoubleRange(string label, double minimum, double maximum)
     {
         Console.Write($"Minimum {label} ({minimum}–{maximum}, blank for none): ");
-        var min = double.TryParse(Console.ReadLine(), out var parsedMin) && parsedMin >= minimum && parsedMin <= maximum ? parsedMin : null;
+        double? min = double.TryParse(Console.ReadLine(), out var parsedMin) && parsedMin >= minimum && parsedMin <= maximum ? parsedMin : null;
         Console.Write($"Maximum {label} ({minimum}–{maximum}, blank for none): ");
-        var max = double.TryParse(Console.ReadLine(), out var parsedMax) && parsedMax >= minimum && parsedMax <= maximum ? parsedMax : null;
+        double? max = double.TryParse(Console.ReadLine(), out var parsedMax) && parsedMax >= minimum && parsedMax <= maximum ? parsedMax : null;
         if (min.HasValue && max.HasValue && min.Value > max.Value) (min, max) = (max, min);
         return (min, max);
     }
