@@ -125,6 +125,23 @@ public sealed class DiscoveryServiceTests
         Assert.AreEqual(match.NodeId, results.Single().NodeId);
     }
 
+    [TestMethod]
+    public void Discover_filters_created_date_by_inclusive_range()
+    {
+        var before = Candidate("Before", average: 5, createdAt: new DateTimeOffset(2026, 8, 31, 23, 59, 0, TimeSpan.Zero));
+        var firstDay = Candidate("First day", average: 5, createdAt: new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero));
+        var lastDay = Candidate("Last day", average: 5, createdAt: new DateTimeOffset(2026, 9, 30, 23, 59, 0, TimeSpan.Zero));
+        var after = Candidate("After", average: 5, createdAt: new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero));
+
+        var results = Service(before, firstDay, lastDay, after).Discover(new DiscoveryQuery(
+            CreatedFrom: new DateOnly(2026, 9, 1),
+            CreatedThrough: new DateOnly(2026, 9, 30)));
+
+        CollectionAssert.AreEquivalent(
+            new[] { firstDay.NodeId, lastDay.NodeId },
+            results.Select(result => result.NodeId).ToArray());
+    }
+
     private static DiscoveryService Service(params DiscoveryCandidate[] candidates) =>
         new(new MemorySource(candidates));
 
@@ -134,10 +151,13 @@ public sealed class DiscoveryServiceTests
         int votes = 0,
         string content = "",
         bool archived = false,
+        DateTimeOffset? createdAt = null,
         DateTimeOffset? updatedAt = null,
         IReadOnlyCollection<Guid>? communities = null,
         IReadOnlyCollection<Guid>? reactions = null) =>
-        new(Guid.NewGuid(), title, content, archived, updatedAt ?? DateTimeOffset.UtcNow,
+        new(Guid.NewGuid(), title, content, archived,
+            createdAt ?? updatedAt ?? DateTimeOffset.UtcNow,
+            updatedAt ?? createdAt ?? DateTimeOffset.UtcNow,
             votes, average, communities ?? Array.Empty<Guid>(), reactions ?? Array.Empty<Guid>());
 
     private sealed class MemorySource(IReadOnlyCollection<DiscoveryCandidate> candidates)

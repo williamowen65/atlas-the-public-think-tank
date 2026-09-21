@@ -9,4 +9,6 @@ public sealed record DiscoveryQuery(
     int? MaximumVoteCount = null,
     double? MinimumAverageVote = null,
     double? MaximumAverageVote = null,
+    DateOnly? CreatedFrom = null,
+    DateOnly? CreatedThrough = null,
     bool IncludeArchived = false);

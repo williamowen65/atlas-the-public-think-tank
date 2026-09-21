@@ -156,7 +156,7 @@ the JSON implementations belong to the Console host.
 |---|---|
 | **Kind** | Read-oriented domain boundary |
 | **Responsibility** | Search, filter, and rank content for consumer-facing discovery experiences. |
-| **Implemented behaviors** | Exclude archived Nodes by default. • Search title and Content projections. • Filter by Community and multiple required reactions. • Filter by inclusive vote-count and average-rating ranges. • Compose filters before returning deterministic vote-ranked results. |
+| **Implemented behaviors** | Exclude archived Nodes by default. • Search title and Content projections. • Filter by Community and multiple required reactions. • Filter by inclusive vote-count, average-rating, and creation-date ranges. • Compose filters before returning deterministic vote-ranked results. |
 | **Owns** | Discovery queries, result contracts, and ranking policy. |
 | **References** | Node, Community, Content, and Voting data through a host-built read projection. |
 | **Does not own** | Nodes, Communities, documents, votes, or mutations in any upstream boundary. |

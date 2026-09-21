@@ -32,6 +32,10 @@ public sealed class DiscoveryService : IDiscoveryService
                 candidate.AverageVote >= query.MinimumAverageVote.Value)
             .Where(candidate => query.MaximumAverageVote is null ||
                 candidate.AverageVote <= query.MaximumAverageVote.Value)
+            .Where(candidate => query.CreatedFrom is null ||
+                DateOnly.FromDateTime(candidate.CreatedAt.DateTime) >= query.CreatedFrom.Value)
+            .Where(candidate => query.CreatedThrough is null ||
+                DateOnly.FromDateTime(candidate.CreatedAt.DateTime) <= query.CreatedThrough.Value)
             .Where(candidate => string.IsNullOrWhiteSpace(search) ||
                 candidate.Title.Contains(search, StringComparison.OrdinalIgnoreCase) ||
                 candidate.SearchableContent.Contains(search, StringComparison.OrdinalIgnoreCase))
@@ -66,6 +70,9 @@ public sealed class DiscoveryService : IDiscoveryService
         if (query.MinimumAverageVote.HasValue && query.MaximumAverageVote.HasValue &&
             query.MinimumAverageVote.Value > query.MaximumAverageVote.Value)
             throw new ArgumentException("Minimum average vote cannot exceed maximum average vote.", nameof(query));
+        if (query.CreatedFrom.HasValue && query.CreatedThrough.HasValue &&
+            query.CreatedFrom.Value > query.CreatedThrough.Value)
+            throw new ArgumentException("Created-from date cannot follow created-through date.", nameof(query));
     }
 
     private static double Score(DiscoveryCandidate candidate, string? search)

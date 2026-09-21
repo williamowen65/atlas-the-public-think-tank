@@ -379,6 +379,8 @@ public sealed class ConsoleApplication
         int? maximumVoteCount = null;
         double? minimumAverageVote = null;
         double? maximumAverageVote = null;
+        DateOnly? createdFrom = null;
+        DateOnly? createdThrough = null;
 
         while (browsing)
         {
@@ -391,6 +393,7 @@ public sealed class ConsoleApplication
             Console.WriteLine($"Reactions: {ResolveReactionFilterNames(reactionIds)}");
             Console.WriteLine($"Vote count: {FormatRange(minimumVoteCount, maximumVoteCount)}");
             Console.WriteLine($"Average vote: {FormatRange(minimumAverageVote, maximumAverageVote)}");
+            Console.WriteLine($"Created: {FormatDateRange(createdFrom, createdThrough)}");
             Console.WriteLine();
 
             var results = _discovery.Discover(new DiscoveryQuery(
@@ -400,7 +403,9 @@ public sealed class ConsoleApplication
                 minimumVoteCount,
                 maximumVoteCount,
                 minimumAverageVote,
-                maximumAverageVote));
+                maximumAverageVote,
+                createdFrom,
+                createdThrough));
             var nodes = results
                 .Select(result => _nodeRepository.GetById(new NodeId(result.NodeId)))
                 .Where(node => node is not null)
@@ -413,7 +418,7 @@ public sealed class ConsoleApplication
             }
             else
             {
-                NodeDisplay.WriteTableHeader();
+                NodeDisplay.WriteTableHeader(includeCreatedDate: true);
                 var votingParticipantId = new VotingParticipantId(_currentParticipant.Id.Value);
                 for (var index = 0; index < nodes.Count; index++)
                 {
@@ -426,13 +431,14 @@ public sealed class ConsoleApplication
                         _documentRepository, _participantRepository, index + 1,
                         result.VoteCount, result.AverageVote, myVote,
                         _nodeTags, _tagDefinitions, _voteRepository,
-                        _communities, _communityNodes, _comments);
+                        _communities, _communityNodes, _comments,
+                        includeCreatedDate: true);
                 }
             }
 
             Console.WriteLine();
             Console.WriteLine("Enter a node number to open it, S for text, C for community,");
-            Console.WriteLine("R for reactions, V for vote ranges, X to clear filters, or 0 to return.");
+            Console.WriteLine("R for reactions, V for vote ranges, D for created date, X to clear, or 0 to return.");
             Console.WriteLine();
             Console.Write("Selection: ");
             var input = Console.ReadLine()?.Trim();
@@ -458,6 +464,11 @@ public sealed class ConsoleApplication
                 (minimumAverageVote, maximumAverageVote) = ReadDoubleRange("average vote", 0, 10);
                 continue;
             }
+            if (string.Equals(input, "d", StringComparison.OrdinalIgnoreCase))
+            {
+                (createdFrom, createdThrough) = ReadDateRange();
+                continue;
+            }
             if (string.Equals(input, "x", StringComparison.OrdinalIgnoreCase))
             {
                 searchText = null;
@@ -467,6 +478,8 @@ public sealed class ConsoleApplication
                 maximumVoteCount = null;
                 minimumAverageVote = null;
                 maximumAverageVote = null;
+                createdFrom = null;
+                createdThrough = null;
                 continue;
             }
             if (!int.TryParse(input, out var selection))
@@ -574,6 +587,22 @@ public sealed class ConsoleApplication
 
     private static string FormatRange<T>(T? minimum, T? maximum) where T : struct =>
         minimum is null && maximum is null ? "(all)" : $"{minimum?.ToString() ?? "no minimum"} to {maximum?.ToString() ?? "no maximum"}";
+
+    private static (DateOnly? From, DateOnly? Through) ReadDateRange()
+    {
+        Console.Write("Created from (YYYY-MM-DD, blank for none): ");
+        DateOnly? from = DateOnly.TryParse(Console.ReadLine(), out var parsedFrom) ? parsedFrom : null;
+        Console.Write("Created through (YYYY-MM-DD, blank for none): ");
+        DateOnly? through = DateOnly.TryParse(Console.ReadLine(), out var parsedThrough) ? parsedThrough : null;
+        if (from.HasValue && through.HasValue && from.Value > through.Value)
+            (from, through) = (through, from);
+        return (from, through);
+    }
+
+    private static string FormatDateRange(DateOnly? from, DateOnly? through) =>
+        from is null && through is null
+            ? "(all)"
+            : $"{from?.ToString("yyyy-MM-dd") ?? "no start"} to {through?.ToString("yyyy-MM-dd") ?? "no end"}";
 
     private static string? NullIfWhiteSpace(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();

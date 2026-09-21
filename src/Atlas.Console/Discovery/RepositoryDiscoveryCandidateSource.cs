@@ -56,6 +56,7 @@ internal sealed class RepositoryDiscoveryCandidateSource : IDiscoveryCandidateSo
                 node.Title.Value,
                 content,
                 node.Status == NodeStatus.Archived,
+                node.CreatedAt,
                 node.UpdatedAt,
                 summary.VoteCount,
                 summary.AverageVote,

@@ -9,6 +9,7 @@ public sealed record DiscoveryCandidate(
     string Title,
     string SearchableContent,
     bool IsArchived,
+    DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
     int VoteCount,
     double? AverageVote,

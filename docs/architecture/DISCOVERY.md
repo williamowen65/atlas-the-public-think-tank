@@ -21,6 +21,7 @@ separate ranking and filtering rules.
 | Reaction IDs | Includes only Nodes containing every selected active reaction |
 | Vote count range | Inclusive minimum and/or maximum number of current votes |
 | Average vote range | Inclusive minimum and/or maximum average from 0–10; unrated Nodes do not match an average range |
+| Created-date range | Inclusive start and/or end calendar date; full creation timestamps remain preserved |
 | Include archived | Off by default; intended for administrative workflows |
 
 All filters compose and are applied before ranking. Results contain Node identities and ranking
@@ -55,5 +56,9 @@ projection input without making bulk browsing part of Graph's domain contract.
 
 Choose **Discover nodes** from the main menu. The view always shows ranked
 Discovery results. Use `S` for text, `C` for Community, `R` for one or more
-reactions, `V` for vote-count and average-vote ranges, `X` to clear all filters,
-a result number to open it, or `0` to return.
+reactions, `V` for vote-count and average-vote ranges, `D` for the created-date
+range, `X` to clear all filters, a result number to open it, or `0` to return.
+
+The Discovery table shows the Created date as `YYYY-MM-DD`. `UpdatedAt` remains
+a separate fact used for deterministic ranking ties and Node details. Discovery
+does not combine creation and modification into an ambiguous synthetic date.

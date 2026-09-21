@@ -1184,3 +1184,11 @@ Atlas shall allow a Discovery query to select one or more reactions. A matching 
 **Status:** Verified
 
 Atlas shall filter by optional inclusive minimum and maximum vote counts and optional inclusive minimum and maximum average ratings from 0 through 10. Nodes without votes shall not match an average-rating range.
+
+<a id="dis-007"></a>
+## DIS-007 — Discovery supports an inclusive created-date range
+
+**Priority:** Must
+**Status:** Verified
+
+Atlas shall filter Nodes by optional inclusive creation-date boundaries while preserving full creation timestamps. The Discovery console shall show the creation date without its time component. Creation and modification dates shall remain semantically distinct.
