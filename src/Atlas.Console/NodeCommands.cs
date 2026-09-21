@@ -1048,7 +1048,7 @@ public static class NodeCommands
         if (selection < 1 || selection > associated.Count) { ConsoleUi.Pause("That is not a valid selection."); return currentParticipant; }
         return CommunityCommands.Run(associated[selection - 1], communities, memberships, communityNodes, service,
             nodes, nodeTypes, documents, participants, votes, castVote, undoVote, tagDefinitions, nodeTags,
-            eventPublisher, currentParticipant);
+            eventPublisher, currentParticipant, comments);
     }
 
     /// <summary>
