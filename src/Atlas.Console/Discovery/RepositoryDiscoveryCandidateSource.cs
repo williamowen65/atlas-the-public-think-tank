@@ -3,6 +3,7 @@ using Atlas.Content.Blocks;
 using Atlas.Content.Documents;
 using Atlas.Discovery;
 using Atlas.Graph.Nodes;
+using Atlas.Graph.Reactions;
 using Atlas.Voting;
 using Atlas.Voting.Data;
 using Atlas.Voting.Target;
@@ -19,17 +20,20 @@ internal sealed class RepositoryDiscoveryCandidateSource : IDiscoveryCandidateSo
     private readonly IDocumentRepository _documents;
     private readonly IVoteRepository _votes;
     private readonly ICommunityNodeRepository _communityNodes;
+    private readonly INodeReactionRepository _nodeReactions;
 
     public RepositoryDiscoveryCandidateSource(
         IDiscoveryNodeReader nodes,
         IDocumentRepository documents,
         IVoteRepository votes,
-        ICommunityNodeRepository communityNodes)
+        ICommunityNodeRepository communityNodes,
+        INodeReactionRepository nodeReactions)
     {
         _nodes = nodes;
         _documents = documents;
         _votes = votes;
         _communityNodes = communityNodes;
+        _nodeReactions = nodeReactions;
     }
 
     public IReadOnlyCollection<DiscoveryCandidate> GetCandidates() =>
@@ -43,6 +47,9 @@ internal sealed class RepositoryDiscoveryCandidateSource : IDiscoveryCandidateSo
             var communityIds = _communityNodes.GetByNode(node.Id.Value)
                 .Select(association => association.CommunityId.Value)
                 .ToList();
+            var reactionIds = _nodeReactions.GetActiveForNode(node.Id)
+                .Select(reaction => reaction.ReactionDefinitionId.Value)
+                .ToList();
 
             return new DiscoveryCandidate(
                 node.Id.Value,
@@ -52,7 +59,8 @@ internal sealed class RepositoryDiscoveryCandidateSource : IDiscoveryCandidateSo
                 node.UpdatedAt,
                 summary.VoteCount,
                 summary.AverageVote,
-                communityIds);
+                communityIds,
+                reactionIds);
         }).ToList();
 
     private static string SearchableText(ContentBlock block) => block switch

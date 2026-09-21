@@ -12,4 +12,5 @@ public sealed record DiscoveryCandidate(
     DateTimeOffset UpdatedAt,
     int VoteCount,
     double? AverageVote,
-    IReadOnlyCollection<Guid> CommunityIds);
+    IReadOnlyCollection<Guid> CommunityIds,
+    IReadOnlyCollection<Guid> ReactionDefinitionIds);

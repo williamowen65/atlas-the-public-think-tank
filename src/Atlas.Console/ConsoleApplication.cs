@@ -374,6 +374,11 @@ public sealed class ConsoleApplication
         var browsing = true;
         string? searchText = null;
         Guid? communityId = null;
+        IReadOnlyCollection<Guid> reactionIds = Array.Empty<Guid>();
+        int? minimumVoteCount = null;
+        int? maximumVoteCount = null;
+        double? minimumAverageVote = null;
+        double? maximumAverageVote = null;
 
         while (browsing)
         {
@@ -383,9 +388,19 @@ public sealed class ConsoleApplication
             WriteActingAs();
             Console.WriteLine($"Search: {searchText ?? "(all)"}");
             Console.WriteLine($"Community: {ResolveCommunityFilterName(communityId)}");
+            Console.WriteLine($"Reactions: {ResolveReactionFilterNames(reactionIds)}");
+            Console.WriteLine($"Vote count: {FormatRange(minimumVoteCount, maximumVoteCount)}");
+            Console.WriteLine($"Average vote: {FormatRange(minimumAverageVote, maximumAverageVote)}");
             Console.WriteLine();
 
-            var results = _discovery.Discover(new DiscoveryQuery(searchText, communityId));
+            var results = _discovery.Discover(new DiscoveryQuery(
+                searchText,
+                communityId,
+                reactionIds,
+                minimumVoteCount,
+                maximumVoteCount,
+                minimumAverageVote,
+                maximumAverageVote));
             var nodes = results
                 .Select(result => _nodeRepository.GetById(new NodeId(result.NodeId)))
                 .Where(node => node is not null)
@@ -416,8 +431,8 @@ public sealed class ConsoleApplication
             }
 
             Console.WriteLine();
-            Console.WriteLine("Enter a node number to open it, S to search, C to filter by community,");
-            Console.WriteLine("X to clear filters, or 0 to return to the main menu.");
+            Console.WriteLine("Enter a node number to open it, S for text, C for community,");
+            Console.WriteLine("R for reactions, V for vote ranges, X to clear filters, or 0 to return.");
             Console.WriteLine();
             Console.Write("Selection: ");
             var input = Console.ReadLine()?.Trim();
@@ -432,10 +447,26 @@ public sealed class ConsoleApplication
                 communityId = SelectDiscoveryCommunity();
                 continue;
             }
+            if (string.Equals(input, "r", StringComparison.OrdinalIgnoreCase))
+            {
+                reactionIds = SelectDiscoveryReactions();
+                continue;
+            }
+            if (string.Equals(input, "v", StringComparison.OrdinalIgnoreCase))
+            {
+                (minimumVoteCount, maximumVoteCount) = ReadIntegerRange("vote count", minimum: 0);
+                (minimumAverageVote, maximumAverageVote) = ReadDoubleRange("average vote", 0, 10);
+                continue;
+            }
             if (string.Equals(input, "x", StringComparison.OrdinalIgnoreCase))
             {
                 searchText = null;
                 communityId = null;
+                reactionIds = Array.Empty<Guid>();
+                minimumVoteCount = null;
+                maximumVoteCount = null;
+                minimumAverageVote = null;
+                maximumAverageVote = null;
                 continue;
             }
             if (!int.TryParse(input, out var selection))
@@ -493,6 +524,56 @@ public sealed class ConsoleApplication
     private string ResolveCommunityFilterName(Guid? id) => id is null
         ? "(all)"
         : _communities.GetById(new CommunityId(id.Value))?.Name ?? "(unavailable)";
+
+    private IReadOnlyCollection<Guid> SelectDiscoveryReactions()
+    {
+        var definitions = _tagDefinitions.GetAll()
+            .Where(definition => !definition.IsSuppressed)
+            .OrderBy(definition => definition.Text)
+            .ToList();
+        Console.WriteLine("Select one or more reactions separated by commas. Matching Nodes must contain all selected reactions.");
+        Console.WriteLine("0. All reactions");
+        for (var index = 0; index < definitions.Count; index++)
+            Console.WriteLine($"{index + 1}. {definitions[index].Emoji} {definitions[index].Text}");
+        Console.Write("Reactions: ");
+        var selections = (Console.ReadLine() ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(value => int.TryParse(value, out var number) ? number : -1)
+            .Where(number => number > 0 && number <= definitions.Count)
+            .Distinct()
+            .ToList();
+        return selections.Select(number => definitions[number - 1].Id.Value).ToList();
+    }
+
+    private string ResolveReactionFilterNames(IReadOnlyCollection<Guid> ids)
+    {
+        if (ids.Count == 0) return "(all)";
+        return string.Join(" + ", ids.Select(id =>
+            _tagDefinitions.GetById(new ReactionDefinitionId(id))?.Text ?? "(unavailable)"));
+    }
+
+    private static (int? Minimum, int? Maximum) ReadIntegerRange(string label, int minimum)
+    {
+        Console.Write($"Minimum {label} (blank for none): ");
+        var min = int.TryParse(Console.ReadLine(), out var parsedMin) && parsedMin >= minimum ? parsedMin : null;
+        Console.Write($"Maximum {label} (blank for none): ");
+        var max = int.TryParse(Console.ReadLine(), out var parsedMax) && parsedMax >= minimum ? parsedMax : null;
+        if (min.HasValue && max.HasValue && min.Value > max.Value) (min, max) = (max, min);
+        return (min, max);
+    }
+
+    private static (double? Minimum, double? Maximum) ReadDoubleRange(string label, double minimum, double maximum)
+    {
+        Console.Write($"Minimum {label} ({minimum}–{maximum}, blank for none): ");
+        var min = double.TryParse(Console.ReadLine(), out var parsedMin) && parsedMin >= minimum && parsedMin <= maximum ? parsedMin : null;
+        Console.Write($"Maximum {label} ({minimum}–{maximum}, blank for none): ");
+        var max = double.TryParse(Console.ReadLine(), out var parsedMax) && parsedMax >= minimum && parsedMax <= maximum ? parsedMax : null;
+        if (min.HasValue && max.HasValue && min.Value > max.Value) (min, max) = (max, min);
+        return (min, max);
+    }
+
+    private static string FormatRange<T>(T? minimum, T? maximum) where T : struct =>
+        minimum is null && maximum is null ? "(all)" : $"{minimum?.ToString() ?? "no minimum"} to {maximum?.ToString() ?? "no maximum"}";
 
     private static string? NullIfWhiteSpace(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();

@@ -127,7 +127,8 @@ IDiscoveryCandidateSource discoverySource = new RepositoryDiscoveryCandidateSour
     (IDiscoveryNodeReader)nodeRepository,
     documentRepository,
     voteRepository,
-    communityNodeRepository);
+    communityNodeRepository,
+    nodeTagRepository);
 IDiscoveryService discovery = new DiscoveryService(discoverySource);
 
 var eventPublisher = new InMemoryEventPublisher();

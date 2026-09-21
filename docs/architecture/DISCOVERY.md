@@ -18,9 +18,12 @@ separate ranking and filtering rules.
 |---|---|
 | Search text | Case-insensitive match against title or searchable content |
 | Community ID | Includes only Nodes associated with that Community |
+| Reaction IDs | Includes only Nodes containing every selected active reaction |
+| Vote count range | Inclusive minimum and/or maximum number of current votes |
+| Average vote range | Inclusive minimum and/or maximum average from 0–10; unrated Nodes do not match an average range |
 | Include archived | Off by default; intended for administrative workflows |
 
-Filters are applied before ranking. Results contain Node identities and ranking
+All filters compose and are applied before ranking. Results contain Node identities and ranking
 metadata, not mutable Graph aggregates.
 
 ## Ranking policy
@@ -51,5 +54,6 @@ projection input without making bulk browsing part of Graph's domain contract.
 ## Console verification
 
 Choose **Discover nodes** from the main menu. The view always shows ranked
-Discovery results. Use `S` to search, `C` to select a Community, `X` to clear
-filters, a result number to open it, or `0` to return.
+Discovery results. Use `S` for text, `C` for Community, `R` for one or more
+reactions, `V` for vote-count and average-vote ranges, `X` to clear all filters,
+a result number to open it, or `0` to return.

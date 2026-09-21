@@ -6,6 +6,8 @@ namespace Atlas.Discovery.Tests;
 public sealed class DiscoveryServiceTests
 {
     private static readonly Guid CommunityA = Guid.NewGuid();
+    private static readonly Guid ReactionA = Guid.NewGuid();
+    private static readonly Guid ReactionB = Guid.NewGuid();
 
     [TestMethod]
     public void Discover_returns_active_candidates_in_ranked_order()
@@ -63,6 +65,66 @@ public sealed class DiscoveryServiceTests
             results.Select(result => result.NodeId).ToArray());
     }
 
+    [TestMethod]
+    public void Discover_requires_all_selected_reactions()
+    {
+        var both = Candidate("Both", average: 5, reactions: [ReactionA, ReactionB]);
+        var one = Candidate("One", average: 9, reactions: [ReactionA]);
+
+        var results = Service(one, both).Discover(new DiscoveryQuery(
+            ReactionDefinitionIds: [ReactionA, ReactionB]));
+
+        Assert.AreEqual(both.NodeId, results.Single().NodeId);
+    }
+
+    [TestMethod]
+    public void Discover_filters_vote_count_by_inclusive_range()
+    {
+        var below = Candidate("Below", average: 5, votes: 1);
+        var included = Candidate("Included", average: 5, votes: 3);
+        var above = Candidate("Above", average: 5, votes: 7);
+
+        var results = Service(below, included, above).Discover(new DiscoveryQuery(
+            MinimumVoteCount: 2,
+            MaximumVoteCount: 5));
+
+        Assert.AreEqual(included.NodeId, results.Single().NodeId);
+    }
+
+    [TestMethod]
+    public void Discover_filters_average_vote_by_inclusive_range_and_excludes_unrated_nodes()
+    {
+        var unrated = Candidate("Unrated", average: null);
+        var included = Candidate("Included", average: 7.5, votes: 2);
+        var above = Candidate("Above", average: 9, votes: 2);
+
+        var results = Service(unrated, included, above).Discover(new DiscoveryQuery(
+            MinimumAverageVote: 6,
+            MaximumAverageVote: 8));
+
+        Assert.AreEqual(included.NodeId, results.Single().NodeId);
+    }
+
+    [TestMethod]
+    public void Discover_composes_text_community_reaction_and_vote_filters()
+    {
+        var match = Candidate("Climate plan", average: 8, votes: 4,
+            communities: [CommunityA], reactions: [ReactionA]);
+        var wrongReaction = Candidate("Climate evidence", average: 8, votes: 4,
+            communities: [CommunityA]);
+
+        var results = Service(match, wrongReaction).Discover(new DiscoveryQuery(
+            SearchText: "climate",
+            CommunityId: CommunityA,
+            ReactionDefinitionIds: [ReactionA],
+            MinimumVoteCount: 3,
+            MaximumVoteCount: 5,
+            MinimumAverageVote: 7,
+            MaximumAverageVote: 9));
+
+        Assert.AreEqual(match.NodeId, results.Single().NodeId);
+    }
+
     private static DiscoveryService Service(params DiscoveryCandidate[] candidates) =>
         new(new MemorySource(candidates));
 
@@ -73,9 +135,10 @@ public sealed class DiscoveryServiceTests
         string content = "",
         bool archived = false,
         DateTimeOffset? updatedAt = null,
-        IReadOnlyCollection<Guid>? communities = null) =>
+        IReadOnlyCollection<Guid>? communities = null,
+        IReadOnlyCollection<Guid>? reactions = null) =>
         new(Guid.NewGuid(), title, content, archived, updatedAt ?? DateTimeOffset.UtcNow,
-            votes, average, communities ?? Array.Empty<Guid>());
+            votes, average, communities ?? Array.Empty<Guid>(), reactions ?? Array.Empty<Guid>());
 
     private sealed class MemorySource(IReadOnlyCollection<DiscoveryCandidate> candidates)
         : IDiscoveryCandidateSource

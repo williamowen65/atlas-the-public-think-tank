@@ -4,4 +4,9 @@ namespace Atlas.Discovery;
 public sealed record DiscoveryQuery(
     string? SearchText = null,
     Guid? CommunityId = null,
+    IReadOnlyCollection<Guid>? ReactionDefinitionIds = null,
+    int? MinimumVoteCount = null,
+    int? MaximumVoteCount = null,
+    double? MinimumAverageVote = null,
+    double? MaximumAverageVote = null,
     bool IncludeArchived = false);

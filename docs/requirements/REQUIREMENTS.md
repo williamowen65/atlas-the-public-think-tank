@@ -1168,3 +1168,19 @@ Atlas shall support case-insensitive search over Node titles and the searchable 
 **Status:** Verified
 
 Ordinary Discovery queries shall exclude archived Nodes. Explicit administrative queries may opt into archived results.
+
+<a id="dis-005"></a>
+## DIS-005 — Discovery supports compound reaction filtering
+
+**Priority:** Must
+**Status:** Verified
+
+Atlas shall allow a Discovery query to select one or more reactions. A matching Node shall contain every selected reaction, and the reaction condition shall compose with all other active filters.
+
+<a id="dis-006"></a>
+## DIS-006 — Discovery supports inclusive vote ranges
+
+**Priority:** Must
+**Status:** Verified
+
+Atlas shall filter by optional inclusive minimum and maximum vote counts and optional inclusive minimum and maximum average ratings from 0 through 10. Nodes without votes shall not match an average-rating range.
