@@ -1,5 +1,6 @@
 using Atlas.ConsoleApp.Eventing;
 using Atlas.Comments.Comments;
+using Atlas.ConsoleApp.Comments;
 using Atlas.ConsoleApp.Communities;
 using Atlas.Communities.Communities;
 using Atlas.Communities.Memberships;
@@ -144,7 +145,9 @@ public static class NodeCommands
             Console.WriteLine("15. View votes");
             Console.WriteLine($"16. Manage communities{authorOnlyStatus}");
             Console.WriteLine("17. View communities");
-            Console.WriteLine("18. Return to node browser");
+            Console.WriteLine("18. Add comment");
+            Console.WriteLine("19. View comments");
+            Console.WriteLine("20. Return to node browser");
             Console.WriteLine();
 
             Console.Write("Selection: ");
@@ -302,6 +305,25 @@ public static class NodeCommands
                         break;
 
                     case "18":
+                        CommentCommands.AddTopLevel(
+                            CommentTarget.Node(node.Id.Value),
+                            new CommentService(
+                                comments,
+                                new NodeCommentTargetAvailability(nodes)),
+                            currentParticipant);
+                        break;
+
+                    case "19":
+                        CommentCommands.Run(
+                            CommentTarget.Node(node.Id.Value),
+                            new CommentService(
+                                comments,
+                                new NodeCommentTargetAvailability(nodes)),
+                            participants,
+                            currentParticipant);
+                        break;
+
+                    case "20":
                         viewingNode = false;
                         break;
 
