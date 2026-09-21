@@ -1,10 +1,79 @@
 [
-  { "Id": "53057519-9a26-4b02-a884-56dcf82159ed", "Name": "Issue", "Description": "A problem or concern to investigate.", "OwnerId": null, "IsSystemDefined": true, "IsArchived": false, "AutoPluralize": true, "CreatedAt": "2026-08-01T14:00:00+00:00", "UpdatedAt": "2026-08-01T14:00:00+00:00" },
-  { "Id": "a2e82ee2-12ba-49fc-9160-c2b864d4f42f", "Name": "Question", "Description": "A question that invites answers.", "OwnerId": null, "IsSystemDefined": true, "IsArchived": false, "AutoPluralize": true, "CreatedAt": "2026-08-01T14:00:00+00:00", "UpdatedAt": "2026-08-01T14:00:00+00:00" },
-  { "Id": "0328981f-7b76-4bcb-ad04-99b4ed74fd23", "Name": "Idea", "Description": "A proposed concept or possibility.", "OwnerId": null, "IsSystemDefined": true, "IsArchived": false, "AutoPluralize": true, "CreatedAt": "2026-08-01T14:00:00+00:00", "UpdatedAt": "2026-08-01T14:00:00+00:00" },
-  { "Id": "60d8ba45-8b78-4593-838b-ffd15af69746", "Name": "Solution", "Description": "A proposed response to a problem.", "OwnerId": null, "IsSystemDefined": true, "IsArchived": false, "AutoPluralize": true, "CreatedAt": "2026-08-01T14:00:00+00:00", "UpdatedAt": "2026-08-01T14:00:00+00:00" },
-  { "Id": "df57b39d-efba-4398-84e0-6a7d4214287f", "Name": "Evidence", "Description": "Information supporting or challenging a claim.", "OwnerId": null, "IsSystemDefined": true, "IsArchived": false, "AutoPluralize": false, "CreatedAt": "2026-08-01T14:00:00+00:00", "UpdatedAt": "2026-08-01T14:00:00+00:00" },
-  { "Id": "d0ac2786-c2a4-407c-9b7c-6e82fd8121c9", "Name": "Relationship", "Description": "A connection involving multiple nodes.", "OwnerId": null, "IsSystemDefined": true, "IsArchived": false, "AutoPluralize": true, "CreatedAt": "2026-08-01T14:00:00+00:00", "UpdatedAt": "2026-08-01T14:00:00+00:00" },
-  { "Id": "a253f4b5-1cf9-4da7-9a55-807cf1cb64b8", "Name": "Comment", "Description": "A response or observation about another node.", "OwnerId": null, "IsSystemDefined": true, "IsArchived": false, "AutoPluralize": true, "CreatedAt": "2026-08-01T14:00:00+00:00", "UpdatedAt": "2026-08-01T14:00:00+00:00" },
-  { "Id": "01659fa4-84b0-4d6e-89c0-2c964132f5c3", "Name": "Location", "Description": "A place associated with another node.", "OwnerId": null, "IsSystemDefined": true, "IsArchived": false, "AutoPluralize": true, "CreatedAt": "2026-08-01T14:00:00+00:00", "UpdatedAt": "2026-08-01T14:00:00+00:00" }
+  {
+    "Id": "53057519-9a26-4b02-a884-56dcf82159ed",
+    "Name": "Issue",
+    "Description": "A problem or concern to investigate.",
+    "OwnerId": null,
+    "IsSystemDefined": true,
+    "IsArchived": false,
+    "AutoPluralize": true,
+    "CreatedAt": "2026-08-01T14:00:00+00:00",
+    "UpdatedAt": "2026-08-01T14:00:00+00:00"
+  },
+  {
+    "Id": "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
+    "Name": "Question",
+    "Description": "A question that invites answers.",
+    "OwnerId": null,
+    "IsSystemDefined": true,
+    "IsArchived": false,
+    "AutoPluralize": true,
+    "CreatedAt": "2026-08-01T14:00:00+00:00",
+    "UpdatedAt": "2026-08-01T14:00:00+00:00"
+  },
+  {
+    "Id": "0328981f-7b76-4bcb-ad04-99b4ed74fd23",
+    "Name": "Idea",
+    "Description": "A proposed concept or possibility.",
+    "OwnerId": null,
+    "IsSystemDefined": true,
+    "IsArchived": false,
+    "AutoPluralize": true,
+    "CreatedAt": "2026-08-01T14:00:00+00:00",
+    "UpdatedAt": "2026-08-01T14:00:00+00:00"
+  },
+  {
+    "Id": "60d8ba45-8b78-4593-838b-ffd15af69746",
+    "Name": "Solution",
+    "Description": "A proposed response to a problem.",
+    "OwnerId": null,
+    "IsSystemDefined": true,
+    "IsArchived": false,
+    "AutoPluralize": true,
+    "CreatedAt": "2026-08-01T14:00:00+00:00",
+    "UpdatedAt": "2026-08-01T14:00:00+00:00"
+  },
+  {
+    "Id": "df57b39d-efba-4398-84e0-6a7d4214287f",
+    "Name": "Evidence",
+    "Description": "Information supporting or challenging a claim.",
+    "OwnerId": null,
+    "IsSystemDefined": true,
+    "IsArchived": false,
+    "AutoPluralize": false,
+    "CreatedAt": "2026-08-01T14:00:00+00:00",
+    "UpdatedAt": "2026-08-01T14:00:00+00:00"
+  },
+  {
+    "Id": "d0ac2786-c2a4-407c-9b7c-6e82fd8121c9",
+    "Name": "Relationship",
+    "Description": "A connection involving multiple nodes.",
+    "OwnerId": null,
+    "IsSystemDefined": true,
+    "IsArchived": false,
+    "AutoPluralize": true,
+    "CreatedAt": "2026-08-01T14:00:00+00:00",
+    "UpdatedAt": "2026-08-01T14:00:00+00:00"
+  },
+  {
+    "Id": "01659fa4-84b0-4d6e-89c0-2c964132f5c3",
+    "Name": "Location",
+    "Description": "A place associated with another node.",
+    "OwnerId": null,
+    "IsSystemDefined": true,
+    "IsArchived": false,
+    "AutoPluralize": true,
+    "CreatedAt": "2026-08-01T14:00:00+00:00",
+    "UpdatedAt": "2026-08-01T14:00:00+00:00"
+  }
 ]
