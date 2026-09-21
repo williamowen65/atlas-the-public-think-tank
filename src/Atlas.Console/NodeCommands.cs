@@ -1,4 +1,5 @@
 using Atlas.ConsoleApp.Eventing;
+using Atlas.Comments.Comments;
 using Atlas.ConsoleApp.Communities;
 using Atlas.Communities.Communities;
 using Atlas.Communities.Memberships;
@@ -36,7 +37,8 @@ public static class NodeCommands
         ICommunityRepository communities,
         ICommunityMembershipRepository communityMemberships,
         ICommunityNodeRepository communityNodes,
-        CommunityService communityService)
+        CommunityService communityService,
+        ICommentRepository comments)
     {
         var viewingNode = true;
 
@@ -105,6 +107,7 @@ public static class NodeCommands
                 votes,
                 communities,
                 communityNodes,
+                comments,
                 votingParticipantId,
                 voteCount,
                 averageRating,
