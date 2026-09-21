@@ -1,13 +1,18 @@
 namespace Atlas.Comments.Comments;
 
-public readonly record struct CommentId(Guid Value)
+public readonly record struct CommentId
 {
-    public static CommentId New() => new(Guid.NewGuid());
+    public Guid Value { get; }
 
-    public CommentId
+    public CommentId(Guid value)
     {
-        if (Value == Guid.Empty) throw new ArgumentException("A comment ID is required.", nameof(Value));
+        if (value == Guid.Empty)
+            throw new ArgumentException("A comment ID is required.", nameof(value));
+
+        Value = value;
     }
+
+    public static CommentId New() => new(Guid.NewGuid());
 
     public override string ToString() => Value.ToString();
 }
