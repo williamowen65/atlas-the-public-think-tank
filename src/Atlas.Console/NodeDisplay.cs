@@ -21,6 +21,7 @@ public static class NodeDisplay
     private const int AuthorWidth = 20;
     private const int DescriptionWidth = 32;
     private const int StatusWidth = 10;
+    private const int CreatedWidth = 10;
     private const int TagsWidth = 40;
     private const int CommunitiesWidth = 24;
     private const int CommentsWidth = 8;
@@ -31,7 +32,7 @@ public static class NodeDisplay
     private const int CurrentVoteWidth = 7;
 
     /// <summary>Writes table header to the console display.</summary>
-    public static void WriteTableHeader()
+    public static void WriteTableHeader(bool includeCreatedDate = false)
     {
         Console.WriteLine(
             $"{"#",3}  " +
@@ -45,6 +46,7 @@ public static class NodeDisplay
             $"{"Reactions",-TagsWidth}  " +
             $"{"Communities",-CommunitiesWidth}  " +
             $"{Center("Comments", CommentsWidth)}  " +
+            (includeCreatedDate ? $"{Center("Created", CreatedWidth)}  " : string.Empty) +
             $"{"Status",-StatusWidth}  " +
             "Sub-nodes");
 
@@ -62,6 +64,7 @@ public static class NodeDisplay
                 CommunitiesWidth + 2 +
                 CommentsWidth + 2 +
                 TagsWidth + 2 +
+                (includeCreatedDate ? CreatedWidth + 2 : 0) +
                 StatusWidth + 2 +
                 SubNodesMinimumWidth));
     }
@@ -82,7 +85,8 @@ public static class NodeDisplay
         IVoteRepository? votes = null,
         ICommunityRepository? communities = null,
         ICommunityNodeRepository? communityNodes = null,
-        ICommentRepository? comments = null)
+        ICommentRepository? comments = null,
+        bool includeCreatedDate = false)
     {
         var typeName = ResolveTypeName(node, nodeTypes);
         var description = ResolveDescription(node, documents, includeBlockDetails: false);
@@ -104,6 +108,7 @@ public static class NodeDisplay
             $"{Truncate(ResolveTags(node, nodeTags, tagDefinitions, votes), TagsWidth),-TagsWidth}  " +
             $"{Truncate(ResolveCommunities(node, communities, communityNodes), CommunitiesWidth),-CommunitiesWidth}  " +
             $"{Center(ResolveCommentCount(node, comments), CommentsWidth)}  " +
+            (includeCreatedDate ? $"{node.CreatedAt:yyyy-MM-dd}  " : string.Empty) +
             $"{node.Status,-StatusWidth}  " +
             subNodeSummary);
     }
@@ -322,9 +327,7 @@ public static class NodeDisplay
         INodeRepository nodes)
     {
         return nodes
-            .GetAll()
-            .Where(candidate =>
-                candidate.ParentNodeIds.Contains(node.Id))
+            .GetChildren(node.Id)
             .OrderBy(candidate => candidate.Title.Value)
             .ToList();
     }

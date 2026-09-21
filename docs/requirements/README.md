@@ -21,6 +21,7 @@ Identifiers use the form `AREA-NNN`.
 | `PER` | Persistence and migration |
 | `TAG` | Reusable node reactions |
 | `VOT` | Voting |
+| `DIS` | Discovery, filtering, search, and ranking |
 | `NFR` | Cross-cutting non-functional requirements |
 
 A requirement ID is permanent once assigned. Do not renumber an ID when requirements are reordered, and do not reuse an ID after a requirement is withdrawn. Keep withdrawn records and mark them `Rejected` or `Deferred` so commits, tests, and discussions retain their meaning.

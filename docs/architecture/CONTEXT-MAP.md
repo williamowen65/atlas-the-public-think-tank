@@ -150,6 +150,21 @@ the JSON implementations belong to the Console host.
 | **Documentation** | [Communities boundary](COMMUNITIES.md) • [Domain README](../../src/Atlas.Communities/README.md) • [Workflow](../workflows/COMMUNITIES.md) • COM requirements and RTM rows |
 | **Gaps or open questions** | Ownership transfer, member removal, private/restricted visibility, invitations, durable uniqueness, and integration events are deferred explicitly. |
 
+### Discovery
+
+| Attribute | Current state |
+|---|---|
+| **Kind** | Read-oriented domain boundary |
+| **Responsibility** | Search, filter, and rank content for consumer-facing discovery experiences. |
+| **Implemented behaviors** | Exclude archived Nodes by default. • Search title and Content projections. • Filter by Community and multiple required reactions. • Filter by inclusive vote-count, average-rating, and creation-date ranges. • Compose filters before returning deterministic vote-ranked results. |
+| **Owns** | Discovery queries, result contracts, and ranking policy. |
+| **References** | Node, Community, Content, and Voting data through a host-built read projection. |
+| **Does not own** | Nodes, Communities, documents, votes, or mutations in any upstream boundary. |
+| **Publishes** | None. |
+| **Subscribes or queries** | The current Console adapter reads a host-side JSON projection without exposing unrestricted listing through Graph's repository contract; a future deployment can replace it with a materialized projection. |
+| **Documentation** | [Discovery boundary](DISCOVERY.md) • [DIS requirements](../requirements/REQUIREMENTS.md#dis-001) • [RTM](../requirements/TRACEABILITY.md) |
+| **Gaps or open questions** | Personalization, pagination, geographic filters, moderation visibility, ranking experiments, and projection freshness are future work. |
+
 ## Implemented event flow
 
 ```mermaid
