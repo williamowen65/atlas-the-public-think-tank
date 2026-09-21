@@ -124,7 +124,7 @@ var undoVote =
         voteMutationPolicy);
 
 IDiscoveryCandidateSource discoverySource = new RepositoryDiscoveryCandidateSource(
-    nodeRepository,
+    (IDiscoveryNodeReader)nodeRepository,
     documentRepository,
     voteRepository,
     communityNodeRepository);

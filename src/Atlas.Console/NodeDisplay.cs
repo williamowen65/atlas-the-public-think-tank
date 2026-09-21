@@ -322,9 +322,7 @@ public static class NodeDisplay
         INodeRepository nodes)
     {
         return nodes
-            .GetAll()
-            .Where(candidate =>
-                candidate.ParentNodeIds.Contains(node.Id))
+            .GetChildren(node.Id)
             .OrderBy(candidate => candidate.Title.Value)
             .ToList();
     }

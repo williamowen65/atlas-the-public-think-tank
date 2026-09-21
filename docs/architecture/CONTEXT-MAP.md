@@ -161,7 +161,7 @@ the JSON implementations belong to the Console host.
 | **References** | Node, Community, Content, and Voting data through a host-built read projection. |
 | **Does not own** | Nodes, Communities, documents, votes, or mutations in any upstream boundary. |
 | **Publishes** | None. |
-| **Subscribes or queries** | The current Console adapter queries JSON-backed repositories synchronously; a future deployment can replace it with a materialized projection. |
+| **Subscribes or queries** | The current Console adapter reads a host-side JSON projection without exposing unrestricted listing through Graph's repository contract; a future deployment can replace it with a materialized projection. |
 | **Documentation** | [Discovery boundary](DISCOVERY.md) • [DIS requirements](../requirements/REQUIREMENTS.md#dis-001) • [RTM](../requirements/TRACEABILITY.md) |
 | **Gaps or open questions** | Personalization, pagination, geographic filters, moderation visibility, ranking experiments, and projection freshness are future work. |
 

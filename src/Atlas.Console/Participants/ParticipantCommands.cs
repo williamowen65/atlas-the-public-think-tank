@@ -31,15 +31,13 @@ public static class ParticipantCommands
             }
 
             var authoredNodes = nodes
-                .GetAll()
-                .Where(node =>
-                    node.AuthorId.Value == participant.Id.Value)
+                .GetByAuthor(new NodeAuthorId(participant.Id.Value))
                 .ToList();
 
             Console.Clear();
             ParticipantDisplay.WriteProfile(
                 participant,
-                nodes.GetAll(),
+                authoredNodes,
                 currentParticipant);
             Console.WriteLine();
             Console.WriteLine("1. Edit profile");

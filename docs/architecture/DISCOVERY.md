@@ -42,9 +42,11 @@ without changing Graph or the console consumer.
 3. Consumers receive `RankedDiscoveryItem` references.
 4. The console resolves a selected Node by ID only after the user opens it.
 
-The console's primary Node list no longer calls `INodeRepository.GetAll()`.
-That legacy persistence operation remains behind the composition adapter while
-JSON is the backing store; it is not exposed as the user-facing list.
+`INodeRepository` no longer exposes an unrestricted `GetAll()` operation.
+Graph offers only identity lookup, persistence, and purpose-specific graph
+queries for children, authorship, and parent selection. The JSON adapter also
+implements a host-side `IDiscoveryNodeReader` that supplies the current
+projection input without making bulk browsing part of Graph's domain contract.
 
 ## Console verification
 

@@ -302,15 +302,14 @@ public sealed class ConsoleApplication
                 return;
             }
 
-            var nodes = _nodeRepository.GetAll();
-
             ParticipantDisplay.WriteTableHeader();
 
             for (var index = 0; index < participants.Count; index++)
             {
                 ParticipantDisplay.WriteTableRow(
                     participants[index],
-                    nodes,
+                    _nodeRepository.GetByAuthor(
+                        new NodeAuthorId(participants[index].Id.Value)),
                     _nodeTypeRepository,
                     index + 1);
             }

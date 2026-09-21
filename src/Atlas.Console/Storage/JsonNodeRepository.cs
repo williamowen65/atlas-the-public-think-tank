@@ -4,11 +4,12 @@ using Atlas.Content.Blocks;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
+using Atlas.ConsoleApp.Discovery;
 
 namespace Atlas.ConsoleApp.Storage;
 
 /// <summary>Persists Graph nodes as JSON and reconstitutes them as domain aggregates.</summary>
-public sealed class JsonNodeRepository : INodeRepository
+public sealed class JsonNodeRepository : INodeRepository, IDiscoveryNodeReader
 {
     private readonly string _filePath;
     private readonly INodeTypeRepository _nodeTypes;
@@ -34,14 +35,6 @@ public sealed class JsonNodeRepository : INodeRepository
         _legacyAuthorId = legacyAuthorId;
     }
 
-    /// <summary>Loads all persisted domain objects.</summary>
-    public IReadOnlyCollection<Node> GetAll()
-    {
-        return ReadAndMigrateStoredNodes()
-            .Select(ToDomain)
-            .ToList();
-    }
-
     /// <summary>Loads a domain object by its boundary-owned identifier.</summary>
     public Node? GetById(NodeId id)
     {
@@ -50,6 +43,29 @@ public sealed class JsonNodeRepository : INodeRepository
 
         return storedNode is null ? null : ToDomain(storedNode);
     }
+
+    public IReadOnlyCollection<Node> GetChildren(NodeId parentId) =>
+        ReadDomainNodes()
+            .Where(node => node.ParentNodeIds.Contains(parentId))
+            .ToList();
+
+    public IReadOnlyCollection<Node> GetByAuthor(NodeAuthorId authorId) =>
+        ReadDomainNodes()
+            .Where(node => node.AuthorId == authorId)
+            .ToList();
+
+    public IReadOnlyCollection<Node> GetParentCandidates(
+        NodeId childId,
+        IReadOnlyCollection<NodeId> existingParentIds) =>
+        ReadDomainNodes()
+            .Where(node => node.Id != childId && !existingParentIds.Contains(node.Id))
+            .ToList();
+
+    IReadOnlyCollection<Node> IDiscoveryNodeReader.ReadNodesForDiscovery() =>
+        ReadDomainNodes();
+
+    private IReadOnlyCollection<Node> ReadDomainNodes() =>
+        ReadAndMigrateStoredNodes().Select(ToDomain).ToList();
 
     /// <summary>Persists the current domain-object state.</summary>
     public void Save(Node node)

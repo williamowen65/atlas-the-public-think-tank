@@ -13,15 +13,15 @@ namespace Atlas.ConsoleApp.Discovery;
 /// Console composition adapter. It is the only place where the current JSON
 /// repositories are projected into Discovery's cross-boundary read model.
 /// </summary>
-public sealed class RepositoryDiscoveryCandidateSource : IDiscoveryCandidateSource
+internal sealed class RepositoryDiscoveryCandidateSource : IDiscoveryCandidateSource
 {
-    private readonly INodeRepository _nodes;
+    private readonly IDiscoveryNodeReader _nodes;
     private readonly IDocumentRepository _documents;
     private readonly IVoteRepository _votes;
     private readonly ICommunityNodeRepository _communityNodes;
 
     public RepositoryDiscoveryCandidateSource(
-        INodeRepository nodes,
+        IDiscoveryNodeReader nodes,
         IDocumentRepository documents,
         IVoteRepository votes,
         ICommunityNodeRepository communityNodes)
@@ -33,7 +33,7 @@ public sealed class RepositoryDiscoveryCandidateSource : IDiscoveryCandidateSour
     }
 
     public IReadOnlyCollection<DiscoveryCandidate> GetCandidates() =>
-        _nodes.GetAll().Select(node =>
+        _nodes.ReadNodesForDiscovery().Select(node =>
         {
             var summary = new GetVoteSummary(_votes).Execute(new NodeVoteTarget(node.Id.Value));
             var document = _documents.GetById(new DocumentId(node.DescriptionId.Value));

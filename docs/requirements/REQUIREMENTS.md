@@ -1143,6 +1143,7 @@ Atlas shall expose the primary consumer-facing Node list through Discovery in a 
 - Active Nodes are returned in descending ranking order.
 - Ranking ties resolve deterministically.
 - The Console's primary Node list consumes Discovery results and resolves a Node only after Discovery returns its identity.
+- Graph's Node repository does not expose an unrestricted all-Nodes query.
 
 <a id="dis-002"></a>
 ## DIS-002 — Discovery supports Community filtering
