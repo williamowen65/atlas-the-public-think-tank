@@ -514,7 +514,7 @@ public sealed class ConsoleApplication
             _currentParticipant = CommunityCommands.Run(
                 communities[selection - 1], _communities, _communityMemberships, _communityNodes, _communityService,
                 _nodeRepository, _nodeTypeRepository, _documentRepository, _participantRepository,
-                _voteRepository, _castVote, _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, _currentParticipant);
+                _voteRepository, _castVote, _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, _currentParticipant, _comments);
         }
     }
 
