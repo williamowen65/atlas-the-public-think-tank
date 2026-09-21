@@ -1,4 +1,5 @@
 using Atlas.ConsoleApp;
+using Atlas.Comments.Comments;
 using Atlas.Communities.Communities;
 using Atlas.Communities.Memberships;
 using Atlas.Communities.Nodes;
@@ -61,6 +62,7 @@ var nodeTagDataFilePath = Path.Combine(
 var communityDataFilePath = Path.Combine(dataDirectory, "communities.json");
 var communityMembershipDataFilePath = Path.Combine(dataDirectory, "community-memberships.json");
 var communityNodeDataFilePath = Path.Combine(dataDirectory, "community-nodes.json");
+var commentDataFilePath = Path.Combine(dataDirectory, "comments.json");
 
 INodeTypeRepository nodeTypeRepository =
     new JsonNodeTypeRepository(nodeTypeDataFilePath);
@@ -88,6 +90,7 @@ ICommunityRepository communityRepository = new JsonCommunityRepository(community
 ICommunityMembershipRepository communityMembershipRepository = new JsonCommunityMembershipRepository(communityMembershipDataFilePath);
 ICommunityNodeRepository communityNodeRepository = new JsonCommunityNodeRepository(communityNodeDataFilePath);
 var communityService = new CommunityService(communityRepository, communityMembershipRepository, communityNodeRepository);
+ICommentRepository commentRepository = new JsonCommentRepository(commentDataFilePath);
 
 var legacyParticipant =
     EnsureLegacyParticipant(participantRepository);
@@ -154,6 +157,8 @@ var application = new ConsoleApplication(
     communityMembershipRepository,
     communityNodeRepository,
     communityService,
+    commentRepository,
+    commentDataFilePath,
     legacyParticipant);
 
 application.Run();
@@ -172,7 +177,6 @@ static void SeedSystemNodeTypes(
         ("Solution", "A proposed response to a problem.", true),
         ("Evidence", "Information supporting or challenging a claim.", false),
         ("Relationship", "A connection involving multiple nodes.", true),
-        ("Comment", "A response or observation about another node.", true),
         ("Location", "A place associated with another node.", true)
     };
 

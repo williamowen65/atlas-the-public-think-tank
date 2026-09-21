@@ -1,4 +1,5 @@
 using Atlas.Communities.Communities;
+using Atlas.Comments.Comments;
 using Atlas.Communities.Memberships;
 using Atlas.Communities.Nodes;
 using Atlas.ConsoleApp.Eventing;
@@ -30,7 +31,8 @@ public static class CommunityCommands
         IReactionDefinitionRepository tagDefinitions,
         INodeReactionRepository nodeTags,
         InMemoryEventPublisher eventPublisher,
-        Participant currentParticipant)
+        Participant currentParticipant,
+        ICommentRepository comments)
     {
         while (true)
         {
@@ -73,7 +75,7 @@ public static class CommunityCommands
                         Console.Write("Node number (0 cancels): ");
                         if (int.TryParse(Console.ReadLine(), out var choice) && choice > 0 && choice <= associatedNodes.Count)
                         {
-                            currentParticipant = NodeCommands.Run(associatedNodes[choice - 1], nodes, nodeTypes, documents, participants, votes, castVote, undoVote, tagDefinitions, nodeTags, eventPublisher, currentParticipant, communities, memberships, communityNodes, service);
+                            currentParticipant = NodeCommands.Run(associatedNodes[choice - 1], nodes, nodeTypes, documents, participants, votes, castVote, undoVote, tagDefinitions, nodeTags, eventPublisher, currentParticipant, communities, memberships, communityNodes, service, comments);
                         }
                         break;
                     case "2" when membership?.IsActive == true:

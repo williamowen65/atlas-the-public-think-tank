@@ -24,6 +24,10 @@ Markdown documentation.
   console voting interaction, NodeTag target and -1/+1 value types, cumulative
   score aggregation, cross-domain eligibility checks, JSON persistence, and
   verification tests.
+- [Comments Domain](workflows/Comments/CommentsDomain.excalidraw.png) maps comment
+  ownership, top-level creation and replies, edit and soft-removal permissions,
+  threaded reads, Console navigation, target availability, and deferred
+  integrations.
 - [The current-state context map](../architecture/CONTEXT-MAP.md) remains the
   authoritative inventory when the blackboard and written documentation differ.
 

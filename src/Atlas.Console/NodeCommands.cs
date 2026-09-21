@@ -1,4 +1,6 @@
 using Atlas.ConsoleApp.Eventing;
+using Atlas.Comments.Comments;
+using Atlas.ConsoleApp.Comments;
 using Atlas.ConsoleApp.Communities;
 using Atlas.Communities.Communities;
 using Atlas.Communities.Memberships;
@@ -36,7 +38,8 @@ public static class NodeCommands
         ICommunityRepository communities,
         ICommunityMembershipRepository communityMemberships,
         ICommunityNodeRepository communityNodes,
-        CommunityService communityService)
+        CommunityService communityService,
+        ICommentRepository comments)
     {
         var viewingNode = true;
 
@@ -105,6 +108,7 @@ public static class NodeCommands
                 votes,
                 communities,
                 communityNodes,
+                comments,
                 votingParticipantId,
                 voteCount,
                 averageRating,
@@ -141,7 +145,9 @@ public static class NodeCommands
             Console.WriteLine("15. View votes");
             Console.WriteLine($"16. Manage communities{authorOnlyStatus}");
             Console.WriteLine("17. View communities");
-            Console.WriteLine("18. Return to node browser");
+            Console.WriteLine("18. Add comment");
+            Console.WriteLine("19. View comments");
+            Console.WriteLine("20. Return to node browser");
             Console.WriteLine();
 
             Console.Write("Selection: ");
@@ -295,10 +301,29 @@ public static class NodeCommands
                         currentParticipant = ViewCommunities(
                             node, communities, communityMemberships, communityNodes, communityService,
                             nodes, nodeTypes, documents, participants, votes, castVote, undoVote,
-                            tagDefinitions, nodeTags, eventPublisher, currentParticipant);
+                            tagDefinitions, nodeTags, eventPublisher, currentParticipant, comments);
                         break;
 
                     case "18":
+                        CommentCommands.AddTopLevel(
+                            CommentTarget.Node(node.Id.Value),
+                            new CommentService(
+                                comments,
+                                new NodeCommentTargetAvailability(nodes)),
+                            currentParticipant);
+                        break;
+
+                    case "19":
+                        CommentCommands.Run(
+                            CommentTarget.Node(node.Id.Value),
+                            new CommentService(
+                                comments,
+                                new NodeCommentTargetAvailability(nodes)),
+                            participants,
+                            currentParticipant);
+                        break;
+
+                    case "20":
                         viewingNode = false;
                         break;
 
@@ -1031,7 +1056,8 @@ public static class NodeCommands
         IReactionDefinitionRepository tagDefinitions,
         INodeReactionRepository nodeTags,
         InMemoryEventPublisher eventPublisher,
-        Participant currentParticipant)
+        Participant currentParticipant,
+        ICommentRepository comments)
     {
         var associated = communityNodes.GetByNode(node.Id.Value)
             .Select(x => communities.GetById(x.CommunityId))
@@ -1044,7 +1070,7 @@ public static class NodeCommands
         if (selection < 1 || selection > associated.Count) { ConsoleUi.Pause("That is not a valid selection."); return currentParticipant; }
         return CommunityCommands.Run(associated[selection - 1], communities, memberships, communityNodes, service,
             nodes, nodeTypes, documents, participants, votes, castVote, undoVote, tagDefinitions, nodeTags,
-            eventPublisher, currentParticipant);
+            eventPublisher, currentParticipant, comments);
     }
 
     /// <summary>
