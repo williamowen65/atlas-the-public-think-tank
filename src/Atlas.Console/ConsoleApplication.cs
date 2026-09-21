@@ -1,4 +1,5 @@
 using Atlas.ConsoleApp.Eventing;
+using Atlas.Comments.Comments;
 using Atlas.ConsoleApp.Communities;
 using Atlas.Communities.Communities;
 using Atlas.Communities.Memberships;
@@ -33,6 +34,7 @@ public sealed class ConsoleApplication
     private readonly ICommunityMembershipRepository _communityMemberships;
     private readonly ICommunityNodeRepository _communityNodes;
     private readonly CommunityService _communityService;
+    private readonly ICommentRepository _comments;
     private Participant _currentParticipant;
     private readonly string _nodeDataFilePath;
     private readonly string _nodeTypeDataFilePath;
@@ -44,6 +46,7 @@ public sealed class ConsoleApplication
     private readonly string _communityDataFilePath;
     private readonly string _communityMembershipDataFilePath;
     private readonly string _communityNodeDataFilePath;
+    private readonly string _commentDataFilePath;
 
     /// <summary>Creates a validated console application instance.</summary>
     public ConsoleApplication(
@@ -71,6 +74,8 @@ public sealed class ConsoleApplication
         ICommunityMembershipRepository communityMemberships,
         ICommunityNodeRepository communityNodes,
         CommunityService communityService,
+        ICommentRepository comments,
+        string commentDataFilePath,
         Participant initialParticipant)
     {
         _nodeRepository = nodes;
@@ -98,6 +103,8 @@ public sealed class ConsoleApplication
         _communityMemberships = communityMemberships;
         _communityNodes = communityNodes;
         _communityService = communityService;
+        _comments = comments;
+        _commentDataFilePath = commentDataFilePath;
     }
 
     /// <summary>Runs the interactive console application workflow.</summary>
@@ -417,7 +424,8 @@ public sealed class ConsoleApplication
                     tagDefinitions: _tagDefinitions,
                     votes: _voteRepository,
                     communities: _communities,
-                    communityNodes: _communityNodes);
+                    communityNodes: _communityNodes,
+                    comments: _comments);
             }
 
             Console.WriteLine();
@@ -460,7 +468,8 @@ public sealed class ConsoleApplication
                 _communities,
                 _communityMemberships,
                 _communityNodes,
-                _communityService);
+                _communityService,
+                _comments);
         }
     }
 
@@ -592,6 +601,7 @@ public sealed class ConsoleApplication
         ShowDataFile("COMMUNITY DATA", _communityDataFilePath);
         ShowDataFile("COMMUNITY MEMBERSHIP DATA", _communityMembershipDataFilePath);
         ShowDataFile("COMMUNITY NODE DATA", _communityNodeDataFilePath);
+        ShowDataFile("COMMENT DATA", _commentDataFilePath);
     }
 
     /// <summary>Displays data file in the console workflow.</summary>
