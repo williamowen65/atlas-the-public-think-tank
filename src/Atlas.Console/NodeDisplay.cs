@@ -172,6 +172,7 @@ public static class NodeDisplay
             nodeTags,
             tagDefinitions,
             votes,
+            comments,
             childVoteSummaries);
     }
 
@@ -195,6 +196,7 @@ public static class NodeDisplay
         INodeReactionRepository nodeTags,
         IReactionDefinitionRepository tagDefinitions,
         IVoteRepository votes,
+        ICommentRepository? comments,
         IReadOnlyDictionary<NodeId, NodeVoteSummary>? childVoteSummaries)
     {
         var children = FindChildren(node, nodes);
@@ -262,7 +264,8 @@ public static class NodeDisplay
                     voteSummary?.CurrentParticipantVote,
                     nodeTags,
                     tagDefinitions,
-                    votes);
+                    votes,
+                    comments: comments);
             }
         }
 
