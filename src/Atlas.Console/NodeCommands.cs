@@ -298,7 +298,7 @@ public static class NodeCommands
                         currentParticipant = ViewCommunities(
                             node, communities, communityMemberships, communityNodes, communityService,
                             nodes, nodeTypes, documents, participants, votes, castVote, undoVote,
-                            tagDefinitions, nodeTags, eventPublisher, currentParticipant);
+                            tagDefinitions, nodeTags, eventPublisher, currentParticipant, comments);
                         break;
 
                     case "18":
@@ -1034,7 +1034,8 @@ public static class NodeCommands
         IReactionDefinitionRepository tagDefinitions,
         INodeReactionRepository nodeTags,
         InMemoryEventPublisher eventPublisher,
-        Participant currentParticipant)
+        Participant currentParticipant,
+        ICommentRepository comments)
     {
         var associated = communityNodes.GetByNode(node.Id.Value)
             .Select(x => communities.GetById(x.CommunityId))
