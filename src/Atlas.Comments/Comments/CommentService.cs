@@ -57,19 +57,30 @@ public sealed class CommentService
     public IReadOnlyList<CommentThreadItem> GetThread(CommentTarget target)
     {
         var comments = _comments.GetByTarget(target).ToList();
+        var roots = comments
+            .Where(x => x.ParentCommentId is null)
+            .OrderBy(x => x.CreatedAt)
+            .ThenBy(x => x.Id.Value)
+            .ToList();
         var children = comments
-            .GroupBy(x => x.ParentCommentId)
+            .Where(x => x.ParentCommentId is not null)
+            .GroupBy(x => x.ParentCommentId!.Value)
             .ToDictionary(x => x.Key, x => x.OrderBy(c => c.CreatedAt).ThenBy(c => c.Id.Value).ToList());
 
         var result = new List<CommentThreadItem>();
-        AppendChildren(null, 0, children, result);
+        foreach (var root in roots)
+        {
+            result.Add(new CommentThreadItem(root, 0));
+            AppendChildren(root.Id, 1, children, result);
+        }
+
         return result;
     }
 
     private static void AppendChildren(
-        CommentId? parentId,
+        CommentId parentId,
         int depth,
-        IReadOnlyDictionary<CommentId?, List<Comment>> children,
+        IReadOnlyDictionary<CommentId, List<Comment>> children,
         List<CommentThreadItem> result)
     {
         if (!children.TryGetValue(parentId, out var directChildren)) return;
