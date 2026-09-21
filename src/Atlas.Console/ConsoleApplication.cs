@@ -6,6 +6,7 @@ using Atlas.Communities.Memberships;
 using Atlas.Communities.Nodes;
 using Atlas.ConsoleApp.Participants;
 using Atlas.Content.Documents;
+using Atlas.Discovery;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Graph.Reactions;
@@ -35,6 +36,7 @@ public sealed class ConsoleApplication
     private readonly ICommunityNodeRepository _communityNodes;
     private readonly CommunityService _communityService;
     private readonly ICommentRepository _comments;
+    private readonly IDiscoveryService _discovery;
     private Participant _currentParticipant;
     private readonly string _nodeDataFilePath;
     private readonly string _nodeTypeDataFilePath;
@@ -76,6 +78,7 @@ public sealed class ConsoleApplication
         CommunityService communityService,
         ICommentRepository comments,
         string commentDataFilePath,
+        IDiscoveryService discovery,
         Participant initialParticipant)
     {
         _nodeRepository = nodes;
@@ -105,6 +108,7 @@ public sealed class ConsoleApplication
         _communityService = communityService;
         _comments = comments;
         _commentDataFilePath = commentDataFilePath;
+        _discovery = discovery;
     }
 
     /// <summary>Runs the interactive console application workflow.</summary>
@@ -185,7 +189,7 @@ public sealed class ConsoleApplication
         Console.WriteLine("2. Create participant");
         Console.WriteLine("3. Browse participants");
         Console.WriteLine("4. Create node");
-        Console.WriteLine("5. Browse nodes");
+        Console.WriteLine("5. Discover nodes");
         Console.WriteLine("6. Create community");
         Console.WriteLine("7. Browse communities");
         Console.WriteLine("8. List node types");
@@ -365,76 +369,77 @@ public sealed class ConsoleApplication
             _eventPublisher);
     }
 
-    /// <summary>Displays nodes in the console workflow.</summary>
+    /// <summary>Displays Nodes exclusively through ranked Discovery results.</summary>
     private void BrowseNodes()
     {
         var browsing = true;
+        string? searchText = null;
+        Guid? communityId = null;
 
         while (browsing)
         {
             Console.Clear();
-            Console.WriteLine("BROWSE NODES");
-            Console.WriteLine("------------");
+            Console.WriteLine("DISCOVERY");
+            Console.WriteLine("---------");
             WriteActingAs();
+            Console.WriteLine($"Search: {searchText ?? "(all)"}");
+            Console.WriteLine($"Community: {ResolveCommunityFilterName(communityId)}");
+            Console.WriteLine();
 
-            var nodes = _nodeRepository.GetAll().ToList();
+            var results = _discovery.Discover(new DiscoveryQuery(searchText, communityId));
+            var nodes = results
+                .Select(result => _nodeRepository.GetById(new NodeId(result.NodeId)))
+                .Where(node => node is not null)
+                .Cast<Node>()
+                .ToList();
 
             if (nodes.Count == 0)
             {
-                ConsoleUi.Pause("No nodes have been created.");
-                return;
+                Console.WriteLine("No nodes match the current Discovery filters.");
             }
-
-            NodeDisplay.WriteTableHeader();
-            var votingParticipantId = new VotingParticipantId(_currentParticipant.Id.Value);
-
-            for (var index = 0; index < nodes.Count; index++)
+            else
             {
-
-                Node node = nodes[index];
-
-                var voteTarget =
-                    new NodeVoteTarget(node.Id.Value);
-
-                var voteSummary =
-                    new GetVoteSummary(_voteRepository).Execute(
-                        voteTarget,
-                        votingParticipantId);
-
-                var voteCount =
-                    voteSummary.VoteCount;
-
-                var averageRating =
-                    voteSummary.AverageVote;
-
-                var myVote =
-                    voteSummary.CurrentParticipantVote;
-
-                NodeDisplay.WriteTableRow(
-                    node,
-                    _nodeRepository,
-                    _nodeTypeRepository,
-                    _documentRepository,
-                    _participantRepository,
-                    index + 1,
-                    voteCount,
-                    averageRating,
-                    myVote,
-                    nodeTags: _nodeTags,
-                    tagDefinitions: _tagDefinitions,
-                    votes: _voteRepository,
-                    communities: _communities,
-                    communityNodes: _communityNodes,
-                    comments: _comments);
+                NodeDisplay.WriteTableHeader();
+                var votingParticipantId = new VotingParticipantId(_currentParticipant.Id.Value);
+                for (var index = 0; index < nodes.Count; index++)
+                {
+                    var result = results[index];
+                    var myVote = _voteRepository.GetByParticipantAndTarget(
+                        votingParticipantId,
+                        new NodeVoteTarget(result.NodeId))?.Value.Value;
+                    NodeDisplay.WriteTableRow(
+                        nodes[index], _nodeRepository, _nodeTypeRepository,
+                        _documentRepository, _participantRepository, index + 1,
+                        result.VoteCount, result.AverageVote, myVote,
+                        _nodeTags, _tagDefinitions, _voteRepository,
+                        _communities, _communityNodes, _comments);
+                }
             }
 
             Console.WriteLine();
-            Console.WriteLine("Enter a node number to open it.");
-            Console.WriteLine("Enter 0 to return to the main menu.");
+            Console.WriteLine("Enter a node number to open it, S to search, C to filter by community,");
+            Console.WriteLine("X to clear filters, or 0 to return to the main menu.");
             Console.WriteLine();
             Console.Write("Selection: ");
-
-            if (!int.TryParse(Console.ReadLine(), out var selection))
+            var input = Console.ReadLine()?.Trim();
+            if (string.Equals(input, "s", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.Write("Search text (blank clears): ");
+                searchText = NullIfWhiteSpace(Console.ReadLine());
+                continue;
+            }
+            if (string.Equals(input, "c", StringComparison.OrdinalIgnoreCase))
+            {
+                communityId = SelectDiscoveryCommunity();
+                continue;
+            }
+            if (string.Equals(input, "x", StringComparison.OrdinalIgnoreCase))
+            {
+                searchText = null;
+                communityId = null;
+                continue;
+            }
+            if (!int.TryParse(input, out var selection))
             {
                 ConsoleUi.Pause("That is not a valid selection.");
                 continue;
@@ -472,6 +477,26 @@ public sealed class ConsoleApplication
                 _comments);
         }
     }
+
+    private Guid? SelectDiscoveryCommunity()
+    {
+        var communities = _communities.GetAll().OrderBy(community => community.Name).ToList();
+        Console.WriteLine("0. All communities");
+        for (var index = 0; index < communities.Count; index++)
+            Console.WriteLine($"{index + 1}. {communities[index].Name}");
+        Console.Write("Community: ");
+        return int.TryParse(Console.ReadLine(), out var selection) &&
+               selection > 0 && selection <= communities.Count
+            ? communities[selection - 1].Id.Value
+            : null;
+    }
+
+    private string ResolveCommunityFilterName(Guid? id) => id is null
+        ? "(all)"
+        : _communities.GetById(new CommunityId(id.Value))?.Name ?? "(unavailable)";
+
+    private static string? NullIfWhiteSpace(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private void CreateCommunity()
     {

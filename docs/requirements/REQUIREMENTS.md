@@ -27,7 +27,7 @@ This document is the authoritative catalog of requirement statements and accepta
 
 **Rationale:** A concise, valid title is the primary human-readable identity of a node.
 
-**Priority:** Must  
+**Priority:** Must
 **Status:** Verified
 
 ### Acceptance criteria
@@ -45,7 +45,7 @@ This document is the authoritative catalog of requirement statements and accepta
 
 **Rationale:** Content should be removable from active use without destroying its identity or history.
 
-**Priority:** Must  
+**Priority:** Must
 **Status:** Verified
 
 ### Acceptance criteria
@@ -64,7 +64,7 @@ This document is the authoritative catalog of requirement statements and accepta
 
 **Rationale:** Authorship supports attribution, profile navigation, contribution summaries, and future authorization.
 
-**Priority:** Must  
+**Priority:** Must
 **Status:** Verified
 
 ### Acceptance criteria
@@ -82,7 +82,7 @@ This document is the authoritative catalog of requirement statements and accepta
 
 **Rationale:** Content owns document composition and lifecycle while Graph owns node topology.
 
-**Priority:** Must  
+**Priority:** Must
 **Status:** Verified
 
 ### Acceptance criteria
@@ -1130,3 +1130,40 @@ This document is the authoritative catalog of requirement statements and accepta
 - Community models do not depend on Graph or Participants projects.
 - Community, membership, and Node-association records use separate JSON files in the prototype.
 - Missing cross-boundary records do not alter Community-owned identities.
+<a id="dis-001"></a>
+## DIS-001 — Consumer-facing Node lists use ranked Discovery results
+
+**Priority:** Must
+**Status:** Verified
+
+Atlas shall expose the primary consumer-facing Node list through Discovery in a deterministic ranked order rather than directly exposing persistence order.
+
+**Acceptance criteria**
+
+- Active Nodes are returned in descending ranking order.
+- Ranking ties resolve deterministically.
+- The Console's primary Node list consumes Discovery results and resolves a Node only after Discovery returns its identity.
+
+<a id="dis-002"></a>
+## DIS-002 — Discovery supports Community filtering
+
+**Priority:** Must
+**Status:** Verified
+
+Atlas shall allow Discovery results to be narrowed to Nodes associated with a selected Community before ranking is applied.
+
+<a id="dis-003"></a>
+## DIS-003 — Search is a Discovery capability
+
+**Priority:** Must
+**Status:** Verified
+
+Atlas shall support case-insensitive search over Node titles and the searchable Content projection, combined with other Discovery filters.
+
+<a id="dis-004"></a>
+## DIS-004 — Archived Nodes are excluded from ordinary Discovery
+
+**Priority:** Must
+**Status:** Verified
+
+Ordinary Discovery queries shall exclude archived Nodes. Explicit administrative queries may opt into archived results.

@@ -1,13 +1,15 @@
 # Atlas architecture
 
 - [Communities bounded context](COMMUNITIES.md)
+- [Discovery bounded context](DISCOVERY.md)
 
 Atlas is currently a modular application hosted by Atlas.Console. Its projects are treated as bounded contexts so they can evolve toward independently deployed services without sharing domain entities.
 
 ## Documents
 
 - [Context map](CONTEXT-MAP.md) describes the boundaries and their relationships.
-- [Data ownership](DATA-OWNERSHIP.md) identifies the authoritative owner of records and identifiers.\n- [Voting boundary](VOTING.md) defines the approved ownership, policies, integration needs, and open decisions for the future Voting implementation.
+- [Data ownership](DATA-OWNERSHIP.md) identifies the authoritative owner of records and identifiers.
+- [Voting boundary](VOTING.md) defines Voting ownership, policies, integration needs, and open decisions.
 - [Architecture decisions](decisions/README.md) preserve the reasoning behind consequential choices.
 
 ## Architectural principles

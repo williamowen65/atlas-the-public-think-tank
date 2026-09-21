@@ -7,7 +7,9 @@ using Atlas.ConsoleApp.Content;
 using Atlas.ConsoleApp.Eventing;
 using Atlas.ConsoleApp.Storage;
 using Atlas.ConsoleApp.Voting;
+using Atlas.ConsoleApp.Discovery;
 using Atlas.Content.Documents;
+using Atlas.Discovery;
 using Atlas.Contracts.Graph.V1;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
@@ -121,6 +123,13 @@ var undoVote =
         voteRepository,
         voteMutationPolicy);
 
+IDiscoveryCandidateSource discoverySource = new RepositoryDiscoveryCandidateSource(
+    nodeRepository,
+    documentRepository,
+    voteRepository,
+    communityNodeRepository);
+IDiscoveryService discovery = new DiscoveryService(discoverySource);
+
 var eventPublisher = new InMemoryEventPublisher();
 
 var contentSubscriber =
@@ -159,6 +168,7 @@ var application = new ConsoleApplication(
     communityService,
     commentRepository,
     commentDataFilePath,
+    discovery,
     legacyParticipant);
 
 application.Run();
