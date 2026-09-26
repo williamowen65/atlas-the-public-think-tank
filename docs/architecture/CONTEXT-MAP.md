@@ -165,6 +165,18 @@ the JSON implementations belong to the Console host.
 | **Documentation** | [Discovery boundary](DISCOVERY.md) • [DIS requirements](../requirements/REQUIREMENTS.md#dis-001) • [RTM](../requirements/TRACEABILITY.md) |
 | **Gaps or open questions** | Personalization, pagination, geographic filters, moderation visibility, ranking experiments, and projection freshness are future work. |
 
+### Moderation (PTT-101 initial slice)
+
+| Attribute | Current state |
+|---|---|
+| **Kind** | Atlas-wide bounded context; a Node need not belong to a Community. |
+| **Responsibility** | Receive Node reports, authorize human reviews, record decisions and rationales. |
+| **Owns** | Moderation cases in `moderation-cases.json`; references Node and Participant IDs. |
+| **References** | Graph Node IDs and Participants; the Console host projects upheld exclusions into Discovery. |
+| **Does not own** | Graph Node lifecycle, Community membership, participant identity, or deployment administration. |
+| **Documentation** | [Moderation boundary](MODERATION.md) and [MOD requirements](../requirements/REQUIREMENTS.md#mod-001). |
+| **Gaps** | Authenticated identity, appeals, notifications, all-surface visibility, durable audit events and automated signals. |
+
 ## Implemented event flow
 
 ```mermaid

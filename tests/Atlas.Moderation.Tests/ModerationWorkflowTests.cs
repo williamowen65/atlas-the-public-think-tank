@@ -1,0 +1,97 @@
+using Atlas.Discovery;
+using Atlas.ConsoleApp.Storage;
+
+namespace Atlas.Moderation.Tests;
+
+[TestClass]
+public sealed class ModerationWorkflowTests
+{
+    private readonly Guid _moderator = Guid.NewGuid();
+    private readonly Guid _reporter = Guid.NewGuid();
+    private readonly Guid _node = Guid.NewGuid();
+
+    [TestMethod]
+    public void Report_review_and_exclusion_hide_node_even_when_archived_is_included()
+    {
+        var repository = new Cases();
+        var service = new ModerationService(repository, new Moderator(_moderator));
+        var reported = service.ReportNode(_node, _reporter, "A Node", "harassment", "details", DateTimeOffset.UtcNow);
+        Assert.AreEqual(reported.Id, service.Queue(_moderator).Single().Id);
+
+        var decided = service.Decide(_moderator, reported.Id, ModerationDecision.ExcludeFromDiscovery,
+            "Rule violation reviewed", DateTimeOffset.UtcNow);
+        Assert.AreEqual(ModerationStatus.Actioned, decided.Status);
+        Assert.AreEqual(_moderator, decided.ReviewerId);
+        Assert.AreEqual(0, service.Queue(_moderator).Count);
+        Assert.ThrowsExactly<InvalidOperationException>(() =>
+            service.Decide(_moderator, reported.Id, ModerationDecision.Dismiss, "retry", DateTimeOffset.UtcNow));
+
+        var candidate = Candidate(decided.Status == ModerationStatus.Actioned);
+        Assert.AreEqual(0, new DiscoveryService(new Source(candidate))
+            .Discover(new DiscoveryQuery(IncludeArchived: true)).Count);
+    }
+
+    [TestMethod]
+    public void Unauthorized_reviewer_cannot_see_queue_or_decide()
+    {
+        var service = new ModerationService(new Cases(), new Moderator(_moderator));
+        var report = service.ReportNode(_node, _reporter, "A Node", "spam", null, DateTimeOffset.UtcNow);
+        Assert.ThrowsExactly<UnauthorizedAccessException>(() => service.Queue(_reporter));
+        Assert.ThrowsExactly<UnauthorizedAccessException>(() =>
+            service.Decide(_reporter, report.Id, ModerationDecision.ExcludeFromDiscovery, "reason", DateTimeOffset.UtcNow));
+        Assert.AreEqual(ModerationStatus.Submitted, service.Queue(_moderator).Single().Status);
+    }
+
+    [TestMethod]
+    public void Dismissal_keeps_node_discoverable()
+    {
+        var service = new ModerationService(new Cases(), new Moderator(_moderator));
+        var report = service.ReportNode(_node, _reporter, "A Node", "disagreement", null, DateTimeOffset.UtcNow);
+        var dismissed = service.Decide(_moderator, report.Id, ModerationDecision.Dismiss,
+            "No violation", DateTimeOffset.UtcNow);
+        Assert.AreEqual(ModerationStatus.Dismissed, dismissed.Status);
+        Assert.AreEqual(1, new DiscoveryService(new Source(Candidate(false)))
+            .Discover(new DiscoveryQuery()).Count);
+    }
+
+    [TestMethod]
+    public void Json_repository_preserves_final_decision_across_instances()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"atlas-moderation-{Guid.NewGuid()}.json");
+        try
+        {
+            var service = new ModerationService(new JsonModerationCaseRepository(path), new Moderator(_moderator));
+            var reported = service.ReportNode(_node, _reporter, "A Node", "spam", "evidence", DateTimeOffset.UtcNow);
+            service.Decide(_moderator, reported.Id, ModerationDecision.ExcludeFromDiscovery,
+                "Reviewed", DateTimeOffset.UtcNow);
+            var loaded = new JsonModerationCaseRepository(path).GetById(reported.Id);
+            Assert.IsNotNull(loaded);
+            Assert.AreEqual(ModerationStatus.Actioned, loaded.Status);
+            Assert.AreEqual("Reviewed", loaded.DecisionReason);
+            Assert.AreEqual(_moderator, loaded.ReviewerId);
+        }
+        finally { File.Delete(path); }
+    }
+
+    private DiscoveryCandidate Candidate(bool excluded) =>
+        new(_node, "A Node", "text", false, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow,
+            0, null, [], [], excluded);
+
+    private sealed class Moderator(Guid id) : IModeratorAuthorization
+    {
+        public bool IsAtlasModerator(Guid participantId) => participantId == id;
+    }
+
+    private sealed class Source(params DiscoveryCandidate[] candidates) : IDiscoveryCandidateSource
+    {
+        public IReadOnlyCollection<DiscoveryCandidate> GetCandidates() => candidates;
+    }
+
+    private sealed class Cases : IModerationCaseRepository
+    {
+        private readonly Dictionary<Guid, ModerationCase> _items = [];
+        public ModerationCase? GetById(Guid caseId) => _items.GetValueOrDefault(caseId);
+        public IReadOnlyCollection<ModerationCase> GetAll() => _items.Values.ToList();
+        public void Save(ModerationCase moderationCase) => _items[moderationCase.Id] = moderationCase;
+    }
+}

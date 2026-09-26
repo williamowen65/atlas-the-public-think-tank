@@ -19,6 +19,7 @@ public sealed class DiscoveryService : IDiscoveryService
         var reactions = query.ReactionDefinitionIds ?? Array.Empty<Guid>();
 
         var ranked = _source.GetCandidates()
+            .Where(candidate => !candidate.IsModerationExcluded)
             .Where(candidate => query.IncludeArchived || !candidate.IsArchived)
             .Where(candidate => query.CommunityId is null ||
                 candidate.CommunityIds.Contains(query.CommunityId.Value))

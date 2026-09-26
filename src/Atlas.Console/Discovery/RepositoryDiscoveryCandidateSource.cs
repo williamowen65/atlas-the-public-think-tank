@@ -7,6 +7,7 @@ using Atlas.Graph.Reactions;
 using Atlas.Voting;
 using Atlas.Voting.Data;
 using Atlas.Voting.Target;
+using Atlas.Moderation;
 
 namespace Atlas.ConsoleApp.Discovery;
 
@@ -21,23 +22,30 @@ internal sealed class RepositoryDiscoveryCandidateSource : IDiscoveryCandidateSo
     private readonly IVoteRepository _votes;
     private readonly ICommunityNodeRepository _communityNodes;
     private readonly INodeReactionRepository _nodeReactions;
+    private readonly IModerationCaseRepository _moderationCases;
 
     public RepositoryDiscoveryCandidateSource(
         IDiscoveryNodeReader nodes,
         IDocumentRepository documents,
         IVoteRepository votes,
         ICommunityNodeRepository communityNodes,
-        INodeReactionRepository nodeReactions)
+        INodeReactionRepository nodeReactions,
+        IModerationCaseRepository moderationCases)
     {
         _nodes = nodes;
         _documents = documents;
         _votes = votes;
         _communityNodes = communityNodes;
         _nodeReactions = nodeReactions;
+        _moderationCases = moderationCases;
     }
 
-    public IReadOnlyCollection<DiscoveryCandidate> GetCandidates() =>
-        _nodes.ReadNodesForDiscovery().Select(node =>
+    public IReadOnlyCollection<DiscoveryCandidate> GetCandidates()
+    {
+        var excludedIds = _moderationCases.GetAll()
+            .Where(item => item.Status == ModerationStatus.Actioned)
+            .Select(item => item.NodeId).ToHashSet();
+        return _nodes.ReadNodesForDiscovery().Select(node =>
         {
             var summary = new GetVoteSummary(_votes).Execute(new NodeVoteTarget(node.Id.Value));
             var document = _documents.GetById(new DocumentId(node.DescriptionId.Value));
@@ -61,8 +69,10 @@ internal sealed class RepositoryDiscoveryCandidateSource : IDiscoveryCandidateSo
                 summary.VoteCount,
                 summary.AverageVote,
                 communityIds,
-                reactionIds);
+                reactionIds,
+                excludedIds.Contains(node.Id.Value));
         }).ToList();
+    }
 
     private static string SearchableText(ContentBlock block) => block switch
     {

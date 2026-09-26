@@ -10,6 +10,8 @@ using Atlas.ConsoleApp.Voting;
 using Atlas.ConsoleApp.Discovery;
 using Atlas.Content.Documents;
 using Atlas.Discovery;
+using Atlas.Moderation;
+using Atlas.ConsoleApp.Moderation;
 using Atlas.Contracts.Graph.V1;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
@@ -65,6 +67,7 @@ var communityDataFilePath = Path.Combine(dataDirectory, "communities.json");
 var communityMembershipDataFilePath = Path.Combine(dataDirectory, "community-memberships.json");
 var communityNodeDataFilePath = Path.Combine(dataDirectory, "community-nodes.json");
 var commentDataFilePath = Path.Combine(dataDirectory, "comments.json");
+var moderationDataFilePath = Path.Combine(dataDirectory, "moderation-cases.json");
 
 INodeTypeRepository nodeTypeRepository =
     new JsonNodeTypeRepository(nodeTypeDataFilePath);
@@ -93,6 +96,10 @@ ICommunityMembershipRepository communityMembershipRepository = new JsonCommunity
 ICommunityNodeRepository communityNodeRepository = new JsonCommunityNodeRepository(communityNodeDataFilePath);
 var communityService = new CommunityService(communityRepository, communityMembershipRepository, communityNodeRepository);
 ICommentRepository commentRepository = new JsonCommentRepository(commentDataFilePath);
+IModerationCaseRepository moderationCases = new JsonModerationCaseRepository(moderationDataFilePath);
+var moderatorAuthorization = new ConfiguredModeratorAuthorization(
+    Environment.GetEnvironmentVariable("ATLAS_MODERATOR_PARTICIPANT_IDS"));
+var moderation = new ModerationService(moderationCases, moderatorAuthorization);
 
 var legacyParticipant =
     EnsureLegacyParticipant(participantRepository);
@@ -128,7 +135,8 @@ IDiscoveryCandidateSource discoverySource = new RepositoryDiscoveryCandidateSour
     documentRepository,
     voteRepository,
     communityNodeRepository,
-    nodeTagRepository);
+    nodeTagRepository,
+    moderationCases);
 IDiscoveryService discovery = new DiscoveryService(discoverySource);
 
 var eventPublisher = new InMemoryEventPublisher();
@@ -170,7 +178,9 @@ var application = new ConsoleApplication(
     commentRepository,
     commentDataFilePath,
     discovery,
-    legacyParticipant);
+    legacyParticipant,
+    moderation,
+    moderatorAuthorization);
 
 application.Run();
 

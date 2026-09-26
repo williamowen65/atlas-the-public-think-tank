@@ -7,6 +7,7 @@ using Atlas.Communities.Nodes;
 using Atlas.ConsoleApp.Participants;
 using Atlas.Content.Documents;
 using Atlas.Discovery;
+using Atlas.Moderation;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Graph.Reactions;
@@ -37,6 +38,8 @@ public sealed class ConsoleApplication
     private readonly CommunityService _communityService;
     private readonly ICommentRepository _comments;
     private readonly IDiscoveryService _discovery;
+    private readonly ModerationService _moderation;
+    private readonly IModeratorAuthorization _moderatorAuthorization;
     private Participant _currentParticipant;
     private readonly string _nodeDataFilePath;
     private readonly string _nodeTypeDataFilePath;
@@ -79,7 +82,9 @@ public sealed class ConsoleApplication
         ICommentRepository comments,
         string commentDataFilePath,
         IDiscoveryService discovery,
-        Participant initialParticipant)
+        Participant initialParticipant,
+        ModerationService moderation,
+        IModeratorAuthorization moderatorAuthorization)
     {
         _nodeRepository = nodes;
         _nodeTypeRepository = nodeTypes;
@@ -109,6 +114,8 @@ public sealed class ConsoleApplication
         _comments = comments;
         _commentDataFilePath = commentDataFilePath;
         _discovery = discovery;
+        _moderation = moderation;
+        _moderatorAuthorization = moderatorAuthorization;
     }
 
     /// <summary>Runs the interactive console application workflow.</summary>
@@ -169,9 +176,13 @@ public sealed class ConsoleApplication
                     running = false;
                     break;
 
+                case "12":
+                    ReviewModerationQueue();
+                    break;
+
                 default:
                     ConsoleUi.Pause(
-                        "Please select an option from 1 through 11.");
+                        "Please select an option from 1 through 12.");
                     break;
             }
         }
@@ -196,6 +207,8 @@ public sealed class ConsoleApplication
         Console.WriteLine("9. Show data files");
         Console.WriteLine("10. List Content documents");
         Console.WriteLine("11. Exit");
+        if (_moderatorAuthorization.IsAtlasModerator(_currentParticipant.Id.Value))
+            Console.WriteLine("12. Review Node reports");
         Console.WriteLine();
     }
 
@@ -437,11 +450,20 @@ public sealed class ConsoleApplication
             }
 
             Console.WriteLine();
-            Console.WriteLine("Enter a node number to open it, S for text, C for community,");
+            Console.WriteLine("Enter a node number to open it, P<number> to report that Node, S for text, C for community,");
             Console.WriteLine("R for reactions, V for vote ranges, D for created date, X to clear, or 0 to return.");
             Console.WriteLine();
             Console.Write("Selection: ");
             var input = Console.ReadLine()?.Trim();
+            if (input?.StartsWith("p", StringComparison.OrdinalIgnoreCase) == true &&
+                int.TryParse(input[1..], out var reportNumber))
+            {
+                if (reportNumber < 1 || reportNumber > nodes.Count)
+                    ConsoleUi.Pause("That node does not exist.");
+                else
+                    ReportNode(nodes[reportNumber - 1]);
+                continue;
+            }
             if (string.Equals(input, "s", StringComparison.OrdinalIgnoreCase))
             {
                 Console.Write("Search text (blank clears): ");
@@ -518,6 +540,62 @@ public sealed class ConsoleApplication
                 _communityNodes,
                 _communityService,
                 _comments);
+        }
+    }
+
+    private void ReportNode(Node node)
+    {
+        Console.WriteLine($"Report: {node.Title.Value}");
+        Console.Write("Reason (e.g. harassment, spam, unsafe content): ");
+        var reason = Console.ReadLine();
+        Console.Write("Explanation (optional): ");
+        var explanation = Console.ReadLine();
+        try
+        {
+            var item = _moderation.ReportNode(node.Id.Value, _currentParticipant.Id.Value,
+                node.Title.Value, reason ?? string.Empty, explanation, DateTimeOffset.UtcNow);
+            ConsoleUi.Pause($"Report submitted: {item.Id}");
+        }
+        catch (ArgumentException error)
+        {
+            ConsoleUi.Pause($"Unable to submit report: {error.Message}");
+        }
+    }
+
+    private void ReviewModerationQueue()
+    {
+        try
+        {
+            var queue = _moderation.Queue(_currentParticipant.Id.Value).ToList();
+            Console.Clear();
+            Console.WriteLine("NODE REPORTS");
+            Console.WriteLine("------------");
+            if (queue.Count == 0) { ConsoleUi.Pause("No reports awaiting review."); return; }
+            for (var index = 0; index < queue.Count; index++)
+                Console.WriteLine($"{index + 1}. {queue[index].ReportedTitle} — {queue[index].Reason} ({queue[index].Id})");
+            Console.Write("Report number (0 returns): ");
+            if (!int.TryParse(Console.ReadLine(), out var selection) || selection < 1 || selection > queue.Count)
+                return;
+            var item = queue[selection - 1];
+            Console.WriteLine($"Reported title: {item.ReportedTitle}");
+            Console.WriteLine($"Explanation: {item.Explanation}");
+            Console.WriteLine($"Reporter: {item.ReporterId}; submitted: {item.CreatedAt:u}");
+            var node = _nodeRepository.GetById(new NodeId(item.NodeId));
+            Console.WriteLine($"Current Node: {node?.Title.Value ?? "unavailable"}");
+            Console.Write("D = dismiss, E = exclude from Discovery, other = cancel: ");
+            var action = Console.ReadLine()?.Trim().ToUpperInvariant();
+            if (action is not ("D" or "E")) return;
+            if (action == "E" && node is null) { ConsoleUi.Pause("Node is unavailable; no action taken."); return; }
+            Console.Write("Decision rationale: ");
+            var rationale = Console.ReadLine() ?? string.Empty;
+            var decision = action == "E" ? ModerationDecision.ExcludeFromDiscovery : ModerationDecision.Dismiss;
+            _moderation.Decide(_currentParticipant.Id.Value, item.Id, decision,
+                rationale, DateTimeOffset.UtcNow);
+            ConsoleUi.Pause(action == "E" ? "Node excluded from public Discovery." : "Report dismissed.");
+        }
+        catch (Exception error) when (error is ArgumentException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            ConsoleUi.Pause($"Unable to decide report: {error.Message}");
         }
     }
 

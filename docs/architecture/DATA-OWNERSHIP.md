@@ -38,3 +38,7 @@ Voting references participant and target identifiers without owning the correspo
 - Which operation owns retries and compensation?
 - How are event delivery and database updates made reliable together?
 - What happens when the authoritative boundary is unavailable?
+
+## Moderation slice (PTT-101)
+
+Moderation owns reports, final decision and rationale in `data/moderation-cases.json`. It references Graph Node and Participants IDs. The Console host projects upheld exclusions into Discovery candidates; Discovery owns whether those candidates appear in its result set. Moderation does not change Graph's Node status. See [Moderation](MODERATION.md) for authorization and prototype limits.
