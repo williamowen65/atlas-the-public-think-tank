@@ -36,7 +36,7 @@ public sealed class CommunityTests
     public void NonOwnerCannotEditCommunity()
     {
         var community = new Community("Teachers", "Education", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        Assert.ThrowsException<InvalidOperationException>(() => community.Rename(Guid.NewGuid(), "Other", DateTimeOffset.UtcNow));
+        Assert.Throws<InvalidOperationException>(() => community.Rename(Guid.NewGuid(), "Other", DateTimeOffset.UtcNow));
     }
 
     [TestMethod]
@@ -48,7 +48,7 @@ public sealed class CommunityTests
         var owner = Guid.NewGuid();
         var created = service.Create("Climate Adaptation", "", owner, DateTimeOffset.UtcNow);
         Assert.IsTrue(memberships.Get(created.Id, owner)!.IsActive);
-        Assert.ThrowsException<InvalidOperationException>(() => service.Create(" climate adaptation ", "", Guid.NewGuid(), DateTimeOffset.UtcNow));
+        Assert.Throws<InvalidOperationException>(() => service.Create(" climate adaptation ", "", Guid.NewGuid(), DateTimeOffset.UtcNow));
     }
 
     [TestMethod]
@@ -81,7 +81,7 @@ public sealed class CommunityTests
         Assert.IsFalse(memberships.Get(community.Id, member)!.IsActive);
         service.Join(community, member, DateTimeOffset.UtcNow.AddMinutes(2));
         Assert.IsTrue(memberships.Get(community.Id, member)!.IsActive);
-        Assert.ThrowsException<InvalidOperationException>(() => service.Leave(community, owner, DateTimeOffset.UtcNow));
+        Assert.Throws<InvalidOperationException>(() => service.Leave(community, owner, DateTimeOffset.UtcNow));
     }
 
     private sealed class MemoryCommunities : ICommunityRepository
