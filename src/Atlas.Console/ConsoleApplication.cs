@@ -6,6 +6,7 @@ using Atlas.Communities.Memberships;
 using Atlas.Communities.Nodes;
 using Atlas.ConsoleApp.Participants;
 using Atlas.Content.Documents;
+using Atlas.Discovery;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Graph.Reactions;
@@ -35,6 +36,7 @@ public sealed class ConsoleApplication
     private readonly ICommunityNodeRepository _communityNodes;
     private readonly CommunityService _communityService;
     private readonly ICommentRepository _comments;
+    private readonly IDiscoveryService _discovery;
     private Participant _currentParticipant;
     private readonly string _nodeDataFilePath;
     private readonly string _nodeTypeDataFilePath;
@@ -76,6 +78,7 @@ public sealed class ConsoleApplication
         CommunityService communityService,
         ICommentRepository comments,
         string commentDataFilePath,
+        IDiscoveryService discovery,
         Participant initialParticipant)
     {
         _nodeRepository = nodes;
@@ -105,6 +108,7 @@ public sealed class ConsoleApplication
         _communityService = communityService;
         _comments = comments;
         _commentDataFilePath = commentDataFilePath;
+        _discovery = discovery;
     }
 
     /// <summary>Runs the interactive console application workflow.</summary>
@@ -185,7 +189,7 @@ public sealed class ConsoleApplication
         Console.WriteLine("2. Create participant");
         Console.WriteLine("3. Browse participants");
         Console.WriteLine("4. Create node");
-        Console.WriteLine("5. Browse nodes");
+        Console.WriteLine("5. Discover nodes");
         Console.WriteLine("6. Create community");
         Console.WriteLine("7. Browse communities");
         Console.WriteLine("8. List node types");
@@ -298,15 +302,14 @@ public sealed class ConsoleApplication
                 return;
             }
 
-            var nodes = _nodeRepository.GetAll();
-
             ParticipantDisplay.WriteTableHeader();
 
             for (var index = 0; index < participants.Count; index++)
             {
                 ParticipantDisplay.WriteTableRow(
                     participants[index],
-                    nodes,
+                    _nodeRepository.GetByAuthor(
+                        new NodeAuthorId(participants[index].Id.Value)),
                     _nodeTypeRepository,
                     index + 1);
             }
@@ -365,76 +368,121 @@ public sealed class ConsoleApplication
             _eventPublisher);
     }
 
-    /// <summary>Displays nodes in the console workflow.</summary>
+    /// <summary>Displays Nodes exclusively through ranked Discovery results.</summary>
     private void BrowseNodes()
     {
         var browsing = true;
+        string? searchText = null;
+        Guid? communityId = null;
+        IReadOnlyCollection<Guid> reactionIds = Array.Empty<Guid>();
+        int? minimumVoteCount = null;
+        int? maximumVoteCount = null;
+        double? minimumAverageVote = null;
+        double? maximumAverageVote = null;
+        DateOnly? createdFrom = null;
+        DateOnly? createdThrough = null;
 
         while (browsing)
         {
             Console.Clear();
-            Console.WriteLine("BROWSE NODES");
-            Console.WriteLine("------------");
+            Console.WriteLine("DISCOVERY");
+            Console.WriteLine("---------");
             WriteActingAs();
+            Console.WriteLine($"Search: {searchText ?? "(all)"}");
+            Console.WriteLine($"Community: {ResolveCommunityFilterName(communityId)}");
+            Console.WriteLine($"Reactions: {ResolveReactionFilterNames(reactionIds)}");
+            Console.WriteLine($"Vote count: {FormatRange(minimumVoteCount, maximumVoteCount)}");
+            Console.WriteLine($"Average vote: {FormatRange(minimumAverageVote, maximumAverageVote)}");
+            Console.WriteLine($"Created: {FormatDateRange(createdFrom, createdThrough)}");
+            Console.WriteLine();
 
-            var nodes = _nodeRepository.GetAll().ToList();
+            var results = _discovery.Discover(new DiscoveryQuery(
+                searchText,
+                communityId,
+                reactionIds,
+                minimumVoteCount,
+                maximumVoteCount,
+                minimumAverageVote,
+                maximumAverageVote,
+                createdFrom,
+                createdThrough));
+            var nodes = results
+                .Select(result => _nodeRepository.GetById(new NodeId(result.NodeId)))
+                .Where(node => node is not null)
+                .Cast<Node>()
+                .ToList();
 
             if (nodes.Count == 0)
             {
-                ConsoleUi.Pause("No nodes have been created.");
-                return;
+                Console.WriteLine("No nodes match the current Discovery filters.");
             }
-
-            NodeDisplay.WriteTableHeader();
-            var votingParticipantId = new VotingParticipantId(_currentParticipant.Id.Value);
-
-            for (var index = 0; index < nodes.Count; index++)
+            else
             {
-
-                Node node = nodes[index];
-
-                var voteTarget =
-                    new NodeVoteTarget(node.Id.Value);
-
-                var voteSummary =
-                    new GetVoteSummary(_voteRepository).Execute(
-                        voteTarget,
-                        votingParticipantId);
-
-                var voteCount =
-                    voteSummary.VoteCount;
-
-                var averageRating =
-                    voteSummary.AverageVote;
-
-                var myVote =
-                    voteSummary.CurrentParticipantVote;
-
-                NodeDisplay.WriteTableRow(
-                    node,
-                    _nodeRepository,
-                    _nodeTypeRepository,
-                    _documentRepository,
-                    _participantRepository,
-                    index + 1,
-                    voteCount,
-                    averageRating,
-                    myVote,
-                    nodeTags: _nodeTags,
-                    tagDefinitions: _tagDefinitions,
-                    votes: _voteRepository,
-                    communities: _communities,
-                    communityNodes: _communityNodes,
-                    comments: _comments);
+                NodeDisplay.WriteTableHeader(includeCreatedDate: true);
+                var votingParticipantId = new VotingParticipantId(_currentParticipant.Id.Value);
+                for (var index = 0; index < nodes.Count; index++)
+                {
+                    var result = results[index];
+                    var myVote = _voteRepository.GetByParticipantAndTarget(
+                        votingParticipantId,
+                        new NodeVoteTarget(result.NodeId))?.Value.Value;
+                    NodeDisplay.WriteTableRow(
+                        nodes[index], _nodeRepository, _nodeTypeRepository,
+                        _documentRepository, _participantRepository, index + 1,
+                        result.VoteCount, result.AverageVote, myVote,
+                        _nodeTags, _tagDefinitions, _voteRepository,
+                        _communities, _communityNodes, _comments,
+                        includeCreatedDate: true);
+                }
             }
 
             Console.WriteLine();
-            Console.WriteLine("Enter a node number to open it.");
-            Console.WriteLine("Enter 0 to return to the main menu.");
+            Console.WriteLine("Enter a node number to open it, S for text, C for community,");
+            Console.WriteLine("R for reactions, V for vote ranges, D for created date, X to clear, or 0 to return.");
             Console.WriteLine();
             Console.Write("Selection: ");
-
-            if (!int.TryParse(Console.ReadLine(), out var selection))
+            var input = Console.ReadLine()?.Trim();
+            if (string.Equals(input, "s", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.Write("Search text (blank clears): ");
+                searchText = NullIfWhiteSpace(Console.ReadLine());
+                continue;
+            }
+            if (string.Equals(input, "c", StringComparison.OrdinalIgnoreCase))
+            {
+                communityId = SelectDiscoveryCommunity();
+                continue;
+            }
+            if (string.Equals(input, "r", StringComparison.OrdinalIgnoreCase))
+            {
+                reactionIds = SelectDiscoveryReactions();
+                continue;
+            }
+            if (string.Equals(input, "v", StringComparison.OrdinalIgnoreCase))
+            {
+                (minimumVoteCount, maximumVoteCount) = ReadIntegerRange("vote count", minimum: 0);
+                (minimumAverageVote, maximumAverageVote) = ReadDoubleRange("average vote", 0, 10);
+                continue;
+            }
+            if (string.Equals(input, "d", StringComparison.OrdinalIgnoreCase))
+            {
+                (createdFrom, createdThrough) = ReadDateRange();
+                continue;
+            }
+            if (string.Equals(input, "x", StringComparison.OrdinalIgnoreCase))
+            {
+                searchText = null;
+                communityId = null;
+                reactionIds = Array.Empty<Guid>();
+                minimumVoteCount = null;
+                maximumVoteCount = null;
+                minimumAverageVote = null;
+                maximumAverageVote = null;
+                createdFrom = null;
+                createdThrough = null;
+                continue;
+            }
+            if (!int.TryParse(input, out var selection))
             {
                 ConsoleUi.Pause("That is not a valid selection.");
                 continue;
@@ -472,6 +520,92 @@ public sealed class ConsoleApplication
                 _comments);
         }
     }
+
+    private Guid? SelectDiscoveryCommunity()
+    {
+        var communities = _communities.GetAll().OrderBy(community => community.Name).ToList();
+        Console.WriteLine("0. All communities");
+        for (var index = 0; index < communities.Count; index++)
+            Console.WriteLine($"{index + 1}. {communities[index].Name}");
+        Console.Write("Community: ");
+        return int.TryParse(Console.ReadLine(), out var selection) &&
+               selection > 0 && selection <= communities.Count
+            ? communities[selection - 1].Id.Value
+            : null;
+    }
+
+    private string ResolveCommunityFilterName(Guid? id) => id is null
+        ? "(all)"
+        : _communities.GetById(new CommunityId(id.Value))?.Name ?? "(unavailable)";
+
+    private IReadOnlyCollection<Guid> SelectDiscoveryReactions()
+    {
+        var definitions = _tagDefinitions.GetAll()
+            .Where(definition => !definition.IsSuppressed)
+            .OrderBy(definition => definition.Text)
+            .ToList();
+        Console.WriteLine("Select one or more reactions separated by commas. Matching Nodes must contain all selected reactions.");
+        Console.WriteLine("0. All reactions");
+        for (var index = 0; index < definitions.Count; index++)
+            Console.WriteLine($"{index + 1}. {definitions[index].Emoji} {definitions[index].Text}");
+        Console.Write("Reactions: ");
+        var selections = (Console.ReadLine() ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(value => int.TryParse(value, out var number) ? number : -1)
+            .Where(number => number > 0 && number <= definitions.Count)
+            .Distinct()
+            .ToList();
+        return selections.Select(number => definitions[number - 1].Id.Value).ToList();
+    }
+
+    private string ResolveReactionFilterNames(IReadOnlyCollection<Guid> ids)
+    {
+        if (ids.Count == 0) return "(all)";
+        return string.Join(" + ", ids.Select(id =>
+            _tagDefinitions.GetById(new ReactionDefinitionId(id))?.Text ?? "(unavailable)"));
+    }
+
+    private static (int? Minimum, int? Maximum) ReadIntegerRange(string label, int minimum)
+    {
+        Console.Write($"Minimum {label} (blank for none): ");
+        int? min = int.TryParse(Console.ReadLine(), out var parsedMin) && parsedMin >= minimum ? parsedMin : null;
+        Console.Write($"Maximum {label} (blank for none): ");
+        int? max = int.TryParse(Console.ReadLine(), out var parsedMax) && parsedMax >= minimum ? parsedMax : null;
+        if (min.HasValue && max.HasValue && min.Value > max.Value) (min, max) = (max, min);
+        return (min, max);
+    }
+
+    private static (double? Minimum, double? Maximum) ReadDoubleRange(string label, double minimum, double maximum)
+    {
+        Console.Write($"Minimum {label} ({minimum}–{maximum}, blank for none): ");
+        double? min = double.TryParse(Console.ReadLine(), out var parsedMin) && parsedMin >= minimum && parsedMin <= maximum ? parsedMin : null;
+        Console.Write($"Maximum {label} ({minimum}–{maximum}, blank for none): ");
+        double? max = double.TryParse(Console.ReadLine(), out var parsedMax) && parsedMax >= minimum && parsedMax <= maximum ? parsedMax : null;
+        if (min.HasValue && max.HasValue && min.Value > max.Value) (min, max) = (max, min);
+        return (min, max);
+    }
+
+    private static string FormatRange<T>(T? minimum, T? maximum) where T : struct =>
+        minimum is null && maximum is null ? "(all)" : $"{minimum?.ToString() ?? "no minimum"} to {maximum?.ToString() ?? "no maximum"}";
+
+    private static (DateOnly? From, DateOnly? Through) ReadDateRange()
+    {
+        Console.Write("Created from (YYYY-MM-DD, blank for none): ");
+        DateOnly? from = DateOnly.TryParse(Console.ReadLine(), out var parsedFrom) ? parsedFrom : null;
+        Console.Write("Created through (YYYY-MM-DD, blank for none): ");
+        DateOnly? through = DateOnly.TryParse(Console.ReadLine(), out var parsedThrough) ? parsedThrough : null;
+        if (from.HasValue && through.HasValue && from.Value > through.Value)
+            (from, through) = (through, from);
+        return (from, through);
+    }
+
+    private static string FormatDateRange(DateOnly? from, DateOnly? through) =>
+        from is null && through is null
+            ? "(all)"
+            : $"{from?.ToString("yyyy-MM-dd") ?? "no start"} to {through?.ToString("yyyy-MM-dd") ?? "no end"}";
+
+    private static string? NullIfWhiteSpace(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private void CreateCommunity()
     {

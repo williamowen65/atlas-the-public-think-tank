@@ -71,11 +71,7 @@ public static class NodeCommands
             var myVote =
                 voteSummary.CurrentParticipantVote;
 
-            var children = nodes
-                .GetAll()
-                .Where(candidate =>
-                    candidate.ParentNodeIds.Contains(node.Id))
-                .ToList();
+            var children = nodes.GetChildren(node.Id).ToList();
 
             var childVoteSummaries =
                 new Dictionary<NodeId, NodeVoteSummary>();
@@ -379,11 +375,7 @@ public static class NodeCommands
             .OrderBy(type => type.Name)
             .ToList();
 
-        var existingChildren = nodes
-            .GetAll()
-            .Where(candidate =>
-                candidate.ParentNodeIds.Contains(parent.Id))
-            .ToList();
+        var existingChildren = nodes.GetChildren(parent.Id).ToList();
 
         Console.WriteLine();
         Console.WriteLine("Requested sub-node types:");
@@ -531,9 +523,7 @@ public static class NodeCommands
         Participant currentParticipant)
     {
         var childGroups = nodes
-            .GetAll()
-            .Where(candidate =>
-                candidate.ParentNodeIds.Contains(parent.Id))
+            .GetChildren(parent.Id)
             .GroupBy(child => child.TypeId)
             .Select(group => new
             {
@@ -697,10 +687,7 @@ public static class NodeCommands
         InMemoryEventPublisher eventPublisher)
     {
         var candidates = nodes
-            .GetAll()
-            .Where(candidate =>
-                candidate.Id != node.Id &&
-                !node.ParentNodeIds.Contains(candidate.Id))
+            .GetParentCandidates(node.Id, node.ParentNodeIds)
             .OrderBy(candidate => candidate.Title.Value)
             .ToList();
 
