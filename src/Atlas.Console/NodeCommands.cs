@@ -11,6 +11,7 @@ using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Graph.Reactions;
+using Atlas.Moderation;
 using Atlas.Participants.Participants;
 using Atlas.Voting;
 using Atlas.Voting.Data;
@@ -39,7 +40,8 @@ public static class NodeCommands
         ICommunityMembershipRepository communityMemberships,
         ICommunityNodeRepository communityNodes,
         CommunityService communityService,
-        ICommentRepository comments)
+        ICommentRepository comments,
+        ModerationService moderation)
     {
         var viewingNode = true;
 
@@ -143,7 +145,8 @@ public static class NodeCommands
             Console.WriteLine("17. View communities");
             Console.WriteLine("18. Add comment");
             Console.WriteLine("19. View comments");
-            Console.WriteLine("20. Return to node browser");
+            Console.WriteLine("20. Return to previous page");
+            Console.WriteLine("21. Report node");
             Console.WriteLine();
 
             Console.Write("Selection: ");
@@ -297,7 +300,7 @@ public static class NodeCommands
                         currentParticipant = ViewCommunities(
                             node, communities, communityMemberships, communityNodes, communityService,
                             nodes, nodeTypes, documents, participants, votes, castVote, undoVote,
-                            tagDefinitions, nodeTags, eventPublisher, currentParticipant, comments);
+                            tagDefinitions, nodeTags, eventPublisher, currentParticipant, comments, moderation);
                         break;
 
                     case "18":
@@ -323,6 +326,10 @@ public static class NodeCommands
                         viewingNode = false;
                         break;
 
+                    case "21":
+                        ReportNode(node, currentParticipant, moderation);
+                        break;
+
                     default:
                         ConsoleUi.Pause("That is not a valid selection.");
                         break;
@@ -342,6 +349,25 @@ public static class NodeCommands
         }
 
         return currentParticipant;
+    }
+
+    public static void ReportNode(Node node, Participant participant, ModerationService moderation)
+    {
+        Console.WriteLine($"Report: {node.Title.Value}");
+        Console.Write("Reason (e.g. harassment, spam, unsafe content): ");
+        var reason = Console.ReadLine();
+        Console.Write("Explanation (optional): ");
+        var explanation = Console.ReadLine();
+        try
+        {
+            var item = moderation.ReportNode(node.Id.Value, participant.Id.Value,
+                node.Title.Value, reason ?? string.Empty, explanation, DateTimeOffset.UtcNow);
+            ConsoleUi.Pause($"Report submitted: {item.Id}");
+        }
+        catch (ArgumentException error)
+        {
+            ConsoleUi.Pause($"Unable to submit report: {error.Message}");
+        }
     }
 
 
@@ -1044,7 +1070,8 @@ public static class NodeCommands
         INodeReactionRepository nodeTags,
         InMemoryEventPublisher eventPublisher,
         Participant currentParticipant,
-        ICommentRepository comments)
+        ICommentRepository comments,
+        ModerationService moderation)
     {
         var associated = communityNodes.GetByNode(node.Id.Value)
             .Select(x => communities.GetById(x.CommunityId))
@@ -1057,7 +1084,7 @@ public static class NodeCommands
         if (selection < 1 || selection > associated.Count) { ConsoleUi.Pause("That is not a valid selection."); return currentParticipant; }
         return CommunityCommands.Run(associated[selection - 1], communities, memberships, communityNodes, service,
             nodes, nodeTypes, documents, participants, votes, castVote, undoVote, tagDefinitions, nodeTags,
-            eventPublisher, currentParticipant, comments);
+            eventPublisher, currentParticipant, comments, moderation);
     }
 
     /// <summary>

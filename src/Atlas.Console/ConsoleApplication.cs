@@ -461,7 +461,7 @@ public sealed class ConsoleApplication
                 if (reportNumber < 1 || reportNumber > nodes.Count)
                     ConsoleUi.Pause("That node does not exist.");
                 else
-                    ReportNode(nodes[reportNumber - 1]);
+                    NodeCommands.ReportNode(nodes[reportNumber - 1], _currentParticipant, _moderation);
                 continue;
             }
             if (string.Equals(input, "s", StringComparison.OrdinalIgnoreCase))
@@ -539,26 +539,8 @@ public sealed class ConsoleApplication
                 _communityMemberships,
                 _communityNodes,
                 _communityService,
-                _comments);
-        }
-    }
-
-    private void ReportNode(Node node)
-    {
-        Console.WriteLine($"Report: {node.Title.Value}");
-        Console.Write("Reason (e.g. harassment, spam, unsafe content): ");
-        var reason = Console.ReadLine();
-        Console.Write("Explanation (optional): ");
-        var explanation = Console.ReadLine();
-        try
-        {
-            var item = _moderation.ReportNode(node.Id.Value, _currentParticipant.Id.Value,
-                node.Title.Value, reason ?? string.Empty, explanation, DateTimeOffset.UtcNow);
-            ConsoleUi.Pause($"Report submitted: {item.Id}");
-        }
-        catch (ArgumentException error)
-        {
-            ConsoleUi.Pause($"Unable to submit report: {error.Message}");
+                _comments,
+                _moderation);
         }
     }
 
@@ -596,7 +578,7 @@ public sealed class ConsoleApplication
                         _participantRepository, _voteRepository, _castVote, _undoVote,
                         _tagDefinitions, _nodeTags, _eventPublisher, _currentParticipant,
                         _communities, _communityMemberships, _communityNodes,
-                        _communityService, _comments);
+                        _communityService, _comments, _moderation);
                     // Node navigation can change the selected Console participant.
                     if (!_moderatorAuthorization.IsAtlasModerator(_currentParticipant.Id.Value))
                     {
@@ -749,7 +731,7 @@ public sealed class ConsoleApplication
             _currentParticipant = CommunityCommands.Run(
                 communities[selection - 1], _communities, _communityMemberships, _communityNodes, _communityService,
                 _nodeRepository, _nodeTypeRepository, _documentRepository, _participantRepository,
-                _voteRepository, _castVote, _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, _currentParticipant, _comments);
+                _voteRepository, _castVote, _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, _currentParticipant, _comments, _moderation);
         }
     }
 
