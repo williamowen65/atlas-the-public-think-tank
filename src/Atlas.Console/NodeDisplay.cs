@@ -152,9 +152,6 @@ public static class NodeDisplay
         Console.WriteLine("----------");
         Console.WriteLine($"ID:             {node.Id}");
         Console.WriteLine($"Title:          {(hidden ? visibility.Notice : node.Title.Value)}");
-        if (visibility.IsHidden)
-            Console.WriteLine($"Moderation:     {visibility.Notice}" +
-                (visibility.ReviewRequested ? " (review requested)" : string.Empty));
         Console.WriteLine(
             $"Type:           {ResolveTypeName(node, nodeTypes)}");
         Console.WriteLine($"Type ID:        {node.TypeId}");

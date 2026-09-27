@@ -9,6 +9,7 @@ Moderation owns reports, case status, public reason categories, human decisions,
 3. The queue groups pending reports by Node ID. A moderator opens a group to review all reports for that Node, including previous decisions, and can open the Node to investigate. One reasoned decision dismisses or hides the Node and closes every pending report in that group together. Hiding also requires a public category; the private rationale is stored separately. Each individual report and reviewer ID remains in `data/moderation-cases.json`; final decisions cannot be overwritten.
 4. Discovery omits hidden Nodes. Console node tables and detail views display `[Hidden by moderator: <public category>]` in place of their title and description while keeping author, votes, reactions, type, and navigation to visible children. The public category is selected independently of the internal decision rationale. A dismissed report has no effect.
 5. The author can view the original title and description, edit them, and request review after an edit. The Node stays hidden until a moderator restores visibility from the review queue. Reports and decisions remain stored for history.
+6. A hidden Node cannot receive another report. The Console shows the report action as disabled, and Moderation rejects direct submissions until visibility is restored.
 
 ## Ownership and limits
 

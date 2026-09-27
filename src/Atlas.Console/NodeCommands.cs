@@ -147,7 +147,9 @@ public static class NodeCommands
             Console.WriteLine("18. Add comment");
             Console.WriteLine("19. View comments");
             Console.WriteLine("20. Return to previous page");
-            Console.WriteLine("21. Report node");
+            Console.WriteLine(moderation.Visibility(node.Id.Value).IsHidden
+                ? "21. Report node [disabled — already hidden by moderator]"
+                : "21. Report node");
             if (isAuthor && moderation.Visibility(node.Id.Value).IsHidden)
             {
                 Console.WriteLine("22. View original content (author only)");
@@ -337,6 +339,10 @@ public static class NodeCommands
                         viewingNode = false;
                         break;
 
+                    case "21" when moderation.Visibility(node.Id.Value).IsHidden:
+                        ConsoleUi.Pause("This node is already hidden by a moderator and cannot be reported again.");
+                        break;
+
                     case "21":
                         ReportNode(node, currentParticipant, moderation);
                         break;
@@ -400,7 +406,7 @@ public static class NodeCommands
                 node.Title.Value, reason ?? string.Empty, explanation, DateTimeOffset.UtcNow);
             ConsoleUi.Pause($"Report submitted: {item.Id}");
         }
-        catch (ArgumentException error)
+        catch (Exception error) when (error is ArgumentException or InvalidOperationException)
         {
             ConsoleUi.Pause($"Unable to submit report: {error.Message}");
         }

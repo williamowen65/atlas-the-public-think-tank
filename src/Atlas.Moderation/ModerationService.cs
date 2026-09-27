@@ -40,6 +40,8 @@ public sealed class ModerationService
     public ModerationCase ReportNode(Guid nodeId, Guid reporterId, string title,
         string reason, string? explanation, DateTimeOffset createdAt)
     {
+        if (Visibility(nodeId).IsHidden)
+            throw new InvalidOperationException("This Node is already hidden by a moderator.");
         var item = new ModerationCase(nodeId, reporterId, reason, explanation, title, createdAt);
         _cases.Save(item);
         return item;
