@@ -141,10 +141,10 @@ public static class NodeDisplay
         int? currentParticipantVote = null,
         IReadOnlyDictionary<NodeId, NodeVoteSummary>? childVoteSummaries = null,
         ModerationService? moderation = null,
-        bool showOriginalToAuthor = false)
+        bool showOriginalContent = false)
     {
         var visibility = moderation?.Visibility(node.Id.Value) ?? ModerationVisibility.Visible;
-        var hidden = visibility.IsHidden && !showOriginalToAuthor;
+        var hidden = visibility.IsHidden && !showOriginalContent;
         var description = hidden ? visibility.Notice : ResolveDescription(node, documents, includeBlockDetails: true);
         var authorName = ResolveAuthorName(node, participants);
 

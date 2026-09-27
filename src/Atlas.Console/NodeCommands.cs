@@ -150,9 +150,14 @@ public static class NodeCommands
             Console.WriteLine(moderation.Visibility(node.Id.Value).IsHidden
                 ? "21. Report node [disabled — already hidden by moderator]"
                 : "21. Report node");
+            if (moderation.CanViewHiddenOriginal(actorParticipantId, node.AuthorId.Value, node.Id.Value))
+            {
+                Console.WriteLine(isAuthor
+                    ? "22. View original content (author edit)"
+                    : "22. View original content (moderator, read only)");
+            }
             if (isAuthor && moderation.Visibility(node.Id.Value).IsHidden)
             {
-                Console.WriteLine("22. View original content (author only)");
                 Console.WriteLine("23. Request moderation review after editing");
             }
             Console.WriteLine();
@@ -347,17 +352,22 @@ public static class NodeCommands
                         ReportNode(node, currentParticipant, moderation);
                         break;
 
-                    case "22" when isAuthor && moderation.Visibility(node.Id.Value).IsHidden:
+                    case "22" when moderation.CanViewHiddenOriginal(actorParticipantId,
+                        node.AuthorId.Value, node.Id.Value):
                         Console.Clear();
                         NodeDisplay.WriteDetails(node, nodes, nodeTypes, documents, participants,
-                            nodeTags, tagDefinitions, votes, showOriginalToAuthor: true,
+                            nodeTags, tagDefinitions, votes, showOriginalContent: true,
                             moderation: moderation);
-                        Console.Write("R = rename, D = edit description blocks, other = return: ");
-                        switch (Console.ReadLine()?.Trim().ToUpperInvariant())
+                        if (isAuthor)
                         {
-                            case "R": Rename(node, nodes, actorParticipantId); break;
-                            case "D": DescriptionBlockCommands.Run(node, documents, actorParticipantId); break;
+                            Console.Write("R = rename, D = edit description blocks, other = return: ");
+                            switch (Console.ReadLine()?.Trim().ToUpperInvariant())
+                            {
+                                case "R": Rename(node, nodes, actorParticipantId); break;
+                                case "D": DescriptionBlockCommands.Run(node, documents, actorParticipantId); break;
+                            }
                         }
+                        else ConsoleUi.Pause("Original content shown for moderation review.");
                         break;
 
                     case "23" when isAuthor && moderation.Visibility(node.Id.Value).IsHidden:

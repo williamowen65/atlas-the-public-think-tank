@@ -97,6 +97,9 @@ public sealed class ModerationWorkflowTests
         var decisionTime = DateTimeOffset.UtcNow.AddMinutes(-5);
         service.DecideNode(_moderator, _node, ModerationDecision.HideNode, "Internal details",
             decisionTime, PublicModerationReason.Spam);
+        Assert.IsTrue(service.CanViewHiddenOriginal(_moderator, _reporter, _node));
+        Assert.IsTrue(service.CanViewHiddenOriginal(_reporter, _reporter, _node));
+        Assert.IsFalse(service.CanViewHiddenOriginal(Guid.NewGuid(), _reporter, _node));
         Assert.AreEqual("[Hidden by moderator: Spam]", service.Visibility(_node).Notice);
         Assert.ThrowsExactly<InvalidOperationException>(() => service.ReportNode(
             _node, Guid.NewGuid(), "Private title", "another report", null, DateTimeOffset.UtcNow));
@@ -109,6 +112,7 @@ public sealed class ModerationWorkflowTests
         Assert.IsTrue(service.NodeQueue(_moderator).Single().ReviewRequested);
         service.RestoreNode(_moderator, _node, "Revision accepted", DateTimeOffset.UtcNow.AddMinutes(1));
         Assert.IsFalse(service.Visibility(_node).IsHidden);
+        Assert.IsFalse(service.CanViewHiddenOriginal(_moderator, _reporter, _node));
         Assert.IsNotNull(service.ReportNode(_node, Guid.NewGuid(), "Revised title", "new concern", null,
             DateTimeOffset.UtcNow.AddMinutes(2)));
         Assert.IsNotNull(repository.GetById(reported.Id)?.VisibilityRestoredAt);

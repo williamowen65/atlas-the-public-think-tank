@@ -82,6 +82,10 @@ public sealed class ModerationService
             : new ModerationVisibility(true, hidden.PublicReason, hidden.ReviewRequestedAt is not null);
     }
 
+    public bool CanViewHiddenOriginal(Guid actorId, Guid authorId, Guid nodeId) =>
+        Visibility(nodeId).IsHidden &&
+        (actorId == authorId || _authorization.IsAtlasModerator(actorId));
+
     public void RequestNodeReview(Guid nodeId, Guid actorId, Guid authorId,
         DateTimeOffset nodeUpdatedAt, DateTimeOffset requestedAt)
     {
