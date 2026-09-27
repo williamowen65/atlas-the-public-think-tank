@@ -363,7 +363,44 @@ public sealed class ConsoleApplication
             _nodeTypeRepository,
             _documentRepository,
             _currentParticipant,
-            _moderation);
+            _moderation,
+            _discovery,
+            (node, actor) => NodeCommands.Run(node, _nodeRepository, _nodeTypeRepository,
+                _documentRepository, _participantRepository, _voteRepository, _castVote,
+                _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, actor,
+                _communities, _communityMemberships, _communityNodes, _communityService,
+                _comments, _moderation),
+            (node, number, result, actor) => NodeDisplay.WriteTableRow(node,
+                _nodeRepository, _nodeTypeRepository, _documentRepository,
+                _participantRepository, number, result?.VoteCount, result?.AverageVote,
+                _voteRepository.GetByParticipantAndTarget(
+                    new VotingParticipantId(actor.Id.Value),
+                    new NodeVoteTarget(node.Id.Value))?.Value.Value,
+                _nodeTags, _tagDefinitions, _voteRepository, _communities, _communityNodes,
+                _comments, includeCreatedDate: true, moderation: _moderation),
+            ChangeAuthoredNodeFilter);
+    }
+
+    private DiscoveryQuery ChangeAuthoredNodeFilter(DiscoveryQuery query, string action)
+    {
+        switch (action)
+        {
+            case "S":
+                Console.Write("Search text (blank clears): ");
+                return query with { SearchText = NullIfWhiteSpace(Console.ReadLine()) };
+            case "C": return query with { CommunityId = SelectDiscoveryCommunity() };
+            case "R": return query with { ReactionDefinitionIds = SelectDiscoveryReactions() };
+            case "V":
+                var (minimumCount, maximumCount) = ReadIntegerRange("vote count", 0);
+                var (minimumAverage, maximumAverage) = ReadDoubleRange("average vote", 0, 10);
+                return query with { MinimumVoteCount = minimumCount, MaximumVoteCount = maximumCount,
+                    MinimumAverageVote = minimumAverage, MaximumAverageVote = maximumAverage };
+            case "D":
+                var (from, through) = ReadDateRange();
+                return query with { CreatedFrom = from, CreatedThrough = through };
+            case "X": return new DiscoveryQuery(IncludeArchived: true);
+            default: return query;
+        }
     }
 
     /// <summary>Creates node during the current workflow.</summary>

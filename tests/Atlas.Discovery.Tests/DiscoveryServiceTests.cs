@@ -25,6 +25,24 @@ public sealed class DiscoveryServiceTests
     }
 
     [TestMethod]
+    public void Authored_listing_ranks_hidden_nodes_without_exposing_hidden_text_to_search()
+    {
+        var hidden = Candidate("Private revised title", average: 9, votes: 4) with
+            { IsModerationExcluded = true };
+        var visible = Candidate("Public node", average: 5, votes: 2);
+        var other = Candidate("Another author", average: 10);
+        var service = Service(hidden, visible, other);
+
+        Assert.AreEqual(2, service.DiscoverAuthored(new DiscoveryQuery(),
+            [hidden.NodeId, visible.NodeId]).Count);
+        Assert.AreEqual(hidden.NodeId, service.DiscoverAuthored(new DiscoveryQuery(),
+            [hidden.NodeId, visible.NodeId])[0].NodeId);
+        Assert.AreEqual(0, service.DiscoverAuthored(
+            new DiscoveryQuery(SearchText: "Private"), [hidden.NodeId, visible.NodeId]).Count);
+        Assert.AreEqual(0, service.Discover(new DiscoveryQuery()).Count(item => item.NodeId == hidden.NodeId));
+    }
+
+    [TestMethod]
     public void Discover_filters_to_one_community_before_ranking()
     {
         var included = Candidate("Included", average: 5, communities: [CommunityA]);

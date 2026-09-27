@@ -1,4 +1,5 @@
 using Atlas.Content.Documents;
+using Atlas.Discovery;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Participants.Participants;
@@ -17,7 +18,11 @@ public static class ParticipantCommands
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
         Participant currentParticipant,
-        Atlas.Moderation.ModerationService moderation)
+        Atlas.Moderation.ModerationService moderation,
+        IDiscoveryService? discovery = null,
+        Func<Node, Participant, Participant>? openNode = null,
+        Action<Node, int, RankedDiscoveryItem?, Participant>? writeNodeRow = null,
+        Func<DiscoveryQuery, string, DiscoveryQuery>? changeFilter = null)
     {
         var viewing = true;
 
@@ -58,14 +63,19 @@ public static class ParticipantCommands
                     break;
 
                 case "2":
-                    ViewAuthoredNodes(
+                    currentParticipant = ViewAuthoredNodes(
                         participant,
                         authoredNodes,
                         nodes,
                         nodeTypes,
                         documents,
                         participants,
-                        moderation);
+                        moderation,
+                        currentParticipant,
+                        discovery,
+                        openNode,
+                        writeNodeRow,
+                        changeFilter);
                     break;
 
                 case "3":
@@ -164,46 +174,69 @@ public static class ParticipantCommands
     }
 
     /// <summary>Displays authored nodes in the console workflow.</summary>
-    private static void ViewAuthoredNodes(
+    private static Participant ViewAuthoredNodes(
         Participant participant,
         IReadOnlyCollection<Node> authoredNodes,
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
         IParticipantRepository participants,
-        Atlas.Moderation.ModerationService moderation)
+        Atlas.Moderation.ModerationService moderation,
+        Participant currentParticipant,
+        IDiscoveryService? discovery,
+        Func<Node, Participant, Participant>? openNode,
+        Action<Node, int, RankedDiscoveryItem?, Participant>? writeNodeRow,
+        Func<DiscoveryQuery, string, DiscoveryQuery>? changeFilter)
     {
-        Console.Clear();
-        Console.WriteLine(
-            $"NODES AUTHORED BY {participant.DisplayName.ToUpperInvariant()}");
-        Console.WriteLine(
-            new string('-', 18 + participant.DisplayName.Length));
-
-        if (authoredNodes.Count == 0)
+        var query = new DiscoveryQuery(IncludeArchived: true);
+        while (true)
         {
-            Console.WriteLine("No authored nodes.");
-            ConsoleUi.Pause();
-            return;
+            Console.Clear();
+            Console.WriteLine($"NODES AUTHORED BY {participant.DisplayName.ToUpperInvariant()}");
+            Console.WriteLine(new string('-', 18 + participant.DisplayName.Length));
+            Console.WriteLine($"Search: {query.SearchText ?? "(all)"}; Community: {query.CommunityId?.ToString() ?? "(all)"}; Reactions: {query.ReactionDefinitionIds?.Count ?? 0}");
+            Console.WriteLine($"Votes: {query.MinimumVoteCount?.ToString() ?? "any"}–{query.MaximumVoteCount?.ToString() ?? "any"}; Average: {query.MinimumAverageVote?.ToString() ?? "any"}–{query.MaximumAverageVote?.ToString() ?? "any"}; Created: {query.CreatedFrom?.ToString() ?? "any"}–{query.CreatedThrough?.ToString() ?? "any"}");
+            Console.WriteLine();
+            // Refresh after edits; the profile's initial count may be stale on return.
+            var authored = nodes.GetByAuthor(new NodeAuthorId(participant.Id.Value)).ToList();
+            var byId = authored.ToDictionary(node => node.Id.Value);
+            var ranked = discovery?.DiscoverAuthored(query,
+                byId.Keys.ToList());
+            var ordered = ranked is null ? authored : ranked
+                .Where(item => byId.ContainsKey(item.NodeId))
+                .Select(item => byId[item.NodeId]).ToList();
+            if (ordered.Count == 0) Console.WriteLine("No authored nodes.");
+            else
+            {
+                NodeDisplay.WriteTableHeader(includeCreatedDate: true);
+                for (var index = 0; index < ordered.Count; index++)
+                    if (writeNodeRow is not null)
+                        writeNodeRow(ordered[index], index + 1, ranked is null ? null : ranked[index], currentParticipant);
+                    else NodeDisplay.WriteTableRow(ordered[index], nodes, nodeTypes, documents,
+                        participants, index + 1,
+                        ranked is null ? null : ranked[index].VoteCount,
+                        ranked is null ? null : ranked[index].AverageVote,
+                        includeCreatedDate: true, moderation: moderation);
+            }
+            Console.WriteLine();
+            Console.WriteLine("Node number to open; S search, C community, R reactions, V vote ranges, D created date, X clear, 0 return.");
+            Console.Write("Selection: ");
+            var input = Console.ReadLine()?.Trim();
+            if (input == "0") return currentParticipant;
+            if (changeFilter is not null && input is not null &&
+                "SCRVDX".Contains(input.ToUpperInvariant()) && input.Length == 1)
+            {
+                query = changeFilter(query, input.ToUpperInvariant());
+                continue;
+            }
+            if (!int.TryParse(input, out var selection) || selection < 1 || selection > ordered.Count)
+            {
+                ConsoleUi.Pause("That node does not exist.");
+                continue;
+            }
+            if (openNode is null)
+                ConsoleUi.Pause("Node navigation is unavailable in this view.");
+            else currentParticipant = openNode(ordered[selection - 1], currentParticipant);
         }
-
-        NodeDisplay.WriteTableHeader();
-
-        var index = 1;
-
-        foreach (var node in authoredNodes)
-        {
-            NodeDisplay.WriteTableRow(
-                node,
-                nodes,
-                nodeTypes,
-                documents,
-                participants,
-                index,
-                moderation: moderation);
-
-            index++;
-        }
-
-        ConsoleUi.Pause();
     }
 }
