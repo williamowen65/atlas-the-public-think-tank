@@ -6,7 +6,7 @@ Moderation owns reports, case status, human decisions, and decision rationales. 
 
 1. In **Discover nodes**, enter `P` followed by the displayed number (for example `P2`). Supply a short reason and optional explanation. A report stores the reporter ID, Node ID, reported title, time, and a pending status.
 2. For local development, open **Manage User Secrets** on the `Atlas.Console` project in Visual Studio and set `{"ATLAS_MODERATOR_PARTICIPANT_IDS":["11111111-1111-4111-8111-111111111111"]}` (or use other GUIDs from `data/participants.json`). The project uses the existing checked-in `UserSecretsId`. For other environments, set `ATLAS_MODERATOR_PARTICIPANT_IDS` to a comma-separated string of participant GUIDs; environment configuration overrides the local User Secrets value. Restart the Console after changing configuration. The menu shows **Review Node reports** for a configured moderator. The service checks authorization again for both queue and decision operations.
-3. A moderator selects a case and records a rationale when dismissing or excluding the Node from Discovery. A final decision cannot be overwritten. The report and reviewer ID are stored in `data/moderation-cases.json`.
+3. A moderator selects a case, can open the reported Node to investigate and return to the same case, then records a rationale when dismissing or excluding the Node from Discovery. A final decision cannot be overwritten. The report and reviewer ID are stored in `data/moderation-cases.json`.
 4. Discovery recomputes the exclusion set from actioned cases on each query. Its filtering rule also applies if `IncludeArchived` is true. A dismissed report has no effect.
 
 ## Ownership and limits

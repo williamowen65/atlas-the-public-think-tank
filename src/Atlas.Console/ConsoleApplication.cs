@@ -577,21 +577,44 @@ public sealed class ConsoleApplication
             if (!int.TryParse(Console.ReadLine(), out var selection) || selection < 1 || selection > queue.Count)
                 return;
             var item = queue[selection - 1];
-            Console.WriteLine($"Reported title: {item.ReportedTitle}");
-            Console.WriteLine($"Explanation: {item.Explanation}");
-            Console.WriteLine($"Reporter: {item.ReporterId}; submitted: {item.CreatedAt:u}");
-            var node = _nodeRepository.GetById(new NodeId(item.NodeId));
-            Console.WriteLine($"Current Node: {node?.Title.Value ?? "unavailable"}");
-            Console.Write("D = dismiss, E = exclude from Discovery, other = cancel: ");
-            var action = Console.ReadLine()?.Trim().ToUpperInvariant();
-            if (action is not ("D" or "E")) return;
-            if (action == "E" && node is null) { ConsoleUi.Pause("Node is unavailable; no action taken."); return; }
-            Console.Write("Decision rationale: ");
-            var rationale = Console.ReadLine() ?? string.Empty;
-            var decision = action == "E" ? ModerationDecision.ExcludeFromDiscovery : ModerationDecision.Dismiss;
-            _moderation.Decide(_currentParticipant.Id.Value, item.Id, decision,
-                rationale, DateTimeOffset.UtcNow);
-            ConsoleUi.Pause(action == "E" ? "Node excluded from public Discovery." : "Report dismissed.");
+            while (true)
+            {
+                Console.Clear();
+                Console.WriteLine($"Reported title: {item.ReportedTitle}");
+                Console.WriteLine($"Reason: {item.Reason}");
+                Console.WriteLine($"Explanation: {item.Explanation}");
+                Console.WriteLine($"Reporter: {item.ReporterId}; submitted: {item.CreatedAt:u}");
+                var node = _nodeRepository.GetById(new NodeId(item.NodeId));
+                Console.WriteLine($"Current Node: {node?.Title.Value ?? "unavailable"}");
+                Console.Write("V = view Node, D = dismiss, E = exclude from Discovery, other = cancel: ");
+                var action = Console.ReadLine()?.Trim().ToUpperInvariant();
+                if (action == "V")
+                {
+                    if (node is null) { ConsoleUi.Pause("Node is unavailable."); continue; }
+                    _currentParticipant = NodeCommands.Run(
+                        node, _nodeRepository, _nodeTypeRepository, _documentRepository,
+                        _participantRepository, _voteRepository, _castVote, _undoVote,
+                        _tagDefinitions, _nodeTags, _eventPublisher, _currentParticipant,
+                        _communities, _communityMemberships, _communityNodes,
+                        _communityService, _comments);
+                    // Node navigation can change the selected Console participant.
+                    if (!_moderatorAuthorization.IsAtlasModerator(_currentParticipant.Id.Value))
+                    {
+                        ConsoleUi.Pause("Moderator participant changed; returning to the main menu.");
+                        return;
+                    }
+                    continue;
+                }
+                if (action is not ("D" or "E")) return;
+                if (action == "E" && node is null) { ConsoleUi.Pause("Node is unavailable; no action taken."); return; }
+                Console.Write("Decision rationale: ");
+                var rationale = Console.ReadLine() ?? string.Empty;
+                var decision = action == "E" ? ModerationDecision.ExcludeFromDiscovery : ModerationDecision.Dismiss;
+                _moderation.Decide(_currentParticipant.Id.Value, item.Id, decision,
+                    rationale, DateTimeOffset.UtcNow);
+                ConsoleUi.Pause(action == "E" ? "Node excluded from public Discovery." : "Report dismissed.");
+                return;
+            }
         }
         catch (Exception error) when (error is ArgumentException or UnauthorizedAccessException or InvalidOperationException)
         {
