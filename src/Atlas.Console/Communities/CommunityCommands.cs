@@ -7,6 +7,7 @@ using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Graph.Reactions;
+using Atlas.Moderation;
 using Atlas.Participants.Participants;
 using Atlas.Voting;
 using Atlas.Voting.Data;
@@ -32,7 +33,8 @@ public static class CommunityCommands
         INodeReactionRepository nodeTags,
         InMemoryEventPublisher eventPublisher,
         Participant currentParticipant,
-        ICommentRepository comments)
+        ICommentRepository comments,
+        ModerationService moderation)
     {
         while (true)
         {
@@ -52,7 +54,7 @@ public static class CommunityCommands
             else
             {
                 for (var index = 0; index < associatedNodes.Count; index++)
-                    Console.WriteLine($"{index + 1}. {associatedNodes[index].Title}");
+                    Console.WriteLine($"{index + 1}. {NodeDisplay.PublicTitle(associatedNodes[index], moderation)}");
             }
 
             var membership = memberships.Get(community.Id, currentParticipant.Id.Value);
@@ -75,7 +77,7 @@ public static class CommunityCommands
                         Console.Write("Node number (0 cancels): ");
                         if (int.TryParse(Console.ReadLine(), out var choice) && choice > 0 && choice <= associatedNodes.Count)
                         {
-                            currentParticipant = NodeCommands.Run(associatedNodes[choice - 1], nodes, nodeTypes, documents, participants, votes, castVote, undoVote, tagDefinitions, nodeTags, eventPublisher, currentParticipant, communities, memberships, communityNodes, service, comments);
+                            currentParticipant = NodeCommands.Run(associatedNodes[choice - 1], nodes, nodeTypes, documents, participants, votes, castVote, undoVote, tagDefinitions, nodeTags, eventPublisher, currentParticipant, communities, memberships, communityNodes, service, comments, moderation);
                         }
                         break;
                     case "2" when membership?.IsActive == true:

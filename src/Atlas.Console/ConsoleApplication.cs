@@ -7,6 +7,7 @@ using Atlas.Communities.Nodes;
 using Atlas.ConsoleApp.Participants;
 using Atlas.Content.Documents;
 using Atlas.Discovery;
+using Atlas.Moderation;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Graph.Reactions;
@@ -37,6 +38,8 @@ public sealed class ConsoleApplication
     private readonly CommunityService _communityService;
     private readonly ICommentRepository _comments;
     private readonly IDiscoveryService _discovery;
+    private readonly ModerationService _moderation;
+    private readonly IModeratorAuthorization _moderatorAuthorization;
     private Participant _currentParticipant;
     private readonly string _nodeDataFilePath;
     private readonly string _nodeTypeDataFilePath;
@@ -79,7 +82,9 @@ public sealed class ConsoleApplication
         ICommentRepository comments,
         string commentDataFilePath,
         IDiscoveryService discovery,
-        Participant initialParticipant)
+        Participant initialParticipant,
+        ModerationService moderation,
+        IModeratorAuthorization moderatorAuthorization)
     {
         _nodeRepository = nodes;
         _nodeTypeRepository = nodeTypes;
@@ -109,6 +114,8 @@ public sealed class ConsoleApplication
         _comments = comments;
         _commentDataFilePath = commentDataFilePath;
         _discovery = discovery;
+        _moderation = moderation;
+        _moderatorAuthorization = moderatorAuthorization;
     }
 
     /// <summary>Runs the interactive console application workflow.</summary>
@@ -169,9 +176,13 @@ public sealed class ConsoleApplication
                     running = false;
                     break;
 
+                case "12":
+                    ReviewModerationQueue();
+                    break;
+
                 default:
                     ConsoleUi.Pause(
-                        "Please select an option from 1 through 11.");
+                        "Please select an option from 1 through 12.");
                     break;
             }
         }
@@ -196,6 +207,8 @@ public sealed class ConsoleApplication
         Console.WriteLine("9. Show data files");
         Console.WriteLine("10. List Content documents");
         Console.WriteLine("11. Exit");
+        if (_moderatorAuthorization.IsAtlasModerator(_currentParticipant.Id.Value))
+            Console.WriteLine("12. Review Node reports");
         Console.WriteLine();
     }
 
@@ -349,7 +362,45 @@ public sealed class ConsoleApplication
             _nodeRepository,
             _nodeTypeRepository,
             _documentRepository,
-            _currentParticipant);
+            _currentParticipant,
+            _moderation,
+            _discovery,
+            (node, actor) => NodeCommands.Run(node, _nodeRepository, _nodeTypeRepository,
+                _documentRepository, _participantRepository, _voteRepository, _castVote,
+                _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, actor,
+                _communities, _communityMemberships, _communityNodes, _communityService,
+                _comments, _moderation),
+            (node, number, result, actor) => NodeDisplay.WriteTableRow(node,
+                _nodeRepository, _nodeTypeRepository, _documentRepository,
+                _participantRepository, number, result?.VoteCount, result?.AverageVote,
+                _voteRepository.GetByParticipantAndTarget(
+                    new VotingParticipantId(actor.Id.Value),
+                    new NodeVoteTarget(node.Id.Value))?.Value.Value,
+                _nodeTags, _tagDefinitions, _voteRepository, _communities, _communityNodes,
+                _comments, includeCreatedDate: true, moderation: _moderation),
+            ChangeAuthoredNodeFilter);
+    }
+
+    private DiscoveryQuery ChangeAuthoredNodeFilter(DiscoveryQuery query, string action)
+    {
+        switch (action)
+        {
+            case "S":
+                Console.Write("Search text (blank clears): ");
+                return query with { SearchText = NullIfWhiteSpace(Console.ReadLine()) };
+            case "C": return query with { CommunityId = SelectDiscoveryCommunity() };
+            case "R": return query with { ReactionDefinitionIds = SelectDiscoveryReactions() };
+            case "V":
+                var (minimumCount, maximumCount) = ReadIntegerRange("vote count", 0);
+                var (minimumAverage, maximumAverage) = ReadDoubleRange("average vote", 0, 10);
+                return query with { MinimumVoteCount = minimumCount, MaximumVoteCount = maximumCount,
+                    MinimumAverageVote = minimumAverage, MaximumAverageVote = maximumAverage };
+            case "D":
+                var (from, through) = ReadDateRange();
+                return query with { CreatedFrom = from, CreatedThrough = through };
+            case "X": return new DiscoveryQuery(IncludeArchived: true);
+            default: return query;
+        }
     }
 
     /// <summary>Creates node during the current workflow.</summary>
@@ -432,16 +483,25 @@ public sealed class ConsoleApplication
                         result.VoteCount, result.AverageVote, myVote,
                         _nodeTags, _tagDefinitions, _voteRepository,
                         _communities, _communityNodes, _comments,
-                        includeCreatedDate: true);
+                        includeCreatedDate: true, moderation: _moderation);
                 }
             }
 
             Console.WriteLine();
-            Console.WriteLine("Enter a node number to open it, S for text, C for community,");
+            Console.WriteLine("Enter a node number to open it, P<number> to report that Node, S for text, C for community,");
             Console.WriteLine("R for reactions, V for vote ranges, D for created date, X to clear, or 0 to return.");
             Console.WriteLine();
             Console.Write("Selection: ");
             var input = Console.ReadLine()?.Trim();
+            if (input?.StartsWith("p", StringComparison.OrdinalIgnoreCase) == true &&
+                int.TryParse(input[1..], out var reportNumber))
+            {
+                if (reportNumber < 1 || reportNumber > nodes.Count)
+                    ConsoleUi.Pause("That node does not exist.");
+                else
+                    NodeCommands.ReportNode(nodes[reportNumber - 1], _currentParticipant, _moderation);
+                continue;
+            }
             if (string.Equals(input, "s", StringComparison.OrdinalIgnoreCase))
             {
                 Console.Write("Search text (blank clears): ");
@@ -517,7 +577,114 @@ public sealed class ConsoleApplication
                 _communityMemberships,
                 _communityNodes,
                 _communityService,
-                _comments);
+                _comments,
+                _moderation);
+        }
+    }
+
+    private void ReviewModerationQueue()
+    {
+        try
+        {
+            var queue = _moderation.NodeQueue(_currentParticipant.Id.Value);
+            Console.Clear();
+            Console.WriteLine("NODE REPORTS");
+            Console.WriteLine("------------");
+            if (queue.Count == 0) { ConsoleUi.Pause("No reports awaiting review."); return; }
+            for (var index = 0; index < queue.Count; index++)
+                Console.WriteLine($"{index + 1}. {queue[index].ReportedTitle} — {queue[index].PendingReports.Count} pending report(s)" +
+                    (queue[index].ReviewRequested ? ", author review requested" : string.Empty));
+            Console.Write("Node number (0 returns): ");
+            if (!int.TryParse(Console.ReadLine(), out var selection) || selection < 1 || selection > queue.Count)
+                return;
+            var group = queue[selection - 1];
+            while (true)
+            {
+                Console.Clear();
+                var reports = _moderation.NodeHistory(_currentParticipant.Id.Value, group.NodeId);
+                Console.WriteLine($"Reported title: {group.ReportedTitle}");
+                Console.WriteLine($"{reports.Count} total report(s), {reports.Count(report => report.Status == ModerationStatus.Submitted)} pending");
+                for (var index = 0; index < reports.Count; index++)
+                {
+                    var report = reports[index];
+                    Console.WriteLine($"\nReport {index + 1}: {report.Reason} [{report.Status}]");
+                    Console.WriteLine($"Explanation: {report.Explanation}");
+                    Console.WriteLine($"Reporter: {report.ReporterId}; submitted: {report.CreatedAt:u}");
+                    if (report.Status != ModerationStatus.Submitted)
+                        Console.WriteLine($"Decision: {report.DecisionReason}; reviewer: {report.ReviewerId}; decided: {report.DecidedAt:u}");
+                    if (report.VisibilityRestoredAt is not null)
+                        Console.WriteLine($"Restored: {report.RestorationReason}; moderator: {report.RestoredBy}; at: {report.VisibilityRestoredAt:u}");
+                }
+                var reviewRequestedAt = reports
+                    .Where(report => report.IsHidden && report.ReviewRequestedAt is not null)
+                    .Max(report => report.ReviewRequestedAt);
+                if (reviewRequestedAt is not null)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine("AUTHOR REVIEW REQUEST");
+                    Console.WriteLine($"The author edited this hidden Node and requested review for restoration at {reviewRequestedAt:u}.");
+                    Console.WriteLine("Open the Node and select 22 to inspect the revised title and description before restoring it.");
+                }
+                var node = _nodeRepository.GetById(new NodeId(group.NodeId));
+                Console.WriteLine($"Current Node: {(node is null ? "unavailable" : NodeDisplay.PublicTitle(node, _moderation))}");
+                Console.Write("V = view Node, D = dismiss reports, H = hide Node, R = restore after review, other = cancel: ");
+                var action = Console.ReadLine()?.Trim().ToUpperInvariant();
+                if (action == "V")
+                {
+                    if (node is null) { ConsoleUi.Pause("Node is unavailable."); continue; }
+                    _currentParticipant = NodeCommands.Run(
+                        node, _nodeRepository, _nodeTypeRepository, _documentRepository,
+                        _participantRepository, _voteRepository, _castVote, _undoVote,
+                        _tagDefinitions, _nodeTags, _eventPublisher, _currentParticipant,
+                        _communities, _communityMemberships, _communityNodes,
+                        _communityService, _comments, _moderation);
+                    // Node navigation can change the selected Console participant.
+                    if (!_moderatorAuthorization.IsAtlasModerator(_currentParticipant.Id.Value))
+                    {
+                        ConsoleUi.Pause("Moderator participant changed; returning to the main menu.");
+                        return;
+                    }
+                    continue;
+                }
+                if (action == "R")
+                {
+                    Console.Write("Restoration rationale: ");
+                    _moderation.RestoreNode(_currentParticipant.Id.Value, group.NodeId,
+                        Console.ReadLine() ?? string.Empty, DateTimeOffset.UtcNow);
+                    ConsoleUi.Pause("Node visibility restored after author review.");
+                    return;
+                }
+                if (action is not ("D" or "H")) return;
+                if (group.PendingReports.Count == 0) { ConsoleUi.Pause("No pending reports to decide."); return; }
+                if (action == "H" && node is null) { ConsoleUi.Pause("Node is unavailable; no action taken."); return; }
+                var publicReason = PublicModerationReason.Other;
+                if (action == "H")
+                {
+                    Console.WriteLine("Public reason: 1 Spam, 2 Harassment, 3 Unsafe content, 4 Off topic, 5 Other");
+                    Console.Write("Reason number: ");
+                    publicReason = Console.ReadLine()?.Trim() switch
+                    {
+                        "1" => PublicModerationReason.Spam,
+                        "2" => PublicModerationReason.Harassment,
+                        "3" => PublicModerationReason.UnsafeContent,
+                        "4" => PublicModerationReason.OffTopic,
+                        _ => PublicModerationReason.Other
+                    };
+                }
+                Console.Write("Decision rationale: ");
+                var rationale = Console.ReadLine() ?? string.Empty;
+                var decision = action == "H" ? ModerationDecision.HideNode : ModerationDecision.Dismiss;
+                var decided = _moderation.DecideNode(_currentParticipant.Id.Value, group.NodeId, decision,
+                    rationale, DateTimeOffset.UtcNow, publicReason);
+                ConsoleUi.Pause(action == "H"
+                    ? $"Node hidden on public surfaces; {decided.Count} pending report(s) closed."
+                    : $"{decided.Count} pending report(s) dismissed.");
+                return;
+            }
+        }
+        catch (Exception error) when (error is ArgumentException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            ConsoleUi.Pause($"Unable to decide report: {error.Message}");
         }
     }
 
@@ -648,7 +815,7 @@ public sealed class ConsoleApplication
             _currentParticipant = CommunityCommands.Run(
                 communities[selection - 1], _communities, _communityMemberships, _communityNodes, _communityService,
                 _nodeRepository, _nodeTypeRepository, _documentRepository, _participantRepository,
-                _voteRepository, _castVote, _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, _currentParticipant, _comments);
+                _voteRepository, _castVote, _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, _currentParticipant, _comments, _moderation);
         }
     }
 

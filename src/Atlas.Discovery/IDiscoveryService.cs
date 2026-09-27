@@ -4,4 +4,5 @@ namespace Atlas.Discovery;
 public interface IDiscoveryService
 {
     IReadOnlyList<RankedDiscoveryItem> Discover(DiscoveryQuery query);
+    IReadOnlyList<RankedDiscoveryItem> DiscoverAuthored(DiscoveryQuery query, IReadOnlyCollection<Guid> authoredNodeIds);
 }

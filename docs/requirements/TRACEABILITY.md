@@ -114,3 +114,12 @@ The Graph model, JSON adapters, Console management flow, autocomplete, and pre-v
 6. Review the known architectural gaps: REL-003, EVT-002, the VOT requirement area, and NFR-002.
 
 During manual review, change a status only when all acceptance criteria support the new value. Add a missing test link when evidence exists; do not treat a Console demonstration as automated verification.
+
+## Moderation slice
+
+| Requirement | Behavior | Status | Implementation | Tests |
+|---|---|---|---|---|
+| [MOD-001](REQUIREMENTS.md#mod-001) | Report a Node without a Community | Implemented | [ModerationCase](../../src/Atlas.Moderation/ModerationCase.cs), [ConsoleApplication](../../src/Atlas.Console/ConsoleApplication.cs) | [Workflow tests](../../tests/Atlas.Moderation.Tests/ModerationWorkflowTests.cs) |
+| [MOD-002](REQUIREMENTS.md#mod-002) | Authorized review and final rationale | Prototype | [ModerationService](../../src/Atlas.Moderation/ModerationService.cs), [host authorization](../../src/Atlas.Console/Moderation/ConfiguredModeratorAuthorization.cs) | [Workflow tests](../../tests/Atlas.Moderation.Tests/ModerationWorkflowTests.cs) |
+| [MOD-003](REQUIREMENTS.md#mod-003) | Hidden Node absent from Discovery and redacted in Console views | Console prototype | [DiscoveryService](../../src/Atlas.Discovery/DiscoveryService.cs), [Node display](../../src/Atlas.Console/NodeDisplay.cs) | [Workflow tests](../../tests/Atlas.Moderation.Tests/ModerationWorkflowTests.cs); manual Console review needed |
+| [MOD-004](REQUIREMENTS.md#mod-004) | Author edit and review request, moderator restoration | Console prototype | [ModerationService](../../src/Atlas.Moderation/ModerationService.cs), [Node commands](../../src/Atlas.Console/NodeCommands.cs) | [Workflow tests](../../tests/Atlas.Moderation.Tests/ModerationWorkflowTests.cs) |

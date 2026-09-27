@@ -1192,3 +1192,35 @@ Atlas shall filter by optional inclusive minimum and maximum vote counts and opt
 **Status:** Verified
 
 Atlas shall filter Nodes by optional inclusive creation-date boundaries while preserving full creation timestamps. The Discovery console shall show the creation date without its time component. Creation and modification dates shall remain semantically distinct.
+
+<a id="mod-001"></a>
+## MOD-001 — Participants report Nodes for human review
+
+**Statement:** Participants shall submit a reasoned report for a Node irrespective of its Community membership.
+
+**Priority:** Must
+**Status:** Implemented in Console prototype
+
+<a id="mod-002"></a>
+## MOD-002 — Atlas-wide moderators decide reported cases
+
+**Statement:** Only an authorized Atlas-wide moderator shall read the pending queue and record a final reasoned decision with their participant ID.
+
+**Priority:** Must
+**Status:** Implemented with configured prototype IDs; authenticated identity remains future work
+
+<a id="mod-003"></a>
+## MOD-003 — Hidden Nodes have consistent public visibility
+
+**Statement:** A hidden Node shall not appear in ordinary Discovery results, including requests that include archived Nodes. Console Node tables and detail views shall replace its title and description with a public moderation category while retaining navigation to visible children and its author, votes, and reactions.
+
+**Priority:** Must
+**Status:** Implemented in Console prototype and Discovery; future API/UI surfaces must enforce the same rule
+
+<a id="mod-004"></a>
+## MOD-004 — Authors request review after editing hidden Nodes
+
+**Statement:** The author of a hidden Node may see and edit its original content and request review after an edit. The Node remains hidden until an Atlas moderator restores its visibility.
+
+**Priority:** Must
+**Status:** Implemented in Console prototype; authenticated identity remains future work

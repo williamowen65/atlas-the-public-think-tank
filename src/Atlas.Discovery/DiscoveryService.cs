@@ -12,6 +12,17 @@ public sealed class DiscoveryService : IDiscoveryService
     }
 
     public IReadOnlyList<RankedDiscoveryItem> Discover(DiscoveryQuery query)
+        => DiscoverCore(query, null);
+
+    /// <summary>Ranks an explicitly scoped author listing, retaining moderated placeholders.</summary>
+    public IReadOnlyList<RankedDiscoveryItem> DiscoverAuthored(DiscoveryQuery query,
+        IReadOnlyCollection<Guid> authoredNodeIds)
+    {
+        ArgumentNullException.ThrowIfNull(authoredNodeIds);
+        return DiscoverCore(query, authoredNodeIds.ToHashSet());
+    }
+
+    private IReadOnlyList<RankedDiscoveryItem> DiscoverCore(DiscoveryQuery query, HashSet<Guid>? authoredIds)
     {
         ArgumentNullException.ThrowIfNull(query);
         Validate(query);
@@ -19,6 +30,9 @@ public sealed class DiscoveryService : IDiscoveryService
         var reactions = query.ReactionDefinitionIds ?? Array.Empty<Guid>();
 
         var ranked = _source.GetCandidates()
+            .Where(candidate => authoredIds is null
+                ? !candidate.IsModerationExcluded
+                : authoredIds.Contains(candidate.NodeId))
             .Where(candidate => query.IncludeArchived || !candidate.IsArchived)
             .Where(candidate => query.CommunityId is null ||
                 candidate.CommunityIds.Contains(query.CommunityId.Value))
@@ -37,8 +51,9 @@ public sealed class DiscoveryService : IDiscoveryService
             .Where(candidate => query.CreatedThrough is null ||
                 DateOnly.FromDateTime(candidate.CreatedAt.DateTime) <= query.CreatedThrough.Value)
             .Where(candidate => string.IsNullOrWhiteSpace(search) ||
-                candidate.Title.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                candidate.SearchableContent.Contains(search, StringComparison.OrdinalIgnoreCase))
+                (!candidate.IsModerationExcluded &&
+                    (candidate.Title.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                     candidate.SearchableContent.Contains(search, StringComparison.OrdinalIgnoreCase))))
             .Select(candidate => new
             {
                 Candidate = candidate,
