@@ -1,7 +1,7 @@
 # Atlas — The Public Think Tank
 
 [![Atlas Rewrite Tests](https://github.com/williamowen65/atlas-the-public-think-tank/actions/workflows/AtlasRewriteTests.yml/badge.svg)](https://github.com/williamowen65/atlas-the-public-think-tank/actions/workflows/AtlasRewriteTests.yml)
-[![License](https://img.shields.io/github/license/williamowen65/atlas-the-public-think-tank)](LICENSE.txt)
+[![License](https://img.shields.io/github/license/williamowen65/atlas-the-public-think-tank)](LICENSE)
 
 Atlas is an open-source platform for thinking through complex public problems together. It is designed to help people develop ideas, examine possible solutions, connect related contributions, and make the structure of a discussion easier to understand.
 
@@ -73,4 +73,4 @@ The previous Atlas web application is preserved under [`legacy/`](legacy/). Its 
 
 ## License
 
-Atlas is licensed under the terms in [LICENSE.txt](LICENSE.txt).
+Atlas is licensed under the terms in [LICENSE.txt](LICENSE).
