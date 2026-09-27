@@ -20,6 +20,12 @@ using Atlas.Participants.Participants;
 using Atlas.Voting;
 using Atlas.Voting.Data;
 using Atlas.Voting.Eligibility;
+using Microsoft.Extensions.Configuration;
+
+var configuration = new ConfigurationBuilder()
+    .AddUserSecrets<Program>(optional: true)
+    .AddEnvironmentVariables()
+    .Build();
 
 var dataDirectory = Path.GetFullPath(
     Path.Combine(
@@ -98,7 +104,10 @@ var communityService = new CommunityService(communityRepository, communityMember
 ICommentRepository commentRepository = new JsonCommentRepository(commentDataFilePath);
 IModerationCaseRepository moderationCases = new JsonModerationCaseRepository(moderationDataFilePath);
 var moderatorAuthorization = new ConfiguredModeratorAuthorization(
-    Environment.GetEnvironmentVariable("ATLAS_MODERATOR_PARTICIPANT_IDS"));
+    configuration["ATLAS_MODERATOR_PARTICIPANT_IDS"] is { } configuredIds
+        ? configuredIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
+        : configuration.GetSection("ATLAS_MODERATOR_PARTICIPANT_IDS")
+            .GetChildren().Select(entry => entry.Value ?? string.Empty));
 var moderation = new ModerationService(moderationCases, moderatorAuthorization);
 
 var legacyParticipant =

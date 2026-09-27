@@ -7,9 +7,9 @@ internal sealed class ConfiguredModeratorAuthorization : IModeratorAuthorization
 {
     private readonly HashSet<Guid> _moderators;
 
-    public ConfiguredModeratorAuthorization(string? ids)
+    public ConfiguredModeratorAuthorization(IEnumerable<string> ids)
     {
-        _moderators = (ids ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries)
+        _moderators = ids
             .Select(value => Guid.TryParse(value.Trim(), out var id) ? id : Guid.Empty)
             .Where(id => id != Guid.Empty).ToHashSet();
     }
