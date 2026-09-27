@@ -548,27 +548,35 @@ public sealed class ConsoleApplication
     {
         try
         {
-            var queue = _moderation.Queue(_currentParticipant.Id.Value).ToList();
+            var queue = _moderation.NodeQueue(_currentParticipant.Id.Value);
             Console.Clear();
             Console.WriteLine("NODE REPORTS");
             Console.WriteLine("------------");
             if (queue.Count == 0) { ConsoleUi.Pause("No reports awaiting review."); return; }
             for (var index = 0; index < queue.Count; index++)
-                Console.WriteLine($"{index + 1}. {queue[index].ReportedTitle} — {queue[index].Reason} ({queue[index].Id})");
-            Console.Write("Report number (0 returns): ");
+                Console.WriteLine($"{index + 1}. {queue[index].ReportedTitle} — {queue[index].PendingReports.Count} pending report(s)");
+            Console.Write("Node number (0 returns): ");
             if (!int.TryParse(Console.ReadLine(), out var selection) || selection < 1 || selection > queue.Count)
                 return;
-            var item = queue[selection - 1];
+            var group = queue[selection - 1];
             while (true)
             {
                 Console.Clear();
-                Console.WriteLine($"Reported title: {item.ReportedTitle}");
-                Console.WriteLine($"Reason: {item.Reason}");
-                Console.WriteLine($"Explanation: {item.Explanation}");
-                Console.WriteLine($"Reporter: {item.ReporterId}; submitted: {item.CreatedAt:u}");
-                var node = _nodeRepository.GetById(new NodeId(item.NodeId));
+                var reports = _moderation.NodeHistory(_currentParticipant.Id.Value, group.NodeId);
+                Console.WriteLine($"Reported title: {group.ReportedTitle}");
+                Console.WriteLine($"{reports.Count} total report(s), {reports.Count(report => report.Status == ModerationStatus.Submitted)} pending");
+                for (var index = 0; index < reports.Count; index++)
+                {
+                    var report = reports[index];
+                    Console.WriteLine($"\nReport {index + 1}: {report.Reason} [{report.Status}]");
+                    Console.WriteLine($"Explanation: {report.Explanation}");
+                    Console.WriteLine($"Reporter: {report.ReporterId}; submitted: {report.CreatedAt:u}");
+                    if (report.Status != ModerationStatus.Submitted)
+                        Console.WriteLine($"Decision: {report.DecisionReason}; reviewer: {report.ReviewerId}; decided: {report.DecidedAt:u}");
+                }
+                var node = _nodeRepository.GetById(new NodeId(group.NodeId));
                 Console.WriteLine($"Current Node: {node?.Title.Value ?? "unavailable"}");
-                Console.Write("V = view Node, D = dismiss, E = exclude from Discovery, other = cancel: ");
+                Console.Write("V = view Node, D = dismiss pending reports, E = exclude Node and close pending reports, other = cancel: ");
                 var action = Console.ReadLine()?.Trim().ToUpperInvariant();
                 if (action == "V")
                 {
@@ -592,9 +600,11 @@ public sealed class ConsoleApplication
                 Console.Write("Decision rationale: ");
                 var rationale = Console.ReadLine() ?? string.Empty;
                 var decision = action == "E" ? ModerationDecision.ExcludeFromDiscovery : ModerationDecision.Dismiss;
-                _moderation.Decide(_currentParticipant.Id.Value, item.Id, decision,
+                var decided = _moderation.DecideNode(_currentParticipant.Id.Value, group.NodeId, decision,
                     rationale, DateTimeOffset.UtcNow);
-                ConsoleUi.Pause(action == "E" ? "Node excluded from public Discovery." : "Report dismissed.");
+                ConsoleUi.Pause(action == "E"
+                    ? $"Node excluded from public Discovery; {decided.Count} pending report(s) closed."
+                    : $"{decided.Count} pending report(s) dismissed.");
                 return;
             }
         }

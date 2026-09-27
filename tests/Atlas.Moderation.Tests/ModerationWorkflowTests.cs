@@ -32,6 +32,39 @@ public sealed class ModerationWorkflowTests
     }
 
     [TestMethod]
+    public void Node_decision_closes_all_pending_reports_and_preserves_history()
+    {
+        var service = new ModerationService(new Cases(), new Moderator(_moderator));
+        var first = service.ReportNode(_node, _reporter, "A Node", "spam", "first", DateTimeOffset.UtcNow);
+        var second = service.ReportNode(_node, Guid.NewGuid(), "A Node", "harassment", "second", DateTimeOffset.UtcNow);
+        var other = service.ReportNode(Guid.NewGuid(), _reporter, "Other Node", "spam", null, DateTimeOffset.UtcNow);
+        var groups = service.NodeQueue(_moderator);
+        Assert.AreEqual(2, groups.Count);
+        Assert.AreEqual(2, groups.Single(group => group.NodeId == _node).PendingReports.Count);
+
+        var decided = service.DecideNode(_moderator, _node, ModerationDecision.ExcludeFromDiscovery,
+            "Reviewed both reports", DateTimeOffset.UtcNow);
+        Assert.AreEqual(2, decided.Count);
+        Assert.IsTrue(decided.All(report => report.Status == ModerationStatus.Actioned &&
+            report.ReviewerId == _moderator && report.DecisionReason == "Reviewed both reports"));
+        Assert.AreEqual(2, service.NodeHistory(_moderator, _node).Count);
+        Assert.AreEqual(other.Id, service.Queue(_moderator).Single().Id);
+        Assert.ThrowsExactly<InvalidOperationException>(() =>
+            service.Decide(_moderator, second.Id, ModerationDecision.Dismiss, "retry", DateTimeOffset.UtcNow));
+    }
+
+    [TestMethod]
+    public void Dismiss_by_case_closes_other_pending_reports_on_the_same_node()
+    {
+        var service = new ModerationService(new Cases(), new Moderator(_moderator));
+        var first = service.ReportNode(_node, _reporter, "A Node", "spam", null, DateTimeOffset.UtcNow);
+        service.ReportNode(_node, Guid.NewGuid(), "A Node", "spam", null, DateTimeOffset.UtcNow);
+        service.Decide(_moderator, first.Id, ModerationDecision.Dismiss, "No violation", DateTimeOffset.UtcNow);
+        Assert.AreEqual(0, service.Queue(_moderator).Count);
+        Assert.IsTrue(service.NodeHistory(_moderator, _node).All(report => report.Status == ModerationStatus.Dismissed));
+    }
+
+    [TestMethod]
     public void Unauthorized_reviewer_cannot_see_queue_or_decide()
     {
         var service = new ModerationService(new Cases(), new Moderator(_moderator));
