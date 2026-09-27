@@ -11,6 +11,8 @@ using Atlas.ConsoleApp.Discovery;
 using Atlas.Content.Documents;
 using Atlas.Discovery;
 using Atlas.Moderation;
+using Atlas.Notifications;
+using Atlas.Contracts.Notifications.V1;
 using Atlas.ConsoleApp.Moderation;
 using Atlas.Contracts.Graph.V1;
 using Atlas.Graph.Nodes;
@@ -149,6 +151,11 @@ IDiscoveryCandidateSource discoverySource = new RepositoryDiscoveryCandidateSour
 IDiscoveryService discovery = new DiscoveryService(discoverySource);
 
 var eventPublisher = new InMemoryEventPublisher();
+INotificationRepository notificationRepository = new JsonNotificationRepository(
+    Path.Combine(dataDirectory, "notifications.json"), Path.Combine(dataDirectory, "notification-preferences.json"));
+var notificationService = new NotificationService(notificationRepository,
+    [new SimulatedDelivery(DeliveryChannel.Email), new SimulatedDelivery(DeliveryChannel.Push)]);
+eventPublisher.Subscribe<NotificationRequestedV1>(request => notificationService.Handle(request));
 
 var contentSubscriber =
     new ObserveNodeLifecycleInContent(documentRepository);
@@ -189,7 +196,9 @@ var application = new ConsoleApplication(
     discovery,
     legacyParticipant,
     moderation,
-    moderatorAuthorization);
+    moderatorAuthorization,
+    notificationService,
+    notificationRepository);
 
 application.Run();
 

@@ -8,6 +8,8 @@ using Atlas.ConsoleApp.Participants;
 using Atlas.Content.Documents;
 using Atlas.Discovery;
 using Atlas.Moderation;
+using Atlas.Notifications;
+using Atlas.Contracts.Notifications.V1;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Graph.Reactions;
@@ -40,6 +42,8 @@ public sealed class ConsoleApplication
     private readonly IDiscoveryService _discovery;
     private readonly ModerationService _moderation;
     private readonly IModeratorAuthorization _moderatorAuthorization;
+    private readonly NotificationService _notificationService;
+    private readonly INotificationRepository _notificationRepository;
     private Participant _currentParticipant;
     private readonly string _nodeDataFilePath;
     private readonly string _nodeTypeDataFilePath;
@@ -84,7 +88,9 @@ public sealed class ConsoleApplication
         IDiscoveryService discovery,
         Participant initialParticipant,
         ModerationService moderation,
-        IModeratorAuthorization moderatorAuthorization)
+        IModeratorAuthorization moderatorAuthorization,
+        NotificationService notificationService,
+        INotificationRepository notificationRepository)
     {
         _nodeRepository = nodes;
         _nodeTypeRepository = nodeTypes;
@@ -116,6 +122,8 @@ public sealed class ConsoleApplication
         _discovery = discovery;
         _moderation = moderation;
         _moderatorAuthorization = moderatorAuthorization;
+        _notificationService = notificationService;
+        _notificationRepository = notificationRepository;
     }
 
     /// <summary>Runs the interactive console application workflow.</summary>
@@ -177,12 +185,16 @@ public sealed class ConsoleApplication
                     break;
 
                 case "12":
-                    ReviewModerationQueue();
+                    if (_moderatorAuthorization.IsAtlasModerator(_currentParticipant.Id.Value)) ReviewModerationQueue();
+                    break;
+
+                case "13":
+                    BrowseNotifications();
                     break;
 
                 default:
                     ConsoleUi.Pause(
-                        "Please select an option from 1 through 12.");
+                        "Please select a listed option.");
                     break;
             }
         }
@@ -207,6 +219,7 @@ public sealed class ConsoleApplication
         Console.WriteLine("9. Show data files");
         Console.WriteLine("10. List Content documents");
         Console.WriteLine("11. Exit");
+        Console.WriteLine("13. Notifications and preferences");
         if (_moderatorAuthorization.IsAtlasModerator(_currentParticipant.Id.Value))
             Console.WriteLine("12. Review Node reports");
         Console.WriteLine();
@@ -582,6 +595,68 @@ public sealed class ConsoleApplication
         }
     }
 
+    private void BrowseNotifications()
+    {
+        var recipient = _currentParticipant.Id.Value;
+        var offset = 0;
+        const int pageSize = 10;
+        while (true)
+        {
+            Console.Clear();
+            WriteActingAs();
+            Console.WriteLine("NOTIFICATIONS");
+            var page = _notificationService.Page(recipient, offset, pageSize);
+            for (var i = 0; i < page.Count; i++)
+            {
+                var item = page[i];
+                Console.WriteLine($"{i + 1}. {(item.ReadAt is null ? "[new]" : "[read]")} {item.Kind} " +
+                    $"({item.SubjectKind} {item.SubjectId}) — {item.CreatedAt:g}");
+                foreach (var attempt in item.DeliveryAttempts)
+                    Console.WriteLine($"   {attempt.Channel}: {attempt.Status}" +
+                        (attempt.Error is null ? string.Empty : $" ({attempt.Error})"));
+            }
+            if (page.Count == 0) Console.WriteLine("No notifications on this page.");
+            Console.Write("Number = mark read, D<number> = dismiss, N = next, P = previous, S = settings, 0 = return: ");
+            var input = Console.ReadLine()?.Trim().ToUpperInvariant();
+            if (input == "0") return;
+            if (input == "N" && page.Count == pageSize) { offset += pageSize; continue; }
+            if (input == "P") { offset = Math.Max(0, offset - pageSize); continue; }
+            if (input == "S") { ConfigureNotifications(recipient); continue; }
+            var dismiss = input?.StartsWith('D') == true;
+            var number = dismiss ? input![1..] : input;
+            if (!int.TryParse(number, out var selection) || selection < 1 || selection > page.Count) continue;
+            if (dismiss) _notificationService.Dismiss(recipient, page[selection - 1].Id);
+            else _notificationService.MarkRead(recipient, page[selection - 1].Id);
+        }
+    }
+
+    private void ConfigureNotifications(Guid recipient)
+    {
+        var settings = _notificationRepository.Preferences(recipient);
+        var choices = new (string Label, Func<bool> Get, Action<bool> Set)[]
+        {
+            ("Discussion in app", () => settings.DiscussionInApp, value => settings.DiscussionInApp = value),
+            ("Moderation in app", () => settings.ModerationInApp, value => settings.ModerationInApp = value),
+            ("Discussion email simulation", () => settings.DiscussionEmail, value => settings.DiscussionEmail = value),
+            ("Moderation email simulation", () => settings.ModerationEmail, value => settings.ModerationEmail = value),
+            ("Discussion push simulation", () => settings.DiscussionPush, value => settings.DiscussionPush = value),
+            ("Moderation push simulation", () => settings.ModerationPush, value => settings.ModerationPush = value)
+        };
+        while (true)
+        {
+            Console.Clear();
+            WriteActingAs();
+            for (var i = 0; i < choices.Length; i++)
+                Console.WriteLine($"{i + 1}. [{(choices[i].Get() ? 'x' : ' ')}] {choices[i].Label}");
+            Console.Write("Toggle number (0 returns): ");
+            if (!int.TryParse(Console.ReadLine(), out var selection) || selection == 0) return;
+            if (selection < 1 || selection > choices.Length) continue;
+            var choice = choices[selection - 1];
+            choice.Set(!choice.Get());
+            _notificationRepository.SavePreferences(settings);
+        }
+    }
+
     private void ReviewModerationQueue()
     {
         try
@@ -651,6 +726,9 @@ public sealed class ConsoleApplication
                     Console.Write("Restoration rationale: ");
                     _moderation.RestoreNode(_currentParticipant.Id.Value, group.NodeId,
                         Console.ReadLine() ?? string.Empty, DateTimeOffset.UtcNow);
+                    if (node is not null)
+                        _eventPublisher.Publish(new NotificationRequestedV1(Guid.NewGuid(), node.AuthorId.Value,
+                            _currentParticipant.Id.Value, "NodeRestored", "Node", node.Id.Value, DateTimeOffset.UtcNow));
                     ConsoleUi.Pause("Node visibility restored after author review.");
                     return;
                 }
@@ -676,6 +754,12 @@ public sealed class ConsoleApplication
                 var decision = action == "H" ? ModerationDecision.HideNode : ModerationDecision.Dismiss;
                 var decided = _moderation.DecideNode(_currentParticipant.Id.Value, group.NodeId, decision,
                     rationale, DateTimeOffset.UtcNow, publicReason);
+                foreach (var report in decided)
+                    _eventPublisher.Publish(new NotificationRequestedV1(report.Id, report.ReporterId,
+                        _currentParticipant.Id.Value, "ReportDecided", "Node", group.NodeId, DateTimeOffset.UtcNow));
+                if (node is not null && action == "H")
+                    _eventPublisher.Publish(new NotificationRequestedV1(Guid.NewGuid(), node.AuthorId.Value,
+                        _currentParticipant.Id.Value, "NodeHidden", "Node", node.Id.Value, DateTimeOffset.UtcNow));
                 ConsoleUi.Pause(action == "H"
                     ? $"Node hidden on public surfaces; {decided.Count} pending report(s) closed."
                     : $"{decided.Count} pending report(s) dismissed.");

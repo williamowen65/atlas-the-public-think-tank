@@ -175,7 +175,18 @@ the JSON implementations belong to the Console host.
 | **References** | Graph Node IDs and Participants; the Console host applies hidden Node visibility in Discovery and Node read views. |
 | **Does not own** | Graph Node lifecycle, Community membership, participant identity, or deployment administration. |
 | **Documentation** | [Moderation boundary](MODERATION.md) and [MOD requirements](../requirements/REQUIREMENTS.md#mod-001). |
-| **Gaps** | Authenticated identity, appeals, notifications, all-surface visibility, durable audit events and automated signals. |
+| **Gaps** | Authenticated identity, appeals, durable notifications, all-surface visibility, durable audit events and automated signals. |
+
+### Notifications (PTT-102 initial slice)
+
+| Attribute | Current state |
+|---|---|
+| **Responsibility** | Recipient feed, preferences, read/dismissal and delivery attempt records. |
+| **Owns** | `notifications.json` and `notification-preferences.json`; references Participants by ID. |
+| **Consumes** | Versioned request events translated by the Console host from completed Comments and Moderation actions. |
+| **Does not own** | Source business events, identity, email addresses or push devices. |
+| **Documentation** | [Notifications boundary](NOTIFICATIONS.md), [workflow](../workflows/NOTIFICATIONS.md), [NOT requirements](../requirements/REQUIREMENTS.md#not-001). |
+| **Gaps** | Durable asynchronous delivery, SQL uniqueness, actual email/push services, and web UI. |
 
 ## Implemented event flow
 

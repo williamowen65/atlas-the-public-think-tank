@@ -123,3 +123,11 @@ During manual review, change a status only when all acceptance criteria support 
 | [MOD-002](REQUIREMENTS.md#mod-002) | Authorized review and final rationale | Prototype | [ModerationService](../../src/Atlas.Moderation/ModerationService.cs), [host authorization](../../src/Atlas.Console/Moderation/ConfiguredModeratorAuthorization.cs) | [Workflow tests](../../tests/Atlas.Moderation.Tests/ModerationWorkflowTests.cs) |
 | [MOD-003](REQUIREMENTS.md#mod-003) | Hidden Node absent from Discovery and redacted in Console views | Console prototype | [DiscoveryService](../../src/Atlas.Discovery/DiscoveryService.cs), [Node display](../../src/Atlas.Console/NodeDisplay.cs) | [Workflow tests](../../tests/Atlas.Moderation.Tests/ModerationWorkflowTests.cs); manual Console review needed |
 | [MOD-004](REQUIREMENTS.md#mod-004) | Author edit and review request, moderator restoration | Console prototype | [ModerationService](../../src/Atlas.Moderation/ModerationService.cs), [Node commands](../../src/Atlas.Console/NodeCommands.cs) | [Workflow tests](../../tests/Atlas.Moderation.Tests/ModerationWorkflowTests.cs) |
+
+## Notifications slice
+
+| Requirement | Behavior | Status | Implementation | Tests |
+|---|---|---|---|---|
+| [NOT-001](REQUIREMENTS.md#not-001) | Comment and moderation recipient requests, idempotency | Console prototype | [contract](../../src/Atlas.Contracts/Notifications/V1/NotificationRequestedV1.cs), [service](../../src/Atlas.Notifications/Notifications.cs), [console host](../../src/Atlas.Console/ConsoleApplication.cs) | [Notification flow](../../tests/Atlas.Notifications.Tests/NotificationFlowTests.cs) |
+| [NOT-002](REQUIREMENTS.md#not-002) | Preferences, paged feed, read and dismiss | Console prototype | [service](../../src/Atlas.Notifications/Notifications.cs), [JSON adapter](../../src/Atlas.Console/Storage/JsonNotificationRepository.cs) | [Notification flow](../../tests/Atlas.Notifications.Tests/NotificationFlowTests.cs) |
+| [NOT-003](REQUIREMENTS.md#not-003) | Simulated channels and recorded failure | Prototype | [delivery adapter](../../src/Atlas.Notifications/Notifications.cs) | [Notification flow](../../tests/Atlas.Notifications.Tests/NotificationFlowTests.cs) |

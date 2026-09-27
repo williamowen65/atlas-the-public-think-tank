@@ -10,7 +10,7 @@ public static class CommentCommands
         CommentTarget target,
         CommentService service,
         IParticipantRepository participants,
-        Participant currentParticipant)
+        Participant currentParticipant, Action<Comment>? onCreated = null)
     {
         while (true)
         {
@@ -26,10 +26,10 @@ public static class CommentCommands
             switch (Console.ReadLine())
             {
                 case "1":
-                    AddTopLevel(target, service, currentParticipant);
+                    AddTopLevel(target, service, currentParticipant, onCreated);
                     break;
                 case "2":
-                    Select(thread, service, participants, currentParticipant);
+                    Select(thread, service, participants, currentParticipant, onCreated);
                     break;
                 case "0":
                     return;
@@ -80,16 +80,16 @@ public static class CommentCommands
     public static void AddTopLevel(
         CommentTarget target,
         CommentService service,
-        Participant currentParticipant)
+        Participant currentParticipant, Action<Comment>? onCreated = null)
     {
         Console.Write("Comment: ");
         var body = Console.ReadLine() ?? string.Empty;
         TryChange(
-            () => service.AddTopLevel(
+            () => { var created = service.AddTopLevel(
                 target,
                 currentParticipant.Id.Value,
                 body,
-                DateTimeOffset.UtcNow),
+                DateTimeOffset.UtcNow); onCreated?.Invoke(created); },
             "Comment added.");
     }
 
@@ -97,7 +97,7 @@ public static class CommentCommands
         IReadOnlyList<CommentThreadItem> thread,
         CommentService service,
         IParticipantRepository participants,
-        Participant currentParticipant)
+        Participant currentParticipant, Action<Comment>? onCreated)
     {
         if (thread.Count == 0)
         {
@@ -134,7 +134,8 @@ public static class CommentCommands
                     Console.Write("Reply: ");
                     var reply = Console.ReadLine() ?? string.Empty;
                     TryChange(
-                        () => service.Reply(comment.Id, currentParticipant.Id.Value, reply, DateTimeOffset.UtcNow),
+                        () => { var created = service.Reply(comment.Id, currentParticipant.Id.Value, reply, DateTimeOffset.UtcNow);
+                            onCreated?.Invoke(created); },
                         "Reply added.");
                     return;
                 case "2" when canChange:
