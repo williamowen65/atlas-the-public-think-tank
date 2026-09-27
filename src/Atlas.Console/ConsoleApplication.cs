@@ -362,7 +362,8 @@ public sealed class ConsoleApplication
             _nodeRepository,
             _nodeTypeRepository,
             _documentRepository,
-            _currentParticipant);
+            _currentParticipant,
+            _moderation);
     }
 
     /// <summary>Creates node during the current workflow.</summary>
@@ -445,7 +446,7 @@ public sealed class ConsoleApplication
                         result.VoteCount, result.AverageVote, myVote,
                         _nodeTags, _tagDefinitions, _voteRepository,
                         _communities, _communityNodes, _comments,
-                        includeCreatedDate: true);
+                        includeCreatedDate: true, moderation: _moderation);
                 }
             }
 
@@ -554,7 +555,8 @@ public sealed class ConsoleApplication
             Console.WriteLine("------------");
             if (queue.Count == 0) { ConsoleUi.Pause("No reports awaiting review."); return; }
             for (var index = 0; index < queue.Count; index++)
-                Console.WriteLine($"{index + 1}. {queue[index].ReportedTitle} — {queue[index].PendingReports.Count} pending report(s)");
+                Console.WriteLine($"{index + 1}. {queue[index].ReportedTitle} — {queue[index].PendingReports.Count} pending report(s)" +
+                    (queue[index].ReviewRequested ? ", author review requested" : string.Empty));
             Console.Write("Node number (0 returns): ");
             if (!int.TryParse(Console.ReadLine(), out var selection) || selection < 1 || selection > queue.Count)
                 return;
@@ -573,10 +575,12 @@ public sealed class ConsoleApplication
                     Console.WriteLine($"Reporter: {report.ReporterId}; submitted: {report.CreatedAt:u}");
                     if (report.Status != ModerationStatus.Submitted)
                         Console.WriteLine($"Decision: {report.DecisionReason}; reviewer: {report.ReviewerId}; decided: {report.DecidedAt:u}");
+                    if (report.VisibilityRestoredAt is not null)
+                        Console.WriteLine($"Restored: {report.RestorationReason}; moderator: {report.RestoredBy}; at: {report.VisibilityRestoredAt:u}");
                 }
                 var node = _nodeRepository.GetById(new NodeId(group.NodeId));
                 Console.WriteLine($"Current Node: {node?.Title.Value ?? "unavailable"}");
-                Console.Write("V = view Node, D = dismiss pending reports, E = exclude Node and close pending reports, other = cancel: ");
+                Console.Write("V = view Node, D = dismiss reports, H = hide Node, R = restore after review, other = cancel: ");
                 var action = Console.ReadLine()?.Trim().ToUpperInvariant();
                 if (action == "V")
                 {
@@ -595,15 +599,38 @@ public sealed class ConsoleApplication
                     }
                     continue;
                 }
-                if (action is not ("D" or "E")) return;
-                if (action == "E" && node is null) { ConsoleUi.Pause("Node is unavailable; no action taken."); return; }
+                if (action == "R")
+                {
+                    Console.Write("Restoration rationale: ");
+                    _moderation.RestoreNode(_currentParticipant.Id.Value, group.NodeId,
+                        Console.ReadLine() ?? string.Empty, DateTimeOffset.UtcNow);
+                    ConsoleUi.Pause("Node visibility restored after author review.");
+                    return;
+                }
+                if (action is not ("D" or "H")) return;
+                if (group.PendingReports.Count == 0) { ConsoleUi.Pause("No pending reports to decide."); return; }
+                if (action == "H" && node is null) { ConsoleUi.Pause("Node is unavailable; no action taken."); return; }
+                var publicReason = PublicModerationReason.Other;
+                if (action == "H")
+                {
+                    Console.WriteLine("Public reason: 1 Spam, 2 Harassment, 3 Unsafe content, 4 Off topic, 5 Other");
+                    Console.Write("Reason number: ");
+                    publicReason = Console.ReadLine()?.Trim() switch
+                    {
+                        "1" => PublicModerationReason.Spam,
+                        "2" => PublicModerationReason.Harassment,
+                        "3" => PublicModerationReason.UnsafeContent,
+                        "4" => PublicModerationReason.OffTopic,
+                        _ => PublicModerationReason.Other
+                    };
+                }
                 Console.Write("Decision rationale: ");
                 var rationale = Console.ReadLine() ?? string.Empty;
-                var decision = action == "E" ? ModerationDecision.ExcludeFromDiscovery : ModerationDecision.Dismiss;
+                var decision = action == "H" ? ModerationDecision.HideNode : ModerationDecision.Dismiss;
                 var decided = _moderation.DecideNode(_currentParticipant.Id.Value, group.NodeId, decision,
-                    rationale, DateTimeOffset.UtcNow);
-                ConsoleUi.Pause(action == "E"
-                    ? $"Node excluded from public Discovery; {decided.Count} pending report(s) closed."
+                    rationale, DateTimeOffset.UtcNow, publicReason);
+                ConsoleUi.Pause(action == "H"
+                    ? $"Node hidden on public surfaces; {decided.Count} pending report(s) closed."
                     : $"{decided.Count} pending report(s) dismissed.");
                 return;
             }

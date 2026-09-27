@@ -16,7 +16,8 @@ public static class ParticipantCommands
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
-        Participant currentParticipant)
+        Participant currentParticipant,
+        Atlas.Moderation.ModerationService moderation)
     {
         var viewing = true;
 
@@ -63,7 +64,8 @@ public static class ParticipantCommands
                         nodes,
                         nodeTypes,
                         documents,
-                        participants);
+                        participants,
+                        moderation);
                     break;
 
                 case "3":
@@ -168,7 +170,8 @@ public static class ParticipantCommands
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
-        IParticipantRepository participants)
+        IParticipantRepository participants,
+        Atlas.Moderation.ModerationService moderation)
     {
         Console.Clear();
         Console.WriteLine(
@@ -195,7 +198,8 @@ public static class ParticipantCommands
                 nodeTypes,
                 documents,
                 participants,
-                index);
+                index,
+                moderation: moderation);
 
             index++;
         }

@@ -54,7 +54,7 @@ public static class CommunityCommands
             else
             {
                 for (var index = 0; index < associatedNodes.Count; index++)
-                    Console.WriteLine($"{index + 1}. {associatedNodes[index].Title}");
+                    Console.WriteLine($"{index + 1}. {NodeDisplay.PublicTitle(associatedNodes[index], moderation)}");
             }
 
             var membership = memberships.Get(community.Id, currentParticipant.Id.Value);

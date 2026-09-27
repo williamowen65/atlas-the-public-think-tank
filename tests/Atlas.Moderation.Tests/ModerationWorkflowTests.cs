@@ -18,7 +18,7 @@ public sealed class ModerationWorkflowTests
         var reported = service.ReportNode(_node, _reporter, "A Node", "harassment", "details", DateTimeOffset.UtcNow);
         Assert.AreEqual(reported.Id, service.Queue(_moderator).Single().Id);
 
-        var decided = service.Decide(_moderator, reported.Id, ModerationDecision.ExcludeFromDiscovery,
+        var decided = service.Decide(_moderator, reported.Id, ModerationDecision.HideNode,
             "Rule violation reviewed", DateTimeOffset.UtcNow);
         Assert.AreEqual(ModerationStatus.Actioned, decided.Status);
         Assert.AreEqual(_moderator, decided.ReviewerId);
@@ -42,7 +42,7 @@ public sealed class ModerationWorkflowTests
         Assert.AreEqual(2, groups.Count);
         Assert.AreEqual(2, groups.Single(group => group.NodeId == _node).PendingReports.Count);
 
-        var decided = service.DecideNode(_moderator, _node, ModerationDecision.ExcludeFromDiscovery,
+        var decided = service.DecideNode(_moderator, _node, ModerationDecision.HideNode,
             "Reviewed both reports", DateTimeOffset.UtcNow);
         Assert.AreEqual(2, decided.Count);
         Assert.IsTrue(decided.All(report => report.Status == ModerationStatus.Actioned &&
@@ -71,7 +71,7 @@ public sealed class ModerationWorkflowTests
         var report = service.ReportNode(_node, _reporter, "A Node", "spam", null, DateTimeOffset.UtcNow);
         Assert.ThrowsExactly<UnauthorizedAccessException>(() => service.Queue(_reporter));
         Assert.ThrowsExactly<UnauthorizedAccessException>(() =>
-            service.Decide(_reporter, report.Id, ModerationDecision.ExcludeFromDiscovery, "reason", DateTimeOffset.UtcNow));
+            service.Decide(_reporter, report.Id, ModerationDecision.HideNode, "reason", DateTimeOffset.UtcNow));
         Assert.AreEqual(ModerationStatus.Submitted, service.Queue(_moderator).Single().Status);
     }
 
@@ -88,6 +88,30 @@ public sealed class ModerationWorkflowTests
     }
 
     [TestMethod]
+    public void Hidden_node_shows_public_reason_and_author_review_can_restore_visibility()
+    {
+        var repository = new Cases();
+        var service = new ModerationService(repository, new Moderator(_moderator));
+        var reported = service.ReportNode(_node, _reporter, "Private title", "spam", null,
+            DateTimeOffset.UtcNow.AddMinutes(-10));
+        var decisionTime = DateTimeOffset.UtcNow.AddMinutes(-5);
+        service.DecideNode(_moderator, _node, ModerationDecision.HideNode, "Internal details",
+            decisionTime, PublicModerationReason.Spam);
+        Assert.AreEqual("[Hidden by moderator: Spam]", service.Visibility(_node).Notice);
+        Assert.ThrowsExactly<UnauthorizedAccessException>(() => service.RequestNodeReview(
+            _node, _reporter, Guid.NewGuid(), decisionTime.AddMinutes(1), DateTimeOffset.UtcNow));
+        Assert.ThrowsExactly<InvalidOperationException>(() => service.RequestNodeReview(
+            _node, _reporter, _reporter, decisionTime, DateTimeOffset.UtcNow));
+        service.RequestNodeReview(_node, _reporter, _reporter,
+            decisionTime.AddMinutes(1), DateTimeOffset.UtcNow);
+        Assert.IsTrue(service.NodeQueue(_moderator).Single().ReviewRequested);
+        service.RestoreNode(_moderator, _node, "Revision accepted", DateTimeOffset.UtcNow.AddMinutes(1));
+        Assert.IsFalse(service.Visibility(_node).IsHidden);
+        Assert.IsNotNull(repository.GetById(reported.Id)?.VisibilityRestoredAt);
+        Assert.AreEqual(_moderator, repository.GetById(reported.Id)?.RestoredBy);
+    }
+
+    [TestMethod]
     public void Json_repository_preserves_final_decision_across_instances()
     {
         var path = Path.Combine(Path.GetTempPath(), $"atlas-moderation-{Guid.NewGuid()}.json");
@@ -95,13 +119,14 @@ public sealed class ModerationWorkflowTests
         {
             var service = new ModerationService(new JsonModerationCaseRepository(path), new Moderator(_moderator));
             var reported = service.ReportNode(_node, _reporter, "A Node", "spam", "evidence", DateTimeOffset.UtcNow);
-            service.Decide(_moderator, reported.Id, ModerationDecision.ExcludeFromDiscovery,
-                "Reviewed", DateTimeOffset.UtcNow);
+            service.DecideNode(_moderator, _node, ModerationDecision.HideNode,
+                "Reviewed", DateTimeOffset.UtcNow, PublicModerationReason.Harassment);
             var loaded = new JsonModerationCaseRepository(path).GetById(reported.Id);
             Assert.IsNotNull(loaded);
             Assert.AreEqual(ModerationStatus.Actioned, loaded.Status);
             Assert.AreEqual("Reviewed", loaded.DecisionReason);
             Assert.AreEqual(_moderator, loaded.ReviewerId);
+            Assert.AreEqual(PublicModerationReason.Harassment, loaded.PublicReason);
         }
         finally { File.Delete(path); }
     }

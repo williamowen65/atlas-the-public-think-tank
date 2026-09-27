@@ -111,7 +111,8 @@ public static class NodeCommands
                 voteCount,
                 averageRating,
                 myVote,
-                childVoteSummaries);
+                childVoteSummaries,
+                moderation);
 
             Console.WriteLine();
             Console.WriteLine(
@@ -147,6 +148,11 @@ public static class NodeCommands
             Console.WriteLine("19. View comments");
             Console.WriteLine("20. Return to previous page");
             Console.WriteLine("21. Report node");
+            if (isAuthor && moderation.Visibility(node.Id.Value).IsHidden)
+            {
+                Console.WriteLine("22. View original content (author only)");
+                Console.WriteLine("23. Request moderation review after editing");
+            }
             Console.WriteLine();
 
             Console.Write("Selection: ");
@@ -217,7 +223,8 @@ public static class NodeCommands
                                    votes,
                                    nodeTags,
                                    tagDefinitions,
-                                   currentParticipant)
+                                   currentParticipant,
+                                   moderation)
                                ?? node;
                         break;
 
@@ -236,7 +243,8 @@ public static class NodeCommands
                             node,
                             nodes,
                             actorParticipantId,
-                            eventPublisher);
+                            eventPublisher,
+                            moderation);
                         break;
 
                     case "10":
@@ -244,7 +252,8 @@ public static class NodeCommands
                             node,
                             nodes,
                             actorParticipantId,
-                            eventPublisher);
+                            eventPublisher,
+                            moderation);
                         break;
 
                     case "11":
@@ -254,7 +263,8 @@ public static class NodeCommands
                             nodeTypes,
                             documents,
                             participants,
-                            currentParticipant);
+                            currentParticipant,
+                            moderation);
                         break;
 
                     case "12":
@@ -289,11 +299,12 @@ public static class NodeCommands
                             documents,
                             participants,
                             votes,
-                            currentParticipant);
+                            currentParticipant,
+                            moderation);
                         break;
 
                     case "16":
-                        ManageCommunities(node, communities, communityNodes, communityService, currentParticipant);
+                        ManageCommunities(node, communities, communityNodes, communityService, currentParticipant, moderation);
                         break;
 
                     case "17":
@@ -330,6 +341,31 @@ public static class NodeCommands
                         ReportNode(node, currentParticipant, moderation);
                         break;
 
+                    case "22" when isAuthor && moderation.Visibility(node.Id.Value).IsHidden:
+                        Console.Clear();
+                        NodeDisplay.WriteDetails(node, nodes, nodeTypes, documents, participants,
+                            nodeTags, tagDefinitions, votes, showOriginalToAuthor: true,
+                            moderation: moderation);
+                        Console.Write("R = rename, D = edit description blocks, other = return: ");
+                        switch (Console.ReadLine()?.Trim().ToUpperInvariant())
+                        {
+                            case "R": Rename(node, nodes, actorParticipantId); break;
+                            case "D": DescriptionBlockCommands.Run(node, documents, actorParticipantId); break;
+                        }
+                        break;
+
+                    case "23" when isAuthor && moderation.Visibility(node.Id.Value).IsHidden:
+                        var document = documents.GetById(new DocumentId(node.DescriptionId.Value));
+                        var latestEdit = document is null || document.UpdatedAt < node.UpdatedAt
+                            ? node.UpdatedAt : document.UpdatedAt;
+                        if (document is not null)
+                            foreach (var block in documents.GetBlocks(document))
+                                if (block.UpdatedAt > latestEdit) latestEdit = block.UpdatedAt;
+                        moderation.RequestNodeReview(node.Id.Value, currentParticipant.Id.Value,
+                            node.AuthorId.Value, latestEdit, DateTimeOffset.UtcNow);
+                        ConsoleUi.Pause("Review requested; the Node remains hidden until a moderator restores it.");
+                        break;
+
                     default:
                         ConsoleUi.Pause("That is not a valid selection.");
                         break;
@@ -353,7 +389,7 @@ public static class NodeCommands
 
     public static void ReportNode(Node node, Participant participant, ModerationService moderation)
     {
-        Console.WriteLine($"Report: {node.Title.Value}");
+        Console.WriteLine($"Report: {NodeDisplay.PublicTitle(node, moderation)}");
         Console.Write("Reason (e.g. harassment, spam, unsafe content): ");
         var reason = Console.ReadLine();
         Console.Write("Explanation (optional): ");
@@ -546,7 +582,8 @@ public static class NodeCommands
         IVoteRepository votes,
         INodeReactionRepository nodeTags,
         IReactionDefinitionRepository tagDefinitions,
-        Participant currentParticipant)
+        Participant currentParticipant,
+        ModerationService moderation)
     {
         var childGroups = nodes
             .GetChildren(parent.Id)
@@ -643,7 +680,8 @@ public static class NodeCommands
                 myVote,
                 nodeTags,
                 tagDefinitions,
-                votes);
+                votes,
+                moderation: moderation);
         }
 
         Console.WriteLine();
@@ -670,7 +708,8 @@ public static class NodeCommands
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
         IParticipantRepository participants,
-        Participant currentParticipant)
+        Participant currentParticipant,
+        ModerationService moderation)
     {
         var authorId = new ParticipantId(node.AuthorId.Value);
 
@@ -687,7 +726,8 @@ public static class NodeCommands
             nodes,
             nodeTypes,
             documents,
-            currentParticipant);
+            currentParticipant,
+            moderation);
     }
 
     /// <summary>Publishes recorded domain events and clears them after dispatch.</summary>
@@ -710,7 +750,8 @@ public static class NodeCommands
         Node node,
         INodeRepository nodes,
         Guid actorParticipantId,
-        InMemoryEventPublisher eventPublisher)
+        InMemoryEventPublisher eventPublisher,
+        ModerationService moderation)
     {
         var candidates = nodes
             .GetParentCandidates(node.Id, node.ParentNodeIds)
@@ -729,7 +770,7 @@ public static class NodeCommands
         for (var index = 0; index < candidates.Count; index++)
         {
             Console.WriteLine(
-                $"{index + 1}. {candidates[index].Title}");
+                $"{index + 1}. {NodeDisplay.PublicTitle(candidates[index], moderation)}");
         }
 
         Console.WriteLine("0. Cancel");
@@ -766,7 +807,7 @@ public static class NodeCommands
         PublishDomainEvents(node, eventPublisher);
 
         ConsoleUi.Pause(
-            $"Attached {node.Title} to parent {parent.Title}.");
+            $"Attached {NodeDisplay.PublicTitle(node, moderation)} to parent {NodeDisplay.PublicTitle(parent, moderation)}.");
     }
 
     /// <summary>Detaches a parent relationship and records the corresponding integration event.</summary>
@@ -774,7 +815,8 @@ public static class NodeCommands
         Node node,
         INodeRepository nodes,
         Guid actorParticipantId,
-        InMemoryEventPublisher eventPublisher)
+        InMemoryEventPublisher eventPublisher,
+        ModerationService moderation)
     {
         var parents = node.ParentNodeIds
             .Select(parentId => nodes.GetById(parentId))
@@ -795,7 +837,7 @@ public static class NodeCommands
         for (var index = 0; index < parents.Count; index++)
         {
             Console.WriteLine(
-                $"{index + 1}. {parents[index].Title}");
+                $"{index + 1}. {NodeDisplay.PublicTitle(parents[index], moderation)}");
         }
 
         Console.WriteLine("0. Cancel");
@@ -825,7 +867,7 @@ public static class NodeCommands
         PublishDomainEvents(node, eventPublisher);
 
         ConsoleUi.Pause(
-            $"Detached {node.Title} from parent {parent.Title}.");
+            $"Detached {NodeDisplay.PublicTitle(node, moderation)} from parent {NodeDisplay.PublicTitle(parent, moderation)}.");
     }
 
     /// <summary>Checks the current graph before a host-coordinated parent attachment.</summary>
@@ -1022,13 +1064,14 @@ public static class NodeCommands
         ICommunityRepository communities,
         ICommunityNodeRepository communityNodes,
         CommunityService service,
-        Participant participant)
+        Participant participant,
+        ModerationService moderation)
     {
         var available = communities.GetAll().OrderBy(x => x.Name).ToList();
         if (available.Count == 0) { ConsoleUi.Pause("No communities have been created."); return; }
 
         Console.Clear();
-        Console.WriteLine($"COMMUNITIES FOR: {node.Title}");
+        Console.WriteLine($"COMMUNITIES FOR: {NodeDisplay.PublicTitle(node, moderation)}");
         Console.WriteLine("Select a community to add or remove this node:");
         for (var index = 0; index < available.Count; index++)
         {
@@ -1098,7 +1141,8 @@ public static class NodeCommands
         IDocumentRepository documents,
         IParticipantRepository participants,
         IVoteRepository votes,
-        Participant currentParticipant)
+        Participant currentParticipant,
+        ModerationService moderation)
     {
 
         // Fetch Votes
@@ -1138,7 +1182,7 @@ public static class NodeCommands
         
         // Add voter list heading
         Console.Clear();
-        Console.WriteLine($"VOTES FOR: {node.Title}");
+        Console.WriteLine($"VOTES FOR: {NodeDisplay.PublicTitle(node, moderation)}");
         Console.WriteLine();
 
         NodeDisplay.WriteVoterListHeader();
@@ -1202,7 +1246,8 @@ public static class NodeCommands
             nodes,
             nodeTypes,
             documents,
-            currentParticipant);
+            currentParticipant,
+            moderation);
         }
 
 }

@@ -12,7 +12,19 @@ public interface IModeratorAuthorization
     bool IsAtlasModerator(Guid participantId);
 }
 
-public sealed record NodeReportGroup(Guid NodeId, string ReportedTitle, IReadOnlyList<ModerationCase> PendingReports);
+public sealed record NodeReportGroup(Guid NodeId, string ReportedTitle,
+    IReadOnlyList<ModerationCase> PendingReports, bool ReviewRequested);
+public sealed record ModerationVisibility(bool IsHidden, PublicModerationReason PublicReason, bool ReviewRequested)
+{
+    public static ModerationVisibility Visible { get; } = new(false, PublicModerationReason.Other, false);
+    public string Notice => $"[Hidden by moderator: {ReasonLabel}]";
+    private string ReasonLabel => PublicReason switch
+    {
+        PublicModerationReason.UnsafeContent => "Unsafe content",
+        PublicModerationReason.OffTopic => "Off topic",
+        _ => PublicReason.ToString()
+    };
+}
 
 /// <summary>Moderation owns cases; the host coordinates enforcement in the consumer boundary.</summary>
 public sealed class ModerationService
@@ -40,10 +52,18 @@ public sealed class ModerationService
             .OrderBy(c => c.CreatedAt).ToList();
     }
 
-    public IReadOnlyList<NodeReportGroup> NodeQueue(Guid actorId) => Queue(actorId)
-        .GroupBy(report => report.NodeId)
-        .Select(group => new NodeReportGroup(group.Key, group.First().ReportedTitle, group.ToList()))
-        .ToList();
+    public IReadOnlyList<NodeReportGroup> NodeQueue(Guid actorId)
+    {
+        EnsureModerator(actorId);
+        return _cases.GetAll()
+            .GroupBy(report => report.NodeId)
+            .Where(group => group.Any(report => report.Status == ModerationStatus.Submitted ||
+                report.IsHidden && report.ReviewRequestedAt is not null))
+            .Select(group => new NodeReportGroup(group.Key, group.First().ReportedTitle,
+                group.Where(report => report.Status == ModerationStatus.Submitted).ToList(),
+                group.Any(report => report.IsHidden && report.ReviewRequestedAt is not null)))
+            .ToList();
+    }
 
     public IReadOnlyList<ModerationCase> NodeHistory(Guid actorId, Guid nodeId)
     {
@@ -52,8 +72,40 @@ public sealed class ModerationService
             .OrderBy(report => report.CreatedAt).ToList();
     }
 
+    public ModerationVisibility Visibility(Guid nodeId)
+    {
+        var hidden = _cases.GetAll().Where(report => report.NodeId == nodeId && report.IsHidden)
+            .OrderByDescending(report => report.DecidedAt).FirstOrDefault();
+        return hidden is null ? ModerationVisibility.Visible
+            : new ModerationVisibility(true, hidden.PublicReason, hidden.ReviewRequestedAt is not null);
+    }
+
+    public void RequestNodeReview(Guid nodeId, Guid actorId, Guid authorId,
+        DateTimeOffset nodeUpdatedAt, DateTimeOffset requestedAt)
+    {
+        if (actorId != authorId) throw new UnauthorizedAccessException("Node author required.");
+        var hidden = _cases.GetAll().Where(report => report.NodeId == nodeId && report.IsHidden).ToList();
+        if (hidden.Count == 0 || hidden.Any(report => report.ReviewRequestedAt is not null) ||
+            hidden.Max(report => report.DecidedAt) >= nodeUpdatedAt)
+            throw new InvalidOperationException("Edit the hidden Node before requesting review.");
+        foreach (var report in hidden) { report.RequestReview(requestedAt); _cases.Save(report); }
+    }
+
+    public void RestoreNode(Guid actorId, Guid nodeId, string rationale, DateTimeOffset restoredAt)
+    {
+        EnsureModerator(actorId);
+        var hidden = _cases.GetAll().Where(report => report.NodeId == nodeId && report.IsHidden).ToList();
+        if (hidden.Count == 0 || hidden.Any(report => report.ReviewRequestedAt is null))
+            throw new InvalidOperationException("No review request is pending for this Node.");
+        if (string.IsNullOrWhiteSpace(rationale) || rationale.Length > 2000 ||
+            hidden.Any(report => report.ReviewRequestedAt > restoredAt))
+            throw new ArgumentException("A valid restoration rationale and time are required.");
+        foreach (var report in hidden) { report.RestoreVisibility(actorId, rationale, restoredAt); _cases.Save(report); }
+    }
+
     public IReadOnlyList<ModerationCase> DecideNode(Guid actorId, Guid nodeId,
-        ModerationDecision decision, string rationale, DateTimeOffset decidedAt)
+        ModerationDecision decision, string rationale, DateTimeOffset decidedAt,
+        PublicModerationReason publicReason = PublicModerationReason.Other)
     {
         EnsureModerator(actorId);
         var pending = _cases.GetAll().Where(report => report.NodeId == nodeId &&
@@ -64,10 +116,10 @@ public sealed class ModerationService
             ModerationCase.Reconstitute(report.Id, report.NodeId, report.ReporterId, report.Reason,
                 report.Explanation, report.ReportedTitle, report.CreatedAt, report.Status,
                 report.ReviewerId, report.DecisionReason, report.DecidedAt)
-                .Decide(actorId, decision, rationale, decidedAt);
+                .Decide(actorId, decision, rationale, decidedAt, publicReason);
         foreach (var report in pending)
         {
-            report.Decide(actorId, decision, rationale, decidedAt);
+            report.Decide(actorId, decision, rationale, decidedAt, publicReason);
             _cases.Save(report);
         }
         return pending;

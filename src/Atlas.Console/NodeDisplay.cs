@@ -7,6 +7,7 @@ using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Graph.Reactions;
+using Atlas.Moderation;
 using Atlas.Participants.Participants;
 using Atlas.Voting.Data;
 using VotingParticipantId = Atlas.Voting.Votes.ParticipantId;
@@ -16,10 +17,15 @@ namespace Atlas.ConsoleApp;
 /// <summary>Formats Graph nodes and their referenced data for the console host.</summary>
 public static class NodeDisplay
 {
-    private const int TitleWidth = 28;
+    public static string PublicTitle(Node node, ModerationService moderation)
+    {
+        var visibility = moderation.Visibility(node.Id.Value);
+        return visibility.IsHidden ? visibility.Notice : node.Title.Value;
+    }
+    private const int TitleWidth = 40;
     private const int TypeWidth = 14;
     private const int AuthorWidth = 20;
-    private const int DescriptionWidth = 32;
+    private const int DescriptionWidth = 40;
     private const int StatusWidth = 10;
     private const int CreatedWidth = 10;
     private const int TagsWidth = 40;
@@ -86,10 +92,13 @@ public static class NodeDisplay
         ICommunityRepository? communities = null,
         ICommunityNodeRepository? communityNodes = null,
         ICommentRepository? comments = null,
-        bool includeCreatedDate = false)
+        bool includeCreatedDate = false,
+        ModerationService? moderation = null)
     {
+        var visibility = moderation?.Visibility(node.Id.Value) ?? ModerationVisibility.Visible;
         var typeName = ResolveTypeName(node, nodeTypes);
-        var description = ResolveDescription(node, documents, includeBlockDetails: false);
+        var description = visibility.IsHidden ? visibility.Notice
+            : ResolveDescription(node, documents, includeBlockDetails: false);
         var authorName = ResolveAuthorName(node, participants);
         var subNodeSummary =
             ResolveSubNodeSummary(node, nodes, nodeTypes);
@@ -101,7 +110,7 @@ public static class NodeDisplay
             $"{Center(
                 FormatCurrentParticipantVote(currentParticipantVote),
                 CurrentVoteWidth)}  " +
-            $"{Truncate(node.Title.Value, TitleWidth),-TitleWidth}  " +
+            $"{Truncate(visibility.IsHidden ? visibility.Notice : node.Title.Value, TitleWidth),-TitleWidth}  " +
             $"{Truncate(typeName, TypeWidth),-TypeWidth}  " +
             $"{Truncate(authorName, AuthorWidth),-AuthorWidth}  " +
             $"{Truncate(description, DescriptionWidth),-DescriptionWidth}  " +
@@ -130,15 +139,22 @@ public static class NodeDisplay
         int? voteCount = null,
         double? averageVote = null,
         int? currentParticipantVote = null,
-        IReadOnlyDictionary<NodeId, NodeVoteSummary>? childVoteSummaries = null)
+        IReadOnlyDictionary<NodeId, NodeVoteSummary>? childVoteSummaries = null,
+        ModerationService? moderation = null,
+        bool showOriginalToAuthor = false)
     {
-        var description = ResolveDescription(node, documents, includeBlockDetails: true);
+        var visibility = moderation?.Visibility(node.Id.Value) ?? ModerationVisibility.Visible;
+        var hidden = visibility.IsHidden && !showOriginalToAuthor;
+        var description = hidden ? visibility.Notice : ResolveDescription(node, documents, includeBlockDetails: true);
         var authorName = ResolveAuthorName(node, participants);
 
         Console.WriteLine("ATLAS NODE");
         Console.WriteLine("----------");
         Console.WriteLine($"ID:             {node.Id}");
-        Console.WriteLine($"Title:          {node.Title}");
+        Console.WriteLine($"Title:          {(hidden ? visibility.Notice : node.Title.Value)}");
+        if (visibility.IsHidden)
+            Console.WriteLine($"Moderation:     {visibility.Notice}" +
+                (visibility.ReviewRequested ? " (review requested)" : string.Empty));
         Console.WriteLine(
             $"Type:           {ResolveTypeName(node, nodeTypes)}");
         Console.WriteLine($"Type ID:        {node.TypeId}");
@@ -146,7 +162,7 @@ public static class NodeDisplay
         Console.WriteLine($"Author ID:      {node.AuthorId}");
         Console.WriteLine($"Authored By:    {authorName}");
         Console.WriteLine(
-            $"Parents:        {ResolveParentSummary(node, nodes)}");
+            $"Parents:        {ResolveParentSummary(node, nodes, moderation)}");
         Console.WriteLine($"Status:         {node.Status}");
         Console.WriteLine($"Votes:          {FormatVoteCount(voteCount)}");
         Console.WriteLine($"Average:        {FormatAverageVote(averageVote)}");
@@ -178,7 +194,8 @@ public static class NodeDisplay
             tagDefinitions,
             votes,
             comments,
-            childVoteSummaries);
+            childVoteSummaries,
+            moderation);
     }
 
     private static string ResolveCommentCount(Node node, ICommentRepository? comments) =>
@@ -202,7 +219,8 @@ public static class NodeDisplay
         IReactionDefinitionRepository tagDefinitions,
         IVoteRepository votes,
         ICommentRepository? comments,
-        IReadOnlyDictionary<NodeId, NodeVoteSummary>? childVoteSummaries)
+        IReadOnlyDictionary<NodeId, NodeVoteSummary>? childVoteSummaries,
+        ModerationService? moderation)
     {
         var children = FindChildren(node, nodes);
         var typeIds = node.RequestedSubNodeTypes
@@ -270,7 +288,8 @@ public static class NodeDisplay
                     nodeTags,
                     tagDefinitions,
                     votes,
-                    comments: comments);
+                    comments: comments,
+                    moderation: moderation);
             }
         }
 
@@ -336,7 +355,8 @@ public static class NodeDisplay
     /// <summary>Resolves parent summary for the current console view.</summary>
     private static string ResolveParentSummary(
         Node node,
-        INodeRepository nodes)
+        INodeRepository nodes,
+        ModerationService? moderation)
     {
         if (node.ParentNodeIds.Count == 0)
         {
@@ -346,7 +366,9 @@ public static class NodeDisplay
         return string.Join(
             " · ",
             node.ParentNodeIds.Select(parentId =>
-                nodes.GetById(parentId)?.Title.Value
+                (moderation?.Visibility(parentId.Value).IsHidden == true
+                    ? moderation.Visibility(parentId.Value).Notice
+                    : nodes.GetById(parentId)?.Title.Value)
                 ?? $"Unknown ({parentId})"));
     }
 

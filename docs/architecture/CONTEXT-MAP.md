@@ -172,7 +172,7 @@ the JSON implementations belong to the Console host.
 | **Kind** | Atlas-wide bounded context; a Node need not belong to a Community. |
 | **Responsibility** | Receive Node reports, authorize human reviews, record decisions and rationales. |
 | **Owns** | Moderation cases in `moderation-cases.json`; references Node and Participant IDs. |
-| **References** | Graph Node IDs and Participants; the Console host projects upheld exclusions into Discovery. |
+| **References** | Graph Node IDs and Participants; the Console host applies hidden Node visibility in Discovery and Node read views. |
 | **Does not own** | Graph Node lifecycle, Community membership, participant identity, or deployment administration. |
 | **Documentation** | [Moderation boundary](MODERATION.md) and [MOD requirements](../requirements/REQUIREMENTS.md#mod-001). |
 | **Gaps** | Authenticated identity, appeals, notifications, all-surface visibility, durable audit events and automated signals. |

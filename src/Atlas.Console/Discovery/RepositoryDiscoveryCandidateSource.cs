@@ -43,7 +43,7 @@ internal sealed class RepositoryDiscoveryCandidateSource : IDiscoveryCandidateSo
     public IReadOnlyCollection<DiscoveryCandidate> GetCandidates()
     {
         var excludedIds = _moderationCases.GetAll()
-            .Where(item => item.Status == ModerationStatus.Actioned)
+            .Where(item => item.IsHidden)
             .Select(item => item.NodeId).ToHashSet();
         return _nodes.ReadNodesForDiscovery().Select(node =>
         {

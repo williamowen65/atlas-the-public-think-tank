@@ -41,4 +41,4 @@ Voting references participant and target identifiers without owning the correspo
 
 ## Moderation slice (PTT-101)
 
-Moderation owns reports, final decision and rationale in `data/moderation-cases.json`. It references Graph Node and Participants IDs. The Console host projects upheld exclusions into Discovery candidates; Discovery owns whether those candidates appear in its result set. Moderation does not change Graph's Node status. See [Moderation](MODERATION.md) for authorization and prototype limits.
+Moderation owns reports, final decisions, public reasons, review requests, and restoration timestamps in `data/moderation-cases.json`. It references Graph Node and Participants IDs. The Console host applies Moderation visibility in Discovery candidates and Node read views. Moderation does not change Graph's Node status or relationships. See [Moderation](MODERATION.md) for authorization and prototype limits.

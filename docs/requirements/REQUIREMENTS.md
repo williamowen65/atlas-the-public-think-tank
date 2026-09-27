@@ -1210,9 +1210,17 @@ Atlas shall filter Nodes by optional inclusive creation-date boundaries while pr
 **Status:** Implemented with configured prototype IDs; authenticated identity remains future work
 
 <a id="mod-003"></a>
-## MOD-003 — Upheld reports affect Discovery
+## MOD-003 — Hidden Nodes have consistent public visibility
 
-**Statement:** A Node excluded by a moderator shall not appear in ordinary Discovery results, including requests that include archived Nodes.
+**Statement:** A hidden Node shall not appear in ordinary Discovery results, including requests that include archived Nodes. Console Node tables and detail views shall replace its title and description with a public moderation category while retaining navigation to visible children and its author, votes, and reactions.
 
 **Priority:** Must
-**Status:** Implemented for Discovery; other public surfaces remain future work
+**Status:** Implemented in Console prototype and Discovery; future API/UI surfaces must enforce the same rule
+
+<a id="mod-004"></a>
+## MOD-004 — Authors request review after editing hidden Nodes
+
+**Statement:** The author of a hidden Node may see and edit its original content and request review after an edit. The Node remains hidden until an Atlas moderator restores its visibility.
+
+**Priority:** Must
+**Status:** Implemented in Console prototype; authenticated identity remains future work
