@@ -181,15 +181,18 @@ public sealed class ConsoleApplication
                     break;
 
                 case "11":
-                    running = false;
+                    BrowseNotifications();
                     break;
 
                 case "12":
-                    if (_moderatorAuthorization.IsAtlasModerator(_currentParticipant.Id.Value)) ReviewModerationQueue();
+                    if (_moderatorAuthorization.IsAtlasModerator(_currentParticipant.Id.Value))
+                        ReviewModerationQueue();
+                    else
+                        ConsoleUi.Pause("Review Node reports is available to Atlas moderators only.");
                     break;
 
                 case "13":
-                    BrowseNotifications();
+                    running = false;
                     break;
 
                 default:
@@ -218,10 +221,12 @@ public sealed class ConsoleApplication
         Console.WriteLine("8. List node types");
         Console.WriteLine("9. Show data files");
         Console.WriteLine("10. List Content documents");
-        Console.WriteLine("11. Exit");
-        Console.WriteLine("13. Notifications and preferences");
+        Console.WriteLine("11. Notifications and preferences");
         if (_moderatorAuthorization.IsAtlasModerator(_currentParticipant.Id.Value))
             Console.WriteLine("12. Review Node reports");
+        else
+            Console.WriteLine("12. Review Node reports [disabled — Atlas moderators only]");
+        Console.WriteLine("13. Exit");
         Console.WriteLine();
     }
 
