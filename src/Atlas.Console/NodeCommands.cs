@@ -409,7 +409,7 @@ public static class NodeCommands
     private static void PublishCommentNotification(Comment created, Node node,
         ICommentRepository comments, InMemoryEventPublisher publisher)
     {
-        var parent = created.ParentCommentId is null ? null : comments.GetById(created.ParentCommentId);
+        var parent = created.ParentCommentId is null ? null : comments.GetById(created.ParentCommentId.Value);
         var recipient = parent?.AuthorParticipantId ?? node.AuthorId.Value;
         publisher.Publish(new NotificationRequestedV1(created.Id.Value, recipient,
             created.AuthorParticipantId, parent is null ? "NodeCommented" : "CommentReplied",

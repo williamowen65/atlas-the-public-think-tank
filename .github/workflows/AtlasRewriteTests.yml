@@ -39,6 +39,8 @@ jobs:
             project: tests/Atlas.Console.Tests/Atlas.Console.Tests.csproj
           - name: Moderation
             project: tests/Atlas.Moderation.Tests/Atlas.Moderation.Tests.csproj
+          - name: Notifications
+            project: tests/Atlas.Notifications.Tests/Atlas.Notifications.Tests.csproj
           - name: Discovery
             project: tests/Atlas.Discovery.Tests/Atlas.Discovery.Tests.csproj
 
