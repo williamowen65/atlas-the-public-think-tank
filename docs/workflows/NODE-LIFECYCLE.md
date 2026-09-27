@@ -42,3 +42,12 @@ If the document is saved and node creation then fails, the prototype may retain 
 Graph owns the state transition and records the corresponding versioned event. The host saves the node before dispatching the event. Subscribers decide independently whether the change requires action in their own boundary.
 
 Authorization for these node mutations is not yet fully enforced behind a Graph application use case; see [AUT-002](../requirements/REQUIREMENTS.md#aut-002).
+
+## Moderation visibility
+
+Moderation can hide a Node's public title and description without changing the
+Graph Node's status or relationships. The Console preserves navigation and
+shows a public reason placeholder; Discovery removes the hidden Node from its
+main browsing results. The author can edit and request restoration review.
+See the [Moderation Domain blackboard](../blackboards/workflows/Moderation/ModerationDomain.excalidraw.png)
+and [boundary documentation](../architecture/MODERATION.md) for the full workflow.
