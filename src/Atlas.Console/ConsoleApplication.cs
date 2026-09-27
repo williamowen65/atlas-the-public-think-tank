@@ -615,8 +615,18 @@ public sealed class ConsoleApplication
                     if (report.VisibilityRestoredAt is not null)
                         Console.WriteLine($"Restored: {report.RestorationReason}; moderator: {report.RestoredBy}; at: {report.VisibilityRestoredAt:u}");
                 }
+                var reviewRequestedAt = reports
+                    .Where(report => report.IsHidden && report.ReviewRequestedAt is not null)
+                    .Max(report => report.ReviewRequestedAt);
+                if (reviewRequestedAt is not null)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine("AUTHOR REVIEW REQUEST");
+                    Console.WriteLine($"The author edited this hidden Node and requested review for restoration at {reviewRequestedAt:u}.");
+                    Console.WriteLine("Open the Node and select 22 to inspect the revised title and description before restoring it.");
+                }
                 var node = _nodeRepository.GetById(new NodeId(group.NodeId));
-                Console.WriteLine($"Current Node: {node?.Title.Value ?? "unavailable"}");
+                Console.WriteLine($"Current Node: {(node is null ? "unavailable" : NodeDisplay.PublicTitle(node, _moderation))}");
                 Console.Write("V = view Node, D = dismiss reports, H = hide Node, R = restore after review, other = cancel: ");
                 var action = Console.ReadLine()?.Trim().ToUpperInvariant();
                 if (action == "V")
