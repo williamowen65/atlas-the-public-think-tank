@@ -73,4 +73,4 @@ The previous Atlas web application is preserved under [`legacy/`](legacy/). Its 
 
 ## License
 
-Atlas is licensed under the terms in [LICENSE.txt](LICENSE).
+Atlas is licensed under the [GNU Affero General Public License version 3](LICENSE). Copyright and trademark information is recorded in [NOTICE.md](NOTICE.md).
