@@ -28,6 +28,9 @@ Markdown documentation.
   ownership, top-level creation and replies, edit and soft-removal permissions,
   threaded reads, Console navigation, target availability, and deferred
   integrations.
+- [Moderation Domain](workflows/Moderation/ModerationDomain.excalidraw.png) maps
+  Node reporting, grouped moderator decisions, hidden visibility, author edits,
+  review requests, restoration, stored history, and future integration points.
 - [The current-state context map](../architecture/CONTEXT-MAP.md) remains the
   authoritative inventory when the blackboard and written documentation differ.
 
