@@ -11,4 +11,5 @@ public sealed record DiscoveryQuery(
     double? MaximumAverageVote = null,
     DateOnly? CreatedFrom = null,
     DateOnly? CreatedThrough = null,
-    bool IncludeArchived = false);
+    bool IncludeArchived = false,
+    int Page = 1);

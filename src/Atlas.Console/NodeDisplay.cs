@@ -31,7 +31,7 @@ public static class NodeDisplay
     private const int TagsWidth = 40;
     private const int CommunitiesWidth = 24;
     private const int CommentsWidth = 8;
-    private const int SubNodesMinimumWidth = 36;
+    private const int SubNodesMinimumWidth = 52;
 
     private const int VoteCountWidth = 5;
     private const int AverageVoteWidth = 5;
@@ -40,39 +40,7 @@ public static class NodeDisplay
     /// <summary>Writes table header to the console display.</summary>
     public static void WriteTableHeader(bool includeCreatedDate = false)
     {
-        Console.WriteLine(
-            $"{"#",3}  " +
-            $"{Center("Votes", VoteCountWidth)}  " +
-            $"{Center("Avg", AverageVoteWidth)}  " +
-            $"{Center("My Vote", CurrentVoteWidth)}  " +
-            $"{"Title",-TitleWidth}  " +
-            $"{"Type",-TypeWidth}  " +
-            $"{"Authored By",-AuthorWidth}  " +
-            $"{"Description",-DescriptionWidth}  " +
-            $"{"Reactions",-TagsWidth}  " +
-            $"{"Communities",-CommunitiesWidth}  " +
-            $"{Center("Comments", CommentsWidth)}  " +
-            (includeCreatedDate ? $"{Center("Created", CreatedWidth)}  " : string.Empty) +
-            $"{"Status",-StatusWidth}  " +
-            "Sub-nodes");
-
-        Console.WriteLine(
-            new string(
-                '-',
-                3 + 2 +
-                VoteCountWidth + 2 +
-                AverageVoteWidth + 2 +
-                CurrentVoteWidth + 2 +
-                TitleWidth + 2 +
-                TypeWidth + 2 +
-                AuthorWidth + 2 +
-                DescriptionWidth + 2 +
-                CommunitiesWidth + 2 +
-                CommentsWidth + 2 +
-                TagsWidth + 2 +
-                (includeCreatedDate ? CreatedWidth + 2 : 0) +
-                StatusWidth + 2 +
-                SubNodesMinimumWidth));
+        // Selection numbers belong to the cards; a wide table header is unnecessary.
     }
 
     /// <summary>Writes table row to the console display.</summary>
@@ -98,28 +66,25 @@ public static class NodeDisplay
         var visibility = moderation?.Visibility(node.Id.Value) ?? ModerationVisibility.Visible;
         var typeName = ResolveTypeName(node, nodeTypes);
         var description = visibility.IsHidden ? visibility.Notice
-            : ResolveDescription(node, documents, includeBlockDetails: false);
+            : ResolveFeedDescription(node, documents);
         var authorName = ResolveAuthorName(node, participants);
         var subNodeSummary =
             ResolveSubNodeSummary(node, nodes, nodeTypes);
 
-        Console.WriteLine(
-            $"{number,3}  " +
-            $"{Center(FormatVoteCount(voteCount), VoteCountWidth)}  " +
-            $"{Center(FormatAverageVote(averageVote), AverageVoteWidth)}  " +
-            $"{Center(
-                FormatCurrentParticipantVote(currentParticipantVote),
-                CurrentVoteWidth)}  " +
-            $"{Truncate(visibility.IsHidden ? visibility.Notice : node.Title.Value, TitleWidth),-TitleWidth}  " +
-            $"{Truncate(typeName, TypeWidth),-TypeWidth}  " +
-            $"{Truncate(authorName, AuthorWidth),-AuthorWidth}  " +
-            $"{Truncate(description, DescriptionWidth),-DescriptionWidth}  " +
-            $"{Truncate(ResolveTags(node, nodeTags, tagDefinitions, votes), TagsWidth),-TagsWidth}  " +
-            $"{Truncate(ResolveCommunities(node, communities, communityNodes), CommunitiesWidth),-CommunitiesWidth}  " +
-            $"{Center(ResolveCommentCount(node, comments), CommentsWidth)}  " +
-            (includeCreatedDate ? $"{node.CreatedAt:yyyy-MM-dd}  " : string.Empty) +
-            $"{node.Status,-StatusWidth}  " +
-            subNodeSummary);
+        Console.WriteLine();
+        WriteWrapped($"{number}. {typeName} · ",
+            visibility.IsHidden ? visibility.Notice : node.Title.Value);
+        WriteBreadcrumb(ResolveBreadcrumb(node, nodes, nodeTypes, moderation));
+        Console.WriteLine($"   By {authorName} · {node.Status}" +
+            (includeCreatedDate ? $" · Created {node.CreatedAt:yyyy-MM-dd}" : string.Empty));
+        WriteWrapped("   ", description);
+        Console.WriteLine($"   Importance: {FormatVoteCount(voteCount)} votes · " +
+            $"avg {FormatAverageVote(averageVote)} · " +
+            $"my rating {FormatCurrentParticipantVote(currentParticipantVote)}");
+        WriteWrapped("   Sub-nodes: ", subNodeSummary);
+        WriteWrapped("   Reactions: ", ResolveTags(node, nodeTags, tagDefinitions, votes));
+        WriteWrapped("   Communities: ", ResolveCommunities(node, communities, communityNodes));
+        Console.WriteLine($"   Comments: {ResolveCommentCount(node, comments)}");
     }
 
     /// <summary>Writes details to the console display.</summary>
@@ -145,29 +110,19 @@ public static class NodeDisplay
     {
         var visibility = moderation?.Visibility(node.Id.Value) ?? ModerationVisibility.Visible;
         var hidden = visibility.IsHidden && !showOriginalContent;
-        var description = hidden ? visibility.Notice : ResolveDescription(node, documents, includeBlockDetails: true);
+        var description = hidden ? visibility.Notice : showOriginalContent
+            ? ResolveDescription(node, documents, includeBlockDetails: true)
+            : ResolveFeedDescription(node, documents);
         var authorName = ResolveAuthorName(node, participants);
 
+        Console.WriteLine();
         Console.WriteLine("ATLAS NODE");
-        Console.WriteLine("----------");
-        Console.WriteLine($"ID:             {node.Id}");
-        Console.WriteLine($"Title:          {(hidden ? visibility.Notice : node.Title.Value)}");
-        Console.WriteLine(
-            $"Type:           {ResolveTypeName(node, nodeTypes)}");
-        Console.WriteLine($"Type ID:        {node.TypeId}");
-        Console.WriteLine($"Description ID: {node.DescriptionId}");
-        Console.WriteLine($"Author ID:      {node.AuthorId}");
-        Console.WriteLine($"Authored By:    {authorName}");
-        Console.WriteLine(
-            $"Parents:        {ResolveParentSummary(node, nodes, moderation)}");
-        Console.WriteLine($"Status:         {node.Status}");
-        Console.WriteLine($"Votes:          {FormatVoteCount(voteCount)}");
-        Console.WriteLine($"Average:        {FormatAverageVote(averageVote)}");
-        Console.WriteLine($"My Vote:        {FormatCurrentParticipantVote(currentParticipantVote)}");
-        Console.WriteLine($"Communities:    {ResolveCommunities(node, communities, communityNodes)}");
-        Console.WriteLine($"Comments:       {ResolveCommentCount(node, comments)}");
-        Console.WriteLine($"Created:        {node.CreatedAt.LocalDateTime}");
-        Console.WriteLine($"Updated:        {node.UpdatedAt.LocalDateTime}");
+        WriteWrapped("  ", $"{ResolveTypeName(node, nodeTypes)} · {(hidden ? visibility.Notice : node.Title.Value)}");
+        Console.WriteLine($"  By {authorName} · {node.Status} · Created {node.CreatedAt:yyyy-MM-dd} · Updated {node.UpdatedAt:yyyy-MM-dd}");
+        WriteBreadcrumb(ResolveBreadcrumb(node, nodes, nodeTypes, moderation));
+        Console.WriteLine($"  Importance: {FormatVoteCount(voteCount)} votes · avg {FormatAverageVote(averageVote)} · my rating {FormatCurrentParticipantVote(currentParticipantVote)}");
+        Console.WriteLine($"  Communities: {ResolveCommunities(node, communities, communityNodes)} · Comments: {ResolveCommentCount(node, comments)}");
+        Console.WriteLine($"  Node ID: {node.Id}");
 
         ReactionDisplay.WriteDetails(
             node,
@@ -177,9 +132,10 @@ public static class NodeDisplay
             votingParticipantId);
 
         Console.WriteLine();
-        Console.WriteLine("Description");
-        Console.WriteLine("-----------");
+        Console.WriteLine("DESCRIPTION");
         Console.WriteLine(description);
+        Console.WriteLine();
+        Console.WriteLine("SUB-NODES");
 
         WriteSubNodeTables(
             node,
@@ -244,25 +200,18 @@ public static class NodeDisplay
                     autoPluralize)
                 .ToUpperInvariant();
 
-            Console.WriteLine();
-            Console.WriteLine(heading);
-            Console.WriteLine(new string('-', heading.Length));
-            WriteTableHeader();
+            Console.WriteLine($"  {heading}");
 
             if (matchingChildren.Count == 0)
             {
                 Console.WriteLine(
-                    $"No {PluralizeTypeName(typeName, autoPluralize)} " +
+                    $"    No {PluralizeTypeName(typeName, autoPluralize)} " +
                     "have been added yet.");
                 continue;
             }
 
-            for (var index = 0;
-                index < matchingChildren.Count;
-                index++)
+            foreach (var child in matchingChildren)
             {
-                var child = matchingChildren[index];
-
                 NodeVoteSummary? voteSummary = null;
 
                 if (childVoteSummaries is not null)
@@ -272,31 +221,17 @@ public static class NodeDisplay
                         out voteSummary);
                 }
 
-                WriteTableRow(
-                    child,
-                    nodes,
-                    nodeTypes,
-                    documents,
-                    participants,
-                    index + 1,
-                    voteSummary?.VoteCount,
-                    voteSummary?.AverageVote,
-                    voteSummary?.CurrentParticipantVote,
-                    nodeTags,
-                    tagDefinitions,
-                    votes,
-                    comments: comments,
-                    moderation: moderation);
+                var childVisibility = moderation?.Visibility(child.Id.Value) ?? ModerationVisibility.Visible;
+                WriteWrapped("    > ",
+                    childVisibility.IsHidden ? childVisibility.Notice : child.Title.Value);
+                Console.WriteLine($"       {FormatVoteCount(voteSummary?.VoteCount)} votes · avg {FormatAverageVote(voteSummary?.AverageVote)}");
             }
         }
 
         if (typeIds.Count == 0)
         {
-            Console.WriteLine();
-            Console.WriteLine("SUB-NODES");
-            Console.WriteLine("---------");
             Console.WriteLine(
-                "This node does not request or contain any sub-nodes.");
+                "  This node does not request or contain any sub-nodes.");
         }
     }
 
@@ -369,6 +304,71 @@ public static class NodeDisplay
                 ?? $"Unknown ({parentId})"));
     }
 
+    private static string ResolveBreadcrumb(
+        Node node,
+        INodeRepository nodes,
+        INodeTypeRepository nodeTypes,
+        ModerationService? moderation)
+    {
+        if (node.ParentNodeIds.Count == 0)
+            return "Root node";
+
+        string Segment(Node item)
+        {
+            var visibility = moderation?.Visibility(item.Id.Value) ?? ModerationVisibility.Visible;
+            return $"{ResolveTypeName(item, nodeTypes)} · " +
+                (visibility.IsHidden ? visibility.Notice : item.Title.Value);
+        }
+
+        IEnumerable<string> Paths(Node current, HashSet<NodeId> visited)
+        {
+            if (!visited.Add(current.Id))
+                return new[] { "[Circular parent link]" };
+
+            if (current.ParentNodeIds.Count == 0)
+                return new[] { Segment(current) };
+
+            var paths = new List<string>();
+            foreach (var parentId in current.ParentNodeIds)
+            {
+                var parent = nodes.GetById(parentId);
+                if (parent is null)
+                {
+                    paths.Add($"Unknown ({parentId}) → {Segment(current)}");
+                    continue;
+                }
+
+                paths.AddRange(Paths(parent, new HashSet<NodeId>(visited))
+                    .Select(path => $"{path} → {Segment(current)}"));
+            }
+
+            return paths;
+        }
+
+        var ancestorPaths = node.ParentNodeIds.SelectMany(parentId =>
+        {
+            var parent = nodes.GetById(parentId);
+            return parent is null
+                ? new[] { $"Unknown ({parentId})" }
+                : Paths(parent, new HashSet<NodeId> { node.Id });
+        });
+
+        return string.Join(" | ", ancestorPaths);
+    }
+
+    private static void WriteBreadcrumb(string breadcrumb)
+    {
+        var paths = breadcrumb.Split(" | ", StringSplitOptions.None);
+        for (var pathIndex = 0; pathIndex < paths.Length; pathIndex++)
+        {
+            if (pathIndex > 0)
+                Console.WriteLine("     and");
+            var segments = paths[pathIndex].Split(" → ", StringSplitOptions.None);
+            for (var depth = 0; depth < segments.Length; depth++)
+                WriteWrapped(pathIndex == 0 && depth == 0 ? "   Path: " : "         ", segments[depth]);
+        }
+    }
+
     /// <summary>Resolves description for the current console view.</summary>
     private static string ResolveDescription(
         Node node,
@@ -417,6 +417,49 @@ public static class NodeDisplay
                     : $"Chart ID: {chart.ChartId}\nTitle: {chart.Title}",
                 _ => $"[{block.Kind}]"
             })));
+    }
+
+    private static string ResolveFeedDescription(Node node, IDocumentRepository documents)
+    {
+        var document = documents.GetById(new DocumentId(node.DescriptionId.Value));
+        if (document is null)
+            return "Description document not found.";
+
+        var blocks = documents.GetBlocks(document);
+        if (blocks.Count == 0)
+            return "No description has been provided.";
+
+        return string.Join("\n\n", blocks.Select(block => block switch
+        {
+            MarkdownTextBlock text => text.Markdown,
+            ImageBlock image => $"Image: {image.AltText} ({image.Url})",
+            VideoBlock video => $"Video: {video.Caption} ({video.Url})",
+            LinkPreviewBlock link => $"Link: {link.Title} ({link.Url}) — {link.Description}",
+            PollReferenceBlock => "Poll",
+            ChartReferenceBlock chart => $"Chart: {chart.Title}",
+            _ => block.Kind
+        }));
+    }
+
+    private static void WriteWrapped(string prefix, string value)
+    {
+        var continuation = new string(' ', prefix.Length);
+        var width = Math.Max(20, (Console.IsOutputRedirected ? 100 : Console.WindowWidth) - prefix.Length - 2);
+        foreach (var paragraph in value.Replace("\r\n", "\n").Split('\n'))
+        {
+            var line = prefix;
+            foreach (var word in paragraph.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (line.Length > prefix.Length && line.Length + word.Length + 1 > prefix.Length + width)
+                {
+                    Console.WriteLine(line);
+                    line = continuation;
+                }
+                line += (line.Length > prefix.Length ? " " : string.Empty) + word;
+            }
+            Console.WriteLine(line);
+            prefix = continuation;
+        }
     }
 
     /// <summary>Resolves author name for the current console view.</summary>

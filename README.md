@@ -1,112 +1,71 @@
-<div align="center">
-  
-[![Milestones](https://img.shields.io/badge/Project-Milestones-orange)](https://github.com/williamowen65/atlas-the-public-think-tank/milestones)
-[![GitHub milestone details](https://img.shields.io/github/milestones/progress/williamowen65/atlas-the-public-think-tank/5)](https://github.com/williamowen65/atlas-the-public-think-tank/milestone/5)
-<br>
-[![Tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/williamowen65/4ac1300861898e7568dbec51c70bd24b/raw/test-badge.json)](#)
-[![Community Contributions](https://img.shields.io/github/milestones/progress/williamowen65/atlas-the-public-think-tank/9)](https://github.com/williamowen65/atlas-the-public-think-tank/milestone/9)
-<br>
-[Pre-Launch Landing Page](https://atlas.thepublicthinktank.com/) / [GoFundMe](https://www.gofundme.com/f/fund-william-owens-innovative-social-media-project?attribution_id=sl%3A941d2104-ef5c-4c33-b0b0-8bb291918c80&utm_campaign=unknown&utm_medium=undefined&utm_source=undefined) / [The Wiki](https://github.com/williamowen65/atlas-the-public-think-tank/wiki)
-</div>
+# Atlas — The Public Think Tank
 
-# Atlas - The Public Think Tank  
+[![Atlas Rewrite Tests](https://github.com/williamowen65/atlas-the-public-think-tank/actions/workflows/AtlasRewriteTests.yml/badge.svg)](https://github.com/williamowen65/atlas-the-public-think-tank/actions/workflows/AtlasRewriteTests.yml)
+[![License](https://img.shields.io/github/license/williamowen65/atlas-the-public-think-tank)](LICENSE)
 
-> Atlas is a social media platform designed to connect innovative thinkers with problem-solvers. It provides a space for users to share ideas, collaborate on projects, and engage in meaningful discussions around issues and solutions. The platform aims to foster a community of forward-thinkers who can collectively address complex challenges.
+Atlas is an open-source platform for thinking through complex public problems together. It is designed to help people develop ideas, examine possible solutions, connect related contributions, and make the structure of a discussion easier to understand.
 
-### MVP Features
+This repository contains a new version of Atlas. The application is being rebuilt around explicit **bounded contexts**: focused parts of the system that each own a particular set of concepts and rules. This keeps the growing platform understandable while allowing its features to work together through documented boundaries.
 
-- A 0 - 10 rating system on Issues, Solutions, and Comments offers the users more say than the the common "like" pattern or "upvote/downvote" pattern of mainstream social media.
-- Issues and Solutions are also nested with offering users ways to navigate parent and child issues or solutions.
-- Content feeds can be filtered and sorted
-- Issues, Solutions, and Users can be followed by users
+> **Project status:** Atlas is under active development. The current Console application is an executable reference for exercising and reviewing the domain workflows before they are exposed through a web API and user interface.
 
-### Extra Feature Goals
+## How Atlas is organized
 
-- AI Content Moderation
+| Boundary | Responsibility |
+|---|---|
+| **Graph** | Nodes, node types, relationships, and lifecycle |
+| **Content** | Structured descriptions and content blocks |
+| **Participants** | Participant identity and domain-level permissions |
+| **Voting** | Node importance ratings and reaction votes |
+| **Communities** | Communities, membership, and node association |
+| **Comments** | Threaded conversations and comment lifecycle |
+| **Discovery** | Searching, filtering, ranking, and pagination |
+| **Moderation** | Reports, moderator review, decisions, and enforced actions |
+| **Contracts** | Shared messages used across boundaries |
+| **Console** | Composition root and interactive workflow harness |
 
-### Documentation
+These boundaries currently run together as a modular application. Separating their responsibilities now keeps deployment options open without adding the operational complexity of distributed services prematurely.
 
-- [Documentation index](docs/README.md)
-- [Atlas.Console architecture and workflow diagrams](src/Atlas.Console/README.md)
-- [Atlas.Participants model and authorization diagrams](src/Atlas.Participants/README.md)
-- [Requirements baseline and traceability](docs/requirements/README.md)
-- [Requirements Traceability Matrix](docs/requirements/TRACEABILITY.md)
+## Run the current application
 
-Contributors, maintainers, and curious readers can find all documentation for on [the Wiki](https://github.com/williamowen65/atlas-the-public-think-tank/wiki).
+Atlas currently targets [.NET 10](https://dotnet.microsoft.com/).
 
+```bash
+git clone https://github.com/williamowen65/atlas-the-public-think-tank.git
+cd atlas-the-public-think-tank
+dotnet restore Atlas.sln
+dotnet run --project src/Atlas.Console/Atlas.Console.csproj
+```
 
-### Collaboration  
+Run the automated tests with:
 
-This project seeks contributions from the community. If you are interested in contributing, please feel free to reach out via this [Discussion Board](https://github.com/williamowen65/atlas-the-public-think-tank/discussions/2).  
+```bash
+dotnet test Atlas.sln
+```
 
+## Repository guide
 
+- [`src/`](src/) — current Atlas boundaries and the Console host
+- [`tests/`](tests/) — automated tests organized by boundary
+- [`docs/`](docs/README.md) — requirements, architecture, contracts, workflows, testing guidance, glossary, and blackboards
+- [`legacy/`](legacy/README.md) — the earlier web application and its original README
+- [`infrastructure/`](infrastructure/README.md) — planned infrastructure as code
+- [`data/`](data/) — file-system data used by the Console host
 
-<!--
+For a deeper technical introduction, start with the [documentation index](docs/README.md). The [requirements baseline](docs/requirements/README.md) and [traceability matrix](docs/requirements/TRACEABILITY.md) connect intended behavior to implementation and verification.
 
-- [ ] **Collaboration Tools**: Features like project boards, task management, and file sharing to facilitate teamwork.
-- [ ] **Integration with Social Media Platforms**: Enable users to share their ideas and projects directly to popular social media platforms, increasing visibility and engagement.
-- [ ] **Notifications**: Real-time notifications for mentions, comments, and project updates.
-- [ ] **API Integration**: RESTful API for third-party integrations and mobile app development.
-- [ ] **Analytics and Reporting**: Insights into user engagement, popular topics, and platform growth.
-- [ ] **Security Features**: Data encryption, secure storage, and regular security audits to protect user information.
-- [ ] **Localization Support**: Multi-language support to cater to a global audience.
-- [ ] **Dark Mode**: Option for users to switch to a dark theme for better readability in low-light environments.
-- [ ] **Bookmarking and Saving**: Users can bookmark ideas and discussions for later reference.
-- [ ] **Mentorship Program**: Connects experienced users with newcomers for guidance and support.
-- [ ] **Gamification**: Badges and rewards for active users to encourage participation and contribution.
-- [ ] **Event Management**: Users can create and manage events, webinars, and meetups to engage the community.
-- [ ] **Integration with External Tools**: Seamless integration with popular tools like GitHub, Google Drive, and Slack for enhanced productivity.
-- [ ] **Content Moderation**: Tools for reporting and moderating content to maintain a respectful and inclusive environment.
-- [ ] **Customizable Notifications**: Users can customize their notification preferences to control the frequency and type of alerts they receive.
-- [ ] **Rich Text Editor**: A powerful editor for creating and formatting posts, ideas, and discussions with support for images, links, and code snippets.
-- [ ] **Version Control for Projects**: Track changes and manage versions of projects to facilitate collaboration and rollback if needed.
-- [ ] **User Badges and Achievements**: Recognition for users who contribute significantly to the platform, encouraging engagement and loyalty.
-- [ ] **API Rate Limiting**: To ensure fair usage and prevent abuse of the API, implementing rate limiting for API calls.
-- [ ] **Data Export**: Allow users to export their data (posts, comments, etc.) in a structured format for personal use or backup.
-- [ ] **Accessibility Features**: Compliance with WCAG (Web Content Accessibility Guidelines) to ensure the platform is usable by individuals with disabilities.
-- [ ] **Multi-Tenancy Support**: Ability to host multiple instances of the platform for different organizations or communities, each with its own branding and settings.
-- [ ] **Custom Domains**: Allow users or organizations to use their own custom domains for their instances of the platform.
-- [ ] **Content Scheduling**: Users can schedule their posts and ideas to be published at a later date, allowing for better planning and consistency in content sharing.
-- [ ] **Real-time Collaboration**: Support for real-time editing and collaboration on documents and projects, similar to Google Docs, to enhance teamwork.
-- [ ] **Offline Mode**: Allow users to work offline and sync their changes once they are back online, ensuring productivity even without an internet connection.
-- [ ] **Data Backup and Recovery**: Regular automated backups of user data and platform content to prevent data loss and ensure quick recovery in case of failures.
-- [ ] **Customizable UI Themes**: Users can customize the user interface with different themes and layouts to suit their preferences, enhancing the user experience.
-- [ ] **Advanced Filtering Options**: Users can filter ideas, projects, and discussions based on various criteria such as date, popularity, and tags to easily find relevant content.
-- [ ] **Mentor Matching Algorithm**: An intelligent algorithm to match mentors with mentees based on their skills, interests, and goals, facilitating meaningful mentorship connections.
-- [ ] **Custom Analytics Dashboards**: Allow users to create their own analytics dashboards to visualize data relevant to their activities and interests on the platform.
-- [ ] **Integration with Learning Platforms**: Partnerships with online learning platforms to provide users with resources and courses related to their interests and projects.
-- [ ] **API Documentation**: Comprehensive documentation for the API to facilitate third-party developers in integrating with the platform, including examples and use cases.
-- [ ] **Event Logging and Monitoring**: Implement logging for critical events and actions on the platform to aid in debugging, monitoring, and improving user experience.
-- [ ] **User Segmentation**: Ability to segment users based on various criteria (e.g., activity level, interests) for targeted notifications and communications, enhancing user engagement.
-- [ ] **A/B Testing Framework**: Built-in support for A/B testing to experiment with different features, layouts, and content to optimize user engagement and experience.
-- [ ] **Customizable Email Templates**: Allow administrators to customize email templates for notifications, invitations, and other communications to maintain brand consistency.
-- [ ] **Feedback Loop for Feature Requests**: A structured process for users to submit feature requests and vote on them, ensuring the platform evolves based on user needs and preferences.
-- [ ] **Data Retention Policies**: Clear policies and mechanisms for data retention, allowing users to manage their data and understand how long their information will be stored on the platform.
-- [ ] **Incident Management System**: A system to handle incidents and outages, including user notifications, status updates, and post-incident reviews to improve platform reliability.
-- [ ] **Scalability and Load Balancing**: Architecture designed to scale horizontally, ensuring the platform can handle increased traffic and user load without performance degradation.
-- [ ] **Disaster Recovery Plan**: A comprehensive disaster recovery plan to ensure business continuity in case of catastrophic failures, including data replication and failover strategies.
-- [ ] **User Journey Mapping**: Tools to visualize and analyze user journeys on the platform, helping identify pain points and opportunities for improvement in the user experience.
-- [ ] **Customizable Onboarding Process**: Allow new users to customize their onboarding experience based on their interests and goals, improving user retention and satisfaction.
-- [ ] **Content Curation**: Mechanisms for curating high-quality content, including user-generated content, to highlight valuable contributions and foster a culture of excellence.
-- [ ] **Sustainability Features**: Implement features to promote sustainability, such as carbon footprint tracking for projects and suggestions for eco-friendly practices within the community.
-- [ ] **Ethical AI Integration**: If using AI features, ensure ethical guidelines are followed, including transparency in AI decision-making and user consent for data usage.
-- [ ] **Open Source Contribution**: Encourage open-source contributions by hosting the codebase on platforms like GitHub, allowing the community to contribute to the development and improvement of the platform.
-- [ ] **Documentation and Tutorials**: Provide comprehensive documentation and tutorials for users to get started, including best practices for idea sharing, collaboration, and utilizing the platform's features effectively.
-- [ ] **User Support and Help Center**: A dedicated support system with a help center, FAQs, and a ticketing system for users to get assistance with any issues they encounter on the platform.
-- [ ] **Community Engagement Initiatives**: Organize regular community engagement initiatives such as hackathons, webinars, and challenges to keep the community active and foster innovation.
+## Contributing
 
--->
+Atlas welcomes thoughtful contributions to its code, tests, documentation, architecture, accessibility, and product design.
 
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for the complete contribution path, including where ideas and bugs belong, how work becomes `contribution-ready`, testing and documentation expectations, the relationship between GitHub and Jira, and contribution licensing.
 
+GitHub Issues are the public proposal and contribution backlog. Jira separately tracks work Atlas has accepted and committed to deliver; the two systems are intentionally not synchronized.
 
-## Repository layout
+## Earlier version
 
-The physical repository layout mirrors the main Visual Studio solution:
+The previous Atlas web application is preserved under [`legacy/`](legacy/). Its [archived README](legacy/README.md) records the earlier project description and feature direction.
 
-- `src/` contains the current Atlas boundaries and Console host.
-- `tests/` contains tests for the current boundaries.
-- `legacy/` contains the previous web application, its cloud tests, and the pre-launch site.
-- `infrastructure/` contains local development and reverse-proxy support.
-- `docs/` contains requirements, architecture decisions, workflows, contracts, testing guidance, the glossary, and legacy SQL references.
-- `data/` contains the Console host's file-system data.
-- `.github/`, `Atlas.sln`, and repository-level files remain at the root.
+## License
+
+Atlas is licensed under the [GNU Affero General Public License version 3](LICENSE). Copyright and trademark information is recorded in [NOTICE.md](NOTICE.md).

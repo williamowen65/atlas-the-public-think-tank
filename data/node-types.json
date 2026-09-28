@@ -75,5 +75,27 @@
     "AutoPluralize": true,
     "CreatedAt": "2026-08-01T14:00:00+00:00",
     "UpdatedAt": "2026-08-01T14:00:00+00:00"
+  },
+  {
+    "Id": "a3000000-0000-4000-8000-000000000001",
+    "Name": "Goal",
+    "Description": "A desired outcome to work toward.",
+    "OwnerId": null,
+    "IsSystemDefined": true,
+    "IsArchived": false,
+    "AutoPluralize": true,
+    "CreatedAt": "2026-09-28T15:20:00+00:00",
+    "UpdatedAt": "2026-09-28T15:20:00+00:00"
+  },
+  {
+    "Id": "a3000000-0000-4000-8000-000000000002",
+    "Name": "Vision",
+    "Description": "A picture of a possible future.",
+    "OwnerId": null,
+    "IsSystemDefined": true,
+    "IsArchived": false,
+    "AutoPluralize": true,
+    "CreatedAt": "2026-09-28T15:20:00+00:00",
+    "UpdatedAt": "2026-09-28T15:20:00+00:00"
   }
 ]

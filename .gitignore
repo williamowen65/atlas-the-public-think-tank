@@ -383,3 +383,6 @@ crash.log
 .idea/
 *.swp
 *.bak
+
+# Keep blackboards interactive; do not commit exported previews.
+/docs/blackboards/**/*.png
