@@ -2,43 +2,43 @@
   {
     "Id": "b3000000-0000-4000-8000-000000000001",
     "Kind": "markdown",
-    "Markdown": "A place for ideas at any scale. What would you change, try, or build, and why might it help?",
+    "Markdown": "Useful ideas can come from anyone, and a small change in one place may inspire progress somewhere else. People of every age and background notice different needs and possibilities. Even an idea too big for one person to carry out can grow when others can see it, develop it, and connect it with ideas from other areas of life.",
     "CreatedAt": "2026-09-28T15:20:00+00:00",
-    "UpdatedAt": "2026-09-28T15:20:00+00:00"
+    "UpdatedAt": "2026-09-28T16:03:58.010Z"
   },
   {
     "Id": "b3000000-0000-4000-8000-000000000002",
     "Kind": "markdown",
-    "Markdown": "Explore experiences, causes, evidence, and responses to homelessness. Which questions should we ask, and what outcomes matter to people affected?",
+    "Markdown": "Homelessness affects people's safety, health, and ability to build a stable life. Listening to people affected and understanding the causes can help communities address the issue in ways that meet people's needs.",
     "CreatedAt": "2026-09-28T15:20:00+00:00",
-    "UpdatedAt": "2026-09-28T15:20:00+00:00"
+    "UpdatedAt": "2026-09-28T16:03:58.010Z"
   },
   {
     "Id": "b3000000-0000-4000-8000-000000000003",
     "Kind": "markdown",
-    "Markdown": "What would meaningful access look like, where are the gaps, and what steps could close them?",
+    "Markdown": "Access to essential services shapes what people are able to do in their daily lives. This goal asks us to notice where access breaks down and consider whether services truly work for the people who need them.",
     "CreatedAt": "2026-09-28T15:20:00+00:00",
-    "UpdatedAt": "2026-09-28T15:20:00+00:00"
+    "UpdatedAt": "2026-09-28T16:03:58.010Z"
   },
   {
     "Id": "b3000000-0000-4000-8000-000000000004",
     "Kind": "markdown",
-    "Markdown": "Share approaches that have worked somewhere, what made them work, and what we would need to learn before trying them elsewhere.",
+    "Markdown": "People are already finding effective ways to address difficult problems. Studying what worked, for whom, and under what conditions could help others adapt promising approaches without assuming that one solution fits everywhere.",
     "CreatedAt": "2026-09-28T15:20:00+00:00",
-    "UpdatedAt": "2026-09-28T15:20:00+00:00"
+    "UpdatedAt": "2026-09-28T16:03:58.010Z"
   },
   {
     "Id": "b3000000-0000-4000-8000-000000000005",
     "Kind": "markdown",
-    "Markdown": "Surface important unanswered questions. What evidence would help us make sense of them?",
+    "Markdown": "Some decisions move forward before the most useful questions have been asked. Identifying what we don’t yet understand can direct attention toward evidence that would make future ideas and decisions stronger.",
     "CreatedAt": "2026-09-28T15:20:00+00:00",
-    "UpdatedAt": "2026-09-28T15:20:00+00:00"
+    "UpdatedAt": "2026-09-28T16:03:58.010Z"
   },
   {
     "Id": "b3000000-0000-4000-8000-000000000006",
     "Kind": "markdown",
-    "Markdown": "Describe a future you would want to live in. What values and changes shape that picture?",
+    "Markdown": "The future is shaped partly by what people can imagine and work toward together. Sharing visions can make underlying values visible and help people decide which goals matter enough to pursue.",
     "CreatedAt": "2026-09-28T15:20:00+00:00",
-    "UpdatedAt": "2026-09-28T15:20:00+00:00"
+    "UpdatedAt": "2026-09-28T16:03:58.010Z"
   }
 ]
