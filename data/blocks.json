@@ -152,5 +152,19 @@
     "Markdown": "People can disagree about causes, priorities, and possible solutions while still learning from one another. This goal invites ways to make those differences clear, examine the reasons behind them, and leave room for ideas to change.",
     "CreatedAt": "2026-09-28T17:49:02.604Z",
     "UpdatedAt": "2026-09-28T17:49:02.604Z"
+  },
+  {
+    "Id": "b3000000-0000-4000-8000-000000000023",
+    "Kind": "markdown",
+    "Markdown": "Atlas, the Public Think Tank is an idea for a place where anyone can contribute to understanding problems and developing possibilities. People bring questions, ideas, issues, goals, and evidence into a connected discussion so others can find them, evaluate their importance, and build on them. A thought that one person cannot pursue alone may become more useful when people with different experiences can work on it together.",
+    "CreatedAt": "2026-09-28T18:02:56.236Z",
+    "UpdatedAt": "2026-09-28T18:02:56.236Z"
+  },
+  {
+    "Id": "b3000000-0000-4000-8000-000000000024",
+    "Kind": "markdown",
+    "Markdown": "Atlas organizes contributions as nodes. Each node has a type, title, and description; it can have parent nodes that show how it connects to larger questions or goals. A node may have more than one parent when it belongs in more than one branch. People can request useful kinds of child nodes, rate a node's importance, react to it, and find it through communities. Comments offer a lighter way to ask or respond. Which parts of this model make it easier to participate, and what still needs explaining?",
+    "CreatedAt": "2026-09-28T18:02:56.236Z",
+    "UpdatedAt": "2026-09-28T18:02:56.236Z"
   }
 ]
