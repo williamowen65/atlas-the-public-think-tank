@@ -89,5 +89,33 @@
     "Markdown": "Internet access can connect people to information, services, education, and one another. What would it take to make reliable access available everywhere without a charge to the person using it? This idea invites exploration of coverage, funding, accessibility, and who would be responsible for keeping it working.",
     "CreatedAt": "2026-09-28T17:19:30.587Z",
     "UpdatedAt": "2026-09-28T17:19:30.587Z"
+  },
+  {
+    "Id": "b3000000-0000-4000-8000-000000000014",
+    "Kind": "markdown",
+    "Markdown": "Providing internet access without charging users would still require people and resources to build, operate, repair, and improve the service. What funding approaches could sustain reliable access over time, especially where it costs more to provide?",
+    "CreatedAt": "2026-09-28T17:37:05.793Z",
+    "UpdatedAt": "2026-09-28T17:37:05.793Z"
+  },
+  {
+    "Id": "b3000000-0000-4000-8000-000000000015",
+    "Kind": "markdown",
+    "Markdown": "One possibility is to fund a basic level of internet access as a public service. That might give more people a usable connection, but its scope, quality, cost, and governance would need to be worked out and compared with other approaches.",
+    "CreatedAt": "2026-09-28T17:37:05.793Z",
+    "UpdatedAt": "2026-09-28T17:37:05.793Z"
+  },
+  {
+    "Id": "b3000000-0000-4000-8000-000000000016",
+    "Kind": "markdown",
+    "Markdown": "A publicly funded service might offer very different levels of quality across communities if funding, infrastructure, or accountability varies. How could a basic service avoid leaving people with access in name but not in practice?",
+    "CreatedAt": "2026-09-28T17:37:05.793Z",
+    "UpdatedAt": "2026-09-28T17:37:05.793Z"
+  },
+  {
+    "Id": "b3000000-0000-4000-8000-000000000017",
+    "Kind": "markdown",
+    "Markdown": "If a service becomes widely relied upon, decisions about coverage, quality, privacy, and interruptions would matter to many people. Who should make those decisions, and how could users challenge them or hold the service accountable?",
+    "CreatedAt": "2026-09-28T17:37:05.793Z",
+    "UpdatedAt": "2026-09-28T17:37:05.793Z"
   }
 ]
