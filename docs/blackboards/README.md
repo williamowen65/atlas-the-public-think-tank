@@ -7,28 +7,28 @@ Markdown documentation.
   editability, connection, traceability, and visual-language rules to apply to
   future workflow boards.
 
-- [PTT-68 current-state architecture](PTT-68-CURRENT-STATE.excalidraw.png) visualizes
+- [PTT-68 current-state architecture](PTT-68-CURRENT-STATE.excalidraw) visualizes
   the implemented system, current interactions, boundary gaps, and candidate
   future domains discovered during PTT-68.
-- [PTT-68 system blackboard](SYSTEM-BLACKBOARD.excalidraw.png) is the larger
+- [PTT-68 system blackboard](SYSTEM-BLACKBOARD.excalidraw) is the larger
   zoomable system graph. It places commands, use cases, event ports, current
   interactions, gaps, and candidate domains around their related boundaries.
-- [Reusable Node Tags](workflows/Node%20Tags/NodeTags.excalidraw.png) maps tag
+- [Reusable Node Tags](workflows/Node%20Tags/NodeTags.excalidraw) maps tag
   definition reuse, node-specific application, mutation authority, author
   disposition, lifecycle audit history, persistence, display, and the future
   Voting handoff.
-- [Content Block Composition](workflows/Content/ContentBlocks.excalidraw.png) is a
+- [Content Block Composition](workflows/Content/ContentBlocks.excalidraw) is a
   dashboard of Content ownership, block creation and validation, ordered document
   composition, type-specific payloads, JSON persistence, and reconstitution.
-- [Node Tag Voting](workflows/Voting/NodeTagVoting.excalidraw.png) maps PTT-84's
+- [Node Tag Voting](workflows/Voting/NodeTagVoting.excalidraw) maps PTT-84's
   console voting interaction, NodeTag target and -1/+1 value types, cumulative
   score aggregation, cross-domain eligibility checks, JSON persistence, and
   verification tests.
-- [Comments Domain](workflows/Comments/CommentsDomain.excalidraw.png) maps comment
+- [Comments Domain](workflows/Comments/CommentsDomain.excalidraw) maps comment
   ownership, top-level creation and replies, edit and soft-removal permissions,
   threaded reads, Console navigation, target availability, and deferred
   integrations.
-- [Moderation Domain](workflows/Moderation/ModerationDomain.excalidraw.png) maps
+- [Moderation Domain](workflows/Moderation/ModerationDomain.excalidraw) maps
   Node reporting, grouped moderator decisions, hidden visibility, author edits,
   review requests, restoration, stored history, and future integration points.
 - [The current-state context map](../architecture/CONTEXT-MAP.md) remains the
@@ -41,10 +41,8 @@ Markdown documentation.
 - Candidate-domain notes record discoveries only; they do not design or approve
   future boundaries.
 
-Open an `.excalidraw.png` file for a mobile-friendly preview. Each PNG contains
-embedded Excalidraw scene data, so it can also be imported into Excalidraw for
-editing. The matching `.excalidraw` file remains the reviewable source. Keep
-related areas on the same canvas unless the board becomes too crowded to
+Open the `.excalidraw` files in Excalidraw to pan, zoom, and edit each board.
+Keep related areas on the same canvas unless the board becomes too crowded to
 review.
 
 The current-state architecture board is a compact summary. The system
