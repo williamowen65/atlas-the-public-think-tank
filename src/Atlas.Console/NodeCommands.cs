@@ -115,51 +115,32 @@ public static class NodeCommands
                 moderation);
 
             Console.WriteLine();
-            Console.WriteLine(
-                $"Choose an action (as {currentParticipant.DisplayName}):");
-
-            var authorOnlyStatus = isAuthor
-                ? string.Empty
-                : " [disabled — requires node author]";
-
-            Console.WriteLine($"1. Rename{authorOnlyStatus}");
-            Console.WriteLine($"2. Manage description blocks{authorOnlyStatus}");
-            Console.WriteLine($"3. Change type{authorOnlyStatus}");
-            Console.WriteLine($"4. Archive{authorOnlyStatus}");
-            Console.WriteLine($"5. Restore{authorOnlyStatus}");
-            Console.WriteLine(
-                $"6. Change requested sub-node types{authorOnlyStatus}");
-
-            Console.WriteLine("7. Select sub-node");
-            Console.WriteLine("8. Add sub-node");
-            Console.WriteLine($"9. Attach to parent{authorOnlyStatus}");
-            Console.WriteLine($"10. Detach from parent{authorOnlyStatus}");
-            Console.WriteLine("11. View author profile");
-            Console.WriteLine("12. Manage reactions");
-            Console.WriteLine(
-                myVote is null
-                    ? "13. Vote on node"
-                    : "13. Change your vote");
-            Console.WriteLine("14. Undo your vote");
-            Console.WriteLine("15. View votes");
-            Console.WriteLine($"16. Manage communities{authorOnlyStatus}");
-            Console.WriteLine("17. View communities");
-            Console.WriteLine("18. Add comment");
-            Console.WriteLine("19. View comments");
-            Console.WriteLine("20. Return to previous page");
+            Console.WriteLine($"ACTIONS (as {currentParticipant.DisplayName})");
+            Console.WriteLine(isAuthor ? "  Edit this node:" : "  Edit this node (disabled — requires node author):");
+            Console.WriteLine("  1 Rename · 2 Description blocks · 3 Change type");
+            Console.WriteLine("  4 Archive · 5 Restore · 6 Requested sub-node types");
+            Console.WriteLine("  9 Attach to parent · 10 Detach from parent · 16 Manage communities");
+            Console.WriteLine("  Explore and contribute:");
+            Console.WriteLine("  7 Select sub-node · 8 Add sub-node · 11 Author profile");
+            Console.WriteLine(node.ParentNodeIds.Count == 0
+                ? "  24 Browse ancestors [disabled — root node]"
+                : "  24 Browse ancestors");
+            Console.WriteLine("  12 Manage reactions · 13 " + (myVote is null ? "Vote" : "Change vote") + " · 14 Undo vote · 15 View votes");
+            Console.WriteLine("  17 View communities · 18 Add comment · 19 View comments");
             Console.WriteLine(moderation.Visibility(node.Id.Value).IsHidden
-                ? "21. Report node [disabled — already hidden by moderator]"
-                : "21. Report node");
+                ? "  21 Report node [disabled — already hidden]"
+                : "  21 Report node");
             if (moderation.CanViewHiddenOriginal(actorParticipantId, node.AuthorId.Value, node.Id.Value))
             {
                 Console.WriteLine(isAuthor
-                    ? "22. View original content (author edit)"
-                    : "22. View original content (moderator, read only)");
+                    ? "  22 View original content (author edit)"
+                    : "  22 View original content (moderator, read only)");
             }
             if (isAuthor && moderation.Visibility(node.Id.Value).IsHidden)
             {
-                Console.WriteLine("23. Request moderation review after editing");
+                Console.WriteLine("  23 Request moderation review after editing");
             }
+            Console.WriteLine("  20 Return to previous page");
             Console.WriteLine();
 
             Console.Write("Selection: ");
@@ -233,6 +214,10 @@ public static class NodeCommands
                                    currentParticipant,
                                    moderation)
                                ?? node;
+                        break;
+
+                    case "24":
+                        node = SelectAncestor(node, nodes, nodeTypes, moderation) ?? node;
                         break;
 
                     case "8":
@@ -715,6 +700,61 @@ public static class NodeCommands
         return nodeSelection == 0
             ? null
             : selectedGroup.Children[nodeSelection - 1];
+    }
+
+    /// <summary>Lets the reader open any parent or more distant ancestor.</summary>
+    private static Node? SelectAncestor(
+        Node node,
+        INodeRepository nodes,
+        INodeTypeRepository nodeTypes,
+        ModerationService moderation)
+    {
+        if (node.ParentNodeIds.Count == 0)
+        {
+            ConsoleUi.Pause("This is a root node with no ancestors.");
+            return null;
+        }
+
+        var ancestors = new List<(Node Node, int Depth)>();
+        var visited = new HashSet<NodeId> { node.Id };
+        var pending = new Queue<(NodeId Id, int Depth)>(
+            node.ParentNodeIds.Select(id => (id, 1)));
+
+        while (pending.Count > 0)
+        {
+            var (id, depth) = pending.Dequeue();
+            if (!visited.Add(id))
+                continue;
+
+            var ancestor = nodes.GetById(id);
+            if (ancestor is null)
+                continue;
+
+            ancestors.Add((ancestor, depth));
+            foreach (var parentId in ancestor.ParentNodeIds)
+                pending.Enqueue((parentId, depth + 1));
+        }
+
+        Console.WriteLine();
+        Console.WriteLine("ANCESTORS (nearest first)");
+        for (var index = 0; index < ancestors.Count; index++)
+        {
+            var (ancestor, depth) = ancestors[index];
+            var type = nodeTypes.GetById(ancestor.TypeId)?.Name ?? "Unknown type";
+            var title = NodeDisplay.PublicTitle(ancestor, moderation);
+            Console.WriteLine($"{index + 1}. {(depth == 1 ? "Parent" : "Ancestor")} · {type} · {title}");
+        }
+
+        Console.WriteLine("0. Cancel");
+        Console.Write("Ancestor: ");
+        if (!int.TryParse(Console.ReadLine(), out var selection) ||
+            selection < 0 || selection > ancestors.Count)
+        {
+            ConsoleUi.Pause("That is not a valid ancestor selection.");
+            return null;
+        }
+
+        return selection == 0 ? null : ancestors[selection - 1].Node;
     }
 
     /// <summary>Displays author profile in the console workflow.</summary>
