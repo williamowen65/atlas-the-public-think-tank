@@ -168,6 +168,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "System", "System", "{C6666666-6666-4666-8666-666666666666}"
 	ProjectSection(SolutionItems) = preProject
 		docs\blackboards\workflows\System\AppStartupAndWiring.excalidraw = docs\blackboards\workflows\System\AppStartupAndWiring.excalidraw
+		docs\blackboards\workflows\System\InMemoryEventBus.excalidraw = docs\blackboards\workflows\System\InMemoryEventBus.excalidraw
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Voting", "src\Atlas.Voting\Atlas.Voting.csproj", "{935FE0CF-44C5-40FA-88ED-96C9B0A9B0D9}"
