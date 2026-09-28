@@ -40,39 +40,7 @@ public static class NodeDisplay
     /// <summary>Writes table header to the console display.</summary>
     public static void WriteTableHeader(bool includeCreatedDate = false)
     {
-        Console.WriteLine(
-            $"{"#",3}  " +
-            $"{Center("Votes", VoteCountWidth)}  " +
-            $"{Center("Avg", AverageVoteWidth)}  " +
-            $"{Center("My Vote", CurrentVoteWidth)}  " +
-            $"{"Type",-TypeWidth}  " +
-            $"{"Title",-TitleWidth}  " +
-            $"{"Sub-nodes",-SubNodesMinimumWidth}  " +
-            $"{"Authored By",-AuthorWidth}  " +
-            $"{"Description",-DescriptionWidth}  " +
-            $"{"Reactions",-TagsWidth}  " +
-            $"{"Communities",-CommunitiesWidth}  " +
-            $"{Center("Comments", CommentsWidth)}  " +
-            (includeCreatedDate ? $"{Center("Created", CreatedWidth)}  " : string.Empty) +
-            $"{"Status",-StatusWidth}");
-
-        Console.WriteLine(
-            new string(
-                '-',
-                3 + 2 +
-                VoteCountWidth + 2 +
-                AverageVoteWidth + 2 +
-                CurrentVoteWidth + 2 +
-                TypeWidth + 2 +
-                TitleWidth + 2 +
-                AuthorWidth + 2 +
-                DescriptionWidth + 2 +
-                CommunitiesWidth + 2 +
-                CommentsWidth + 2 +
-                TagsWidth + 2 +
-                (includeCreatedDate ? CreatedWidth + 2 : 0) +
-                StatusWidth + 2 +
-                SubNodesMinimumWidth));
+        // Selection numbers belong to the cards; a wide table header is unnecessary.
     }
 
     /// <summary>Writes table row to the console display.</summary>
@@ -98,28 +66,23 @@ public static class NodeDisplay
         var visibility = moderation?.Visibility(node.Id.Value) ?? ModerationVisibility.Visible;
         var typeName = ResolveTypeName(node, nodeTypes);
         var description = visibility.IsHidden ? visibility.Notice
-            : ResolveDescription(node, documents, includeBlockDetails: false);
+            : ResolveFeedDescription(node, documents);
         var authorName = ResolveAuthorName(node, participants);
         var subNodeSummary =
             ResolveSubNodeSummary(node, nodes, nodeTypes);
 
-        Console.WriteLine(
-            $"{number,3}  " +
-            $"{Center(FormatVoteCount(voteCount), VoteCountWidth)}  " +
-            $"{Center(FormatAverageVote(averageVote), AverageVoteWidth)}  " +
-            $"{Center(
-                FormatCurrentParticipantVote(currentParticipantVote),
-                CurrentVoteWidth)}  " +
-            $"{Truncate(typeName, TypeWidth),-TypeWidth}  " +
-            $"{Truncate(visibility.IsHidden ? visibility.Notice : node.Title.Value, TitleWidth),-TitleWidth}  " +
-            $"{Truncate(subNodeSummary, SubNodesMinimumWidth),-SubNodesMinimumWidth}  " +
-            $"{Truncate(authorName, AuthorWidth),-AuthorWidth}  " +
-            $"{Truncate(description, DescriptionWidth),-DescriptionWidth}  " +
-            $"{Truncate(ResolveTags(node, nodeTags, tagDefinitions, votes), TagsWidth),-TagsWidth}  " +
-            $"{Truncate(ResolveCommunities(node, communities, communityNodes), CommunitiesWidth),-CommunitiesWidth}  " +
-            $"{Center(ResolveCommentCount(node, comments), CommentsWidth)}  " +
-            (includeCreatedDate ? $"{node.CreatedAt:yyyy-MM-dd}  " : string.Empty) +
-            $"{node.Status,-StatusWidth}");
+        Console.WriteLine();
+        Console.WriteLine($"{number}. {typeName} · {(visibility.IsHidden ? visibility.Notice : node.Title.Value)}");
+        Console.WriteLine($"   By {authorName} · {node.Status}" +
+            (includeCreatedDate ? $" · Created {node.CreatedAt:yyyy-MM-dd}" : string.Empty));
+        WriteWrapped("   ", description);
+        Console.WriteLine($"   Importance: {FormatVoteCount(voteCount)} votes · " +
+            $"avg {FormatAverageVote(averageVote)} · " +
+            $"my rating {FormatCurrentParticipantVote(currentParticipantVote)}");
+        WriteWrapped("   Sub-nodes: ", subNodeSummary);
+        WriteWrapped("   Reactions: ", ResolveTags(node, nodeTags, tagDefinitions, votes));
+        WriteWrapped("   Communities: ", ResolveCommunities(node, communities, communityNodes));
+        Console.WriteLine($"   Comments: {ResolveCommentCount(node, comments)}");
     }
 
     /// <summary>Writes details to the console display.</summary>
@@ -417,6 +380,49 @@ public static class NodeDisplay
                     : $"Chart ID: {chart.ChartId}\nTitle: {chart.Title}",
                 _ => $"[{block.Kind}]"
             })));
+    }
+
+    private static string ResolveFeedDescription(Node node, IDocumentRepository documents)
+    {
+        var document = documents.GetById(new DocumentId(node.DescriptionId.Value));
+        if (document is null)
+            return "Description document not found.";
+
+        var blocks = documents.GetBlocks(document);
+        if (blocks.Count == 0)
+            return "No description has been provided.";
+
+        return string.Join("\n\n", blocks.Select(block => block switch
+        {
+            MarkdownTextBlock text => text.Markdown,
+            ImageBlock image => $"Image: {image.AltText} ({image.Url})",
+            VideoBlock video => $"Video: {video.Caption} ({video.Url})",
+            LinkPreviewBlock link => $"Link: {link.Title} ({link.Url}) — {link.Description}",
+            PollReferenceBlock => "Poll",
+            ChartReferenceBlock chart => $"Chart: {chart.Title}",
+            _ => block.Kind
+        }));
+    }
+
+    private static void WriteWrapped(string prefix, string value)
+    {
+        var continuation = new string(' ', prefix.Length);
+        var width = Math.Max(20, (Console.IsOutputRedirected ? 100 : Console.WindowWidth) - prefix.Length - 2);
+        foreach (var paragraph in value.Replace("\r\n", "\n").Split('\n'))
+        {
+            var line = prefix;
+            foreach (var word in paragraph.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (line.Length > prefix.Length && line.Length + word.Length + 1 > prefix.Length + width)
+                {
+                    Console.WriteLine(line);
+                    line = continuation;
+                }
+                line += (line.Length > prefix.Length ? " " : string.Empty) + word;
+            }
+            Console.WriteLine(line);
+            prefix = continuation;
+        }
     }
 
     /// <summary>Resolves author name for the current console view.</summary>
