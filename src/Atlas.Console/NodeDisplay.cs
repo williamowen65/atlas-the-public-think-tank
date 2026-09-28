@@ -72,7 +72,8 @@ public static class NodeDisplay
             ResolveSubNodeSummary(node, nodes, nodeTypes);
 
         Console.WriteLine();
-        Console.WriteLine($"{number}. {typeName} · {(visibility.IsHidden ? visibility.Notice : node.Title.Value)}");
+        WriteWrapped($"{number}. {typeName} · ",
+            visibility.IsHidden ? visibility.Notice : node.Title.Value);
         Console.WriteLine($"   By {authorName} · {node.Status}" +
             (includeCreatedDate ? $" · Created {node.CreatedAt:yyyy-MM-dd}" : string.Empty));
         WriteWrapped("   ", description);
