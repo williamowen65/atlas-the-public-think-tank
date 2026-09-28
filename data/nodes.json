@@ -5,11 +5,15 @@
     "DescriptionId": "b2000000-0000-4000-8000-000000000001",
     "TypeId": "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
     "AuthorId": "11111111-1111-4111-8111-111111111111",
-    "RequestedSubNodeTypeIds": [],
+    "RequestedSubNodeTypeIds": [
+      "0328981f-7b76-4bcb-ad04-99b4ed74fd23",
+      "53057519-9a26-4b02-a884-56dcf82159ed",
+      "a3000000-0000-4000-8000-000000000001"
+    ],
     "ParentNodeIds": [],
     "Status": "Active",
     "CreatedAt": "2026-09-28T15:20:00+00:00",
-    "UpdatedAt": "2026-09-28T15:20:00+00:00"
+    "UpdatedAt": "2026-09-28T15:43:00+00:00"
   },
   {
     "Id": "b1000000-0000-4000-8000-000000000002",
@@ -17,11 +21,16 @@
     "DescriptionId": "b2000000-0000-4000-8000-000000000002",
     "TypeId": "53057519-9a26-4b02-a884-56dcf82159ed",
     "AuthorId": "22222222-2222-4222-8222-222222222222",
-    "RequestedSubNodeTypeIds": [],
+    "RequestedSubNodeTypeIds": [
+      "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
+      "df57b39d-efba-4398-84e0-6a7d4214287f",
+      "0328981f-7b76-4bcb-ad04-99b4ed74fd23",
+      "60d8ba45-8b78-4593-838b-ffd15af69746"
+    ],
     "ParentNodeIds": [],
     "Status": "Active",
     "CreatedAt": "2026-09-28T15:20:00+00:00",
-    "UpdatedAt": "2026-09-28T15:20:00+00:00"
+    "UpdatedAt": "2026-09-28T15:43:00+00:00"
   },
   {
     "Id": "b1000000-0000-4000-8000-000000000003",
@@ -29,11 +38,15 @@
     "DescriptionId": "b2000000-0000-4000-8000-000000000003",
     "TypeId": "a3000000-0000-4000-8000-000000000001",
     "AuthorId": "33333333-3333-4333-8333-333333333333",
-    "RequestedSubNodeTypeIds": [],
+    "RequestedSubNodeTypeIds": [
+      "53057519-9a26-4b02-a884-56dcf82159ed",
+      "0328981f-7b76-4bcb-ad04-99b4ed74fd23",
+      "df57b39d-efba-4398-84e0-6a7d4214287f"
+    ],
     "ParentNodeIds": [],
     "Status": "Active",
     "CreatedAt": "2026-09-28T15:20:00+00:00",
-    "UpdatedAt": "2026-09-28T15:20:00+00:00"
+    "UpdatedAt": "2026-09-28T15:43:00+00:00"
   },
   {
     "Id": "b1000000-0000-4000-8000-000000000004",
@@ -41,11 +54,15 @@
     "DescriptionId": "b2000000-0000-4000-8000-000000000004",
     "TypeId": "0328981f-7b76-4bcb-ad04-99b4ed74fd23",
     "AuthorId": "44444444-4444-4444-8444-444444444444",
-    "RequestedSubNodeTypeIds": [],
+    "RequestedSubNodeTypeIds": [
+      "df57b39d-efba-4398-84e0-6a7d4214287f",
+      "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
+      "60d8ba45-8b78-4593-838b-ffd15af69746"
+    ],
     "ParentNodeIds": [],
     "Status": "Active",
     "CreatedAt": "2026-09-28T15:20:00+00:00",
-    "UpdatedAt": "2026-09-28T15:20:00+00:00"
+    "UpdatedAt": "2026-09-28T15:43:00+00:00"
   },
   {
     "Id": "b1000000-0000-4000-8000-000000000005",
@@ -53,11 +70,15 @@
     "DescriptionId": "b2000000-0000-4000-8000-000000000005",
     "TypeId": "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
     "AuthorId": "55555555-5555-4555-8555-555555555555",
-    "RequestedSubNodeTypeIds": [],
+    "RequestedSubNodeTypeIds": [
+      "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
+      "df57b39d-efba-4398-84e0-6a7d4214287f",
+      "0328981f-7b76-4bcb-ad04-99b4ed74fd23"
+    ],
     "ParentNodeIds": [],
     "Status": "Active",
     "CreatedAt": "2026-09-28T15:20:00+00:00",
-    "UpdatedAt": "2026-09-28T15:20:00+00:00"
+    "UpdatedAt": "2026-09-28T15:43:00+00:00"
   },
   {
     "Id": "b1000000-0000-4000-8000-000000000006",
@@ -65,10 +86,14 @@
     "DescriptionId": "b2000000-0000-4000-8000-000000000006",
     "TypeId": "a3000000-0000-4000-8000-000000000002",
     "AuthorId": "11111111-1111-4111-8111-111111111111",
-    "RequestedSubNodeTypeIds": [],
+    "RequestedSubNodeTypeIds": [
+      "a3000000-0000-4000-8000-000000000001",
+      "0328981f-7b76-4bcb-ad04-99b4ed74fd23",
+      "a2e82ee2-12ba-49fc-9160-c2b864d4f42f"
+    ],
     "ParentNodeIds": [],
     "Status": "Active",
     "CreatedAt": "2026-09-28T15:20:00+00:00",
-    "UpdatedAt": "2026-09-28T15:20:00+00:00"
+    "UpdatedAt": "2026-09-28T15:43:00+00:00"
   }
 ]
