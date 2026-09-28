@@ -1,81 +1,44 @@
 [
   {
-    "Id": "30000000-0000-4000-8000-000000000001",
+    "Id": "b3000000-0000-4000-8000-000000000001",
     "Kind": "markdown",
-    "Markdown": "Several low-lying neighborhoods already see water across roads during the highest tides. What preparations would help residents without treating every shoreline the same?",
-    "CreatedAt": "2026-08-22T16:00:00+00:00",
-    "UpdatedAt": "2026-08-22T16:00:00+00:00"
+    "Markdown": "A place for ideas at any scale. What would you change, try, or build, and why might it help?",
+    "CreatedAt": "2026-09-28T15:20:00+00:00",
+    "UpdatedAt": "2026-09-28T15:20:00+00:00"
   },
   {
-    "Id": "30000000-0000-4000-8000-000000000002",
+    "Id": "b3000000-0000-4000-8000-000000000002",
     "Kind": "markdown",
-    "Markdown": "Create a public map that combines elevation, drainage trouble spots, road closures, and resident observations at the block level. Each layer should show its source and last update.",
-    "CreatedAt": "2026-08-23T16:00:00+00:00",
-    "UpdatedAt": "2026-08-23T16:00:00+00:00"
+    "Markdown": "Explore experiences, causes, evidence, and responses to homelessness. Which questions should we ask, and what outcomes matter to people affected?",
+    "CreatedAt": "2026-09-28T15:20:00+00:00",
+    "UpdatedAt": "2026-09-28T15:20:00+00:00"
   },
   {
-    "Id": "30000000-0000-4000-8000-000000000003",
+    "Id": "b3000000-0000-4000-8000-000000000003",
     "Kind": "markdown",
-    "Markdown": "A fixed description",
-    "CreatedAt": "2026-08-24T16:00:00+00:00",
-    "UpdatedAt": "2026-09-27T16:23:10.018576+00:00"
+    "Markdown": "What would meaningful access look like, where are the gaps, and what steps could close them?",
+    "CreatedAt": "2026-09-28T15:20:00+00:00",
+    "UpdatedAt": "2026-09-28T15:20:00+00:00"
   },
   {
-    "Id": "30000000-0000-4000-8000-000000000004",
+    "Id": "b3000000-0000-4000-8000-000000000004",
     "Kind": "markdown",
-    "Markdown": "Residents interested in backyard cottages and small duplexes report that they cannot tell which rules apply, what drawings are required, or how much review will cost before hiring a designer.",
-    "CreatedAt": "2026-08-25T16:00:00+00:00",
-    "UpdatedAt": "2026-08-25T16:00:00+00:00"
+    "Markdown": "Share approaches that have worked somewhere, what made them work, and what we would need to learn before trying them elsewhere.",
+    "CreatedAt": "2026-09-28T15:20:00+00:00",
+    "UpdatedAt": "2026-09-28T15:20:00+00:00"
   },
   {
-    "Id": "30000000-0000-4000-8000-000000000005",
+    "Id": "b3000000-0000-4000-8000-000000000005",
     "Kind": "markdown",
-    "Markdown": "Build a plain-language permit navigator shared by nearby cities. A resident could answer a short series of questions and receive the relevant rules, example plans, likely fees, and the correct staff contact.",
-    "CreatedAt": "2026-08-26T16:00:00+00:00",
-    "UpdatedAt": "2026-08-26T16:00:00+00:00"
+    "Markdown": "Surface important unanswered questions. What evidence would help us make sense of them?",
+    "CreatedAt": "2026-09-28T15:20:00+00:00",
+    "UpdatedAt": "2026-09-28T15:20:00+00:00"
   },
   {
-    "Id": "30000000-0000-4000-8000-000000000006",
+    "Id": "b3000000-0000-4000-8000-000000000006",
     "Kind": "markdown",
-    "Markdown": "Evening service ends before many restaurant, hospital, and event shifts. Which missing connections strand the most people, and where would one additional late trip make the biggest difference?",
-    "CreatedAt": "2026-08-27T16:00:00+00:00",
-    "UpdatedAt": "2026-08-27T16:00:00+00:00"
-  },
-  {
-    "Id": "30000000-0000-4000-8000-000000000007",
-    "Kind": "markdown",
-    "Markdown": "Treat major ferry terminals and transit centers as timed-transfer hubs. Publish a shared connection standard and hold the final feeder bus briefly when a ferry or trunk route is only a few minutes late.",
-    "CreatedAt": "2026-08-28T16:00:00+00:00",
-    "UpdatedAt": "2026-08-28T16:00:00+00:00"
-  },
-  {
-    "Id": "30000000-0000-4000-8000-000000000008",
-    "Kind": "markdown",
-    "Markdown": "Parks may support pollinators, but wide gaps between them leave few feeding and nesting places. School grounds, apartment landscaping, street edges, and small yards could become a connected habitat network.",
-    "CreatedAt": "2026-08-29T16:00:00+00:00",
-    "UpdatedAt": "2026-08-29T16:00:00+00:00"
-  },
-  {
-    "Id": "30000000-0000-4000-8000-000000000009",
-    "Kind": "markdown",
-    "Markdown": "Offer compact planting kits designed for sunny, shady, and container locations. Each kit would include locally appropriate plants, a simple maintenance guide, and a marker connecting the site to a community habitat map.",
-    "CreatedAt": "2026-08-30T16:00:00+00:00",
-    "UpdatedAt": "2026-08-30T16:00:00+00:00"
-  },
-  {
-    "Id": "30000000-0000-4000-8000-000000000010",
-    "Kind": "markdown",
-    "Markdown": "School walking and biking routes often pass transit stops and underused planting strips. Coordinating these projects could create safer crossings, shade, habitat, and better access to buses with one set of improvements.",
-    "CreatedAt": "2026-08-31T16:00:00+00:00",
-    "UpdatedAt": "2026-08-31T16:00:00+00:00"
-  },
-  {
-    "Id": "3e798797-84d6-48f2-a87a-69db562bc555",
-    "Kind": "image",
-    "AltText": "image of dog",
-    "Caption": "dog",
-    "Url": "test.url",
-    "CreatedAt": "2026-09-21T21:21:10.1129275+00:00",
-    "UpdatedAt": "2026-09-21T21:21:10.1129275+00:00"
+    "Markdown": "Describe a future you would want to live in. What values and changes shape that picture?",
+    "CreatedAt": "2026-09-28T15:20:00+00:00",
+    "UpdatedAt": "2026-09-28T15:20:00+00:00"
   }
 ]
