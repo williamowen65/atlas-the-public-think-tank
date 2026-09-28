@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MSTest" Version="4.0.2" />
+    <PackageReference Include="MSTest" Version="4.4.1" />
     <ProjectReference Include="..\..\src\Atlas.Communities\Atlas.Communities.csproj" />
   </ItemGroup>
   <ItemGroup>
