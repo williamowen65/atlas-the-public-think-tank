@@ -122,6 +122,9 @@ public static class NodeCommands
             Console.WriteLine("  9 Attach to parent · 10 Detach from parent · 16 Manage communities");
             Console.WriteLine("  Explore and contribute:");
             Console.WriteLine("  7 Select sub-node · 8 Add sub-node · 11 Author profile");
+            Console.WriteLine(node.ParentNodeIds.Count == 0
+                ? "  24 Browse ancestors [disabled — root node]"
+                : "  24 Browse ancestors");
             Console.WriteLine("  12 Manage reactions · 13 " + (myVote is null ? "Vote" : "Change vote") + " · 14 Undo vote · 15 View votes");
             Console.WriteLine("  17 View communities · 18 Add comment · 19 View comments");
             Console.WriteLine(moderation.Visibility(node.Id.Value).IsHidden
@@ -211,6 +214,10 @@ public static class NodeCommands
                                    currentParticipant,
                                    moderation)
                                ?? node;
+                        break;
+
+                    case "24":
+                        node = SelectAncestor(node, nodes, nodeTypes, moderation) ?? node;
                         break;
 
                     case "8":
@@ -693,6 +700,61 @@ public static class NodeCommands
         return nodeSelection == 0
             ? null
             : selectedGroup.Children[nodeSelection - 1];
+    }
+
+    /// <summary>Lets the reader open any parent or more distant ancestor.</summary>
+    private static Node? SelectAncestor(
+        Node node,
+        INodeRepository nodes,
+        INodeTypeRepository nodeTypes,
+        ModerationService moderation)
+    {
+        if (node.ParentNodeIds.Count == 0)
+        {
+            ConsoleUi.Pause("This is a root node with no ancestors.");
+            return null;
+        }
+
+        var ancestors = new List<(Node Node, int Depth)>();
+        var visited = new HashSet<NodeId> { node.Id };
+        var pending = new Queue<(NodeId Id, int Depth)>(
+            node.ParentNodeIds.Select(id => (id, 1)));
+
+        while (pending.Count > 0)
+        {
+            var (id, depth) = pending.Dequeue();
+            if (!visited.Add(id))
+                continue;
+
+            var ancestor = nodes.GetById(id);
+            if (ancestor is null)
+                continue;
+
+            ancestors.Add((ancestor, depth));
+            foreach (var parentId in ancestor.ParentNodeIds)
+                pending.Enqueue((parentId, depth + 1));
+        }
+
+        Console.WriteLine();
+        Console.WriteLine("ANCESTORS (nearest first)");
+        for (var index = 0; index < ancestors.Count; index++)
+        {
+            var (ancestor, depth) = ancestors[index];
+            var type = nodeTypes.GetById(ancestor.TypeId)?.Name ?? "Unknown type";
+            var title = NodeDisplay.PublicTitle(ancestor, moderation);
+            Console.WriteLine($"{index + 1}. {(depth == 1 ? "Parent" : "Ancestor")} · {type} · {title}");
+        }
+
+        Console.WriteLine("0. Cancel");
+        Console.Write("Ancestor: ");
+        if (!int.TryParse(Console.ReadLine(), out var selection) ||
+            selection < 0 || selection > ancestors.Count)
+        {
+            ConsoleUi.Pause("That is not a valid ancestor selection.");
+            return null;
+        }
+
+        return selection == 0 ? null : ancestors[selection - 1].Node;
     }
 
     /// <summary>Displays author profile in the console workflow.</summary>
