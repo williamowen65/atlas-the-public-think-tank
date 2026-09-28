@@ -125,6 +125,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{
 	ProjectSection(SolutionItems) = preProject
 		docs\workflows\COMMUNITIES.md = docs\workflows\COMMUNITIES.md
 		docs\workflows\CONTENT-BLOCKS.md = docs\workflows\CONTENT-BLOCKS.md
+		docs\workflows\NODE-LIFECYCLE-DIAGRAM.md = docs\workflows\NODE-LIFECYCLE-DIAGRAM.md
 		docs\workflows\NODE-LIFECYCLE.md = docs\workflows\NODE-LIFECYCLE.md
 		docs\workflows\README.md = docs\workflows\README.md
 	EndProjectSection
