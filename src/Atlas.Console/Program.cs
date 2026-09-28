@@ -111,7 +111,7 @@ var moderatorAuthorization = new ConfiguredModeratorAuthorization(
 var moderation = new ModerationService(moderationCases, moderatorAuthorization);
 
 var legacyParticipant =
-    EnsureLegacyParticipant(participantRepository);
+    EnsureDefaultDemoParticipant(participantRepository);
 
 INodeRepository nodeRepository =
     new JsonNodeRepository(
@@ -239,7 +239,7 @@ static void SeedSystemNodeTypes(
     }
 }
 
-static Participant EnsureLegacyParticipant(
+static Participant EnsureDefaultDemoParticipant(
     IParticipantRepository participants)
 {
     var existing = participants
@@ -247,7 +247,7 @@ static Participant EnsureLegacyParticipant(
         .FirstOrDefault(participant =>
             string.Equals(
                 participant.DisplayName,
-                "Legacy Console User",
+                "Demo User 01",
                 StringComparison.OrdinalIgnoreCase));
 
     if (existing is not null)
@@ -256,7 +256,7 @@ static Participant EnsureLegacyParticipant(
     }
 
     var participant = new Participant(
-        "Legacy Console User",
+        "Demo User 01",
         DateTimeOffset.UtcNow);
 
     participants.Save(participant);
