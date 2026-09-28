@@ -1,5 +1,7 @@
 # Node lifecycle workflow
 
+See the [node lifecycle diagram](NODE-LIFECYCLE-DIAGRAM.md) for a visual overview.
+
 Related requirements: [GRA-001](../requirements/REQUIREMENTS.md#gra-001), [GRA-003](../requirements/REQUIREMENTS.md#gra-003), [GRA-005](../requirements/REQUIREMENTS.md#gra-005), [EVT-001](../requirements/REQUIREMENTS.md#evt-001)
 
 ## Create a node with a description
