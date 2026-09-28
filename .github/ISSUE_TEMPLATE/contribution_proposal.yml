@@ -84,9 +84,9 @@ body:
     attributes:
       label: Would you like to work on this?
       options:
-        - Yes
-        - Maybe, with guidance
-        - No; I am proposing it for others
+        - "Yes"
+        - "Maybe, with guidance"
+        - "No; I am proposing it for others"
     validations:
       required: true
 
