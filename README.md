@@ -56,16 +56,11 @@ For a deeper technical introduction, start with the [documentation index](docs/R
 
 ## Contributing
 
-Atlas welcomes thoughtful contributions from people interested in collaborative problem-solving, software architecture, testing, documentation, or product design.
+Atlas welcomes thoughtful contributions to its code, tests, documentation, architecture, accessibility, and product design.
 
-1. Read the relevant requirement and architecture documentation before changing behavior.
-2. Choose an existing issue or begin a conversation on the [discussion board](https://github.com/williamowen65/atlas-the-public-think-tank/discussions/2).
-3. Create a focused branch from `main`.
-4. Add or update tests for behavioral changes.
-5. Run the relevant test projects locally.
-6. Open a pull request explaining the problem, the approach, and how the change was verified.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for the complete contribution path, including where ideas and bugs belong, how work becomes `contribution-ready`, testing and documentation expectations, the relationship between GitHub and Jira, and contribution licensing.
 
-Please keep changes focused and preserve ownership between bounded contexts. When a workflow crosses boundaries, prefer their public contracts rather than reaching into another boundary's internal state.
+GitHub Issues are the public proposal and contribution backlog. Jira separately tracks work Atlas has accepted and committed to deliver; the two systems are intentionally not synchronized.
 
 ## Earlier version
 
