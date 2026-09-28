@@ -195,7 +195,7 @@ public sealed class DiscoveryServiceTests
         Assert.AreEqual(25, page.TotalCount);
         Assert.AreEqual(5, page.Items.Count);
         Assert.AreEqual(21, page.Items[0].Rank);
-        Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
             service.DiscoverPage(new DiscoveryQuery(Page: 0)));
     }
 
