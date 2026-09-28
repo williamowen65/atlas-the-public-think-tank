@@ -210,5 +210,77 @@
     "Status": "Active",
     "CreatedAt": "2026-09-28T17:19:14.273Z",
     "UpdatedAt": "2026-09-28T17:19:14.273Z"
+  },
+  {
+    "Id": "b1000000-0000-4000-8000-000000000014",
+    "Title": "How could free internet access be funded and maintained?",
+    "DescriptionId": "b2000000-0000-4000-8000-000000000014",
+    "TypeId": "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
+    "AuthorId": "22222222-2222-4222-8222-222222222222",
+    "RequestedSubNodeTypeIds": [
+      "0328981f-7b76-4bcb-ad04-99b4ed74fd23",
+      "53057519-9a26-4b02-a884-56dcf82159ed",
+      "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
+      "df57b39d-efba-4398-84e0-6a7d4214287f"
+    ],
+    "ParentNodeIds": [
+      "b1000000-0000-4000-8000-000000000013"
+    ],
+    "Status": "Active",
+    "CreatedAt": "2026-09-28T17:36:49.048Z",
+    "UpdatedAt": "2026-09-28T17:36:49.048Z"
+  },
+  {
+    "Id": "b1000000-0000-4000-8000-000000000015",
+    "Title": "Publicly fund a basic level of internet access",
+    "DescriptionId": "b2000000-0000-4000-8000-000000000015",
+    "TypeId": "0328981f-7b76-4bcb-ad04-99b4ed74fd23",
+    "AuthorId": "33333333-3333-4333-8333-333333333333",
+    "RequestedSubNodeTypeIds": [
+      "53057519-9a26-4b02-a884-56dcf82159ed",
+      "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
+      "df57b39d-efba-4398-84e0-6a7d4214287f"
+    ],
+    "ParentNodeIds": [
+      "b1000000-0000-4000-8000-000000000014"
+    ],
+    "Status": "Active",
+    "CreatedAt": "2026-09-28T17:36:49.048Z",
+    "UpdatedAt": "2026-09-28T17:36:49.048Z"
+  },
+  {
+    "Id": "b1000000-0000-4000-8000-000000000016",
+    "Title": "Public funding could leave some communities with inadequate service",
+    "DescriptionId": "b2000000-0000-4000-8000-000000000016",
+    "TypeId": "53057519-9a26-4b02-a884-56dcf82159ed",
+    "AuthorId": "44444444-4444-4444-8444-444444444444",
+    "RequestedSubNodeTypeIds": [
+      "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
+      "0328981f-7b76-4bcb-ad04-99b4ed74fd23",
+      "df57b39d-efba-4398-84e0-6a7d4214287f"
+    ],
+    "ParentNodeIds": [
+      "b1000000-0000-4000-8000-000000000015"
+    ],
+    "Status": "Active",
+    "CreatedAt": "2026-09-28T17:36:49.048Z",
+    "UpdatedAt": "2026-09-28T17:36:49.048Z"
+  },
+  {
+    "Id": "b1000000-0000-4000-8000-000000000017",
+    "Title": "Who would oversee the service and protect users' interests?",
+    "DescriptionId": "b2000000-0000-4000-8000-000000000017",
+    "TypeId": "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
+    "AuthorId": "55555555-5555-4555-8555-555555555555",
+    "RequestedSubNodeTypeIds": [
+      "0328981f-7b76-4bcb-ad04-99b4ed74fd23",
+      "df57b39d-efba-4398-84e0-6a7d4214287f"
+    ],
+    "ParentNodeIds": [
+      "b1000000-0000-4000-8000-000000000014"
+    ],
+    "Status": "Active",
+    "CreatedAt": "2026-09-28T17:36:49.048Z",
+    "UpdatedAt": "2026-09-28T17:36:49.048Z"
   }
 ]
