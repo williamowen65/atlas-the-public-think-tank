@@ -349,7 +349,15 @@ public static class NodeDisplay
             return paths;
         }
 
-        return string.Join(" | ", Paths(node, new HashSet<NodeId>()));
+        var ancestorPaths = node.ParentNodeIds.SelectMany(parentId =>
+        {
+            var parent = nodes.GetById(parentId);
+            return parent is null
+                ? new[] { $"Unknown ({parentId})" }
+                : Paths(parent, new HashSet<NodeId> { node.Id });
+        });
+
+        return string.Join(" | ", ancestorPaths);
     }
 
     private static void WriteBreadcrumb(string breadcrumb)
