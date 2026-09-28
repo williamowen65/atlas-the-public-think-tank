@@ -380,7 +380,6 @@ public static class NodeDisplay
 
     private static void WriteBreadcrumb(string breadcrumb)
     {
-        Console.WriteLine("   Path:");
         var paths = breadcrumb.Split(" | ", StringSplitOptions.None);
         for (var pathIndex = 0; pathIndex < paths.Length; pathIndex++)
         {
@@ -388,7 +387,7 @@ public static class NodeDisplay
                 Console.WriteLine("     or");
             var segments = paths[pathIndex].Split(" → ", StringSplitOptions.None);
             for (var depth = 0; depth < segments.Length; depth++)
-                WriteWrapped($"     {new string(' ', depth * 2)}", segments[depth]);
+                WriteWrapped(pathIndex == 0 && depth == 0 ? "   Path: " : "         ", segments[depth]);
         }
     }
 
