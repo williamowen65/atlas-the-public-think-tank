@@ -74,6 +74,7 @@ public static class NodeDisplay
         Console.WriteLine();
         WriteWrapped($"{number}. {typeName} · ",
             visibility.IsHidden ? visibility.Notice : node.Title.Value);
+        WriteWrapped("   Path: ", ResolveBreadcrumb(node, nodes, nodeTypes, moderation));
         Console.WriteLine($"   By {authorName} · {node.Status}" +
             (includeCreatedDate ? $" · Created {node.CreatedAt:yyyy-MM-dd}" : string.Empty));
         WriteWrapped("   ", description);
@@ -331,6 +332,50 @@ public static class NodeDisplay
                     ? moderation.Visibility(parentId.Value).Notice
                     : nodes.GetById(parentId)?.Title.Value)
                 ?? $"Unknown ({parentId})"));
+    }
+
+    private static string ResolveBreadcrumb(
+        Node node,
+        INodeRepository nodes,
+        INodeTypeRepository nodeTypes,
+        ModerationService? moderation)
+    {
+        if (node.ParentNodeIds.Count == 0)
+            return "Root node";
+
+        string Segment(Node item)
+        {
+            var visibility = moderation?.Visibility(item.Id.Value) ?? ModerationVisibility.Visible;
+            return $"{ResolveTypeName(item, nodeTypes)} · " +
+                (visibility.IsHidden ? visibility.Notice : item.Title.Value);
+        }
+
+        IEnumerable<string> Paths(Node current, HashSet<NodeId> visited)
+        {
+            if (!visited.Add(current.Id))
+                return new[] { "[Circular parent link]" };
+
+            if (current.ParentNodeIds.Count == 0)
+                return new[] { Segment(current) };
+
+            var paths = new List<string>();
+            foreach (var parentId in current.ParentNodeIds)
+            {
+                var parent = nodes.GetById(parentId);
+                if (parent is null)
+                {
+                    paths.Add($"Unknown ({parentId}) → {Segment(current)}");
+                    continue;
+                }
+
+                paths.AddRange(Paths(parent, new HashSet<NodeId>(visited))
+                    .Select(path => $"{path} → {Segment(current)}"));
+            }
+
+            return paths;
+        }
+
+        return string.Join(" | ", Paths(node, new HashSet<NodeId>()));
     }
 
     /// <summary>Resolves description for the current console view.</summary>
