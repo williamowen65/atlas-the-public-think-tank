@@ -115,6 +115,7 @@ public static class NodeDisplay
             : ResolveFeedDescription(node, documents);
         var authorName = ResolveAuthorName(node, participants);
 
+        Console.WriteLine();
         Console.WriteLine("ATLAS NODE");
         WriteWrapped("  ", $"{ResolveTypeName(node, nodeTypes)} · {(hidden ? visibility.Notice : node.Title.Value)}");
         Console.WriteLine($"  By {authorName} · {node.Status} · Created {node.CreatedAt:yyyy-MM-dd} · Updated {node.UpdatedAt:yyyy-MM-dd}");
@@ -204,7 +205,7 @@ public static class NodeDisplay
             if (matchingChildren.Count == 0)
             {
                 Console.WriteLine(
-                    $"No {PluralizeTypeName(typeName, autoPluralize)} " +
+                    $"    No {PluralizeTypeName(typeName, autoPluralize)} " +
                     "have been added yet.");
                 continue;
             }
