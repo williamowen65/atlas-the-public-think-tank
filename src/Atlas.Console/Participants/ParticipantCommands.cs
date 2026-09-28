@@ -189,6 +189,7 @@ public static class ParticipantCommands
         Func<DiscoveryQuery, string, DiscoveryQuery>? changeFilter)
     {
         var query = new DiscoveryQuery(IncludeArchived: true);
+        var visiblePages = 1;
         while (true)
         {
             Console.Clear();
@@ -200,8 +201,10 @@ public static class ParticipantCommands
             // Refresh after edits; the profile's initial count may be stale on return.
             var authored = nodes.GetByAuthor(new NodeAuthorId(participant.Id.Value)).ToList();
             var byId = authored.ToDictionary(node => node.Id.Value);
-            var ranked = discovery?.DiscoverAuthored(query,
-                byId.Keys.ToList());
+            var pages = discovery is null ? null : Enumerable.Range(1, visiblePages)
+                .Select(page => discovery.DiscoverAuthoredPage(query with { Page = page }, byId.Keys.ToList()))
+                .ToList();
+            var ranked = pages?.SelectMany(page => page.Items).ToList();
             var ordered = ranked is null ? authored : ranked
                 .Where(item => byId.ContainsKey(item.NodeId))
                 .Select(item => byId[item.NodeId]).ToList();
@@ -219,14 +222,22 @@ public static class ParticipantCommands
                         includeCreatedDate: true, moderation: moderation);
             }
             Console.WriteLine();
+            if (pages is not null) Console.WriteLine($"Showing {ordered.Count} of {pages[^1].TotalCount} matching nodes.");
             Console.WriteLine("Node number to open; S search, C community, R reactions, V vote ranges, D created date, X clear, 0 return.");
+            if (pages is not null && pages[^1].HasNextPage) Console.WriteLine("N to load the next page.");
             Console.Write("Selection: ");
             var input = Console.ReadLine()?.Trim();
             if (input == "0") return currentParticipant;
+            if (string.Equals(input, "n", StringComparison.OrdinalIgnoreCase) && pages is not null && pages[^1].HasNextPage)
+            {
+                visiblePages++;
+                continue;
+            }
             if (changeFilter is not null && input is not null &&
                 "SCRVDX".Contains(input.ToUpperInvariant()) && input.Length == 1)
             {
-                query = changeFilter(query, input.ToUpperInvariant());
+                query = changeFilter(query, input.ToUpperInvariant()) with { Page = 1 };
+                visiblePages = 1;
                 continue;
             }
             if (!int.TryParse(input, out var selection) || selection < 1 || selection > ordered.Count)
