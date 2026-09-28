@@ -209,6 +209,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Moderation", "Moderation", 
 		docs\blackboards\workflows\Moderation\ModerationDomain.excalidraw = docs\blackboards\workflows\Moderation\ModerationDomain.excalidraw
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Notifications", "Notifications", "{5E1E2B84-A69E-4782-BD65-5AA3F4D2D597}"
+	ProjectSection(SolutionItems) = preProject
+		docs\blackboards\workflows\Notifications\NotificationsDomain.excalidraw = docs\blackboards\workflows\Notifications\NotificationsDomain.excalidraw
+	EndProjectSection
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Notifications.Tests", "tests\Atlas.Notifications.Tests\Atlas.Notifications.Tests.csproj", "{10200002-1020-4102-8102-000000000002}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Notifications", "src\Atlas.Notifications\Atlas.Notifications.csproj", "{10200001-1020-4102-8102-000000000001}"
@@ -362,6 +367,7 @@ Global
 		{9032A0BF-ADFC-4C20-A5E6-E545208A565A} = {C2222222-2222-4222-8222-222222222222}
 		{F0D04025-2AF7-4011-A7B5-C817B708CF22} = {C2222222-2222-4222-8222-222222222222}
 		{AB4F3CF6-9BCD-4AD1-80BC-8A2192D9B1D7} = {C2222222-2222-4222-8222-222222222222}
+		{5E1E2B84-A69E-4782-BD65-5AA3F4D2D597} = {C2222222-2222-4222-8222-222222222222}
 		{10100001-1010-4101-8101-000000000001} = {11111111-1111-4111-8111-111111111111}
 		{10100002-1010-4101-8101-000000000002} = {22222222-2222-4222-8222-222222222222}
 	EndGlobalSection
