@@ -31,7 +31,7 @@ public static class NodeDisplay
     private const int TagsWidth = 40;
     private const int CommunitiesWidth = 24;
     private const int CommentsWidth = 8;
-    private const int SubNodesMinimumWidth = 36;
+    private const int SubNodesMinimumWidth = 52;
 
     private const int VoteCountWidth = 5;
     private const int AverageVoteWidth = 5;
@@ -47,14 +47,14 @@ public static class NodeDisplay
             $"{Center("My Vote", CurrentVoteWidth)}  " +
             $"{"Type",-TypeWidth}  " +
             $"{"Title",-TitleWidth}  " +
+            $"{"Sub-nodes",-SubNodesMinimumWidth}  " +
             $"{"Authored By",-AuthorWidth}  " +
             $"{"Description",-DescriptionWidth}  " +
             $"{"Reactions",-TagsWidth}  " +
             $"{"Communities",-CommunitiesWidth}  " +
             $"{Center("Comments", CommentsWidth)}  " +
             (includeCreatedDate ? $"{Center("Created", CreatedWidth)}  " : string.Empty) +
-            $"{"Status",-StatusWidth}  " +
-            "Sub-nodes");
+            $"{"Status",-StatusWidth}");
 
         Console.WriteLine(
             new string(
@@ -112,14 +112,14 @@ public static class NodeDisplay
                 CurrentVoteWidth)}  " +
             $"{Truncate(typeName, TypeWidth),-TypeWidth}  " +
             $"{Truncate(visibility.IsHidden ? visibility.Notice : node.Title.Value, TitleWidth),-TitleWidth}  " +
+            $"{Truncate(subNodeSummary, SubNodesMinimumWidth),-SubNodesMinimumWidth}  " +
             $"{Truncate(authorName, AuthorWidth),-AuthorWidth}  " +
             $"{Truncate(description, DescriptionWidth),-DescriptionWidth}  " +
             $"{Truncate(ResolveTags(node, nodeTags, tagDefinitions, votes), TagsWidth),-TagsWidth}  " +
             $"{Truncate(ResolveCommunities(node, communities, communityNodes), CommunitiesWidth),-CommunitiesWidth}  " +
             $"{Center(ResolveCommentCount(node, comments), CommentsWidth)}  " +
             (includeCreatedDate ? $"{node.CreatedAt:yyyy-MM-dd}  " : string.Empty) +
-            $"{node.Status,-StatusWidth}  " +
-            subNodeSummary);
+            $"{node.Status,-StatusWidth}");
     }
 
     /// <summary>Writes details to the console display.</summary>
