@@ -37,7 +37,9 @@ body:
   - type: dropdown
     id: area
     attributes:
-      label: Likely affected area
+      label: Likely affected areas
+      description: Select every area that may be involved. Choose Unsure when the boundary is not yet clear.
+      multiple: true
       options:
         - Graph
         - Content

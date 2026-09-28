@@ -41,7 +41,9 @@ body:
   - type: dropdown
     id: area
     attributes:
-      label: Affected area
+      label: Affected areas
+      description: Select every area where the problem appears. Choose Unsure or multiple areas when the boundary is not yet clear.
+      multiple: true
       options:
         - Graph
         - Content
