@@ -74,7 +74,7 @@ public static class NodeDisplay
         Console.WriteLine();
         WriteWrapped($"{number}. {typeName} · ",
             visibility.IsHidden ? visibility.Notice : node.Title.Value);
-        WriteWrapped("   Path: ", ResolveBreadcrumb(node, nodes, nodeTypes, moderation));
+        WriteBreadcrumb(ResolveBreadcrumb(node, nodes, nodeTypes, moderation));
         Console.WriteLine($"   By {authorName} · {node.Status}" +
             (includeCreatedDate ? $" · Created {node.CreatedAt:yyyy-MM-dd}" : string.Empty));
         WriteWrapped("   ", description);
@@ -376,6 +376,20 @@ public static class NodeDisplay
         }
 
         return string.Join(" | ", Paths(node, new HashSet<NodeId>()));
+    }
+
+    private static void WriteBreadcrumb(string breadcrumb)
+    {
+        Console.WriteLine("   Path:");
+        var paths = breadcrumb.Split(" | ", StringSplitOptions.None);
+        for (var pathIndex = 0; pathIndex < paths.Length; pathIndex++)
+        {
+            if (pathIndex > 0)
+                Console.WriteLine("     or");
+            var segments = paths[pathIndex].Split(" → ", StringSplitOptions.None);
+            for (var depth = 0; depth < segments.Length; depth++)
+                WriteWrapped($"     {new string(' ', depth * 2)}", segments[depth]);
+        }
     }
 
     /// <summary>Resolves description for the current console view.</summary>
