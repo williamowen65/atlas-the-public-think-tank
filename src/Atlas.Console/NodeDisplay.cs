@@ -45,8 +45,8 @@ public static class NodeDisplay
             $"{Center("Votes", VoteCountWidth)}  " +
             $"{Center("Avg", AverageVoteWidth)}  " +
             $"{Center("My Vote", CurrentVoteWidth)}  " +
-            $"{"Title",-TitleWidth}  " +
             $"{"Type",-TypeWidth}  " +
+            $"{"Title",-TitleWidth}  " +
             $"{"Authored By",-AuthorWidth}  " +
             $"{"Description",-DescriptionWidth}  " +
             $"{"Reactions",-TagsWidth}  " +
@@ -63,8 +63,8 @@ public static class NodeDisplay
                 VoteCountWidth + 2 +
                 AverageVoteWidth + 2 +
                 CurrentVoteWidth + 2 +
-                TitleWidth + 2 +
                 TypeWidth + 2 +
+                TitleWidth + 2 +
                 AuthorWidth + 2 +
                 DescriptionWidth + 2 +
                 CommunitiesWidth + 2 +
@@ -110,8 +110,8 @@ public static class NodeDisplay
             $"{Center(
                 FormatCurrentParticipantVote(currentParticipantVote),
                 CurrentVoteWidth)}  " +
-            $"{Truncate(visibility.IsHidden ? visibility.Notice : node.Title.Value, TitleWidth),-TitleWidth}  " +
             $"{Truncate(typeName, TypeWidth),-TypeWidth}  " +
+            $"{Truncate(visibility.IsHidden ? visibility.Notice : node.Title.Value, TitleWidth),-TitleWidth}  " +
             $"{Truncate(authorName, AuthorWidth),-AuthorWidth}  " +
             $"{Truncate(description, DescriptionWidth),-DescriptionWidth}  " +
             $"{Truncate(ResolveTags(node, nodeTags, tagDefinitions, votes), TagsWidth),-TagsWidth}  " +
