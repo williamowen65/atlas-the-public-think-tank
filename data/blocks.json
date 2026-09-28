@@ -40,5 +40,19 @@
     "Markdown": "The future is shaped partly by what people can imagine and work toward together. Sharing visions can make underlying values visible and help people decide which goals matter enough to pursue.",
     "CreatedAt": "2026-09-28T15:20:00+00:00",
     "UpdatedAt": "2026-09-28T16:03:58.010Z"
+  },
+  {
+    "Id": "b3000000-0000-4000-8000-000000000007",
+    "Kind": "markdown",
+    "Markdown": "Ranked voting would let people express more than one preference among candidates. Could using it in major U.S. elections give voters more meaningful choices and make room for more people to run? This proposal is worth exploring alongside its possible benefits, limits, and effects.",
+    "CreatedAt": "2026-09-28T16:47:12.781Z",
+    "UpdatedAt": "2026-09-28T16:47:12.781Z"
+  },
+  {
+    "Id": "b3000000-0000-4000-8000-000000000008",
+    "Kind": "markdown",
+    "Markdown": "If voters could express more than one preference, would more candidates consider running for office? Understanding candidates' decisions and examining elections that use ranked voting could help us evaluate this possibility.",
+    "CreatedAt": "2026-09-28T16:47:12.781Z",
+    "UpdatedAt": "2026-09-28T16:47:12.781Z"
   }
 ]
