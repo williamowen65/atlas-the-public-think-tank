@@ -1,6 +1,6 @@
 # Moderation boundary — PTT-101
 
-Visual companion: [Moderation Domain blackboard](../blackboards/workflows/Moderation/ModerationDomain.excalidraw.png)
+Visual companion: [Moderation Domain blackboard](../blackboards/workflows/Moderation/ModerationDomain.excalidraw)
 ([editable Excalidraw source](../blackboards/workflows/Moderation/ModerationDomain.excalidraw)).
 
 Moderation owns reports, case status, public reason categories, human decisions, and decision rationales. It references a Node and Participant by ID; Graph and Participants retain ownership of those entities. The Console host applies hidden Node visibility to Discovery and Node views. This works for Nodes without Community membership. Disagreement with an idea alone is not a policy violation.

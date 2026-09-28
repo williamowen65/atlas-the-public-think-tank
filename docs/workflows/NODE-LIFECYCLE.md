@@ -49,5 +49,5 @@ Moderation can hide a Node's public title and description without changing the
 Graph Node's status or relationships. The Console preserves navigation and
 shows a public reason placeholder; Discovery removes the hidden Node from its
 main browsing results. The author can edit and request restoration review.
-See the [Moderation Domain blackboard](../blackboards/workflows/Moderation/ModerationDomain.excalidraw.png)
+See the [Moderation Domain blackboard](../blackboards/workflows/Moderation/ModerationDomain.excalidraw)
 and [boundary documentation](../architecture/MODERATION.md) for the full workflow.
