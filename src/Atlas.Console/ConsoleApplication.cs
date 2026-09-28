@@ -423,6 +423,7 @@ public sealed class ConsoleApplication
     private void BrowseNodes()
     {
         var browsing = true;
+        var visiblePages = 1;
         string? searchText = null;
         Guid? communityId = null;
         IReadOnlyCollection<Guid> reactionIds = Array.Empty<Guid>();
@@ -447,7 +448,7 @@ public sealed class ConsoleApplication
             Console.WriteLine($"Created: {FormatDateRange(createdFrom, createdThrough)}");
             Console.WriteLine();
 
-            var results = _discovery.Discover(new DiscoveryQuery(
+            var query = new DiscoveryQuery(
                 searchText,
                 communityId,
                 reactionIds,
@@ -456,7 +457,12 @@ public sealed class ConsoleApplication
                 minimumAverageVote,
                 maximumAverageVote,
                 createdFrom,
-                createdThrough));
+                createdThrough);
+            var pages = Enumerable.Range(1, visiblePages)
+                .Select(page => _discovery.DiscoverPage(query with { Page = page }))
+                .ToList();
+            var results = pages.SelectMany(page => page.Items).ToList();
+            var hasMore = pages[^1].HasNextPage;
             var nodes = results
                 .Select(result => _nodeRepository.GetById(new NodeId(result.NodeId)))
                 .Where(node => node is not null)
@@ -488,11 +494,18 @@ public sealed class ConsoleApplication
             }
 
             Console.WriteLine();
+            Console.WriteLine($"Showing {nodes.Count} of {pages[^1].TotalCount} matching nodes.");
             Console.WriteLine("Enter a node number to open it, P<number> to report that Node, S for text, C for community,");
             Console.WriteLine("R for reactions, V for vote ranges, D for created date, X to clear, or 0 to return.");
+            if (hasMore) Console.WriteLine("N to load the next page.");
             Console.WriteLine();
             Console.Write("Selection: ");
             var input = Console.ReadLine()?.Trim();
+            if (string.Equals(input, "n", StringComparison.OrdinalIgnoreCase) && hasMore)
+            {
+                visiblePages++;
+                continue;
+            }
             if (input?.StartsWith("p", StringComparison.OrdinalIgnoreCase) == true &&
                 int.TryParse(input[1..], out var reportNumber))
             {
@@ -504,33 +517,39 @@ public sealed class ConsoleApplication
             }
             if (string.Equals(input, "s", StringComparison.OrdinalIgnoreCase))
             {
+                visiblePages = 1;
                 Console.Write("Search text (blank clears): ");
                 searchText = NullIfWhiteSpace(Console.ReadLine());
                 continue;
             }
             if (string.Equals(input, "c", StringComparison.OrdinalIgnoreCase))
             {
+                visiblePages = 1;
                 communityId = SelectDiscoveryCommunity();
                 continue;
             }
             if (string.Equals(input, "r", StringComparison.OrdinalIgnoreCase))
             {
+                visiblePages = 1;
                 reactionIds = SelectDiscoveryReactions();
                 continue;
             }
             if (string.Equals(input, "v", StringComparison.OrdinalIgnoreCase))
             {
+                visiblePages = 1;
                 (minimumVoteCount, maximumVoteCount) = ReadIntegerRange("vote count", minimum: 0);
                 (minimumAverageVote, maximumAverageVote) = ReadDoubleRange("average vote", 0, 10);
                 continue;
             }
             if (string.Equals(input, "d", StringComparison.OrdinalIgnoreCase))
             {
+                visiblePages = 1;
                 (createdFrom, createdThrough) = ReadDateRange();
                 continue;
             }
             if (string.Equals(input, "x", StringComparison.OrdinalIgnoreCase))
             {
+                visiblePages = 1;
                 searchText = null;
                 communityId = null;
                 reactionIds = Array.Empty<Guid>();

@@ -11,6 +11,24 @@ public sealed class DiscoveryService : IDiscoveryService
         _source = source;
     }
 
+    public DiscoveryPage DiscoverPage(DiscoveryQuery query)
+        => Page(DiscoverCore(query, null), query.Page);
+
+    public DiscoveryPage DiscoverAuthoredPage(DiscoveryQuery query, IReadOnlyCollection<Guid> authoredNodeIds)
+    {
+        ArgumentNullException.ThrowIfNull(authoredNodeIds);
+        return Page(DiscoverCore(query, authoredNodeIds.ToHashSet()), query.Page);
+    }
+
+    private static DiscoveryPage Page(IReadOnlyList<RankedDiscoveryItem> results, int page)
+    {
+        var offset = ((long)page - 1) * IDiscoveryService.PageSize;
+        var items = offset >= results.Count
+            ? Array.Empty<RankedDiscoveryItem>()
+            : results.Skip((int)offset).Take(IDiscoveryService.PageSize).ToArray();
+        return new DiscoveryPage(items, results.Count, page, IDiscoveryService.PageSize);
+    }
+
     public IReadOnlyList<RankedDiscoveryItem> Discover(DiscoveryQuery query)
         => DiscoverCore(query, null);
 
@@ -63,6 +81,7 @@ public sealed class DiscoveryService : IDiscoveryService
             .ThenByDescending(item => item.Candidate.VoteCount)
             .ThenByDescending(item => item.Candidate.UpdatedAt)
             .ThenBy(item => item.Candidate.Title, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(item => item.Candidate.NodeId)
             .ToList();
 
         return ranked.Select((item, index) => new RankedDiscoveryItem(
@@ -75,6 +94,8 @@ public sealed class DiscoveryService : IDiscoveryService
 
     private static void Validate(DiscoveryQuery query)
     {
+        if (query.Page < 1)
+            throw new ArgumentOutOfRangeException(nameof(query), "Page must be positive.");
         if (query.MinimumVoteCount < 0 || query.MaximumVoteCount < 0)
             throw new ArgumentOutOfRangeException(nameof(query), "Vote-count bounds cannot be negative.");
         if (query.MinimumVoteCount.HasValue && query.MaximumVoteCount.HasValue &&

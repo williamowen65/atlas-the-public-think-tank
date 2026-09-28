@@ -210,12 +210,8 @@ public static class NodeDisplay
                 continue;
             }
 
-            for (var index = 0;
-                index < matchingChildren.Count;
-                index++)
+            foreach (var child in matchingChildren)
             {
-                var child = matchingChildren[index];
-
                 NodeVoteSummary? voteSummary = null;
 
                 if (childVoteSummaries is not null)
@@ -226,7 +222,7 @@ public static class NodeDisplay
                 }
 
                 var childVisibility = moderation?.Visibility(child.Id.Value) ?? ModerationVisibility.Visible;
-                WriteWrapped($"    {index + 1}. ",
+                WriteWrapped("    > ",
                     childVisibility.IsHidden ? childVisibility.Notice : child.Title.Value);
                 Console.WriteLine($"       {FormatVoteCount(voteSummary?.VoteCount)} votes · avg {FormatAverageVote(voteSummary?.AverageVote)}");
             }
