@@ -115,51 +115,29 @@ public static class NodeCommands
                 moderation);
 
             Console.WriteLine();
-            Console.WriteLine(
-                $"Choose an action (as {currentParticipant.DisplayName}):");
-
-            var authorOnlyStatus = isAuthor
-                ? string.Empty
-                : " [disabled — requires node author]";
-
-            Console.WriteLine($"1. Rename{authorOnlyStatus}");
-            Console.WriteLine($"2. Manage description blocks{authorOnlyStatus}");
-            Console.WriteLine($"3. Change type{authorOnlyStatus}");
-            Console.WriteLine($"4. Archive{authorOnlyStatus}");
-            Console.WriteLine($"5. Restore{authorOnlyStatus}");
-            Console.WriteLine(
-                $"6. Change requested sub-node types{authorOnlyStatus}");
-
-            Console.WriteLine("7. Select sub-node");
-            Console.WriteLine("8. Add sub-node");
-            Console.WriteLine($"9. Attach to parent{authorOnlyStatus}");
-            Console.WriteLine($"10. Detach from parent{authorOnlyStatus}");
-            Console.WriteLine("11. View author profile");
-            Console.WriteLine("12. Manage reactions");
-            Console.WriteLine(
-                myVote is null
-                    ? "13. Vote on node"
-                    : "13. Change your vote");
-            Console.WriteLine("14. Undo your vote");
-            Console.WriteLine("15. View votes");
-            Console.WriteLine($"16. Manage communities{authorOnlyStatus}");
-            Console.WriteLine("17. View communities");
-            Console.WriteLine("18. Add comment");
-            Console.WriteLine("19. View comments");
-            Console.WriteLine("20. Return to previous page");
+            Console.WriteLine($"ACTIONS (as {currentParticipant.DisplayName})");
+            Console.WriteLine(isAuthor ? "  Edit this node:" : "  Edit this node (disabled — requires node author):");
+            Console.WriteLine("  1 Rename · 2 Description blocks · 3 Change type");
+            Console.WriteLine("  4 Archive · 5 Restore · 6 Requested sub-node types");
+            Console.WriteLine("  9 Attach to parent · 10 Detach from parent · 16 Manage communities");
+            Console.WriteLine("  Explore and contribute:");
+            Console.WriteLine("  7 Select sub-node · 8 Add sub-node · 11 Author profile");
+            Console.WriteLine("  12 Manage reactions · 13 " + (myVote is null ? "Vote" : "Change vote") + " · 14 Undo vote · 15 View votes");
+            Console.WriteLine("  17 View communities · 18 Add comment · 19 View comments");
             Console.WriteLine(moderation.Visibility(node.Id.Value).IsHidden
-                ? "21. Report node [disabled — already hidden by moderator]"
-                : "21. Report node");
+                ? "  21 Report node [disabled — already hidden]"
+                : "  21 Report node");
             if (moderation.CanViewHiddenOriginal(actorParticipantId, node.AuthorId.Value, node.Id.Value))
             {
                 Console.WriteLine(isAuthor
-                    ? "22. View original content (author edit)"
-                    : "22. View original content (moderator, read only)");
+                    ? "  22 View original content (author edit)"
+                    : "  22 View original content (moderator, read only)");
             }
             if (isAuthor && moderation.Visibility(node.Id.Value).IsHidden)
             {
-                Console.WriteLine("23. Request moderation review after editing");
+                Console.WriteLine("  23 Request moderation review after editing");
             }
+            Console.WriteLine("  20 Return to previous page");
             Console.WriteLine();
 
             Console.Write("Selection: ");
