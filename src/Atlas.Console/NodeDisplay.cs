@@ -110,29 +110,18 @@ public static class NodeDisplay
     {
         var visibility = moderation?.Visibility(node.Id.Value) ?? ModerationVisibility.Visible;
         var hidden = visibility.IsHidden && !showOriginalContent;
-        var description = hidden ? visibility.Notice : ResolveDescription(node, documents, includeBlockDetails: true);
+        var description = hidden ? visibility.Notice : showOriginalContent
+            ? ResolveDescription(node, documents, includeBlockDetails: true)
+            : ResolveFeedDescription(node, documents);
         var authorName = ResolveAuthorName(node, participants);
 
         Console.WriteLine("ATLAS NODE");
-        Console.WriteLine("----------");
-        Console.WriteLine($"ID:             {node.Id}");
-        Console.WriteLine($"Title:          {(hidden ? visibility.Notice : node.Title.Value)}");
-        Console.WriteLine(
-            $"Type:           {ResolveTypeName(node, nodeTypes)}");
-        Console.WriteLine($"Type ID:        {node.TypeId}");
-        Console.WriteLine($"Description ID: {node.DescriptionId}");
-        Console.WriteLine($"Author ID:      {node.AuthorId}");
-        Console.WriteLine($"Authored By:    {authorName}");
-        Console.WriteLine(
-            $"Parents:        {ResolveParentSummary(node, nodes, moderation)}");
-        Console.WriteLine($"Status:         {node.Status}");
-        Console.WriteLine($"Votes:          {FormatVoteCount(voteCount)}");
-        Console.WriteLine($"Average:        {FormatAverageVote(averageVote)}");
-        Console.WriteLine($"My Vote:        {FormatCurrentParticipantVote(currentParticipantVote)}");
-        Console.WriteLine($"Communities:    {ResolveCommunities(node, communities, communityNodes)}");
-        Console.WriteLine($"Comments:       {ResolveCommentCount(node, comments)}");
-        Console.WriteLine($"Created:        {node.CreatedAt.LocalDateTime}");
-        Console.WriteLine($"Updated:        {node.UpdatedAt.LocalDateTime}");
+        WriteWrapped("  ", $"{ResolveTypeName(node, nodeTypes)} · {(hidden ? visibility.Notice : node.Title.Value)}");
+        Console.WriteLine($"  By {authorName} · {node.Status} · Created {node.CreatedAt:yyyy-MM-dd} · Updated {node.UpdatedAt:yyyy-MM-dd}");
+        WriteBreadcrumb(ResolveBreadcrumb(node, nodes, nodeTypes, moderation));
+        Console.WriteLine($"  Importance: {FormatVoteCount(voteCount)} votes · avg {FormatAverageVote(averageVote)} · my rating {FormatCurrentParticipantVote(currentParticipantVote)}");
+        Console.WriteLine($"  Communities: {ResolveCommunities(node, communities, communityNodes)} · Comments: {ResolveCommentCount(node, comments)}");
+        Console.WriteLine($"  Node ID: {node.Id}");
 
         ReactionDisplay.WriteDetails(
             node,
@@ -142,9 +131,10 @@ public static class NodeDisplay
             votingParticipantId);
 
         Console.WriteLine();
-        Console.WriteLine("Description");
-        Console.WriteLine("-----------");
+        Console.WriteLine("DESCRIPTION");
         Console.WriteLine(description);
+        Console.WriteLine();
+        Console.WriteLine("SUB-NODES");
 
         WriteSubNodeTables(
             node,
@@ -209,10 +199,7 @@ public static class NodeDisplay
                     autoPluralize)
                 .ToUpperInvariant();
 
-            Console.WriteLine();
-            Console.WriteLine(heading);
-            Console.WriteLine(new string('-', heading.Length));
-            WriteTableHeader();
+            Console.WriteLine($"  {heading}");
 
             if (matchingChildren.Count == 0)
             {
@@ -237,31 +224,17 @@ public static class NodeDisplay
                         out voteSummary);
                 }
 
-                WriteTableRow(
-                    child,
-                    nodes,
-                    nodeTypes,
-                    documents,
-                    participants,
-                    index + 1,
-                    voteSummary?.VoteCount,
-                    voteSummary?.AverageVote,
-                    voteSummary?.CurrentParticipantVote,
-                    nodeTags,
-                    tagDefinitions,
-                    votes,
-                    comments: comments,
-                    moderation: moderation);
+                var childVisibility = moderation?.Visibility(child.Id.Value) ?? ModerationVisibility.Visible;
+                WriteWrapped($"    {index + 1}. ",
+                    childVisibility.IsHidden ? childVisibility.Notice : child.Title.Value);
+                Console.WriteLine($"       {FormatVoteCount(voteSummary?.VoteCount)} votes · avg {FormatAverageVote(voteSummary?.AverageVote)}");
             }
         }
 
         if (typeIds.Count == 0)
         {
-            Console.WriteLine();
-            Console.WriteLine("SUB-NODES");
-            Console.WriteLine("---------");
             Console.WriteLine(
-                "This node does not request or contain any sub-nodes.");
+                "  This node does not request or contain any sub-nodes.");
         }
     }
 
