@@ -282,5 +282,92 @@
     "Status": "Active",
     "CreatedAt": "2026-09-28T17:36:49.048Z",
     "UpdatedAt": "2026-09-28T17:36:49.048Z"
+  },
+  {
+    "Id": "b1000000-0000-4000-8000-000000000018",
+    "Title": "Support community-owned internet networks",
+    "DescriptionId": "b2000000-0000-4000-8000-000000000018",
+    "TypeId": "0328981f-7b76-4bcb-ad04-99b4ed74fd23",
+    "AuthorId": "55555555-5555-4555-8555-555555555555",
+    "RequestedSubNodeTypeIds": [
+      "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
+      "53057519-9a26-4b02-a884-56dcf82159ed",
+      "df57b39d-efba-4398-84e0-6a7d4214287f"
+    ],
+    "ParentNodeIds": [
+      "b1000000-0000-4000-8000-000000000014"
+    ],
+    "Status": "Active",
+    "CreatedAt": "2026-09-28T17:48:43.289Z",
+    "UpdatedAt": "2026-09-28T17:48:43.289Z"
+  },
+  {
+    "Id": "b1000000-0000-4000-8000-000000000019",
+    "Title": "How should Atlas help people think and work together?",
+    "DescriptionId": "b2000000-0000-4000-8000-000000000019",
+    "TypeId": "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
+    "AuthorId": "11111111-1111-4111-8111-111111111111",
+    "RequestedSubNodeTypeIds": [
+      "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
+      "0328981f-7b76-4bcb-ad04-99b4ed74fd23",
+      "a3000000-0000-4000-8000-000000000001",
+      "53057519-9a26-4b02-a884-56dcf82159ed"
+    ],
+    "ParentNodeIds": [],
+    "Status": "Active",
+    "CreatedAt": "2026-09-28T17:48:43.289Z",
+    "UpdatedAt": "2026-09-28T17:48:43.289Z"
+  },
+  {
+    "Id": "b1000000-0000-4000-8000-000000000020",
+    "Title": "When should a contribution be a node instead of a comment?",
+    "DescriptionId": "b2000000-0000-4000-8000-000000000020",
+    "TypeId": "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
+    "AuthorId": "22222222-2222-4222-8222-222222222222",
+    "RequestedSubNodeTypeIds": [
+      "0328981f-7b76-4bcb-ad04-99b4ed74fd23",
+      "df57b39d-efba-4398-84e0-6a7d4214287f"
+    ],
+    "ParentNodeIds": [
+      "b1000000-0000-4000-8000-000000000019"
+    ],
+    "Status": "Active",
+    "CreatedAt": "2026-09-28T17:48:43.289Z",
+    "UpdatedAt": "2026-09-28T17:48:43.289Z"
+  },
+  {
+    "Id": "b1000000-0000-4000-8000-000000000021",
+    "Title": "Let people turn a comment into a node",
+    "DescriptionId": "b2000000-0000-4000-8000-000000000021",
+    "TypeId": "0328981f-7b76-4bcb-ad04-99b4ed74fd23",
+    "AuthorId": "33333333-3333-4333-8333-333333333333",
+    "RequestedSubNodeTypeIds": [
+      "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
+      "df57b39d-efba-4398-84e0-6a7d4214287f"
+    ],
+    "ParentNodeIds": [
+      "b1000000-0000-4000-8000-000000000020"
+    ],
+    "Status": "Active",
+    "CreatedAt": "2026-09-28T17:48:43.289Z",
+    "UpdatedAt": "2026-09-28T17:48:43.289Z"
+  },
+  {
+    "Id": "b1000000-0000-4000-8000-000000000022",
+    "Title": "Make disagreement useful",
+    "DescriptionId": "b2000000-0000-4000-8000-000000000022",
+    "TypeId": "a3000000-0000-4000-8000-000000000001",
+    "AuthorId": "44444444-4444-4444-8444-444444444444",
+    "RequestedSubNodeTypeIds": [
+      "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
+      "0328981f-7b76-4bcb-ad04-99b4ed74fd23",
+      "df57b39d-efba-4398-84e0-6a7d4214287f"
+    ],
+    "ParentNodeIds": [
+      "b1000000-0000-4000-8000-000000000019"
+    ],
+    "Status": "Active",
+    "CreatedAt": "2026-09-28T17:48:43.289Z",
+    "UpdatedAt": "2026-09-28T17:48:43.289Z"
   }
 ]
