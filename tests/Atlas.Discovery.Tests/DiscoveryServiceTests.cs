@@ -163,7 +163,7 @@ public sealed class DiscoveryServiceTests
     [TestMethod]
     public void Pages_preserve_global_rank_and_filter_before_slicing()
     {
-        var candidates = Enumerable.Range(0, 45)
+        var candidates = Enumerable.Range(0, 8)
             .Select(index => Candidate($"Node {index:D2}", average: index % 11, communities: [CommunityA]))
             .Concat(Enumerable.Range(0, 5).Select(index =>
                 Candidate($"Other {index}", average: 10)))
@@ -173,12 +173,12 @@ public sealed class DiscoveryServiceTests
         var second = service.DiscoverPage(new DiscoveryQuery(CommunityId: CommunityA, Page: 2));
         var last = service.DiscoverPage(new DiscoveryQuery(CommunityId: CommunityA, Page: 3));
 
-        Assert.AreEqual(45, first.TotalCount);
-        Assert.AreEqual(20, first.Items.Count);
+        Assert.AreEqual(8, first.TotalCount);
+        Assert.AreEqual(3, first.Items.Count);
         Assert.IsTrue(first.HasNextPage);
-        CollectionAssert.AreEqual(Enumerable.Range(21, 20).ToArray(),
+        CollectionAssert.AreEqual(Enumerable.Range(4, 3).ToArray(),
             second.Items.Select(item => item.Rank).ToArray());
-        Assert.AreEqual(5, last.Items.Count);
+        Assert.AreEqual(2, last.Items.Count);
         Assert.IsFalse(last.HasNextPage);
         Assert.AreEqual(0, service.DiscoverPage(new DiscoveryQuery(CommunityId: CommunityA, Page: 4)).Items.Count);
     }
@@ -186,15 +186,15 @@ public sealed class DiscoveryServiceTests
     [TestMethod]
     public void Authored_pages_only_include_authored_nodes_and_reject_invalid_page()
     {
-        var candidates = Enumerable.Range(0, 25)
+        var candidates = Enumerable.Range(0, 5)
             .Select(index => Candidate($"Author {index:D2}", average: 5))
             .ToArray();
         var service = Service(candidates);
         var page = service.DiscoverAuthoredPage(new DiscoveryQuery(Page: 2),
             candidates.Select(candidate => candidate.NodeId).ToArray());
-        Assert.AreEqual(25, page.TotalCount);
-        Assert.AreEqual(5, page.Items.Count);
-        Assert.AreEqual(21, page.Items[0].Rank);
+        Assert.AreEqual(5, page.TotalCount);
+        Assert.AreEqual(2, page.Items.Count);
+        Assert.AreEqual(4, page.Items[0].Rank);
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             service.DiscoverPage(new DiscoveryQuery(Page: 0)));
     }

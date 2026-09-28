@@ -3,7 +3,7 @@ namespace Atlas.Discovery;
 /// <summary>Exposes Atlas content through ranked Discovery results.</summary>
 public interface IDiscoveryService
 {
-    const int PageSize = 20;
+    const int PageSize = 3;
     DiscoveryPage DiscoverPage(DiscoveryQuery query);
     DiscoveryPage DiscoverAuthoredPage(DiscoveryQuery query, IReadOnlyCollection<Guid> authoredNodeIds);
     IReadOnlyList<RankedDiscoveryItem> Discover(DiscoveryQuery query);
