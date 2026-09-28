@@ -117,30 +117,30 @@ public static class NodeCommands
             Console.WriteLine();
             Console.WriteLine($"ACTIONS (as {currentParticipant.DisplayName})");
             Console.WriteLine(isAuthor ? "  Edit this node:" : "  Edit this node (disabled — requires node author):");
-            Console.WriteLine("  1 Rename · 2 Description blocks · 3 Change type");
-            Console.WriteLine("  4 Archive · 5 Restore · 6 Requested sub-node types");
-            Console.WriteLine("  9 Attach to parent · 10 Detach from parent · 16 Manage communities");
+            Console.WriteLine("    1 Rename · 2 Description blocks · 3 Change type");
+            Console.WriteLine("    4 Archive · 5 Restore · 6 Requested sub-node types");
+            Console.WriteLine("    9 Attach to parent · 10 Detach from parent · 16 Manage communities");
             Console.WriteLine("  Explore and contribute:");
-            Console.WriteLine("  7 Select sub-node · 8 Add sub-node · 11 Author profile");
+            Console.WriteLine("    7 Select sub-node · 8 Add sub-node · 11 Author profile");
             Console.WriteLine(node.ParentNodeIds.Count == 0
-                ? "  24 Browse ancestors [disabled — root node]"
-                : "  24 Browse ancestors");
-            Console.WriteLine("  12 Manage reactions · 13 " + (myVote is null ? "Vote" : "Change vote") + " · 14 Undo vote · 15 View votes");
-            Console.WriteLine("  17 View communities · 18 Add comment · 19 View comments");
+                ? "    24 Browse ancestors [disabled — root node]"
+                : "    24 Browse ancestors");
+            Console.WriteLine("    12 Manage reactions · 13 " + (myVote is null ? "Vote" : "Change vote") + " · 14 Undo vote · 15 View votes");
+            Console.WriteLine("    17 View communities · 18 Add comment · 19 View comments");
             Console.WriteLine(moderation.Visibility(node.Id.Value).IsHidden
-                ? "  21 Report node [disabled — already hidden]"
-                : "  21 Report node");
+                ? "    21 Report node [disabled — already hidden]"
+                : "    21 Report node");
             if (moderation.CanViewHiddenOriginal(actorParticipantId, node.AuthorId.Value, node.Id.Value))
             {
                 Console.WriteLine(isAuthor
-                    ? "  22 View original content (author edit)"
-                    : "  22 View original content (moderator, read only)");
+                    ? "    22 View original content (author edit)"
+                    : "    22 View original content (moderator, read only)");
             }
             if (isAuthor && moderation.Visibility(node.Id.Value).IsHidden)
             {
-                Console.WriteLine("  23 Request moderation review after editing");
+                Console.WriteLine("    23 Request moderation review after editing");
             }
-            Console.WriteLine("  20 Return to previous page");
+            Console.WriteLine("    20 Return to previous page");
             Console.WriteLine();
 
             Console.Write("Selection: ");
