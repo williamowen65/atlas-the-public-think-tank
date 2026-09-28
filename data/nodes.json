@@ -95,5 +95,33 @@
     "Status": "Active",
     "CreatedAt": "2026-09-28T15:20:00+00:00",
     "UpdatedAt": "2026-09-28T15:43:00+00:00"
+  },
+  {
+    "Id": "b1000000-0000-4000-8000-000000000007",
+    "Title": "Use ranked voting in major U.S. elections",
+    "DescriptionId": "b2000000-0000-4000-8000-000000000007",
+    "TypeId": "0328981f-7b76-4bcb-ad04-99b4ed74fd23",
+    "AuthorId": "11111111-1111-4111-8111-111111111111",
+    "RequestedSubNodeTypeIds": [],
+    "ParentNodeIds": [
+      "b1000000-0000-4000-8000-000000000001"
+    ],
+    "Status": "Active",
+    "CreatedAt": "2026-09-28T16:46:57.176Z",
+    "UpdatedAt": "2026-09-28T16:46:57.176Z"
+  },
+  {
+    "Id": "b1000000-0000-4000-8000-000000000008",
+    "Title": "Would ranked voting encourage more people to run for office?",
+    "DescriptionId": "b2000000-0000-4000-8000-000000000008",
+    "TypeId": "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
+    "AuthorId": "22222222-2222-4222-8222-222222222222",
+    "RequestedSubNodeTypeIds": [],
+    "ParentNodeIds": [
+      "b1000000-0000-4000-8000-000000000007"
+    ],
+    "Status": "Active",
+    "CreatedAt": "2026-09-28T16:46:57.176Z",
+    "UpdatedAt": "2026-09-28T16:46:57.176Z"
   }
 ]
