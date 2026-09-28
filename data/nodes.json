@@ -123,5 +123,74 @@
     "Status": "Active",
     "CreatedAt": "2026-09-28T16:46:57.176Z",
     "UpdatedAt": "2026-09-28T16:46:57.176Z"
+  },
+  {
+    "Id": "b1000000-0000-4000-8000-000000000009",
+    "Title": "Help Southern Resident orcas recover",
+    "DescriptionId": "b2000000-0000-4000-8000-000000000009",
+    "TypeId": "a3000000-0000-4000-8000-000000000001",
+    "AuthorId": "33333333-3333-4333-8333-333333333333",
+    "RequestedSubNodeTypeIds": [
+      "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
+      "0328981f-7b76-4bcb-ad04-99b4ed74fd23"
+    ],
+    "ParentNodeIds": [
+      "b1000000-0000-4000-8000-000000000001"
+    ],
+    "Status": "Active",
+    "CreatedAt": "2026-09-28T17:12:32.348Z",
+    "UpdatedAt": "2026-09-28T17:12:32.348Z"
+  },
+  {
+    "Id": "b1000000-0000-4000-8000-000000000010",
+    "Title": "What most limits Southern Resident orca recovery?",
+    "DescriptionId": "b2000000-0000-4000-8000-000000000010",
+    "TypeId": "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
+    "AuthorId": "33333333-3333-4333-8333-333333333333",
+    "RequestedSubNodeTypeIds": [
+      "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
+      "df57b39d-efba-4398-84e0-6a7d4214287f",
+      "0328981f-7b76-4bcb-ad04-99b4ed74fd23"
+    ],
+    "ParentNodeIds": [
+      "b1000000-0000-4000-8000-000000000009",
+      "b1000000-0000-4000-8000-000000000005"
+    ],
+    "Status": "Active",
+    "CreatedAt": "2026-09-28T17:12:32.348Z",
+    "UpdatedAt": "2026-09-28T17:12:32.348Z"
+  },
+  {
+    "Id": "b1000000-0000-4000-8000-000000000011",
+    "Title": "How has the Southern Resident orca population changed over time?",
+    "DescriptionId": "b2000000-0000-4000-8000-000000000011",
+    "TypeId": "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
+    "AuthorId": "33333333-3333-4333-8333-333333333333",
+    "RequestedSubNodeTypeIds": [
+      "df57b39d-efba-4398-84e0-6a7d4214287f"
+    ],
+    "ParentNodeIds": [
+      "b1000000-0000-4000-8000-000000000010"
+    ],
+    "Status": "Active",
+    "CreatedAt": "2026-09-28T17:12:32.348Z",
+    "UpdatedAt": "2026-09-28T17:12:32.348Z"
+  },
+  {
+    "Id": "b1000000-0000-4000-8000-000000000012",
+    "Title": "Restore salmon habitat that supports orca prey",
+    "DescriptionId": "b2000000-0000-4000-8000-000000000012",
+    "TypeId": "0328981f-7b76-4bcb-ad04-99b4ed74fd23",
+    "AuthorId": "33333333-3333-4333-8333-333333333333",
+    "RequestedSubNodeTypeIds": [
+      "a2e82ee2-12ba-49fc-9160-c2b864d4f42f",
+      "df57b39d-efba-4398-84e0-6a7d4214287f"
+    ],
+    "ParentNodeIds": [
+      "b1000000-0000-4000-8000-000000000009"
+    ],
+    "Status": "Active",
+    "CreatedAt": "2026-09-28T17:12:32.348Z",
+    "UpdatedAt": "2026-09-28T17:12:32.348Z"
   }
 ]
