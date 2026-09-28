@@ -366,7 +366,7 @@ public static class NodeDisplay
         for (var pathIndex = 0; pathIndex < paths.Length; pathIndex++)
         {
             if (pathIndex > 0)
-                Console.WriteLine("     or");
+                Console.WriteLine("     and");
             var segments = paths[pathIndex].Split(" → ", StringSplitOptions.None);
             for (var depth = 0; depth < segments.Length; depth++)
                 WriteWrapped(pathIndex == 0 && depth == 0 ? "   Path: " : "         ", segments[depth]);
