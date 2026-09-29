@@ -1,5 +1,4 @@
 using Atlas.Discovery;
-using Atlas.ConsoleApp.Storage;
 
 namespace Atlas.Moderation.Tests;
 
@@ -119,25 +118,7 @@ public sealed class ModerationWorkflowTests
         Assert.AreEqual(_moderator, repository.GetById(reported.Id)?.RestoredBy);
     }
 
-    [TestMethod]
-    public void Json_repository_preserves_final_decision_across_instances()
-    {
-        var path = Path.Combine(Path.GetTempPath(), $"atlas-moderation-{Guid.NewGuid()}.json");
-        try
-        {
-            var service = new ModerationService(new SerializedModerationCaseRepository(path), new Moderator(_moderator));
-            var reported = service.ReportNode(_node, _reporter, "A Node", "spam", "evidence", DateTimeOffset.UtcNow);
-            service.DecideNode(_moderator, _node, ModerationDecision.HideNode,
-                "Reviewed", DateTimeOffset.UtcNow, PublicModerationReason.Harassment);
-            var loaded = new SerializedModerationCaseRepository(path).GetById(reported.Id);
-            Assert.IsNotNull(loaded);
-            Assert.AreEqual(ModerationStatus.Actioned, loaded.Status);
-            Assert.AreEqual("Reviewed", loaded.DecisionReason);
-            Assert.AreEqual(_moderator, loaded.ReviewerId);
-            Assert.AreEqual(PublicModerationReason.Harassment, loaded.PublicReason);
-        }
-        finally { File.Delete(path); }
-    }
+
 
     private DiscoveryCandidate Candidate(bool excluded) =>
         new(_node, "A Node", "text", false, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow,

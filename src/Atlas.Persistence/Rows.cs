@@ -6,12 +6,20 @@ public sealed class NodeRow
     public Guid Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public Guid? DescriptionId { get; set; }
-    public string? Description { get; set; }
     public Guid? TypeId { get; set; }
-    public string? Type { get; set; }
     public Guid? AuthorId { get; set; }
-    public List<Guid>? RequestedSubNodeTypeIds { get; set; } = [];
-    public List<Guid>? ParentNodeIds { get; set; } = [];
+    public List<NodeRequestedTypeRow> RequestedTypes { get; set; } = [];
+    public List<Guid>? RequestedSubNodeTypeIds
+    {
+        get => RequestedTypes.OrderBy(row => row.Position).Select(row => row.TypeId).ToList();
+        set => RequestedTypes = (value ?? []).Select((id, position) => new NodeRequestedTypeRow { NodeId = Id, Position = position, TypeId = id }).ToList();
+    }
+    public List<NodeParentRow> Parents { get; set; } = [];
+    public List<Guid>? ParentNodeIds
+    {
+        get => Parents.OrderBy(row => row.Position).Select(row => row.ParentNodeId).ToList();
+        set => Parents = (value ?? []).Select((id, position) => new NodeParentRow { NodeId = Id, Position = position, ParentNodeId = id }).ToList();
+    }
     public string Status { get; set; } = string.Empty;
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
@@ -33,7 +41,12 @@ public sealed class NodeTypeRow
 public sealed class DocumentRow
 {
     public Guid Id { get; set; }
-    public List<Guid> BlockIds { get; set; } = [];
+    public List<DocumentBlockRow> Blocks { get; set; } = [];
+    public List<Guid> BlockIds
+    {
+        get => Blocks.OrderBy(row => row.Position).Select(row => row.BlockId).ToList();
+        set => Blocks = value.Select((id, position) => new DocumentBlockRow { DocumentId = Id, Position = position, BlockId = id }).ToList();
+    }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 }
@@ -191,6 +204,8 @@ public sealed class NotificationPreferencesRow
 
 public sealed class ReactionAuditRow
 {
+    public Guid NodeReactionId { get; set; }
+    public int Position { get; set; }
     public string Action { get; set; } = string.Empty;
     public Guid? ActorParticipantId { get; set; }
     public DateTimeOffset OccurredAt { get; set; }
@@ -201,8 +216,29 @@ public sealed class ReactionAuditRow
 
 public sealed class DeliveryAttemptRow
 {
+    public Guid NotificationId { get; set; }
+    public int Position { get; set; }
     public int Channel { get; set; }
     public int Status { get; set; }
     public DateTimeOffset AttemptedAt { get; set; }
     public string? Error { get; set; }
+}
+
+public sealed class NodeParentRow
+{
+    public Guid NodeId { get; set; }
+    public int Position { get; set; }
+    public Guid ParentNodeId { get; set; }
+}
+public sealed class NodeRequestedTypeRow
+{
+    public Guid NodeId { get; set; }
+    public int Position { get; set; }
+    public Guid TypeId { get; set; }
+}
+public sealed class DocumentBlockRow
+{
+    public Guid DocumentId { get; set; }
+    public int Position { get; set; }
+    public Guid BlockId { get; set; }
 }

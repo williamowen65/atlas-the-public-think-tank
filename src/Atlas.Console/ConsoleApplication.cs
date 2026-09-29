@@ -45,17 +45,17 @@ public sealed class ConsoleApplication
     private readonly NotificationService _notificationService;
     private readonly INotificationRepository _notificationRepository;
     private Participant _currentParticipant;
-    private readonly string _nodeDataFilePath;
-    private readonly string _nodeTypeDataFilePath;
-    private readonly string _documentDataFilePath;
-    private readonly string _participantDataFilePath;
-    private readonly string _voteDataFilePath;
-    private readonly string _tagDefinitionDataFilePath;
-    private readonly string _nodeTagDataFilePath;
-    private readonly string _communityDataFilePath;
-    private readonly string _communityMembershipDataFilePath;
-    private readonly string _communityNodeDataFilePath;
-    private readonly string _commentDataFilePath;
+    private readonly string _nodeCollectionKey;
+    private readonly string _nodeTypeCollectionKey;
+    private readonly string _documentCollectionKey;
+    private readonly string _participantCollectionKey;
+    private readonly string _voteCollectionKey;
+    private readonly string _tagDefinitionCollectionKey;
+    private readonly string _nodeTagCollectionKey;
+    private readonly string _communityCollectionKey;
+    private readonly string _communityMembershipCollectionKey;
+    private readonly string _communityNodeCollectionKey;
+    private readonly string _commentCollectionKey;
 
     /// <summary>Creates a validated console application instance.</summary>
     public ConsoleApplication(
@@ -69,22 +69,22 @@ public sealed class ConsoleApplication
         IReactionDefinitionRepository tagDefinitions,
         INodeReactionRepository nodeTags,
         InMemoryEventPublisher eventPublisher,
-        string nodeDataFilePath,
-        string nodeTypeDataFilePath,
-        string documentDataFilePath,
-        string participantDataFilePath,
-        string voteDataFilePath,
-        string tagDefinitionDataFilePath,
-        string nodeTagDataFilePath,
-        string communityDataFilePath,
-        string communityMembershipDataFilePath,
-        string communityNodeDataFilePath,
+        string nodeCollectionKey,
+        string nodeTypeCollectionKey,
+        string documentCollectionKey,
+        string participantCollectionKey,
+        string voteCollectionKey,
+        string tagDefinitionCollectionKey,
+        string nodeTagCollectionKey,
+        string communityCollectionKey,
+        string communityMembershipCollectionKey,
+        string communityNodeCollectionKey,
         ICommunityRepository communities,
         ICommunityMembershipRepository communityMemberships,
         ICommunityNodeRepository communityNodes,
         CommunityService communityService,
         ICommentRepository comments,
-        string commentDataFilePath,
+        string commentCollectionKey,
         IDiscoveryService discovery,
         Participant initialParticipant,
         ModerationService moderation,
@@ -103,22 +103,22 @@ public sealed class ConsoleApplication
         _nodeTags = nodeTags;
         _eventPublisher = eventPublisher;
         _currentParticipant = initialParticipant;
-        _nodeDataFilePath = nodeDataFilePath;
-        _nodeTypeDataFilePath = nodeTypeDataFilePath;
-        _documentDataFilePath = documentDataFilePath;
-        _participantDataFilePath = participantDataFilePath;
-        _voteDataFilePath = voteDataFilePath;
-        _tagDefinitionDataFilePath = tagDefinitionDataFilePath;
-        _nodeTagDataFilePath = nodeTagDataFilePath;
-        _communityDataFilePath = communityDataFilePath;
-        _communityMembershipDataFilePath = communityMembershipDataFilePath;
-        _communityNodeDataFilePath = communityNodeDataFilePath;
+        _nodeCollectionKey = nodeCollectionKey;
+        _nodeTypeCollectionKey = nodeTypeCollectionKey;
+        _documentCollectionKey = documentCollectionKey;
+        _participantCollectionKey = participantCollectionKey;
+        _voteCollectionKey = voteCollectionKey;
+        _tagDefinitionCollectionKey = tagDefinitionCollectionKey;
+        _nodeTagCollectionKey = nodeTagCollectionKey;
+        _communityCollectionKey = communityCollectionKey;
+        _communityMembershipCollectionKey = communityMembershipCollectionKey;
+        _communityNodeCollectionKey = communityNodeCollectionKey;
         _communities = communities;
         _communityMemberships = communityMemberships;
         _communityNodes = communityNodes;
         _communityService = communityService;
         _comments = comments;
-        _commentDataFilePath = commentDataFilePath;
+        _commentCollectionKey = commentCollectionKey;
         _discovery = discovery;
         _moderation = moderation;
         _moderatorAuthorization = moderatorAuthorization;
@@ -173,7 +173,7 @@ public sealed class ConsoleApplication
                     break;
 
                 case "9":
-                    ShowDataFiles();
+                    ShowSqlCollections();
                     break;
 
                 case "10":
@@ -219,7 +219,7 @@ public sealed class ConsoleApplication
         Console.WriteLine("6. Create community");
         Console.WriteLine("7. Browse communities");
         Console.WriteLine("8. List node types");
-        Console.WriteLine("9. Show data files");
+        Console.WriteLine("9. Show SQL data");
         Console.WriteLine("10. List Content documents");
         Console.WriteLine("11. Notifications and preferences");
         if (_moderatorAuthorization.IsAtlasModerator(_currentParticipant.Id.Value))
@@ -997,38 +997,36 @@ public sealed class ConsoleApplication
         ConsoleUi.Pause();
     }
 
-    /// <summary>Displays data files in the console workflow.</summary>
-    private void ShowDataFiles()
+    /// <summary>Displays SQL rowss in the console workflow.</summary>
+    private void ShowSqlCollections()
     {
-        ShowDataFile("NODE DATA", _nodeDataFilePath);
-        ShowDataFile("NODE TYPE DATA", _nodeTypeDataFilePath);
-        ShowDataFile("CONTENT DOCUMENT DATA", _documentDataFilePath);
-        ShowDataFile("PARTICIPANT DATA", _participantDataFilePath);
-        ShowDataFile("VOTE DATA", _voteDataFilePath);
-        ShowDataFile("REACTION DEFINITION DATA", _tagDefinitionDataFilePath);
-        ShowDataFile("NODE REACTION DATA", _nodeTagDataFilePath);
-        ShowDataFile("COMMUNITY DATA", _communityDataFilePath);
-        ShowDataFile("COMMUNITY MEMBERSHIP DATA", _communityMembershipDataFilePath);
-        ShowDataFile("COMMUNITY NODE DATA", _communityNodeDataFilePath);
-        ShowDataFile("COMMENT DATA", _commentDataFilePath);
+        ShowSqlCollection("NODE DATA", _nodeCollectionKey);
+        ShowSqlCollection("NODE TYPE DATA", _nodeTypeCollectionKey);
+        ShowSqlCollection("CONTENT DOCUMENT DATA", _documentCollectionKey);
+        ShowSqlCollection("PARTICIPANT DATA", _participantCollectionKey);
+        ShowSqlCollection("VOTE DATA", _voteCollectionKey);
+        ShowSqlCollection("REACTION DEFINITION DATA", _tagDefinitionCollectionKey);
+        ShowSqlCollection("NODE REACTION DATA", _nodeTagCollectionKey);
+        ShowSqlCollection("COMMUNITY DATA", _communityCollectionKey);
+        ShowSqlCollection("COMMUNITY MEMBERSHIP DATA", _communityMembershipCollectionKey);
+        ShowSqlCollection("COMMUNITY NODE DATA", _communityNodeCollectionKey);
+        ShowSqlCollection("COMMENT DATA", _commentCollectionKey);
     }
 
-    /// <summary>Displays data file in the console workflow.</summary>
-    private void ShowDataFile(
+    /// <summary>Displays SQL rows in the console workflow.</summary>
+    private void ShowSqlCollection(
         string heading,
-        string filePath)
+        string collectionKey)
     {
         Console.Clear();
         Console.WriteLine(heading);
         Console.WriteLine(new string('-', heading.Length));
         WriteActingAs();
-        Console.WriteLine(filePath);
+        Console.WriteLine(collectionKey);
         Console.WriteLine();
 
         Console.WriteLine(
-            Storage.SqlStorage.Exists(filePath)
-                ? Storage.SqlStorage.ReadText(filePath)
-                : "The data file has not been created yet.");
+            Storage.SqlStorage.DescribeCollection(collectionKey));
 
         ConsoleUi.Pause();
     }

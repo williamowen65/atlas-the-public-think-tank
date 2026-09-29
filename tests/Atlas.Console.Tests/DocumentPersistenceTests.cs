@@ -1,7 +1,5 @@
-using Atlas.ConsoleApp.Storage;
 using Atlas.Content.Blocks;
 using Atlas.Content.Documents;
-using System.Text.Json;
 
 namespace Atlas.ConsoleApp.Tests;
 
@@ -53,78 +51,9 @@ public sealed class DocumentPersistenceTests
             document.BlockIds.ToArray());
     }
 
-    [TestMethod]
-    public void MixedBlocksRoundTripThroughSeparateJsonFiles()
-    {
-        var directory = Path.Combine(Path.GetTempPath(), $"atlas-content-tests-{Guid.NewGuid():N}");
-        var documentPath = Path.Combine(directory, "documents.json");
-        var blockPath = Path.Combine(directory, "blocks.json");
 
-        try
-        {
-            var createdAt = new DateTimeOffset(2026, 9, 19, 12, 0, 0, TimeSpan.Zero);
-            var blocks = new ContentBlock[]
-            {
-                new MarkdownTextBlock("## Markdown heading", createdAt),
-                new ImageBlock("media/image-1", "Alt text", "Caption", createdAt),
-                new VideoBlock("media/video-1", "Video caption", createdAt),
-                new LinkPreviewBlock("https://example.com/article", "Article", "Preview", createdAt),
-                new PollReferenceBlock(Guid.NewGuid(), createdAt),
-                new ChartReferenceBlock(Guid.NewGuid(), "Baseline chart", createdAt)
-            };
-            var document = new Document(blocks.Select(block => block.Id), createdAt);
-            var repository = new SerializedDocumentRepository(documentPath, blockPath);
 
-            foreach (var block in blocks) repository.SaveBlock(block);
-            repository.Save(document);
 
-            var reloaded = new SerializedDocumentRepository(documentPath, blockPath);
-            var reloadedDocument = reloaded.GetById(document.Id);
-
-            Assert.IsNotNull(reloadedDocument);
-            CollectionAssert.AreEqual(document.BlockIds.ToArray(), reloadedDocument.BlockIds.ToArray());
-            Assert.AreEqual(document.UpdatedAt, reloadedDocument.UpdatedAt);
-            CollectionAssert.AreEqual(
-                blocks.Select(block => block.GetType()).ToArray(),
-                reloaded.GetBlocks(reloadedDocument).Select(block => block.GetType()).ToArray());
-            Assert.AreEqual(blocks[0].Id, reloaded.GetBlocks(reloadedDocument).First().Id);
-        }
-        finally
-        {
-            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
-        }
-    }
-
-    [TestMethod]
-    public void JsonStoresOnlyFieldsBelongingToEachBlockType()
-    {
-        var directory = Path.Combine(Path.GetTempPath(), $"atlas-content-shapes-{Guid.NewGuid():N}");
-        var documentPath = Path.Combine(directory, "documents.json");
-        var blockPath = Path.Combine(directory, "blocks.json");
-
-        try
-        {
-            var now = DateTimeOffset.UtcNow;
-            var repository = new SerializedDocumentRepository(documentPath, blockPath);
-            repository.SaveBlock(new MarkdownTextBlock("# Text", now));
-            repository.SaveBlock(new ImageBlock("https://example.com/image.jpg", "Coast", null, now));
-
-            using var json = JsonDocument.Parse(File.ReadAllText(blockPath));
-            var markdown = json.RootElement[0];
-            var image = json.RootElement[1];
-
-            CollectionAssert.AreEquivalent(
-                new[] { "Id", "Kind", "Markdown", "CreatedAt", "UpdatedAt" },
-                markdown.EnumerateObject().Select(property => property.Name).ToArray());
-            CollectionAssert.AreEquivalent(
-                new[] { "Id", "Kind", "AltText", "Url", "CreatedAt", "UpdatedAt" },
-                image.EnumerateObject().Select(property => property.Name).ToArray());
-        }
-        finally
-        {
-            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
-        }
-    }
 
     [TestMethod]
     public void BlockTypesEnforceTheirOwnValidation()

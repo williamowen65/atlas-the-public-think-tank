@@ -29,8 +29,18 @@ public sealed class SqlPersistenceTests
             Assert.IsTrue(database.ParticipantRows.Any());
             Assert.IsTrue(database.DocumentRows.Any());
             Assert.IsTrue(database.VoteRows.Any());
-            Assert.AreEqual(database.NodeRows.Count(),
-                System.Text.Json.JsonSerializer.Deserialize<List<StoredNode>>(SqlStorage.ReadText("nodes"))!.Count);
+            Assert.IsNotNull(new SqlNodeRepository(() => new AtlasDataContext(options)).GetById(new Atlas.Graph.Nodes.NodeId(database.NodeRows.First().Id)));
+
+            var factory = () => new AtlasDataContext(options);
+            Assert.IsTrue(new SqlNodeTypeRepository(factory).GetAll().Count > 0);
+            Assert.IsTrue(new SqlReactionDefinitionRepository(factory).GetAll().Count > 0);
+            var reactions = new SqlNodeReactionRepository(factory).GetAll();
+            Assert.IsTrue(reactions.Count > 0);
+            Assert.IsTrue(reactions.Any(reaction => reaction.AuditHistory.Count > 0));
+            Assert.IsTrue(new SqlCommunityRepository(factory).GetAll().Count > 0);
+            Assert.IsTrue(new SqlParticipantRepository(factory).GetAll().All(participant => participant.DisplayName.StartsWith("Demo User")));
+            Assert.IsTrue(database.Set<NodeParentRow>().Any());
+            Assert.IsTrue(database.Set<DocumentBlockRow>().Any());
 
             var original = database.VoteRows.AsNoTracking().First();
             database.VoteRows.Add(new VoteRow

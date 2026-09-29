@@ -1,25 +1,25 @@
 # PTT-87 SQL Server persistence
 
-The console needs `ATLAS_SQL_CONNECTION_STRING`. `Atlas.Persistence` owns the EF Core `AtlasDataContext`, persistence row types, Fluent API mappings, and migration. Domain models and repository interfaces remain in their domain projects. The console wires repository adapters to that persistence boundary.
+Domain models and repository interfaces remain in their domains. `Atlas.Persistence` owns EF Core row types, Fluent API mappings, the DbContext, and migrations. The console constructs `Sql*Repository` adapters that map directly between domain objects and EF rows. Saving an object updates that object and its owned child rows; it does not rewrite other records in the table.
 
 ## Local setup
 
-1. Create a **new empty** SQL Server database (for example `Atlas`). Set `ATLAS_SQL_CONNECTION_STRING` in the console project user secrets or environment. For local SQL Server with Windows authentication, one example is `Server=localhost;Database=Atlas;Trusted_Connection=True;TrustServerCertificate=True`. Do not commit credentials.
-2. From the repository root run `dotnet run --project src/Atlas.Console -- --seed-demo` once. It applies the migration and inserts the code-defined demo records into an empty database, retaining IDs and timestamps. Normal startup does not seed the demo.
-3. Run `dotnet run --project src/Atlas.Console`. The console reads and writes SQL rows.
+1. Create a **new empty** SQL Server database (for example `Atlas`). Set `ATLAS_SQL_CONNECTION_STRING` in the console project user secrets or environment. For local Windows authentication, one example is `Server=localhost;Database=Atlas;Trusted_Connection=True;TrustServerCertificate=True`. Do not commit credentials.
+2. Run `dotnet run --project src/Atlas.Console -- --seed-demo` once. It applies the migration and loads typed seed records from `src/Atlas.Console/Storage/SeedData/`, retaining their identities and timestamps. The seed command refuses a populated database.
+3. Run `dotnet run --project src/Atlas.Console` to use the SQL database.
 
-The migration in this draft replaces the former `AtlasCollections` draft schema. If you already ran the earlier draft locally, use a new empty database for this revision. Back up any data you want to retain first. `--seed-demo` does not import a previous local JSON directory or the earlier serialized-collection SQL table.
+The draft migration has been revised. If you already ran an earlier revision, use a new empty database for this revision and retain any previous database you want to keep. This command does not import previous local JSON files or the earlier draft SQL schema.
 
-## How the mapping works
+## Tables and mapping
 
-For example, the Graph domain owns `Node` and `INodeRepository`; `Atlas.Persistence` owns `NodeRow` and its Fluent API table mapping. The console's repository adapter reconstitutes domain nodes from persistence records and saves updated records. There is one SQL row per node, vote, document, block, participant, reaction, community, comment, moderation case, notification, and preference. The vote table has a unique `(ParticipantId, TargetType, TargetId)` index; notifications have a unique `(OccurrenceId, RecipientParticipantId)` index.
+Each node, type, document, block, participant, vote, reaction definition, node reaction, community, membership, association, comment, moderation case, notification, and preference has an EF row. Node parents, requested types, ordered document block references, reaction audit entries, and notification delivery attempts have child tables. Child keys include their owner and position, preserving order. Fluent API maps ownership with cascading deletion of child rows.
 
-The existing adapters still use JSON serialization **in memory** as a compatibility bridge between their stored DTOs and EF rows. The database does not store whole collections as JSON payloads. A few ordered or nested values (`BlockIds`, node parent/type IDs, reaction audit entries, notification delivery attempts) currently use value-converted JSON columns; normal aggregate fields are SQL columns. The prior file-backed repository tests remain, but they do not verify the SQL boundary. The console uses collection keys such as `nodes`, not file paths.
+The vote table enforces unique `(ParticipantId, TargetType, TargetId)` values. Notifications enforce unique `(OccurrenceId, RecipientParticipantId)` values. The repositories map explicitly to domain reconstitution methods, preserving identities, timestamps, lifecycle states, preferences, and histories.
 
-## Review limits
+The old serialized repositories, stored JSON DTOs, file adapters, JSON seed payloads, and JSON value converters are removed. The console data viewer formats rows as text. Domain projects do not take an EF Core dependency.
 
-This draft has not been compiled or run in this workspace because it has no .NET SDK or SQL Server. Local build and migration checks are required. The compatibility adapters currently replace all rows in one collection per write, so cross-process read/modify/write can still lose updates. The database unique indexes prevent duplicate vote and notification keys but do not make the entire repository operation atomic. A later pass should move queries and individual upserts directly into EF repositories and normalize the remaining ordered association tables.
+## Verification
 
-## SQL test
+Set `ATLAS_SQL_TEST_CONNECTION_STRING` to a SQL Server instance where the test login may create databases. Run `dotnet test tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj`. Each test creates a uniquely named temporary database and deletes only that database. Coverage includes vote creation/update/deletion and uniqueness, content block types/order/timestamps, communities and memberships, moderation decisions, notification preferences/delivery history/read state, and demo seeding. Without that environment variable the integration tests are marked inconclusive. GitHub Actions also runs this suite against an isolated SQL Server container.
 
-`ATLAS_SQL_TEST_CONNECTION_STRING` is an optional connection to a SQL Server instance with permission to create databases. Run `dotnet test tests/Atlas.Persistence.Tests` to create a uniquely named temporary database, apply the migration, seed every demo collection, check the mapped rows, and verify the database rejects a duplicate vote. The test deletes only its own uniquely named database. The existing file adapter tests still use temporary files.
+No .NET SDK or SQL Server is installed in this workspace; validation runs through GitHub Actions and your local SQL Server. The adapters use short-lived DbContexts. Same-record conflicting edits use ordinary last-write behavior; optimistic version checks remain a separate design choice. Node ancestry filtering currently materializes rows before filtering, while ordinary identifier and target queries use EF predicates.

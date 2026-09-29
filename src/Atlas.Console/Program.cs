@@ -47,7 +47,6 @@ var nodeTypeCollectionKey = "node-types";
 
 var documentCollectionKey = "documents";
 
-var blockCollectionKey = "blocks";
 
 var participantCollectionKey = "participants";
 
@@ -61,36 +60,33 @@ var communityCollectionKey = "communities";
 var communityMembershipCollectionKey = "community-memberships";
 var communityNodeCollectionKey = "community-nodes";
 var commentCollectionKey = "comments";
-var moderationCollectionKey = "moderation-cases";
 
 INodeTypeRepository nodeTypeRepository =
-    new SerializedNodeTypeRepository(nodeTypeCollectionKey);
+    new SqlNodeTypeRepository();
 
 SeedSystemNodeTypes(nodeTypeRepository);
 
 IDocumentRepository documentRepository =
-    new SerializedDocumentRepository(
-        documentCollectionKey,
-        blockCollectionKey);
+    new SqlDocumentRepository();
 
 IParticipantRepository participantRepository =
-    new SerializedParticipantRepository(participantCollectionKey);
+    new SqlParticipantRepository();
 
 IVoteRepository voteRepository =
-    new SerializedVoteRepository(voteCollectionKey);
+    new SqlVoteRepository();
 
 IReactionDefinitionRepository tagDefinitionRepository =
-    new SerializedReactionDefinitionRepository(tagDefinitionCollectionKey);
+    new SqlReactionDefinitionRepository();
 
 INodeReactionRepository nodeTagRepository =
-    new SerializedNodeReactionRepository(nodeTagCollectionKey);
+    new SqlNodeReactionRepository();
 
-ICommunityRepository communityRepository = new SerializedCommunityRepository(communityCollectionKey);
-ICommunityMembershipRepository communityMembershipRepository = new SerializedCommunityMembershipRepository(communityMembershipCollectionKey);
-ICommunityNodeRepository communityNodeRepository = new SerializedCommunityNodeRepository(communityNodeCollectionKey);
+ICommunityRepository communityRepository = new SqlCommunityRepository();
+ICommunityMembershipRepository communityMembershipRepository = new SqlCommunityMembershipRepository();
+ICommunityNodeRepository communityNodeRepository = new SqlCommunityNodeRepository();
 var communityService = new CommunityService(communityRepository, communityMembershipRepository, communityNodeRepository);
-ICommentRepository commentRepository = new SerializedCommentRepository(commentCollectionKey);
-IModerationCaseRepository moderationCases = new SerializedModerationCaseRepository(moderationCollectionKey);
+ICommentRepository commentRepository = new SqlCommentRepository();
+IModerationCaseRepository moderationCases = new SqlModerationCaseRepository();
 var moderatorAuthorization = new ConfiguredModeratorAuthorization(
     configuration["ATLAS_MODERATOR_PARTICIPANT_IDS"] is { } configuredIds
         ? configuredIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
@@ -101,12 +97,7 @@ var moderation = new ModerationService(moderationCases, moderatorAuthorization);
 var legacyParticipant =
     EnsureDefaultDemoParticipant(participantRepository);
 
-INodeRepository nodeRepository =
-    new SerializedNodeRepository(
-        nodeCollectionKey,
-        nodeTypeRepository,
-        documentRepository,
-        new NodeAuthorId(legacyParticipant.Id.Value));
+INodeRepository nodeRepository = new SqlNodeRepository();
 
 var votingEligibility =
     new RepositoryVotingEligibility(
@@ -137,8 +128,7 @@ IDiscoveryCandidateSource discoverySource = new RepositoryDiscoveryCandidateSour
 IDiscoveryService discovery = new DiscoveryService(discoverySource);
 
 var eventPublisher = new InMemoryEventPublisher();
-INotificationRepository notificationRepository = new SerializedNotificationRepository(
-    "notifications", "notification-preferences");
+INotificationRepository notificationRepository = new SqlNotificationRepository();
 var notificationService = new NotificationService(notificationRepository,
     [new SimulatedDelivery(DeliveryChannel.Email), new SimulatedDelivery(DeliveryChannel.Push)]);
 eventPublisher.Subscribe<NotificationRequestedV1>(request => notificationService.Handle(request));
