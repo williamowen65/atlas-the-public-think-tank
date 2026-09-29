@@ -74,10 +74,13 @@ public static class NodeDisplay
         Console.WriteLine();
         WriteWrapped($"{number}. {typeName} · ",
             visibility.IsHidden ? visibility.Notice : node.Title.Value);
+        Console.WriteLine();
         WriteBreadcrumb(ResolveBreadcrumb(node, nodes, nodeTypes, moderation));
         Console.WriteLine($"   By {authorName} · {node.Status}" +
             (includeCreatedDate ? $" · Created {node.CreatedAt:yyyy-MM-dd}" : string.Empty));
+        Console.WriteLine();
         WriteWrapped("   ", description);
+        Console.WriteLine();
         Console.WriteLine($"   Importance: {FormatVoteCount(voteCount)} votes · " +
             $"avg {FormatAverageVote(averageVote)} · " +
             $"my rating {FormatCurrentParticipantVote(currentParticipantVote)}");
@@ -117,9 +120,14 @@ public static class NodeDisplay
 
         Console.WriteLine();
         Console.WriteLine("ATLAS NODE");
+        Console.WriteLine();
         WriteWrapped("  ", $"{ResolveTypeName(node, nodeTypes)} · {(hidden ? visibility.Notice : node.Title.Value)}");
+        Console.WriteLine();
+        WriteBreadcrumb(ResolveBreadcrumb(node, nodes, nodeTypes, moderation), indent: 2);
         Console.WriteLine($"  By {authorName} · {node.Status} · Created {node.CreatedAt:yyyy-MM-dd} · Updated {node.UpdatedAt:yyyy-MM-dd}");
-        WriteBreadcrumb(ResolveBreadcrumb(node, nodes, nodeTypes, moderation));
+        Console.WriteLine();
+        WriteWrapped("  ", description);
+        Console.WriteLine();
         Console.WriteLine($"  Importance: {FormatVoteCount(voteCount)} votes · avg {FormatAverageVote(averageVote)} · my rating {FormatCurrentParticipantVote(currentParticipantVote)}");
         Console.WriteLine($"  Communities: {ResolveCommunities(node, communities, communityNodes)} · Comments: {ResolveCommentCount(node, comments)}");
         Console.WriteLine($"  Node ID: {node.Id}");
@@ -131,9 +139,6 @@ public static class NodeDisplay
             votes,
             votingParticipantId);
 
-        Console.WriteLine();
-        Console.WriteLine("DESCRIPTION");
-        Console.WriteLine(description);
         Console.WriteLine();
         Console.WriteLine("SUB-NODES");
 
@@ -356,16 +361,18 @@ public static class NodeDisplay
         return string.Join(" | ", ancestorPaths);
     }
 
-    private static void WriteBreadcrumb(string breadcrumb)
+    private static void WriteBreadcrumb(string breadcrumb, int indent = 3)
     {
+        var pathPrefix = new string(' ', indent) + "Path: ";
+        var continuation = new string(' ', pathPrefix.Length);
         var paths = breadcrumb.Split(" | ", StringSplitOptions.None);
         for (var pathIndex = 0; pathIndex < paths.Length; pathIndex++)
         {
             if (pathIndex > 0)
-                Console.WriteLine("     and");
+                Console.WriteLine(new string(' ', indent + 2) + "and");
             var segments = paths[pathIndex].Split(" → ", StringSplitOptions.None);
             for (var depth = 0; depth < segments.Length; depth++)
-                WriteWrapped(pathIndex == 0 && depth == 0 ? "   Path: " : "         ", segments[depth]);
+                WriteWrapped(pathIndex == 0 && depth == 0 ? pathPrefix : continuation, segments[depth]);
         }
     }
 
