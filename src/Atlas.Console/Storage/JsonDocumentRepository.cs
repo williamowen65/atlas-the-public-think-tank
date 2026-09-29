@@ -75,23 +75,18 @@ public sealed class JsonDocumentRepository : IDocumentRepository
 
     private T Read<T>(string path) where T : new()
     {
-        if (!File.Exists(path) || string.IsNullOrWhiteSpace(File.ReadAllText(path)))
+        if (!SqlStorage.Exists(path) || string.IsNullOrWhiteSpace(SqlStorage.ReadText(path)))
         {
             return new T();
         }
 
-        return JsonSerializer.Deserialize<T>(File.ReadAllText(path), _jsonOptions) ?? new T();
+        return JsonSerializer.Deserialize<T>(SqlStorage.ReadText(path), _jsonOptions) ?? new T();
     }
 
     private void Write<T>(string path, T value)
     {
-        var directory = Path.GetDirectoryName(path);
-        if (!string.IsNullOrWhiteSpace(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
 
-        File.WriteAllText(path, JsonSerializer.Serialize(value, _jsonOptions));
+        SqlStorage.WriteText(path, JsonSerializer.Serialize(value, _jsonOptions));
     }
 
     private static void Upsert<T>(List<T> items, Guid id, T replacement, Func<T, Guid> idSelector)
