@@ -78,12 +78,12 @@ public sealed class JsonParticipantRepository : IParticipantRepository
     /// <summary>Reads participant persistence records from JSON.</summary>
     private List<StoredParticipant> ReadStoredParticipants()
     {
-        if (!File.Exists(_filePath))
+        if (!SqlStorage.Exists(_filePath))
         {
             return [];
         }
 
-        var json = File.ReadAllText(_filePath);
+        var json = SqlStorage.ReadText(_filePath);
 
         if (string.IsNullOrWhiteSpace(json))
         {
@@ -100,15 +100,9 @@ public sealed class JsonParticipantRepository : IParticipantRepository
     private void WriteStoredParticipants(
         List<StoredParticipant> participants)
     {
-        var directory = Path.GetDirectoryName(_filePath);
-
-        if (!string.IsNullOrWhiteSpace(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
 
         var json = JsonSerializer.Serialize(participants, _jsonOptions);
-        File.WriteAllText(_filePath, json);
+        SqlStorage.WriteText(_filePath, json);
     }
 
     /// <summary>Maps a domain object to its data-only persistence representation.</summary>
