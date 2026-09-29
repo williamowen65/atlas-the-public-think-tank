@@ -31,6 +31,12 @@ Markdown documentation.
 - [Moderation Domain](workflows/Moderation/ModerationDomain.excalidraw) maps
   Node reporting, grouped moderator decisions, hidden visibility, author edits,
   review requests, restoration, stored history, and future integration points.
+- [In-Memory Event Bus](workflows/System/InMemoryEventBus.excalidraw) shows the
+  console host subscriptions, publication paths, exact-type lookup, synchronous
+  handler calls, and failure behavior.
+- [Notifications Domain](workflows/Notifications/NotificationsDomain.excalidraw) traces
+  completed comment and moderation actions through the event bus, `Handle`,
+  recipient preferences, JSON persistence, simulated delivery, and feed actions.
 - [The current-state context map](../architecture/CONTEXT-MAP.md) remains the
   authoritative inventory when the blackboard and written documentation differ.
 

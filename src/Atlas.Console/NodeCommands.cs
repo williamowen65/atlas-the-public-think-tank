@@ -1,5 +1,6 @@
 using Atlas.ConsoleApp.Eventing;
 using Atlas.Comments.Comments;
+using Atlas.Contracts.Notifications.V1;
 using Atlas.ConsoleApp.Comments;
 using Atlas.ConsoleApp.Communities;
 using Atlas.Communities.Communities;
@@ -312,7 +313,8 @@ public static class NodeCommands
                             new CommentService(
                                 comments,
                                 new NodeCommentTargetAvailability(nodes)),
-                            currentParticipant);
+                            currentParticipant,
+                            created => PublishCommentNotification(created, node, comments, eventPublisher));
                         break;
 
                     case "19":
@@ -322,7 +324,8 @@ public static class NodeCommands
                                 comments,
                                 new NodeCommentTargetAvailability(nodes)),
                             participants,
-                            currentParticipant);
+                            currentParticipant,
+                            created => PublishCommentNotification(created, node, comments, eventPublisher));
                         break;
 
                     case "20":
@@ -386,6 +389,16 @@ public static class NodeCommands
         }
 
         return currentParticipant;
+    }
+
+    private static void PublishCommentNotification(Comment created, Node node,
+        ICommentRepository comments, InMemoryEventPublisher publisher)
+    {
+        var parent = created.ParentCommentId is null ? null : comments.GetById(created.ParentCommentId.Value);
+        var recipient = parent?.AuthorParticipantId ?? node.AuthorId.Value;
+        publisher.Publish(new NotificationRequestedV1(created.Id.Value, recipient,
+            created.AuthorParticipantId, parent is null ? "NodeCommented" : "CommentReplied",
+            "Node", node.Id.Value, created.CreatedAt));
     }
 
     public static void ReportNode(Node node, Participant participant, ModerationService moderation)

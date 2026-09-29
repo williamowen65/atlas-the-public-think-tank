@@ -1224,3 +1224,27 @@ Atlas shall filter Nodes by optional inclusive creation-date boundaries while pr
 
 **Priority:** Must
 **Status:** Implemented in Console prototype; authenticated identity remains future work
+
+<a id="not-001"></a>
+## NOT-001 — Recipient notifications
+
+**Statement:** Atlas shall create a recipient-specific notification for a comment on a Node, a direct reply, a hidden or restored Node, or a decided report. It shall suppress self-notifications and duplicate source occurrences per recipient.
+
+**Priority:** Must
+**Status:** Console prototype; durable event delivery pending
+
+<a id="not-002"></a>
+## NOT-002 — Participant preferences and lifecycle
+
+**Statement:** A participant shall control in-app and future external channels by category and shall view only their own paged feed, mark items read and dismiss them. The initial defaults favor in-app delivery with no external channel enabled.
+
+**Priority:** Must
+**Status:** Console prototype
+
+<a id="not-003"></a>
+## NOT-003 — Delivery isolation
+
+**Statement:** External channel failures shall be recorded separately from notification read state. Email and push interfaces shall accept replaceable adapters; production delivery requires durable asynchronous processing and a bounded retry policy.
+
+**Priority:** Must
+**Status:** Simulated adapters implemented; production worker pending

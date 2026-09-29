@@ -4,6 +4,7 @@ using Atlas.Contracts.Graph.V1;
 namespace Atlas.ConsoleApp.Content;
 
 /// <summary>Observes Graph lifecycle events from the console host and checks related Content state.</summary>
+/// <remarks>Lives in Console because it only checks references and logs; archiving a node leaves its Content document intact.</remarks>
 public sealed class ObserveNodeLifecycleInContent
 {
     private readonly IDocumentRepository _documents;

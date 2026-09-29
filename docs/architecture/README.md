@@ -28,3 +28,5 @@ Today, Atlas.Console references the boundary projects directly and provides pers
 A future web application may first retain the same modular-monolith shape. If a boundary later becomes an independent service, its public application API and integration contracts form the migration seam.
 
 - [Moderation boundary and first workflow](MODERATION.md)
+
+- [Notifications boundary](NOTIFICATIONS.md) documents the PTT-102 initial slice and delivery seam.

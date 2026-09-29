@@ -33,3 +33,5 @@ Each workflow should record:
 9. Related requirements, ADRs, and tests
 
 A workflow describes coordination. It should not move domain invariants into the host.
+
+- [Notifications workflow](NOTIFICATIONS.md) traces event translation and recipient delivery.
