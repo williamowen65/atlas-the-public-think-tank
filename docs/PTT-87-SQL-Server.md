@@ -32,6 +32,7 @@ From the repository root, with the .NET 10 SDK installed:
 
 ```bash
 dotnet tool restore
+dotnet restore src/Atlas.Persistence/Atlas.Persistence.csproj
 dotnet ef migrations add AddReferentialIntegrity --project src/Atlas.Persistence --context AtlasDataContext --output-dir Migrations
 ```
 

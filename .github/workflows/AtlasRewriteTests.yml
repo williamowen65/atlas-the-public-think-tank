@@ -94,6 +94,7 @@ jobs:
       - name: Generate pending model changes for SQL tests
         run: |
           dotnet tool restore
+          dotnet restore src/Atlas.Persistence/Atlas.Persistence.csproj
           if dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence; then
             echo "The checked-in migrations match the model."
           else
