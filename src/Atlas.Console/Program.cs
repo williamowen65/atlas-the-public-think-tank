@@ -39,6 +39,18 @@ var dataDirectory = Path.GetFullPath(
         "..",
         "data"));
 
+var connectionString = configuration["ATLAS_SQL_CONNECTION_STRING"];
+if (string.IsNullOrWhiteSpace(connectionString))
+    throw new InvalidOperationException("Set ATLAS_SQL_CONNECTION_STRING to a SQL Server connection string.");
+
+SqlStorage.Configure(connectionString);
+if (args.Contains("--import-demo-data", StringComparer.OrdinalIgnoreCase))
+{
+    SqlStorage.ImportDemoData(dataDirectory);
+    System.Console.WriteLine("Demo data imported into SQL Server. Existing IDs were preserved.");
+    return;
+}
+
 var nodeDataFilePath = Path.Combine(
     dataDirectory,
     "nodes.json");
