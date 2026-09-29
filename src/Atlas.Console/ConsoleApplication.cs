@@ -1026,8 +1026,8 @@ public sealed class ConsoleApplication
         Console.WriteLine();
 
         Console.WriteLine(
-            File.Exists(filePath)
-                ? File.ReadAllText(filePath)
+            Storage.SqlStorage.Exists(filePath)
+                ? Storage.SqlStorage.ReadText(filePath)
                 : "The data file has not been created yet.");
 
         ConsoleUi.Pause();
