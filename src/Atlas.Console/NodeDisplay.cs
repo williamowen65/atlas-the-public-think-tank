@@ -77,7 +77,9 @@ public static class NodeDisplay
         WriteBreadcrumb(ResolveBreadcrumb(node, nodes, nodeTypes, moderation));
         Console.WriteLine($"   By {authorName} · {node.Status}" +
             (includeCreatedDate ? $" · Created {node.CreatedAt:yyyy-MM-dd}" : string.Empty));
+        Console.WriteLine();
         WriteWrapped("   ", description);
+        Console.WriteLine();
         Console.WriteLine($"   Importance: {FormatVoteCount(voteCount)} votes · " +
             $"avg {FormatAverageVote(averageVote)} · " +
             $"my rating {FormatCurrentParticipantVote(currentParticipantVote)}");
@@ -118,8 +120,11 @@ public static class NodeDisplay
         Console.WriteLine();
         Console.WriteLine("ATLAS NODE");
         WriteWrapped("  ", $"{ResolveTypeName(node, nodeTypes)} · {(hidden ? visibility.Notice : node.Title.Value)}");
-        Console.WriteLine($"  By {authorName} · {node.Status} · Created {node.CreatedAt:yyyy-MM-dd} · Updated {node.UpdatedAt:yyyy-MM-dd}");
         WriteBreadcrumb(ResolveBreadcrumb(node, nodes, nodeTypes, moderation));
+        Console.WriteLine($"  By {authorName} · {node.Status} · Created {node.CreatedAt:yyyy-MM-dd} · Updated {node.UpdatedAt:yyyy-MM-dd}");
+        Console.WriteLine();
+        WriteWrapped("  ", description);
+        Console.WriteLine();
         Console.WriteLine($"  Importance: {FormatVoteCount(voteCount)} votes · avg {FormatAverageVote(averageVote)} · my rating {FormatCurrentParticipantVote(currentParticipantVote)}");
         Console.WriteLine($"  Communities: {ResolveCommunities(node, communities, communityNodes)} · Comments: {ResolveCommentCount(node, comments)}");
         Console.WriteLine($"  Node ID: {node.Id}");
@@ -131,9 +136,6 @@ public static class NodeDisplay
             votes,
             votingParticipantId);
 
-        Console.WriteLine();
-        Console.WriteLine("DESCRIPTION");
-        Console.WriteLine(description);
         Console.WriteLine();
         Console.WriteLine("SUB-NODES");
 
