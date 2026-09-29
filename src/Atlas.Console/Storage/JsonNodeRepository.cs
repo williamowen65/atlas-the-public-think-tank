@@ -148,12 +148,12 @@ public sealed class JsonNodeRepository : INodeRepository, IDiscoveryNodeReader
     /// <summary>Reads node persistence records from JSON.</summary>
     private List<StoredNode> ReadStoredNodes()
     {
-        if (!File.Exists(_filePath))
+        if (!SqlStorage.Exists(_filePath))
         {
             return [];
         }
 
-        var json = File.ReadAllText(_filePath);
+        var json = SqlStorage.ReadText(_filePath);
 
         if (string.IsNullOrWhiteSpace(json))
         {
@@ -169,15 +169,9 @@ public sealed class JsonNodeRepository : INodeRepository, IDiscoveryNodeReader
     /// <summary>Writes node persistence records to JSON.</summary>
     private void WriteStoredNodes(List<StoredNode> nodes)
     {
-        var directory = Path.GetDirectoryName(_filePath);
-
-        if (!string.IsNullOrWhiteSpace(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
 
         var json = JsonSerializer.Serialize(nodes, _jsonOptions);
-        File.WriteAllText(_filePath, json);
+        SqlStorage.WriteText(_filePath, json);
     }
 
     /// <summary>Maps a domain object to its data-only persistence representation.</summary>
