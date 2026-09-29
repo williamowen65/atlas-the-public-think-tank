@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace Atlas.ConsoleApp.Storage;
 
-internal static class JsonStorage
+internal static class SerializedStorage
 {
     public static T? Read<T>(string filePath, JsonSerializerOptions options)
     {

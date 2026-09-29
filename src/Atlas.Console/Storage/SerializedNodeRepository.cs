@@ -9,7 +9,7 @@ using Atlas.ConsoleApp.Discovery;
 namespace Atlas.ConsoleApp.Storage;
 
 /// <summary>Persists Graph nodes as JSON and reconstitutes them as domain aggregates.</summary>
-public sealed class JsonNodeRepository : INodeRepository, IDiscoveryNodeReader
+public sealed class SerializedNodeRepository : INodeRepository, IDiscoveryNodeReader
 {
     private readonly string _filePath;
     private readonly INodeTypeRepository _nodeTypes;
@@ -23,7 +23,7 @@ public sealed class JsonNodeRepository : INodeRepository, IDiscoveryNodeReader
     };
 
     /// <summary>Initializes the JSON adapter and ensures its backing file is available.</summary>
-    public JsonNodeRepository(
+    public SerializedNodeRepository(
         string filePath,
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
@@ -145,7 +145,7 @@ public sealed class JsonNodeRepository : INodeRepository, IDiscoveryNodeReader
         return storedNodes;
     }
 
-    /// <summary>Reads node persistence records from JSON.</summary>
+    /// <summary>Reads node persistence records from a serialized collection.</summary>
     private List<StoredNode> ReadStoredNodes()
     {
         if (!SqlStorage.Exists(_filePath))
@@ -166,7 +166,7 @@ public sealed class JsonNodeRepository : INodeRepository, IDiscoveryNodeReader
                ?? [];
     }
 
-    /// <summary>Writes node persistence records to JSON.</summary>
+    /// <summary>Writes node persistence records to a serialized collection.</summary>
     private void WriteStoredNodes(List<StoredNode> nodes)
     {
 

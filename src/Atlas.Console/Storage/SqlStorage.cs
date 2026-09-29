@@ -21,7 +21,7 @@ public static class SqlStorage
     private static AtlasDataContext Open() => new(
         _connectionString ?? throw new InvalidOperationException("SQL storage has not been configured."));
 
-    private static string Name(string path) => Path.GetFileName(path);
+    private static string Name(string collectionKey) => Path.GetFileNameWithoutExtension(collectionKey);
 
     public static bool Exists(string path)
     {
@@ -72,7 +72,7 @@ public static class SqlStorage
         foreach (var (name, payload) in DemoData.Collections)
             database.Collections.Add(new SqlCollection
             {
-                Name = name,
+                Name = Name(name),
                 Payload = payload
             });
 

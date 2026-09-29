@@ -4,11 +4,11 @@ using Atlas.Communities.Nodes;
 
 namespace Atlas.ConsoleApp.Storage;
 
-public sealed class JsonCommunityNodeRepository : ICommunityNodeRepository
+public sealed class SerializedCommunityNodeRepository : ICommunityNodeRepository
 {
     private readonly string _filePath;
     private readonly JsonSerializerOptions _options = new() { WriteIndented = true };
-    public JsonCommunityNodeRepository(string filePath) => _filePath = filePath;
+    public SerializedCommunityNodeRepository(string filePath) => _filePath = filePath;
 
     public IReadOnlyCollection<CommunityNodeAssociation> GetByCommunity(CommunityId id) => Read().Where(x => x.CommunityId == id.Value).Select(ToDomain).ToList();
     public IReadOnlyCollection<CommunityNodeAssociation> GetByNode(Guid id) => Read().Where(x => x.NodeId == id).Select(ToDomain).ToList();
@@ -24,16 +24,16 @@ public sealed class JsonCommunityNodeRepository : ICommunityNodeRepository
             AssociatedByParticipantId = association.AssociatedByParticipantId,
             AssociatedAt = association.AssociatedAt
         });
-        JsonStorage.Write(_filePath, stored, _options);
+        SerializedStorage.Write(_filePath, stored, _options);
     }
 
     public void Remove(CommunityId communityId, Guid nodeId)
     {
         var stored = Read();
         stored.RemoveAll(x => x.CommunityId == communityId.Value && x.NodeId == nodeId);
-        JsonStorage.Write(_filePath, stored, _options);
+        SerializedStorage.Write(_filePath, stored, _options);
     }
 
-    private List<StoredCommunityNode> Read() => JsonStorage.Read<List<StoredCommunityNode>>(_filePath, _options) ?? [];
+    private List<StoredCommunityNode> Read() => SerializedStorage.Read<List<StoredCommunityNode>>(_filePath, _options) ?? [];
     private static CommunityNodeAssociation ToDomain(StoredCommunityNode x) => new(new CommunityId(x.CommunityId), x.NodeId, x.AssociatedByParticipantId, x.AssociatedAt);
 }

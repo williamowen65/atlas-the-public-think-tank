@@ -4,7 +4,7 @@ using Atlas.Graph.Nodes.NodeTypes;
 namespace Atlas.ConsoleApp.Storage;
 
 /// <summary>Persists Graph node-type definitions as JSON and reconstitutes them as domain objects.</summary>
-public sealed class JsonNodeTypeRepository : INodeTypeRepository
+public sealed class SerializedNodeTypeRepository : INodeTypeRepository
 {
     private readonly string _filePath;
 
@@ -14,7 +14,7 @@ public sealed class JsonNodeTypeRepository : INodeTypeRepository
     };
 
     /// <summary>Initializes the JSON adapter and ensures its backing file is available.</summary>
-    public JsonNodeTypeRepository(string filePath)
+    public SerializedNodeTypeRepository(string filePath)
     {
         _filePath = filePath;
     }
@@ -58,7 +58,7 @@ public sealed class JsonNodeTypeRepository : INodeTypeRepository
         WriteStoredTypes(storedTypes);
     }
 
-    /// <summary>Reads node-type persistence records from JSON.</summary>
+    /// <summary>Reads node-type persistence records from a serialized collection.</summary>
     private List<StoredNodeType> ReadStoredTypes()
     {
         if (!SqlStorage.Exists(_filePath))
@@ -79,7 +79,7 @@ public sealed class JsonNodeTypeRepository : INodeTypeRepository
                ?? [];
     }
 
-    /// <summary>Writes node-type persistence records to JSON.</summary>
+    /// <summary>Writes node-type persistence records to a serialized collection.</summary>
     private void WriteStoredTypes(List<StoredNodeType> nodeTypes)
     {
 

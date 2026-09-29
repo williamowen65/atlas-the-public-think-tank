@@ -4,7 +4,7 @@ using Atlas.Participants.Participants;
 namespace Atlas.ConsoleApp.Storage;
 
 /// <summary>Persists participant profiles as JSON and reconstitutes them as domain objects.</summary>
-public sealed class JsonParticipantRepository : IParticipantRepository
+public sealed class SerializedParticipantRepository : IParticipantRepository
 {
     private readonly string _filePath;
 
@@ -14,7 +14,7 @@ public sealed class JsonParticipantRepository : IParticipantRepository
     };
 
     /// <summary>Initializes the JSON adapter and ensures its backing file is available.</summary>
-    public JsonParticipantRepository(string filePath)
+    public SerializedParticipantRepository(string filePath)
     {
         _filePath = filePath;
     }
@@ -75,7 +75,7 @@ public sealed class JsonParticipantRepository : IParticipantRepository
         WriteStoredParticipants(storedParticipants);
     }
 
-    /// <summary>Reads participant persistence records from JSON.</summary>
+    /// <summary>Reads participant persistence records from a serialized collection.</summary>
     private List<StoredParticipant> ReadStoredParticipants()
     {
         if (!SqlStorage.Exists(_filePath))
@@ -96,7 +96,7 @@ public sealed class JsonParticipantRepository : IParticipantRepository
                ?? [];
     }
 
-    /// <summary>Writes participant persistence records to JSON.</summary>
+    /// <summary>Writes participant persistence records to a serialized collection.</summary>
     private void WriteStoredParticipants(
         List<StoredParticipant> participants)
     {

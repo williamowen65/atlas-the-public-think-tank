@@ -4,10 +4,10 @@ using Atlas.Notifications;
 namespace Atlas.ConsoleApp.Storage;
 
 /// <summary>Prototype file adapter; SQL must enforce the occurrence/recipient unique key atomically.</summary>
-public sealed class JsonNotificationRepository(string notificationsPath, string preferencesPath) : INotificationRepository
+public sealed class SerializedNotificationRepository(string notificationsPath, string preferencesPath) : INotificationRepository
 {
     private readonly JsonSerializerOptions _options = new() { WriteIndented = true };
-    private List<Notification> Read() => JsonStorage.Read<List<Notification>>(notificationsPath, _options) ?? [];
+    private List<Notification> Read() => SerializedStorage.Read<List<Notification>>(notificationsPath, _options) ?? [];
     public Notification? Find(Guid id) => Read().SingleOrDefault(item => item.Id == id);
     public Notification? FindOccurrence(Guid occurrenceId, Guid recipientId) =>
         Read().SingleOrDefault(item => item.OccurrenceId == occurrenceId && item.RecipientParticipantId == recipientId);
@@ -20,17 +20,17 @@ public sealed class JsonNotificationRepository(string notificationsPath, string 
         var items = Read();
         var index = items.FindIndex(existing => existing.Id == item.Id);
         if (index < 0) items.Add(item); else items[index] = item;
-        JsonStorage.Write(notificationsPath, items, _options);
+        SerializedStorage.Write(notificationsPath, items, _options);
     }
     public NotificationPreferences Preferences(Guid participantId) =>
-        (JsonStorage.Read<List<NotificationPreferences>>(preferencesPath, _options) ?? [])
+        (SerializedStorage.Read<List<NotificationPreferences>>(preferencesPath, _options) ?? [])
             .SingleOrDefault(item => item.ParticipantId == participantId)
         ?? new NotificationPreferences { ParticipantId = participantId };
     public void SavePreferences(NotificationPreferences preferences)
     {
-        var items = JsonStorage.Read<List<NotificationPreferences>>(preferencesPath, _options) ?? [];
+        var items = SerializedStorage.Read<List<NotificationPreferences>>(preferencesPath, _options) ?? [];
         var index = items.FindIndex(item => item.ParticipantId == preferences.ParticipantId);
         if (index < 0) items.Add(preferences); else items[index] = preferences;
-        JsonStorage.Write(preferencesPath, items, _options);
+        SerializedStorage.Write(preferencesPath, items, _options);
     }
 }

@@ -4,15 +4,15 @@ using Atlas.Graph.Reactions;
 
 namespace Atlas.ConsoleApp.Storage;
 
-/// <summary>Persists Graph node-reaction associations in a dedicated JSON file.</summary>
-public sealed class JsonNodeReactionRepository : INodeReactionRepository
+/// <summary>Persists Graph node-reaction associations in a serialized SQL collection.</summary>
+public sealed class SerializedNodeReactionRepository : INodeReactionRepository
 {
     private readonly string _filePath;
     private readonly object _gate = new();
     private readonly JsonSerializerOptions _jsonOptions = new() { WriteIndented = true };
 
-    /// <summary>Initializes the adapter for its dedicated data file.</summary>
-    public JsonNodeReactionRepository(string filePath)
+    /// <summary>Initializes the adapter for its dedicated collection.</summary>
+    public SerializedNodeReactionRepository(string filePath)
     {
         _filePath = filePath;
     }

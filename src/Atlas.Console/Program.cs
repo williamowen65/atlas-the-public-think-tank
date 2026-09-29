@@ -29,16 +29,6 @@ var configuration = new ConfigurationBuilder()
     .AddEnvironmentVariables()
     .Build();
 
-var dataDirectory = Path.GetFullPath(
-    Path.Combine(
-        AppContext.BaseDirectory,
-        "..",
-        "..",
-        "..",
-        "..",
-        "..",
-        "data"));
-
 var connectionString = configuration["ATLAS_SQL_CONNECTION_STRING"];
 if (string.IsNullOrWhiteSpace(connectionString))
     throw new InvalidOperationException("Set ATLAS_SQL_CONNECTION_STRING to a SQL Server connection string.");
@@ -51,72 +41,56 @@ if (args.Contains("--seed-demo", StringComparer.OrdinalIgnoreCase))
     return;
 }
 
-var nodeDataFilePath = Path.Combine(
-    dataDirectory,
-    "nodes.json");
+var nodeCollectionKey = "nodes";
 
-var nodeTypeDataFilePath = Path.Combine(
-    dataDirectory,
-    "node-types.json");
+var nodeTypeCollectionKey = "node-types";
 
-var documentDataFilePath = Path.Combine(
-    dataDirectory,
-    "documents.json");
+var documentCollectionKey = "documents";
 
-var blockDataFilePath = Path.Combine(
-    dataDirectory,
-    "blocks.json");
+var blockCollectionKey = "blocks";
 
-var participantDataFilePath = Path.Combine(
-    dataDirectory,
-    "participants.json");
+var participantCollectionKey = "participants";
 
-var voteDataFilePath = Path.Combine(
-    dataDirectory,
-    "votes.json");
+var voteCollectionKey = "votes";
 
-var tagDefinitionDataFilePath = Path.Combine(
-    dataDirectory,
-    "reaction-definitions.json");
+var tagDefinitionCollectionKey = "reaction-definitions";
 
-var nodeTagDataFilePath = Path.Combine(
-    dataDirectory,
-    "node-reactions.json");
+var nodeTagCollectionKey = "node-reactions";
 
-var communityDataFilePath = Path.Combine(dataDirectory, "communities.json");
-var communityMembershipDataFilePath = Path.Combine(dataDirectory, "community-memberships.json");
-var communityNodeDataFilePath = Path.Combine(dataDirectory, "community-nodes.json");
-var commentDataFilePath = Path.Combine(dataDirectory, "comments.json");
-var moderationDataFilePath = Path.Combine(dataDirectory, "moderation-cases.json");
+var communityCollectionKey = "communities";
+var communityMembershipCollectionKey = "community-memberships";
+var communityNodeCollectionKey = "community-nodes";
+var commentCollectionKey = "comments";
+var moderationCollectionKey = "moderation-cases";
 
 INodeTypeRepository nodeTypeRepository =
-    new JsonNodeTypeRepository(nodeTypeDataFilePath);
+    new SerializedNodeTypeRepository(nodeTypeCollectionKey);
 
 SeedSystemNodeTypes(nodeTypeRepository);
 
 IDocumentRepository documentRepository =
-    new JsonDocumentRepository(
-        documentDataFilePath,
-        blockDataFilePath);
+    new SerializedDocumentRepository(
+        documentCollectionKey,
+        blockCollectionKey);
 
 IParticipantRepository participantRepository =
-    new JsonParticipantRepository(participantDataFilePath);
+    new SerializedParticipantRepository(participantCollectionKey);
 
 IVoteRepository voteRepository =
-    new JsonVoteRepository(voteDataFilePath);
+    new SerializedVoteRepository(voteCollectionKey);
 
 IReactionDefinitionRepository tagDefinitionRepository =
-    new JsonReactionDefinitionRepository(tagDefinitionDataFilePath);
+    new SerializedReactionDefinitionRepository(tagDefinitionCollectionKey);
 
 INodeReactionRepository nodeTagRepository =
-    new JsonNodeReactionRepository(nodeTagDataFilePath);
+    new SerializedNodeReactionRepository(nodeTagCollectionKey);
 
-ICommunityRepository communityRepository = new JsonCommunityRepository(communityDataFilePath);
-ICommunityMembershipRepository communityMembershipRepository = new JsonCommunityMembershipRepository(communityMembershipDataFilePath);
-ICommunityNodeRepository communityNodeRepository = new JsonCommunityNodeRepository(communityNodeDataFilePath);
+ICommunityRepository communityRepository = new SerializedCommunityRepository(communityCollectionKey);
+ICommunityMembershipRepository communityMembershipRepository = new SerializedCommunityMembershipRepository(communityMembershipCollectionKey);
+ICommunityNodeRepository communityNodeRepository = new SerializedCommunityNodeRepository(communityNodeCollectionKey);
 var communityService = new CommunityService(communityRepository, communityMembershipRepository, communityNodeRepository);
-ICommentRepository commentRepository = new JsonCommentRepository(commentDataFilePath);
-IModerationCaseRepository moderationCases = new JsonModerationCaseRepository(moderationDataFilePath);
+ICommentRepository commentRepository = new SerializedCommentRepository(commentCollectionKey);
+IModerationCaseRepository moderationCases = new SerializedModerationCaseRepository(moderationCollectionKey);
 var moderatorAuthorization = new ConfiguredModeratorAuthorization(
     configuration["ATLAS_MODERATOR_PARTICIPANT_IDS"] is { } configuredIds
         ? configuredIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
@@ -128,8 +102,8 @@ var legacyParticipant =
     EnsureDefaultDemoParticipant(participantRepository);
 
 INodeRepository nodeRepository =
-    new JsonNodeRepository(
-        nodeDataFilePath,
+    new SerializedNodeRepository(
+        nodeCollectionKey,
         nodeTypeRepository,
         documentRepository,
         new NodeAuthorId(legacyParticipant.Id.Value));
@@ -163,8 +137,8 @@ IDiscoveryCandidateSource discoverySource = new RepositoryDiscoveryCandidateSour
 IDiscoveryService discovery = new DiscoveryService(discoverySource);
 
 var eventPublisher = new InMemoryEventPublisher();
-INotificationRepository notificationRepository = new JsonNotificationRepository(
-    Path.Combine(dataDirectory, "notifications.json"), Path.Combine(dataDirectory, "notification-preferences.json"));
+INotificationRepository notificationRepository = new SerializedNotificationRepository(
+    "notifications", "notification-preferences");
 var notificationService = new NotificationService(notificationRepository,
     [new SimulatedDelivery(DeliveryChannel.Email), new SimulatedDelivery(DeliveryChannel.Push)]);
 eventPublisher.Subscribe<NotificationRequestedV1>(request => notificationService.Handle(request));
@@ -189,22 +163,22 @@ var application = new ConsoleApplication(
     tagDefinitionRepository,
     nodeTagRepository,
     eventPublisher,
-    nodeDataFilePath,
-    nodeTypeDataFilePath,
-    documentDataFilePath,
-    participantDataFilePath,
-    voteDataFilePath,
-    tagDefinitionDataFilePath,
-    nodeTagDataFilePath,
-    communityDataFilePath,
-    communityMembershipDataFilePath,
-    communityNodeDataFilePath,
+    nodeCollectionKey,
+    nodeTypeCollectionKey,
+    documentCollectionKey,
+    participantCollectionKey,
+    voteCollectionKey,
+    tagDefinitionCollectionKey,
+    nodeTagCollectionKey,
+    communityCollectionKey,
+    communityMembershipCollectionKey,
+    communityNodeCollectionKey,
     communityRepository,
     communityMembershipRepository,
     communityNodeRepository,
     communityService,
     commentRepository,
-    commentDataFilePath,
+    commentCollectionKey,
     discovery,
     legacyParticipant,
     moderation,

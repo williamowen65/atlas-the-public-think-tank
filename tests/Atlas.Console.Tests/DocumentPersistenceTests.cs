@@ -73,12 +73,12 @@ public sealed class DocumentPersistenceTests
                 new ChartReferenceBlock(Guid.NewGuid(), "Baseline chart", createdAt)
             };
             var document = new Document(blocks.Select(block => block.Id), createdAt);
-            var repository = new JsonDocumentRepository(documentPath, blockPath);
+            var repository = new SerializedDocumentRepository(documentPath, blockPath);
 
             foreach (var block in blocks) repository.SaveBlock(block);
             repository.Save(document);
 
-            var reloaded = new JsonDocumentRepository(documentPath, blockPath);
+            var reloaded = new SerializedDocumentRepository(documentPath, blockPath);
             var reloadedDocument = reloaded.GetById(document.Id);
 
             Assert.IsNotNull(reloadedDocument);
@@ -105,7 +105,7 @@ public sealed class DocumentPersistenceTests
         try
         {
             var now = DateTimeOffset.UtcNow;
-            var repository = new JsonDocumentRepository(documentPath, blockPath);
+            var repository = new SerializedDocumentRepository(documentPath, blockPath);
             repository.SaveBlock(new MarkdownTextBlock("# Text", now));
             repository.SaveBlock(new ImageBlock("https://example.com/image.jpg", "Coast", null, now));
 

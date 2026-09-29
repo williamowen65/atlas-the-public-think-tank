@@ -3,12 +3,12 @@ using Atlas.Communities.Communities;
 
 namespace Atlas.ConsoleApp.Storage;
 
-public sealed class JsonCommunityRepository : ICommunityRepository
+public sealed class SerializedCommunityRepository : ICommunityRepository
 {
     private readonly string _filePath;
     private readonly JsonSerializerOptions _options = new() { WriteIndented = true };
 
-    public JsonCommunityRepository(string filePath) => _filePath = filePath;
+    public SerializedCommunityRepository(string filePath) => _filePath = filePath;
 
     public IReadOnlyCollection<Community> GetAll() => Read().Select(ToDomain).ToList();
 
@@ -41,8 +41,8 @@ public sealed class JsonCommunityRepository : ICommunityRepository
         Write(stored);
     }
 
-    private List<StoredCommunity> Read() => JsonStorage.Read<List<StoredCommunity>>(_filePath, _options) ?? [];
-    private void Write(List<StoredCommunity> items) => JsonStorage.Write(_filePath, items, _options);
+    private List<StoredCommunity> Read() => SerializedStorage.Read<List<StoredCommunity>>(_filePath, _options) ?? [];
+    private void Write(List<StoredCommunity> items) => SerializedStorage.Write(_filePath, items, _options);
 
     private static Community ToDomain(StoredCommunity stored) => Community.Reconstitute(
         new CommunityId(stored.Id), stored.Name, stored.Description, stored.OwnerParticipantId,

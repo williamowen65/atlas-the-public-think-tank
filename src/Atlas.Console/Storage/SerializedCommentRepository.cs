@@ -4,12 +4,12 @@ using Atlas.Comments.Comments;
 namespace Atlas.ConsoleApp.Storage;
 
 /// <summary>JSON adapter for the Comments boundary while Atlas uses file persistence.</summary>
-public sealed class JsonCommentRepository : ICommentRepository
+public sealed class SerializedCommentRepository : ICommentRepository
 {
     private readonly string _filePath;
     private readonly JsonSerializerOptions _options = new() { WriteIndented = true };
 
-    public JsonCommentRepository(string filePath) => _filePath = filePath;
+    public SerializedCommentRepository(string filePath) => _filePath = filePath;
 
     public Comment? GetById(CommentId id)
     {
@@ -39,10 +39,10 @@ public sealed class JsonCommentRepository : ICommentRepository
         };
         var index = items.FindIndex(x => x.Id == replacement.Id);
         if (index >= 0) items[index] = replacement; else items.Add(replacement);
-        JsonStorage.Write(_filePath, items, _options);
+        SerializedStorage.Write(_filePath, items, _options);
     }
 
-    private List<StoredComment> Read() => JsonStorage.Read<List<StoredComment>>(_filePath, _options) ?? [];
+    private List<StoredComment> Read() => SerializedStorage.Read<List<StoredComment>>(_filePath, _options) ?? [];
 
     private static Comment ToDomain(StoredComment x) => Comment.Reconstitute(
         new CommentId(x.Id),

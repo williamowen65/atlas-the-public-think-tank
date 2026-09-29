@@ -125,11 +125,11 @@ public sealed class ModerationWorkflowTests
         var path = Path.Combine(Path.GetTempPath(), $"atlas-moderation-{Guid.NewGuid()}.json");
         try
         {
-            var service = new ModerationService(new JsonModerationCaseRepository(path), new Moderator(_moderator));
+            var service = new ModerationService(new SerializedModerationCaseRepository(path), new Moderator(_moderator));
             var reported = service.ReportNode(_node, _reporter, "A Node", "spam", "evidence", DateTimeOffset.UtcNow);
             service.DecideNode(_moderator, _node, ModerationDecision.HideNode,
                 "Reviewed", DateTimeOffset.UtcNow, PublicModerationReason.Harassment);
-            var loaded = new JsonModerationCaseRepository(path).GetById(reported.Id);
+            var loaded = new SerializedModerationCaseRepository(path).GetById(reported.Id);
             Assert.IsNotNull(loaded);
             Assert.AreEqual(ModerationStatus.Actioned, loaded.Status);
             Assert.AreEqual("Reviewed", loaded.DecisionReason);

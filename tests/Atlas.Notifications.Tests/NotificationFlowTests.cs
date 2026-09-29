@@ -16,7 +16,7 @@ public sealed class NotificationFlowTests
         {
             var path = Path.Combine(directory, "notifications.json");
             var preferencesPath = Path.Combine(directory, "preferences.json");
-            var repository = new JsonNotificationRepository(path, preferencesPath);
+            var repository = new SerializedNotificationRepository(path, preferencesPath);
             var service = new NotificationService(repository, []);
             var recipient = Guid.NewGuid();
             var request = new NotificationRequestedV1(Guid.NewGuid(), recipient, Guid.NewGuid(),
@@ -24,7 +24,7 @@ public sealed class NotificationFlowTests
             var first = service.Handle(request)!;
             Assert.AreEqual(first.Id, service.Handle(request)!.Id);
             service.MarkRead(recipient, first.Id);
-            var reloaded = new JsonNotificationRepository(path, preferencesPath).Page(recipient, 0, 10);
+            var reloaded = new SerializedNotificationRepository(path, preferencesPath).Page(recipient, 0, 10);
             Assert.HasCount(1, reloaded);
             Assert.IsNotNull(reloaded[0].ReadAt);
             Assert.Throws<UnauthorizedAccessException>(() => service.Dismiss(Guid.NewGuid(), first.Id));
@@ -41,7 +41,7 @@ public sealed class NotificationFlowTests
         Directory.CreateDirectory(directory);
         try
         {
-            var repository = new JsonNotificationRepository(Path.Combine(directory, "notifications.json"),
+            var repository = new SerializedNotificationRepository(Path.Combine(directory, "notifications.json"),
                 Path.Combine(directory, "preferences.json"));
             var recipient = Guid.NewGuid();
             var preferences = repository.Preferences(recipient);

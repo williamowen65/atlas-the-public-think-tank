@@ -4,11 +4,11 @@ using Atlas.Communities.Memberships;
 
 namespace Atlas.ConsoleApp.Storage;
 
-public sealed class JsonCommunityMembershipRepository : ICommunityMembershipRepository
+public sealed class SerializedCommunityMembershipRepository : ICommunityMembershipRepository
 {
     private readonly string _filePath;
     private readonly JsonSerializerOptions _options = new() { WriteIndented = true };
-    public JsonCommunityMembershipRepository(string filePath) => _filePath = filePath;
+    public SerializedCommunityMembershipRepository(string filePath) => _filePath = filePath;
 
     public IReadOnlyCollection<CommunityMembership> GetByCommunity(CommunityId id) => Read().Where(x => x.CommunityId == id.Value).Select(ToDomain).ToList();
     public IReadOnlyCollection<CommunityMembership> GetByParticipant(Guid id) => Read().Where(x => x.ParticipantId == id).Select(ToDomain).ToList();
@@ -30,9 +30,9 @@ public sealed class JsonCommunityMembershipRepository : ICommunityMembershipRepo
         };
         var index = stored.FindIndex(x => x.CommunityId == replacement.CommunityId && x.ParticipantId == replacement.ParticipantId);
         if (index >= 0) stored[index] = replacement; else stored.Add(replacement);
-        JsonStorage.Write(_filePath, stored, _options);
+        SerializedStorage.Write(_filePath, stored, _options);
     }
 
-    private List<StoredCommunityMembership> Read() => JsonStorage.Read<List<StoredCommunityMembership>>(_filePath, _options) ?? [];
+    private List<StoredCommunityMembership> Read() => SerializedStorage.Read<List<StoredCommunityMembership>>(_filePath, _options) ?? [];
     private static CommunityMembership ToDomain(StoredCommunityMembership x) => CommunityMembership.Reconstitute(new CommunityId(x.CommunityId), x.ParticipantId, x.JoinedAt, x.LeftAt);
 }

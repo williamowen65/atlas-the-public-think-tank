@@ -3,15 +3,15 @@ using Atlas.Graph.Reactions;
 
 namespace Atlas.ConsoleApp.Storage;
 
-/// <summary>Persists reusable Graph reaction definitions in a dedicated JSON file.</summary>
-public sealed class JsonReactionDefinitionRepository : IReactionDefinitionRepository
+/// <summary>Persists reusable Graph reaction definitions in a serialized SQL collection.</summary>
+public sealed class SerializedReactionDefinitionRepository : IReactionDefinitionRepository
 {
     private readonly string _filePath;
     private readonly object _gate = new();
     private readonly JsonSerializerOptions _jsonOptions = new() { WriteIndented = true };
 
-    /// <summary>Initializes the adapter for its dedicated data file.</summary>
-    public JsonReactionDefinitionRepository(string filePath)
+    /// <summary>Initializes the adapter for its dedicated collection.</summary>
+    public SerializedReactionDefinitionRepository(string filePath)
     {
         _filePath = filePath;
     }

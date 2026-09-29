@@ -7,7 +7,7 @@ using System.Text.Json;
 
 namespace Atlas.ConsoleApp.Storage
 {
-    public sealed class JsonVoteRepository : IVoteRepository
+    public sealed class SerializedVoteRepository : IVoteRepository
     {
 
         private readonly string _filePath;
@@ -18,12 +18,12 @@ namespace Atlas.ConsoleApp.Storage
         };
 
         /// <summary>Initializes the JSON adapter and ensures its backing file is available.</summary>
-        public JsonVoteRepository(string filePath)
+        public SerializedVoteRepository(string filePath)
         {
             _filePath = filePath;
         }
 
-        /// <summary>Reads Vote persistence records from JSON.</summary>
+        /// <summary>Reads Vote persistence records from a serialized collection.</summary>
         private List<StoredVote> ReadStoredVotes()
         {
             if (!SqlStorage.Exists(_filePath))
@@ -44,7 +44,7 @@ namespace Atlas.ConsoleApp.Storage
                    ?? [];
         }
 
-        /// <summary>Writes Vote persistence records to JSON.</summary>
+        /// <summary>Writes Vote persistence records to a serialized collection.</summary>
         private void WriteStoredVotes(
             List<StoredVote> votes)
         {

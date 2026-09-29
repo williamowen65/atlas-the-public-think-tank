@@ -14,9 +14,9 @@ public sealed class CommunityRepositoryTests
         var directory = Path.Combine(Path.GetTempPath(), "AtlasCommunityTests", Guid.NewGuid().ToString());
         try
         {
-            var communities = new JsonCommunityRepository(Path.Combine(directory, "communities.json"));
-            var memberships = new JsonCommunityMembershipRepository(Path.Combine(directory, "memberships.json"));
-            var nodes = new JsonCommunityNodeRepository(Path.Combine(directory, "nodes.json"));
+            var communities = new SerializedCommunityRepository(Path.Combine(directory, "communities.json"));
+            var memberships = new SerializedCommunityMembershipRepository(Path.Combine(directory, "memberships.json"));
+            var nodes = new SerializedCommunityNodeRepository(Path.Combine(directory, "nodes.json"));
             var owner = Guid.NewGuid();
             var nodeId = Guid.NewGuid();
             var created = new DateTimeOffset(2026, 9, 20, 12, 0, 0, TimeSpan.Zero);

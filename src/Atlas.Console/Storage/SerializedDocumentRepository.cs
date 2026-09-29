@@ -9,7 +9,7 @@ namespace Atlas.ConsoleApp.Storage;
 /// JSON adapter for the Content repository boundary. Documents store ordered
 /// references; blocks are stored separately as discriminated records.
 /// </summary>
-public sealed class JsonDocumentRepository : IDocumentRepository
+public sealed class SerializedDocumentRepository : IDocumentRepository
 {
     private readonly string _documentFilePath;
     private readonly string _blockFilePath;
@@ -21,7 +21,7 @@ public sealed class JsonDocumentRepository : IDocumentRepository
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    public JsonDocumentRepository(string documentFilePath, string blockFilePath)
+    public SerializedDocumentRepository(string documentFilePath, string blockFilePath)
     {
         _documentFilePath = documentFilePath;
         _blockFilePath = blockFilePath;

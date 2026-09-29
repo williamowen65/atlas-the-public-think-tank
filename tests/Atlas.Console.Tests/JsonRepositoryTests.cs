@@ -1,4 +1,4 @@
-﻿using Atlas.ConsoleApp.Storage;
+using Atlas.ConsoleApp.Storage;
 using Atlas.Voting;
 using Atlas.Voting.Target;
 using Atlas.Voting.Votes;
@@ -21,7 +21,7 @@ namespace Atlas.Console.Tests
                 → reloaded Vote
          */
         [TestMethod]
-        public void JsonVoteRepository_SavedVoteCanBeReloaded()
+        public void SerializedVoteRepository_SavedVoteCanBeReloaded()
         {
             var temporaryDirectory = Path.Combine(
                 Path.GetTempPath(),
@@ -35,7 +35,7 @@ namespace Atlas.Console.Tests
             try
             {
                 var repository =
-                    new JsonVoteRepository(filePath);
+                    new SerializedVoteRepository(filePath);
 
                 var target =
                     new NodeVoteTarget(Guid.NewGuid());
@@ -93,7 +93,7 @@ namespace Atlas.Console.Tests
 
         /// <summary>Verifies that node-reaction vote targets survive JSON persistence.</summary>
         [TestMethod]
-        public void JsonVoteRepository_NodeReactionVoteCanBeReloaded()
+        public void SerializedVoteRepository_NodeReactionVoteCanBeReloaded()
         {
             var temporaryDirectory = Path.Combine(
                 Path.GetTempPath(),
@@ -103,7 +103,7 @@ namespace Atlas.Console.Tests
 
             try
             {
-                var repository = new JsonVoteRepository(filePath);
+                var repository = new SerializedVoteRepository(filePath);
                 var original = new Vote(
                     new NodeReactionVoteTarget(Guid.NewGuid()),
                     new ParticipantId(Guid.NewGuid()),
@@ -130,7 +130,7 @@ namespace Atlas.Console.Tests
         /// are loaded by a new JSON repository instance.
         /// </summary>
         [TestMethod]
-        public void JsonVoteRepository_ReloadedVoteCanBeFoundByParticipantAndTarget()
+        public void SerializedVoteRepository_ReloadedVoteCanBeFoundByParticipantAndTarget()
         {
             var temporaryDirectory = Path.Combine(
                 Path.GetTempPath(),
@@ -150,7 +150,7 @@ namespace Atlas.Console.Tests
                     new NodeVoteTarget(Guid.NewGuid());
 
                 var originalRepository =
-                    new JsonVoteRepository(filePath);
+                    new SerializedVoteRepository(filePath);
 
                 var originalVote =
                     new Vote(target, participantId, 7);
@@ -158,7 +158,7 @@ namespace Atlas.Console.Tests
                 originalRepository.Save(originalVote);
 
                 var reloadedRepository =
-                    new JsonVoteRepository(filePath);
+                    new SerializedVoteRepository(filePath);
 
                 var reloadedVote =
                     reloadedRepository.GetByParticipantAndTarget(
@@ -191,7 +191,7 @@ namespace Atlas.Console.Tests
         /// while preserving identity and creation time.
         /// </summary>
         [TestMethod]
-        public void JsonVoteRepository_ChangedVoteReplacesStoredRecord()
+        public void SerializedVoteRepository_ChangedVoteReplacesStoredRecord()
         {
             var temporaryDirectory = Path.Combine(
                 Path.GetTempPath(),
@@ -205,7 +205,7 @@ namespace Atlas.Console.Tests
             try
             {
                 var repository =
-                    new JsonVoteRepository(filePath);
+                    new SerializedVoteRepository(filePath);
 
                 var target =
                     new NodeVoteTarget(Guid.NewGuid());
@@ -234,7 +234,7 @@ namespace Atlas.Console.Tests
                     originalVote;
 
                 var reloadedRepository =
-                    new JsonVoteRepository(filePath);
+                    new SerializedVoteRepository(filePath);
 
                 var reloadedVote =
                     reloadedRepository.GetById(
@@ -277,7 +277,7 @@ namespace Atlas.Console.Tests
         /// Verifies that undo physically removes the current JSON record.
         /// </summary>
         [TestMethod]
-        public void JsonVoteRepository_UndoneVoteIsAbsentAfterReload()
+        public void SerializedVoteRepository_UndoneVoteIsAbsentAfterReload()
         {
             var temporaryDirectory = Path.Combine(
                 Path.GetTempPath(),
@@ -291,7 +291,7 @@ namespace Atlas.Console.Tests
             try
             {
                 var repository =
-                    new JsonVoteRepository(filePath);
+                    new SerializedVoteRepository(filePath);
 
                 var target =
                     new NodeVoteTarget(Guid.NewGuid());
@@ -308,7 +308,7 @@ namespace Atlas.Console.Tests
                 repository.Delete(vote.Id);
 
                 var reloadedRepository =
-                    new JsonVoteRepository(filePath);
+                    new SerializedVoteRepository(filePath);
 
                 Assert.IsNull(
                     reloadedRepository.GetById(vote.Id));
