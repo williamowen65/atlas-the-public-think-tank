@@ -1,4 +1,4 @@
-﻿using Atlas.ConsoleApp.Storage;
+using Atlas.ConsoleApp.Storage;
 using Atlas.Voting;
 using Atlas.Voting.Data;
 using Atlas.Voting.Target;
@@ -26,12 +26,12 @@ namespace Atlas.ConsoleApp.Storage
         /// <summary>Reads Vote persistence records from JSON.</summary>
         private List<StoredVote> ReadStoredVotes()
         {
-            if (!File.Exists(_filePath))
+            if (!SqlStorage.Exists(_filePath))
             {
                 return [];
             }
 
-            var json = File.ReadAllText(_filePath);
+            var json = SqlStorage.ReadText(_filePath);
 
             if (string.IsNullOrWhiteSpace(json))
             {
@@ -48,15 +48,9 @@ namespace Atlas.ConsoleApp.Storage
         private void WriteStoredVotes(
             List<StoredVote> votes)
         {
-            var directory = Path.GetDirectoryName(_filePath);
-
-            if (!string.IsNullOrWhiteSpace(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
 
             var json = JsonSerializer.Serialize(votes, _jsonOptions);
-            File.WriteAllText(_filePath, json);
+            SqlStorage.WriteText(_filePath, json);
         }
 
         private static StoredVote ToStorage(Vote vote)
