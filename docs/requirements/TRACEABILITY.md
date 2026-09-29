@@ -4,6 +4,9 @@ This RTM provides the broad implementation and verification view. Follow a requi
 
 | Requirement | Summary | Priority | Status | Implementation evidence | Verification evidence |
 |---|---|---:|---|---|---|
+| [SEC-001](REQUIREMENTS.md#sec-001) | Production host derives the actor from authenticated identity | Must | **Approved** — no authenticated API host yet; Console participant selection is a demo only | [Console actor selection](../../src/Atlas.Console/ConsoleApplication.cs) | —; future API tests must attempt forged participant IDs |
+| [SEC-002](REQUIREMENTS.md#sec-002) | Protected mutations check ownership before changing state | Must | **Partial** — Graph and Participants checks are tested; dependent workflows and production host need review | [Node.cs](../../src/Atlas.Graph/Node.cs)<br>[UpdateParticipantProfile.cs](../../src/Atlas.Participants/Profiles/UpdateParticipantProfile.cs)<br>[DescriptionBlockCommands.cs](../../src/Atlas.Console/DescriptionBlockCommands.cs) | [Graph security tests](../../tests/Atlas.Graph.Tests/SecurityAuthorizationTests.cs)<br>[existing Node authorization tests](../../tests/Atlas.Graph.Tests/NodeAuthorizationTests.cs)<br>[profile ownership tests](../../tests/Atlas.Participants.Tests/UpdateParticipantProfileTests.cs) |
+| [SEC-003](REQUIREMENTS.md#sec-003) | Moderator reads and decisions require capability | Must | **Partial** — service checks are tested; authenticated actor binding remains future work | [ModerationService.cs](../../src/Atlas.Moderation/ModerationService.cs)<br>[ConfiguredModeratorAuthorization.cs](../../src/Atlas.Console/Moderation/ConfiguredModeratorAuthorization.cs) | [Moderation security tests](../../tests/Atlas.Moderation.Tests/SecurityAuthorizationTests.cs)<br>[workflow tests](../../tests/Atlas.Moderation.Tests/ModerationWorkflowTests.cs) |
 | [DIS-001](REQUIREMENTS.md#dis-001) | Consumer-facing Node lists use ranked Discovery results | Must | **Verified** | [DiscoveryService.cs](../../src/Atlas.Discovery/DiscoveryService.cs)<br>[INodeRepository.cs](../../src/Atlas.Graph/Nodes/INodeRepository.cs)<br>[ConsoleApplication.cs](../../src/Atlas.Console/ConsoleApplication.cs) | [DiscoveryServiceTests.cs](../../tests/Atlas.Discovery.Tests/DiscoveryServiceTests.cs) |
 | [DIS-002](REQUIREMENTS.md#dis-002) | Discovery supports Community filtering | Must | **Verified** | [DiscoveryQuery.cs](../../src/Atlas.Discovery/DiscoveryQuery.cs)<br>[DiscoveryService.cs](../../src/Atlas.Discovery/DiscoveryService.cs) | [DiscoveryServiceTests.cs](../../tests/Atlas.Discovery.Tests/DiscoveryServiceTests.cs) |
 | [DIS-003](REQUIREMENTS.md#dis-003) | Search is a Discovery capability | Must | **Verified** | [DiscoveryService.cs](../../src/Atlas.Discovery/DiscoveryService.cs)<br>[RepositoryDiscoveryCandidateSource.cs](../../src/Atlas.Console/Discovery/RepositoryDiscoveryCandidateSource.cs) | [DiscoveryServiceTests.cs](../../tests/Atlas.Discovery.Tests/DiscoveryServiceTests.cs) |
@@ -69,6 +72,11 @@ This RTM provides the broad implementation and verification view. Follow a requi
 | [NFR-002](REQUIREMENTS.md#nfr-002) | Integration events survive process failure | Should | **Deferred** | — | — |
 
 ## Review notes and known gaps
+
+<a id="sec-001"></a>
+### SEC-001 through SEC-003 — Actor provenance and authorization
+
+Authentication establishes who is calling; authorization decides what that actor may do. The current Console deliberately allows selecting a demo participant. Its participant ID is passed to Graph, Participants, and Moderation checks, but no login proves that the person using the Console owns that ID. The future ASP.NET Identity/BFF host must derive the actor from its authenticated session and ignore any actor ID supplied in request content. Domain tests prove checks against the ID they receive; they cannot prove where that ID came from. Add host-level forgery and unauthenticated-request tests when the API exists.
 
 <a id="rel-003"></a>
 ### REL-003 — Cycle prevention is host-local
