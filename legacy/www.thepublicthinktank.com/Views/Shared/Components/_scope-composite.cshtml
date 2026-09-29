@@ -1,0 +1,56 @@
+﻿@using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common
+@model Scope
+
+<style>
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: auto 1fr; /* first column fits content, second takes remaining space */
+        gap: 0.5rem 1rem; /* row gap, column gap */
+        align-items: start;
+    }
+
+    .key {
+        font-weight: bold;
+        text-align: right;
+    }
+
+    .value {
+        /* optional: style the values */
+    }
+
+</style>
+
+
+<div class="float-end composite-scope p-1 border border-top-0 border-end-0 ms-1 " style="">
+    <div class="info-grid">
+        @if (Model.Scales != null && Model.Scales.Any())
+        {
+            <div class="key">Scale:</div>
+            <div class="value">
+                @Html.Raw(string.Join(",<br/>", Model.Scales))
+            </div>
+        }
+        @if (Model.Domains != null && Model.Domains.Any())
+        {
+            <div class="key">Domain:</div>
+            <div class="value">@Html.Raw(string.Join(",<br/>", Model.Domains))</div>
+        }
+        @if (Model.EntityTypes != null && Model.EntityTypes.Any())
+        {
+            <div class="key">Entity:</div>
+            <div class="value">@Html.Raw(string.Join(",<br/>", Model.EntityTypes))</div>
+        }
+        @if (Model.Timeframes != null && Model.Timeframes.Any())
+        {
+            <div class="key">Timeframe:</div>
+            <div class="value">@Html.Raw(string.Join(",<br/>", Model.Timeframes))</div>
+        }
+        @if (Model.Boundaries != null && Model.Boundaries.Any())
+        {
+            <div class="key">Boundaries:</div>
+            <div class="value">@Html.Raw(string.Join(",<br/>", Model.Boundaries))</div>
+        }
+    </div>
+
+</div>

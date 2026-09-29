@@ -1,0 +1,17 @@
+﻿@using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common
+@using atlas_the_public_think_tank.Models.Enums
+@using atlas_the_public_think_tank.Models.ViewModel.AjaxVM
+@using atlas_the_public_think_tank.Models.ViewModel.UI_VM.FormComponentVM
+@model Issue_CreateOrEdit_AjaxVM
+
+@*
+Client side scripts tied to this view: ContentCreate.js
+*@
+
+
+@* Create new issue description  *@
+<form class="border-1 border card mb-3 issue-editor" asp-action="RnDEditIssue" asp-controller="RnD" method="post">
+    @await Html.PartialAsync("~/Views/RnD/RnDIssueForm.cshtml", Model)
+</form>
+
+

@@ -1,0 +1,107 @@
+﻿@using System.ComponentModel.DataAnnotations
+@using atlas_the_public_think_tank.Models.ViewModel.UI_VM.FormComponentVM
+@model FormInputVM
+
+@{
+
+    // Parameters
+    var propertyName = Model.PropertyName;
+    var labelText = propertyName;
+    var rows = Model.Rows ?? 1;
+    var uniqueId = $"field_{Guid.NewGuid().ToString("N")}";
+
+
+    /// NOTE: This FormInput always will have a max value
+    // Default values in case we can't get the attributes
+    int maxLength = 300;
+    int minLength = 0;
+    bool isRequired = false;
+
+
+    try
+    {
+        // Get property info
+        var propertyInfo = Model.Model.GetType().GetProperty(propertyName);
+
+        // Safe way to get attributes
+        if (propertyInfo != null)
+        {
+            var attributes = propertyInfo.GetCustomAttributes(false);
+            foreach (var attr in attributes)
+            {
+                if (attr is StringLengthAttribute stringLengthAttr)
+                {
+                    maxLength = stringLengthAttr.MaximumLength;
+                    minLength = stringLengthAttr.MinimumLength;
+                    break;
+                }
+                if (attr is RequiredAttribute requiredBool)
+                {
+                    isRequired = true;
+                }
+                if (attr is DisplayAttribute displayAttr)
+                {
+                    labelText = displayAttr.Name;  
+                }
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        // Silently handle any exceptions and use default values
+    }
+
+    // Get the actual value from the model (For Edit operation)
+    object propertyValue = null;
+    try
+    {
+        propertyValue = Model.Model.GetType().GetProperty(propertyName)?.GetValue(Model.Model, null);
+    }
+    catch { }
+
+}
+
+
+
+<style>
+    .form-field .form-field-container {
+        border: 1px solid rgb(220, 225, 231);
+        border-radius: var(--bs-border-radius);
+        position: relative;
+    }
+
+        .form-field .form-label {
+            font-size: x-large;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            left: 10px;
+            transition: top 0.5s ease, left 0.5s ease, transform 0.5s ease, font-size 0.5s ease;
+        }
+
+        .form-field.active .form-label {
+            top: 0;
+            left: 10px;
+            font-size: smaller;
+            transform: translateY(0%);
+        }
+
+        .form-field textarea {
+            border: none;
+            padding: 21px 10px 0px;
+            resize: none;
+            height: 54px;
+        }
+</style>
+
+
+
+<div id="@uniqueId" class="mb-4 form-field form-element form-input">
+    <div class="form-field-container">
+    <label for="@propertyName" class="form-label">@labelText @(isRequired ? "*" : "")</label>
+    <textarea id="@propertyName" name="@propertyName" class="form-control" rows="@rows">@(propertyValue as string)</textarea>
+    <small data-max-length="@maxLength" class="text-muted char-counter position-absolute" style="right: 0">0/@maxLength</small>
+    </div>
+    <span data-valmsg-for="@propertyName" class="text-danger"></span>
+</div>
+

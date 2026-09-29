@@ -1,0 +1,10 @@
+﻿@using Microsoft.Extensions.Options
+@using atlas_the_public_think_tank.Email.Models
+@using atlas_the_public_think_tank.Utilities
+@inject IOptions<EmailSettings> EmailSettings
+
+<p style="margin:0; font-family: Consolas, monospace, Arial, sans-serif; color:#999; border-bottom:1px solid #dee2e6;">
+    <a href="@UrlHelpers.EnsureProtocol(EmailSettings.Value.BaseUrl)" style="color:#999; text-decoration:none;">
+        <strong>Atlas</strong> – The Public Think Tank
+    </a>
+</p>

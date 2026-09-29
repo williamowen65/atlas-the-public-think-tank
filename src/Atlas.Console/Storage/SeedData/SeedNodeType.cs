@@ -1,0 +1,121 @@
+using Atlas.Persistence;
+
+namespace Atlas.ConsoleApp.Storage;
+
+internal static partial class DemoData
+{
+    private static void SeedNodeType(AtlasDataContext database)
+    {
+        database.NodeTypeRows.AddRange(new NodeTypeRow[]
+        {
+            new NodeTypeRow
+            {
+                Id = Guid.Parse("53057519-9a26-4b02-a884-56dcf82159ed"),
+                Name = "Issue",
+                Description = "A problem or concern to investigate.",
+                OwnerId = null,
+                IsSystemDefined = true,
+                IsArchived = false,
+                AutoPluralize = true,
+                CreatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                UpdatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+            },
+            new NodeTypeRow
+            {
+                Id = Guid.Parse("a2e82ee2-12ba-49fc-9160-c2b864d4f42f"),
+                Name = "Question",
+                Description = "A question that invites answers.",
+                OwnerId = null,
+                IsSystemDefined = true,
+                IsArchived = false,
+                AutoPluralize = true,
+                CreatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                UpdatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+            },
+            new NodeTypeRow
+            {
+                Id = Guid.Parse("0328981f-7b76-4bcb-ad04-99b4ed74fd23"),
+                Name = "Idea",
+                Description = "A proposed concept or possibility.",
+                OwnerId = null,
+                IsSystemDefined = true,
+                IsArchived = false,
+                AutoPluralize = true,
+                CreatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                UpdatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+            },
+            new NodeTypeRow
+            {
+                Id = Guid.Parse("60d8ba45-8b78-4593-838b-ffd15af69746"),
+                Name = "Solution",
+                Description = "A proposed response to a problem.",
+                OwnerId = null,
+                IsSystemDefined = true,
+                IsArchived = false,
+                AutoPluralize = true,
+                CreatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                UpdatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+            },
+            new NodeTypeRow
+            {
+                Id = Guid.Parse("df57b39d-efba-4398-84e0-6a7d4214287f"),
+                Name = "Evidence",
+                Description = "Information supporting or challenging a claim.",
+                OwnerId = null,
+                IsSystemDefined = true,
+                IsArchived = false,
+                AutoPluralize = false,
+                CreatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                UpdatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+            },
+            new NodeTypeRow
+            {
+                Id = Guid.Parse("d0ac2786-c2a4-407c-9b7c-6e82fd8121c9"),
+                Name = "Relationship",
+                Description = "A connection involving multiple nodes.",
+                OwnerId = null,
+                IsSystemDefined = true,
+                IsArchived = false,
+                AutoPluralize = true,
+                CreatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                UpdatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+            },
+            new NodeTypeRow
+            {
+                Id = Guid.Parse("01659fa4-84b0-4d6e-89c0-2c964132f5c3"),
+                Name = "Location",
+                Description = "A place associated with another node.",
+                OwnerId = null,
+                IsSystemDefined = true,
+                IsArchived = false,
+                AutoPluralize = true,
+                CreatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                UpdatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+            },
+            new NodeTypeRow
+            {
+                Id = Guid.Parse("a3000000-0000-4000-8000-000000000001"),
+                Name = "Goal",
+                Description = "A desired outcome to work toward.",
+                OwnerId = null,
+                IsSystemDefined = true,
+                IsArchived = false,
+                AutoPluralize = true,
+                CreatedAt = DateTimeOffset.Parse("2026-09-28T15:20:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                UpdatedAt = DateTimeOffset.Parse("2026-09-28T15:20:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+            },
+            new NodeTypeRow
+            {
+                Id = Guid.Parse("a3000000-0000-4000-8000-000000000002"),
+                Name = "Vision",
+                Description = "A picture of a possible future.",
+                OwnerId = null,
+                IsSystemDefined = true,
+                IsArchived = false,
+                AutoPluralize = true,
+                CreatedAt = DateTimeOffset.Parse("2026-09-28T15:20:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                UpdatedAt = DateTimeOffset.Parse("2026-09-28T15:20:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+            },
+        });
+    }
+}

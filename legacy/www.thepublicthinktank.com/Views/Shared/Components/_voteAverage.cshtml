@@ -1,0 +1,25 @@
+﻿@using atlas_the_public_think_tank.Models.ViewModel
+@using atlas_the_public_think_tank.Models.ViewModel.CRUD.ContentItem_Common.ContentItemVote
+@*
+   A small portion of the vote dial (Top square - holds the average vote value)
+*@
+@model ContentItemVotes_ReadVM
+
+<div class="vote-average" id="vote-average-@Model.ContentID">
+    @(Model.AverageVote % 1 == 0 ? Model.AverageVote.ToString("F0") : Model.AverageVote.ToString("F1"))
+
+</div>
+
+<style>
+   .vote-average {
+       box-sizing: border-box;
+       height: 40px;
+       width: 60px;
+       border: 3px solid;
+       margin: 8px;
+       display: flex;
+       justify-content: center;
+       align-items: center;
+       font-weight: bold;
+   }
+</style>

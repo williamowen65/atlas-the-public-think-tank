@@ -1,0 +1,94 @@
+name: Bug report
+description: Report reproducible behavior in the current Atlas rewrite
+title: "[Bug]: "
+labels:
+  - bug
+  - needs-discussion
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping improve Atlas. Please describe current behavior in the rewrite rather than the application preserved under `legacy/`.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Give a concise description of the problem and its impact.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should happen?
+      description: Describe the expected behavior.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How can we reproduce it?
+      description: Include the smallest useful sequence, inputs, or data.
+      placeholder: |
+        1. Run ...
+        2. Choose ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected areas
+      description: Select every area where the problem appears. Choose Unsure or multiple areas when the boundary is not yet clear.
+      multiple: true
+      options:
+        - Graph
+        - Content
+        - Participants
+        - Voting
+        - Communities
+        - Comments
+        - Discovery
+        - Moderation
+        - Contracts
+        - Console
+        - Documentation
+        - Tests or build
+        - Unsure or multiple areas
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include operating system, .NET version, branch or commit, and any relevant configuration.
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Add logs, screenshots, failing tests, or other evidence. Remove secrets and personal information.
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: Suggested verification
+      description: What test or observable behavior would prove the bug is fixed?
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched open and closed issues for an existing report.
+          required: true
+        - label: This report concerns the current rewrite, not the application under `legacy/`.
+          required: true
+        - label: I removed secrets, credentials, and personal information.
+          required: true

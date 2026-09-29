@@ -1,0 +1,127 @@
+﻿@using atlas_the_public_think_tank.Models.Enums
+@using atlas_the_public_think_tank.Models.ViewModel.AjaxVM
+@using atlas_the_public_think_tank.Models.ViewModel.UI_VM.FormComponentVM
+@model Solution_CreateOrEdit_AjaxVM
+
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+
+    bool isEditMode = Model.Solution.SolutionID != null;
+}
+
+
+<form class="border-1 border card mb-3 solution-editor" data-content-type="solution" data-content-id="@Model.Solution.SolutionID" data-form-url="/edit-solution">
+    @*
+        asp-controller="Solution" asp-action="CreateSolution" method="post"
+        These are controlled via the Ajax in ContentCreate.js
+    *@
+        @Html.AntiForgeryToken()
+
+        @if (!isEditMode)
+        {
+        
+            <h5 class="card-header text-center ">
+                Solution <span class="solution-count"></span>
+            </h5>
+        }
+        <div class="card-header text-center bg-success" style="background: linear-gradient(-299deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.3));">
+            <h5 class="m-0">A solution is a proposed answer, idea, or approach to an issue.</h5> 
+      
+            <small>(This should be addressing a parent issue)</small>
+    </div>
+    <div class="card-body d-flex flex-md-row flex-column">
+        <div class="flex-grow-1 me-md-4">
+
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            @if (Model.Solution.SolutionID != null)
+            {
+                <input type="hidden" name="SolutionID" id="SolutionID" value="@Model.Solution.SolutionID" />
+            }
+
+            @await Html.PartialAsync("~/Views/Shared/FormComponents/FormInput.cshtml", new FormInputVM()
+            {
+                Model = Model.Solution,
+                PropertyName = "Title"
+            })
+
+            @await Html.PartialAsync("~/Views/Shared/FormComponents/FormMarkdownEditor/FormMarkdownEditor.cshtml", new FormMarkdownEditorVM()
+            {
+                Model = Model.Solution,
+                PropertyName = "Content",
+                Rows = 10
+            })
+            
+
+            </div>
+        <div class="col-md-4 col-12">
+
+            <fieldset style="all:revert" class="parent-fieldset">
+
+                @{
+                    List<object> issueIdList = new List<object>();
+                    string? selectedParentIssueValue = null;
+                    string? select2TemplateCallback = null;
+                    string? parentIssueIdFromQuery = Context.Request.Query["parentIssueID"].FirstOrDefault();
+                    bool hasParentIssueIdQuery = !string.IsNullOrEmpty(parentIssueIdFromQuery);
+                    if (Model.Solution.ParentIssue != null)
+                    {
+                        issueIdList.Add(Model.Solution.ParentIssue);
+                        selectedParentIssueValue = Model.Solution.ParentIssue.IssueID.ToString();
+                        select2TemplateCallback = $"/issue/get-issue-select2-template/{selectedParentIssueValue}";
+                    }
+                } 
+
+                <div class="parentIssueSelectContainer">
+                @await Html.PartialAsync("~/Views/Shared/FormComponents/FormSelect.cshtml",
+                new FormSelectVM()
+                {
+                    Model = Model.Solution.ParentIssue,
+                    FieldLabel = "Parent Issue",
+                    FieldPlaceholder = "-- Select a Parent Issue --",
+                    PropertyName = "ParentIssueID",
+                    TextField = "Title",
+                    ValueField = "IssueID",
+                    ListItems = issueIdList,
+                    DisabledField = hasParentIssueIdQuery,
+                    SelectedValue = selectedParentIssueValue,
+                    Select2TemplateCallback = select2TemplateCallback,
+                    Select2ConfigurationCallback = "getParentIssueSelect2Config",
+                    Select2ListenerCallback = "setParentIssueSelect2Listener"
+                })
+                </div>
+            </fieldset>
+
+
+                @await Html.PartialAsync("~/Views/Shared/FormComponents/_ScopeFields.cshtml", Model.Solution.Scope)
+
+
+            </div>
+        </div>
+        <div class="card-footer">
+          
+
+        <div class=" ms-auto d-flex">
+            @if (Model.Solution.ContentStatus == null)
+            {
+                <button class="cancel-edit-solution-button btn btn-sm btn-secondary fw-bold" type="submit">Cancel</button>
+
+                <button class="create-solution-draft btn btn-sm btn-secondary fw-bold ms-auto" type="submit">Save as Draft</button>
+                @await Html.PartialAsync("~/Views/Solution/FormComponents/_PublishSolutionButton.cshtml", Model)
+            }
+            @if (Model.Solution.ContentStatus == ContentStatus.Draft)
+            {
+                <button class="cancel-edit-solution-button btn btn-sm btn-secondary fw-bold" type="submit">Cancel</button>
+                <button class="update-solution-draft btn btn-sm btn-secondary fw-bold ms-auto" type="submit">Update Draft</button>
+                @await Html.PartialAsync("~/Views/Solution/FormComponents/_PublishSolutionButton.cshtml", Model)
+            }
+            @if (Model.Solution.ContentStatus == ContentStatus.Published)
+            {
+                <button class="cancel-edit-solution-button btn btn-sm btn-secondary fw-bold" type="submit">Cancel</button>
+                @await Html.PartialAsync("~/Views/Solution/FormComponents/_PublishSolutionButton.cshtml", Model)
+            }
+        </div>
+        </div>
+    </form>

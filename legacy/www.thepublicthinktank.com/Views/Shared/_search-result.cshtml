@@ -1,0 +1,82 @@
+﻿@using atlas_the_public_think_tank.Data.RawSQL
+@using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers
+@using atlas_the_public_think_tank.Models.ViewModel.CRUD.Issue
+@using atlas_the_public_think_tank.Data.CRUD
+@using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution
+@inject Read _read;
+
+@model List<SearchResult>
+
+
+<div class="search-results-container">
+    @if (Model != null && Model.Any())
+    {
+        foreach (var result in Model)
+        {
+            @if (result.Type == "Issue")
+            {
+                Issue_ReadVM? issue = await _read.Issue(result.Id, new ContentFilter());
+                @await Html.PartialAsync("~/Views/Issue/_issue-card.cshtml", issue)
+            } else
+            {
+
+                Solution_ReadVM? solution = await _read.Solution(result.Id, new ContentFilter());
+                @await Html.PartialAsync("~/Views/Solution/_solution-card.cshtml", solution)
+            }
+        }
+    }
+    else
+    {
+        <div class="">
+            <p>No search results found. Please try different search terms.</p>
+        </div>
+    }
+</div>
+
+<style>
+    .search-results-container {
+    }
+    
+    .search-result-item {
+        padding: 15px 0;
+    }
+    
+    .search-result-title {
+        margin-bottom: 5px;
+    }
+    
+    .search-result-title a {
+        color: #007bff;
+        text-decoration: none;
+    }
+    
+    .search-result-title a:hover {
+        text-decoration: underline;
+    }
+    
+    .search-result-excerpt {
+        margin-bottom: 10px;
+        color: #555;
+    }
+    
+    .search-result-metadata {
+        font-size: 0.85em;
+        color: #777;
+    }
+    
+    .search-result-date, .search-result-category {
+        margin-right: 15px;
+    }
+    
+    .search-result-divider {
+        margin: 0;
+        border-top: 1px solid #eee;
+    }
+    
+    .no-results {
+        padding: 20px;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        text-align: center;
+    }
+</style>

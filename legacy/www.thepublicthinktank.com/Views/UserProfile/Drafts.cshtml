@@ -1,0 +1,141 @@
+﻿@using Microsoft.AspNetCore.Identity
+@inject UserManager<AppUser> UserManager
+@using atlas_the_public_think_tank.Data.DatabaseEntities.Users
+@using atlas_the_public_think_tank.Models.ViewModel.PageVM
+@using atlas_the_public_think_tank.Models.ViewModel.UI_VM
+@model UserDraft_PageVM
+
+@{
+    ViewData["Title"] = "Drafts";
+
+    // The user must be signed in already to be viewing this pages (safe to assume User is logged in)
+    string userId = UserManager.GetUserId(User)!;
+
+}
+
+<div class="container py-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h1 class="h3 mb-0">Your Drafts</h1>
+        <small class="text-muted">Work-in-progress issues and solutions</small>
+    </div>
+
+    <ul class="nav nav-tabs" id="nav-tabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active"
+                    id="issues-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#issues-pane"
+                    type="button"
+                    role="tab"
+                    aria-controls="issues-pane"
+                    aria-selected="true">
+                Issues
+                <span class="badge bg-secondary ms-1 issue-draft-count">
+                    @* Note that FilteredCount is used here, not AbsoluteCount *@
+                    @Model.paginatedUserIssuesDrafts.ContentCount.FilteredCount
+                </span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link"
+                    id="solutions-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#solutions-pane"
+                    type="button"
+                    role="tab"
+                    aria-controls="solutions-pane"
+                    aria-selected="false">
+                Solutions
+                <span class="badge bg-secondary ms-1 solution-draft-count">
+                    @* Note that FilteredCount is used here, not AbsoluteCount *@
+                    @Model.paginatedUserSolutionsDrafts.ContentCount.FilteredCount
+                </span>
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content pt-3" id="draftsTabContent">
+        <!-- Issue Drafts -->
+        <div class="tab-pane fade show active"
+             id="issues-pane"
+             role="tabpanel"
+             aria-labelledby="issues-tab">
+            <div class="feed" data-feed="issue-drafts">
+                <div id="draft-issue-content">
+                    @if (Model.paginatedUserIssuesDrafts?.Issues != null && Model.paginatedUserIssuesDrafts.Issues.Any())
+                    {
+                        @await Html.PartialAsync("~/Views/Issue/_issue-cards.cshtml", Model.paginatedUserIssuesDrafts.Issues)
+                    }
+                    else
+                    {
+                        <div class="empty-feed text-muted">
+                            You don't have any issue drafts yet.
+                        </div>
+                    }
+                </div>
+
+                @await Html.PartialAsync("~/Views/Shared/Components/_pagination-button.cshtml", new PaginationButton_VM
+                {
+                    ElementId = "fetchPaginatedDraftUserIssues",
+                    ContentType = "draft issues",
+                    Target = "#draft-issue-content",
+                    Url = "/user-profile/getPaginatedUserDraftIssues/" + @userId,
+                    CurrentPage = Model.paginatedUserIssuesDrafts.CurrentPage,
+                    PageSize = Model.paginatedUserIssuesDrafts.PageSize,
+                    @* Note that FilteredCount is used here, not AbsoluteCount *@
+                    TotalCount = Model.paginatedUserIssuesDrafts.ContentCount.FilteredCount,
+                })
+            </div>
+        </div>
+
+        <!-- Solution Drafts -->
+        <div class="tab-pane fade"
+             id="solutions-pane"
+             role="tabpanel"
+             aria-labelledby="solutions-tab">
+            <div class="feed" data-feed="solution-drafts">
+                <div id="draft-solution-content">
+                    @if (Model.paginatedUserSolutionsDrafts?.Solutions != null && Model.paginatedUserSolutionsDrafts.Solutions.Any())
+                    {
+                        @await Html.PartialAsync("~/Views/Solution/_solution-cards.cshtml", Model.paginatedUserSolutionsDrafts.Solutions)
+                    }
+                    else
+                    {
+                        <div class="empty-feed text-muted">
+                            You don't have any solution drafts yet.
+                        </div>
+                    }
+                </div>
+
+                @await Html.PartialAsync("~/Views/Shared/Components/_pagination-button.cshtml", new PaginationButton_VM
+                {
+                    ElementId = "fetchPaginatedDraftUserSolutions",
+                    ContentType = "draft solutions",
+                    Target = "#draft-solution-content",
+                    Url = "/user-profile/getPaginatedUserDraftSolutions/" + @userId,
+                    CurrentPage = Model.paginatedUserSolutionsDrafts.CurrentPage,
+                    PageSize = Model.paginatedUserSolutionsDrafts.PageSize,
+                @* Note that FilteredCount is used here, not AbsoluteCount *@
+                    TotalCount = Model.paginatedUserSolutionsDrafts.ContentCount.FilteredCount,
+                })
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        initTabbedForum({
+            paginationButtonId: "fetchPaginatedDraftUserIssues",
+            tabId: 'issues-tab'
+        });
+        initTabbedForum({
+            paginationButtonId: "fetchPaginatedDraftUserSolutions",
+            tabId: 'solutions-tab' 
+        });
+    })
+
+</script>
+
+<script src="~/js/Site/remember-tab.js" asp-append-version="true"></script> 

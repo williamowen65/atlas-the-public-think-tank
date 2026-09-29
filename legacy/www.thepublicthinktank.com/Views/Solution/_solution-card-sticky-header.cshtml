@@ -1,0 +1,12 @@
+﻿@using atlas_the_public_think_tank.Models.ViewModel.CRUD.Solution
+@model Solution_ReadVM
+
+
+
+
+<div class="card-sticky-header">
+    <div class="sticky-header-content rounded-bottom-3" style="background: var(--solution-bg);">
+        <span>@await Html.PartialAsync("~/Views/Shared/Icons/_Solutions.cshtml")</span> 
+        <span>@Model.Title</span>
+    </div>
+</div>

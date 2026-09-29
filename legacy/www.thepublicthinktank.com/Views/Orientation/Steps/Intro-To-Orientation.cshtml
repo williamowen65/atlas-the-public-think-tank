@@ -1,0 +1,25 @@
+﻿@using atlas_the_public_think_tank.Models.ViewModel.UI_VM
+<h5 class="card-title">Welcome to Atlas: The Public Think Tank</h5>
+
+<p>Atlas is a social media platform designed to connect innovative thinkers with problem-solvers. It provides a space for users to share ideas, collaborate on projects, and engage in meaningful discussions around issues and solutions. The platform aims to foster a community of forward-thinkers who can collectively address complex challenges.</p>
+
+<div class="d-flex justify-content-center my-3 flex-column align-items-center">
+
+    <p class="d-flex align-items-center">
+        It is an Open-Source project on <a class="ms-2 d-flex align-items-center" style="text-decoration:none" target="_blank" href="https://github.com/williamowen65/atlas-the-public-think-tank">
+            GitHub
+            <span class="fs-3 ms-2">
+            @Html.Partial("~/Views/Shared/Icons/_Github-logo.cshtml")
+            </span>
+        </a>
+    </p>
+
+@await Html.PartialAsync(
+"~/Views/Shared/Components/_gradient-border.cshtml",
+new GradientBorder_VM()
+{
+    Link = "https://www.youtube.com/watch?v=ULjr4gNmb9s",
+    LinkText = "Click here to view inspiration for this website"
+})
+</div>
+<p class="card-text text-center">Would you like to get a walk-through of the website?</p>

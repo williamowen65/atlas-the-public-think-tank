@@ -1,0 +1,33 @@
+﻿@* @model SideBar_ReadVM *@
+
+
+<div id="categoriesContainer" class="sidebar-content active">
+    <div class="accordion" id="categoriesAccordion">
+        @* @if (@Model.Any())
+        {
+            @foreach (var category in Model)
+            {
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button style="--background-hover-color: #191c1f"
+                                class="accordion-button collapsed hoverable"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#category-@category.CategoryID"
+                                aria-expanded="false"
+                                aria-controls="category-@category.CategoryID">
+                            @category.CategoryName
+                        </button>
+                    </h2>
+                    <div id="category-@category.CategoryID"
+                         class="accordion-collapse collapse"
+                         data-bs-parent="#categoriesAccordion">
+                        <div class="accordion-body">
+                            <a href="/category/@category.CategoryID" class="d-block mb-2">View all posts</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        } *@
+    </div>
+</div>

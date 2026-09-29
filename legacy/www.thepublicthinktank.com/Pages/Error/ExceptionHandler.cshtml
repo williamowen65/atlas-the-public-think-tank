@@ -1,0 +1,24 @@
+﻿@page
+@model atlas_the_public_think_tank.Pages.Error.ExceptionHandlerModel
+
+@{
+    ViewData["Title"] = "Error";
+}
+
+<h1 class="text-danger">Error</h1>
+
+<div>
+    <strong>@Model.ExceptionType:</strong> @Model.ExceptionMessage
+
+    @if (!string.IsNullOrEmpty(Model.InnerExceptionMessage))
+    {
+        <pre>Inner Exception: @Model.InnerExceptionMessage</pre>
+    }
+</div>
+
+@if (!string.IsNullOrEmpty(Model.RequestId))
+{
+    <p>
+        <strong>Request ID:</strong> @Model.RequestId
+    </p>
+}

@@ -1,0 +1,35 @@
+﻿@using atlas_the_public_think_tank.Email.Models
+@model ConfirmationEmailModel
+@{
+    Layout = "/Email/Templates/EmailLayout.cshtml";
+    ViewData["Title"] = "Welcome to The Public Think Tank!";
+}
+
+
+<h1>Hi @Model.UserName,</h1>
+<p>
+    Thanks for signing up for <strong>The Public Think Tank</strong>! 
+</p>
+<p>
+    Please confirm your email address to activate your account:
+</p>
+
+    <p align="center">
+    <a href="@Model.ConfirmationLink" class="btn">Confirm Email</a>
+</p>
+<p>
+    Once confirmed:
+    <ul>
+        <li>You will be logged in.</li>
+        <li>You will be prompted with an orientation walkthrough of the website.</li>
+        <li>You will be subscribed to an email queue beginning with a Welcome email.
+            <ul>
+                <li><i>You'll be able to unsubscribe anytime</i></li>
+            </ul>
+        </li>
+    </ul>
+</p>
+<div class="line-break"></div>
+<p align="center">
+    If you didn't sign up, you can safely ignore this email.
+</p>

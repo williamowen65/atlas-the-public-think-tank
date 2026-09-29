@@ -1,0 +1,19 @@
+﻿
+/*
+    Stylesheet for the alert system. 
+    This file relates to client_alerts.js
+*/
+
+.plain-text-alert {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: none !important;
+    color: inherit !important;
+    box-shadow: none !important;
+    border: none !important;
+    font-weight: bold;
+}
+
+#header-alert-target .alert-container {
+    transform: translateY(10px);
+}

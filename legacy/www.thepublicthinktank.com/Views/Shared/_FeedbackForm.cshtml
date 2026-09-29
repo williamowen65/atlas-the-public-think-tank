@@ -1,0 +1,43 @@
+﻿@using atlas_the_public_think_tank.Email.Models
+@model InBoundEmailModel
+
+
+<!-- Bootstrap Modal for Accessibility/General Feedback -->
+<div class="modal fade" id="@(Model.MessageType)-feedback-modal" tabindex="-1" aria-labelledby="@(Model.MessageType)FeedbackModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        @* enctype="multipart/form-data" is set in the AJAX of InBoundEmail.js *@
+        <form class="modal-content" id="@(Model.MessageType)-feedback-form" data-message-type="@Model.MessageType">
+            <div class="modal-header">
+                <h5 class="modal-title" id="@(Model.MessageType)FeedbackModalLabel">@((char.ToUpper(Model.MessageType[0]) + Model.MessageType.Substring(1))) Feedback</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label asp-for="Message" class="form-label">Your feedback</label>
+                    <textarea asp-for="Message" class="form-control" rows="4"></textarea>
+                    <span asp-validation-for="Message" class="text-danger"></span>
+                </div>
+                <div class="mb-3">
+                    <label for="ImageAttachments" class="form-label">Attach images (optional)</label>
+                    <input type="file" id="ImageAttachments" name="ImageAttachments" class="form-control" accept="image/*" multiple>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary">Submit Feedback</button>
+                <div id="@(Model.MessageType)-feedback-error"></div>
+            </div>
+        </form>
+        <div class="modal-content thank-you-message d-none">
+            <div class="modal-body text-center">
+            Thanks for your feedback.
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+                style="
+                    position: absolute;
+                    right: 15px;
+                "
+            ></button>
+            </div>
+        </div>
+    </div>
+</div>

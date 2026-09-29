@@ -1,0 +1,58 @@
+﻿@using atlas_the_public_think_tank.Email.Models
+
+
+<style>
+    #accessibility-tab{
+        position: fixed;
+        top: 0;
+        z-index: 100000000000;
+        background: var(--bs-body-bg);
+        /* Overrides .card css value which upset the card width */
+        container-type: initial !important;
+        opacity: 0;             /* invisible but still focusable */
+        pointer-events: none;    /* ignore clicks while hidden */
+        transition: opacity 0.2s;
+    }
+    #accessibility-tab:focus,
+    #accessibility-tab:focus-within {
+        opacity: 1;
+        pointer-events: auto;    /* enable interaction */
+    }
+ 
+    .accessibility-entry {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+</style>
+
+<div id="accessibility-tab" class="card" tabindex="0">
+    <div class="card-body">
+        <div class="accessibility-entry"><h5 class="card-title">Accessibility tab</h5> <span class="ms-2 mb-2">(alt + a)</span></div>
+        <div class="accessibility-menu">
+            <button id="go-to" class="text-button" aria-label="Go to a specific part of the website">Go to...</button>
+            <br />
+            <button class="text-button" data-bs-toggle="modal" data-bs-target="#accessibility-feedback-modal">
+                Provide Accessibility Feedback
+            </button>
+            <br />
+            <button id="exit-accessibility-tab-button" class="text-button">Exit</button>
+        </div>
+        <div class="go-to-menu d-none">
+            <h6 class="card-subtitle mb-2 text-body-secondary">Go to...</h6>
+            <div class="accessibility-entry"><button id="go-to-header" class="text-button">Header</button> (alt + h) </div>
+            <div class="accessibility-entry"><button id="go-to-sidebar" class="text-button">Sidebar</button> (alt + s) </div>
+            
+            <div class="accessibility-entry"><button id="go-to-main-section" class="text-button">Main Content</button> (alt + m)</div>
+            <div class="accessibility-entry"><button id="go-to-footer" class="text-button">Footer</button>(alt + b)</div>
+            <div class="accessibility-entry"><button id="go-to-utility-dock" class="text-button">Utility Dock</button>(alt + u)</div>
+            <button id="go-back-from-go-to-menu" class="text-button">Go back...</button>
+        </div>
+    </div>
+</div>
+
+@await Html.PartialAsync("~/Views/Shared/_FeedbackForm.cshtml", new InBoundEmailModel()
+{
+    MessageType = "accessibility"
+})

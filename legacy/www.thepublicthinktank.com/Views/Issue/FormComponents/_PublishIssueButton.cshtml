@@ -1,0 +1,39 @@
+﻿@using atlas_the_public_think_tank.Models.Enums
+@using atlas_the_public_think_tank.Models.ViewModel.AjaxVM
+@model Issue_CreateOrEdit_AjaxVM
+
+@{
+    bool parentPostExist = Model.Issue!.ParentIssue != null || Model.Issue.ParentSolution != null;
+    bool isParentPostPublic = false;
+    if (parentPostExist)
+    {
+        if (Model.Issue.ParentIssue != null)
+        {
+            if (Model.Issue.ParentIssue.ContentStatus == ContentStatus.Published)
+            {
+                isParentPostPublic = true;    
+            }
+        }
+        if (Model.Issue.ParentSolution != null)
+        {
+            if (Model.Issue.ParentSolution.ContentStatus == ContentStatus.Published)
+            {
+                isParentPostPublic = true;    
+            }
+        }
+    }
+}
+
+@* // Publish button depends on parent content being public first *@
+
+@if (parentPostExist && !isParentPostPublic)
+{
+    <button class="btn btn-sm btn-warning fw-bold ms-2 awaiting-parent-publish" disabled>
+        Awaiting parent publish
+    </button>
+}
+else
+{    
+<button class="publish-issue btn btn-sm btn-primary fw-bold ms-2" type="submit">Publish Issue
+</button>
+}

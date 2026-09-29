@@ -1,0 +1,362 @@
+﻿using atlas_the_public_think_tank.Data.CRUD;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Common;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Issue;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution;
+using atlas_the_public_think_tank.Data.DatabaseEntities.History;
+using atlas_the_public_think_tank.Data.DatabaseEntities.Users;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Cache.Helpers;
+using atlas_the_public_think_tank.Data.RepositoryPattern.Repository.Helpers;
+using atlas_the_public_think_tank.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.CodeAnalysis;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Mono.TextTemplating;
+using System.Security.Claims;
+using Solution = atlas_the_public_think_tank.Data.DatabaseEntities.Content.Solution.Solution;
+
+namespace atlas_the_public_think_tank.Data.DbContext
+{
+    public class UserHistoryDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>
+    {
+        private readonly IServiceProvider _serviceProvider;
+        private readonly CacheHelper _cacheHelper;
+
+        public UserHistoryDbContext(
+            DbContextOptions<ApplicationDbContext> options,
+            IServiceProvider serviceProvider,
+            CacheHelper cacheHelper)
+            : base(options)
+        {
+            _serviceProvider = serviceProvider;
+            _cacheHelper = cacheHelper;
+        }
+
+        public DbSet<UserHistory> UserHistory { get; set; }
+
+   
+
+        public override int SaveChanges()
+        {
+            try
+            {
+                // Clone the entries before SaveChanges
+                var clonedEntries = ChangeTracker.Entries()
+                    .Select(e => new ChangeTrackerEntryDTO
+                    {
+                        Entity = e.Entity,
+                        State = e.State,
+                        OriginalValues = e.OriginalValues.Properties.ToDictionary(
+                            p => p.Name,
+                            p => e.OriginalValues[p])
+                    })
+                    .ToList();
+
+                int result = base.SaveChanges();
+                if (result > 0)
+                {
+                    AddUserHistoryEntriesSync(clonedEntries);
+                }
+                return result;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public override async Task<int> SaveChangesAsync(
+            bool acceptAllChangesOnSuccess,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                // Clone the entries before SaveChanges
+                var clonedEntries = ChangeTracker.Entries()
+                    .Select(e => new ChangeTrackerEntryDTO
+                    {
+                        Entity = e.Entity,
+                        State = e.State,
+                        OriginalValues = e.OriginalValues.Properties.ToDictionary(
+                            p => p.Name,
+                            p => e.OriginalValues[p])
+                    })
+                    .ToList();
+
+                int result = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+                if (result > 0) { 
+                    await AddUserHistoryEntriesAsync(clonedEntries);
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+
+           
+        }
+
+        private static bool IsHistoryTrackableEntity(object entity)
+        {
+            return entity is AppUser
+                || entity is IssueVote
+                || entity is SolutionVote
+                || entity is Issue
+                || entity is Solution;
+        }
+
+        // Synchronous version for SaveChanges
+        private void AddUserHistoryEntriesSync(IEnumerable<ChangeTrackerEntryDTO> changeTrackerEntries)
+        {
+            var historyEntries = new List<UserHistory>();
+
+            foreach (var entry in changeTrackerEntries
+                         .Where(e => e.State == EntityState.Added ||
+                                     e.State == EntityState.Modified ||
+                                     e.State == EntityState.Deleted))
+            {
+                if (!IsHistoryTrackableEntity(entry.Entity)) continue;
+
+                using var scope = _serviceProvider.CreateScope();
+                var services = scope.ServiceProvider;
+
+                var userHistoryProcessor = services.GetService<UserHistoryProcessor>();
+
+                // Call the async method synchronously (safe only if no awaits inside)
+                var historyTask = userHistoryProcessor!.CreateHistoryEntry(entry);
+                historyTask.Wait();
+                var history = historyTask.Result;
+                if (history != null)
+                {
+                    historyEntries.Add(history);
+                }
+            }
+
+            UserHistory.AddRange(historyEntries);
+
+            SaveChanges();
+            
+        }
+
+        // Async version for SaveChangesAsync
+        private async Task AddUserHistoryEntriesAsync(IEnumerable<ChangeTrackerEntryDTO> changeTrackerEntries)
+        {
+            var historyEntries = new List<UserHistory>();
+
+            foreach (var entry in changeTrackerEntries
+                         .Where(e => e.State == EntityState.Added ||
+                                     e.State == EntityState.Modified ||
+                                     e.State == EntityState.Deleted))
+            {
+                if (!IsHistoryTrackableEntity(entry.Entity)) continue;
+
+                using var scope = _serviceProvider.CreateScope();
+                var services = scope.ServiceProvider;
+
+                var userHistoryProcessor = services.GetService<UserHistoryProcessor>();
+
+                var history = await userHistoryProcessor.CreateHistoryEntry(entry);
+                if (history != null)
+                {
+                    historyEntries.Add(history);
+                }
+            }
+
+            UserHistory.AddRange(historyEntries);
+
+            await SaveChangesAsync();
+        }
+    }
+
+    /// <summary>
+    /// Added to DI for access to other classes
+    /// </summary>
+    public class UserHistoryProcessor
+    {
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly CacheHelper _cacheHelper;
+        private readonly Read _read;
+
+        public UserHistoryProcessor(IHttpContextAccessor httpContextAccessor, CacheHelper cacheHelper, Read read)
+        {
+            _httpContextAccessor = httpContextAccessor;
+            _cacheHelper = cacheHelper;
+            _read = read;
+        }
+
+        public async Task<UserHistory?> CreateHistoryEntry(ChangeTrackerEntryDTO entry)
+        {
+            var now = DateTime.UtcNow;
+
+            HttpContext? httpContext = _httpContextAccessor.HttpContext;
+
+            Guid? userId = null;
+
+            UserHistory? userHistory = null;
+
+            if (entry.Entity is AppUser && entry.State == EntityState.Added)
+            {
+                userId = ((AppUser)entry.Entity).Id;
+                userHistory = new UserHistory
+                {
+                    Action = "Account Created",
+                    UserID = (Guid)userId!,
+                    Timestamp = now
+                };
+            }
+            else if (entry.Entity is AppUser) { 
+                userId = ((AppUser)entry.Entity).Id;
+            }
+
+            if (entry.Entity is IssueVote)
+            {
+                userId = ExtractUserId(entry, ((IssueVote)entry.Entity).UserID);
+
+                Guid issueId = ((IssueVote)entry.Entity).IssueID;
+                var issue = await _read.Issue(issueId, new ContentFilter());
+
+                int voteValue = ((IssueVote)entry.Entity).VoteValue;
+
+                string actionText = VoteSwitch(voteValue, entry);
+
+                userHistory = new UserHistory
+                {
+                    Action = $"{actionText} on an issue: {issue!.Title}",
+                    UserID = (Guid)userId!,
+                    Timestamp = now,
+                    IssueID = issueId
+                };
+            }
+
+            if (entry.Entity is SolutionVote)
+            {
+                userId = ExtractUserId(entry, ((SolutionVote)entry.Entity).UserID);
+
+                Guid solutionId = ((SolutionVote)entry.Entity).SolutionID;
+                var solution = await _read.Solution(solutionId, new ContentFilter());
+
+                int voteValue = ((SolutionVote)entry.Entity).VoteValue;
+
+                string actionText = VoteSwitch(voteValue, entry);
+
+                userHistory = new UserHistory
+                {
+                    Action = $"{actionText} on a solution: {solution!.Title}",
+                    UserID = (Guid)userId!,
+                    Timestamp = now,
+                    SolutionID = solutionId
+                };
+            }
+
+            if (entry.Entity is Issue)
+            {
+                Issue thisIssue = ((Issue)entry.Entity);
+                userId = ExtractUserId(entry, thisIssue.AuthorID);
+
+                string actionText = ContentItemSwitch(entry, "an issue");
+
+                userHistory = new UserHistory
+                {
+                    Action = $"{actionText}: {thisIssue.Title}",
+                    UserID = (Guid)userId!,
+                    Timestamp = now,
+                    IssueID = thisIssue.IssueID
+                };
+
+            }
+
+            if (entry.Entity is Solution)
+            {
+                Solution thisSolution = ((Solution)entry.Entity);
+                userId = ExtractUserId(entry, thisSolution.AuthorID);
+
+                string actionText = ContentItemSwitch(entry, "a solution");
+
+                userHistory = new UserHistory
+                {
+                    Action = $"{actionText}: {thisSolution.Title}",
+                    UserID = (Guid)userId!,
+                    Timestamp = now,
+                    SolutionID = thisSolution.SolutionID
+                };
+
+            }
+
+            _cacheHelper.ClearUserHistoryCache((Guid)userId!);
+
+            return userHistory;
+           
+        }
+
+        public Guid? ExtractUserId(ChangeTrackerEntryDTO entry, Guid fallbackGuid)
+        {
+            HttpContext? httpContext = _httpContextAccessor.HttpContext;
+            Guid? userId = null;
+            if (httpContext != null)
+            {
+                var userIdClaim = httpContext.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!Guid.TryParse(userIdClaim, out var _userId)) return null;
+                userId = _userId;
+            }
+            else
+            {
+                userId = fallbackGuid;
+            }
+
+            return userId;
+        }
+
+        /// <summary>
+        /// Language = "an issue" or "a solution"
+        /// </summary>
+        public string ContentItemSwitch(ChangeTrackerEntryDTO entry, string language)
+        {
+            string actionText;
+
+            switch (entry.State)
+            {
+                case EntityState.Added:
+                    actionText = $"Created {language}";
+                    break;
+                case EntityState.Modified:
+                    actionText = $"Updated {language}";
+                    break;
+                case EntityState.Deleted:
+                    actionText = $"Deleted {language}";
+                    break;
+                default:
+                    actionText = $"Interacted with {language}";
+                    break;
+            }
+
+            return actionText;
+        }
+
+        public string VoteSwitch(int voteValue, ChangeTrackerEntryDTO entry)
+        {
+
+            string actionText;
+            switch (entry.State)
+            {
+                case EntityState.Added:
+                    actionText = $"Voted {voteValue}";
+                    break;
+                case EntityState.Modified:
+                    actionText = $"Updated a vote to {voteValue}";
+                    break;
+                case EntityState.Deleted:
+                    actionText = "Removed a vote";
+                    break;
+                default:
+                    actionText = "Voted";
+                    break;
+            }
+
+            return actionText;
+        }
+
+
+    }
+}
