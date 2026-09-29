@@ -8,7 +8,7 @@ Domain models and repository interfaces remain in their domains. `Atlas.Persiste
 2. Run `dotnet run --project src/Atlas.Console -- --seed-demo` once. It applies the migration and loads typed seed records from `src/Atlas.Console/Storage/SeedData/`, retaining their identities and timestamps. The seed command refuses a populated database.
 3. Run `dotnet run --project src/Atlas.Console` to use the SQL database.
 
-The draft migration has been revised. If you already ran an earlier revision, use a new empty database for this revision and retain any previous database you want to keep. This command does not import previous local JSON files or the earlier draft SQL schema.
+The initial relational migration is already checked in. The additional foreign-key mappings are model changes awaiting an EF-generated migration, as described below. Generate that migration before starting this revision; EF will otherwise report pending model changes. Keep your existing relational database: the new migration should add constraints and indexes, without dropping tables or resetting demo data. Previous JSON files and the earlier JSON-in-SQL draft schema are not imported.
 
 ## Tables and mapping
 
@@ -23,3 +23,32 @@ The old serialized repositories, stored JSON DTOs, file adapters, JSON seed payl
 Set `ATLAS_SQL_TEST_CONNECTION_STRING` to a SQL Server instance where the test login may create databases. Run `dotnet test tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj`. Each test creates a uniquely named temporary database and deletes only that database. Coverage includes vote creation/update/deletion and uniqueness, content block types/order/timestamps, communities and memberships, moderation decisions, notification preferences/delivery history/read state, and demo seeding. Without that environment variable the integration tests are marked inconclusive. GitHub Actions also runs this suite against an isolated SQL Server container.
 
 No .NET SDK or SQL Server is installed in this workspace; validation runs through GitHub Actions and your local SQL Server. The adapters use short-lived DbContexts. Same-record conflicting edits use ordinary last-write behavior; optimistic version checks remain a separate design choice. Node ancestry filtering currently materializes rows before filtering, while ordinary identifier and target queries use EF predicates.
+
+## Model-first migration workflow
+
+`Rows.cs` and `AtlasDataContext.ConfigureModel` define the current persistence model. Update those files first, then let EF compare the model with the last migration snapshot. Do not manually update the snapshot or write migration operations to substitute for model mappings.
+
+From the repository root, with the .NET 10 SDK installed:
+
+```bash
+dotnet tool restore
+dotnet ef migrations add AddReferentialIntegrity --project src/Atlas.Persistence --context AtlasDataContext --output-dir Migrations
+```
+
+Review and commit the generated migration, its designer, and the updated snapshot together. For these relationship changes, expect foreign keys and supporting indexes. Table drops or recreation are unexpected. The design-time factory uses SQL Server metadata without starting the console, seeding records, or connecting to the server during scaffolding. The initial migration's historical model is frozen separately so future snapshot generation cannot change that earlier migration's target model.
+
+Apply the reviewed migration using your actual connection string, or start the console, which applies checked-in migrations:
+
+```bash
+dotnet ef database update --project src/Atlas.Persistence --context AtlasDataContext --connection "YOUR_SQL_CONNECTION_STRING"
+```
+
+The factory also reads `ATLAS_SQL_CONNECTION_STRING` from the environment. Console user secrets are not loaded by the persistence design-time factory; pass `--connection` for database update if that is where your connection is configured.
+
+Foreign keys cover node descriptions, authors and types; parent nodes and requested types; document blocks; voting participants; reaction definitions, applications and audit references; community owners, memberships and node associations; comment authors and parents; moderation participants and nodes; and notification participants and preferences. Cross-record references use `NoAction` deletion, preserving referenced records. Owned child rows retain cascading deletion.
+
+Deliberate exceptions are polymorphic references (`VoteRow.TargetId`, `CommentRow.TargetId`, `NotificationRow.SubjectId`), block references to poll/chart entities that do not yet have tables, event occurrence IDs, and the opaque string `NodeTypeRow.OwnerId`. These are not claimed to have database referential integrity. Polymorphic targets need a schema design such as separate target columns with foreign keys and a check constraint; a single ordinary foreign key cannot point to different tables based on a kind column.
+
+Existing orphaned references will cause SQL Server to reject the new constraints. Review and correct such records explicitly; migrations do not silently delete data or invent participants. The demo seed's structural references have been checked against its fixed IDs.
+
+While the developer-generated migration is pending, the SQL CI job scaffolds pending model changes in its disposable checkout and tests that generated schema. It does not publish or commit those files. After the migration is committed, the same job uses the checked-in migration. SQL tests cover rejection of missing references, restricted deletion, upgrading existing relational rows, and the demo seed under the constraints.

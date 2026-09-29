@@ -20,7 +20,7 @@ public sealed class SqlVoteRepositoryTests
                     new NodeVoteTarget(Guid.NewGuid());
 
                 var participantId =
-                    new ParticipantId(Guid.NewGuid());
+                    new ParticipantId(database.AddParticipant());
 
                 var originalVote =
                     new Vote(target, participantId, 7);
@@ -68,7 +68,7 @@ public sealed class SqlVoteRepositoryTests
                 var repository = new SqlVoteRepository(database.Open);
                 var original = new Vote(
                     new NodeReactionVoteTarget(Guid.NewGuid()),
-                    new ParticipantId(Guid.NewGuid()),
+                    new ParticipantId(database.AddParticipant()),
                     1);
 
                 repository.Save(original);
@@ -85,7 +85,7 @@ public sealed class SqlVoteRepositoryTests
         using var database = SqlTestDatabase.Create();
 
                 var participantId =
-                    new ParticipantId(Guid.NewGuid());
+                    new ParticipantId(database.AddParticipant());
 
                 var target =
                     new NodeVoteTarget(Guid.NewGuid());
@@ -129,7 +129,7 @@ public sealed class SqlVoteRepositoryTests
                     new NodeVoteTarget(Guid.NewGuid());
 
                 var participantId =
-                    new ParticipantId(Guid.NewGuid());
+                    new ParticipantId(database.AddParticipant());
 
                 var originalVote =
                     new Vote(
@@ -193,7 +193,7 @@ public sealed class SqlVoteRepositoryTests
                     new NodeVoteTarget(Guid.NewGuid());
 
                 var participantId =
-                    new ParticipantId(Guid.NewGuid());
+                    new ParticipantId(database.AddParticipant());
 
                 var vote = new Vote(
                     target,

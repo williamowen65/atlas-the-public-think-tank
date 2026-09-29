@@ -15,8 +15,8 @@ public sealed class SqlCommunityRepositoryTests
             var communities = new SqlCommunityRepository(database.Open);
             var memberships = new SqlCommunityMembershipRepository(database.Open);
             var nodes = new SqlCommunityNodeRepository(database.Open);
-            var owner = Guid.NewGuid();
-            var nodeId = Guid.NewGuid();
+            var owner = database.AddParticipant();
+            var nodeId = database.AddNode();
             var created = new DateTimeOffset(2026, 9, 20, 12, 0, 0, TimeSpan.Zero);
             var community = new Community("Puget Sound", "Regional ideas", owner, created);
 

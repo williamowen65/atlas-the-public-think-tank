@@ -11,6 +11,9 @@ public sealed class SqlModerationRepositoryTests
     public void Final_decision_survives_new_repository_instance()
     {
         using var database = SqlTestDatabase.Create();
+        database.AddParticipant(_moderator);
+        database.AddParticipant(_reporter);
+        database.AddNode(_node);
 
             var service = new ModerationService(new SqlModerationCaseRepository(database.Open), new Moderator(_moderator));
             var reported = service.ReportNode(_node, _reporter, "A Node", "spam", "evidence", DateTimeOffset.UtcNow);

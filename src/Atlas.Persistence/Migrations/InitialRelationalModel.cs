@@ -1,38 +1,10 @@
 using Microsoft.EntityFrameworkCore;
-
-namespace Atlas.Persistence;
-
-public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options) : DbContext(options)
+using Microsoft.EntityFrameworkCore.Infrastructure;
+namespace Atlas.Persistence.Migrations;
+internal sealed class InitialRelationalModel : ModelSnapshot
 {
-    public DbSet<NodeRow> NodeRows => Set<NodeRow>();
-    public DbSet<NodeTypeRow> NodeTypeRows => Set<NodeTypeRow>();
-    public DbSet<DocumentRow> DocumentRows => Set<DocumentRow>();
-    public DbSet<BlockRow> BlockRows => Set<BlockRow>();
-    public DbSet<ParticipantRow> ParticipantRows => Set<ParticipantRow>();
-    public DbSet<VoteRow> VoteRows => Set<VoteRow>();
-    public DbSet<ReactionDefinitionRow> ReactionDefinitionRows => Set<ReactionDefinitionRow>();
-    public DbSet<NodeReactionRow> NodeReactionRows => Set<NodeReactionRow>();
-    public DbSet<CommunityRow> CommunityRows => Set<CommunityRow>();
-    public DbSet<CommunityMembershipRow> CommunityMembershipRows => Set<CommunityMembershipRow>();
-    public DbSet<CommunityNodeRow> CommunityNodeRows => Set<CommunityNodeRow>();
-    public DbSet<CommentRow> CommentRows => Set<CommentRow>();
-    public DbSet<ModerationCaseRow> ModerationCaseRows => Set<ModerationCaseRow>();
-    public DbSet<NotificationRow> NotificationRows => Set<NotificationRow>();
-    public DbSet<NotificationPreferencesRow> NotificationPreferencesRows => Set<NotificationPreferencesRow>();
-
-    public static void PrepareRow(object row)
-    {
-        if (row is NodeReactionRow reaction)
-            for (var position = 0; position < reaction.AuditHistory.Count; position++)
-            { reaction.AuditHistory[position].NodeReactionId = reaction.Id; reaction.AuditHistory[position].Position = position; }
-        if (row is NotificationRow notification)
-            for (var position = 0; position < notification.DeliveryAttempts.Count; position++)
-            { notification.DeliveryAttempts[position].NotificationId = notification.Id; notification.DeliveryAttempts[position].Position = position; }
-    }
-
-    protected override void OnModelCreating(ModelBuilder model) => ConfigureModel(model);
-
-    internal static void ConfigureModel(ModelBuilder model)
+    protected override void BuildModel(ModelBuilder modelBuilder) => ConfigureSnapshot(modelBuilder);
+    internal static void ConfigureSnapshot(ModelBuilder model)
     {
         model.HasAnnotation("ProductVersion", "10.0.0").HasAnnotation("Relational:MaxIdentifierLength", 128);
         model.UseIdentityColumns();
@@ -367,89 +339,6 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
         foreach (var entity in model.Model.GetEntityTypes())
             foreach (var property in entity.FindPrimaryKey()!.Properties)
                 property.ValueGenerated = Microsoft.EntityFrameworkCore.Metadata.ValueGenerated.Never;
-
-        // References across domains are enforced here; deleting a principal must be explicit.
-        model.Entity<NodeRow>().HasOne<DocumentRow>().WithMany().HasForeignKey(row => row.DescriptionId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_NodeRows_DocumentRows_DescriptionId");
-        model.Entity<NodeRow>().HasIndex(row => row.DescriptionId).HasDatabaseName("IX_NodeRows_DescriptionId");
-        model.Entity<NodeRow>().HasOne<NodeTypeRow>().WithMany().HasForeignKey(row => row.TypeId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_NodeRows_NodeTypeRows_TypeId");
-        model.Entity<NodeRow>().HasIndex(row => row.TypeId).HasDatabaseName("IX_NodeRows_TypeId");
-        model.Entity<NodeRow>().HasOne<ParticipantRow>().WithMany().HasForeignKey(row => row.AuthorId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_NodeRows_ParticipantRows_AuthorId");
-        model.Entity<NodeRow>().HasIndex(row => row.AuthorId).HasDatabaseName("IX_NodeRows_AuthorId");
-        model.Entity<NodeParentRow>().HasOne<NodeRow>().WithMany().HasForeignKey(row => row.ParentNodeId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_NodeParents_NodeRows_ParentNodeId");
-        model.Entity<NodeParentRow>().HasIndex(row => row.ParentNodeId).HasDatabaseName("IX_NodeParents_ParentNodeId");
-        model.Entity<NodeRequestedTypeRow>().HasOne<NodeTypeRow>().WithMany().HasForeignKey(row => row.TypeId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_NodeRequestedTypes_NodeTypeRows_TypeId");
-        model.Entity<NodeRequestedTypeRow>().HasIndex(row => row.TypeId).HasDatabaseName("IX_NodeRequestedTypes_TypeId");
-        model.Entity<DocumentBlockRow>().HasOne<BlockRow>().WithMany().HasForeignKey(row => row.BlockId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_DocumentBlocks_BlockRows_BlockId");
-        model.Entity<DocumentBlockRow>().HasIndex(row => row.BlockId).HasDatabaseName("IX_DocumentBlocks_BlockId");
-        model.Entity<VoteRow>().HasOne<ParticipantRow>().WithMany().HasForeignKey(row => row.ParticipantId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_VoteRows_ParticipantRows_ParticipantId");
-        model.Entity<VoteRow>().HasIndex(row => row.ParticipantId).HasDatabaseName("IX_VoteRows_ParticipantId");
-        model.Entity<ReactionDefinitionRow>().HasOne<ParticipantRow>().WithMany().HasForeignKey(row => row.CreatedByParticipantId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_ReactionDefinitionRows_ParticipantRows_CreatedByParticipantId");
-        model.Entity<ReactionDefinitionRow>().HasIndex(row => row.CreatedByParticipantId).HasDatabaseName("IX_ReactionDefinitionRows_CreatedByParticipantId");
-        model.Entity<NodeReactionRow>().HasOne<NodeRow>().WithMany().HasForeignKey(row => row.NodeId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_NodeReactionRows_NodeRows_NodeId");
-        model.Entity<NodeReactionRow>().HasIndex(row => row.NodeId).HasDatabaseName("IX_NodeReactionRows_NodeId");
-        model.Entity<NodeReactionRow>().HasOne<ReactionDefinitionRow>().WithMany().HasForeignKey(row => row.ReactionDefinitionId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_NodeReactionRows_ReactionDefinitionRows_ReactionDefinitionId");
-        model.Entity<NodeReactionRow>().HasIndex(row => row.ReactionDefinitionId).HasDatabaseName("IX_NodeReactionRows_ReactionDefinitionId");
-        model.Entity<NodeReactionRow>().HasOne<ParticipantRow>().WithMany().HasForeignKey(row => row.AppliedByParticipantId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_NodeReactionRows_ParticipantRows_AppliedByParticipantId");
-        model.Entity<NodeReactionRow>().HasIndex(row => row.AppliedByParticipantId).HasDatabaseName("IX_NodeReactionRows_AppliedByParticipantId");
-        model.Entity<ReactionAuditRow>().HasOne<ParticipantRow>().WithMany().HasForeignKey(row => row.ActorParticipantId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_ReactionAuditEntries_ParticipantRows_ActorParticipantId");
-        model.Entity<ReactionAuditRow>().HasIndex(row => row.ActorParticipantId).HasDatabaseName("IX_ReactionAuditEntries_ActorParticipantId");
-        model.Entity<ReactionAuditRow>().HasOne<NodeReactionRow>().WithMany().HasForeignKey(row => row.RelatedNodeReactionId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_ReactionAuditEntries_NodeReactionRows_RelatedNodeReactionId");
-        model.Entity<ReactionAuditRow>().HasIndex(row => row.RelatedNodeReactionId).HasDatabaseName("IX_ReactionAuditEntries_RelatedNodeReactionId");
-        model.Entity<CommunityRow>().HasOne<ParticipantRow>().WithMany().HasForeignKey(row => row.OwnerParticipantId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_CommunityRows_ParticipantRows_OwnerParticipantId");
-        model.Entity<CommunityRow>().HasIndex(row => row.OwnerParticipantId).HasDatabaseName("IX_CommunityRows_OwnerParticipantId");
-        model.Entity<CommunityMembershipRow>().HasOne<CommunityRow>().WithMany().HasForeignKey(row => row.CommunityId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_CommunityMembershipRows_CommunityRows_CommunityId");
-        model.Entity<CommunityMembershipRow>().HasOne<ParticipantRow>().WithMany().HasForeignKey(row => row.ParticipantId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_CommunityMembershipRows_ParticipantRows_ParticipantId");
-        model.Entity<CommunityMembershipRow>().HasIndex(row => row.ParticipantId).HasDatabaseName("IX_CommunityMembershipRows_ParticipantId");
-        model.Entity<CommunityNodeRow>().HasOne<CommunityRow>().WithMany().HasForeignKey(row => row.CommunityId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_CommunityNodeRows_CommunityRows_CommunityId");
-        model.Entity<CommunityNodeRow>().HasOne<NodeRow>().WithMany().HasForeignKey(row => row.NodeId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_CommunityNodeRows_NodeRows_NodeId");
-        model.Entity<CommunityNodeRow>().HasIndex(row => row.NodeId).HasDatabaseName("IX_CommunityNodeRows_NodeId");
-        model.Entity<CommunityNodeRow>().HasOne<ParticipantRow>().WithMany().HasForeignKey(row => row.AssociatedByParticipantId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_CommunityNodeRows_ParticipantRows_AssociatedByParticipantId");
-        model.Entity<CommunityNodeRow>().HasIndex(row => row.AssociatedByParticipantId).HasDatabaseName("IX_CommunityNodeRows_AssociatedByParticipantId");
-        model.Entity<CommentRow>().HasOne<CommentRow>().WithMany().HasForeignKey(row => row.ParentCommentId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_CommentRows_CommentRows_ParentCommentId");
-        model.Entity<CommentRow>().HasIndex(row => row.ParentCommentId).HasDatabaseName("IX_CommentRows_ParentCommentId");
-        model.Entity<CommentRow>().HasOne<ParticipantRow>().WithMany().HasForeignKey(row => row.AuthorParticipantId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_CommentRows_ParticipantRows_AuthorParticipantId");
-        model.Entity<CommentRow>().HasIndex(row => row.AuthorParticipantId).HasDatabaseName("IX_CommentRows_AuthorParticipantId");
-        model.Entity<ModerationCaseRow>().HasOne<NodeRow>().WithMany().HasForeignKey(row => row.NodeId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_ModerationCaseRows_NodeRows_NodeId");
-        model.Entity<ModerationCaseRow>().HasIndex(row => row.NodeId).HasDatabaseName("IX_ModerationCaseRows_NodeId");
-        model.Entity<ModerationCaseRow>().HasOne<ParticipantRow>().WithMany().HasForeignKey(row => row.ReporterId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_ModerationCaseRows_ParticipantRows_ReporterId");
-        model.Entity<ModerationCaseRow>().HasIndex(row => row.ReporterId).HasDatabaseName("IX_ModerationCaseRows_ReporterId");
-        model.Entity<ModerationCaseRow>().HasOne<ParticipantRow>().WithMany().HasForeignKey(row => row.ReviewerId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_ModerationCaseRows_ParticipantRows_ReviewerId");
-        model.Entity<ModerationCaseRow>().HasIndex(row => row.ReviewerId).HasDatabaseName("IX_ModerationCaseRows_ReviewerId");
-        model.Entity<ModerationCaseRow>().HasOne<ParticipantRow>().WithMany().HasForeignKey(row => row.RestoredBy)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_ModerationCaseRows_ParticipantRows_RestoredBy");
-        model.Entity<ModerationCaseRow>().HasIndex(row => row.RestoredBy).HasDatabaseName("IX_ModerationCaseRows_RestoredBy");
-        model.Entity<NotificationRow>().HasOne<ParticipantRow>().WithMany().HasForeignKey(row => row.RecipientParticipantId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_NotificationRows_ParticipantRows_RecipientParticipantId");
-        model.Entity<NotificationRow>().HasIndex(row => row.RecipientParticipantId).HasDatabaseName("IX_NotificationRows_RecipientParticipantId");
-        model.Entity<NotificationRow>().HasOne<ParticipantRow>().WithMany().HasForeignKey(row => row.ActorParticipantId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_NotificationRows_ParticipantRows_ActorParticipantId");
-        model.Entity<NotificationRow>().HasIndex(row => row.ActorParticipantId).HasDatabaseName("IX_NotificationRows_ActorParticipantId");
-        model.Entity<NotificationPreferencesRow>().HasOne<ParticipantRow>().WithMany().HasForeignKey(row => row.ParticipantId)
-            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_NotificationPreferencesRows_ParticipantRows_ParticipantId");
     }
 
 }

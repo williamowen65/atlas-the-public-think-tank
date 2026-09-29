@@ -20,6 +20,9 @@ on:
       - '.github/workflows/AtlasRewriteTests.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   test-rewrite:
     name: Test ${{ matrix.name }}
@@ -88,5 +91,13 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+      - name: Generate pending model changes for SQL tests
+        run: |
+          dotnet tool restore
+          if dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence; then
+            echo "The checked-in migrations match the model."
+          else
+            dotnet ef migrations add CIModelChanges --project src/Atlas.Persistence --output-dir Migrations
+          fi
       - name: Test direct EF repositories against SQL Server
         run: dotnet test tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj --configuration Release --verbosity normal

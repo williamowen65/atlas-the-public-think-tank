@@ -8,7 +8,7 @@ namespace Atlas.Persistence.Migrations;
 [Migration("20260929180000_InitialRelationalStorage")]
 public sealed class InitialRelationalStorage : Migration
 {
-    protected override void BuildTargetModel(ModelBuilder modelBuilder) => AtlasDataContextModelSnapshot.ConfigureSnapshot(modelBuilder);
+    protected override void BuildTargetModel(ModelBuilder modelBuilder) => InitialRelationalModel.ConfigureSnapshot(modelBuilder);
 
     protected override void Up(MigrationBuilder migrationBuilder)
     {

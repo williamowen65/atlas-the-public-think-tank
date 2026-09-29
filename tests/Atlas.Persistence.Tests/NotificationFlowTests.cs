@@ -13,8 +13,8 @@ public sealed class NotificationFlowTests
         using var database = SqlTestDatabase.Create();
             var repository = new SqlNotificationRepository(database.Open);
             var service = new NotificationService(repository, []);
-            var recipient = Guid.NewGuid();
-            var request = new NotificationRequestedV1(Guid.NewGuid(), recipient, Guid.NewGuid(),
+            var recipient = database.AddParticipant();
+            var request = new NotificationRequestedV1(Guid.NewGuid(), recipient, database.AddParticipant(),
                 "NodeCommented", "Node", Guid.NewGuid(), DateTimeOffset.UtcNow);
             var first = service.Handle(request)!;
             Assert.AreEqual(first.Id, service.Handle(request)!.Id);
@@ -33,13 +33,13 @@ public sealed class NotificationFlowTests
         using var database = SqlTestDatabase.Create();
 
             var repository = new SqlNotificationRepository(database.Open);
-            var recipient = Guid.NewGuid();
+            var recipient = database.AddParticipant();
             var preferences = repository.Preferences(recipient);
             preferences.DiscussionInApp = false;
             preferences.DiscussionEmail = true;
             repository.SavePreferences(preferences);
             var service = new NotificationService(repository, [new FailingEmail(), new SimulatedDelivery(DeliveryChannel.Push)]);
-            var item = service.Handle(new NotificationRequestedV1(Guid.NewGuid(), recipient, Guid.NewGuid(),
+            var item = service.Handle(new NotificationRequestedV1(Guid.NewGuid(), recipient, database.AddParticipant(),
                 "NodeCommented", "Node", Guid.NewGuid(), DateTimeOffset.UtcNow))!;
             Assert.HasCount(0, service.Page(recipient, 0, 10));
             Assert.HasCount(1, item.DeliveryAttempts);
