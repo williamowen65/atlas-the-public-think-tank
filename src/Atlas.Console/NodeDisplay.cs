@@ -74,6 +74,7 @@ public static class NodeDisplay
         Console.WriteLine();
         WriteWrapped($"{number}. {typeName} · ",
             visibility.IsHidden ? visibility.Notice : node.Title.Value);
+        Console.WriteLine();
         WriteBreadcrumb(ResolveBreadcrumb(node, nodes, nodeTypes, moderation));
         Console.WriteLine($"   By {authorName} · {node.Status}" +
             (includeCreatedDate ? $" · Created {node.CreatedAt:yyyy-MM-dd}" : string.Empty));
@@ -120,6 +121,7 @@ public static class NodeDisplay
         Console.WriteLine();
         Console.WriteLine("ATLAS NODE");
         WriteWrapped("  ", $"{ResolveTypeName(node, nodeTypes)} · {(hidden ? visibility.Notice : node.Title.Value)}");
+        Console.WriteLine();
         WriteBreadcrumb(ResolveBreadcrumb(node, nodes, nodeTypes, moderation));
         Console.WriteLine($"  By {authorName} · {node.Status} · Created {node.CreatedAt:yyyy-MM-dd} · Updated {node.UpdatedAt:yyyy-MM-dd}");
         Console.WriteLine();
