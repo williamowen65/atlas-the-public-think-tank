@@ -120,6 +120,7 @@ public static class NodeDisplay
 
         Console.WriteLine();
         Console.WriteLine("ATLAS NODE");
+        Console.WriteLine();
         WriteWrapped("  ", $"{ResolveTypeName(node, nodeTypes)} · {(hidden ? visibility.Notice : node.Title.Value)}");
         Console.WriteLine();
         WriteBreadcrumb(ResolveBreadcrumb(node, nodes, nodeTypes, moderation));
