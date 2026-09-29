@@ -83,12 +83,12 @@ public sealed class JsonReactionDefinitionRepository : IReactionDefinitionReposi
 
     private List<StoredReactionDefinition> ReadStored()
     {
-        if (!File.Exists(_filePath))
+        if (!SqlStorage.Exists(_filePath))
         {
             return [];
         }
 
-        var json = File.ReadAllText(_filePath);
+        var json = SqlStorage.ReadText(_filePath);
         return string.IsNullOrWhiteSpace(json)
             ? []
             : JsonSerializer.Deserialize<List<StoredReactionDefinition>>(json, _jsonOptions) ?? [];
@@ -96,14 +96,8 @@ public sealed class JsonReactionDefinitionRepository : IReactionDefinitionReposi
 
     private void WriteStored(List<StoredReactionDefinition> definitions)
     {
-        var directory = Path.GetDirectoryName(_filePath);
 
-        if (!string.IsNullOrWhiteSpace(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
-
-        File.WriteAllText(
+        SqlStorage.WriteText(
             _filePath,
             JsonSerializer.Serialize(definitions, _jsonOptions));
     }
