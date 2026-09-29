@@ -75,6 +75,7 @@ public sealed class SimulatedDelivery(DeliveryChannel channel) : INotificationDe
     public void Send(Notification item) { }
 }
 
+/// <summary>Handles notification requests here because Notifications owns the feed, preferences, and delivery records; Console only wires the subscription.</summary>
 public sealed class NotificationService(INotificationRepository repository, IEnumerable<INotificationDelivery> deliveries)
 {
     public Notification? Handle(NotificationRequestedV1 request)
