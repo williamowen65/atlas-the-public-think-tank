@@ -61,19 +61,19 @@ public static class SqlStorage
         database.SaveChanges();
     }
 
-    /// <summary>Import all checked-in demo collections exactly once into an empty database.</summary>
-    public static void ImportDemoData(string dataDirectory)
+    /// <summary>Seed stable demo collections exactly once into an empty database.</summary>
+    public static void SeedDemoData()
     {
         using var database = Open();
         using var transaction = database.Database.BeginTransaction();
         if (database.Collections.Any())
             throw new InvalidOperationException("Import requires an empty Atlas database; no existing SQL data was changed.");
 
-        foreach (var path in Directory.EnumerateFiles(dataDirectory, "*.json"))
+        foreach (var (name, payload) in DemoData.Collections)
             database.Collections.Add(new SqlCollection
             {
-                Name = Name(path),
-                Payload = File.ReadAllText(path)
+                Name = name,
+                Payload = payload
             });
 
         database.SaveChanges();

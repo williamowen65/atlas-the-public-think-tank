@@ -14,17 +14,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
 		.github\workflows\AtlasRewriteTests.yml = .github\workflows\AtlasRewriteTests.yml
-		data\blocks.json = data\blocks.json
-		data\comments.json = data\comments.json
-		data\communities.json = data\communities.json
-		data\community-memberships.json = data\community-memberships.json
-		data\community-nodes.json = data\community-nodes.json
-		data\documents.json = data\documents.json
-		data\node-reactions.json = data\node-reactions.json
-		data\node-types.json = data\node-types.json
-		data\nodes.json = data\nodes.json
-		data\participants.json = data\participants.json
-		data\reaction-definitions.json = data\reaction-definitions.json
 		README.md = README.md
 		.github\workflows\SQLServerTest.yml = .github\workflows\SQLServerTest.yml
 	EndProjectSection

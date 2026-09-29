@@ -44,10 +44,10 @@ if (string.IsNullOrWhiteSpace(connectionString))
     throw new InvalidOperationException("Set ATLAS_SQL_CONNECTION_STRING to a SQL Server connection string.");
 
 SqlStorage.Configure(connectionString);
-if (args.Contains("--import-demo-data", StringComparer.OrdinalIgnoreCase))
+if (args.Contains("--seed-demo", StringComparer.OrdinalIgnoreCase))
 {
-    SqlStorage.ImportDemoData(dataDirectory);
-    System.Console.WriteLine("Demo data imported into SQL Server. Existing IDs were preserved.");
+    SqlStorage.SeedDemoData();
+    System.Console.WriteLine("Demo data seeded in SQL Server. Existing IDs were preserved.");
     return;
 }
 

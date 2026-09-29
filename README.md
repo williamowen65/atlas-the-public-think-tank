@@ -50,7 +50,7 @@ dotnet test Atlas.sln
 - [`docs/`](docs/README.md) — requirements, architecture, contracts, workflows, testing guidance, glossary, and blackboards
 - [`legacy/`](legacy/README.md) — the earlier web application and its original README
 - [`infrastructure/`](infrastructure/README.md) — planned infrastructure as code
-- [`data/`](data/) — file-system data used by the Console host
+- [`src/Atlas.Console/Storage/DemoData.cs`](src/Atlas.Console/Storage/DemoData.cs) — opt-in SQL Server demo seed records
 
 For a deeper technical introduction, start with the [documentation index](docs/README.md). The [requirements baseline](docs/requirements/README.md) and [traceability matrix](docs/requirements/TRACEABILITY.md) connect intended behavior to implementation and verification.
 
