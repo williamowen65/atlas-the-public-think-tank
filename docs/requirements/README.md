@@ -17,6 +17,7 @@ Identifiers use the form `AREA-NNN`.
 | `CON` | Content and description documents |
 | `PAR` | Participants and profiles |
 | `AUT` | Authorization |
+| `SEC` | Security boundary and adversarial verification |
 | `EVT` | Events and cross-boundary communication |
 | `PER` | Persistence and migration |
 | `TAG` | Reusable node reactions |
