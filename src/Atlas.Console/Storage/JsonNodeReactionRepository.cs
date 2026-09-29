@@ -98,12 +98,12 @@ public sealed class JsonNodeReactionRepository : INodeReactionRepository
 
     private List<StoredNodeReaction> ReadStored()
     {
-        if (!File.Exists(_filePath))
+        if (!SqlStorage.Exists(_filePath))
         {
             return [];
         }
 
-        var json = File.ReadAllText(_filePath);
+        var json = SqlStorage.ReadText(_filePath);
         return string.IsNullOrWhiteSpace(json)
             ? []
             : JsonSerializer.Deserialize<List<StoredNodeReaction>>(json, _jsonOptions) ?? [];
@@ -111,14 +111,8 @@ public sealed class JsonNodeReactionRepository : INodeReactionRepository
 
     private void WriteStored(List<StoredNodeReaction> nodeTags)
     {
-        var directory = Path.GetDirectoryName(_filePath);
 
-        if (!string.IsNullOrWhiteSpace(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
-
-        File.WriteAllText(
+        SqlStorage.WriteText(
             _filePath,
             JsonSerializer.Serialize(nodeTags, _jsonOptions));
     }
