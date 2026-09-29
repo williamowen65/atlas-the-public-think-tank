@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Configuration;
 
 namespace Atlas.Persistence;
 
@@ -8,10 +9,16 @@ public sealed class AtlasDataContextFactory : IDesignTimeDbContextFactory<AtlasD
 {
     public AtlasDataContext CreateDbContext(string[] args)
     {
-        // Scaffolding needs the SQL Server provider, but does not connect to this database.
-        // Database update requires the actual connection through --connection or the environment.
-        var connection = Environment.GetEnvironmentVariable("ATLAS_SQL_CONNECTION_STRING")
-            ?? "Server=localhost;Database=Atlas;Integrated Security=True;TrustServerCertificate=True";
+        // Use the same secrets ID and provider precedence as the console.
+        // Building the model does not connect to the database or run startup migrations.
+        var configuration = new ConfigurationBuilder()
+            .AddUserSecrets<AtlasDataContextFactory>(optional: true)
+            .AddEnvironmentVariables()
+            .Build();
+        var connection = configuration["ATLAS_SQL_CONNECTION_STRING"];
+        if (string.IsNullOrWhiteSpace(connection))
+            throw new InvalidOperationException(
+                "Set ATLAS_SQL_CONNECTION_STRING in shared user secrets or the environment before using EF tooling.");
         var options = new DbContextOptionsBuilder<AtlasDataContext>().UseSqlServer(connection).Options;
         return new AtlasDataContext(options);
     }
