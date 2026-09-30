@@ -103,3 +103,5 @@ jobs:
         run: dotnet test tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj --configuration Release --verbosity normal
       - name: Test Identity accounts and authorization against SQL Server
         run: dotnet test tests/Atlas.Identity.Tests/Atlas.Identity.Tests.csproj --configuration Release --verbosity normal
+      - name: Test console authentication against SQL Server
+        run: dotnet test tests/Atlas.Console.Tests/Atlas.Console.Tests.csproj --configuration Release --verbosity normal

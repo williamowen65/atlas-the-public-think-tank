@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Atlas.Identity\Atlas.Identity.csproj" />
     <ProjectReference Include="..\Atlas.Comments\Atlas.Comments.csproj" />
     <ProjectReference Include="..\Atlas.Communities\Atlas.Communities.csproj" />
     <ProjectReference Include="..\Atlas.Content\Atlas.Content.csproj" />

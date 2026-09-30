@@ -1,6 +1,6 @@
 # ADR-0006: Link Identity accounts to independent Participant profiles
 
-Status: Proposed (PTT-94 PR; pending developer-generated migration and SQL verification)
+Status: Proposed (PTT-94 PR)
 Date: 2026-09-30
 Related requirements: [IDN-001](../../requirements/REQUIREMENTS.md#idn-001), [IDN-002](../../requirements/REQUIREMENTS.md#idn-002)
 
@@ -16,9 +16,9 @@ Use framework account managers/token providers rather than custom password/crede
 
 ## Consequences
 
-Participants stays independent of Identity/EF. Existing profiles may lack accounts; no public workflow can claim one. One shared context supports atomic account/profile registration today, while the dependency remains explicitly infrastructure-owned. Credentials and role seeds have no default passwords or automatic administrator assignment. The developer scaffolds and commits the migration using EF commands; until then, pending-model/SQL checks intentionally block merge readiness.
+Participants stays independent of Identity/EF. Existing profiles may lack accounts; no public workflow can claim one. One shared context supports atomic account/profile registration today, while the dependency remains explicitly infrastructure-owned. Credentials and role seeds have no default passwords or automatic administrator assignment. The developer has scaffolded and committed the migration using EF commands.
 
-The current Console remains a demo harness. HTTP/email delivery, first-administrator provisioning, and durable Data Protection configuration are subsequent host integration, not silently implemented by registering framework services.
+The Console now authenticates account-linked Participants and removes arbitrary participant switching. HTTP/email delivery, first-administrator provisioning, and durable Data Protection configuration are subsequent host integration, not silently implemented by registering framework services.
 
 ## Alternatives considered
 

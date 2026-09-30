@@ -115,7 +115,7 @@ sequenceDiagram
     end
 ```
 
-The Console's selected participant simulates the authenticated actor. Atlas.Participants performs the authorization check for this Participants-owned operation.
+The Console's Identity session supplies the authenticated Participant actor. Atlas.Participants performs the authorization check for this Participants-owned operation.
 
 A future MVC application could obtain the actor ID from ASP.NET Core Identity, but it should call the same protected use case rather than duplicating the ownership check in a controller.
 
@@ -162,7 +162,6 @@ The shared profile workflow offers:
 
 1. Edit profile
 2. View authored nodes
-3. Select as current participant
 4. Return
 
 The Edit action remains visible for someone else's profile so the authorization rejection can be observed. Hiding the action in a future UI may improve usability, but server-side or application-layer authorization must remain even if the UI hides it.

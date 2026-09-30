@@ -2,40 +2,9 @@
 
 PTT-94 adds account infrastructure for the future HTTP host. Participants remains a plain domain project. ASP.NET Core Identity owns credentials, password hashing, security stamps, tokens, lockout, and global roles. [Architecture](architecture/IDENTITY.md) explains the mapping and host responsibilities.
 
-## Generate the migration yourself
+## Migration status
 
-The PR deliberately does not include a generated Identity migration or an updated snapshot. Generate these with EF on the PR branch. There is no separate Identity migration command: Identity contributes its model to the existing `AtlasDataContext`, and EF generates the SQL Server migration.
-
-From the repository root:
-
-```powershell
-git fetch origin
-git switch PTT-94-identity-participants
-git pull --ff-only
-dotnet tool restore
-dotnet restore src/Atlas.Persistence/Atlas.Persistence.csproj
-dotnet ef migrations add AddIdentityAccounts --project src/Atlas.Persistence --context AtlasDataContext
-```
-
-Use your existing `ATLAS_SQL_CONNECTION_STRING` user secret. The persistence design-time factory already uses the same secrets ID as the console. Scaffolding builds the model without connecting to SQL Server. Do not start the console before scaffolding: its existing startup migration call detects the uncommitted model change.
-
-EF should produce three files in `src/Atlas.Persistence/Migrations`:
-
-- A timestamped `AddIdentityAccounts.cs` migration.
-- Its matching `.Designer.cs` historical target model.
-- The updated `AtlasDataContextModelSnapshot.cs`.
-
-The migration should add the `identity` schema; Users, Roles, UserRoles, UserClaims, RoleClaims, UserLogins, and UserTokens; three role records; indexes; and the Users.Id → ParticipantRows.Id foreign key. Existing domain tables and rows should not be dropped, recreated, or changed. Numeric claim IDs should retain SQL identity generation. The roles are metadata only: no account, password, administrator, or role assignment is seeded.
-
-After reviewing the generated files, commit and push them to the same PR branch:
-
-```powershell
-git add src/Atlas.Persistence/Migrations
-git commit -m "PTT-94: generate Identity account migration"
-git push origin PTT-94-identity-participants
-```
-
-The assistant can then review the generated migration and CI results. The PR remains draft until this is done. The existing pending-model check and SQL tests will fail before the migration is committed; this is expected and must not be bypassed by ignoring pending-model warnings or auto-generating migrations in CI.
+The developer-generated `20260930213148_AddIdentityAccounts` migration, designer, and updated snapshot are checked in. The console registration/sign-in follow-up changes no EF mappings and needs no additional migration. Keep generating future migrations yourself through `dotnet ef migrations add <Name> --project src/Atlas.Persistence` when the model changes.
 
 ## Apply to your existing local SQL database
 
@@ -58,6 +27,24 @@ dotnet test tests/Atlas.Identity.Tests/Atlas.Identity.Tests.csproj
 
 Without the test connection, only the model, domain-dependency, and service-wiring tests run; SQL tests report inconclusive/skipped. After the migration is committed, CI verifies registration/reload, rollback, confirmation, lockout, password changes/resets, policy decisions, existing-row preservation, and SQL constraints against SQL Server.
 
-## What this does not enable yet
+## Use registration and sign-in
 
-The current Console remains the explicit demo participant-switching harness. It does not authenticate its selected participant and does not use the new Identity policy adapter. PTT-94 must not be mistaken for securing that console or publishing an HTTP login API. HTTP endpoints, real confirmation/reset email delivery, antiforgery/rate-limit behavior, trusted first-administrator provisioning, and persistent Data Protection keys are host integration work. No shared demo passwords or automatic linking of an existing public profile to a newly registering user is provided.
+```powershell
+dotnet run --project src/Atlas.Console
+```
+
+The entry menu offers Sign in, Register, and Exit. Registration creates a new Member account with a new linked Participant, asks for password confirmation, and returns to the entry menu. Password entry requires an interactive terminal and is not echoed. Existing demo profiles are browseable but cannot be selected as authenticated actors.
+
+Email confirmation is still required. Until real email delivery is connected, a trusted local operator can confirm a newly created account in a second terminal:
+
+```powershell
+dotnet run --project src/Atlas.Console -- --confirm-email
+```
+
+Enter the account email, then type `CONFIRM`. This explicitly confirms the account through Identity's token provider; it is a development operator utility, not verification that someone owns an email address, and must not become a public endpoint. It neither assigns a privileged role nor claims an existing demo profile.
+
+Return to the first terminal and sign in with the email/password. Main-menu option 1 signs out; option 2 opens your profile; option 13 exits. Browsing someone else's profile never changes your signed-in actor. Global moderation access comes from stored Identity roles, replacing the configured moderator-ID list. Public registration only assigns Member; first-administrator/role provisioning remains controlled operator work.
+
+Console sessions use fresh SQL scopes, check account/profile/Member-policy eligibility before each main menu, and invalidate the session when its security stamp changes. Long-running nested menus do not implement continuous session expiry; domain authorization still applies to their actions. Accounts requiring 2FA are rejected with a clear message because the console has no second-factor entry flow yet.
+
+Real confirmation/reset email delivery, account-management HTTP endpoints, browser security controls, and persistent/shared Data Protection keys remain HTTP-host work.

@@ -322,7 +322,7 @@ This document is the authoritative catalog of requirement statements and accepta
 
 ### Acceptance criteria
 
-- Participants are selectable from a browser.
+- Participant profiles can be opened from a browser without changing the authenticated actor.
 - A profile can be reached from a node's author action.
 - Authored nodes are summarized with singular/plural type labels.
 - The nodes summary is the rightmost browser column.
@@ -1254,7 +1254,7 @@ Atlas shall filter Nodes by optional inclusive creation-date boundaries while pr
 
 **Priority:** Must
 
-**Status:** Implemented — migration and SQL verification pending
+**Status:** Implemented — developer-generated migration committed
 
 ### Acceptance criteria
 
@@ -1274,7 +1274,7 @@ Atlas shall filter Nodes by optional inclusive creation-date boundaries while pr
 
 **Priority:** Must
 
-**Status:** Implemented — SQL verification and HTTP host integration pending
+**Status:** Implemented — console authentication added; HTTP host integration pending
 
 ### Acceptance criteria
 
@@ -1284,6 +1284,8 @@ Atlas shall filter Nodes by optional inclusive creation-date boundaries while pr
 - Role revocation affects the next policy check even when cookie role claims are stale.
 - The moderation port may use global Identity roles; Atlas-specific business authorization stays in the appropriate domain/application layer.
 - Public registration grants Member only and cannot choose an existing profile ID.
-- The current participant-switching console remains an explicitly documented demo harness; no HTTP login UI/API is claimed as delivered.
+- The Console offers registration/sign-in/sign-out, uses the linked Participant as actor, and prohibits arbitrary participant switching.
+- Console sessions recheck credentials/profile/access before each main menu and refuse 2FA accounts until second-factor entry is implemented.
+- Local operator email confirmation is explicitly development tooling; no HTTP login UI/API or email ownership verification is claimed as delivered.
 
 [View traceability](TRACEABILITY.md#idn-002)
