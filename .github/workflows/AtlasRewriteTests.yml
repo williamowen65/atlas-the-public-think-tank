@@ -51,10 +51,10 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up .NET 10
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
 
@@ -88,8 +88,8 @@ jobs:
       ATLAS_SQL_TEST_CONNECTION_STRING: Server=localhost,1433;User ID=sa;Password=Atlas_CI_Only_29!Password;TrustServerCertificate=True;Encrypt=True
       ATLAS_SQL_CONNECTION_STRING: Server=localhost,1433;User ID=sa;Password=Atlas_CI_Only_29!Password;TrustServerCertificate=True;Encrypt=True
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
       - name: Check migrations match the EF model
