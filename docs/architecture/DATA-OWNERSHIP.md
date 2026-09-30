@@ -49,4 +49,4 @@ For setup and migration commands see [SQL Server persistence](../PTT-87-SQL-Serv
 
 ## Account/profile consistency
 
-[Identity registration](IDENTITY.md#registration-transaction) is an explicit cross-boundary transaction on the shared context: profile, credentials, and Member assignment commit together. This does not make unrelated Atlas multi-save workflows atomic. Developer-generated Identity migrations are pending in PTT-94.
+[Identity registration](IDENTITY.md#registration-transaction) is an explicit cross-boundary transaction on the shared context: profile, credentials, and Member assignment commit together. This does not make unrelated Atlas multi-save workflows atomic. The developer-generated Identity migration is committed in PTT-94.
