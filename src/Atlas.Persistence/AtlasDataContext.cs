@@ -1,10 +1,14 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Atlas.Persistence.Identity;
 
 namespace Atlas.Persistence;
 
 // EF maps persistence rows rather than domain aggregates. Repositories translate between them,
 // keeping SQL structure here and business behavior (ratings, permissions, lifecycle rules) in domains.
-public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options) : DbContext(options)
+public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
+    : IdentityDbContext<AtlasIdentityUser, IdentityRole<Guid>, Guid>(options)
 {
     public DbSet<NodeRow> NodeRows => Set<NodeRow>();
     public DbSet<NodeTypeRow> NodeTypeRows => Set<NodeTypeRow>();
@@ -47,7 +51,12 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
             }
     }
 
-    protected override void OnModelCreating(ModelBuilder model) => ConfigureModel(model);
+    protected override void OnModelCreating(ModelBuilder model)
+    {
+        base.OnModelCreating(model);
+        ConfigureModel(model);
+        IdentityModel.Configure(model);
+    }
 
     internal static void ConfigureModel(ModelBuilder model)
     {
@@ -719,9 +728,11 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
             entity.ToTable("NotificationDeliveryAttempts");
             entity.HasKey(row => new { row.NotificationId, row.Position });
         });
-        // Atlas supplies ALL key components: aggregate GUIDs, association pairs, and list positions.
+        // Atlas supplies its row key components: aggregate GUIDs, association pairs, and list positions.
         // Never tells EF to use the supplied value rather than expect database-generated keys.
-        foreach (var entity in model.Model.GetEntityTypes())
+        // Identity has its own key conventions (including generated numeric claim IDs).
+        foreach (var entity in model.Model.GetEntityTypes()
+                     .Where(entity => entity.ClrType.Namespace == typeof(ParticipantRow).Namespace))
             foreach (var property in entity.FindPrimaryKey()!.Properties)
                 property.ValueGenerated = Microsoft.EntityFrameworkCore.Metadata.ValueGenerated.Never;
 

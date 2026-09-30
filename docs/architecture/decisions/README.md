@@ -12,6 +12,8 @@ Architecture Decision Records explain why Atlas adopted a consequential design. 
 | [ADR-0004](ADR-0004-use-sql-server-persistence.md) | Start with SQL Server persistence adapters | Accepted |
 | [ADR-0005](ADR-0005-enforce-concurrency-at-domain-persistence-boundaries.md) | Enforce concurrency invariants at each bounded context's persistence boundary | Proposed |
 
+| [ADR-0006](ADR-0006-identity-participant-mapping.md) | Link Identity accounts to independent Participant profiles | Proposed |
+
 ## Identifier and status rules
 
 ADR numbers are permanent and never reused. A superseded ADR remains in the repository and links to the decision that replaced it.

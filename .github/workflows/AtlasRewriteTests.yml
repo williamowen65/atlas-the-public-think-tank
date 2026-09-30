@@ -36,6 +36,8 @@ jobs:
             project: tests/Atlas.Graph.Tests/Atlas.Graph.Tests.csproj
           - name: Participants
             project: tests/Atlas.Participants.Tests/Atlas.Participants.Tests.csproj
+          - name: Identity
+            project: tests/Atlas.Identity.Tests/Atlas.Identity.Tests.csproj
           - name: Voting
             project: tests/Atlas.Voting.Tests/Atlas.Voting.Tests.csproj
           - name: Console
@@ -99,3 +101,5 @@ jobs:
           dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence
       - name: Test direct EF repositories against SQL Server
         run: dotnet test tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj --configuration Release --verbosity normal
+      - name: Test Identity accounts and authorization against SQL Server
+        run: dotnet test tests/Atlas.Identity.Tests/Atlas.Identity.Tests.csproj --configuration Release --verbosity normal
