@@ -26,11 +26,12 @@ public sealed class ConsoleIdentitySession(IServiceScopeFactory scopes) : IModer
         var users = services.GetRequiredService<UserManager<AtlasIdentityUser>>();
         var user = await users.FindByEmailAsync(email.Trim());
         if (user is null) return SignInResult.Failed;
+        // Check before the framework password flow: its 2FA remembered-client check requires an HTTP context.
+        // The console has no second-factor flow and never grants these accounts a session.
+        if (await users.GetTwoFactorEnabledAsync(user)) return SignInResult.TwoFactorRequired;
         var signIn = services.GetRequiredService<SignInManager<AtlasIdentityUser>>();
         var result = await signIn.CheckPasswordSignInAsync(user, password, lockoutOnFailure: true);
         if (!result.Succeeded) return result;
-        // A password check is not the completed 2FA flow. Never grant a session to a 2FA account here.
-        if (await users.GetTwoFactorEnabledAsync(user)) return SignInResult.TwoFactorRequired;
         var principal = await services.GetRequiredService<IUserClaimsPrincipalFactory<AtlasIdentityUser>>()
             .CreateAsync(user);
         if (!(await services.GetRequiredService<IAuthorizationService>()
