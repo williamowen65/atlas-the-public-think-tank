@@ -8,7 +8,7 @@ Domain models and repository interfaces remain in their domains. `Atlas.Persiste
 2. Run `dotnet run --project src/Atlas.Console -- --seed-demo` once. It applies the migration and loads typed seed records from `src/Atlas.Console/Storage/SeedData/`, retaining their identities and timestamps. The seed command refuses a populated database.
 3. Run `dotnet run --project src/Atlas.Console` to use the SQL database.
 
-The initial relational migration is already checked in. The developer-generated `20260929202249_AddReferentialIntegrity` migration and its snapshot are now checked in; do not generate a second migration for those same relationships. Keep your existing relational database: the new migration should add constraints and indexes, without dropping tables or resetting demo data. Previous JSON files and the earlier JSON-in-SQL draft schema are not imported.
+The initial relational migration is already checked in. The developer-generated `20260929202249_AddReferentialIntegrity` migration and its snapshot are now checked in; do not generate a second migration for those same relationships. Keep your existing relational database: the new migration should add constraints and indexes, without dropping tables or resetting demo data.
 
 ## Tables and mapping
 
@@ -16,7 +16,7 @@ Each node, type, document, block, participant, vote, reaction definition, node r
 
 The vote table enforces unique `(ParticipantId, TargetType, TargetId)` values. Notifications enforce unique `(OccurrenceId, RecipientParticipantId)` values. The repositories map explicitly to domain reconstitution methods, preserving identities, timestamps, lifecycle states, preferences, and histories.
 
-The old serialized repositories, stored JSON DTOs, file adapters, JSON seed payloads, and JSON value converters are removed. The console data viewer formats rows as text. Domain projects do not take an EF Core dependency.
+Repositories map domain objects directly to EF Core rows; typed C# seed records provide demo data. The console data viewer formats rows as text. Domain projects do not take an EF Core dependency.
 
 ## Verification
 

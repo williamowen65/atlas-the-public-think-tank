@@ -69,8 +69,8 @@ Status meanings:
 
 These should be tested separately from the aggregate:
 
-- JSON round trips preserve requested type IDs, parent IDs, author IDs, and description IDs.
-- Legacy records are migrated or defaulted intentionally.
+- SQL repository round trips preserve requested type IDs, parent IDs, author IDs, and description IDs.
+- Checked-in relational migrations preserve valid existing rows during schema upgrades.
 - Missing referenced documents, participants, node types, and parents are handled predictably.
 - Publishing occurs after a successful node save.
 - Subscribers receive each integration event once.
