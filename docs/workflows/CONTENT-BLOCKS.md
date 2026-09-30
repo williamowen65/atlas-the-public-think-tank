@@ -9,9 +9,9 @@ Content owns documents, block identities, ordered composition, block payloads, a
 ## Composition lifecycle
 
 1. Create a concrete block from user-facing content; Content assigns its permanent, randomly generated GUID BlockId. The console never asks the user to supply an identity.
-2. Save the block to blocks.json.
+2. Save the block to BlockRows.
 3. Add the BlockId to the document at the intended position and advance Document.UpdatedAt.
-4. Save the document's ordered BlockIds to documents.json.
+4. Save the document's ordered BlockIds to DocumentRows.
 5. Edit the block through its type-specific behavior without changing BlockId.
 6. Move a block by changing only its position in the document and advancing Document.UpdatedAt.
 7. Remove a block reference and advance Document.UpdatedAt. Detached-block deletion or retention is deliberately deferred.
@@ -31,4 +31,4 @@ Markdown provides headings and inline formatting; there is no Header block. Spec
 
 ## Persistence boundary
 
-documents.json stores document identity, timestamps, and ordered BlockIds. blocks.json stores discriminated concrete block records. Each JSON record contains only its shared metadata and the fields belonging to its concrete block kind; unrelated and empty optional properties are omitted. This is a one-way migration from plain-text documents, not a compatibility layer.
+DocumentRows stores identity and timestamps. DocumentBlocks stores ordered (DocumentId, Position, BlockId) links. BlockRows stores a Kind discriminator, shared metadata, and nullable payload columns; the adapter populates only the selected kind's fields. Unused columns remain NULL. Blocks are saved before their document links. Each save is transactional, but the complete block-plus-document workflow is not one transaction.

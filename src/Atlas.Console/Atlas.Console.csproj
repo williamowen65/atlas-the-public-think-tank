@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.0" />
   </ItemGroup>
@@ -23,6 +24,7 @@
     <ProjectReference Include="..\Atlas.Moderation\Atlas.Moderation.csproj" />
     <ProjectReference Include="..\Atlas.Notifications\Atlas.Notifications.csproj" />
     <ProjectReference Include="..\Atlas.Participants\Atlas.Participants.csproj" />
+    <ProjectReference Include="..\Atlas.Persistence\Atlas.Persistence.csproj" />
     <ProjectReference Include="..\Atlas.Voting\Atlas.Voting.csproj" />
   </ItemGroup>
 

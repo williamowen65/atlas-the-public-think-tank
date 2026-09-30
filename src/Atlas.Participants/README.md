@@ -12,8 +12,8 @@ flowchart TB
     useCase["UpdateParticipantProfile"]
     repository["IParticipantRepository"]
     entity["Participant"]
-    adapter["JSON adapter in Atlas.Console"]
-    storage["data/participants.json"]
+    adapter["SQL adapter in Atlas.Console"]
+    storage["ParticipantRows"]
 
     caller -->|"actor ID and profile ID"| useCase
     useCase -->|"load and save"| repository
@@ -22,7 +22,7 @@ flowchart TB
     adapter --> storage
 ```
 
-The interface `IParticipantRepository` belongs to Atlas.Participants because this boundary defines what it needs from persistence. The current `JsonParticipantRepository` implementation belongs to Atlas.Console because JSON storage is infrastructure for the prototype.
+The interface `IParticipantRepository` belongs to Atlas.Participants because this boundary defines what it needs from persistence. The current `SqlParticipantRepository` implementation belongs to Atlas.Console as a SQL Server adapter; EF row definitions, mappings, and migrations live in Atlas.Persistence.
 
 ## Participant model
 
@@ -207,4 +207,4 @@ Future tests should cover protected deactivation, any reactivation policy, parti
 4. `Profiles/UpdateParticipantProfile.cs`
 5. `../../tests/Atlas.Participants.Tests/`
 6. `../Atlas.Console/Participants/ParticipantCommands.cs`
-7. `../Atlas.Console/Storage/JsonParticipantRepository.cs`
+7. `../Atlas.Console/Storage/SqlParticipantRepository.cs`

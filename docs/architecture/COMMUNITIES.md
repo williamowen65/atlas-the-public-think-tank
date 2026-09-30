@@ -19,9 +19,9 @@ The two many-to-many relationships are maintained through Community-owned record
 
 ## Consistency and failures
 
-The prototype uses one JSON file per owned record type. Repository-wide services enforce name uniqueness and association policies, but JSON provides only single-process consistency. A future database must enforce unique normalized Community names, `(CommunityId, ParticipantId)`, and `(CommunityId, NodeId)` constraints.
+The Console supplies SQL repository adapters for CommunityRows, CommunityMembershipRows, and CommunityNodeRows. SQL Server enforces a unique Community Name index and composite primary keys for (CommunityId, ParticipantId) and (CommunityId, NodeId). Name comparison follows the database collation; application validation also checks names case-insensitively.
 
-References may temporarily point to missing Participants or Nodes because cross-boundary transactions do not exist. Console composition displays missing references safely. Deletion is not implemented; archive preserves references.
+Foreign keys enforce references to existing Communities, Participants, and Nodes. NoAction prevents physical deletion while dependents exist; archive preserves references. Each repository save is transactional, but creating a Community plus its initial membership and other multi-save workflows do not share one transaction. Conflicting edits of the same row currently use last-write behavior.
 
 ## Follow-up decisions
 
@@ -30,4 +30,4 @@ References may temporarily point to missing Participants or Nodes because cross-
 - Community rules and presentation settings.
 - Private/restricted discovery and invitation behavior if users request it.
 - Versioned events for creation, archive, membership, and node-association changes.
-- Durable uniqueness and concurrency enforcement during SQL migration.
+- Recovery/transactions for multi-record workflows and conflict handling for simultaneous edits.

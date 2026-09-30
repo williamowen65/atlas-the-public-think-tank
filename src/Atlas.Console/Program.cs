@@ -29,82 +29,64 @@ var configuration = new ConfigurationBuilder()
     .AddEnvironmentVariables()
     .Build();
 
-var dataDirectory = Path.GetFullPath(
-    Path.Combine(
-        AppContext.BaseDirectory,
-        "..",
-        "..",
-        "..",
-        "..",
-        "..",
-        "data"));
+var connectionString = configuration["ATLAS_SQL_CONNECTION_STRING"];
+if (string.IsNullOrWhiteSpace(connectionString))
+    throw new InvalidOperationException("Set ATLAS_SQL_CONNECTION_STRING to a SQL Server connection string.");
 
-var nodeDataFilePath = Path.Combine(
-    dataDirectory,
-    "nodes.json");
+SqlStorage.Configure(connectionString);
+if (args.Contains("--seed-demo", StringComparer.OrdinalIgnoreCase))
+{
+    SqlStorage.SeedDemoData();
+    System.Console.WriteLine("Demo data seeded in SQL Server. Existing IDs were preserved.");
+    return;
+}
 
-var nodeTypeDataFilePath = Path.Combine(
-    dataDirectory,
-    "node-types.json");
+var nodeCollectionKey = "nodes";
 
-var documentDataFilePath = Path.Combine(
-    dataDirectory,
-    "documents.json");
+var nodeTypeCollectionKey = "node-types";
 
-var blockDataFilePath = Path.Combine(
-    dataDirectory,
-    "blocks.json");
+var documentCollectionKey = "documents";
 
-var participantDataFilePath = Path.Combine(
-    dataDirectory,
-    "participants.json");
 
-var voteDataFilePath = Path.Combine(
-    dataDirectory,
-    "votes.json");
+var participantCollectionKey = "participants";
 
-var tagDefinitionDataFilePath = Path.Combine(
-    dataDirectory,
-    "reaction-definitions.json");
+var voteCollectionKey = "votes";
 
-var nodeTagDataFilePath = Path.Combine(
-    dataDirectory,
-    "node-reactions.json");
+var tagDefinitionCollectionKey = "reaction-definitions";
 
-var communityDataFilePath = Path.Combine(dataDirectory, "communities.json");
-var communityMembershipDataFilePath = Path.Combine(dataDirectory, "community-memberships.json");
-var communityNodeDataFilePath = Path.Combine(dataDirectory, "community-nodes.json");
-var commentDataFilePath = Path.Combine(dataDirectory, "comments.json");
-var moderationDataFilePath = Path.Combine(dataDirectory, "moderation-cases.json");
+var nodeTagCollectionKey = "node-reactions";
+
+var communityCollectionKey = "communities";
+var communityMembershipCollectionKey = "community-memberships";
+var communityNodeCollectionKey = "community-nodes";
+var commentCollectionKey = "comments";
 
 INodeTypeRepository nodeTypeRepository =
-    new JsonNodeTypeRepository(nodeTypeDataFilePath);
+    new SqlNodeTypeRepository();
 
 SeedSystemNodeTypes(nodeTypeRepository);
 
 IDocumentRepository documentRepository =
-    new JsonDocumentRepository(
-        documentDataFilePath,
-        blockDataFilePath);
+    new SqlDocumentRepository();
 
 IParticipantRepository participantRepository =
-    new JsonParticipantRepository(participantDataFilePath);
+    new SqlParticipantRepository();
 
 IVoteRepository voteRepository =
-    new JsonVoteRepository(voteDataFilePath);
+    new SqlVoteRepository();
 
 IReactionDefinitionRepository tagDefinitionRepository =
-    new JsonReactionDefinitionRepository(tagDefinitionDataFilePath);
+    new SqlReactionDefinitionRepository();
 
 INodeReactionRepository nodeTagRepository =
-    new JsonNodeReactionRepository(nodeTagDataFilePath);
+    new SqlNodeReactionRepository();
 
-ICommunityRepository communityRepository = new JsonCommunityRepository(communityDataFilePath);
-ICommunityMembershipRepository communityMembershipRepository = new JsonCommunityMembershipRepository(communityMembershipDataFilePath);
-ICommunityNodeRepository communityNodeRepository = new JsonCommunityNodeRepository(communityNodeDataFilePath);
+ICommunityRepository communityRepository = new SqlCommunityRepository();
+ICommunityMembershipRepository communityMembershipRepository = new SqlCommunityMembershipRepository();
+ICommunityNodeRepository communityNodeRepository = new SqlCommunityNodeRepository();
 var communityService = new CommunityService(communityRepository, communityMembershipRepository, communityNodeRepository);
-ICommentRepository commentRepository = new JsonCommentRepository(commentDataFilePath);
-IModerationCaseRepository moderationCases = new JsonModerationCaseRepository(moderationDataFilePath);
+ICommentRepository commentRepository = new SqlCommentRepository();
+IModerationCaseRepository moderationCases = new SqlModerationCaseRepository();
 var moderatorAuthorization = new ConfiguredModeratorAuthorization(
     configuration["ATLAS_MODERATOR_PARTICIPANT_IDS"] is { } configuredIds
         ? configuredIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
@@ -115,12 +97,7 @@ var moderation = new ModerationService(moderationCases, moderatorAuthorization);
 var legacyParticipant =
     EnsureDefaultDemoParticipant(participantRepository);
 
-INodeRepository nodeRepository =
-    new JsonNodeRepository(
-        nodeDataFilePath,
-        nodeTypeRepository,
-        documentRepository,
-        new NodeAuthorId(legacyParticipant.Id.Value));
+INodeRepository nodeRepository = new SqlNodeRepository();
 
 var votingEligibility =
     new RepositoryVotingEligibility(
@@ -151,8 +128,7 @@ IDiscoveryCandidateSource discoverySource = new RepositoryDiscoveryCandidateSour
 IDiscoveryService discovery = new DiscoveryService(discoverySource);
 
 var eventPublisher = new InMemoryEventPublisher();
-INotificationRepository notificationRepository = new JsonNotificationRepository(
-    Path.Combine(dataDirectory, "notifications.json"), Path.Combine(dataDirectory, "notification-preferences.json"));
+INotificationRepository notificationRepository = new SqlNotificationRepository();
 var notificationService = new NotificationService(notificationRepository,
     [new SimulatedDelivery(DeliveryChannel.Email), new SimulatedDelivery(DeliveryChannel.Push)]);
 eventPublisher.Subscribe<NotificationRequestedV1>(request => notificationService.Handle(request));
@@ -177,22 +153,22 @@ var application = new ConsoleApplication(
     tagDefinitionRepository,
     nodeTagRepository,
     eventPublisher,
-    nodeDataFilePath,
-    nodeTypeDataFilePath,
-    documentDataFilePath,
-    participantDataFilePath,
-    voteDataFilePath,
-    tagDefinitionDataFilePath,
-    nodeTagDataFilePath,
-    communityDataFilePath,
-    communityMembershipDataFilePath,
-    communityNodeDataFilePath,
+    nodeCollectionKey,
+    nodeTypeCollectionKey,
+    documentCollectionKey,
+    participantCollectionKey,
+    voteCollectionKey,
+    tagDefinitionCollectionKey,
+    nodeTagCollectionKey,
+    communityCollectionKey,
+    communityMembershipCollectionKey,
+    communityNodeCollectionKey,
     communityRepository,
     communityMembershipRepository,
     communityNodeRepository,
     communityService,
     commentRepository,
-    commentDataFilePath,
+    commentCollectionKey,
     discovery,
     legacyParticipant,
     moderation,

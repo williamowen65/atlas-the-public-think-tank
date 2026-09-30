@@ -1,6 +1,6 @@
 # Atlas.Console architecture
 
-`Atlas.Console` is the executable host and composition root for the current Atlas prototype. It stitches the domain boundaries together, supplies JSON-backed repository implementations, presents interactive workflows, and dispatches integration events synchronously in memory.
+`Atlas.Console` is the executable host and composition root for the current Atlas prototype. It stitches the domain boundaries together, supplies SQL Server-backed repository implementations, presents interactive workflows, and dispatches integration events synchronously in memory.
 
 The projects are strongly separated domain boundaries inside one process today. They are not independently deployed microservices yet.
 
@@ -15,7 +15,7 @@ flowchart TB
         app["ConsoleApplication — main menu and session"]
         workflows["Console workflows — nodes and profiles"]
         eventBus["In-memory event publisher"]
-        adapters["JSON repository adapters"]
+        adapters["SQL repository adapters"]
     end
 
     subgraph boundaries["Domain boundaries"]
@@ -25,8 +25,8 @@ flowchart TB
         contracts["Atlas.Contracts — integration-event payloads"]
     end
 
-    subgraph storage["File-system data"]
-        files["data/*.json"]
+    subgraph storage["SQL Server persistence"]
+        files["AtlasDataContext and relational tables"]
     end
 
     user --> app
@@ -46,7 +46,7 @@ flowchart TB
     adapters --> files
 ```
 
-`Program.cs` constructs the repositories, seeds system node types, registers event subscribers, selects the initial participant, and starts `ConsoleApplication`.
+`Program.cs` loads configuration, configures SQL Server and applies migrations, handles optional empty-database demo seeding, constructs repositories/services, ensures seven system node types, registers subscribers, selects Demo User 01, and starts `ConsoleApplication`.
 
 `ConsoleApplication` owns the current Console session, including the currently selected participant. It delegates focused work to classes such as `NodeCreationWorkflow`, `NodeCommands`, and `ParticipantCommands`.
 
@@ -78,7 +78,7 @@ erDiagram
 
     DOCUMENT {
         Guid Id PK
-        string Content
+        GuidArray BlockIds
     }
 
     NODE_TYPE {
@@ -103,9 +103,9 @@ sequenceDiagram
     actor User
     participant Workflow as NodeCreationWorkflow
     participant Content as Atlas.Content
-    participant Documents as documents.json
+    participant Documents as DocumentRows
     participant Graph as Atlas.Graph
-    participant Nodes as nodes.json
+    participant Nodes as NodeRows
     participant Bus as Event publisher
     participant Observer as Content observer
 
@@ -122,7 +122,7 @@ sequenceDiagram
     Observer-->>Bus: Handled
 ```
 
-Content generates the document ID because Content owns the document lifecycle. Graph receives only that opaque identifier. The node is saved before its recorded events are published.
+Content generates the document ID because Content owns the document lifecycle. Graph receives only that opaque identifier. The node is saved before its recorded events are published. Block, document, and node saves use separate transactions; later failures can leave orphaned content.
 
 The current publisher and subscribers are synchronous and in-process. A future message broker and outbox could replace this infrastructure without putting broker code inside the domain objects.
 
@@ -170,14 +170,14 @@ This is why editing another participant remains visible: the Console allows the 
 
 ## Persistence adapters
 
-| Domain contract | Console implementation | File |
+| Domain contract | Console implementation | SQL tables |
 |---|---|---|
-| `INodeRepository` | `JsonNodeRepository` | `data/nodes.json` |
-| `INodeTypeRepository` | `JsonNodeTypeRepository` | `data/node-types.json` |
-| `IDocumentRepository` | `JsonDocumentRepository` | `data/documents.json` |
-| `IParticipantRepository` | `JsonParticipantRepository` | `data/participants.json` |
+| `INodeRepository` | `SqlNodeRepository` | `NodeRows` |
+| `INodeTypeRepository` | `SqlNodeTypeRepository` | `NodeTypeRows` |
+| `IDocumentRepository` | `SqlDocumentRepository` | `DocumentRows` |
+| `IParticipantRepository` | `SqlParticipantRepository` | `ParticipantRows` |
 
-The repository interfaces live with the boundaries that own their data. The JSON implementations live in Atlas.Console because file storage is infrastructure for this prototype.
+The repository interfaces live with the boundaries that own their data. The SQL implementations live in Atlas.Console as infrastructure adapters. Atlas.Persistence owns rows, mappings, AtlasDataContext, and migrations.
 
 ## Where to begin reading the code
 
@@ -188,7 +188,7 @@ The repository interfaces live with the boundaries that own their data. The JSON
 5. `Participants/ParticipantCommands.cs` — shared profile actions and authorization call.
 6. `Eventing/InMemoryEventPublisher.cs` — subscriber registration and synchronous dispatch.
 7. `Content/ObserveNodeLifecycleInContent.cs` — how Content observes Graph events.
-8. `Storage/` — how domain objects are translated to and from JSON records.
+8. `Storage/` — how domain objects are translated to and from EF Core rows.
 
 ## Current architectural boundaries
 

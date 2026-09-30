@@ -114,3 +114,9 @@ Before committing a generated blackboard, verify:
 - [ ] Implemented and deferred behavior are visually distinct.
 - [ ] The board remains readable both by section and as a whole.
 
+
+## Required viewing and review format
+
+Open and review blackboards in Excalidraw using the native `.excalidraw` file. Verify changed text, layout, groups, arrow bindings, and implementation links in Excalidraw before committing. PDF, SVG, PNG, and other static previews do not substitute for native Excalidraw review and are not the default diagram deliverable. Create an export only when explicitly requested.
+
+Keep labels and links aligned with the current repository. Persistence diagrams must show SQL adapters, EF row mappings, relational child tables, database constraints, and actual transaction boundaries. Do not imply that every multi-save workflow or event publication is atomic.
