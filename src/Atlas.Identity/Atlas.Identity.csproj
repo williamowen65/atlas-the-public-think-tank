@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../Atlas.Persistence/Atlas.Persistence.csproj" />
+    <ProjectReference Include="../Atlas.Participants/Atlas.Participants.csproj" />
+    <ProjectReference Include="../Atlas.Moderation/Atlas.Moderation.csproj" />
+  </ItemGroup>
+</Project>

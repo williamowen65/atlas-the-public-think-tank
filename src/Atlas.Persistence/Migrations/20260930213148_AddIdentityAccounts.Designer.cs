@@ -4,6 +4,7 @@ using Atlas.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Atlas.Persistence.Migrations
 {
     [DbContext(typeof(AtlasDataContext))]
-    partial class AtlasDataContextModelSnapshot : ModelSnapshot
+    [Migration("20260930213148_AddIdentityAccounts")]
+    partial class AddIdentityAccounts
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -827,8 +830,8 @@ namespace Atlas.Persistence.Migrations
                         {
                             Id = new Guid("94000000-0000-4000-8000-000000000002"),
                             ConcurrencyStamp = "94000000-0000-4000-8000-000000000002",
-                            Name = "GlobalModerator",
-                            NormalizedName = "GLOBALMODERATOR"
+                            Name = "Moderator",
+                            NormalizedName = "MODERATOR"
                         },
                         new
                         {

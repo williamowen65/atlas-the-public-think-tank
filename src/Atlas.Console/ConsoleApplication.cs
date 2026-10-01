@@ -45,6 +45,8 @@ public sealed class ConsoleApplication
     private readonly NotificationService _notificationService;
     private readonly INotificationRepository _notificationRepository;
     private Participant _currentParticipant;
+    private readonly Func<bool>? _validateSession;
+    public bool ExitRequested { get; private set; }
     private readonly string _nodeCollectionKey;
     private readonly string _nodeTypeCollectionKey;
     private readonly string _documentCollectionKey;
@@ -90,7 +92,8 @@ public sealed class ConsoleApplication
         ModerationService moderation,
         IModeratorAuthorization moderatorAuthorization,
         NotificationService notificationService,
-        INotificationRepository notificationRepository)
+        INotificationRepository notificationRepository,
+        Func<bool>? validateSession = null)
     {
         _nodeRepository = nodes;
         _nodeTypeRepository = nodeTypes;
@@ -124,6 +127,7 @@ public sealed class ConsoleApplication
         _moderatorAuthorization = moderatorAuthorization;
         _notificationService = notificationService;
         _notificationRepository = notificationRepository;
+        _validateSession = validateSession;
     }
 
     /// <summary>Runs the interactive console application workflow.</summary>
@@ -133,6 +137,12 @@ public sealed class ConsoleApplication
 
         while (running)
         {
+            if (_validateSession is not null && !_validateSession())
+            {
+                ConsoleUi.Pause("Your session has ended. Please sign in again.");
+                return;
+            }
+            _currentParticipant = _participantRepository.GetById(_currentParticipant.Id) ?? _currentParticipant;
             Console.Clear();
             WriteMainMenu();
 
@@ -141,11 +151,10 @@ public sealed class ConsoleApplication
             switch (Console.ReadLine())
             {
                 case "1":
-                    SelectParticipant();
-                    break;
+                    return;
 
                 case "2":
-                    CreateParticipant();
+                    ViewParticipantProfile(_currentParticipant.Id);
                     break;
 
                 case "3":
@@ -192,6 +201,7 @@ public sealed class ConsoleApplication
                     break;
 
                 case "13":
+                    ExitRequested = true;
                     running = false;
                     break;
 
@@ -211,8 +221,8 @@ public sealed class ConsoleApplication
         Console.WriteLine(
             $"Current participant: {_currentParticipant.DisplayName}");
         Console.WriteLine();
-        Console.WriteLine("1. Select participant");
-        Console.WriteLine("2. Create participant");
+        Console.WriteLine("1. Sign out");
+        Console.WriteLine("2. My profile");
         Console.WriteLine("3. Browse participants");
         Console.WriteLine("4. Create node");
         Console.WriteLine("5. Discover nodes");
@@ -230,85 +240,6 @@ public sealed class ConsoleApplication
         Console.WriteLine();
     }
 
-
-    /// <summary>Selects participant for the current console workflow.</summary>
-    private void SelectParticipant()
-    {
-        Console.Clear();
-        Console.WriteLine("SELECT PARTICIPANT");
-        Console.WriteLine("------------------");
-        WriteActingAs();
-
-        var participants = _participantRepository
-            .GetAll()
-            .Where(participant => participant.IsActive)
-            .OrderBy(participant => participant.DisplayName)
-            .ToList();
-
-        for (var index = 0; index < participants.Count; index++)
-        {
-            Console.WriteLine(
-                $"{index + 1}. {participants[index].DisplayName}");
-        }
-
-        Console.WriteLine();
-        Console.Write("Selection (0 cancels): ");
-
-        if (!int.TryParse(Console.ReadLine(), out var selection) ||
-            selection < 0 ||
-            selection > participants.Count)
-        {
-            ConsoleUi.Pause("That is not a valid selection.");
-            return;
-        }
-
-        if (selection == 0)
-        {
-            return;
-        }
-
-        _currentParticipant = participants[selection - 1];
-
-        ConsoleUi.Pause(
-            $"Current participant: {_currentParticipant.DisplayName}");
-    }
-
-    /// <summary>Creates participant during the current workflow.</summary>
-    private void CreateParticipant()
-    {
-        Console.Clear();
-        Console.WriteLine("CREATE PARTICIPANT");
-        Console.WriteLine("------------------");
-        WriteActingAs();
-        Console.Write("Display name: ");
-        var displayName = Console.ReadLine();
-        Console.Write("Short bio (optional): ");
-        var bio = Console.ReadLine();
-
-        try
-        {
-            var participant = new Participant(
-                displayName ?? string.Empty,
-                bio ?? string.Empty,
-                DateTimeOffset.UtcNow);
-
-            _participantRepository.Save(participant);
-            _currentParticipant = participant;
-
-            ConsoleUi.Pause(
-                $"Created and selected {participant.DisplayName}.");
-        }
-        catch (ArgumentException exception)
-        {
-            ConsoleUi.Pause(
-                $"Unable to create participant: {exception.Message}");
-        }
-        catch (InvalidOperationException exception)
-        {
-            ConsoleUi.Pause(
-                $"Unable to create participant: {exception.Message}");
-        }
-    }
 
     /// <summary>Displays participants in the console workflow.</summary>
     private void BrowseParticipants()

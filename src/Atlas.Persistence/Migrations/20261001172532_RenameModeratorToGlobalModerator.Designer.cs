@@ -4,6 +4,7 @@ using Atlas.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Atlas.Persistence.Migrations
 {
     [DbContext(typeof(AtlasDataContext))]
-    partial class AtlasDataContextModelSnapshot : ModelSnapshot
+    [Migration("20261001172532_RenameModeratorToGlobalModerator")]
+    partial class RenameModeratorToGlobalModerator
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

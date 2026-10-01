@@ -1,4 +1,6 @@
 using Atlas.ConsoleApp.Storage;
+using Atlas.Identity;
+using Microsoft.Extensions.DependencyInjection;
 using Atlas.Persistence;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -9,7 +11,7 @@ namespace Atlas.Persistence.Tests;
 public sealed class SqlPersistenceTests
 {
     [TestMethod]
-    public void DemoSeed_creates_domain_rows_and_sql_enforces_vote_uniqueness()
+    public async Task DemoSeed_creates_domain_rows_and_sql_enforces_vote_uniqueness()
     {
         var serverConnection = Environment.GetEnvironmentVariable("ATLAS_SQL_TEST_CONNECTION_STRING");
         if (string.IsNullOrWhiteSpace(serverConnection))
@@ -23,7 +25,9 @@ public sealed class SqlPersistenceTests
         try
         {
             SqlStorage.Configure(connection); // EF creates an isolated database and applies the migration.
-            SqlStorage.SeedDemoData();
+            using var identityServices = new ServiceCollection().AddAtlasIdentity(connection)
+                .BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+            await SqlStorage.SeedDemoDataAsync(identityServices.GetRequiredService<IServiceScopeFactory>());
             using var database = new AtlasDataContext(options);
             Assert.IsTrue(database.NodeRows.Any());
             Assert.IsTrue(database.ParticipantRows.Any());

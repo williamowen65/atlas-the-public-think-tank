@@ -46,9 +46,9 @@ flowchart TB
     adapters --> files
 ```
 
-`Program.cs` loads configuration, configures SQL Server and applies migrations, handles optional empty-database demo seeding, constructs repositories/services, ensures seven system node types, registers subscribers, selects Demo User 01, and starts `ConsoleApplication`.
+`Program.cs` loads configuration, configures SQL Server and applies migrations, handles optional empty-database demo seeding, constructs repositories/services, ensures seven system node types, registers subscribers, offers Identity registration/sign-in, and starts `ConsoleApplication` with the authenticated account-linked Participant.
 
-`ConsoleApplication` owns the current Console session, including the currently selected participant. It delegates focused work to classes such as `NodeCreationWorkflow`, `NodeCommands`, and `ParticipantCommands`.
+`ConsoleApplication` owns the current Console session, including the authenticated participant. It delegates focused work to classes such as `NodeCreationWorkflow`, `NodeCommands`, and `ParticipantCommands`.
 
 ## How the domain objects relate
 
@@ -153,7 +153,7 @@ sequenceDiagram
     end
 ```
 
-Selecting a participant in the Console simulates authentication: it establishes who the current actor is. `UpdateParticipantProfile` in Atlas.Participants performs authorization by comparing the actor ID with the profile ID. `Participant.UpdateProfile` validates and applies the state change atomically.
+Identity sign-in establishes the Console actor; browsing a Participant profile cannot change that actor. `UpdateParticipantProfile` in Atlas.Participants performs authorization by comparing the actor ID with the profile ID. `Participant.UpdateProfile` validates and applies the state change atomically.
 
 Both entry paths use the same `ParticipantCommands` workflow:
 
@@ -163,7 +163,6 @@ flowchart LR
     node["View node author"] --> profile
     profile --> edit["Edit profile"]
     profile --> authored["View authored nodes"]
-    profile --> select["Select participant"]
 ```
 
 This is why editing another participant remains visible: the Console allows the attempt so the Participants boundary can demonstrate and enforce the permission rule.
@@ -193,3 +192,7 @@ The repository interfaces live with the boundaries that own their data. The SQL 
 ## Current architectural boundaries
 
 The Console is intentionally doing several application-layer jobs while it is the only executable host. When an MVC or API host is added, reusable use cases should move out of Console rather than be copied. Presentation stays in each host; domain rules, application authorization, contracts, and persistence abstractions remain reusable.
+
+## Account entry
+
+See [PTT-94 setup](../../docs/PTT-94-Identity.md#use-registration-and-sign-in) for registration, local operator email confirmation, sign-in, and sign-out. Passwords are not echoed. No new migration is needed for the console flow.

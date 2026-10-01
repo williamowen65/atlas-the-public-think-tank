@@ -1,58 +1,39 @@
-using Atlas.Persistence;
-
 namespace Atlas.ConsoleApp.Storage;
 
-internal static partial class DemoData
+internal sealed record DemoParticipant(string Email, string DisplayName);
+
+/// <summary>
+/// Demo identities are created through Atlas registration. Generated IDs are then reused by every
+/// dependent seed record so authorship, votes, communities, and reactions point at real accounts.
+/// </summary>
+internal static class DemoParticipants
 {
-    private static void SeedParticipant(AtlasDataContext database)
+    public const string Password = "Atlas_Demo_Only_94!Password";
+
+    public static readonly DemoParticipant[] Accounts =
+    [
+        new("demo01@example.test", "Demo User 01"),
+        new("demo02@example.test", "Demo User 02"),
+        new("demo03@example.test", "Demo User 03"),
+        new("demo04@example.test", "Demo User 04"),
+        new("demo05@example.test", "Demo User 05"),
+    ];
+
+    public static Guid User01Id { get; private set; }
+    public static Guid User02Id { get; private set; }
+    public static Guid User03Id { get; private set; }
+    public static Guid User04Id { get; private set; }
+    public static Guid User05Id { get; private set; }
+
+    public static void SetIds(IReadOnlyList<Guid> ids)
     {
-        database.ParticipantRows.AddRange(new ParticipantRow[]
-        {
-            new ParticipantRow
-            {
-                Id = Guid.Parse("11111111-1111-4111-8111-111111111111"),
-                DisplayName = "Demo User 01",
-                Bio = "The default Atlas participant used when the console first starts.",
-                IsActive = true,
-                CreatedAt = DateTimeOffset.Parse("2026-08-01T15:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-08-01T15:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-            },
-            new ParticipantRow
-            {
-                Id = Guid.Parse("22222222-2222-4222-8222-222222222222"),
-                DisplayName = "Demo User 02",
-                Bio = "Tacoma neighborhood planner interested in housing, public space, and practical civic experiments.",
-                IsActive = true,
-                CreatedAt = DateTimeOffset.Parse("2026-08-02T16:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-08-02T16:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-            },
-            new ParticipantRow
-            {
-                Id = Guid.Parse("33333333-3333-4333-8333-333333333333"),
-                DisplayName = "Demo User 03",
-                Bio = "Ferry commuter and volunteer emergency-preparedness coordinator from Kitsap County.",
-                IsActive = true,
-                CreatedAt = DateTimeOffset.Parse("2026-08-03T17:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-08-03T17:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-            },
-            new ParticipantRow
-            {
-                Id = Guid.Parse("44444444-4444-4444-8444-444444444444"),
-                DisplayName = "Demo User 04",
-                Bio = "Marine ecologist who works with community groups on shoreline resilience and habitat restoration.",
-                IsActive = true,
-                CreatedAt = DateTimeOffset.Parse("2026-08-04T18:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-08-04T18:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-            },
-            new ParticipantRow
-            {
-                Id = Guid.Parse("55555555-5555-4555-8555-555555555555"),
-                DisplayName = "Demo User 05",
-                Bio = "Middle-school science teacher and daily bus rider who likes projects students can test locally.",
-                IsActive = true,
-                CreatedAt = DateTimeOffset.Parse("2026-08-05T19:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-08-05T19:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-            },
-        });
+        if (ids.Count != Accounts.Length || ids.Any(id => id == Guid.Empty))
+            throw new ArgumentException("All demo participant IDs are required.", nameof(ids));
+
+        User01Id = ids[0];
+        User02Id = ids[1];
+        User03Id = ids[2];
+        User04Id = ids[3];
+        User05Id = ids[4];
     }
 }

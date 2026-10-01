@@ -12,6 +12,7 @@ Domains own behavior and identifiers. Console SQL repository adapters translate 
 | Documents / ordered block references | Content | DocumentRows / DocumentBlocks |
 | Typed block payloads | Content | BlockRows |
 | Participant profiles | Participants | ParticipantRows |
+| Credentials, tokens, global roles | ASP.NET Core Identity; account Id equals ParticipantId | identity.Users / Roles / UserRoles / UserClaims / RoleClaims / UserLogins / UserTokens |
 | Current votes | Voting | VoteRows |
 | Communities / membership / node associations | Communities | CommunityRows / CommunityMembershipRows / CommunityNodeRows |
 | Threaded comments | Comments | CommentRows |
@@ -45,3 +46,7 @@ Competing first votes cannot persist duplicate participant-target rows, but the 
 The host dispatches recorded facts after saves. SQL commits and in-memory event dispatch are not atomic. Notification deduplication prevents duplicate rows for an occurrence/recipient; it does not guarantee external side effects exactly once.
 
 For setup and migration commands see [SQL Server persistence](../PTT-87-SQL-Server.md). For behavior and boundary gaps see the [context map](CONTEXT-MAP.md).
+
+## Account/profile consistency
+
+[Identity registration](IDENTITY.md#registration-transaction) is an explicit cross-boundary transaction on the shared context: profile, credentials, and Member assignment commit together. This does not make unrelated Atlas multi-save workflows atomic. The developer-generated Identity migration is committed in PTT-94.

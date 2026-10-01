@@ -297,7 +297,7 @@ This document is the authoritative catalog of requirement statements and accepta
 
 **Statement:** The system shall represent each participant with a stable identifier, display name, optional biography, active state, and timestamps.
 
-**Rationale:** Participants need lightweight public identities without prematurely implementing authentication.
+**Rationale:** Public profile behavior remains independent of authentication infrastructure.
 
 **Priority:** Must  
 **Status:** Verified
@@ -322,7 +322,7 @@ This document is the authoritative catalog of requirement statements and accepta
 
 ### Acceptance criteria
 
-- Participants are selectable from a browser.
+- Participant profiles can be opened from a browser without changing the authenticated actor.
 - A profile can be reached from a node's author action.
 - Authored nodes are summarized with singular/plural type labels.
 - The nodes summary is the rightmost browser column.
@@ -1245,3 +1245,47 @@ Atlas shall filter Nodes by optional inclusive creation-date boundaries while pr
 
 **Priority:** Must
 **Status:** Simulated adapters implemented; production worker pending
+
+
+<a id="idn-001"></a>
+## IDN-001 — Accounts map atomically to independent Participants
+
+**Statement:** Authentication infrastructure shall use ASP.NET Core Identity and SQL Server, with the account GUID matching an independent ParticipantId.
+
+**Priority:** Must
+
+**Status:** Implemented — developer-generated migration committed
+
+### Acceptance criteria
+
+- Participants references neither Identity nor EF.
+- New-account registration creates a validated profile, account, and Member role assignment in one transaction; failures leave no orphan profile.
+- A SQL foreign key prevents accounts without profiles; normalized email and username uniqueness is database-enforced.
+- Identity owns hashing, confirmation/reset tokens, lockout, security stamps, and credential changes.
+- Existing profiles survive migration without receiving accounts/passwords or privileged roles automatically.
+- The developer generates the migration through EF tooling and commits migration, designer, and snapshot together.
+
+[View traceability](TRACEABILITY.md#idn-001)
+
+<a id="idn-002"></a>
+## IDN-002 — Identity supplies authenticated actors and baseline roles
+
+**Statement:** Identity infrastructure shall expose Member, Moderator, and Administrator policies using authenticated, active linked Participants and current stored role memberships.
+
+**Priority:** Must
+
+**Status:** Implemented — console authentication added; HTTP host integration pending
+
+### Acceptance criteria
+
+- Anonymous, malformed, unknown, inactive, unconfirmed, or locked accounts do not resolve to authorized actors.
+- Sign-in requires confirmed email and an active profile and retains framework password/lockout/2FA behavior.
+- Member accepts any baseline role; Moderator accepts Moderator or Administrator; Administrator accepts only Administrator.
+- Role revocation affects the next policy check even when cookie role claims are stale.
+- The moderation port may use global Identity roles; Atlas-specific business authorization stays in the appropriate domain/application layer.
+- Public registration grants Member only and cannot choose an existing profile ID.
+- The Console offers registration/sign-in/sign-out, uses the linked Participant as actor, and prohibits arbitrary participant switching.
+- Console sessions recheck credentials/profile/access before each main menu and refuse 2FA accounts until second-factor entry is implemented.
+- Local operator email confirmation is explicitly development tooling; no HTTP login UI/API or email ownership verification is claimed as delivered.
+
+[View traceability](TRACEABILITY.md#idn-002)
