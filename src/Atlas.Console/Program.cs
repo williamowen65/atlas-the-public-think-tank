@@ -36,6 +36,10 @@ if (string.IsNullOrWhiteSpace(connectionString))
     throw new InvalidOperationException("Set ATLAS_SQL_CONNECTION_STRING to a SQL Server connection string.");
 
 SqlStorage.Configure(connectionString);
+using var identityServices = new ServiceCollection().AddAtlasIdentity(connectionString)
+    .BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+var accountScopes = identityServices.GetRequiredService<IServiceScopeFactory>();
+
 if (args.Contains("--seed-demo", StringComparer.OrdinalIgnoreCase))
 {
     await SqlStorage.SeedDemoDataAsync(accountScopes);
@@ -44,10 +48,6 @@ if (args.Contains("--seed-demo", StringComparer.OrdinalIgnoreCase))
     System.Console.WriteLine("Demo password: Atlas_Demo_Only_94!Password");
     return;
 }
-
-using var identityServices = new ServiceCollection().AddAtlasIdentity(connectionString)
-    .BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
-var accountScopes = identityServices.GetRequiredService<IServiceScopeFactory>();
 
 var nodeCollectionKey = "nodes";
 
