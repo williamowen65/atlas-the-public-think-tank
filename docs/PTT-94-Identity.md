@@ -4,15 +4,24 @@ PTT-94 adds account infrastructure for the future HTTP host. Participants remain
 
 ## Migration status
 
-The developer-generated `20260930213148_AddIdentityAccounts` migration, designer, and updated snapshot are checked in. The console registration/sign-in follow-up changes no EF mappings and needs no additional migration. Keep generating future migrations yourself through `dotnet ef migrations add <Name> --project src/Atlas.Persistence` when the model changes.
+Identity migrations use `Atlas.Persistence` as the migration project and `Atlas.Console` as the startup project. These flags have separate jobs:
+
+- `--project src/Atlas.Persistence` selects the project that owns `AtlasDataContext`, the EF model snapshot, and generated migration files.
+- `--startup-project src/Atlas.Console` selects the executable EF builds/starts to obtain Atlas runtime configuration and services used to construct the context.
+
+When using `Atlas.Console` as the startup project, it must reference `Microsoft.EntityFrameworkCore.Design` with `PrivateAssets=all`. Keep its EF Core package version aligned with the other EF Core packages in the solution.
+
+
+
+The developer-generated `20260930213148_AddIdentityAccounts` migration, designer, and updated snapshot are checked in. The console registration/sign-in follow-up changes no EF mappings and needs no additional migration. Keep generating future migrations yourself through `dotnet ef migrations add <Name> --project src/Atlas.Persistence --startup-project src/Atlas.Console` when the model changes.
 
 ## Apply to your existing local SQL database
 
 After migration review, run:
 
 ```powershell
-dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence
-dotnet ef database update --project src/Atlas.Persistence --context AtlasDataContext
+dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence --startup-project src/Atlas.Console
+dotnet ef database update --project src/Atlas.Persistence --startup-project src/Atlas.Console --context AtlasDataContext
 ```
 
 Keep the current database and demo data. Do not reset or reseed it, and do not regenerate the earlier referential-integrity migration. Updating applies only migrations missing from `__EFMigrationsHistory`. Console startup also applies committed migrations under the existing prototype behavior; the explicit update command makes this step visible.
