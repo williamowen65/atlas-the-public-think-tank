@@ -9,7 +9,7 @@ namespace Atlas.Identity;
 public static class AtlasPolicies
 {
     public const string Member = "Atlas.Member";
-    public const string Moderator = "Atlas.Moderator";
+    public const string GlobalModerator = "Atlas.GlobalModerator";
     public const string Administrator = "Atlas.Administrator";
 }
 
@@ -42,6 +42,6 @@ public sealed class IdentityModeratorAuthorization(AtlasDataContext database) : 
          join role in database.Roles on membership.RoleId equals role.Id
          where user.Id == participantId && participant.IsActive && user.EmailConfirmed &&
                (!user.LockoutEnabled || user.LockoutEnd == null || user.LockoutEnd <= DateTimeOffset.UtcNow) &&
-               (role.Name == AtlasRoles.Moderator || role.Name == AtlasRoles.Administrator)
+               (role.Name == AtlasRoles.GlobalModerator || role.Name == AtlasRoles.Administrator)
          select user.Id).Any();
 }
