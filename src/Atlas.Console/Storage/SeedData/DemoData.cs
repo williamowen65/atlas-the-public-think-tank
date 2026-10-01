@@ -11,7 +11,6 @@ internal static partial class DemoData
         SeedNodeType(database);
         SeedDocument(database);
         SeedBlock(database);
-        SeedParticipant(database);
         SeedVote(database);
         SeedReactionDefinition(database);
         SeedNodeReaction(database);
