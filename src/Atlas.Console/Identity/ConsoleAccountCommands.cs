@@ -70,6 +70,16 @@ internal static class ConsoleAccountCommands
         if (user.EmailConfirmed) { Console.WriteLine("Email is already confirmed."); return; }
         Console.Write("Confirm this account as the local operator? Type CONFIRM: ");
         if (Console.ReadLine() != "CONFIRM") { Console.WriteLine("Cancelled."); return; }
+        // LOCAL-DEVELOPMENT SHORTCUT: there is no email provider or in-memory confirmation list here.
+        // ASP.NET Core Identity generates a real email-confirmation token for this persisted user, and
+        // ConfirmEmailAsync validates that token and persists EmailConfirmed = true in the Identity user row.
+        //
+        // A future web/email integration should keep this Identity token + ConfirmEmailAsync mechanism.
+        // The difference is that the application will generate the token, put it in a confirmation link,
+        // and an email provider will deliver that link to the user's email address. The public confirmation
+        // endpoint will then receive the token from the clicked link and pass it to ConfirmEmailAsync.
+        // This console command deliberately skips the delivery/ownership-verification step and is therefore
+        // only a trusted local operator utility.
         var token = await users.GenerateEmailConfirmationTokenAsync(user);
         var result = await users.ConfirmEmailAsync(user, token);
         Console.WriteLine(result.Succeeded ? "Email confirmed. You can now sign in."
