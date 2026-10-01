@@ -41,15 +41,15 @@ Tests use `CheckPasswordSignInAsync` to exercise password/eligibility/lockout be
 
 | Policy | Allowed stored roles |
 |---|---|
-| `Atlas.Member` | Member, Moderator, Administrator |
-| `Atlas.Moderator` | Moderator, Administrator |
+| `Atlas.Member` | Member, GlobalGlobalModerator, Administrator |
+| `Atlas.Moderator` | GlobalModerator, Administrator |
 | `Atlas.Administrator` | Administrator |
 
 All policies require an authenticated principal and a persisted, confirmed, unlocked account with an active Participant. `AtlasAccounts.ResolveParticipantAsync` maps the framework user-ID claim to this verified ID. Missing, malformed, empty, unknown, anonymous, locked, unconfirmed, or inactive identities cannot resolve.
 
 The policy handler reads current database role memberships instead of trusting role claims copied into an older cookie. Removing a role takes effect on the next policy check. Cookie validation retains the framework security-stamp validator and rechecks profile eligibility on every cookie request; password-change stamp invalidation retains the framework's validation interval. Role possession does not grant ownership of someone else's profile/node or community moderator status.
 
-`IdentityModeratorAuthorization` implements the existing `IModeratorAuthorization` port using stored global Moderator/Administrator membership and active-account eligibility. The host must derive its actor ID from authenticated identity before invoking domain services. This adapter does not turn arbitrary caller-supplied GUIDs into authenticated actors. Moderation continues to own reports, decisions, hide/restore behavior, and audit history.
+`IdentityModeratorAuthorization` implements the existing `IModeratorAuthorization` port using stored global GlobalModerator/Administrator membership and active-account eligibility. The host must derive its actor ID from authenticated identity before invoking domain services. This adapter does not turn arbitrary caller-supplied GUIDs into authenticated actors. Moderation continues to own reports, decisions, hide/restore behavior, and audit history.
 
 ## HTTP host integration contract
 
