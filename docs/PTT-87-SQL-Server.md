@@ -26,6 +26,12 @@ No .NET SDK or SQL Server is installed in this workspace; validation runs throug
 
 ## Model-first migration workflow
 
+`--project src/Atlas.Persistence` tells EF Core where the `AtlasDataContext`, migrations, and model snapshot live; generated migration files belong to that project. `--startup-project src/Atlas.Console` is different: it tells EF which executable project to build/start when tooling needs the application's runtime services and configuration to construct the DbContext. The Console startup project must reference `Microsoft.EntityFrameworkCore.Design` when using that route.
+
+Atlas.Persistence also has a design-time DbContext factory, so persistence-only migrations can be scaffolded without starting the Console. That is why older PTT-87 commands use `--project` plus `--context` but no `--startup-project`. Do not mix the two forms accidentally: use the Console startup-project form when following the Identity/runtime workflow documented in PTT-94; use the design-time-factory form below for persistence-only model work.
+
+
+
 `Rows.cs` and `AtlasDataContext.ConfigureModel` define the current persistence model. Update those files first, then let EF compare the model with the last migration snapshot. Do not manually update the snapshot or write migration operations to substitute for model mappings.
 
 From the repository root, with the .NET 10 SDK installed:
