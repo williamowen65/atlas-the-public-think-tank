@@ -13,9 +13,23 @@ namespace Atlas.ConsoleApp.Identity;
 
 /// <summary>
 /// Acts as the console application's session manager and security guard.
-/// A web application normally keeps an authenticated user signed in with an authentication cookie. The console
-/// has no browser or cookie, so this class keeps the current ClaimsPrincipal, security stamp, and Participant
-/// in memory and repeatedly checks SQL/Identity to make sure that session is still allowed to continue.
+/// A web application normally keeps an authenticated user signed in through the ASP.NET Core authentication
+/// pipeline. The console has no HTTP request, browser, or authentication cookie, so this class keeps the current
+/// ClaimsPrincipal, security stamp, and Participant in memory and repeatedly checks SQL/Identity to make sure
+/// that session is still allowed to continue.
+///
+/// This class is intentionally console-specific and is expected to disappear when the REST API/web host becomes
+/// the application entry point. The underlying Identity services and authorization rules remain reusable; the
+/// future host simply takes over the session responsibilities that the console has to perform manually today.
+///
+/// Console today                         REST API / web host later
+/// -------------------------------       ---------------------------------------
+/// ConsoleIdentitySession                ASP.NET Core authentication middleware
+/// _principal held in memory             HttpContext.User / authenticated principal
+/// _securityStamp + RefreshAsync()       Identity authentication/session validation
+/// Participant reloaded manually         Current-user / actor resolution service
+/// IsAtlasModerator()                    Authorization policies and handlers
+/// SignOut() clears local state          Host authentication sign-out/token handling
 /// </summary>
 public sealed class ConsoleIdentitySession(IServiceScopeFactory scopes) : IModeratorAuthorization
 {
