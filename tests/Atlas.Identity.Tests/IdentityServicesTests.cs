@@ -27,7 +27,7 @@ public sealed class IdentityServicesTests
         Assert.IsTrue(options.User.RequireUniqueEmail);
         Assert.AreEqual(12, options.Password.RequiredLength);
         var policies = scoped.GetRequiredService<IAuthorizationPolicyProvider>();
-        foreach (var name in new[] { AtlasPolicies.Member, AtlasPolicies.Moderator, AtlasPolicies.Administrator })
+        foreach (var name in new[] { AtlasPolicies.Member, AtlasPolicies.GlobalModerator, AtlasPolicies.Administrator })
             Assert.IsNotNull(await policies.GetPolicyAsync(name));
         var accounts = scoped.GetRequiredService<AtlasAccounts>();
         Assert.IsNull(await accounts.ResolveParticipantAsync(new ClaimsPrincipal()));
