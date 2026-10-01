@@ -13,7 +13,14 @@ public sealed record AccountRegistration(IdentityResult Result, ParticipantId? P
 /// <summary>Coordinates account/profile creation. Credential operations remain owned by UserManager.</summary>
 public sealed class AtlasAccounts(AtlasDataContext database, UserManager<AtlasIdentityUser> users)
 {
-    /// <summary>Creates a new Member, profile, and role link atomically; callers cannot choose IDs or roles.</summary>
+    /// <summary>
+    /// Creates a new Member, Participant profile, and role link atomically; callers cannot choose IDs or roles.
+    /// Registration intentionally leaves the Identity email unconfirmed. In the future REST API/web registration
+    /// flow, the host will use UserManager to generate an email-confirmation token and an email provider will send
+    /// the confirmation link. The confirmation endpoint will then pass that token to UserManager.ConfirmEmailAsync.
+    /// AtlasAccounts owns coordinated account/profile creation; email delivery and HTTP confirmation belong to the host.
+    /// The console's --confirm-email command is only a local-development substitute for that future delivery flow.
+    /// </summary>
     public async Task<AccountRegistration> RegisterAsync(string email, string password, string displayName,
         CancellationToken cancellationToken = default)
     {
