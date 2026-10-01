@@ -48,3 +48,7 @@ Return to the first terminal and sign in with the email/password. Main-menu opti
 Console sessions use fresh SQL scopes, check account/profile/Member-policy eligibility before each main menu, and invalidate the session when its security stamp changes. Long-running nested menus do not implement continuous session expiry; domain authorization still applies to their actions. Accounts requiring 2FA are rejected with a clear message because the console has no second-factor entry flow yet.
 
 Real confirmation/reset email delivery, account-management HTTP endpoints, browser security controls, and persistent/shared Data Protection keys remain HTTP-host work.
+
+## Demo seed accounts
+
+`--seed-demo` creates Demo User 01 through Demo User 05 through `AtlasAccounts.RegisterAsync` before seeding dependent records. Their generated Participant/Identity GUIDs are reused for authorship, votes, communities, memberships, and reactions. The demo emails are `demo01@example.test` through `demo05@example.test`; the local demo password is printed by the seed command. These credentials are development seed data only.
