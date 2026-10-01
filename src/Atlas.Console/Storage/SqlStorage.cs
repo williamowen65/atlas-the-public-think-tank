@@ -105,7 +105,7 @@ public static class SqlStorage
                     string.Join("; ", registration.Result.Errors.Select(error => error.Description)));
 
             var users = scope.ServiceProvider.GetRequiredService<UserManager<AtlasIdentityUser>>();
-            var user = await users.FindByIdAsync(registration.ParticipantId.Value.Value.ToString());
+            var user = await users.FindByIdAsync(registration.ParticipantId.Value.ToString());
             if (user is null)
                 throw new InvalidOperationException($"Demo Identity user {demo.Email} was not persisted.");
             var confirmation = await users.GenerateEmailConfirmationTokenAsync(user);
@@ -113,7 +113,7 @@ public static class SqlStorage
             if (!confirmed.Succeeded)
                 throw new InvalidOperationException($"Could not confirm demo account {demo.Email}.");
 
-            ids.Add(registration.ParticipantId.Value.Value);
+            ids.Add(registration.ParticipantId.Value);
         }
 
         DemoParticipants.SetIds(ids);
