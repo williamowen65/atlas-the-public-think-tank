@@ -53,10 +53,10 @@ public sealed class ConsoleIdentitySessionTests
             Assert.IsFalse(session.IsAtlasModerator(user.Id));
             database.ChangeTracker.Clear();
             user = (await users.FindByEmailAsync("console@example.test"))!;
-            Assert.IsTrue((await users.AddToRoleAsync(user, AtlasRoles.Moderator)).Succeeded);
+            Assert.IsTrue((await users.AddToRoleAsync(user, AtlasRoles.GlobalModerator)).Succeeded);
             Assert.IsTrue(session.IsAtlasModerator(user.Id));
             Assert.IsFalse(session.IsAtlasModerator(Guid.NewGuid()));
-            Assert.IsTrue((await users.RemoveFromRoleAsync(user, AtlasRoles.Moderator)).Succeeded);
+            Assert.IsTrue((await users.RemoveFromRoleAsync(user, AtlasRoles.GlobalModerator)).Succeeded);
             Assert.IsFalse(session.IsAtlasModerator(user.Id));
             Assert.IsTrue((await users.ChangePasswordAsync(user, password, password + "New")).Succeeded);
             Assert.IsFalse(await session.RefreshAsync());
