@@ -12,6 +12,7 @@ public class SecurityAuthorizationTests
         var node = NodeTestFactory.Create();
         var originalTitle = node.Title;
         var originalTime = node.UpdatedAt;
+        var originalEventCount = node.DomainEvents.Count;
 
         Assert.ThrowsExactly<ArgumentException>(() =>
             node.Rename(new NodeTitle("Changed"), Guid.Empty, originalTime.AddMinutes(1)));
@@ -20,7 +21,7 @@ public class SecurityAuthorizationTests
 
         Assert.AreEqual(originalTitle, node.Title);
         Assert.AreEqual(originalTime, node.UpdatedAt);
-        Assert.AreEqual(0, node.DomainEvents.Count);
+        Assert.AreEqual(originalEventCount, node.DomainEvents.Count);
     }
 
     [TestMethod]
