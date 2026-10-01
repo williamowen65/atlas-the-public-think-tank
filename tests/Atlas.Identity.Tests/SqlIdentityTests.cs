@@ -104,21 +104,21 @@ public sealed class SqlIdentityTests
         var authorization = services.GetRequiredService<IAuthorizationService>();
         Assert.AreEqual(user.Id, (await accounts.ResolveParticipantAsync(principal))!.Value);
         Assert.IsTrue((await authorization.AuthorizeAsync(principal, null, AtlasPolicies.Member)).Succeeded);
-        Assert.IsFalse((await authorization.AuthorizeAsync(principal, null, AtlasPolicies.Moderator)).Succeeded);
+        Assert.IsFalse((await authorization.AuthorizeAsync(principal, null, AtlasPolicies.GlobalModerator)).Succeeded);
         // An invented role claim does not grant a database role.
         ((ClaimsIdentity)principal.Identity!).AddClaim(new Claim(ClaimTypes.Role, AtlasRoles.Administrator));
         Assert.IsFalse((await authorization.AuthorizeAsync(principal, null, AtlasPolicies.Administrator)).Succeeded);
-        Assert.IsTrue((await users.AddToRoleAsync(user, AtlasRoles.Moderator)).Succeeded);
-        Assert.IsTrue((await authorization.AuthorizeAsync(principal, null, AtlasPolicies.Moderator)).Succeeded);
+        Assert.IsTrue((await users.AddToRoleAsync(user, AtlasRoles.GlobalModerator)).Succeeded);
+        Assert.IsTrue((await authorization.AuthorizeAsync(principal, null, AtlasPolicies.GlobalModerator)).Succeeded);
         var moderation = services.GetRequiredService<IModeratorAuthorization>();
         Assert.IsTrue(moderation.IsAtlasModerator(user.Id));
         Assert.IsFalse((await authorization.AuthorizeAsync(principal, null, AtlasPolicies.Administrator)).Succeeded);
-        Assert.IsTrue((await users.RemoveFromRoleAsync(user, AtlasRoles.Moderator)).Succeeded);
-        Assert.IsFalse((await authorization.AuthorizeAsync(principal, null, AtlasPolicies.Moderator)).Succeeded);
+        Assert.IsTrue((await users.RemoveFromRoleAsync(user, AtlasRoles.GlobalModerator)).Succeeded);
+        Assert.IsFalse((await authorization.AuthorizeAsync(principal, null, AtlasPolicies.GlobalModerator)).Succeeded);
         Assert.IsFalse(moderation.IsAtlasModerator(user.Id));
         Assert.IsTrue((await users.AddToRoleAsync(user, AtlasRoles.Administrator)).Succeeded);
         Assert.IsTrue((await authorization.AuthorizeAsync(principal, null, AtlasPolicies.Administrator)).Succeeded);
-        Assert.IsTrue((await authorization.AuthorizeAsync(principal, null, AtlasPolicies.Moderator)).Succeeded);
+        Assert.IsTrue((await authorization.AuthorizeAsync(principal, null, AtlasPolicies.GlobalModerator)).Succeeded);
         Assert.IsTrue(moderation.IsAtlasModerator(user.Id));
         Assert.IsFalse((await authorization.AuthorizeAsync(new ClaimsPrincipal(new ClaimsIdentity(principal.Claims)),
             null, AtlasPolicies.Member)).Succeeded);
