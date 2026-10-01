@@ -12,7 +12,7 @@ Atlas now has SQL Server/EF persistence, a Participants domain, and Atlas-specif
 
 Use IdentityUser<Guid> in infrastructure and share its Id with an independent ParticipantId. Add Identity tables in an `identity` schema using the existing shared AtlasDataContext/migration history. Enforce the one-to-one account/profile relationship with a non-cascading FK. Create the new profile, Identity account, and Member assignment in one SQL transaction.
 
-Use framework account managers/token providers rather than custom password/credential logic. Add baseline Member/Moderator/Administrator policies, checking current database role memberships and active profile eligibility. Keep ownership, community-specific moderation, lifecycle, and report decisions in Atlas domains/application workflows. The HTTP host establishes authenticated actor IDs.
+Use framework account managers/token providers rather than custom password/credential logic. Add baseline Member/GlobalModerator/Administrator policies, checking current database role memberships and active profile eligibility. Keep ownership, community-specific moderation, lifecycle, and report decisions in Atlas domains/application workflows. The HTTP host establishes authenticated actor IDs.
 
 ## Consequences
 
