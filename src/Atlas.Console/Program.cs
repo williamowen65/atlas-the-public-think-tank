@@ -1,3 +1,6 @@
+using Atlas.Identity;
+using Atlas.ConsoleApp.Identity;
+using Microsoft.Extensions.DependencyInjection;
 using Atlas.ConsoleApp;
 using Atlas.Comments.Comments;
 using Atlas.Communities.Communities;
@@ -13,7 +16,6 @@ using Atlas.Discovery;
 using Atlas.Moderation;
 using Atlas.Notifications;
 using Atlas.Contracts.Notifications.V1;
-using Atlas.ConsoleApp.Moderation;
 using Atlas.Contracts.Graph.V1;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
@@ -29,98 +31,80 @@ var configuration = new ConfigurationBuilder()
     .AddEnvironmentVariables()
     .Build();
 
-var dataDirectory = Path.GetFullPath(
-    Path.Combine(
-        AppContext.BaseDirectory,
-        "..",
-        "..",
-        "..",
-        "..",
-        "..",
-        "data"));
+var connectionString = configuration["ATLAS_SQL_CONNECTION_STRING"];
+if (string.IsNullOrWhiteSpace(connectionString))
+    throw new InvalidOperationException("Set ATLAS_SQL_CONNECTION_STRING to a SQL Server connection string.");
 
-var nodeDataFilePath = Path.Combine(
-    dataDirectory,
-    "nodes.json");
+SqlStorage.Configure(connectionString);
+using var identityServices = new ServiceCollection().AddAtlasIdentity(connectionString)
+    .BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+var accountScopes = identityServices.GetRequiredService<IServiceScopeFactory>();
 
-var nodeTypeDataFilePath = Path.Combine(
-    dataDirectory,
-    "node-types.json");
+if (args.Contains("--seed-demo", StringComparer.OrdinalIgnoreCase))
+{
+    await SqlStorage.SeedDemoDataAsync(accountScopes);
+    System.Console.WriteLine("Demo accounts and data seeded in SQL Server through Identity registration.");
+    System.Console.WriteLine("Demo sign-in: demo01@example.test through demo05@example.test");
+    System.Console.WriteLine("Demo password: Atlas_Demo_Only_94!Password");
+    return;
+}
 
-var documentDataFilePath = Path.Combine(
-    dataDirectory,
-    "documents.json");
+var nodeCollectionKey = "nodes";
 
-var blockDataFilePath = Path.Combine(
-    dataDirectory,
-    "blocks.json");
+var nodeTypeCollectionKey = "node-types";
 
-var participantDataFilePath = Path.Combine(
-    dataDirectory,
-    "participants.json");
+var documentCollectionKey = "documents";
 
-var voteDataFilePath = Path.Combine(
-    dataDirectory,
-    "votes.json");
 
-var tagDefinitionDataFilePath = Path.Combine(
-    dataDirectory,
-    "reaction-definitions.json");
+var participantCollectionKey = "participants";
 
-var nodeTagDataFilePath = Path.Combine(
-    dataDirectory,
-    "node-reactions.json");
+var voteCollectionKey = "votes";
 
-var communityDataFilePath = Path.Combine(dataDirectory, "communities.json");
-var communityMembershipDataFilePath = Path.Combine(dataDirectory, "community-memberships.json");
-var communityNodeDataFilePath = Path.Combine(dataDirectory, "community-nodes.json");
-var commentDataFilePath = Path.Combine(dataDirectory, "comments.json");
-var moderationDataFilePath = Path.Combine(dataDirectory, "moderation-cases.json");
+var tagDefinitionCollectionKey = "reaction-definitions";
+
+var nodeTagCollectionKey = "node-reactions";
+
+var communityCollectionKey = "communities";
+var communityMembershipCollectionKey = "community-memberships";
+var communityNodeCollectionKey = "community-nodes";
+var commentCollectionKey = "comments";
 
 INodeTypeRepository nodeTypeRepository =
-    new JsonNodeTypeRepository(nodeTypeDataFilePath);
+    new SqlNodeTypeRepository();
 
 SeedSystemNodeTypes(nodeTypeRepository);
 
 IDocumentRepository documentRepository =
-    new JsonDocumentRepository(
-        documentDataFilePath,
-        blockDataFilePath);
+    new SqlDocumentRepository();
 
 IParticipantRepository participantRepository =
-    new JsonParticipantRepository(participantDataFilePath);
+    new SqlParticipantRepository();
 
 IVoteRepository voteRepository =
-    new JsonVoteRepository(voteDataFilePath);
+    new SqlVoteRepository();
 
 IReactionDefinitionRepository tagDefinitionRepository =
-    new JsonReactionDefinitionRepository(tagDefinitionDataFilePath);
+    new SqlReactionDefinitionRepository();
 
 INodeReactionRepository nodeTagRepository =
-    new JsonNodeReactionRepository(nodeTagDataFilePath);
+    new SqlNodeReactionRepository();
 
-ICommunityRepository communityRepository = new JsonCommunityRepository(communityDataFilePath);
-ICommunityMembershipRepository communityMembershipRepository = new JsonCommunityMembershipRepository(communityMembershipDataFilePath);
-ICommunityNodeRepository communityNodeRepository = new JsonCommunityNodeRepository(communityNodeDataFilePath);
+ICommunityRepository communityRepository = new SqlCommunityRepository();
+ICommunityMembershipRepository communityMembershipRepository = new SqlCommunityMembershipRepository();
+ICommunityNodeRepository communityNodeRepository = new SqlCommunityNodeRepository();
 var communityService = new CommunityService(communityRepository, communityMembershipRepository, communityNodeRepository);
-ICommentRepository commentRepository = new JsonCommentRepository(commentDataFilePath);
-IModerationCaseRepository moderationCases = new JsonModerationCaseRepository(moderationDataFilePath);
-var moderatorAuthorization = new ConfiguredModeratorAuthorization(
-    configuration["ATLAS_MODERATOR_PARTICIPANT_IDS"] is { } configuredIds
-        ? configuredIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
-        : configuration.GetSection("ATLAS_MODERATOR_PARTICIPANT_IDS")
-            .GetChildren().Select(entry => entry.Value ?? string.Empty));
+ICommentRepository commentRepository = new SqlCommentRepository();
+IModerationCaseRepository moderationCases = new SqlModerationCaseRepository();
+if (args.Contains("--confirm-email", StringComparer.OrdinalIgnoreCase))
+{
+    await ConsoleAccountCommands.ConfirmEmailAsync(accountScopes);
+    return;
+}
+var session = new ConsoleIdentitySession(accountScopes);
+IModeratorAuthorization moderatorAuthorization = session;
 var moderation = new ModerationService(moderationCases, moderatorAuthorization);
 
-var legacyParticipant =
-    EnsureDefaultDemoParticipant(participantRepository);
-
-INodeRepository nodeRepository =
-    new JsonNodeRepository(
-        nodeDataFilePath,
-        nodeTypeRepository,
-        documentRepository,
-        new NodeAuthorId(legacyParticipant.Id.Value));
+INodeRepository nodeRepository = new SqlNodeRepository();
 
 var votingEligibility =
     new RepositoryVotingEligibility(
@@ -151,8 +135,7 @@ IDiscoveryCandidateSource discoverySource = new RepositoryDiscoveryCandidateSour
 IDiscoveryService discovery = new DiscoveryService(discoverySource);
 
 var eventPublisher = new InMemoryEventPublisher();
-INotificationRepository notificationRepository = new JsonNotificationRepository(
-    Path.Combine(dataDirectory, "notifications.json"), Path.Combine(dataDirectory, "notification-preferences.json"));
+INotificationRepository notificationRepository = new SqlNotificationRepository();
 var notificationService = new NotificationService(notificationRepository,
     [new SimulatedDelivery(DeliveryChannel.Email), new SimulatedDelivery(DeliveryChannel.Push)]);
 eventPublisher.Subscribe<NotificationRequestedV1>(request => notificationService.Handle(request));
@@ -166,41 +149,47 @@ eventPublisher.Subscribe<NodeCreatedV1>(
 eventPublisher.Subscribe<NodeArchivedV1>(
     contentSubscriber.Handle);
 
-var application = new ConsoleApplication(
-    nodeRepository,
-    nodeTypeRepository,
-    documentRepository,
-    participantRepository,
-    voteRepository,
-    castVote,
-    undoVote,
-    tagDefinitionRepository,
-    nodeTagRepository,
-    eventPublisher,
-    nodeDataFilePath,
-    nodeTypeDataFilePath,
-    documentDataFilePath,
-    participantDataFilePath,
-    voteDataFilePath,
-    tagDefinitionDataFilePath,
-    nodeTagDataFilePath,
-    communityDataFilePath,
-    communityMembershipDataFilePath,
-    communityNodeDataFilePath,
-    communityRepository,
-    communityMembershipRepository,
-    communityNodeRepository,
-    communityService,
-    commentRepository,
-    commentDataFilePath,
-    discovery,
-    legacyParticipant,
-    moderation,
-    moderatorAuthorization,
-    notificationService,
-    notificationRepository);
+while (await ConsoleAccountCommands.SignInOrRegisterAsync(accountScopes, session))
+{
+    var application = new ConsoleApplication(
+        nodeRepository,
+        nodeTypeRepository,
+        documentRepository,
+        participantRepository,
+        voteRepository,
+        castVote,
+        undoVote,
+        tagDefinitionRepository,
+        nodeTagRepository,
+        eventPublisher,
+        nodeCollectionKey,
+        nodeTypeCollectionKey,
+        documentCollectionKey,
+        participantCollectionKey,
+        voteCollectionKey,
+        tagDefinitionCollectionKey,
+        nodeTagCollectionKey,
+        communityCollectionKey,
+        communityMembershipCollectionKey,
+        communityNodeCollectionKey,
+        communityRepository,
+        communityMembershipRepository,
+        communityNodeRepository,
+        communityService,
+        commentRepository,
+        commentCollectionKey,
+        discovery,
+        session.Participant!,
+        moderation,
+        moderatorAuthorization,
+        notificationService,
+        notificationRepository,
+        () => session.RefreshAsync().GetAwaiter().GetResult());
 
-application.Run();
+    application.Run();
+    session.SignOut();
+    if (application.ExitRequested) break;
+}
 
 static void SeedSystemNodeTypes(
     INodeTypeRepository nodeTypes)
@@ -246,28 +235,4 @@ static void SeedSystemNodeTypes(
                 createdAt,
                 autoPluralize));
     }
-}
-
-static Participant EnsureDefaultDemoParticipant(
-    IParticipantRepository participants)
-{
-    var existing = participants
-        .GetAll()
-        .FirstOrDefault(participant =>
-            string.Equals(
-                participant.DisplayName,
-                "Demo User 01",
-                StringComparison.OrdinalIgnoreCase));
-
-    if (existing is not null)
-    {
-        return existing;
-    }
-
-    var participant = new Participant(
-        "Demo User 01",
-        DateTimeOffset.UtcNow);
-
-    participants.Save(participant);
-    return participant;
 }

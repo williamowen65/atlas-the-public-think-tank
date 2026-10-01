@@ -13,6 +13,8 @@ This directory records what Atlas must do, how its boundaries fit together, why 
 | [Blackboards](blackboards/README.md) | Exploratory architecture visuals linked to authoritative documentation |
 | [Legacy SQL](sql/) | Reference material from the earlier application |
 
+[PTT-94 Identity setup](PTT-94-Identity.md) covers scaffolding the migration and updating your local SQL database.
+
 ## How the documents connect
 
 A useful review path is:

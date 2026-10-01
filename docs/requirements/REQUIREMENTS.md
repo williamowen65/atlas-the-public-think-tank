@@ -150,20 +150,18 @@ This document is the authoritative catalog of requirement statements and accepta
 [View traceability](TRACEABILITY.md#typ-003)
 
 <a id="typ-004"></a>
-## TYP-004 — Comment is requested by default
+## TYP-004 — Threaded Comments are separate from requested Node types
 
-**Statement:** The system shall include Comment as a default requested sub-node type when a user does not select another initial set.
-
-**Rationale:** Any participant should be able to contribute a general comment throughout Atlas.
+**Statement:** General discussion shall use the Comments boundary rather than require a Comment Graph response type.
 
 **Priority:** Should  
-**Status:** Partial
+**Status:** Implemented
 
 ### Acceptance criteria
 
-- The creation workflow offers Comment as the default.
-- The default is persisted with the node.
-- The rule is eventually enforced outside any single UI host.
+- Startup does not seed Comment as a Graph system type.
+- Comments are represented separately from Graph sub-nodes.
+- Requested Node types continue to describe typed Graph contributions.
 
 [View traceability](TRACEABILITY.md#typ-004)
 
@@ -288,7 +286,7 @@ This document is the authoritative catalog of requirement statements and accepta
 
 ### Acceptance criteria
 
-- Documents are written to data/documents.json.
+- Documents use DocumentRows and DocumentBlocks; typed payloads use BlockRows.
 - Nodes contain DescriptionId rather than description text.
 - Restarting the Console preserves document identifiers and bodies.
 
@@ -299,7 +297,7 @@ This document is the authoritative catalog of requirement statements and accepta
 
 **Statement:** The system shall represent each participant with a stable identifier, display name, optional biography, active state, and timestamps.
 
-**Rationale:** Participants need lightweight public identities without prematurely implementing authentication.
+**Rationale:** Public profile behavior remains independent of authentication infrastructure.
 
 **Priority:** Must  
 **Status:** Verified
@@ -324,13 +322,14 @@ This document is the authoritative catalog of requirement statements and accepta
 
 ### Acceptance criteria
 
-- Participants are selectable from a browser.
+- Participant profiles can be opened from a browser without changing the authenticated actor.
 - A profile can be reached from a node's author action.
 - Authored nodes are summarized with singular/plural type labels.
 - The nodes summary is the rightmost browser column.
 
 [View traceability](TRACEABILITY.md#par-002)
 
+<a id="sec-001"></a>
 ## SEC-001 — Request actors come from a trusted identity boundary
 
 **Statement:** A production request shall derive the acting participant from its authenticated identity rather than a caller-supplied participant ID.
@@ -338,13 +337,13 @@ This document is the authoritative catalog of requirement statements and accepta
 **Rationale:** An ownership check is ineffective if a caller can claim the owner's ID.
 
 **Priority:** Must
-**Status:** Approved
+**Status:** Partial
 
 ### Acceptance criteria
 
 - A request with no authenticated identity cannot perform a protected action.
 - Supplying another participant's ID in request data does not change the acting participant.
-- The web/API identity-to-participant mapping is tested at the host boundary when that host exists.
+- The current Console derives its actor from authenticated Identity; the future web/API identity-to-participant mapping is also tested at that host boundary when it exists.
 
 [View traceability](TRACEABILITY.md#sec-001)
 
@@ -456,39 +455,38 @@ This document is the authoritative catalog of requirement statements and accepta
 [View traceability](TRACEABILITY.md#evt-002)
 
 <a id="per-001"></a>
-## PER-001 — Prototype boundary data is stored in separate files
+## PER-001 — Boundary data persists in SQL Server
 
-**Statement:** The Console prototype shall persist nodes, node types, documents, and participants in separate JSON files under data.
-
-**Rationale:** The file-system database keeps ownership visible and makes the prototype easy to inspect.
+**Statement:** The Console shall persist domain-owned data through SQL repository adapters and the shared EF Core persistence model.
 
 **Priority:** Must  
 **Status:** Implemented
 
 ### Acceptance criteria
 
-- Each aggregate category has its own repository adapter and data file.
-- Repositories implement contracts owned by their respective domain boundaries.
-- Restarting the Console reloads prior state.
+- Domains own repository interfaces without an EF Core dependency.
+- Atlas.Persistence owns row types, Fluent API mappings, AtlasDataContext, and migrations.
+- Console SQL adapters preserve IDs, timestamps, references, and owned child order across reload.
+- Configured foreign keys and unique indexes are enforced by SQL Server.
+- Repository saves update the addressed record and owned children transactionally.
 
 [View traceability](TRACEABILITY.md#per-001)
 
 <a id="per-002"></a>
-## PER-002 — Legacy node records migrate without losing descriptions
+## PER-002 — Relational migrations preserve existing data
 
-**Statement:** The Console prototype shall migrate supported legacy node JSON into the current identifier-based representation.
+**Statement:** Checked-in EF Core migrations shall upgrade the relational schema without unnecessarily resetting existing records.
 
-**Rationale:** Existing prototype data should remain usable as boundaries and storage shapes evolve.
-
-**Priority:** Should  
+**Priority:** Must  
 **Status:** Implemented
 
 ### Acceptance criteria
 
-- Legacy description text becomes a Content document.
-- The migrated node receives that document's identifier.
-- Missing author and requested-type fields receive documented compatibility defaults.
-- Migration does not regenerate identifiers on every load.
+- Apply migrations using the persistence project and design-time connection configuration.
+- The referential-integrity migration adds configured constraints and supporting indexes.
+- Existing valid relational rows retain their IDs and values across upgrade.
+- New model changes receive a new migration, designer, and snapshot.
+- Demo seeding is an explicit operation requiring an empty database.
 
 [View traceability](TRACEABILITY.md#per-002)
 
@@ -1012,7 +1010,7 @@ This document is the authoritative catalog of requirement statements and accepta
 <a id="con-006"></a>
 ## CON-006 — Documents and blocks persist separately
 
-**Statement:** The Console prototype shall persist document composition in documents.json and typed block state in blocks.json.
+**Statement:** The Console prototype shall persist document identity in DocumentRows, ordered block references in DocumentBlocks, and typed payloads in BlockRows.
 
 **Priority:** Must  
 **Status:** Verified
@@ -1020,40 +1018,40 @@ This document is the authoritative catalog of requirement statements and accepta
 ### Acceptance criteria
 
 - Documents store ordered BlockIds rather than block payloads.
-- Mixed concrete block types round-trip through JSON.
+- Mixed concrete block types round-trip through SQL Server.
 - Reconstitution preserves DocumentId, BlockId, order, and concrete type.
 
 [View traceability](TRACEABILITY.md#con-006)
 
 <a id="con-007"></a>
-## CON-007 — Plain-text descriptions migrate to blocks
+## CON-007 — Descriptions use block composition
 
-**Statement:** Existing prototype descriptions shall be migrated into Markdown blocks as a one-way data migration.
+**Statement:** New descriptions and typed demo data shall use Documents with ordered Markdown or other supported block references.
 
 **Priority:** Must  
 **Status:** Implemented
 
 ### Acceptance criteria
 
-- Checked-in documents use the block-reference schema.
-- Existing bodies become Markdown block payloads.
-- The old plain-text document schema is not retained as an active format.
+- A Document stores ordered block references and timestamps.
+- Description text is represented by a MarkdownTextBlock.
+- Typed seed records preserve stable Document and Block IDs.
 
 [View traceability](TRACEABILITY.md#con-007)
 
 <a id="con-008"></a>
 ## CON-008 — Persist only concrete block fields
 
-**Statement:** A stored Content block shall contain only shared metadata and payload fields belonging to its concrete block type.
+**Statement:** The SQL adapter shall populate shared block metadata and payload values appropriate to the concrete Kind; unused columns shall remain NULL.
 
 **Priority:** Must
 **Status:** Verified
 
 ### Acceptance criteria
 
-- Markdown records do not store image, video, link, poll, or chart fields.
+- Markdown rows populate Markdown while unrelated nullable payload columns remain NULL.
 - Image records store URL and alternative text, plus a caption only when supplied.
-- Null and empty optional payload properties are omitted from JSON.
+- Empty optional strings are stored as NULL; concrete payloads are reconstituted according to Kind.
 
 [View traceability](TRACEABILITY.md#con-008)
 
@@ -1177,7 +1175,7 @@ This document is the authoritative catalog of requirement statements and accepta
 ### Acceptance criteria
 
 - Community models do not depend on Graph or Participants projects.
-- Community, membership, and Node-association records use separate JSON files in the prototype.
+- Community, membership, and Node-association records use separate SQL tables and composite association keys.
 - Missing cross-boundary records do not alter Community-owned identities.
 <a id="dis-001"></a>
 ## DIS-001 — Consumer-facing Node lists use ranked Discovery results
@@ -1297,3 +1295,47 @@ Atlas shall filter Nodes by optional inclusive creation-date boundaries while pr
 
 **Priority:** Must
 **Status:** Simulated adapters implemented; production worker pending
+
+
+<a id="idn-001"></a>
+## IDN-001 — Accounts map atomically to independent Participants
+
+**Statement:** Authentication infrastructure shall use ASP.NET Core Identity and SQL Server, with the account GUID matching an independent ParticipantId.
+
+**Priority:** Must
+
+**Status:** Implemented — developer-generated migration committed
+
+### Acceptance criteria
+
+- Participants references neither Identity nor EF.
+- New-account registration creates a validated profile, account, and Member role assignment in one transaction; failures leave no orphan profile.
+- A SQL foreign key prevents accounts without profiles; normalized email and username uniqueness is database-enforced.
+- Identity owns hashing, confirmation/reset tokens, lockout, security stamps, and credential changes.
+- Existing profiles survive migration without receiving accounts/passwords or privileged roles automatically.
+- The developer generates the migration through EF tooling and commits migration, designer, and snapshot together.
+
+[View traceability](TRACEABILITY.md#idn-001)
+
+<a id="idn-002"></a>
+## IDN-002 — Identity supplies authenticated actors and baseline roles
+
+**Statement:** Identity infrastructure shall expose Member, Moderator, and Administrator policies using authenticated, active linked Participants and current stored role memberships.
+
+**Priority:** Must
+
+**Status:** Implemented — console authentication added; HTTP host integration pending
+
+### Acceptance criteria
+
+- Anonymous, malformed, unknown, inactive, unconfirmed, or locked accounts do not resolve to authorized actors.
+- Sign-in requires confirmed email and an active profile and retains framework password/lockout/2FA behavior.
+- Member accepts any baseline role; Moderator accepts Moderator or Administrator; Administrator accepts only Administrator.
+- Role revocation affects the next policy check even when cookie role claims are stale.
+- The moderation port may use global Identity roles; Atlas-specific business authorization stays in the appropriate domain/application layer.
+- Public registration grants Member only and cannot choose an existing profile ID.
+- The Console offers registration/sign-in/sign-out, uses the linked Participant as actor, and prohibits arbitrary participant switching.
+- Console sessions recheck credentials/profile/access before each main menu and refuse 2FA accounts until second-factor entry is implemented.
+- Local operator email confirmation is explicitly development tooling; no HTTP login UI/API or email ownership verification is claimed as delivered.
+
+[View traceability](TRACEABILITY.md#idn-002)

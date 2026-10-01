@@ -1,0 +1,145 @@
+using Atlas.Persistence;
+
+namespace Atlas.ConsoleApp.Storage;
+
+internal static partial class DemoData
+{
+    private static void SeedReactionDefinition(AtlasDataContext database)
+    {
+        database.ReactionDefinitionRows.AddRange(new ReactionDefinitionRow[]
+        {
+            new ReactionDefinitionRow
+            {
+                Id = Guid.Parse("40000000-0000-4000-8000-000000000001"),
+                Text = "Promising",
+                Emoji = "🌱",
+                Description = "Shows meaningful potential worth developing.",
+                NormalizedText = "PROMISING",
+                CreatedByParticipantId = DemoParticipants.User01Id,
+                IsSuppressed = false,
+                CreatedAt = DateTimeOffset.Parse("2026-08-20T17:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                UpdatedAt = DateTimeOffset.Parse("2026-08-20T17:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+            },
+            new ReactionDefinitionRow
+            {
+                Id = Guid.Parse("40000000-0000-4000-8000-000000000003"),
+                Text = "Urgent",
+                Emoji = "🚨",
+                Description = "Calls for attention or action soon.",
+                NormalizedText = "URGENT",
+                CreatedByParticipantId = DemoParticipants.User01Id,
+                IsSuppressed = false,
+                CreatedAt = DateTimeOffset.Parse("2026-08-20T17:02:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                UpdatedAt = DateTimeOffset.Parse("2026-08-20T17:02:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+            },
+            new ReactionDefinitionRow
+            {
+                Id = Guid.Parse("40000000-0000-4000-8000-000000000004"),
+                Text = "Concerning",
+                Emoji = "⚠️",
+                Description = "Raises a meaningful worry, risk, or potential harm.",
+                NormalizedText = "CONCERNING",
+                CreatedByParticipantId = DemoParticipants.User01Id,
+                IsSuppressed = false,
+                CreatedAt = DateTimeOffset.Parse("2026-08-20T17:03:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                UpdatedAt = DateTimeOffset.Parse("2026-08-20T17:03:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+            },
+            new ReactionDefinitionRow
+            {
+                Id = Guid.Parse("40000000-0000-4000-8000-000000000005"),
+                Text = "Hopeful",
+                Emoji = "🌤️",
+                Description = "Creates a grounded sense that improvement is possible.",
+                NormalizedText = "HOPEFUL",
+                CreatedByParticipantId = DemoParticipants.User01Id,
+                IsSuppressed = false,
+                CreatedAt = DateTimeOffset.Parse("2026-08-20T17:04:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                UpdatedAt = DateTimeOffset.Parse("2026-08-20T17:04:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+            },
+            new ReactionDefinitionRow
+            {
+                Id = Guid.Parse("40000000-0000-4000-8000-000000000006"),
+                Text = "Innovative",
+                Emoji = "💡",
+                Description = "Introduces a notably fresh approach or connection.",
+                NormalizedText = "INNOVATIVE",
+                CreatedByParticipantId = DemoParticipants.User01Id,
+                IsSuppressed = false,
+                CreatedAt = DateTimeOffset.Parse("2026-08-20T17:05:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                UpdatedAt = DateTimeOffset.Parse("2026-08-20T17:05:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+            },
+            new ReactionDefinitionRow
+            {
+                Id = Guid.Parse("40000000-0000-4000-8000-000000000007"),
+                Text = "Practical",
+                Emoji = "🛠️",
+                Description = "Feels workable with realistic effort and resources.",
+                NormalizedText = "PRACTICAL",
+                CreatedByParticipantId = DemoParticipants.User01Id,
+                IsSuppressed = false,
+                CreatedAt = DateTimeOffset.Parse("2026-08-20T17:06:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                UpdatedAt = DateTimeOffset.Parse("2026-08-20T17:06:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+            },
+            new ReactionDefinitionRow
+            {
+                Id = Guid.Parse("40000000-0000-4000-8000-000000000008"),
+                Text = "Ambitious",
+                Emoji = "🚀",
+                Description = "Aims for substantial change and may require major effort.",
+                NormalizedText = "AMBITIOUS",
+                CreatedByParticipantId = DemoParticipants.User01Id,
+                IsSuppressed = false,
+                CreatedAt = DateTimeOffset.Parse("2026-08-20T17:07:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                UpdatedAt = DateTimeOffset.Parse("2026-08-20T17:07:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+            },
+            new ReactionDefinitionRow
+            {
+                Id = Guid.Parse("40000000-0000-4000-8000-000000000009"),
+                Text = "Overlooked",
+                Emoji = "👀",
+                Description = "Highlights something that is too often missed or undervalued.",
+                NormalizedText = "OVERLOOKED",
+                CreatedByParticipantId = DemoParticipants.User01Id,
+                IsSuppressed = false,
+                CreatedAt = DateTimeOffset.Parse("2026-08-20T17:08:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                UpdatedAt = DateTimeOffset.Parse("2026-08-20T17:08:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+            },
+            new ReactionDefinitionRow
+            {
+                Id = Guid.Parse("40000000-0000-4000-8000-000000000010"),
+                Text = "Uncertain",
+                Emoji = "🤔",
+                Description = "Leaves important questions, assumptions, or outcomes unresolved.",
+                NormalizedText = "UNCERTAIN",
+                CreatedByParticipantId = DemoParticipants.User01Id,
+                IsSuppressed = false,
+                CreatedAt = DateTimeOffset.Parse("2026-08-20T17:09:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                UpdatedAt = DateTimeOffset.Parse("2026-08-20T17:09:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+            },
+            new ReactionDefinitionRow
+            {
+                Id = Guid.Parse("40000000-0000-4000-8000-000000000011"),
+                Text = "Inspiring",
+                Emoji = "✨",
+                Description = "Sparks motivation, imagination, or constructive action.",
+                NormalizedText = "INSPIRING",
+                CreatedByParticipantId = DemoParticipants.User01Id,
+                IsSuppressed = false,
+                CreatedAt = DateTimeOffset.Parse("2026-08-20T17:10:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                UpdatedAt = DateTimeOffset.Parse("2026-08-20T17:10:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+            },
+            new ReactionDefinitionRow
+            {
+                Id = Guid.Parse("40000000-0000-4000-8000-000000000012"),
+                Text = "Evidence-needed",
+                Emoji = "🔎",
+                Description = "Would be more convincing with stronger supporting evidence.",
+                NormalizedText = "EVIDENCE-NEEDED",
+                CreatedByParticipantId = DemoParticipants.User01Id,
+                IsSuppressed = false,
+                CreatedAt = DateTimeOffset.Parse("2026-08-20T17:11:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                UpdatedAt = DateTimeOffset.Parse("2026-08-20T17:11:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+            },
+        });
+    }
+}

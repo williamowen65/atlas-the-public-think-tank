@@ -1,25 +1,27 @@
-# ADR-0005: Enforce concurrency invariants at each bounded context's persistence boundary
+# ADR-0005: Enforce concurrency invariants at persistence boundaries
 
-Status: Proposed  
-Date: 2026-09-16  
-Related requirements: [VOT-004](../../requirements/REQUIREMENTS.md#vot-004), [VOT-010](../../requirements/REQUIREMENTS.md#vot-010), [PER-001](../../requirements/REQUIREMENTS.md#per-001), [PER-002](../../requirements/REQUIREMENTS.md#per-002)  
-Related work: [PTT-83](https://thepublicthinktank.atlassian.net/browse/PTT-83), [PTT-86](https://thepublicthinktank.atlassian.net/browse/PTT-86), [PTT-87](https://thepublicthinktank.atlassian.net/browse/PTT-87)
+Status: Accepted for implemented uniqueness; broader conflict handling remains open  
+Updated: 2026-09-30
 
-## Context
+## Context and decision
 
-Concurrent requests can read the same state and produce a result that violates a domain rule. An in-process `lock` cannot prevent this when requests run in different processes or on different servers.
+Process-local locks cannot enforce invariants across app instances. Domain-owned repository contracts describe required behavior; SQL Server constraints enforce configured uniqueness across processes.
 
-## Decision
+Atlas currently shares one AtlasDataContext and migration set in Atlas.Persistence. This is infrastructure reuse, not a transfer of domain behavior or a promise of separate databases per domain.
 
-Each bounded context owns its concurrency rules. Its production persistence adapter must enforce each complete state change atomically.
+## Current enforcement
 
-Each bounded context also owns its persistence model and migrations. Sharing a physical database does not mean sharing a central `DbContext`.
+- Votes: unique (ParticipantId, TargetType, TargetId).
+- Notifications: unique (OccurrenceId, RecipientParticipantId).
+- Preferences: primary key ParticipantId.
+- Communities: unique Name under SQL collation.
+- Memberships and community-node links: composite ID-pair primary keys.
+- Ordered children: composite owner-ID/Position primary keys.
 
-The database provider and exact enforcement mechanism will be decided in PTT-87, using Voting as the first implementation.
+Each repository save and owned-child replacement is transactional. SQL integration tests verify uniqueness, reference constraints, deletion behavior, and upgrades.
 
-## Consequences
+## Remaining limits
 
-- Concurrency rules remain owned by the relevant domain.
-- Production adapters must enforce those rules across processes.
-- Provider-backed integration tests must verify concurrent behavior.
-- JSON adapters cannot demonstrate cross-process concurrency safety.
+A uniqueness error is not automatically converted to a successful create-or-update retry. Existing-record conflicts use last-write behavior; there is no rowversion. Multi-save domain workflows and event publication do not share one transaction. Future policies must address recovery, conflict detection, and reliable delivery explicitly.
+
+See [Voting](../VOTING.md), [Data ownership](../DATA-OWNERSHIP.md), and [SQL setup](../../PTT-87-SQL-Server.md).

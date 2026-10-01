@@ -48,7 +48,6 @@ public static class ParticipantCommands
             Console.WriteLine();
             Console.WriteLine("1. Edit profile");
             Console.WriteLine("2. View authored nodes");
-            Console.WriteLine("3. Select as current participant");
             Console.WriteLine("4. Return");
             Console.WriteLine();
             Console.Write("Selection: ");
@@ -78,26 +77,13 @@ public static class ParticipantCommands
                         changeFilter);
                     break;
 
-                case "3":
-                    if (!participant.IsActive)
-                    {
-                        ConsoleUi.Pause(
-                            "An inactive participant cannot be selected.");
-                        break;
-                    }
-
-                    currentParticipant = participant;
-                    ConsoleUi.Pause(
-                        $"Current participant: {participant.DisplayName}");
-                    break;
-
                 case "4":
                     viewing = false;
                     break;
 
                 default:
                     ConsoleUi.Pause(
-                        "Please select an option from 1 through 4.");
+                        "Please select a listed option.");
                     break;
             }
         }

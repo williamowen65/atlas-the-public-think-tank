@@ -1,5 +1,4 @@
 using Atlas.Contracts.Notifications.V1;
-using System.Text.Json.Serialization;
 
 namespace Atlas.Notifications;
 
@@ -22,8 +21,8 @@ public sealed class Notification
     public Guid SubjectId { get; init; }
     public Guid ActorParticipantId { get; init; }
     public DateTimeOffset CreatedAt { get; init; }
-    [JsonInclude] public DateTimeOffset? ReadAt { get; private set; }
-    [JsonInclude] public DateTimeOffset? DismissedAt { get; private set; }
+    public DateTimeOffset? ReadAt { get; private set; }
+    public DateTimeOffset? DismissedAt { get; private set; }
     public List<DeliveryAttempt> DeliveryAttempts { get; init; } = [];
 
     public void MarkRead(DateTimeOffset at) => ReadAt ??= at;

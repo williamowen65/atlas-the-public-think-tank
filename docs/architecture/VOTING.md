@@ -17,7 +17,7 @@ Voting is also a strong candidate for independent deployment. Atlas may receive 
 | **References** | Participant IDs supplied by Participants. • Target IDs and target availability supplied by the target-owning boundary. |
 | **Does not own** | Nodes, NodeReactions, ReactionDefinitions, participant profiles, credentials, sessions, or target lifecycle. |
 | **Possible deployment** | A separately deployable service that can scale independently when voting traffic is high. |
-| **Current implementation** | Node voting is implemented through the Voting model and application services, in-memory and JSON repositories, and Console-composed Node workflows. NodeReaction voting and service extraction remain future slices. |
+| **Current implementation** | Node importance ratings and NodeReaction up/down votes are implemented through Voting services, in-memory test repositories, SQL Server adapters, and Console workflows. Service extraction remains future work. |
 
 A foreign target identifier tells Voting what received a vote; it does not transfer ownership of that target to Voting.
 
@@ -47,7 +47,7 @@ Voting records the same participant and timestamp information for NodeReaction v
 
 ## Node rating policy
 
-A Node receives a general rating based on the human-readable context presented with that Node. Atlas initially relies on normal user interpretation rather than assigning a narrower universal meaning such as agreement, truth, importance, or quality. If ambiguity becomes harmful, Voting owns the future voting-policy change.
+The current Node policy is named **Node Importance Rating**. It evaluates the importance of the Node in its presented context.
 
 - Allowed values are whole numbers from 0 through 10.
 - The summary contains the number of current votes and their arithmetic mean.
@@ -93,7 +93,7 @@ This is public account attribution, not necessarily disclosure of a person's leg
 
 Undoing a vote must remove it from all current aggregates and public vote listings.
 
-The Console prototype physically deletes an undone vote from current JSON persistence. This immediately removes it from aggregates and public voter listings and avoids introducing an audit store before Atlas has defined access and retention policy.
+The Console prototype physically deletes an undone vote from current SQL Server persistence. This immediately removes it from aggregates and public voter listings and avoids introducing an audit store before Atlas has defined access and retention policy.
 
 A future production slice may retain restricted operational history, but that store must be separate from current votes and must account for transparency, privacy, moderation, abuse investigation, and data-retention policy. The participant-facing behavior remains the same: an undone vote is no longer current.
 
@@ -112,7 +112,7 @@ No Voting events are introduced in this slice because no current consumer needs 
 
 ## Console prototype slice
 
-The Console should eventually demonstrate:
+The Console supports:
 
 1. selecting the acting participant;
 2. casting a 0–10 Node vote;
@@ -134,3 +134,9 @@ The domain behavior belongs behind a Voting application API. Console commands sh
 - Whether NodeReaction voter details will be visible in the first web interface.
 - Whether future abuse controls add eligibility rules, quotas, rate limits, or moderation capabilities.
 - Which versioned events and query contracts are required.
+
+## Database integrity and concurrency
+
+The shared EF model creates `IX_Vote_UniqueParticipantTarget` over (ParticipantId, TargetType, TargetId), and ParticipantId references ParticipantRows. Two concurrent first inserts cannot both persist duplicate influence. The losing insert can raise a database uniqueness error; CastVote does not yet retry it as an update. Existing-row conflicts use last-write behavior, without a rowversion or accepted-update guarantee.
+
+TargetId is polymorphic (Node or NodeReaction), so no ordinary target foreign key is configured. Availability remains checked through Voting-owned ports and the host adapter. SQL integration tests cover reload, change, undo, and uniqueness; durable aggregates and production identity remain separate concerns.

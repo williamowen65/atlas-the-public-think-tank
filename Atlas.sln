@@ -2,32 +2,225 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
 VisualStudioVersion = 18.8.12105.206
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{11111111-1111-4111-8111-111111111111}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".config", ".config", "{D0C50000-0000-4000-8000-000000000001}"
+	ProjectSection(SolutionItems) = preProject
+		.config\dotnet-tools.json = .config\dotnet-tools.json
+	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{22222222-2222-4222-8222-222222222222}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{D0C50000-0000-4000-8000-000000000002}"
+	ProjectSection(SolutionItems) = preProject
+		.github\copilot-instructions.md = .github\copilot-instructions.md
+		.github\dependabot.yml = .github\dependabot.yml
+		.github\PULL_REQUEST_TEMPLATE.md = .github\PULL_REQUEST_TEMPLATE.md
+	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "legacy", "legacy", "{33333333-3333-4333-8333-333333333333}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ISSUE_TEMPLATE", "ISSUE_TEMPLATE", "{D0C50000-0000-4000-8000-000000000003}"
+	ProjectSection(SolutionItems) = preProject
+		.github\ISSUE_TEMPLATE\bug_report.yml = .github\ISSUE_TEMPLATE\bug_report.yml
+		.github\ISSUE_TEMPLATE\config.yml = .github\ISSUE_TEMPLATE\config.yml
+		.github\ISSUE_TEMPLATE\contribution_proposal.yml = .github\ISSUE_TEMPLATE\contribution_proposal.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{D0C50000-0000-4000-8000-000000000004}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\AtlasRewriteTests.yml = .github\workflows\AtlasRewriteTests.yml
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{55555555-5555-4555-8555-555555555555}"
+	ProjectSection(SolutionItems) = preProject
+		docs\PTT-87-SQL-Server.md = docs\PTT-87-SQL-Server.md
+		docs\PTT-94-Identity.md = docs\PTT-94-Identity.md
+		docs\README.md = docs\README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "architecture", "architecture", "{A1111111-1111-4111-8111-111111111111}"
+	ProjectSection(SolutionItems) = preProject
+		docs\architecture\COMMENTS.md = docs\architecture\COMMENTS.md
+		docs\architecture\IDENTITY.md = docs\architecture\IDENTITY.md
+		docs\architecture\COMMUNITIES.md = docs\architecture\COMMUNITIES.md
+		docs\architecture\CONTEXT-MAP.md = docs\architecture\CONTEXT-MAP.md
+		docs\architecture\DATA-OWNERSHIP.md = docs\architecture\DATA-OWNERSHIP.md
+		docs\architecture\DISCOVERY.md = docs\architecture\DISCOVERY.md
+		docs\architecture\MODERATION.md = docs\architecture\MODERATION.md
+		docs\architecture\NOTIFICATIONS.md = docs\architecture\NOTIFICATIONS.md
+		docs\architecture\README.md = docs\architecture\README.md
+		docs\architecture\VOTING.md = docs\architecture\VOTING.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "decisions", "decisions", "{A2222222-2222-4222-8222-222222222222}"
+	ProjectSection(SolutionItems) = preProject
+		docs\architecture\decisions\ADR-0001-use-bounded-contexts.md = docs\architecture\decisions\ADR-0001-use-bounded-contexts.md
+		docs\architecture\decisions\ADR-0002-reference-boundaries-by-id.md = docs\architecture\decisions\ADR-0002-reference-boundaries-by-id.md
+		docs\architecture\decisions\ADR-0003-use-versioned-integration-contracts.md = docs\architecture\decisions\ADR-0003-use-versioned-integration-contracts.md
+		docs\architecture\decisions\ADR-0004-use-sql-server-persistence.md = docs\architecture\decisions\ADR-0004-use-sql-server-persistence.md
+		docs\architecture\decisions\ADR-0005-enforce-concurrency-at-domain-persistence-boundaries.md = docs\architecture\decisions\ADR-0005-enforce-concurrency-at-domain-persistence-boundaries.md
+		docs\architecture\decisions\ADR-0006-identity-participant-mapping.md = docs\architecture\decisions\ADR-0006-identity-participant-mapping.md
+		docs\architecture\decisions\README.md = docs\architecture\decisions\README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "blackboards", "blackboards", "{C1111111-1111-4111-8111-111111111111}"
+	ProjectSection(SolutionItems) = preProject
+		docs\blackboards\CONVENTIONS.md = docs\blackboards\CONVENTIONS.md
+		docs\blackboards\PTT-68-CURRENT-STATE.excalidraw = docs\blackboards\PTT-68-CURRENT-STATE.excalidraw
+		docs\blackboards\README.md = docs\blackboards\README.md
+		docs\blackboards\SYSTEM-BLACKBOARD.excalidraw = docs\blackboards\SYSTEM-BLACKBOARD.excalidraw
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{C2222222-2222-4222-8222-222222222222}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Comments", "Comments", "{9032A0BF-ADFC-4C20-A5E6-E545208A565A}"
+	ProjectSection(SolutionItems) = preProject
+		docs\blackboards\workflows\Comments\CommentsDomain.excalidraw = docs\blackboards\workflows\Comments\CommentsDomain.excalidraw
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Content", "Content", "{C8888888-8888-4888-8888-888888888888}"
+	ProjectSection(SolutionItems) = preProject
+		docs\blackboards\workflows\Content\ContentBlocks.excalidraw = docs\blackboards\workflows\Content\ContentBlocks.excalidraw
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Discovery", "Discovery", "{F0D04025-2AF7-4011-A7B5-C817B708CF22}"
+	ProjectSection(SolutionItems) = preProject
+		docs\blackboards\workflows\Discovery\DiscoveryDomain.excalidraw = docs\blackboards\workflows\Discovery\DiscoveryDomain.excalidraw
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Moderation", "Moderation", "{AB4F3CF6-9BCD-4AD1-80BC-8A2192D9B1D7}"
+	ProjectSection(SolutionItems) = preProject
+		docs\blackboards\workflows\Moderation\ModerationDomain.excalidraw = docs\blackboards\workflows\Moderation\ModerationDomain.excalidraw
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Node Tags", "Node Tags", "{C7777777-7777-4777-8777-777777777777}"
+	ProjectSection(SolutionItems) = preProject
+		docs\blackboards\workflows\Node Tags\NodeTags.excalidraw = docs\blackboards\workflows\Node Tags\NodeTags.excalidraw
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Nodes", "Nodes", "{C4444444-4444-4444-8444-444444444444}"
+	ProjectSection(SolutionItems) = preProject
+		docs\blackboards\workflows\Nodes\NodeCreation.excalidraw = docs\blackboards\workflows\Nodes\NodeCreation.excalidraw
+		docs\blackboards\workflows\Nodes\NodeLifecycle.excalidraw = docs\blackboards\workflows\Nodes\NodeLifecycle.excalidraw
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NodeTypes", "NodeTypes", "{C3333333-3333-4333-8333-333333333333}"
+	ProjectSection(SolutionItems) = preProject
+		docs\blackboards\workflows\NodeTypes\NodeTypeLifecycle.excalidraw = docs\blackboards\workflows\NodeTypes\NodeTypeLifecycle.excalidraw
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Notifications", "Notifications", "{5E1E2B84-A69E-4782-BD65-5AA3F4D2D597}"
+	ProjectSection(SolutionItems) = preProject
+		docs\blackboards\workflows\Notifications\NotificationsDomain.excalidraw = docs\blackboards\workflows\Notifications\NotificationsDomain.excalidraw
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Participants", "Participants", "{C5555555-5555-4555-8555-555555555555}"
+	ProjectSection(SolutionItems) = preProject
+		docs\blackboards\workflows\Participants\ParticipantLifecycle.excalidraw = docs\blackboards\workflows\Participants\ParticipantLifecycle.excalidraw
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "System", "System", "{C6666666-6666-4666-8666-666666666666}"
+	ProjectSection(SolutionItems) = preProject
+		docs\blackboards\workflows\System\AppStartupAndWiring.excalidraw = docs\blackboards\workflows\System\AppStartupAndWiring.excalidraw
+		docs\blackboards\workflows\System\InMemoryEventBus.excalidraw = docs\blackboards\workflows\System\InMemoryEventBus.excalidraw
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Voting", "Voting", "{2F264AFF-1E2B-4CBE-84DB-C1A067039CF5}"
+	ProjectSection(SolutionItems) = preProject
+		docs\blackboards\workflows\Voting\NodeTagVoting.excalidraw = docs\blackboards\workflows\Voting\NodeTagVoting.excalidraw
+		docs\blackboards\workflows\Voting\VotingDomain.excalidraw = docs\blackboards\workflows\Voting\VotingDomain.excalidraw
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "contracts", "contracts", "{A6666666-6666-4666-8666-666666666666}"
+	ProjectSection(SolutionItems) = preProject
+		docs\contracts\README.md = docs\contracts\README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "glossary", "glossary", "{A5555555-5555-4555-8555-555555555555}"
+	ProjectSection(SolutionItems) = preProject
+		docs\glossary\GLOSSARY.md = docs\glossary\GLOSSARY.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "requirements", "requirements", "{9C01D8BE-79A9-4FAF-9A21-C452508327A4}"
+	ProjectSection(SolutionItems) = preProject
+		docs\requirements\README.md = docs\requirements\README.md
+		docs\requirements\REQUIREMENTS.md = docs\requirements\REQUIREMENTS.md
+		docs\requirements\TRACEABILITY.md = docs\requirements\TRACEABILITY.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sql", "sql", "{88888888-8888-4888-8888-888888888888}"
+	ProjectSection(SolutionItems) = preProject
+		legacy\sql\database-ext-objects.sql = legacy\sql\database-ext-objects.sql
+		legacy\sql\database-objects.sql = legacy\sql\database-objects.sql
+		legacy\sql\General.sql = legacy\sql\General.sql
+		legacy\sql\Query for combining issues and solutions.sql = legacy\sql\Query for combining issues and solutions.sql
+		legacy\sql\remove-test-dbs.sql = legacy\sql\remove-test-dbs.sql
+		legacy\sql\target-database-schema-and-stored-procedures.sql = legacy\sql\target-database-schema-and-stored-procedures.sql
+		legacy\sql\TestDataCleanUp-ByAuthorID.sql = legacy\sql\TestDataCleanUp-ByAuthorID.sql
+		legacy\sql\TestDataCleanUp-ByIssueID.sql = legacy\sql\TestDataCleanUp-ByIssueID.sql
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "testing", "testing", "{A3333333-3333-4333-8333-333333333333}"
+	ProjectSection(SolutionItems) = preProject
+		docs\testing\TEST-STRATEGY.md = docs\testing\TEST-STRATEGY.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{A4444444-4444-4444-8444-444444444444}"
+	ProjectSection(SolutionItems) = preProject
+		docs\workflows\COMMENTS.md = docs\workflows\COMMENTS.md
+		docs\workflows\COMMUNITIES.md = docs\workflows\COMMUNITIES.md
+		docs\workflows\CONTENT-BLOCKS.md = docs\workflows\CONTENT-BLOCKS.md
+		docs\workflows\NODE-LIFECYCLE.md = docs\workflows\NODE-LIFECYCLE.md
+		docs\workflows\NOTIFICATIONS.md = docs\workflows\NOTIFICATIONS.md
+		docs\workflows\REACTIONS.md = docs\workflows\REACTIONS.md
+		docs\workflows\README.md = docs\workflows\README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "infrastructure", "infrastructure", "{D0C50000-0000-4000-8000-000000000005}"
+	ProjectSection(SolutionItems) = preProject
+		infrastructure\README.md = infrastructure\README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "legacy", "legacy", "{33333333-3333-4333-8333-333333333333}"
+	ProjectSection(SolutionItems) = preProject
+		legacy\README.md = legacy\README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "development-email-setup", "development-email-setup", "{D0C50000-0000-4000-8000-000000000006}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "executables", "executables", "{D0C50000-0000-4000-8000-000000000007}"
+	ProjectSection(SolutionItems) = preProject
+		legacy\development-email-setup\executables\MailHog_windows_amd64.exe = legacy\development-email-setup\executables\MailHog_windows_amd64.exe
+		legacy\development-email-setup\executables\mhsendmail_windows_amd64.exe = legacy\development-email-setup\executables\mhsendmail_windows_amd64.exe
+		legacy\development-email-setup\executables\README.md = legacy\development-email-setup\executables\README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "reverse-proxies", "reverse-proxies", "{D0C50000-0000-4000-8000-000000000008}"
+	ProjectSection(SolutionItems) = preProject
+		legacy\reverse-proxies\README.md = legacy\reverse-proxies\README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "staging", "staging", "{D0C50000-0000-4000-8000-000000000009}"
+	ProjectSection(SolutionItems) = preProject
+		legacy\reverse-proxies\staging\index.html = legacy\reverse-proxies\staging\index.html
+		legacy\reverse-proxies\staging\_redirects.txt = legacy\reverse-proxies\staging\_redirects.txt
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "testing", "testing", "{D0C50000-0000-4000-8000-00000000000A}"
+	ProjectSection(SolutionItems) = preProject
+		legacy\reverse-proxies\testing\index.html = legacy\reverse-proxies\testing\index.html
+		legacy\reverse-proxies\testing\_redirects = legacy\reverse-proxies\testing\_redirects
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{DA27B20D-3056-416F-AEF3-074B872DC691}"
 	ProjectSection(SolutionItems) = preProject
+		.gitattributes = .gitattributes
 		.gitignore = .gitignore
-		.github\workflows\AtlasRewriteTests.yml = .github\workflows\AtlasRewriteTests.yml
-		data\blocks.json = data\blocks.json
-		data\comments.json = data\comments.json
-		data\communities.json = data\communities.json
-		data\community-memberships.json = data\community-memberships.json
-		data\community-nodes.json = data\community-nodes.json
-		data\documents.json = data\documents.json
-		data\node-reactions.json = data\node-reactions.json
-		data\node-types.json = data\node-types.json
-		data\nodes.json = data\nodes.json
-		data\participants.json = data\participants.json
-		data\reaction-definitions.json = data\reaction-definitions.json
+		.gitmodules = .gitmodules
+		CONTRIBUTING.md = CONTRIBUTING.md
+		LICENSE = LICENSE
+		NOTICE.md = NOTICE.md
 		README.md = README.md
-		.github\workflows\SQLServerTest.yml = .github\workflows\SQLServerTest.yml
 	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{11111111-1111-4111-8111-111111111111}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{22222222-2222-4222-8222-222222222222}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Contracts", "src\Atlas.Contracts\Atlas.Contracts.csproj", "{A2D46B6E-7512-4E62-8A84-1F37CF82D930}"
 EndProject
@@ -68,109 +261,6 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "pre-launch-landing-page", "
 		SlnRelativePath = "legacy\pre-launch-landing-page\"
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sql", "sql", "{88888888-8888-4888-8888-888888888888}"
-	ProjectSection(SolutionItems) = preProject
-		docs\sql\General.sql = docs\sql\General.sql
-		docs\sql\remove-test-dbs.sql = docs\sql\remove-test-dbs.sql
-		docs\sql\target-database-schema-and-stored-procedures.sql = docs\sql\target-database-schema-and-stored-procedures.sql
-		docs\sql\TestDataCleanUp-ByAuthorID.sql = docs\sql\TestDataCleanUp-ByAuthorID.sql
-		docs\sql\TestDataCleanUp-ByIssueID.sql = docs\sql\TestDataCleanUp-ByIssueID.sql
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "requirements", "requirements", "{9C01D8BE-79A9-4FAF-9A21-C452508327A4}"
-	ProjectSection(SolutionItems) = preProject
-		docs\requirements\README.md = docs\requirements\README.md
-		docs\requirements\REQUIREMENTS.md = docs\requirements\REQUIREMENTS.md
-		docs\requirements\TRACEABILITY.md = docs\requirements\TRACEABILITY.md
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "architecture", "architecture", "{A1111111-1111-4111-8111-111111111111}"
-	ProjectSection(SolutionItems) = preProject
-		docs\architecture\COMMUNITIES.md = docs\architecture\COMMUNITIES.md
-		docs\architecture\CONTEXT-MAP.md = docs\architecture\CONTEXT-MAP.md
-		docs\architecture\DATA-OWNERSHIP.md = docs\architecture\DATA-OWNERSHIP.md
-		docs\architecture\README.md = docs\architecture\README.md
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "decisions", "decisions", "{A2222222-2222-4222-8222-222222222222}"
-	ProjectSection(SolutionItems) = preProject
-		docs\architecture\decisions\ADR-0001-use-bounded-contexts.md = docs\architecture\decisions\ADR-0001-use-bounded-contexts.md
-		docs\architecture\decisions\ADR-0002-reference-boundaries-by-id.md = docs\architecture\decisions\ADR-0002-reference-boundaries-by-id.md
-		docs\architecture\decisions\ADR-0003-use-versioned-integration-contracts.md = docs\architecture\decisions\ADR-0003-use-versioned-integration-contracts.md
-		docs\architecture\decisions\ADR-0004-start-with-json-persistence.md = docs\architecture\decisions\ADR-0004-start-with-json-persistence.md
-		docs\architecture\decisions\README.md = docs\architecture\decisions\README.md
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "testing", "testing", "{A3333333-3333-4333-8333-333333333333}"
-	ProjectSection(SolutionItems) = preProject
-		docs\testing\TEST-STRATEGY.md = docs\testing\TEST-STRATEGY.md
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{A4444444-4444-4444-8444-444444444444}"
-	ProjectSection(SolutionItems) = preProject
-		docs\workflows\COMMUNITIES.md = docs\workflows\COMMUNITIES.md
-		docs\workflows\CONTENT-BLOCKS.md = docs\workflows\CONTENT-BLOCKS.md
-		docs\workflows\NODE-LIFECYCLE.md = docs\workflows\NODE-LIFECYCLE.md
-		docs\workflows\README.md = docs\workflows\README.md
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "glossary", "glossary", "{A5555555-5555-4555-8555-555555555555}"
-	ProjectSection(SolutionItems) = preProject
-		docs\glossary\GLOSSARY.md = docs\glossary\GLOSSARY.md
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "contracts", "contracts", "{A6666666-6666-4666-8666-666666666666}"
-	ProjectSection(SolutionItems) = preProject
-		docs\contracts\README.md = docs\contracts\README.md
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "documentation-index", "documentation-index", "{B7777777-7777-4777-8777-777777777777}"
-	ProjectSection(SolutionItems) = preProject
-		docs\README.md = docs\README.md
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "blackboards", "blackboards", "{C1111111-1111-4111-8111-111111111111}"
-	ProjectSection(SolutionItems) = preProject
-		docs\blackboards\CONVENTIONS.md = docs\blackboards\CONVENTIONS.md
-		docs\blackboards\PTT-68-CURRENT-STATE.excalidraw = docs\blackboards\PTT-68-CURRENT-STATE.excalidraw
-		docs\blackboards\README.md = docs\blackboards\README.md
-		docs\blackboards\SYSTEM-BLACKBOARD.excalidraw = docs\blackboards\SYSTEM-BLACKBOARD.excalidraw
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{C2222222-2222-4222-8222-222222222222}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Content", "Content", "{C8888888-8888-4888-8888-888888888888}"
-	ProjectSection(SolutionItems) = preProject
-		docs\blackboards\workflows\Content\ContentBlocks.excalidraw = docs\blackboards\workflows\Content\ContentBlocks.excalidraw
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NodeTypes", "NodeTypes", "{C3333333-3333-4333-8333-333333333333}"
-	ProjectSection(SolutionItems) = preProject
-		docs\blackboards\workflows\NodeTypes\NodeTypeLifecycle.excalidraw = docs\blackboards\workflows\NodeTypes\NodeTypeLifecycle.excalidraw
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Nodes", "Nodes", "{C4444444-4444-4444-8444-444444444444}"
-	ProjectSection(SolutionItems) = preProject
-		docs\blackboards\workflows\Nodes\NodeCreation.excalidraw = docs\blackboards\workflows\Nodes\NodeCreation.excalidraw
-		docs\blackboards\workflows\Nodes\NodeLifecycle.excalidraw = docs\blackboards\workflows\Nodes\NodeLifecycle.excalidraw
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Node Tags", "Node Tags", "{C7777777-7777-4777-8777-777777777777}"
-	ProjectSection(SolutionItems) = preProject
-		docs\blackboards\workflows\Node Tags\NodeTags.excalidraw = docs\blackboards\workflows\Node Tags\NodeTags.excalidraw
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Participants", "Participants", "{C5555555-5555-4555-8555-555555555555}"
-	ProjectSection(SolutionItems) = preProject
-		docs\blackboards\workflows\Participants\ParticipantLifecycle.excalidraw = docs\blackboards\workflows\Participants\ParticipantLifecycle.excalidraw
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "System", "System", "{C6666666-6666-4666-8666-666666666666}"
-	ProjectSection(SolutionItems) = preProject
-		docs\blackboards\workflows\System\AppStartupAndWiring.excalidraw = docs\blackboards\workflows\System\AppStartupAndWiring.excalidraw
-		docs\blackboards\workflows\System\InMemoryEventBus.excalidraw = docs\blackboards\workflows\System\InMemoryEventBus.excalidraw
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Voting", "src\Atlas.Voting\Atlas.Voting.csproj", "{935FE0CF-44C5-40FA-88ED-96C9B0A9B0D9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Voting.Tests", "tests\Atlas.Voting.Tests\Atlas.Voting.Tests.csproj", "{E536EA50-0130-4A49-BA2C-F41153B41CAE}"
@@ -181,12 +271,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Communities", "src\At
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Communities.Tests", "tests\Atlas.Communities.Tests\Atlas.Communities.Tests.csproj", "{75C00002-75C0-475C-875C-000000000002}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Voting", "Voting", "{2F264AFF-1E2B-4CBE-84DB-C1A067039CF5}"
-	ProjectSection(SolutionItems) = preProject
-		docs\blackboards\workflows\Voting\NodeTagVoting.excalidraw = docs\blackboards\workflows\Voting\NodeTagVoting.excalidraw
-		docs\blackboards\workflows\Voting\VotingDomain.excalidraw = docs\blackboards\workflows\Voting\VotingDomain.excalidraw
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Comments", "src\Atlas.Comments\Atlas.Comments.csproj", "{99000001-9900-4900-8900-000000000001}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Comments.Tests", "tests\Atlas.Comments.Tests\Atlas.Comments.Tests.csproj", "{99000002-9900-4900-8900-000000000002}"
@@ -195,26 +279,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Discovery", "src\Atla
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Discovery.Tests", "tests\Atlas.Discovery.Tests\Atlas.Discovery.Tests.csproj", "{95000002-9500-4500-8500-000000000002}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Comments", "Comments", "{9032A0BF-ADFC-4C20-A5E6-E545208A565A}"
-	ProjectSection(SolutionItems) = preProject
-		docs\blackboards\workflows\Comments\CommentsDomain.excalidraw = docs\blackboards\workflows\Comments\CommentsDomain.excalidraw
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Discovery", "Discovery", "{F0D04025-2AF7-4011-A7B5-C817B708CF22}"
-	ProjectSection(SolutionItems) = preProject
-		docs\blackboards\workflows\Discovery\DiscoveryDomain.excalidraw = docs\blackboards\workflows\Discovery\DiscoveryDomain.excalidraw
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Moderation", "Moderation", "{AB4F3CF6-9BCD-4AD1-80BC-8A2192D9B1D7}"
-	ProjectSection(SolutionItems) = preProject
-		docs\blackboards\workflows\Moderation\ModerationDomain.excalidraw = docs\blackboards\workflows\Moderation\ModerationDomain.excalidraw
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Notifications", "Notifications", "{5E1E2B84-A69E-4782-BD65-5AA3F4D2D597}"
-	ProjectSection(SolutionItems) = preProject
-		docs\blackboards\workflows\Notifications\NotificationsDomain.excalidraw = docs\blackboards\workflows\Notifications\NotificationsDomain.excalidraw
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Notifications.Tests", "tests\Atlas.Notifications.Tests\Atlas.Notifications.Tests.csproj", "{10200002-1020-4102-8102-000000000002}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Notifications", "src\Atlas.Notifications\Atlas.Notifications.csproj", "{10200001-1020-4102-8102-000000000001}"
@@ -222,6 +286,14 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Moderation", "src\Atlas.Moderation\Atlas.Moderation.csproj", "{10100001-1010-4101-8101-000000000001}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Moderation.Tests", "tests\Atlas.Moderation.Tests\Atlas.Moderation.Tests.csproj", "{10100002-1010-4101-8101-000000000002}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Persistence", "src\Atlas.Persistence\Atlas.Persistence.csproj", "{E2F5C2A1-6958-4D61-A90C-3F7C2F848781}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Persistence.Tests", "tests\Atlas.Persistence.Tests\Atlas.Persistence.Tests.csproj", "{6A930610-27FC-4F80-B054-DC713E812660}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Identity", "src\Atlas.Identity\Atlas.Identity.csproj", "{A9490004-AD6A-4A74-A955-CF40174E2269}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Identity.Tests", "tests\Atlas.Identity.Tests\Atlas.Identity.Tests.csproj", "{DC5B97FD-1B51-4AB7-B619-3C31AE7856DD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -321,13 +393,55 @@ Global
 		{10100002-1010-4101-8101-000000000002}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{10100002-1010-4101-8101-000000000002}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{10100002-1010-4101-8101-000000000002}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E2F5C2A1-6958-4D61-A90C-3F7C2F848781}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E2F5C2A1-6958-4D61-A90C-3F7C2F848781}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E2F5C2A1-6958-4D61-A90C-3F7C2F848781}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E2F5C2A1-6958-4D61-A90C-3F7C2F848781}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6A930610-27FC-4F80-B054-DC713E812660}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6A930610-27FC-4F80-B054-DC713E812660}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6A930610-27FC-4F80-B054-DC713E812660}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6A930610-27FC-4F80-B054-DC713E812660}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9490004-AD6A-4A74-A955-CF40174E2269}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9490004-AD6A-4A74-A955-CF40174E2269}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9490004-AD6A-4A74-A955-CF40174E2269}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9490004-AD6A-4A74-A955-CF40174E2269}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DC5B97FD-1B51-4AB7-B619-3C31AE7856DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC5B97FD-1B51-4AB7-B619-3C31AE7856DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DC5B97FD-1B51-4AB7-B619-3C31AE7856DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DC5B97FD-1B51-4AB7-B619-3C31AE7856DD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{10200001-1020-4102-8102-000000000001} = {11111111-1111-4111-8111-111111111111}
-		{10200002-1020-4102-8102-000000000002} = {22222222-2222-4222-8222-222222222222}
+		{D0C50000-0000-4000-8000-000000000003} = {D0C50000-0000-4000-8000-000000000002}
+		{D0C50000-0000-4000-8000-000000000004} = {D0C50000-0000-4000-8000-000000000002}
+		{A1111111-1111-4111-8111-111111111111} = {55555555-5555-4555-8555-555555555555}
+		{A2222222-2222-4222-8222-222222222222} = {A1111111-1111-4111-8111-111111111111}
+		{C1111111-1111-4111-8111-111111111111} = {55555555-5555-4555-8555-555555555555}
+		{C2222222-2222-4222-8222-222222222222} = {C1111111-1111-4111-8111-111111111111}
+		{9032A0BF-ADFC-4C20-A5E6-E545208A565A} = {C2222222-2222-4222-8222-222222222222}
+		{C8888888-8888-4888-8888-888888888888} = {C2222222-2222-4222-8222-222222222222}
+		{F0D04025-2AF7-4011-A7B5-C817B708CF22} = {C2222222-2222-4222-8222-222222222222}
+		{AB4F3CF6-9BCD-4AD1-80BC-8A2192D9B1D7} = {C2222222-2222-4222-8222-222222222222}
+		{C7777777-7777-4777-8777-777777777777} = {C2222222-2222-4222-8222-222222222222}
+		{C4444444-4444-4444-8444-444444444444} = {C2222222-2222-4222-8222-222222222222}
+		{C3333333-3333-4333-8333-333333333333} = {C2222222-2222-4222-8222-222222222222}
+		{5E1E2B84-A69E-4782-BD65-5AA3F4D2D597} = {C2222222-2222-4222-8222-222222222222}
+		{C5555555-5555-4555-8555-555555555555} = {C2222222-2222-4222-8222-222222222222}
+		{C6666666-6666-4666-8666-666666666666} = {C2222222-2222-4222-8222-222222222222}
+		{2F264AFF-1E2B-4CBE-84DB-C1A067039CF5} = {C2222222-2222-4222-8222-222222222222}
+		{A6666666-6666-4666-8666-666666666666} = {55555555-5555-4555-8555-555555555555}
+		{A5555555-5555-4555-8555-555555555555} = {55555555-5555-4555-8555-555555555555}
+		{9C01D8BE-79A9-4FAF-9A21-C452508327A4} = {55555555-5555-4555-8555-555555555555}
+		{88888888-8888-4888-8888-888888888888} = {33333333-3333-4333-8333-333333333333}
+		{A3333333-3333-4333-8333-333333333333} = {55555555-5555-4555-8555-555555555555}
+		{A4444444-4444-4444-8444-444444444444} = {55555555-5555-4555-8555-555555555555}
+		{D0C50000-0000-4000-8000-000000000006} = {33333333-3333-4333-8333-333333333333}
+		{D0C50000-0000-4000-8000-000000000007} = {D0C50000-0000-4000-8000-000000000006}
+		{D0C50000-0000-4000-8000-000000000008} = {33333333-3333-4333-8333-333333333333}
+		{D0C50000-0000-4000-8000-000000000009} = {D0C50000-0000-4000-8000-000000000008}
+		{D0C50000-0000-4000-8000-00000000000A} = {D0C50000-0000-4000-8000-000000000008}
 		{A2D46B6E-7512-4E62-8A84-1F37CF82D930} = {11111111-1111-4111-8111-111111111111}
 		{9B93F8F5-43FB-48FE-A57A-F291F8670797} = {11111111-1111-4111-8111-111111111111}
 		{5344A21F-DF7D-4530-95BE-DE9AF24EAE1B} = {11111111-1111-4111-8111-111111111111}
@@ -338,39 +452,23 @@ Global
 		{D0587ED8-7D90-4C4F-A6C1-52CFD875CF46} = {33333333-3333-4333-8333-333333333333}
 		{689BB7B7-1A8D-0EC8-249F-DC954538CF0C} = {33333333-3333-4333-8333-333333333333}
 		{EED2838B-BDE7-DB37-97E1-DA60BF5955DB} = {33333333-3333-4333-8333-333333333333}
-		{88888888-8888-4888-8888-888888888888} = {55555555-5555-4555-8555-555555555555}
-		{9C01D8BE-79A9-4FAF-9A21-C452508327A4} = {55555555-5555-4555-8555-555555555555}
-		{A1111111-1111-4111-8111-111111111111} = {55555555-5555-4555-8555-555555555555}
-		{A2222222-2222-4222-8222-222222222222} = {A1111111-1111-4111-8111-111111111111}
-		{A3333333-3333-4333-8333-333333333333} = {55555555-5555-4555-8555-555555555555}
-		{A4444444-4444-4444-8444-444444444444} = {55555555-5555-4555-8555-555555555555}
-		{A5555555-5555-4555-8555-555555555555} = {55555555-5555-4555-8555-555555555555}
-		{A6666666-6666-4666-8666-666666666666} = {55555555-5555-4555-8555-555555555555}
-		{B7777777-7777-4777-8777-777777777777} = {55555555-5555-4555-8555-555555555555}
-		{C1111111-1111-4111-8111-111111111111} = {55555555-5555-4555-8555-555555555555}
-		{C2222222-2222-4222-8222-222222222222} = {C1111111-1111-4111-8111-111111111111}
-		{C8888888-8888-4888-8888-888888888888} = {C2222222-2222-4222-8222-222222222222}
-		{C3333333-3333-4333-8333-333333333333} = {C2222222-2222-4222-8222-222222222222}
-		{C4444444-4444-4444-8444-444444444444} = {C2222222-2222-4222-8222-222222222222}
-		{C7777777-7777-4777-8777-777777777777} = {C2222222-2222-4222-8222-222222222222}
-		{C5555555-5555-4555-8555-555555555555} = {C2222222-2222-4222-8222-222222222222}
-		{C6666666-6666-4666-8666-666666666666} = {C2222222-2222-4222-8222-222222222222}
 		{935FE0CF-44C5-40FA-88ED-96C9B0A9B0D9} = {11111111-1111-4111-8111-111111111111}
 		{E536EA50-0130-4A49-BA2C-F41153B41CAE} = {22222222-2222-4222-8222-222222222222}
 		{9C371605-468F-435E-9CCE-E499E008DB59} = {22222222-2222-4222-8222-222222222222}
 		{75C00001-75C0-475C-875C-000000000001} = {11111111-1111-4111-8111-111111111111}
 		{75C00002-75C0-475C-875C-000000000002} = {22222222-2222-4222-8222-222222222222}
-		{2F264AFF-1E2B-4CBE-84DB-C1A067039CF5} = {C2222222-2222-4222-8222-222222222222}
 		{99000001-9900-4900-8900-000000000001} = {11111111-1111-4111-8111-111111111111}
 		{99000002-9900-4900-8900-000000000002} = {22222222-2222-4222-8222-222222222222}
 		{95000001-9500-4500-8500-000000000001} = {11111111-1111-4111-8111-111111111111}
 		{95000002-9500-4500-8500-000000000002} = {22222222-2222-4222-8222-222222222222}
-		{9032A0BF-ADFC-4C20-A5E6-E545208A565A} = {C2222222-2222-4222-8222-222222222222}
-		{F0D04025-2AF7-4011-A7B5-C817B708CF22} = {C2222222-2222-4222-8222-222222222222}
-		{AB4F3CF6-9BCD-4AD1-80BC-8A2192D9B1D7} = {C2222222-2222-4222-8222-222222222222}
-		{5E1E2B84-A69E-4782-BD65-5AA3F4D2D597} = {C2222222-2222-4222-8222-222222222222}
+		{10200002-1020-4102-8102-000000000002} = {22222222-2222-4222-8222-222222222222}
+		{10200001-1020-4102-8102-000000000001} = {11111111-1111-4111-8111-111111111111}
 		{10100001-1010-4101-8101-000000000001} = {11111111-1111-4111-8111-111111111111}
 		{10100002-1010-4101-8101-000000000002} = {22222222-2222-4222-8222-222222222222}
+		{E2F5C2A1-6958-4D61-A90C-3F7C2F848781} = {11111111-1111-4111-8111-111111111111}
+		{6A930610-27FC-4F80-B054-DC713E812660} = {22222222-2222-4222-8222-222222222222}
+		{A9490004-AD6A-4A74-A955-CF40174E2269} = {11111111-1111-4111-8111-111111111111}
+		{DC5B97FD-1B51-4AB7-B619-3C31AE7856DD} = {22222222-2222-4222-8222-222222222222}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {91FBCB71-A526-4836-AC90-535593188277}

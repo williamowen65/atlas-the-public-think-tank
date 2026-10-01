@@ -12,7 +12,7 @@ using Atlas.Moderation;
 namespace Atlas.ConsoleApp.Discovery;
 
 /// <summary>
-/// Console composition adapter. It is the only place where the current JSON
+/// Console composition adapter. It is the only place where the current SQL
 /// repositories are projected into Discovery's cross-boundary read model.
 /// </summary>
 internal sealed class RepositoryDiscoveryCandidateSource : IDiscoveryCandidateSource
