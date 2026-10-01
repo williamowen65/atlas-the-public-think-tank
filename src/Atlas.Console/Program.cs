@@ -95,9 +95,6 @@ ICommunityNodeRepository communityNodeRepository = new SqlCommunityNodeRepositor
 var communityService = new CommunityService(communityRepository, communityMembershipRepository, communityNodeRepository);
 ICommentRepository commentRepository = new SqlCommentRepository();
 IModerationCaseRepository moderationCases = new SqlModerationCaseRepository();
-using var identityServices = new ServiceCollection().AddAtlasIdentity(connectionString)
-    .BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
-var accountScopes = identityServices.GetRequiredService<IServiceScopeFactory>();
 if (args.Contains("--confirm-email", StringComparer.OrdinalIgnoreCase))
 {
     await ConsoleAccountCommands.ConfirmEmailAsync(accountScopes);
