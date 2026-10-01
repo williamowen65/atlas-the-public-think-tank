@@ -35,9 +35,9 @@ public static class IdentityServices
         services.AddAuthorization(options =>
         {
             options.AddPolicy(AtlasPolicies.Member, policy => policy.RequireAuthenticatedUser()
-                .AddRequirements(new AtlasRoleRequirement(AtlasRoles.Member, AtlasRoles.Moderator, AtlasRoles.Administrator)));
-            options.AddPolicy(AtlasPolicies.Moderator, policy => policy.RequireAuthenticatedUser()
-                .AddRequirements(new AtlasRoleRequirement(AtlasRoles.Moderator, AtlasRoles.Administrator)));
+                .AddRequirements(new AtlasRoleRequirement(AtlasRoles.Member, AtlasRoles.GlobalModerator, AtlasRoles.Administrator)));
+            options.AddPolicy(AtlasPolicies.GlobalModerator, policy => policy.RequireAuthenticatedUser()
+                .AddRequirements(new AtlasRoleRequirement(AtlasRoles.GlobalModerator, AtlasRoles.Administrator)));
             options.AddPolicy(AtlasPolicies.Administrator, policy => policy.RequireAuthenticatedUser()
                 .AddRequirements(new AtlasRoleRequirement(AtlasRoles.Administrator)));
         });
