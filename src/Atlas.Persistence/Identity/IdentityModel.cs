@@ -35,7 +35,7 @@ internal static class IdentityModel
         });
         model.Entity<IdentityRole<Guid>>().HasData(
             Role("94000000-0000-4000-8000-000000000001", AtlasRoles.Member),
-            Role("94000000-0000-4000-8000-000000000002", AtlasRoles.Moderator),
+            Role("94000000-0000-4000-8000-000000000002", AtlasRoles.GlobalModerator),
             Role("94000000-0000-4000-8000-000000000003", AtlasRoles.Administrator));
     }
 
