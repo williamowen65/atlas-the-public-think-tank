@@ -71,8 +71,19 @@ jobs:
           --verbosity normal
 
   test-sql-server:
-    name: SQL Server persistence
+    name: SQL Server ${{ matrix.name }}
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Persistence
+            project: tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj
+          - name: Identity
+            project: tests/Atlas.Identity.Tests/Atlas.Identity.Tests.csproj
+          - name: Console
+            project: tests/Atlas.Console.Tests/Atlas.Console.Tests.csproj
     services:
       sql:
         image: mcr.microsoft.com/mssql/server:2022-latest
@@ -99,9 +110,5 @@ jobs:
           dotnet tool restore
           dotnet restore src/Atlas.Persistence/Atlas.Persistence.csproj
           dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence
-      - name: Test direct EF repositories against SQL Server
-        run: dotnet test tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj --configuration Release --verbosity normal
-      - name: Test Identity accounts and authorization against SQL Server
-        run: dotnet test tests/Atlas.Identity.Tests/Atlas.Identity.Tests.csproj --configuration Release --verbosity normal
-      - name: Test console authentication against SQL Server
-        run: dotnet test tests/Atlas.Console.Tests/Atlas.Console.Tests.csproj --configuration Release --verbosity normal
+      - name: Test ${{ matrix.name }} against SQL Server
+        run: dotnet test "${{ matrix.project }}" --configuration Release --verbosity normal
