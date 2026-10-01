@@ -5,7 +5,7 @@ Domain models and repository interfaces remain in their domains. `Atlas.Persiste
 ## Local setup
 
 1. Create a **new empty** SQL Server database (for example `Atlas`). Set `ATLAS_SQL_CONNECTION_STRING` in the console project user secrets or environment. For local Windows authentication, one example is `Server=localhost;Database=Atlas;Trusted_Connection=True;TrustServerCertificate=True`. Do not commit credentials.
-2. Run `dotnet run --project src/Atlas.Console -- --seed-demo` once. It applies the migration and loads typed seed records from `src/Atlas.Console/Storage/SeedData/`, retaining their identities and timestamps. The seed command refuses a populated database.
+2. Run `dotnet run --project src/Atlas.Console -- --seed-demo` once. It applies the migration, creates the five demo participants through the real Identity registration flow, and then loads the dependent typed seed records from `src/Atlas.Console/Storage/SeedData/` using the generated participant IDs. The seed command refuses a populated database.
 3. Run `dotnet run --project src/Atlas.Console` to use the SQL database.
 
 The initial relational migration is already checked in. The developer-generated `20260929202249_AddReferentialIntegrity` migration and its snapshot are now checked in; do not generate a second migration for those same relationships. Keep your existing relational database: the new migration should add constraints and indexes, without dropping tables or resetting demo data.
