@@ -8,6 +8,6 @@ public sealed class AtlasIdentityUser : IdentityUser<Guid> { }
 public static class AtlasRoles
 {
     public const string Member = "Member";
-    public const string Moderator = "Moderator";
+    public const string GlobalModerator = "GlobalModerator";
     public const string Administrator = "Administrator";
 }
