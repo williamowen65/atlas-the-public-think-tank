@@ -6,7 +6,7 @@ Related requirements: [IDN-001](../../requirements/REQUIREMENTS.md#idn-001), [ID
 
 ## Context
 
-Atlas now has SQL Server/EF persistence, a Participants domain, and Atlas-specific authorization workflows. Authentication should use ASP.NET Core Identity without importing credential infrastructure into domain projects. Existing demo Participant IDs and contributions must survive the change.
+Atlas now has SQL Server/EF persistence, a Participants domain, and Atlas-specific authorization workflows. Authentication should use ASP.NET Core Identity without importing credential infrastructure into domain projects. Demo data should be recreated through the same Identity-backed registration path as normal accounts so seeded contributions reference valid account-linked Participants.
 
 ## Decision
 
@@ -16,7 +16,7 @@ Use framework account managers/token providers rather than custom password/crede
 
 ## Consequences
 
-Participants stays independent of Identity/EF. Existing profiles may lack accounts; no public workflow can claim one. One shared context supports atomic account/profile registration today, while the dependency remains explicitly infrastructure-owned. Credentials and role seeds have no default passwords or automatic administrator assignment. The developer has scaffolded and committed the migration using EF commands.
+Participants stays independent of Identity/EF. Registration creates the Participant profile and Identity account together with the same generated GUID; demo Participants are likewise created through this registration flow before their generated IDs are reused by the remaining demo seed data. One shared context supports atomic account/profile registration today, while the dependency remains explicitly infrastructure-owned. Credentials and role seeds have no default passwords or automatic administrator assignment. The developer has scaffolded and committed the migration using EF commands.
 
 The Console now authenticates account-linked Participants and removes arbitrary participant switching. HTTP/email delivery, first-administrator provisioning, and durable Data Protection configuration are subsequent host integration, not silently implemented by registering framework services.
 
