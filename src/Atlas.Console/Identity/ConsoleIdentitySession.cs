@@ -11,15 +11,27 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Atlas.ConsoleApp.Identity;
 
-/// <summary>Holds an authenticated console actor; each check uses fresh SQL state without browser cookies.</summary>
+/// <summary>
+/// Acts as the console application's session manager and security guard.
+/// A web application normally keeps an authenticated user signed in with an authentication cookie. The console
+/// has no browser or cookie, so this class keeps the current ClaimsPrincipal, security stamp, and Participant
+/// in memory and repeatedly checks SQL/Identity to make sure that session is still allowed to continue.
+/// </summary>
 public sealed class ConsoleIdentitySession(IServiceScopeFactory scopes) : IModeratorAuthorization
 {
     private ClaimsPrincipal? _principal;
     private string? _securityStamp;
     public Participant? Participant { get; private set; }
 
+    /// <summary>
+    /// Attempts to start a console session from an email and password.
+    /// Identity verifies the account/password and applies lockout rules. The console deliberately rejects accounts
+    /// requiring 2FA because it has no second-factor UI; 2FA belongs to the future REST API/web login flow.
+    /// A successful password check is not enough by itself: the account must also satisfy the Atlas Member policy.
+    /// </summary>
     public async Task<SignInResult> SignInAsync(string email, string password)
     {
+        // Always discard any previous in-memory session before attempting a new login.
         SignOut();
         using var scope = scopes.CreateScope();
         var services = scope.ServiceProvider;
@@ -32,16 +44,26 @@ public sealed class ConsoleIdentitySession(IServiceScopeFactory scopes) : IModer
         var signIn = services.GetRequiredService<SignInManager<AtlasIdentityUser>>();
         var result = await signIn.CheckPasswordSignInAsync(user, password, lockoutOnFailure: true);
         if (!result.Succeeded) return result;
+        // Build the ClaimsPrincipal that represents this authenticated Identity user. It contains the claims/roles
+        // that Atlas authorization policies inspect, similar to the User principal a web request would normally have.
         var principal = await services.GetRequiredService<IUserClaimsPrincipalFactory<AtlasIdentityUser>>()
             .CreateAsync(user);
         if (!(await services.GetRequiredService<IAuthorizationService>()
                 .AuthorizeAsync(principal, null, AtlasPolicies.Member)).Succeeded) return SignInResult.NotAllowed;
         _principal = principal;
+        // Remember Identity's current security stamp. Identity changes this value when security-sensitive account
+        // state changes (for example, a password/security update), allowing RefreshAsync to invalidate this session.
         _securityStamp = await users.GetSecurityStampAsync(user);
         return await RefreshAsync() ? SignInResult.Success : SignInResult.NotAllowed;
     }
 
-    /// <summary>Rejects revoked credentials, lockout, inactive profiles, and removed access before each main menu.</summary>
+    /// <summary>
+    /// Revalidates the in-memory console session against current database state.
+    /// This is the console equivalent of rechecking an authentication session: it makes sure the Identity user still
+    /// exists, the security stamp has not changed, and the user still satisfies the Member policy. If any check fails,
+    /// the session is immediately cleared. It then reloads the linked Participant from SQL so the console uses current
+    /// Atlas profile data rather than a stale copy kept from login.
+    /// </summary>
     public async Task<bool> RefreshAsync()
     {
         if (_principal is null) return false;
@@ -56,6 +78,8 @@ public sealed class ConsoleIdentitySession(IServiceScopeFactory scopes) : IModer
             SignOut();
             return false;
         }
+        // Identity answers "is this account still authenticated/authorized?"; Participant supplies the current
+        // Atlas-domain profile (display name, bio, active state, etc.). The shared GUID links the two records.
         var row = await services.GetRequiredService<AtlasDataContext>().ParticipantRows.AsNoTracking()
             .SingleAsync(row => row.Id == user.Id);
         Participant = Atlas.Participants.Participants.Participant.Reconstitute(new ParticipantId(row.Id),
@@ -63,6 +87,10 @@ public sealed class ConsoleIdentitySession(IServiceScopeFactory scopes) : IModer
         return true;
     }
 
+    /// <summary>
+    /// Ends the console session by forgetting all locally held authentication/profile state.
+    /// There is no browser authentication cookie to delete; clearing these values resets the console to signed out.
+    /// </summary>
     public void SignOut()
     {
         _principal = null;
@@ -70,6 +98,12 @@ public sealed class ConsoleIdentitySession(IServiceScopeFactory scopes) : IModer
         Participant = null;
     }
 
+    /// <summary>
+    /// Checks whether the requested Participant is the currently signed-in actor and has Atlas-wide moderation access.
+    /// The session is refreshed first so a stale login cannot keep moderator privileges after access changes.
+    /// The final decision is delegated to the Identity-backed moderator authorization service, which checks the
+    /// persisted global role. This is global Atlas moderation, not a future community-specific moderator role.
+    /// </summary>
     public bool IsAtlasModerator(Guid participantId)
     {
         if (Participant?.Id.Value != participantId || !RefreshAsync().GetAwaiter().GetResult()) return false;
