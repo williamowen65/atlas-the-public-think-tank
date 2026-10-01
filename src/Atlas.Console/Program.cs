@@ -38,10 +38,16 @@ if (string.IsNullOrWhiteSpace(connectionString))
 SqlStorage.Configure(connectionString);
 if (args.Contains("--seed-demo", StringComparer.OrdinalIgnoreCase))
 {
-    SqlStorage.SeedDemoData();
-    System.Console.WriteLine("Demo data seeded in SQL Server. Existing IDs were preserved.");
+    await SqlStorage.SeedDemoDataAsync(accountScopes);
+    System.Console.WriteLine("Demo accounts and data seeded in SQL Server through Identity registration.");
+    System.Console.WriteLine("Demo sign-in: demo01@example.test through demo05@example.test");
+    System.Console.WriteLine("Demo password: Atlas_Demo_Only_94!Password");
     return;
 }
+
+using var identityServices = new ServiceCollection().AddAtlasIdentity(connectionString)
+    .BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+var accountScopes = identityServices.GetRequiredService<IServiceScopeFactory>();
 
 var nodeCollectionKey = "nodes";
 
