@@ -19,10 +19,10 @@ Markdown documentation.
   Voting handoff.
 - [Content Block Composition](workflows/Content/ContentBlocks.excalidraw) is a
   dashboard of Content ownership, block creation and validation, ordered document
-  composition, type-specific payloads, JSON persistence, and reconstitution.
+  composition, type-specific payloads, SQL Server persistence, and reconstitution.
 - [Node Tag Voting](workflows/Voting/NodeTagVoting.excalidraw) maps PTT-84's
   console voting interaction, NodeTag target and -1/+1 value types, cumulative
-  score aggregation, cross-domain eligibility checks, JSON persistence, and
+  score aggregation, cross-domain eligibility checks, SQL Server persistence, and
   verification tests.
 - [Comments Domain](workflows/Comments/CommentsDomain.excalidraw) maps comment
   ownership, top-level creation and replies, edit and soft-removal permissions,
@@ -36,7 +36,7 @@ Markdown documentation.
   handler calls, and failure behavior.
 - [Notifications Domain](workflows/Notifications/NotificationsDomain.excalidraw) traces
   completed comment and moderation actions through the event bus, `Handle`,
-  recipient preferences, JSON persistence, simulated delivery, and feed actions.
+  recipient preferences, SQL Server persistence, simulated delivery, and feed actions.
 - [The current-state context map](../architecture/CONTEXT-MAP.md) remains the
   authoritative inventory when the blackboard and written documentation differ.
 
@@ -55,3 +55,7 @@ The current-state architecture board is a compact summary. The system
 blackboard is intentionally much larger and is designed to be panned and
 zoomed: boundary names remain visible from a distance, while ports, event
 timing, and gap notes become readable when zoomed in.
+
+## Viewing and reviewing
+
+The native `.excalidraw` file is the diagram deliverable. Download it and open it in Excalidraw (or an Excalidraw editor extension). Review edits in Excalidraw; static previews and PDF exports do not replace that review. Exports are provided only when explicitly requested. See [conventions](CONVENTIONS.md).

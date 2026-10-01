@@ -16,6 +16,7 @@ Identifiers use the form `AREA-NNN`.
 | `REL` | Parent/child graph relationships |
 | `CON` | Content and description documents |
 | `PAR` | Participants and profiles |
+| `IDN` | Identity infrastructure and account/profile integration |
 | `AUT` | Authorization |
 | `SEC` | Security boundary and adversarial verification |
 | `EVT` | Events and cross-boundary communication |

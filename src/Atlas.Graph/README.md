@@ -29,9 +29,7 @@ Graph does not own:
 - NodeReaction ballots and vote summaries
 - Comments as a separate discussion entity
 
-In Atlas, a comment is currently modeled as a Graph node. This allows comments
-to participate in the same typed, navigable structure as questions, ideas,
-evidence, and other responses.
+Threaded comments belong to Atlas.Comments and are separate from Graph nodes and sub-nodes.
 
 ## Node model
 
@@ -138,14 +136,10 @@ application or infrastructure adapter.
 
 The Console prototype currently stores:
 
-- Node records and reference IDs in `data/nodes.json`
-- Global type definitions in `data/node-types.json`
+- Node records and reference IDs in `NodeRows`
+- Global type definitions in `NodeTypeRows`
 
-Content documents and participants remain in their own data files. Existing
-JSON is migrated when newer optional reference collections are absent.
-
-A relational implementation may eventually use a join table for parent links,
-even though the domain continues to expose `ParentNodeIds` as a collection.
+Content documents and participants use their own SQL tables. NodeParents and NodeRequestedTypes preserve ordered references as child rows. The domain continues to expose identifier collections; Atlas.Persistence owns EF mappings and migrations.
 
 ## Current local invariants
 
@@ -198,7 +192,7 @@ global `NodeTypeDefinition`.
 
 - Keep requested-type changes restricted to the node author through Graph authorization.
 - Record events when requested types are added or removed.
-- Decide whether Comment must always remain requested.
+- Keep threaded Comments separate from requested Graph response types.
 - Support ordering, prompts, or display settings per requested type.
 - Determine how archived global types affect existing requests.
 
@@ -214,8 +208,8 @@ global `NodeTypeDefinition`.
 
 - Add repository queries for roots, children, parents, and type-grouped counts.
 - Avoid scanning every node as the graph grows.
-- Add integration tests for JSON migration and complete creation/linking flows.
-- Introduce concurrency handling when persistence moves beyond local files.
+- Maintain SQL migration, referential-integrity, and creation/linking integration coverage.
+- Add conflict handling for simultaneous edits of the same graph records.
 - Use transactional event publishing or an outbox when services are separated.
 
 ### Additional Graph behavior

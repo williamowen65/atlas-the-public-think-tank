@@ -48,7 +48,7 @@ without changing Graph or the console consumer.
 
 `INodeRepository` no longer exposes an unrestricted `GetAll()` operation.
 Graph offers only identity lookup, persistence, and purpose-specific graph
-queries for children, authorship, and parent selection. The JSON adapter also
+queries for children, authorship, and parent selection. The SQL adapter also
 implements a host-side `IDiscoveryNodeReader` that supplies the current
 projection input without making bulk browsing part of Graph's domain contract.
 
@@ -62,3 +62,7 @@ range, `X` to clear all filters, a result number to open it, or `0` to return.
 The Discovery table shows the Created date as `YYYY-MM-DD`. `UpdatedAt` remains
 a separate fact used for deterministic ranking ties and Node details. Discovery
 does not combine creation and modification into an ambiguous synthetic date.
+
+## Persistence and scale
+
+The host projects SQL repository reads into candidates. Filtering and ranking operate on materialized candidates; this is not yet a single database-side ranked query. Graph ancestry filtering also materializes rows. Keep future query optimization behind the Discovery source and repository interfaces.

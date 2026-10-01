@@ -28,8 +28,8 @@ Related requirements: [GRA-001](../requirements/REQUIREMENTS.md#gra-001), [GRA-0
 
 ### Persistent result
 
-- `data/documents.json` contains the document body and Content-owned identifier.
-- `data/nodes.json` contains the Graph node and matching description reference.
+- `DocumentRows` contains the Content-owned identifier and timestamps; `DocumentBlocks` preserves block order and `BlockRows` contains typed payloads.
+- `NodeRows` contains the Graph node and matching description reference.
 - The Document does not contain the Node entity.
 - The Node does not contain the Document entity.
 

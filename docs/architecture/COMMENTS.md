@@ -24,6 +24,6 @@ Authors may edit their own active comments and remove their own comments. A mode
 
 **Ports and Adapters / Dependency Inversion:** `ICommentTargetAvailability` lets Comments enforce target lifecycle rules without referencing Graph. A Graph-backed adapter can be supplied by the host later.
 
-**Repository:** `ICommentRepository` expresses the persistence operations Comments needs without choosing JSON or EF/SQL here.
+**Repository:** `ICommentRepository` expresses the persistence operations Comments needs without coupling its domain model to EF Core. The host supplies `SqlCommentRepository`, backed by `CommentRows` in SQL Server.
 
 **Application Service:** `CommentService` coordinates operations that need repository or external-target state while the Comment entity protects its own lifecycle and author invariants.
