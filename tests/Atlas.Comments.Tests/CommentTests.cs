@@ -22,7 +22,7 @@ public sealed class CommentTests
     public void Reply_UsesExactlyOneParentAndInheritsTarget()
     {
         var repo = new MemoryRepository();
-        var service = new CommentService(repo, new AvailableTargets(), new NoModerators());
+        var service = new CommentService(repo, new AvailableTargets(), new AllModerators());
         var target = CommentTarget.Node(Guid.NewGuid());
         var root = service.AddTopLevel(target, Guid.NewGuid(), "Root", DateTimeOffset.UtcNow);
 
@@ -80,7 +80,7 @@ public sealed class CommentTests
         var root = service.AddTopLevel(target, Guid.NewGuid(), "Root", DateTimeOffset.UtcNow);
         var reply = service.Reply(root.Id, Guid.NewGuid(), "Reply", root.CreatedAt.AddMinutes(1));
 
-        service.Remove(root.Id, Guid.NewGuid(), true, root.CreatedAt.AddMinutes(2));
+        service.Remove(root.Id, Guid.NewGuid(), root.CreatedAt.AddMinutes(2));
 
         Assert.AreEqual(CommentStatus.RemovedByModerator, root.Status);
         Assert.AreEqual(reply.Id, service.GetThread(target)[1].Comment.Id);
@@ -121,5 +121,9 @@ public sealed class CommentTests
     private sealed class NoModerators : ICommentModeratorAuthorization
     {
         public bool CanModerate(Guid participantId) => false;
+    }
+    private sealed class AllModerators : ICommentModeratorAuthorization
+    {
+        public bool CanModerate(Guid participantId) => true;
     }
 }
