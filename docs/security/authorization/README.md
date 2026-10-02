@@ -1,32 +1,44 @@
 # Authorization Review
 
-PTT-120 reviews authorization boundaries across Atlas before the REST API and frontend exist.
+PTT-120 reviews authorization operation by operation before the REST API/frontend exist.
 
-ASP.NET Core Identity answers **who is the authenticated actor?** Atlas authorization answers **what may that actor read or change?** The current Console derives its actor through the Identity-backed session. A future REST API/web host must preserve that trust boundary rather than accepting a caller-supplied ParticipantId as proof of identity.
+For every operation, answer only two security questions:
 
-## Review method
+1. **How is the actor established?** Authentication/host responsibility. Never treat a caller-supplied ParticipantId as proof of identity.
+2. **What enforces permission once the actor is known?** Application/domain authorization responsibility.
 
-Each MVP boundary is reviewed domain by domain. Important operations are recorded using this inventory:
+A disabled Console action is useful UI behavior, but is not by itself an authorization boundary.
 
-| Boundary / operation | Data/action | Required access | Current enforcement | Test/evidence | Result / follow-up |
-|---|---|---|---|---|---|
-| Example: update Participant profile | Write own profile | Authenticated owner | Workflow compares actor and profile IDs | Ownership tests | Covered |
-| Example: read public Node | Public read | Public/anonymous | Public query/domain path | Existing query evidence or future host test | Review |
-| Example: moderation decision | Privileged write | GlobalModerator or Administrator | Moderation authorization backed by Identity roles | Moderation + Identity tests | Covered at application boundary; API wiring later |
+## Review index
 
-Results should distinguish:
+| Boundary | Review |
+|---|---|
+| Participants | [Participants.md](Participants.md) |
+| Graph | [Graph.md](Graph.md) |
+| Content | [Content.md](Content.md) |
+| Voting | [Voting.md](Voting.md) |
+| Communities | [Communities.md](Communities.md) |
+| Comments | [Comments.md](Comments.md) |
+| Discovery | [Discovery.md](Discovery.md) |
+| Notifications | [Notifications.md](Notifications.md) |
+| Moderation | [Moderation.md](Moderation.md) |
+| Identity | [Identity.md](Identity.md) |
 
-- **Covered** — existing implementation and tests already establish the rule.
-- **Small PTT-120 fix** — a focused authorization gap that belongs in this review.
-- **Follow-up** — a larger or domain-specific authorization change.
-- **Future API enforcement** — the application rule is known, but endpoint/policy wiring requires the future HTTP host.
+Each review is intentionally a compact operation table rather than a domain recap. Use the architecture/domain documentation for broader behavior.
 
-## Domain review order
+## Result labels
 
-The review starts with Participants so the distinction between public profile data, owner-controlled profile data, and Identity-owned private account/security data is explicit. The same method can then be applied to Graph, Content, Voting, Communities, Comments, Discovery, Notifications, Moderation, and other MVP boundaries.
+- **Covered** — the current boundary enforces the rule, with evidence.
+- **Host identity required** — the domain/application behavior relies on the host supplying the actor established by authentication.
+- **Review / Policy needed** — the current code exposes a question that needs an explicit authorization decision or stronger workflow.
+- **Deferred** — intentionally belongs to a future host/capability.
 
-Domain documents are added as their reviews are performed rather than created as empty placeholders.
+## Supporting boundaries
 
-## HTTP/API boundary
+`Atlas.Console` is the current host/security harness. It establishes the current actor through the Identity-backed session and provides anonymous/authenticated UI behavior. Its disabled menu items are not substitutes for application/domain authorization.
 
-PTT-120 does not create speculative controllers, middleware, or page protection. When the REST API/web host exists, host-level authorization tests should prove that authenticated identity is used as the actor, caller-supplied participant identifiers cannot impersonate another user, and privileged endpoints enforce the appropriate global or contextual permissions.
+`Atlas.Persistence` persists security-relevant state and constraints but is not treated as a user-operation authorization domain. `Atlas.Contracts` defines cross-boundary messages and likewise does not establish caller identity. Both may have security requirements under the other PTT-97 reviews.
+
+## Future HTTP/API boundary
+
+The future host must derive the actor from authenticated Identity, not request data. Endpoint tests should prove that unauthenticated callers are rejected where authentication is required, Member A cannot act as Member B by supplying B's ParticipantId, and privileged operations use the established global/contextual authorization source.
