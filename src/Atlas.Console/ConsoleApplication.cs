@@ -626,7 +626,7 @@ public sealed class ConsoleApplication
 
     private void ConfigureNotifications(Guid recipient)
     {
-        var settings = _notificationRepository.Preferences(recipient);
+        var settings = _notificationService.Preferences(recipient, recipient);
         var choices = new (string Label, Func<bool> Get, Action<bool> Set)[]
         {
             ("Discussion in app", () => settings.DiscussionInApp, value => settings.DiscussionInApp = value),
@@ -647,7 +647,7 @@ public sealed class ConsoleApplication
             if (selection < 1 || selection > choices.Length) continue;
             var choice = choices[selection - 1];
             choice.Set(!choice.Get());
-            _notificationRepository.SavePreferences(settings);
+            _notificationService.SavePreferences(recipient, settings);
         }
     }
 
