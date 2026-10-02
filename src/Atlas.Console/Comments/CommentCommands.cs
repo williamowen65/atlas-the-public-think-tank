@@ -150,7 +150,7 @@ public static class CommentCommands
                     if (string.Equals(Console.ReadLine(), "y", StringComparison.OrdinalIgnoreCase))
                     {
                         TryChange(
-                            () => service.Remove(comment.Id, currentParticipant.Id.Value, false, DateTimeOffset.UtcNow),
+                            () => service.Remove(comment.Id, currentParticipant.Id.Value, DateTimeOffset.UtcNow),
                             "Comment removed.");
                     }
                     return;
