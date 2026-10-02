@@ -123,8 +123,8 @@ public static class AnonymousBrowseCommands
             Console.WriteLine("Viewing as: Anonymous");
             Console.WriteLine($"Text: {searchText ?? "(all)"}");
             Console.WriteLine($"Community: {communities.GetById(communityId is null ? default : new CommunityId(communityId.Value))?.Name ?? (communityId is null ? "(all)" : "(unknown)")}");
-            Console.WriteLine($"Node type: {nodeTypeId is null ? "(all)" : nodeTypes.GetById(new NodeTypeId(nodeTypeId.Value))?.Name ?? "(unknown)"}");
-            Console.WriteLine($"Author: {authorId is null ? "(all)" : participants.GetById(new ParticipantId(authorId.Value))?.DisplayName ?? "(unknown)"}");
+            Console.WriteLine($"Node type: {(nodeTypeId is null ? "(all)" : nodeTypes.GetById(new NodeTypeId(nodeTypeId.Value))?.Name ?? "(unknown)")}");
+            Console.WriteLine($"Author: {(authorId is null ? "(all)" : participants.GetById(new ParticipantId(authorId.Value))?.DisplayName ?? "(unknown)")}");
             Console.WriteLine($"Status: {(isArchived is null ? "All" : isArchived.Value ? "Archived" : "Active")}");
             Console.WriteLine();
 
