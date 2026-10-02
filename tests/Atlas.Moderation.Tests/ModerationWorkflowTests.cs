@@ -121,8 +121,8 @@ public sealed class ModerationWorkflowTests
 
 
     private DiscoveryCandidate Candidate(bool excluded) =>
-        new(_node, "A Node", "text", false, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow,
-            0, null, [], [], excluded);
+        new(_node, "A Node", "text", Guid.NewGuid(), Guid.NewGuid(), false,
+            DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, 0, null, [], [], excluded);
 
     private sealed class Moderator(Guid id) : IModeratorAuthorization
     {

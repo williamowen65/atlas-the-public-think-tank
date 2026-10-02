@@ -329,6 +329,56 @@ This document is the authoritative catalog of requirement statements and accepta
 
 [View traceability](TRACEABILITY.md#par-002)
 
+<a id="sec-001"></a>
+## SEC-001 — Request actors come from a trusted identity boundary
+
+**Statement:** A production request shall derive the acting participant from its authenticated identity rather than a caller-supplied participant ID.
+
+**Rationale:** An ownership check is ineffective if a caller can claim the owner's ID.
+
+**Priority:** Must
+**Status:** Partial
+
+### Acceptance criteria
+
+- A request with no authenticated identity cannot perform a protected action.
+- Supplying another participant's ID in request data does not change the acting participant.
+- The current Console derives its actor from authenticated Identity; the future web/API identity-to-participant mapping is also tested at that host boundary when it exists.
+
+[View traceability](TRACEABILITY.md#sec-001)
+
+<a id="sec-002"></a>
+## SEC-002 — Protected mutations enforce ownership
+
+**Statement:** Protected profile and Node mutations shall reject missing or unrelated actors before changing state.
+
+**Priority:** Must
+**Status:** Partial
+
+### Acceptance criteria
+
+- The owner can perform allowed mutations; an unrelated actor is rejected.
+- Rejected actions do not change persisted state or emit success events.
+- Cross-boundary workflows check authorization before creating dependent records.
+
+[View traceability](TRACEABILITY.md#sec-002)
+
+<a id="sec-003"></a>
+## SEC-003 — Moderator actions require moderator capability
+
+**Statement:** Moderator-only reads and decisions shall check the acting participant's moderator capability at the service boundary.
+
+**Priority:** Must
+**Status:** Partial
+
+### Acceptance criteria
+
+- An unrelated participant cannot inspect the moderation queue or history or decide a report.
+- A rejected decision leaves the report unchanged.
+- The moderator capability is bound to an authenticated actor when a production host exists.
+
+[View traceability](TRACEABILITY.md#sec-003)
+
 <a id="aut-001"></a>
 ## AUT-001 — Participants may edit only their own profiles
 

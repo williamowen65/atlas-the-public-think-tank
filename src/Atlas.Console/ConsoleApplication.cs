@@ -375,6 +375,9 @@ public sealed class ConsoleApplication
         var visiblePages = 1;
         string? searchText = null;
         Guid? communityId = null;
+        Guid? nodeTypeId = null;
+        Guid? authorId = null;
+        bool? isArchived = false;
         IReadOnlyCollection<Guid> reactionIds = Array.Empty<Guid>();
         int? minimumVoteCount = null;
         int? maximumVoteCount = null;
@@ -391,6 +394,9 @@ public sealed class ConsoleApplication
             WriteActingAs();
             Console.WriteLine($"Search: {searchText ?? "(all)"}");
             Console.WriteLine($"Community: {ResolveCommunityFilterName(communityId)}");
+            Console.WriteLine($"Node type: {(nodeTypeId is null ? "(all)" : _nodeTypeRepository.GetById(new NodeTypeId(nodeTypeId.Value))?.Name ?? "(unknown)")}");
+            Console.WriteLine($"Author: {(authorId is null ? "(all)" : _participantRepository.GetById(new ParticipantId(authorId.Value))?.DisplayName ?? "(unknown)")}");
+            Console.WriteLine($"Status: {(isArchived is null ? "All" : isArchived.Value ? "Archived" : "Active")}");
             Console.WriteLine($"Reactions: {ResolveReactionFilterNames(reactionIds)}");
             Console.WriteLine($"Vote count: {FormatRange(minimumVoteCount, maximumVoteCount)}");
             Console.WriteLine($"Average vote: {FormatRange(minimumAverageVote, maximumAverageVote)}");
@@ -398,9 +404,12 @@ public sealed class ConsoleApplication
             Console.WriteLine();
 
             var query = new DiscoveryQuery(
-                searchText,
-                communityId,
-                reactionIds,
+                SearchText: searchText,
+                CommunityId: communityId,
+                NodeTypeId: nodeTypeId,
+                AuthorParticipantId: authorId,
+                IsArchived: isArchived,
+                ReactionDefinitionIds: reactionIds,
                 minimumVoteCount,
                 maximumVoteCount,
                 minimumAverageVote,
@@ -444,8 +453,8 @@ public sealed class ConsoleApplication
 
             Console.WriteLine();
             Console.WriteLine($"Showing {nodes.Count} of {pages[^1].TotalCount} matching nodes.");
-            Console.WriteLine("Enter a node number to open it, P<number> to report that Node, S for text, C for community,");
-            Console.WriteLine("R for reactions, V for vote ranges, D for created date, X to clear, or 0 to return.");
+            Console.WriteLine("Enter a node number to open it, P<number> to report that Node, S text, C community, T node type, A author,");
+            Console.WriteLine("U status, R reactions, V vote ranges, D created date, X clear, or 0 to return.");
             if (hasMore) Console.WriteLine("N to load the next page.");
             Console.WriteLine();
             Console.Write("Selection: ");
@@ -477,6 +486,33 @@ public sealed class ConsoleApplication
                 communityId = SelectDiscoveryCommunity();
                 continue;
             }
+            if (string.Equals(input, "t", StringComparison.OrdinalIgnoreCase))
+            {
+                visiblePages = 1;
+                var types = _nodeTypeRepository.GetAll().Where(type => !type.IsArchived).OrderBy(type => type.Name).ToList();
+                for (var index = 0; index < types.Count; index++) Console.WriteLine($"{index + 1}. {types[index].Name}");
+                Console.Write("Node type (0 clears): ");
+                nodeTypeId = int.TryParse(Console.ReadLine(), out var selected) && selected >= 1 && selected <= types.Count
+                    ? types[selected - 1].Id.Value : null;
+                continue;
+            }
+            if (string.Equals(input, "a", StringComparison.OrdinalIgnoreCase))
+            {
+                visiblePages = 1;
+                var authors = _participantRepository.GetAll().OrderBy(participant => participant.DisplayName).ToList();
+                for (var index = 0; index < authors.Count; index++) Console.WriteLine($"{index + 1}. {authors[index].DisplayName}");
+                Console.Write("Author (0 clears): ");
+                authorId = int.TryParse(Console.ReadLine(), out var selected) && selected >= 1 && selected <= authors.Count
+                    ? authors[selected - 1].Id.Value : null;
+                continue;
+            }
+            if (string.Equals(input, "u", StringComparison.OrdinalIgnoreCase))
+            {
+                visiblePages = 1;
+                Console.Write("Status: 1 Active, 2 Archived, 3 All: ");
+                isArchived = Console.ReadLine() switch { "1" => false, "2" => true, "3" => null, _ => isArchived };
+                continue;
+            }
             if (string.Equals(input, "r", StringComparison.OrdinalIgnoreCase))
             {
                 visiblePages = 1;
@@ -501,6 +537,9 @@ public sealed class ConsoleApplication
                 visiblePages = 1;
                 searchText = null;
                 communityId = null;
+                nodeTypeId = null;
+                authorId = null;
+                isArchived = false;
                 reactionIds = Array.Empty<Guid>();
                 minimumVoteCount = null;
                 maximumVoteCount = null;

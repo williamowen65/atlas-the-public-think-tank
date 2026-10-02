@@ -149,8 +149,93 @@ eventPublisher.Subscribe<NodeCreatedV1>(
 eventPublisher.Subscribe<NodeArchivedV1>(
     contentSubscriber.Handle);
 
-while (await ConsoleAccountCommands.SignInOrRegisterAsync(accountScopes, session))
+while (true)
 {
+    System.Console.Clear();
+    System.Console.WriteLine("ATLAS");
+    System.Console.WriteLine("-----");
+    System.Console.WriteLine("Viewing as: Anonymous");
+    System.Console.WriteLine();
+    System.Console.WriteLine("1. Sign in");
+    System.Console.WriteLine("2. Register");
+    System.Console.WriteLine("3. Browse participants");
+    System.Console.WriteLine("4. Discover nodes");
+    System.Console.WriteLine("5. Browse communities");
+    System.Console.WriteLine("6. List node types");
+    System.Console.WriteLine("7. My profile [disabled — sign in required]");
+    System.Console.WriteLine("8. Create node [disabled — sign in required]");
+    System.Console.WriteLine("9. Create community [disabled — sign in required]");
+    System.Console.WriteLine("10. Notifications and preferences [disabled — sign in required]");
+    System.Console.WriteLine("11. Developer SQL/content diagnostics [disabled — sign in required]");
+    System.Console.WriteLine("0. Exit");
+    System.Console.WriteLine();
+    System.Console.Write("Selection: ");
+
+    var selection = System.Console.ReadLine();
+    if (selection is null or "0") break;
+
+    if (selection == "2")
+    {
+        await ConsoleAccountCommands.RegisterAsync(accountScopes);
+        continue;
+    }
+
+    if (selection == "3")
+    {
+        AnonymousBrowseCommands.BrowseParticipants(
+            participantRepository,
+            nodeRepository,
+            nodeTypeRepository);
+        continue;
+    }
+
+    if (selection == "4")
+    {
+        AnonymousBrowseCommands.DiscoverNodes(
+            discovery,
+            nodeRepository,
+            nodeTypeRepository,
+            documentRepository,
+            participantRepository,
+            nodeTagRepository,
+            tagDefinitionRepository,
+            voteRepository,
+            communityRepository,
+            communityNodeRepository,
+            commentRepository,
+            moderation);
+        continue;
+    }
+
+    if (selection == "5")
+    {
+        AnonymousBrowseCommands.BrowseCommunities(
+            communityRepository,
+            communityNodeRepository);
+        continue;
+    }
+
+    if (selection == "6")
+    {
+        AnonymousBrowseCommands.ListNodeTypes(nodeTypeRepository);
+        continue;
+    }
+
+    if (selection is "7" or "8" or "9" or "10" or "11")
+    {
+        ConsoleUi.Pause("Sign in is required for this action.");
+        continue;
+    }
+
+    if (selection != "1")
+    {
+        ConsoleUi.Pause("Please select a listed option.");
+        continue;
+    }
+
+    if (!await ConsoleAccountCommands.SignInAsync(accountScopes, session))
+        continue;
+
     var application = new ConsoleApplication(
         nodeRepository,
         nodeTypeRepository,

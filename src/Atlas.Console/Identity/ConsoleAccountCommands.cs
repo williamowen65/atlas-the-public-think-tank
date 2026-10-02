@@ -57,6 +57,54 @@ internal static class ConsoleAccountCommands
         }
     }
 
+    public static async Task<bool> SignInAsync(
+        IServiceScopeFactory scopes,
+        ConsoleIdentitySession session)
+    {
+        Console.Clear();
+        Console.WriteLine("ATLAS — SIGN IN");
+        Console.Write("Email: ");
+        var email = Console.ReadLine() ?? "";
+        var password = ReadPassword("Password: ");
+        var result = await session.SignInAsync(email, password);
+
+        if (result.Succeeded) return true;
+
+        ConsoleUi.Pause(result.IsLockedOut
+            ? "Account is temporarily locked. Try again later."
+            : result.IsNotAllowed
+                ? "Sign-in is unavailable. Confirm the email and check that the account/profile has access."
+                : result.RequiresTwoFactor
+                    ? "This account requires two-factor authentication, which the console does not support yet."
+                    : "Unable to sign in with those credentials.");
+        return false;
+    }
+
+    public static async Task RegisterAsync(IServiceScopeFactory scopes)
+    {
+        Console.Clear();
+        Console.WriteLine("ATLAS — REGISTER");
+        Console.Write("Email: ");
+        var email = Console.ReadLine() ?? "";
+        Console.Write("Display name: ");
+        var displayName = Console.ReadLine() ?? "";
+        Console.WriteLine("Password: at least 12 characters, including uppercase, lowercase, digit, and symbol.");
+        var password = ReadPassword("Password: ");
+
+        if (password != ReadPassword("Confirm password: "))
+        {
+            ConsoleUi.Pause("Passwords did not match.");
+            return;
+        }
+
+        using var scope = scopes.CreateScope();
+        var result = await scope.ServiceProvider.GetRequiredService<AtlasAccounts>()
+            .RegisterAsync(email, password, displayName);
+        ConsoleUi.Pause(result.Result.Succeeded
+            ? "Account created. Email confirmation is required before sign-in. For local development, run the console with --confirm-email in another terminal."
+            : string.Join(Environment.NewLine, result.Result.Errors.Select(error => error.Description)));
+    }
+
     /// <summary>Trusted local operator utility, not email ownership verification or a public confirmation endpoint.</summary>
     public static async Task ConfirmEmailAsync(IServiceScopeFactory scopes)
     {

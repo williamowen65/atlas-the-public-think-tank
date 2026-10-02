@@ -51,7 +51,11 @@ public sealed class DiscoveryService : IDiscoveryService
             .Where(candidate => authoredIds is null
                 ? !candidate.IsModerationExcluded
                 : authoredIds.Contains(candidate.NodeId))
-            .Where(candidate => query.IncludeArchived || !candidate.IsArchived)
+            .Where(candidate => query.IsArchived is null
+                ? query.IncludeArchived || !candidate.IsArchived
+                : candidate.IsArchived == query.IsArchived.Value)
+            .Where(candidate => query.NodeTypeId is null || candidate.NodeTypeId == query.NodeTypeId.Value)
+            .Where(candidate => query.AuthorParticipantId is null || candidate.AuthorParticipantId == query.AuthorParticipantId.Value)
             .Where(candidate => query.CommunityId is null ||
                 candidate.CommunityIds.Contains(query.CommunityId.Value))
             .Where(candidate => reactions.All(
