@@ -11,4 +11,4 @@
 
 ## Review note
 
-Author-owned mutations have domain enforcement. Moderator removal is different: Comments currently accepts an `isModerator` fact from its caller. A future API must never populate that boolean from request data. PTT-120 should verify the host/application wiring derives it from Atlas moderator authorization.
+Author-owned mutations remain enforced by Comments. Moderator removal now follows the same security shape: the caller supplies the actor ID, while Comments asks an authorization port whether that actor may moderate. The Console adapter obtains that answer from Atlas Moderation rather than accepting a caller-supplied boolean.
