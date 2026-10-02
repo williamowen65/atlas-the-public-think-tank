@@ -312,7 +312,8 @@ public static class NodeCommands
                             CommentTarget.Node(node.Id.Value),
                             new CommentService(
                                 comments,
-                                new NodeCommentTargetAvailability(nodes)),
+                                new NodeCommentTargetAvailability(nodes),
+                                new CommentModeratorAuthorization(moderation)),
                             currentParticipant,
                             created => PublishCommentNotification(created, node, comments, eventPublisher));
                         break;
@@ -322,7 +323,8 @@ public static class NodeCommands
                             CommentTarget.Node(node.Id.Value),
                             new CommentService(
                                 comments,
-                                new NodeCommentTargetAvailability(nodes)),
+                                new NodeCommentTargetAvailability(nodes),
+                                new CommentModeratorAuthorization(moderation)),
                             participants,
                             currentParticipant,
                             created => PublishCommentNotification(created, node, comments, eventPublisher));
