@@ -7,6 +7,7 @@ using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Graph.Reactions;
 using Atlas.Moderation;
+using Atlas.ConsoleApp.Participants;
 using Atlas.Participants.Participants;
 using Atlas.Voting.Data;
 
