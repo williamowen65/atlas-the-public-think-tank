@@ -13,4 +13,4 @@
 
 ## Review note
 
-Owner-managed community mutations have strong domain authorization. Create/join/leave rely more heavily on the host supplying the real authenticated Participant ID. Node association also needs a clear product authorization rule: the current service records who associated the node but does not establish which participants are permitted to do so.
+Owner-managed community mutations have domain authorization. Create/join/leave rely on the host supplying the authenticated Participant ID. For node association, the current product behavior is now explicit: the **node author** may manage that node's community associations. The current Console enforces the Graph author gate before entering that workflow; a future API must preserve the same cross-boundary authorization before calling Communities.
