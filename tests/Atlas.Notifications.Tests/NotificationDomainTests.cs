@@ -45,6 +45,23 @@ public sealed class NotificationFlowTests
             Assert.IsNotNull(repository.Find(item.Id));
         
     }
+    [TestMethod]
+    public void Preferences_are_owned_by_the_authenticated_participant()
+    {
+        var repository = new MemoryNotifications();
+        var service = new NotificationService(repository, []);
+        var owner = Guid.NewGuid();
+        var outsider = Guid.NewGuid();
+
+        var preferences = service.Preferences(owner, owner);
+        preferences.DiscussionEmail = true;
+        service.SavePreferences(owner, preferences);
+
+        Assert.IsTrue(service.Preferences(owner, owner).DiscussionEmail);
+        Assert.Throws<UnauthorizedAccessException>(() => service.Preferences(outsider, owner));
+        Assert.Throws<UnauthorizedAccessException>(() => service.SavePreferences(outsider, preferences));
+    }
+
     private sealed class FailingEmail : INotificationDelivery
     {
         public DeliveryChannel Channel => DeliveryChannel.Email;
