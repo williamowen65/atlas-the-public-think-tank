@@ -12,7 +12,7 @@ Current node mutation policy is author ownership: the participant recorded as `N
 
 | Boundary / operation | Data/action | Required access | Current enforcement | Test/evidence | Result / follow-up |
 |---|---|---|---|---|---|
-| Read/browse node | Read public node state | Public | Current browsing/query paths treat nodes as public Atlas content | Existing Graph/Console behavior | **Covered conceptually**; future API public-read endpoint tests later |
+| Read/browse node | Read public node state | Public/anonymous | Console entry menu exposes Discovery and read-only node details before sign-in; actor-required contribution/mutation paths remain unavailable | Anonymous Console browsing + Graph/Discovery behavior | **Covered at current host**; future API public-read endpoint tests later |
 | Create node | Create public Atlas content | Authenticated Member at host/application boundary | Node constructor records supplied author but does not authenticate that GUID | Current Console uses authenticated actor after Identity integration | **Current host covered; future API enforcement:** host must derive author from authenticated Participant rather than request body |
 | Rename node | Modify title | Author | `Node.Rename` calls `EnsureAuthoredBy` before mutation | `NodeAuthorizationTests`, `SecurityAuthorizationTests` | **Covered** |
 | Change node type | Modify type | Author | `Node.ChangeType` calls `EnsureAuthoredBy` | `NodeAuthorizationTests` | **Covered** |
@@ -39,6 +39,12 @@ This includes scalar changes, collection/relationship changes, and archive/resto
 - A non-empty actor that differs from `AuthorId` receives an authorization failure.
 
 PTT-120 security regression tests verify both cases and verify rejected operations do not mutate node state or add domain events.
+
+### Anonymous reads are demonstrated by the current host
+
+The Console now starts in an anonymous state rather than forcing authentication before Atlas can be explored. Anonymous users can browse participant profiles, discover and open public nodes, browse communities, and list active node types. Actor-required actions such as profile editing, node/community creation, notifications, moderation, and developer diagnostics require sign-in.
+
+The anonymous node-detail path is deliberately read-only rather than passing a placeholder or fabricated Participant through the authenticated node workflow. This gives PTT-120 concrete host-level evidence that public Graph reads do not require an identity while preserving the rule that contributions require a trustworthy actor.
 
 ### Creation is a host trust-boundary concern
 
