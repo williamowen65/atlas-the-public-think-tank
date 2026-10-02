@@ -8,6 +8,10 @@ public sealed class DiscoveryServiceTests
     private static readonly Guid CommunityA = Guid.NewGuid();
     private static readonly Guid ReactionA = Guid.NewGuid();
     private static readonly Guid ReactionB = Guid.NewGuid();
+    private static readonly Guid TypeA = Guid.NewGuid();
+    private static readonly Guid TypeB = Guid.NewGuid();
+    private static readonly Guid AuthorA = Guid.NewGuid();
+    private static readonly Guid AuthorB = Guid.NewGuid();
 
     [TestMethod]
     public void Discover_returns_active_candidates_in_ranked_order()
@@ -66,6 +70,29 @@ public sealed class DiscoveryServiceTests
         CollectionAssert.AreEqual(
             new[] { titleMatch.NodeId, contentMatch.NodeId },
             results.Select(result => result.NodeId).ToArray());
+    }
+
+    [TestMethod]
+    public void Discover_filters_by_node_type_author_and_status()
+    {
+        var match = Candidate("Match", average: 5, nodeTypeId: TypeA, authorParticipantId: AuthorA);
+        var wrongType = Candidate("Wrong type", average: 5, nodeTypeId: TypeB, authorParticipantId: AuthorA);
+        var wrongAuthor = Candidate("Wrong author", average: 5, nodeTypeId: TypeA, authorParticipantId: AuthorB);
+        var archived = Candidate("Archived", average: 5, archived: true, nodeTypeId: TypeA, authorParticipantId: AuthorA);
+
+        var activeResults = Service(match, wrongType, wrongAuthor, archived).Discover(new DiscoveryQuery(
+            NodeTypeId: TypeA,
+            AuthorParticipantId: AuthorA,
+            IsArchived: false));
+
+        Assert.AreEqual(match.NodeId, activeResults.Single().NodeId);
+
+        var archivedResults = Service(match, archived).Discover(new DiscoveryQuery(
+            NodeTypeId: TypeA,
+            AuthorParticipantId: AuthorA,
+            IsArchived: true));
+
+        Assert.AreEqual(archived.NodeId, archivedResults.Single().NodeId);
     }
 
     [TestMethod]
@@ -211,8 +238,10 @@ public sealed class DiscoveryServiceTests
         DateTimeOffset? createdAt = null,
         DateTimeOffset? updatedAt = null,
         IReadOnlyCollection<Guid>? communities = null,
-        IReadOnlyCollection<Guid>? reactions = null) =>
-        new(Guid.NewGuid(), title, content, archived,
+        IReadOnlyCollection<Guid>? reactions = null,
+        Guid? nodeTypeId = null,
+        Guid? authorParticipantId = null) =>
+        new(Guid.NewGuid(), title, content, nodeTypeId ?? TypeA, authorParticipantId ?? AuthorA, archived,
             createdAt ?? updatedAt ?? DateTimeOffset.UtcNow,
             updatedAt ?? createdAt ?? DateTimeOffset.UtcNow,
             votes, average, communities ?? Array.Empty<Guid>(), reactions ?? Array.Empty<Guid>());
