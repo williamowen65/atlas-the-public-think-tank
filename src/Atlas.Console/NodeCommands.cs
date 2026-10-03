@@ -269,7 +269,7 @@ public static class NodeCommands
                             nodeTags,
                             votes,
                             castVote,
-                            currentParticipant,
+                            participants,
                             userContext);
                         break;
 
@@ -307,7 +307,7 @@ public static class NodeCommands
                         ViewCommunities(
                             node, communities, communityMemberships, communityNodes, communityService,
                             nodes, nodeTypes, documents, participants, votes, castVote, undoVote,
-                            tagDefinitions, nodeTags, eventPublisher, currentParticipant, userContext, comments, moderation);
+                            tagDefinitions, nodeTags, eventPublisher, userContext, comments, moderation);
                         break;
 
                     case "18":
