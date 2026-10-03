@@ -319,6 +319,7 @@ public sealed class ConsoleApplication
             _nodeTypeRepository,
             _documentRepository,
             _currentParticipant,
+            _userContext,
             _moderation,
             _discovery,
             (node, actor) => NodeCommands.Run(node, _nodeRepository, _nodeTypeRepository,
