@@ -587,6 +587,7 @@ public sealed class ConsoleApplication
                 _nodeTags,
                 _eventPublisher,
                 _currentParticipant,
+                _userContext,
                 _communities,
                 _communityMemberships,
                 _communityNodes,
@@ -710,7 +711,7 @@ public sealed class ConsoleApplication
                     _currentParticipant = NodeCommands.Run(
                         node, _nodeRepository, _nodeTypeRepository, _documentRepository,
                         _participantRepository, _voteRepository, _castVote, _undoVote,
-                        _tagDefinitions, _nodeTags, _eventPublisher, _currentParticipant,
+                        _tagDefinitions, _nodeTags, _eventPublisher, _currentParticipant, _userContext,
                         _communities, _communityMemberships, _communityNodes,
                         _communityService, _comments, _moderation);
                     // Node navigation can change the selected Console participant.
@@ -899,7 +900,7 @@ public sealed class ConsoleApplication
             _currentParticipant = CommunityCommands.Run(
                 communities[selection - 1], _communities, _communityMemberships, _communityNodes, _communityService,
                 _nodeRepository, _nodeTypeRepository, _documentRepository, _participantRepository,
-                _voteRepository, _castVote, _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, _currentParticipant, _comments, _moderation);
+                _voteRepository, _castVote, _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, _currentParticipant, _userContext, _comments, _moderation);
         }
     }
 
