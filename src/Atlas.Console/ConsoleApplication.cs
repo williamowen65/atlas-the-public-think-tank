@@ -323,7 +323,7 @@ public sealed class ConsoleApplication
             _discovery,
             (node, actor) => NodeCommands.Run(node, _nodeRepository, _nodeTypeRepository,
                 _documentRepository, _participantRepository, _voteRepository, _castVote,
-                _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, actor,
+                _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, actor, _userContext,
                 _communities, _communityMemberships, _communityNodes, _communityService,
                 _comments, _moderation),
             (node, number, result, actor) => NodeDisplay.WriteTableRow(node,
@@ -371,7 +371,7 @@ public sealed class ConsoleApplication
             _nodeRepository,
             _nodeTypeRepository,
             _documentRepository,
-            _currentParticipant,
+            _userContext.ParticipantId,
             _eventPublisher);
     }
 
@@ -477,7 +477,7 @@ public sealed class ConsoleApplication
                 if (reportNumber < 1 || reportNumber > nodes.Count)
                     ConsoleUi.Pause("That node does not exist.");
                 else
-                    NodeCommands.ReportNode(nodes[reportNumber - 1], _currentParticipant, _moderation);
+                    NodeCommands.ReportNode(nodes[reportNumber - 1], _userContext.ParticipantId, _moderation);
                 continue;
             }
             if (string.Equals(input, "s", StringComparison.OrdinalIgnoreCase))
