@@ -214,7 +214,7 @@ public static class NodeCommands
                                    votes,
                                    nodeTags,
                                    tagDefinitions,
-                                   currentParticipant,
+                                   actorParticipantId,
                                    moderation)
                                ?? node;
                         break;
@@ -602,7 +602,7 @@ public static class NodeCommands
         IVoteRepository votes,
         INodeReactionRepository nodeTags,
         IReactionDefinitionRepository tagDefinitions,
-        Participant currentParticipant,
+        Guid actorParticipantId,
         ModerationService moderation)
     {
         var childGroups = nodes
@@ -663,7 +663,7 @@ public static class NodeCommands
         Console.WriteLine();
         NodeDisplay.WriteTableHeader();
 
-        var votingParticipantId =  new Atlas.Voting.Votes.ParticipantId(currentParticipant.Id.Value);
+        var votingParticipantId =  new Atlas.Voting.Votes.ParticipantId(actorParticipantId);
 
         for (var index = 0;
              index < selectedGroup.Children.Count;
@@ -1122,7 +1122,7 @@ public static class NodeCommands
 
         var votingParticipantId =
             new Atlas.Voting.Votes.ParticipantId(
-                currentParticipant.Id.Value);
+                actorParticipantId);
 
         var removed = undoVote.Execute(
             voteTarget,
