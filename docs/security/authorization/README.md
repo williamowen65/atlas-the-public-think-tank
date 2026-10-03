@@ -33,11 +33,11 @@ Each review is intentionally a compact operation table rather than a domain reca
 - **Review / Policy needed** — the current code exposes a question that needs an explicit authorization decision or stronger workflow.
 - **Deferred** — intentionally belongs to a future host/capability.
 
-## Authenticated user context
+## Authenticated actor
 
-Application/host workflows obtain the current actor through `IUserContext` rather than treating a caller-supplied Participant ID as authentication evidence. The current Console implementation is `ConsoleIdentitySession`; a future ASP.NET host should provide a request-scoped implementation derived from the authenticated `ClaimsPrincipal`.
+Application/host workflows obtain the current actor through `IAuthenticatedActor` rather than treating a caller-supplied Participant ID as authentication evidence. The current Console implementation is `ConsoleIdentitySession`; a future ASP.NET host should provide a request-scoped implementation derived from the authenticated `ClaimsPrincipal`.
 
-`IUserContext` deliberately does **not** belong in the domain projects. Once the application has established the actor, domain operations continue to receive explicit actor IDs where authorization is part of their rule. This keeps authorization visible/testable without coupling Graph, Participants, Voting, Comments, Communities, Notifications, or Moderation to HTTP/session infrastructure.
+`IAuthenticatedActor` deliberately does **not** belong in the domain projects. Once the application has established the actor, domain operations continue to receive explicit actor IDs where authorization is part of their rule. This keeps authorization visible/testable without coupling Graph, Participants, Voting, Comments, Communities, Notifications, or Moderation to HTTP/session infrastructure.
 
 This distinction also separates **actor** from **target**. A workflow may navigate or display another Participant, Node, notification, or other resource while the authenticated actor remains unchanged.
 
