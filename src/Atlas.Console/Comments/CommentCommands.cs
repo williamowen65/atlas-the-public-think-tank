@@ -124,7 +124,7 @@ public static class CommentCommands
         var comment = thread[selection - 1].Comment;
         while (true)
         {
-            WriteSelected(comment, participants, currentParticipant);
+            WriteSelected(comment, participants, authenticatedActor.ParticipantId);
             var isAuthor = comment.AuthorParticipantId == authenticatedActor.ParticipantId;
             var canChange = isAuthor && !comment.IsRemoved;
 
@@ -175,7 +175,7 @@ public static class CommentCommands
     private static void WriteSelected(
         Comment comment,
         IParticipantRepository participants,
-        Participant currentParticipant)
+        Guid actorParticipantId)
     {
         Console.Clear();
         var author = participants
@@ -186,7 +186,11 @@ public static class CommentCommands
         Console.WriteLine($"Author: {author}");
         Console.WriteLine($"Status: {FormatStatus(comment.Status)}");
         Console.WriteLine($"Created: {comment.CreatedAt.LocalDateTime:g}");
-        Console.WriteLine($"Viewing as: {currentParticipant.DisplayName}");
+        var actorDisplayName = participants
+            .GetById(new ParticipantId(actorParticipantId))
+            ?.DisplayName
+            ?? "authenticated participant";
+        Console.WriteLine($"Viewing as: {actorDisplayName}");
         Console.WriteLine();
         Console.WriteLine(comment.IsRemoved ? "[comment removed]" : comment.Body);
         Console.WriteLine();
