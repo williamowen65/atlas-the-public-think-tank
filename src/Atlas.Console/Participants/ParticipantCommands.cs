@@ -18,7 +18,7 @@ public static class ParticipantCommands
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
-        IUserContext userContext,
+        IAuthenticatedActor authenticatedActor,
         Atlas.Moderation.ModerationService moderation,
         IDiscoveryService? discovery = null,
         Action<Node>? openNode = null,
@@ -58,8 +58,8 @@ public static class ParticipantCommands
                     EditProfile(
                         participant,
                         participants,
-                        userContext.ParticipantId,
-                        participants.GetById(new ParticipantId(userContext.ParticipantId))?.DisplayName ?? "authenticated participant");
+                        authenticatedActor.ParticipantId,
+                        participants.GetById(new ParticipantId(authenticatedActor.ParticipantId))?.DisplayName ?? "authenticated participant");
                     break;
 
                 case "2":
