@@ -48,7 +48,6 @@ public sealed class ConsoleApplication
     private readonly CurrentUserNotifications _currentUserNotifications;
     private readonly INotificationRepository _notificationRepository;
     private readonly IUserContext _userContext;
-    private Participant _currentParticipant;
     private readonly Func<bool>? _validateSession;
     public bool ExitRequested { get; private set; }
     private readonly string _nodeCollectionKey;
@@ -92,7 +91,6 @@ public sealed class ConsoleApplication
         ICommentRepository comments,
         string commentCollectionKey,
         IDiscoveryService discovery,
-        Participant initialParticipant,
         ModerationService moderation,
         IModeratorAuthorization moderatorAuthorization,
         NotificationService notificationService,
@@ -110,7 +108,6 @@ public sealed class ConsoleApplication
         _tagDefinitions = tagDefinitions;
         _nodeTags = nodeTags;
         _eventPublisher = eventPublisher;
-        _currentParticipant = initialParticipant;
         _nodeCollectionKey = nodeCollectionKey;
         _nodeTypeCollectionKey = nodeTypeCollectionKey;
         _documentCollectionKey = documentCollectionKey;
@@ -149,7 +146,6 @@ public sealed class ConsoleApplication
                 ConsoleUi.Pause("Your session has ended. Please sign in again.");
                 return;
             }
-            _currentParticipant = _participantRepository.GetById(_currentParticipant.Id) ?? _currentParticipant;
             Console.Clear();
             WriteMainMenu();
 
@@ -161,7 +157,7 @@ public sealed class ConsoleApplication
                     return;
 
                 case "2":
-                    ViewParticipantProfile(_currentParticipant.Id);
+                    ViewParticipantProfile(new ParticipantId(_userContext.ParticipantId));
                     break;
 
                 case "3":
@@ -226,7 +222,7 @@ public sealed class ConsoleApplication
         Console.WriteLine("ATLAS");
         Console.WriteLine("-----");
         Console.WriteLine(
-            $"Current participant: {_currentParticipant.DisplayName}");
+            $"Current participant: {AuthenticatedParticipantDisplayName()}");
         Console.WriteLine();
         Console.WriteLine("1. Sign out");
         Console.WriteLine("2. My profile");
@@ -312,26 +308,25 @@ public sealed class ConsoleApplication
     private void ViewParticipantProfile(
         ParticipantId participantId)
     {
-        _currentParticipant = ParticipantCommands.Run(
+        ParticipantCommands.Run(
             participantId,
             _participantRepository,
             _nodeRepository,
             _nodeTypeRepository,
             _documentRepository,
-            _currentParticipant,
             _userContext,
             _moderation,
             _discovery,
-            (node, actor) => NodeCommands.Run(node, _nodeRepository, _nodeTypeRepository,
+            node => NodeCommands.Run(node, _nodeRepository, _nodeTypeRepository,
                 _documentRepository, _participantRepository, _voteRepository, _castVote,
-                _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, actor, _userContext,
+                _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, _userContext,
                 _communities, _communityMemberships, _communityNodes, _communityService,
                 _comments, _moderation),
-            (node, number, result, actor) => NodeDisplay.WriteTableRow(node,
+            (node, number, result) => NodeDisplay.WriteTableRow(node,
                 _nodeRepository, _nodeTypeRepository, _documentRepository,
                 _participantRepository, number, result?.VoteCount, result?.AverageVote,
                 _voteRepository.GetByParticipantAndTarget(
-                    new VotingParticipantId(actor.Id.Value),
+                    new VotingParticipantId(_userContext.ParticipantId),
                     new NodeVoteTarget(node.Id.Value))?.Value.Value,
                 _nodeTags, _tagDefinitions, _voteRepository, _communities, _communityNodes,
                 _comments, includeCreatedDate: true, moderation: _moderation),
@@ -575,7 +570,7 @@ public sealed class ConsoleApplication
                 continue;
             }
 
-            _currentParticipant = NodeCommands.Run(
+            NodeCommands.Run(
                 nodes[selection - 1],
                 _nodeRepository,
                 _nodeTypeRepository,
@@ -587,7 +582,6 @@ public sealed class ConsoleApplication
                 _tagDefinitions,
                 _nodeTags,
                 _eventPublisher,
-                _currentParticipant,
                 _userContext,
                 _communities,
                 _communityMemberships,
@@ -709,18 +703,12 @@ public sealed class ConsoleApplication
                 if (action == "V")
                 {
                     if (node is null) { ConsoleUi.Pause("Node is unavailable."); continue; }
-                    _currentParticipant = NodeCommands.Run(
+                    NodeCommands.Run(
                         node, _nodeRepository, _nodeTypeRepository, _documentRepository,
                         _participantRepository, _voteRepository, _castVote, _undoVote,
-                        _tagDefinitions, _nodeTags, _eventPublisher, _currentParticipant, _userContext,
+                        _tagDefinitions, _nodeTags, _eventPublisher, _userContext,
                         _communities, _communityMemberships, _communityNodes,
                         _communityService, _comments, _moderation);
-                    // Node navigation can change the selected Console participant.
-                    if (!_moderatorAuthorization.IsAtlasModerator(_userContext.ParticipantId))
-                    {
-                        ConsoleUi.Pause("Moderator participant changed; returning to the main menu.");
-                        return;
-                    }
                     continue;
                 }
                 if (action == "R")
@@ -898,10 +886,10 @@ public sealed class ConsoleApplication
             if (!int.TryParse(Console.ReadLine(), out var selection) || selection < 0 || selection > communities.Count)
             { ConsoleUi.Pause("That is not a valid selection."); continue; }
             if (selection == 0) return;
-            _currentParticipant = CommunityCommands.Run(
+            CommunityCommands.Run(
                 communities[selection - 1], _communities, _communityMemberships, _communityNodes, _communityService,
                 _nodeRepository, _nodeTypeRepository, _documentRepository, _participantRepository,
-                _voteRepository, _castVote, _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, _currentParticipant, _userContext, _comments, _moderation);
+                _voteRepository, _castVote, _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, _userContext, _comments, _moderation);
         }
     }
 
@@ -1009,10 +997,16 @@ public sealed class ConsoleApplication
         ConsoleUi.Pause();
     }
 
-    /// <summary>Makes the simulated authenticated identity visible on Console screens.</summary>
+    private string AuthenticatedParticipantDisplayName() =>
+        _participantRepository
+            .GetById(new ParticipantId(_userContext.ParticipantId))
+            ?.DisplayName
+        ?? "authenticated participant";
+
+    /// <summary>Makes the authenticated identity visible on Console screens.</summary>
     private void WriteActingAs()
     {
-        Console.WriteLine($"Acting as: {_currentParticipant.DisplayName}");
+        Console.WriteLine($"Acting as: {AuthenticatedParticipantDisplayName()}");
         Console.WriteLine();
     }
 }
