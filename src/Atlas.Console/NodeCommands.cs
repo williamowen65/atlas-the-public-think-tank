@@ -25,7 +25,7 @@ namespace Atlas.ConsoleApp;
 public static class NodeCommands
 {
     /// <summary>Runs the interactive node commands workflow.</summary>
-    public static Participant Run(
+    public static void Run(
         Node node,
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
@@ -37,7 +37,6 @@ public static class NodeCommands
         IReactionDefinitionRepository tagDefinitions,
         INodeReactionRepository nodeTags,
         InMemoryEventPublisher eventPublisher,
-        Participant currentParticipant,
         IUserContext userContext,
         ICommunityRepository communities,
         ICommunityMembershipRepository communityMemberships,
@@ -118,7 +117,8 @@ public static class NodeCommands
                 moderation);
 
             Console.WriteLine();
-            Console.WriteLine($"ACTIONS (as {currentParticipant.DisplayName})");
+            var actorDisplayName = participants.GetById(new ParticipantId(actorParticipantId))?.DisplayName ?? "authenticated participant";
+            Console.WriteLine($"ACTIONS (as {actorDisplayName})");
             Console.WriteLine(isAuthor ? "  Edit this node:" : "  Edit this node (disabled — requires node author):");
             Console.WriteLine("    1 Rename · 2 Description blocks · 3 Change type");
             Console.WriteLine("    4 Archive · 5 Restore · 6 Requested sub-node types");
@@ -252,13 +252,12 @@ public static class NodeCommands
                         break;
 
                     case "11":
-                        currentParticipant = ViewAuthorProfile(
+                        ViewAuthorProfile(
                             node,
                             nodes,
                             nodeTypes,
                             documents,
                             participants,
-                            currentParticipant,
                             userContext,
                             moderation);
                         break;
@@ -289,14 +288,13 @@ public static class NodeCommands
                         break;
 
                     case "15":
-                        currentParticipant = ViewNodeVotes(
+                        ViewNodeVotes(
                             node,
                             nodes,
                             nodeTypes,
                             documents,
                             participants,
                             votes,
-                            currentParticipant,
                             userContext,
                             moderation);
                         break;
@@ -306,7 +304,7 @@ public static class NodeCommands
                         break;
 
                     case "17":
-                        currentParticipant = ViewCommunities(
+                        ViewCommunities(
                             node, communities, communityMemberships, communityNodes, communityService,
                             nodes, nodeTypes, documents, participants, votes, castVote, undoVote,
                             tagDefinitions, nodeTags, eventPublisher, currentParticipant, userContext, comments, moderation);
@@ -331,7 +329,6 @@ public static class NodeCommands
                                 new NodeCommentTargetAvailability(nodes),
                                 new CommentModeratorAuthorization(moderation)),
                             participants,
-                            currentParticipant,
                             userContext,
                             created => PublishCommentNotification(created, node, comments, eventPublisher));
                         break;
@@ -396,7 +393,6 @@ public static class NodeCommands
             }
         }
 
-        return currentParticipant;
     }
 
     private static void PublishCommentNotification(Comment created, Node node,
@@ -779,13 +775,12 @@ public static class NodeCommands
     }
 
     /// <summary>Displays author profile in the console workflow.</summary>
-    private static Participant ViewAuthorProfile(
+    private static void ViewAuthorProfile(
         Node node,
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
         IParticipantRepository participants,
-        Participant currentParticipant,
         IUserContext userContext,
         ModerationService moderation)
     {
@@ -795,16 +790,15 @@ public static class NodeCommands
         {
             ConsoleUi.Pause(
                 "The participant profile for this author was not found.");
-            return currentParticipant;
+            return;
         }
 
-        return ParticipantCommands.Run(
+        ParticipantCommands.Run(
             authorId,
             participants,
             nodes,
             nodeTypes,
             documents,
-            currentParticipant,
             userContext,
             moderation);
     }
@@ -1175,7 +1169,7 @@ public static class NodeCommands
         }
     }
 
-    private static Participant ViewCommunities(
+    private static void ViewCommunities(
         Node node,
         ICommunityRepository communities,
         ICommunityMembershipRepository memberships,
@@ -1191,7 +1185,6 @@ public static class NodeCommands
         IReactionDefinitionRepository tagDefinitions,
         INodeReactionRepository nodeTags,
         InMemoryEventPublisher eventPublisher,
-        Participant currentParticipant,
         IUserContext userContext,
         ICommentRepository comments,
         ModerationService moderation)
@@ -1199,29 +1192,28 @@ public static class NodeCommands
         var associated = communityNodes.GetByNode(node.Id.Value)
             .Select(x => communities.GetById(x.CommunityId))
             .Where(x => x is not null).Cast<Community>().OrderBy(x => x.Name).ToList();
-        if (associated.Count == 0) { ConsoleUi.Pause("This node is not associated with any communities."); return currentParticipant; }
+        if (associated.Count == 0) { ConsoleUi.Pause("This node is not associated with any communities."); return; }
         Console.Clear();
         for (var index = 0; index < associated.Count; index++) Console.WriteLine($"{index + 1}. {associated[index].Name}");
         Console.Write("Community number (0 cancels): ");
-        if (!int.TryParse(Console.ReadLine(), out var selection) || selection == 0) return currentParticipant;
-        if (selection < 1 || selection > associated.Count) { ConsoleUi.Pause("That is not a valid selection."); return currentParticipant; }
-        return CommunityCommands.Run(associated[selection - 1], communities, memberships, communityNodes, service,
+        if (!int.TryParse(Console.ReadLine(), out var selection) || selection == 0) return;
+        if (selection < 1 || selection > associated.Count) { ConsoleUi.Pause("That is not a valid selection."); return; }
+        CommunityCommands.Run(associated[selection - 1], communities, memberships, communityNodes, service,
             nodes, nodeTypes, documents, participants, votes, castVote, undoVote, tagDefinitions, nodeTags,
-            eventPublisher, currentParticipant, userContext, comments, moderation);
+            eventPublisher, userContext, comments, moderation);
     }
 
     /// <summary>
     /// Displays the participants who voted on a node and allows
     /// navigation to a selected participant profile.
     /// </summary>
-    private static Participant ViewNodeVotes(
+    private static void ViewNodeVotes(
         Node node,
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
         IParticipantRepository participants,
         IVoteRepository votes,
-        Participant currentParticipant,
         IUserContext userContext,
         ModerationService moderation)
     {
@@ -1238,7 +1230,7 @@ public static class NodeCommands
         {
             ConsoleUi.Pause(
                 "No participants have voted on this node.");
-            return currentParticipant;
+            return;
         }
 
         // Match votes to participants
@@ -1302,12 +1294,12 @@ public static class NodeCommands
             ConsoleUi.Pause(
                 "That is not a valid voter selection.");
 
-            return currentParticipant;
+            return;
         }
 
         if (selection == 0)
         {
-            return currentParticipant;
+            return;
         }
 
         // Get the selected voter
@@ -1317,17 +1309,16 @@ public static class NodeCommands
             ConsoleUi.Pause(
                 "That participant profile could not be found.");
 
-            return currentParticipant;
+            return;
         }
 
         // Open the participant profile
-        return ParticipantCommands.Run(
+        ParticipantCommands.Run(
             selectedRow.Participant.Id,
             participants,
             nodes,
             nodeTypes,
             documents,
-            currentParticipant,
             userContext,
             moderation);
         }
