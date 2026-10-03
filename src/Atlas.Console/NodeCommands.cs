@@ -10,6 +10,7 @@ using Atlas.ConsoleApp.Participants;
 using Atlas.Content.Blocks;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
+using Atlas.Identity;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Graph.Reactions;
 using Atlas.Moderation;
@@ -37,6 +38,7 @@ public static class NodeCommands
         INodeReactionRepository nodeTags,
         InMemoryEventPublisher eventPublisher,
         Participant currentParticipant,
+        IUserContext userContext,
         ICommunityRepository communities,
         ICommunityMembershipRepository communityMemberships,
         ICommunityNodeRepository communityNodes,
@@ -48,7 +50,7 @@ public static class NodeCommands
 
         while (viewingNode)
         {
-            var actorParticipantId = currentParticipant.Id.Value;
+            var actorParticipantId = userContext.ParticipantId;
             var isAuthor = actorParticipantId == node.AuthorId.Value;
 
             Console.Clear();
@@ -58,7 +60,7 @@ public static class NodeCommands
 
             var votingParticipantId =
                 new Atlas.Voting.Votes.ParticipantId(
-                    currentParticipant.Id.Value);
+                    actorParticipantId);
 
             var voteSummary =
                 new GetVoteSummary(votes).Execute(
@@ -267,20 +269,21 @@ public static class NodeCommands
                             nodeTags,
                             votes,
                             castVote,
-                            currentParticipant);
+                            currentParticipant,
+                            userContext);
                         break;
 
                     case "13":
                         VoteOnNode(
                             node,
-                            currentParticipant,
+                            actorParticipantId,
                             castVote);
                         break;
 
                     case "14":
                         UndoVoteOnNode(
                             node,
-                            currentParticipant,
+                            actorParticipantId,
                             undoVote);
                         break;
 
@@ -297,14 +300,14 @@ public static class NodeCommands
                         break;
 
                     case "16":
-                        ManageCommunities(node, communities, communityNodes, communityService, currentParticipant, moderation);
+                        ManageCommunities(node, communities, communityNodes, communityService, actorParticipantId, moderation);
                         break;
 
                     case "17":
                         currentParticipant = ViewCommunities(
                             node, communities, communityMemberships, communityNodes, communityService,
                             nodes, nodeTypes, documents, participants, votes, castVote, undoVote,
-                            tagDefinitions, nodeTags, eventPublisher, currentParticipant, comments, moderation);
+                            tagDefinitions, nodeTags, eventPublisher, currentParticipant, userContext, comments, moderation);
                         break;
 
                     case "18":
@@ -314,7 +317,7 @@ public static class NodeCommands
                                 comments,
                                 new NodeCommentTargetAvailability(nodes),
                                 new CommentModeratorAuthorization(moderation)),
-                            currentParticipant,
+                            userContext,
                             created => PublishCommentNotification(created, node, comments, eventPublisher));
                         break;
 
@@ -327,6 +330,7 @@ public static class NodeCommands
                                 new CommentModeratorAuthorization(moderation)),
                             participants,
                             currentParticipant,
+                            userContext,
                             created => PublishCommentNotification(created, node, comments, eventPublisher));
                         break;
 
@@ -339,7 +343,7 @@ public static class NodeCommands
                         break;
 
                     case "21":
-                        ReportNode(node, currentParticipant, moderation);
+                        ReportNode(node, actorParticipantId, moderation);
                         break;
 
                     case "22" when moderation.CanViewHiddenOriginal(actorParticipantId,
@@ -367,7 +371,7 @@ public static class NodeCommands
                         if (document is not null)
                             foreach (var block in documents.GetBlocks(document))
                                 if (block.UpdatedAt > latestEdit) latestEdit = block.UpdatedAt;
-                        moderation.RequestNodeReview(node.Id.Value, currentParticipant.Id.Value,
+                        moderation.RequestNodeReview(node.Id.Value, actorParticipantId,
                             node.AuthorId.Value, latestEdit, DateTimeOffset.UtcNow);
                         ConsoleUi.Pause("Review requested; the Node remains hidden until a moderator restores it.");
                         break;
@@ -403,7 +407,7 @@ public static class NodeCommands
             "Node", node.Id.Value, created.CreatedAt));
     }
 
-    public static void ReportNode(Node node, Participant participant, ModerationService moderation)
+    public static void ReportNode(Node node, Guid actorParticipantId, ModerationService moderation)
     {
         Console.WriteLine($"Report: {NodeDisplay.PublicTitle(node, moderation)}");
         Console.Write("Reason (e.g. harassment, spam, unsafe content): ");
@@ -412,7 +416,7 @@ public static class NodeCommands
         var explanation = Console.ReadLine();
         try
         {
-            var item = moderation.ReportNode(node.Id.Value, participant.Id.Value,
+            var item = moderation.ReportNode(node.Id.Value, actorParticipantId,
                 node.Title.Value, reason ?? string.Empty, explanation, DateTimeOffset.UtcNow);
             ConsoleUi.Pause($"Report submitted: {item.Id}");
         }
@@ -431,7 +435,7 @@ public static class NodeCommands
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
-        Participant author,
+        Guid authorParticipantId,
         InMemoryEventPublisher eventPublisher)
     {
         var requestedTypes = parent.RequestedSubNodeTypes
@@ -513,7 +517,7 @@ public static class NodeCommands
         {
             selectedType = ConsoleUi.CreateCustomNodeType(
                 nodeTypes,
-                author.Id.Value.ToString());
+                authorParticipantId.ToString());
 
             if (selectedType is null)
             {
