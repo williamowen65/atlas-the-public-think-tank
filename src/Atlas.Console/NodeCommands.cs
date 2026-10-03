@@ -37,7 +37,7 @@ public static class NodeCommands
         IReactionDefinitionRepository tagDefinitions,
         INodeReactionRepository nodeTags,
         InMemoryEventPublisher eventPublisher,
-        IUserContext userContext,
+        IAuthenticatedActor authenticatedActor,
         ICommunityRepository communities,
         ICommunityMembershipRepository communityMemberships,
         ICommunityNodeRepository communityNodes,
@@ -49,7 +49,7 @@ public static class NodeCommands
 
         while (viewingNode)
         {
-            var actorParticipantId = userContext.ParticipantId;
+            var actorParticipantId = authenticatedActor.ParticipantId;
             var isAuthor = actorParticipantId == node.AuthorId.Value;
 
             Console.Clear();
@@ -258,7 +258,7 @@ public static class NodeCommands
                             nodeTypes,
                             documents,
                             participants,
-                            userContext,
+                            authenticatedActor,
                             moderation);
                         break;
 
@@ -270,7 +270,7 @@ public static class NodeCommands
                             votes,
                             castVote,
                             participants,
-                            userContext);
+                            authenticatedActor);
                         break;
 
                     case "13":
@@ -295,7 +295,7 @@ public static class NodeCommands
                             documents,
                             participants,
                             votes,
-                            userContext,
+                            authenticatedActor,
                             moderation);
                         break;
 
@@ -307,7 +307,7 @@ public static class NodeCommands
                         ViewCommunities(
                             node, communities, communityMemberships, communityNodes, communityService,
                             nodes, nodeTypes, documents, participants, votes, castVote, undoVote,
-                            tagDefinitions, nodeTags, eventPublisher, userContext, comments, moderation);
+                            tagDefinitions, nodeTags, eventPublisher, authenticatedActor, comments, moderation);
                         break;
 
                     case "18":
@@ -317,7 +317,7 @@ public static class NodeCommands
                                 comments,
                                 new NodeCommentTargetAvailability(nodes),
                                 new CommentModeratorAuthorization(moderation)),
-                            userContext,
+                            authenticatedActor,
                             created => PublishCommentNotification(created, node, comments, eventPublisher));
                         break;
 
@@ -329,7 +329,7 @@ public static class NodeCommands
                                 new NodeCommentTargetAvailability(nodes),
                                 new CommentModeratorAuthorization(moderation)),
                             participants,
-                            userContext,
+                            authenticatedActor,
                             created => PublishCommentNotification(created, node, comments, eventPublisher));
                         break;
 
@@ -781,7 +781,7 @@ public static class NodeCommands
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
         IParticipantRepository participants,
-        IUserContext userContext,
+        IAuthenticatedActor authenticatedActor,
         ModerationService moderation)
     {
         var authorId = new ParticipantId(node.AuthorId.Value);
@@ -799,7 +799,7 @@ public static class NodeCommands
             nodes,
             nodeTypes,
             documents,
-            userContext,
+            authenticatedActor,
             moderation);
     }
 
@@ -1185,7 +1185,7 @@ public static class NodeCommands
         IReactionDefinitionRepository tagDefinitions,
         INodeReactionRepository nodeTags,
         InMemoryEventPublisher eventPublisher,
-        IUserContext userContext,
+        IAuthenticatedActor authenticatedActor,
         ICommentRepository comments,
         ModerationService moderation)
     {
@@ -1200,7 +1200,7 @@ public static class NodeCommands
         if (selection < 1 || selection > associated.Count) { ConsoleUi.Pause("That is not a valid selection."); return; }
         CommunityCommands.Run(associated[selection - 1], communities, memberships, communityNodes, service,
             nodes, nodeTypes, documents, participants, votes, castVote, undoVote, tagDefinitions, nodeTags,
-            eventPublisher, userContext, comments, moderation);
+            eventPublisher, authenticatedActor, comments, moderation);
     }
 
     /// <summary>
@@ -1214,7 +1214,7 @@ public static class NodeCommands
         IDocumentRepository documents,
         IParticipantRepository participants,
         IVoteRepository votes,
-        IUserContext userContext,
+        IAuthenticatedActor authenticatedActor,
         ModerationService moderation)
     {
 
@@ -1319,7 +1319,7 @@ public static class NodeCommands
             nodes,
             nodeTypes,
             documents,
-            userContext,
+            authenticatedActor,
             moderation);
         }
 
