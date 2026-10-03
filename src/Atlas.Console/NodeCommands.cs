@@ -229,7 +229,7 @@ public static class NodeCommands
                             nodes,
                             nodeTypes,
                             documents,
-                            currentParticipant,
+                            actorParticipantId,
                             eventPublisher);
                         break;
 
@@ -1080,7 +1080,7 @@ public static class NodeCommands
     /// <summary>Reads and casts the current participant's rating for a node.</summary>
     private static void VoteOnNode(
         Node node,
-        Participant currentParticipant,
+        Guid actorParticipantId,
         CastVote castVote)
     {
         Console.Write("Rating from 0 through 10: ");
@@ -1098,7 +1098,7 @@ public static class NodeCommands
 
         var votingParticipantId =
             new Atlas.Voting.Votes.ParticipantId(
-                currentParticipant.Id.Value);
+                actorParticipantId);
 
         castVote.Execute(
             voteTarget,
@@ -1114,7 +1114,7 @@ public static class NodeCommands
     /// </summary>
     private static void UndoVoteOnNode(
         Node node,
-        Participant currentParticipant,
+        Guid actorParticipantId,
         UndoVote undoVote)
     {
         var voteTarget =
@@ -1139,7 +1139,7 @@ public static class NodeCommands
         ICommunityRepository communities,
         ICommunityNodeRepository communityNodes,
         CommunityService service,
-        Participant participant,
+        Guid actorParticipantId,
         ModerationService moderation)
     {
         var available = communities.GetAll().OrderBy(x => x.Name).ToList();
@@ -1166,7 +1166,7 @@ public static class NodeCommands
         }
         else
         {
-            service.AssociateNode(community, node.Id.Value, participant.Id.Value, DateTimeOffset.UtcNow);
+            service.AssociateNode(community, node.Id.Value, actorParticipantId, DateTimeOffset.UtcNow);
             ConsoleUi.Pause($"Added this node to {community.Name}.");
         }
     }
@@ -1188,6 +1188,7 @@ public static class NodeCommands
         INodeReactionRepository nodeTags,
         InMemoryEventPublisher eventPublisher,
         Participant currentParticipant,
+        IUserContext userContext,
         ICommentRepository comments,
         ModerationService moderation)
     {
@@ -1202,7 +1203,7 @@ public static class NodeCommands
         if (selection < 1 || selection > associated.Count) { ConsoleUi.Pause("That is not a valid selection."); return currentParticipant; }
         return CommunityCommands.Run(associated[selection - 1], communities, memberships, communityNodes, service,
             nodes, nodeTypes, documents, participants, votes, castVote, undoVote, tagDefinitions, nodeTags,
-            eventPublisher, currentParticipant, comments, moderation);
+            eventPublisher, currentParticipant, userContext, comments, moderation);
     }
 
     /// <summary>
