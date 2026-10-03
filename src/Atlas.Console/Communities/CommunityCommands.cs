@@ -5,6 +5,7 @@ using Atlas.Communities.Nodes;
 using Atlas.ConsoleApp.Eventing;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
+using Atlas.Identity;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Graph.Reactions;
 using Atlas.Moderation;
@@ -33,6 +34,7 @@ public static class CommunityCommands
         INodeReactionRepository nodeTags,
         InMemoryEventPublisher eventPublisher,
         Participant currentParticipant,
+        IUserContext userContext,
         ICommentRepository comments,
         ModerationService moderation)
     {
@@ -57,8 +59,8 @@ public static class CommunityCommands
                     Console.WriteLine($"{index + 1}. {NodeDisplay.PublicTitle(associatedNodes[index], moderation)}");
             }
 
-            var membership = memberships.Get(community.Id, currentParticipant.Id.Value);
-            var isOwner = community.OwnerParticipantId == currentParticipant.Id.Value;
+            var membership = memberships.Get(community.Id, userContext.ParticipantId);
+            var isOwner = community.OwnerParticipantId == userContext.ParticipantId;
             Console.WriteLine();
             Console.WriteLine("1. Select community node");
             Console.WriteLine(membership?.IsActive == true ? "2. Leave community" : "2. Join community");
@@ -77,32 +79,32 @@ public static class CommunityCommands
                         Console.Write("Node number (0 cancels): ");
                         if (int.TryParse(Console.ReadLine(), out var choice) && choice > 0 && choice <= associatedNodes.Count)
                         {
-                            currentParticipant = NodeCommands.Run(associatedNodes[choice - 1], nodes, nodeTypes, documents, participants, votes, castVote, undoVote, tagDefinitions, nodeTags, eventPublisher, currentParticipant, communities, memberships, communityNodes, service, comments, moderation);
+                            currentParticipant = NodeCommands.Run(associatedNodes[choice - 1], nodes, nodeTypes, documents, participants, votes, castVote, undoVote, tagDefinitions, nodeTags, eventPublisher, currentParticipant, userContext, communities, memberships, communityNodes, service, comments, moderation);
                         }
                         break;
                     case "2" when membership?.IsActive == true:
-                        service.Leave(community, currentParticipant.Id.Value, DateTimeOffset.UtcNow);
+                        service.Leave(community, userContext.ParticipantId, DateTimeOffset.UtcNow);
                         ConsoleUi.Pause("You left the community.");
                         break;
                     case "2":
-                        service.Join(community, currentParticipant.Id.Value, DateTimeOffset.UtcNow);
+                        service.Join(community, userContext.ParticipantId, DateTimeOffset.UtcNow);
                         ConsoleUi.Pause("You joined the community.");
                         break;
                     case "3" when isOwner:
                         Console.Write("New name: ");
-                        service.Rename(community, currentParticipant.Id.Value, Console.ReadLine() ?? string.Empty, DateTimeOffset.UtcNow);
+                        service.Rename(community, userContext.ParticipantId, Console.ReadLine() ?? string.Empty, DateTimeOffset.UtcNow);
                         break;
                     case "4" when isOwner:
                         Console.Write("New description: ");
-                        community.ChangeDescription(currentParticipant.Id.Value, Console.ReadLine() ?? string.Empty, DateTimeOffset.UtcNow);
+                        community.ChangeDescription(userContext.ParticipantId, Console.ReadLine() ?? string.Empty, DateTimeOffset.UtcNow);
                         communities.Save(community);
                         break;
                     case "5" when isOwner:
-                        community.Archive(currentParticipant.Id.Value, DateTimeOffset.UtcNow);
+                        community.Archive(userContext.ParticipantId, DateTimeOffset.UtcNow);
                         communities.Save(community);
                         break;
                     case "6" when isOwner:
-                        community.Restore(currentParticipant.Id.Value, DateTimeOffset.UtcNow);
+                        community.Restore(userContext.ParticipantId, DateTimeOffset.UtcNow);
                         communities.Save(community);
                         break;
                     case "3" or "4" or "5" or "6":
