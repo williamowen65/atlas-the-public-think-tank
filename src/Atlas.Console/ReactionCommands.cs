@@ -16,10 +16,10 @@ public static class ReactionCommands
     public static void Run(Node node, IReactionDefinitionRepository definitions,
         INodeReactionRepository reactions, IVoteRepository votes, CastVote castVote,
         IParticipantRepository participants,
-        IUserContext userContext)
+        IAuthenticatedActor authenticatedActor)
     {
         var service = new NodeReactionApplicationService(definitions, reactions);
-        var currentParticipant = participants.GetById(new ParticipantId(userContext.ParticipantId))
+        var currentParticipant = participants.GetById(new ParticipantId(authenticatedActor.ParticipantId))
             ?? throw new InvalidOperationException("The authenticated Atlas participant was not found.");
 
         while (true)
@@ -31,7 +31,7 @@ public static class ReactionCommands
             Console.WriteLine();
 
             var choices = BuildChoices(node, definitions, reactions, votes,
-                new VotingParticipantId(userContext.ParticipantId));
+                new VotingParticipantId(authenticatedActor.ParticipantId));
             WriteChoices(choices);
             Console.WriteLine("0. Return to node");
             Console.Write("Reaction to vote on: ");
@@ -62,11 +62,11 @@ public static class ReactionCommands
             {
                 var choice = choices[selection - 1];
                 var association = choice.Association ?? service.Apply(
-                    node, choice.Definition.Text, userContext.ParticipantId,
+                    node, choice.Definition.Text, authenticatedActor.ParticipantId,
                     currentParticipant.IsActive, DateTimeOffset.UtcNow);
 
                 castVote.Execute(new NodeReactionVoteTarget(association.Id.Value),
-                    new VotingParticipantId(userContext.ParticipantId), value.Value);
+                    new VotingParticipantId(authenticatedActor.ParticipantId), value.Value);
                 ConsoleUi.Pause("Your reaction vote was saved.");
             }
             catch (Exception exception) when (exception is ArgumentException or
