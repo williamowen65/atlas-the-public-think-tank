@@ -1,6 +1,7 @@
 using Atlas.Content.Documents;
 using Atlas.Discovery;
 using Atlas.Graph.Nodes;
+using Atlas.Identity;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Participants.Participants;
 using Atlas.Participants.Profiles;
@@ -18,6 +19,7 @@ public static class ParticipantCommands
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
         Participant currentParticipant,
+        IUserContext userContext,
         Atlas.Moderation.ModerationService moderation,
         IDiscoveryService? discovery = null,
         Func<Node, Participant, Participant>? openNode = null,
@@ -58,7 +60,8 @@ public static class ParticipantCommands
                     currentParticipant = EditProfile(
                         participant,
                         participants,
-                        currentParticipant);
+                        currentParticipant,
+                        userContext.ParticipantId);
                     break;
 
                 case "2":
@@ -95,7 +98,8 @@ public static class ParticipantCommands
     private static Participant EditProfile(
         Participant participant,
         IParticipantRepository participants,
-        Participant currentParticipant)
+        Participant currentParticipant,
+        Guid actorParticipantId)
     {
         Console.Clear();
         Console.WriteLine("EDIT PARTICIPANT PROFILE");
@@ -131,7 +135,7 @@ public static class ParticipantCommands
                 new UpdateParticipantProfile(participants);
 
             var updatedParticipant = workflow.Execute(
-                currentParticipant.Id,
+                new ParticipantId(actorParticipantId),
                 participant.Id,
                 requestedDisplayName,
                 requestedBio,
