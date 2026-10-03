@@ -75,7 +75,7 @@ public sealed class CommentTests
     public void Remove_ByModerator_PreservesCommentForThreadContinuity()
     {
         var repo = new MemoryRepository();
-        var service = new CommentService(repo, new AvailableTargets(), new NoModerators());
+        var service = new CommentService(repo, new AvailableTargets(), new AllModerators());
         var target = CommentTarget.Node(Guid.NewGuid());
         var root = service.AddTopLevel(target, Guid.NewGuid(), "Root", DateTimeOffset.UtcNow);
         var reply = service.Reply(root.Id, Guid.NewGuid(), "Reply", root.CreatedAt.AddMinutes(1));
