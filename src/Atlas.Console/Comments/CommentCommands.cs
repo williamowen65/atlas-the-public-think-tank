@@ -11,14 +11,13 @@ public static class CommentCommands
         CommentTarget target,
         CommentService service,
         IParticipantRepository participants,
-        Participant currentParticipant,
         IAuthenticatedActor authenticatedActor,
         Action<Comment>? onCreated = null)
     {
         while (true)
         {
             var thread = service.GetThread(target);
-            WriteThread(thread, participants, currentParticipant, authenticatedActor.ParticipantId);
+            WriteThread(thread, participants, authenticatedActor.ParticipantId);
 
             Console.WriteLine();
             Console.WriteLine("1. Add comment");
@@ -32,7 +31,7 @@ public static class CommentCommands
                     AddTopLevel(target, service, authenticatedActor, onCreated);
                     break;
                 case "2":
-                    Select(thread, service, participants, currentParticipant, authenticatedActor, onCreated);
+                    Select(thread, service, participants, authenticatedActor, onCreated);
                     break;
                 case "0":
                     return;
@@ -46,13 +45,16 @@ public static class CommentCommands
     private static void WriteThread(
         IReadOnlyList<CommentThreadItem> thread,
         IParticipantRepository participants,
-        Participant currentParticipant,
         Guid actorParticipantId)
     {
         Console.Clear();
         Console.WriteLine("COMMENTS");
         Console.WriteLine("--------");
-        Console.WriteLine($"Viewing as: {currentParticipant.DisplayName}");
+        var actorDisplayName = participants
+            .GetById(new ParticipantId(actorParticipantId))
+            ?.DisplayName
+            ?? "authenticated participant";
+        Console.WriteLine($"Viewing as: {actorDisplayName}");
         Console.WriteLine();
 
         if (thread.Count == 0)
@@ -101,7 +103,7 @@ public static class CommentCommands
         IReadOnlyList<CommentThreadItem> thread,
         CommentService service,
         IParticipantRepository participants,
-        Participant currentParticipant, IAuthenticatedActor authenticatedActor, Action<Comment>? onCreated)
+        IAuthenticatedActor authenticatedActor, Action<Comment>? onCreated)
     {
         if (thread.Count == 0)
         {
