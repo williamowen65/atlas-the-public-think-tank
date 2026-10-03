@@ -28,8 +28,9 @@ public sealed class PollReferenceBlock : ContentBlock
 
     public void UpdateReference(Guid pollId, DateTimeOffset changedAt)
     {
-        PollId = pollId != Guid.Empty ? pollId : throw new ArgumentException("A poll ID is required.", nameof(pollId));
+        var validatedPollId = pollId != Guid.Empty ? pollId : throw new ArgumentException("A poll ID is required.", nameof(pollId));
         ChangedAt(changedAt);
+        PollId = validatedPollId;
     }
 
     public static PollReferenceBlock Reconstitute(BlockId id, Guid pollId, DateTimeOffset createdAt, DateTimeOffset updatedAt) =>

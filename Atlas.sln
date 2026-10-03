@@ -295,6 +295,33 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Identity", "src\Atlas
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Identity.Tests", "tests\Atlas.Identity.Tests\Atlas.Identity.Tests.csproj", "{DC5B97FD-1B51-4AB7-B619-3C31AE7856DD}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "security", "security", "{F0977A94-B8E4-40C0-8D9A-4068A1783D59}"
+	ProjectSection(SolutionItems) = preProject
+		docs\security\README.md = docs\security\README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "authorization", "authorization", "{A143E9DE-B9C9-43DE-AA32-B8146E93AB12}"
+	ProjectSection(SolutionItems) = preProject
+		docs\security\authorization\Comments.md = docs\security\authorization\Comments.md
+		docs\security\authorization\Communities.md = docs\security\authorization\Communities.md
+		docs\security\authorization\Content.md = docs\security\authorization\Content.md
+		docs\security\authorization\Discovery.md = docs\security\authorization\Discovery.md
+		docs\security\authorization\Graph.md = docs\security\authorization\Graph.md
+		docs\security\authorization\Identity.md = docs\security\authorization\Identity.md
+		docs\security\authorization\Moderation.md = docs\security\authorization\Moderation.md
+		docs\security\authorization\Notifications.md = docs\security\authorization\Notifications.md
+		docs\security\authorization\Participants.md = docs\security\authorization\Participants.md
+		docs\security\authorization\README.md = docs\security\authorization\README.md
+		docs\security\authorization\Voting.md = docs\security\authorization\Voting.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "validation", "validation", "{3DAA8227-4815-4D2B-92F6-37D73AF3AEA4}"
+	ProjectSection(SolutionItems) = preProject
+		docs\security\validation\DOMAIN-REVIEW.md = docs\security\validation\DOMAIN-REVIEW.md
+		docs\security\validation\PERSISTENCE.md = docs\security\validation\PERSISTENCE.md
+		docs\security\validation\README.md = docs\security\validation\README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -414,6 +441,9 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{F0977A94-B8E4-40C0-8D9A-4068A1783D59} = {55555555-5555-4555-8555-555555555555}
+		{A143E9DE-B9C9-43DE-AA32-B8146E93AB12} = {F0977A94-B8E4-40C0-8D9A-4068A1783D59}
+		{3DAA8227-4815-4D2B-92F6-37D73AF3AEA4} = {F0977A94-B8E4-40C0-8D9A-4068A1783D59}
 		{D0C50000-0000-4000-8000-000000000003} = {D0C50000-0000-4000-8000-000000000002}
 		{D0C50000-0000-4000-8000-000000000004} = {D0C50000-0000-4000-8000-000000000002}
 		{A1111111-1111-4111-8111-111111111111} = {55555555-5555-4555-8555-555555555555}

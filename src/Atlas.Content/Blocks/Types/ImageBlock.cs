@@ -21,10 +21,13 @@ public sealed class ImageBlock : ContentBlock
 
     public void Update(string url, string altText, string? caption, DateTimeOffset changedAt)
     {
-        Url = Required(url, nameof(url), 500);
-        AltText = Required(altText, nameof(altText), 2_000);
-        Caption = Optional(caption, 2_000, nameof(caption));
+        var validatedUrl = Required(url, nameof(url), 500);
+        var validatedAltText = Required(altText, nameof(altText), 2_000);
+        var validatedCaption = Optional(caption, 2_000, nameof(caption));
         ChangedAt(changedAt);
+        Url = validatedUrl;
+        AltText = validatedAltText;
+        Caption = validatedCaption;
     }
 
     public static ImageBlock Reconstitute(BlockId id, string url, string altText, string? caption, DateTimeOffset createdAt, DateTimeOffset updatedAt) =>

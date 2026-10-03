@@ -64,8 +64,8 @@ public sealed class Document
             throw new ArgumentOutOfRangeException(nameof(index));
         }
 
-        _blockIds.Insert(insertionIndex, blockId);
         ChangedAt(changedAt);
+        _blockIds.Insert(insertionIndex, blockId);
     }
 
     /// <summary>Changes composition order without changing the block's stable identity.</summary>
@@ -91,20 +91,21 @@ public sealed class Document
             return;
         }
 
+        ChangedAt(changedAt);
         _blockIds.RemoveAt(currentIndex);
         _blockIds.Insert(newIndex, blockId);
-        ChangedAt(changedAt);
     }
 
     /// <summary>Removes a block from this composition without deleting the block entity.</summary>
     public void RemoveBlock(BlockId blockId, DateTimeOffset changedAt)
     {
-        if (!_blockIds.Remove(blockId))
+        if (!_blockIds.Contains(blockId))
         {
             throw new InvalidOperationException("The document does not contain this block.");
         }
 
         ChangedAt(changedAt);
+        _blockIds.Remove(blockId);
     }
 
     /// <summary>Restores persisted state without generating a new document identity.</summary>

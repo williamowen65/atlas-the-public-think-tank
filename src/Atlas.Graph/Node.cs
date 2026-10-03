@@ -87,6 +87,8 @@ public sealed class Node
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt)
     {
+        if (!Enum.IsDefined(status)) throw new ArgumentOutOfRangeException(nameof(status));
+
         if (updatedAt < createdAt)
         {
             throw new ArgumentException(

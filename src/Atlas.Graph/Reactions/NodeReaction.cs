@@ -30,6 +30,9 @@ public sealed class NodeReaction
         DateTimeOffset? removedAt,
         IEnumerable<NodeReactionAuditEntry> auditHistory)
     {
+        if (!Enum.IsDefined(lifecycleState)) throw new ArgumentOutOfRangeException(nameof(lifecycleState));
+        if (!Enum.IsDefined(disposition)) throw new ArgumentOutOfRangeException(nameof(disposition));
+
         if (id.Value == Guid.Empty)
         {
             throw new ArgumentException("A node-reaction ID is required.", nameof(id));
@@ -209,6 +212,8 @@ public sealed class NodeReaction
         Guid nodeAuthorParticipantId,
         DateTimeOffset changedAt)
     {
+        if (!Enum.IsDefined(disposition)) throw new ArgumentOutOfRangeException(nameof(disposition));
+
         if (actorParticipantId != nodeAuthorParticipantId)
         {
             throw new UnauthorizedAccessException("Only the node author may change tag disposition.");

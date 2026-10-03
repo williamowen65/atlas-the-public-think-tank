@@ -105,7 +105,9 @@ public sealed class DiscoveryService : IDiscoveryService
         if (query.MinimumVoteCount.HasValue && query.MaximumVoteCount.HasValue &&
             query.MinimumVoteCount.Value > query.MaximumVoteCount.Value)
             throw new ArgumentException("Minimum vote count cannot exceed maximum vote count.", nameof(query));
-        if (query.MinimumAverageVote is < 0 or > 10 || query.MaximumAverageVote is < 0 or > 10)
+        if (query.MinimumAverageVote is { } minimum && !double.IsFinite(minimum) ||
+            query.MaximumAverageVote is { } maximum && !double.IsFinite(maximum) ||
+            query.MinimumAverageVote is < 0 or > 10 || query.MaximumAverageVote is < 0 or > 10)
             throw new ArgumentOutOfRangeException(nameof(query), "Average-vote bounds must be from 0 through 10.");
         if (query.MinimumAverageVote.HasValue && query.MaximumAverageVote.HasValue &&
             query.MinimumAverageVote.Value > query.MaximumAverageVote.Value)

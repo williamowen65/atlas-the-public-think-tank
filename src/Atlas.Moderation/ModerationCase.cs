@@ -46,7 +46,8 @@ public sealed class ModerationCase
         if (!Enum.IsDefined(status)) throw new ArgumentOutOfRangeException(nameof(status));
         if (!Enum.IsDefined(publicReason)) throw new ArgumentOutOfRangeException(nameof(publicReason));
         if (status != ModerationStatus.Submitted &&
-            (reviewerId is null || reviewerId == Guid.Empty || string.IsNullOrWhiteSpace(decisionReason) || decidedAt < createdAt))
+            (reviewerId is null || reviewerId == Guid.Empty || string.IsNullOrWhiteSpace(decisionReason) || decisionReason.Trim().Length > 2000 ||
+             decidedAt is null || decidedAt < createdAt))
             throw new ArgumentException("Decided cases require a reviewer, rationale, and valid decision time.");
         if (status == ModerationStatus.Submitted && (reviewerId is not null || decidedAt is not null || decisionReason is not null))
             throw new ArgumentException("Pending cases cannot have a decision.");

@@ -17,8 +17,9 @@ public sealed class MarkdownTextBlock : ContentBlock
 
     public void Update(string markdown, DateTimeOffset changedAt)
     {
-        Markdown = Optional(markdown, 100_000, nameof(markdown));
+        var validatedMarkdown = Optional(markdown, 100_000, nameof(markdown));
         ChangedAt(changedAt);
+        Markdown = validatedMarkdown;
     }
 
     public static MarkdownTextBlock Reconstitute(BlockId id, string markdown, DateTimeOffset createdAt, DateTimeOffset updatedAt) =>

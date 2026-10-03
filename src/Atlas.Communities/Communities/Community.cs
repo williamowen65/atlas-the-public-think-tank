@@ -28,6 +28,7 @@ public sealed class Community
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt)
     {
+        if (!Enum.IsDefined(status)) throw new ArgumentOutOfRangeException(nameof(status));
         if (ownerParticipantId == Guid.Empty)
         {
             throw new ArgumentException("A community owner is required.", nameof(ownerParticipantId));

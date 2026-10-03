@@ -28,9 +28,9 @@ public abstract class ContentBlock
     /// <summary>Records a successful domain change without changing block identity.</summary>
     protected void ChangedAt(DateTimeOffset changedAt)
     {
-        if (changedAt < CreatedAt)
+        if (changedAt < UpdatedAt)
         {
-            throw new ArgumentException("Changed time cannot precede created time.", nameof(changedAt));
+            throw new ArgumentException("Changed time cannot precede the current updated time.", nameof(changedAt));
         }
 
         UpdatedAt = changedAt;

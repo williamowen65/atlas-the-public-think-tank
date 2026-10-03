@@ -41,6 +41,7 @@ public sealed class Comment
         DateTimeOffset updatedAt,
         DateTimeOffset? removedAt)
     {
+        if (!Enum.IsDefined(status)) throw new ArgumentOutOfRangeException(nameof(status));
         if (authorParticipantId == Guid.Empty) throw new ArgumentException("A comment author is required.", nameof(authorParticipantId));
         if (parentCommentId == id) throw new ArgumentException("A comment cannot be its own parent.", nameof(parentCommentId));
         if (updatedAt < createdAt) throw new ArgumentException("Updated time cannot precede created time.");
