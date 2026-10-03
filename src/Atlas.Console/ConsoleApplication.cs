@@ -1,4 +1,6 @@
 using Atlas.ConsoleApp.Eventing;
+using Atlas.ConsoleApp.Notifications;
+using Atlas.Identity;
 using Atlas.Comments.Comments;
 using Atlas.ConsoleApp.Communities;
 using Atlas.Communities.Communities;
@@ -43,8 +45,9 @@ public sealed class ConsoleApplication
     private readonly ModerationService _moderation;
     private readonly IModeratorAuthorization _moderatorAuthorization;
     private readonly NotificationService _notificationService;
+    private readonly CurrentUserNotifications _currentUserNotifications;
     private readonly INotificationRepository _notificationRepository;
-    private Participant _currentParticipant;
+    private readonly IAuthenticatedActor _authenticatedActor;
     private readonly Func<bool>? _validateSession;
     public bool ExitRequested { get; private set; }
     private readonly string _nodeCollectionKey;
@@ -88,11 +91,11 @@ public sealed class ConsoleApplication
         ICommentRepository comments,
         string commentCollectionKey,
         IDiscoveryService discovery,
-        Participant initialParticipant,
         ModerationService moderation,
         IModeratorAuthorization moderatorAuthorization,
         NotificationService notificationService,
         INotificationRepository notificationRepository,
+        IAuthenticatedActor authenticatedActor,
         Func<bool>? validateSession = null)
     {
         _nodeRepository = nodes;
@@ -105,7 +108,6 @@ public sealed class ConsoleApplication
         _tagDefinitions = tagDefinitions;
         _nodeTags = nodeTags;
         _eventPublisher = eventPublisher;
-        _currentParticipant = initialParticipant;
         _nodeCollectionKey = nodeCollectionKey;
         _nodeTypeCollectionKey = nodeTypeCollectionKey;
         _documentCollectionKey = documentCollectionKey;
@@ -126,7 +128,9 @@ public sealed class ConsoleApplication
         _moderation = moderation;
         _moderatorAuthorization = moderatorAuthorization;
         _notificationService = notificationService;
+        _currentUserNotifications = new CurrentUserNotifications(authenticatedActor, notificationService);
         _notificationRepository = notificationRepository;
+        _authenticatedActor = authenticatedActor;
         _validateSession = validateSession;
     }
 
@@ -142,7 +146,6 @@ public sealed class ConsoleApplication
                 ConsoleUi.Pause("Your session has ended. Please sign in again.");
                 return;
             }
-            _currentParticipant = _participantRepository.GetById(_currentParticipant.Id) ?? _currentParticipant;
             Console.Clear();
             WriteMainMenu();
 
@@ -154,7 +157,7 @@ public sealed class ConsoleApplication
                     return;
 
                 case "2":
-                    ViewParticipantProfile(_currentParticipant.Id);
+                    ViewParticipantProfile(new ParticipantId(_authenticatedActor.ParticipantId));
                     break;
 
                 case "3":
@@ -194,7 +197,7 @@ public sealed class ConsoleApplication
                     break;
 
                 case "12":
-                    if (_moderatorAuthorization.IsAtlasModerator(_currentParticipant.Id.Value))
+                    if (_moderatorAuthorization.IsAtlasModerator(_authenticatedActor.ParticipantId))
                         ReviewModerationQueue();
                     else
                         ConsoleUi.Pause("Review Node reports is available to Atlas moderators only.");
@@ -219,7 +222,7 @@ public sealed class ConsoleApplication
         Console.WriteLine("ATLAS");
         Console.WriteLine("-----");
         Console.WriteLine(
-            $"Current participant: {_currentParticipant.DisplayName}");
+            $"Current participant: {AuthenticatedParticipantDisplayName()}");
         Console.WriteLine();
         Console.WriteLine("1. Sign out");
         Console.WriteLine("2. My profile");
@@ -232,7 +235,7 @@ public sealed class ConsoleApplication
         Console.WriteLine("9. Show SQL data");
         Console.WriteLine("10. List Content documents");
         Console.WriteLine("11. Notifications and preferences");
-        if (_moderatorAuthorization.IsAtlasModerator(_currentParticipant.Id.Value))
+        if (_moderatorAuthorization.IsAtlasModerator(_authenticatedActor.ParticipantId))
             Console.WriteLine("12. Review Node reports");
         else
             Console.WriteLine("12. Review Node reports [disabled — Atlas moderators only]");
@@ -305,25 +308,25 @@ public sealed class ConsoleApplication
     private void ViewParticipantProfile(
         ParticipantId participantId)
     {
-        _currentParticipant = ParticipantCommands.Run(
+        ParticipantCommands.Run(
             participantId,
             _participantRepository,
             _nodeRepository,
             _nodeTypeRepository,
             _documentRepository,
-            _currentParticipant,
+            _authenticatedActor,
             _moderation,
             _discovery,
-            (node, actor) => NodeCommands.Run(node, _nodeRepository, _nodeTypeRepository,
+            node => NodeCommands.Run(node, _nodeRepository, _nodeTypeRepository,
                 _documentRepository, _participantRepository, _voteRepository, _castVote,
-                _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, actor,
+                _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, _authenticatedActor,
                 _communities, _communityMemberships, _communityNodes, _communityService,
                 _comments, _moderation),
-            (node, number, result, actor) => NodeDisplay.WriteTableRow(node,
+            (node, number, result) => NodeDisplay.WriteTableRow(node,
                 _nodeRepository, _nodeTypeRepository, _documentRepository,
                 _participantRepository, number, result?.VoteCount, result?.AverageVote,
                 _voteRepository.GetByParticipantAndTarget(
-                    new VotingParticipantId(actor.Id.Value),
+                    new VotingParticipantId(_authenticatedActor.ParticipantId),
                     new NodeVoteTarget(node.Id.Value))?.Value.Value,
                 _nodeTags, _tagDefinitions, _voteRepository, _communities, _communityNodes,
                 _comments, includeCreatedDate: true, moderation: _moderation),
@@ -364,7 +367,7 @@ public sealed class ConsoleApplication
             _nodeRepository,
             _nodeTypeRepository,
             _documentRepository,
-            _currentParticipant,
+            _authenticatedActor.ParticipantId,
             _eventPublisher);
     }
 
@@ -434,7 +437,7 @@ public sealed class ConsoleApplication
             else
             {
                 NodeDisplay.WriteTableHeader(includeCreatedDate: true);
-                var votingParticipantId = new VotingParticipantId(_currentParticipant.Id.Value);
+                var votingParticipantId = new VotingParticipantId(_authenticatedActor.ParticipantId);
                 for (var index = 0; index < nodes.Count; index++)
                 {
                     var result = results[index];
@@ -470,7 +473,7 @@ public sealed class ConsoleApplication
                 if (reportNumber < 1 || reportNumber > nodes.Count)
                     ConsoleUi.Pause("That node does not exist.");
                 else
-                    NodeCommands.ReportNode(nodes[reportNumber - 1], _currentParticipant, _moderation);
+                    NodeCommands.ReportNode(nodes[reportNumber - 1], _authenticatedActor.ParticipantId, _moderation);
                 continue;
             }
             if (string.Equals(input, "s", StringComparison.OrdinalIgnoreCase))
@@ -567,7 +570,7 @@ public sealed class ConsoleApplication
                 continue;
             }
 
-            _currentParticipant = NodeCommands.Run(
+            NodeCommands.Run(
                 nodes[selection - 1],
                 _nodeRepository,
                 _nodeTypeRepository,
@@ -579,7 +582,7 @@ public sealed class ConsoleApplication
                 _tagDefinitions,
                 _nodeTags,
                 _eventPublisher,
-                _currentParticipant,
+                _authenticatedActor,
                 _communities,
                 _communityMemberships,
                 _communityNodes,
@@ -591,7 +594,6 @@ public sealed class ConsoleApplication
 
     private void BrowseNotifications()
     {
-        var recipient = _currentParticipant.Id.Value;
         var offset = 0;
         const int pageSize = 10;
         while (true)
@@ -599,7 +601,7 @@ public sealed class ConsoleApplication
             Console.Clear();
             WriteActingAs();
             Console.WriteLine("NOTIFICATIONS");
-            var page = _notificationService.Page(recipient, offset, pageSize);
+            var page = _currentUserNotifications.Page(offset, pageSize);
             for (var i = 0; i < page.Count; i++)
             {
                 var item = page[i];
@@ -615,18 +617,18 @@ public sealed class ConsoleApplication
             if (input == "0") return;
             if (input == "N" && page.Count == pageSize) { offset += pageSize; continue; }
             if (input == "P") { offset = Math.Max(0, offset - pageSize); continue; }
-            if (input == "S") { ConfigureNotifications(recipient); continue; }
+            if (input == "S") { ConfigureNotifications(); continue; }
             var dismiss = input?.StartsWith('D') == true;
             var number = dismiss ? input![1..] : input;
             if (!int.TryParse(number, out var selection) || selection < 1 || selection > page.Count) continue;
-            if (dismiss) _notificationService.Dismiss(recipient, page[selection - 1].Id);
-            else _notificationService.MarkRead(recipient, page[selection - 1].Id);
+            if (dismiss) _currentUserNotifications.Dismiss(page[selection - 1].Id);
+            else _currentUserNotifications.MarkRead(page[selection - 1].Id);
         }
     }
 
-    private void ConfigureNotifications(Guid recipient)
+    private void ConfigureNotifications()
     {
-        var settings = _notificationRepository.Preferences(recipient);
+        var settings = _currentUserNotifications.Preferences();
         var choices = new (string Label, Func<bool> Get, Action<bool> Set)[]
         {
             ("Discussion in app", () => settings.DiscussionInApp, value => settings.DiscussionInApp = value),
@@ -647,7 +649,7 @@ public sealed class ConsoleApplication
             if (selection < 1 || selection > choices.Length) continue;
             var choice = choices[selection - 1];
             choice.Set(!choice.Get());
-            _notificationRepository.SavePreferences(settings);
+            _currentUserNotifications.SavePreferences(settings);
         }
     }
 
@@ -655,7 +657,7 @@ public sealed class ConsoleApplication
     {
         try
         {
-            var queue = _moderation.NodeQueue(_currentParticipant.Id.Value);
+            var queue = _moderation.NodeQueue(_authenticatedActor.ParticipantId);
             Console.Clear();
             Console.WriteLine("NODE REPORTS");
             Console.WriteLine("------------");
@@ -670,7 +672,7 @@ public sealed class ConsoleApplication
             while (true)
             {
                 Console.Clear();
-                var reports = _moderation.NodeHistory(_currentParticipant.Id.Value, group.NodeId);
+                var reports = _moderation.NodeHistory(_authenticatedActor.ParticipantId, group.NodeId);
                 Console.WriteLine($"Reported title: {group.ReportedTitle}");
                 Console.WriteLine($"{reports.Count} total report(s), {reports.Count(report => report.Status == ModerationStatus.Submitted)} pending");
                 for (var index = 0; index < reports.Count; index++)
@@ -701,28 +703,22 @@ public sealed class ConsoleApplication
                 if (action == "V")
                 {
                     if (node is null) { ConsoleUi.Pause("Node is unavailable."); continue; }
-                    _currentParticipant = NodeCommands.Run(
+                    NodeCommands.Run(
                         node, _nodeRepository, _nodeTypeRepository, _documentRepository,
                         _participantRepository, _voteRepository, _castVote, _undoVote,
-                        _tagDefinitions, _nodeTags, _eventPublisher, _currentParticipant,
+                        _tagDefinitions, _nodeTags, _eventPublisher, _authenticatedActor,
                         _communities, _communityMemberships, _communityNodes,
                         _communityService, _comments, _moderation);
-                    // Node navigation can change the selected Console participant.
-                    if (!_moderatorAuthorization.IsAtlasModerator(_currentParticipant.Id.Value))
-                    {
-                        ConsoleUi.Pause("Moderator participant changed; returning to the main menu.");
-                        return;
-                    }
                     continue;
                 }
                 if (action == "R")
                 {
                     Console.Write("Restoration rationale: ");
-                    _moderation.RestoreNode(_currentParticipant.Id.Value, group.NodeId,
+                    _moderation.RestoreNode(_authenticatedActor.ParticipantId, group.NodeId,
                         Console.ReadLine() ?? string.Empty, DateTimeOffset.UtcNow);
                     if (node is not null)
                         _eventPublisher.Publish(new NotificationRequestedV1(Guid.NewGuid(), node.AuthorId.Value,
-                            _currentParticipant.Id.Value, "NodeRestored", "Node", node.Id.Value, DateTimeOffset.UtcNow));
+                            _authenticatedActor.ParticipantId, "NodeRestored", "Node", node.Id.Value, DateTimeOffset.UtcNow));
                     ConsoleUi.Pause("Node visibility restored after author review.");
                     return;
                 }
@@ -746,14 +742,14 @@ public sealed class ConsoleApplication
                 Console.Write("Decision rationale: ");
                 var rationale = Console.ReadLine() ?? string.Empty;
                 var decision = action == "H" ? ModerationDecision.HideNode : ModerationDecision.Dismiss;
-                var decided = _moderation.DecideNode(_currentParticipant.Id.Value, group.NodeId, decision,
+                var decided = _moderation.DecideNode(_authenticatedActor.ParticipantId, group.NodeId, decision,
                     rationale, DateTimeOffset.UtcNow, publicReason);
                 foreach (var report in decided)
                     _eventPublisher.Publish(new NotificationRequestedV1(report.Id, report.ReporterId,
-                        _currentParticipant.Id.Value, "ReportDecided", "Node", group.NodeId, DateTimeOffset.UtcNow));
+                        _authenticatedActor.ParticipantId, "ReportDecided", "Node", group.NodeId, DateTimeOffset.UtcNow));
                 if (node is not null && action == "H")
                     _eventPublisher.Publish(new NotificationRequestedV1(Guid.NewGuid(), node.AuthorId.Value,
-                        _currentParticipant.Id.Value, "NodeHidden", "Node", node.Id.Value, DateTimeOffset.UtcNow));
+                        _authenticatedActor.ParticipantId, "NodeHidden", "Node", node.Id.Value, DateTimeOffset.UtcNow));
                 ConsoleUi.Pause(action == "H"
                     ? $"Node hidden on public surfaces; {decided.Count} pending report(s) closed."
                     : $"{decided.Count} pending report(s) dismissed.");
@@ -865,7 +861,7 @@ public sealed class ConsoleApplication
 
         try
         {
-            var community = _communityService.Create(name, description, _currentParticipant.Id.Value, DateTimeOffset.UtcNow);
+            var community = _communityService.Create(name, description, _authenticatedActor.ParticipantId, DateTimeOffset.UtcNow);
             ConsoleUi.Pause($"Created {community.Name}. You are its owner and first member.");
         }
         catch (ArgumentException exception) { ConsoleUi.Pause(exception.Message); }
@@ -890,10 +886,10 @@ public sealed class ConsoleApplication
             if (!int.TryParse(Console.ReadLine(), out var selection) || selection < 0 || selection > communities.Count)
             { ConsoleUi.Pause("That is not a valid selection."); continue; }
             if (selection == 0) return;
-            _currentParticipant = CommunityCommands.Run(
+            CommunityCommands.Run(
                 communities[selection - 1], _communities, _communityMemberships, _communityNodes, _communityService,
                 _nodeRepository, _nodeTypeRepository, _documentRepository, _participantRepository,
-                _voteRepository, _castVote, _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, _currentParticipant, _comments, _moderation);
+                _voteRepository, _castVote, _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, _authenticatedActor, _comments, _moderation);
         }
     }
 
@@ -1001,10 +997,16 @@ public sealed class ConsoleApplication
         ConsoleUi.Pause();
     }
 
-    /// <summary>Makes the simulated authenticated identity visible on Console screens.</summary>
+    private string AuthenticatedParticipantDisplayName() =>
+        _participantRepository
+            .GetById(new ParticipantId(_authenticatedActor.ParticipantId))
+            ?.DisplayName
+        ?? "authenticated participant";
+
+    /// <summary>Makes the authenticated identity visible on Console screens.</summary>
     private void WriteActingAs()
     {
-        Console.WriteLine($"Acting as: {_currentParticipant.DisplayName}");
+        Console.WriteLine($"Acting as: {AuthenticatedParticipantDisplayName()}");
         Console.WriteLine();
     }
 }

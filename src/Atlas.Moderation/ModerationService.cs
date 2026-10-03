@@ -142,9 +142,11 @@ public sealed class ModerationService
         return item;
     }
 
+    public bool CanModerate(Guid actorId) => _authorization.IsAtlasModerator(actorId);
+
     private void EnsureModerator(Guid actorId)
     {
-        if (!_authorization.IsAtlasModerator(actorId))
+        if (!CanModerate(actorId))
             throw new UnauthorizedAccessException("Atlas moderator access required.");
     }
 }

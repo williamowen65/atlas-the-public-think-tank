@@ -127,6 +127,19 @@ public sealed class NotificationService(INotificationRepository repository, IEnu
         return repository.Page(recipientId, offset, limit);
     }
 
+    public NotificationPreferences Preferences(Guid actorParticipantId, Guid participantId)
+    {
+        EnsureOwner(actorParticipantId, participantId);
+        return repository.Preferences(participantId);
+    }
+
+    public void SavePreferences(Guid actorParticipantId, NotificationPreferences preferences)
+    {
+        ArgumentNullException.ThrowIfNull(preferences);
+        EnsureOwner(actorParticipantId, preferences.ParticipantId);
+        repository.SavePreferences(preferences);
+    }
+
     public void MarkRead(Guid recipientId, Guid notificationId)
     {
         var item = Own(recipientId, notificationId);
@@ -139,6 +152,12 @@ public sealed class NotificationService(INotificationRepository repository, IEnu
         var item = Own(recipientId, notificationId);
         item.Dismiss(DateTimeOffset.UtcNow);
         repository.Save(item);
+    }
+
+    private static void EnsureOwner(Guid actorParticipantId, Guid participantId)
+    {
+        if (actorParticipantId != participantId)
+            throw new UnauthorizedAccessException("Notification preferences are unavailable to this participant.");
     }
 
     private Notification Own(Guid recipientId, Guid id)

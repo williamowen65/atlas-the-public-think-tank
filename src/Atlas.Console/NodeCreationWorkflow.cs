@@ -15,7 +15,7 @@ public static class NodeCreationWorkflow
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
-        Participant author,
+        Guid authorParticipantId,
         InMemoryEventPublisher eventPublisher,
         NodeTypeDefinition? preselectedType = null,
         Node? parent = null)
@@ -44,7 +44,7 @@ public static class NodeCreationWorkflow
         var nodeType = preselectedType
             ?? ConsoleUi.ReadNodeType(
                 nodeTypes,
-                author.Id.Value.ToString());
+                authorParticipantId.ToString());
 
         if (nodeType is null)
         {
@@ -54,7 +54,7 @@ public static class NodeCreationWorkflow
         var requestedSubNodeTypes =
             ConsoleUi.ReadRequestedSubNodeTypes(
                 nodeTypes,
-                author.Id.Value.ToString());
+                authorParticipantId.ToString());
 
         if (requestedSubNodeTypes.Count == 0)
         {
@@ -83,7 +83,7 @@ public static class NodeCreationWorkflow
                 nodeTitle,
                 new NodeDescriptionId(document.Id.Value),
                 nodeType.Id,
-                new NodeAuthorId(author.Id.Value),
+                new NodeAuthorId(authorParticipantId),
                 requestedSubNodeTypes.Select(type => type.Id),
                 now);
 
@@ -91,7 +91,7 @@ public static class NodeCreationWorkflow
             {
                 node.AttachToParent(
                     parent.Id,
-                    author.Id.Value,
+                    authorParticipantId,
                     now);
             }
 

@@ -31,11 +31,19 @@ namespace Atlas.ConsoleApp.Identity;
 /// IsAtlasModerator()                    Authorization policies and handlers
 /// SignOut() clears local state          Host authentication sign-out/token handling
 /// </summary>
-public sealed class ConsoleIdentitySession(IServiceScopeFactory scopes) : IModeratorAuthorization
+public sealed class ConsoleIdentitySession(IServiceScopeFactory scopes) : IModeratorAuthorization, IAuthenticatedActor
 {
     private ClaimsPrincipal? _principal;
     private string? _securityStamp;
     public Participant? Participant { get; private set; }
+
+    /// <summary>
+    /// The Atlas Participant ID established by the current authenticated session.
+    /// Application workflows consume this through IAuthenticatedActor instead of accepting
+    /// a caller-selected actor ID.
+    /// </summary>
+    public Guid ParticipantId => Participant?.Id.Value
+        ?? throw new InvalidOperationException("There is no authenticated Atlas user context.");
 
     /// <summary>
     /// Attempts to start a console session from an email and password.

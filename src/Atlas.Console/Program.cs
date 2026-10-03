@@ -264,11 +264,11 @@ while (true)
         commentRepository,
         commentCollectionKey,
         discovery,
-        session.Participant!,
         moderation,
         moderatorAuthorization,
         notificationService,
         notificationRepository,
+        session,
         () => session.RefreshAsync().GetAwaiter().GetResult());
 
     application.Run();

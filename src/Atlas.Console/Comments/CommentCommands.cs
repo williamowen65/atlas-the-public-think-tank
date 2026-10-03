@@ -1,4 +1,5 @@
 using Atlas.Comments.Comments;
+using Atlas.Identity;
 using Atlas.Participants.Participants;
 
 namespace Atlas.ConsoleApp.Comments;
@@ -10,12 +11,13 @@ public static class CommentCommands
         CommentTarget target,
         CommentService service,
         IParticipantRepository participants,
-        Participant currentParticipant, Action<Comment>? onCreated = null)
+        IAuthenticatedActor authenticatedActor,
+        Action<Comment>? onCreated = null)
     {
         while (true)
         {
             var thread = service.GetThread(target);
-            WriteThread(thread, participants, currentParticipant);
+            WriteThread(thread, participants, authenticatedActor.ParticipantId);
 
             Console.WriteLine();
             Console.WriteLine("1. Add comment");
@@ -26,10 +28,10 @@ public static class CommentCommands
             switch (Console.ReadLine())
             {
                 case "1":
-                    AddTopLevel(target, service, currentParticipant, onCreated);
+                    AddTopLevel(target, service, authenticatedActor, onCreated);
                     break;
                 case "2":
-                    Select(thread, service, participants, currentParticipant, onCreated);
+                    Select(thread, service, participants, authenticatedActor, onCreated);
                     break;
                 case "0":
                     return;
@@ -43,12 +45,16 @@ public static class CommentCommands
     private static void WriteThread(
         IReadOnlyList<CommentThreadItem> thread,
         IParticipantRepository participants,
-        Participant currentParticipant)
+        Guid actorParticipantId)
     {
         Console.Clear();
         Console.WriteLine("COMMENTS");
         Console.WriteLine("--------");
-        Console.WriteLine($"Viewing as: {currentParticipant.DisplayName}");
+        var actorDisplayName = participants
+            .GetById(new ParticipantId(actorParticipantId))
+            ?.DisplayName
+            ?? "authenticated participant";
+        Console.WriteLine($"Viewing as: {actorDisplayName}");
         Console.WriteLine();
 
         if (thread.Count == 0)
@@ -68,7 +74,7 @@ public static class CommentCommands
             var body = comment.IsRemoved
                 ? $"[removed: {FormatStatus(comment.Status)}]"
                 : comment.Body;
-            var ownComment = comment.AuthorParticipantId == currentParticipant.Id.Value
+            var ownComment = comment.AuthorParticipantId == actorParticipantId
                 ? " (yours)"
                 : string.Empty;
 
@@ -80,14 +86,14 @@ public static class CommentCommands
     public static void AddTopLevel(
         CommentTarget target,
         CommentService service,
-        Participant currentParticipant, Action<Comment>? onCreated = null)
+        IAuthenticatedActor authenticatedActor, Action<Comment>? onCreated = null)
     {
         Console.Write("Comment: ");
         var body = Console.ReadLine() ?? string.Empty;
         TryChange(
             () => { var created = service.AddTopLevel(
                 target,
-                currentParticipant.Id.Value,
+                authenticatedActor.ParticipantId,
                 body,
                 DateTimeOffset.UtcNow); onCreated?.Invoke(created); },
             "Comment added.");
@@ -97,7 +103,7 @@ public static class CommentCommands
         IReadOnlyList<CommentThreadItem> thread,
         CommentService service,
         IParticipantRepository participants,
-        Participant currentParticipant, Action<Comment>? onCreated)
+        IAuthenticatedActor authenticatedActor, Action<Comment>? onCreated)
     {
         if (thread.Count == 0)
         {
@@ -118,8 +124,8 @@ public static class CommentCommands
         var comment = thread[selection - 1].Comment;
         while (true)
         {
-            WriteSelected(comment, participants, currentParticipant);
-            var isAuthor = comment.AuthorParticipantId == currentParticipant.Id.Value;
+            WriteSelected(comment, participants, authenticatedActor.ParticipantId);
+            var isAuthor = comment.AuthorParticipantId == authenticatedActor.ParticipantId;
             var canChange = isAuthor && !comment.IsRemoved;
 
             Console.WriteLine("1. Reply");
@@ -134,7 +140,7 @@ public static class CommentCommands
                     Console.Write("Reply: ");
                     var reply = Console.ReadLine() ?? string.Empty;
                     TryChange(
-                        () => { var created = service.Reply(comment.Id, currentParticipant.Id.Value, reply, DateTimeOffset.UtcNow);
+                        () => { var created = service.Reply(comment.Id, authenticatedActor.ParticipantId, reply, DateTimeOffset.UtcNow);
                             onCreated?.Invoke(created); },
                         "Reply added.");
                     return;
@@ -142,7 +148,7 @@ public static class CommentCommands
                     Console.Write("New comment text: ");
                     var body = Console.ReadLine() ?? string.Empty;
                     TryChange(
-                        () => service.Edit(comment.Id, currentParticipant.Id.Value, body, DateTimeOffset.UtcNow),
+                        () => service.Edit(comment.Id, authenticatedActor.ParticipantId, body, DateTimeOffset.UtcNow),
                         "Comment updated.");
                     return;
                 case "3" when canChange:
@@ -150,7 +156,7 @@ public static class CommentCommands
                     if (string.Equals(Console.ReadLine(), "y", StringComparison.OrdinalIgnoreCase))
                     {
                         TryChange(
-                            () => service.Remove(comment.Id, currentParticipant.Id.Value, false, DateTimeOffset.UtcNow),
+                            () => service.Remove(comment.Id, authenticatedActor.ParticipantId, DateTimeOffset.UtcNow),
                             "Comment removed.");
                     }
                     return;
@@ -169,7 +175,7 @@ public static class CommentCommands
     private static void WriteSelected(
         Comment comment,
         IParticipantRepository participants,
-        Participant currentParticipant)
+        Guid actorParticipantId)
     {
         Console.Clear();
         var author = participants
@@ -180,7 +186,11 @@ public static class CommentCommands
         Console.WriteLine($"Author: {author}");
         Console.WriteLine($"Status: {FormatStatus(comment.Status)}");
         Console.WriteLine($"Created: {comment.CreatedAt.LocalDateTime:g}");
-        Console.WriteLine($"Viewing as: {currentParticipant.DisplayName}");
+        var actorDisplayName = participants
+            .GetById(new ParticipantId(actorParticipantId))
+            ?.DisplayName
+            ?? "authenticated participant";
+        Console.WriteLine($"Viewing as: {actorDisplayName}");
         Console.WriteLine();
         Console.WriteLine(comment.IsRemoved ? "[comment removed]" : comment.Body);
         Console.WriteLine();
