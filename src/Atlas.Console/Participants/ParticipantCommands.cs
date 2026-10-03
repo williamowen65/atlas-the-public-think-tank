@@ -58,8 +58,7 @@ public static class ParticipantCommands
                     EditProfile(
                         participant,
                         participants,
-                        authenticatedActor.ParticipantId,
-                        participants.GetById(new ParticipantId(authenticatedActor.ParticipantId))?.DisplayName ?? "authenticated participant");
+                        authenticatedActor);
                     break;
 
                 case "2":
@@ -94,9 +93,14 @@ public static class ParticipantCommands
     private static void EditProfile(
         Participant participant,
         IParticipantRepository participants,
-        Guid actorParticipantId,
-        string actorDisplayName)
+        IAuthenticatedActor authenticatedActor)
     {
+        var actorParticipantId = authenticatedActor.ParticipantId;
+        var actorDisplayName = participants
+            .GetById(new ParticipantId(actorParticipantId))
+            ?.DisplayName
+            ?? "authenticated participant";
+
         Console.Clear();
         Console.WriteLine("EDIT PARTICIPANT PROFILE");
         Console.WriteLine("------------------------");
