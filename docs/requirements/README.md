@@ -18,6 +18,7 @@ Identifiers use the form `AREA-NNN`.
 | `PAR` | Participants and profiles |
 | `IDN` | Identity infrastructure and account/profile integration |
 | `AUT` | Authorization |
+| `SEC` | Security boundary and adversarial verification |
 | `EVT` | Events and cross-boundary communication |
 | `PER` | Persistence and migration |
 | `TAG` | Reusable node reactions |

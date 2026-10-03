@@ -63,6 +63,8 @@ internal sealed class RepositoryDiscoveryCandidateSource : IDiscoveryCandidateSo
                 node.Id.Value,
                 node.Title.Value,
                 content,
+                node.TypeId.Value,
+                node.AuthorId.Value,
                 node.Status == NodeStatus.Archived,
                 node.CreatedAt,
                 node.UpdatedAt,

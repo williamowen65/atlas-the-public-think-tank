@@ -8,6 +8,8 @@ public sealed record DiscoveryCandidate(
     Guid NodeId,
     string Title,
     string SearchableContent,
+    Guid NodeTypeId,
+    Guid AuthorParticipantId,
     bool IsArchived,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
