@@ -35,7 +35,7 @@ public sealed class CommentTests
     [TestMethod]
     public void Reply_WithMissingParent_IsRejected()
     {
-        var service = new CommentService(new MemoryRepository(), new AvailableTargets());
+        var service = new CommentService(new MemoryRepository(), new AvailableTargets(), new NoModerators());
         Assert.Throws<InvalidOperationException>(() =>
             service.Reply(CommentId.New(), Guid.NewGuid(), "Reply", DateTimeOffset.UtcNow));
     }
@@ -91,7 +91,7 @@ public sealed class CommentTests
     {
         var repo = new MemoryRepository();
         var availability = new AvailableTargets();
-        var service = new CommentService(repo, availability);
+        var service = new CommentService(repo, availability, new NoModerators());
         var target = CommentTarget.Node(Guid.NewGuid());
         var comment = service.AddTopLevel(target, Guid.NewGuid(), "Root", DateTimeOffset.UtcNow);
         availability.Available = false;
