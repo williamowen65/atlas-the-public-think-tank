@@ -1,15 +1,23 @@
 namespace Atlas.Comments.Comments;
 
 /// <summary>Coordinates comment use cases and invariants that require repository or target state.</summary>
+public interface ICommentModeratorAuthorization
+{
+    bool CanModerate(Guid participantId);
+}
+
 public sealed class CommentService
 {
     private readonly ICommentRepository _comments;
     private readonly ICommentTargetAvailability _targets;
+    private readonly ICommentModeratorAuthorization _moderators;
 
-    public CommentService(ICommentRepository comments, ICommentTargetAvailability targets)
+    public CommentService(ICommentRepository comments, ICommentTargetAvailability targets,
+        ICommentModeratorAuthorization moderators)
     {
         _comments = comments;
         _targets = targets;
+        _moderators = moderators;
     }
 
     public Comment AddTopLevel(CommentTarget target, Guid authorParticipantId, string body, DateTimeOffset createdAt)
@@ -41,12 +49,12 @@ public sealed class CommentService
         _comments.Save(comment);
     }
 
-    public void Remove(CommentId commentId, Guid actorParticipantId, bool isModerator, DateTimeOffset removedAt)
+    public void Remove(CommentId commentId, Guid actorParticipantId, DateTimeOffset removedAt)
     {
         var comment = GetRequired(commentId);
         if (actorParticipantId == comment.AuthorParticipantId)
             comment.RemoveByAuthor(actorParticipantId, removedAt);
-        else if (isModerator)
+        else if (_moderators.CanModerate(actorParticipantId))
             comment.RemoveByModerator(removedAt);
         else
             throw new UnauthorizedAccessException("Only the comment author or a moderator may remove this comment.");

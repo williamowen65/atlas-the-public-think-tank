@@ -1,4 +1,5 @@
 using Atlas.Comments.Comments;
+using Atlas.Identity;
 using Atlas.Participants.Participants;
 
 namespace Atlas.ConsoleApp.Comments;
@@ -10,12 +11,14 @@ public static class CommentCommands
         CommentTarget target,
         CommentService service,
         IParticipantRepository participants,
-        Participant currentParticipant, Action<Comment>? onCreated = null)
+        Participant currentParticipant,
+        IUserContext userContext,
+        Action<Comment>? onCreated = null)
     {
         while (true)
         {
             var thread = service.GetThread(target);
-            WriteThread(thread, participants, currentParticipant);
+            WriteThread(thread, participants, currentParticipant, userContext.ParticipantId);
 
             Console.WriteLine();
             Console.WriteLine("1. Add comment");
@@ -26,10 +29,10 @@ public static class CommentCommands
             switch (Console.ReadLine())
             {
                 case "1":
-                    AddTopLevel(target, service, currentParticipant, onCreated);
+                    AddTopLevel(target, service, userContext, onCreated);
                     break;
                 case "2":
-                    Select(thread, service, participants, currentParticipant, onCreated);
+                    Select(thread, service, participants, currentParticipant, userContext, onCreated);
                     break;
                 case "0":
                     return;
@@ -43,7 +46,8 @@ public static class CommentCommands
     private static void WriteThread(
         IReadOnlyList<CommentThreadItem> thread,
         IParticipantRepository participants,
-        Participant currentParticipant)
+        Participant currentParticipant,
+        Guid actorParticipantId)
     {
         Console.Clear();
         Console.WriteLine("COMMENTS");
@@ -68,7 +72,7 @@ public static class CommentCommands
             var body = comment.IsRemoved
                 ? $"[removed: {FormatStatus(comment.Status)}]"
                 : comment.Body;
-            var ownComment = comment.AuthorParticipantId == currentParticipant.Id.Value
+            var ownComment = comment.AuthorParticipantId == actorParticipantId
                 ? " (yours)"
                 : string.Empty;
 
@@ -80,14 +84,14 @@ public static class CommentCommands
     public static void AddTopLevel(
         CommentTarget target,
         CommentService service,
-        Participant currentParticipant, Action<Comment>? onCreated = null)
+        IUserContext userContext, Action<Comment>? onCreated = null)
     {
         Console.Write("Comment: ");
         var body = Console.ReadLine() ?? string.Empty;
         TryChange(
             () => { var created = service.AddTopLevel(
                 target,
-                currentParticipant.Id.Value,
+                userContext.ParticipantId,
                 body,
                 DateTimeOffset.UtcNow); onCreated?.Invoke(created); },
             "Comment added.");
@@ -97,7 +101,7 @@ public static class CommentCommands
         IReadOnlyList<CommentThreadItem> thread,
         CommentService service,
         IParticipantRepository participants,
-        Participant currentParticipant, Action<Comment>? onCreated)
+        Participant currentParticipant, IUserContext userContext, Action<Comment>? onCreated)
     {
         if (thread.Count == 0)
         {
@@ -119,7 +123,7 @@ public static class CommentCommands
         while (true)
         {
             WriteSelected(comment, participants, currentParticipant);
-            var isAuthor = comment.AuthorParticipantId == currentParticipant.Id.Value;
+            var isAuthor = comment.AuthorParticipantId == userContext.ParticipantId;
             var canChange = isAuthor && !comment.IsRemoved;
 
             Console.WriteLine("1. Reply");
@@ -134,7 +138,7 @@ public static class CommentCommands
                     Console.Write("Reply: ");
                     var reply = Console.ReadLine() ?? string.Empty;
                     TryChange(
-                        () => { var created = service.Reply(comment.Id, currentParticipant.Id.Value, reply, DateTimeOffset.UtcNow);
+                        () => { var created = service.Reply(comment.Id, userContext.ParticipantId, reply, DateTimeOffset.UtcNow);
                             onCreated?.Invoke(created); },
                         "Reply added.");
                     return;
@@ -142,7 +146,7 @@ public static class CommentCommands
                     Console.Write("New comment text: ");
                     var body = Console.ReadLine() ?? string.Empty;
                     TryChange(
-                        () => service.Edit(comment.Id, currentParticipant.Id.Value, body, DateTimeOffset.UtcNow),
+                        () => service.Edit(comment.Id, userContext.ParticipantId, body, DateTimeOffset.UtcNow),
                         "Comment updated.");
                     return;
                 case "3" when canChange:
@@ -150,7 +154,7 @@ public static class CommentCommands
                     if (string.Equals(Console.ReadLine(), "y", StringComparison.OrdinalIgnoreCase))
                     {
                         TryChange(
-                            () => service.Remove(comment.Id, currentParticipant.Id.Value, false, DateTimeOffset.UtcNow),
+                            () => service.Remove(comment.Id, userContext.ParticipantId, DateTimeOffset.UtcNow),
                             "Comment removed.");
                     }
                     return;

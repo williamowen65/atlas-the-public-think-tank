@@ -59,8 +59,7 @@ public static class ParticipantDisplay
     /// <summary>Writes profile to the console display.</summary>
     public static void WriteProfile(
         Participant participant,
-        IReadOnlyCollection<Node> nodes,
-        Participant currentParticipant)
+        IReadOnlyCollection<Node> nodes)
     {
         var authoredNodeCount = nodes.Count(
             node => node.AuthorId.Value == participant.Id.Value);
@@ -76,8 +75,6 @@ public static class ParticipantDisplay
         Console.WriteLine(
             $"Status:       {(participant.IsActive ? "Active" : "Inactive")}");
         Console.WriteLine($"Authored nodes: {authoredNodeCount}");
-        Console.WriteLine(
-            $"Viewing as:   {currentParticipant.DisplayName}");
     }
 
     /// <summary>Resolves node summary for the current console view.</summary>
