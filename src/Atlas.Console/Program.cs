@@ -264,7 +264,6 @@ while (true)
         commentRepository,
         commentCollectionKey,
         discovery,
-        session.Participant!,
         moderation,
         moderatorAuthorization,
         notificationService,
