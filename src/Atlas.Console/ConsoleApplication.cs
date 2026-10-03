@@ -47,7 +47,7 @@ public sealed class ConsoleApplication
     private readonly NotificationService _notificationService;
     private readonly CurrentUserNotifications _currentUserNotifications;
     private readonly INotificationRepository _notificationRepository;
-    private readonly IUserContext _userContext;
+    private readonly IAuthenticatedActor _authenticatedActor;
     private readonly Func<bool>? _validateSession;
     public bool ExitRequested { get; private set; }
     private readonly string _nodeCollectionKey;
@@ -95,7 +95,7 @@ public sealed class ConsoleApplication
         IModeratorAuthorization moderatorAuthorization,
         NotificationService notificationService,
         INotificationRepository notificationRepository,
-        IUserContext userContext,
+        IAuthenticatedActor authenticatedActor,
         Func<bool>? validateSession = null)
     {
         _nodeRepository = nodes;
@@ -128,9 +128,9 @@ public sealed class ConsoleApplication
         _moderation = moderation;
         _moderatorAuthorization = moderatorAuthorization;
         _notificationService = notificationService;
-        _currentUserNotifications = new CurrentUserNotifications(userContext, notificationService);
+        _currentUserNotifications = new CurrentUserNotifications(authenticatedActor, notificationService);
         _notificationRepository = notificationRepository;
-        _userContext = userContext;
+        _authenticatedActor = authenticatedActor;
         _validateSession = validateSession;
     }
 
@@ -157,7 +157,7 @@ public sealed class ConsoleApplication
                     return;
 
                 case "2":
-                    ViewParticipantProfile(new ParticipantId(_userContext.ParticipantId));
+                    ViewParticipantProfile(new ParticipantId(_authenticatedActor.ParticipantId));
                     break;
 
                 case "3":
@@ -197,7 +197,7 @@ public sealed class ConsoleApplication
                     break;
 
                 case "12":
-                    if (_moderatorAuthorization.IsAtlasModerator(_userContext.ParticipantId))
+                    if (_moderatorAuthorization.IsAtlasModerator(_authenticatedActor.ParticipantId))
                         ReviewModerationQueue();
                     else
                         ConsoleUi.Pause("Review Node reports is available to Atlas moderators only.");
@@ -235,7 +235,7 @@ public sealed class ConsoleApplication
         Console.WriteLine("9. Show SQL data");
         Console.WriteLine("10. List Content documents");
         Console.WriteLine("11. Notifications and preferences");
-        if (_moderatorAuthorization.IsAtlasModerator(_userContext.ParticipantId))
+        if (_moderatorAuthorization.IsAtlasModerator(_authenticatedActor.ParticipantId))
             Console.WriteLine("12. Review Node reports");
         else
             Console.WriteLine("12. Review Node reports [disabled — Atlas moderators only]");
@@ -314,19 +314,19 @@ public sealed class ConsoleApplication
             _nodeRepository,
             _nodeTypeRepository,
             _documentRepository,
-            _userContext,
+            _authenticatedActor,
             _moderation,
             _discovery,
             node => NodeCommands.Run(node, _nodeRepository, _nodeTypeRepository,
                 _documentRepository, _participantRepository, _voteRepository, _castVote,
-                _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, _userContext,
+                _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, _authenticatedActor,
                 _communities, _communityMemberships, _communityNodes, _communityService,
                 _comments, _moderation),
             (node, number, result) => NodeDisplay.WriteTableRow(node,
                 _nodeRepository, _nodeTypeRepository, _documentRepository,
                 _participantRepository, number, result?.VoteCount, result?.AverageVote,
                 _voteRepository.GetByParticipantAndTarget(
-                    new VotingParticipantId(_userContext.ParticipantId),
+                    new VotingParticipantId(_authenticatedActor.ParticipantId),
                     new NodeVoteTarget(node.Id.Value))?.Value.Value,
                 _nodeTags, _tagDefinitions, _voteRepository, _communities, _communityNodes,
                 _comments, includeCreatedDate: true, moderation: _moderation),
@@ -367,7 +367,7 @@ public sealed class ConsoleApplication
             _nodeRepository,
             _nodeTypeRepository,
             _documentRepository,
-            _userContext.ParticipantId,
+            _authenticatedActor.ParticipantId,
             _eventPublisher);
     }
 
@@ -437,7 +437,7 @@ public sealed class ConsoleApplication
             else
             {
                 NodeDisplay.WriteTableHeader(includeCreatedDate: true);
-                var votingParticipantId = new VotingParticipantId(_userContext.ParticipantId);
+                var votingParticipantId = new VotingParticipantId(_authenticatedActor.ParticipantId);
                 for (var index = 0; index < nodes.Count; index++)
                 {
                     var result = results[index];
@@ -473,7 +473,7 @@ public sealed class ConsoleApplication
                 if (reportNumber < 1 || reportNumber > nodes.Count)
                     ConsoleUi.Pause("That node does not exist.");
                 else
-                    NodeCommands.ReportNode(nodes[reportNumber - 1], _userContext.ParticipantId, _moderation);
+                    NodeCommands.ReportNode(nodes[reportNumber - 1], _authenticatedActor.ParticipantId, _moderation);
                 continue;
             }
             if (string.Equals(input, "s", StringComparison.OrdinalIgnoreCase))
@@ -582,7 +582,7 @@ public sealed class ConsoleApplication
                 _tagDefinitions,
                 _nodeTags,
                 _eventPublisher,
-                _userContext,
+                _authenticatedActor,
                 _communities,
                 _communityMemberships,
                 _communityNodes,
@@ -657,7 +657,7 @@ public sealed class ConsoleApplication
     {
         try
         {
-            var queue = _moderation.NodeQueue(_userContext.ParticipantId);
+            var queue = _moderation.NodeQueue(_authenticatedActor.ParticipantId);
             Console.Clear();
             Console.WriteLine("NODE REPORTS");
             Console.WriteLine("------------");
@@ -672,7 +672,7 @@ public sealed class ConsoleApplication
             while (true)
             {
                 Console.Clear();
-                var reports = _moderation.NodeHistory(_userContext.ParticipantId, group.NodeId);
+                var reports = _moderation.NodeHistory(_authenticatedActor.ParticipantId, group.NodeId);
                 Console.WriteLine($"Reported title: {group.ReportedTitle}");
                 Console.WriteLine($"{reports.Count} total report(s), {reports.Count(report => report.Status == ModerationStatus.Submitted)} pending");
                 for (var index = 0; index < reports.Count; index++)
@@ -706,7 +706,7 @@ public sealed class ConsoleApplication
                     NodeCommands.Run(
                         node, _nodeRepository, _nodeTypeRepository, _documentRepository,
                         _participantRepository, _voteRepository, _castVote, _undoVote,
-                        _tagDefinitions, _nodeTags, _eventPublisher, _userContext,
+                        _tagDefinitions, _nodeTags, _eventPublisher, _authenticatedActor,
                         _communities, _communityMemberships, _communityNodes,
                         _communityService, _comments, _moderation);
                     continue;
@@ -714,11 +714,11 @@ public sealed class ConsoleApplication
                 if (action == "R")
                 {
                     Console.Write("Restoration rationale: ");
-                    _moderation.RestoreNode(_userContext.ParticipantId, group.NodeId,
+                    _moderation.RestoreNode(_authenticatedActor.ParticipantId, group.NodeId,
                         Console.ReadLine() ?? string.Empty, DateTimeOffset.UtcNow);
                     if (node is not null)
                         _eventPublisher.Publish(new NotificationRequestedV1(Guid.NewGuid(), node.AuthorId.Value,
-                            _userContext.ParticipantId, "NodeRestored", "Node", node.Id.Value, DateTimeOffset.UtcNow));
+                            _authenticatedActor.ParticipantId, "NodeRestored", "Node", node.Id.Value, DateTimeOffset.UtcNow));
                     ConsoleUi.Pause("Node visibility restored after author review.");
                     return;
                 }
@@ -742,14 +742,14 @@ public sealed class ConsoleApplication
                 Console.Write("Decision rationale: ");
                 var rationale = Console.ReadLine() ?? string.Empty;
                 var decision = action == "H" ? ModerationDecision.HideNode : ModerationDecision.Dismiss;
-                var decided = _moderation.DecideNode(_userContext.ParticipantId, group.NodeId, decision,
+                var decided = _moderation.DecideNode(_authenticatedActor.ParticipantId, group.NodeId, decision,
                     rationale, DateTimeOffset.UtcNow, publicReason);
                 foreach (var report in decided)
                     _eventPublisher.Publish(new NotificationRequestedV1(report.Id, report.ReporterId,
-                        _userContext.ParticipantId, "ReportDecided", "Node", group.NodeId, DateTimeOffset.UtcNow));
+                        _authenticatedActor.ParticipantId, "ReportDecided", "Node", group.NodeId, DateTimeOffset.UtcNow));
                 if (node is not null && action == "H")
                     _eventPublisher.Publish(new NotificationRequestedV1(Guid.NewGuid(), node.AuthorId.Value,
-                        _userContext.ParticipantId, "NodeHidden", "Node", node.Id.Value, DateTimeOffset.UtcNow));
+                        _authenticatedActor.ParticipantId, "NodeHidden", "Node", node.Id.Value, DateTimeOffset.UtcNow));
                 ConsoleUi.Pause(action == "H"
                     ? $"Node hidden on public surfaces; {decided.Count} pending report(s) closed."
                     : $"{decided.Count} pending report(s) dismissed.");
@@ -861,7 +861,7 @@ public sealed class ConsoleApplication
 
         try
         {
-            var community = _communityService.Create(name, description, _userContext.ParticipantId, DateTimeOffset.UtcNow);
+            var community = _communityService.Create(name, description, _authenticatedActor.ParticipantId, DateTimeOffset.UtcNow);
             ConsoleUi.Pause($"Created {community.Name}. You are its owner and first member.");
         }
         catch (ArgumentException exception) { ConsoleUi.Pause(exception.Message); }
@@ -889,7 +889,7 @@ public sealed class ConsoleApplication
             CommunityCommands.Run(
                 communities[selection - 1], _communities, _communityMemberships, _communityNodes, _communityService,
                 _nodeRepository, _nodeTypeRepository, _documentRepository, _participantRepository,
-                _voteRepository, _castVote, _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, _userContext, _comments, _moderation);
+                _voteRepository, _castVote, _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, _authenticatedActor, _comments, _moderation);
         }
     }
 
@@ -999,7 +999,7 @@ public sealed class ConsoleApplication
 
     private string AuthenticatedParticipantDisplayName() =>
         _participantRepository
-            .GetById(new ParticipantId(_userContext.ParticipantId))
+            .GetById(new ParticipantId(_authenticatedActor.ParticipantId))
             ?.DisplayName
         ?? "authenticated participant";
 
