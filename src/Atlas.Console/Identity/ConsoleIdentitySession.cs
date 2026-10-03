@@ -31,7 +31,7 @@ namespace Atlas.ConsoleApp.Identity;
 /// IsAtlasModerator()                    Authorization policies and handlers
 /// SignOut() clears local state          Host authentication sign-out/token handling
 /// </summary>
-public sealed class ConsoleIdentitySession(IServiceScopeFactory scopes) : IModeratorAuthorization, IUserContext
+public sealed class ConsoleIdentitySession(IServiceScopeFactory scopes) : IModeratorAuthorization, IAuthenticatedActor
 {
     private ClaimsPrincipal? _principal;
     private string? _securityStamp;
@@ -39,7 +39,7 @@ public sealed class ConsoleIdentitySession(IServiceScopeFactory scopes) : IModer
 
     /// <summary>
     /// The Atlas Participant ID established by the current authenticated session.
-    /// Application workflows consume this through IUserContext instead of accepting
+    /// Application workflows consume this through IAuthenticatedActor instead of accepting
     /// a caller-selected actor ID.
     /// </summary>
     public Guid ParticipantId => Participant?.Id.Value
