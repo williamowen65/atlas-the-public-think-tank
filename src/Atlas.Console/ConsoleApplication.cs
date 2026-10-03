@@ -1,4 +1,6 @@
 using Atlas.ConsoleApp.Eventing;
+using Atlas.ConsoleApp.Notifications;
+using Atlas.Identity;
 using Atlas.Comments.Comments;
 using Atlas.ConsoleApp.Communities;
 using Atlas.Communities.Communities;
@@ -43,7 +45,9 @@ public sealed class ConsoleApplication
     private readonly ModerationService _moderation;
     private readonly IModeratorAuthorization _moderatorAuthorization;
     private readonly NotificationService _notificationService;
+    private readonly CurrentUserNotifications _currentUserNotifications;
     private readonly INotificationRepository _notificationRepository;
+    private readonly IUserContext _userContext;
     private Participant _currentParticipant;
     private readonly Func<bool>? _validateSession;
     public bool ExitRequested { get; private set; }
@@ -93,6 +97,7 @@ public sealed class ConsoleApplication
         IModeratorAuthorization moderatorAuthorization,
         NotificationService notificationService,
         INotificationRepository notificationRepository,
+        IUserContext userContext,
         Func<bool>? validateSession = null)
     {
         _nodeRepository = nodes;
@@ -126,7 +131,9 @@ public sealed class ConsoleApplication
         _moderation = moderation;
         _moderatorAuthorization = moderatorAuthorization;
         _notificationService = notificationService;
+        _currentUserNotifications = new CurrentUserNotifications(userContext, notificationService);
         _notificationRepository = notificationRepository;
+        _userContext = userContext;
         _validateSession = validateSession;
     }
 
@@ -194,7 +201,7 @@ public sealed class ConsoleApplication
                     break;
 
                 case "12":
-                    if (_moderatorAuthorization.IsAtlasModerator(_currentParticipant.Id.Value))
+                    if (_moderatorAuthorization.IsAtlasModerator(_userContext.ParticipantId))
                         ReviewModerationQueue();
                     else
                         ConsoleUi.Pause("Review Node reports is available to Atlas moderators only.");
@@ -232,7 +239,7 @@ public sealed class ConsoleApplication
         Console.WriteLine("9. Show SQL data");
         Console.WriteLine("10. List Content documents");
         Console.WriteLine("11. Notifications and preferences");
-        if (_moderatorAuthorization.IsAtlasModerator(_currentParticipant.Id.Value))
+        if (_moderatorAuthorization.IsAtlasModerator(_userContext.ParticipantId))
             Console.WriteLine("12. Review Node reports");
         else
             Console.WriteLine("12. Review Node reports [disabled — Atlas moderators only]");
@@ -434,7 +441,7 @@ public sealed class ConsoleApplication
             else
             {
                 NodeDisplay.WriteTableHeader(includeCreatedDate: true);
-                var votingParticipantId = new VotingParticipantId(_currentParticipant.Id.Value);
+                var votingParticipantId = new VotingParticipantId(_userContext.ParticipantId);
                 for (var index = 0; index < nodes.Count; index++)
                 {
                     var result = results[index];
@@ -591,7 +598,6 @@ public sealed class ConsoleApplication
 
     private void BrowseNotifications()
     {
-        var recipient = _currentParticipant.Id.Value;
         var offset = 0;
         const int pageSize = 10;
         while (true)
@@ -599,7 +605,7 @@ public sealed class ConsoleApplication
             Console.Clear();
             WriteActingAs();
             Console.WriteLine("NOTIFICATIONS");
-            var page = _notificationService.Page(recipient, offset, pageSize);
+            var page = _currentUserNotifications.Page(offset, pageSize);
             for (var i = 0; i < page.Count; i++)
             {
                 var item = page[i];
@@ -615,18 +621,18 @@ public sealed class ConsoleApplication
             if (input == "0") return;
             if (input == "N" && page.Count == pageSize) { offset += pageSize; continue; }
             if (input == "P") { offset = Math.Max(0, offset - pageSize); continue; }
-            if (input == "S") { ConfigureNotifications(recipient); continue; }
+            if (input == "S") { ConfigureNotifications(); continue; }
             var dismiss = input?.StartsWith('D') == true;
             var number = dismiss ? input![1..] : input;
             if (!int.TryParse(number, out var selection) || selection < 1 || selection > page.Count) continue;
-            if (dismiss) _notificationService.Dismiss(recipient, page[selection - 1].Id);
-            else _notificationService.MarkRead(recipient, page[selection - 1].Id);
+            if (dismiss) _currentUserNotifications.Dismiss(page[selection - 1].Id);
+            else _currentUserNotifications.MarkRead(page[selection - 1].Id);
         }
     }
 
-    private void ConfigureNotifications(Guid recipient)
+    private void ConfigureNotifications()
     {
-        var settings = _notificationService.Preferences(recipient, recipient);
+        var settings = _currentUserNotifications.Preferences();
         var choices = new (string Label, Func<bool> Get, Action<bool> Set)[]
         {
             ("Discussion in app", () => settings.DiscussionInApp, value => settings.DiscussionInApp = value),
@@ -647,7 +653,7 @@ public sealed class ConsoleApplication
             if (selection < 1 || selection > choices.Length) continue;
             var choice = choices[selection - 1];
             choice.Set(!choice.Get());
-            _notificationService.SavePreferences(recipient, settings);
+            _currentUserNotifications.SavePreferences(settings);
         }
     }
 
@@ -655,7 +661,7 @@ public sealed class ConsoleApplication
     {
         try
         {
-            var queue = _moderation.NodeQueue(_currentParticipant.Id.Value);
+            var queue = _moderation.NodeQueue(_userContext.ParticipantId);
             Console.Clear();
             Console.WriteLine("NODE REPORTS");
             Console.WriteLine("------------");
@@ -670,7 +676,7 @@ public sealed class ConsoleApplication
             while (true)
             {
                 Console.Clear();
-                var reports = _moderation.NodeHistory(_currentParticipant.Id.Value, group.NodeId);
+                var reports = _moderation.NodeHistory(_userContext.ParticipantId, group.NodeId);
                 Console.WriteLine($"Reported title: {group.ReportedTitle}");
                 Console.WriteLine($"{reports.Count} total report(s), {reports.Count(report => report.Status == ModerationStatus.Submitted)} pending");
                 for (var index = 0; index < reports.Count; index++)
@@ -708,7 +714,7 @@ public sealed class ConsoleApplication
                         _communities, _communityMemberships, _communityNodes,
                         _communityService, _comments, _moderation);
                     // Node navigation can change the selected Console participant.
-                    if (!_moderatorAuthorization.IsAtlasModerator(_currentParticipant.Id.Value))
+                    if (!_moderatorAuthorization.IsAtlasModerator(_userContext.ParticipantId))
                     {
                         ConsoleUi.Pause("Moderator participant changed; returning to the main menu.");
                         return;
@@ -718,11 +724,11 @@ public sealed class ConsoleApplication
                 if (action == "R")
                 {
                     Console.Write("Restoration rationale: ");
-                    _moderation.RestoreNode(_currentParticipant.Id.Value, group.NodeId,
+                    _moderation.RestoreNode(_userContext.ParticipantId, group.NodeId,
                         Console.ReadLine() ?? string.Empty, DateTimeOffset.UtcNow);
                     if (node is not null)
                         _eventPublisher.Publish(new NotificationRequestedV1(Guid.NewGuid(), node.AuthorId.Value,
-                            _currentParticipant.Id.Value, "NodeRestored", "Node", node.Id.Value, DateTimeOffset.UtcNow));
+                            _userContext.ParticipantId, "NodeRestored", "Node", node.Id.Value, DateTimeOffset.UtcNow));
                     ConsoleUi.Pause("Node visibility restored after author review.");
                     return;
                 }
@@ -746,14 +752,14 @@ public sealed class ConsoleApplication
                 Console.Write("Decision rationale: ");
                 var rationale = Console.ReadLine() ?? string.Empty;
                 var decision = action == "H" ? ModerationDecision.HideNode : ModerationDecision.Dismiss;
-                var decided = _moderation.DecideNode(_currentParticipant.Id.Value, group.NodeId, decision,
+                var decided = _moderation.DecideNode(_userContext.ParticipantId, group.NodeId, decision,
                     rationale, DateTimeOffset.UtcNow, publicReason);
                 foreach (var report in decided)
                     _eventPublisher.Publish(new NotificationRequestedV1(report.Id, report.ReporterId,
-                        _currentParticipant.Id.Value, "ReportDecided", "Node", group.NodeId, DateTimeOffset.UtcNow));
+                        _userContext.ParticipantId, "ReportDecided", "Node", group.NodeId, DateTimeOffset.UtcNow));
                 if (node is not null && action == "H")
                     _eventPublisher.Publish(new NotificationRequestedV1(Guid.NewGuid(), node.AuthorId.Value,
-                        _currentParticipant.Id.Value, "NodeHidden", "Node", node.Id.Value, DateTimeOffset.UtcNow));
+                        _userContext.ParticipantId, "NodeHidden", "Node", node.Id.Value, DateTimeOffset.UtcNow));
                 ConsoleUi.Pause(action == "H"
                     ? $"Node hidden on public surfaces; {decided.Count} pending report(s) closed."
                     : $"{decided.Count} pending report(s) dismissed.");
@@ -865,7 +871,7 @@ public sealed class ConsoleApplication
 
         try
         {
-            var community = _communityService.Create(name, description, _currentParticipant.Id.Value, DateTimeOffset.UtcNow);
+            var community = _communityService.Create(name, description, _userContext.ParticipantId, DateTimeOffset.UtcNow);
             ConsoleUi.Pause($"Created {community.Name}. You are its owner and first member.");
         }
         catch (ArgumentException exception) { ConsoleUi.Pause(exception.Message); }

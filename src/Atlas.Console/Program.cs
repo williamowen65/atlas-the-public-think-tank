@@ -269,6 +269,7 @@ while (true)
         moderatorAuthorization,
         notificationService,
         notificationRepository,
+        session,
         () => session.RefreshAsync().GetAwaiter().GetResult());
 
     application.Run();
