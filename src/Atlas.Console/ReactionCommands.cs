@@ -1,4 +1,5 @@
 using Atlas.Graph.Nodes;
+using Atlas.Identity;
 using Atlas.Graph.Reactions;
 using Atlas.Participants.Participants;
 using Atlas.Voting;
@@ -14,7 +15,8 @@ public static class ReactionCommands
 {
     public static void Run(Node node, IReactionDefinitionRepository definitions,
         INodeReactionRepository reactions, IVoteRepository votes, CastVote castVote,
-        Participant currentParticipant)
+        Participant currentParticipant,
+        IUserContext userContext)
     {
         var service = new NodeReactionApplicationService(definitions, reactions);
 
@@ -27,7 +29,7 @@ public static class ReactionCommands
             Console.WriteLine();
 
             var choices = BuildChoices(node, definitions, reactions, votes,
-                new VotingParticipantId(currentParticipant.Id.Value));
+                new VotingParticipantId(userContext.ParticipantId));
             WriteChoices(choices);
             Console.WriteLine("0. Return to node");
             Console.Write("Reaction to vote on: ");
@@ -58,11 +60,11 @@ public static class ReactionCommands
             {
                 var choice = choices[selection - 1];
                 var association = choice.Association ?? service.Apply(
-                    node, choice.Definition.Text, currentParticipant.Id.Value,
+                    node, choice.Definition.Text, userContext.ParticipantId,
                     currentParticipant.IsActive, DateTimeOffset.UtcNow);
 
                 castVote.Execute(new NodeReactionVoteTarget(association.Id.Value),
-                    new VotingParticipantId(currentParticipant.Id.Value), value.Value);
+                    new VotingParticipantId(userContext.ParticipantId), value.Value);
                 ConsoleUi.Pause("Your reaction vote was saved.");
             }
             catch (Exception exception) when (exception is ArgumentException or
