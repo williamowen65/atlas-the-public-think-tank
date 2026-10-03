@@ -12,18 +12,17 @@ namespace Atlas.ConsoleApp.Participants;
 public static class ParticipantCommands
 {
     /// <summary>Runs the interactive participant commands workflow.</summary>
-    public static Participant Run(
+    public static void Run(
         ParticipantId participantId,
         IParticipantRepository participants,
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
         IDocumentRepository documents,
-        Participant currentParticipant,
         IUserContext userContext,
         Atlas.Moderation.ModerationService moderation,
         IDiscoveryService? discovery = null,
-        Func<Node, Participant, Participant>? openNode = null,
-        Action<Node, int, RankedDiscoveryItem?, Participant>? writeNodeRow = null,
+        Action<Node>? openNode = null,
+        Action<Node, int, RankedDiscoveryItem?>? writeNodeRow = null,
         Func<DiscoveryQuery, string, DiscoveryQuery>? changeFilter = null)
     {
         var viewing = true;
@@ -35,7 +34,7 @@ public static class ParticipantCommands
             if (participant is null)
             {
                 ConsoleUi.Pause("That participant no longer exists.");
-                return currentParticipant;
+                return;
             }
 
             var authoredNodes = nodes
@@ -45,8 +44,7 @@ public static class ParticipantCommands
             Console.Clear();
             ParticipantDisplay.WriteProfile(
                 participant,
-                authoredNodes,
-                currentParticipant);
+                authoredNodes);
             Console.WriteLine();
             Console.WriteLine("1. Edit profile");
             Console.WriteLine("2. View authored nodes");
@@ -57,15 +55,15 @@ public static class ParticipantCommands
             switch (Console.ReadLine())
             {
                 case "1":
-                    currentParticipant = EditProfile(
+                    EditProfile(
                         participant,
                         participants,
-                        currentParticipant,
-                        userContext.ParticipantId);
+                        userContext.ParticipantId,
+                        participants.GetById(new ParticipantId(userContext.ParticipantId))?.DisplayName ?? "authenticated participant");
                     break;
 
                 case "2":
-                    currentParticipant = ViewAuthoredNodes(
+                    ViewAuthoredNodes(
                         participant,
                         authoredNodes,
                         nodes,
@@ -73,7 +71,6 @@ public static class ParticipantCommands
                         documents,
                         participants,
                         moderation,
-                        currentParticipant,
                         discovery,
                         openNode,
                         writeNodeRow,
@@ -91,22 +88,21 @@ public static class ParticipantCommands
             }
         }
 
-        return currentParticipant;
     }
 
     /// <summary>Edits profile through the authorized workflow.</summary>
-    private static Participant EditProfile(
+    private static void EditProfile(
         Participant participant,
         IParticipantRepository participants,
-        Participant currentParticipant,
-        Guid actorParticipantId)
+        Guid actorParticipantId,
+        string actorDisplayName)
     {
         Console.Clear();
         Console.WriteLine("EDIT PARTICIPANT PROFILE");
         Console.WriteLine("------------------------");
         Console.WriteLine(
             $"Editing {participant.DisplayName} " +
-            $"as {currentParticipant.DisplayName}.");
+            $"as {actorDisplayName}.");
         Console.WriteLine();
         Console.Write(
             $"Display name ({participant.DisplayName}): ");
@@ -134,7 +130,7 @@ public static class ParticipantCommands
             var workflow =
                 new UpdateParticipantProfile(participants);
 
-            var updatedParticipant = workflow.Execute(
+            workflow.Execute(
                 new ParticipantId(actorParticipantId),
                 participant.Id,
                 requestedDisplayName,
@@ -143,9 +139,6 @@ public static class ParticipantCommands
 
             ConsoleUi.Pause("Profile updated.");
 
-            return currentParticipant.Id == updatedParticipant.Id
-                ? updatedParticipant
-                : currentParticipant;
         }
         catch (UnauthorizedAccessException exception)
         {
@@ -160,11 +153,10 @@ public static class ParticipantCommands
             ConsoleUi.Pause($"Unable to update profile: {exception.Message}");
         }
 
-        return currentParticipant;
     }
 
     /// <summary>Displays authored nodes in the console workflow.</summary>
-    private static Participant ViewAuthoredNodes(
+    private static void ViewAuthoredNodes(
         Participant participant,
         IReadOnlyCollection<Node> authoredNodes,
         INodeRepository nodes,
@@ -172,10 +164,9 @@ public static class ParticipantCommands
         IDocumentRepository documents,
         IParticipantRepository participants,
         Atlas.Moderation.ModerationService moderation,
-        Participant currentParticipant,
         IDiscoveryService? discovery,
-        Func<Node, Participant, Participant>? openNode,
-        Action<Node, int, RankedDiscoveryItem?, Participant>? writeNodeRow,
+        Action<Node>? openNode,
+        Action<Node, int, RankedDiscoveryItem?>? writeNodeRow,
         Func<DiscoveryQuery, string, DiscoveryQuery>? changeFilter)
     {
         var query = new DiscoveryQuery(IncludeArchived: true);
@@ -204,7 +195,7 @@ public static class ParticipantCommands
                 NodeDisplay.WriteTableHeader(includeCreatedDate: true);
                 for (var index = 0; index < ordered.Count; index++)
                     if (writeNodeRow is not null)
-                        writeNodeRow(ordered[index], index + 1, ranked is null ? null : ranked[index], currentParticipant);
+                        writeNodeRow(ordered[index], index + 1, ranked is null ? null : ranked[index]);
                     else NodeDisplay.WriteTableRow(ordered[index], nodes, nodeTypes, documents,
                         participants, index + 1,
                         ranked is null ? null : ranked[index].VoteCount,
@@ -217,7 +208,7 @@ public static class ParticipantCommands
             if (pages is not null && pages[^1].HasNextPage) Console.WriteLine("N to load the next page.");
             Console.Write("Selection: ");
             var input = Console.ReadLine()?.Trim();
-            if (input == "0") return currentParticipant;
+            if (input == "0") return;
             if (string.Equals(input, "n", StringComparison.OrdinalIgnoreCase) && pages is not null && pages[^1].HasNextPage)
             {
                 visiblePages++;
@@ -237,7 +228,7 @@ public static class ParticipantCommands
             }
             if (openNode is null)
                 ConsoleUi.Pause("Node navigation is unavailable in this view.");
-            else currentParticipant = openNode(ordered[selection - 1], currentParticipant);
+            else openNode(ordered[selection - 1]);
         }
     }
 }
