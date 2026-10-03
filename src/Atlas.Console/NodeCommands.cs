@@ -259,6 +259,7 @@ public static class NodeCommands
                             documents,
                             participants,
                             currentParticipant,
+                            userContext,
                             moderation);
                         break;
 
@@ -296,6 +297,7 @@ public static class NodeCommands
                             participants,
                             votes,
                             currentParticipant,
+                            userContext,
                             moderation);
                         break;
 
@@ -545,7 +547,7 @@ public static class NodeCommands
             nodes,
             nodeTypes,
             documents,
-            author,
+            authorParticipantId,
             eventPublisher,
             selectedType,
             parent);
@@ -784,6 +786,7 @@ public static class NodeCommands
         IDocumentRepository documents,
         IParticipantRepository participants,
         Participant currentParticipant,
+        IUserContext userContext,
         ModerationService moderation)
     {
         var authorId = new ParticipantId(node.AuthorId.Value);
@@ -802,6 +805,7 @@ public static class NodeCommands
             nodeTypes,
             documents,
             currentParticipant,
+            userContext,
             moderation);
     }
 
@@ -1218,6 +1222,7 @@ public static class NodeCommands
         IParticipantRepository participants,
         IVoteRepository votes,
         Participant currentParticipant,
+        IUserContext userContext,
         ModerationService moderation)
     {
 
@@ -1323,6 +1328,7 @@ public static class NodeCommands
             nodeTypes,
             documents,
             currentParticipant,
+            userContext,
             moderation);
         }
 
