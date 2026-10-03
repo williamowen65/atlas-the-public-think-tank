@@ -15,10 +15,12 @@ public static class ReactionCommands
 {
     public static void Run(Node node, IReactionDefinitionRepository definitions,
         INodeReactionRepository reactions, IVoteRepository votes, CastVote castVote,
-        Participant currentParticipant,
+        IParticipantRepository participants,
         IUserContext userContext)
     {
         var service = new NodeReactionApplicationService(definitions, reactions);
+        var currentParticipant = participants.GetById(new ParticipantId(userContext.ParticipantId))
+            ?? throw new InvalidOperationException("The authenticated Atlas participant was not found.");
 
         while (true)
         {
