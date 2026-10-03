@@ -1,4 +1,5 @@
 using Atlas.ConsoleApp.Eventing;
+using Atlas.ConsoleApp.Notifications;
 using Atlas.Identity;
 using Atlas.Comments.Comments;
 using Atlas.ConsoleApp.Communities;
@@ -44,6 +45,7 @@ public sealed class ConsoleApplication
     private readonly ModerationService _moderation;
     private readonly IModeratorAuthorization _moderatorAuthorization;
     private readonly NotificationService _notificationService;
+    private readonly CurrentUserNotifications _currentUserNotifications;
     private readonly INotificationRepository _notificationRepository;
     private readonly IUserContext _userContext;
     private Participant _currentParticipant;
@@ -129,6 +131,7 @@ public sealed class ConsoleApplication
         _moderation = moderation;
         _moderatorAuthorization = moderatorAuthorization;
         _notificationService = notificationService;
+        _currentUserNotifications = new CurrentUserNotifications(userContext, notificationService);
         _notificationRepository = notificationRepository;
         _userContext = userContext;
         _validateSession = validateSession;
@@ -595,7 +598,6 @@ public sealed class ConsoleApplication
 
     private void BrowseNotifications()
     {
-        var recipient = _userContext.ParticipantId;
         var offset = 0;
         const int pageSize = 10;
         while (true)
@@ -603,7 +605,7 @@ public sealed class ConsoleApplication
             Console.Clear();
             WriteActingAs();
             Console.WriteLine("NOTIFICATIONS");
-            var page = _notificationService.Page(recipient, offset, pageSize);
+            var page = _currentUserNotifications.Page(offset, pageSize);
             for (var i = 0; i < page.Count; i++)
             {
                 var item = page[i];
@@ -623,15 +625,14 @@ public sealed class ConsoleApplication
             var dismiss = input?.StartsWith('D') == true;
             var number = dismiss ? input![1..] : input;
             if (!int.TryParse(number, out var selection) || selection < 1 || selection > page.Count) continue;
-            if (dismiss) _notificationService.Dismiss(recipient, page[selection - 1].Id);
-            else _notificationService.MarkRead(recipient, page[selection - 1].Id);
+            if (dismiss) _currentUserNotifications.Dismiss(page[selection - 1].Id);
+            else _currentUserNotifications.MarkRead(page[selection - 1].Id);
         }
     }
 
     private void ConfigureNotifications()
     {
-        var actorId = _userContext.ParticipantId;
-        var settings = _notificationService.Preferences(actorId, actorId);
+        var settings = _currentUserNotifications.Preferences();
         var choices = new (string Label, Func<bool> Get, Action<bool> Set)[]
         {
             ("Discussion in app", () => settings.DiscussionInApp, value => settings.DiscussionInApp = value),
@@ -652,7 +653,7 @@ public sealed class ConsoleApplication
             if (selection < 1 || selection > choices.Length) continue;
             var choice = choices[selection - 1];
             choice.Set(!choice.Get());
-            _notificationService.SavePreferences(actorId, settings);
+            _currentUserNotifications.SavePreferences(settings);
         }
     }
 
