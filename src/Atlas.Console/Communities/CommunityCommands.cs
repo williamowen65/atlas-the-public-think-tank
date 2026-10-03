@@ -17,7 +17,7 @@ namespace Atlas.ConsoleApp.Communities;
 
 public static class CommunityCommands
 {
-    public static Participant Run(
+    public static void Run(
         Community community,
         ICommunityRepository communities,
         ICommunityMembershipRepository memberships,
@@ -33,7 +33,6 @@ public static class CommunityCommands
         IReactionDefinitionRepository tagDefinitions,
         INodeReactionRepository nodeTags,
         InMemoryEventPublisher eventPublisher,
-        Participant currentParticipant,
         IUserContext userContext,
         ICommentRepository comments,
         ModerationService moderation)
@@ -79,7 +78,7 @@ public static class CommunityCommands
                         Console.Write("Node number (0 cancels): ");
                         if (int.TryParse(Console.ReadLine(), out var choice) && choice > 0 && choice <= associatedNodes.Count)
                         {
-                            currentParticipant = NodeCommands.Run(associatedNodes[choice - 1], nodes, nodeTypes, documents, participants, votes, castVote, undoVote, tagDefinitions, nodeTags, eventPublisher, currentParticipant, userContext, communities, memberships, communityNodes, service, comments, moderation);
+                            NodeCommands.Run(associatedNodes[choice - 1], nodes, nodeTypes, documents, participants, votes, castVote, undoVote, tagDefinitions, nodeTags, eventPublisher, userContext, communities, memberships, communityNodes, service, comments, moderation);
                         }
                         break;
                     case "2" when membership?.IsActive == true:
@@ -110,7 +109,7 @@ public static class CommunityCommands
                     case "3" or "4" or "5" or "6":
                         ConsoleUi.Pause("This action requires the community owner.");
                         break;
-                    case "7": return currentParticipant;
+                    case "7": return;
                     default: ConsoleUi.Pause("That is not a valid selection."); break;
                 }
             }
