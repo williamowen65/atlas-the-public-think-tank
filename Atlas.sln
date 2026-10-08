@@ -28,6 +28,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{55555555-5555-4555-8555-555555555555}"
 	ProjectSection(SolutionItems) = preProject
+		docs\atlas_milestone_timeline.excalidraw = docs\atlas_milestone_timeline.excalidraw
 		docs\PTT-87-SQL-Server.md = docs\PTT-87-SQL-Server.md
 		docs\PTT-94-Identity.md = docs\PTT-94-Identity.md
 		docs\README.md = docs\README.md
@@ -36,11 +37,11 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "architecture", "architecture", "{A1111111-1111-4111-8111-111111111111}"
 	ProjectSection(SolutionItems) = preProject
 		docs\architecture\COMMENTS.md = docs\architecture\COMMENTS.md
-		docs\architecture\IDENTITY.md = docs\architecture\IDENTITY.md
 		docs\architecture\COMMUNITIES.md = docs\architecture\COMMUNITIES.md
 		docs\architecture\CONTEXT-MAP.md = docs\architecture\CONTEXT-MAP.md
 		docs\architecture\DATA-OWNERSHIP.md = docs\architecture\DATA-OWNERSHIP.md
 		docs\architecture\DISCOVERY.md = docs\architecture\DISCOVERY.md
+		docs\architecture\IDENTITY.md = docs\architecture\IDENTITY.md
 		docs\architecture\MODERATION.md = docs\architecture\MODERATION.md
 		docs\architecture\NOTIFICATIONS.md = docs\architecture\NOTIFICATIONS.md
 		docs\architecture\README.md = docs\architecture\README.md
