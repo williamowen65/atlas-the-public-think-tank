@@ -13,6 +13,7 @@ Atlas is currently a modular application hosted by Atlas.Console. Its projects a
 - [Data ownership](DATA-OWNERSHIP.md) identifies the authoritative owner of records and identifiers.
 - [Voting boundary](VOTING.md) defines Voting ownership, policies, integration needs, and open decisions.
 - [Architecture decisions](decisions/README.md) preserve the reasoning behind consequential choices.
+- [Cloud hosting research](../deployment/CLOUD-HOSTING-RESEARCH.md) supports the proposed [Azure SQL and serverless backend evaluation](decisions/ADR-0007-evaluate-azure-sql-with-serverless-backend.md).
 
 ## Architectural principles
 
@@ -32,3 +33,4 @@ A future web application may first retain the same modular-monolith shape. If a 
 - [Moderation boundary and first workflow](MODERATION.md)
 
 - [Notifications boundary](NOTIFICATIONS.md) documents the PTT-102 initial slice and delivery seam.
+

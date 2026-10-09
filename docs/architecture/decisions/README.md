@@ -11,8 +11,8 @@ Architecture Decision Records explain why Atlas adopted a consequential design. 
 | [ADR-0003](ADR-0003-use-versioned-integration-contracts.md) | Use versioned integration contracts | Accepted |
 | [ADR-0004](ADR-0004-use-sql-server-persistence.md) | Start with SQL Server persistence adapters | Accepted |
 | [ADR-0005](ADR-0005-enforce-concurrency-at-domain-persistence-boundaries.md) | Enforce concurrency invariants at each bounded context's persistence boundary | Proposed |
-
 | [ADR-0006](ADR-0006-identity-participant-mapping.md) | Link Identity accounts to independent Participant profiles | Proposed |
+| [ADR-0007](ADR-0007-evaluate-azure-sql-with-serverless-backend.md) | Evaluate Azure SQL Database with a serverless backend | Proposed |
 
 ## Identifier and status rules
 
@@ -51,3 +51,4 @@ What becomes easier, harder, required, or deliberately deferred?
 
 What credible alternatives were evaluated?
 ```
+
