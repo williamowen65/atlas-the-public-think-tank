@@ -6,6 +6,7 @@ This directory records what Atlas must do, how its boundaries fit together, why 
 |---|---|
 | [Requirements](requirements/README.md) | Requirement catalog, stable IDs, acceptance criteria, and traceability |
 | [Architecture](architecture/README.md) | Boundary map, data ownership, and architectural decisions |
+| [Deployment research](deployment/CLOUD-HOSTING-RESEARCH.md) | Cloud hosting options, cost assumptions, sources, and evaluation process |
 | [Contracts](contracts/README.md) | Published communication shapes and compatibility expectations |
 | [Workflows](workflows/README.md) | Multi-boundary behavior, sequencing, and failure paths |
 | [Testing](testing/TEST-STRATEGY.md) | Test levels, responsibilities, and verification standards |
@@ -55,3 +56,4 @@ Documentation should remain usable from a phone:
 - Preserve a genuinely wide matrix only when side-by-side comparison is more
   important than mobile readability, such as a requirements traceability
   matrix.
+
