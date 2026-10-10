@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -206,8 +207,13 @@ public sealed class SqlIdentityTests
         }
         public static Database Create(bool migrate = true)
         {
-            var template = Environment.GetEnvironmentVariable("ATLAS_SQL_TEST_CONNECTION_STRING");
-            if (string.IsNullOrWhiteSpace(template)) Assert.Inconclusive("Set ATLAS_SQL_TEST_CONNECTION_STRING for SQL Server Identity tests.");
+            // Local projects share one secrets file; CI environment values take precedence.
+            var configuration = new ConfigurationBuilder()
+                .AddUserSecrets<SqlIdentityTests>(optional: true)
+                .AddEnvironmentVariables()
+                .Build();
+            var template = configuration["ATLAS_SQL_TEST_CONNECTION_STRING"];
+            if (string.IsNullOrWhiteSpace(template)) Assert.Inconclusive("Set ATLAS_SQL_TEST_CONNECTION_STRING in user secrets or environment variables to run SQL Server tests.");
             var connection = new SqlConnectionStringBuilder(template) { InitialCatalog = $"AtlasIdentityTests_{Guid.NewGuid():N}" };
             return new Database(connection.ConnectionString, migrate);
         }

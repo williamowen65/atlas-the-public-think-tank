@@ -26,6 +26,20 @@ If raw SQL is introduced, use EF's parameterized APIs or explicit provider param
 
 `tests/Atlas.Persistence.Tests/SqlValidationTests.cs` saves and queries SQL-looking text through the current EF repository and then confirms a normal write still works. Its command interceptor also asserts that the supplied query value is a command parameter rather than SQL text. It requires `ATLAS_SQL_TEST_CONNECTION_STRING` and a real SQL Server; the existing SQL CI job supplies both. It complements domain validation tests and does not replace the production-source review.
 
+## Local SQL test configuration
+
+Persistence, Identity and Console SQL tests load `ATLAS_SQL_TEST_CONNECTION_STRING` from user secrets, then environment variables. All three test projects use the Console application's shared `UserSecretsId` (`02103f3e-daff-4644-b045-6eb5f00889eb`), so Manage User Secrets opens the same local file. Environment variables override secrets, preserving CI's disposable SQL Server configuration.
+
+For local SQL Express with Windows authentication, add this to the shared secrets file:
+
+```json
+{
+  "ATLAS_SQL_TEST_CONNECTION_STRING": "Server=localhost\\\\SQLEXPRESS;Trusted_Connection=True;TrustServerCertificate=True"
+}
+```
+
+The test fixtures replace any supplied database name with a unique test database, apply migrations and delete it afterward. The local account must have permission to create and delete databases on the dedicated test server. Missing configuration marks SQL tests inconclusive; a configured but unreachable server produces a test failure. Keep actual credentials in local secrets, outside the repository.
+
 ## Browser and network concerns
 
 Parameterized SQL does not prevent stored XSS. Markdown/HTML rendering and context-appropriate output encoding belong to the future browser boundary (PTT-125). `LinkPreviewBlock` limits schemes to HTTP(S), but that alone is not an SSRF defense. If a backend later retrieves a user URL, define destination/redirect/DNS and size/time restrictions at that fetch boundary. Image/video values currently allow media reference strings, so their policy must fit the future asset system.
