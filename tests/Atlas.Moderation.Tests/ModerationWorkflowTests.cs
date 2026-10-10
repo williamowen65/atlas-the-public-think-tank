@@ -134,8 +134,10 @@ public sealed class ModerationWorkflowTests
         public IReadOnlyCollection<DiscoveryCandidate> GetCandidates() => candidates;
     }
 
-    private sealed class Cases : IModerationCaseRepository
+    private sealed class Cases : IModerationCaseRepository, Atlas.Contracts.Operations.IReferenceLookup
     {
+        public bool IsAvailable(string kind, Guid id, bool requireActive) => id != Guid.Empty;
+
         private readonly Dictionary<Guid, ModerationCase> _items = [];
         public ModerationCase? GetById(Guid caseId) => _items.GetValueOrDefault(caseId);
         public IReadOnlyCollection<ModerationCase> GetAll() => _items.Values.ToList();

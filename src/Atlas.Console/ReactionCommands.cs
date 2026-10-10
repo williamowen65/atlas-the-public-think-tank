@@ -63,7 +63,7 @@ public static class ReactionCommands
                 var choice = choices[selection - 1];
                 var association = choice.Association ?? service.Apply(
                     node, choice.Definition.Text, authenticatedActor.ParticipantId,
-                    currentParticipant.IsActive, DateTimeOffset.UtcNow);
+                    currentParticipant.IsActive, AtlasTime.UtcNow);
 
                 castVote.Execute(new NodeReactionVoteTarget(association.Id.Value),
                     new VotingParticipantId(authenticatedActor.ParticipantId), value.Value);

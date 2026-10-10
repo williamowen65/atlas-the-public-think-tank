@@ -24,12 +24,13 @@ namespace Atlas.Voting
         public Vote(
             VoteTarget target,
             ParticipantId pId,
-            int voteValue)
+            int voteValue, DateTimeOffset? createdAt = null)
         {
+            ArgumentNullException.ThrowIfNull(pId);
             Value = CreateValue(target, voteValue);
             Id = VoteId.New();
             ParticipantId = pId;
-            CreatedAt = DateTimeOffset.UtcNow;
+            CreatedAt = (createdAt ?? AtlasTime.UtcNow).ToUniversalTime();
             UpdatedAt = CreatedAt;
             Target = target;
         }
@@ -42,6 +43,8 @@ namespace Atlas.Voting
             DateTimeOffset createdAt,
             DateTimeOffset updatedAt)
         {
+            ArgumentNullException.ThrowIfNull(pId);
+            if (id.Value == Guid.Empty) throw new ArgumentException("A vote ID is required.", nameof(id));
             if (updatedAt < createdAt)
             {
                 throw new ArgumentException(
@@ -51,8 +54,8 @@ namespace Atlas.Voting
             Id = id;
             Target = target;
             ParticipantId = pId;
-            CreatedAt = createdAt;
-            UpdatedAt = updatedAt;
+            CreatedAt = createdAt.ToUniversalTime();
+            UpdatedAt = updatedAt.ToUniversalTime();
             Value = CreateValue(target, voteValue);
         }
 
@@ -76,7 +79,7 @@ namespace Atlas.Voting
                 voteValue);
 
             Value = replacement;
-            UpdatedAt = changedAt;
+            UpdatedAt = changedAt.ToUniversalTime();
         }
 
         /// <summary>

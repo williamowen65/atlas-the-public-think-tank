@@ -82,28 +82,28 @@ public static class CommunityCommands
                         }
                         break;
                     case "2" when membership?.IsActive == true:
-                        service.Leave(community, authenticatedActor.ParticipantId, DateTimeOffset.UtcNow);
+                        service.Leave(community, authenticatedActor.ParticipantId, AtlasTime.UtcNow);
                         ConsoleUi.Pause("You left the community.");
                         break;
                     case "2":
-                        service.Join(community, authenticatedActor.ParticipantId, DateTimeOffset.UtcNow);
+                        service.Join(community, authenticatedActor.ParticipantId, AtlasTime.UtcNow);
                         ConsoleUi.Pause("You joined the community.");
                         break;
                     case "3" when isOwner:
                         Console.Write("New name: ");
-                        service.Rename(community, authenticatedActor.ParticipantId, Console.ReadLine() ?? string.Empty, DateTimeOffset.UtcNow);
+                        service.Rename(community, authenticatedActor.ParticipantId, Console.ReadLine() ?? string.Empty, AtlasTime.UtcNow);
                         break;
                     case "4" when isOwner:
                         Console.Write("New description: ");
-                        community.ChangeDescription(authenticatedActor.ParticipantId, Console.ReadLine() ?? string.Empty, DateTimeOffset.UtcNow);
+                        community.ChangeDescription(authenticatedActor.ParticipantId, Console.ReadLine() ?? string.Empty, AtlasTime.UtcNow);
                         communities.Save(community);
                         break;
                     case "5" when isOwner:
-                        community.Archive(authenticatedActor.ParticipantId, DateTimeOffset.UtcNow);
+                        community.Archive(authenticatedActor.ParticipantId, AtlasTime.UtcNow);
                         communities.Save(community);
                         break;
                     case "6" when isOwner:
-                        community.Restore(authenticatedActor.ParticipantId, DateTimeOffset.UtcNow);
+                        community.Restore(authenticatedActor.ParticipantId, AtlasTime.UtcNow);
                         communities.Save(community);
                         break;
                     case "3" or "4" or "5" or "6":

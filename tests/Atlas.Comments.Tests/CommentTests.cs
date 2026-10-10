@@ -107,8 +107,10 @@ public sealed class CommentTests
         public bool IsAvailable(CommentTarget target) => Available;
     }
 
-    private sealed class MemoryRepository : ICommentRepository
+    private sealed class MemoryRepository : ICommentRepository, Atlas.Contracts.Operations.IReferenceLookup
     {
+        public bool IsAvailable(string kind, Guid id, bool requireActive) => id != Guid.Empty;
+
         private readonly Dictionary<CommentId, Comment> _items = [];
 
         public Comment? GetById(CommentId id) => _items.GetValueOrDefault(id);

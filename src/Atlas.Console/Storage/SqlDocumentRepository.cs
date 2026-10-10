@@ -9,7 +9,13 @@ public sealed class SqlDocumentRepository(Func<AtlasDataContext>? contextFactory
 {
     public IReadOnlyCollection<Document> GetAll() => ReadRows<DocumentRow>().Select(ToDomain).ToList();
     public Document? GetById(DocumentId id) => FindRow<DocumentRow>(id.Value) is { } row ? ToDomain(row) : null;
-    public void Save(Document document) { ArgumentNullException.ThrowIfNull(document); SaveRow(ToStorage(document)); }
+    public void Save(Document document) => Execute(() =>
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        foreach (var block in document.BlockIds) ReferenceValidation.Require(this, "Block", block.Value, false);
+        SaveRow(ToStorage(document));
+        return true;
+    });
     public ContentBlock? GetBlockById(BlockId id) => FindRow<BlockRow>(id.Value) is { } row ? ToDomain(row) : null;
     public IReadOnlyCollection<ContentBlock> GetBlocks(Document document) => document.BlockIds.Select(id =>
         GetBlockById(id) ?? throw new InvalidOperationException($"Content block {id} was not found.")).ToList();

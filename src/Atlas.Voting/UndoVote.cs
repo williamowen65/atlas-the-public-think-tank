@@ -30,6 +30,8 @@ namespace Atlas.Voting
             VoteTarget target,
             ParticipantId participantId)
         {
+        return OperationBoundary.Execute(_voteRepository, () =>
+        {
             _mutationPolicy.EnsureAllowed(
                 target,
                 participantId);
@@ -47,7 +49,8 @@ namespace Atlas.Voting
             _voteRepository.Delete(existingVote.Id);
 
             return true;
-        }
+                });
+    }
 
     }
 }

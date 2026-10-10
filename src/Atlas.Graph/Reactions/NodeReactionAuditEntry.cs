@@ -55,7 +55,7 @@ public sealed record NodeReactionAuditEntry
 
         Action = action;
         ActorParticipantId = actorParticipantId;
-        OccurredAt = occurredAt;
+        OccurredAt = occurredAt.ToUniversalTime();
         LifecycleState = lifecycleState;
         Disposition = disposition;
         RelatedNodeReactionId = relatedNodeReactionId;

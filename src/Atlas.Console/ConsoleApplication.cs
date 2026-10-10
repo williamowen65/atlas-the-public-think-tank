@@ -715,10 +715,10 @@ public sealed class ConsoleApplication
                 {
                     Console.Write("Restoration rationale: ");
                     _moderation.RestoreNode(_authenticatedActor.ParticipantId, group.NodeId,
-                        Console.ReadLine() ?? string.Empty, DateTimeOffset.UtcNow);
+                        Console.ReadLine() ?? string.Empty, AtlasTime.UtcNow);
                     if (node is not null)
                         _eventPublisher.Publish(new NotificationRequestedV1(Guid.NewGuid(), node.AuthorId.Value,
-                            _authenticatedActor.ParticipantId, "NodeRestored", "Node", node.Id.Value, DateTimeOffset.UtcNow));
+                            _authenticatedActor.ParticipantId, "NodeRestored", "Node", node.Id.Value, AtlasTime.UtcNow));
                     ConsoleUi.Pause("Node visibility restored after author review.");
                     return;
                 }
@@ -743,13 +743,13 @@ public sealed class ConsoleApplication
                 var rationale = Console.ReadLine() ?? string.Empty;
                 var decision = action == "H" ? ModerationDecision.HideNode : ModerationDecision.Dismiss;
                 var decided = _moderation.DecideNode(_authenticatedActor.ParticipantId, group.NodeId, decision,
-                    rationale, DateTimeOffset.UtcNow, publicReason);
+                    rationale, AtlasTime.UtcNow, publicReason);
                 foreach (var report in decided)
                     _eventPublisher.Publish(new NotificationRequestedV1(report.Id, report.ReporterId,
-                        _authenticatedActor.ParticipantId, "ReportDecided", "Node", group.NodeId, DateTimeOffset.UtcNow));
+                        _authenticatedActor.ParticipantId, "ReportDecided", "Node", group.NodeId, AtlasTime.UtcNow));
                 if (node is not null && action == "H")
                     _eventPublisher.Publish(new NotificationRequestedV1(Guid.NewGuid(), node.AuthorId.Value,
-                        _authenticatedActor.ParticipantId, "NodeHidden", "Node", node.Id.Value, DateTimeOffset.UtcNow));
+                        _authenticatedActor.ParticipantId, "NodeHidden", "Node", node.Id.Value, AtlasTime.UtcNow));
                 ConsoleUi.Pause(action == "H"
                     ? $"Node hidden on public surfaces; {decided.Count} pending report(s) closed."
                     : $"{decided.Count} pending report(s) dismissed.");
@@ -861,7 +861,7 @@ public sealed class ConsoleApplication
 
         try
         {
-            var community = _communityService.Create(name, description, _authenticatedActor.ParticipantId, DateTimeOffset.UtcNow);
+            var community = _communityService.Create(name, description, _authenticatedActor.ParticipantId, AtlasTime.UtcNow);
             ConsoleUi.Pause($"Created {community.Name}. You are its owner and first member.");
         }
         catch (ArgumentException exception) { ConsoleUi.Pause(exception.Message); }

@@ -41,7 +41,7 @@ public sealed class IdentityModeratorAuthorization(AtlasDataContext database) : 
          join membership in database.UserRoles on user.Id equals membership.UserId
          join role in database.Roles on membership.RoleId equals role.Id
          where user.Id == participantId && participant.IsActive && user.EmailConfirmed &&
-               (!user.LockoutEnabled || user.LockoutEnd == null || user.LockoutEnd <= DateTimeOffset.UtcNow) &&
+               (!user.LockoutEnabled || user.LockoutEnd == null || user.LockoutEnd <= AtlasTime.UtcNow) &&
                (role.Name == AtlasRoles.GlobalModerator || role.Name == AtlasRoles.Administrator)
          select user.Id).Any();
 }

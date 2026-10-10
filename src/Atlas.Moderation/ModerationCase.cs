@@ -57,11 +57,16 @@ public sealed class ModerationCase
             (reviewRequestedAt is null || visibilityRestoredAt < reviewRequestedAt ||
              restoredBy is null || restoredBy == Guid.Empty || string.IsNullOrWhiteSpace(restorationReason)))
             throw new ArgumentException("Restoration requires a review request and moderator rationale.");
+        if (visibilityRestoredAt is null && (restoredBy is not null || restorationReason is not null))
+            throw new ArgumentException("Restoration details require a restoration time.");
+        if (restorationReason?.Trim().Length > 2000) throw new ArgumentException("Restoration rationale is too long.");
+        if (status != ModerationStatus.Actioned && (reviewRequestedAt is not null || visibilityRestoredAt is not null || publicReason != PublicModerationReason.Other))
+            throw new ArgumentException("Only upheld cases have visibility review state.");
         Id = id; NodeId = nodeId; ReporterId = reporterId; Reason = reason.Trim();
-        Explanation = explanation?.Trim(); ReportedTitle = reportedTitle.Trim(); CreatedAt = createdAt;
-        Status = status; ReviewerId = reviewerId; DecisionReason = decisionReason; DecidedAt = decidedAt;
-        PublicReason = publicReason; ReviewRequestedAt = reviewRequestedAt;
-        VisibilityRestoredAt = visibilityRestoredAt;
+        Explanation = explanation?.Trim(); ReportedTitle = reportedTitle.Trim(); CreatedAt = createdAt.ToUniversalTime();
+        Status = status; ReviewerId = reviewerId; DecisionReason = decisionReason; DecidedAt = decidedAt?.ToUniversalTime();
+        PublicReason = publicReason; ReviewRequestedAt = reviewRequestedAt?.ToUniversalTime();
+        VisibilityRestoredAt = visibilityRestoredAt?.ToUniversalTime();
         RestoredBy = restoredBy; RestorationReason = restorationReason;
     }
 
@@ -85,8 +90,8 @@ public sealed class ModerationCase
         if (decidedAt < CreatedAt) throw new ArgumentException("Decision cannot precede report.", nameof(decidedAt));
         if (!Enum.IsDefined(decision)) throw new ArgumentOutOfRangeException(nameof(decision));
         if (!Enum.IsDefined(publicReason)) throw new ArgumentOutOfRangeException(nameof(publicReason));
-        ReviewerId = reviewerId; DecisionReason = rationale.Trim(); DecidedAt = decidedAt;
-        PublicReason = publicReason;
+        ReviewerId = reviewerId; DecisionReason = rationale.Trim(); DecidedAt = decidedAt.ToUniversalTime();
+        PublicReason = decision == ModerationDecision.Dismiss ? PublicModerationReason.Other : publicReason;
         Status = decision == ModerationDecision.Dismiss ? ModerationStatus.Dismissed : ModerationStatus.Actioned;
     }
 
@@ -94,7 +99,7 @@ public sealed class ModerationCase
     {
         if (!IsHidden || ReviewRequestedAt is not null || requestedAt <= DecidedAt)
             throw new InvalidOperationException("This Node is not eligible for review.");
-        ReviewRequestedAt = requestedAt;
+        ReviewRequestedAt = requestedAt.ToUniversalTime();
     }
 
     public void RestoreVisibility(Guid moderatorId, string rationale, DateTimeOffset restoredAt)
@@ -103,7 +108,7 @@ public sealed class ModerationCase
             throw new InvalidOperationException("A pending review request is required.");
         if (moderatorId == Guid.Empty || string.IsNullOrWhiteSpace(rationale) || rationale.Length > 2000)
             throw new ArgumentException("A moderator and restoration rationale are required.");
-        VisibilityRestoredAt = restoredAt;
+        VisibilityRestoredAt = restoredAt.ToUniversalTime();
         RestoredBy = moderatorId; RestorationReason = rationale.Trim();
     }
 }

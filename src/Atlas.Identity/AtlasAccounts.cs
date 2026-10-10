@@ -25,7 +25,7 @@ public sealed class AtlasAccounts(AtlasDataContext database, UserManager<AtlasId
         CancellationToken cancellationToken = default)
     {
         Participant participant;
-        try { participant = new Participant(displayName, DateTimeOffset.UtcNow); }
+        try { participant = new Participant(displayName, AtlasTime.UtcNow); }
         catch (ArgumentException)
         {
             return Failure("InvalidDisplayName", "A valid display name is required.");

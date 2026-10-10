@@ -26,6 +26,8 @@ public sealed class Document
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt)
     {
+        ArgumentNullException.ThrowIfNull(id);
+        if (id.Value == Guid.Empty) throw new ArgumentException("A document ID is required.", nameof(id));
         ArgumentNullException.ThrowIfNull(blockIds);
 
         if (updatedAt < createdAt)
@@ -36,10 +38,11 @@ public sealed class Document
         }
 
         Id = id;
-        CreatedAt = createdAt;
-        UpdatedAt = updatedAt;
+        CreatedAt = createdAt.ToUniversalTime();
+        UpdatedAt = updatedAt.ToUniversalTime();
         _blockIds = blockIds.ToList();
 
+        if (_blockIds.Any(block => block is null)) throw new ArgumentException("Block IDs cannot be null.", nameof(blockIds));
         if (_blockIds.Count != _blockIds.Distinct().Count())
         {
             throw new ArgumentException("A document cannot contain the same block more than once.", nameof(blockIds));
@@ -52,6 +55,7 @@ public sealed class Document
         DateTimeOffset changedAt,
         int? index = null)
     {
+        ArgumentNullException.ThrowIfNull(blockId);
         if (_blockIds.Contains(blockId))
         {
             throw new InvalidOperationException("The document already contains this block.");
@@ -74,6 +78,7 @@ public sealed class Document
         int newIndex,
         DateTimeOffset changedAt)
     {
+        ArgumentNullException.ThrowIfNull(blockId);
         var currentIndex = _blockIds.IndexOf(blockId);
 
         if (currentIndex < 0)
@@ -99,6 +104,7 @@ public sealed class Document
     /// <summary>Removes a block from this composition without deleting the block entity.</summary>
     public void RemoveBlock(BlockId blockId, DateTimeOffset changedAt)
     {
+        ArgumentNullException.ThrowIfNull(blockId);
         if (!_blockIds.Contains(blockId))
         {
             throw new InvalidOperationException("The document does not contain this block.");
@@ -125,6 +131,6 @@ public sealed class Document
                 nameof(changedAt));
         }
 
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 }

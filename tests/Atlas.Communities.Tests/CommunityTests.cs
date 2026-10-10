@@ -84,8 +84,10 @@ public sealed class CommunityTests
         Assert.Throws<InvalidOperationException>(() => service.Leave(community, owner, DateTimeOffset.UtcNow));
     }
 
-    private sealed class MemoryCommunities : ICommunityRepository
+    private sealed class MemoryCommunities : ICommunityRepository, Atlas.Contracts.Operations.IReferenceLookup
     {
+        public bool IsAvailable(string kind, Guid id, bool requireActive) => id != Guid.Empty;
+
         private readonly List<Community> _items = [];
         public IReadOnlyCollection<Community> GetAll() => _items;
         public Community? GetById(CommunityId id) => _items.SingleOrDefault(x => x.Id == id);

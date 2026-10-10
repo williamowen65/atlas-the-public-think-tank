@@ -30,8 +30,10 @@ public class SecurityAuthorizationTests
         public bool IsAtlasModerator(Guid participantId) => participantId == moderatorId;
     }
 
-    private sealed class CaseRepository : IModerationCaseRepository
+    private sealed class CaseRepository : IModerationCaseRepository, Atlas.Contracts.Operations.IReferenceLookup
     {
+        public bool IsAvailable(string kind, Guid id, bool requireActive) => id != Guid.Empty;
+
         private readonly Dictionary<Guid, ModerationCase> _cases = [];
         public ModerationCase? GetById(Guid caseId) => _cases.GetValueOrDefault(caseId);
         public IReadOnlyCollection<ModerationCase> GetAll() => _cases.Values.ToList();

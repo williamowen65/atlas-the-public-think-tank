@@ -27,6 +27,9 @@ namespace Atlas.Voting
             ParticipantId participantId,
             int voteValue)
         {
+        return OperationBoundary.Execute(_voteRepository, () =>
+        {
+            var now = AtlasTime.UtcNow;
             _mutationPolicy.EnsureAllowed(
                 target,
                 participantId);
@@ -41,14 +44,14 @@ namespace Atlas.Voting
                 var newVote = new Vote(
                     target,
                     participantId,
-                    voteValue);
+                    voteValue, now);
 
                 _voteRepository.Save(newVote);
 
                 return newVote;
             }
 
-            var changedAt = DateTimeOffset.UtcNow;
+            var changedAt = now;
 
             if (changedAt <= existingVote.UpdatedAt)
             {
@@ -62,7 +65,8 @@ namespace Atlas.Voting
             _voteRepository.Save(existingVote);
 
             return existingVote;
-        }
+                });
+    }
 
     }
 }

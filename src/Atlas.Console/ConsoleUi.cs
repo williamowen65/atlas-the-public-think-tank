@@ -237,7 +237,7 @@ public static class ConsoleUi
                 name ?? string.Empty,
                 description ?? string.Empty,
                 ownerId,
-                DateTimeOffset.UtcNow,
+                AtlasTime.UtcNow,
                 autoPluralize);
 
             nodeTypes.Save(nodeType);

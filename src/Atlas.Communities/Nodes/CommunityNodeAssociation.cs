@@ -12,6 +12,7 @@ public sealed record CommunityNodeAssociation
 
     public CommunityNodeAssociation(CommunityId communityId, Guid nodeId, Guid associatedByParticipantId, DateTimeOffset associatedAt)
     {
+        if (communityId.Value == Guid.Empty) throw new ArgumentException("A community ID is required.", nameof(communityId));
         if (nodeId == Guid.Empty) throw new ArgumentException("A node ID is required.", nameof(nodeId));
         if (associatedByParticipantId == Guid.Empty) throw new ArgumentException("An associating participant is required.", nameof(associatedByParticipantId));
         CommunityId = communityId;

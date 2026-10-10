@@ -58,17 +58,19 @@ public sealed class NodeReaction
             throw new ArgumentException("Removed state and removal time must agree.");
         }
 
+        ArgumentNullException.ThrowIfNull(auditHistory);
+        if (removedAt < createdAt) throw new ArgumentException("Removal cannot precede creation.");
         Id = id;
         NodeId = nodeId;
         ReactionDefinitionId = tagDefinitionId;
         AppliedByParticipantId = appliedByParticipantId;
         LifecycleState = lifecycleState;
         Disposition = disposition;
-        CreatedAt = createdAt;
-        RemovedAt = removedAt;
+        CreatedAt = createdAt.ToUniversalTime();
+        RemovedAt = removedAt?.ToUniversalTime();
         _auditHistory = auditHistory.ToList();
 
-        if (_auditHistory.Any(entry => entry.OccurredAt < CreatedAt))
+        if (_auditHistory.Any(entry => entry is null || entry.OccurredAt < CreatedAt))
         {
             throw new ArgumentException(
                 "Audit entries cannot precede node-reaction creation.",
@@ -108,6 +110,7 @@ public sealed class NodeReaction
         Guid nodeAuthorParticipantId,
         DateTimeOffset createdAt)
     {
+        if (nodeAuthorParticipantId == Guid.Empty) throw new ArgumentException("A node author is required.", nameof(nodeAuthorParticipantId));
         var disposition = appliedByParticipantId == nodeAuthorParticipantId
             ? NodeReactionDisposition.Endorsed
             : NodeReactionDisposition.Community;
@@ -189,20 +192,16 @@ public sealed class NodeReaction
 
         EnsureAuditTime(removedAt, nameof(removedAt));
 
-        LifecycleState = actorIsModerator
-            ? NodeReactionLifecycleState.AdministrativelyRemoved
-            : NodeReactionLifecycleState.Withdrawn;
-        RemovedAt = removedAt;
-
-        _auditHistory.Add(
-            new NodeReactionAuditEntry(
+        var lifecycle = actorIsModerator ? NodeReactionLifecycleState.AdministrativelyRemoved : NodeReactionLifecycleState.Withdrawn;
+        var audit = new NodeReactionAuditEntry(
                 actorIsModerator
                     ? NodeReactionAuditAction.AdministrativelyRemoved
                     : NodeReactionAuditAction.Withdrawn,
                 actorParticipantId,
-                removedAt,
-                LifecycleState,
-                Disposition));
+                removedAt, lifecycle, Disposition);
+        LifecycleState = lifecycle;
+        RemovedAt = removedAt.ToUniversalTime();
+        _auditHistory.Add(audit);
     }
 
     /// <summary>Records the node author's presentation decision without erasing the association.</summary>
@@ -214,6 +213,7 @@ public sealed class NodeReaction
     {
         if (!Enum.IsDefined(disposition)) throw new ArgumentOutOfRangeException(nameof(disposition));
 
+        if (actorParticipantId == Guid.Empty || nodeAuthorParticipantId == Guid.Empty) throw new ArgumentException("Actor and node author are required.");
         if (actorParticipantId != nodeAuthorParticipantId)
         {
             throw new UnauthorizedAccessException("Only the node author may change tag disposition.");
@@ -230,14 +230,14 @@ public sealed class NodeReaction
         }
 
         EnsureAuditTime(changedAt, nameof(changedAt));
-        Disposition = disposition;
-        _auditHistory.Add(
-            new NodeReactionAuditEntry(
+        var audit = new NodeReactionAuditEntry(
                 NodeReactionAuditAction.DispositionChanged,
                 actorParticipantId,
                 changedAt,
                 LifecycleState,
-                Disposition));
+                disposition);
+        Disposition = disposition;
+        _auditHistory.Add(audit);
     }
 
     /// <summary>Marks this association as replaced while preserving its audit record.</summary>
@@ -248,16 +248,13 @@ public sealed class NodeReaction
     {
         EnsureAuditTime(supersededAt, nameof(supersededAt));
 
+        if (IsRemoved) throw new InvalidOperationException("Only an active reaction can be superseded.");
+        if (replacementNodeReactionId == Id) throw new ArgumentException("A reaction cannot replace itself.");
+        var audit = new NodeReactionAuditEntry(NodeReactionAuditAction.Superseded,
+            actorParticipantId, supersededAt, NodeReactionLifecycleState.Superseded, Disposition, replacementNodeReactionId);
         LifecycleState = NodeReactionLifecycleState.Superseded;
-        RemovedAt = supersededAt;
-        _auditHistory.Add(
-            new NodeReactionAuditEntry(
-                NodeReactionAuditAction.Superseded,
-                actorParticipantId,
-                supersededAt,
-                LifecycleState,
-                Disposition,
-                replacementNodeReactionId));
+        RemovedAt = supersededAt.ToUniversalTime();
+        _auditHistory.Add(audit);
     }
 
     /// <summary>Checks removal authority without changing the association.</summary>
@@ -267,6 +264,7 @@ public sealed class NodeReaction
         bool actorIsActive,
         bool actorIsModerator)
     {
+        if (actorParticipantId == Guid.Empty || nodeAuthorParticipantId == Guid.Empty) throw new ArgumentException("Actor and node author are required.");
         if (!actorIsActive)
         {
             throw new InvalidOperationException("An inactive participant cannot change node reactions.");

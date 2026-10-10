@@ -30,8 +30,8 @@ public sealed class Participant
         DisplayName = ValidateDisplayName(displayName);
         Bio = ValidateBio(bio);
         IsActive = true;
-        CreatedAt = createdAt;
-        UpdatedAt = createdAt;
+        CreatedAt = createdAt.ToUniversalTime();
+        UpdatedAt = createdAt.ToUniversalTime();
     }
 
     /// <summary>Creates a validated participant instance.</summary>
@@ -43,6 +43,8 @@ public sealed class Participant
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt)
     {
+        ArgumentNullException.ThrowIfNull(id);
+        if (id.Value == Guid.Empty) throw new ArgumentException("A participant ID is required.", nameof(id));
         if (updatedAt < createdAt)
         {
             throw new ArgumentException(
@@ -53,8 +55,8 @@ public sealed class Participant
         DisplayName = ValidateDisplayName(displayName);
         Bio = ValidateBio(bio);
         IsActive = isActive;
-        CreatedAt = createdAt;
-        UpdatedAt = updatedAt;
+        CreatedAt = createdAt.ToUniversalTime();
+        UpdatedAt = updatedAt.ToUniversalTime();
     }
 
     /// <summary>Rebuilds the domain object from persisted state without replaying creation behavior.</summary>
@@ -87,8 +89,9 @@ public sealed class Participant
             return;
         }
 
+        EnsureTime(changedAt);
         DisplayName = validatedName;
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 
     /// <summary>Changes the validated participant biography when the value differs.</summary>
@@ -103,8 +106,9 @@ public sealed class Participant
             return;
         }
 
+        EnsureTime(changedAt);
         Bio = validatedBio;
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 
     /// <summary>Applies an atomic profile update after validating all proposed values.</summary>
@@ -122,9 +126,10 @@ public sealed class Participant
             return;
         }
 
+        EnsureTime(changedAt);
         DisplayName = validatedName;
         Bio = validatedBio;
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 
     /// <summary>Moves the participant into the inactive lifecycle state.</summary>
@@ -135,11 +140,17 @@ public sealed class Participant
             return;
         }
 
+        EnsureTime(deactivatedAt);
         IsActive = false;
-        UpdatedAt = deactivatedAt;
+        UpdatedAt = deactivatedAt.ToUniversalTime();
     }
 
     /// <summary>Validates and normalizes display name.</summary>
+    private void EnsureTime(DateTimeOffset at)
+    {
+        if (at < UpdatedAt) throw new ArgumentException("Change time cannot precede the current update time.", nameof(at));
+    }
+
     private static string ValidateDisplayName(string displayName)
     {
         if (string.IsNullOrWhiteSpace(displayName))

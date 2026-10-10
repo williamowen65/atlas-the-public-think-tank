@@ -47,6 +47,18 @@ internal sealed class SqlTestDatabase : IDisposable
         database.SaveChanges();
         return key;
     }
+    public Guid AddReaction()
+    {
+        var actor = AddParticipant();
+        var node = AddNode();
+        var now = DateTimeOffset.UtcNow;
+        var definitions = new Atlas.ConsoleApp.Storage.SqlReactionDefinitionRepository(Open);
+        var definition = Atlas.Graph.Reactions.ReactionDefinition.Create("Helpful", "👍", "Helpful", actor, now);
+        definitions.Save(definition);
+        var reaction = Atlas.Graph.Reactions.NodeReaction.Create(new Atlas.Graph.Nodes.NodeId(node), definition.Id, actor, actor, now);
+        new Atlas.ConsoleApp.Storage.SqlNodeReactionRepository(Open).Save(reaction);
+        return reaction.Id.Value;
+    }
     public void Dispose()
     {
         using var database = Open();

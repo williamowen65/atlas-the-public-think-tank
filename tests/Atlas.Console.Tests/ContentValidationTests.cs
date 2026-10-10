@@ -9,6 +9,17 @@ public sealed class ContentValidationTests
     private static readonly DateTimeOffset Created = new(2026, 10, 3, 12, 0, 0, TimeSpan.Zero);
 
     [TestMethod]
+    public void NullCompositionIdsAreRejectedBeforeChangingDocument()
+    {
+        Assert.Throws<ArgumentException>(() => new Document([null!], Created));
+        Assert.Throws<ArgumentNullException>(() => Document.Reconstitute(null!, [], Created, Created));
+        var document = new Document([], Created);
+        Assert.Throws<ArgumentNullException>(() => document.AddBlock(null!, Created.AddMinutes(1)));
+        Assert.AreEqual(0, document.BlockIds.Count);
+        Assert.AreEqual(Created, document.UpdatedAt);
+    }
+
+    [TestMethod]
     public void InvalidPayloadDoesNotPartiallyUpdateBlocks()
     {
         var image = new ImageBlock("original", "alt", "caption", Created);

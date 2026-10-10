@@ -63,7 +63,8 @@ namespace Atlas.ConsoleApp.Voting
             if (target is NodeVoteTarget)
             {
                 var node = _nodes.GetById(new NodeId(target.Id));
-                return node?.Status == NodeStatus.Active;
+                return node?.Status == NodeStatus.Active &&
+                    (_nodes is not IReferenceLookup lookup || lookup.IsAvailable("Node", node.Id.Value, true));
             }
 
             if (target is NodeReactionVoteTarget)
@@ -75,7 +76,8 @@ namespace Atlas.ConsoleApp.Voting
                 }
 
                 var node = _nodes.GetById(nodeTag.NodeId);
-                return node?.Status == NodeStatus.Active;
+                return node?.Status == NodeStatus.Active &&
+                    (_nodes is not IReferenceLookup lookup || lookup.IsAvailable("Node", node.Id.Value, true));
             }
 
             return false;

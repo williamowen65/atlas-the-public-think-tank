@@ -95,7 +95,7 @@ public static class CommentCommands
                 target,
                 authenticatedActor.ParticipantId,
                 body,
-                DateTimeOffset.UtcNow); onCreated?.Invoke(created); },
+                AtlasTime.UtcNow); onCreated?.Invoke(created); },
             "Comment added.");
     }
 
@@ -140,7 +140,7 @@ public static class CommentCommands
                     Console.Write("Reply: ");
                     var reply = Console.ReadLine() ?? string.Empty;
                     TryChange(
-                        () => { var created = service.Reply(comment.Id, authenticatedActor.ParticipantId, reply, DateTimeOffset.UtcNow);
+                        () => { var created = service.Reply(comment.Id, authenticatedActor.ParticipantId, reply, AtlasTime.UtcNow);
                             onCreated?.Invoke(created); },
                         "Reply added.");
                     return;
@@ -148,7 +148,7 @@ public static class CommentCommands
                     Console.Write("New comment text: ");
                     var body = Console.ReadLine() ?? string.Empty;
                     TryChange(
-                        () => service.Edit(comment.Id, authenticatedActor.ParticipantId, body, DateTimeOffset.UtcNow),
+                        () => service.Edit(comment.Id, authenticatedActor.ParticipantId, body, AtlasTime.UtcNow),
                         "Comment updated.");
                     return;
                 case "3" when canChange:
@@ -156,7 +156,7 @@ public static class CommentCommands
                     if (string.Equals(Console.ReadLine(), "y", StringComparison.OrdinalIgnoreCase))
                     {
                         TryChange(
-                            () => service.Remove(comment.Id, authenticatedActor.ParticipantId, DateTimeOffset.UtcNow),
+                            () => service.Remove(comment.Id, authenticatedActor.ParticipantId, AtlasTime.UtcNow),
                             "Comment removed.");
                     }
                     return;
