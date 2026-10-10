@@ -70,9 +70,9 @@ sequenceDiagram
     Context-->>Repo: Boolean result
     Repo-->>Guard: Available or unavailable
     alt Available
-        Guard-->>Service: Return; continue validation
+        Guard-->>Service: Return and continue validation
     else Missing or inactive
-        Guard-->>Service: Throw; stop before mutation or saves
+        Guard-->>Service: Throw and stop before mutation or saves
     end
 ```
 
