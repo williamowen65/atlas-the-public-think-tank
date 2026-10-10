@@ -11,6 +11,7 @@ This directory records what Atlas must do, how its boundaries fit together, why 
 | [Testing](testing/TEST-STRATEGY.md) | Test levels, responsibilities, and verification standards |
 | [Glossary](glossary/GLOSSARY.md) | Shared Atlas domain language |
 | [Blackboards](blackboards/README.md) | Exploratory architecture visuals linked to authoritative documentation |
+| [Milestone timeline](ATLAS-MILESTONE-TIMELINE.md) | Editable Excalidraw roadmap of Atlas history, dependencies, resources, and MVP milestones |
 | [Legacy SQL](sql/) | Reference material from the earlier application |
 
 [PTT-94 Identity setup](PTT-94-Identity.md) covers scaffolding the migration and updating your local SQL database.
