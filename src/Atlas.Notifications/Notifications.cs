@@ -68,7 +68,7 @@ public sealed class Notification
     public void MarkRead(DateTimeOffset at)
     {
         if (ReadAt is not null) return;
-        if (at < CreatedAt) throw new ArgumentException("Read time cannot precede creation.");
+        if (at < CreatedAt || at > DismissedAt) throw new ArgumentException("Read time must follow creation and cannot follow dismissal.");
         ReadAt = at.ToUniversalTime();
     }
     public void Dismiss(DateTimeOffset at)
@@ -210,16 +210,22 @@ public sealed class NotificationService(INotificationRepository repository, IEnu
 
     public void MarkRead(Guid recipientId, Guid notificationId)
     {
-        var item = Own(recipientId, notificationId);
-        item.MarkRead(AtlasTime.UtcNow);
-        repository.Save(item);
+        OperationBoundary.Execute(repository, () =>
+        {
+            var item = Own(recipientId, notificationId);
+            item.MarkRead(AtlasTime.UtcNow);
+            repository.Save(item);
+        });
     }
 
     public void Dismiss(Guid recipientId, Guid notificationId)
     {
-        var item = Own(recipientId, notificationId);
-        item.Dismiss(AtlasTime.UtcNow);
-        repository.Save(item);
+        OperationBoundary.Execute(repository, () =>
+        {
+            var item = Own(recipientId, notificationId);
+            item.Dismiss(AtlasTime.UtcNow);
+            repository.Save(item);
+        });
     }
 
     private void EnsureOwner(Guid actorParticipantId, Guid participantId)
