@@ -14,6 +14,8 @@ Review public constructors, reconstitution paths, mutation methods, services, Co
 
 The traceability unit is **expectation → owning enforcement → test or inspected code → fix or follow-up**. Existing tests are reused rather than duplicated. A test filename below identifies an evidence source, not proof of every possible input combination.
 
+For column meanings, reference validity and trust between layers, see [Reading the inventory](DOMAIN-REVIEW.md#reading-the-inventory).
+
 ## Layer responsibilities
 
 | Layer | Responsibility |
@@ -30,13 +32,13 @@ A successful constructor check is insufficient for a record-struct ID: `default(
 
 | Finding | Change | Regression evidence |
 |---|---|---|
-| Block updates assigned fields before validating later fields/time | All six block types validate proposed payload into locals, validate time, then assign | `ContentValidationTests.InvalidPayloadDoesNotPartiallyUpdateBlocks` and `StaleTimeDoesNotChangeAnyBlockPayload` |
-| Block time could move backward after a previous edit | Compare against current `UpdatedAt`; equal timestamps remain accepted | `ContentValidationTests.StaleTimeDoesNotChangeAnyBlockPayload` |
-| Composition mutated before a stale timestamp failed | Add/move/remove validate time before changing the list | `ContentValidationTests.StaleTimeDoesNotChangeDocumentComposition` |
-| `NaN` escaped rating-range comparisons | Reject all non-finite Discovery rating bounds before reading candidates | `DiscoveryServiceTests.DiscoverRejectsNonFiniteBoundsBeforeReadingCandidates` |
-| Undefined lifecycle/disposition enum integers were accepted | Reject undefined Node, Community, Comment and reaction/audit enums at relevant domain entry points | Graph, Communities and Comments `ValidationTests` |
-| Decided moderation records could have no decision timestamp or an oversized rationale | Reconstitution now requires time and the same 2,000-character normalized rationale bound as decisions | Moderation `ValidationTests.DecidedCaseRequiresDecisionTimeAndBoundedRationale` |
-| Communities tests were absent from the rewrite CI matrix | Add the existing test project to CI | `.github/workflows/AtlasRewriteTests.yml` |
+| Block updates assigned fields before validating later fields/time | All six block types validate proposed payload into locals, validate time, then assign | [ContentValidationTests.InvalidPayloadDoesNotPartiallyUpdateBlocks](../../../tests/Atlas.Console.Tests/ContentValidationTests.cs) and [StaleTimeDoesNotChangeAnyBlockPayload](../../../tests/Atlas.Console.Tests/ContentValidationTests.cs) |
+| Block time could move backward after a previous edit | Compare against current [UpdatedAt](../../../src/Atlas.Content/Blocks/ContentBlock.cs); equal timestamps remain accepted | [ContentValidationTests.StaleTimeDoesNotChangeAnyBlockPayload](../../../tests/Atlas.Console.Tests/ContentValidationTests.cs) |
+| Composition mutated before a stale timestamp failed | Add/move/remove validate time before changing the list | [ContentValidationTests.StaleTimeDoesNotChangeDocumentComposition](../../../tests/Atlas.Console.Tests/ContentValidationTests.cs) |
+| `NaN` escaped rating-range comparisons | Reject all non-finite Discovery rating bounds before reading candidates | [DiscoveryServiceTests.DiscoverRejectsNonFiniteBoundsBeforeReadingCandidates](../../../tests/Atlas.Discovery.Tests/DiscoveryServiceTests.cs) |
+| Undefined lifecycle/disposition enum integers were accepted | Reject undefined Node, Community, Comment and reaction/audit enums at relevant domain entry points | [Graph ValidationTests](../../../tests/Atlas.Graph.Tests/ValidationTests.cs), [Communities ValidationTests](../../../tests/Atlas.Communities.Tests/ValidationTests.cs) and [Comments ValidationTests](../../../tests/Atlas.Comments.Tests/ValidationTests.cs) |
+| Decided moderation records could have no decision timestamp or an oversized rationale | Reconstitution now requires time and the same 2,000-character normalized rationale bound as decisions | [ValidationTests.DecidedCaseRequiresDecisionTimeAndBoundedRationale](../../../tests/Atlas.Moderation.Tests/ValidationTests.cs) |
+| Communities tests were absent from the rewrite CI matrix | Add the existing test project to CI | [.github/workflows/AtlasRewriteTests.yml](../../../.github/workflows/AtlasRewriteTests.yml) |
 
 No EF model or migration changes are required by this slice.
 
