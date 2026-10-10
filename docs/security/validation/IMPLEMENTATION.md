@@ -76,7 +76,7 @@ sequenceDiagram
     end
 ```
 
-The caller chooses the policy; `SqlRepository.IsAvailable` is the central implementation of the **reference availability facts**, rather than all validation. With `requireActive: true` (the helper's default), Participants must be active, NodeTypes unarchived, Communities active, and Nodes active and not currently hidden by moderation. An active reaction also needs an available parent Node. Documents and Blocks currently have only an existence check. With `requireActive: false`, these branches check existence while allowing historical/inactive references. Unsupported kinds return `false`.
+The caller chooses the policy; `SqlRepository.IsAvailable` is the central implementation of the **reference availability facts**, rather than all validation. With `requireActive: true` (the helper's default), Participants must be active, NodeTypes unarchived, Communities active, and Nodes active and not currently hidden by moderation. An active reaction also needs an available parent Node. Documents and Blocks currently have only an existence check. With `requireActive: false`, these branches check existence while allowing references to records that are now inactive, archived or hidden. Unsupported kinds return `false`.
 
 The current wiring passes the repository object into the helper and discovers its lookup capability at runtime; the individual domain repository interfaces do not themselves require `IReferenceLookup`. Test adapters that exercise these services must explicitly implement that capability too. If another backend replaces SQL, it must provide equivalent facts and policy behavior.
 
@@ -91,13 +91,28 @@ SQL foreign keys remain the final protection for mapped relationships. A success
 | Operation | Enforced policy |
 |---|---|
 | Create Node | Active author, existing description document and blocks, existing unarchived selected/requested types, active and publicly available parent |
-| Change/request Node types | Resolve new types before changing the aggregate; preserve unchanged historical references |
+| Change/request Node types | Resolve new types before changing the aggregate; preserve existing type references that are not being changed |
 | Attach parent | Active, publicly available child/parent and active actor; check full ancestry and detect stale loaded relationship state before mutation |
 | Create/join/associate Community | Active owner/participant and active community; associations require an active, publicly available Node. Leaving/removing retains history. |
 | Add/edit/reply Comment | Active actor and available Node; reject unsupported target kinds. Replies inherit their parent's target and cannot predate it. Removed ancestors may receive replies, preserving the existing thread policy. |
 | Cast/change Vote | Active participant; target kind must resolve to an active, publicly available Node or an active reaction on such a Node |
 | Notification request | Active actor/recipient and supported kind/Node subject; discussion requires an available Node, moderation may refer to a hidden Node. Validate before duplicate/self shortcuts. |
-| Historical updates | Existing references may remain when their participant/type/parent later becomes inactive; creation and new relationships require availability. SQL FKs retain mapped existence protection. |
+| Preserving existing references | Existing references may remain when their participant/type/parent later becomes inactive; creation and new relationships require availability. SQL FKs retain mapped existence protection. |
+
+
+### Preserving existing references
+
+An **existing reference** is a stored relationship that remains after the referenced record becomes unavailable for new operations. This does not mean database version history or a saved copy of an earlier record.
+
+For example:
+
+- A node keeps its author ID after the author's account is deactivated.
+- A node keeps its existing type ID after that type is archived; assigning a different type requires an available type.
+- Hiding a parent node does not delete its stored parent/child relationships or its subtree.
+
+**Existence** means the referenced record is still present; mapped SQL foreign keys enforce this. **Availability** adds operation-specific requirements, such as being active and not hidden. Preserve unchanged references during an otherwise permitted update, but check availability when creating or changing a relationship.
+
+Keeping a relationship stored does not grant access to hidden content. Visibility and authorization still apply.
 
 [NodeRelationshipService](../../../src/Atlas.Graph/Nodes/NodeRelationshipService.cs) validates relationships and type proposals before mutation. [GraphRelationshipValidation](../../../src/Atlas.Graph/Nodes/GraphRelationshipValidation.cs) traverses ancestry to reject direct/transitive cycles and missing parents, while allowing several parents and shared ancestors. [SqlNodeRepository](../../../src/Atlas.Console/Storage/SqlNodeRepository.cs) repeats graph/reference checks at the write boundary.
 
