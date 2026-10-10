@@ -26,7 +26,13 @@ For column meanings, reference validity and trust between layers, see [Reading t
 | SQL / EF | Parameterize values; enforce mapped FK and unique constraints as a final integrity check. A FK proves existence, not authorization or active status. |
 | Future browser / URL fetcher | Safely render Markdown and other stored text; enforce a URL-fetch policy if remote previews are introduced. These are separate from SQL safety. |
 
-A successful constructor check is insufficient for a record-struct ID: `default(T)` bypasses its constructor. Nullable reference objects can also be passed at runtime despite nullable annotations. Reconstitution is a validation entry point, not an exemption for database data.
+Domain entry points still need checks because:
+
+- **Default IDs:** `default(NodeId)` creates a struct without running its validating constructor, so its GUID can be empty.
+- **Null objects:** Nullable annotations produce compiler warnings; they do not prevent a caller from passing null at runtime.
+- **Saved data:** Reconstitution rebuilds an object from stored values. Those values must satisfy domain rules too; SQL constraints do not enforce every rule.
+
+These local-value and state-consistency gaps are tracked in [PTT-128](https://thepublicthinktank.atlassian.net/browse/PTT-128).
 
 ## Changes in this slice
 
