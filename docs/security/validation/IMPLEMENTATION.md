@@ -23,7 +23,70 @@ The application supplies time to domain methods so tests and reconstitution can 
 
 ## References and relationships — PTT-129
 
-[IReferenceLookup](../../../src/Atlas.Contracts/Operations/ReferenceValidation.cs) supplies existence/activity facts through a backend port. Missing adapters fail explicitly. [SQL repositories](../../../src/Atlas.Console/Storage/SqlRepository.cs) implement the port; aggregates do not query another domain's database. These facts complement authentication and authorization and do not replace them.
+A reference check asks: **“Does this ID identify a record of the expected kind, and is that record available for this operation?”** The application decides which references it needs; the host's lookup implementation answers using stored facts. This is one part of validation. Aggregate value/history checks, authorization and graph ancestry checks still have their own owners.
+
+### How the pieces fit together
+
+| Piece | Responsibility | Where to read it |
+|---|---|---|
+| `IReferenceLookup` | Defines the question an adapter must answer: `IsAvailable(kind, id, requireActive)` returns a boolean. The interface contains no database queries. | [Contracts: ReferenceValidation.cs](../../../src/Atlas.Contracts/Operations/ReferenceValidation.cs) |
+| `ReferenceValidation.Require` | Rejects an empty ID, checks that the supplied adapter implements the contract, calls `IsAvailable`, and throws if the reference is unavailable. It turns a boolean answer into an enforced precondition. | [Contracts: ReferenceValidation.cs](../../../src/Atlas.Contracts/Operations/ReferenceValidation.cs) |
+| Application service | Chooses the required references and whether availability or existence alone is needed, then calls `Require` before changing state or saving. | [NodeCreationService](../../../src/Atlas.Console/NodeCreationService.cs), [CommunityService](../../../src/Atlas.Communities/Communities/CommunityService.cs) |
+| `SqlRepository` | Implements the lookup once in the host's storage layer. Its `kind` switch selects EF queries for Participants, Nodes, Documents, Blocks, NodeTypes, Communities or NodeReactions. | [Console storage: SqlRepository](../../../src/Atlas.Console/Storage/SqlRepository.cs) |
+| Concrete SQL repository | Supplies its domain's persistence operations and inherits the shared lookup implementation. It does not need to repeat `IsAvailable`. | [SqlNodeRepository](../../../src/Atlas.Console/Storage/SqlNodeRepository.cs), [SqlCommunityRepository](../../../src/Atlas.Console/Storage/SqlCommunityRepository.cs) |
+| Database context | Provides access to the mapped tables in the shared Atlas database. The SQL lookup uses these tables directly through EF. | [AtlasDataContext](../../../src/Atlas.Persistence/AtlasDataContext.cs) |
+
+**The contract is a capability; inheritance is how the current SQL adapter provides it.** For example, `SqlNodeRepository` inherits from `SqlRepository`, which implements `IReferenceLookup`. A `SqlNodeRepository` instance therefore supports both `INodeRepository` and `IReferenceLookup`.
+
+This code lives in the Console project because Console is the current host/composition layer. “Host” means the backend that wires services to adapters, not a browser or form. A future REST host can provide the same capability without putting SQL queries into domain aggregates.
+
+### Follow one call: validate a Node's author
+
+[NodeCreationService.Create](../../../src/Atlas.Console/NodeCreationService.cs) receives `nodes` as an `INodeRepository`. In the SQL-backed host, the actual object is a `SqlNodeRepository`. It calls:
+
+```csharp
+ReferenceValidation.Require(nodes, "Participant", authorId);
+```
+
+1. **The helper checks the input and capability.** An empty `authorId` is rejected immediately. Although the parameter's declared type is `INodeRepository`, the runtime object also implements `IReferenceLookup` through its base class. `Require` checks for that interface; an adapter without it fails explicitly.
+2. **The same repository instance answers the lookup.** `Require` calls its inherited `IsAvailable("Participant", authorId, true)`. There is no separate lookup object created and no call to `SqlParticipantRepository` here.
+3. **The shared implementation queries the appropriate table.** The `"Participant"` branch asks EF whether `ParticipantRows` contains that ID with `IsActive == true`. A Node repository can answer this cross-domain question because its shared base implementation has access to the common Atlas database context.
+4. **The answer controls continuation.** `false` causes `Require` to throw before Node construction or writes. `true` lets the service proceed to its other reference checks and local aggregate validation. It does not establish that the caller is authenticated or authorized.
+
+```mermaid
+sequenceDiagram
+    participant Service as NodeCreationService
+    participant Guard as ReferenceValidation
+    participant Repo as SqlNodeRepository
+    participant Context as AtlasDataContext
+    participant DB as SQL Server
+    Service->>Guard: Require(nodes, Participant, authorId)
+    Guard->>Guard: Check nonempty ID and IReferenceLookup
+    Guard->>Repo: IsAvailable(Participant, authorId, true)
+    Note over Repo: Inherited from SqlRepository
+    Repo->>Context: Query ParticipantRows for active author
+    Context->>DB: Execute parameterized existence query
+    DB-->>Context: Match or no match
+    Context-->>Repo: Boolean result
+    Repo-->>Guard: Available or unavailable
+    alt Available
+        Guard-->>Service: Return; continue validation
+    else Missing or inactive
+        Guard-->>Service: Throw; stop before mutation or saves
+    end
+```
+
+The caller chooses the policy; `SqlRepository.IsAvailable` is the central implementation of the **reference availability facts**, rather than all validation. With `requireActive: true` (the helper's default), Participants must be active, NodeTypes unarchived, Communities active, and Nodes active and not currently hidden by moderation. An active reaction also needs an available parent Node. Documents and Blocks currently have only an existence check. With `requireActive: false`, these branches check existence while allowing historical/inactive references. Unsupported kinds return `false`.
+
+The current wiring passes the repository object into the helper and discovers its lookup capability at runtime; the individual domain repository interfaces do not themselves require `IReferenceLookup`. Test adapters that exercise these services must explicitly implement that capability too. If another backend replaces SQL, it must provide equivalent facts and policy behavior.
+
+### How reference checks connect to saving
+
+The [operation boundary](../../../src/Atlas.Contracts/Operations/OperationBoundary.cs) starts the SQL transaction before these service checks. [SqlOperationBoundary](../../../src/Atlas.Console/Storage/SqlOperationBoundary.cs) lets the lookup and subsequent repository saves reuse that operation's database context. Node creation validates the author/types/optional parent, constructs valid local objects, then saves the block, document and Node. [SqlDocumentRepository](../../../src/Atlas.Console/Storage/SqlDocumentRepository.cs) verifies block references, and [SqlNodeRepository.Save](../../../src/Atlas.Console/Storage/SqlNodeRepository.cs) repeats its reference and ancestry checks before the Node write. Those save-boundary checks also protect callers using the repository directly.
+
+SQL foreign keys remain the final protection for mapped relationships. A successful lookup does not replace those constraints, authorize an actor, or detect a transitive graph cycle. The graph traversal described below handles ancestry; the transaction and competing-write protection are covered under [PTT-130](#complete-operations--ptt-130).
+
+### Policies by operation
 
 | Operation | Enforced policy |
 |---|---|
