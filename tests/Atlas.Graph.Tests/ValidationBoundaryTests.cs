@@ -25,6 +25,18 @@ public sealed class ValidationBoundaryTests
     }
 
     [TestMethod]
+    public void RestoredNodeTypesRequireIdentityOwnerAndChronologicalHistory()
+    {
+        Assert.Throws<ArgumentException>(() => NodeTypeDefinition.Reconstitute(default, "Idea", "", null, true, false, Now, Now));
+        Assert.Throws<ArgumentException>(() => NodeTypeDefinition.Reconstitute(NodeTypeId.New(), "Idea", "", null, false, false, Now, Now));
+        Assert.Throws<ArgumentException>(() => NodeTypeDefinition.Reconstitute(NodeTypeId.New(), "Idea", "", "owner", true, false, Now, Now));
+        var type = NodeTypeDefinition.CreateCustom("Idea", "", "owner", Now);
+        Assert.Throws<ArgumentException>(() => type.Rename("Changed", "owner", false, Now.AddMinutes(-1)));
+        Assert.AreEqual("Idea", type.Name);
+        Assert.AreEqual(Now, type.UpdatedAt);
+    }
+
+    [TestMethod]
     public void EarlierMutationLeavesValuesCollectionsAndEventsUnchanged()
     {
         var node = NodeTestFactory.Create(createdAt: Now);
@@ -50,6 +62,17 @@ public sealed class ValidationBoundaryTests
         Assert.Throws<ArgumentException>(() => reaction.Remove(actor, actor, true, false, Now.AddMinutes(-1)));
         Assert.AreEqual(NodeReactionLifecycleState.Active, reaction.LifecycleState);
         CollectionAssert.AreEqual(history, reaction.AuditHistory.ToArray());
+    }
+
+    [TestMethod]
+    public void RestoredReactionRemovalMustAgreeWithAuditTime()
+    {
+        var actor = Guid.NewGuid();
+        var history = new NodeReactionAuditEntry(NodeReactionAuditAction.Withdrawn, actor,
+            Now.AddMinutes(1), NodeReactionLifecycleState.Withdrawn, NodeReactionDisposition.Community);
+        Assert.Throws<ArgumentException>(() => NodeReaction.Reconstitute(NodeReactionId.New(), NodeId.New(),
+            ReactionDefinitionId.New(), actor, NodeReactionLifecycleState.Withdrawn, NodeReactionDisposition.Community,
+            Now, Now.AddMinutes(2), [history]));
     }
 
     [TestMethod]

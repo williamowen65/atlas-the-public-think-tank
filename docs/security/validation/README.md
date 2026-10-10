@@ -32,7 +32,7 @@ Domain entry points still need checks because:
 - **Null objects:** Nullable annotations produce compiler warnings; they do not prevent a caller from passing null at runtime.
 - **Saved data:** Reconstitution rebuilds an object from stored values. Those values must satisfy domain rules too; SQL constraints do not enforce every rule.
 
-These local-value and state-consistency gaps are tracked in [PTT-128](https://thepublicthinktank.atlassian.net/browse/PTT-128).
+These local-value and state-consistency changes are implemented in this PR and tracked by [PTT-128](https://thepublicthinktank.atlassian.net/browse/PTT-128).
 
 ## Changes in this slice
 
@@ -48,13 +48,22 @@ These local-value and state-consistency gaps are tracked in [PTT-128](https://th
 
 No EF model or migration changes are required by this slice.
 
+## Follow-ups included in this PR
+
+The three follow-up cards are now part of PR #337 on the PTT-121 branch:
+
+| Tracking | What to review | Evidence and policies |
+|---|---|---|
+| [PTT-128](https://thepublicthinktank.atlassian.net/browse/PTT-128) | Default/null guards, chronological changes, restored-state consistency and a shared UTC clock | [Local values and history](IMPLEMENTATION.md#local-values-and-history--ptt-128) |
+| [PTT-129](https://thepublicthinktank.atlassian.net/browse/PTT-129) | Backend reference availability, graph ancestry, target kinds and notification shortcuts | [References and relationships](IMPLEMENTATION.md#references-and-relationships--ptt-129) |
+| [PTT-130](https://thepublicthinktank.atlassian.net/browse/PTT-130) | Shared SQL transactions, rollback, competing writes and useful conflict errors | [Complete operations](IMPLEMENTATION.md#complete-operations--ptt-130) |
+
+Start with the [implementation overview](IMPLEMENTATION.md), then use the domain tables for individual rules. The overview names test scenarios and explains the transaction/clock policies and limits.
+
 ## Remaining work
 
 | Work | Tracking |
 |---|---|
-| Required default/null values, timestamp policies, and full restored-state consistency | [PTT-128](https://thepublicthinktank.atlassian.net/browse/PTT-128) |
-| Backend reference availability and transitive graph-cycle checks | [PTT-129](https://thepublicthinktank.atlassian.net/browse/PTT-129) |
-| Atomic coordination of multi-repository writes, failure handling and concurrency | [PTT-130](https://thepublicthinktank.atlassian.net/browse/PTT-130) |
 | Collection sizes, text/resource budgets and query limits | [PTT-122](https://thepublicthinktank.atlassian.net/browse/PTT-122) |
 | Broader failure-path coverage | [PTT-123](https://thepublicthinktank.atlassian.net/browse/PTT-123) |
 | Browser rendering, request validation and any future outbound URL fetcher | [PTT-125](https://thepublicthinktank.atlassian.net/browse/PTT-125) |

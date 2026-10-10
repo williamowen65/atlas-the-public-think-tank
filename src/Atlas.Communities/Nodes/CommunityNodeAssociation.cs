@@ -18,6 +18,6 @@ public sealed record CommunityNodeAssociation
         CommunityId = communityId;
         NodeId = nodeId;
         AssociatedByParticipantId = associatedByParticipantId;
-        AssociatedAt = associatedAt;
+        AssociatedAt = associatedAt.ToUniversalTime();
     }
 }

@@ -93,7 +93,8 @@ public sealed class NodeReaction
             var latestAudit = _auditHistory[^1];
 
             if (latestAudit.LifecycleState != LifecycleState ||
-                latestAudit.Disposition != Disposition)
+                latestAudit.Disposition != Disposition ||
+                (IsRemoved && latestAudit.OccurredAt != RemovedAt))
             {
                 throw new ArgumentException(
                     "The latest audit entry must match the node reaction's current state.",

@@ -105,14 +105,14 @@ public sealed class NotificationPreferences
     {
         if (!Enum.IsDefined(category) || (channel is { } value && !Enum.IsDefined(value))) throw new ArgumentException("Unsupported preference category/channel.");
         return (category, channel) switch
-    {
-        (NotificationCategory.Discussion, null) => DiscussionInApp,
-        (NotificationCategory.Moderation, null) => ModerationInApp,
-        (NotificationCategory.Discussion, DeliveryChannel.Email) => DiscussionEmail,
-        (NotificationCategory.Moderation, DeliveryChannel.Email) => ModerationEmail,
-        (NotificationCategory.Discussion, DeliveryChannel.Push) => DiscussionPush,
-        (NotificationCategory.Moderation, DeliveryChannel.Push) => ModerationPush,
-        _ => false
+        {
+            (NotificationCategory.Discussion, null) => DiscussionInApp,
+            (NotificationCategory.Moderation, null) => ModerationInApp,
+            (NotificationCategory.Discussion, DeliveryChannel.Email) => DiscussionEmail,
+            (NotificationCategory.Moderation, DeliveryChannel.Email) => ModerationEmail,
+            (NotificationCategory.Discussion, DeliveryChannel.Push) => DiscussionPush,
+            (NotificationCategory.Moderation, DeliveryChannel.Push) => ModerationPush,
+            _ => false
         };
     }
 }
@@ -146,26 +146,26 @@ public sealed class NotificationService(INotificationRepository repository, IEnu
     public Notification? Handle(NotificationRequestedV1 request)
     {
         var category = Notification.ValidateRequest(request);
-        ReferenceValidation.Require(repository, "Participant", request.ActorParticipantId);
-        ReferenceValidation.Require(repository, "Participant", request.RecipientParticipantId);
-        // Moderation notifications intentionally refer to hidden nodes; existence is still required.
-        ReferenceValidation.Require(repository, "Node", request.SubjectId, category == NotificationCategory.Discussion);
-        if (request.RecipientParticipantId == request.ActorParticipantId) return null;
         var created = false;
         var item = OperationBoundary.Execute(repository, () =>
         {
-        var existing = repository.FindOccurrence(request.OccurrenceId, request.RecipientParticipantId);
-        if (existing is not null) return existing;
-        var preferences = repository.Preferences(request.RecipientParticipantId);
-        if (!preferences.Enabled(category, null) && !Enum.GetValues<DeliveryChannel>()
-                .Any(channel => preferences.Enabled(category, channel))) return null;
-        var item = new Notification(Guid.NewGuid(), request.OccurrenceId, request.RecipientParticipantId,
-            request.ActorParticipantId, request.Kind, request.SubjectKind, request.SubjectId,
-            category, preferences.Enabled(category, null), request.OccurredAt);
-        // Persist first so an external delivery failure cannot erase the in-app record.
-        repository.Save(item);
-        created = true;
-        return item;
+            ReferenceValidation.Require(repository, "Participant", request.ActorParticipantId);
+            ReferenceValidation.Require(repository, "Participant", request.RecipientParticipantId);
+            // Moderation notifications intentionally refer to hidden nodes; existence is still required.
+            ReferenceValidation.Require(repository, "Node", request.SubjectId, category == NotificationCategory.Discussion);
+            if (request.RecipientParticipantId == request.ActorParticipantId) return null;
+            var existing = repository.FindOccurrence(request.OccurrenceId, request.RecipientParticipantId);
+            if (existing is not null) return existing;
+            var preferences = repository.Preferences(request.RecipientParticipantId);
+            if (!preferences.Enabled(category, null) && !Enum.GetValues<DeliveryChannel>()
+                    .Any(channel => preferences.Enabled(category, channel))) return null;
+            var item = new Notification(Guid.NewGuid(), request.OccurrenceId, request.RecipientParticipantId,
+                request.ActorParticipantId, request.Kind, request.SubjectKind, request.SubjectId,
+                category, preferences.Enabled(category, null), request.OccurredAt);
+            // Persist first so an external delivery failure cannot erase the in-app record.
+            repository.Save(item);
+            created = true;
+            return item;
         });
         if (item is null) return null;
         // Existing notifications are returned without repeating external delivery.

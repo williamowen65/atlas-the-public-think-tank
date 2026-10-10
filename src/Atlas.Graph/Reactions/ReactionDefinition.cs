@@ -122,7 +122,7 @@ public sealed class ReactionDefinition
         }
 
         IsSuppressed = true;
-        UpdatedAt = suppressedAt;
+        UpdatedAt = suppressedAt.ToUniversalTime();
     }
 
     /// <summary>Produces the stable comparison form used for lookup and duplicate detection.</summary>

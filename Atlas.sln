@@ -318,6 +318,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "validation", "validation", "{3DAA8227-4815-4D2B-92F6-37D73AF3AEA4}"
 	ProjectSection(SolutionItems) = preProject
 		docs\security\validation\DOMAIN-REVIEW.md = docs\security\validation\DOMAIN-REVIEW.md
+		docs\security\validation\IMPLEMENTATION.md = docs\security\validation\IMPLEMENTATION.md
 		docs\security\validation\PERSISTENCE.md = docs\security\validation\PERSISTENCE.md
 		docs\security\validation\README.md = docs\security\validation\README.md
 	EndProjectSection

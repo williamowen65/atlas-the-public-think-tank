@@ -16,6 +16,12 @@ public static class AtlasTime
 
     private sealed class ClockScope(TimeProvider? previous) : IDisposable
     {
-        public void Dispose() => Current.Value = previous;
+        private bool _disposed;
+        public void Dispose()
+        {
+            if (_disposed) return;
+            Current.Value = previous;
+            _disposed = true;
+        }
     }
 }

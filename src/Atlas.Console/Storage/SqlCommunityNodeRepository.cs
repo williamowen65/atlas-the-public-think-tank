@@ -9,12 +9,17 @@ public sealed class SqlCommunityNodeRepository(Func<AtlasDataContext>? contextFa
 {
     public IReadOnlyCollection<CommunityNodeAssociation> GetByCommunity(CommunityId id) => QueryRows<CommunityNodeRow>(row => row.CommunityId == id.Value).Select(ToDomain).ToList();
     public IReadOnlyCollection<CommunityNodeAssociation> GetByNode(Guid id) => QueryRows<CommunityNodeRow>(row => row.NodeId == id).Select(ToDomain).ToList();
-    public void Add(CommunityNodeAssociation association)
+    public void Add(CommunityNodeAssociation association) => Execute(() =>
     {
-        if (FindRow<CommunityNodeRow>(association.CommunityId.Value, association.NodeId) is not null) return;
+        ArgumentNullException.ThrowIfNull(association);
+        ReferenceValidation.Require(this, "Community", association.CommunityId.Value);
+        ReferenceValidation.Require(this, "Participant", association.AssociatedByParticipantId);
+        ReferenceValidation.Require(this, "Node", association.NodeId);
+        if (FindRow<CommunityNodeRow>(association.CommunityId.Value, association.NodeId) is not null) return true;
         SaveRow(new CommunityNodeRow { CommunityId = association.CommunityId.Value, NodeId = association.NodeId,
             AssociatedByParticipantId = association.AssociatedByParticipantId, AssociatedAt = association.AssociatedAt });
-    }
+        return true;
+    });
     public void Remove(CommunityId communityId, Guid nodeId) => DeleteRow<CommunityNodeRow>(communityId.Value, nodeId);
 
     private static CommunityNodeAssociation ToDomain(CommunityNodeRow x) => new(new CommunityId(x.CommunityId), x.NodeId, x.AssociatedByParticipantId, x.AssociatedAt);

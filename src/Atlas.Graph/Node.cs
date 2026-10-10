@@ -280,7 +280,7 @@ public sealed class Node
 
         EnsureTime(attachedAt);
         _parentNodeIds.Add(parentNodeId);
-        UpdatedAt = attachedAt;
+        UpdatedAt = attachedAt.ToUniversalTime();
 
         _domainEvents.Add(
             new NodeParentAttachedV1(
@@ -307,7 +307,7 @@ public sealed class Node
 
         EnsureTime(detachedAt);
         _parentNodeIds.Remove(parentNodeId);
-        UpdatedAt = detachedAt;
+        UpdatedAt = detachedAt.ToUniversalTime();
 
         _domainEvents.Add(
             new NodeParentDetachedV1(

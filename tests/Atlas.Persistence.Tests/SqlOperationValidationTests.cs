@@ -203,6 +203,69 @@ public sealed class SqlOperationValidationTests
         Assert.AreEqual(0, check.NodeRows.Count()); Assert.AreEqual(0, check.BlockRows.Count()); Assert.AreEqual(0, check.DocumentRows.Count());
     }
 
+    [TestMethod]
+    public void CommunityAndCommentReferencePoliciesRejectInvalidProposals()
+    {
+        using var database = SqlTestDatabase.Create();
+        var actor = database.AddParticipant(); var firstNode = database.AddNode(); var otherNode = database.AddNode();
+        var communities = new SqlCommunityRepository(database.Open);
+        var associations = new SqlCommunityNodeRepository(database.Open);
+        var membership = new SqlCommunityMembershipRepository(database.Open);
+        var service = new CommunityService(communities, membership, associations);
+        Assert.Throws<InvalidOperationException>(() => service.Create("Invalid owner", "", Guid.NewGuid(), Now));
+        var community = service.Create("Community", "", actor, Now);
+        Assert.Throws<InvalidOperationException>(() => service.AssociateNode(community, Guid.NewGuid(), actor, Now));
+        var comments = new SqlCommentRepository(database.Open);
+        var parent = new Atlas.Comments.Comments.Comment(new("Node", firstNode), null, actor, "Parent", Now);
+        comments.Save(parent);
+        Assert.Throws<ArgumentException>(() => comments.Save(new(new("Node", otherNode), parent.Id, actor, "Foreign target", Now.AddMinutes(1))));
+        Assert.Throws<ArgumentException>(() => comments.Save(new(new("Unknown", firstNode), null, actor, "Wrong kind", Now)));
+        Assert.Throws<ArgumentException>(() => comments.Save(new(new("Node", firstNode), parent.Id, actor, "Earlier reply", Now.AddMinutes(-1))));
+        using (var db = database.Open()) { db.ParticipantRows.Single(row => row.Id == actor).IsActive = false; db.SaveChanges(); }
+        Assert.Throws<InvalidOperationException>(() => service.Join(community, actor, Now));
+        Assert.Throws<InvalidOperationException>(() => service.AssociateNode(community, firstNode, actor, Now));
+        using var check = database.Open();
+        Assert.AreEqual(1, check.CommentRows.Count()); Assert.AreEqual(0, check.CommunityNodeRows.Count());
+        Assert.AreEqual(1, check.CommunityMembershipRows.Count());
+    }
+
+    [TestMethod]
+    public void FailedGroupedReviewAndRestorationPreservePersistedHistory()
+    {
+        using var database = SqlTestDatabase.Create();
+        var actor = database.AddParticipant(); var reporter = database.AddParticipant(); var node = database.AddNode();
+        var cases = new SqlModerationCaseRepository(database.Open);
+        var service = new ModerationService(cases, new Moderator(actor));
+        for (var index = 0; index < 2; index++) service.ReportNode(node, reporter, "Title", "spam", null, Now);
+        service.DecideNode(actor, node, ModerationDecision.HideNode, "Reviewed", Now.AddMinutes(1));
+        var failingReview = new ModerationService(new FailingCases(cases), new Moderator(actor));
+        Assert.Throws<InjectedFailure>(() => failingReview.RequestNodeReview(node, reporter, reporter, Now.AddMinutes(2), Now.AddMinutes(3)));
+        Assert.IsTrue(cases.GetAll().All(item => item.ReviewRequestedAt is null && item.IsHidden));
+        service.RequestNodeReview(node, reporter, reporter, Now.AddMinutes(2), Now.AddMinutes(3));
+        var failingRestore = new ModerationService(new FailingCases(cases), new Moderator(actor));
+        Assert.Throws<InjectedFailure>(() => failingRestore.RestoreNode(actor, node, "Restored", Now.AddMinutes(4)));
+        Assert.IsTrue(cases.GetAll().All(item => item.IsHidden && item.VisibilityRestoredAt is null && item.RestoredBy is null));
+        service.RestoreNode(actor, node, "Restored", Now.AddMinutes(4));
+        Assert.IsTrue(cases.GetAll().All(item => !item.IsHidden && item.VisibilityRestoredAt == Now.AddMinutes(4)));
+    }
+
+    [TestMethod]
+    public async Task CompetingNewVotesReturnOneConflictAndLeaveOneRecord()
+    {
+        using var database = SqlTestDatabase.Create();
+        var actor = database.AddParticipant(); var node = database.AddNode();
+        using var start = new ManualResetEventSlim();
+        Task<bool> Save(int value) => Task.Run(() =>
+        {
+            start.Wait();
+            try { new SqlVoteRepository(database.Open).Save(new Vote(new NodeVoteTarget(node), new VotingParticipantId(actor), value)); return true; }
+            catch (OperationConflictException) { return false; }
+        });
+        var one = Save(1); var two = Save(2); start.Set();
+        Assert.AreEqual(1, (await Task.WhenAll(one, two)).Count(result => result));
+        using var check = database.Open(); Assert.AreEqual(1, check.VoteRows.Count());
+    }
+
     private sealed class FixedClock : TimeProvider { public override DateTimeOffset GetUtcNow() => Now; }
 
     private sealed class InjectedFailure : Exception;
