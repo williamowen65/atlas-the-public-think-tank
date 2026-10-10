@@ -1,3 +1,4 @@
+using Atlas.Contracts.Operations;
 using Atlas.Contracts.Notifications.V1;
 using Atlas.Notifications;
 
@@ -105,7 +106,7 @@ public sealed class NotificationFlowTests
         public DeliveryChannel Channel => DeliveryChannel.Email;
         public void Send(Notification item) => throw new InvalidOperationException("simulated outage");
     }
-    private sealed class MemoryNotifications : INotificationRepository, Atlas.Contracts.Operations.IReferenceLookup
+    private sealed class MemoryNotifications : INotificationRepository, IReferenceLookup
     {
         public bool Available { get; set; } = true;
         public bool IsAvailable(string kind, Guid id, bool requireActive) => Available && id != Guid.Empty;

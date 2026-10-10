@@ -1,3 +1,4 @@
+using Atlas.Contracts.Operations;
 using Atlas.Communities.Communities;
 using Atlas.Communities.Memberships;
 using Atlas.Communities.Nodes;
@@ -84,7 +85,7 @@ public sealed class CommunityTests
         Assert.Throws<InvalidOperationException>(() => service.Leave(community, owner, DateTimeOffset.UtcNow));
     }
 
-    private sealed class MemoryCommunities : ICommunityRepository, Atlas.Contracts.Operations.IReferenceLookup
+    private sealed class MemoryCommunities : ICommunityRepository, IReferenceLookup
     {
         public bool IsAvailable(string kind, Guid id, bool requireActive) => id != Guid.Empty;
 

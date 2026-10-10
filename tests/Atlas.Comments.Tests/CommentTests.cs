@@ -1,3 +1,4 @@
+using Atlas.Contracts.Operations;
 using Atlas.Comments.Comments;
 
 namespace Atlas.Comments.Tests;
@@ -107,7 +108,7 @@ public sealed class CommentTests
         public bool IsAvailable(CommentTarget target) => Available;
     }
 
-    private sealed class MemoryRepository : ICommentRepository, Atlas.Contracts.Operations.IReferenceLookup
+    private sealed class MemoryRepository : ICommentRepository, IReferenceLookup
     {
         public bool IsAvailable(string kind, Guid id, bool requireActive) => id != Guid.Empty;
 

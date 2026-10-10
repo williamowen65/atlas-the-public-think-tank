@@ -1,3 +1,4 @@
+using Atlas.Contracts.Operations;
 using Atlas.Discovery;
 
 namespace Atlas.Moderation.Tests;
@@ -134,7 +135,7 @@ public sealed class ModerationWorkflowTests
         public IReadOnlyCollection<DiscoveryCandidate> GetCandidates() => candidates;
     }
 
-    private sealed class Cases : IModerationCaseRepository, Atlas.Contracts.Operations.IReferenceLookup
+    private sealed class Cases : IModerationCaseRepository, IReferenceLookup
     {
         public bool IsAvailable(string kind, Guid id, bool requireActive) => id != Guid.Empty;
 

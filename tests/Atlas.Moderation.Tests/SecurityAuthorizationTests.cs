@@ -1,3 +1,4 @@
+using Atlas.Contracts.Operations;
 namespace Atlas.Moderation.Tests;
 
 /// <summary>Security regression tests for moderator-only operations.</summary>
@@ -30,7 +31,7 @@ public class SecurityAuthorizationTests
         public bool IsAtlasModerator(Guid participantId) => participantId == moderatorId;
     }
 
-    private sealed class CaseRepository : IModerationCaseRepository, Atlas.Contracts.Operations.IReferenceLookup
+    private sealed class CaseRepository : IModerationCaseRepository, IReferenceLookup
     {
         public bool IsAvailable(string kind, Guid id, bool requireActive) => id != Guid.Empty;
 
