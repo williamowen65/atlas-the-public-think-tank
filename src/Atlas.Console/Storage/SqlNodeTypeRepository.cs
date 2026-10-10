@@ -8,7 +8,17 @@ public sealed class SqlNodeTypeRepository(Func<AtlasDataContext>? contextFactory
 {
     public IReadOnlyCollection<NodeTypeDefinition> GetAll() => ReadRows<NodeTypeRow>().Select(ToDomain).ToList();
     public NodeTypeDefinition? GetById(NodeTypeId id) => FindRow<NodeTypeRow>(id.Value) is { } row ? ToDomain(row) : null;
-    public void Save(NodeTypeDefinition nodeType) => SaveRow(ToStorage(nodeType));
+    public void Save(NodeTypeDefinition nodeType) => Execute(() =>
+    {
+        ArgumentNullException.ThrowIfNull(nodeType);
+        if (!nodeType.IsSystemDefined)
+        {
+            if (!Guid.TryParse(nodeType.OwnerId, out var owner)) throw new ArgumentException("A custom type owner must identify a Participant.");
+            ReferenceValidation.Require(this, "Participant", owner, FindRow<NodeTypeRow>(nodeType.Id.Value) is null);
+        }
+        SaveRow(ToStorage(nodeType));
+        return true;
+    });
 
     private static NodeTypeRow ToStorage(
         NodeTypeDefinition nodeType)

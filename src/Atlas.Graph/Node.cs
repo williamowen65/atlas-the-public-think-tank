@@ -54,14 +54,15 @@ public sealed class Node
         IEnumerable<NodeTypeId> requestedSubNodeTypeIds,
         DateTimeOffset createdAt)
     {
+        ValidateValues(title, descriptionId, typeId, authorId);
         Id = NodeId.New();
         Title = title;
         DescriptionId = descriptionId;
         TypeId = typeId;
         AuthorId = authorId;
         Status = NodeStatus.Active;
-        CreatedAt = createdAt;
-        UpdatedAt = createdAt;
+        CreatedAt = createdAt.ToUniversalTime();
+        UpdatedAt = createdAt.ToUniversalTime();
         _requestedSubNodeTypes =
             CreateRequestedSubNodeTypes(requestedSubNodeTypeIds);
         _parentNodeIds = [];
@@ -87,6 +88,10 @@ public sealed class Node
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt)
     {
+        if (id.Value == Guid.Empty) throw new ArgumentException("A node ID is required.", nameof(id));
+        ValidateValues(title, descriptionId, typeId, authorId);
+        if (!Enum.IsDefined(status)) throw new ArgumentOutOfRangeException(nameof(status));
+
         if (updatedAt < createdAt)
         {
             throw new ArgumentException(
@@ -99,8 +104,8 @@ public sealed class Node
         TypeId = typeId;
         AuthorId = authorId;
         Status = status;
-        CreatedAt = createdAt;
-        UpdatedAt = updatedAt;
+        CreatedAt = createdAt.ToUniversalTime();
+        UpdatedAt = updatedAt.ToUniversalTime();
         _requestedSubNodeTypes =
             CreateRequestedSubNodeTypes(requestedSubNodeTypeIds);
         _parentNodeIds = CreateParentNodeIds(parentNodeIds, Id);
@@ -188,14 +193,16 @@ public sealed class Node
         DateTimeOffset changedAt)
     {
         EnsureAuthoredBy(actorParticipantId);
+        ArgumentNullException.ThrowIfNull(newTitle);
 
         if (Title == newTitle)
         {
             return;
         }
 
+        EnsureTime(changedAt);
         Title = newTitle;
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 
     /// <summary>Changes the node type and advances the modification timestamp when the value differs.</summary>
@@ -205,14 +212,16 @@ public sealed class Node
         DateTimeOffset changedAt)
     {
         EnsureAuthoredBy(actorParticipantId);
+        if (newTypeId.Value == Guid.Empty) throw new ArgumentException("A node type is required.", nameof(newTypeId));
 
         if (TypeId == newTypeId)
         {
             return;
         }
 
+        EnsureTime(changedAt);
         TypeId = newTypeId;
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 
     /// <summary>Adds a requested response type when it is not already present.</summary>
@@ -230,8 +239,9 @@ public sealed class Node
             return;
         }
 
+        EnsureTime(changedAt);
         _requestedSubNodeTypes.Add(requestedType);
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 
     /// <summary>Removes a requested response type when it is present.</summary>
@@ -244,12 +254,14 @@ public sealed class Node
 
         var requestedType = new RequestedSubNodeType(typeId);
 
-        if (!_requestedSubNodeTypes.Remove(requestedType))
+        if (!_requestedSubNodeTypes.Contains(requestedType))
         {
             return;
         }
 
-        UpdatedAt = changedAt;
+        EnsureTime(changedAt);
+        _requestedSubNodeTypes.Remove(requestedType);
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 
     /// <summary>Attaches a parent relationship and records the corresponding integration event.</summary>
@@ -266,8 +278,9 @@ public sealed class Node
             return;
         }
 
+        EnsureTime(attachedAt);
         _parentNodeIds.Add(parentNodeId);
-        UpdatedAt = attachedAt;
+        UpdatedAt = attachedAt.ToUniversalTime();
 
         _domainEvents.Add(
             new NodeParentAttachedV1(
@@ -287,12 +300,14 @@ public sealed class Node
         EnsureAuthoredBy(actorParticipantId);
         EnsureValidParentNodeId(parentNodeId, Id);
 
-        if (!_parentNodeIds.Remove(parentNodeId))
+        if (!_parentNodeIds.Contains(parentNodeId))
         {
             return;
         }
 
-        UpdatedAt = detachedAt;
+        EnsureTime(detachedAt);
+        _parentNodeIds.Remove(parentNodeId);
+        UpdatedAt = detachedAt.ToUniversalTime();
 
         _domainEvents.Add(
             new NodeParentDetachedV1(
@@ -315,8 +330,9 @@ public sealed class Node
             return;
         }
 
+        EnsureTime(archivedAt);
         Status = NodeStatus.Archived;
-        UpdatedAt = archivedAt;
+        UpdatedAt = archivedAt.ToUniversalTime();
 
         _domainEvents.Add(
             new NodeArchivedV1(
@@ -338,8 +354,9 @@ public sealed class Node
             return;
         }
 
+        EnsureTime(restoredAt);
         Status = NodeStatus.Active;
-        UpdatedAt = restoredAt;
+        UpdatedAt = restoredAt.ToUniversalTime();
 
         _domainEvents.Add(
             new NodeRestoredV1(
@@ -370,6 +387,19 @@ public sealed class Node
     public void ClearDomainEvents()
     {
         _domainEvents.Clear();
+    }
+
+    private static void ValidateValues(NodeTitle title, NodeDescriptionId descriptionId, NodeTypeId typeId, NodeAuthorId authorId)
+    {
+        ArgumentNullException.ThrowIfNull(title);
+        ArgumentNullException.ThrowIfNull(descriptionId);
+        ArgumentNullException.ThrowIfNull(authorId);
+        if (typeId.Value == Guid.Empty) throw new ArgumentException("A node type is required.", nameof(typeId));
+    }
+
+    private void EnsureTime(DateTimeOffset at)
+    {
+        if (at < UpdatedAt) throw new ArgumentException("Change time cannot precede the current update time.", nameof(at));
     }
 
     private static List<RequestedSubNodeType>

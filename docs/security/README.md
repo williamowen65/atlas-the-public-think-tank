@@ -18,7 +18,7 @@ The structure was established by PTT-97, the pre-UI application security baselin
 | Area | PTT-97 child | Purpose |
 |---|---|---|
 | `authorization/` | PTT-120 | Who may read or change each resource or operation |
-| `validation/` | PTT-121 | Input and domain-boundary validation |
+| [validation/](validation/README.md) | PTT-121 | Input and domain-boundary validation |
 | `resource-limits/` | PTT-122 | Bounds on user-controlled values and structures |
 | `negative-paths/` | PTT-123 | Security-relevant failure and rejection behavior |
 | `abuse-prevention/` | PTT-124 | Rate limiting and repeated-request abuse responsibilities |

@@ -40,11 +40,16 @@ public sealed class ModerationService
     public ModerationCase ReportNode(Guid nodeId, Guid reporterId, string title,
         string reason, string? explanation, DateTimeOffset createdAt)
     {
-        if (Visibility(nodeId).IsHidden)
-            throw new InvalidOperationException("This Node is already hidden by a moderator.");
-        var item = new ModerationCase(nodeId, reporterId, reason, explanation, title, createdAt);
-        _cases.Save(item);
-        return item;
+        return OperationBoundary.Execute(_cases, () =>
+        {
+            ReferenceValidation.Require(_cases, "Participant", reporterId);
+            ReferenceValidation.Require(_cases, "Node", nodeId);
+            if (Visibility(nodeId).IsHidden)
+                throw new InvalidOperationException("This Node is already hidden by a moderator.");
+            var item = new ModerationCase(nodeId, reporterId, reason, explanation, title, createdAt);
+            _cases.Save(item);
+            return item;
+        });
     }
 
     public IReadOnlyCollection<ModerationCase> Queue(Guid actorId)
@@ -89,63 +94,87 @@ public sealed class ModerationService
     public void RequestNodeReview(Guid nodeId, Guid actorId, Guid authorId,
         DateTimeOffset nodeUpdatedAt, DateTimeOffset requestedAt)
     {
-        if (actorId != authorId) throw new UnauthorizedAccessException("Node author required.");
-        var hidden = _cases.GetAll().Where(report => report.NodeId == nodeId && report.IsHidden).ToList();
-        if (hidden.Count == 0 || hidden.Any(report => report.ReviewRequestedAt is not null) ||
-            hidden.Max(report => report.DecidedAt) >= nodeUpdatedAt)
-            throw new InvalidOperationException("Edit the hidden Node before requesting review.");
-        foreach (var report in hidden) { report.RequestReview(requestedAt); _cases.Save(report); }
+        OperationBoundary.Execute(_cases, () =>
+        {
+            ReferenceValidation.Require(_cases, "Participant", actorId);
+            ReferenceValidation.Require(_cases, "Node", nodeId, false);
+            if (actorId == Guid.Empty || authorId == Guid.Empty || nodeId == Guid.Empty) throw new ArgumentException("Node and actor identifiers are required.");
+            if (requestedAt < nodeUpdatedAt) throw new ArgumentException("Review request cannot precede the node edit.");
+            if (actorId != authorId) throw new UnauthorizedAccessException("Node author required.");
+            var hidden = _cases.GetAll().Where(report => report.NodeId == nodeId && report.IsHidden).ToList();
+            if (hidden.Count == 0 || hidden.Any(report => report.ReviewRequestedAt is not null) ||
+                hidden.Max(report => report.DecidedAt) >= nodeUpdatedAt)
+                throw new InvalidOperationException("Edit the hidden Node before requesting review.");
+            foreach (var report in hidden) Copy(report).RequestReview(requestedAt);
+            foreach (var report in hidden) { report.RequestReview(requestedAt); _cases.Save(report); }
+        });
     }
 
     public void RestoreNode(Guid actorId, Guid nodeId, string rationale, DateTimeOffset restoredAt)
     {
-        EnsureModerator(actorId);
-        var hidden = _cases.GetAll().Where(report => report.NodeId == nodeId && report.IsHidden).ToList();
-        if (hidden.Count == 0 || hidden.Any(report => report.ReviewRequestedAt is null))
-            throw new InvalidOperationException("No review request is pending for this Node.");
-        if (string.IsNullOrWhiteSpace(rationale) || rationale.Length > 2000 ||
-            hidden.Any(report => report.ReviewRequestedAt > restoredAt))
-            throw new ArgumentException("A valid restoration rationale and time are required.");
-        foreach (var report in hidden) { report.RestoreVisibility(actorId, rationale, restoredAt); _cases.Save(report); }
+        OperationBoundary.Execute(_cases, () =>
+        {
+            EnsureModerator(actorId);
+            var hidden = _cases.GetAll().Where(report => report.NodeId == nodeId && report.IsHidden).ToList();
+            if (hidden.Count == 0 || hidden.Any(report => report.ReviewRequestedAt is null))
+                throw new InvalidOperationException("No review request is pending for this Node.");
+            if (string.IsNullOrWhiteSpace(rationale) || rationale.Length > 2000 ||
+                hidden.Any(report => report.ReviewRequestedAt > restoredAt))
+                throw new ArgumentException("A valid restoration rationale and time are required.");
+            foreach (var report in hidden) Copy(report).RestoreVisibility(actorId, rationale, restoredAt);
+            foreach (var report in hidden) { report.RestoreVisibility(actorId, rationale, restoredAt); _cases.Save(report); }
+        });
     }
 
     public IReadOnlyList<ModerationCase> DecideNode(Guid actorId, Guid nodeId,
         ModerationDecision decision, string rationale, DateTimeOffset decidedAt,
         PublicModerationReason publicReason = PublicModerationReason.Other)
     {
-        EnsureModerator(actorId);
-        var pending = _cases.GetAll().Where(report => report.NodeId == nodeId &&
-            report.Status == ModerationStatus.Submitted).ToList();
-        if (pending.Count == 0) throw new InvalidOperationException("No pending reports for this Node.");
-        // Validate every case before saving any of the decisions.
-        foreach (var report in pending)
-            ModerationCase.Reconstitute(report.Id, report.NodeId, report.ReporterId, report.Reason,
-                report.Explanation, report.ReportedTitle, report.CreatedAt, report.Status,
-                report.ReviewerId, report.DecisionReason, report.DecidedAt)
-                .Decide(actorId, decision, rationale, decidedAt, publicReason);
-        foreach (var report in pending)
+        return OperationBoundary.Execute(_cases, () =>
         {
-            report.Decide(actorId, decision, rationale, decidedAt, publicReason);
-            _cases.Save(report);
-        }
-        return pending;
+            EnsureModerator(actorId);
+            var pending = _cases.GetAll().Where(report => report.NodeId == nodeId &&
+                report.Status == ModerationStatus.Submitted).ToList();
+            if (pending.Count == 0) throw new InvalidOperationException("No pending reports for this Node.");
+            // Validate every case before saving any of the decisions.
+            foreach (var report in pending)
+                ModerationCase.Reconstitute(report.Id, report.NodeId, report.ReporterId, report.Reason,
+                    report.Explanation, report.ReportedTitle, report.CreatedAt, report.Status,
+                    report.ReviewerId, report.DecisionReason, report.DecidedAt)
+                    .Decide(actorId, decision, rationale, decidedAt, publicReason);
+            foreach (var report in pending)
+            {
+                report.Decide(actorId, decision, rationale, decidedAt, publicReason);
+                _cases.Save(report);
+            }
+            return pending;
+        });
     }
 
     public ModerationCase Decide(Guid actorId, Guid caseId, ModerationDecision decision,
         string rationale, DateTimeOffset decidedAt)
     {
-        EnsureModerator(actorId);
-        var item = _cases.GetById(caseId) ?? throw new KeyNotFoundException("Report not found.");
-        if (item.Status != ModerationStatus.Submitted)
-            throw new InvalidOperationException("Case already decided.");
-        DecideNode(actorId, item.NodeId, decision, rationale, decidedAt);
-        return item;
+        return OperationBoundary.Execute(_cases, () =>
+        {
+            EnsureModerator(actorId);
+            var item = _cases.GetById(caseId) ?? throw new KeyNotFoundException("Report not found.");
+            if (item.Status != ModerationStatus.Submitted)
+                throw new InvalidOperationException("Case already decided.");
+            DecideNode(actorId, item.NodeId, decision, rationale, decidedAt);
+            return item;
+        });
     }
 
     public bool CanModerate(Guid actorId) => _authorization.IsAtlasModerator(actorId);
 
+    private static ModerationCase Copy(ModerationCase item) => ModerationCase.Reconstitute(
+        item.Id, item.NodeId, item.ReporterId, item.Reason, item.Explanation, item.ReportedTitle,
+        item.CreatedAt, item.Status, item.ReviewerId, item.DecisionReason, item.DecidedAt,
+        item.PublicReason, item.ReviewRequestedAt, item.VisibilityRestoredAt, item.RestoredBy, item.RestorationReason);
+
     private void EnsureModerator(Guid actorId)
     {
+        ReferenceValidation.Require(_cases, "Participant", actorId);
         if (!CanModerate(actorId))
             throw new UnauthorizedAccessException("Atlas moderator access required.");
     }

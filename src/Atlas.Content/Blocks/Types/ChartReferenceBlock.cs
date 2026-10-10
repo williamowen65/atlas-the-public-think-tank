@@ -30,9 +30,11 @@ public sealed class ChartReferenceBlock : ContentBlock
 
     public void Update(Guid chartId, string? title, DateTimeOffset changedAt)
     {
-        ChartId = chartId != Guid.Empty ? chartId : throw new ArgumentException("A chart ID is required.", nameof(chartId));
-        Title = Optional(title, 500, nameof(title));
+        var validatedChartId = chartId != Guid.Empty ? chartId : throw new ArgumentException("A chart ID is required.", nameof(chartId));
+        var validatedTitle = Optional(title, 500, nameof(title));
         ChangedAt(changedAt);
+        ChartId = validatedChartId;
+        Title = validatedTitle;
     }
 
     public static ChartReferenceBlock Reconstitute(BlockId id, Guid chartId, string? title, DateTimeOffset createdAt, DateTimeOffset updatedAt) =>

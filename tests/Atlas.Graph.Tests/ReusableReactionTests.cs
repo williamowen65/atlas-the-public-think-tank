@@ -1,3 +1,4 @@
+using Atlas.Contracts.Operations;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Reactions;
 
@@ -112,8 +113,10 @@ public class ReusableReactionTests
         public void Save(ReactionDefinition definition) => _items.Add(definition);
     }
 
-    private sealed class InMemoryNodeReactionRepository : INodeReactionRepository
+    private sealed class InMemoryNodeReactionRepository : INodeReactionRepository, IReferenceLookup
     {
+        public bool IsAvailable(string kind, Guid id, bool requireActive) => id != Guid.Empty;
+
         private readonly List<NodeReaction> _items = [];
         public IReadOnlyCollection<NodeReaction> GetAll() => _items.ToList();
         public NodeReaction? GetById(NodeReactionId id) =>

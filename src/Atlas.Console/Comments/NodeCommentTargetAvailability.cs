@@ -18,6 +18,7 @@ public sealed class NodeCommentTargetAvailability : ICommentTargetAvailability
             return false;
 
         var node = _nodes.GetById(new NodeId(target.Id));
-        return node is not null && node.Status == NodeStatus.Active;
+        return node is not null && node.Status == NodeStatus.Active &&
+            (_nodes is not IReferenceLookup lookup || lookup.IsAvailable("Node", node.Id.Value, true));
     }
 }

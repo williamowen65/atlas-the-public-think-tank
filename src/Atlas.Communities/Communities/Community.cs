@@ -28,11 +28,13 @@ public sealed class Community
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt)
     {
+        if (!Enum.IsDefined(status)) throw new ArgumentOutOfRangeException(nameof(status));
         if (ownerParticipantId == Guid.Empty)
         {
             throw new ArgumentException("A community owner is required.", nameof(ownerParticipantId));
         }
 
+        if (id.Value == Guid.Empty) throw new ArgumentException("A community ID is required.", nameof(id));
         if (updatedAt < createdAt)
         {
             throw new ArgumentException("Updated time cannot precede created time.");
@@ -43,8 +45,8 @@ public sealed class Community
         Description = ValidateDescription(description);
         OwnerParticipantId = ownerParticipantId;
         Status = status;
-        CreatedAt = createdAt;
-        UpdatedAt = updatedAt;
+        CreatedAt = createdAt.ToUniversalTime();
+        UpdatedAt = updatedAt.ToUniversalTime();
     }
 
     public static Community Reconstitute(
@@ -62,8 +64,9 @@ public sealed class Community
         EnsureOwner(actorParticipantId);
         var validated = ValidateName(name);
         if (Name == validated) return;
+        EnsureTime(changedAt);
         Name = validated;
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 
     public void ChangeDescription(Guid actorParticipantId, string description, DateTimeOffset changedAt)
@@ -71,24 +74,32 @@ public sealed class Community
         EnsureOwner(actorParticipantId);
         var validated = ValidateDescription(description);
         if (Description == validated) return;
+        EnsureTime(changedAt);
         Description = validated;
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 
     public void Archive(Guid actorParticipantId, DateTimeOffset changedAt)
     {
         EnsureOwner(actorParticipantId);
         if (Status == CommunityStatus.Archived) return;
+        EnsureTime(changedAt);
         Status = CommunityStatus.Archived;
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 
     public void Restore(Guid actorParticipantId, DateTimeOffset changedAt)
     {
         EnsureOwner(actorParticipantId);
         if (Status == CommunityStatus.Active) return;
+        EnsureTime(changedAt);
         Status = CommunityStatus.Active;
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
+    }
+
+    private void EnsureTime(DateTimeOffset at)
+    {
+        if (at < UpdatedAt) throw new ArgumentException("Change time cannot precede the current update time.", nameof(at));
     }
 
     private void EnsureOwner(Guid actorParticipantId)

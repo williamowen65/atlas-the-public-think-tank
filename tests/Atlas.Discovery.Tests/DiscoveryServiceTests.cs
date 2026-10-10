@@ -226,6 +226,25 @@ public sealed class DiscoveryServiceTests
             service.DiscoverPage(new DiscoveryQuery(Page: 0)));
     }
 
+    [TestMethod]
+    public void DiscoverRejectsNonFiniteBoundsBeforeReadingCandidates()
+    {
+        var service = new DiscoveryService(new RejectReadSource());
+        foreach (var value in new[] { double.NaN, double.PositiveInfinity, double.NegativeInfinity })
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => service.Discover(new DiscoveryQuery(MinimumAverageVote: value)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => service.DiscoverPage(new DiscoveryQuery(MaximumAverageVote: value)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => service.DiscoverAuthored(new DiscoveryQuery(MinimumAverageVote: value), []));
+            Assert.Throws<ArgumentOutOfRangeException>(() => service.DiscoverAuthoredPage(new DiscoveryQuery(MaximumAverageVote: value), []));
+        }
+    }
+
+    private sealed class RejectReadSource : IDiscoveryCandidateSource
+    {
+        public IReadOnlyCollection<DiscoveryCandidate> GetCandidates() =>
+            throw new AssertFailedException("Invalid input must be rejected before querying candidates.");
+    }
+
     private static DiscoveryService Service(params DiscoveryCandidate[] candidates) =>
         new(new MemorySource(candidates));
 

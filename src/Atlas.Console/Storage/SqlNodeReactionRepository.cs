@@ -14,13 +14,20 @@ public sealed class SqlNodeReactionRepository(Func<AtlasDataContext>? contextFac
     public NodeReaction? GetActive(NodeId nodeId, ReactionDefinitionId definitionId) =>
         QueryRows<NodeReactionRow>(row => row.NodeId == nodeId.Value && row.ReactionDefinitionId == definitionId.Value && row.LifecycleState == "Active")
             .Select(ToDomain).SingleOrDefault();
-    public void Save(NodeReaction reaction)
+    public void Save(NodeReaction reaction) => Execute(() =>
     {
+        ArgumentNullException.ThrowIfNull(reaction);
+        var isNew = FindRow<NodeReactionRow>(reaction.Id.Value) is null;
+        ReferenceValidation.Require(this, "Participant", reaction.AppliedByParticipantId, isNew);
+        ReferenceValidation.Require(this, "Node", reaction.NodeId.Value, isNew);
+        var definition = FindRow<ReactionDefinitionRow>(reaction.ReactionDefinitionId.Value);
+        if (definition is null || isNew && definition.IsSuppressed) throw new ArgumentException("Reaction definition is missing or suppressed.");
         if (!reaction.IsRemoved && QueryRows<NodeReactionRow>(row => row.Id != reaction.Id.Value && row.NodeId == reaction.NodeId.Value &&
             row.ReactionDefinitionId == reaction.ReactionDefinitionId.Value && row.LifecycleState == "Active").Any())
             throw new InvalidOperationException("That reaction is already applied to this node.");
         SaveRow(ToStorage(reaction));
-    }
+        return true;
+    });
 
     private static NodeReactionRow ToStorage(NodeReaction nodeTag) => new()
     {

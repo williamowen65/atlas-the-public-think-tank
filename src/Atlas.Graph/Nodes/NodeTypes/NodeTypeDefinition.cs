@@ -1,4 +1,4 @@
-﻿namespace Atlas.Graph.Nodes.NodeTypes;
+namespace Atlas.Graph.Nodes.NodeTypes;
 
 /// <summary>Defines a governed Graph node type, including naming, pluralization, ownership, and lifecycle rules.</summary>
 public sealed class NodeTypeDefinition
@@ -33,6 +33,10 @@ public sealed class NodeTypeDefinition
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt)
     {
+        if (id.Value == Guid.Empty) throw new ArgumentException("A node type ID is required.", nameof(id));
+        if (!isSystemDefined && string.IsNullOrWhiteSpace(ownerId)) throw new ArgumentException("A custom type requires an owner.", nameof(ownerId));
+        if (isSystemDefined && ownerId is not null) throw new ArgumentException("A system type cannot have a custom owner.", nameof(ownerId));
+        if (updatedAt < createdAt) throw new ArgumentException("Update time cannot precede creation.");
         Id = id;
         Name = ValidateName(name);
         Description = ValidateDescription(description);
@@ -40,8 +44,8 @@ public sealed class NodeTypeDefinition
         IsSystemDefined = isSystemDefined;
         IsArchived = isArchived;
         AutoPluralize = autoPluralize;
-        CreatedAt = createdAt;
-        UpdatedAt = updatedAt;
+        CreatedAt = createdAt.ToUniversalTime();
+        UpdatedAt = updatedAt.ToUniversalTime();
     }
 
     /// <summary>Creates custom during the current workflow.</summary>
@@ -136,8 +140,9 @@ public sealed class NodeTypeDefinition
             return;
         }
 
+        if (changedAt < UpdatedAt) throw new ArgumentException("Change time cannot precede the current update time.");
         Name = validatedName;
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 
     /// <summary>Changes the description while enforcing node-type editing rules.</summary>
@@ -157,8 +162,9 @@ public sealed class NodeTypeDefinition
             return;
         }
 
+        if (changedAt < UpdatedAt) throw new ArgumentException("Change time cannot precede the current update time.");
         Description = validatedDescription;
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 
 
@@ -176,8 +182,9 @@ public sealed class NodeTypeDefinition
             return;
         }
 
+        if (changedAt < UpdatedAt) throw new ArgumentException("Change time cannot precede the current update time.");
         AutoPluralize = autoPluralize;
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 
     /// <summary>Moves the aggregate into its archived lifecycle state and records the transition when applicable.</summary>
@@ -193,8 +200,9 @@ public sealed class NodeTypeDefinition
             return;
         }
 
+        if (archivedAt < UpdatedAt) throw new ArgumentException("Change time cannot precede the current update time.");
         IsArchived = true;
-        UpdatedAt = archivedAt;
+        UpdatedAt = archivedAt.ToUniversalTime();
     }
 
     /// <summary>Enforces can edit before the operation continues.</summary>

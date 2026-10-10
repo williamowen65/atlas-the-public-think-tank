@@ -181,7 +181,7 @@ public static class NodeCommands
                     case "4":
                         node.Archive(
                             actorParticipantId,
-                            DateTimeOffset.UtcNow);
+                            AtlasTime.UtcNow);
                         nodes.Save(node);
                         PublishDomainEvents(node, eventPublisher);
                         ConsoleUi.Pause("Node archived and saved.");
@@ -190,7 +190,7 @@ public static class NodeCommands
                     case "5":
                         node.Restore(
                             actorParticipantId,
-                            DateTimeOffset.UtcNow);
+                            AtlasTime.UtcNow);
                         nodes.Save(node);
                         PublishDomainEvents(node, eventPublisher);
                         ConsoleUi.Pause("Node restored and saved.");
@@ -371,7 +371,7 @@ public static class NodeCommands
                             foreach (var block in documents.GetBlocks(document))
                                 if (block.UpdatedAt > latestEdit) latestEdit = block.UpdatedAt;
                         moderation.RequestNodeReview(node.Id.Value, actorParticipantId,
-                            node.AuthorId.Value, latestEdit, DateTimeOffset.UtcNow);
+                            node.AuthorId.Value, latestEdit, AtlasTime.UtcNow);
                         ConsoleUi.Pause("Review requested; the Node remains hidden until a moderator restores it.");
                         break;
 
@@ -415,7 +415,7 @@ public static class NodeCommands
         try
         {
             var item = moderation.ReportNode(node.Id.Value, actorParticipantId,
-                node.Title.Value, reason ?? string.Empty, explanation, DateTimeOffset.UtcNow);
+                node.Title.Value, reason ?? string.Empty, explanation, AtlasTime.UtcNow);
             ConsoleUi.Pause($"Report submitted: {item.Id}");
         }
         catch (Exception error) when (error is ArgumentException or InvalidOperationException)
@@ -871,12 +871,7 @@ public static class NodeCommands
             return;
         }
 
-        node.AttachToParent(
-            parent.Id,
-            actorParticipantId,
-            DateTimeOffset.UtcNow);
-
-        nodes.Save(node);
+        new NodeRelationshipService(nodes).Attach(node, parent.Id, actorParticipantId, AtlasTime.UtcNow);
         PublishDomainEvents(node, eventPublisher);
 
         ConsoleUi.Pause(
@@ -934,7 +929,7 @@ public static class NodeCommands
         node.DetachFromParent(
             parent.Id,
             actorParticipantId,
-            DateTimeOffset.UtcNow);
+            AtlasTime.UtcNow);
 
         nodes.Save(node);
         PublishDomainEvents(node, eventPublisher);
@@ -1000,32 +995,8 @@ public static class NodeCommands
             return;
         }
 
-        var selectedTypeIds = selectedTypes
-            .Select(type => type.Id)
-            .ToHashSet();
-        var changedAt = DateTimeOffset.UtcNow;
-
-        foreach (var existingRequest in
-                 node.RequestedSubNodeTypes.ToList())
-        {
-            if (!selectedTypeIds.Contains(existingRequest.TypeId))
-            {
-                node.StopRequestingSubNodeType(
-                    existingRequest.TypeId,
-                    actorParticipantId,
-                    changedAt);
-            }
-        }
-
-        foreach (var selectedTypeId in selectedTypeIds)
-        {
-            node.RequestSubNodeType(
-                selectedTypeId,
-                actorParticipantId,
-                changedAt);
-        }
-
-        nodes.Save(node);
+        new NodeRelationshipService(nodes).SetRequestedTypes(node,
+            selectedTypes.Select(type => type.Id), actorParticipantId, AtlasTime.UtcNow);
         ConsoleUi.Pause(
             "Requested sub-node types updated and saved.");
     }
@@ -1042,7 +1013,7 @@ public static class NodeCommands
         node.Rename(
             new NodeTitle(title ?? string.Empty),
             actorParticipantId,
-            DateTimeOffset.UtcNow);
+            AtlasTime.UtcNow);
 
         nodes.Save(node);
         ConsoleUi.Pause("Node renamed and saved.");
@@ -1064,12 +1035,7 @@ public static class NodeCommands
             return;
         }
 
-        node.ChangeType(
-            nodeType.Id,
-            actorParticipantId,
-            DateTimeOffset.UtcNow);
-
-        nodes.Save(node);
+        new NodeRelationshipService(nodes).ChangeType(node, nodeType.Id, actorParticipantId, AtlasTime.UtcNow);
 
         ConsoleUi.Pause(
             $"Node type changed to {nodeType.Name} and saved.");
@@ -1164,7 +1130,7 @@ public static class NodeCommands
         }
         else
         {
-            service.AssociateNode(community, node.Id.Value, actorParticipantId, DateTimeOffset.UtcNow);
+            service.AssociateNode(community, node.Id.Value, actorParticipantId, AtlasTime.UtcNow);
             ConsoleUi.Pause($"Added this node to {community.Name}.");
         }
     }

@@ -15,14 +15,14 @@ public sealed class NotificationFlowTests
             var service = new NotificationService(repository, []);
             var recipient = database.AddParticipant();
             var request = new NotificationRequestedV1(Guid.NewGuid(), recipient, database.AddParticipant(),
-                "NodeCommented", "Node", Guid.NewGuid(), DateTimeOffset.UtcNow);
+                "NodeCommented", "Node", database.AddNode(), DateTimeOffset.UtcNow);
             var first = service.Handle(request)!;
             Assert.AreEqual(first.Id, service.Handle(request)!.Id);
             service.MarkRead(recipient, first.Id);
             var reloaded = new SqlNotificationRepository(database.Open).Page(recipient, 0, 10);
             Assert.HasCount(1, reloaded);
             Assert.IsNotNull(reloaded[0].ReadAt);
-            Assert.Throws<UnauthorizedAccessException>(() => service.Dismiss(Guid.NewGuid(), first.Id));
+            Assert.Throws<UnauthorizedAccessException>(() => service.Dismiss(database.AddParticipant(), first.Id));
             service.Dismiss(recipient, first.Id);
             Assert.HasCount(0, repository.Page(recipient, 0, 10));
         
@@ -40,7 +40,7 @@ public sealed class NotificationFlowTests
             repository.SavePreferences(preferences);
             var service = new NotificationService(repository, [new FailingEmail(), new SimulatedDelivery(DeliveryChannel.Push)]);
             var item = service.Handle(new NotificationRequestedV1(Guid.NewGuid(), recipient, database.AddParticipant(),
-                "NodeCommented", "Node", Guid.NewGuid(), DateTimeOffset.UtcNow))!;
+                "NodeCommented", "Node", database.AddNode(), DateTimeOffset.UtcNow))!;
             Assert.HasCount(0, service.Page(recipient, 0, 10));
             Assert.HasCount(1, item.DeliveryAttempts);
             Assert.AreEqual(DeliveryStatus.Failed, item.DeliveryAttempts[0].Status);

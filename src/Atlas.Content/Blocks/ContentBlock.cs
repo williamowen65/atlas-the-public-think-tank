@@ -15,25 +15,26 @@ public abstract class ContentBlock
 
     protected ContentBlock(BlockId id, DateTimeOffset createdAt, DateTimeOffset updatedAt)
     {
+        ArgumentNullException.ThrowIfNull(id);
         if (updatedAt < createdAt)
         {
             throw new ArgumentException("Updated time cannot precede created time.");
         }
 
         Id = id;
-        CreatedAt = createdAt;
-        UpdatedAt = updatedAt;
+        CreatedAt = createdAt.ToUniversalTime();
+        UpdatedAt = updatedAt.ToUniversalTime();
     }
 
     /// <summary>Records a successful domain change without changing block identity.</summary>
     protected void ChangedAt(DateTimeOffset changedAt)
     {
-        if (changedAt < CreatedAt)
+        if (changedAt < UpdatedAt)
         {
-            throw new ArgumentException("Changed time cannot precede created time.", nameof(changedAt));
+            throw new ArgumentException("Changed time cannot precede the current updated time.", nameof(changedAt));
         }
 
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 
     /// <summary>

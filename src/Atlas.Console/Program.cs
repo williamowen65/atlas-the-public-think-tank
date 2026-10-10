@@ -280,7 +280,7 @@ static void SeedSystemNodeTypes(
     INodeTypeRepository nodeTypes)
 {
     var existingTypes = nodeTypes.GetAll();
-    var createdAt = DateTimeOffset.UtcNow;
+    var createdAt = AtlasTime.UtcNow;
 
     var systemTypes = new[]
     {

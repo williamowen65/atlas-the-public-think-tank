@@ -125,7 +125,7 @@ public static class DescriptionBlockCommands
         Console.WriteLine("0. Cancel");
         Console.Write("Block type: ");
 
-        var now = DateTimeOffset.UtcNow;
+        var now = AtlasTime.UtcNow;
         ContentBlock? block = Console.ReadLine() switch
         {
             "1" => NewMarkdown(now),
@@ -160,9 +160,12 @@ public static class DescriptionBlockCommands
 
         // Persist the payload first so a saved document never references a
         // block that cannot be loaded.
-        documents.SaveBlock(block);
-        document.AddBlock(block.Id, DateTimeOffset.UtcNow, index);
-        documents.Save(document);
+        OperationBoundary.Execute(documents, () =>
+        {
+            document.AddBlock(block.Id, now, index);
+            documents.SaveBlock(block);
+            documents.Save(document);
+        });
         ConsoleUi.Pause($"Added {block.Kind} block {block.Id}.");
     }
 
@@ -173,7 +176,7 @@ public static class DescriptionBlockCommands
         var block = SelectBlock(document, documents, "Block to update");
         if (block is null) return;
 
-        var now = DateTimeOffset.UtcNow;
+        var now = AtlasTime.UtcNow;
 
         switch (block)
         {
@@ -232,7 +235,7 @@ public static class DescriptionBlockCommands
         document.MoveBlock(
             block.Id,
             position - 1,
-            DateTimeOffset.UtcNow);
+            AtlasTime.UtcNow);
         documents.Save(document);
         ConsoleUi.Pause($"Moved block {block.Id} to position {position}.");
     }
@@ -244,7 +247,7 @@ public static class DescriptionBlockCommands
 
         // Removal changes this document's composition only. The stored block is
         // retained until orphan cleanup semantics are deliberately defined.
-        document.RemoveBlock(block.Id, DateTimeOffset.UtcNow);
+        document.RemoveBlock(block.Id, AtlasTime.UtcNow);
         documents.Save(document);
         ConsoleUi.Pause(
             $"Removed block {block.Id} from the description. Its stored record is retained.");

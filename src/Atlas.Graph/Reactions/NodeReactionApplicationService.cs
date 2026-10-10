@@ -24,31 +24,34 @@ public sealed class NodeReactionApplicationService
         bool actorIsActive,
         DateTimeOffset appliedAt)
     {
-        EnsureMutable(node, actorParticipantId, actorIsActive);
-
-        var definition = ResolveDefinition(reactionText);
-
-        if (definition.IsSuppressed)
+        return OperationBoundary.Execute(_nodeTags, () =>
         {
-            throw new InvalidOperationException("A suppressed reaction cannot be applied.");
-        }
+            EnsureMutable(node, actorParticipantId, actorIsActive);
 
-        var existing = _nodeTags.GetActive(node.Id, definition.Id);
+            var definition = ResolveDefinition(reactionText);
 
-        if (existing is not null)
-        {
-            return existing;
-        }
+            if (definition.IsSuppressed)
+            {
+                throw new InvalidOperationException("A suppressed reaction cannot be applied.");
+            }
 
-        var nodeReaction = NodeReaction.Create(
-            node.Id,
-            definition.Id,
-            actorParticipantId,
-            node.AuthorId.Value,
-            appliedAt);
+            var existing = _nodeTags.GetActive(node.Id, definition.Id);
 
-        _nodeTags.Save(nodeReaction);
-        return nodeReaction;
+            if (existing is not null)
+            {
+                return existing;
+            }
+
+            var nodeReaction = NodeReaction.Create(
+                node.Id,
+                definition.Id,
+                actorParticipantId,
+                node.AuthorId.Value,
+                appliedAt);
+
+            _nodeTags.Save(nodeReaction);
+            return nodeReaction;
+        });
     }
 
     /// <summary>Removes one node-specific association after checking node state and actor authority.</summary>
@@ -60,24 +63,27 @@ public sealed class NodeReactionApplicationService
         bool actorIsModerator,
         DateTimeOffset removedAt)
     {
-        EnsureMutable(node, actorParticipantId, actorIsActive);
-
-        var nodeTag = _nodeTags.GetById(nodeTagId)
-            ?? throw new KeyNotFoundException("The node reaction does not exist.");
-
-        if (nodeTag.NodeId != node.Id)
+        OperationBoundary.Execute(_nodeTags, () =>
         {
-            throw new InvalidOperationException("The node reaction belongs to a different node.");
-        }
+            EnsureMutable(node, actorParticipantId, actorIsActive);
 
-        nodeTag.Remove(
-            actorParticipantId,
-            node.AuthorId.Value,
-            actorIsActive,
-            actorIsModerator,
-            removedAt);
+            var nodeTag = _nodeTags.GetById(nodeTagId)
+                ?? throw new KeyNotFoundException("The node reaction does not exist.");
 
-        _nodeTags.Save(nodeTag);
+            if (nodeTag.NodeId != node.Id)
+            {
+                throw new InvalidOperationException("The node reaction belongs to a different node.");
+            }
+
+            nodeTag.Remove(
+                actorParticipantId,
+                node.AuthorId.Value,
+                actorIsActive,
+                actorIsModerator,
+                removedAt);
+
+            _nodeTags.Save(nodeTag);
+        });
     }
 
     /// <summary>Replaces one association without renaming its shared definition.</summary>
@@ -90,59 +96,63 @@ public sealed class NodeReactionApplicationService
         bool actorIsModerator,
         DateTimeOffset replacedAt)
     {
-        EnsureMutable(node, actorParticipantId, actorIsActive);
-
-        var existing = _nodeTags.GetById(existingNodeReactionId)
-            ?? throw new KeyNotFoundException("The node reaction does not exist.");
-
-        if (existing.NodeId != node.Id)
+        return OperationBoundary.Execute(_nodeTags, () =>
         {
-            throw new InvalidOperationException("The node reaction belongs to a different node.");
-        }
+            EnsureMutable(node, actorParticipantId, actorIsActive);
 
-        if (existing.IsRemoved)
-        {
-            throw new InvalidOperationException("A removed node reaction cannot be replaced.");
-        }
+            var existing = _nodeTags.GetById(existingNodeReactionId)
+                ?? throw new KeyNotFoundException("The node reaction does not exist.");
 
-        existing.EnsureCanRemove(
-            actorParticipantId,
-            node.AuthorId.Value,
-            actorIsActive,
-            actorIsModerator);
+            if (existing.NodeId != node.Id)
+            {
+                throw new InvalidOperationException("The node reaction belongs to a different node.");
+            }
 
-        var replacementDefinition = ResolveDefinition(replacementText);
+            if (existing.IsRemoved)
+            {
+                throw new InvalidOperationException("A removed node reaction cannot be replaced.");
+            }
 
-        if (replacementDefinition.IsSuppressed)
-        {
-            throw new InvalidOperationException("A suppressed reaction cannot be applied.");
-        }
-
-        if (!existing.IsRemoved &&
-            existing.ReactionDefinitionId == replacementDefinition.Id)
-        {
-            return existing;
-        }
-
-        var replacement = _nodeTags.GetActive(node.Id, replacementDefinition.Id);
-
-        if (replacement is null)
-        {
-            replacement = NodeReaction.Create(
-                node.Id,
-                replacementDefinition.Id,
+            existing.EnsureCanRemove(
                 actorParticipantId,
                 node.AuthorId.Value,
+                actorIsActive,
+                actorIsModerator);
+
+            var replacementDefinition = ResolveDefinition(replacementText);
+
+            if (replacementDefinition.IsSuppressed)
+            {
+                throw new InvalidOperationException("A suppressed reaction cannot be applied.");
+            }
+
+            if (!existing.IsRemoved &&
+                existing.ReactionDefinitionId == replacementDefinition.Id)
+            {
+                return existing;
+            }
+
+            var replacement = _nodeTags.GetActive(node.Id, replacementDefinition.Id);
+
+            if (replacement is null)
+            {
+                replacement = NodeReaction.Create(
+                    node.Id,
+                    replacementDefinition.Id,
+                    actorParticipantId,
+                    node.AuthorId.Value,
+                    replacedAt);
+
+            }
+
+            existing.Supersede(
+                actorParticipantId,
+                replacement.Id,
                 replacedAt);
             _nodeTags.Save(replacement);
-        }
-
-        existing.Supersede(
-            actorParticipantId,
-            replacement.Id,
-            replacedAt);
-        _nodeTags.Save(existing);
-        return replacement;
+            _nodeTags.Save(existing);
+            return replacement;
+        });
     }
 
     /// <summary>Changes how the node author presents one active tag.</summary>
@@ -154,21 +164,24 @@ public sealed class NodeReactionApplicationService
         bool actorIsActive,
         DateTimeOffset changedAt)
     {
-        EnsureMutable(node, actorParticipantId, actorIsActive);
-        var nodeTag = _nodeTags.GetById(nodeTagId)
-            ?? throw new KeyNotFoundException("The node reaction does not exist.");
-
-        if (nodeTag.NodeId != node.Id)
+        OperationBoundary.Execute(_nodeTags, () =>
         {
-            throw new InvalidOperationException("The node reaction belongs to a different node.");
-        }
+            EnsureMutable(node, actorParticipantId, actorIsActive);
+            var nodeTag = _nodeTags.GetById(nodeTagId)
+                ?? throw new KeyNotFoundException("The node reaction does not exist.");
 
-        nodeTag.SetDisposition(
-            disposition,
-            actorParticipantId,
-            node.AuthorId.Value,
-            changedAt);
-        _nodeTags.Save(nodeTag);
+            if (nodeTag.NodeId != node.Id)
+            {
+                throw new InvalidOperationException("The node reaction belongs to a different node.");
+            }
+
+            nodeTag.SetDisposition(
+                disposition,
+                actorParticipantId,
+                node.AuthorId.Value,
+                changedAt);
+            _nodeTags.Save(nodeTag);
+        });
     }
 
     private ReactionDefinition ResolveDefinition(string reactionText)
@@ -185,11 +198,14 @@ public sealed class NodeReactionApplicationService
         return existing;
     }
 
-    private static void EnsureMutable(
+    private void EnsureMutable(
         Node node,
         Guid actorParticipantId,
         bool actorIsActive)
     {
+        ArgumentNullException.ThrowIfNull(node);
+        ReferenceValidation.Require(_nodeTags, "Participant", actorParticipantId);
+        ReferenceValidation.Require(_nodeTags, "Node", node.Id.Value);
         if (actorParticipantId == Guid.Empty)
         {
             throw new ArgumentException("An acting participant is required.", nameof(actorParticipantId));

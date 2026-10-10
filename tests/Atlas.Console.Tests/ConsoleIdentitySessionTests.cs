@@ -5,6 +5,7 @@ using Atlas.Persistence.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Atlas.Console.Tests;
@@ -26,8 +27,13 @@ public sealed class ConsoleIdentitySessionTests
     [TestMethod]
     public async Task Sql_console_session_uses_confirmed_account_checks_roles_and_revokes_changed_credentials()
     {
-        var template = Environment.GetEnvironmentVariable("ATLAS_SQL_TEST_CONNECTION_STRING");
-        if (string.IsNullOrWhiteSpace(template)) Assert.Inconclusive("Set ATLAS_SQL_TEST_CONNECTION_STRING for console sign-in tests.");
+        // Local projects share one secrets file; CI environment values take precedence.
+        var configuration = new ConfigurationBuilder()
+            .AddUserSecrets<ConsoleIdentitySessionTests>(optional: true)
+            .AddEnvironmentVariables()
+            .Build();
+        var template = configuration["ATLAS_SQL_TEST_CONNECTION_STRING"];
+        if (string.IsNullOrWhiteSpace(template)) Assert.Inconclusive("Set ATLAS_SQL_TEST_CONNECTION_STRING in user secrets or environment variables to run SQL Server tests.");
         var connection = new SqlConnectionStringBuilder(template) { InitialCatalog = $"AtlasConsoleIdentity_{Guid.NewGuid():N}" };
         using var services = new ServiceCollection().AddAtlasIdentity(connection.ConnectionString).BuildServiceProvider();
         var scopes = services.GetRequiredService<IServiceScopeFactory>();

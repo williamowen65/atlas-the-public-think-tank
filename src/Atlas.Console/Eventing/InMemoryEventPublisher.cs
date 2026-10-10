@@ -31,7 +31,7 @@ public sealed class InMemoryEventPublisher
         Console.WriteLine();
         Console.WriteLine(
             $"[EVENT BUS] Publishing {eventType.Name} at " +
-            $"{DateTimeOffset.UtcNow:O}.");
+            $"{AtlasTime.UtcNow:O}.");
 
         if (!_subscribers.TryGetValue(eventType, out var handlers))
         {

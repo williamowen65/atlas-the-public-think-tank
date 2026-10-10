@@ -19,6 +19,10 @@ public sealed record NodeReactionAuditEntry
         NodeReactionDisposition disposition,
         NodeReactionId? relatedNodeReactionId = null)
     {
+        if (!Enum.IsDefined(action)) throw new ArgumentOutOfRangeException(nameof(action));
+        if (!Enum.IsDefined(lifecycleState)) throw new ArgumentOutOfRangeException(nameof(lifecycleState));
+        if (!Enum.IsDefined(disposition)) throw new ArgumentOutOfRangeException(nameof(disposition));
+
         if (actorParticipantId == Guid.Empty)
         {
             throw new ArgumentException(
@@ -51,7 +55,7 @@ public sealed record NodeReactionAuditEntry
 
         Action = action;
         ActorParticipantId = actorParticipantId;
-        OccurredAt = occurredAt;
+        OccurredAt = occurredAt.ToUniversalTime();
         LifecycleState = lifecycleState;
         Disposition = disposition;
         RelatedNodeReactionId = relatedNodeReactionId;

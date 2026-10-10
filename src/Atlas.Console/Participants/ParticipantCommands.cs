@@ -139,7 +139,7 @@ public static class ParticipantCommands
                 participant.Id,
                 requestedDisplayName,
                 requestedBio,
-                DateTimeOffset.UtcNow);
+                AtlasTime.UtcNow);
 
             ConsoleUi.Pause("Profile updated.");
 

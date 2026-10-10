@@ -41,20 +41,24 @@ public sealed class Comment
         DateTimeOffset updatedAt,
         DateTimeOffset? removedAt)
     {
+        if (id.Value == Guid.Empty || parentCommentId?.Value == Guid.Empty) throw new ArgumentException("Comment IDs must be nonempty.");
+        if (!Enum.IsDefined(status)) throw new ArgumentOutOfRangeException(nameof(status));
         if (authorParticipantId == Guid.Empty) throw new ArgumentException("A comment author is required.", nameof(authorParticipantId));
         if (parentCommentId == id) throw new ArgumentException("A comment cannot be its own parent.", nameof(parentCommentId));
         if (updatedAt < createdAt) throw new ArgumentException("Updated time cannot precede created time.");
         if (removedAt is not null && removedAt < createdAt) throw new ArgumentException("Removed time cannot precede created time.");
 
+        if ((status != CommentStatus.Active) != removedAt.HasValue || (removedAt.HasValue && removedAt != updatedAt))
+            throw new ArgumentException("Comment status, removal time and update time must agree.");
         Id = id;
         Target = target ?? throw new ArgumentNullException(nameof(target));
         ParentCommentId = parentCommentId;
         AuthorParticipantId = authorParticipantId;
         Body = ValidateBody(body);
         Status = status;
-        CreatedAt = createdAt;
-        UpdatedAt = updatedAt;
-        RemovedAt = removedAt;
+        CreatedAt = createdAt.ToUniversalTime();
+        UpdatedAt = updatedAt.ToUniversalTime();
+        RemovedAt = removedAt?.ToUniversalTime();
     }
 
     public static Comment Reconstitute(
@@ -75,7 +79,7 @@ public sealed class Comment
         EnsureActive();
         EnsureLater(changedAt);
         Body = ValidateBody(body);
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 
     public void RemoveByAuthor(Guid actorParticipantId, DateTimeOffset removedAt)
@@ -84,8 +88,8 @@ public sealed class Comment
         EnsureActive();
         EnsureLater(removedAt);
         Status = CommentStatus.RemovedByAuthor;
-        RemovedAt = removedAt;
-        UpdatedAt = removedAt;
+        RemovedAt = removedAt.ToUniversalTime();
+        UpdatedAt = removedAt.ToUniversalTime();
     }
 
     public void RemoveByModerator(DateTimeOffset removedAt)
@@ -93,8 +97,8 @@ public sealed class Comment
         EnsureActive();
         EnsureLater(removedAt);
         Status = CommentStatus.RemovedByModerator;
-        RemovedAt = removedAt;
-        UpdatedAt = removedAt;
+        RemovedAt = removedAt.ToUniversalTime();
+        UpdatedAt = removedAt.ToUniversalTime();
     }
 
     private void EnsureAuthor(Guid actorParticipantId)

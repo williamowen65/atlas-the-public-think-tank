@@ -58,8 +58,8 @@ public sealed class ReactionDefinition
         NormalizedText = normalizedText;
         CreatedByParticipantId = createdByParticipantId;
         IsSuppressed = isSuppressed;
-        CreatedAt = createdAt;
-        UpdatedAt = updatedAt;
+        CreatedAt = createdAt.ToUniversalTime();
+        UpdatedAt = updatedAt.ToUniversalTime();
     }
 
     /// <summary>Creates a definition for the curated reaction catalog.</summary>
@@ -122,7 +122,7 @@ public sealed class ReactionDefinition
         }
 
         IsSuppressed = true;
-        UpdatedAt = suppressedAt;
+        UpdatedAt = suppressedAt.ToUniversalTime();
     }
 
     /// <summary>Produces the stable comparison form used for lookup and duplicate detection.</summary>

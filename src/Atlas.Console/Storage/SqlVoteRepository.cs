@@ -9,7 +9,14 @@ namespace Atlas.ConsoleApp.Storage;
 /// <summary>Maps domain objects directly to EF Core rows in SQL Server.</summary>
 public sealed class SqlVoteRepository(Func<AtlasDataContext>? contextFactory = null) : SqlRepository(contextFactory), IVoteRepository
 {
-    public void Save(Vote vote) { ArgumentNullException.ThrowIfNull(vote); SaveRow(ToStorage(vote)); }
+    public void Save(Vote vote) => Execute(() =>
+    {
+        ArgumentNullException.ThrowIfNull(vote);
+        ReferenceValidation.Require(this, "Participant", vote.ParticipantId.Id);
+        ReferenceValidation.Require(this, TargetKind(vote.Target), vote.Target.Id);
+        SaveRow(ToStorage(vote));
+        return true;
+    });
     public void Delete(VoteId id) => DeleteRow<VoteRow>(id.Value);
     public Vote? GetById(VoteId id) => FindRow<VoteRow>(id.Value) is { } row ? ToDomain(row) : null;
     private static string TargetKind(VoteTarget target) => target switch

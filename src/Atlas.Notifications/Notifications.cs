@@ -6,49 +6,115 @@ public enum NotificationCategory { Discussion, Moderation }
 public enum DeliveryChannel { Email, Push }
 public enum DeliveryStatus { Simulated, Failed }
 
-public sealed record DeliveryAttempt(DeliveryChannel Channel, DeliveryStatus Status,
-    DateTimeOffset AttemptedAt, string? Error);
+public sealed record DeliveryAttempt
+{
+    public DeliveryChannel Channel { get; }
+    public DeliveryStatus Status { get; }
+    public DateTimeOffset AttemptedAt { get; }
+    public string? Error { get; }
+    public DeliveryAttempt(DeliveryChannel channel, DeliveryStatus status, DateTimeOffset attemptedAt, string? error)
+    {
+        if (!Enum.IsDefined(channel) || !Enum.IsDefined(status)) throw new ArgumentException("Unsupported delivery state.");
+        Channel = channel; Status = status; AttemptedAt = attemptedAt.ToUniversalTime(); Error = error;
+    }
+}
 
 public sealed class Notification
 {
-    public Guid Id { get; init; }
-    public Guid OccurrenceId { get; init; }
-    public Guid RecipientParticipantId { get; init; }
-    public NotificationCategory Category { get; init; }
-    public bool InAppVisible { get; init; }
-    public string Kind { get; init; } = string.Empty;
-    public string SubjectKind { get; init; } = string.Empty;
-    public Guid SubjectId { get; init; }
-    public Guid ActorParticipantId { get; init; }
-    public DateTimeOffset CreatedAt { get; init; }
+    public Guid Id { get; }
+    public Guid OccurrenceId { get; }
+    public Guid RecipientParticipantId { get; }
+    public NotificationCategory Category { get; }
+    public bool InAppVisible { get; }
+    public string Kind { get; }
+    public string SubjectKind { get; }
+    public Guid SubjectId { get; }
+    public Guid ActorParticipantId { get; }
+    public DateTimeOffset CreatedAt { get; }
     public DateTimeOffset? ReadAt { get; private set; }
     public DateTimeOffset? DismissedAt { get; private set; }
-    public List<DeliveryAttempt> DeliveryAttempts { get; init; } = [];
+    private readonly List<DeliveryAttempt> _deliveryAttempts;
+    public IReadOnlyList<DeliveryAttempt> DeliveryAttempts => _deliveryAttempts.AsReadOnly();
 
-    public void MarkRead(DateTimeOffset at) => ReadAt ??= at;
-    public void Dismiss(DateTimeOffset at) => DismissedAt ??= at;
+    public Notification(Guid id, Guid occurrenceId, Guid recipientId, Guid actorId, string kind,
+        string subjectKind, Guid subjectId, NotificationCategory category, bool inAppVisible,
+        DateTimeOffset createdAt, IEnumerable<DeliveryAttempt>? attempts = null)
+    {
+        if (id == Guid.Empty) throw new ArgumentException("A notification ID is required.");
+        var expectedCategory = ValidateRequest(new(occurrenceId, recipientId, actorId, kind, subjectKind, subjectId, createdAt));
+        if (!Enum.IsDefined(category) || category != expectedCategory) throw new ArgumentException("Notification category does not match its kind.");
+        Id = id; OccurrenceId = occurrenceId; RecipientParticipantId = recipientId; ActorParticipantId = actorId;
+        Kind = kind; SubjectKind = subjectKind; SubjectId = subjectId; Category = category;
+        InAppVisible = inAppVisible; CreatedAt = createdAt.ToUniversalTime();
+        _deliveryAttempts = [];
+        foreach (var attempt in attempts ?? []) RecordDelivery(attempt);
+    }
+
+    public static NotificationCategory ValidateRequest(NotificationRequestedV1 request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (request.OccurrenceId == Guid.Empty || request.RecipientParticipantId == Guid.Empty ||
+            request.ActorParticipantId == Guid.Empty || request.SubjectId == Guid.Empty)
+            throw new ArgumentException("Notification occurrence, recipient, actor and subject IDs are required.");
+        if (request.SubjectKind != "Node") throw new ArgumentException("Only Node notification subjects are supported.");
+        return request.Kind switch
+        {
+            "NodeCommented" or "CommentReplied" => NotificationCategory.Discussion,
+            "NodeHidden" or "NodeRestored" or "ReportDecided" => NotificationCategory.Moderation,
+            _ => throw new ArgumentException("Unsupported notification kind.")
+        };
+    }
+
+    public void MarkRead(DateTimeOffset at)
+    {
+        if (ReadAt is not null) return;
+        if (at < CreatedAt || at > DismissedAt) throw new ArgumentException("Read time must follow creation and cannot follow dismissal.");
+        ReadAt = at.ToUniversalTime();
+    }
+    public void Dismiss(DateTimeOffset at)
+    {
+        if (DismissedAt is not null) return;
+        if (at < CreatedAt || at < ReadAt) throw new ArgumentException("Dismissal cannot precede creation or reading.");
+        DismissedAt = at.ToUniversalTime();
+    }
+    public void RecordDelivery(DeliveryAttempt attempt)
+    {
+        ArgumentNullException.ThrowIfNull(attempt);
+        if (attempt.AttemptedAt < CreatedAt || (_deliveryAttempts.Count > 0 && attempt.AttemptedAt < _deliveryAttempts[^1].AttemptedAt))
+            throw new ArgumentException("Delivery time cannot precede recorded history.");
+        _deliveryAttempts.Add(attempt);
+    }
 }
 
 /// <summary>Each participant chooses channels per category; defaults favor a quiet in-app feed.</summary>
 public sealed class NotificationPreferences
 {
-    public Guid ParticipantId { get; init; }
+    public Guid ParticipantId { get; }
+    public NotificationPreferences(Guid participantId)
+    {
+        if (participantId == Guid.Empty) throw new ArgumentException("A preferences owner is required.");
+        ParticipantId = participantId;
+    }
     public bool DiscussionInApp { get; set; } = true;
     public bool ModerationInApp { get; set; } = true;
     public bool DiscussionEmail { get; set; }
     public bool ModerationEmail { get; set; }
     public bool DiscussionPush { get; set; }
     public bool ModerationPush { get; set; }
-    public bool Enabled(NotificationCategory category, DeliveryChannel? channel) => (category, channel) switch
+    public bool Enabled(NotificationCategory category, DeliveryChannel? channel)
     {
-        (NotificationCategory.Discussion, null) => DiscussionInApp,
-        (NotificationCategory.Moderation, null) => ModerationInApp,
-        (NotificationCategory.Discussion, DeliveryChannel.Email) => DiscussionEmail,
-        (NotificationCategory.Moderation, DeliveryChannel.Email) => ModerationEmail,
-        (NotificationCategory.Discussion, DeliveryChannel.Push) => DiscussionPush,
-        (NotificationCategory.Moderation, DeliveryChannel.Push) => ModerationPush,
-        _ => false
-    };
+        if (!Enum.IsDefined(category) || (channel is { } value && !Enum.IsDefined(value))) throw new ArgumentException("Unsupported preference category/channel.");
+        return (category, channel) switch
+        {
+            (NotificationCategory.Discussion, null) => DiscussionInApp,
+            (NotificationCategory.Moderation, null) => ModerationInApp,
+            (NotificationCategory.Discussion, DeliveryChannel.Email) => DiscussionEmail,
+            (NotificationCategory.Moderation, DeliveryChannel.Email) => ModerationEmail,
+            (NotificationCategory.Discussion, DeliveryChannel.Push) => DiscussionPush,
+            (NotificationCategory.Moderation, DeliveryChannel.Push) => ModerationPush,
+            _ => false
+        };
+    }
 }
 
 public interface INotificationRepository
@@ -79,42 +145,43 @@ public sealed class NotificationService(INotificationRepository repository, IEnu
 {
     public Notification? Handle(NotificationRequestedV1 request)
     {
-        if (request.OccurrenceId == Guid.Empty || request.RecipientParticipantId == Guid.Empty ||
-            request.SubjectId == Guid.Empty || string.IsNullOrWhiteSpace(request.Kind))
-            throw new ArgumentException("A notification needs an occurrence, recipient, kind and subject.");
-        if (request.RecipientParticipantId == request.ActorParticipantId) return null;
-        var category = request.Kind switch
+        var category = Notification.ValidateRequest(request);
+        var created = false;
+        var item = OperationBoundary.Execute(repository, () =>
         {
-            "NodeCommented" or "CommentReplied" => NotificationCategory.Discussion,
-            "NodeHidden" or "NodeRestored" or "ReportDecided" => NotificationCategory.Moderation,
-            _ => throw new ArgumentException("Unsupported notification kind.")
-        };
-        var existing = repository.FindOccurrence(request.OccurrenceId, request.RecipientParticipantId);
-        if (existing is not null) return existing;
+            ReferenceValidation.Require(repository, "Participant", request.ActorParticipantId);
+            ReferenceValidation.Require(repository, "Participant", request.RecipientParticipantId);
+            // Moderation notifications intentionally refer to hidden nodes; existence is still required.
+            ReferenceValidation.Require(repository, "Node", request.SubjectId, category == NotificationCategory.Discussion);
+            if (request.RecipientParticipantId == request.ActorParticipantId) return null;
+            var existing = repository.FindOccurrence(request.OccurrenceId, request.RecipientParticipantId);
+            if (existing is not null) return existing;
+            var preferences = repository.Preferences(request.RecipientParticipantId);
+            if (!preferences.Enabled(category, null) && !Enum.GetValues<DeliveryChannel>()
+                    .Any(channel => preferences.Enabled(category, channel))) return null;
+            var item = new Notification(Guid.NewGuid(), request.OccurrenceId, request.RecipientParticipantId,
+                request.ActorParticipantId, request.Kind, request.SubjectKind, request.SubjectId,
+                category, preferences.Enabled(category, null), request.OccurredAt);
+            // Persist first so an external delivery failure cannot erase the in-app record.
+            repository.Save(item);
+            created = true;
+            return item;
+        });
+        if (item is null) return null;
+        // Existing notifications are returned without repeating external delivery.
+        if (!created) return item;
         var preferences = repository.Preferences(request.RecipientParticipantId);
-        if (!preferences.Enabled(category, null) && !Enum.GetValues<DeliveryChannel>()
-                .Any(channel => preferences.Enabled(category, channel))) return null;
-        var item = new Notification
-        {
-            Id = Guid.NewGuid(), OccurrenceId = request.OccurrenceId,
-            RecipientParticipantId = request.RecipientParticipantId, ActorParticipantId = request.ActorParticipantId,
-            Category = category, InAppVisible = preferences.Enabled(category, null),
-            Kind = request.Kind, SubjectKind = request.SubjectKind,
-            SubjectId = request.SubjectId, CreatedAt = request.OccurredAt
-        };
-        // Persist first so an external delivery failure cannot erase the in-app record.
-        repository.Save(item);
         foreach (var channel in deliveries)
         {
             if (!preferences.Enabled(category, channel.Channel)) continue;
             try
             {
                 channel.Send(item);
-                item.DeliveryAttempts.Add(new(channel.Channel, DeliveryStatus.Simulated, DateTimeOffset.UtcNow, null));
+                item.RecordDelivery(new(channel.Channel, DeliveryStatus.Simulated, AtlasTime.UtcNow, null));
             }
             catch (Exception exception)
             {
-                item.DeliveryAttempts.Add(new(channel.Channel, DeliveryStatus.Failed, DateTimeOffset.UtcNow, exception.Message));
+                item.RecordDelivery(new(channel.Channel, DeliveryStatus.Failed, AtlasTime.UtcNow, exception.Message));
             }
             repository.Save(item);
         }
@@ -123,6 +190,7 @@ public sealed class NotificationService(INotificationRepository repository, IEnu
 
     public IReadOnlyList<Notification> Page(Guid recipientId, int offset, int limit)
     {
+        ReferenceValidation.Require(repository, "Participant", recipientId);
         if (offset < 0 || limit is < 1 or > 100) throw new ArgumentOutOfRangeException(nameof(limit));
         return repository.Page(recipientId, offset, limit);
     }
@@ -142,26 +210,36 @@ public sealed class NotificationService(INotificationRepository repository, IEnu
 
     public void MarkRead(Guid recipientId, Guid notificationId)
     {
-        var item = Own(recipientId, notificationId);
-        item.MarkRead(DateTimeOffset.UtcNow);
-        repository.Save(item);
+        OperationBoundary.Execute(repository, () =>
+        {
+            var item = Own(recipientId, notificationId);
+            item.MarkRead(AtlasTime.UtcNow);
+            repository.Save(item);
+        });
     }
 
     public void Dismiss(Guid recipientId, Guid notificationId)
     {
-        var item = Own(recipientId, notificationId);
-        item.Dismiss(DateTimeOffset.UtcNow);
-        repository.Save(item);
+        OperationBoundary.Execute(repository, () =>
+        {
+            var item = Own(recipientId, notificationId);
+            item.Dismiss(AtlasTime.UtcNow);
+            repository.Save(item);
+        });
     }
 
-    private static void EnsureOwner(Guid actorParticipantId, Guid participantId)
+    private void EnsureOwner(Guid actorParticipantId, Guid participantId)
     {
+        ReferenceValidation.Require(repository, "Participant", actorParticipantId);
+        ReferenceValidation.Require(repository, "Participant", participantId);
         if (actorParticipantId != participantId)
             throw new UnauthorizedAccessException("Notification preferences are unavailable to this participant.");
     }
 
     private Notification Own(Guid recipientId, Guid id)
     {
+        ReferenceValidation.Require(repository, "Participant", recipientId);
+        if (id == Guid.Empty) throw new ArgumentException("A notification ID is required.");
         var item = repository.Find(id);
         if (item is null || item.RecipientParticipantId != recipientId)
             throw new UnauthorizedAccessException("Notification is unavailable to this participant.");

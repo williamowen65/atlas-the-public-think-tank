@@ -1,3 +1,4 @@
+using Atlas.Contracts.Operations;
 namespace Atlas.Moderation.Tests;
 
 /// <summary>Security regression tests for moderator-only operations.</summary>
@@ -30,8 +31,10 @@ public class SecurityAuthorizationTests
         public bool IsAtlasModerator(Guid participantId) => participantId == moderatorId;
     }
 
-    private sealed class CaseRepository : IModerationCaseRepository
+    private sealed class CaseRepository : IModerationCaseRepository, IReferenceLookup
     {
+        public bool IsAvailable(string kind, Guid id, bool requireActive) => id != Guid.Empty;
+
         private readonly Dictionary<Guid, ModerationCase> _cases = [];
         public ModerationCase? GetById(Guid caseId) => _cases.GetValueOrDefault(caseId);
         public IReadOnlyCollection<ModerationCase> GetAll() => _cases.Values.ToList();

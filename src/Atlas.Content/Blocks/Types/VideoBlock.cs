@@ -19,9 +19,11 @@ public sealed class VideoBlock : ContentBlock
 
     public void Update(string url, string? caption, DateTimeOffset changedAt)
     {
-        Url = Required(url, nameof(url), 500);
-        Caption = Optional(caption, 2_000, nameof(caption));
+        var validatedUrl = Required(url, nameof(url), 500);
+        var validatedCaption = Optional(caption, 2_000, nameof(caption));
         ChangedAt(changedAt);
+        Url = validatedUrl;
+        Caption = validatedCaption;
     }
 
     public static VideoBlock Reconstitute(BlockId id, string url, string? caption, DateTimeOffset createdAt, DateTimeOffset updatedAt) =>

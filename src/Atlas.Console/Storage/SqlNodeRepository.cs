@@ -15,7 +15,23 @@ public sealed class SqlNodeRepository(Func<AtlasDataContext>? contextFactory = n
     public IReadOnlyCollection<Node> GetParentCandidates(NodeId childId, IReadOnlyCollection<NodeId> existingParentIds) =>
         All().Where(node => node.Id != childId && !existingParentIds.Contains(node.Id)).ToList();
     IReadOnlyCollection<Node> IDiscoveryNodeReader.ReadNodesForDiscovery() => All();
-    public void Save(Node node) => SaveRow(ToStorage(node));
+    public void Save(Node node) => Execute(() =>
+    {
+        ArgumentNullException.ThrowIfNull(node);
+        var previous = FindRow<NodeRow>(node.Id.Value);
+        ReferenceValidation.Require(this, "Participant", node.AuthorId.Value, previous is null);
+        ReferenceValidation.Require(this, "Document", node.DescriptionId.Value, false);
+        ReferenceValidation.Require(this, "NodeType", node.TypeId.Value, previous is null || previous.TypeId != node.TypeId.Value);
+        foreach (var request in node.RequestedSubNodeTypes)
+            ReferenceValidation.Require(this, "NodeType", request.TypeId.Value,
+                previous is null || !(previous.RequestedSubNodeTypeIds ?? []).Contains(request.TypeId.Value));
+        GraphRelationshipValidation.EnsureAcyclic(node.Id, node.ParentNodeIds, parentId =>
+            FindRow<NodeRow>(parentId.Value) is { } parent ? (parent.ParentNodeIds ?? []).Select(id => new NodeId(id)).ToList() : null);
+        foreach (var parent in node.ParentNodeIds)
+            ReferenceValidation.Require(this, "Node", parent.Value, previous is null || !(previous.ParentNodeIds ?? []).Contains(parent.Value));
+        SaveRow(ToStorage(node));
+        return true;
+    });
 
     private static NodeRow ToStorage(Node node)
     {

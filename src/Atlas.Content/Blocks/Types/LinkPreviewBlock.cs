@@ -21,10 +21,13 @@ public sealed class LinkPreviewBlock : ContentBlock
 
     public void UpdatePreview(string url, string title, string? description, DateTimeOffset changedAt)
     {
-        Url = HttpUrl(url, nameof(url));
-        Title = Required(title, nameof(title), 500);
-        Description = Optional(description, 2_000, nameof(description));
+        var validatedUrl = HttpUrl(url, nameof(url));
+        var validatedTitle = Required(title, nameof(title), 500);
+        var validatedDescription = Optional(description, 2_000, nameof(description));
         ChangedAt(changedAt);
+        Url = validatedUrl;
+        Title = validatedTitle;
+        Description = validatedDescription;
     }
 
     public static LinkPreviewBlock Reconstitute(BlockId id, string url, string title, string? description, DateTimeOffset createdAt, DateTimeOffset updatedAt) =>

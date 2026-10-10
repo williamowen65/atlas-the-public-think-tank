@@ -30,23 +30,26 @@ namespace Atlas.Voting
             VoteTarget target,
             ParticipantId participantId)
         {
-            _mutationPolicy.EnsureAllowed(
-                target,
-                participantId);
-
-            var existingVote =
-                _voteRepository.GetByParticipantAndTarget(
-                    participantId,
-                    target);
-
-            if (existingVote is null)
+            return OperationBoundary.Execute(_voteRepository, () =>
             {
-                return false;
-            }
+                _mutationPolicy.EnsureAllowed(
+                    target,
+                    participantId);
 
-            _voteRepository.Delete(existingVote.Id);
+                var existingVote =
+                    _voteRepository.GetByParticipantAndTarget(
+                        participantId,
+                        target);
 
-            return true;
+                if (existingVote is null)
+                {
+                    return false;
+                }
+
+                _voteRepository.Delete(existingVote.Id);
+
+                return true;
+            });
         }
 
     }
