@@ -29,6 +29,59 @@ Application coordination may rely on invariants enforced by a value object, whil
 
 See [layer responsibilities](README.md#layer-responsibilities) and [persistence responsibilities](PERSISTENCE.md#integrity-protection-is-layered).
 
+## Coverage overview and review workflow
+
+This inventory is a map of validation rules and the evidence behind them. Its purpose is to help locate an area, understand what protects it today, and identify the next piece of work without repeating the entire review.
+
+### What has been reviewed
+
+The review spans the current MVP domains: Graph and reactions, Content, Participants and Identity, Voting, Communities, Comments, Discovery, Moderation and Notifications. It considers creating objects, changing them, rebuilding saved state, querying/filtering, and coordinating relationships or several writes. Persistence is considered where parameters, foreign keys, uniqueness and transactions affect those rules.
+
+This is coverage of **reviewed operation families**, not a verified exhaustive list of every public method or every input combination. A row may group several methods and expectations. No complete operation-to-test matrix or validation-coverage percentage has been established yet. The tables provide a starting catalog; new operations and newly discovered rules must be added as they are reviewed.
+
+### Where protection and evidence stand today
+
+**Local value checks have substantial existing enforcement.** The tables identify checks for required text, length limits, rating ranges, IDs, enums and some lifecycle/timestamp rules. Evidence is a mixture of automated tests and code inspection. Enforcement exists in many places, but the remaining default/null and state-consistency findings mean this category is not complete.
+
+**This PR strengthens rejection behavior in specific places.** Content edits and document composition now reject invalid payloads or times before applying changes. Discovery rejects non-finite rating bounds. Selected lifecycle/audit enums and decided moderation records receive additional validation. The [change summary and regression links](README.md#changes-in-this-slice) identify the fixes and their supporting tests.
+
+**Application and SQL protections cover different parts of a rule.** Some services resolve availability or eligibility, and mapped SQL constraints protect existence and uniqueness when saving. A local ID check, an application availability check and a database foreign-key test are separate evidence. None alone proves that the entire operation is valid.
+
+### How to judge the evidence
+
+Ask three questions for each expectation:
+
+1. **Was it cataloged?** The rule and its owning layer are stated, including any policy that still needs a decision.
+2. **Was enforcement inspected?** The linked implementation shows where the rule is checked and whether rejection happens before changes.
+3. **Was the behavior tested?** A linked assertion exercises the relevant entry point and demonstrates the expected result, including unchanged state on rejection when applicable.
+
+These are separate forms of coverage. A rule can be cataloged but not implemented; implemented but only inspected; or tested for some cases while other cases remain unverified. A passing test suite only confirms the assertions that ran.
+
+For example, [NodeValueObjectTests](../../../tests/Atlas.Graph.Tests/NodeValueObjectTests.cs) supports the title and ID value checks in the first row. It does not, by itself, prove that [Node](../../../src/Atlas.Graph/Node.cs) correctly consumes those values, that referenced records exist, or that the complete creation workflow is safe. Those claims need their own implementation and test evidence. A test filename in a row is an evidence source, not a completeness badge.
+
+### Where the known gaps are
+
+The remaining findings fall into three recurring groups:
+
+- **Local values and object history — [PTT-128](https://thepublicthinktank.atlassian.net/browse/PTT-128).** Required default/empty IDs or null objects can bypass intended usage. Timestamp and restored-state rules are inconsistent in some domains. Some rejected changes can still affect state or audit history.
+- **References and relationships — [PTT-129](https://thepublicthinktank.atlassian.net/browse/PTT-129).** Nonempty IDs do not uniformly receive backend existence/availability checks. Longer graph cycles need repository-wide checks. Comment/vote target kinds and notification reference policies need explicit coverage.
+- **Complete workflows and competing requests — [PTT-130](https://thepublicthinktank.atlassian.net/browse/PTT-130).** Separate repository saves can leave partial results. Rollback and concurrency evidence must cover the entire operation, including grouped moderation.
+
+Other security work remains separately tracked: resource budgets and collection/query limits ([PTT-122](https://thepublicthinktank.atlassian.net/browse/PTT-122)), broader failure-path coverage ([PTT-123](https://thepublicthinktank.atlassian.net/browse/PTT-123)), and future browser/HTTP/outbound-fetch boundaries ([PTT-125](https://thepublicthinktank.atlassian.net/browse/PTT-125)). Poll/chart reference existence is deferred until those domains exist. Current backend validation does not establish coverage for a REST API or browser that has not been built.
+
+An absent rule or assertion is an **evidence gap** until investigated; it should not automatically be described as either safe or defective. The named Jira findings are known work. Other unreviewed cases may still be discovered.
+
+### Repeatable workflow for a new finding or operation
+
+1. **Locate or add the operation.** Identify all relevant entry points, including direct backend calls and reconstitution. Split a grouped row when different methods need different rules or evidence.
+2. **State one expectation at a time.** Describe valid input, the rejection condition, and what must remain unchanged. Identify whether the owner is the aggregate, application coordination, authentication/authorization boundary or persistence.
+3. **Inspect and link enforcement.** Record the implementation that checks the rule. Note bypass paths, unresolved policy and checks that occur after mutation.
+4. **Verify the claim with evidence.** Link the specific test method/assertion when available. Cover the consuming operation as well as a value object where required. Include valid and invalid cases, boundary values and rejection-without-change; use real SQL evidence for constraints or rollback.
+5. **Record the remaining gap.** State whether enforcement is missing, evidence is incomplete or a policy is undecided. Link the existing Jira owner or create an appropriately scoped follow-up.
+6. **Close the loop.** After implementation and tests, update the row with the actual enforcement and evidence. Mark only the expectations demonstrated by that evidence as resolved.
+
+The goal is a maintained chain from **operation → expectation → responsible layer → enforcement → evidence → remaining work**. Closing a Jira card or obtaining a green test run does not replace updating that chain.
+
 ## Graph and reactions
 
 | Operation | Expectation | Enforcement | Evidence | Result / follow-up |
