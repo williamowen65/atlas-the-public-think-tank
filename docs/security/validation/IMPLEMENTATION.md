@@ -120,7 +120,51 @@ Evidence: [Graph boundary tests](../../../tests/Atlas.Graph.Tests/ValidationBoun
 
 ## Complete operations — PTT-130
 
-[IOperationBoundary](../../../src/Atlas.Contracts/Operations/OperationBoundary.cs) wraps the complete application use case. [SqlOperationBoundary](../../../src/Atlas.Console/Storage/SqlOperationBoundary.cs) shares one EF context and serializable transaction across nested repositories using the same connection configuration. A transaction-owned `sp_getapplock` serializes the current MVP write workflows. It covers both the precheck and related saves, including graph ancestry. Different database configurations cannot join the boundary.
+### Problem: several saves must succeed together
+
+A complete operation is one application action, even when it touches several repositories. For example, creating a node saves its description block, its document, and then the node.
+
+If each save commits independently, the block and document can remain in SQL when the node save fails. Each individual save succeeded, but the user's action is only partly complete. The operation boundary puts all those writes in one transaction: commit after the entire action succeeds, or roll back if any step throws.
+
+A shared EF context alone does not provide this guarantee. The shared **transaction** keeps earlier `SaveChanges` calls from becoming permanent until the outer operation commits.
+
+### Which class implements the interface?
+
+| Piece | What it does |
+|---|---|
+| [IOperationBoundary](../../../src/Atlas.Contracts/Operations/OperationBoundary.cs) | Contract for executing a callback as one complete operation. |
+| [OperationBoundary.Execute](../../../src/Atlas.Contracts/Operations/OperationBoundary.cs) | Application-facing helper. Checks whether the supplied repository implements the contract and calls it. Without that capability, it runs the callback directly; this fallback does not promise SQL atomicity. |
+| [SqlRepository](../../../src/Atlas.Console/Storage/SqlRepository.cs) | Implements `IOperationBoundary`. Concrete SQL repositories inherit this capability. Its `Execute` method delegates to the static SQL helper below. |
+| [SqlOperationBoundary](../../../src/Atlas.Console/Storage/SqlOperationBoundary.cs) | Static implementation helper, so it does **not** implement the interface. Owns the context, transaction, write lock and commit/cleanup logic. |
+
+For example, [NodeCreationService.Create](../../../src/Atlas.Console/NodeCreationService.cs) passes its Node repository to `OperationBoundary.Execute`. The runtime `SqlNodeRepository` inherits `SqlRepository.Execute`, which calls `SqlOperationBoundary.Execute`.
+
+### How repositories share the operation
+
+The outermost SQL boundary opens one `AtlasDataContext` and starts a serializable transaction. It stores that context in the current execution scope using `AsyncLocal`. Repository queries and saves obtain it through `SqlOperationBoundary.Open`.
+
+This allows the Content and Graph repository calls in node creation to use the same context and transaction. The domain objects do not receive an EF context; sharing happens inside the SQL adapters.
+
+Nested boundary calls join the existing operation rather than opening or committing another transaction. Only the outermost call commits. A failure disposes the uncommitted transaction, rolling back its writes. Different connection configurations are rejected rather than combined. This context is scoped to the operation, not shared globally across users.
+
+### Why also acquire a write lock?
+
+Rollback solves partial completion. A second problem is **competing checks and writes**: two operations can each inspect valid state, then together produce an invalid result.
+
+For example, one operation attaches A beneath B while another attaches B beneath A. If each checks ancestry before either change is visible, both might conclude that its own proposal has no cycle.
+
+The boundary calls SQL Server's `sp_getapplock` to acquire an exclusive application lock named `AtlasWriteWorkflow` before running the checks and writes:
+
+- **Application lock:** SQL Server coordinates access to a named resource. This is not a new database table or an instruction to lock every row.
+- **Exclusive:** only one cooperating operation in the same database can hold this named lock at a time. Another waits until the first finishes, then performs its checks against the resulting state.
+- **Transaction-owned:** `@LockOwner='Transaction'` ties the lock's lifetime to the transaction. SQL Server releases it when the transaction commits or rolls back.
+- **Timeout:** the current code waits up to 15 seconds. Failure to acquire the lock stops the operation and is translated into `OperationConflictException`.
+
+The transaction provides all-or-nothing writes; the named lock makes cooperating MVP write workflows take turns through their checks and saves. Both protections cover the full operation.
+
+This is deliberately coarse: unrelated writes using this boundary also wait for each other. Direct SQL or other code that does not acquire the named lock does not participate in this coordination. Database constraints remain necessary, and this is not a general stale-form/version check.
+
+### Workflows and evidence
 
 | Workflow | Writes committed or rolled back together | Failure-injection evidence |
 |---|---|---|
