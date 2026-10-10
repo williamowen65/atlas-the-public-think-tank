@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Atlas.Persistence;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace Atlas.Persistence.Tests;
 
@@ -13,9 +14,14 @@ public sealed class SqlPersistenceTests
     [TestMethod]
     public async Task DemoSeed_creates_domain_rows_and_sql_enforces_vote_uniqueness()
     {
-        var serverConnection = Environment.GetEnvironmentVariable("ATLAS_SQL_TEST_CONNECTION_STRING");
+        // Match the other SQL fixtures: shared local secrets, overridden by CI's environment.
+        var configuration = new ConfigurationBuilder()
+            .AddUserSecrets<SqlPersistenceTests>(optional: true)
+            .AddEnvironmentVariables()
+            .Build();
+        var serverConnection = configuration["ATLAS_SQL_TEST_CONNECTION_STRING"];
         if (string.IsNullOrWhiteSpace(serverConnection))
-            Assert.Inconclusive("Set ATLAS_SQL_TEST_CONNECTION_STRING to run the SQL Server integration test.");
+            Assert.Inconclusive("Set ATLAS_SQL_TEST_CONNECTION_STRING in user secrets or environment variables to run the SQL Server integration test.");
 
         var connection = new SqlConnectionStringBuilder(serverConnection)
         {
