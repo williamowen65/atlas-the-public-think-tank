@@ -122,7 +122,7 @@ sequenceDiagram
     Observer-->>Bus: Handled
 ```
 
-Content generates the document ID because Content owns the document lifecycle. Graph receives only that opaque identifier. The node is saved before its recorded events are published. Block, document, and node saves use separate transactions; later failures can leave orphaned content.
+Content generates the document ID because Content owns the document lifecycle. Graph receives only that opaque identifier. The node is saved before its recorded events are published. NodeCreationService groups block, document and Node saves in one topology-coordinated SQL transaction; a later save failure rolls back all three. Event publication remains outside that transaction. See [validation workflow evidence](../../docs/security/validation/IMPLEMENTATION.md#workflows-and-evidence).
 
 The current publisher and subscribers are synchronous and in-process. A future message broker and outbox could replace this infrastructure without putting broker code inside the domain objects.
 

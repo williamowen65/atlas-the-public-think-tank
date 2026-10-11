@@ -6,17 +6,17 @@ Atlas is a modular application hosted by Atlas.Console. Domain projects own beha
 
 | Component | Owns / current role | References and limits |
 |---|---|---|
-| Graph | Typed Nodes, parent links, requested response types, curated reaction definitions and node-reaction lifecycle | Author, description, and type IDs; author checks are domain-enforced. Cycle traversal remains host-coordinated. |
-| Content | Documents, ordered block references, typed payload validation, identity and timestamps | Poll/chart references have no mapped principal table. Block/document saves are separate. |
-| Participants | Public profiles, active state, protected self-edit use case | Credentials, authenticated sessions, and protected deactivation remain future work. |
+| Graph | Typed Nodes, parent links, requested response types, curated reaction definitions and node-reaction lifecycle | Author, description, and type IDs; author checks are domain-enforced. Graph relationship services and SQL adapters check transitive ancestry; topology changes share an application lock. |
+| Content | Documents, ordered block references, typed payload validation, identity and timestamps | Poll/chart references have no mapped principal table. Block addition and node creation coordinate related saves in one transaction. |
+| Participants | Public profiles, active state, protected self-edit use case | Identity owns credentials and sign-in; Participants owns profile state and authorized self-edit. |
 | Voting | Node importance ratings (0–10), reaction votes (+1/−1), change/undo, current summaries | Identifier-based eligibility/availability ports; SQL uniqueness protects participant-target pairs. |
 | Communities | Community metadata/lifecycle, membership, node associations | Participant and Node IDs; owner authorization and separate records for memberships/associations. |
 | Comments | Threaded comments, single parent comment, lifecycle and permissions | Author and polymorphic target IDs; Comments are separate from Graph children. |
 | Discovery | Search/filter/rank policy and ranked result IDs | Host materializes candidates from repositories; no mutable Graph aggregate ownership. |
-| Moderation | Reports, decisions, public reasons, review requests, restoration | Configured participant IDs authorize prototype moderation; group saves are not one transaction. |
+| Moderation | Reports, decisions, public reasons, review requests, restoration | Stored global Identity roles supply authorization; grouped changes share a transaction. |
 | Notifications | Recipient feed, preferences, read/dismiss state, delivery attempts | Occurrence/recipient uniqueness; email/push are simulated and events are synchronous. |
-| Contracts | Versioned Graph lifecycle and notification-request payloads | Shapes, not behavior, dispatch, or storage. |
-| Console | UI, selected participant, workflows, adapters, startup and event registration | Selected participant simulates identity; it is not production authentication. |
+| Contracts | Versioned Graph lifecycle and notification-request payloads | Versioned payloads plus shared clock, reference and operation ports; no SQL storage ownership. |
+| Console | UI, authenticated actor, workflows, adapters, startup and event registration | Identity-backed sign-in supplies the actor; a future HTTP host will compose its own request scope. |
 | Persistence | AtlasDataContext, row types, mappings, constraints, migrations | Shared SQL Server infrastructure; domain projects do not depend on EF Core. |
 
 ## Persistence flow
@@ -25,11 +25,11 @@ Repository interfaces remain in their owning domains. The implementation chain i
 
 1. Console calls the domain behavior or application service.
 2. A Sql*Repository maps the resulting domain object into an EF row.
-3. SqlRepository opens a scoped AtlasDataContext, prepares owned child keys, and saves.
+3. SqlRepository starts or joins the operation context/transaction, prepares owned child keys, and saves.
 4. SQL Server enforces configured primary keys, foreign keys, and unique indexes.
 5. On read, the adapter loads rows/owned children and reconstitutes domain objects without replaying creation events.
 
-Each SaveRow transaction updates the addressed record and replaces its owned children. Same-record competing edits use last-write behavior. Separate repository calls do not share a transaction.
+Related repository calls inside an operation boundary share one transaction. Standalone calls do not automatically join earlier saves. Full saves replace owned children; Node metadata saves preserve parent rows. Serializable isolation, constraints and topology coordination protect competing writes, while universal stale-object version checks remain deferred. See [transaction responsibilities](DATA-OWNERSHIP.md#transaction-boundaries).
 
 ## Cross-boundary references
 
@@ -39,7 +39,7 @@ Vote TargetId, Comment TargetId, and Notification SubjectId are polymorphic; the
 
 ## Startup and events
 
-Program.cs reads User Secrets, then environment variables. ATLAS_SQL_CONNECTION_STRING configures SqlStorage, which applies checked-in migrations. Optional --seed-demo inserts typed demo rows into an empty database and exits. Normal startup constructs repositories/services, ensures seven system Node types, selects or creates Demo User 01, registers subscribers, and starts ConsoleApplication.
+Program.cs reads User Secrets, then environment variables. ATLAS_SQL_CONNECTION_STRING configures SqlStorage, which applies checked-in migrations. Optional --seed-demo inserts typed demo rows into an empty database and exits. Normal startup constructs repositories/services and Identity-backed session services, ensures system Node types, registers subscribers, and starts ConsoleApplication with anonymous browsing and sign-in/registration.
 
 | Event | Registration / current effect |
 |---|---|
@@ -52,15 +52,15 @@ The host publishes recorded events after relevant saves. Dispatch is synchronous
 
 ## Creation consistency
 
-NodeCreationWorkflow validates title, creates a Markdown block and Document, saves the block, saves the document, constructs/saves the Node, then publishes its recorded events. SQL references prevent dangling configured IDs, but do not prevent an orphaned block/document if a later step fails. No shared workflow transaction or compensation exists.
+[NodeCreationWorkflow](../../src/Atlas.Console/NodeCreationWorkflow.cs) collects input and delegates to [NodeCreationService](../../src/Atlas.Console/NodeCreationService.cs). The service constructs the proposed block, document and Node before writing, validates references and ancestry, and saves Content then Graph inside one topology-coordinated SQL transaction. A later save failure rolls back earlier writes. The host publishes recorded events after the service returns successfully; dispatch is outside the transaction. See [workflow evidence and limits](../security/validation/IMPLEMENTATION.md#workflows-and-evidence).
 
 ## Current gaps
 
-- Move graph-wide cycle policy behind a reusable boundary API; database foreign keys do not prevent cycles.
+- Keep new topology entry points behind graph coordination; database foreign keys alone do not prevent cycles.
 - Define relationship-node cardinality and global type-name concurrency rules.
-- Add same-record conflict detection and recovery from competing first inserts.
-- Define compensation or a transaction boundary for multi-save creation, reaction replacement, and moderation groups.
-- Add durable integration messaging, production identity, rate limits, and real delivery adapters.
+- Define a general stale-object/version policy and host retry behavior for translated operation conflicts.
+- Extend rollback/failure evidence when new multi-save workflows are added; existing coordinated workflows already share a transaction.
+- Add durable integration messaging, future HTTP/browser authentication boundaries, rate limits, and real delivery adapters.
 - Optimize materialized Discovery/ancestry queries and adopt stable feed pagination where needed.
 - Complete event compatibility/metadata and lifecycle policy before service extraction.
 

@@ -15,7 +15,7 @@ Open the [editable Excalidraw blackboard](PTT-130-TRANSACTION-FLOW.excalidraw) t
 | Save Content rows through inherited helpers | [SqlDocumentRepository](../../src/Atlas.Console/Storage/SqlDocumentRepository.cs) |
 | Save Graph rows through inherited helpers | [SqlNodeRepository](../../src/Atlas.Console/Storage/SqlNodeRepository.cs) |
 
-`Current` is an `AsyncLocal` execution-scope value. It is not a context shared globally across requests. A nested call opens a temporary candidate to verify its connection string, then disposes it. A Node boundary also acquires its graph lock on the current transaction before running its callback. Repository context leases borrow `Current`. A borrowed context lease does not dispose the outer context.
+`Current` is an `AsyncLocal` execution-scope value. It is not a context shared globally across requests. A nested call opens a temporary candidate to verify its connection string, then disposes it. A topology boundary also acquires its graph lock on the current transaction before running its callback. Repository context leases borrow `Current`. A borrowed context lease does not dispose the outer context.
 
 `SaveChanges` flushes pending changes to SQL. Since an explicit outer transaction is active, those writes are still subject to rollback. Only the outer boundary commits. A repository save without an existing boundary instead creates its own boundary for that save; it cannot retroactively group earlier independent saves.
 

@@ -1,7 +1,7 @@
 # ADR-0005: Enforce concurrency invariants at persistence boundaries
 
-Status: Accepted for implemented uniqueness; broader conflict handling remains open  
-Updated: 2026-09-30
+Status: Accepted for uniqueness, coordinated SQL operations and topology locking; general stale-edit/reliable-delivery policies remain open
+Updated: 2026-10-11
 
 ## Context and decision
 
@@ -18,10 +18,18 @@ Atlas currently shares one AtlasDataContext and migration set in Atlas.Persisten
 - Memberships and community-node links: composite ID-pair primary keys.
 - Ordered children: composite owner-ID/Position primary keys.
 
-Each repository save and owned-child replacement is transactional. SQL integration tests verify uniqueness, reference constraints, deletion behavior, and upgrades.
+Standalone saves are transactional. Calls within [OperationBoundary](../../../src/Atlas.Contracts/Operations/OperationBoundary.cs) share the SQL adapter's operation context and serializable transaction. Node creation, community/owner creation, reaction replacement and grouped moderation commit or roll back together.
+
+Node creation and parent changes use [NodeTopologyBoundary](../../../src/Atlas.Graph/Nodes/NodeTopologyBoundary.cs) and the database-scoped AtlasGraphTopology lock. A per-node lock is insufficient for cycles formed by changes across several nodes. Metadata edits use SaveMetadata, preserve stored parents and do not request the graph lock. Other domains rely on transactions and constraints unless a specific invariant requires named coordination.
+
+SQL tests cover constraints, upgrades, real document-insert failure rollback, competing topology writes and independent metadata/Content/vote writes while the graph lock is held. See [implementation evidence](../../security/validation/IMPLEMENTATION.md#workflows-and-evidence).
 
 ## Remaining limits
 
-A uniqueness error is not automatically converted to a successful create-or-update retry. Existing-record conflicts use last-write behavior; there is no rowversion. Multi-save domain workflows and event publication do not share one transaction. Future policies must address recovery, conflict detection, and reliable delivery explicitly.
+- Expected SQL deadlocks, uniqueness/constraint failures and lock timeouts become OperationConflictException. They are not automatically retried or converted into a successful upsert.
+- No universal rowversion check rejects every stale edit. Some relationship workflows check current state; broader version policy remains separate work.
+- The boundary covers sequential cooperating calls in one database. Direct SQL/DbContext writes can skip application validation and topology coordination.
+- Rollback restores SQL data, not caller objects; reload before retrying.
+- Event publication and external delivery remain outside the SQL transaction. Durable outbox/reliable delivery is deferred.
 
 See [Voting](../VOTING.md), [Data ownership](../DATA-OWNERSHIP.md), and [SQL setup](../../PTT-87-SQL-Server.md).

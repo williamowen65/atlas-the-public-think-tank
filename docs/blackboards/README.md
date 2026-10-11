@@ -3,6 +3,8 @@
 These blackboards are exploratory visual companions to Atlas's authoritative
 Markdown documentation.
 
+The [Node creation board](workflows/Nodes/NodeCreation.excalidraw) restores the custom 213-element layout from before the PTT-87 replacement (commit `0fa7943`). PTT-121 updates its labels and links for SQL, pre-write construction, topology coordination, rollback and post-commit events while preserving the original geometry and arrow bindings.
+
 - [Blackboard conventions](CONVENTIONS.md) describe the shared layout,
   editability, connection, traceability, and visual-language rules to apply to
   future workflow boards.
