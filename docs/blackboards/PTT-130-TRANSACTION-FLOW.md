@@ -2,45 +2,7 @@
 
 Creating a node writes a Content block, a Content document, and a Graph node. These are separate repository calls, but the outer operation owns their commit. The repositories share an EF context through `SqlOperationBoundary`, not through the domain objects.
 
-```mermaid
-sequenceDiagram
-    participant App as NodeCreationService
-    participant Repos as SQL repositories
-    participant Boundary as SqlOperationBoundary
-    participant Context as Shared AtlasDataContext
-    participant DB as SQL Server
-    App->>Repos: OperationBoundary.Execute(nodes, callback)
-    Repos->>Boundary: SqlRepository.Execute delegates
-    Boundary->>Context: Open outer context
-    Context->>DB: Begin serializable transaction
-    Boundary->>DB: Acquire AtlasWriteWorkflow application lock
-    Boundary->>Boundary: Set Current to outer context
-    Boundary-->>App: Run callback inside boundary
-    App->>Repos: Validate references
-    Repos->>Boundary: Open context lease
-    Boundary-->>Repos: Borrow Current context
-    Repos->>Context: Query referenced rows
-    Context->>DB: Read within transaction
-    loop Save block, document, then node
-        App->>Repos: Save entity
-        Repos->>Boundary: Execute nested save
-        Boundary->>Boundary: Verify matching connection string
-        Note over Boundary: Join outer operation without a new transaction
-        Repos->>Boundary: Open context lease
-        Boundary-->>Repos: Borrow Current context
-        Repos->>Context: SaveChanges
-        Context->>DB: Write within existing transaction
-        Note over Context,DB: Writes remain uncommitted
-    end
-    alt Entire callback succeeds
-        Boundary->>DB: Commit all writes and release lock
-    else Callback throws
-        Boundary->>DB: Dispose uncommitted transaction and release lock
-        Note over DB: All transaction writes roll back
-    end
-    Boundary->>Boundary: Clear Current
-    Boundary->>Context: Dispose outer context
-```
+Open the [editable Excalidraw blackboard](PTT-130-TRANSACTION-FLOW.excalidraw) to follow the shared context and transaction through each repository call.
 
 ## Follow the code
 
