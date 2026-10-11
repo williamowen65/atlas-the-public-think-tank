@@ -33,7 +33,7 @@ public sealed class SqlValidationTests
         Assert.AreEqual(name, loaded.DisplayName);
         Assert.AreEqual(participant.Bio, loaded.Bio);
         participants.Save(new Participant("Normal participant", DateTimeOffset.UtcNow));
-        Assert.AreEqual(2, participants.GetAll().Count);
+        Assert.HasCount(2, participants.GetAll());
     }
 
     // Exercises the same expression-based query helper used by production SQL repositories.

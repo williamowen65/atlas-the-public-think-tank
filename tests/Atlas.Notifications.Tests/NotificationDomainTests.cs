@@ -35,7 +35,7 @@ public sealed class NotificationFlowTests
         Assert.Throws<ArgumentException>(() => item.MarkRead(now.AddMinutes(-1)));
         Assert.Throws<ArgumentException>(() => item.RecordDelivery(new(DeliveryChannel.Email, DeliveryStatus.Simulated, now.AddMinutes(-1), null)));
         Assert.IsNull(item.ReadAt);
-        Assert.AreEqual(0, item.DeliveryAttempts.Count);
+        Assert.IsEmpty(item.DeliveryAttempts);
         item.MarkRead(now.AddMinutes(1));
         Assert.Throws<ArgumentException>(() => item.Dismiss(now));
         Assert.IsNull(item.DismissedAt);

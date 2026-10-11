@@ -53,6 +53,22 @@ public sealed class CommunityTests
     }
 
     [TestMethod]
+    public void RenameServiceRejectsRuntimeNullWithoutChangingCommunity()
+    {
+        var communities = new MemoryCommunities();
+        var service = new CommunityService(communities, new MemoryMemberships(), new MemoryNodes());
+        var owner = Guid.NewGuid();
+        var createdAt = DateTimeOffset.UtcNow;
+        var community = service.Create("Original", "", owner, createdAt);
+
+        Assert.ThrowsExactly<ArgumentNullException>(() => service.Rename(community, owner, null!, createdAt.AddMinutes(1)));
+
+        Assert.AreEqual("Original", community.Name);
+        Assert.AreEqual(createdAt, community.UpdatedAt);
+        Assert.AreEqual("Original", communities.GetById(community.Id)!.Name);
+    }
+
+    [TestMethod]
     public void NodeCanBelongToMultipleCommunitiesWithoutDuplication()
     {
         var communities = new MemoryCommunities();
@@ -65,7 +81,7 @@ public sealed class CommunityTests
         service.AssociateNode(first, nodeId, participant, DateTimeOffset.UtcNow);
         service.AssociateNode(second, nodeId, participant, DateTimeOffset.UtcNow);
         service.AssociateNode(first, nodeId, participant, DateTimeOffset.UtcNow);
-        Assert.AreEqual(2, nodes.GetByNode(nodeId).Count);
+        Assert.HasCount(2, nodes.GetByNode(nodeId));
     }
 
     [TestMethod]

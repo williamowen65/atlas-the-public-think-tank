@@ -44,7 +44,7 @@ public sealed class SqlOperationValidationTests
         var communities = new SqlCommunityRepository(database.Open);
         var service = new CommunityService(communities, new FailingMemberships(), new SqlCommunityNodeRepository(database.Open));
         Assert.Throws<InjectedFailure>(() => service.Create("Community", "Description", database.AddParticipant(), Now));
-        Assert.AreEqual(0, communities.GetAll().Count);
+        Assert.IsEmpty(communities.GetAll());
         using var check = database.Open();
         Assert.AreEqual(0, check.CommunityMembershipRows.Count());
     }
@@ -61,7 +61,7 @@ public sealed class SqlOperationValidationTests
         var service = new ModerationService(new FailingCases(cases), new Moderator(moderator));
         Assert.Throws<InjectedFailure>(() => service.DecideNode(moderator, node, ModerationDecision.HideNode, "Reviewed", Now.AddMinutes(1)));
         Assert.IsTrue(cases.GetAll().All(item => item.Status == ModerationStatus.Submitted && item.ReviewerId is null));
-        Assert.AreEqual(2, cases.GetAll().Count);
+        Assert.HasCount(2, cases.GetAll());
     }
 
     [TestMethod]
@@ -80,9 +80,9 @@ public sealed class SqlOperationValidationTests
         var first = new NodeReactionApplicationService(definitions, reactions).Apply(node, "Helpful", actor, true, Now);
         var service = new NodeReactionApplicationService(definitions, new FailingReactions(reactions));
         Assert.Throws<InjectedFailure>(() => service.Replace(node, first.Id, "Interesting", actor, true, false, Now.AddMinutes(1)));
-        Assert.AreEqual(1, reactions.GetAll().Count);
+        Assert.HasCount(1, reactions.GetAll());
         Assert.AreEqual(NodeReactionLifecycleState.Active, reactions.GetById(first.Id)!.LifecycleState);
-        Assert.AreEqual(1, reactions.GetById(first.Id)!.AuditHistory.Count);
+        Assert.HasCount(1, reactions.GetById(first.Id)!.AuditHistory);
     }
 
     [TestMethod]
@@ -126,7 +126,7 @@ public sealed class SqlOperationValidationTests
         var one = Decide(ModerationDecision.HideNode); var two = Decide(ModerationDecision.Dismiss); start.Set();
         Assert.AreEqual(1, (await Task.WhenAll(one, two)).Count(result => result));
         var reports = cases.GetAll();
-        Assert.AreEqual(3, reports.Count);
+        Assert.HasCount(3, reports);
         Assert.AreEqual(1, reports.Select(item => item.Status).Distinct().Count());
         Assert.AreEqual(1, reports.Select(item => item.DecisionReason).Distinct().Count());
         Assert.IsTrue(reports.All(item => item.Status != ModerationStatus.Submitted));

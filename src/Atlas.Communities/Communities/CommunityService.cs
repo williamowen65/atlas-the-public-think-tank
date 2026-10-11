@@ -39,7 +39,8 @@ public sealed class CommunityService
         {
             ReferenceValidation.Require(_communities, "Community", community.Id.Value, false);
             ReferenceValidation.Require(_communities, "Participant", actorParticipantId);
-            if (!string.Equals(community.Name, name?.Trim(), StringComparison.OrdinalIgnoreCase)) EnsureUniqueName(name);
+            ArgumentNullException.ThrowIfNull(name);
+            if (!string.Equals(community.Name, name.Trim(), StringComparison.OrdinalIgnoreCase)) EnsureUniqueName(name);
             community.Rename(actorParticipantId, name, changedAt);
             _communities.Save(community);
         });

@@ -21,7 +21,7 @@ public class SecurityAuthorizationTests
 
         Assert.AreEqual(originalTitle, node.Title);
         Assert.AreEqual(originalTime, node.UpdatedAt);
-        Assert.AreEqual(originalEventCount, node.DomainEvents.Count);
+        Assert.HasCount(originalEventCount, node.DomainEvents);
     }
 
     [TestMethod]

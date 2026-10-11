@@ -15,7 +15,7 @@ public sealed class ContentValidationTests
         Assert.Throws<ArgumentNullException>(() => Document.Reconstitute(null!, [], Created, Created));
         var document = new Document([], Created);
         Assert.Throws<ArgumentNullException>(() => document.AddBlock(null!, Created.AddMinutes(1)));
-        Assert.AreEqual(0, document.BlockIds.Count);
+        Assert.IsEmpty(document.BlockIds);
         Assert.AreEqual(Created, document.UpdatedAt);
     }
 

@@ -22,13 +22,13 @@ public sealed class ModerationWorkflowTests
             "Rule violation reviewed", DateTimeOffset.UtcNow);
         Assert.AreEqual(ModerationStatus.Actioned, decided.Status);
         Assert.AreEqual(_moderator, decided.ReviewerId);
-        Assert.AreEqual(0, service.Queue(_moderator).Count);
+        Assert.IsEmpty(service.Queue(_moderator));
         Assert.ThrowsExactly<InvalidOperationException>(() =>
             service.Decide(_moderator, reported.Id, ModerationDecision.Dismiss, "retry", DateTimeOffset.UtcNow));
 
         var candidate = Candidate(decided.Status == ModerationStatus.Actioned);
-        Assert.AreEqual(0, new DiscoveryService(new Source(candidate))
-            .Discover(new DiscoveryQuery(IncludeArchived: true)).Count);
+        Assert.IsEmpty(new DiscoveryService(new Source(candidate))
+            .Discover(new DiscoveryQuery(IncludeArchived: true)));
     }
 
     [TestMethod]
@@ -39,15 +39,15 @@ public sealed class ModerationWorkflowTests
         var second = service.ReportNode(_node, Guid.NewGuid(), "A Node", "harassment", "second", DateTimeOffset.UtcNow);
         var other = service.ReportNode(Guid.NewGuid(), _reporter, "Other Node", "spam", null, DateTimeOffset.UtcNow);
         var groups = service.NodeQueue(_moderator);
-        Assert.AreEqual(2, groups.Count);
-        Assert.AreEqual(2, groups.Single(group => group.NodeId == _node).PendingReports.Count);
+        Assert.HasCount(2, groups);
+        Assert.HasCount(2, groups.Single(group => group.NodeId == _node).PendingReports);
 
         var decided = service.DecideNode(_moderator, _node, ModerationDecision.HideNode,
             "Reviewed both reports", DateTimeOffset.UtcNow);
-        Assert.AreEqual(2, decided.Count);
+        Assert.HasCount(2, decided);
         Assert.IsTrue(decided.All(report => report.Status == ModerationStatus.Actioned &&
             report.ReviewerId == _moderator && report.DecisionReason == "Reviewed both reports"));
-        Assert.AreEqual(2, service.NodeHistory(_moderator, _node).Count);
+        Assert.HasCount(2, service.NodeHistory(_moderator, _node));
         Assert.AreEqual(other.Id, service.Queue(_moderator).Single().Id);
         Assert.ThrowsExactly<InvalidOperationException>(() =>
             service.Decide(_moderator, second.Id, ModerationDecision.Dismiss, "retry", DateTimeOffset.UtcNow));
@@ -60,7 +60,7 @@ public sealed class ModerationWorkflowTests
         var first = service.ReportNode(_node, _reporter, "A Node", "spam", null, DateTimeOffset.UtcNow);
         service.ReportNode(_node, Guid.NewGuid(), "A Node", "spam", null, DateTimeOffset.UtcNow);
         service.Decide(_moderator, first.Id, ModerationDecision.Dismiss, "No violation", DateTimeOffset.UtcNow);
-        Assert.AreEqual(0, service.Queue(_moderator).Count);
+        Assert.IsEmpty(service.Queue(_moderator));
         Assert.IsTrue(service.NodeHistory(_moderator, _node).All(report => report.Status == ModerationStatus.Dismissed));
     }
 
@@ -83,8 +83,8 @@ public sealed class ModerationWorkflowTests
         var dismissed = service.Decide(_moderator, report.Id, ModerationDecision.Dismiss,
             "No violation", DateTimeOffset.UtcNow);
         Assert.AreEqual(ModerationStatus.Dismissed, dismissed.Status);
-        Assert.AreEqual(1, new DiscoveryService(new Source(Candidate(false)))
-            .Discover(new DiscoveryQuery()).Count);
+        Assert.HasCount(1, new DiscoveryService(new Source(Candidate(false)))
+            .Discover(new DiscoveryQuery()));
     }
 
     [TestMethod]

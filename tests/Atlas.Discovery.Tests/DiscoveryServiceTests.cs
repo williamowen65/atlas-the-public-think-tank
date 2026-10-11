@@ -37,12 +37,12 @@ public sealed class DiscoveryServiceTests
         var other = Candidate("Another author", average: 10);
         var service = Service(hidden, visible, other);
 
-        Assert.AreEqual(2, service.DiscoverAuthored(new DiscoveryQuery(),
-            [hidden.NodeId, visible.NodeId]).Count);
+        Assert.HasCount(2, service.DiscoverAuthored(new DiscoveryQuery(),
+            [hidden.NodeId, visible.NodeId]));
         Assert.AreEqual(hidden.NodeId, service.DiscoverAuthored(new DiscoveryQuery(),
             [hidden.NodeId, visible.NodeId])[0].NodeId);
-        Assert.AreEqual(0, service.DiscoverAuthored(
-            new DiscoveryQuery(SearchText: "Private"), [hidden.NodeId, visible.NodeId]).Count);
+        Assert.IsEmpty(service.DiscoverAuthored(
+            new DiscoveryQuery(SearchText: "Private"), [hidden.NodeId, visible.NodeId]));
         Assert.AreEqual(0, service.Discover(new DiscoveryQuery()).Count(item => item.NodeId == hidden.NodeId));
     }
 
@@ -201,13 +201,13 @@ public sealed class DiscoveryServiceTests
         var last = service.DiscoverPage(new DiscoveryQuery(CommunityId: CommunityA, Page: 3));
 
         Assert.AreEqual(8, first.TotalCount);
-        Assert.AreEqual(3, first.Items.Count);
+        Assert.HasCount(3, first.Items);
         Assert.IsTrue(first.HasNextPage);
         CollectionAssert.AreEqual(Enumerable.Range(4, 3).ToArray(),
             second.Items.Select(item => item.Rank).ToArray());
-        Assert.AreEqual(2, last.Items.Count);
+        Assert.HasCount(2, last.Items);
         Assert.IsFalse(last.HasNextPage);
-        Assert.AreEqual(0, service.DiscoverPage(new DiscoveryQuery(CommunityId: CommunityA, Page: 4)).Items.Count);
+        Assert.IsEmpty(service.DiscoverPage(new DiscoveryQuery(CommunityId: CommunityA, Page: 4)).Items);
     }
 
     [TestMethod]
@@ -220,7 +220,7 @@ public sealed class DiscoveryServiceTests
         var page = service.DiscoverAuthoredPage(new DiscoveryQuery(Page: 2),
             candidates.Select(candidate => candidate.NodeId).ToArray());
         Assert.AreEqual(5, page.TotalCount);
-        Assert.AreEqual(2, page.Items.Count);
+        Assert.HasCount(2, page.Items);
         Assert.AreEqual(4, page.Items[0].Rank);
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             service.DiscoverPage(new DiscoveryQuery(Page: 0)));

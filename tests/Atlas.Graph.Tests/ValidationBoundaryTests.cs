@@ -96,7 +96,7 @@ public sealed class ValidationBoundaryTests
         Assert.Throws<InvalidOperationException>(() => new NodeRelationshipService(repository)
             .Attach(node, NodeId.New(), node.AuthorId.Value, Now.AddMinutes(1)));
         Assert.AreEqual(0, repository.Saves);
-        Assert.AreEqual(0, node.ParentNodeIds.Count);
+        Assert.IsEmpty(node.ParentNodeIds);
         CollectionAssert.AreEqual(history, node.DomainEvents.ToArray());
     }
 
@@ -110,7 +110,7 @@ public sealed class ValidationBoundaryTests
         Assert.Throws<InvalidOperationException>(() => service.ChangeType(node, NodeTypeId.New(), node.AuthorId.Value, Now.AddMinutes(1)));
         Assert.Throws<InvalidOperationException>(() => service.SetRequestedTypes(node, [NodeTypeId.New()], node.AuthorId.Value, Now.AddMinutes(1)));
         Assert.AreEqual(type, node.TypeId);
-        Assert.AreEqual(0, node.RequestedSubNodeTypes.Count);
+        Assert.IsEmpty(node.RequestedSubNodeTypes);
         Assert.AreEqual(Now, node.UpdatedAt);
         Assert.AreEqual(0, repository.Saves);
     }
