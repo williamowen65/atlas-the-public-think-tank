@@ -130,6 +130,17 @@ If each save commits independently, the block and document can remain in SQL whe
 
 A shared EF context alone does not provide this guarantee. The shared **transaction** keeps earlier `SaveChanges` calls from becoming permanent until the outer operation commits.
 
+### Transaction workflow
+
+1. **Begin the transaction** before the operation's database checks and writes.
+2. **Run the operation:** queries and `SaveChanges()` calls use the same EF context and transaction. `SaveChanges()` sends changes to SQL without committing the outer transaction.
+3. **Commit** if the entire operation succeeds, or **roll back** if it fails.
+4. **Dispose** the transaction and context to clean up.
+
+Atlas also acquires the application lock before the checks. It remains held until commit or rollback.
+
+“Close the transaction” therefore means deciding whether to commit or roll back, then cleaning up—not simply finishing the last `SaveChanges()` call.
+
 ### Which class implements the interface?
 
 | Piece | What it does |
