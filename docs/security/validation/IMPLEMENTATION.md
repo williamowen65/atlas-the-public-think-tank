@@ -200,8 +200,20 @@ All named tests above are in [SqlOperationValidationTests](../../../tests/Atlas.
 
 ### Limits to retain during review
 
-The graph-wide lock serializes Node creation and parent changes. Metadata edits do not request it. Further narrowing of topology coordination requires equivalent transitive-cycle evidence; there is no per-node lock scheme in this slice. These boundaries are synchronous, use one database and cover cooperating repository operations. They do not make arbitrary direct `DbContext` writes follow application policy, provide universal optimistic version checks for every stale object, or coordinate external delivery/event publication with SQL.
+This slice protects the workflows described above. Keep these limits in mind when reviewing or adding a new operation:
 
-Validation rejects local invalid proposals before mutation. A later persistence failure rolls back database writes; it does not rewind domain objects already changed in caller memory. Reload after failure before retrying. In-memory test adapters without an `IOperationBoundary` do not claim SQL rollback semantics.
+- **Creation and parent changes share one graph lock.** These operations take turns, even when they affect different nodes, because their combined changes could create a cycle. Metadata edits such as rename do not request it. A future lock per node would need tests proving that cycles involving several nodes are still prevented.
 
-Notifications persist before external delivery. An outbox/reliable delivery mechanism and general stale-object versioning are separate architectural work. Poll/chart existence remains deferred until those domains exist. Resource limits, wider failure paths and future browser/HTTP boundaries remain [PTT-122](https://thepublicthinktank.atlassian.net/browse/PTT-122), [PTT-123](https://thepublicthinktank.atlassian.net/browse/PTT-123) and [PTT-125](https://thepublicthinktank.atlassian.net/browse/PTT-125).
+- **One operation uses one database and runs its repository calls sequentially.** Nested calls share its context and transaction. Do not run parallel database calls inside that operation: the shared EF context is not safe for concurrent use. The concurrent tests simulate separate requests, each with its own operation context.
+
+- **The guarantees depend on using the operation boundaries and repositories.** A new workflow that writes directly through `DbContext` can skip the application’s reference checks and graph lock. SQL constraints still apply, but they do not enforce every domain rule. In-memory adapters without [IOperationBoundary](../../../src/Atlas.Contracts/Operations/OperationBoundary.cs) also do not provide the SQL rollback guarantee.
+
+- **Rollback restores database state, not objects already changed in memory.** Local validation rejects invalid proposals before changing the object. If a later save fails, however, the caller’s object may still contain the attempted change even though SQL rolled it back. Reload the object from storage before retrying.
+
+- **Transactions do not prevent every stale-form overwrite.** Two forms can hold older copies of the same object. This slice does not add a universal version check that rejects every save based on an outdated copy. Some relationship operations check for changes, and metadata saves preserve stored parents, but general stale-object protection remains separate work.
+
+- **Database writes and external delivery are separate.** A notification can be saved successfully while its later email or other external delivery fails. Likewise, rolling back SQL does not undo an event already sent outside the transaction. A reliable delivery mechanism, such as an outbox that records pending messages in the transaction and sends them afterward, remains future work.
+
+- **Poll and chart references cannot yet be checked for existence.** Their IDs can be checked locally, but confirming that the referenced poll or chart exists is deferred until those domains are implemented.
+
+- **Other security work remains outside this slice.** Resource limits are tracked in [PTT-122](https://thepublicthinktank.atlassian.net/browse/PTT-122), broader failure-path coverage in [PTT-123](https://thepublicthinktank.atlassian.net/browse/PTT-123), and future browser/HTTP boundaries in [PTT-125](https://thepublicthinktank.atlassian.net/browse/PTT-125).
