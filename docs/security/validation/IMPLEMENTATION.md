@@ -177,6 +177,8 @@ The transaction provides all-or-nothing writes; the named lock makes cooperating
 
 This is deliberately coarse: unrelated writes using this boundary also wait for each other. Direct SQL or other code that does not acquire the named lock does not participate in this coordination. Database constraints remain necessary, and this is not a general stale-form/version check.
 
+**Monitoring the lock:** SQL Server exposes current application-lock holders and waiters through its monitoring views; Atlas does not need a manually built queue. Each operation has its own context and transaction, while cooperating writes request the same named lock. For future performance monitoring, measure waiting-session counts, lock acquisition time, time holding the lock and timeout counts. Live database views provide snapshots; application metrics can show trends over time. The full discovery proposal and diagnostic SQL are recorded in [PTTD-36](https://thepublicthinktank.atlassian.net/browse/PTTD-36).
+
 ### Workflows and evidence
 
 | Workflow | Writes committed or rolled back together | Failure-injection evidence |
