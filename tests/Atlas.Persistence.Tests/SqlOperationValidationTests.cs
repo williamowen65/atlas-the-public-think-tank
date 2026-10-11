@@ -1,6 +1,7 @@
 using Atlas.Content.Blocks;
 using Atlas.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
 using Atlas.Communities.Communities;
 using Atlas.Communities.Memberships;
 using Atlas.ConsoleApp;
@@ -401,6 +402,46 @@ public sealed class SqlOperationValidationTests
         var saved = nodes.GetById(child.Id)!;
         Assert.AreEqual("Renamed", saved.Title.Value);
         CollectionAssert.AreEqual(new[] { parent.Id }, saved.ParentNodeIds.ToArray());
+    }
+
+    [TestMethod]
+    public void SqlDocumentInsertFailureDuringNodeCreationRollsBackEarlierBlockSave()
+    {
+        using var database = SqlTestDatabase.Create();
+        using var clock = AtlasTime.Use(new FixedClock());
+        var author = database.AddParticipant();
+        var type = NodeTypeDefinition.CreateSystemDefined("Idea", "Ideas", Now);
+        new SqlNodeTypeRepository(database.Open).Save(type);
+        using (var setup = database.Open())
+        {
+            // Test-only constraint in this disposable database: reject real document INSERTs.
+            // No repository save is replaced and no application exception is injected.
+            setup.Database.ExecuteSqlRaw("ALTER TABLE [DocumentRows] ADD CONSTRAINT [CK_Test_RejectDocumentInsert] CHECK ([Id] = '00000000-0000-0000-0000-000000000000')");
+        }
+        var blockWasSavedBeforeFailure = false;
+        AtlasDataContext Open()
+        {
+            var context = database.Open();
+            // Observe the successful SQL write inside the transaction before document saving starts.
+            context.SavedChanges += (_, _) =>
+                blockWasSavedBeforeFailure |= context.BlockRows.Any() && !context.DocumentRows.Any();
+            return context;
+        }
+        var service = new NodeCreationService(new SqlNodeRepository(Open), new SqlDocumentRepository(Open));
+        var failure = Assert.Throws<OperationConflictException>(() =>
+            service.Create("Title", "Description", type.Id, author, []));
+        Assert.IsTrue(blockWasSavedBeforeFailure, "The real block save must succeed before document insertion fails.");
+        Exception? cause = failure;
+        while (cause is not null && cause is not SqlException) cause = cause.InnerException;
+        Assert.IsInstanceOfType<SqlException>(cause);
+        var sqlFailure = (SqlException)cause!;
+        Assert.AreEqual(547, sqlFailure.Number);
+        StringAssert.Contains(sqlFailure.Message, "CK_Test_RejectDocumentInsert");
+        using var check = database.Open();
+        Assert.AreEqual(0, check.BlockRows.Count());
+        Assert.AreEqual(0, check.DocumentRows.Count());
+        Assert.AreEqual(0, check.Set<DocumentBlockRow>().Count());
+        Assert.AreEqual(0, check.NodeRows.Count());
     }
 
     private sealed class FixedClock : TimeProvider { public override DateTimeOffset GetUtcNow() => Now; }

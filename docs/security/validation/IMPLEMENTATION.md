@@ -185,14 +185,16 @@ Add a named application lock only when a specific domain rule could be broken by
 
 ### Workflows and evidence
 
-Each linked test deliberately makes a later write fail, then checks that the transaction left no partial result in SQL.
+The linked tests cover injected failures and a real SQL document-insert rejection, then check that the transaction left no partial result in SQL.
 
-| Workflow | Writes committed or rolled back together | Failure-injection evidence |
+| Workflow | Writes committed or rolled back together | Failure-path evidence |
 |---|---|---|
-| [NodeCreationService](../../../src/Atlas.Console/NodeCreationService.cs) | Block, document, Node and parent relationship | [FailedNodeSaveRollsBackBlocksAndDocument](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L25) |
-| [CommunityService.Create](../../../src/Atlas.Communities/Communities/CommunityService.cs) | Community and owner membership | [FailedOwnerMembershipRollsBackCommunity](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L41) |
-| [Reaction replacement](../../../src/Atlas.Graph/Reactions/NodeReactionApplicationService.cs) | Replacement and old association's supersession/audit | [FailedSupersessionSaveRollsBackReplacement](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L68) |
-| [Grouped moderation](../../../src/Atlas.Moderation/ModerationService.cs) | All decisions, review requests or restorations in the group | [FailedSecondModerationSaveRollsBackWholeGroup](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L53) and [FailedGroupedReviewAndRestorationPreservePersistedHistory](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L236) |
+| [NodeCreationService](../../../src/Atlas.Console/NodeCreationService.cs) | Block, document, Node and parent relationship | [FailedNodeSaveRollsBackBlocksAndDocument](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L26) and [SqlDocumentInsertFailureDuringNodeCreationRollsBackEarlierBlockSave](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L408) |
+| [CommunityService.Create](../../../src/Atlas.Communities/Communities/CommunityService.cs) | Community and owner membership | [FailedOwnerMembershipRollsBackCommunity](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L42) |
+| [Reaction replacement](../../../src/Atlas.Graph/Reactions/NodeReactionApplicationService.cs) | Replacement and old association's supersession/audit | [FailedSupersessionSaveRollsBackReplacement](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L69) |
+| [Grouped moderation](../../../src/Atlas.Moderation/ModerationService.cs) | All decisions, review requests or restorations in the group | [FailedSecondModerationSaveRollsBackWholeGroup](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L54) and [FailedGroupedReviewAndRestorationPreservePersistedHistory](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L237) |
+
+The document-insert test uses unmodified SQL repositories and a test-only constraint in its disposable database. It observes the earlier block write, checks that SQL error 547 reaches the caller as `OperationConflictException`, and verifies rollback removes the block and leaves no document, document-block association or Node. This proves that specific failure path; it does not cover every possible persistence failure.
 
 All named tests above are in [SqlOperationValidationTests](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs). Further tests cover competing community names/vote inserts, competing moderator decisions, opposite parent attachments and translation of a SQL unique violation into [OperationConflictException](../../../src/Atlas.Contracts/Operations/OperationBoundary.cs). Additional SQL tests prove that metadata renames, Content and vote writes finish while a graph lock is held, and stale metadata saves preserve newly added parents. They also show that direct competing Node saves cannot create a three-node cycle, and nested topology operations acquire the lock without committing early or leaking it after rollback. Constraints remain final protection. No EF model or migration change is required.
 
