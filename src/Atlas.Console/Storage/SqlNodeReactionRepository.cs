@@ -11,8 +11,12 @@ public sealed class SqlNodeReactionRepository(Func<AtlasDataContext>? contextFac
     // Read reactions as domain objects; active queries filter by lifecycle state before mapping.
     public IReadOnlyCollection<NodeReaction> GetAll() => ReadRows<NodeReactionRow>().Select(ToDomain).ToList();
     public NodeReaction? GetById(NodeReactionId id) => FindRow<NodeReactionRow>(id.Value) is { } row ? ToDomain(row) : null;
+    // Return all non-removed reaction associations for this Node, for display and selection.
+    // Active refers to the association's lifecycle; this query does not check Node availability or definition suppression.
     public IReadOnlyCollection<NodeReaction> GetActiveForNode(NodeId nodeId) =>
         QueryRows<NodeReactionRow>(row => row.NodeId == nodeId.Value && row.LifecycleState == "Active").Select(ToDomain).ToList();
+    // Find the current association for one Node/definition pair, used when applying or replacing a reaction.
+    // Return null when none exists; SingleOrDefault throws if duplicate active associations are stored.
     public NodeReaction? GetActive(NodeId nodeId, ReactionDefinitionId definitionId) =>
         QueryRows<NodeReactionRow>(row => row.NodeId == nodeId.Value && row.ReactionDefinitionId == definitionId.Value && row.LifecycleState == "Active")
             .Select(ToDomain).SingleOrDefault();
