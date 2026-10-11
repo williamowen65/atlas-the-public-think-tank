@@ -15,13 +15,29 @@ public class SecurityAuthorizationTests
         var originalEventCount = node.DomainEvents.Count;
 
         Assert.ThrowsExactly<ArgumentException>(() =>
-            node.Rename(new NodeTitle("Changed"), Guid.Empty, originalTime.AddMinutes(1)));
+            node.Rename(
+                new NodeTitle("Changed"),
+                Guid.Empty,
+                originalTime.AddMinutes(1)
+            ));
         Assert.ThrowsExactly<ArgumentException>(() =>
-            node.Archive(Guid.Empty, originalTime.AddMinutes(1)));
+            node.Archive(
+                Guid.Empty,
+                originalTime.AddMinutes(1)
+            ));
 
-        Assert.AreEqual(originalTitle, node.Title);
-        Assert.AreEqual(originalTime, node.UpdatedAt);
-        Assert.HasCount(originalEventCount, node.DomainEvents);
+        Assert.AreEqual(
+            originalTitle,
+            node.Title
+        );
+        Assert.AreEqual(
+            originalTime,
+            node.UpdatedAt
+        );
+        Assert.HasCount(
+            originalEventCount,
+            node.DomainEvents
+        );
     }
 
     [TestMethod]

@@ -10,7 +10,10 @@ public sealed class SqlNodeRepository(Func<AtlasDataContext>? contextFactory = n
 {
     /// <summary>Coordinates creation and parent changes before graph checks and saves.</summary>
     /// <remarks>Metadata edits use the ordinary boundary and never request this named lock.</remarks>
-    public T ExecuteTopology<T>(Func<T> operation) => ExecuteWithLock(operation, "AtlasGraphTopology");
+    public T ExecuteTopology<T>(Func<T> operation) => ExecuteWithLock(
+        operation,
+        "AtlasGraphTopology"
+    );
 
 
     // Read saved Nodes with their relationships. A missing ID returns null.
@@ -20,17 +23,29 @@ public sealed class SqlNodeRepository(Func<AtlasDataContext>? contextFactory = n
     private IReadOnlyCollection<Node> All() => ReadRows<NodeRow>().Select(ToDomain).ToList();
     public IReadOnlyCollection<Node> GetChildren(NodeId parentId) => All().Where(node => node.ParentNodeIds.Contains(parentId)).ToList();
     public IReadOnlyCollection<Node> GetByAuthor(NodeAuthorId authorId) => All().Where(node => node.AuthorId == authorId).ToList();
-    public IReadOnlyCollection<Node> GetParentCandidates(NodeId childId, IReadOnlyCollection<NodeId> existingParentIds) =>
+    public IReadOnlyCollection<Node> GetParentCandidates(
+        NodeId childId,
+        IReadOnlyCollection<NodeId> existingParentIds
+    ) =>
         All().Where(node => node.Id != childId && !existingParentIds.Contains(node.Id)).ToList();
     IReadOnlyCollection<Node> IDiscoveryNodeReader.ReadNodesForDiscovery() => All();
     /// <summary>Persists a complete node, including its parents, under graph coordination.</summary>
-    public void Save(Node node) => ExecuteTopology(() => { SaveCore(node, false); return true; });
+    public void Save(Node node) => ExecuteTopology(() => { SaveCore(
+        node,
+        false
+    ); return true; });
 
     /// <summary>Updates an existing node's metadata without acquiring the graph lock or rewriting parents.</summary>
-    public void SaveMetadata(Node node) => Execute(() => { SaveCore(node, true); return true; });
+    public void SaveMetadata(Node node) => Execute(() => { SaveCore(
+        node,
+        true
+    ); return true; });
 
     /// <summary>Validates references and persists the selected metadata or complete-node operation.</summary>
-    private void SaveCore(Node node, bool metadataOnly)
+    private void SaveCore(
+        Node node,
+        bool metadataOnly
+    )
     {
         ArgumentNullException.ThrowIfNull(node);
 
@@ -39,25 +54,56 @@ public sealed class SqlNodeRepository(Func<AtlasDataContext>? contextFactory = n
         if (metadataOnly && previous is null) throw new InvalidOperationException("Metadata edits require an existing node.");
 
         // Require existing references throughout. Creation and newly selected types additionally require availability.
-        ReferenceValidation.Require(this, "Participant", node.AuthorId.Value, previous is null);
-        ReferenceValidation.Require(this, "Document", node.DescriptionId.Value, false);
-        ReferenceValidation.Require(this, "NodeType", node.TypeId.Value, previous is null || previous.TypeId != node.TypeId.Value);
+        ReferenceValidation.Require(
+            this,
+            "Participant",
+            node.AuthorId.Value,
+            previous is null
+        );
+        ReferenceValidation.Require(
+            this,
+            "Document",
+            node.DescriptionId.Value,
+            false
+        );
+        ReferenceValidation.Require(
+            this,
+            "NodeType",
+            node.TypeId.Value,
+            previous is null || previous.TypeId != node.TypeId.Value
+        );
         foreach (var request in node.RequestedSubNodeTypes)
-            ReferenceValidation.Require(this, "NodeType", request.TypeId.Value,
-                previous is null || !(previous.RequestedSubNodeTypeIds ?? []).Contains(request.TypeId.Value));
+            ReferenceValidation.Require(
+                this,
+                "NodeType",
+                request.TypeId.Value,
+                previous is null || !(previous.RequestedSubNodeTypeIds ?? []).Contains(request.TypeId.Value)
+            );
 
         // Only full saves validate and replace topology. Traverse stored ancestry to reject indirect cycles,
         // then require newly attached parents to be available.
         if (!metadataOnly)
         {
-            GraphRelationshipValidation.EnsureAcyclic(node.Id, node.ParentNodeIds, parentId =>
-                FindRow<NodeRow>(parentId.Value) is { } parent ? (parent.ParentNodeIds ?? []).Select(id => new NodeId(id)).ToList() : null);
+            GraphRelationshipValidation.EnsureAcyclic(
+                node.Id,
+                node.ParentNodeIds,
+                parentId =>
+                FindRow<NodeRow>(parentId.Value) is { } parent ? (parent.ParentNodeIds ?? []).Select(id => new NodeId(id)).ToList() : null
+            );
             foreach (var parent in node.ParentNodeIds)
-                ReferenceValidation.Require(this, "Node", parent.Value, previous is null || !(previous.ParentNodeIds ?? []).Contains(parent.Value));
+                ReferenceValidation.Require(
+                    this,
+                    "Node",
+                    parent.Value,
+                    previous is null || !(previous.ParentNodeIds ?? []).Contains(parent.Value)
+                );
         }
 
         // Metadata saves preserve the stored Parents collection, so stale metadata cannot overwrite newer links.
-        SaveRow(ToStorage(node), metadataOnly ? [nameof(NodeRow.Parents)] : []);
+        SaveRow(
+            ToStorage(node),
+            metadataOnly ? [nameof(NodeRow.Parents)] : []
+        );
     }
 
 
@@ -90,7 +136,8 @@ public sealed class SqlNodeRepository(Func<AtlasDataContext>? contextFactory = n
         // Parse lifecycle state and reject missing required references before rebuilding the domain object.
         var status = Enum.Parse<NodeStatus>(
             storedNode.Status,
-            ignoreCase: true);
+            ignoreCase: true
+        );
 
         var descriptionId = storedNode.DescriptionId
             ?? throw new InvalidDataException(
@@ -114,7 +161,8 @@ public sealed class SqlNodeRepository(Func<AtlasDataContext>? contextFactory = n
             (storedNode.ParentNodeIds ?? [])
                 .Select(id => new NodeId(id)),
             storedNode.CreatedAt,
-            storedNode.UpdatedAt);
+            storedNode.UpdatedAt
+        );
     }
 
 }

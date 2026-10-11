@@ -50,5 +50,6 @@ public sealed class SqlReactionDefinitionRepository(Func<AtlasDataContext>? cont
             stored.CreatedByParticipantId,
             stored.IsSuppressed,
             stored.CreatedAt,
-            stored.UpdatedAt);
+            stored.UpdatedAt
+        );
 }

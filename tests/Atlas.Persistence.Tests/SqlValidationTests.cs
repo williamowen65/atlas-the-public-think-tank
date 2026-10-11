@@ -22,18 +22,40 @@ public sealed class SqlValidationTests
             .Options;
         AtlasDataContext Open() => new(options);
         var participants = new SqlParticipantRepository(Open);
-        var participant = new Participant(name, "Unicode 水; SELECT * FROM Nodes;", DateTimeOffset.UtcNow);
+        var participant = new Participant(
+            name,
+            "Unicode 水; SELECT * FROM Nodes;",
+            DateTimeOffset.UtcNow
+        );
         participants.Save(participant);
 
         probe.Reset();
         var found = new QueryProbe(Open).FindByName(name);
-        Assert.AreEqual(participant.Id.Value, found.Single().Id);
-        Assert.IsTrue(probe.SawParameterizedValue, "The SQL query must bind supplied text as a parameter.");
+        Assert.AreEqual(
+            participant.Id.Value,
+            found.Single().Id
+        );
+        Assert.IsTrue(
+            probe.SawParameterizedValue,
+            "The SQL query must bind supplied text as a parameter."
+        );
         var loaded = participants.GetById(participant.Id)!;
-        Assert.AreEqual(name, loaded.DisplayName);
-        Assert.AreEqual(participant.Bio, loaded.Bio);
-        participants.Save(new Participant("Normal participant", DateTimeOffset.UtcNow));
-        Assert.HasCount(2, participants.GetAll());
+        Assert.AreEqual(
+            name,
+            loaded.DisplayName
+        );
+        Assert.AreEqual(
+            participant.Bio,
+            loaded.Bio
+        );
+        participants.Save(new Participant(
+            "Normal participant",
+            DateTimeOffset.UtcNow
+        ));
+        Assert.HasCount(
+            2,
+            participants.GetAll()
+        );
     }
 
     // Exercises the same expression-based query helper used by production SQL repositories.
@@ -49,11 +71,22 @@ public sealed class SqlValidationTests
         public void Reset() => SawParameterizedValue = false;
 
         public override InterceptionResult<DbDataReader> ReaderExecuting(
-            DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result)
+            DbCommand command,
+            CommandEventData eventData,
+            InterceptionResult<DbDataReader> result
+        )
         {
-            Assert.IsFalse(command.CommandText.Contains(suppliedText, StringComparison.Ordinal),
-                "User text must not be concatenated into a SQL command.");
-            if (command.Parameters.Cast<DbParameter>().Any(parameter => Equals(parameter.Value, suppliedText)))
+            Assert.IsFalse(
+                command.CommandText.Contains(
+                    suppliedText,
+                    StringComparison.Ordinal
+                ),
+                "User text must not be concatenated into a SQL command."
+            );
+            if (command.Parameters.Cast<DbParameter>().Any(parameter => Equals(
+                parameter.Value,
+                suppliedText
+            )))
                 SawParameterizedValue = true;
             return result;
         }

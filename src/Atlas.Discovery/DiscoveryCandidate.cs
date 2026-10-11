@@ -17,4 +17,5 @@ public sealed record DiscoveryCandidate(
     double? AverageVote,
     IReadOnlyCollection<Guid> CommunityIds,
     IReadOnlyCollection<Guid> ReactionDefinitionIds,
-    bool IsModerationExcluded = false);
+    bool IsModerationExcluded = false
+);

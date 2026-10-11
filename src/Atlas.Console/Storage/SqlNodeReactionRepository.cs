@@ -17,7 +17,10 @@ public sealed class SqlNodeReactionRepository(Func<AtlasDataContext>? contextFac
         QueryRows<NodeReactionRow>(row => row.NodeId == nodeId.Value && row.LifecycleState == "Active").Select(ToDomain).ToList();
     // Find the current association for one Node/definition pair, used when applying or replacing a reaction.
     // Return null when none exists; SingleOrDefault throws if duplicate active associations are stored.
-    public NodeReaction? GetActive(NodeId nodeId, ReactionDefinitionId definitionId) =>
+    public NodeReaction? GetActive(
+        NodeId nodeId,
+        ReactionDefinitionId definitionId
+    ) =>
         QueryRows<NodeReactionRow>(row => row.NodeId == nodeId.Value && row.ReactionDefinitionId == definitionId.Value && row.LifecycleState == "Active")
             .Select(ToDomain).SingleOrDefault();
     public void Save(NodeReaction reaction) => Execute(() =>
@@ -26,8 +29,18 @@ public sealed class SqlNodeReactionRepository(Func<AtlasDataContext>? contextFac
 
         // New reactions need an active participant and available Node; updates require those references to exist.
         var isNew = FindRow<NodeReactionRow>(reaction.Id.Value) is null;
-        ReferenceValidation.Require(this, "Participant", reaction.AppliedByParticipantId, isNew);
-        ReferenceValidation.Require(this, "Node", reaction.NodeId.Value, isNew);
+        ReferenceValidation.Require(
+            this,
+            "Participant",
+            reaction.AppliedByParticipantId,
+            isNew
+        );
+        ReferenceValidation.Require(
+            this,
+            "Node",
+            reaction.NodeId.Value,
+            isNew
+        );
 
         // The definition must exist. Suppression prevents a new application, but does not block saving an existing one.
         var definition = FindRow<ReactionDefinitionRow>(reaction.ReactionDefinitionId.Value);
@@ -90,7 +103,9 @@ public sealed class SqlNodeReactionRepository(Func<AtlasDataContext>? contextFac
                     Enum.Parse<NodeReactionDisposition>(entry.Disposition),
                     entry.RelatedNodeReactionId.HasValue
                         ? new NodeReactionId(entry.RelatedNodeReactionId.Value)
-                        : null)));
+                        : null
+                ))
+        );
 
 
     // Parse the saved lifecycle name; an unrecognized value fails instead of silently defaulting.

@@ -17,10 +17,17 @@ public class NodeMutationTests
         node.Rename(
             new NodeTitle("Updated title"),
             node.AuthorId.Value,
-            changedAt);
+            changedAt
+        );
 
-        Assert.AreEqual(new NodeTitle("Updated title"), node.Title);
-        Assert.AreEqual(changedAt, node.UpdatedAt);
+        Assert.AreEqual(
+            new NodeTitle("Updated title"),
+            node.Title
+        );
+        Assert.AreEqual(
+            changedAt,
+            node.UpdatedAt
+        );
     }
 
     /// <summary>Verifies that rename to same title is no op.</summary>
@@ -33,9 +40,13 @@ public class NodeMutationTests
         node.Rename(
             node.Title,
             node.AuthorId.Value,
-            originalUpdatedAt.AddMinutes(1));
+            originalUpdatedAt.AddMinutes(1)
+        );
 
-        Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);
+        Assert.AreEqual(
+            originalUpdatedAt,
+            node.UpdatedAt
+        );
     }
 
     /// <summary>Verifies that change type updates type and timestamp.</summary>
@@ -46,10 +57,20 @@ public class NodeMutationTests
         var typeId = NodeTypeId.New();
         var changedAt = node.CreatedAt.AddMinutes(1);
 
-        node.ChangeType(typeId, node.AuthorId.Value, changedAt);
+        node.ChangeType(
+            typeId,
+            node.AuthorId.Value,
+            changedAt
+        );
 
-        Assert.AreEqual(typeId, node.TypeId);
-        Assert.AreEqual(changedAt, node.UpdatedAt);
+        Assert.AreEqual(
+            typeId,
+            node.TypeId
+        );
+        Assert.AreEqual(
+            changedAt,
+            node.UpdatedAt
+        );
     }
 
     /// <summary>Verifies that change type to same type is no op.</summary>
@@ -62,9 +83,13 @@ public class NodeMutationTests
         node.ChangeType(
             node.TypeId,
             node.AuthorId.Value,
-            originalUpdatedAt.AddMinutes(1));
+            originalUpdatedAt.AddMinutes(1)
+        );
 
-        Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);
+        Assert.AreEqual(
+            originalUpdatedAt,
+            node.UpdatedAt
+        );
     }
 
     /// <summary>Verifies that request sub node type adds request and updates timestamp.</summary>
@@ -78,10 +103,17 @@ public class NodeMutationTests
         node.RequestSubNodeType(
             typeId,
             node.AuthorId.Value,
-            changedAt);
+            changedAt
+        );
 
-        Assert.AreEqual(typeId, node.RequestedSubNodeTypes.Single().TypeId);
-        Assert.AreEqual(changedAt, node.UpdatedAt);
+        Assert.AreEqual(
+            typeId,
+            node.RequestedSubNodeTypes.Single().TypeId
+        );
+        Assert.AreEqual(
+            changedAt,
+            node.UpdatedAt
+        );
     }
 
     /// <summary>Verifies that request sub node type when already requested is no op.</summary>
@@ -93,16 +125,24 @@ public class NodeMutationTests
         node.RequestSubNodeType(
             typeId,
             node.AuthorId.Value,
-            node.CreatedAt.AddMinutes(1));
+            node.CreatedAt.AddMinutes(1)
+        );
         var originalUpdatedAt = node.UpdatedAt;
 
         node.RequestSubNodeType(
             typeId,
             node.AuthorId.Value,
-            originalUpdatedAt.AddMinutes(1));
+            originalUpdatedAt.AddMinutes(1)
+        );
 
-        Assert.HasCount(1, node.RequestedSubNodeTypes);
-        Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);
+        Assert.HasCount(
+            1,
+            node.RequestedSubNodeTypes
+        );
+        Assert.AreEqual(
+            originalUpdatedAt,
+            node.UpdatedAt
+        );
     }
 
     /// <summary>Verifies that stop requesting sub node type removes request and updates timestamp.</summary>
@@ -114,16 +154,21 @@ public class NodeMutationTests
         node.RequestSubNodeType(
             typeId,
             node.AuthorId.Value,
-            node.CreatedAt.AddMinutes(1));
+            node.CreatedAt.AddMinutes(1)
+        );
         var changedAt = node.UpdatedAt.AddMinutes(1);
 
         node.StopRequestingSubNodeType(
             typeId,
             node.AuthorId.Value,
-            changedAt);
+            changedAt
+        );
 
         Assert.IsEmpty(node.RequestedSubNodeTypes);
-        Assert.AreEqual(changedAt, node.UpdatedAt);
+        Assert.AreEqual(
+            changedAt,
+            node.UpdatedAt
+        );
     }
 
     /// <summary>Verifies that stop requesting sub node type when not requested is no op.</summary>
@@ -136,8 +181,12 @@ public class NodeMutationTests
         node.StopRequestingSubNodeType(
             NodeTypeId.New(),
             node.AuthorId.Value,
-            originalUpdatedAt.AddMinutes(1));
+            originalUpdatedAt.AddMinutes(1)
+        );
 
-        Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);
+        Assert.AreEqual(
+            originalUpdatedAt,
+            node.UpdatedAt
+        );
     }
 }

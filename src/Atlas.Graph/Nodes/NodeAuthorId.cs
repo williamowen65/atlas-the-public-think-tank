@@ -12,7 +12,8 @@ public sealed record NodeAuthorId
         {
             throw new ArgumentException(
                 "A node author ID cannot be empty.",
-                nameof(value));
+                nameof(value)
+            );
         }
 
         Value = value;

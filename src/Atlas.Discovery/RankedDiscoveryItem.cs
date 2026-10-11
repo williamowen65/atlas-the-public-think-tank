@@ -6,4 +6,5 @@ public sealed record RankedDiscoveryItem(
     int Rank,
     double RankingScore,
     int VoteCount,
-    double? AverageVote);
+    double? AverageVote
+);

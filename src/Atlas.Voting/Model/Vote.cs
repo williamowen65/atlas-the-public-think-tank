@@ -24,10 +24,15 @@ namespace Atlas.Voting
         public Vote(
             VoteTarget target,
             ParticipantId pId,
-            int voteValue, DateTimeOffset? createdAt = null)
+            int voteValue,
+            DateTimeOffset? createdAt = null
+        )
         {
             ArgumentNullException.ThrowIfNull(pId);
-            Value = CreateValue(target, voteValue);
+            Value = CreateValue(
+                target,
+                voteValue
+            );
             Id = VoteId.New();
             ParticipantId = pId;
             CreatedAt = (createdAt ?? AtlasTime.UtcNow).ToUniversalTime();
@@ -41,10 +46,14 @@ namespace Atlas.Voting
             ParticipantId pId,
             int voteValue,
             DateTimeOffset createdAt,
-            DateTimeOffset updatedAt)
+            DateTimeOffset updatedAt
+        )
         {
             ArgumentNullException.ThrowIfNull(pId);
-            if (id.Value == Guid.Empty) throw new ArgumentException("A vote ID is required.", nameof(id));
+            if (id.Value == Guid.Empty) throw new ArgumentException(
+                "A vote ID is required.",
+                nameof(id)
+            );
             if (updatedAt < createdAt)
             {
                 throw new ArgumentException(
@@ -56,7 +65,10 @@ namespace Atlas.Voting
             ParticipantId = pId;
             CreatedAt = createdAt.ToUniversalTime();
             UpdatedAt = updatedAt.ToUniversalTime();
-            Value = CreateValue(target, voteValue);
+            Value = CreateValue(
+                target,
+                voteValue
+            );
         }
 
         /// <summary>
@@ -65,18 +77,21 @@ namespace Atlas.Voting
         /// </summary>
         public void ChangeValue(
             int voteValue,
-            DateTimeOffset changedAt)
+            DateTimeOffset changedAt
+        )
         {
             if (changedAt <= UpdatedAt)
             {
                 throw new ArgumentException(
                     "Change time must be later than the current update time.",
-                    nameof(changedAt));
+                    nameof(changedAt)
+                );
             }
 
             var replacement = CreateValue(
                 Target,
-                voteValue);
+                voteValue
+            );
 
             Value = replacement;
             UpdatedAt = changedAt.ToUniversalTime();
@@ -92,7 +107,8 @@ namespace Atlas.Voting
             ParticipantId pId,
             int voteValue,
             DateTimeOffset createdAt,
-            DateTimeOffset updatedAt)
+            DateTimeOffset updatedAt
+        )
         {
             return new Vote(
                 id,
@@ -100,12 +116,14 @@ namespace Atlas.Voting
                 pId,
                 voteValue,
                 createdAt,
-                updatedAt);
+                updatedAt
+            );
         }
 
         private static IVoteValue CreateValue(
             VoteTarget target,
-            int voteValue)
+            int voteValue
+        )
         {
             return target switch
             {
@@ -114,7 +132,8 @@ namespace Atlas.Voting
 
                 _ => throw new ArgumentException(
                     "Unsupported vote target type.",
-                    nameof(target))
+                    nameof(target)
+                )
             };
         }
     }

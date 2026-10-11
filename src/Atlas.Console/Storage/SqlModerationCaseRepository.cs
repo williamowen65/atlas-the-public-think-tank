@@ -13,13 +13,42 @@ public sealed class SqlModerationCaseRepository(Func<AtlasDataContext>? contextF
 
     // Persist the report, decision and restoration state together. SaveRow joins an outer transaction,
     // so a grouped moderation workflow can save several cases atomically.
-    public void Save(ModerationCase item) => SaveRow(new ModerationCaseRow { Id = item.Id, NodeId = item.NodeId, ReporterId = item.ReporterId,
-        Reason = item.Reason, Explanation = item.Explanation, ReportedTitle = item.ReportedTitle, CreatedAt = item.CreatedAt, Status = (int)item.Status,
-        ReviewerId = item.ReviewerId, DecisionReason = item.DecisionReason, DecidedAt = item.DecidedAt, PublicReason = (int)item.PublicReason,
-        ReviewRequestedAt = item.ReviewRequestedAt, VisibilityRestoredAt = item.VisibilityRestoredAt, RestoredBy = item.RestoredBy, RestorationReason = item.RestorationReason });
+    public void Save(ModerationCase item) => SaveRow(new ModerationCaseRow {
+        Id = item.Id,
+        NodeId = item.NodeId,
+        ReporterId = item.ReporterId,
+        Reason = item.Reason,
+        Explanation = item.Explanation,
+        ReportedTitle = item.ReportedTitle,
+        CreatedAt = item.CreatedAt,
+        Status = (int)item.Status,
+        ReviewerId = item.ReviewerId,
+        DecisionReason = item.DecisionReason,
+        DecidedAt = item.DecidedAt,
+        PublicReason = (int)item.PublicReason,
+        ReviewRequestedAt = item.ReviewRequestedAt,
+        VisibilityRestoredAt = item.VisibilityRestoredAt,
+        RestoredBy = item.RestoredBy,
+        RestorationReason = item.RestorationReason
+    });
 
     // Convert stored enum numbers and lifecycle fields back into a validated moderation case.
-    private static ModerationCase ToDomain(ModerationCaseRow row) => ModerationCase.Reconstitute(row.Id, row.NodeId, row.ReporterId,
-        row.Reason, row.Explanation, row.ReportedTitle, row.CreatedAt, (ModerationStatus)row.Status, row.ReviewerId, row.DecisionReason,
-        row.DecidedAt, (PublicModerationReason)row.PublicReason, row.ReviewRequestedAt, row.VisibilityRestoredAt, row.RestoredBy, row.RestorationReason);
+    private static ModerationCase ToDomain(ModerationCaseRow row) => ModerationCase.Reconstitute(
+        row.Id,
+        row.NodeId,
+        row.ReporterId,
+        row.Reason,
+        row.Explanation,
+        row.ReportedTitle,
+        row.CreatedAt,
+        (ModerationStatus)row.Status,
+        row.ReviewerId,
+        row.DecisionReason,
+        row.DecidedAt,
+        (PublicModerationReason)row.PublicReason,
+        row.ReviewRequestedAt,
+        row.VisibilityRestoredAt,
+        row.RestoredBy,
+        row.RestorationReason
+    );
 }

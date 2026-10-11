@@ -12,71 +12,140 @@ public sealed class CommentService
     private readonly ICommentTargetAvailability _targets;
     private readonly ICommentModeratorAuthorization _moderators;
 
-    public CommentService(ICommentRepository comments, ICommentTargetAvailability targets,
-        ICommentModeratorAuthorization moderators)
+    public CommentService(
+        ICommentRepository comments,
+        ICommentTargetAvailability targets,
+        ICommentModeratorAuthorization moderators
+    )
     {
         _comments = comments;
         _targets = targets;
         _moderators = moderators;
     }
 
-    public Comment AddTopLevel(CommentTarget target, Guid authorParticipantId, string body, DateTimeOffset createdAt)
+    public Comment AddTopLevel(
+        CommentTarget target,
+        Guid authorParticipantId,
+        string body,
+        DateTimeOffset createdAt
+    )
     {
-        return OperationBoundary.Execute(_comments, () =>
+        return OperationBoundary.Execute(
+            _comments,
+            () =>
         {
-            ReferenceValidation.Require(_comments, "Participant", authorParticipantId);
+            ReferenceValidation.Require(
+                _comments,
+                "Participant",
+                authorParticipantId
+            );
             EnsureTargetAvailable(target);
-            var comment = new Comment(target, null, authorParticipantId, body, createdAt);
+            var comment = new Comment(
+                target,
+                null,
+                authorParticipantId,
+                body,
+                createdAt
+            );
             _comments.Save(comment);
             return comment;
-        });
+        }
+        );
     }
 
-    public Comment Reply(CommentId parentId, Guid authorParticipantId, string body, DateTimeOffset createdAt)
+    public Comment Reply(
+        CommentId parentId,
+        Guid authorParticipantId,
+        string body,
+        DateTimeOffset createdAt
+    )
     {
-        return OperationBoundary.Execute(_comments, () =>
+        return OperationBoundary.Execute(
+            _comments,
+            () =>
         {
             if (parentId.Value == Guid.Empty) throw new ArgumentException("A parent comment ID is required.");
-            ReferenceValidation.Require(_comments, "Participant", authorParticipantId);
+            ReferenceValidation.Require(
+                _comments,
+                "Participant",
+                authorParticipantId
+            );
             var parent = _comments.GetById(parentId)
                 ?? throw new InvalidOperationException("The parent comment does not exist.");
 
             EnsureTargetAvailable(parent.Target);
 
             // Policy decision: removed ancestors remain as thread placeholders and may still receive replies.
-            var reply = new Comment(parent.Target, parent.Id, authorParticipantId, body, createdAt);
+            var reply = new Comment(
+                parent.Target,
+                parent.Id,
+                authorParticipantId,
+                body,
+                createdAt
+            );
             _comments.Save(reply);
             return reply;
-        });
+        }
+        );
     }
 
-    public void Edit(CommentId commentId, Guid actorParticipantId, string body, DateTimeOffset changedAt)
+    public void Edit(
+        CommentId commentId,
+        Guid actorParticipantId,
+        string body,
+        DateTimeOffset changedAt
+    )
     {
-        OperationBoundary.Execute(_comments, () =>
+        OperationBoundary.Execute(
+            _comments,
+            () =>
         {
-            ReferenceValidation.Require(_comments, "Participant", actorParticipantId);
+            ReferenceValidation.Require(
+                _comments,
+                "Participant",
+                actorParticipantId
+            );
             var comment = GetRequired(commentId);
             EnsureTargetAvailable(comment.Target);
-            comment.Edit(actorParticipantId, body, changedAt);
+            comment.Edit(
+                actorParticipantId,
+                body,
+                changedAt
+            );
             _comments.Save(comment);
-        });
+        }
+        );
     }
 
-    public void Remove(CommentId commentId, Guid actorParticipantId, DateTimeOffset removedAt)
+    public void Remove(
+        CommentId commentId,
+        Guid actorParticipantId,
+        DateTimeOffset removedAt
+    )
     {
-        OperationBoundary.Execute(_comments, () =>
+        OperationBoundary.Execute(
+            _comments,
+            () =>
         {
-            ReferenceValidation.Require(_comments, "Participant", actorParticipantId);
+            ReferenceValidation.Require(
+                _comments,
+                "Participant",
+                actorParticipantId
+            );
             var comment = GetRequired(commentId);
             if (actorParticipantId == comment.AuthorParticipantId)
-                comment.RemoveByAuthor(actorParticipantId, removedAt);
+                comment.RemoveByAuthor(
+                    actorParticipantId,
+                    removedAt
+                );
             else if (_moderators.CanModerate(actorParticipantId))
                 comment.RemoveByModerator(removedAt);
             else
                 throw new UnauthorizedAccessException("Only the comment author or a moderator may remove this comment.");
 
             _comments.Save(comment);
-        });
+        }
+        );
     }
 
     public IReadOnlyList<CommentThreadItem> GetThread(CommentTarget target)
@@ -90,13 +159,24 @@ public sealed class CommentService
         var children = comments
             .Where(x => x.ParentCommentId is not null)
             .GroupBy(x => x.ParentCommentId!.Value)
-            .ToDictionary(x => x.Key, x => x.OrderBy(c => c.CreatedAt).ThenBy(c => c.Id.Value).ToList());
+            .ToDictionary(
+                x => x.Key,
+                x => x.OrderBy(c => c.CreatedAt).ThenBy(c => c.Id.Value).ToList()
+            );
 
         var result = new List<CommentThreadItem>();
         foreach (var root in roots)
         {
-            result.Add(new CommentThreadItem(root, 0));
-            AppendChildren(root.Id, 1, children, result);
+            result.Add(new CommentThreadItem(
+                root,
+                0
+            ));
+            AppendChildren(
+                root.Id,
+                1,
+                children,
+                result
+            );
         }
 
         return result;
@@ -106,13 +186,25 @@ public sealed class CommentService
         CommentId parentId,
         int depth,
         IReadOnlyDictionary<CommentId, List<Comment>> children,
-        List<CommentThreadItem> result)
+        List<CommentThreadItem> result
+    )
     {
-        if (!children.TryGetValue(parentId, out var directChildren)) return;
+        if (!children.TryGetValue(
+            parentId,
+            out var directChildren
+        )) return;
         foreach (var child in directChildren)
         {
-            result.Add(new CommentThreadItem(child, depth));
-            AppendChildren(child.Id, depth + 1, children, result);
+            result.Add(new CommentThreadItem(
+                child,
+                depth
+            ));
+            AppendChildren(
+                child.Id,
+                depth + 1,
+                children,
+                result
+            );
         }
     }
 

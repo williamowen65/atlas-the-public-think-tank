@@ -15,4 +15,5 @@ public sealed record DiscoveryQuery(
     DateOnly? CreatedFrom = null,
     DateOnly? CreatedThrough = null,
     bool IncludeArchived = false,
-    int Page = 1);
+    int Page = 1
+);

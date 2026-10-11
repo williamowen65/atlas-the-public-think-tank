@@ -15,13 +15,25 @@ public sealed class IdentityModelTests
         using var context = new AtlasDataContext(new DbContextOptionsBuilder<AtlasDataContext>()
             .UseSqlServer("Server=localhost;Database=ModelOnly;Integrated Security=True;TrustServerCertificate=True").Options);
         var user = context.Model.FindEntityType(typeof(AtlasIdentityUser))!;
-        Assert.AreEqual("identity", user.GetSchema());
+        Assert.AreEqual(
+            "identity",
+            user.GetSchema()
+        );
         var link = user.GetForeignKeys().Single(key => key.PrincipalEntityType.ClrType == typeof(ParticipantRow));
         Assert.IsTrue(link.IsUnique);
-        Assert.AreEqual(DeleteBehavior.NoAction, link.DeleteBehavior);
-        Assert.AreEqual(nameof(AtlasIdentityUser.Id), link.Properties.Single().Name);
+        Assert.AreEqual(
+            DeleteBehavior.NoAction,
+            link.DeleteBehavior
+        );
+        Assert.AreEqual(
+            nameof(AtlasIdentityUser.Id),
+            link.Properties.Single().Name
+        );
         Assert.IsTrue(user.GetIndexes().Single(index => index.GetDatabaseName() == "EmailIndex").IsUnique);
-        Assert.AreEqual(typeof(Guid), user.FindPrimaryKey()!.Properties.Single().ClrType);
+        Assert.AreEqual(
+            typeof(Guid),
+            user.FindPrimaryKey()!.Properties.Single().ClrType
+        );
     }
 
     [TestMethod]

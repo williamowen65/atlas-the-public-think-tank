@@ -17,8 +17,14 @@ internal static partial class DemoData
                 IsSystemDefined = true,
                 IsArchived = false,
                 AutoPluralize = true,
-                CreatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-08-01T14:00:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-08-01T14:00:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeTypeRow
             {
@@ -29,8 +35,14 @@ internal static partial class DemoData
                 IsSystemDefined = true,
                 IsArchived = false,
                 AutoPluralize = true,
-                CreatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-08-01T14:00:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-08-01T14:00:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeTypeRow
             {
@@ -41,8 +53,14 @@ internal static partial class DemoData
                 IsSystemDefined = true,
                 IsArchived = false,
                 AutoPluralize = true,
-                CreatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-08-01T14:00:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-08-01T14:00:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeTypeRow
             {
@@ -53,8 +71,14 @@ internal static partial class DemoData
                 IsSystemDefined = true,
                 IsArchived = false,
                 AutoPluralize = true,
-                CreatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-08-01T14:00:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-08-01T14:00:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeTypeRow
             {
@@ -65,8 +89,14 @@ internal static partial class DemoData
                 IsSystemDefined = true,
                 IsArchived = false,
                 AutoPluralize = false,
-                CreatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-08-01T14:00:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-08-01T14:00:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeTypeRow
             {
@@ -77,8 +107,14 @@ internal static partial class DemoData
                 IsSystemDefined = true,
                 IsArchived = false,
                 AutoPluralize = true,
-                CreatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-08-01T14:00:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-08-01T14:00:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeTypeRow
             {
@@ -89,8 +125,14 @@ internal static partial class DemoData
                 IsSystemDefined = true,
                 IsArchived = false,
                 AutoPluralize = true,
-                CreatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-08-01T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-08-01T14:00:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-08-01T14:00:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeTypeRow
             {
@@ -101,8 +143,14 @@ internal static partial class DemoData
                 IsSystemDefined = true,
                 IsArchived = false,
                 AutoPluralize = true,
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T15:20:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T15:20:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T15:20:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T15:20:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeTypeRow
             {
@@ -113,8 +161,14 @@ internal static partial class DemoData
                 IsSystemDefined = true,
                 IsArchived = false,
                 AutoPluralize = true,
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T15:20:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T15:20:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T15:20:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T15:20:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
         });
     }

@@ -14,11 +14,19 @@ public sealed class NodeCommentTargetAvailability : ICommentTargetAvailability
 
     public bool IsAvailable(CommentTarget target)
     {
-        if (!string.Equals(target.Kind, "Node", StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(
+            target.Kind,
+            "Node",
+            StringComparison.OrdinalIgnoreCase
+        ))
             return false;
 
         var node = _nodes.GetById(new NodeId(target.Id));
         return node is not null && node.Status == NodeStatus.Active &&
-            (_nodes is not IReferenceLookup lookup || lookup.IsAvailable("Node", node.Id.Value, true));
+            (_nodes is not IReferenceLookup lookup || lookup.IsAvailable(
+                "Node",
+                node.Id.Value,
+                true
+            ));
     }
 }

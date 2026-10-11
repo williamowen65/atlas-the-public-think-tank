@@ -7,4 +7,5 @@ namespace Atlas.Voting;
 public sealed record VoteSummary(
     int VoteCount,
     double? AverageVote,
-    int? CurrentParticipantVote);
+    int? CurrentParticipantVote
+);

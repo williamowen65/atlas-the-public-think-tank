@@ -96,7 +96,8 @@ public sealed class ConsoleApplication
         NotificationService notificationService,
         INotificationRepository notificationRepository,
         IAuthenticatedActor authenticatedActor,
-        Func<bool>? validateSession = null)
+        Func<bool>? validateSession = null
+    )
     {
         _nodeRepository = nodes;
         _nodeTypeRepository = nodeTypes;
@@ -128,7 +129,10 @@ public sealed class ConsoleApplication
         _moderation = moderation;
         _moderatorAuthorization = moderatorAuthorization;
         _notificationService = notificationService;
-        _currentUserNotifications = new CurrentUserNotifications(authenticatedActor, notificationService);
+        _currentUserNotifications = new CurrentUserNotifications(
+            authenticatedActor,
+            notificationService
+        );
         _notificationRepository = notificationRepository;
         _authenticatedActor = authenticatedActor;
         _validateSession = validateSession;
@@ -276,7 +280,8 @@ public sealed class ConsoleApplication
                     _nodeRepository.GetByAuthor(
                         new NodeAuthorId(participants[index].Id.Value)),
                     _nodeTypeRepository,
-                    index + 1);
+                    index + 1
+                );
             }
 
             Console.WriteLine();
@@ -285,7 +290,10 @@ public sealed class ConsoleApplication
             Console.WriteLine();
             Console.Write("Selection: ");
 
-            if (!int.TryParse(Console.ReadLine(), out var selection) ||
+            if (!int.TryParse(
+                Console.ReadLine(),
+                out var selection
+            ) ||
                 selection < 0 ||
                 selection > participants.Count)
             {
@@ -317,23 +325,60 @@ public sealed class ConsoleApplication
             _authenticatedActor,
             _moderation,
             _discovery,
-            node => NodeCommands.Run(node, _nodeRepository, _nodeTypeRepository,
-                _documentRepository, _participantRepository, _voteRepository, _castVote,
-                _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, _authenticatedActor,
-                _communities, _communityMemberships, _communityNodes, _communityService,
-                _comments, _moderation),
-            (node, number, result) => NodeDisplay.WriteTableRow(node,
-                _nodeRepository, _nodeTypeRepository, _documentRepository,
-                _participantRepository, number, result?.VoteCount, result?.AverageVote,
+            node => NodeCommands.Run(
+                node,
+                _nodeRepository,
+                _nodeTypeRepository,
+                _documentRepository,
+                _participantRepository,
+                _voteRepository,
+                _castVote,
+                _undoVote,
+                _tagDefinitions,
+                _nodeTags,
+                _eventPublisher,
+                _authenticatedActor,
+                _communities,
+                _communityMemberships,
+                _communityNodes,
+                _communityService,
+                _comments,
+                _moderation
+            ),
+            (
+                node,
+                number,
+                result
+            ) => NodeDisplay.WriteTableRow(
+                node,
+                _nodeRepository,
+                _nodeTypeRepository,
+                _documentRepository,
+                _participantRepository,
+                number,
+                result?.VoteCount,
+                result?.AverageVote,
                 _voteRepository.GetByParticipantAndTarget(
                     new VotingParticipantId(_authenticatedActor.ParticipantId),
-                    new NodeVoteTarget(node.Id.Value))?.Value.Value,
-                _nodeTags, _tagDefinitions, _voteRepository, _communities, _communityNodes,
-                _comments, includeCreatedDate: true, moderation: _moderation),
-            ChangeAuthoredNodeFilter);
+                    new NodeVoteTarget(node.Id.Value)
+                )?.Value.Value,
+                _nodeTags,
+                _tagDefinitions,
+                _voteRepository,
+                _communities,
+                _communityNodes,
+                _comments,
+                includeCreatedDate: true,
+                moderation: _moderation
+            ),
+            ChangeAuthoredNodeFilter
+        );
     }
 
-    private DiscoveryQuery ChangeAuthoredNodeFilter(DiscoveryQuery query, string action)
+    private DiscoveryQuery ChangeAuthoredNodeFilter(
+        DiscoveryQuery query,
+        string action
+    )
     {
         switch (action)
         {
@@ -343,8 +388,15 @@ public sealed class ConsoleApplication
             case "C": return query with { CommunityId = SelectDiscoveryCommunity() };
             case "R": return query with { ReactionDefinitionIds = SelectDiscoveryReactions() };
             case "V":
-                var (minimumCount, maximumCount) = ReadIntegerRange("vote count", 0);
-                var (minimumAverage, maximumAverage) = ReadDoubleRange("average vote", 0, 10);
+                var (minimumCount, maximumCount) = ReadIntegerRange(
+                    "vote count",
+                    0
+                );
+                var (minimumAverage, maximumAverage) = ReadDoubleRange(
+                    "average vote",
+                    0,
+                    10
+                );
                 return query with { MinimumVoteCount = minimumCount, MaximumVoteCount = maximumCount,
                     MinimumAverageVote = minimumAverage, MaximumAverageVote = maximumAverage };
             case "D":
@@ -368,7 +420,8 @@ public sealed class ConsoleApplication
             _nodeTypeRepository,
             _documentRepository,
             _authenticatedActor.ParticipantId,
-            _eventPublisher);
+            _eventPublisher
+        );
     }
 
     /// <summary>Displays Nodes exclusively through ranked Discovery results.</summary>
@@ -401,9 +454,18 @@ public sealed class ConsoleApplication
             Console.WriteLine($"Author: {(authorId is null ? "(all)" : _participantRepository.GetById(new ParticipantId(authorId.Value))?.DisplayName ?? "(unknown)")}");
             Console.WriteLine($"Status: {(isArchived is null ? "All" : isArchived.Value ? "Archived" : "Active")}");
             Console.WriteLine($"Reactions: {ResolveReactionFilterNames(reactionIds)}");
-            Console.WriteLine($"Vote count: {FormatRange(minimumVoteCount, maximumVoteCount)}");
-            Console.WriteLine($"Average vote: {FormatRange(minimumAverageVote, maximumAverageVote)}");
-            Console.WriteLine($"Created: {FormatDateRange(createdFrom, createdThrough)}");
+            Console.WriteLine($"Vote count: {FormatRange(
+                minimumVoteCount,
+                maximumVoteCount
+            )}");
+            Console.WriteLine($"Average vote: {FormatRange(
+                minimumAverageVote,
+                maximumAverageVote
+            )}");
+            Console.WriteLine($"Created: {FormatDateRange(
+                createdFrom,
+                createdThrough
+            )}");
             Console.WriteLine();
 
             var query = new DiscoveryQuery(
@@ -418,7 +480,8 @@ public sealed class ConsoleApplication
                 minimumAverageVote,
                 maximumAverageVote,
                 createdFrom,
-                createdThrough);
+                createdThrough
+            );
             var resultPage = _discovery.DiscoverPage(query with { Page = page });
             var results = resultPage.Items.ToList();
             var firstNumber = DiscoveryPaging.FirstNumber(resultPage);
@@ -441,95 +504,174 @@ public sealed class ConsoleApplication
                     var result = results[index];
                     var myVote = _voteRepository.GetByParticipantAndTarget(
                         votingParticipantId,
-                        new NodeVoteTarget(result.NodeId))?.Value.Value;
+                        new NodeVoteTarget(result.NodeId)
+                    )?.Value.Value;
                     NodeDisplay.WriteTableRow(
-                        nodes[index], _nodeRepository, _nodeTypeRepository,
-                        _documentRepository, _participantRepository, firstNumber + index,
-                        result.VoteCount, result.AverageVote, myVote,
-                        _nodeTags, _tagDefinitions, _voteRepository,
-                        _communities, _communityNodes, _comments,
-                        includeCreatedDate: true, moderation: _moderation);
+                        nodes[index],
+                        _nodeRepository,
+                        _nodeTypeRepository,
+                        _documentRepository,
+                        _participantRepository,
+                        firstNumber + index,
+                        result.VoteCount,
+                        result.AverageVote,
+                        myVote,
+                        _nodeTags,
+                        _tagDefinitions,
+                        _voteRepository,
+                        _communities,
+                        _communityNodes,
+                        _comments,
+                        includeCreatedDate: true,
+                        moderation: _moderation
+                    );
                 }
             }
 
             Console.WriteLine();
-            DiscoveryPaging.WriteSummary(resultPage, nodes.Count);
+            DiscoveryPaging.WriteSummary(
+                resultPage,
+                nodes.Count
+            );
             Console.WriteLine("Enter a node number to open it, P<number> to report that Node, S text, C community, T node type, A author,");
             Console.WriteLine("U status, R reactions, V vote ranges, D created date, X clear, or 0 to return.");
             DiscoveryPaging.WriteNavigation(resultPage);
             Console.WriteLine();
             Console.Write("Selection: ");
             var input = Console.ReadLine()?.Trim();
-            if (DiscoveryPaging.TryNavigate(input, resultPage, ref page)) continue;
-            if (input?.StartsWith("p", StringComparison.OrdinalIgnoreCase) == true &&
-                int.TryParse(input[1..], out var reportNumber))
+            if (DiscoveryPaging.TryNavigate(
+                input,
+                resultPage,
+                ref page
+            )) continue;
+            if (input?.StartsWith(
+                "p",
+                StringComparison.OrdinalIgnoreCase
+            ) == true &&
+                int.TryParse(
+                    input[1..],
+                    out var reportNumber
+                ))
             {
                 if (reportNumber < firstNumber || reportNumber >= firstNumber + nodes.Count)
                     ConsoleUi.Pause("That node does not exist.");
                 else
-                    NodeCommands.ReportNode(nodes[reportNumber - firstNumber], _authenticatedActor.ParticipantId, _moderation);
+                    NodeCommands.ReportNode(
+                        nodes[reportNumber - firstNumber],
+                        _authenticatedActor.ParticipantId,
+                        _moderation
+                    );
                 continue;
             }
-            if (string.Equals(input, "s", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(
+                input,
+                "s",
+                StringComparison.OrdinalIgnoreCase
+            ))
             {
                 page = 1;
                 Console.Write("Search text (blank clears): ");
                 searchText = NullIfWhiteSpace(Console.ReadLine());
                 continue;
             }
-            if (string.Equals(input, "c", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(
+                input,
+                "c",
+                StringComparison.OrdinalIgnoreCase
+            ))
             {
                 page = 1;
                 communityId = SelectDiscoveryCommunity();
                 continue;
             }
-            if (string.Equals(input, "t", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(
+                input,
+                "t",
+                StringComparison.OrdinalIgnoreCase
+            ))
             {
                 page = 1;
                 var types = _nodeTypeRepository.GetAll().Where(type => !type.IsArchived).OrderBy(type => type.Name).ToList();
                 for (var index = 0; index < types.Count; index++) Console.WriteLine($"{index + 1}. {types[index].Name}");
                 Console.Write("Node type (0 clears): ");
-                nodeTypeId = int.TryParse(Console.ReadLine(), out var selected) && selected >= 1 && selected <= types.Count
+                nodeTypeId = int.TryParse(
+                    Console.ReadLine(),
+                    out var selected
+                ) && selected >= 1 && selected <= types.Count
                     ? types[selected - 1].Id.Value : null;
                 continue;
             }
-            if (string.Equals(input, "a", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(
+                input,
+                "a",
+                StringComparison.OrdinalIgnoreCase
+            ))
             {
                 page = 1;
                 var authors = _participantRepository.GetAll().OrderBy(participant => participant.DisplayName).ToList();
                 for (var index = 0; index < authors.Count; index++) Console.WriteLine($"{index + 1}. {authors[index].DisplayName}");
                 Console.Write("Author (0 clears): ");
-                authorId = int.TryParse(Console.ReadLine(), out var selected) && selected >= 1 && selected <= authors.Count
+                authorId = int.TryParse(
+                    Console.ReadLine(),
+                    out var selected
+                ) && selected >= 1 && selected <= authors.Count
                     ? authors[selected - 1].Id.Value : null;
                 continue;
             }
-            if (string.Equals(input, "u", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(
+                input,
+                "u",
+                StringComparison.OrdinalIgnoreCase
+            ))
             {
                 page = 1;
                 Console.Write("Status: 1 Active, 2 Archived, 3 All: ");
                 isArchived = Console.ReadLine() switch { "1" => false, "2" => true, "3" => null, _ => isArchived };
                 continue;
             }
-            if (string.Equals(input, "r", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(
+                input,
+                "r",
+                StringComparison.OrdinalIgnoreCase
+            ))
             {
                 page = 1;
                 reactionIds = SelectDiscoveryReactions();
                 continue;
             }
-            if (string.Equals(input, "v", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(
+                input,
+                "v",
+                StringComparison.OrdinalIgnoreCase
+            ))
             {
                 page = 1;
-                (minimumVoteCount, maximumVoteCount) = ReadIntegerRange("vote count", minimum: 0);
-                (minimumAverageVote, maximumAverageVote) = ReadDoubleRange("average vote", 0, 10);
+                (minimumVoteCount, maximumVoteCount) = ReadIntegerRange(
+                    "vote count",
+                    minimum: 0
+                );
+                (minimumAverageVote, maximumAverageVote) = ReadDoubleRange(
+                    "average vote",
+                    0,
+                    10
+                );
                 continue;
             }
-            if (string.Equals(input, "d", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(
+                input,
+                "d",
+                StringComparison.OrdinalIgnoreCase
+            ))
             {
                 page = 1;
                 (createdFrom, createdThrough) = ReadDateRange();
                 continue;
             }
-            if (string.Equals(input, "x", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(
+                input,
+                "x",
+                StringComparison.OrdinalIgnoreCase
+            ))
             {
                 page = 1;
                 searchText = null;
@@ -546,7 +688,10 @@ public sealed class ConsoleApplication
                 createdThrough = null;
                 continue;
             }
-            if (!int.TryParse(input, out var selection))
+            if (!int.TryParse(
+                input,
+                out var selection
+            ))
             {
                 ConsoleUi.Pause("That is not a valid selection.");
                 continue;
@@ -582,7 +727,8 @@ public sealed class ConsoleApplication
                 _communityNodes,
                 _communityService,
                 _comments,
-                _moderation);
+                _moderation
+            );
         }
     }
 
@@ -595,7 +741,10 @@ public sealed class ConsoleApplication
             Console.Clear();
             WriteActingAs();
             Console.WriteLine("NOTIFICATIONS");
-            var page = _currentUserNotifications.Page(offset, pageSize);
+            var page = _currentUserNotifications.Page(
+                offset,
+                pageSize
+            );
             for (var i = 0; i < page.Count; i++)
             {
                 var item = page[i];
@@ -610,11 +759,17 @@ public sealed class ConsoleApplication
             var input = Console.ReadLine()?.Trim().ToUpperInvariant();
             if (input == "0") return;
             if (input == "N" && page.Count == pageSize) { offset += pageSize; continue; }
-            if (input == "P") { offset = Math.Max(0, offset - pageSize); continue; }
+            if (input == "P") { offset = Math.Max(
+                0,
+                offset - pageSize
+            ); continue; }
             if (input == "S") { ConfigureNotifications(); continue; }
             var dismiss = input?.StartsWith('D') == true;
             var number = dismiss ? input![1..] : input;
-            if (!int.TryParse(number, out var selection) || selection < 1 || selection > page.Count) continue;
+            if (!int.TryParse(
+                number,
+                out var selection
+            ) || selection < 1 || selection > page.Count) continue;
             if (dismiss) _currentUserNotifications.Dismiss(page[selection - 1].Id);
             else _currentUserNotifications.MarkRead(page[selection - 1].Id);
         }
@@ -639,7 +794,10 @@ public sealed class ConsoleApplication
             for (var i = 0; i < choices.Length; i++)
                 Console.WriteLine($"{i + 1}. [{(choices[i].Get() ? 'x' : ' ')}] {choices[i].Label}");
             Console.Write("Toggle number (0 returns): ");
-            if (!int.TryParse(Console.ReadLine(), out var selection) || selection == 0) return;
+            if (!int.TryParse(
+                Console.ReadLine(),
+                out var selection
+            ) || selection == 0) return;
             if (selection < 1 || selection > choices.Length) continue;
             var choice = choices[selection - 1];
             choice.Set(!choice.Get());
@@ -660,13 +818,19 @@ public sealed class ConsoleApplication
                 Console.WriteLine($"{index + 1}. {queue[index].ReportedTitle} — {queue[index].PendingReports.Count} pending report(s)" +
                     (queue[index].ReviewRequested ? ", author review requested" : string.Empty));
             Console.Write("Node number (0 returns): ");
-            if (!int.TryParse(Console.ReadLine(), out var selection) || selection < 1 || selection > queue.Count)
+            if (!int.TryParse(
+                Console.ReadLine(),
+                out var selection
+            ) || selection < 1 || selection > queue.Count)
                 return;
             var group = queue[selection - 1];
             while (true)
             {
                 Console.Clear();
-                var reports = _moderation.NodeHistory(_authenticatedActor.ParticipantId, group.NodeId);
+                var reports = _moderation.NodeHistory(
+                    _authenticatedActor.ParticipantId,
+                    group.NodeId
+                );
                 Console.WriteLine($"Reported title: {group.ReportedTitle}");
                 Console.WriteLine($"{reports.Count} total report(s), {reports.Count(report => report.Status == ModerationStatus.Submitted)} pending");
                 for (var index = 0; index < reports.Count; index++)
@@ -691,28 +855,56 @@ public sealed class ConsoleApplication
                     Console.WriteLine("Open the Node and select 22 to inspect the revised title and description before restoring it.");
                 }
                 var node = _nodeRepository.GetById(new NodeId(group.NodeId));
-                Console.WriteLine($"Current Node: {(node is null ? "unavailable" : NodeDisplay.PublicTitle(node, _moderation))}");
+                Console.WriteLine($"Current Node: {(node is null ? "unavailable" : NodeDisplay.PublicTitle(
+                    node,
+                    _moderation
+                ))}");
                 Console.Write("V = view Node, D = dismiss reports, H = hide Node, R = restore after review, other = cancel: ");
                 var action = Console.ReadLine()?.Trim().ToUpperInvariant();
                 if (action == "V")
                 {
                     if (node is null) { ConsoleUi.Pause("Node is unavailable."); continue; }
                     NodeCommands.Run(
-                        node, _nodeRepository, _nodeTypeRepository, _documentRepository,
-                        _participantRepository, _voteRepository, _castVote, _undoVote,
-                        _tagDefinitions, _nodeTags, _eventPublisher, _authenticatedActor,
-                        _communities, _communityMemberships, _communityNodes,
-                        _communityService, _comments, _moderation);
+                        node,
+                        _nodeRepository,
+                        _nodeTypeRepository,
+                        _documentRepository,
+                        _participantRepository,
+                        _voteRepository,
+                        _castVote,
+                        _undoVote,
+                        _tagDefinitions,
+                        _nodeTags,
+                        _eventPublisher,
+                        _authenticatedActor,
+                        _communities,
+                        _communityMemberships,
+                        _communityNodes,
+                        _communityService,
+                        _comments,
+                        _moderation
+                    );
                     continue;
                 }
                 if (action == "R")
                 {
                     Console.Write("Restoration rationale: ");
-                    _moderation.RestoreNode(_authenticatedActor.ParticipantId, group.NodeId,
-                        Console.ReadLine() ?? string.Empty, AtlasTime.UtcNow);
+                    _moderation.RestoreNode(
+                        _authenticatedActor.ParticipantId,
+                        group.NodeId,
+                        Console.ReadLine() ?? string.Empty,
+                        AtlasTime.UtcNow
+                    );
                     if (node is not null)
-                        _eventPublisher.Publish(new NotificationRequestedV1(Guid.NewGuid(), node.AuthorId.Value,
-                            _authenticatedActor.ParticipantId, "NodeRestored", "Node", node.Id.Value, AtlasTime.UtcNow));
+                        _eventPublisher.Publish(new NotificationRequestedV1(
+                            Guid.NewGuid(),
+                            node.AuthorId.Value,
+                            _authenticatedActor.ParticipantId,
+                            "NodeRestored",
+                            "Node",
+                            node.Id.Value,
+                            AtlasTime.UtcNow
+                        ));
                     ConsoleUi.Pause("Node visibility restored after author review.");
                     return;
                 }
@@ -736,14 +928,34 @@ public sealed class ConsoleApplication
                 Console.Write("Decision rationale: ");
                 var rationale = Console.ReadLine() ?? string.Empty;
                 var decision = action == "H" ? ModerationDecision.HideNode : ModerationDecision.Dismiss;
-                var decided = _moderation.DecideNode(_authenticatedActor.ParticipantId, group.NodeId, decision,
-                    rationale, AtlasTime.UtcNow, publicReason);
+                var decided = _moderation.DecideNode(
+                    _authenticatedActor.ParticipantId,
+                    group.NodeId,
+                    decision,
+                    rationale,
+                    AtlasTime.UtcNow,
+                    publicReason
+                );
                 foreach (var report in decided)
-                    _eventPublisher.Publish(new NotificationRequestedV1(report.Id, report.ReporterId,
-                        _authenticatedActor.ParticipantId, "ReportDecided", "Node", group.NodeId, AtlasTime.UtcNow));
+                    _eventPublisher.Publish(new NotificationRequestedV1(
+                        report.Id,
+                        report.ReporterId,
+                        _authenticatedActor.ParticipantId,
+                        "ReportDecided",
+                        "Node",
+                        group.NodeId,
+                        AtlasTime.UtcNow
+                    ));
                 if (node is not null && action == "H")
-                    _eventPublisher.Publish(new NotificationRequestedV1(Guid.NewGuid(), node.AuthorId.Value,
-                        _authenticatedActor.ParticipantId, "NodeHidden", "Node", node.Id.Value, AtlasTime.UtcNow));
+                    _eventPublisher.Publish(new NotificationRequestedV1(
+                        Guid.NewGuid(),
+                        node.AuthorId.Value,
+                        _authenticatedActor.ParticipantId,
+                        "NodeHidden",
+                        "Node",
+                        node.Id.Value,
+                        AtlasTime.UtcNow
+                    ));
                 ConsoleUi.Pause(action == "H"
                     ? $"Node hidden on public surfaces; {decided.Count} pending report(s) closed."
                     : $"{decided.Count} pending report(s) dismissed.");
@@ -763,7 +975,10 @@ public sealed class ConsoleApplication
         for (var index = 0; index < communities.Count; index++)
             Console.WriteLine($"{index + 1}. {communities[index].Name}");
         Console.Write("Community: ");
-        return int.TryParse(Console.ReadLine(), out var selection) &&
+        return int.TryParse(
+            Console.ReadLine(),
+            out var selection
+        ) &&
                selection > 0 && selection <= communities.Count
             ? communities[selection - 1].Id.Value
             : null;
@@ -785,8 +1000,14 @@ public sealed class ConsoleApplication
             Console.WriteLine($"{index + 1}. {definitions[index].Emoji} {definitions[index].Text}");
         Console.Write("Reactions: ");
         var selections = (Console.ReadLine() ?? string.Empty)
-            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(value => int.TryParse(value, out var number) ? number : -1)
+            .Split(
+                ',',
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+            )
+            .Select(value => int.TryParse(
+                value,
+                out var number
+            ) ? number : -1)
             .Where(number => number > 0 && number <= definitions.Count)
             .Distinct()
             .ToList();
@@ -796,45 +1017,79 @@ public sealed class ConsoleApplication
     private string ResolveReactionFilterNames(IReadOnlyCollection<Guid> ids)
     {
         if (ids.Count == 0) return "(all)";
-        return string.Join(" + ", ids.Select(id =>
-            _tagDefinitions.GetById(new ReactionDefinitionId(id))?.Text ?? "(unavailable)"));
+        return string.Join(
+            " + ",
+            ids.Select(id =>
+            _tagDefinitions.GetById(new ReactionDefinitionId(id))?.Text ?? "(unavailable)")
+        );
     }
 
-    private static (int? Minimum, int? Maximum) ReadIntegerRange(string label, int minimum)
+    private static (int? Minimum, int? Maximum) ReadIntegerRange(
+        string label,
+        int minimum
+    )
     {
         Console.Write($"Minimum {label} (blank for none): ");
-        int? min = int.TryParse(Console.ReadLine(), out var parsedMin) && parsedMin >= minimum ? parsedMin : null;
+        int? min = int.TryParse(
+            Console.ReadLine(),
+            out var parsedMin
+        ) && parsedMin >= minimum ? parsedMin : null;
         Console.Write($"Maximum {label} (blank for none): ");
-        int? max = int.TryParse(Console.ReadLine(), out var parsedMax) && parsedMax >= minimum ? parsedMax : null;
+        int? max = int.TryParse(
+            Console.ReadLine(),
+            out var parsedMax
+        ) && parsedMax >= minimum ? parsedMax : null;
         if (min.HasValue && max.HasValue && min.Value > max.Value) (min, max) = (max, min);
         return (min, max);
     }
 
-    private static (double? Minimum, double? Maximum) ReadDoubleRange(string label, double minimum, double maximum)
+    private static (double? Minimum, double? Maximum) ReadDoubleRange(
+        string label,
+        double minimum,
+        double maximum
+    )
     {
         Console.Write($"Minimum {label} ({minimum}–{maximum}, blank for none): ");
-        double? min = double.TryParse(Console.ReadLine(), out var parsedMin) && parsedMin >= minimum && parsedMin <= maximum ? parsedMin : null;
+        double? min = double.TryParse(
+            Console.ReadLine(),
+            out var parsedMin
+        ) && parsedMin >= minimum && parsedMin <= maximum ? parsedMin : null;
         Console.Write($"Maximum {label} ({minimum}–{maximum}, blank for none): ");
-        double? max = double.TryParse(Console.ReadLine(), out var parsedMax) && parsedMax >= minimum && parsedMax <= maximum ? parsedMax : null;
+        double? max = double.TryParse(
+            Console.ReadLine(),
+            out var parsedMax
+        ) && parsedMax >= minimum && parsedMax <= maximum ? parsedMax : null;
         if (min.HasValue && max.HasValue && min.Value > max.Value) (min, max) = (max, min);
         return (min, max);
     }
 
-    private static string FormatRange<T>(T? minimum, T? maximum) where T : struct =>
+    private static string FormatRange<T>(
+        T? minimum,
+        T? maximum
+    ) where T : struct =>
         minimum is null && maximum is null ? "(all)" : $"{minimum?.ToString() ?? "no minimum"} to {maximum?.ToString() ?? "no maximum"}";
 
     private static (DateOnly? From, DateOnly? Through) ReadDateRange()
     {
         Console.Write("Created from (YYYY-MM-DD, blank for none): ");
-        DateOnly? from = DateOnly.TryParse(Console.ReadLine(), out var parsedFrom) ? parsedFrom : null;
+        DateOnly? from = DateOnly.TryParse(
+            Console.ReadLine(),
+            out var parsedFrom
+        ) ? parsedFrom : null;
         Console.Write("Created through (YYYY-MM-DD, blank for none): ");
-        DateOnly? through = DateOnly.TryParse(Console.ReadLine(), out var parsedThrough) ? parsedThrough : null;
+        DateOnly? through = DateOnly.TryParse(
+            Console.ReadLine(),
+            out var parsedThrough
+        ) ? parsedThrough : null;
         if (from.HasValue && through.HasValue && from.Value > through.Value)
             (from, through) = (through, from);
         return (from, through);
     }
 
-    private static string FormatDateRange(DateOnly? from, DateOnly? through) =>
+    private static string FormatDateRange(
+        DateOnly? from,
+        DateOnly? through
+    ) =>
         from is null && through is null
             ? "(all)"
             : $"{from?.ToString("yyyy-MM-dd") ?? "no start"} to {through?.ToString("yyyy-MM-dd") ?? "no end"}";
@@ -855,7 +1110,12 @@ public sealed class ConsoleApplication
 
         try
         {
-            var community = _communityService.Create(name, description, _authenticatedActor.ParticipantId, AtlasTime.UtcNow);
+            var community = _communityService.Create(
+                name,
+                description,
+                _authenticatedActor.ParticipantId,
+                AtlasTime.UtcNow
+            );
             ConsoleUi.Pause($"Created {community.Name}. You are its owner and first member.");
         }
         catch (ArgumentException exception) { ConsoleUi.Pause(exception.Message); }
@@ -874,16 +1134,41 @@ public sealed class ConsoleApplication
             if (communities.Count == 0) { ConsoleUi.Pause("No communities have been created."); return; }
             CommunityDisplay.WriteTableHeader();
             for (var index = 0; index < communities.Count; index++)
-                CommunityDisplay.WriteTableRow(communities[index], _participantRepository, _communityMemberships, _communityNodes, index + 1);
+                CommunityDisplay.WriteTableRow(
+                    communities[index],
+                    _participantRepository,
+                    _communityMemberships,
+                    _communityNodes,
+                    index + 1
+                );
             Console.WriteLine();
             Console.Write("Community number (0 returns): ");
-            if (!int.TryParse(Console.ReadLine(), out var selection) || selection < 0 || selection > communities.Count)
+            if (!int.TryParse(
+                Console.ReadLine(),
+                out var selection
+            ) || selection < 0 || selection > communities.Count)
             { ConsoleUi.Pause("That is not a valid selection."); continue; }
             if (selection == 0) return;
             CommunityCommands.Run(
-                communities[selection - 1], _communities, _communityMemberships, _communityNodes, _communityService,
-                _nodeRepository, _nodeTypeRepository, _documentRepository, _participantRepository,
-                _voteRepository, _castVote, _undoVote, _tagDefinitions, _nodeTags, _eventPublisher, _authenticatedActor, _comments, _moderation);
+                communities[selection - 1],
+                _communities,
+                _communityMemberships,
+                _communityNodes,
+                _communityService,
+                _nodeRepository,
+                _nodeTypeRepository,
+                _documentRepository,
+                _participantRepository,
+                _voteRepository,
+                _castVote,
+                _undoVote,
+                _tagDefinitions,
+                _nodeTags,
+                _eventPublisher,
+                _authenticatedActor,
+                _comments,
+                _moderation
+            );
         }
     }
 
@@ -960,27 +1245,64 @@ public sealed class ConsoleApplication
     /// <summary>Displays SQL rowss in the console workflow.</summary>
     private void ShowSqlCollections()
     {
-        ShowSqlCollection("NODE DATA", _nodeCollectionKey);
-        ShowSqlCollection("NODE TYPE DATA", _nodeTypeCollectionKey);
-        ShowSqlCollection("CONTENT DOCUMENT DATA", _documentCollectionKey);
-        ShowSqlCollection("PARTICIPANT DATA", _participantCollectionKey);
-        ShowSqlCollection("VOTE DATA", _voteCollectionKey);
-        ShowSqlCollection("REACTION DEFINITION DATA", _tagDefinitionCollectionKey);
-        ShowSqlCollection("NODE REACTION DATA", _nodeTagCollectionKey);
-        ShowSqlCollection("COMMUNITY DATA", _communityCollectionKey);
-        ShowSqlCollection("COMMUNITY MEMBERSHIP DATA", _communityMembershipCollectionKey);
-        ShowSqlCollection("COMMUNITY NODE DATA", _communityNodeCollectionKey);
-        ShowSqlCollection("COMMENT DATA", _commentCollectionKey);
+        ShowSqlCollection(
+            "NODE DATA",
+            _nodeCollectionKey
+        );
+        ShowSqlCollection(
+            "NODE TYPE DATA",
+            _nodeTypeCollectionKey
+        );
+        ShowSqlCollection(
+            "CONTENT DOCUMENT DATA",
+            _documentCollectionKey
+        );
+        ShowSqlCollection(
+            "PARTICIPANT DATA",
+            _participantCollectionKey
+        );
+        ShowSqlCollection(
+            "VOTE DATA",
+            _voteCollectionKey
+        );
+        ShowSqlCollection(
+            "REACTION DEFINITION DATA",
+            _tagDefinitionCollectionKey
+        );
+        ShowSqlCollection(
+            "NODE REACTION DATA",
+            _nodeTagCollectionKey
+        );
+        ShowSqlCollection(
+            "COMMUNITY DATA",
+            _communityCollectionKey
+        );
+        ShowSqlCollection(
+            "COMMUNITY MEMBERSHIP DATA",
+            _communityMembershipCollectionKey
+        );
+        ShowSqlCollection(
+            "COMMUNITY NODE DATA",
+            _communityNodeCollectionKey
+        );
+        ShowSqlCollection(
+            "COMMENT DATA",
+            _commentCollectionKey
+        );
     }
 
     /// <summary>Displays SQL rows in the console workflow.</summary>
     private void ShowSqlCollection(
         string heading,
-        string collectionKey)
+        string collectionKey
+    )
     {
         Console.Clear();
         Console.WriteLine(heading);
-        Console.WriteLine(new string('-', heading.Length));
+        Console.WriteLine(new string(
+            '-',
+            heading.Length
+        ));
         WriteActingAs();
         Console.WriteLine(collectionKey);
         Console.WriteLine();

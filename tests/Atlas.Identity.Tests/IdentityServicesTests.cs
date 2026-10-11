@@ -16,7 +16,9 @@ public sealed class IdentityServicesTests
     public async Task Services_resolve_framework_account_managers_policies_and_reject_invalid_actors_without_sql()
     {
         var services = new ServiceCollection().AddAtlasIdentity("Server=localhost;Database=ModelOnly;Integrated Security=True");
-        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions {
+            ValidateScopes = true
+        });
         using var scope = provider.CreateScope();
         var scoped = scope.ServiceProvider;
         Assert.IsNotNull(scoped.GetRequiredService<UserManager<AtlasIdentityUser>>());
@@ -25,14 +27,28 @@ public sealed class IdentityServicesTests
         var options = scoped.GetRequiredService<IOptions<IdentityOptions>>().Value;
         Assert.IsTrue(options.SignIn.RequireConfirmedEmail);
         Assert.IsTrue(options.User.RequireUniqueEmail);
-        Assert.AreEqual(12, options.Password.RequiredLength);
+        Assert.AreEqual(
+            12,
+            options.Password.RequiredLength
+        );
         var policies = scoped.GetRequiredService<IAuthorizationPolicyProvider>();
-        foreach (var name in new[] { AtlasPolicies.Member, AtlasPolicies.GlobalModerator, AtlasPolicies.Administrator })
+        foreach (var name in new[] {
+            AtlasPolicies.Member,
+            AtlasPolicies.GlobalModerator,
+            AtlasPolicies.Administrator
+        })
             Assert.IsNotNull(await policies.GetPolicyAsync(name));
         var accounts = scoped.GetRequiredService<AtlasAccounts>();
         Assert.IsNull(await accounts.ResolveParticipantAsync(new ClaimsPrincipal()));
-        var malformed = new ClaimsPrincipal(new ClaimsIdentity(new[] {
-            new Claim(ClaimTypes.NameIdentifier, "malformed") }, "test"));
+        var malformed = new ClaimsPrincipal(new ClaimsIdentity(
+            new[] {
+                new Claim(
+                    ClaimTypes.NameIdentifier,
+                    "malformed"
+                )
+            },
+            "test"
+        ));
         Assert.IsNull(await accounts.ResolveParticipantAsync(malformed));
     }
 }

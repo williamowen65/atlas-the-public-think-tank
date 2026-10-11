@@ -16,8 +16,16 @@ public sealed class SqlVoteRepository(Func<AtlasDataContext>? contextFactory = n
         ArgumentNullException.ThrowIfNull(vote);
 
         // The voter and supported target must be available before the vote is written.
-        ReferenceValidation.Require(this, "Participant", vote.ParticipantId.Id);
-        ReferenceValidation.Require(this, TargetKind(vote.Target), vote.Target.Id);
+        ReferenceValidation.Require(
+            this,
+            "Participant",
+            vote.ParticipantId.Id
+        );
+        ReferenceValidation.Require(
+            this,
+            TargetKind(vote.Target),
+            vote.Target.Id
+        );
 
         // Persist the typed target, rating and timestamps; an outer workflow still owns its commit.
         SaveRow(ToStorage(vote));
@@ -43,7 +51,10 @@ public sealed class SqlVoteRepository(Func<AtlasDataContext>? contextFactory = n
     }
 
     // Find the single vote belonging to this participant and this typed target.
-    public Vote? GetByParticipantAndTarget(ParticipantId participantId, VoteTarget target)
+    public Vote? GetByParticipantAndTarget(
+        ParticipantId participantId,
+        VoteTarget target
+    )
     {
         var kind = TargetKind(target);
         return QueryRows<VoteRow>(row => row.ParticipantId == participantId.Id && row.TargetId == target.Id && row.TargetType == kind)
@@ -59,7 +70,6 @@ public sealed class SqlVoteRepository(Func<AtlasDataContext>? contextFactory = n
                 Id = vote.Id.Value,
                 ParticipantId = vote.ParticipantId.Id,
                 TargetId = vote.Target.Id,
-
                 TargetType = vote.Target switch
                 {
                     NodeVoteTarget => "Node",
@@ -68,7 +78,6 @@ public sealed class SqlVoteRepository(Func<AtlasDataContext>? contextFactory = n
                     _ => throw new InvalidOperationException(
                         "Unsupported vote target type.")
                 },
-
                 Value = vote.Value.Value,
                 CreatedAt = vote.CreatedAt,
                 UpdatedAt = vote.UpdatedAt
@@ -99,6 +108,7 @@ public sealed class SqlVoteRepository(Func<AtlasDataContext>? contextFactory = n
                 new ParticipantId(storedVote.ParticipantId),
                 storedVote.Value,
                 storedVote.CreatedAt,
-                storedVote.UpdatedAt);
+                storedVote.UpdatedAt
+            );
         }
 }

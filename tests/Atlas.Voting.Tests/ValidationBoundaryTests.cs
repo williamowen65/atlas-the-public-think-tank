@@ -10,8 +10,26 @@ public sealed class ValidationBoundaryTests
     {
         var now = DateTimeOffset.UtcNow;
         var target = new NodeVoteTarget(Guid.NewGuid());
-        Assert.Throws<ArgumentNullException>(() => new Vote(target, null!, 1));
-        Assert.Throws<ArgumentException>(() => Vote.Reconstitute(default, target, new ParticipantId(Guid.NewGuid()), 1, now, now));
-        Assert.Throws<ArgumentNullException>(() => Vote.Reconstitute(VoteId.New(), target, null!, 1, now, now));
+        Assert.Throws<ArgumentNullException>(() => new Vote(
+            target,
+            null!,
+            1
+        ));
+        Assert.Throws<ArgumentException>(() => Vote.Reconstitute(
+            default,
+            target,
+            new ParticipantId(Guid.NewGuid()),
+            1,
+            now,
+            now
+        ));
+        Assert.Throws<ArgumentNullException>(() => Vote.Reconstitute(
+            VoteId.New(),
+            target,
+            null!,
+            1,
+            now,
+            now
+        ));
     }
 }

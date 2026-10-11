@@ -62,8 +62,14 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
     {
         // Explicit provider metadata and column types make the intended SQL Server model visible.
         // These settings do not replace migration review when EF/provider versions change.
-        model.HasAnnotation("ProductVersion", "10.0.0")
-            .HasAnnotation("Relational:MaxIdentifierLength", 128);
+        model.HasAnnotation(
+            "ProductVersion",
+            "10.0.0"
+        )
+            .HasAnnotation(
+                "Relational:MaxIdentifierLength",
+                128
+            );
 
         // Default strategy for generated numeric columns; primary-key generation is overridden below.
         // GUIDs are supplied by Atlas, and child positions are supplied by the row mapping.

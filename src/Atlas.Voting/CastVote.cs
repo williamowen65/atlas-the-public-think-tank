@@ -16,7 +16,8 @@ namespace Atlas.Voting
 
         public CastVote(
             IVoteRepository voteRepository,
-            VoteMutationPolicy mutationPolicy)
+            VoteMutationPolicy mutationPolicy
+        )
         {
             _voteRepository = voteRepository;
             _mutationPolicy = mutationPolicy;
@@ -25,26 +26,33 @@ namespace Atlas.Voting
         public Vote Execute(
             VoteTarget target,
             ParticipantId participantId,
-            int voteValue)
+            int voteValue
+        )
         {
-            return OperationBoundary.Execute(_voteRepository, () =>
+            return OperationBoundary.Execute(
+                _voteRepository,
+                () =>
             {
                 var now = AtlasTime.UtcNow;
                 _mutationPolicy.EnsureAllowed(
                     target,
-                    participantId);
+                    participantId
+                );
 
                 var existingVote =
                     _voteRepository.GetByParticipantAndTarget(
                         participantId,
-                        target);
+                        target
+                    );
 
                 if (existingVote is null)
                 {
                     var newVote = new Vote(
                         target,
                         participantId,
-                        voteValue, now);
+                        voteValue,
+                        now
+                    );
 
                     _voteRepository.Save(newVote);
 
@@ -60,12 +68,14 @@ namespace Atlas.Voting
 
                 existingVote.ChangeValue(
                     voteValue,
-                    changedAt);
+                    changedAt
+                );
 
                 _voteRepository.Save(existingVote);
 
                 return existingVote;
-            });
+            }
+            );
         }
 
     }

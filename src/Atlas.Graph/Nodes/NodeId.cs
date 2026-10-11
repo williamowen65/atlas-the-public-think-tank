@@ -1,4 +1,3 @@
-﻿
 namespace Atlas.Graph.Nodes;
 
 /// <summary>Identifies a node within the Graph boundary.</summary>

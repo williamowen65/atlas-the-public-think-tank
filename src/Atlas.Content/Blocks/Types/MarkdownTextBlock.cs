@@ -6,22 +6,60 @@ public sealed class MarkdownTextBlock : ContentBlock
     public override string Kind => "markdown";
     public string Markdown { get; private set; }
 
-    public MarkdownTextBlock(string markdown, DateTimeOffset createdAt)
-        : this(BlockId.New(), markdown, createdAt, createdAt) { }
+    public MarkdownTextBlock(
+        string markdown,
+        DateTimeOffset createdAt
+    )
+        : this(
+            BlockId.New(),
+            markdown,
+            createdAt,
+            createdAt
+        ) { }
 
-    private MarkdownTextBlock(BlockId id, string markdown, DateTimeOffset createdAt, DateTimeOffset updatedAt)
-        : base(id, createdAt, updatedAt)
+    private MarkdownTextBlock(
+        BlockId id,
+        string markdown,
+        DateTimeOffset createdAt,
+        DateTimeOffset updatedAt
+    )
+        : base(
+            id,
+            createdAt,
+            updatedAt
+        )
     {
-        Markdown = Optional(markdown, 100_000, nameof(markdown));
+        Markdown = Optional(
+            markdown,
+            100_000,
+            nameof(markdown)
+        );
     }
 
-    public void Update(string markdown, DateTimeOffset changedAt)
+    public void Update(
+        string markdown,
+        DateTimeOffset changedAt
+    )
     {
-        var validatedMarkdown = Optional(markdown, 100_000, nameof(markdown));
+        var validatedMarkdown = Optional(
+            markdown,
+            100_000,
+            nameof(markdown)
+        );
         ChangedAt(changedAt);
         Markdown = validatedMarkdown;
     }
 
-    public static MarkdownTextBlock Reconstitute(BlockId id, string markdown, DateTimeOffset createdAt, DateTimeOffset updatedAt) =>
-        new(id, markdown, createdAt, updatedAt);
+    public static MarkdownTextBlock Reconstitute(
+        BlockId id,
+        string markdown,
+        DateTimeOffset createdAt,
+        DateTimeOffset updatedAt
+    ) =>
+        new(
+            id,
+            markdown,
+            createdAt,
+            updatedAt
+        );
 }

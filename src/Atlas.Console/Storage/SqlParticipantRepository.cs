@@ -16,7 +16,11 @@ public sealed class SqlParticipantRepository(Func<AtlasDataContext>? contextFact
 
         // Reject a case-insensitive display-name collision with another Participant before saving.
         if (ReadRows<ParticipantRow>().Any(row => row.Id != participant.Id.Value &&
-            string.Equals(row.DisplayName, participant.DisplayName, StringComparison.OrdinalIgnoreCase)))
+            string.Equals(
+                row.DisplayName,
+                participant.DisplayName,
+                StringComparison.OrdinalIgnoreCase
+            )))
             throw new InvalidOperationException($"A participant named '{participant.DisplayName}' already exists.");
 
         // Insert or update this profile. SaveRow starts a transaction or joins the caller's operation.
@@ -49,6 +53,7 @@ public sealed class SqlParticipantRepository(Func<AtlasDataContext>? contextFact
             storedParticipant.Bio,
             storedParticipant.IsActive,
             storedParticipant.CreatedAt,
-            storedParticipant.UpdatedAt);
+            storedParticipant.UpdatedAt
+        );
     }
 }

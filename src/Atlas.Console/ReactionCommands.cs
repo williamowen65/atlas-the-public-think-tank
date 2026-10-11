@@ -13,12 +13,20 @@ namespace Atlas.ConsoleApp;
 /// <summary>Coordinates voting for the curated reactions available to every Node.</summary>
 public static class ReactionCommands
 {
-    public static void Run(Node node, IReactionDefinitionRepository definitions,
-        INodeReactionRepository reactions, IVoteRepository votes, CastVote castVote,
+    public static void Run(
+        Node node,
+        IReactionDefinitionRepository definitions,
+        INodeReactionRepository reactions,
+        IVoteRepository votes,
+        CastVote castVote,
         IParticipantRepository participants,
-        IAuthenticatedActor authenticatedActor)
+        IAuthenticatedActor authenticatedActor
+    )
     {
-        var service = new NodeReactionApplicationService(definitions, reactions);
+        var service = new NodeReactionApplicationService(
+            definitions,
+            reactions
+        );
         var currentParticipant = participants.GetById(new ParticipantId(authenticatedActor.ParticipantId))
             ?? throw new InvalidOperationException("The authenticated Atlas participant was not found.");
 
@@ -26,17 +34,28 @@ public static class ReactionCommands
         {
             Console.Clear();
             Console.WriteLine($"REACTIONS TO {node.Title.Value.ToUpperInvariant()}");
-            Console.WriteLine(new string('-', $"REACTIONS TO {node.Title.Value}".Length));
+            Console.WriteLine(new string(
+                '-',
+                $"REACTIONS TO {node.Title.Value}".Length
+            ));
             Console.WriteLine($"Acting as: {currentParticipant.DisplayName}");
             Console.WriteLine();
 
-            var choices = BuildChoices(node, definitions, reactions, votes,
-                new VotingParticipantId(authenticatedActor.ParticipantId));
+            var choices = BuildChoices(
+                node,
+                definitions,
+                reactions,
+                votes,
+                new VotingParticipantId(authenticatedActor.ParticipantId)
+            );
             WriteChoices(choices);
             Console.WriteLine("0. Return to node");
             Console.Write("Reaction to vote on: ");
 
-            if (!int.TryParse(Console.ReadLine(), out var selection) || selection < 0 ||
+            if (!int.TryParse(
+                Console.ReadLine(),
+                out var selection
+            ) || selection < 0 ||
                 selection > choices.Count)
             {
                 ConsoleUi.Pause("That is not a valid reaction selection.");
@@ -62,11 +81,18 @@ public static class ReactionCommands
             {
                 var choice = choices[selection - 1];
                 var association = choice.Association ?? service.Apply(
-                    node, choice.Definition.Text, authenticatedActor.ParticipantId,
-                    currentParticipant.IsActive, AtlasTime.UtcNow);
+                    node,
+                    choice.Definition.Text,
+                    authenticatedActor.ParticipantId,
+                    currentParticipant.IsActive,
+                    AtlasTime.UtcNow
+                );
 
-                castVote.Execute(new NodeReactionVoteTarget(association.Id.Value),
-                    new VotingParticipantId(authenticatedActor.ParticipantId), value.Value);
+                castVote.Execute(
+                    new NodeReactionVoteTarget(association.Id.Value),
+                    new VotingParticipantId(authenticatedActor.ParticipantId),
+                    value.Value
+                );
                 ConsoleUi.Pause("Your reaction vote was saved.");
             }
             catch (Exception exception) when (exception is ArgumentException or
@@ -78,9 +104,13 @@ public static class ReactionCommands
         }
     }
 
-    private static IReadOnlyList<ReactionChoice> BuildChoices(Node node,
-        IReactionDefinitionRepository definitions, INodeReactionRepository reactions,
-        IVoteRepository votes, VotingParticipantId participantId)
+    private static IReadOnlyList<ReactionChoice> BuildChoices(
+        Node node,
+        IReactionDefinitionRepository definitions,
+        INodeReactionRepository reactions,
+        IVoteRepository votes,
+        VotingParticipantId participantId
+    )
     {
         var associations = reactions.GetActiveForNode(node.Id)
             .ToDictionary(item => item.ReactionDefinitionId);
@@ -90,14 +120,23 @@ public static class ReactionCommands
             .OrderBy(definition => definition.Text)
             .Select(definition =>
             {
-                associations.TryGetValue(definition.Id, out var association);
+                associations.TryGetValue(
+                    definition.Id,
+                    out var association
+                );
                 var summary = association is null
                     ? null
                     : new GetNodeReactionVoteSummary(votes).Execute(
-                        new NodeReactionVoteTarget(association.Id.Value), participantId);
-                return new ReactionChoice(definition, association,
-                    summary?.Score ?? 0, summary?.TotalVotes ?? 0,
-                    summary?.CurrentParticipantVote);
+                        new NodeReactionVoteTarget(association.Id.Value),
+                        participantId
+                    );
+                return new ReactionChoice(
+                    definition,
+                    association,
+                    summary?.Score ?? 0,
+                    summary?.TotalVotes ?? 0,
+                    summary?.CurrentParticipantVote
+                );
             })
             .ToList();
     }
@@ -120,6 +159,11 @@ public static class ReactionCommands
         Console.WriteLine();
     }
 
-    private sealed record ReactionChoice(ReactionDefinition Definition,
-        NodeReaction? Association, int Score, int TotalVotes, int? CurrentParticipantVote);
+    private sealed record ReactionChoice(
+        ReactionDefinition Definition,
+        NodeReaction? Association,
+        int Score,
+        int TotalVotes,
+        int? CurrentParticipantVote
+    );
 }

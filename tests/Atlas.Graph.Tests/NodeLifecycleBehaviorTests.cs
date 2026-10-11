@@ -14,10 +14,19 @@ public class NodeLifecycleBehaviorTests
         var node = NodeTestFactory.Create();
         var archivedAt = node.CreatedAt.AddMinutes(1);
 
-        node.Archive(node.AuthorId.Value, archivedAt);
+        node.Archive(
+            node.AuthorId.Value,
+            archivedAt
+        );
 
-        Assert.AreEqual(NodeStatus.Archived, node.Status);
-        Assert.AreEqual(archivedAt, node.UpdatedAt);
+        Assert.AreEqual(
+            NodeStatus.Archived,
+            node.Status
+        );
+        Assert.AreEqual(
+            archivedAt,
+            node.UpdatedAt
+        );
     }
 
     /// <summary>Verifies that archive when already archived preserves timestamp.</summary>
@@ -27,15 +36,20 @@ public class NodeLifecycleBehaviorTests
         var node = NodeTestFactory.Create();
         node.Archive(
             node.AuthorId.Value,
-            node.CreatedAt.AddMinutes(1));
+            node.CreatedAt.AddMinutes(1)
+        );
         var originalUpdatedAt = node.UpdatedAt;
         node.ClearDomainEvents();
 
         node.Archive(
             node.AuthorId.Value,
-            originalUpdatedAt.AddMinutes(1));
+            originalUpdatedAt.AddMinutes(1)
+        );
 
-        Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);
+        Assert.AreEqual(
+            originalUpdatedAt,
+            node.UpdatedAt
+        );
         Assert.IsEmpty(node.DomainEvents);
     }
 
@@ -46,23 +60,45 @@ public class NodeLifecycleBehaviorTests
         var node = NodeTestFactory.Create();
         node.Archive(
             node.AuthorId.Value,
-            node.CreatedAt.AddMinutes(1));
+            node.CreatedAt.AddMinutes(1)
+        );
         node.ClearDomainEvents();
         var restoredAt = node.UpdatedAt.AddMinutes(1);
 
-        node.Restore(node.AuthorId.Value, restoredAt);
+        node.Restore(
+            node.AuthorId.Value,
+            restoredAt
+        );
 
-        Assert.AreEqual(NodeStatus.Active, node.Status);
-        Assert.AreEqual(restoredAt, node.UpdatedAt);
+        Assert.AreEqual(
+            NodeStatus.Active,
+            node.Status
+        );
+        Assert.AreEqual(
+            restoredAt,
+            node.UpdatedAt
+        );
 
         var message = node.DomainEvents
             .OfType<NodeRestoredV1>()
             .Single();
 
-        Assert.AreEqual(node.Id.Value, message.NodeId);
-        Assert.AreEqual(node.DescriptionId.Value, message.DescriptionId);
-        Assert.AreEqual(node.AuthorId.Value, message.AuthorId);
-        Assert.AreEqual(restoredAt, message.OccurredAt);
+        Assert.AreEqual(
+            node.Id.Value,
+            message.NodeId
+        );
+        Assert.AreEqual(
+            node.DescriptionId.Value,
+            message.DescriptionId
+        );
+        Assert.AreEqual(
+            node.AuthorId.Value,
+            message.AuthorId
+        );
+        Assert.AreEqual(
+            restoredAt,
+            message.OccurredAt
+        );
     }
 
     /// <summary>Verifies that restore when already active is no op.</summary>
@@ -75,10 +111,17 @@ public class NodeLifecycleBehaviorTests
 
         node.Restore(
             node.AuthorId.Value,
-            originalUpdatedAt.AddMinutes(1));
+            originalUpdatedAt.AddMinutes(1)
+        );
 
-        Assert.AreEqual(NodeStatus.Active, node.Status);
-        Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);
+        Assert.AreEqual(
+            NodeStatus.Active,
+            node.Status
+        );
+        Assert.AreEqual(
+            originalUpdatedAt,
+            node.UpdatedAt
+        );
         Assert.IsEmpty(node.DomainEvents);
     }
 }

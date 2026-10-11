@@ -34,14 +34,16 @@ public sealed class Node
         NodeDescriptionId descriptionId,
         NodeTypeId typeId,
         NodeAuthorId authorId,
-        DateTimeOffset createdAt)
+        DateTimeOffset createdAt
+    )
         : this(
             title,
             descriptionId,
             typeId,
             authorId,
             [],
-            createdAt)
+            createdAt
+        )
     {
     }
 
@@ -52,9 +54,15 @@ public sealed class Node
         NodeTypeId typeId,
         NodeAuthorId authorId,
         IEnumerable<NodeTypeId> requestedSubNodeTypeIds,
-        DateTimeOffset createdAt)
+        DateTimeOffset createdAt
+    )
     {
-        ValidateValues(title, descriptionId, typeId, authorId);
+        ValidateValues(
+            title,
+            descriptionId,
+            typeId,
+            authorId
+        );
         Id = NodeId.New();
         Title = title;
         DescriptionId = descriptionId;
@@ -72,7 +80,8 @@ public sealed class Node
                 Id.Value,
                 DescriptionId.Value,
                 AuthorId.Value,
-                createdAt));
+                createdAt
+            ));
     }
 
     /// <summary>Creates a validated node instance.</summary>
@@ -86,10 +95,19 @@ public sealed class Node
         IEnumerable<NodeTypeId> requestedSubNodeTypeIds,
         IEnumerable<NodeId> parentNodeIds,
         DateTimeOffset createdAt,
-        DateTimeOffset updatedAt)
+        DateTimeOffset updatedAt
+    )
     {
-        if (id.Value == Guid.Empty) throw new ArgumentException("A node ID is required.", nameof(id));
-        ValidateValues(title, descriptionId, typeId, authorId);
+        if (id.Value == Guid.Empty) throw new ArgumentException(
+            "A node ID is required.",
+            nameof(id)
+        );
+        ValidateValues(
+            title,
+            descriptionId,
+            typeId,
+            authorId
+        );
         if (!Enum.IsDefined(status)) throw new ArgumentOutOfRangeException(nameof(status));
 
         if (updatedAt < createdAt)
@@ -108,7 +126,10 @@ public sealed class Node
         UpdatedAt = updatedAt.ToUniversalTime();
         _requestedSubNodeTypes =
             CreateRequestedSubNodeTypes(requestedSubNodeTypeIds);
-        _parentNodeIds = CreateParentNodeIds(parentNodeIds, Id);
+        _parentNodeIds = CreateParentNodeIds(
+            parentNodeIds,
+            Id
+        );
     }
 
     /// <summary>Rebuilds the domain object from persisted state without replaying creation behavior.</summary>
@@ -120,7 +141,8 @@ public sealed class Node
         NodeAuthorId authorId,
         NodeStatus status,
         DateTimeOffset createdAt,
-        DateTimeOffset updatedAt)
+        DateTimeOffset updatedAt
+    )
     {
         return Reconstitute(
             id,
@@ -132,7 +154,8 @@ public sealed class Node
             [],
             [],
             createdAt,
-            updatedAt);
+            updatedAt
+        );
     }
 
     /// <summary>Rebuilds the domain object from persisted state without replaying creation behavior.</summary>
@@ -145,7 +168,8 @@ public sealed class Node
         NodeStatus status,
         IEnumerable<NodeTypeId> requestedSubNodeTypeIds,
         DateTimeOffset createdAt,
-        DateTimeOffset updatedAt)
+        DateTimeOffset updatedAt
+    )
     {
         return Reconstitute(
             id,
@@ -157,7 +181,8 @@ public sealed class Node
             requestedSubNodeTypeIds,
             [],
             createdAt,
-            updatedAt);
+            updatedAt
+        );
     }
 
     /// <summary>Rebuilds the domain object from persisted state without replaying creation behavior.</summary>
@@ -171,7 +196,8 @@ public sealed class Node
         IEnumerable<NodeTypeId> requestedSubNodeTypeIds,
         IEnumerable<NodeId> parentNodeIds,
         DateTimeOffset createdAt,
-        DateTimeOffset updatedAt)
+        DateTimeOffset updatedAt
+    )
     {
         return new Node(
             id,
@@ -183,14 +209,16 @@ public sealed class Node
             requestedSubNodeTypeIds,
             parentNodeIds,
             createdAt,
-            updatedAt);
+            updatedAt
+        );
     }
 
     /// <summary>Changes the validated name and advances the modification timestamp when the value differs.</summary>
     public void Rename(
         NodeTitle newTitle,
         Guid actorParticipantId,
-        DateTimeOffset changedAt)
+        DateTimeOffset changedAt
+    )
     {
         EnsureAuthoredBy(actorParticipantId);
         ArgumentNullException.ThrowIfNull(newTitle);
@@ -209,10 +237,14 @@ public sealed class Node
     public void ChangeType(
         NodeTypeId newTypeId,
         Guid actorParticipantId,
-        DateTimeOffset changedAt)
+        DateTimeOffset changedAt
+    )
     {
         EnsureAuthoredBy(actorParticipantId);
-        if (newTypeId.Value == Guid.Empty) throw new ArgumentException("A node type is required.", nameof(newTypeId));
+        if (newTypeId.Value == Guid.Empty) throw new ArgumentException(
+            "A node type is required.",
+            nameof(newTypeId)
+        );
 
         if (TypeId == newTypeId)
         {
@@ -228,7 +260,8 @@ public sealed class Node
     public void RequestSubNodeType(
         NodeTypeId typeId,
         Guid actorParticipantId,
-        DateTimeOffset changedAt)
+        DateTimeOffset changedAt
+    )
     {
         EnsureAuthoredBy(actorParticipantId);
 
@@ -248,7 +281,8 @@ public sealed class Node
     public void StopRequestingSubNodeType(
         NodeTypeId typeId,
         Guid actorParticipantId,
-        DateTimeOffset changedAt)
+        DateTimeOffset changedAt
+    )
     {
         EnsureAuthoredBy(actorParticipantId);
 
@@ -268,10 +302,14 @@ public sealed class Node
     public void AttachToParent(
         NodeId parentNodeId,
         Guid actorParticipantId,
-        DateTimeOffset attachedAt)
+        DateTimeOffset attachedAt
+    )
     {
         EnsureAuthoredBy(actorParticipantId);
-        EnsureValidParentNodeId(parentNodeId, Id);
+        EnsureValidParentNodeId(
+            parentNodeId,
+            Id
+        );
 
         if (_parentNodeIds.Contains(parentNodeId))
         {
@@ -288,17 +326,22 @@ public sealed class Node
                 parentNodeId.Value,
                 DescriptionId.Value,
                 AuthorId.Value,
-                attachedAt));
+                attachedAt
+            ));
     }
 
     /// <summary>Detaches a parent relationship and records the corresponding integration event.</summary>
     public void DetachFromParent(
         NodeId parentNodeId,
         Guid actorParticipantId,
-        DateTimeOffset detachedAt)
+        DateTimeOffset detachedAt
+    )
     {
         EnsureAuthoredBy(actorParticipantId);
-        EnsureValidParentNodeId(parentNodeId, Id);
+        EnsureValidParentNodeId(
+            parentNodeId,
+            Id
+        );
 
         if (!_parentNodeIds.Contains(parentNodeId))
         {
@@ -315,13 +358,15 @@ public sealed class Node
                 parentNodeId.Value,
                 DescriptionId.Value,
                 AuthorId.Value,
-                detachedAt));
+                detachedAt
+            ));
     }
 
     /// <summary>Moves the aggregate into its archived lifecycle state and records the transition when applicable.</summary>
     public void Archive(
         Guid actorParticipantId,
-        DateTimeOffset archivedAt)
+        DateTimeOffset archivedAt
+    )
     {
         EnsureAuthoredBy(actorParticipantId);
 
@@ -339,13 +384,15 @@ public sealed class Node
                 Id.Value,
                 DescriptionId.Value,
                 AuthorId.Value,
-                archivedAt));
+                archivedAt
+            ));
     }
 
     /// <summary>Returns the aggregate to its active lifecycle state and records the transition when applicable.</summary>
     public void Restore(
         Guid actorParticipantId,
-        DateTimeOffset restoredAt)
+        DateTimeOffset restoredAt
+    )
     {
         EnsureAuthoredBy(actorParticipantId);
 
@@ -363,7 +410,8 @@ public sealed class Node
                 Id.Value,
                 DescriptionId.Value,
                 AuthorId.Value,
-                restoredAt));
+                restoredAt
+            ));
     }
 
     /// <summary>Ensures an actor is the node author before an author-owned workflow continues.</summary>
@@ -373,7 +421,8 @@ public sealed class Node
         {
             throw new ArgumentException(
                 "An acting participant ID is required.",
-                nameof(actorParticipantId));
+                nameof(actorParticipantId)
+            );
         }
 
         if (actorParticipantId != AuthorId.Value)
@@ -389,17 +438,28 @@ public sealed class Node
         _domainEvents.Clear();
     }
 
-    private static void ValidateValues(NodeTitle title, NodeDescriptionId descriptionId, NodeTypeId typeId, NodeAuthorId authorId)
+    private static void ValidateValues(
+        NodeTitle title,
+        NodeDescriptionId descriptionId,
+        NodeTypeId typeId,
+        NodeAuthorId authorId
+    )
     {
         ArgumentNullException.ThrowIfNull(title);
         ArgumentNullException.ThrowIfNull(descriptionId);
         ArgumentNullException.ThrowIfNull(authorId);
-        if (typeId.Value == Guid.Empty) throw new ArgumentException("A node type is required.", nameof(typeId));
+        if (typeId.Value == Guid.Empty) throw new ArgumentException(
+            "A node type is required.",
+            nameof(typeId)
+        );
     }
 
     private void EnsureTime(DateTimeOffset at)
     {
-        if (at < UpdatedAt) throw new ArgumentException("Change time cannot precede the current update time.", nameof(at));
+        if (at < UpdatedAt) throw new ArgumentException(
+            "Change time cannot precede the current update time.",
+            nameof(at)
+        );
     }
 
     private static List<RequestedSubNodeType>
@@ -417,7 +477,8 @@ public sealed class Node
     /// <summary>Creates parent node ids during the current workflow.</summary>
     private static List<NodeId> CreateParentNodeIds(
         IEnumerable<NodeId> parentNodeIds,
-        NodeId nodeId)
+        NodeId nodeId
+    )
     {
         ArgumentNullException.ThrowIfNull(parentNodeIds);
 
@@ -425,7 +486,10 @@ public sealed class Node
 
         foreach (var parentNodeId in parents)
         {
-            EnsureValidParentNodeId(parentNodeId, nodeId);
+            EnsureValidParentNodeId(
+                parentNodeId,
+                nodeId
+            );
         }
 
         return parents;
@@ -434,13 +498,15 @@ public sealed class Node
     /// <summary>Enforces valid parent node id before the operation continues.</summary>
     private static void EnsureValidParentNodeId(
         NodeId parentNodeId,
-        NodeId nodeId)
+        NodeId nodeId
+    )
     {
         if (parentNodeId.Value == Guid.Empty)
         {
             throw new ArgumentException(
                 "A parent node ID is required.",
-                nameof(parentNodeId));
+                nameof(parentNodeId)
+            );
         }
 
         if (parentNodeId == nodeId)

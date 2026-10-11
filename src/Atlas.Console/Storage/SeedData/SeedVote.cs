@@ -15,8 +15,14 @@ internal static partial class DemoData
                 TargetId = Guid.Parse("d1000000-0000-4000-8000-000000000001"),
                 TargetType = "NodeReaction",
                 Value = 1,
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new VoteRow
             {
@@ -25,8 +31,14 @@ internal static partial class DemoData
                 TargetId = Guid.Parse("d1000000-0000-4000-8000-000000000001"),
                 TargetType = "NodeReaction",
                 Value = 1,
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new VoteRow
             {
@@ -35,8 +47,14 @@ internal static partial class DemoData
                 TargetId = Guid.Parse("d1000000-0000-4000-8000-000000000002"),
                 TargetType = "NodeReaction",
                 Value = 1,
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new VoteRow
             {
@@ -45,8 +63,14 @@ internal static partial class DemoData
                 TargetId = Guid.Parse("d1000000-0000-4000-8000-000000000003"),
                 TargetType = "NodeReaction",
                 Value = 1,
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new VoteRow
             {
@@ -55,8 +79,14 @@ internal static partial class DemoData
                 TargetId = Guid.Parse("d1000000-0000-4000-8000-000000000003"),
                 TargetType = "NodeReaction",
                 Value = 1,
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new VoteRow
             {
@@ -65,8 +95,14 @@ internal static partial class DemoData
                 TargetId = Guid.Parse("d1000000-0000-4000-8000-000000000004"),
                 TargetType = "NodeReaction",
                 Value = 1,
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new VoteRow
             {
@@ -75,8 +111,14 @@ internal static partial class DemoData
                 TargetId = Guid.Parse("d1000000-0000-4000-8000-000000000005"),
                 TargetType = "NodeReaction",
                 Value = 1,
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new VoteRow
             {
@@ -85,8 +127,14 @@ internal static partial class DemoData
                 TargetId = Guid.Parse("d1000000-0000-4000-8000-000000000005"),
                 TargetType = "NodeReaction",
                 Value = 1,
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new VoteRow
             {
@@ -95,8 +143,14 @@ internal static partial class DemoData
                 TargetId = Guid.Parse("d1000000-0000-4000-8000-000000000006"),
                 TargetType = "NodeReaction",
                 Value = 1,
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new VoteRow
             {
@@ -105,8 +159,14 @@ internal static partial class DemoData
                 TargetId = Guid.Parse("d1000000-0000-4000-8000-000000000007"),
                 TargetType = "NodeReaction",
                 Value = 1,
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new VoteRow
             {
@@ -115,8 +175,14 @@ internal static partial class DemoData
                 TargetId = Guid.Parse("d1000000-0000-4000-8000-000000000008"),
                 TargetType = "NodeReaction",
                 Value = 1,
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new VoteRow
             {
@@ -125,8 +191,14 @@ internal static partial class DemoData
                 TargetId = Guid.Parse("d1000000-0000-4000-8000-000000000008"),
                 TargetType = "NodeReaction",
                 Value = 1,
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new VoteRow
             {
@@ -135,8 +207,14 @@ internal static partial class DemoData
                 TargetId = Guid.Parse("d1000000-0000-4000-8000-000000000009"),
                 TargetType = "NodeReaction",
                 Value = 1,
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new VoteRow
             {
@@ -145,8 +223,14 @@ internal static partial class DemoData
                 TargetId = Guid.Parse("d1000000-0000-4000-8000-000000000009"),
                 TargetType = "NodeReaction",
                 Value = 1,
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new VoteRow
             {
@@ -155,8 +239,14 @@ internal static partial class DemoData
                 TargetId = Guid.Parse("d1000000-0000-4000-8000-000000000010"),
                 TargetType = "NodeReaction",
                 Value = 1,
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new VoteRow
             {
@@ -165,8 +255,14 @@ internal static partial class DemoData
                 TargetId = Guid.Parse("d1000000-0000-4000-8000-000000000010"),
                 TargetType = "NodeReaction",
                 Value = 1,
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new VoteRow
             {
@@ -175,8 +271,14 @@ internal static partial class DemoData
                 TargetId = Guid.Parse("d1000000-0000-4000-8000-000000000011"),
                 TargetType = "NodeReaction",
                 Value = 1,
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new VoteRow
             {
@@ -185,8 +287,14 @@ internal static partial class DemoData
                 TargetId = Guid.Parse("d1000000-0000-4000-8000-000000000011"),
                 TargetType = "NodeReaction",
                 Value = 1,
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new VoteRow
             {
@@ -195,8 +303,14 @@ internal static partial class DemoData
                 TargetId = Guid.Parse("d1000000-0000-4000-8000-000000000011"),
                 TargetType = "NodeReaction",
                 Value = -1,
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new VoteRow
             {
@@ -205,8 +319,14 @@ internal static partial class DemoData
                 TargetId = Guid.Parse("d1000000-0000-4000-8000-000000000012"),
                 TargetType = "NodeReaction",
                 Value = 1,
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new VoteRow
             {
@@ -215,8 +335,14 @@ internal static partial class DemoData
                 TargetId = Guid.Parse("d1000000-0000-4000-8000-000000000013"),
                 TargetType = "NodeReaction",
                 Value = 1,
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:58:33.243Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:33.243Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
         });
     }

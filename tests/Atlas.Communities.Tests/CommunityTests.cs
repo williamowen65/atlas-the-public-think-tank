@@ -12,11 +12,33 @@ public sealed class CommunityTests
     public void Create_AssignsOwnerAndActiveStatus()
     {
         var owner = Guid.NewGuid();
-        var created = new DateTimeOffset(2026, 9, 20, 12, 0, 0, TimeSpan.Zero);
-        var community = new Community("Puget Sound", "Regional ideas", owner, created);
-        Assert.AreEqual(owner, community.OwnerParticipantId);
-        Assert.AreEqual(CommunityStatus.Active, community.Status);
-        Assert.AreEqual(created, community.CreatedAt);
+        var created = new DateTimeOffset(
+            2026,
+            9,
+            20,
+            12,
+            0,
+            0,
+            TimeSpan.Zero
+        );
+        var community = new Community(
+            "Puget Sound",
+            "Regional ideas",
+            owner,
+            created
+        );
+        Assert.AreEqual(
+            owner,
+            community.OwnerParticipantId
+        );
+        Assert.AreEqual(
+            CommunityStatus.Active,
+            community.Status
+        );
+        Assert.AreEqual(
+            created,
+            community.CreatedAt
+        );
     }
 
     [TestMethod]
@@ -24,20 +46,54 @@ public sealed class CommunityTests
     {
         var owner = Guid.NewGuid();
         var created = DateTimeOffset.UtcNow;
-        var community = new Community("Nature", "Original", owner, created);
-        community.Rename(owner, "Nature and Wildlife", created.AddMinutes(1));
-        community.ChangeDescription(owner, "Updated", created.AddMinutes(2));
-        community.Archive(owner, created.AddMinutes(3));
-        Assert.AreEqual("Nature and Wildlife", community.Name);
-        Assert.AreEqual("Updated", community.Description);
-        Assert.AreEqual(CommunityStatus.Archived, community.Status);
+        var community = new Community(
+            "Nature",
+            "Original",
+            owner,
+            created
+        );
+        community.Rename(
+            owner,
+            "Nature and Wildlife",
+            created.AddMinutes(1)
+        );
+        community.ChangeDescription(
+            owner,
+            "Updated",
+            created.AddMinutes(2)
+        );
+        community.Archive(
+            owner,
+            created.AddMinutes(3)
+        );
+        Assert.AreEqual(
+            "Nature and Wildlife",
+            community.Name
+        );
+        Assert.AreEqual(
+            "Updated",
+            community.Description
+        );
+        Assert.AreEqual(
+            CommunityStatus.Archived,
+            community.Status
+        );
     }
 
     [TestMethod]
     public void NonOwnerCannotEditCommunity()
     {
-        var community = new Community("Teachers", "Education", Guid.NewGuid(), DateTimeOffset.UtcNow);
-        Assert.Throws<InvalidOperationException>(() => community.Rename(Guid.NewGuid(), "Other", DateTimeOffset.UtcNow));
+        var community = new Community(
+            "Teachers",
+            "Education",
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow
+        );
+        Assert.Throws<InvalidOperationException>(() => community.Rename(
+            Guid.NewGuid(),
+            "Other",
+            DateTimeOffset.UtcNow
+        ));
     }
 
     [TestMethod]
@@ -45,27 +101,67 @@ public sealed class CommunityTests
     {
         var communities = new MemoryCommunities();
         var memberships = new MemoryMemberships();
-        var service = new CommunityService(communities, memberships, new MemoryNodes());
+        var service = new CommunityService(
+            communities,
+            memberships,
+            new MemoryNodes()
+        );
         var owner = Guid.NewGuid();
-        var created = service.Create("Climate Adaptation", "", owner, DateTimeOffset.UtcNow);
-        Assert.IsTrue(memberships.Get(created.Id, owner)!.IsActive);
-        Assert.Throws<InvalidOperationException>(() => service.Create(" climate adaptation ", "", Guid.NewGuid(), DateTimeOffset.UtcNow));
+        var created = service.Create(
+            "Climate Adaptation",
+            "",
+            owner,
+            DateTimeOffset.UtcNow
+        );
+        Assert.IsTrue(memberships.Get(
+            created.Id,
+            owner
+        )!.IsActive);
+        Assert.Throws<InvalidOperationException>(() => service.Create(
+            " climate adaptation ",
+            "",
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow
+        ));
     }
 
     [TestMethod]
     public void RenameServiceRejectsRuntimeNullWithoutChangingCommunity()
     {
         var communities = new MemoryCommunities();
-        var service = new CommunityService(communities, new MemoryMemberships(), new MemoryNodes());
+        var service = new CommunityService(
+            communities,
+            new MemoryMemberships(),
+            new MemoryNodes()
+        );
         var owner = Guid.NewGuid();
         var createdAt = DateTimeOffset.UtcNow;
-        var community = service.Create("Original", "", owner, createdAt);
+        var community = service.Create(
+            "Original",
+            "",
+            owner,
+            createdAt
+        );
 
-        Assert.ThrowsExactly<ArgumentNullException>(() => service.Rename(community, owner, null!, createdAt.AddMinutes(1)));
+        Assert.ThrowsExactly<ArgumentNullException>(() => service.Rename(
+            community,
+            owner,
+            null!,
+            createdAt.AddMinutes(1)
+        ));
 
-        Assert.AreEqual("Original", community.Name);
-        Assert.AreEqual(createdAt, community.UpdatedAt);
-        Assert.AreEqual("Original", communities.GetById(community.Id)!.Name);
+        Assert.AreEqual(
+            "Original",
+            community.Name
+        );
+        Assert.AreEqual(
+            createdAt,
+            community.UpdatedAt
+        );
+        Assert.AreEqual(
+            "Original",
+            communities.GetById(community.Id)!.Name
+        );
     }
 
     [TestMethod]
@@ -73,15 +169,47 @@ public sealed class CommunityTests
     {
         var communities = new MemoryCommunities();
         var nodes = new MemoryNodes();
-        var service = new CommunityService(communities, new MemoryMemberships(), nodes);
+        var service = new CommunityService(
+            communities,
+            new MemoryMemberships(),
+            nodes
+        );
         var participant = Guid.NewGuid();
         var nodeId = Guid.NewGuid();
-        var first = service.Create("Future Sound", "", participant, DateTimeOffset.UtcNow);
-        var second = service.Create("Climate Adaptation", "", participant, DateTimeOffset.UtcNow);
-        service.AssociateNode(first, nodeId, participant, DateTimeOffset.UtcNow);
-        service.AssociateNode(second, nodeId, participant, DateTimeOffset.UtcNow);
-        service.AssociateNode(first, nodeId, participant, DateTimeOffset.UtcNow);
-        Assert.HasCount(2, nodes.GetByNode(nodeId));
+        var first = service.Create(
+            "Future Sound",
+            "",
+            participant,
+            DateTimeOffset.UtcNow
+        );
+        var second = service.Create(
+            "Climate Adaptation",
+            "",
+            participant,
+            DateTimeOffset.UtcNow
+        );
+        service.AssociateNode(
+            first,
+            nodeId,
+            participant,
+            DateTimeOffset.UtcNow
+        );
+        service.AssociateNode(
+            second,
+            nodeId,
+            participant,
+            DateTimeOffset.UtcNow
+        );
+        service.AssociateNode(
+            first,
+            nodeId,
+            participant,
+            DateTimeOffset.UtcNow
+        );
+        Assert.HasCount(
+            2,
+            nodes.GetByNode(nodeId)
+        );
     }
 
     [TestMethod]
@@ -89,21 +217,56 @@ public sealed class CommunityTests
     {
         var communities = new MemoryCommunities();
         var memberships = new MemoryMemberships();
-        var service = new CommunityService(communities, memberships, new MemoryNodes());
+        var service = new CommunityService(
+            communities,
+            memberships,
+            new MemoryNodes()
+        );
         var owner = Guid.NewGuid();
         var member = Guid.NewGuid();
-        var community = service.Create("Civic Life", "", owner, DateTimeOffset.UtcNow);
-        service.Join(community, member, DateTimeOffset.UtcNow);
-        service.Leave(community, member, DateTimeOffset.UtcNow.AddMinutes(1));
-        Assert.IsFalse(memberships.Get(community.Id, member)!.IsActive);
-        service.Join(community, member, DateTimeOffset.UtcNow.AddMinutes(2));
-        Assert.IsTrue(memberships.Get(community.Id, member)!.IsActive);
-        Assert.Throws<InvalidOperationException>(() => service.Leave(community, owner, DateTimeOffset.UtcNow));
+        var community = service.Create(
+            "Civic Life",
+            "",
+            owner,
+            DateTimeOffset.UtcNow
+        );
+        service.Join(
+            community,
+            member,
+            DateTimeOffset.UtcNow
+        );
+        service.Leave(
+            community,
+            member,
+            DateTimeOffset.UtcNow.AddMinutes(1)
+        );
+        Assert.IsFalse(memberships.Get(
+            community.Id,
+            member
+        )!.IsActive);
+        service.Join(
+            community,
+            member,
+            DateTimeOffset.UtcNow.AddMinutes(2)
+        );
+        Assert.IsTrue(memberships.Get(
+            community.Id,
+            member
+        )!.IsActive);
+        Assert.Throws<InvalidOperationException>(() => service.Leave(
+            community,
+            owner,
+            DateTimeOffset.UtcNow
+        ));
     }
 
     private sealed class MemoryCommunities : ICommunityRepository, IReferenceLookup
     {
-        public bool IsAvailable(string kind, Guid id, bool requireActive) => id != Guid.Empty;
+        public bool IsAvailable(
+            string kind,
+            Guid id,
+            bool requireActive
+        ) => id != Guid.Empty;
 
         private readonly List<Community> _items = [];
         public IReadOnlyCollection<Community> GetAll() => _items;
@@ -116,7 +279,10 @@ public sealed class CommunityTests
         private readonly List<CommunityMembership> _items = [];
         public IReadOnlyCollection<CommunityMembership> GetByCommunity(CommunityId id) => _items.Where(x => x.CommunityId == id).ToList();
         public IReadOnlyCollection<CommunityMembership> GetByParticipant(Guid id) => _items.Where(x => x.ParticipantId == id).ToList();
-        public CommunityMembership? Get(CommunityId id, Guid participantId) => _items.SingleOrDefault(x => x.CommunityId == id && x.ParticipantId == participantId);
+        public CommunityMembership? Get(
+            CommunityId id,
+            Guid participantId
+        ) => _items.SingleOrDefault(x => x.CommunityId == id && x.ParticipantId == participantId);
         public void Save(CommunityMembership item) { _items.RemoveAll(x => x.CommunityId == item.CommunityId && x.ParticipantId == item.ParticipantId); _items.Add(item); }
     }
 
@@ -126,6 +292,9 @@ public sealed class CommunityTests
         public IReadOnlyCollection<CommunityNodeAssociation> GetByCommunity(CommunityId id) => _items.Where(x => x.CommunityId == id).ToList();
         public IReadOnlyCollection<CommunityNodeAssociation> GetByNode(Guid id) => _items.Where(x => x.NodeId == id).ToList();
         public void Add(CommunityNodeAssociation item) { if (!_items.Any(x => x.CommunityId == item.CommunityId && x.NodeId == item.NodeId)) _items.Add(item); }
-        public void Remove(CommunityId id, Guid nodeId) => _items.RemoveAll(x => x.CommunityId == id && x.NodeId == nodeId);
+        public void Remove(
+            CommunityId id,
+            Guid nodeId
+        ) => _items.RemoveAll(x => x.CommunityId == id && x.NodeId == nodeId);
     }
 }

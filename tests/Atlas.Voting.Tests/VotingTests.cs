@@ -1,4 +1,4 @@
-﻿using Atlas.Voting.Target;
+using Atlas.Voting.Target;
 using Atlas.Voting.Value;
 using Atlas.Voting.Votes;
 using Atlas.Voting.Data;
@@ -21,11 +21,13 @@ namespace Atlas.Voting.Tests
             var vote = castVote.Execute(
                 target,
                 participantId,
-                7);
+                7
+            );
 
             Assert.AreSame(
                 vote,
-                repository.GetById(vote.Id));
+                repository.GetById(vote.Id)
+            );
         }
 
         /// <summary>
@@ -47,7 +49,8 @@ namespace Atlas.Voting.Tests
             var originalVote = castVote.Execute(
                 target,
                 participantId,
-                7);
+                7
+            );
 
             var originalCreatedAt = originalVote.CreatedAt;
             var originalUpdatedAt = originalVote.UpdatedAt;
@@ -55,26 +58,31 @@ namespace Atlas.Voting.Tests
             var changedVote = castVote.Execute(
                 target,
                 participantId,
-                9);
+                9
+            );
 
             Assert.AreEqual(
                 originalVote.Id,
-                changedVote.Id);
+                changedVote.Id
+            );
 
             Assert.AreEqual(
                 9,
-                changedVote.Value.Value);
+                changedVote.Value.Value
+            );
 
             Assert.AreEqual(
                 originalCreatedAt,
-                changedVote.CreatedAt);
+                changedVote.CreatedAt
+            );
 
             Assert.IsTrue(
                 changedVote.UpdatedAt > originalUpdatedAt);
 
             Assert.HasCount(
                 1,
-                repository.GetTargetVotes(target));
+                repository.GetTargetVotes(target)
+            );
         }
 
         /// <summary>
@@ -99,40 +107,47 @@ namespace Atlas.Voting.Tests
             castVote.Execute(
                 target,
                 firstParticipantId,
-                8);
+                8
+            );
 
             castVote.Execute(
                 target,
                 secondParticipantId,
-                4);
+                4
+            );
 
             var targetVotes =
                 repository.GetTargetVotes(target);
 
             Assert.HasCount(
                 2,
-                targetVotes);
+                targetVotes
+            );
 
             var firstVote =
                 repository.GetByParticipantAndTarget(
                     firstParticipantId,
-                    target);
+                    target
+                );
 
             var secondVote =
                 repository.GetByParticipantAndTarget(
                     secondParticipantId,
-                    target);
+                    target
+                );
 
             Assert.IsNotNull(firstVote);
             Assert.IsNotNull(secondVote);
 
             Assert.AreEqual(
                 8,
-                firstVote.Value.Value);
+                firstVote.Value.Value
+            );
 
             Assert.AreEqual(
                 4,
-                secondVote.Value.Value);
+                secondVote.Value.Value
+            );
         }
 
         /// <summary>
@@ -160,20 +175,24 @@ namespace Atlas.Voting.Tests
             castVote.Execute(
                 firstTarget,
                 participantId,
-                8);
+                8
+            );
 
             castVote.Execute(
                 secondTarget,
                 participantId,
-                6);
+                6
+            );
 
             Assert.HasCount(
                 1,
-                repository.GetTargetVotes(firstTarget));
+                repository.GetTargetVotes(firstTarget)
+            );
 
             Assert.HasCount(
                 1,
-                repository.GetTargetVotes(secondTarget));
+                repository.GetTargetVotes(secondTarget)
+            );
         }
 
         /// <summary>
@@ -190,7 +209,8 @@ namespace Atlas.Voting.Tests
 
             Assert.AreEqual(
                 0,
-                summary.VoteCount);
+                summary.VoteCount
+            );
 
             Assert.IsNull(
                 summary.AverageVote);
@@ -219,28 +239,33 @@ namespace Atlas.Voting.Tests
             castVote.Execute(
                 requestedTarget,
                 new ParticipantId(Guid.NewGuid()),
-                8);
+                8
+            );
 
             castVote.Execute(
                 requestedTarget,
                 new ParticipantId(Guid.NewGuid()),
-                4);
+                4
+            );
 
             castVote.Execute(
                 otherTarget,
                 new ParticipantId(Guid.NewGuid()),
-                10);
+                10
+            );
 
             var summary =
                 getVoteSummary.Execute(requestedTarget);
 
             Assert.AreEqual(
                 2,
-                summary.VoteCount);
+                summary.VoteCount
+            );
 
             Assert.AreEqual(
                 6.0,
-                summary.AverageVote);
+                summary.AverageVote
+            );
         }
 
         /// <summary>
@@ -263,20 +288,24 @@ namespace Atlas.Voting.Tests
             castVote.Execute(
                 target,
                 requestedParticipant,
-                8);
+                8
+            );
 
             castVote.Execute(
                 target,
                 new ParticipantId(Guid.NewGuid()),
-                4);
+                4
+            );
 
             var summary = getVoteSummary.Execute(
                 target,
-                requestedParticipant);
+                requestedParticipant
+            );
 
             Assert.AreEqual(
                 8,
-                summary.CurrentParticipantVote);
+                summary.CurrentParticipantVote
+            );
         }
 
         [TestMethod]
@@ -285,10 +314,17 @@ namespace Atlas.Voting.Tests
             var target = new NodeVoteTarget(Guid.NewGuid());
             var participantId = new ParticipantId(Guid.NewGuid());
 
-            var vote = new Vote(target, participantId, 7);
+            var vote = new Vote(
+                target,
+                participantId,
+                7
+            );
 
             Assert.IsInstanceOfType<NodeImportanceRating>(vote.Value);
-            Assert.AreEqual(7, vote.Value.Value);
+            Assert.AreEqual(
+                7,
+                vote.Value.Value
+            );
         }
 
         [TestMethod]
@@ -299,7 +335,11 @@ namespace Atlas.Voting.Tests
 
             Assert.Throws<ArgumentException>(() =>
             {
-                new Vote(unsupportedTarget, participantId, 7);
+                new Vote(
+                    unsupportedTarget,
+                    participantId,
+                    7
+                );
             });
         }
 
@@ -329,7 +369,10 @@ namespace Atlas.Voting.Tests
         {
             NodeImportanceRating nodeRating = new NodeImportanceRating(value);
 
-            Assert.AreEqual(value,nodeRating.Value);
+            Assert.AreEqual(
+                value,
+                nodeRating.Value
+            );
 
         }
 
@@ -376,37 +419,44 @@ namespace Atlas.Voting.Tests
             castVote.Execute(
                 target,
                 participantId,
-                8);
+                8
+            );
 
             castVote.Execute(
                 target,
                 new ParticipantId(Guid.NewGuid()),
-                4);
+                4
+            );
 
             var removed = undoVote.Execute(
                 target,
-                participantId);
+                participantId
+            );
 
             var summary = getVoteSummary.Execute(
                 target,
-                participantId);
+                participantId
+            );
 
             Assert.IsTrue(removed);
 
             Assert.AreEqual(
                 1,
-                summary.VoteCount);
+                summary.VoteCount
+            );
 
             Assert.AreEqual(
                 4.0,
-                summary.AverageVote);
+                summary.AverageVote
+            );
 
             Assert.IsNull(
                 summary.CurrentParticipantVote);
 
             Assert.HasCount(
                 1,
-                repository.GetTargetVotes(target));
+                repository.GetTargetVotes(target)
+            );
         }
 
         /// <summary>
@@ -426,17 +476,20 @@ namespace Atlas.Voting.Tests
             castVote.Execute(
                 target,
                 new ParticipantId(Guid.NewGuid()),
-                6);
+                6
+            );
 
             var removed = undoVote.Execute(
                 target,
-                new ParticipantId(Guid.NewGuid()));
+                new ParticipantId(Guid.NewGuid())
+            );
 
             Assert.IsFalse(removed);
 
             Assert.HasCount(
                 1,
-                repository.GetTargetVotes(target));
+                repository.GetTargetVotes(target)
+            );
         }
 
         /// <summary>
@@ -450,7 +503,8 @@ namespace Atlas.Voting.Tests
 
             var removed = undoVote.Execute(
                 new NodeVoteTarget(Guid.NewGuid()),
-                new ParticipantId(Guid.NewGuid()));
+                new ParticipantId(Guid.NewGuid())
+            );
 
             Assert.IsFalse(removed);
         }
@@ -476,28 +530,33 @@ namespace Atlas.Voting.Tests
             castVote.Execute(
                 target,
                 changingParticipant,
-                8);
+                8
+            );
 
             castVote.Execute(
                 target,
                 new ParticipantId(Guid.NewGuid()),
-                4);
+                4
+            );
 
             castVote.Execute(
                 target,
                 changingParticipant,
-                10);
+                10
+            );
 
             var summary =
                 getVoteSummary.Execute(target);
 
             Assert.AreEqual(
                 2,
-                summary.VoteCount);
+                summary.VoteCount
+            );
 
             Assert.AreEqual(
                 7.0,
-                summary.AverageVote);
+                summary.AverageVote
+            );
         }
 
         /// <summary>
@@ -510,14 +569,16 @@ namespace Atlas.Voting.Tests
             var eligibility = new TestVotingEligibility();
             var castVote = new CastVote(
                 repository,
-                new VoteMutationPolicy(eligibility));
+                new VoteMutationPolicy(eligibility)
+            );
 
             Assert.Throws<ArgumentNullException>(() =>
             {
                 castVote.Execute(
                     new NodeVoteTarget(Guid.NewGuid()),
                     null!,
-                    7);
+                    7
+                );
             });
         }
 
@@ -538,19 +599,22 @@ namespace Atlas.Voting.Tests
 
             var castVote = new CastVote(
                 repository,
-                new VoteMutationPolicy(eligibility));
+                new VoteMutationPolicy(eligibility)
+            );
 
             Assert.Throws<InvalidOperationException>(() =>
             {
                 castVote.Execute(
                     target,
                     new ParticipantId(Guid.NewGuid()),
-                    7);
+                    7
+                );
             });
 
             Assert.HasCount(
                 0,
-                repository.GetTargetVotes(target));
+                repository.GetTargetVotes(target)
+            );
         }
 
         /// <summary>
@@ -570,19 +634,22 @@ namespace Atlas.Voting.Tests
 
             var castVote = new CastVote(
                 repository,
-                new VoteMutationPolicy(eligibility));
+                new VoteMutationPolicy(eligibility)
+            );
 
             Assert.Throws<InvalidOperationException>(() =>
             {
                 castVote.Execute(
                     target,
                     new ParticipantId(Guid.NewGuid()),
-                    7);
+                    7
+                );
             });
 
             Assert.HasCount(
                 0,
-                repository.GetTargetVotes(target));
+                repository.GetTargetVotes(target)
+            );
         }
 
         /// <summary>
@@ -596,7 +663,8 @@ namespace Atlas.Voting.Tests
             var eligibility = new TestVotingEligibility();
             var castVote = new CastVote(
                 repository,
-                new VoteMutationPolicy(eligibility));
+                new VoteMutationPolicy(eligibility)
+            );
 
             var target =
                 new NodeVoteTarget(Guid.NewGuid());
@@ -607,7 +675,8 @@ namespace Atlas.Voting.Tests
             castVote.Execute(
                 target,
                 participantId,
-                4);
+                4
+            );
 
             eligibility.TargetsAreAvailable = false;
 
@@ -616,19 +685,22 @@ namespace Atlas.Voting.Tests
                 castVote.Execute(
                     target,
                     participantId,
-                    9);
+                    9
+                );
             });
 
             var existingVote =
                 repository.GetByParticipantAndTarget(
                     participantId,
-                    target);
+                    target
+                );
 
             Assert.IsNotNull(existingVote);
 
             Assert.AreEqual(
                 4,
-                existingVote.Value.Value);
+                existingVote.Value.Value
+            );
         }
 
         /// <summary>
@@ -641,11 +713,13 @@ namespace Atlas.Voting.Tests
             var eligibility = new TestVotingEligibility();
             var castVote = new CastVote(
                 repository,
-                new VoteMutationPolicy(eligibility));
+                new VoteMutationPolicy(eligibility)
+            );
 
             var undoVote = new UndoVote(
                 repository,
-                new VoteMutationPolicy(eligibility));
+                new VoteMutationPolicy(eligibility)
+            );
 
             var target =
                 new NodeVoteTarget(Guid.NewGuid());
@@ -656,7 +730,8 @@ namespace Atlas.Voting.Tests
             var vote = castVote.Execute(
                 target,
                 participantId,
-                8);
+                8
+            );
 
             eligibility.TargetsAreAvailable = false;
 
@@ -664,7 +739,8 @@ namespace Atlas.Voting.Tests
             {
                 undoVote.Execute(
                     target,
-                    participantId);
+                    participantId
+                );
             });
 
             Assert.IsNotNull(
@@ -682,7 +758,8 @@ namespace Atlas.Voting.Tests
             var eligibility = new TestVotingEligibility();
             var castVote = new CastVote(
                 repository,
-                new VoteMutationPolicy(eligibility));
+                new VoteMutationPolicy(eligibility)
+            );
 
             var target =
                 new NodeVoteTarget(Guid.NewGuid());
@@ -693,26 +770,31 @@ namespace Atlas.Voting.Tests
             castVote.Execute(
                 target,
                 participantId,
-                8);
+                8
+            );
 
             eligibility.TargetsAreAvailable = false;
 
             var summary =
                 new GetVoteSummary(repository).Execute(
                     target,
-                    participantId);
+                    participantId
+                );
 
             Assert.AreEqual(
                 1,
-                summary.VoteCount);
+                summary.VoteCount
+            );
 
             Assert.AreEqual(
                 8.0,
-                summary.AverageVote);
+                summary.AverageVote
+            );
 
             Assert.AreEqual(
                 8,
-                summary.CurrentParticipantVote);
+                summary.CurrentParticipantVote
+            );
         }
 
         /// <summary>
@@ -726,7 +808,8 @@ namespace Atlas.Voting.Tests
             var eligibility = new TestVotingEligibility();
             var castVote = new CastVote(
                 repository,
-                new VoteMutationPolicy(eligibility));
+                new VoteMutationPolicy(eligibility)
+            );
 
             var unavailableTarget =
                 new NodeVoteTarget(Guid.NewGuid());
@@ -745,21 +828,25 @@ namespace Atlas.Voting.Tests
                 castVote.Execute(
                     unavailableTarget,
                     participantId,
-                    5);
+                    5
+                );
             });
 
             castVote.Execute(
                 availableTarget,
                 participantId,
-                9);
+                9
+            );
 
             Assert.HasCount(
                 0,
-                repository.GetTargetVotes(unavailableTarget));
+                repository.GetTargetVotes(unavailableTarget)
+            );
 
             Assert.HasCount(
                 1,
-                repository.GetTargetVotes(availableTarget));
+                repository.GetTargetVotes(availableTarget)
+            );
         }
 
         private static CastVote CreateCastVote(
@@ -770,7 +857,8 @@ namespace Atlas.Voting.Tests
 
             return new CastVote(
                 repository,
-                new VoteMutationPolicy(eligibility));
+                new VoteMutationPolicy(eligibility)
+            );
         }
 
         private static UndoVote CreateUndoVote(
@@ -781,7 +869,8 @@ namespace Atlas.Voting.Tests
 
             return new UndoVote(
                 repository,
-                new VoteMutationPolicy(eligibility));
+                new VoteMutationPolicy(eligibility)
+            );
         }
 
         private sealed class TestVotingEligibility :

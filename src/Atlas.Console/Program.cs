@@ -37,10 +37,15 @@ if (string.IsNullOrWhiteSpace(connectionString))
 
 SqlStorage.Configure(connectionString);
 using var identityServices = new ServiceCollection().AddAtlasIdentity(connectionString)
-    .BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+    .BuildServiceProvider(new ServiceProviderOptions {
+        ValidateScopes = true
+    });
 var accountScopes = identityServices.GetRequiredService<IServiceScopeFactory>();
 
-if (args.Contains("--seed-demo", StringComparer.OrdinalIgnoreCase))
+if (args.Contains(
+    "--seed-demo",
+    StringComparer.OrdinalIgnoreCase
+))
 {
     await SqlStorage.SeedDemoDataAsync(accountScopes);
     System.Console.WriteLine("Demo accounts and data seeded in SQL Server through Identity registration.");
@@ -92,17 +97,27 @@ INodeReactionRepository nodeTagRepository =
 ICommunityRepository communityRepository = new SqlCommunityRepository();
 ICommunityMembershipRepository communityMembershipRepository = new SqlCommunityMembershipRepository();
 ICommunityNodeRepository communityNodeRepository = new SqlCommunityNodeRepository();
-var communityService = new CommunityService(communityRepository, communityMembershipRepository, communityNodeRepository);
+var communityService = new CommunityService(
+    communityRepository,
+    communityMembershipRepository,
+    communityNodeRepository
+);
 ICommentRepository commentRepository = new SqlCommentRepository();
 IModerationCaseRepository moderationCases = new SqlModerationCaseRepository();
-if (args.Contains("--confirm-email", StringComparer.OrdinalIgnoreCase))
+if (args.Contains(
+    "--confirm-email",
+    StringComparer.OrdinalIgnoreCase
+))
 {
     await ConsoleAccountCommands.ConfirmEmailAsync(accountScopes);
     return;
 }
 var session = new ConsoleIdentitySession(accountScopes);
 IModeratorAuthorization moderatorAuthorization = session;
-var moderation = new ModerationService(moderationCases, moderatorAuthorization);
+var moderation = new ModerationService(
+    moderationCases,
+    moderatorAuthorization
+);
 
 INodeRepository nodeRepository = new SqlNodeRepository();
 
@@ -110,7 +125,8 @@ var votingEligibility =
     new RepositoryVotingEligibility(
         nodeRepository,
         participantRepository,
-        nodeTagRepository);
+        nodeTagRepository
+    );
 
 var voteMutationPolicy =
     new VoteMutationPolicy(votingEligibility);
@@ -118,12 +134,14 @@ var voteMutationPolicy =
 var castVote =
     new CastVote(
         voteRepository,
-        voteMutationPolicy);
+        voteMutationPolicy
+    );
 
 var undoVote =
     new UndoVote(
         voteRepository,
-        voteMutationPolicy);
+        voteMutationPolicy
+    );
 
 IDiscoveryCandidateSource discoverySource = new RepositoryDiscoveryCandidateSource(
     (IDiscoveryNodeReader)nodeRepository,
@@ -131,13 +149,16 @@ IDiscoveryCandidateSource discoverySource = new RepositoryDiscoveryCandidateSour
     voteRepository,
     communityNodeRepository,
     nodeTagRepository,
-    moderationCases);
+    moderationCases
+);
 IDiscoveryService discovery = new DiscoveryService(discoverySource);
 
 var eventPublisher = new InMemoryEventPublisher();
 INotificationRepository notificationRepository = new SqlNotificationRepository();
-var notificationService = new NotificationService(notificationRepository,
-    [new SimulatedDelivery(DeliveryChannel.Email), new SimulatedDelivery(DeliveryChannel.Push)]);
+var notificationService = new NotificationService(
+    notificationRepository,
+    [new SimulatedDelivery(DeliveryChannel.Email), new SimulatedDelivery(DeliveryChannel.Push)]
+);
 eventPublisher.Subscribe<NotificationRequestedV1>(request => notificationService.Handle(request));
 
 var contentSubscriber =
@@ -185,7 +206,8 @@ while (true)
         AnonymousBrowseCommands.BrowseParticipants(
             participantRepository,
             nodeRepository,
-            nodeTypeRepository);
+            nodeTypeRepository
+        );
         continue;
     }
 
@@ -203,7 +225,8 @@ while (true)
             communityRepository,
             communityNodeRepository,
             commentRepository,
-            moderation);
+            moderation
+        );
         continue;
     }
 
@@ -211,7 +234,8 @@ while (true)
     {
         AnonymousBrowseCommands.BrowseCommunities(
             communityRepository,
-            communityNodeRepository);
+            communityNodeRepository
+        );
         continue;
     }
 
@@ -233,7 +257,10 @@ while (true)
         continue;
     }
 
-    if (!await ConsoleAccountCommands.SignInAsync(accountScopes, session))
+    if (!await ConsoleAccountCommands.SignInAsync(
+        accountScopes,
+        session
+    ))
         continue;
 
     var application = new ConsoleApplication(
@@ -269,7 +296,8 @@ while (true)
         notificationService,
         notificationRepository,
         session,
-        () => session.RefreshAsync().GetAwaiter().GetResult());
+        () => session.RefreshAsync().GetAwaiter().GetResult()
+    );
 
     application.Run();
     session.SignOut();
@@ -299,7 +327,8 @@ static void SeedSystemNodeTypes(
             string.Equals(
                 type.Name,
                 name,
-                StringComparison.OrdinalIgnoreCase));
+                StringComparison.OrdinalIgnoreCase
+            ));
 
         if (existingType is not null)
         {
@@ -307,7 +336,8 @@ static void SeedSystemNodeTypes(
                 autoPluralize,
                 actorId: "system",
                 actorIsModerator: true,
-                changedAt: createdAt);
+                changedAt: createdAt
+            );
 
             nodeTypes.Save(existingType);
             continue;
@@ -318,6 +348,7 @@ static void SeedSystemNodeTypes(
                 name,
                 description,
                 createdAt,
-                autoPluralize));
+                autoPluralize
+            ));
     }
 }

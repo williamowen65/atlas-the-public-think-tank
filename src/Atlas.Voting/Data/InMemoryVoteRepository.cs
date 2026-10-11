@@ -51,7 +51,8 @@ namespace Atlas.Voting.Data
 
         public Vote? GetByParticipantAndTarget(
             ParticipantId participantId,
-            VoteTarget voteTarget)
+            VoteTarget voteTarget
+        )
         {
             return _votes.SingleOrDefault(vote =>
                 vote.ParticipantId.Id == participantId.Id &&

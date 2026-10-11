@@ -17,7 +17,8 @@ public sealed class GetNodeReactionVoteSummary
 
     public NodeReactionVoteSummary Execute(
         NodeReactionVoteTarget target,
-        ParticipantId? participantId = null)
+        ParticipantId? participantId = null
+    )
     {
         ArgumentNullException.ThrowIfNull(target);
 
@@ -26,9 +27,16 @@ public sealed class GetNodeReactionVoteSummary
 
         var currentParticipantVote = participantId is null
             ? null
-            : _votes.GetByParticipantAndTarget(participantId, target)
+            : _votes.GetByParticipantAndTarget(
+                participantId,
+                target
+            )
                 ?.Value.Value;
 
-        return new NodeReactionVoteSummary(score, targetVotes.Count, currentParticipantVote);
+        return new NodeReactionVoteSummary(
+            score,
+            targetVotes.Count,
+            currentParticipantVote
+        );
     }
 }

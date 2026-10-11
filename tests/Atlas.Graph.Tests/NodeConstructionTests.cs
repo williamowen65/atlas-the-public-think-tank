@@ -20,13 +20,29 @@ public class NodeConstructionTests
             new NodeDescriptionId(Guid.NewGuid()),
             typeId,
             new NodeAuthorId(Guid.NewGuid()),
-            createdAt);
+            createdAt
+        );
 
-        Assert.AreNotEqual(Guid.Empty, node.Id.Value);
-        Assert.AreEqual(typeId, node.TypeId);
-        Assert.AreEqual(NodeStatus.Active, node.Status);
-        Assert.AreEqual(createdAt, node.CreatedAt);
-        Assert.AreEqual(createdAt, node.UpdatedAt);
+        Assert.AreNotEqual(
+            Guid.Empty,
+            node.Id.Value
+        );
+        Assert.AreEqual(
+            typeId,
+            node.TypeId
+        );
+        Assert.AreEqual(
+            NodeStatus.Active,
+            node.Status
+        );
+        Assert.AreEqual(
+            createdAt,
+            node.CreatedAt
+        );
+        Assert.AreEqual(
+            createdAt,
+            node.UpdatedAt
+        );
         Assert.IsEmpty(node.ParentNodeIds);
         Assert.IsEmpty(node.RequestedSubNodeTypes);
     }
@@ -42,10 +58,22 @@ public class NodeConstructionTests
             .OfType<NodeCreatedV1>()
             .Single();
 
-        Assert.AreEqual(node.Id.Value, message.NodeId);
-        Assert.AreEqual(node.DescriptionId.Value, message.DescriptionId);
-        Assert.AreEqual(node.AuthorId.Value, message.AuthorId);
-        Assert.AreEqual(createdAt, message.OccurredAt);
+        Assert.AreEqual(
+            node.Id.Value,
+            message.NodeId
+        );
+        Assert.AreEqual(
+            node.DescriptionId.Value,
+            message.DescriptionId
+        );
+        Assert.AreEqual(
+            node.AuthorId.Value,
+            message.AuthorId
+        );
+        Assert.AreEqual(
+            createdAt,
+            message.OccurredAt
+        );
     }
 
     /// <summary>Verifies that constructor deduplicates requested sub node types.</summary>
@@ -60,10 +88,17 @@ public class NodeConstructionTests
             NodeTypeId.New(),
             new NodeAuthorId(Guid.NewGuid()),
             [typeId, typeId],
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow
+        );
 
-        Assert.HasCount(1, node.RequestedSubNodeTypes);
-        Assert.AreEqual(typeId, node.RequestedSubNodeTypes.Single().TypeId);
+        Assert.HasCount(
+            1,
+            node.RequestedSubNodeTypes
+        );
+        Assert.AreEqual(
+            typeId,
+            node.RequestedSubNodeTypes.Single().TypeId
+        );
     }
 
     /// <summary>Verifies that constructor with null requested sub node types throws.</summary>
@@ -77,7 +112,8 @@ public class NodeConstructionTests
                 NodeTypeId.New(),
                 new NodeAuthorId(Guid.NewGuid()),
                 null!,
-                DateTimeOffset.UtcNow));
+                DateTimeOffset.UtcNow
+            ));
     }
 
     /// <summary>Verifies that clear domain events removes recorded events.</summary>

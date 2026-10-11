@@ -17,7 +17,8 @@ public sealed record NodeReactionAuditEntry
         DateTimeOffset occurredAt,
         NodeReactionLifecycleState lifecycleState,
         NodeReactionDisposition disposition,
-        NodeReactionId? relatedNodeReactionId = null)
+        NodeReactionId? relatedNodeReactionId = null
+    )
     {
         if (!Enum.IsDefined(action)) throw new ArgumentOutOfRangeException(nameof(action));
         if (!Enum.IsDefined(lifecycleState)) throw new ArgumentOutOfRangeException(nameof(lifecycleState));
@@ -27,7 +28,8 @@ public sealed record NodeReactionAuditEntry
         {
             throw new ArgumentException(
                 "An audit actor must be a non-empty participant ID when present.",
-                nameof(actorParticipantId));
+                nameof(actorParticipantId)
+            );
         }
 
         if (action != NodeReactionAuditAction.LegacyImported &&
@@ -35,14 +37,16 @@ public sealed record NodeReactionAuditEntry
         {
             throw new ArgumentException(
                 "A node-reaction change must identify its acting participant.",
-                nameof(actorParticipantId));
+                nameof(actorParticipantId)
+            );
         }
 
         if (relatedNodeReactionId?.Value == Guid.Empty)
         {
             throw new ArgumentException(
                 "A related node-reaction ID must be non-empty when present.",
-                nameof(relatedNodeReactionId));
+                nameof(relatedNodeReactionId)
+            );
         }
 
         if (action == NodeReactionAuditAction.Superseded &&
@@ -50,7 +54,8 @@ public sealed record NodeReactionAuditEntry
         {
             throw new ArgumentException(
                 "A supersession audit entry must identify its replacement.",
-                nameof(relatedNodeReactionId));
+                nameof(relatedNodeReactionId)
+            );
         }
 
         Action = action;

@@ -23,7 +23,8 @@ public static class ParticipantCommands
         IDiscoveryService? discovery = null,
         Action<Node>? openNode = null,
         Action<Node, int, RankedDiscoveryItem?>? writeNodeRow = null,
-        Func<DiscoveryQuery, string, DiscoveryQuery>? changeFilter = null)
+        Func<DiscoveryQuery, string, DiscoveryQuery>? changeFilter = null
+    )
     {
         var viewing = true;
 
@@ -44,7 +45,8 @@ public static class ParticipantCommands
             Console.Clear();
             ParticipantDisplay.WriteProfile(
                 participant,
-                authoredNodes);
+                authoredNodes
+            );
             Console.WriteLine();
             Console.WriteLine("1. Edit profile");
             Console.WriteLine("2. View authored nodes");
@@ -58,7 +60,8 @@ public static class ParticipantCommands
                     EditProfile(
                         participant,
                         participants,
-                        authenticatedActor);
+                        authenticatedActor
+                    );
                     break;
 
                 case "2":
@@ -73,7 +76,8 @@ public static class ParticipantCommands
                         discovery,
                         openNode,
                         writeNodeRow,
-                        changeFilter);
+                        changeFilter
+                    );
                     break;
 
                 case "4":
@@ -93,7 +97,8 @@ public static class ParticipantCommands
     private static void EditProfile(
         Participant participant,
         IParticipantRepository participants,
-        IAuthenticatedActor authenticatedActor)
+        IAuthenticatedActor authenticatedActor
+    )
     {
         var actorParticipantId = authenticatedActor.ParticipantId;
         var actorDisplayName = participants
@@ -139,7 +144,8 @@ public static class ParticipantCommands
                 participant.Id,
                 requestedDisplayName,
                 requestedBio,
-                AtlasTime.UtcNow);
+                AtlasTime.UtcNow
+            );
 
             ConsoleUi.Pause("Profile updated.");
 
@@ -171,7 +177,8 @@ public static class ParticipantCommands
         IDiscoveryService? discovery,
         Action<Node>? openNode,
         Action<Node, int, RankedDiscoveryItem?>? writeNodeRow,
-        Func<DiscoveryQuery, string, DiscoveryQuery>? changeFilter)
+        Func<DiscoveryQuery, string, DiscoveryQuery>? changeFilter
+    )
     {
         var query = new DiscoveryQuery(IncludeArchived: true);
         var visiblePages = 1;
@@ -179,15 +186,24 @@ public static class ParticipantCommands
         {
             Console.Clear();
             Console.WriteLine($"NODES AUTHORED BY {participant.DisplayName.ToUpperInvariant()}");
-            Console.WriteLine(new string('-', 18 + participant.DisplayName.Length));
+            Console.WriteLine(new string(
+                '-',
+                18 + participant.DisplayName.Length
+            ));
             Console.WriteLine($"Search: {query.SearchText ?? "(all)"}; Community: {query.CommunityId?.ToString() ?? "(all)"}; Reactions: {query.ReactionDefinitionIds?.Count ?? 0}");
             Console.WriteLine($"Votes: {query.MinimumVoteCount?.ToString() ?? "any"}–{query.MaximumVoteCount?.ToString() ?? "any"}; Average: {query.MinimumAverageVote?.ToString() ?? "any"}–{query.MaximumAverageVote?.ToString() ?? "any"}; Created: {query.CreatedFrom?.ToString() ?? "any"}–{query.CreatedThrough?.ToString() ?? "any"}");
             Console.WriteLine();
             // Refresh after edits; the profile's initial count may be stale on return.
             var authored = nodes.GetByAuthor(new NodeAuthorId(participant.Id.Value)).ToList();
             var byId = authored.ToDictionary(node => node.Id.Value);
-            var pages = discovery is null ? null : Enumerable.Range(1, visiblePages)
-                .Select(page => discovery.DiscoverAuthoredPage(query with { Page = page }, byId.Keys.ToList()))
+            var pages = discovery is null ? null : Enumerable.Range(
+                1,
+                visiblePages
+            )
+                .Select(page => discovery.DiscoverAuthoredPage(
+                    query with { Page = page },
+                    byId.Keys.ToList()
+                ))
                 .ToList();
             var ranked = pages?.SelectMany(page => page.Items).ToList();
             var ordered = ranked is null ? authored : ranked
@@ -199,12 +215,23 @@ public static class ParticipantCommands
                 NodeDisplay.WriteTableHeader(includeCreatedDate: true);
                 for (var index = 0; index < ordered.Count; index++)
                     if (writeNodeRow is not null)
-                        writeNodeRow(ordered[index], index + 1, ranked is null ? null : ranked[index]);
-                    else NodeDisplay.WriteTableRow(ordered[index], nodes, nodeTypes, documents,
-                        participants, index + 1,
+                        writeNodeRow(
+                            ordered[index],
+                            index + 1,
+                            ranked is null ? null : ranked[index]
+                        );
+                    else NodeDisplay.WriteTableRow(
+                        ordered[index],
+                        nodes,
+                        nodeTypes,
+                        documents,
+                        participants,
+                        index + 1,
                         ranked is null ? null : ranked[index].VoteCount,
                         ranked is null ? null : ranked[index].AverageVote,
-                        includeCreatedDate: true, moderation: moderation);
+                        includeCreatedDate: true,
+                        moderation: moderation
+                    );
             }
             Console.WriteLine();
             if (pages is not null) Console.WriteLine($"Showing {ordered.Count} of {pages[^1].TotalCount} matching nodes.");
@@ -213,7 +240,11 @@ public static class ParticipantCommands
             Console.Write("Selection: ");
             var input = Console.ReadLine()?.Trim();
             if (input == "0") return;
-            if (string.Equals(input, "n", StringComparison.OrdinalIgnoreCase) && pages is not null && pages[^1].HasNextPage)
+            if (string.Equals(
+                input,
+                "n",
+                StringComparison.OrdinalIgnoreCase
+            ) && pages is not null && pages[^1].HasNextPage)
             {
                 visiblePages++;
                 continue;
@@ -221,11 +252,17 @@ public static class ParticipantCommands
             if (changeFilter is not null && input is not null &&
                 "SCRVDX".Contains(input.ToUpperInvariant()) && input.Length == 1)
             {
-                query = changeFilter(query, input.ToUpperInvariant()) with { Page = 1 };
+                query = changeFilter(
+                    query,
+                    input.ToUpperInvariant()
+                ) with { Page = 1 };
                 visiblePages = 1;
                 continue;
             }
-            if (!int.TryParse(input, out var selection) || selection < 1 || selection > ordered.Count)
+            if (!int.TryParse(
+                input,
+                out var selection
+            ) || selection < 1 || selection > ordered.Count)
             {
                 ConsoleUi.Pause("That node does not exist.");
                 continue;

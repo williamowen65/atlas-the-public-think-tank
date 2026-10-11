@@ -24,9 +24,19 @@ public sealed class Comment
         CommentId? parentCommentId,
         Guid authorParticipantId,
         string body,
-        DateTimeOffset createdAt)
-        : this(CommentId.New(), target, parentCommentId, authorParticipantId, body,
-            CommentStatus.Active, createdAt, createdAt, null)
+        DateTimeOffset createdAt
+    )
+        : this(
+            CommentId.New(),
+            target,
+            parentCommentId,
+            authorParticipantId,
+            body,
+            CommentStatus.Active,
+            createdAt,
+            createdAt,
+            null
+        )
     {
     }
 
@@ -39,12 +49,19 @@ public sealed class Comment
         CommentStatus status,
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt,
-        DateTimeOffset? removedAt)
+        DateTimeOffset? removedAt
+    )
     {
         if (id.Value == Guid.Empty || parentCommentId?.Value == Guid.Empty) throw new ArgumentException("Comment IDs must be nonempty.");
         if (!Enum.IsDefined(status)) throw new ArgumentOutOfRangeException(nameof(status));
-        if (authorParticipantId == Guid.Empty) throw new ArgumentException("A comment author is required.", nameof(authorParticipantId));
-        if (parentCommentId == id) throw new ArgumentException("A comment cannot be its own parent.", nameof(parentCommentId));
+        if (authorParticipantId == Guid.Empty) throw new ArgumentException(
+            "A comment author is required.",
+            nameof(authorParticipantId)
+        );
+        if (parentCommentId == id) throw new ArgumentException(
+            "A comment cannot be its own parent.",
+            nameof(parentCommentId)
+        );
         if (updatedAt < createdAt) throw new ArgumentException("Updated time cannot precede created time.");
         if (removedAt is not null && removedAt < createdAt) throw new ArgumentException("Removed time cannot precede created time.");
 
@@ -70,10 +87,25 @@ public sealed class Comment
         CommentStatus status,
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt,
-        DateTimeOffset? removedAt) =>
-        new(id, target, parentCommentId, authorParticipantId, body, status, createdAt, updatedAt, removedAt);
+        DateTimeOffset? removedAt
+    ) =>
+        new(
+            id,
+            target,
+            parentCommentId,
+            authorParticipantId,
+            body,
+            status,
+            createdAt,
+            updatedAt,
+            removedAt
+        );
 
-    public void Edit(Guid actorParticipantId, string body, DateTimeOffset changedAt)
+    public void Edit(
+        Guid actorParticipantId,
+        string body,
+        DateTimeOffset changedAt
+    )
     {
         EnsureAuthor(actorParticipantId);
         EnsureActive();
@@ -82,7 +114,10 @@ public sealed class Comment
         UpdatedAt = changedAt.ToUniversalTime();
     }
 
-    public void RemoveByAuthor(Guid actorParticipantId, DateTimeOffset removedAt)
+    public void RemoveByAuthor(
+        Guid actorParticipantId,
+        DateTimeOffset removedAt
+    )
     {
         EnsureAuthor(actorParticipantId);
         EnsureActive();
@@ -114,14 +149,23 @@ public sealed class Comment
 
     private void EnsureLater(DateTimeOffset changedAt)
     {
-        if (changedAt <= UpdatedAt) throw new ArgumentException("Change time must be later than the current update time.", nameof(changedAt));
+        if (changedAt <= UpdatedAt) throw new ArgumentException(
+            "Change time must be later than the current update time.",
+            nameof(changedAt)
+        );
     }
 
     private static string ValidateBody(string body)
     {
-        if (string.IsNullOrWhiteSpace(body)) throw new ArgumentException("Comment text is required.", nameof(body));
+        if (string.IsNullOrWhiteSpace(body)) throw new ArgumentException(
+            "Comment text is required.",
+            nameof(body)
+        );
         var trimmed = body.Trim();
-        if (trimmed.Length > MaximumBodyLength) throw new ArgumentException($"Comment text cannot exceed {MaximumBodyLength} characters.", nameof(body));
+        if (trimmed.Length > MaximumBodyLength) throw new ArgumentException(
+            $"Comment text cannot exceed {MaximumBodyLength} characters.",
+            nameof(body)
+        );
         return trimmed;
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace Atlas.Graph.Nodes;
+namespace Atlas.Graph.Nodes;
 
 /// <summary>References a Content document without importing the Content model.</summary>
 public sealed record NodeDescriptionId
@@ -12,7 +12,8 @@ public sealed record NodeDescriptionId
         {
             throw new ArgumentException(
                 "A description ID cannot be empty.",
-                nameof(value));
+                nameof(value)
+            );
         }
 
         Value = value;

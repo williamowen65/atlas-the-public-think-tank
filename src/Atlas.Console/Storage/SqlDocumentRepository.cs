@@ -16,7 +16,12 @@ public sealed class SqlDocumentRepository(Func<AtlasDataContext>? contextFactory
         ArgumentNullException.ThrowIfNull(document);
 
         // Every referenced block must already exist. These checks and the document save share one operation.
-        foreach (var block in document.BlockIds) ReferenceValidation.Require(this, "Block", block.Value, false);
+        foreach (var block in document.BlockIds) ReferenceValidation.Require(
+            this,
+            "Block",
+            block.Value,
+            false
+        );
 
         // Persist the document and its ordered block references without committing an outer workflow early.
         SaveRow(ToStorage(document));
@@ -48,7 +53,8 @@ public sealed class SqlDocumentRepository(Func<AtlasDataContext>? contextFactory
             new DocumentId(document.Id),
             document.BlockIds.Select(id => new BlockId(id)),
             document.CreatedAt,
-            document.UpdatedAt);
+            document.UpdatedAt
+        );
 
     private static BlockRow ToStorage(ContentBlock block)
     {
@@ -110,12 +116,48 @@ public sealed class SqlDocumentRepository(Func<AtlasDataContext>? contextFactory
         // than running a public constructor that represents new creation.
         return block.Kind switch
         {
-            "markdown" => MarkdownTextBlock.Reconstitute(id, block.Markdown ?? string.Empty, block.CreatedAt, block.UpdatedAt),
-            "image" => ImageBlock.Reconstitute(id, block.Url ?? string.Empty, block.AltText ?? string.Empty, block.Caption, block.CreatedAt, block.UpdatedAt),
-            "video" => VideoBlock.Reconstitute(id, block.Url ?? string.Empty, block.Caption, block.CreatedAt, block.UpdatedAt),
-            "link-preview" => LinkPreviewBlock.Reconstitute(id, block.Url ?? string.Empty, block.Title ?? string.Empty, block.Description, block.CreatedAt, block.UpdatedAt),
-            "poll-reference" => PollReferenceBlock.Reconstitute(id, block.ReferenceId ?? Guid.Empty, block.CreatedAt, block.UpdatedAt),
-            "chart-reference" => ChartReferenceBlock.Reconstitute(id, block.ReferenceId ?? Guid.Empty, block.Title, block.CreatedAt, block.UpdatedAt),
+            "markdown" => MarkdownTextBlock.Reconstitute(
+                id,
+                block.Markdown ?? string.Empty,
+                block.CreatedAt,
+                block.UpdatedAt
+            ),
+            "image" => ImageBlock.Reconstitute(
+                id,
+                block.Url ?? string.Empty,
+                block.AltText ?? string.Empty,
+                block.Caption,
+                block.CreatedAt,
+                block.UpdatedAt
+            ),
+            "video" => VideoBlock.Reconstitute(
+                id,
+                block.Url ?? string.Empty,
+                block.Caption,
+                block.CreatedAt,
+                block.UpdatedAt
+            ),
+            "link-preview" => LinkPreviewBlock.Reconstitute(
+                id,
+                block.Url ?? string.Empty,
+                block.Title ?? string.Empty,
+                block.Description,
+                block.CreatedAt,
+                block.UpdatedAt
+            ),
+            "poll-reference" => PollReferenceBlock.Reconstitute(
+                id,
+                block.ReferenceId ?? Guid.Empty,
+                block.CreatedAt,
+                block.UpdatedAt
+            ),
+            "chart-reference" => ChartReferenceBlock.Reconstitute(
+                id,
+                block.ReferenceId ?? Guid.Empty,
+                block.Title,
+                block.CreatedAt,
+                block.UpdatedAt
+            ),
             _ => throw new InvalidOperationException($"Unknown Content block kind '{block.Kind}'.")
         };
     }

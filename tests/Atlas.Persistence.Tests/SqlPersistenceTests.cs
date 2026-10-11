@@ -32,7 +32,9 @@ public sealed class SqlPersistenceTests
         {
             SqlStorage.Configure(connection); // EF creates an isolated database and applies the migration.
             using var identityServices = new ServiceCollection().AddAtlasIdentity(connection)
-                .BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+                .BuildServiceProvider(new ServiceProviderOptions {
+                    ValidateScopes = true
+                });
             await SqlStorage.SeedDemoDataAsync(identityServices.GetRequiredService<IServiceScopeFactory>());
             using var database = new AtlasDataContext(options);
             Assert.IsTrue(database.NodeRows.Any());

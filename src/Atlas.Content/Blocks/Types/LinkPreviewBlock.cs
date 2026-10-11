@@ -8,28 +8,92 @@ public sealed class LinkPreviewBlock : ContentBlock
     public string Title { get; private set; }
     public string Description { get; private set; }
 
-    public LinkPreviewBlock(string url, string title, string? description, DateTimeOffset createdAt)
-        : this(BlockId.New(), url, title, description, createdAt, createdAt) { }
+    public LinkPreviewBlock(
+        string url,
+        string title,
+        string? description,
+        DateTimeOffset createdAt
+    )
+        : this(
+            BlockId.New(),
+            url,
+            title,
+            description,
+            createdAt,
+            createdAt
+        ) { }
 
-    private LinkPreviewBlock(BlockId id, string url, string title, string? description, DateTimeOffset createdAt, DateTimeOffset updatedAt)
-        : base(id, createdAt, updatedAt)
+    private LinkPreviewBlock(
+        BlockId id,
+        string url,
+        string title,
+        string? description,
+        DateTimeOffset createdAt,
+        DateTimeOffset updatedAt
+    )
+        : base(
+            id,
+            createdAt,
+            updatedAt
+        )
     {
-        Url = HttpUrl(url, nameof(url));
-        Title = Required(title, nameof(title), 500);
-        Description = Optional(description, 2_000, nameof(description));
+        Url = HttpUrl(
+            url,
+            nameof(url)
+        );
+        Title = Required(
+            title,
+            nameof(title),
+            500
+        );
+        Description = Optional(
+            description,
+            2_000,
+            nameof(description)
+        );
     }
 
-    public void UpdatePreview(string url, string title, string? description, DateTimeOffset changedAt)
+    public void UpdatePreview(
+        string url,
+        string title,
+        string? description,
+        DateTimeOffset changedAt
+    )
     {
-        var validatedUrl = HttpUrl(url, nameof(url));
-        var validatedTitle = Required(title, nameof(title), 500);
-        var validatedDescription = Optional(description, 2_000, nameof(description));
+        var validatedUrl = HttpUrl(
+            url,
+            nameof(url)
+        );
+        var validatedTitle = Required(
+            title,
+            nameof(title),
+            500
+        );
+        var validatedDescription = Optional(
+            description,
+            2_000,
+            nameof(description)
+        );
         ChangedAt(changedAt);
         Url = validatedUrl;
         Title = validatedTitle;
         Description = validatedDescription;
     }
 
-    public static LinkPreviewBlock Reconstitute(BlockId id, string url, string title, string? description, DateTimeOffset createdAt, DateTimeOffset updatedAt) =>
-        new(id, url, title, description, createdAt, updatedAt);
+    public static LinkPreviewBlock Reconstitute(
+        BlockId id,
+        string url,
+        string title,
+        string? description,
+        DateTimeOffset createdAt,
+        DateTimeOffset updatedAt
+    ) =>
+        new(
+            id,
+            url,
+            title,
+            description,
+            createdAt,
+            updatedAt
+        );
 }

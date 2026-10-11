@@ -7,25 +7,77 @@ public sealed class VideoBlock : ContentBlock
     public string Url { get; private set; }
     public string Caption { get; private set; }
 
-    public VideoBlock(string url, string? caption, DateTimeOffset createdAt)
-        : this(BlockId.New(), url, caption, createdAt, createdAt) { }
+    public VideoBlock(
+        string url,
+        string? caption,
+        DateTimeOffset createdAt
+    )
+        : this(
+            BlockId.New(),
+            url,
+            caption,
+            createdAt,
+            createdAt
+        ) { }
 
-    private VideoBlock(BlockId id, string url, string? caption, DateTimeOffset createdAt, DateTimeOffset updatedAt)
-        : base(id, createdAt, updatedAt)
+    private VideoBlock(
+        BlockId id,
+        string url,
+        string? caption,
+        DateTimeOffset createdAt,
+        DateTimeOffset updatedAt
+    )
+        : base(
+            id,
+            createdAt,
+            updatedAt
+        )
     {
-        Url = Required(url, nameof(url), 500);
-        Caption = Optional(caption, 2_000, nameof(caption));
+        Url = Required(
+            url,
+            nameof(url),
+            500
+        );
+        Caption = Optional(
+            caption,
+            2_000,
+            nameof(caption)
+        );
     }
 
-    public void Update(string url, string? caption, DateTimeOffset changedAt)
+    public void Update(
+        string url,
+        string? caption,
+        DateTimeOffset changedAt
+    )
     {
-        var validatedUrl = Required(url, nameof(url), 500);
-        var validatedCaption = Optional(caption, 2_000, nameof(caption));
+        var validatedUrl = Required(
+            url,
+            nameof(url),
+            500
+        );
+        var validatedCaption = Optional(
+            caption,
+            2_000,
+            nameof(caption)
+        );
         ChangedAt(changedAt);
         Url = validatedUrl;
         Caption = validatedCaption;
     }
 
-    public static VideoBlock Reconstitute(BlockId id, string url, string? caption, DateTimeOffset createdAt, DateTimeOffset updatedAt) =>
-        new(id, url, caption, createdAt, updatedAt);
+    public static VideoBlock Reconstitute(
+        BlockId id,
+        string url,
+        string? caption,
+        DateTimeOffset createdAt,
+        DateTimeOffset updatedAt
+    ) =>
+        new(
+            id,
+            url,
+            caption,
+            createdAt,
+            updatedAt
+        );
 }

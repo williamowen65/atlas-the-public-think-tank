@@ -9,7 +9,10 @@ public readonly record struct CommunityId
     {
         if (value == Guid.Empty)
         {
-            throw new ArgumentException("A community ID cannot be empty.", nameof(value));
+            throw new ArgumentException(
+                "A community ID cannot be empty.",
+                nameof(value)
+            );
         }
 
         Value = value;

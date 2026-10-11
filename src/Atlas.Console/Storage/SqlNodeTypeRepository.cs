@@ -18,8 +18,16 @@ public sealed class SqlNodeTypeRepository(Func<AtlasDataContext>? contextFactory
         // system-defined types do not use this ownership check.
         if (!nodeType.IsSystemDefined)
         {
-            if (!Guid.TryParse(nodeType.OwnerId, out var owner)) throw new ArgumentException("A custom type owner must identify a Participant.");
-            ReferenceValidation.Require(this, "Participant", owner, FindRow<NodeTypeRow>(nodeType.Id.Value) is null);
+            if (!Guid.TryParse(
+                nodeType.OwnerId,
+                out var owner
+            )) throw new ArgumentException("A custom type owner must identify a Participant.");
+            ReferenceValidation.Require(
+                this,
+                "Participant",
+                owner,
+                FindRow<NodeTypeRow>(nodeType.Id.Value) is null
+            );
         }
 
         // Save definition flags and timestamps inside the current operation transaction.
@@ -61,6 +69,7 @@ public sealed class SqlNodeTypeRepository(Func<AtlasDataContext>? contextFactory
             storedType.IsArchived,
             storedType.CreatedAt,
             storedType.UpdatedAt,
-            storedType.AutoPluralize ?? true);
+            storedType.AutoPluralize ?? true
+        );
     }
 }

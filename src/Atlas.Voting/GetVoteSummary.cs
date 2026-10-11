@@ -23,7 +23,8 @@ public sealed class GetVoteSummary
     /// </summary>
     public VoteSummary Execute(
         VoteTarget target,
-        ParticipantId? participantId = null)
+        ParticipantId? participantId = null
+    )
     {
         ArgumentNullException.ThrowIfNull(target);
 
@@ -38,13 +39,15 @@ public sealed class GetVoteSummary
         var currentParticipantVote = participantId is null
             ? null
             : _votes.GetByParticipantAndTarget(
-                    participantId,
-                    target)
+                participantId,
+                target
+            )
                 ?.Value.Value;
 
         return new VoteSummary(
             targetVotes.Count,
             averageVote,
-            currentParticipantVote);
+            currentParticipantVote
+        );
     }
 }

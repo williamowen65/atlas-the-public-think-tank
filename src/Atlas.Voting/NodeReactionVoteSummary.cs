@@ -6,4 +6,5 @@ namespace Atlas.Voting;
 public sealed record NodeReactionVoteSummary(
     int Score,
     int TotalVotes,
-    int? CurrentParticipantVote);
+    int? CurrentParticipantVote
+);

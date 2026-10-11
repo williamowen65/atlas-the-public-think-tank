@@ -18,13 +18,23 @@ public static class SqlOperationBoundary
     /// Optional named coordination is independent of transaction atomicity.
     /// The callback is synchronous and must not launch parallel repository work using the shared context.
     /// </remarks>
-    public static T Execute<T>(Func<AtlasDataContext> open, Func<T> operation, string? lockResource = null)
+    public static T Execute<T>(
+        Func<AtlasDataContext> open,
+        Func<T> operation,
+        string? lockResource = null
+    )
     {
         if (Current.Value is not null)
         {
             using var check = open();
-            EnsureSameDatabase(check, Current.Value);
-            AcquireLock(Current.Value, lockResource);
+            EnsureSameDatabase(
+                check,
+                Current.Value
+            );
+            AcquireLock(
+                Current.Value,
+                lockResource
+            );
             return operation();
         }
         using var database = open();
@@ -32,7 +42,10 @@ public static class SqlOperationBoundary
         using var transaction = database.Database.BeginTransaction(IsolationLevel.Serializable);
         try
         {
-            AcquireLock(database, lockResource);
+            AcquireLock(
+                database,
+                lockResource
+            );
             Current.Value = database;
             var result = operation();
             transaction.Commit();
@@ -40,7 +53,10 @@ public static class SqlOperationBoundary
         }
         catch (Exception exception) when (IsConflict(exception))
         {
-            throw new OperationConflictException("The operation conflicted with another write or a database constraint. Reload and retry.", exception);
+            throw new OperationConflictException(
+                "The operation conflicted with another write or a database constraint. Reload and retry.",
+                exception
+            );
         }
         finally { Current.Value = null; }
     }
@@ -54,7 +70,10 @@ public static class SqlOperationBoundary
     /// Exclusive applies only to this resource name. Timeout is 15000 milliseconds; failure raises SQL
     /// error 51000 for translation to OperationConflictException. Resource values are SQL parameters.
     /// </remarks>
-    private static void AcquireLock(AtlasDataContext database, string? lockResource)
+    private static void AcquireLock(
+        AtlasDataContext database,
+        string? lockResource
+    )
     {
         if (lockResource is null) return;
         database.Database.ExecuteSqlInterpolated($"DECLARE @result int; EXEC @result = sp_getapplock @Resource={lockResource}, @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=15000; IF @result < 0 THROW 51000, 'Atlas write lock unavailable', 1;");
@@ -67,17 +86,29 @@ public static class SqlOperationBoundary
     internal static ContextLease Open(Func<AtlasDataContext> open)
     {
         var candidate = open();
-        if (Current.Value is null) return new ContextLease(candidate, true);
-        try { EnsureSameDatabase(candidate, Current.Value); }
+        if (Current.Value is null) return new ContextLease(
+            candidate,
+            true
+        );
+        try { EnsureSameDatabase(
+            candidate,
+            Current.Value
+        ); }
         finally { candidate.Dispose(); }
-        return new ContextLease(Current.Value, false);
+        return new ContextLease(
+            Current.Value,
+            false
+        );
     }
 
     /// <summary>Rejects joining repositories with different connection strings.</summary>
     /// <remarks>
     /// This deliberately compares configured strings exactly, rather than assuming equivalent strings identify the same database.
     /// </remarks>
-    private static void EnsureSameDatabase(AtlasDataContext candidate, AtlasDataContext current)
+    private static void EnsureSameDatabase(
+        AtlasDataContext candidate,
+        AtlasDataContext current
+    )
     {
         if (candidate.Database.GetConnectionString() != current.Database.GetConnectionString())
             throw new InvalidOperationException("An operation cannot span different Atlas databases.");
@@ -93,7 +124,10 @@ public static class SqlOperationBoundary
         exception.InnerException is not null && IsConflict(exception.InnerException);
 
     /// <summary>Tracks whether this caller owns its context or only borrows the outer operation context.</summary>
-    internal sealed class ContextLease(AtlasDataContext context, bool owns) : IDisposable
+    internal sealed class ContextLease(
+        AtlasDataContext context,
+        bool owns
+    ) : IDisposable
     {
         public AtlasDataContext Context { get; } = context;
         /// <summary>Disposes only an owned standalone context; borrowed contexts remain alive until the outer boundary exits.</summary>

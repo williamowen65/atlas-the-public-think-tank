@@ -12,27 +12,68 @@ public sealed class PollReferenceBlock : ContentBlock
     public override string Kind => "poll-reference";
     public Guid PollId { get; private set; }
 
-    public PollReferenceBlock(Guid pollId, DateTimeOffset createdAt)
-        : this(BlockId.New(), pollId, createdAt, createdAt) { }
+    public PollReferenceBlock(
+        Guid pollId,
+        DateTimeOffset createdAt
+    )
+        : this(
+            BlockId.New(),
+            pollId,
+            createdAt,
+            createdAt
+        ) { }
 
     // Placeholder implementation: this ID does not currently identify a
     // persisted poll. Remove this overload when real poll creation is wired in.
     public PollReferenceBlock(DateTimeOffset createdAt)
-        : this(BlockId.New(), Guid.NewGuid(), createdAt, createdAt) { }
+        : this(
+            BlockId.New(),
+            Guid.NewGuid(),
+            createdAt,
+            createdAt
+        ) { }
 
-    private PollReferenceBlock(BlockId id, Guid pollId, DateTimeOffset createdAt, DateTimeOffset updatedAt)
-        : base(id, createdAt, updatedAt)
+    private PollReferenceBlock(
+        BlockId id,
+        Guid pollId,
+        DateTimeOffset createdAt,
+        DateTimeOffset updatedAt
+    )
+        : base(
+            id,
+            createdAt,
+            updatedAt
+        )
     {
-        PollId = pollId != Guid.Empty ? pollId : throw new ArgumentException("A poll ID is required.", nameof(pollId));
+        PollId = pollId != Guid.Empty ? pollId : throw new ArgumentException(
+            "A poll ID is required.",
+            nameof(pollId)
+        );
     }
 
-    public void UpdateReference(Guid pollId, DateTimeOffset changedAt)
+    public void UpdateReference(
+        Guid pollId,
+        DateTimeOffset changedAt
+    )
     {
-        var validatedPollId = pollId != Guid.Empty ? pollId : throw new ArgumentException("A poll ID is required.", nameof(pollId));
+        var validatedPollId = pollId != Guid.Empty ? pollId : throw new ArgumentException(
+            "A poll ID is required.",
+            nameof(pollId)
+        );
         ChangedAt(changedAt);
         PollId = validatedPollId;
     }
 
-    public static PollReferenceBlock Reconstitute(BlockId id, Guid pollId, DateTimeOffset createdAt, DateTimeOffset updatedAt) =>
-        new(id, pollId, createdAt, updatedAt);
+    public static PollReferenceBlock Reconstitute(
+        BlockId id,
+        Guid pollId,
+        DateTimeOffset createdAt,
+        DateTimeOffset updatedAt
+    ) =>
+        new(
+            id,
+            pollId,
+            createdAt,
+            updatedAt
+        );
 }

@@ -17,7 +17,8 @@ public class NodeTests
 
         Assert.AreEqual(
             new NodeTitle("Climate adaptation"),
-            node.Title);
+            node.Title
+        );
     }
 
     /// <summary>Verifies that constructor sets description reference.</summary>
@@ -31,9 +32,13 @@ public class NodeTests
             descriptionId,
             NodeTypeId.New(),
             new NodeAuthorId(Guid.NewGuid()),
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow
+        );
 
-        Assert.AreEqual(descriptionId, node.DescriptionId);
+        Assert.AreEqual(
+            descriptionId,
+            node.DescriptionId
+        );
     }
 
 
@@ -48,9 +53,13 @@ public class NodeTests
             new NodeDescriptionId(Guid.NewGuid()),
             NodeTypeId.New(),
             authorId,
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow
+        );
 
-        Assert.AreEqual(authorId, node.AuthorId);
+        Assert.AreEqual(
+            authorId,
+            node.AuthorId
+        );
     }
 
     /// <summary>Verifies that rename with valid title changes title.</summary>
@@ -62,11 +71,13 @@ public class NodeTests
         node.Rename(
             new NodeTitle("Updated title"),
             node.AuthorId.Value,
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow
+        );
 
         Assert.AreEqual(
             new NodeTitle("Updated title"),
-            node.Title);
+            node.Title
+        );
     }
 
     /// <summary>Verifies that rename with blank title throws argument exception.</summary>
@@ -79,11 +90,13 @@ public class NodeTests
             () => node.Rename(
                 new NodeTitle("    "),
                 node.AuthorId.Value,
-                DateTimeOffset.UtcNow));
+                DateTimeOffset.UtcNow
+            ));
 
         Assert.AreEqual(
             new NodeTitle("Climate adaptation"),
-            node.Title);
+            node.Title
+        );
     }
 
     /// <summary>Verifies that archive records node archived event.</summary>
@@ -94,18 +107,31 @@ public class NodeTests
         node.ClearDomainEvents();
         var archivedAt = DateTimeOffset.UtcNow;
 
-        node.Archive(node.AuthorId.Value, archivedAt);
+        node.Archive(
+            node.AuthorId.Value,
+            archivedAt
+        );
 
         var domainEvent = node.DomainEvents
             .OfType<NodeArchivedV1>()
             .Single();
 
-        Assert.AreEqual(node.Id.Value, domainEvent.NodeId);
+        Assert.AreEqual(
+            node.Id.Value,
+            domainEvent.NodeId
+        );
         Assert.AreEqual(
             node.DescriptionId.Value,
-            domainEvent.DescriptionId);
-        Assert.AreEqual(node.AuthorId.Value, domainEvent.AuthorId);
-        Assert.AreEqual(archivedAt, domainEvent.OccurredAt);
+            domainEvent.DescriptionId
+        );
+        Assert.AreEqual(
+            node.AuthorId.Value,
+            domainEvent.AuthorId
+        );
+        Assert.AreEqual(
+            archivedAt,
+            domainEvent.OccurredAt
+        );
     }
 
     /// <summary>Verifies that archive when already archived does not record another event.</summary>
@@ -114,12 +140,16 @@ public class NodeTests
     {
         var node = CreateNode("Climate adaptation");
 
-        node.Archive(node.AuthorId.Value, DateTimeOffset.UtcNow);
+        node.Archive(
+            node.AuthorId.Value,
+            DateTimeOffset.UtcNow
+        );
         node.ClearDomainEvents();
 
         node.Archive(
             node.AuthorId.Value,
-            DateTimeOffset.UtcNow.AddMinutes(1));
+            DateTimeOffset.UtcNow.AddMinutes(1)
+        );
 
         Assert.IsEmpty(node.DomainEvents);
     }
@@ -138,13 +168,18 @@ public class NodeTests
             NodeTypeId.New(),
             new NodeAuthorId(Guid.NewGuid()),
             [commentTypeId, evidenceTypeId],
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow
+        );
 
         CollectionAssert.AreEquivalent(
-            new[] { commentTypeId, evidenceTypeId },
+            new[] {
+                commentTypeId,
+                evidenceTypeId
+            },
             node.RequestedSubNodeTypes
                 .Select(request => request.TypeId)
-                .ToArray());
+                .ToArray()
+        );
     }
 
     /// <summary>Verifies that request sub node type does not add duplicate.</summary>
@@ -157,14 +192,19 @@ public class NodeTests
         node.RequestSubNodeType(
             commentTypeId,
             node.AuthorId.Value,
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow
+        );
 
         node.RequestSubNodeType(
             commentTypeId,
             node.AuthorId.Value,
-            DateTimeOffset.UtcNow.AddMinutes(1));
+            DateTimeOffset.UtcNow.AddMinutes(1)
+        );
 
-        Assert.HasCount(1, node.RequestedSubNodeTypes);
+        Assert.HasCount(
+            1,
+            node.RequestedSubNodeTypes
+        );
     }
 
     /// <summary>Verifies that stop requesting sub node type removes request.</summary>
@@ -177,12 +217,14 @@ public class NodeTests
         node.RequestSubNodeType(
             commentTypeId,
             node.AuthorId.Value,
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow
+        );
 
         node.StopRequestingSubNodeType(
             commentTypeId,
             node.AuthorId.Value,
-            DateTimeOffset.UtcNow.AddMinutes(1));
+            DateTimeOffset.UtcNow.AddMinutes(1)
+        );
 
         Assert.IsEmpty(node.RequestedSubNodeTypes);
     }
@@ -197,7 +239,8 @@ public class NodeTests
             () => node.RequestSubNodeType(
                 new NodeTypeId(Guid.Empty),
                 node.AuthorId.Value,
-                DateTimeOffset.UtcNow));
+                DateTimeOffset.UtcNow
+            ));
     }
 
 
@@ -213,19 +256,30 @@ public class NodeTests
         node.AttachToParent(
             parentId,
             node.AuthorId.Value,
-            attachedAt);
+            attachedAt
+        );
 
         CollectionAssert.Contains(
             node.ParentNodeIds.ToList(),
-            parentId);
+            parentId
+        );
 
         var domainEvent = node.DomainEvents
             .OfType<NodeParentAttachedV1>()
             .Single();
 
-        Assert.AreEqual(node.Id.Value, domainEvent.NodeId);
-        Assert.AreEqual(parentId.Value, domainEvent.ParentNodeId);
-        Assert.AreEqual(attachedAt, domainEvent.OccurredAt);
+        Assert.AreEqual(
+            node.Id.Value,
+            domainEvent.NodeId
+        );
+        Assert.AreEqual(
+            parentId.Value,
+            domainEvent.ParentNodeId
+        );
+        Assert.AreEqual(
+            attachedAt,
+            domainEvent.OccurredAt
+        );
     }
 
     /// <summary>Verifies that attach to parent when already attached does not duplicate.</summary>
@@ -238,15 +292,20 @@ public class NodeTests
         node.AttachToParent(
             parentId,
             node.AuthorId.Value,
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow
+        );
         node.ClearDomainEvents();
 
         node.AttachToParent(
             parentId,
             node.AuthorId.Value,
-            DateTimeOffset.UtcNow.AddMinutes(1));
+            DateTimeOffset.UtcNow.AddMinutes(1)
+        );
 
-        Assert.HasCount(1, node.ParentNodeIds);
+        Assert.HasCount(
+            1,
+            node.ParentNodeIds
+        );
         Assert.IsEmpty(node.DomainEvents);
     }
 
@@ -260,7 +319,8 @@ public class NodeTests
             () => node.AttachToParent(
                 node.Id,
                 node.AuthorId.Value,
-                DateTimeOffset.UtcNow));
+                DateTimeOffset.UtcNow
+            ));
     }
 
     /// <summary>Verifies that attach to parent with empty guid throws.</summary>
@@ -273,7 +333,8 @@ public class NodeTests
             () => node.AttachToParent(
                 new NodeId(Guid.Empty),
                 node.AuthorId.Value,
-                DateTimeOffset.UtcNow));
+                DateTimeOffset.UtcNow
+            ));
     }
 
     /// <summary>Verifies that detach from parent removes parent and records event.</summary>
@@ -285,14 +346,16 @@ public class NodeTests
         node.AttachToParent(
             parentId,
             node.AuthorId.Value,
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow
+        );
         node.ClearDomainEvents();
         var detachedAt = DateTimeOffset.UtcNow.AddMinutes(1);
 
         node.DetachFromParent(
             parentId,
             node.AuthorId.Value,
-            detachedAt);
+            detachedAt
+        );
 
         Assert.IsEmpty(node.ParentNodeIds);
 
@@ -300,8 +363,14 @@ public class NodeTests
             .OfType<NodeParentDetachedV1>()
             .Single();
 
-        Assert.AreEqual(parentId.Value, domainEvent.ParentNodeId);
-        Assert.AreEqual(detachedAt, domainEvent.OccurredAt);
+        Assert.AreEqual(
+            parentId.Value,
+            domainEvent.ParentNodeId
+        );
+        Assert.AreEqual(
+            detachedAt,
+            domainEvent.OccurredAt
+        );
     }
 
     /// <summary>Verifies that constructor allows multiple parents.</summary>
@@ -316,15 +385,21 @@ public class NodeTests
         node.AttachToParent(
             firstParentId,
             node.AuthorId.Value,
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow
+        );
         node.AttachToParent(
             secondParentId,
             node.AuthorId.Value,
-            DateTimeOffset.UtcNow.AddMinutes(1));
+            DateTimeOffset.UtcNow.AddMinutes(1)
+        );
 
         CollectionAssert.AreEquivalent(
-            new[] { firstParentId, secondParentId },
-            node.ParentNodeIds.ToArray());
+            new[] {
+                firstParentId,
+                secondParentId
+            },
+            node.ParentNodeIds.ToArray()
+        );
     }
 
     /// <summary>Creates node during the current workflow.</summary>
@@ -335,6 +410,7 @@ public class NodeTests
             new NodeDescriptionId(Guid.NewGuid()),
             NodeTypeId.New(),
             new NodeAuthorId(Guid.NewGuid()),
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow
+        );
     }
 }

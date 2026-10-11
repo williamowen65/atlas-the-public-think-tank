@@ -1,4 +1,4 @@
-﻿namespace Atlas.Content.Documents;
+namespace Atlas.Content.Documents;
 
 /// <summary>Identifies a document within the Content boundary.</summary>
 public sealed record DocumentId(Guid Value)

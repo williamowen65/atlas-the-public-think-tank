@@ -29,7 +29,8 @@ public static class ParticipantDisplay
                 NameWidth + 2 +
                 BioWidth + 2 +
                 StatusWidth + 2 +
-                NodesMinimumWidth));
+                NodesMinimumWidth
+            ));
     }
 
     /// <summary>Writes table row to the console display.</summary>
@@ -37,7 +38,8 @@ public static class ParticipantDisplay
         Participant participant,
         IReadOnlyCollection<Node> nodes,
         INodeTypeRepository nodeTypes,
-        int number)
+        int number
+    )
     {
         var status = participant.IsActive
             ? "Active"
@@ -46,12 +48,19 @@ public static class ParticipantDisplay
         var nodeSummary = ResolveNodeSummary(
             participant,
             nodes,
-            nodeTypes);
+            nodeTypes
+        );
 
         Console.WriteLine(
             $"{number,3}  " +
-            $"{Truncate(participant.DisplayName, NameWidth),-NameWidth}  " +
-            $"{Truncate(participant.Bio, BioWidth),-BioWidth}  " +
+            $"{Truncate(
+                participant.DisplayName,
+                NameWidth
+            ),-NameWidth}  " +
+            $"{Truncate(
+                participant.Bio,
+                BioWidth
+            ),-BioWidth}  " +
             $"{status,-StatusWidth}  " +
             nodeSummary);
     }
@@ -59,7 +68,8 @@ public static class ParticipantDisplay
     /// <summary>Writes profile to the console display.</summary>
     public static void WriteProfile(
         Participant participant,
-        IReadOnlyCollection<Node> nodes)
+        IReadOnlyCollection<Node> nodes
+    )
     {
         var authoredNodeCount = nodes.Count(
             node => node.AuthorId.Value == participant.Id.Value);
@@ -81,7 +91,8 @@ public static class ParticipantDisplay
     private static string ResolveNodeSummary(
         Participant participant,
         IReadOnlyCollection<Node> nodes,
-        INodeTypeRepository nodeTypes)
+        INodeTypeRepository nodeTypes
+    )
     {
         var groups = nodes
             .Where(node =>
@@ -113,11 +124,16 @@ public static class ParticipantDisplay
                 NodeDisplay.FormatTypeCount(
                     group.Name,
                     group.Count,
-                    group.AutoPluralize)));
+                    group.AutoPluralize
+                ))
+        );
     }
 
     /// <summary>Shortens text to the requested display width.</summary>
-    private static string Truncate(string value, int maximumLength)
+    private static string Truncate(
+        string value,
+        int maximumLength
+    )
     {
         if (string.IsNullOrWhiteSpace(value))
         {

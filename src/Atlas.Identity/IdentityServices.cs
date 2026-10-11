@@ -11,7 +11,10 @@ namespace Atlas.Identity;
 public static class IdentityServices
 {
     /// <summary>Registers the SQL account infrastructure. Hosts supply endpoints, email delivery, and key storage.</summary>
-    public static IServiceCollection AddAtlasIdentity(this IServiceCollection services, string connectionString)
+    public static IServiceCollection AddAtlasIdentity(
+        this IServiceCollection services,
+        string connectionString
+    )
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
         // Register AtlasDataContext as the EF Core DbContext used by Identity and the Atlas SQL repositories.
@@ -62,16 +65,32 @@ public static class IdentityServices
         {
             // Member: normal authenticated Atlas access. Member, GlobalModerator, and Administrator all satisfy it
             // because the two privileged roles are also allowed to perform ordinary member actions.
-            options.AddPolicy(AtlasPolicies.Member, policy => policy.RequireAuthenticatedUser()
-                .AddRequirements(new AtlasRoleRequirement(AtlasRoles.Member, AtlasRoles.GlobalModerator, AtlasRoles.Administrator)));
+            options.AddPolicy(
+                AtlasPolicies.Member,
+                policy => policy.RequireAuthenticatedUser()
+                .AddRequirements(new AtlasRoleRequirement(
+                    AtlasRoles.Member,
+                    AtlasRoles.GlobalModerator,
+                    AtlasRoles.Administrator
+                ))
+            );
 
             // GlobalModerator: Atlas-wide moderation access. Administrators inherit this capability; ordinary Members do not.
-            options.AddPolicy(AtlasPolicies.GlobalModerator, policy => policy.RequireAuthenticatedUser()
-                .AddRequirements(new AtlasRoleRequirement(AtlasRoles.GlobalModerator, AtlasRoles.Administrator)));
+            options.AddPolicy(
+                AtlasPolicies.GlobalModerator,
+                policy => policy.RequireAuthenticatedUser()
+                .AddRequirements(new AtlasRoleRequirement(
+                    AtlasRoles.GlobalModerator,
+                    AtlasRoles.Administrator
+                ))
+            );
 
             // Administrator: highest global Identity policy. Only a persisted Administrator role satisfies it.
-            options.AddPolicy(AtlasPolicies.Administrator, policy => policy.RequireAuthenticatedUser()
-                .AddRequirements(new AtlasRoleRequirement(AtlasRoles.Administrator)));
+            options.AddPolicy(
+                AtlasPolicies.Administrator,
+                policy => policy.RequireAuthenticatedUser()
+                .AddRequirements(new AtlasRoleRequirement(AtlasRoles.Administrator))
+            );
         });
         // Recheck active profile on every cookie request in addition to framework security-stamp validation.
         services.ConfigureApplicationCookie(options =>

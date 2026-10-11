@@ -22,7 +22,8 @@ public static class AnonymousBrowseCommands
     public static void BrowseParticipants(
         IParticipantRepository participants,
         INodeRepository nodes,
-        INodeTypeRepository nodeTypes)
+        INodeTypeRepository nodeTypes
+    )
     {
         while (true)
         {
@@ -49,12 +50,16 @@ public static class AnonymousBrowseCommands
                     available[index],
                     nodes.GetByAuthor(new NodeAuthorId(available[index].Id.Value)),
                     nodeTypes,
-                    index + 1);
+                    index + 1
+                );
             }
 
             Console.WriteLine();
             Console.Write("Participant number to view (0 returns): ");
-            if (!int.TryParse(Console.ReadLine(), out var selection) ||
+            if (!int.TryParse(
+                Console.ReadLine(),
+                out var selection
+            ) ||
                 selection < 0 ||
                 selection > available.Count)
             {
@@ -91,7 +96,8 @@ public static class AnonymousBrowseCommands
         ICommunityRepository communities,
         ICommunityNodeRepository communityNodes,
         ICommentRepository comments,
-        ModerationService moderation)
+        ModerationService moderation
+    )
     {
         var page = 1;
         string? searchText = null;
@@ -108,7 +114,8 @@ public static class AnonymousBrowseCommands
                 NodeTypeId: nodeTypeId,
                 AuthorParticipantId: authorId,
                 IsArchived: isArchived,
-                Page: page);
+                Page: page
+            );
             var resultPage = discovery.DiscoverPage(query);
             // Keep result numbers distinct across pages, and map selections back to this page.
             var firstNumber = DiscoveryPaging.FirstNumber(resultPage);
@@ -134,53 +141,111 @@ public static class AnonymousBrowseCommands
             {
                 var result = results[index];
                 NodeDisplay.WriteTableRow(
-                    available[index], nodes, nodeTypes, documents, participants, firstNumber + index,
-                    result.VoteCount, result.AverageVote, null, nodeTags, tagDefinitions, votes,
-                    communities, communityNodes, comments, includeCreatedDate: true, moderation: moderation);
+                    available[index],
+                    nodes,
+                    nodeTypes,
+                    documents,
+                    participants,
+                    firstNumber + index,
+                    result.VoteCount,
+                    result.AverageVote,
+                    null,
+                    nodeTags,
+                    tagDefinitions,
+                    votes,
+                    communities,
+                    communityNodes,
+                    comments,
+                    includeCreatedDate: true,
+                    moderation: moderation
+                );
             }
             if (available.Count == 0) Console.WriteLine("No nodes match the current filters.");
 
             Console.WriteLine();
-            DiscoveryPaging.WriteSummary(resultPage, available.Count);
+            DiscoveryPaging.WriteSummary(
+                resultPage,
+                available.Count
+            );
             Console.WriteLine("Node number to view; S text; C community; T node type; A author; U status; X clear; 0 return.");
             DiscoveryPaging.WriteNavigation(resultPage);
             Console.Write("Selection: ");
             var input = Console.ReadLine()?.Trim();
             if (input == "0") return;
-            if (DiscoveryPaging.TryNavigate(input, resultPage, ref page)) continue;
-            if (string.Equals(input, "s", StringComparison.OrdinalIgnoreCase))
+            if (DiscoveryPaging.TryNavigate(
+                input,
+                resultPage,
+                ref page
+            )) continue;
+            if (string.Equals(
+                input,
+                "s",
+                StringComparison.OrdinalIgnoreCase
+            ))
             {
                 Console.Write("Search text (blank clears): ");
                 var value = Console.ReadLine();
                 searchText = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
                 page = 1; continue;
             }
-            if (string.Equals(input, "c", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(
+                input,
+                "c",
+                StringComparison.OrdinalIgnoreCase
+            ))
             {
-                communityId = SelectId(communities.GetAll().OrderBy(x => x.Name).Select(x => (x.Id.Value, x.Name)).ToList(), "community");
+                communityId = SelectId(
+                    communities.GetAll().OrderBy(x => x.Name).Select(x => (x.Id.Value, x.Name)).ToList(),
+                    "community"
+                );
                 page = 1; continue;
             }
-            if (string.Equals(input, "t", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(
+                input,
+                "t",
+                StringComparison.OrdinalIgnoreCase
+            ))
             {
-                nodeTypeId = SelectId(nodeTypes.GetAll().Where(x => !x.IsArchived).OrderBy(x => x.Name).Select(x => (x.Id.Value, x.Name)).ToList(), "node type");
+                nodeTypeId = SelectId(
+                    nodeTypes.GetAll().Where(x => !x.IsArchived).OrderBy(x => x.Name).Select(x => (x.Id.Value, x.Name)).ToList(),
+                    "node type"
+                );
                 page = 1; continue;
             }
-            if (string.Equals(input, "a", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(
+                input,
+                "a",
+                StringComparison.OrdinalIgnoreCase
+            ))
             {
-                authorId = SelectId(participants.GetAll().OrderBy(x => x.DisplayName).Select(x => (x.Id.Value, x.DisplayName)).ToList(), "author");
+                authorId = SelectId(
+                    participants.GetAll().OrderBy(x => x.DisplayName).Select(x => (x.Id.Value, x.DisplayName)).ToList(),
+                    "author"
+                );
                 page = 1; continue;
             }
-            if (string.Equals(input, "u", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(
+                input,
+                "u",
+                StringComparison.OrdinalIgnoreCase
+            ))
             {
                 Console.Write("Status: 1 Active, 2 Archived, 3 All: ");
                 isArchived = Console.ReadLine() switch { "1" => false, "2" => true, "3" => null, _ => isArchived };
                 page = 1; continue;
             }
-            if (string.Equals(input, "x", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(
+                input,
+                "x",
+                StringComparison.OrdinalIgnoreCase
+            ))
             {
                 searchText = null; communityId = null; nodeTypeId = null; authorId = null; isArchived = false; page = 1; continue;
             }
-            if (!int.TryParse(input, out var selection) || selection < firstNumber || selection >= firstNumber + available.Count)
+            if (!int.TryParse(
+                input,
+                out var selection
+            ) || selection < firstNumber || selection >= firstNumber + available.Count)
             {
                 ConsoleUi.Pause("That is not a valid selection."); continue;
             }
@@ -188,28 +253,50 @@ public static class AnonymousBrowseCommands
             var node = available[selection - firstNumber];
             var ranked = results[selection - firstNumber];
             if (!Console.IsOutputRedirected) Console.Clear();
-            NodeDisplay.WriteDetails(node, nodes, nodeTypes, documents, participants, nodeTags,
-                tagDefinitions, votes, communities, communityNodes, comments, null,
-                ranked.VoteCount, ranked.AverageVote, null, moderation: moderation);
+            NodeDisplay.WriteDetails(
+                node,
+                nodes,
+                nodeTypes,
+                documents,
+                participants,
+                nodeTags,
+                tagDefinitions,
+                votes,
+                communities,
+                communityNodes,
+                comments,
+                null,
+                ranked.VoteCount,
+                ranked.AverageVote,
+                null,
+                moderation: moderation
+            );
             Console.WriteLine();
             Console.WriteLine("Read-only public view. Sign in to contribute or modify Atlas content.");
             ConsoleUi.Pause();
         }
     }
 
-    private static Guid? SelectId(IReadOnlyList<(Guid Id, string Name)> values, string label)
+    private static Guid? SelectId(
+        IReadOnlyList<(Guid Id, string Name)> values,
+        string label
+    )
     {
         Console.WriteLine($"Select {label} (0 clears):");
         for (var index = 0; index < values.Count; index++)
             Console.WriteLine($"{index + 1}. {values[index].Name}");
         Console.Write("Selection: ");
-        if (!int.TryParse(Console.ReadLine(), out var selection) || selection == 0) return null;
+        if (!int.TryParse(
+            Console.ReadLine(),
+            out var selection
+        ) || selection == 0) return null;
         return selection >= 1 && selection <= values.Count ? values[selection - 1].Id : null;
     }
 
     public static void BrowseCommunities(
         ICommunityRepository communities,
-        ICommunityNodeRepository communityNodes)
+        ICommunityNodeRepository communityNodes
+    )
     {
         if (!Console.IsOutputRedirected) Console.Clear();
         Console.WriteLine("BROWSE COMMUNITIES");

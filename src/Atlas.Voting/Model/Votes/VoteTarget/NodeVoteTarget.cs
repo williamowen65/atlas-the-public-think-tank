@@ -1,5 +1,3 @@
-﻿
-
 namespace Atlas.Voting.Target
 {
     public sealed class NodeVoteTarget : VoteTarget

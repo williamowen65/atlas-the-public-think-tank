@@ -15,8 +15,14 @@ internal static partial class DemoData
                 Description = "Questions, evidence, and ideas to support the recovery of Southern Resident orcas.",
                 OwnerParticipantId = DemoParticipants.User01Id,
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:53:35.160Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:53:35.160Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:53:35.160Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:53:35.160Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new CommunityRow
             {
@@ -25,8 +31,14 @@ internal static partial class DemoData
                 Description = "Explore ways to make reliable internet access available and useful to everyone.",
                 OwnerParticipantId = DemoParticipants.User02Id,
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:53:35.160Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:53:35.160Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:53:35.160Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:53:35.160Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new CommunityRow
             {
@@ -35,8 +47,14 @@ internal static partial class DemoData
                 Description = "Ideas and questions about how elections could give people meaningful choices and representation.",
                 OwnerParticipantId = DemoParticipants.User03Id,
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:53:35.160Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:53:35.160Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:53:35.160Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:53:35.160Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new CommunityRow
             {
@@ -45,8 +63,14 @@ internal static partial class DemoData
                 Description = "Explore homelessness, stable housing, and responses shaped by people affected.",
                 OwnerParticipantId = DemoParticipants.User04Id,
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:53:35.160Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:53:35.160Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:53:35.160Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:53:35.160Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new CommunityRow
             {
@@ -55,8 +79,14 @@ internal static partial class DemoData
                 Description = "Help shape how Atlas organizes ideas, questions, disagreement, and collaboration.",
                 OwnerParticipantId = DemoParticipants.User05Id,
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:53:35.160Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:53:35.160Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:53:35.160Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:53:35.160Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
         });
     }

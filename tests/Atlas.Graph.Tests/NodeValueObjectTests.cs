@@ -22,26 +22,41 @@ public class NodeValueObjectTests
     {
         var title = new NodeTitle("  Climate adaptation  ");
 
-        Assert.AreEqual("Climate adaptation", title.Value);
-        Assert.AreEqual("Climate adaptation", title.ToString());
+        Assert.AreEqual(
+            "Climate adaptation",
+            title.Value
+        );
+        Assert.AreEqual(
+            "Climate adaptation",
+            title.ToString()
+        );
     }
 
     /// <summary>Verifies that node title at maximum length is accepted.</summary>
     [TestMethod]
     public void NodeTitle_AtMaximumLength_IsAccepted()
     {
-        var value = new string('a', NodeTitle.MaximumLength);
+        var value = new string(
+            'a',
+            NodeTitle.MaximumLength
+        );
 
         var title = new NodeTitle(value);
 
-        Assert.AreEqual(value, title.Value);
+        Assert.AreEqual(
+            value,
+            title.Value
+        );
     }
 
     /// <summary>Verifies that node title over maximum length throws.</summary>
     [TestMethod]
     public void NodeTitle_OverMaximumLength_Throws()
     {
-        var value = new string('a', NodeTitle.MaximumLength + 1);
+        var value = new string(
+            'a',
+            NodeTitle.MaximumLength + 1
+        );
 
         Assert.Throws<ArgumentException>(() => new NodeTitle(value));
     }

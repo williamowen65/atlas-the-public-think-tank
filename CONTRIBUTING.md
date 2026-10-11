@@ -68,6 +68,33 @@ Before opening a pull request:
 
 If you cannot run part of the verification, say exactly what was not run and why in the pull request.
 
+## C# readability
+
+Use vertical formatting in the current application and tests (`src/` and `tests/`):
+
+- Put each object-initializer property assignment on its own line.
+- Put each argument or parameter on its own line when a call or declaration has multiple arguments or parameters.
+- Indent nested initializers and argument lists so their ownership is clear.
+- Preserve comments that explain validation, workflow steps and transaction boundaries.
+- Keep broad formatting passes in a separate commit so reviewers can distinguish them from behavior changes.
+
+```csharp
+SaveRow(new NotificationRow
+{
+    Id = item.Id,
+    RecipientParticipantId = item.RecipientParticipantId,
+    DeliveryAttempts = item.DeliveryAttempts
+        .Select(attempt => new DeliveryAttemptRow
+        {
+            Channel = (int)attempt.Channel,
+            Status = (int)attempt.Status,
+            AttemptedAt = attempt.AttemptedAt,
+            Error = attempt.Error
+        })
+        .ToList()
+});
+```
+
 ## Review and acceptance
 
 A `contribution-ready` issue approves a direction for development; it does not automatically approve a particular implementation. A pull request is accepted only after review confirms that it:

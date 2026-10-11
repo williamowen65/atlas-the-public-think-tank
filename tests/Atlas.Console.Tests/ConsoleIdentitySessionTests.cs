@@ -34,7 +34,9 @@ public sealed class ConsoleIdentitySessionTests
             .Build();
         var template = configuration["ATLAS_SQL_TEST_CONNECTION_STRING"];
         if (string.IsNullOrWhiteSpace(template)) Assert.Inconclusive("Set ATLAS_SQL_TEST_CONNECTION_STRING in user secrets or environment variables to run SQL Server tests.");
-        var connection = new SqlConnectionStringBuilder(template) { InitialCatalog = $"AtlasConsoleIdentity_{Guid.NewGuid():N}" };
+        var connection = new SqlConnectionStringBuilder(template) {
+            InitialCatalog = $"AtlasConsoleIdentity_{Guid.NewGuid():N}"
+        };
         using var services = new ServiceCollection().AddAtlasIdentity(connection.ConnectionString).BuildServiceProvider();
         var scopes = services.GetRequiredService<IServiceScopeFactory>();
         using var setup = scopes.CreateScope();
@@ -44,35 +46,73 @@ public sealed class ConsoleIdentitySessionTests
             await database.Database.MigrateAsync();
             const string password = "Console_94!TestPassword";
             var accounts = setup.ServiceProvider.GetRequiredService<AtlasAccounts>();
-            var created = await accounts.RegisterAsync("console@example.test", password, "Console Member");
+            var created = await accounts.RegisterAsync(
+                "console@example.test",
+                password,
+                "Console Member"
+            );
             Assert.IsTrue(created.Result.Succeeded);
             var users = setup.ServiceProvider.GetRequiredService<UserManager<AtlasIdentityUser>>();
             var user = (await users.FindByEmailAsync("console@example.test"))!;
             var session = new ConsoleIdentitySession(scopes);
-            Assert.IsTrue((await session.SignInAsync(user.Email!, password)).IsNotAllowed);
+            Assert.IsTrue((await session.SignInAsync(
+                user.Email!,
+                password
+            )).IsNotAllowed);
             Assert.IsNull(session.Participant);
             var token = await users.GenerateEmailConfirmationTokenAsync(user);
-            Assert.IsTrue((await users.ConfirmEmailAsync(user, token)).Succeeded);
-            Assert.IsFalse((await session.SignInAsync(user.Email!, "wrong")).Succeeded);
-            Assert.IsTrue((await session.SignInAsync(user.Email!, password)).Succeeded);
-            Assert.AreEqual(created.ParticipantId, session.Participant!.Id);
+            Assert.IsTrue((await users.ConfirmEmailAsync(
+                user,
+                token
+            )).Succeeded);
+            Assert.IsFalse((await session.SignInAsync(
+                user.Email!,
+                "wrong"
+            )).Succeeded);
+            Assert.IsTrue((await session.SignInAsync(
+                user.Email!,
+                password
+            )).Succeeded);
+            Assert.AreEqual(
+                created.ParticipantId,
+                session.Participant!.Id
+            );
             Assert.IsFalse(session.IsAtlasModerator(user.Id));
             database.ChangeTracker.Clear();
             user = (await users.FindByEmailAsync("console@example.test"))!;
-            Assert.IsTrue((await users.AddToRoleAsync(user, AtlasRoles.GlobalModerator)).Succeeded);
+            Assert.IsTrue((await users.AddToRoleAsync(
+                user,
+                AtlasRoles.GlobalModerator
+            )).Succeeded);
             Assert.IsTrue(session.IsAtlasModerator(user.Id));
             Assert.IsFalse(session.IsAtlasModerator(Guid.NewGuid()));
-            Assert.IsTrue((await users.RemoveFromRoleAsync(user, AtlasRoles.GlobalModerator)).Succeeded);
+            Assert.IsTrue((await users.RemoveFromRoleAsync(
+                user,
+                AtlasRoles.GlobalModerator
+            )).Succeeded);
             Assert.IsFalse(session.IsAtlasModerator(user.Id));
-            Assert.IsTrue((await users.ChangePasswordAsync(user, password, password + "New")).Succeeded);
+            Assert.IsTrue((await users.ChangePasswordAsync(
+                user,
+                password,
+                password + "New"
+            )).Succeeded);
             Assert.IsFalse(await session.RefreshAsync());
             Assert.IsNull(session.Participant);
-            Assert.IsTrue((await session.SignInAsync(user.Email!, password + "New")).Succeeded);
+            Assert.IsTrue((await session.SignInAsync(
+                user.Email!,
+                password + "New"
+            )).Succeeded);
             session.SignOut();
             Assert.IsNull(session.Participant);
             Assert.IsFalse(await session.RefreshAsync());
-            Assert.IsTrue((await users.SetTwoFactorEnabledAsync(user, true)).Succeeded);
-            Assert.IsTrue((await session.SignInAsync(user.Email!, password + "New")).RequiresTwoFactor);
+            Assert.IsTrue((await users.SetTwoFactorEnabledAsync(
+                user,
+                true
+            )).Succeeded);
+            Assert.IsTrue((await session.SignInAsync(
+                user.Email!,
+                password + "New"
+            )).RequiresTwoFactor);
             Assert.IsNull(session.Participant);
         }
         finally { await database.Database.EnsureDeletedAsync(); }

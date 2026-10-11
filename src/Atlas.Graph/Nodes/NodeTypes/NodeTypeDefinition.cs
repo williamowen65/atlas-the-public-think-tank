@@ -31,11 +31,21 @@ public sealed class NodeTypeDefinition
         bool isArchived,
         bool autoPluralize,
         DateTimeOffset createdAt,
-        DateTimeOffset updatedAt)
+        DateTimeOffset updatedAt
+    )
     {
-        if (id.Value == Guid.Empty) throw new ArgumentException("A node type ID is required.", nameof(id));
-        if (!isSystemDefined && string.IsNullOrWhiteSpace(ownerId)) throw new ArgumentException("A custom type requires an owner.", nameof(ownerId));
-        if (isSystemDefined && ownerId is not null) throw new ArgumentException("A system type cannot have a custom owner.", nameof(ownerId));
+        if (id.Value == Guid.Empty) throw new ArgumentException(
+            "A node type ID is required.",
+            nameof(id)
+        );
+        if (!isSystemDefined && string.IsNullOrWhiteSpace(ownerId)) throw new ArgumentException(
+            "A custom type requires an owner.",
+            nameof(ownerId)
+        );
+        if (isSystemDefined && ownerId is not null) throw new ArgumentException(
+            "A system type cannot have a custom owner.",
+            nameof(ownerId)
+        );
         if (updatedAt < createdAt) throw new ArgumentException("Update time cannot precede creation.");
         Id = id;
         Name = ValidateName(name);
@@ -54,13 +64,15 @@ public sealed class NodeTypeDefinition
         string description,
         string ownerId,
         DateTimeOffset createdAt,
-        bool autoPluralize = true)
+        bool autoPluralize = true
+    )
     {
         if (string.IsNullOrWhiteSpace(ownerId))
         {
             throw new ArgumentException(
                 "A custom node type requires an owner.",
-                nameof(ownerId));
+                nameof(ownerId)
+            );
         }
 
         return new NodeTypeDefinition(
@@ -72,7 +84,8 @@ public sealed class NodeTypeDefinition
             isArchived: false,
             autoPluralize,
             createdAt,
-            createdAt);
+            createdAt
+        );
     }
 
     /// <summary>Creates system defined during the current workflow.</summary>
@@ -80,7 +93,8 @@ public sealed class NodeTypeDefinition
         string name,
         string description,
         DateTimeOffset createdAt,
-        bool autoPluralize = true)
+        bool autoPluralize = true
+    )
     {
         return new NodeTypeDefinition(
             NodeTypeId.New(),
@@ -91,7 +105,8 @@ public sealed class NodeTypeDefinition
             isArchived: false,
             autoPluralize,
             createdAt,
-            createdAt);
+            createdAt
+        );
     }
 
     /// <summary>Rebuilds the domain object from persisted state without replaying creation behavior.</summary>
@@ -104,7 +119,8 @@ public sealed class NodeTypeDefinition
         bool isArchived,
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt,
-        bool autoPluralize = true)
+        bool autoPluralize = true
+    )
     {
         if (updatedAt < createdAt)
         {
@@ -121,7 +137,8 @@ public sealed class NodeTypeDefinition
             isArchived,
             autoPluralize,
             createdAt,
-            updatedAt);
+            updatedAt
+        );
     }
 
     /// <summary>Changes the validated name and advances the modification timestamp when the value differs.</summary>
@@ -129,9 +146,13 @@ public sealed class NodeTypeDefinition
         string newName,
         string actorId,
         bool actorIsModerator,
-        DateTimeOffset changedAt)
+        DateTimeOffset changedAt
+    )
     {
-        EnsureCanEdit(actorId, actorIsModerator);
+        EnsureCanEdit(
+            actorId,
+            actorIsModerator
+        );
 
         var validatedName = ValidateName(newName);
 
@@ -150,9 +171,13 @@ public sealed class NodeTypeDefinition
         string newDescription,
         string actorId,
         bool actorIsModerator,
-        DateTimeOffset changedAt)
+        DateTimeOffset changedAt
+    )
     {
-        EnsureCanEdit(actorId, actorIsModerator);
+        EnsureCanEdit(
+            actorId,
+            actorIsModerator
+        );
 
         var validatedDescription =
             ValidateDescription(newDescription);
@@ -173,9 +198,13 @@ public sealed class NodeTypeDefinition
         bool autoPluralize,
         string actorId,
         bool actorIsModerator,
-        DateTimeOffset changedAt)
+        DateTimeOffset changedAt
+    )
     {
-        EnsureCanEdit(actorId, actorIsModerator);
+        EnsureCanEdit(
+            actorId,
+            actorIsModerator
+        );
 
         if (AutoPluralize == autoPluralize)
         {
@@ -191,9 +220,13 @@ public sealed class NodeTypeDefinition
     public void Archive(
         string actorId,
         bool actorIsModerator,
-        DateTimeOffset archivedAt)
+        DateTimeOffset archivedAt
+    )
     {
-        EnsureCanEdit(actorId, actorIsModerator);
+        EnsureCanEdit(
+            actorId,
+            actorIsModerator
+        );
 
         if (IsArchived)
         {
@@ -208,7 +241,8 @@ public sealed class NodeTypeDefinition
     /// <summary>Enforces can edit before the operation continues.</summary>
     private void EnsureCanEdit(
         string actorId,
-        bool actorIsModerator)
+        bool actorIsModerator
+    )
     {
         if (IsSystemDefined && !actorIsModerator)
         {
@@ -230,7 +264,8 @@ public sealed class NodeTypeDefinition
         {
             throw new ArgumentException(
                 "A node type name is required.",
-                nameof(name));
+                nameof(name)
+            );
         }
 
         name = name.Trim();
@@ -239,7 +274,8 @@ public sealed class NodeTypeDefinition
         {
             throw new ArgumentException(
                 "A node type name cannot exceed 50 characters.",
-                nameof(name));
+                nameof(name)
+            );
         }
 
         return name;
@@ -255,7 +291,8 @@ public sealed class NodeTypeDefinition
         {
             throw new ArgumentException(
                 "A node type description cannot exceed 500 characters.",
-                nameof(description));
+                nameof(description)
+            );
         }
 
         return description;

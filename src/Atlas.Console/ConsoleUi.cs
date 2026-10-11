@@ -8,7 +8,8 @@ public static class ConsoleUi
     /// <summary>Reads node type from the console interaction.</summary>
     public static NodeTypeDefinition? ReadNodeType(
         INodeTypeRepository nodeTypes,
-        string ownerId)
+        string ownerId
+    )
     {
         var availableTypes = nodeTypes
             .GetAll()
@@ -34,7 +35,10 @@ public static class ConsoleUi
         Console.WriteLine();
         Console.Write("Type: ");
 
-        if (!int.TryParse(Console.ReadLine(), out var selection))
+        if (!int.TryParse(
+            Console.ReadLine(),
+            out var selection
+        ))
         {
             Pause("That is not a valid selection.");
             return null;
@@ -47,7 +51,10 @@ public static class ConsoleUi
 
         if (selection == availableTypes.Count + 1)
         {
-            return CreateCustomNodeType(nodeTypes, ownerId);
+            return CreateCustomNodeType(
+                nodeTypes,
+                ownerId
+            );
         }
 
         if (selection < 1 || selection > availableTypes.Count)
@@ -63,7 +70,8 @@ public static class ConsoleUi
     public static IReadOnlyCollection<NodeTypeDefinition>
         ReadRequestedSubNodeTypes(
             INodeTypeRepository nodeTypes,
-            string ownerId)
+            string ownerId
+        )
     {
         var allTypes = nodeTypes.GetAll();
 
@@ -73,7 +81,8 @@ public static class ConsoleUi
                 !string.Equals(
                     type.Name,
                     "Comment",
-                    StringComparison.OrdinalIgnoreCase))
+                    StringComparison.OrdinalIgnoreCase
+                ))
             .OrderBy(type => type.Name)
             .ToList();
 
@@ -82,7 +91,8 @@ public static class ConsoleUi
                 string.Equals(
                     type.Name,
                     "Comment",
-                    StringComparison.OrdinalIgnoreCase));
+                    StringComparison.OrdinalIgnoreCase
+                ));
 
         Console.WriteLine();
         Console.WriteLine(
@@ -114,11 +124,15 @@ public static class ConsoleUi
         var selections = new List<int>();
 
         foreach (var value in input.Split(
-                     ',',
-                     StringSplitOptions.RemoveEmptyEntries |
-                     StringSplitOptions.TrimEntries))
+            ',',
+            StringSplitOptions.RemoveEmptyEntries |
+                     StringSplitOptions.TrimEntries
+        ))
         {
-            if (!int.TryParse(value, out var selection) ||
+            if (!int.TryParse(
+                value,
+                out var selection
+            ) ||
                 selection < 1 ||
                 selection > createTypeSelection)
             {
@@ -140,7 +154,8 @@ public static class ConsoleUi
         {
             var customType = CreateCustomNodeType(
                 nodeTypes,
-                ownerId);
+                ownerId
+            );
 
             if (customType is null)
             {
@@ -172,7 +187,8 @@ public static class ConsoleUi
     /// <summary>Creates custom node type during the current workflow.</summary>
     public static NodeTypeDefinition? CreateCustomNodeType(
         INodeTypeRepository nodeTypes,
-        string ownerId)
+        string ownerId
+    )
     {
         Console.WriteLine();
         Console.Write("Custom type name: ");
@@ -184,7 +200,8 @@ public static class ConsoleUi
                 string.Equals(
                     type.Name,
                     name?.Trim(),
-                    StringComparison.OrdinalIgnoreCase));
+                    StringComparison.OrdinalIgnoreCase
+                ));
 
         if (existingType is not null)
         {
@@ -206,22 +223,26 @@ public static class ConsoleUi
             string.Equals(
                 pluralizeResponse,
                 "y",
-                StringComparison.OrdinalIgnoreCase) ||
+                StringComparison.OrdinalIgnoreCase
+            ) ||
             string.Equals(
                 pluralizeResponse,
                 "yes",
-                StringComparison.OrdinalIgnoreCase))
+                StringComparison.OrdinalIgnoreCase
+            ))
         {
             autoPluralize = true;
         }
         else if (string.Equals(
-                     pluralizeResponse,
-                     "n",
-                     StringComparison.OrdinalIgnoreCase) ||
+            pluralizeResponse,
+            "n",
+            StringComparison.OrdinalIgnoreCase
+        ) ||
                  string.Equals(
                      pluralizeResponse,
                      "no",
-                     StringComparison.OrdinalIgnoreCase))
+                     StringComparison.OrdinalIgnoreCase
+                 ))
         {
             autoPluralize = false;
         }
@@ -238,7 +259,8 @@ public static class ConsoleUi
                 description ?? string.Empty,
                 ownerId,
                 AtlasTime.UtcNow,
-                autoPluralize);
+                autoPluralize
+            );
 
             nodeTypes.Save(nodeType);
             return nodeType;

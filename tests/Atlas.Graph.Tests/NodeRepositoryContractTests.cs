@@ -22,7 +22,12 @@ public sealed class NodeRepositoryContractTests
             .ToArray();
 
         CollectionAssert.AreEqual(
-            new[] { "GetByAuthor", "GetChildren", "GetParentCandidates" },
-            collectionQueries);
+            new[] {
+                "GetByAuthor",
+                "GetChildren",
+                "GetParentCandidates"
+            },
+            collectionQueries
+        );
     }
 }

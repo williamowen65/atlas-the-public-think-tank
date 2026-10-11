@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -14,7 +14,8 @@ namespace Atlas.Voting.Target
             {
                 throw new ArgumentException(
                     "Vote target ID cannot be empty.",
-                    nameof(id));
+                    nameof(id)
+                );
             }
 
             Id = id;  

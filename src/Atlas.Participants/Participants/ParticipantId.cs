@@ -12,7 +12,8 @@ public sealed record ParticipantId
         {
             throw new ArgumentException(
                 "A participant ID cannot be empty.",
-                nameof(value));
+                nameof(value)
+            );
         }
 
         Value = value;

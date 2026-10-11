@@ -25,24 +25,62 @@ public sealed class ModerationCase
     public string? RestorationReason { get; private set; }
     public bool IsHidden => Status == ModerationStatus.Actioned && VisibilityRestoredAt is null;
 
-    public ModerationCase(Guid nodeId, Guid reporterId, string reason, string? explanation,
-        string reportedTitle, DateTimeOffset createdAt)
-        : this(Guid.NewGuid(), nodeId, reporterId, reason, explanation, reportedTitle,
-            createdAt, ModerationStatus.Submitted, null, null, null) { }
+    public ModerationCase(
+        Guid nodeId,
+        Guid reporterId,
+        string reason,
+        string? explanation,
+        string reportedTitle,
+        DateTimeOffset createdAt
+    )
+        : this(
+            Guid.NewGuid(),
+            nodeId,
+            reporterId,
+            reason,
+            explanation,
+            reportedTitle,
+            createdAt,
+            ModerationStatus.Submitted,
+            null,
+            null,
+            null
+        ) { }
 
-    private ModerationCase(Guid id, Guid nodeId, Guid reporterId, string reason, string? explanation,
-        string reportedTitle, DateTimeOffset createdAt, ModerationStatus status,
-        Guid? reviewerId, string? decisionReason, DateTimeOffset? decidedAt,
+    private ModerationCase(
+        Guid id,
+        Guid nodeId,
+        Guid reporterId,
+        string reason,
+        string? explanation,
+        string reportedTitle,
+        DateTimeOffset createdAt,
+        ModerationStatus status,
+        Guid? reviewerId,
+        string? decisionReason,
+        DateTimeOffset? decidedAt,
         PublicModerationReason publicReason = PublicModerationReason.Other,
-        DateTimeOffset? reviewRequestedAt = null, DateTimeOffset? visibilityRestoredAt = null,
-        Guid? restoredBy = null, string? restorationReason = null)
+        DateTimeOffset? reviewRequestedAt = null,
+        DateTimeOffset? visibilityRestoredAt = null,
+        Guid? restoredBy = null,
+        string? restorationReason = null
+    )
     {
         if (id == Guid.Empty || nodeId == Guid.Empty || reporterId == Guid.Empty)
             throw new ArgumentException("Case, Node, and reporter identifiers are required.");
         if (string.IsNullOrWhiteSpace(reason) || reason.Trim().Length > 100)
-            throw new ArgumentException("A reason of at most 100 characters is required.", nameof(reason));
-        if (explanation?.Length > 2000) throw new ArgumentException("Explanation is too long.", nameof(explanation));
-        if (string.IsNullOrWhiteSpace(reportedTitle)) throw new ArgumentException("A reported title is required.", nameof(reportedTitle));
+            throw new ArgumentException(
+                "A reason of at most 100 characters is required.",
+                nameof(reason)
+            );
+        if (explanation?.Length > 2000) throw new ArgumentException(
+            "Explanation is too long.",
+            nameof(explanation)
+        );
+        if (string.IsNullOrWhiteSpace(reportedTitle)) throw new ArgumentException(
+            "A reported title is required.",
+            nameof(reportedTitle)
+        );
         if (!Enum.IsDefined(status)) throw new ArgumentOutOfRangeException(nameof(status));
         if (!Enum.IsDefined(publicReason)) throw new ArgumentOutOfRangeException(nameof(publicReason));
         if (status != ModerationStatus.Submitted &&
@@ -70,24 +108,65 @@ public sealed class ModerationCase
         RestoredBy = restoredBy; RestorationReason = restorationReason;
     }
 
-    public static ModerationCase Reconstitute(Guid id, Guid nodeId, Guid reporterId, string reason,
-        string? explanation, string reportedTitle, DateTimeOffset createdAt, ModerationStatus status,
-        Guid? reviewerId, string? decisionReason, DateTimeOffset? decidedAt,
+    public static ModerationCase Reconstitute(
+        Guid id,
+        Guid nodeId,
+        Guid reporterId,
+        string reason,
+        string? explanation,
+        string reportedTitle,
+        DateTimeOffset createdAt,
+        ModerationStatus status,
+        Guid? reviewerId,
+        string? decisionReason,
+        DateTimeOffset? decidedAt,
         PublicModerationReason publicReason = PublicModerationReason.Other,
-        DateTimeOffset? reviewRequestedAt = null, DateTimeOffset? visibilityRestoredAt = null,
-        Guid? restoredBy = null, string? restorationReason = null) =>
-        new(id, nodeId, reporterId, reason, explanation, reportedTitle, createdAt,
-            status, reviewerId, decisionReason, decidedAt, publicReason, reviewRequestedAt,
-            visibilityRestoredAt, restoredBy, restorationReason);
+        DateTimeOffset? reviewRequestedAt = null,
+        DateTimeOffset? visibilityRestoredAt = null,
+        Guid? restoredBy = null,
+        string? restorationReason = null
+    ) =>
+        new(
+            id,
+            nodeId,
+            reporterId,
+            reason,
+            explanation,
+            reportedTitle,
+            createdAt,
+            status,
+            reviewerId,
+            decisionReason,
+            decidedAt,
+            publicReason,
+            reviewRequestedAt,
+            visibilityRestoredAt,
+            restoredBy,
+            restorationReason
+        );
 
-    public void Decide(Guid reviewerId, ModerationDecision decision, string rationale, DateTimeOffset decidedAt,
-        PublicModerationReason publicReason = PublicModerationReason.Other)
+    public void Decide(
+        Guid reviewerId,
+        ModerationDecision decision,
+        string rationale,
+        DateTimeOffset decidedAt,
+        PublicModerationReason publicReason = PublicModerationReason.Other
+    )
     {
         if (Status != ModerationStatus.Submitted) throw new InvalidOperationException("Case already decided.");
-        if (reviewerId == Guid.Empty) throw new ArgumentException("Reviewer is required.", nameof(reviewerId));
+        if (reviewerId == Guid.Empty) throw new ArgumentException(
+            "Reviewer is required.",
+            nameof(reviewerId)
+        );
         if (string.IsNullOrWhiteSpace(rationale) || rationale.Trim().Length > 2000)
-            throw new ArgumentException("A rationale of at most 2000 characters is required.", nameof(rationale));
-        if (decidedAt < CreatedAt) throw new ArgumentException("Decision cannot precede report.", nameof(decidedAt));
+            throw new ArgumentException(
+                "A rationale of at most 2000 characters is required.",
+                nameof(rationale)
+            );
+        if (decidedAt < CreatedAt) throw new ArgumentException(
+            "Decision cannot precede report.",
+            nameof(decidedAt)
+        );
         if (!Enum.IsDefined(decision)) throw new ArgumentOutOfRangeException(nameof(decision));
         if (!Enum.IsDefined(publicReason)) throw new ArgumentOutOfRangeException(nameof(publicReason));
         ReviewerId = reviewerId; DecisionReason = rationale.Trim(); DecidedAt = decidedAt.ToUniversalTime();
@@ -102,7 +181,11 @@ public sealed class ModerationCase
         ReviewRequestedAt = requestedAt.ToUniversalTime();
     }
 
-    public void RestoreVisibility(Guid moderatorId, string rationale, DateTimeOffset restoredAt)
+    public void RestoreVisibility(
+        Guid moderatorId,
+        string rationale,
+        DateTimeOffset restoredAt
+    )
     {
         if (!IsHidden || ReviewRequestedAt is null || restoredAt < ReviewRequestedAt)
             throw new InvalidOperationException("A pending review request is required.");

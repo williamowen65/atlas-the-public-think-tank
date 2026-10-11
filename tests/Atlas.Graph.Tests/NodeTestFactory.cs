@@ -9,14 +9,16 @@ internal static class NodeTestFactory
     /// <summary>Coordinates creation and persistence for this workflow.</summary>
     public static Node Create(
         string title = "Climate adaptation",
-        DateTimeOffset? createdAt = null)
+        DateTimeOffset? createdAt = null
+    )
     {
         return new Node(
             new NodeTitle(title),
             new NodeDescriptionId(Guid.NewGuid()),
             NodeTypeId.New(),
             new NodeAuthorId(Guid.NewGuid()),
-            createdAt ?? DateTimeOffset.UtcNow);
+            createdAt ?? DateTimeOffset.UtcNow
+        );
     }
 
     /// <summary>Rebuilds the domain object from persisted state without replaying creation behavior.</summary>
@@ -25,7 +27,8 @@ internal static class NodeTestFactory
         IEnumerable<NodeTypeId>? requestedTypeIds = null,
         IEnumerable<NodeId>? parentIds = null,
         DateTimeOffset? createdAt = null,
-        DateTimeOffset? updatedAt = null)
+        DateTimeOffset? updatedAt = null
+    )
     {
         var created = createdAt ?? DateTimeOffset.UtcNow.AddHours(-1);
 
@@ -39,6 +42,7 @@ internal static class NodeTestFactory
             requestedTypeIds ?? [],
             parentIds ?? [],
             created,
-            updatedAt ?? created);
+            updatedAt ?? created
+        );
     }
 }

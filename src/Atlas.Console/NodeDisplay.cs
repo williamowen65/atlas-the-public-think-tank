@@ -17,7 +17,10 @@ namespace Atlas.ConsoleApp;
 /// <summary>Formats Graph nodes and their referenced data for the console host.</summary>
 public static class NodeDisplay
 {
-    public static string PublicTitle(Node node, ModerationService moderation)
+    public static string PublicTitle(
+        Node node,
+        ModerationService moderation
+    )
     {
         var visibility = moderation.Visibility(node.Id.Value);
         return visibility.IsHidden ? visibility.Notice : node.Title.Value;
@@ -61,33 +64,78 @@ public static class NodeDisplay
         ICommunityNodeRepository? communityNodes = null,
         ICommentRepository? comments = null,
         bool includeCreatedDate = false,
-        ModerationService? moderation = null)
+        ModerationService? moderation = null
+    )
     {
         var visibility = moderation?.Visibility(node.Id.Value) ?? ModerationVisibility.Visible;
-        var typeName = ResolveTypeName(node, nodeTypes);
+        var typeName = ResolveTypeName(
+            node,
+            nodeTypes
+        );
         var description = visibility.IsHidden ? visibility.Notice
-            : ResolveFeedDescription(node, documents);
-        var authorName = ResolveAuthorName(node, participants);
+            : ResolveFeedDescription(
+                node,
+                documents
+            );
+        var authorName = ResolveAuthorName(
+            node,
+            participants
+        );
         var subNodeSummary =
-            ResolveSubNodeSummary(node, nodes, nodeTypes);
+            ResolveSubNodeSummary(
+                node,
+                nodes,
+                nodeTypes
+            );
 
         Console.WriteLine();
-        WriteWrapped($"{number}. {typeName} · ",
-            visibility.IsHidden ? visibility.Notice : node.Title.Value);
+        WriteWrapped(
+            $"{number}. {typeName} · ",
+            visibility.IsHidden ? visibility.Notice : node.Title.Value
+        );
         Console.WriteLine();
-        WriteBreadcrumb(ResolveBreadcrumb(node, nodes, nodeTypes, moderation));
+        WriteBreadcrumb(ResolveBreadcrumb(
+            node,
+            nodes,
+            nodeTypes,
+            moderation
+        ));
         Console.WriteLine($"   By {authorName} · {node.Status}" +
             (includeCreatedDate ? $" · Created {node.CreatedAt:yyyy-MM-dd}" : string.Empty));
         Console.WriteLine();
-        WriteWrapped("   ", description);
+        WriteWrapped(
+            "   ",
+            description
+        );
         Console.WriteLine();
         Console.WriteLine($"   Importance: {FormatVoteCount(voteCount)} votes · " +
             $"avg {FormatAverageVote(averageVote)} · " +
             $"my rating {FormatCurrentParticipantVote(currentParticipantVote)}");
-        WriteWrapped("   Sub-nodes: ", subNodeSummary);
-        WriteWrapped("   Reactions: ", ResolveTags(node, nodeTags, tagDefinitions, votes));
-        WriteWrapped("   Communities: ", ResolveCommunities(node, communities, communityNodes));
-        Console.WriteLine($"   Comments: {ResolveCommentCount(node, comments)}");
+        WriteWrapped(
+            "   Sub-nodes: ",
+            subNodeSummary
+        );
+        WriteWrapped(
+            "   Reactions: ",
+            ResolveTags(
+                node,
+                nodeTags,
+                tagDefinitions,
+                votes
+            )
+        );
+        WriteWrapped(
+            "   Communities: ",
+            ResolveCommunities(
+                node,
+                communities,
+                communityNodes
+            )
+        );
+        Console.WriteLine($"   Comments: {ResolveCommentCount(
+            node,
+            comments
+        )}");
     }
 
     /// <summary>Writes details to the console display.</summary>
@@ -109,27 +157,62 @@ public static class NodeDisplay
         int? currentParticipantVote = null,
         IReadOnlyDictionary<NodeId, NodeVoteSummary>? childVoteSummaries = null,
         ModerationService? moderation = null,
-        bool showOriginalContent = false)
+        bool showOriginalContent = false
+    )
     {
         var visibility = moderation?.Visibility(node.Id.Value) ?? ModerationVisibility.Visible;
         var hidden = visibility.IsHidden && !showOriginalContent;
         var description = hidden ? visibility.Notice : showOriginalContent
-            ? ResolveDescription(node, documents, includeBlockDetails: true)
-            : ResolveFeedDescription(node, documents);
-        var authorName = ResolveAuthorName(node, participants);
+            ? ResolveDescription(
+                node,
+                documents,
+                includeBlockDetails: true
+            )
+            : ResolveFeedDescription(
+                node,
+                documents
+            );
+        var authorName = ResolveAuthorName(
+            node,
+            participants
+        );
 
         Console.WriteLine();
         Console.WriteLine("ATLAS NODE");
         Console.WriteLine();
-        WriteWrapped("  ", $"{ResolveTypeName(node, nodeTypes)} · {(hidden ? visibility.Notice : node.Title.Value)}");
+        WriteWrapped(
+            "  ",
+            $"{ResolveTypeName(
+                node,
+                nodeTypes
+            )} · {(hidden ? visibility.Notice : node.Title.Value)}"
+        );
         Console.WriteLine();
-        WriteBreadcrumb(ResolveBreadcrumb(node, nodes, nodeTypes, moderation), indent: 2);
+        WriteBreadcrumb(
+            ResolveBreadcrumb(
+                node,
+                nodes,
+                nodeTypes,
+                moderation
+            ),
+            indent: 2
+        );
         Console.WriteLine($"  By {authorName} · {node.Status} · Created {node.CreatedAt:yyyy-MM-dd} · Updated {node.UpdatedAt:yyyy-MM-dd}");
         Console.WriteLine();
-        WriteWrapped("  ", description);
+        WriteWrapped(
+            "  ",
+            description
+        );
         Console.WriteLine();
         Console.WriteLine($"  Importance: {FormatVoteCount(voteCount)} votes · avg {FormatAverageVote(averageVote)} · my rating {FormatCurrentParticipantVote(currentParticipantVote)}");
-        Console.WriteLine($"  Communities: {ResolveCommunities(node, communities, communityNodes)} · Comments: {ResolveCommentCount(node, comments)}");
+        Console.WriteLine($"  Communities: {ResolveCommunities(
+            node,
+            communities,
+            communityNodes
+        )} · Comments: {ResolveCommentCount(
+            node,
+            comments
+        )}");
         Console.WriteLine($"  Node ID: {node.Id}");
 
         ReactionDisplay.WriteDetails(
@@ -137,7 +220,8 @@ public static class NodeDisplay
             nodeTags,
             tagDefinitions,
             votes,
-            votingParticipantId);
+            votingParticipantId
+        );
 
         Console.WriteLine();
         Console.WriteLine("SUB-NODES");
@@ -153,16 +237,28 @@ public static class NodeDisplay
             votes,
             comments,
             childVoteSummaries,
-            moderation);
+            moderation
+        );
     }
 
-    private static string ResolveCommentCount(Node node, ICommentRepository? comments) =>
+    private static string ResolveCommentCount(
+        Node node,
+        ICommentRepository? comments
+    ) =>
         comments is null ? "—" : comments.GetByTarget(CommentTarget.Node(node.Id.Value)).Count.ToString();
 
-    private static string ResolveCommunities(Node node, ICommunityRepository? communities, ICommunityNodeRepository? communityNodes)
+    private static string ResolveCommunities(
+        Node node,
+        ICommunityRepository? communities,
+        ICommunityNodeRepository? communityNodes
+    )
     {
         if (communities is null || communityNodes is null) return "None";
-        var names = CommunityDisplay.NamesForNode(node.Id.Value, communityNodes, communities);
+        var names = CommunityDisplay.NamesForNode(
+            node.Id.Value,
+            communityNodes,
+            communities
+        );
         return string.IsNullOrWhiteSpace(names) ? "None" : names;
     }
 
@@ -178,9 +274,13 @@ public static class NodeDisplay
         IVoteRepository votes,
         ICommentRepository? comments,
         IReadOnlyDictionary<NodeId, NodeVoteSummary>? childVoteSummaries,
-        ModerationService? moderation)
+        ModerationService? moderation
+    )
     {
-        var children = FindChildren(node, nodes);
+        var children = FindChildren(
+            node,
+            nodes
+        );
         var typeIds = node.RequestedSubNodeTypes
             .Select(request => request.TypeId)
             .Concat(children.Select(child => child.TypeId))
@@ -200,9 +300,10 @@ public static class NodeDisplay
                 .Where(child => child.TypeId == typeId)
                 .ToList();
             var heading = FormatTypeCount(
-                    typeName,
-                    matchingChildren.Count,
-                    autoPluralize)
+                typeName,
+                matchingChildren.Count,
+                autoPluralize
+            )
                 .ToUpperInvariant();
 
             Console.WriteLine($"  {heading}");
@@ -210,7 +311,10 @@ public static class NodeDisplay
             if (matchingChildren.Count == 0)
             {
                 Console.WriteLine(
-                    $"    No {PluralizeTypeName(typeName, autoPluralize)} " +
+                    $"    No {PluralizeTypeName(
+                        typeName,
+                        autoPluralize
+                    )} " +
                     "have been added yet.");
                 continue;
             }
@@ -223,12 +327,15 @@ public static class NodeDisplay
                 {
                     childVoteSummaries.TryGetValue(
                         child.Id,
-                        out voteSummary);
+                        out voteSummary
+                    );
                 }
 
                 var childVisibility = moderation?.Visibility(child.Id.Value) ?? ModerationVisibility.Visible;
-                WriteWrapped("    > ",
-                    childVisibility.IsHidden ? childVisibility.Notice : child.Title.Value);
+                WriteWrapped(
+                    "    > ",
+                    childVisibility.IsHidden ? childVisibility.Notice : child.Title.Value
+                );
                 Console.WriteLine($"       {FormatVoteCount(voteSummary?.VoteCount)} votes · avg {FormatAverageVote(voteSummary?.AverageVote)}");
             }
         }
@@ -244,9 +351,13 @@ public static class NodeDisplay
     private static string ResolveSubNodeSummary(
         Node node,
         INodeRepository nodes,
-        INodeTypeRepository nodeTypes)
+        INodeTypeRepository nodeTypes
+    )
     {
-        var children = FindChildren(node, nodes);
+        var children = FindChildren(
+            node,
+            nodes
+        );
         var typeIds = node.RequestedSubNodeTypes
             .Select(request => request.TypeId)
             .Concat(children.Select(child => child.TypeId))
@@ -273,14 +384,17 @@ public static class NodeDisplay
                 return FormatTypeCount(
                     name,
                     count,
-                    nodeType?.AutoPluralize ?? true);
-            }));
+                    nodeType?.AutoPluralize ?? true
+                );
+            })
+        );
     }
 
     /// <summary>Finds nodes that directly reference the selected node as a parent.</summary>
     private static List<Node> FindChildren(
         Node node,
-        INodeRepository nodes)
+        INodeRepository nodes
+    )
     {
         return nodes
             .GetChildren(node.Id)
@@ -293,7 +407,8 @@ public static class NodeDisplay
     private static string ResolveParentSummary(
         Node node,
         INodeRepository nodes,
-        ModerationService? moderation)
+        ModerationService? moderation
+    )
     {
         if (node.ParentNodeIds.Count == 0)
         {
@@ -306,14 +421,16 @@ public static class NodeDisplay
                 (moderation?.Visibility(parentId.Value).IsHidden == true
                     ? moderation.Visibility(parentId.Value).Notice
                     : nodes.GetById(parentId)?.Title.Value)
-                ?? $"Unknown ({parentId})"));
+                ?? $"Unknown ({parentId})")
+        );
     }
 
     private static string ResolveBreadcrumb(
         Node node,
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
-        ModerationService? moderation)
+        ModerationService? moderation
+    )
     {
         if (node.ParentNodeIds.Count == 0)
             return "Root node";
@@ -321,17 +438,27 @@ public static class NodeDisplay
         string Segment(Node item)
         {
             var visibility = moderation?.Visibility(item.Id.Value) ?? ModerationVisibility.Visible;
-            return $"{ResolveTypeName(item, nodeTypes)} · " +
+            return $"{ResolveTypeName(
+                item,
+                nodeTypes
+            )} · " +
                 (visibility.IsHidden ? visibility.Notice : item.Title.Value);
         }
 
-        IEnumerable<string> Paths(Node current, HashSet<NodeId> visited)
+        IEnumerable<string> Paths(
+            Node current,
+            HashSet<NodeId> visited
+        )
         {
             if (!visited.Add(current.Id))
-                return new[] { "[Circular parent link]" };
+                return new[] {
+                    "[Circular parent link]"
+                };
 
             if (current.ParentNodeIds.Count == 0)
-                return new[] { Segment(current) };
+                return new[] {
+                    Segment(current)
+                };
 
             var paths = new List<string>();
             foreach (var parentId in current.ParentNodeIds)
@@ -343,7 +470,10 @@ public static class NodeDisplay
                     continue;
                 }
 
-                paths.AddRange(Paths(parent, new HashSet<NodeId>(visited))
+                paths.AddRange(Paths(
+                    parent,
+                    new HashSet<NodeId>(visited)
+                )
                     .Select(path => $"{path} → {Segment(current)}"));
             }
 
@@ -354,25 +484,56 @@ public static class NodeDisplay
         {
             var parent = nodes.GetById(parentId);
             return parent is null
-                ? new[] { $"Unknown ({parentId})" }
-                : Paths(parent, new HashSet<NodeId> { node.Id });
+                ? new[] {
+                    $"Unknown ({parentId})"
+                }
+                : Paths(
+                    parent,
+                    new HashSet<NodeId> {
+                        node.Id
+                    }
+                );
         });
 
-        return string.Join(" | ", ancestorPaths);
+        return string.Join(
+            " | ",
+            ancestorPaths
+        );
     }
 
-    private static void WriteBreadcrumb(string breadcrumb, int indent = 3)
+    private static void WriteBreadcrumb(
+        string breadcrumb,
+        int indent = 3
+    )
     {
-        var pathPrefix = new string(' ', indent) + "Path: ";
-        var continuation = new string(' ', pathPrefix.Length);
-        var paths = breadcrumb.Split(" | ", StringSplitOptions.None);
+        var pathPrefix = new string(
+            ' ',
+            indent
+        ) + "Path: ";
+        var continuation = new string(
+            ' ',
+            pathPrefix.Length
+        );
+        var paths = breadcrumb.Split(
+            " | ",
+            StringSplitOptions.None
+        );
         for (var pathIndex = 0; pathIndex < paths.Length; pathIndex++)
         {
             if (pathIndex > 0)
-                Console.WriteLine(new string(' ', indent + 2) + "and");
-            var segments = paths[pathIndex].Split(" → ", StringSplitOptions.None);
+                Console.WriteLine(new string(
+                    ' ',
+                    indent + 2
+                ) + "and");
+            var segments = paths[pathIndex].Split(
+                " → ",
+                StringSplitOptions.None
+            );
             for (var depth = 0; depth < segments.Length; depth++)
-                WriteWrapped(pathIndex == 0 && depth == 0 ? pathPrefix : continuation, segments[depth]);
+                WriteWrapped(
+                    pathIndex == 0 && depth == 0 ? pathPrefix : continuation,
+                    segments[depth]
+                );
         }
     }
 
@@ -380,7 +541,8 @@ public static class NodeDisplay
     private static string ResolveDescription(
         Node node,
         IDocumentRepository documents,
-        bool includeBlockDetails)
+        bool includeBlockDetails
+    )
     {
         var document = documents.GetById(
             new DocumentId(node.DescriptionId.Value));
@@ -401,13 +563,20 @@ public static class NodeDisplay
         {
             return string.Join(
                 " | ",
-                blocks.Select((block, index) =>
-                    $"{index + 1}:{block.Kind}"));
+                blocks.Select((
+                    block,
+                    index
+                ) =>
+                    $"{index + 1}:{block.Kind}")
+            );
         }
 
         return string.Join(
             Environment.NewLine + Environment.NewLine,
-            blocks.Select((block, index) =>
+            blocks.Select((
+                block,
+                index
+            ) =>
                 $"BLOCK {index + 1} · {block.Kind.ToUpperInvariant()} · {block.Id}" +
                 Environment.NewLine +
                 (block switch
@@ -423,10 +592,14 @@ public static class NodeDisplay
                     ? $"Chart ID: {chart.ChartId}"
                     : $"Chart ID: {chart.ChartId}\nTitle: {chart.Title}",
                 _ => $"[{block.Kind}]"
-            })));
+            }))
+        );
     }
 
-    private static string ResolveFeedDescription(Node node, IDocumentRepository documents)
+    private static string ResolveFeedDescription(
+        Node node,
+        IDocumentRepository documents
+    )
     {
         var document = documents.GetById(new DocumentId(node.DescriptionId.Value));
         if (document is null)
@@ -436,7 +609,9 @@ public static class NodeDisplay
         if (blocks.Count == 0)
             return "No description has been provided.";
 
-        return string.Join("\n\n", blocks.Select(block => block switch
+        return string.Join(
+            "\n\n",
+            blocks.Select(block => block switch
         {
             MarkdownTextBlock text => text.Markdown,
             ImageBlock image => $"Image: {image.AltText} ({image.Url})",
@@ -445,17 +620,33 @@ public static class NodeDisplay
             PollReferenceBlock => "Poll",
             ChartReferenceBlock chart => $"Chart: {chart.Title}",
             _ => block.Kind
-        }));
+        })
+        );
     }
 
-    private static void WriteWrapped(string prefix, string value)
+    private static void WriteWrapped(
+        string prefix,
+        string value
+    )
     {
-        var continuation = new string(' ', prefix.Length);
-        var width = Math.Max(20, (Console.IsOutputRedirected ? 100 : Console.WindowWidth) - prefix.Length - 2);
-        foreach (var paragraph in value.Replace("\r\n", "\n").Split('\n'))
+        var continuation = new string(
+            ' ',
+            prefix.Length
+        );
+        var width = Math.Max(
+            20,
+            (Console.IsOutputRedirected ? 100 : Console.WindowWidth) - prefix.Length - 2
+        );
+        foreach (var paragraph in value.Replace(
+            "\r\n",
+            "\n"
+        ).Split('\n'))
         {
             var line = prefix;
-            foreach (var word in paragraph.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            foreach (var word in paragraph.Split(
+                ' ',
+                StringSplitOptions.RemoveEmptyEntries
+            ))
             {
                 if (line.Length > prefix.Length && line.Length + word.Length + 1 > prefix.Length + width)
                 {
@@ -472,7 +663,8 @@ public static class NodeDisplay
     /// <summary>Resolves author name for the current console view.</summary>
     private static string ResolveAuthorName(
         Node node,
-        IParticipantRepository participants)
+        IParticipantRepository participants
+    )
     {
         return participants.GetById(
                    new ParticipantId(node.AuthorId.Value))
@@ -483,7 +675,8 @@ public static class NodeDisplay
     /// <summary>Resolves type name for the current console view.</summary>
     private static string ResolveTypeName(
         Node node,
-        INodeTypeRepository nodeTypes)
+        INodeTypeRepository nodeTypes
+    )
     {
         return nodeTypes.GetById(node.TypeId)?.Name
             ?? $"Unknown ({node.TypeId})";
@@ -494,11 +687,17 @@ public static class NodeDisplay
         Node node,
         INodeReactionRepository? nodeTags,
         IReactionDefinitionRepository? tagDefinitions,
-        IVoteRepository? votes)
+        IVoteRepository? votes
+    )
     {
         return nodeTags is null || tagDefinitions is null || votes is null
             ? "—"
-            : ReactionDisplay.FormatCompact(node, nodeTags, tagDefinitions, votes);
+            : ReactionDisplay.FormatCompact(
+                node,
+                nodeTags,
+                tagDefinitions,
+                votes
+            );
     }
 
 
@@ -506,13 +705,15 @@ public static class NodeDisplay
     public static string FormatTypeCount(
         string singularTypeName,
         int count,
-        bool autoPluralize)
+        bool autoPluralize
+    )
     {
         var displayedName = count == 1
             ? singularTypeName
             : PluralizeTypeName(
                 singularTypeName,
-                autoPluralize);
+                autoPluralize
+            );
 
         return $"{count} {displayedName}";
     }
@@ -520,7 +721,8 @@ public static class NodeDisplay
     /// <summary>Pluralizes a node-type name for count-aware console output.</summary>
     private static string PluralizeTypeName(
         string singularTypeName,
-        bool autoPluralize)
+        bool autoPluralize
+    )
     {
         if (!autoPluralize)
         {
@@ -533,8 +735,9 @@ public static class NodeDisplay
         var finalWord = singularTypeName[finalWordStart..];
 
         if (finalWord.EndsWith(
-                "y",
-                StringComparison.OrdinalIgnoreCase) &&
+            "y",
+            StringComparison.OrdinalIgnoreCase
+        ) &&
             finalWord.Length > 1 &&
             !"aeiou".Contains(
                 char.ToLowerInvariant(finalWord[^2])))
@@ -543,20 +746,25 @@ public static class NodeDisplay
         }
 
         if (finalWord.EndsWith(
-                "s",
-                StringComparison.OrdinalIgnoreCase) ||
+            "s",
+            StringComparison.OrdinalIgnoreCase
+        ) ||
             finalWord.EndsWith(
                 "x",
-                StringComparison.OrdinalIgnoreCase) ||
+                StringComparison.OrdinalIgnoreCase
+            ) ||
             finalWord.EndsWith(
                 "z",
-                StringComparison.OrdinalIgnoreCase) ||
+                StringComparison.OrdinalIgnoreCase
+            ) ||
             finalWord.EndsWith(
                 "ch",
-                StringComparison.OrdinalIgnoreCase) ||
+                StringComparison.OrdinalIgnoreCase
+            ) ||
             finalWord.EndsWith(
                 "sh",
-                StringComparison.OrdinalIgnoreCase))
+                StringComparison.OrdinalIgnoreCase
+            ))
         {
             return prefix + finalWord + "es";
         }
@@ -565,7 +773,10 @@ public static class NodeDisplay
     }
 
     /// <summary>Shortens text to the requested display width.</summary>
-    private static string Truncate(string value, int maximumLength)
+    private static string Truncate(
+        string value,
+        int maximumLength
+    )
     {
         if (value.Length <= maximumLength)
         {
@@ -596,8 +807,9 @@ public static class NodeDisplay
     }
 
     private static string Center(
-    string value,
-    int width)
+        string value,
+        int width
+    )
     {
         if (value.Length >= width)
         {
@@ -608,9 +820,15 @@ public static class NodeDisplay
         var leftPadding = totalPadding / 2;
         var rightPadding = totalPadding - leftPadding;
 
-        return new string(' ', leftPadding) +
+        return new string(
+            ' ',
+            leftPadding
+        ) +
                value +
-               new string(' ', rightPadding);
+               new string(
+                   ' ',
+                   rightPadding
+               );
     }
 
     /// <summary>Writes the voter-list table heading.</summary>
@@ -618,7 +836,10 @@ public static class NodeDisplay
     {
         Console.WriteLine(
             $"{"#",3}  " +
-            $"{Center("Vote", 6)}  " +
+            $"{Center(
+                "Vote",
+                6
+            )}  " +
             "Participant");
 
         Console.WriteLine(
@@ -626,18 +847,23 @@ public static class NodeDisplay
                 '-',
                 3 + 2 +
                 6 + 2 +
-                30));
+                30
+            ));
     }
 
     /// <summary>Writes one voter-list table row.</summary>
     public static void WriteVoterListRow(
         int number,
         string participantName,
-        int rating)
+        int rating
+    )
     {
         Console.WriteLine(
             $"{number,3}  " +
-            $"{Center(rating.ToString(), 6)}  " +
+            $"{Center(
+                rating.ToString(),
+                6
+            )}  " +
             participantName);
     }
 }

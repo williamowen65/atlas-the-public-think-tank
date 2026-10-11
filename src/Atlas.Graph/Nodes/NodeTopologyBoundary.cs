@@ -9,9 +9,21 @@ public interface INodeTopologyBoundary
 /// <summary>Coordinates topology checks and writes; other node edits use the ordinary operation boundary.</summary>
 public static class NodeTopologyBoundary
 {
-    public static T Execute<T>(INodeRepository nodes, Func<T> operation) =>
-        nodes is INodeTopologyBoundary boundary ? boundary.ExecuteTopology(operation) : OperationBoundary.Execute(nodes, operation);
+    public static T Execute<T>(
+        INodeRepository nodes,
+        Func<T> operation
+    ) =>
+        nodes is INodeTopologyBoundary boundary ? boundary.ExecuteTopology(operation) : OperationBoundary.Execute(
+            nodes,
+            operation
+        );
 
-    public static void Execute(INodeRepository nodes, Action operation) =>
-        Execute(nodes, () => { operation(); return true; });
+    public static void Execute(
+        INodeRepository nodes,
+        Action operation
+    ) =>
+        Execute(
+            nodes,
+            () => { operation(); return true; }
+        );
 }

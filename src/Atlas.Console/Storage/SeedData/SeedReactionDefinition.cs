@@ -17,8 +17,14 @@ internal static partial class DemoData
                 NormalizedText = "PROMISING",
                 CreatedByParticipantId = DemoParticipants.User01Id,
                 IsSuppressed = false,
-                CreatedAt = DateTimeOffset.Parse("2026-08-20T17:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-08-20T17:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-08-20T17:00:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-08-20T17:00:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new ReactionDefinitionRow
             {
@@ -29,8 +35,14 @@ internal static partial class DemoData
                 NormalizedText = "URGENT",
                 CreatedByParticipantId = DemoParticipants.User01Id,
                 IsSuppressed = false,
-                CreatedAt = DateTimeOffset.Parse("2026-08-20T17:02:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-08-20T17:02:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-08-20T17:02:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-08-20T17:02:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new ReactionDefinitionRow
             {
@@ -41,8 +53,14 @@ internal static partial class DemoData
                 NormalizedText = "CONCERNING",
                 CreatedByParticipantId = DemoParticipants.User01Id,
                 IsSuppressed = false,
-                CreatedAt = DateTimeOffset.Parse("2026-08-20T17:03:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-08-20T17:03:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-08-20T17:03:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-08-20T17:03:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new ReactionDefinitionRow
             {
@@ -53,8 +71,14 @@ internal static partial class DemoData
                 NormalizedText = "HOPEFUL",
                 CreatedByParticipantId = DemoParticipants.User01Id,
                 IsSuppressed = false,
-                CreatedAt = DateTimeOffset.Parse("2026-08-20T17:04:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-08-20T17:04:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-08-20T17:04:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-08-20T17:04:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new ReactionDefinitionRow
             {
@@ -65,8 +89,14 @@ internal static partial class DemoData
                 NormalizedText = "INNOVATIVE",
                 CreatedByParticipantId = DemoParticipants.User01Id,
                 IsSuppressed = false,
-                CreatedAt = DateTimeOffset.Parse("2026-08-20T17:05:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-08-20T17:05:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-08-20T17:05:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-08-20T17:05:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new ReactionDefinitionRow
             {
@@ -77,8 +107,14 @@ internal static partial class DemoData
                 NormalizedText = "PRACTICAL",
                 CreatedByParticipantId = DemoParticipants.User01Id,
                 IsSuppressed = false,
-                CreatedAt = DateTimeOffset.Parse("2026-08-20T17:06:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-08-20T17:06:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-08-20T17:06:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-08-20T17:06:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new ReactionDefinitionRow
             {
@@ -89,8 +125,14 @@ internal static partial class DemoData
                 NormalizedText = "AMBITIOUS",
                 CreatedByParticipantId = DemoParticipants.User01Id,
                 IsSuppressed = false,
-                CreatedAt = DateTimeOffset.Parse("2026-08-20T17:07:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-08-20T17:07:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-08-20T17:07:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-08-20T17:07:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new ReactionDefinitionRow
             {
@@ -101,8 +143,14 @@ internal static partial class DemoData
                 NormalizedText = "OVERLOOKED",
                 CreatedByParticipantId = DemoParticipants.User01Id,
                 IsSuppressed = false,
-                CreatedAt = DateTimeOffset.Parse("2026-08-20T17:08:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-08-20T17:08:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-08-20T17:08:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-08-20T17:08:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new ReactionDefinitionRow
             {
@@ -113,8 +161,14 @@ internal static partial class DemoData
                 NormalizedText = "UNCERTAIN",
                 CreatedByParticipantId = DemoParticipants.User01Id,
                 IsSuppressed = false,
-                CreatedAt = DateTimeOffset.Parse("2026-08-20T17:09:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-08-20T17:09:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-08-20T17:09:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-08-20T17:09:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new ReactionDefinitionRow
             {
@@ -125,8 +179,14 @@ internal static partial class DemoData
                 NormalizedText = "INSPIRING",
                 CreatedByParticipantId = DemoParticipants.User01Id,
                 IsSuppressed = false,
-                CreatedAt = DateTimeOffset.Parse("2026-08-20T17:10:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-08-20T17:10:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-08-20T17:10:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-08-20T17:10:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new ReactionDefinitionRow
             {
@@ -137,8 +197,14 @@ internal static partial class DemoData
                 NormalizedText = "EVIDENCE-NEEDED",
                 CreatedByParticipantId = DemoParticipants.User01Id,
                 IsSuppressed = false,
-                CreatedAt = DateTimeOffset.Parse("2026-08-20T17:11:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-08-20T17:11:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-08-20T17:11:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-08-20T17:11:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
         });
     }

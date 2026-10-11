@@ -15,7 +15,8 @@ public interface INodeRepository
     /// <summary>Loads Nodes eligible to be considered as a new parent.</summary>
     IReadOnlyCollection<Node> GetParentCandidates(
         NodeId childId,
-        IReadOnlyCollection<NodeId> existingParentIds);
+        IReadOnlyCollection<NodeId> existingParentIds
+    );
 
     /// <summary>Persists the current domain-object state.</summary>
     void Save(Node node);

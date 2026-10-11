@@ -9,7 +9,10 @@ public sealed record BlockId
     {
         if (value == Guid.Empty)
         {
-            throw new ArgumentException("A block ID is required.", nameof(value));
+            throw new ArgumentException(
+                "A block ID is required.",
+                nameof(value)
+            );
         }
 
         Value = value;

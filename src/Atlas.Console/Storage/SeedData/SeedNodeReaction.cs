@@ -16,13 +16,19 @@ internal static partial class DemoData
                 AppliedByParticipantId = DemoParticipants.User02Id,
                 LifecycleState = "Active",
                 Disposition = "Community",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:20.490Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
                 RemovedAt = null,
                 AuditHistory = [ new ReactionAuditRow
                 {
                     Action = "Applied",
                     ActorParticipantId = DemoParticipants.User02Id,
-                    OccurredAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                    OccurredAt = DateTimeOffset.Parse(
+                        "2026-09-28T17:58:20.490Z",
+                        System.Globalization.CultureInfo.InvariantCulture
+                    ),
                     LifecycleState = "Active",
                     Disposition = "Community",
                     RelatedNodeReactionId = null,
@@ -36,13 +42,19 @@ internal static partial class DemoData
                 AppliedByParticipantId = DemoParticipants.User03Id,
                 LifecycleState = "Active",
                 Disposition = "Community",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:20.490Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
                 RemovedAt = null,
                 AuditHistory = [ new ReactionAuditRow
                 {
                     Action = "Applied",
                     ActorParticipantId = DemoParticipants.User03Id,
-                    OccurredAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                    OccurredAt = DateTimeOffset.Parse(
+                        "2026-09-28T17:58:20.490Z",
+                        System.Globalization.CultureInfo.InvariantCulture
+                    ),
                     LifecycleState = "Active",
                     Disposition = "Community",
                     RelatedNodeReactionId = null,
@@ -56,13 +68,19 @@ internal static partial class DemoData
                 AppliedByParticipantId = DemoParticipants.User01Id,
                 LifecycleState = "Active",
                 Disposition = "Community",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:20.490Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
                 RemovedAt = null,
                 AuditHistory = [ new ReactionAuditRow
                 {
                     Action = "Applied",
                     ActorParticipantId = DemoParticipants.User01Id,
-                    OccurredAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                    OccurredAt = DateTimeOffset.Parse(
+                        "2026-09-28T17:58:20.490Z",
+                        System.Globalization.CultureInfo.InvariantCulture
+                    ),
                     LifecycleState = "Active",
                     Disposition = "Community",
                     RelatedNodeReactionId = null,
@@ -76,13 +94,19 @@ internal static partial class DemoData
                 AppliedByParticipantId = DemoParticipants.User04Id,
                 LifecycleState = "Active",
                 Disposition = "Community",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:20.490Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
                 RemovedAt = null,
                 AuditHistory = [ new ReactionAuditRow
                 {
                     Action = "Applied",
                     ActorParticipantId = DemoParticipants.User04Id,
-                    OccurredAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                    OccurredAt = DateTimeOffset.Parse(
+                        "2026-09-28T17:58:20.490Z",
+                        System.Globalization.CultureInfo.InvariantCulture
+                    ),
                     LifecycleState = "Active",
                     Disposition = "Community",
                     RelatedNodeReactionId = null,
@@ -96,13 +120,19 @@ internal static partial class DemoData
                 AppliedByParticipantId = DemoParticipants.User02Id,
                 LifecycleState = "Active",
                 Disposition = "Community",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:20.490Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
                 RemovedAt = null,
                 AuditHistory = [ new ReactionAuditRow
                 {
                     Action = "Applied",
                     ActorParticipantId = DemoParticipants.User02Id,
-                    OccurredAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                    OccurredAt = DateTimeOffset.Parse(
+                        "2026-09-28T17:58:20.490Z",
+                        System.Globalization.CultureInfo.InvariantCulture
+                    ),
                     LifecycleState = "Active",
                     Disposition = "Community",
                     RelatedNodeReactionId = null,
@@ -116,13 +146,19 @@ internal static partial class DemoData
                 AppliedByParticipantId = DemoParticipants.User01Id,
                 LifecycleState = "Active",
                 Disposition = "Community",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:20.490Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
                 RemovedAt = null,
                 AuditHistory = [ new ReactionAuditRow
                 {
                     Action = "Applied",
                     ActorParticipantId = DemoParticipants.User01Id,
-                    OccurredAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                    OccurredAt = DateTimeOffset.Parse(
+                        "2026-09-28T17:58:20.490Z",
+                        System.Globalization.CultureInfo.InvariantCulture
+                    ),
                     LifecycleState = "Active",
                     Disposition = "Community",
                     RelatedNodeReactionId = null,
@@ -136,13 +172,19 @@ internal static partial class DemoData
                 AppliedByParticipantId = DemoParticipants.User03Id,
                 LifecycleState = "Active",
                 Disposition = "Community",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:20.490Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
                 RemovedAt = null,
                 AuditHistory = [ new ReactionAuditRow
                 {
                     Action = "Applied",
                     ActorParticipantId = DemoParticipants.User03Id,
-                    OccurredAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                    OccurredAt = DateTimeOffset.Parse(
+                        "2026-09-28T17:58:20.490Z",
+                        System.Globalization.CultureInfo.InvariantCulture
+                    ),
                     LifecycleState = "Active",
                     Disposition = "Community",
                     RelatedNodeReactionId = null,
@@ -156,13 +198,19 @@ internal static partial class DemoData
                 AppliedByParticipantId = DemoParticipants.User02Id,
                 LifecycleState = "Active",
                 Disposition = "Community",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:20.490Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
                 RemovedAt = null,
                 AuditHistory = [ new ReactionAuditRow
                 {
                     Action = "Applied",
                     ActorParticipantId = DemoParticipants.User02Id,
-                    OccurredAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                    OccurredAt = DateTimeOffset.Parse(
+                        "2026-09-28T17:58:20.490Z",
+                        System.Globalization.CultureInfo.InvariantCulture
+                    ),
                     LifecycleState = "Active",
                     Disposition = "Community",
                     RelatedNodeReactionId = null,
@@ -176,13 +224,19 @@ internal static partial class DemoData
                 AppliedByParticipantId = DemoParticipants.User03Id,
                 LifecycleState = "Active",
                 Disposition = "Community",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:20.490Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
                 RemovedAt = null,
                 AuditHistory = [ new ReactionAuditRow
                 {
                     Action = "Applied",
                     ActorParticipantId = DemoParticipants.User03Id,
-                    OccurredAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                    OccurredAt = DateTimeOffset.Parse(
+                        "2026-09-28T17:58:20.490Z",
+                        System.Globalization.CultureInfo.InvariantCulture
+                    ),
                     LifecycleState = "Active",
                     Disposition = "Community",
                     RelatedNodeReactionId = null,
@@ -196,13 +250,19 @@ internal static partial class DemoData
                 AppliedByParticipantId = DemoParticipants.User01Id,
                 LifecycleState = "Active",
                 Disposition = "Community",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:20.490Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
                 RemovedAt = null,
                 AuditHistory = [ new ReactionAuditRow
                 {
                     Action = "Applied",
                     ActorParticipantId = DemoParticipants.User01Id,
-                    OccurredAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                    OccurredAt = DateTimeOffset.Parse(
+                        "2026-09-28T17:58:20.490Z",
+                        System.Globalization.CultureInfo.InvariantCulture
+                    ),
                     LifecycleState = "Active",
                     Disposition = "Community",
                     RelatedNodeReactionId = null,
@@ -216,13 +276,19 @@ internal static partial class DemoData
                 AppliedByParticipantId = DemoParticipants.User02Id,
                 LifecycleState = "Active",
                 Disposition = "Community",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:20.490Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
                 RemovedAt = null,
                 AuditHistory = [ new ReactionAuditRow
                 {
                     Action = "Applied",
                     ActorParticipantId = DemoParticipants.User02Id,
-                    OccurredAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                    OccurredAt = DateTimeOffset.Parse(
+                        "2026-09-28T17:58:20.490Z",
+                        System.Globalization.CultureInfo.InvariantCulture
+                    ),
                     LifecycleState = "Active",
                     Disposition = "Community",
                     RelatedNodeReactionId = null,
@@ -236,13 +302,19 @@ internal static partial class DemoData
                 AppliedByParticipantId = DemoParticipants.User03Id,
                 LifecycleState = "Active",
                 Disposition = "Community",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:20.490Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
                 RemovedAt = null,
                 AuditHistory = [ new ReactionAuditRow
                 {
                     Action = "Applied",
                     ActorParticipantId = DemoParticipants.User03Id,
-                    OccurredAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                    OccurredAt = DateTimeOffset.Parse(
+                        "2026-09-28T17:58:20.490Z",
+                        System.Globalization.CultureInfo.InvariantCulture
+                    ),
                     LifecycleState = "Active",
                     Disposition = "Community",
                     RelatedNodeReactionId = null,
@@ -256,13 +328,19 @@ internal static partial class DemoData
                 AppliedByParticipantId = DemoParticipants.User02Id,
                 LifecycleState = "Active",
                 Disposition = "Community",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:58:20.490Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
                 RemovedAt = null,
                 AuditHistory = [ new ReactionAuditRow
                 {
                     Action = "Applied",
                     ActorParticipantId = DemoParticipants.User02Id,
-                    OccurredAt = DateTimeOffset.Parse("2026-09-28T17:58:20.490Z", System.Globalization.CultureInfo.InvariantCulture),
+                    OccurredAt = DateTimeOffset.Parse(
+                        "2026-09-28T17:58:20.490Z",
+                        System.Globalization.CultureInfo.InvariantCulture
+                    ),
                     LifecycleState = "Active",
                     Disposition = "Community",
                     RelatedNodeReactionId = null,

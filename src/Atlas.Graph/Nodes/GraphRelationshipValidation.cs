@@ -3,8 +3,11 @@ namespace Atlas.Graph.Nodes;
 /// <summary>Graph owns ancestry rules; the caller supplies repository facts inside its write transaction.</summary>
 public static class GraphRelationshipValidation
 {
-    public static void EnsureAcyclic(NodeId childId, IEnumerable<NodeId> parents,
-        Func<NodeId, IReadOnlyCollection<NodeId>?> getParents)
+    public static void EnsureAcyclic(
+        NodeId childId,
+        IEnumerable<NodeId> parents,
+        Func<NodeId, IReadOnlyCollection<NodeId>?> getParents
+    )
     {
         if (childId.Value == Guid.Empty) throw new ArgumentException("A child ID is required.");
         ArgumentNullException.ThrowIfNull(parents);

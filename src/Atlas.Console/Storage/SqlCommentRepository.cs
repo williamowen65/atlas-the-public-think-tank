@@ -22,9 +22,19 @@ public sealed class SqlCommentRepository(Func<AtlasDataContext>? contextFactory 
         // Check cross-domain references before writing. Live comments require an active author
         // and an available Node; removed comments require existence only, so removal can be saved
         // after an author is deactivated or a Node becomes unavailable.
-        ReferenceValidation.Require(this, "Participant", comment.AuthorParticipantId, !comment.IsRemoved);
+        ReferenceValidation.Require(
+            this,
+            "Participant",
+            comment.AuthorParticipantId,
+            !comment.IsRemoved
+        );
         if (comment.Target.Kind != "Node") throw new ArgumentException("Only Node comment targets are supported.");
-        ReferenceValidation.Require(this, "Node", comment.Target.Id, !comment.IsRemoved);
+        ReferenceValidation.Require(
+            this,
+            "Node",
+            comment.Target.Id,
+            !comment.IsRemoved
+        );
 
         // Replies must point to an existing comment on the same target. Their creation time
         // cannot be earlier than the parent's; root comments skip this check.
@@ -37,9 +47,18 @@ public sealed class SqlCommentRepository(Func<AtlasDataContext>? contextFactory 
 
         // Copy domain values into the SQL row. SaveRow inserts or updates this comment
         // and flushes the write within the transaction; it does not commit an outer workflow.
-        SaveRow(new CommentRow { Id = comment.Id.Value, TargetKind = comment.Target.Kind,
-        TargetId = comment.Target.Id, ParentCommentId = comment.ParentCommentId?.Value, AuthorParticipantId = comment.AuthorParticipantId,
-        Body = comment.Body, Status = comment.Status.ToString(), CreatedAt = comment.CreatedAt, UpdatedAt = comment.UpdatedAt, RemovedAt = comment.RemovedAt });
+        SaveRow(new CommentRow {
+            Id = comment.Id.Value,
+            TargetKind = comment.Target.Kind,
+            TargetId = comment.Target.Id,
+            ParentCommentId = comment.ParentCommentId?.Value,
+            AuthorParticipantId = comment.AuthorParticipantId,
+            Body = comment.Body,
+            Status = comment.Status.ToString(),
+            CreatedAt = comment.CreatedAt,
+            UpdatedAt = comment.UpdatedAt,
+            RemovedAt = comment.RemovedAt
+        });
 
         // Execute requires a result; this internal value is not a persistence ID or response.
         // The owning boundary commits on success and rolls back if validation or saving throws.
@@ -48,7 +67,21 @@ public sealed class SqlCommentRepository(Func<AtlasDataContext>? contextFactory 
 
     // Reconstitution checks stored values against domain rules too. Convert nullable parent IDs
     // and the stored status text back to their domain types, preserving lifecycle timestamps.
-    private static Comment ToDomain(CommentRow row) => Comment.Reconstitute(new CommentId(row.Id), new CommentTarget(row.TargetKind, row.TargetId),
-        row.ParentCommentId.HasValue ? new CommentId(row.ParentCommentId.Value) : null, row.AuthorParticipantId, row.Body,
-        Enum.Parse<CommentStatus>(row.Status, true), row.CreatedAt, row.UpdatedAt, row.RemovedAt);
+    private static Comment ToDomain(CommentRow row) => Comment.Reconstitute(
+        new CommentId(row.Id),
+        new CommentTarget(
+            row.TargetKind,
+            row.TargetId
+        ),
+        row.ParentCommentId.HasValue ? new CommentId(row.ParentCommentId.Value) : null,
+        row.AuthorParticipantId,
+        row.Body,
+        Enum.Parse<CommentStatus>(
+            row.Status,
+            true
+        ),
+        row.CreatedAt,
+        row.UpdatedAt,
+        row.RemovedAt
+    );
 }

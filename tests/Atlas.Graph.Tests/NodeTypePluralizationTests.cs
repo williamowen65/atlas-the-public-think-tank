@@ -14,7 +14,8 @@ public class NodeTypePluralizationTests
             "Comment",
             "A response.",
             "participant-id",
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow
+        );
 
         Assert.IsTrue(nodeType.AutoPluralize);
     }
@@ -28,7 +29,8 @@ public class NodeTypePluralizationTests
             "Evidence challenging a claim.",
             "participant-id",
             DateTimeOffset.UtcNow,
-            autoPluralize: false);
+            autoPluralize: false
+        );
 
         Assert.IsFalse(nodeType.AutoPluralize);
     }
@@ -41,13 +43,15 @@ public class NodeTypePluralizationTests
             "Evidence",
             "Supporting information.",
             "participant-id",
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow
+        );
 
         nodeType.ChangeAutoPluralize(
             false,
             "participant-id",
             actorIsModerator: false,
-            changedAt: DateTimeOffset.UtcNow.AddMinutes(1));
+            changedAt: DateTimeOffset.UtcNow.AddMinutes(1)
+        );
 
         Assert.IsFalse(nodeType.AutoPluralize);
     }
@@ -60,13 +64,15 @@ public class NodeTypePluralizationTests
             "Comment",
             "A response.",
             "owner-id",
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow
+        );
 
         Assert.Throws<UnauthorizedAccessException>(
             () => nodeType.ChangeAutoPluralize(
                 false,
                 "different-participant",
                 actorIsModerator: false,
-                DateTimeOffset.UtcNow.AddMinutes(1)));
+                DateTimeOffset.UtcNow.AddMinutes(1)
+            ));
     }
 }

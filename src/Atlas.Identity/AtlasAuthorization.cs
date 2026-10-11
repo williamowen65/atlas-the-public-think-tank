@@ -16,11 +16,16 @@ public static class AtlasPolicies
 public sealed record AtlasRoleRequirement(params string[] Roles) : IAuthorizationRequirement;
 
 /// <summary>Uses current stored roles and profile eligibility rather than trusting stale role claims.</summary>
-public sealed class AtlasRoleHandler(AtlasAccounts accounts, AtlasDataContext database)
+public sealed class AtlasRoleHandler(
+    AtlasAccounts accounts,
+    AtlasDataContext database
+)
     : AuthorizationHandler<AtlasRoleRequirement>
 {
-    protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context,
-        AtlasRoleRequirement requirement)
+    protected override async Task HandleRequirementAsync(
+        AuthorizationHandlerContext context,
+        AtlasRoleRequirement requirement
+    )
     {
         var participant = await accounts.ResolveParticipantAsync(context.User);
         if (participant is null) return;

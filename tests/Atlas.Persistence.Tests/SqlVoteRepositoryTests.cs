@@ -23,7 +23,11 @@ public sealed class SqlVoteRepositoryTests
                     new ParticipantId(database.AddParticipant());
 
                 var originalVote =
-                    new Vote(target, participantId, 7);
+                    new Vote(
+                        target,
+                        participantId,
+                        7
+                    );
 
                 repository.Save(originalVote);
 
@@ -34,30 +38,36 @@ public sealed class SqlVoteRepositoryTests
 
                 Assert.AreEqual(
                     originalVote.Id,
-                    reloadedVote.Id);
+                    reloadedVote.Id
+                );
 
                 Assert.AreEqual(
                     originalVote.ParticipantId.Id,
-                    reloadedVote.ParticipantId.Id);
+                    reloadedVote.ParticipantId.Id
+                );
 
                 Assert.AreEqual(
                     originalVote.Target.Id,
-                    reloadedVote.Target.Id);
+                    reloadedVote.Target.Id
+                );
 
                 Assert.IsInstanceOfType<NodeVoteTarget>(
                     reloadedVote.Target);
 
                 Assert.AreEqual(
                     originalVote.Value.Value,
-                    reloadedVote.Value.Value);
+                    reloadedVote.Value.Value
+                );
 
                 Assert.AreEqual(
                     originalVote.CreatedAt,
-                    reloadedVote.CreatedAt);
+                    reloadedVote.CreatedAt
+                );
 
                 Assert.AreEqual(
                     originalVote.UpdatedAt,
-                    reloadedVote.UpdatedAt);
+                    reloadedVote.UpdatedAt
+                );
             
     }
     [TestMethod]
@@ -69,14 +79,18 @@ public sealed class SqlVoteRepositoryTests
                 var original = new Vote(
                     new NodeReactionVoteTarget(database.AddReaction()),
                     new ParticipantId(database.AddParticipant()),
-                    1);
+                    1
+                );
 
                 repository.Save(original);
                 var reloaded = repository.GetById(original.Id);
 
                 Assert.IsNotNull(reloaded);
                 Assert.IsInstanceOfType<NodeReactionVoteTarget>(reloaded.Target);
-                Assert.AreEqual(1, reloaded.Value.Value);
+                Assert.AreEqual(
+                    1,
+                    reloaded.Value.Value
+                );
             
     }
     [TestMethod]
@@ -94,7 +108,11 @@ public sealed class SqlVoteRepositoryTests
                     new SqlVoteRepository(database.Open);
 
                 var originalVote =
-                    new Vote(target, participantId, 7);
+                    new Vote(
+                        target,
+                        participantId,
+                        7
+                    );
 
                 originalRepository.Save(originalVote);
 
@@ -104,17 +122,20 @@ public sealed class SqlVoteRepositoryTests
                 var reloadedVote =
                     reloadedRepository.GetByParticipantAndTarget(
                         participantId,
-                        target);
+                        target
+                    );
 
                 Assert.IsNotNull(reloadedVote);
 
                 Assert.AreEqual(
                     originalVote.Id,
-                    reloadedVote.Id);
+                    reloadedVote.Id
+                );
 
                 Assert.AreEqual(
                     7,
-                    reloadedVote.Value.Value);
+                    reloadedVote.Value.Value
+                );
             
     }
     [TestMethod]
@@ -135,7 +156,8 @@ public sealed class SqlVoteRepositoryTests
                     new Vote(
                         target,
                         participantId,
-                        3);
+                        3
+                    );
 
                 repository.Save(originalVote);
 
@@ -144,7 +166,8 @@ public sealed class SqlVoteRepositoryTests
 
                 originalVote.ChangeValue(
                     9,
-                    originalVote.UpdatedAt.AddMinutes(1));
+                    originalVote.UpdatedAt.AddMinutes(1)
+                );
 
                 repository.Save(originalVote);
 
@@ -162,15 +185,18 @@ public sealed class SqlVoteRepositoryTests
 
                 Assert.AreEqual(
                     originalVote.Id,
-                    reloadedVote.Id);
+                    reloadedVote.Id
+                );
 
                 Assert.AreEqual(
                     originalCreatedAt,
-                    reloadedVote.CreatedAt);
+                    reloadedVote.CreatedAt
+                );
 
                 Assert.AreEqual(
                     9,
-                    reloadedVote.Value.Value);
+                    reloadedVote.Value.Value
+                );
 
                 Assert.IsTrue(
                     reloadedVote.UpdatedAt >
@@ -178,7 +204,8 @@ public sealed class SqlVoteRepositoryTests
 
                 Assert.HasCount(
                     1,
-                    reloadedRepository.GetTargetVotes(target));
+                    reloadedRepository.GetTargetVotes(target)
+                );
             
     }
     [TestMethod]
@@ -198,7 +225,8 @@ public sealed class SqlVoteRepositoryTests
                 var vote = new Vote(
                     target,
                     participantId,
-                    7);
+                    7
+                );
 
                 repository.Save(vote);
                 repository.Delete(vote.Id);
@@ -211,7 +239,8 @@ public sealed class SqlVoteRepositoryTests
 
                 Assert.HasCount(
                     0,
-                    reloadedRepository.GetTargetVotes(target));
+                    reloadedRepository.GetTargetVotes(target)
+                );
             
     }
 }
