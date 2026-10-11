@@ -111,7 +111,7 @@ public static class AnonymousBrowseCommands
                 Page: page);
             var resultPage = discovery.DiscoverPage(query);
             // Keep result numbers distinct across pages, and map selections back to this page.
-            var firstNumber = (page - 1) * resultPage.PageSize + 1;
+            var firstNumber = DiscoveryPaging.FirstNumber(resultPage);
             var results = resultPage.Items.ToList();
             var available = results
                 .Select(result => nodes.GetById(new NodeId(result.NodeId)))
@@ -141,26 +141,13 @@ public static class AnonymousBrowseCommands
             if (available.Count == 0) Console.WriteLine("No nodes match the current filters.");
 
             Console.WriteLine();
-            var pageCount = Math.Max(1, (int)Math.Ceiling(resultPage.TotalCount / (double)resultPage.PageSize));
-            Console.WriteLine($"Page {page} of {pageCount}; showing {available.Count} of {resultPage.TotalCount} matching nodes.");
+            DiscoveryPaging.WriteSummary(resultPage, available.Count);
             Console.WriteLine("Node number to view; S text; C community; T node type; A author; U status; X clear; 0 return.");
-            if (resultPage.HasNextPage) Console.WriteLine("N: next page.");
-            if (page > 1) Console.WriteLine("P: previous page.");
+            DiscoveryPaging.WriteNavigation(resultPage);
             Console.Write("Selection: ");
             var input = Console.ReadLine()?.Trim();
             if (input == "0") return;
-            if (string.Equals(input, "n", StringComparison.OrdinalIgnoreCase))
-            {
-                if (resultPage.HasNextPage) page++;
-                else ConsoleUi.Pause("There is no next page for the current filters.");
-                continue;
-            }
-            if (string.Equals(input, "p", StringComparison.OrdinalIgnoreCase))
-            {
-                if (page > 1) page--;
-                else ConsoleUi.Pause("You are already on the first page.");
-                continue;
-            }
+            if (DiscoveryPaging.TryNavigate(input, resultPage, ref page)) continue;
             if (string.Equals(input, "s", StringComparison.OrdinalIgnoreCase))
             {
                 Console.Write("Search text (blank clears): ");

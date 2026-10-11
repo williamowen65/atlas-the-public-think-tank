@@ -2,12 +2,14 @@ using System.Reflection;
 using Atlas.Comments.Comments;
 using Atlas.Communities.Communities;
 using Atlas.Communities.Nodes;
+using Atlas.Communities.Memberships;
 using Atlas.Content.Documents;
 using Atlas.Discovery;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Graph.Reactions;
 using Atlas.Moderation;
+using Atlas.Identity;
 using Atlas.Participants.Participants;
 using Atlas.Voting.Data;
 
@@ -54,7 +56,20 @@ public sealed class AnonymousDiscoveryTests
         Assert.IsFalse(output.Contains("P: previous page.", StringComparison.Ordinal));
     }
 
-    private static (IReadOnlyList<int> Pages, string Output) Browse(int count, string input)
+    [TestMethod]
+    public void AuthenticatedDiscoveryReplacesPagesAndSupportsPrevious()
+    {
+        var (pages, output) = Browse(7, "N\nN\nP\n0\n", authenticated: true);
+        CollectionAssert.AreEqual(new[] { 1, 2, 3, 2 }, pages.ToArray());
+        var screens = output.Split("DISCOVERY", StringSplitOptions.None);
+        StringAssert.Contains(screens[2], "4. Idea · Node 4");
+        Assert.IsFalse(screens[2].Contains("1. Idea · Node 1", StringComparison.Ordinal));
+        StringAssert.Contains(screens[3], "7. Idea · Node 7");
+        StringAssert.Contains(screens[4], "4. Idea · Node 4");
+        StringAssert.Contains(screens[4], "P: previous page.");
+    }
+
+    private static (IReadOnlyList<int> Pages, string Output) Browse(int count, string input, bool authenticated = false)
     {
         var now = new DateTimeOffset(2026, 10, 11, 12, 0, 0, TimeSpan.Zero);
         var author = Guid.NewGuid();
@@ -68,25 +83,50 @@ public sealed class AnonymousDiscoveryTests
             ? nodes.SingleOrDefault(n => n.Id == (NodeId)args![0]!) : EmptyValue(method.ReturnType));
         var types = Stub<INodeTypeRepository>((method, _) => method.Name == "GetById"
             ? type : EmptyValue(method.ReturnType));
-        var originalInput = Console.In;
-        var originalOutput = Console.Out;
+        var originalInput = System.Console.In;
+        var originalOutput = System.Console.Out;
         using var reader = new StringReader(input);
         using var writer = new StringWriter();
         try
         {
-            Console.SetIn(reader);
-            Console.SetOut(writer);
+            System.Console.SetIn(reader);
+            System.Console.SetOut(writer);
             // Exercise the actual anonymous input/render loop with real Discovery filtering and slicing.
+            if (authenticated)
+            {
+                // Exercise the authenticated browse loop; contribution services are unused here.
+                var app = new ConsoleApplication(
+                    nodes: nodeRepository, nodeTypes: types, documents: Stub<IDocumentRepository>(),
+                    participants: Stub<IParticipantRepository>(), votes: Stub<IVoteRepository>(),
+                    castVote: null!, undoVote: null!, tagDefinitions: Stub<IReactionDefinitionRepository>(),
+                    nodeTags: Stub<INodeReactionRepository>(), eventPublisher: null!,
+                    nodeCollectionKey: "", nodeTypeCollectionKey: "", documentCollectionKey: "",
+                    participantCollectionKey: "", voteCollectionKey: "", tagDefinitionCollectionKey: "",
+                    nodeTagCollectionKey: "", communityCollectionKey: "", communityMembershipCollectionKey: "",
+                    communityNodeCollectionKey: "", communities: Stub<ICommunityRepository>(),
+                    communityMemberships: Stub<ICommunityMembershipRepository>(),
+                    communityNodes: Stub<ICommunityNodeRepository>(), communityService: null!,
+                    comments: Stub<ICommentRepository>(), commentCollectionKey: "", discovery: discovery,
+                    moderation: new ModerationService(Stub<IModerationCaseRepository>(), Stub<IModeratorAuthorization>()),
+                    moderatorAuthorization: Stub<IModeratorAuthorization>(), notificationService: null!,
+                    notificationRepository: null!,
+                    authenticatedActor: Stub<IAuthenticatedActor>((_, _) => author));
+                typeof(ConsoleApplication).GetMethod("BrowseNodes", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(app, null);
+            }
+            else
+            {
             AnonymousBrowseCommands.DiscoverNodes(discovery, nodeRepository, types,
                 Stub<IDocumentRepository>(), Stub<IParticipantRepository>(), Stub<INodeReactionRepository>(),
                 Stub<IReactionDefinitionRepository>(), Stub<IVoteRepository>(), Stub<ICommunityRepository>(),
                 Stub<ICommunityNodeRepository>(), Stub<ICommentRepository>(),
                 new ModerationService(Stub<IModerationCaseRepository>(), Stub<IModeratorAuthorization>()));
+            }
         }
         finally
         {
-            Console.SetIn(originalInput);
-            Console.SetOut(originalOutput);
+            System.Console.SetIn(originalInput);
+            System.Console.SetOut(originalOutput);
         }
         return (discovery.Pages, writer.ToString());
     }

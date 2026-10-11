@@ -375,7 +375,7 @@ public sealed class ConsoleApplication
     private void BrowseNodes()
     {
         var browsing = true;
-        var visiblePages = 1;
+        var page = 1;
         string? searchText = null;
         Guid? communityId = null;
         Guid? nodeTypeId = null;
@@ -391,7 +391,7 @@ public sealed class ConsoleApplication
 
         while (browsing)
         {
-            Console.Clear();
+            if (!Console.IsOutputRedirected) Console.Clear();
             Console.WriteLine("DISCOVERY");
             Console.WriteLine("---------");
             WriteActingAs();
@@ -419,11 +419,9 @@ public sealed class ConsoleApplication
                 maximumAverageVote,
                 createdFrom,
                 createdThrough);
-            var pages = Enumerable.Range(1, visiblePages)
-                .Select(page => _discovery.DiscoverPage(query with { Page = page }))
-                .ToList();
-            var results = pages.SelectMany(page => page.Items).ToList();
-            var hasMore = pages[^1].HasNextPage;
+            var resultPage = _discovery.DiscoverPage(query with { Page = page });
+            var results = resultPage.Items.ToList();
+            var firstNumber = DiscoveryPaging.FirstNumber(resultPage);
             var nodes = results
                 .Select(result => _nodeRepository.GetById(new NodeId(result.NodeId)))
                 .Where(node => node is not null)
@@ -446,7 +444,7 @@ public sealed class ConsoleApplication
                         new NodeVoteTarget(result.NodeId))?.Value.Value;
                     NodeDisplay.WriteTableRow(
                         nodes[index], _nodeRepository, _nodeTypeRepository,
-                        _documentRepository, _participantRepository, index + 1,
+                        _documentRepository, _participantRepository, firstNumber + index,
                         result.VoteCount, result.AverageVote, myVote,
                         _nodeTags, _tagDefinitions, _voteRepository,
                         _communities, _communityNodes, _comments,
@@ -455,43 +453,39 @@ public sealed class ConsoleApplication
             }
 
             Console.WriteLine();
-            Console.WriteLine($"Showing {nodes.Count} of {pages[^1].TotalCount} matching nodes.");
+            DiscoveryPaging.WriteSummary(resultPage, nodes.Count);
             Console.WriteLine("Enter a node number to open it, P<number> to report that Node, S text, C community, T node type, A author,");
             Console.WriteLine("U status, R reactions, V vote ranges, D created date, X clear, or 0 to return.");
-            if (hasMore) Console.WriteLine("N to load the next page.");
+            DiscoveryPaging.WriteNavigation(resultPage);
             Console.WriteLine();
             Console.Write("Selection: ");
             var input = Console.ReadLine()?.Trim();
-            if (string.Equals(input, "n", StringComparison.OrdinalIgnoreCase) && hasMore)
-            {
-                visiblePages++;
-                continue;
-            }
+            if (DiscoveryPaging.TryNavigate(input, resultPage, ref page)) continue;
             if (input?.StartsWith("p", StringComparison.OrdinalIgnoreCase) == true &&
                 int.TryParse(input[1..], out var reportNumber))
             {
-                if (reportNumber < 1 || reportNumber > nodes.Count)
+                if (reportNumber < firstNumber || reportNumber >= firstNumber + nodes.Count)
                     ConsoleUi.Pause("That node does not exist.");
                 else
-                    NodeCommands.ReportNode(nodes[reportNumber - 1], _authenticatedActor.ParticipantId, _moderation);
+                    NodeCommands.ReportNode(nodes[reportNumber - firstNumber], _authenticatedActor.ParticipantId, _moderation);
                 continue;
             }
             if (string.Equals(input, "s", StringComparison.OrdinalIgnoreCase))
             {
-                visiblePages = 1;
+                page = 1;
                 Console.Write("Search text (blank clears): ");
                 searchText = NullIfWhiteSpace(Console.ReadLine());
                 continue;
             }
             if (string.Equals(input, "c", StringComparison.OrdinalIgnoreCase))
             {
-                visiblePages = 1;
+                page = 1;
                 communityId = SelectDiscoveryCommunity();
                 continue;
             }
             if (string.Equals(input, "t", StringComparison.OrdinalIgnoreCase))
             {
-                visiblePages = 1;
+                page = 1;
                 var types = _nodeTypeRepository.GetAll().Where(type => !type.IsArchived).OrderBy(type => type.Name).ToList();
                 for (var index = 0; index < types.Count; index++) Console.WriteLine($"{index + 1}. {types[index].Name}");
                 Console.Write("Node type (0 clears): ");
@@ -501,7 +495,7 @@ public sealed class ConsoleApplication
             }
             if (string.Equals(input, "a", StringComparison.OrdinalIgnoreCase))
             {
-                visiblePages = 1;
+                page = 1;
                 var authors = _participantRepository.GetAll().OrderBy(participant => participant.DisplayName).ToList();
                 for (var index = 0; index < authors.Count; index++) Console.WriteLine($"{index + 1}. {authors[index].DisplayName}");
                 Console.Write("Author (0 clears): ");
@@ -511,33 +505,33 @@ public sealed class ConsoleApplication
             }
             if (string.Equals(input, "u", StringComparison.OrdinalIgnoreCase))
             {
-                visiblePages = 1;
+                page = 1;
                 Console.Write("Status: 1 Active, 2 Archived, 3 All: ");
                 isArchived = Console.ReadLine() switch { "1" => false, "2" => true, "3" => null, _ => isArchived };
                 continue;
             }
             if (string.Equals(input, "r", StringComparison.OrdinalIgnoreCase))
             {
-                visiblePages = 1;
+                page = 1;
                 reactionIds = SelectDiscoveryReactions();
                 continue;
             }
             if (string.Equals(input, "v", StringComparison.OrdinalIgnoreCase))
             {
-                visiblePages = 1;
+                page = 1;
                 (minimumVoteCount, maximumVoteCount) = ReadIntegerRange("vote count", minimum: 0);
                 (minimumAverageVote, maximumAverageVote) = ReadDoubleRange("average vote", 0, 10);
                 continue;
             }
             if (string.Equals(input, "d", StringComparison.OrdinalIgnoreCase))
             {
-                visiblePages = 1;
+                page = 1;
                 (createdFrom, createdThrough) = ReadDateRange();
                 continue;
             }
             if (string.Equals(input, "x", StringComparison.OrdinalIgnoreCase))
             {
-                visiblePages = 1;
+                page = 1;
                 searchText = null;
                 communityId = null;
                 nodeTypeId = null;
@@ -564,14 +558,14 @@ public sealed class ConsoleApplication
                 continue;
             }
 
-            if (selection < 1 || selection > nodes.Count)
+            if (selection < firstNumber || selection >= firstNumber + nodes.Count)
             {
                 ConsoleUi.Pause("That node does not exist.");
                 continue;
             }
 
             NodeCommands.Run(
-                nodes[selection - 1],
+                nodes[selection - firstNumber],
                 _nodeRepository,
                 _nodeTypeRepository,
                 _documentRepository,
