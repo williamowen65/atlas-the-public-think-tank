@@ -27,6 +27,21 @@ public sealed class AnonymousDiscoveryTests
     }
 
     [TestMethod]
+    public void AnonymousPagesUseDistinctNumbersAndOpenTheCorrespondingNode()
+    {
+        // Advance to the final partial page, then open its globally numbered result.
+        var (pages, output) = Browse(7, "N\nN\n7\n\nP\n0\n");
+        CollectionAssert.AreEqual(new[] { 1, 2, 3, 3, 2 }, pages.ToArray());
+        StringAssert.Contains(output, "1. Idea · Node 1");
+        StringAssert.Contains(output, "4. Idea · Node 4");
+        StringAssert.Contains(output, "7. Idea · Node 7");
+        StringAssert.Contains(output, "Page 3 of 3; showing 1 of 7 matching nodes.");
+        var details = output[(output.IndexOf("ATLAS NODE", StringComparison.Ordinal))..];
+        StringAssert.Contains(details, "Idea · Node 7");
+        Assert.IsFalse(output.Contains("That is not a valid selection.", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
     public void UnavailablePagesExplainWhyAnonymousResultsDoNotChange()
     {
         // Extra blank lines acknowledge the explicit boundary messages before the next command.

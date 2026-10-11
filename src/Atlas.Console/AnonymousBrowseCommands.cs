@@ -110,6 +110,8 @@ public static class AnonymousBrowseCommands
                 IsArchived: isArchived,
                 Page: page);
             var resultPage = discovery.DiscoverPage(query);
+            // Keep result numbers distinct across pages, and map selections back to this page.
+            var firstNumber = (page - 1) * resultPage.PageSize + 1;
             var results = resultPage.Items.ToList();
             var available = results
                 .Select(result => nodes.GetById(new NodeId(result.NodeId)))
@@ -132,7 +134,7 @@ public static class AnonymousBrowseCommands
             {
                 var result = results[index];
                 NodeDisplay.WriteTableRow(
-                    available[index], nodes, nodeTypes, documents, participants, index + 1,
+                    available[index], nodes, nodeTypes, documents, participants, firstNumber + index,
                     result.VoteCount, result.AverageVote, null, nodeTags, tagDefinitions, votes,
                     communities, communityNodes, comments, includeCreatedDate: true, moderation: moderation);
             }
@@ -191,13 +193,13 @@ public static class AnonymousBrowseCommands
             {
                 searchText = null; communityId = null; nodeTypeId = null; authorId = null; isArchived = false; page = 1; continue;
             }
-            if (!int.TryParse(input, out var selection) || selection < 1 || selection > available.Count)
+            if (!int.TryParse(input, out var selection) || selection < firstNumber || selection >= firstNumber + available.Count)
             {
                 ConsoleUi.Pause("That is not a valid selection."); continue;
             }
 
-            var node = available[selection - 1];
-            var ranked = results[selection - 1];
+            var node = available[selection - firstNumber];
+            var ranked = results[selection - firstNumber];
             if (!Console.IsOutputRedirected) Console.Clear();
             NodeDisplay.WriteDetails(node, nodes, nodeTypes, documents, participants, nodeTags,
                 tagDefinitions, votes, communities, communityNodes, comments, null,
