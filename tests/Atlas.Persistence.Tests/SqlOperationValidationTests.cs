@@ -273,6 +273,7 @@ public sealed class SqlOperationValidationTests
     public async Task CompetingDirectNodeSavesCannotCreateTransitiveCycle()
     {
         using var database = SqlTestDatabase.Create();
+        using var clock = AtlasTime.Use(new FixedClock());
         var actor = database.AddParticipant();
         var type = NodeTypeDefinition.CreateSystemDefined("Idea", "Ideas", Now);
         new SqlNodeTypeRepository(database.Open).Save(type);
