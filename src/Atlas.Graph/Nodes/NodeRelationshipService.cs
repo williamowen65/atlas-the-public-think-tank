@@ -11,7 +11,7 @@ public sealed class NodeRelationshipService(INodeRepository nodes)
             EnsureCurrent(node, actorId);
             ReferenceValidation.Require(nodes, "NodeType", typeId.Value);
             node.ChangeType(typeId, actorId, at);
-            nodes.Save(node);
+            nodes.SaveMetadata(node);
         });
 
     public void SetRequestedTypes(Node node, IEnumerable<NodeTypeId> typeIds, Guid actorId, DateTimeOffset at) =>
@@ -26,7 +26,7 @@ public sealed class NodeRelationshipService(INodeRepository nodes)
                 node.Status, node.RequestedSubNodeTypes.Select(request => request.TypeId), node.ParentNodeIds, node.CreatedAt, node.UpdatedAt);
             Apply(proposal);
             Apply(node);
-            nodes.Save(node);
+            nodes.SaveMetadata(node);
             void Apply(Node value)
             {
                 foreach (var old in value.RequestedSubNodeTypes.ToList())
@@ -47,7 +47,7 @@ public sealed class NodeRelationshipService(INodeRepository nodes)
     }
 
     public void Attach(Node node, NodeId parentId, Guid actorId, DateTimeOffset at) =>
-        OperationBoundary.Execute(nodes, () =>
+        NodeTopologyBoundary.Execute(nodes, () =>
         {
             ArgumentNullException.ThrowIfNull(node);
             ReferenceValidation.Require(nodes, "Participant", actorId);

@@ -15,6 +15,10 @@ public abstract class SqlRepository(Func<AtlasDataContext>? contextFactory = nul
     /// resource for the invariant being protected, rather than one arbitrary name per repository instance.</remarks>
     protected virtual string? WriteLockResource => null;
 
+    /// <summary>Requests named coordination for a specific operation, joining the current transaction when nested.</summary>
+    protected T ExecuteWithLock<T>(Func<T> operation, string resource) =>
+        SqlOperationBoundary.Execute(Open, operation, resource);
+
     /// <summary>Creates a candidate context using the injected factory, or the host-configured SqlStorage factory.</summary>
     /// <remarks>
     /// This factory does not itself join a transaction; SqlOperationBoundary.Open determines which context the caller uses.
@@ -87,12 +91,13 @@ public abstract class SqlRepository(Func<AtlasDataContext>? contextFactory = nul
         return row;
     }
     /// <summary>Starts or joins an operation boundary before inserting or replacing the addressed row.</summary>
-    protected void SaveRow<T>(T row) where T : class => Execute(() => { SaveRowCore(row); return true; });
+    protected void SaveRow<T>(T row, params string[] preservedCollections) where T : class =>
+        Execute(() => { SaveRowCore(row, preservedCollections); return true; });
     /// <summary>Prepares row values, finds the existing primary key, and inserts or updates that entity.</summary>
     /// <remarks>
-    /// Mapped child collections are replaced after their old rows are removed. SaveChanges flushes SQL within the current transaction; it does not commit the outer operation.
+    /// Mapped child collections are replaced after their old rows are removed, except explicitly preserved collections. SaveChanges flushes SQL within the current transaction; it does not commit the outer operation.
     /// </remarks>
-    private void SaveRowCore<T>(T row) where T : class
+    private void SaveRowCore<T>(T row, string[] preservedCollections) where T : class
     {
         using var lease = SqlOperationBoundary.Open(Open);
         var database = lease.Context;
@@ -106,7 +111,7 @@ public abstract class SqlRepository(Func<AtlasDataContext>? contextFactory = nul
         else
         {
             var existingEntry = database.Entry(existing);
-            var collections = existingEntry.Metadata.GetNavigations().Where(navigation => navigation.IsCollection).ToList();
+            var collections = existingEntry.Metadata.GetNavigations().Where(navigation => navigation.IsCollection && !preservedCollections.Contains(navigation.Name)).ToList();
             foreach (var navigation in collections)
             {
                 existingEntry.Collection(navigation.Name).Load();

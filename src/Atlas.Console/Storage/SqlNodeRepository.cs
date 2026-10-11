@@ -6,12 +6,11 @@ using Atlas.ConsoleApp.Discovery;
 namespace Atlas.ConsoleApp.Storage;
 
 /// <summary>Maps domain objects directly to EF Core rows in SQL Server.</summary>
-public sealed class SqlNodeRepository(Func<AtlasDataContext>? contextFactory = null) : SqlRepository(contextFactory), INodeRepository, IDiscoveryNodeReader
+public sealed class SqlNodeRepository(Func<AtlasDataContext>? contextFactory = null) : SqlRepository(contextFactory), INodeRepository, IDiscoveryNodeReader, INodeTopologyBoundary
 {
-    /// <summary>Coordinates node writes before their ancestry checks and saves.</summary>
-    /// <remarks>All node writes conservatively share this database-scoped lock: two changes to different
-    /// nodes can collectively create a transitive cycle. Other repository families do not request it.</remarks>
-    protected override string? WriteLockResource => "AtlasGraphTopology";
+    /// <summary>Coordinates creation and parent changes before graph checks and saves.</summary>
+    /// <remarks>Metadata edits use the ordinary boundary and never request this named lock.</remarks>
+    public T ExecuteTopology<T>(Func<T> operation) => ExecuteWithLock(operation, "AtlasGraphTopology");
 
     public Node? GetById(NodeId id) => FindRow<NodeRow>(id.Value) is { } row ? ToDomain(row) : null;
     private IReadOnlyCollection<Node> All() => ReadRows<NodeRow>().Select(ToDomain).ToList();
@@ -20,23 +19,33 @@ public sealed class SqlNodeRepository(Func<AtlasDataContext>? contextFactory = n
     public IReadOnlyCollection<Node> GetParentCandidates(NodeId childId, IReadOnlyCollection<NodeId> existingParentIds) =>
         All().Where(node => node.Id != childId && !existingParentIds.Contains(node.Id)).ToList();
     IReadOnlyCollection<Node> IDiscoveryNodeReader.ReadNodesForDiscovery() => All();
-    public void Save(Node node) => Execute(() =>
+    /// <summary>Persists a complete node, including its parents, under graph coordination.</summary>
+    public void Save(Node node) => ExecuteTopology(() => { SaveCore(node, false); return true; });
+
+    /// <summary>Updates an existing node's metadata without acquiring the graph lock or rewriting parents.</summary>
+    public void SaveMetadata(Node node) => Execute(() => { SaveCore(node, true); return true; });
+
+    /// <summary>Validates references and persists the selected metadata or complete-node operation.</summary>
+    private void SaveCore(Node node, bool metadataOnly)
     {
         ArgumentNullException.ThrowIfNull(node);
         var previous = FindRow<NodeRow>(node.Id.Value);
+        if (metadataOnly && previous is null) throw new InvalidOperationException("Metadata edits require an existing node.");
         ReferenceValidation.Require(this, "Participant", node.AuthorId.Value, previous is null);
         ReferenceValidation.Require(this, "Document", node.DescriptionId.Value, false);
         ReferenceValidation.Require(this, "NodeType", node.TypeId.Value, previous is null || previous.TypeId != node.TypeId.Value);
         foreach (var request in node.RequestedSubNodeTypes)
             ReferenceValidation.Require(this, "NodeType", request.TypeId.Value,
                 previous is null || !(previous.RequestedSubNodeTypeIds ?? []).Contains(request.TypeId.Value));
-        GraphRelationshipValidation.EnsureAcyclic(node.Id, node.ParentNodeIds, parentId =>
-            FindRow<NodeRow>(parentId.Value) is { } parent ? (parent.ParentNodeIds ?? []).Select(id => new NodeId(id)).ToList() : null);
-        foreach (var parent in node.ParentNodeIds)
-            ReferenceValidation.Require(this, "Node", parent.Value, previous is null || !(previous.ParentNodeIds ?? []).Contains(parent.Value));
-        SaveRow(ToStorage(node));
-        return true;
-    });
+        if (!metadataOnly)
+        {
+            GraphRelationshipValidation.EnsureAcyclic(node.Id, node.ParentNodeIds, parentId =>
+                FindRow<NodeRow>(parentId.Value) is { } parent ? (parent.ParentNodeIds ?? []).Select(id => new NodeId(id)).ToList() : null);
+            foreach (var parent in node.ParentNodeIds)
+                ReferenceValidation.Require(this, "Node", parent.Value, previous is null || !(previous.ParentNodeIds ?? []).Contains(parent.Value));
+        }
+        SaveRow(ToStorage(node), metadataOnly ? [nameof(NodeRow.Parents)] : []);
+    }
 
     private static NodeRow ToStorage(Node node)
     {

@@ -47,7 +47,7 @@ public static class SqlOperationBoundary
 
     /// <summary>Acquires optional named coordination inside the current transaction before the callback runs.</summary>
     /// <remarks>
-    /// Null means ordinary serializable transaction protection only. Node repositories request the shared
+    /// Null means ordinary serializable transaction protection only. Node topology operations request the shared
     /// AtlasGraphTopology resource because ancestry checks can span multiple nodes. Nested calls also
     /// request their required lock, even when the outer operation began through another repository.
     /// SQL Server permits repeated acquisition by the owning transaction and releases its locks at completion.

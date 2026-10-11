@@ -19,7 +19,7 @@ Open the [editable Excalidraw blackboard](PTT-130-TRANSACTION-FLOW.excalidraw) t
 
 `SaveChanges` flushes pending changes to SQL. Since an explicit outer transaction is active, those writes are still subject to rollback. Only the outer boundary commits. A repository save without an existing boundary instead creates its own boundary for that save; it cannot retroactively group earlier independent saves.
 
-The named AtlasGraphTopology application lock makes Node writes take turns before reference and ancestry checks. Other repository families do not request it; they retain serializable transactions and database constraints. Normal SQL row/range locks may still cause blocking. It is separate from transaction atomicity and normal SQL row/range locks. It is released on commit or rollback, waits up to 15 seconds, and does not coordinate code that skips the named lock.
+The named AtlasGraphTopology application lock makes Node creation and parent changes take turns before reference and ancestry checks. Node metadata saves and other repository families do not request it; they retain serializable transactions and database constraints. Normal SQL row/range locks may still cause blocking. It is separate from transaction atomicity and normal SQL row/range locks. It is released on commit or rollback, waits up to 15 seconds, and does not coordinate code that skips the named lock.
 
 The shared context is not safe for parallel repository work. Different connection strings cannot join the same operation. SQL rollback does not rewind mutated domain objects in memory or roll back external event delivery.
 

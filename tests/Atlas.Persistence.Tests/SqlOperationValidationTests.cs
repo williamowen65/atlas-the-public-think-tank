@@ -302,15 +302,21 @@ public sealed class SqlOperationValidationTests
     }
 
     [TestMethod]
-    public async Task ContentAndVoteWritesCompleteWhileGraphLockIsHeld()
+    public async Task MetadataContentAndVoteWritesCompleteWhileGraphLockIsHeld()
     {
         using var database = SqlTestDatabase.Create();
         var actor = database.AddParticipant();
         var node = database.AddNode();
+        using var clock = AtlasTime.Use(new FixedClock());
+        var type = NodeTypeDefinition.CreateSystemDefined("Idea", "Ideas", Now);
+        new SqlNodeTypeRepository(database.Open).Save(type);
+        var nodes = new SqlNodeRepository(database.Open);
+        var editable = new NodeCreationService(nodes, new SqlDocumentRepository(database.Open))
+            .Create("Original", "Description", type.Id, actor, []);
         using var acquired = new ManualResetEventSlim();
         using var release = new ManualResetEventSlim();
         // Start separate execution flows outside any ambient operation context.
-        var holder = Task.Run(() => new SqlNodeRepository(database.Open).Execute(() =>
+        var holder = Task.Run(() => new SqlNodeRepository(database.Open).ExecuteTopology(() =>
         {
             acquired.Set();
             if (!release.Wait(TimeSpan.FromSeconds(30))) throw new TimeoutException("Test did not release graph lock.");
@@ -322,14 +328,17 @@ public sealed class SqlOperationValidationTests
             Assert.IsTrue(acquired.Wait(TimeSpan.FromSeconds(10)), "Graph boundary did not start.");
             writes = Task.Run(() =>
             {
+                editable.Rename(new NodeTitle("Renamed without graph lock"), actor, Now.AddMinutes(1));
+                new SqlNodeRepository(database.Open).SaveMetadata(editable);
                 new SqlDocumentRepository(database.Open).SaveBlock(new MarkdownTextBlock("Independent content", Now));
                 new SqlVoteRepository(database.Open).Save(new Vote(new NodeVoteTarget(node), new VotingParticipantId(actor), 3));
             });
             // The writes must finish BEFORE releasing the graph lock, not just eventually succeed.
             await writes.WaitAsync(TimeSpan.FromSeconds(10));
             using var check = database.Open();
-            Assert.AreEqual(1, check.BlockRows.Count());
+            Assert.AreEqual(2, check.BlockRows.Count());
             Assert.AreEqual(1, check.VoteRows.Count());
+            Assert.AreEqual("Renamed without graph lock", nodes.GetById(editable.Id)!.Title.Value);
         }
         finally
         {
@@ -355,7 +364,7 @@ public sealed class SqlOperationValidationTests
         {
             Assert.AreEqual("NoLock", outer!.Database.SqlQueryRaw<string>(
                 "SELECT APPLOCK_MODE('public', 'AtlasGraphTopology', 'Transaction') AS [Value]").Single());
-            new SqlNodeRepository(database.Open).Execute(() =>
+            new SqlNodeRepository(database.Open).ExecuteTopology(() =>
             {
                 Assert.AreEqual("Exclusive", outer.Database.SqlQueryRaw<string>(
                     "SELECT APPLOCK_MODE('public', 'AtlasGraphTopology', 'Transaction') AS [Value]").Single());
@@ -371,6 +380,27 @@ public sealed class SqlOperationValidationTests
         Assert.AreEqual(0, check.BlockRows.Count());
         Assert.AreEqual(1, check.Database.SqlQueryRaw<int>(
             "SELECT APPLOCK_TEST('public', 'AtlasGraphTopology', 'Exclusive', 'Session') AS [Value]").Single());
+    }
+
+    [TestMethod]
+    public void MetadataSavePreservesParentsAddedSinceNodeWasLoaded()
+    {
+        using var database = SqlTestDatabase.Create();
+        using var clock = AtlasTime.Use(new FixedClock());
+        var actor = database.AddParticipant();
+        var type = NodeTypeDefinition.CreateSystemDefined("Idea", "Ideas", Now);
+        new SqlNodeTypeRepository(database.Open).Save(type);
+        var nodes = new SqlNodeRepository(database.Open);
+        var creation = new NodeCreationService(nodes, new SqlDocumentRepository(database.Open));
+        var child = creation.Create("Child", "Description", type.Id, actor, []);
+        var parent = creation.Create("Parent", "Description", type.Id, actor, []);
+        var stale = nodes.GetById(child.Id)!;
+        new NodeRelationshipService(nodes).Attach(child, parent.Id, actor, Now.AddMinutes(1));
+        stale.Rename(new NodeTitle("Renamed"), actor, Now.AddMinutes(2));
+        nodes.SaveMetadata(stale);
+        var saved = nodes.GetById(child.Id)!;
+        Assert.AreEqual("Renamed", saved.Title.Value);
+        CollectionAssert.AreEqual(new[] { parent.Id }, saved.ParentNodeIds.ToArray());
     }
 
     private sealed class FixedClock : TimeProvider { public override DateTimeOffset GetUtcNow() => Now; }

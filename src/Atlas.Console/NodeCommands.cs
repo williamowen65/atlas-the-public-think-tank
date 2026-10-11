@@ -182,7 +182,7 @@ public static class NodeCommands
                         node.Archive(
                             actorParticipantId,
                             AtlasTime.UtcNow);
-                        nodes.Save(node);
+                        nodes.SaveMetadata(node);
                         PublishDomainEvents(node, eventPublisher);
                         ConsoleUi.Pause("Node archived and saved.");
                         break;
@@ -191,7 +191,7 @@ public static class NodeCommands
                         node.Restore(
                             actorParticipantId,
                             AtlasTime.UtcNow);
-                        nodes.Save(node);
+                        nodes.SaveMetadata(node);
                         PublishDomainEvents(node, eventPublisher);
                         ConsoleUi.Pause("Node restored and saved.");
                         break;
@@ -1015,7 +1015,7 @@ public static class NodeCommands
             actorParticipantId,
             AtlasTime.UtcNow);
 
-        nodes.Save(node);
+        nodes.SaveMetadata(node);
         ConsoleUi.Pause("Node renamed and saved.");
     }
 

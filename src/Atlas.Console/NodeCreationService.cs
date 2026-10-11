@@ -10,7 +10,7 @@ public sealed class NodeCreationService(INodeRepository nodes, IDocumentReposito
 {
     public Node Create(string title, string markdown, NodeTypeId typeId, Guid authorId,
         IEnumerable<NodeTypeId> requestedTypes, NodeId? parentId = null) =>
-        OperationBoundary.Execute(nodes, () =>
+        NodeTopologyBoundary.Execute(nodes, () =>
         {
             ArgumentNullException.ThrowIfNull(requestedTypes);
             var requests = requestedTypes.ToList();

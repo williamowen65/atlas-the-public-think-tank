@@ -1,4 +1,4 @@
-﻿namespace Atlas.Graph.Nodes;
+namespace Atlas.Graph.Nodes;
 
 /// <summary>Defines the persistence operations required by the Graph boundary for nodes.</summary>
 public interface INodeRepository
@@ -19,4 +19,8 @@ public interface INodeRepository
 
     /// <summary>Persists the current domain-object state.</summary>
     void Save(Node node);
+
+    /// <summary>Updates metadata on an existing node without replacing its parent relationships.</summary>
+    /// <remarks>Adapters without separate relationship storage may use their normal save.</remarks>
+    void SaveMetadata(Node node) => Save(node);
 }
