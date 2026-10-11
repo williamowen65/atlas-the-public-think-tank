@@ -29,11 +29,30 @@ public sealed class SqlNotificationRepository(Func<AtlasDataContext>? contextFac
         ReferenceValidation.Require(this, "Node", item.SubjectId, isNew && item.Category == NotificationCategory.Discussion);
 
         // Persist notification state and delivery-attempt history together in the operation transaction.
-        SaveRow(new NotificationRow { Id = item.Id, OccurrenceId = item.OccurrenceId,
-        RecipientParticipantId = item.RecipientParticipantId, Category = (int)item.Category, InAppVisible = item.InAppVisible, Kind = item.Kind,
-        SubjectKind = item.SubjectKind, SubjectId = item.SubjectId, ActorParticipantId = item.ActorParticipantId, CreatedAt = item.CreatedAt,
-        ReadAt = item.ReadAt, DismissedAt = item.DismissedAt, DeliveryAttempts = item.DeliveryAttempts.Select(attempt => new DeliveryAttemptRow
-        { Channel = (int)attempt.Channel, Status = (int)attempt.Status, AttemptedAt = attempt.AttemptedAt, Error = attempt.Error }).ToList() });
+        SaveRow(new NotificationRow
+        {
+            Id = item.Id,
+            OccurrenceId = item.OccurrenceId,
+            RecipientParticipantId = item.RecipientParticipantId,
+            Category = (int)item.Category,
+            InAppVisible = item.InAppVisible,
+            Kind = item.Kind,
+            SubjectKind = item.SubjectKind,
+            SubjectId = item.SubjectId,
+            ActorParticipantId = item.ActorParticipantId,
+            CreatedAt = item.CreatedAt,
+            ReadAt = item.ReadAt,
+            DismissedAt = item.DismissedAt,
+            DeliveryAttempts = item.DeliveryAttempts
+                .Select(attempt => new DeliveryAttemptRow
+                {
+                    Channel = (int)attempt.Channel,
+                    Status = (int)attempt.Status,
+                    AttemptedAt = attempt.AttemptedAt,
+                    Error = attempt.Error
+                })
+                .ToList()
+        });
         return true;
     });
 
