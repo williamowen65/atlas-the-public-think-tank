@@ -20,11 +20,11 @@ Related requirements: [GRA-001](../requirements/REQUIREMENTS.md#gra-001), [GRA-0
 1. The host gathers title, description body, node type and requested sub-node types.
 2. NodeCreationService enters the topology boundary: SQL starts a transaction and acquires the graph lock.
 3. Check author/type/parent availability and construct a Markdown block, Document and Node proposal using one AtlasTime UTC timestamp. Content and Graph generate their IDs in memory.
-4. Give Graph the DocumentId as DescriptionId; attach the optional parent after ancestry validation. Graph records its lifecycle events in memory.
+4. Give Graph the DocumentId as DescriptionId. The Node constructor records [NodeCreatedV1](../../src/Atlas.Contracts/Graph/V1/NodeLifecycleEvents.cs) in memory using the shared Atlas.Contracts event definition. Attaching an optional parent after ancestry validation also records `NodeParentAttachedV1`. These events are recorded before persistence and have not yet been published.
 5. Save the block, document and Node through repositories sharing the operation context and transaction.
 6. Commit the outer transaction only after every save succeeds; the service returns the Node.
-7. The host publishes recorded events outside the SQL transaction.
-8. Registered subscribers handle or ignore each event synchronously.
+7. After commit, the host publishes `NodeCreatedV1` and any recorded `NodeParentAttachedV1` through the in-memory event bus, outside the SQL transaction.
+8. Registered subscribers handle each event synchronously. The [Console-owned Content observer](../../src/Atlas.Console/Content/ObserveNodeLifecycleInContent.cs) receives `NodeCreatedV1` and checks its DescriptionId against the committed document. Events without registered handlers have no subscriber action.
 9. The host clears successfully dispatched events and displays the new node.
 
 ### Persistent result
