@@ -117,7 +117,7 @@ public static class AnonymousBrowseCommands
                 .Cast<Node>()
                 .ToList();
 
-            Console.Clear();
+            if (!Console.IsOutputRedirected) Console.Clear();
             Console.WriteLine("DISCOVERY");
             Console.WriteLine("---------");
             Console.WriteLine("Viewing as: Anonymous");
@@ -139,12 +139,26 @@ public static class AnonymousBrowseCommands
             if (available.Count == 0) Console.WriteLine("No nodes match the current filters.");
 
             Console.WriteLine();
-            Console.WriteLine("Node number to view; S text; C community; T node type; A author; U status; X clear; N/P pages; 0 return.");
+            var pageCount = Math.Max(1, (int)Math.Ceiling(resultPage.TotalCount / (double)resultPage.PageSize));
+            Console.WriteLine($"Page {page} of {pageCount}; showing {available.Count} of {resultPage.TotalCount} matching nodes.");
+            Console.WriteLine("Node number to view; S text; C community; T node type; A author; U status; X clear; 0 return.");
+            if (resultPage.HasNextPage) Console.WriteLine("N: next page.");
+            if (page > 1) Console.WriteLine("P: previous page.");
             Console.Write("Selection: ");
             var input = Console.ReadLine()?.Trim();
             if (input == "0") return;
-            if (string.Equals(input, "n", StringComparison.OrdinalIgnoreCase) && resultPage.HasNextPage) { page++; continue; }
-            if (string.Equals(input, "p", StringComparison.OrdinalIgnoreCase) && page > 1) { page--; continue; }
+            if (string.Equals(input, "n", StringComparison.OrdinalIgnoreCase))
+            {
+                if (resultPage.HasNextPage) page++;
+                else ConsoleUi.Pause("There is no next page for the current filters.");
+                continue;
+            }
+            if (string.Equals(input, "p", StringComparison.OrdinalIgnoreCase))
+            {
+                if (page > 1) page--;
+                else ConsoleUi.Pause("You are already on the first page.");
+                continue;
+            }
             if (string.Equals(input, "s", StringComparison.OrdinalIgnoreCase))
             {
                 Console.Write("Search text (blank clears): ");
@@ -184,7 +198,7 @@ public static class AnonymousBrowseCommands
 
             var node = available[selection - 1];
             var ranked = results[selection - 1];
-            Console.Clear();
+            if (!Console.IsOutputRedirected) Console.Clear();
             NodeDisplay.WriteDetails(node, nodes, nodeTypes, documents, participants, nodeTags,
                 tagDefinitions, votes, communities, communityNodes, comments, null,
                 ranked.VoteCount, ranked.AverageVote, null, moderation: moderation);
@@ -208,7 +222,7 @@ public static class AnonymousBrowseCommands
         ICommunityRepository communities,
         ICommunityNodeRepository communityNodes)
     {
-        Console.Clear();
+        if (!Console.IsOutputRedirected) Console.Clear();
         Console.WriteLine("BROWSE COMMUNITIES");
         Console.WriteLine("------------------");
         Console.WriteLine("Viewing as: Anonymous");
@@ -235,7 +249,7 @@ public static class AnonymousBrowseCommands
 
     public static void ListNodeTypes(INodeTypeRepository nodeTypes)
     {
-        Console.Clear();
+        if (!Console.IsOutputRedirected) Console.Clear();
         Console.WriteLine("NODE TYPES");
         Console.WriteLine("----------");
         Console.WriteLine("Viewing as: Anonymous");
