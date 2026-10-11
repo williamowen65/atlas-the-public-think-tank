@@ -28,7 +28,7 @@ public sealed class SqlCommentRepository(Func<AtlasDataContext>? contextFactory 
 
         // Replies must point to an existing comment on the same target. Their creation time
         // cannot be earlier than the parent's; root comments skip this check.
-        if (comment.ParentCommentId is { } parentId)
+        if (comment.ParentCommentId is { } parentId) // Equivalent to HasValue; unwraps Value into parentId.
         {
             var parent = FindRow<CommentRow>(parentId.Value) ?? throw new ArgumentException("Comment parent does not exist.");
             if (parent.TargetKind != comment.Target.Kind || parent.TargetId != comment.Target.Id || parent.CreatedAt > comment.CreatedAt)
