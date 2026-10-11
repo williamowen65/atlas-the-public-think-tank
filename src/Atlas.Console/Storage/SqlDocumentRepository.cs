@@ -7,20 +7,32 @@ namespace Atlas.ConsoleApp.Storage;
 /// <summary>Maps domain objects directly to EF Core rows in SQL Server.</summary>
 public sealed class SqlDocumentRepository(Func<AtlasDataContext>? contextFactory = null) : SqlRepository(contextFactory), IDocumentRepository
 {
+
+    // Read documents as domain objects; the base repository loads their mapped block references.
     public IReadOnlyCollection<Document> GetAll() => ReadRows<DocumentRow>().Select(ToDomain).ToList();
     public Document? GetById(DocumentId id) => FindRow<DocumentRow>(id.Value) is { } row ? ToDomain(row) : null;
     public void Save(Document document) => Execute(() =>
     {
         ArgumentNullException.ThrowIfNull(document);
+
+        // Every referenced block must already exist. These checks and the document save share one operation.
         foreach (var block in document.BlockIds) ReferenceValidation.Require(this, "Block", block.Value, false);
+
+        // Persist the document and its ordered block references without committing an outer workflow early.
         SaveRow(ToStorage(document));
         return true;
     });
+
+    // Read a single block, or resolve a document's block IDs in their stored order. Missing blocks are errors.
     public ContentBlock? GetBlockById(BlockId id) => FindRow<BlockRow>(id.Value) is { } row ? ToDomain(row) : null;
     public IReadOnlyCollection<ContentBlock> GetBlocks(Document document) => document.BlockIds.Select(id =>
         GetBlockById(id) ?? throw new InvalidOperationException($"Content block {id} was not found.")).ToList();
+
+    // Save a block independently or join the caller's transaction, such as during Node creation.
     public void SaveBlock(ContentBlock block) { ArgumentNullException.ThrowIfNull(block); SaveRow(ToStorage(block)); }
 
+
+    // Store document identity, block ordering and lifecycle timestamps.
     private static DocumentRow ToStorage(Document document) => new()
     {
         Id = document.Id.Value,
@@ -29,6 +41,8 @@ public sealed class SqlDocumentRepository(Func<AtlasDataContext>? contextFactory
         UpdatedAt = document.UpdatedAt
     };
 
+
+    // Rebuild the document from saved values rather than treating it as newly created.
     private static Document ToDomain(DocumentRow document) =>
         Document.Reconstitute(
             new DocumentId(document.Id),
@@ -81,11 +95,15 @@ public sealed class SqlDocumentRepository(Func<AtlasDataContext>? contextFactory
         return stored;
     }
 
+
+    // Represent optional blank text as SQL null; required payloads are handled by their block type.
     private static string? ForStorage(string value) =>
         string.IsNullOrWhiteSpace(value) ? null : value;
 
     private static ContentBlock ToDomain(BlockRow block)
     {
+
+        // Restore the block identity first; the stored kind then selects its concrete domain type.
         var id = new BlockId(block.Id);
 
         // Reconstitution preserves persisted identity and timestamps rather
