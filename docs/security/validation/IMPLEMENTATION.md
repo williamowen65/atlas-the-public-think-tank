@@ -137,7 +137,7 @@ A shared EF context alone does not provide this guarantee. The shared **transact
 3. **Commit** if the entire operation succeeds, or **roll back** if it fails.
 4. **Dispose** the transaction and context to clean up.
 
-Atlas also acquires the application lock before the checks. It remains held until commit or rollback.
+Node operations also acquire the graph application lock before their checks. Other repository families use the transaction without requesting that named lock. Once acquired, the graph lock remains held until the outer transaction commits or rolls back.
 
 “Close the transaction” therefore means deciding whether to commit or roll back, then cleaning up—not simply finishing the last `SaveChanges()` call.
 
@@ -158,7 +158,7 @@ The outermost SQL boundary opens one `AtlasDataContext` and starts a serializabl
 
 This allows the Content and Graph repository calls in node creation to use the same context and transaction. The domain objects do not receive an EF context; sharing happens inside the SQL adapters.
 
-Nested boundary calls join the existing operation rather than opening or committing another transaction. Only the outermost call commits. A failure disposes the uncommitted transaction, rolling back its writes. Different connection configurations are rejected rather than combined. This context is scoped to the operation, not shared globally across users.
+Nested boundary calls join the existing operation rather than opening or committing another transaction. A nested Node repository call also acquires the graph lock before running its callback, even if a Content repository started the outer transaction. Only the outermost call commits. A failure disposes the uncommitted transaction, rolling back its writes. Different connection configurations are rejected rather than combined. This context is scoped to the operation, not shared globally across users.
 
 ### Why also acquire a write lock?
 
@@ -166,18 +166,18 @@ Rollback solves partial completion. A second problem is **competing checks and w
 
 For example, one operation attaches A beneath B while another attaches B beneath A. If each checks ancestry before either change is visible, both might conclude that its own proposal has no cycle.
 
-The boundary calls SQL Server's `sp_getapplock` to acquire an exclusive application lock named `AtlasWriteWorkflow` before running the checks and writes:
+[SqlRepository.WriteLockResource](../../../src/Atlas.Console/Storage/SqlRepository.cs) defaults to no named lock. [SqlNodeRepository](../../../src/Atlas.Console/Storage/SqlNodeRepository.cs) overrides it with `AtlasGraphTopology`. The boundary calls SQL Server's `sp_getapplock` for that resource before the Node operation's checks and writes:
 
 - **Application lock:** SQL Server coordinates access to a named resource. This is not a new database table or an instruction to lock every row.
 - **Exclusive:** only one cooperating operation in the same database can hold this named lock at a time. Another waits until the first finishes, then performs its checks against the resulting state.
 - **Transaction-owned:** `@LockOwner='Transaction'` ties the lock's lifetime to the transaction. SQL Server releases it when the transaction commits or rolls back.
 - **Timeout:** the current code waits up to 15 seconds. Failure to acquire the lock stops the operation and is translated into `OperationConflictException`.
 
-The transaction provides all-or-nothing writes; the named lock makes cooperating MVP write workflows take turns through their checks and saves. Both protections cover the full operation.
+The transaction provides all-or-nothing writes for every repository family. The named lock makes Node write workflows take turns through their checks and saves. Content, votes, communities, moderation and other repositories do not request it; their serializable transactions and database constraints protect competing database changes. SQL deadlocks and constraint failures are translated into operation conflicts, so callers may need to reload and retry.
 
-This is deliberately coarse: unrelated writes using this boundary also wait for each other. Direct SQL or other code that does not acquire the named lock does not participate in this coordination. Database constraints remain necessary, and this is not a general stale-form/version check.
+The graph lock remains deliberately coarse within Node writes: changes to different nodes can collectively create a transitive cycle, so one lock per node would not be sufficient. Even a rename currently uses it because Node saves recheck and persist parent relationships. A held graph lock does not by itself block unrelated Content or vote writes, although normal SQL row/range locks can still cause blocking. Direct SQL that skips the graph lock does not participate in graph coordination. This is not a general stale-form/version check.
 
-**Monitoring the lock:** SQL Server exposes current application-lock holders and waiters through its monitoring views; Atlas does not need a manually built queue. Each operation has its own context and transaction, while cooperating writes request the same named lock. For future performance monitoring, measure waiting-session counts, lock acquisition time, time holding the lock and timeout counts. Live database views provide snapshots; application metrics can show trends over time. The full discovery proposal and diagnostic SQL are recorded in [PTTD-36](https://thepublicthinktank.atlassian.net/browse/PTTD-36).
+**Monitoring the lock:** SQL Server exposes current application-lock holders and waiters through its monitoring views; Atlas does not need a manually built queue. Each operation has its own context and transaction, while cooperating Node writes request the graph lock. For future performance monitoring, measure waiting-session counts, lock acquisition time, time holding the lock and timeout counts. Live database views provide snapshots; application metrics can show trends over time. The full discovery proposal and diagnostic SQL are recorded in [PTTD-36](https://thepublicthinktank.atlassian.net/browse/PTTD-36).
 
 ### Workflows and evidence
 
@@ -188,11 +188,11 @@ This is deliberately coarse: unrelated writes using this boundary also wait for 
 | [Reaction replacement](../../../src/Atlas.Graph/Reactions/NodeReactionApplicationService.cs) | Replacement and old association's supersession/audit | `FailedSupersessionSaveRollsBackReplacement` |
 | [Grouped moderation](../../../src/Atlas.Moderation/ModerationService.cs) | All decisions, review requests or restorations in the group | `FailedSecondModerationSaveRollsBackWholeGroup` and `FailedGroupedReviewAndRestorationPreservePersistedHistory` |
 
-All named tests above are in [SqlOperationValidationTests](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs). Further tests cover competing community names/vote inserts, competing moderator decisions, opposite parent attachments and translation of a SQL unique violation into [OperationConflictException](../../../src/Atlas.Contracts/Operations/OperationBoundary.cs). Constraints remain final protection. No EF model or migration change is required.
+All named tests above are in [SqlOperationValidationTests](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs). Further tests cover competing community names/vote inserts, competing moderator decisions, opposite parent attachments and translation of a SQL unique violation into [OperationConflictException](../../../src/Atlas.Contracts/Operations/OperationBoundary.cs). Additional SQL tests prove that Content and vote writes finish while a graph lock is held, direct competing Node saves cannot create a three-node cycle, and nested Node operations acquire the lock without committing early or leaking it after rollback. Constraints remain final protection. No EF model or migration change is required.
 
 ### Limits to retain during review
 
-The database-wide write lock is intentionally coarse and limits write throughput. Refine its granularity only with equivalent concurrency evidence. These boundaries are synchronous, use one database and cover cooperating repository operations. They do not make arbitrary direct `DbContext` writes follow application policy, provide universal optimistic version checks for every stale object, or coordinate external delivery/event publication with SQL.
+The graph-wide lock serializes Node writes, not all Atlas writes. Further narrowing requires equivalent transitive-cycle evidence; there is no per-node lock scheme in this slice. These boundaries are synchronous, use one database and cover cooperating repository operations. They do not make arbitrary direct `DbContext` writes follow application policy, provide universal optimistic version checks for every stale object, or coordinate external delivery/event publication with SQL.
 
 Validation rejects local invalid proposals before mutation. A later persistence failure rolls back database writes; it does not rewind domain objects already changed in caller memory. Reload after failure before retrying. In-memory test adapters without an `IOperationBoundary` do not claim SQL rollback semantics.
 

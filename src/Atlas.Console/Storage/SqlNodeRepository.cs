@@ -8,6 +8,11 @@ namespace Atlas.ConsoleApp.Storage;
 /// <summary>Maps domain objects directly to EF Core rows in SQL Server.</summary>
 public sealed class SqlNodeRepository(Func<AtlasDataContext>? contextFactory = null) : SqlRepository(contextFactory), INodeRepository, IDiscoveryNodeReader
 {
+    /// <summary>Coordinates node writes before their ancestry checks and saves.</summary>
+    /// <remarks>All node writes conservatively share this database-scoped lock: two changes to different
+    /// nodes can collectively create a transitive cycle. Other repository families do not request it.</remarks>
+    protected override string? WriteLockResource => "AtlasGraphTopology";
+
     public Node? GetById(NodeId id) => FindRow<NodeRow>(id.Value) is { } row ? ToDomain(row) : null;
     private IReadOnlyCollection<Node> All() => ReadRows<NodeRow>().Select(ToDomain).ToList();
     public IReadOnlyCollection<Node> GetChildren(NodeId parentId) => All().Where(node => node.ParentNodeIds.Contains(parentId)).ToList();

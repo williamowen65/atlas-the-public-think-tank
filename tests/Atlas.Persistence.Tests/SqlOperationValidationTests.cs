@@ -1,3 +1,6 @@
+using Atlas.Content.Blocks;
+using Atlas.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Atlas.Communities.Communities;
 using Atlas.Communities.Memberships;
 using Atlas.ConsoleApp;
@@ -264,6 +267,109 @@ public sealed class SqlOperationValidationTests
         var one = Save(1); var two = Save(2); start.Set();
         Assert.AreEqual(1, (await Task.WhenAll(one, two)).Count(result => result));
         using var check = database.Open(); Assert.AreEqual(1, check.VoteRows.Count());
+    }
+
+    [TestMethod]
+    public async Task CompetingDirectNodeSavesCannotCreateTransitiveCycle()
+    {
+        using var database = SqlTestDatabase.Create();
+        var actor = database.AddParticipant();
+        var type = NodeTypeDefinition.CreateSystemDefined("Idea", "Ideas", Now);
+        new SqlNodeTypeRepository(database.Open).Save(type);
+        var nodes = new SqlNodeRepository(database.Open);
+        var creation = new NodeCreationService(nodes, new SqlDocumentRepository(database.Open));
+        var a = creation.Create("A", "Description", type.Id, actor, []);
+        var b = creation.Create("B", "Description", type.Id, actor, []);
+        var c = creation.Create("C", "Description", type.Id, actor, []);
+        a.AttachToParent(b.Id, actor, Now.AddMinutes(1));
+        b.AttachToParent(c.Id, actor, Now.AddMinutes(1));
+        c.AttachToParent(a.Id, actor, Now.AddMinutes(1));
+        using var start = new ManualResetEventSlim();
+        Task<bool> Save(Node value) => Task.Run(() =>
+        {
+            start.Wait();
+            try { new SqlNodeRepository(database.Open).Save(value); return true; }
+            catch (InvalidOperationException) { return false; }
+        });
+        var operations = new[] { Save(a), Save(b), Save(c) };
+        start.Set();
+        Assert.AreEqual(2, (await Task.WhenAll(operations)).Count(result => result));
+        var loaded = new[] { nodes.GetById(a.Id)!, nodes.GetById(b.Id)!, nodes.GetById(c.Id)! };
+        Assert.AreEqual(2, loaded.Sum(value => value.ParentNodeIds.Count));
+        foreach (var value in loaded)
+            GraphRelationshipValidation.EnsureAcyclic(value.Id, value.ParentNodeIds, id => nodes.GetById(id)?.ParentNodeIds);
+    }
+
+    [TestMethod]
+    public async Task ContentAndVoteWritesCompleteWhileGraphLockIsHeld()
+    {
+        using var database = SqlTestDatabase.Create();
+        var actor = database.AddParticipant();
+        var node = database.AddNode();
+        using var acquired = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        // Start separate execution flows outside any ambient operation context.
+        var holder = Task.Run(() => new SqlNodeRepository(database.Open).Execute(() =>
+        {
+            acquired.Set();
+            if (!release.Wait(TimeSpan.FromSeconds(30))) throw new TimeoutException("Test did not release graph lock.");
+            return true;
+        }));
+        Task? writes = null;
+        try
+        {
+            Assert.IsTrue(acquired.Wait(TimeSpan.FromSeconds(10)), "Graph boundary did not start.");
+            writes = Task.Run(() =>
+            {
+                new SqlDocumentRepository(database.Open).SaveBlock(new MarkdownTextBlock("Independent content", Now));
+                new SqlVoteRepository(database.Open).Save(new Vote(new NodeVoteTarget(node), new VotingParticipantId(actor), 3));
+            });
+            // The writes must finish BEFORE releasing the graph lock, not just eventually succeed.
+            await writes.WaitAsync(TimeSpan.FromSeconds(10));
+            using var check = database.Open();
+            Assert.AreEqual(1, check.BlockRows.Count());
+            Assert.AreEqual(1, check.VoteRows.Count());
+        }
+        finally
+        {
+            release.Set();
+            await holder;
+            if (writes is not null) await writes;
+        }
+    }
+
+    [TestMethod]
+    public void NestedNodeBoundaryAcquiresGraphLockAndOuterRollbackReleasesIt()
+    {
+        using var database = SqlTestDatabase.Create();
+        AtlasDataContext? outer = null;
+        AtlasDataContext Open()
+        {
+            var candidate = database.Open();
+            outer ??= candidate;
+            return candidate;
+        }
+        var content = new SqlDocumentRepository(Open);
+        Assert.Throws<InjectedFailure>(() => content.Execute<bool>(() =>
+        {
+            Assert.AreEqual("NoLock", outer!.Database.SqlQueryRaw<string>(
+                "SELECT APPLOCK_MODE('public', 'AtlasGraphTopology', 'Transaction') AS [Value]").Single());
+            new SqlNodeRepository(database.Open).Execute(() =>
+            {
+                Assert.AreEqual("Exclusive", outer.Database.SqlQueryRaw<string>(
+                    "SELECT APPLOCK_MODE('public', 'AtlasGraphTopology', 'Transaction') AS [Value]").Single());
+                return true;
+            });
+            content.SaveBlock(new MarkdownTextBlock("Must roll back", Now));
+            // A nested return must neither commit nor release the transaction-owned graph lock.
+            Assert.AreEqual("Exclusive", outer.Database.SqlQueryRaw<string>(
+                "SELECT APPLOCK_MODE('public', 'AtlasGraphTopology', 'Transaction') AS [Value]").Single());
+            throw new InjectedFailure();
+        }));
+        using var check = database.Open();
+        Assert.AreEqual(0, check.BlockRows.Count());
+        Assert.AreEqual(1, check.Database.SqlQueryRaw<int>(
+            "SELECT APPLOCK_TEST('public', 'AtlasGraphTopology', 'Exclusive', 'Session') AS [Value]").Single());
     }
 
     private sealed class FixedClock : TimeProvider { public override DateTimeOffset GetUtcNow() => Now; }

@@ -15,11 +15,11 @@ Open the [editable Excalidraw blackboard](PTT-130-TRANSACTION-FLOW.excalidraw) t
 | Save Content rows through inherited helpers | [SqlDocumentRepository](../../src/Atlas.Console/Storage/SqlDocumentRepository.cs) |
 | Save Graph rows through inherited helpers | [SqlNodeRepository](../../src/Atlas.Console/Storage/SqlNodeRepository.cs) |
 
-`Current` is an `AsyncLocal` execution-scope value. It is not a context shared globally across requests. A nested call opens a temporary candidate only to verify its connection string, then disposes it and borrows `Current`. A borrowed context lease does not dispose the outer context.
+`Current` is an `AsyncLocal` execution-scope value. It is not a context shared globally across requests. A nested call opens a temporary candidate to verify its connection string, then disposes it. A Node boundary also acquires its graph lock on the current transaction before running its callback. Repository context leases borrow `Current`. A borrowed context lease does not dispose the outer context.
 
 `SaveChanges` flushes pending changes to SQL. Since an explicit outer transaction is active, those writes are still subject to rollback. Only the outer boundary commits. A repository save without an existing boundary instead creates its own boundary for that save; it cannot retroactively group earlier independent saves.
 
-The named application lock makes cooperating writes take turns before reference and ancestry checks. It is separate from transaction atomicity and normal SQL row/range locks. It is released on commit or rollback, waits up to 15 seconds, and does not coordinate code that skips the named lock.
+The named AtlasGraphTopology application lock makes Node writes take turns before reference and ancestry checks. Other repository families do not request it; they retain serializable transactions and database constraints. Normal SQL row/range locks may still cause blocking. It is separate from transaction atomicity and normal SQL row/range locks. It is released on commit or rollback, waits up to 15 seconds, and does not coordinate code that skips the named lock.
 
 The shared context is not safe for parallel repository work. Different connection strings cannot join the same operation. SQL rollback does not rewind mutated domain objects in memory or roll back external event delivery.
 

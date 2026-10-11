@@ -15,14 +15,16 @@ public static class SqlOperationBoundary
     /// <summary>Runs the complete callback in one SQL transaction, or joins the current operation.</summary>
     /// <remarks>
     /// Only the outermost call owns commit and rollback. Exceptions leave the transaction uncommitted; disposal rolls it back.
+    /// Optional named coordination is independent of transaction atomicity.
     /// The callback is synchronous and must not launch parallel repository work using the shared context.
     /// </remarks>
-    public static T Execute<T>(Func<AtlasDataContext> open, Func<T> operation)
+    public static T Execute<T>(Func<AtlasDataContext> open, Func<T> operation, string? lockResource = null)
     {
         if (Current.Value is not null)
         {
             using var check = open();
             EnsureSameDatabase(check, Current.Value);
+            AcquireLock(Current.Value, lockResource);
             return operation();
         }
         using var database = open();
@@ -30,14 +32,7 @@ public static class SqlOperationBoundary
         using var transaction = database.Database.BeginTransaction(IsolationLevel.Serializable);
         try
         {
-            // A database-scoped transaction lock serializes current MVP write workflows,
-            // including check-then-insert and graph topology checks. No schema changes.
-            // AtlasWriteWorkflow is one common resource name: all cooperating writes take turns.
-            // Exclusive prevents a second holder; Transaction releases the lock on commit/rollback.
-            // LockTimeout is 15000 milliseconds. Negative return codes become custom SQL error 51000.
-            // These are fixed implementation settings, not user input or separate app configuration.
-            // ExecuteSqlInterpolated binds the resource name as a SQL parameter.
-            database.Database.ExecuteSqlInterpolated($"DECLARE @result int; EXEC @result = sp_getapplock @Resource={"AtlasWriteWorkflow"}, @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=15000; IF @result < 0 THROW 51000, 'Atlas write lock unavailable', 1;");
+            AcquireLock(database, lockResource);
             Current.Value = database;
             var result = operation();
             transaction.Commit();
@@ -48,6 +43,21 @@ public static class SqlOperationBoundary
             throw new OperationConflictException("The operation conflicted with another write or a database constraint. Reload and retry.", exception);
         }
         finally { Current.Value = null; }
+    }
+
+    /// <summary>Acquires optional named coordination inside the current transaction before the callback runs.</summary>
+    /// <remarks>
+    /// Null means ordinary serializable transaction protection only. Node repositories request the shared
+    /// AtlasGraphTopology resource because ancestry checks can span multiple nodes. Nested calls also
+    /// request their required lock, even when the outer operation began through another repository.
+    /// SQL Server permits repeated acquisition by the owning transaction and releases its locks at completion.
+    /// Exclusive applies only to this resource name. Timeout is 15000 milliseconds; failure raises SQL
+    /// error 51000 for translation to OperationConflictException. Resource values are SQL parameters.
+    /// </remarks>
+    private static void AcquireLock(AtlasDataContext database, string? lockResource)
+    {
+        if (lockResource is null) return;
+        database.Database.ExecuteSqlInterpolated($"DECLARE @result int; EXEC @result = sp_getapplock @Resource={lockResource}, @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=15000; IF @result < 0 THROW 51000, 'Atlas write lock unavailable', 1;");
     }
 
     /// <summary>Returns a lease on the current operation context, or owns a fresh context for a standalone call.</summary>

@@ -10,6 +10,11 @@ namespace Atlas.ConsoleApp.Storage;
 /// one operation must produce contexts with exactly the same connection string.</param>
 public abstract class SqlRepository(Func<AtlasDataContext>? contextFactory = null) : IOperationBoundary, IReferenceLookup
 {
+    /// <summary>Optional named lock requested before this repository's operation callback.</summary>
+    /// <remarks>Most writes rely on serializable isolation and constraints. Overrides must use a shared
+    /// resource for the invariant being protected, rather than one arbitrary name per repository instance.</remarks>
+    protected virtual string? WriteLockResource => null;
+
     /// <summary>Creates a candidate context using the injected factory, or the host-configured SqlStorage factory.</summary>
     /// <remarks>
     /// This factory does not itself join a transaction; SqlOperationBoundary.Open determines which context the caller uses.
@@ -19,7 +24,7 @@ public abstract class SqlRepository(Func<AtlasDataContext>? contextFactory = nul
     /// <remarks>
     /// Nested calls join the outer operation, so repository saves cannot commit that operation early.
     /// </remarks>
-    public T Execute<T>(Func<T> operation) => SqlOperationBoundary.Execute(Open, operation);
+    public T Execute<T>(Func<T> operation) => SqlOperationBoundary.Execute(Open, operation, WriteLockResource);
     /// <summary>Answers reference existence and optional availability checks using the operation context.</summary>
     /// <remarks>
     /// When requireActive is false, inactive, archived or hidden records may still satisfy existence.
