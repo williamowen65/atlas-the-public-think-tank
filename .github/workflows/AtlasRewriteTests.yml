@@ -40,6 +40,8 @@ jobs:
             project: tests/Atlas.Identity.Tests/Atlas.Identity.Tests.csproj
           - name: Voting
             project: tests/Atlas.Voting.Tests/Atlas.Voting.Tests.csproj
+          - name: Communities
+            project: tests/Atlas.Communities.Tests/Atlas.Communities.Tests.csproj
           - name: Comments
             project: tests/Atlas.Comments.Tests/Atlas.Comments.Tests.csproj
           - name: Console

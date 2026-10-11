@@ -15,8 +15,13 @@ public sealed class Participant
     /// <summary>Creates a validated participant instance.</summary>
     public Participant(
         string displayName,
-        DateTimeOffset createdAt)
-        : this(displayName, string.Empty, createdAt)
+        DateTimeOffset createdAt
+    )
+        : this(
+            displayName,
+            string.Empty,
+            createdAt
+        )
     {
     }
 
@@ -24,14 +29,15 @@ public sealed class Participant
     public Participant(
         string displayName,
         string bio,
-        DateTimeOffset createdAt)
+        DateTimeOffset createdAt
+    )
     {
         Id = ParticipantId.New();
         DisplayName = ValidateDisplayName(displayName);
         Bio = ValidateBio(bio);
         IsActive = true;
-        CreatedAt = createdAt;
-        UpdatedAt = createdAt;
+        CreatedAt = createdAt.ToUniversalTime();
+        UpdatedAt = createdAt.ToUniversalTime();
     }
 
     /// <summary>Creates a validated participant instance.</summary>
@@ -41,8 +47,14 @@ public sealed class Participant
         string bio,
         bool isActive,
         DateTimeOffset createdAt,
-        DateTimeOffset updatedAt)
+        DateTimeOffset updatedAt
+    )
     {
+        ArgumentNullException.ThrowIfNull(id);
+        if (id.Value == Guid.Empty) throw new ArgumentException(
+            "A participant ID is required.",
+            nameof(id)
+        );
         if (updatedAt < createdAt)
         {
             throw new ArgumentException(
@@ -53,8 +65,8 @@ public sealed class Participant
         DisplayName = ValidateDisplayName(displayName);
         Bio = ValidateBio(bio);
         IsActive = isActive;
-        CreatedAt = createdAt;
-        UpdatedAt = updatedAt;
+        CreatedAt = createdAt.ToUniversalTime();
+        UpdatedAt = updatedAt.ToUniversalTime();
     }
 
     /// <summary>Rebuilds the domain object from persisted state without replaying creation behavior.</summary>
@@ -64,7 +76,8 @@ public sealed class Participant
         string bio,
         bool isActive,
         DateTimeOffset createdAt,
-        DateTimeOffset updatedAt)
+        DateTimeOffset updatedAt
+    )
     {
         return new Participant(
             id,
@@ -72,13 +85,15 @@ public sealed class Participant
             bio,
             isActive,
             createdAt,
-            updatedAt);
+            updatedAt
+        );
     }
 
     /// <summary>Changes the validated name and advances the modification timestamp when the value differs.</summary>
     internal void Rename(
         string newDisplayName,
-        DateTimeOffset changedAt)
+        DateTimeOffset changedAt
+    )
     {
         var validatedName = ValidateDisplayName(newDisplayName);
 
@@ -87,14 +102,16 @@ public sealed class Participant
             return;
         }
 
+        EnsureTime(changedAt);
         DisplayName = validatedName;
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 
     /// <summary>Changes the validated participant biography when the value differs.</summary>
     internal void ChangeBio(
         string newBio,
-        DateTimeOffset changedAt)
+        DateTimeOffset changedAt
+    )
     {
         var validatedBio = ValidateBio(newBio);
 
@@ -103,15 +120,17 @@ public sealed class Participant
             return;
         }
 
+        EnsureTime(changedAt);
         Bio = validatedBio;
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 
     /// <summary>Applies an atomic profile update after validating all proposed values.</summary>
     internal void UpdateProfile(
         string newDisplayName,
         string newBio,
-        DateTimeOffset changedAt)
+        DateTimeOffset changedAt
+    )
     {
         var validatedName = ValidateDisplayName(newDisplayName);
         var validatedBio = ValidateBio(newBio);
@@ -122,9 +141,10 @@ public sealed class Participant
             return;
         }
 
+        EnsureTime(changedAt);
         DisplayName = validatedName;
         Bio = validatedBio;
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 
     /// <summary>Moves the participant into the inactive lifecycle state.</summary>
@@ -135,18 +155,28 @@ public sealed class Participant
             return;
         }
 
+        EnsureTime(deactivatedAt);
         IsActive = false;
-        UpdatedAt = deactivatedAt;
+        UpdatedAt = deactivatedAt.ToUniversalTime();
     }
 
     /// <summary>Validates and normalizes display name.</summary>
+    private void EnsureTime(DateTimeOffset at)
+    {
+        if (at < UpdatedAt) throw new ArgumentException(
+            "Change time cannot precede the current update time.",
+            nameof(at)
+        );
+    }
+
     private static string ValidateDisplayName(string displayName)
     {
         if (string.IsNullOrWhiteSpace(displayName))
         {
             throw new ArgumentException(
                 "A participant display name is required.",
-                nameof(displayName));
+                nameof(displayName)
+            );
         }
 
         var trimmedName = displayName.Trim();
@@ -155,7 +185,8 @@ public sealed class Participant
         {
             throw new ArgumentException(
                 "A participant display name cannot exceed 80 characters.",
-                nameof(displayName));
+                nameof(displayName)
+            );
         }
 
         return trimmedName;
@@ -171,7 +202,8 @@ public sealed class Participant
             throw new ArgumentException(
                 $"A participant bio cannot exceed " +
                 $"{MaximumBioLength} characters.",
-                nameof(bio));
+                nameof(bio)
+            );
         }
 
         return trimmedBio;

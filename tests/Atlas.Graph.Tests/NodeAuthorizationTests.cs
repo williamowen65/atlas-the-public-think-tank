@@ -12,33 +12,51 @@ public class NodeAuthorizationTests
     public void AuthorOwnedScalarMutations_ByNonAuthor_AreRejected()
     {
         AssertRejectedWithoutStateChange(
-            (node, actorId) => node.Rename(
+            (
+                node,
+                actorId
+            ) => node.Rename(
                 new NodeTitle("Unauthorized title"),
                 actorId,
-                node.UpdatedAt.AddMinutes(1)));
+                node.UpdatedAt.AddMinutes(1)
+            ));
 
         AssertRejectedWithoutStateChange(
-            (node, actorId) => node.ChangeType(
+            (
+                node,
+                actorId
+            ) => node.ChangeType(
                 NodeTypeId.New(),
                 actorId,
-                node.UpdatedAt.AddMinutes(1)));
+                node.UpdatedAt.AddMinutes(1)
+            ));
 
         AssertRejectedWithoutStateChange(
-            (node, actorId) => node.Archive(
+            (
+                node,
+                actorId
+            ) => node.Archive(
                 actorId,
-                node.UpdatedAt.AddMinutes(1)));
+                node.UpdatedAt.AddMinutes(1)
+            ));
 
         var archivedNode = NodeTestFactory.Create();
         archivedNode.Archive(
             archivedNode.AuthorId.Value,
-            archivedNode.UpdatedAt.AddMinutes(1));
+            archivedNode.UpdatedAt.AddMinutes(1)
+        );
         archivedNode.ClearDomainEvents();
 
         AssertRejectedWithoutStateChange(
             archivedNode,
-            (node, actorId) => node.Restore(
+            (
+                node,
+                actorId
+            ) => node.Restore(
                 actorId,
-                node.UpdatedAt.AddMinutes(1)));
+                node.UpdatedAt.AddMinutes(1)
+            )
+        );
     }
 
     /// <summary>Verifies that a non-author cannot change node relationships or requested types.</summary>
@@ -46,46 +64,66 @@ public class NodeAuthorizationTests
     public void AuthorOwnedCollectionMutations_ByNonAuthor_AreRejected()
     {
         AssertRejectedWithoutStateChange(
-            (node, actorId) => node.RequestSubNodeType(
+            (
+                node,
+                actorId
+            ) => node.RequestSubNodeType(
                 NodeTypeId.New(),
                 actorId,
-                node.UpdatedAt.AddMinutes(1)));
+                node.UpdatedAt.AddMinutes(1)
+            ));
 
         var requestedTypeNode = NodeTestFactory.Create();
         var requestedTypeId = NodeTypeId.New();
         requestedTypeNode.RequestSubNodeType(
             requestedTypeId,
             requestedTypeNode.AuthorId.Value,
-            requestedTypeNode.UpdatedAt.AddMinutes(1));
+            requestedTypeNode.UpdatedAt.AddMinutes(1)
+        );
         requestedTypeNode.ClearDomainEvents();
 
         AssertRejectedWithoutStateChange(
             requestedTypeNode,
-            (node, actorId) => node.StopRequestingSubNodeType(
+            (
+                node,
+                actorId
+            ) => node.StopRequestingSubNodeType(
                 requestedTypeId,
                 actorId,
-                node.UpdatedAt.AddMinutes(1)));
+                node.UpdatedAt.AddMinutes(1)
+            )
+        );
 
         AssertRejectedWithoutStateChange(
-            (node, actorId) => node.AttachToParent(
+            (
+                node,
+                actorId
+            ) => node.AttachToParent(
                 NodeId.New(),
                 actorId,
-                node.UpdatedAt.AddMinutes(1)));
+                node.UpdatedAt.AddMinutes(1)
+            ));
 
         var attachedNode = NodeTestFactory.Create();
         var parentId = NodeId.New();
         attachedNode.AttachToParent(
             parentId,
             attachedNode.AuthorId.Value,
-            attachedNode.UpdatedAt.AddMinutes(1));
+            attachedNode.UpdatedAt.AddMinutes(1)
+        );
         attachedNode.ClearDomainEvents();
 
         AssertRejectedWithoutStateChange(
             attachedNode,
-            (node, actorId) => node.DetachFromParent(
+            (
+                node,
+                actorId
+            ) => node.DetachFromParent(
                 parentId,
                 actorId,
-                node.UpdatedAt.AddMinutes(1)));
+                node.UpdatedAt.AddMinutes(1)
+            )
+        );
     }
 
     /// <summary>Verifies authorization happens even when a requested value would otherwise be a no-op.</summary>
@@ -98,7 +136,8 @@ public class NodeAuthorizationTests
             () => node.Rename(
                 node.Title,
                 Guid.NewGuid(),
-                node.UpdatedAt.AddMinutes(1)));
+                node.UpdatedAt.AddMinutes(1)
+            ));
     }
 
     private static void AssertRejectedWithoutStateChange(
@@ -106,12 +145,14 @@ public class NodeAuthorizationTests
     {
         AssertRejectedWithoutStateChange(
             NodeTestFactory.Create(),
-            mutation);
+            mutation
+        );
     }
 
     private static void AssertRejectedWithoutStateChange(
         Node node,
-        Action<Node, Guid> mutation)
+        Action<Node, Guid> mutation
+    )
     {
         var title = node.Title;
         var descriptionId = node.DescriptionId;
@@ -123,21 +164,42 @@ public class NodeAuthorizationTests
         var domainEvents = node.DomainEvents.ToArray();
 
         Assert.Throws<UnauthorizedAccessException>(
-            () => mutation(node, Guid.NewGuid()));
+            () => mutation(
+                node,
+                Guid.NewGuid()
+            ));
 
-        Assert.AreEqual(title, node.Title);
-        Assert.AreEqual(descriptionId, node.DescriptionId);
-        Assert.AreEqual(typeId, node.TypeId);
-        Assert.AreEqual(status, node.Status);
+        Assert.AreEqual(
+            title,
+            node.Title
+        );
+        Assert.AreEqual(
+            descriptionId,
+            node.DescriptionId
+        );
+        Assert.AreEqual(
+            typeId,
+            node.TypeId
+        );
+        Assert.AreEqual(
+            status,
+            node.Status
+        );
         CollectionAssert.AreEqual(
             requestedTypes,
-            node.RequestedSubNodeTypes.ToArray());
+            node.RequestedSubNodeTypes.ToArray()
+        );
         CollectionAssert.AreEqual(
             parentIds,
-            node.ParentNodeIds.ToArray());
-        Assert.AreEqual(updatedAt, node.UpdatedAt);
+            node.ParentNodeIds.ToArray()
+        );
+        Assert.AreEqual(
+            updatedAt,
+            node.UpdatedAt
+        );
         CollectionAssert.AreEqual(
             domainEvents,
-            node.DomainEvents.ToArray());
+            node.DomainEvents.ToArray()
+        );
     }
 }

@@ -35,11 +35,21 @@ Domains own behavior and identifiers. Console SQL repository adapters translate 
 
 ## Transaction boundaries
 
-SqlRepository.SaveRow opens a context and transaction for the addressed record and owned children. Existing children are removed and flushed before replacement rows with the same composite keys are attached. This preserves owner-local atomicity.
+[SqlRepository](../../src/Atlas.Console/Storage/SqlRepository.cs) starts a transaction for a standalone save or joins the current operation. Replaced owned children are removed and flushed before new rows with the same keys are attached. Node metadata saves preserve stored parents instead of replacing them.
 
-Node creation saves a block, document, and node in separate repository calls. A later failure can leave an unreferenced block/document. Community creation/membership, reaction replacement, and moderation group operations likewise may span separate saves. Shared physical storage does not imply a shared workflow transaction.
+The following workflows explicitly share one context and SQL transaction:
 
-Competing first votes cannot persist duplicate participant-target rows, but the loser can receive a uniqueness error. Same-record edits have last-write behavior; rowversion conflict detection and retry policies are not implemented.
+- Node creation: block, document and Node, including an optional parent.
+- Community creation: community and owner membership.
+- Reaction replacement: new association and old association supersession/audit.
+- Moderation: grouped decisions, review requests and restoration.
+- Content block addition: payload and document composition.
+
+A failure rolls back their earlier writes. This guarantee comes from the operation boundary, not merely from sharing a database. Independent saves outside a boundary remain separate transactions. See [implementation and failure evidence](../security/validation/IMPLEMENTATION.md#workflows-and-evidence).
+
+- Serializable transactions and SQL constraints protect competing writes; expected deadlock/constraint failures become [OperationConflictException](../../src/Atlas.Contracts/Operations/OperationBoundary.cs). Callers reload before retrying; no automatic successful upsert is implied.
+- Node creation and parent changes request the shared graph application lock before ancestry checks. Metadata edits do not request it. Ordinary SQL row/range blocking remains possible.
+- There is no universal rowversion/stale-edit policy; some relationship operations check current state. Rollback does not rewind objects in caller memory.
 
 ## Event consistency
 

@@ -18,7 +18,8 @@ public static class NodeCreationWorkflow
         Guid authorParticipantId,
         InMemoryEventPublisher eventPublisher,
         NodeTypeDefinition? preselectedType = null,
-        Node? parent = null)
+        Node? parent = null
+    )
     {
         if (preselectedType is not null)
         {
@@ -44,7 +45,8 @@ public static class NodeCreationWorkflow
         var nodeType = preselectedType
             ?? ConsoleUi.ReadNodeType(
                 nodeTypes,
-                authorParticipantId.ToString());
+                authorParticipantId.ToString()
+            );
 
         if (nodeType is null)
         {
@@ -54,7 +56,8 @@ public static class NodeCreationWorkflow
         var requestedSubNodeTypes =
             ConsoleUi.ReadRequestedSubNodeTypes(
                 nodeTypes,
-                authorParticipantId.ToString());
+                authorParticipantId.ToString()
+            );
 
         if (requestedSubNodeTypes.Count == 0)
         {
@@ -63,39 +66,17 @@ public static class NodeCreationWorkflow
 
         try
         {
-            var now = DateTimeOffset.UtcNow;
-            var nodeTitle = new NodeTitle(title ?? string.Empty);
-
-            var textBlock = new MarkdownTextBlock(
+            var node = new NodeCreationService(
+                nodes,
+                documents
+            ).Create(
+                title ?? string.Empty,
                 description ?? string.Empty,
-                now);
-            var document = new Document([textBlock.Id], now);
-
-            documents.SaveBlock(textBlock);
-            documents.Save(document);
-
-            Console.WriteLine();
-            Console.WriteLine(
-                $"[ATLAS.CONTENT] Saved description document " +
-                $"{document.Id}.");
-
-            var node = new Node(
-                nodeTitle,
-                new NodeDescriptionId(document.Id.Value),
                 nodeType.Id,
-                new NodeAuthorId(authorParticipantId),
+                authorParticipantId,
                 requestedSubNodeTypes.Select(type => type.Id),
-                now);
-
-            if (parent is not null)
-            {
-                node.AttachToParent(
-                    parent.Id,
-                    authorParticipantId,
-                    now);
-            }
-
-            nodes.Save(node);
+                parent?.Id
+            );
 
             Console.WriteLine(
                 $"[ATLAS.GRAPH] Saved node {node.Id} with " +
@@ -118,7 +99,7 @@ public static class NodeCreationWorkflow
 
             return node;
         }
-        catch (ArgumentException exception)
+        catch (Exception exception) when (exception is ArgumentException or InvalidOperationException)
         {
             ConsoleUi.Pause(
                 $"Unable to create node: {exception.Message}");

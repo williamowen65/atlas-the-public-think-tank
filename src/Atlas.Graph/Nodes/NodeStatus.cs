@@ -1,4 +1,4 @@
-﻿namespace Atlas.Graph.Nodes;
+namespace Atlas.Graph.Nodes;
 
 /// <summary>Describes whether a Graph node is active or archived.</summary>
 public enum NodeStatus

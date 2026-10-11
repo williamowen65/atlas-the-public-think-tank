@@ -11,7 +11,10 @@ public static class CommunityDisplay
     public static void WriteTableHeader()
     {
         Console.WriteLine($"{"#",3}  {"Name",-28}  {"Owner",-20}  {"Members",7}  {"Nodes",5}  {"Status",-10}  Description");
-        Console.WriteLine(new string('-', 108));
+        Console.WriteLine(new string(
+            '-',
+            108
+        ));
     }
 
     public static void WriteTableRow(
@@ -19,19 +22,30 @@ public static class CommunityDisplay
         IParticipantRepository participants,
         ICommunityMembershipRepository memberships,
         ICommunityNodeRepository communityNodes,
-        int number)
+        int number
+    )
     {
         var owner = participants.GetById(new ParticipantId(community.OwnerParticipantId))?.DisplayName ?? "Unknown";
         var memberCount = memberships.GetByCommunity(community.Id).Count(x => x.IsActive);
         var nodeCount = communityNodes.GetByCommunity(community.Id).Count;
-        Console.WriteLine($"{number,3}  {Trim(community.Name, 28),-28}  {Trim(owner, 20),-20}  {memberCount,7}  {nodeCount,5}  {community.Status,-10}  {Trim(community.Description, 34)}");
+        Console.WriteLine($"{number,3}  {Trim(
+            community.Name,
+            28
+        ),-28}  {Trim(
+            owner,
+            20
+        ),-20}  {memberCount,7}  {nodeCount,5}  {community.Status,-10}  {Trim(
+            community.Description,
+            34
+        )}");
     }
 
     public static void WriteDetails(
         Community community,
         IParticipantRepository participants,
         ICommunityMembershipRepository memberships,
-        ICommunityNodeRepository communityNodes)
+        ICommunityNodeRepository communityNodes
+    )
     {
         var owner = participants.GetById(new ParticipantId(community.OwnerParticipantId))?.DisplayName ?? "Unknown";
         Console.WriteLine("ATLAS COMMUNITY");
@@ -45,13 +59,23 @@ public static class CommunityDisplay
         Console.WriteLine($"ID:          {community.Id}");
     }
 
-    public static string NamesForNode(Guid nodeId, ICommunityNodeRepository associations, ICommunityRepository communities)
+    public static string NamesForNode(
+        Guid nodeId,
+        ICommunityNodeRepository associations,
+        ICommunityRepository communities
+    )
     {
         var names = associations.GetByNode(nodeId)
             .Select(x => communities.GetById(x.CommunityId)?.Name)
             .Where(x => !string.IsNullOrWhiteSpace(x));
-        return string.Join(", ", names!);
+        return string.Join(
+            ", ",
+            names!
+        );
     }
 
-    private static string Trim(string value, int length) => value.Length <= length ? value : value[..(length - 1)] + "…";
+    private static string Trim(
+        string value,
+        int length
+    ) => value.Length <= length ? value : value[..(length - 1)] + "…";
 }

@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Atlas.Persistence;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace Atlas.Persistence.Tests;
 
@@ -13,9 +14,14 @@ public sealed class SqlPersistenceTests
     [TestMethod]
     public async Task DemoSeed_creates_domain_rows_and_sql_enforces_vote_uniqueness()
     {
-        var serverConnection = Environment.GetEnvironmentVariable("ATLAS_SQL_TEST_CONNECTION_STRING");
+        // Match the other SQL fixtures: shared local secrets, overridden by CI's environment.
+        var configuration = new ConfigurationBuilder()
+            .AddUserSecrets<SqlPersistenceTests>(optional: true)
+            .AddEnvironmentVariables()
+            .Build();
+        var serverConnection = configuration["ATLAS_SQL_TEST_CONNECTION_STRING"];
         if (string.IsNullOrWhiteSpace(serverConnection))
-            Assert.Inconclusive("Set ATLAS_SQL_TEST_CONNECTION_STRING to run the SQL Server integration test.");
+            Assert.Inconclusive("Set ATLAS_SQL_TEST_CONNECTION_STRING in user secrets or environment variables to run the SQL Server integration test.");
 
         var connection = new SqlConnectionStringBuilder(serverConnection)
         {
@@ -26,7 +32,9 @@ public sealed class SqlPersistenceTests
         {
             SqlStorage.Configure(connection); // EF creates an isolated database and applies the migration.
             using var identityServices = new ServiceCollection().AddAtlasIdentity(connection)
-                .BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+                .BuildServiceProvider(new ServiceProviderOptions {
+                    ValidateScopes = true
+                });
             await SqlStorage.SeedDemoDataAsync(identityServices.GetRequiredService<IServiceScopeFactory>());
             using var database = new AtlasDataContext(options);
             Assert.IsTrue(database.NodeRows.Any());
@@ -36,12 +44,12 @@ public sealed class SqlPersistenceTests
             Assert.IsNotNull(new SqlNodeRepository(() => new AtlasDataContext(options)).GetById(new Atlas.Graph.Nodes.NodeId(database.NodeRows.First().Id)));
 
             var factory = () => new AtlasDataContext(options);
-            Assert.IsTrue(new SqlNodeTypeRepository(factory).GetAll().Count > 0);
-            Assert.IsTrue(new SqlReactionDefinitionRepository(factory).GetAll().Count > 0);
+            Assert.IsNotEmpty(new SqlNodeTypeRepository(factory).GetAll());
+            Assert.IsNotEmpty(new SqlReactionDefinitionRepository(factory).GetAll());
             var reactions = new SqlNodeReactionRepository(factory).GetAll();
-            Assert.IsTrue(reactions.Count > 0);
+            Assert.IsNotEmpty(reactions);
             Assert.IsTrue(reactions.Any(reaction => reaction.AuditHistory.Count > 0));
-            Assert.IsTrue(new SqlCommunityRepository(factory).GetAll().Count > 0);
+            Assert.IsNotEmpty(new SqlCommunityRepository(factory).GetAll());
             Assert.IsTrue(new SqlParticipantRepository(factory).GetAll().All(participant => participant.DisplayName.StartsWith("Demo User")));
             Assert.IsTrue(database.Set<NodeParentRow>().Any());
             Assert.IsTrue(database.Set<DocumentBlockRow>().Any());

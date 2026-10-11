@@ -13,27 +13,35 @@ public abstract class ContentBlock
     /// <summary>Discriminator used to restore the correct concrete type from storage.</summary>
     public abstract string Kind { get; }
 
-    protected ContentBlock(BlockId id, DateTimeOffset createdAt, DateTimeOffset updatedAt)
+    protected ContentBlock(
+        BlockId id,
+        DateTimeOffset createdAt,
+        DateTimeOffset updatedAt
+    )
     {
+        ArgumentNullException.ThrowIfNull(id);
         if (updatedAt < createdAt)
         {
             throw new ArgumentException("Updated time cannot precede created time.");
         }
 
         Id = id;
-        CreatedAt = createdAt;
-        UpdatedAt = updatedAt;
+        CreatedAt = createdAt.ToUniversalTime();
+        UpdatedAt = updatedAt.ToUniversalTime();
     }
 
     /// <summary>Records a successful domain change without changing block identity.</summary>
     protected void ChangedAt(DateTimeOffset changedAt)
     {
-        if (changedAt < CreatedAt)
+        if (changedAt < UpdatedAt)
         {
-            throw new ArgumentException("Changed time cannot precede created time.", nameof(changedAt));
+            throw new ArgumentException(
+                "Changed time cannot precede the current updated time.",
+                nameof(changedAt)
+            );
         }
 
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 
     /// <summary>
@@ -41,18 +49,28 @@ public abstract class ContentBlock
     /// Keeping this invariant helper on the base class gives every subtype the
     /// same whitespace and maximum-length behavior.
     /// </summary>
-    protected static string Required(string? value, string parameterName, int maximumLength)
+    protected static string Required(
+        string? value,
+        string parameterName,
+        int maximumLength
+    )
     {
         var normalized = value?.Trim() ?? string.Empty;
 
         if (normalized.Length == 0)
         {
-            throw new ArgumentException("A value is required.", parameterName);
+            throw new ArgumentException(
+                "A value is required.",
+                parameterName
+            );
         }
 
         if (normalized.Length > maximumLength)
         {
-            throw new ArgumentException($"Value cannot exceed {maximumLength} characters.", parameterName);
+            throw new ArgumentException(
+                $"Value cannot exceed {maximumLength} characters.",
+                parameterName
+            );
         }
 
         return normalized;
@@ -65,25 +83,42 @@ public abstract class ContentBlock
     /// shared invariant behavior. It resembles the helper/hook portion of the
     /// Template Method pattern, although it is not a complete Template Method.
     /// </summary>
-    protected static string Optional(string? value, int maximumLength, string parameterName)
+    protected static string Optional(
+        string? value,
+        int maximumLength,
+        string parameterName
+    )
     {
         var normalized = value?.Trim() ?? string.Empty;
 
         if (normalized.Length > maximumLength)
         {
-            throw new ArgumentException($"Value cannot exceed {maximumLength} characters.", parameterName);
+            throw new ArgumentException(
+                $"Value cannot exceed {maximumLength} characters.",
+                parameterName
+            );
         }
 
         return normalized;
     }
 
     /// <summary>Accepts only absolute HTTP or HTTPS addresses.</summary>
-    protected static Uri HttpUrl(string value, string parameterName)
+    protected static Uri HttpUrl(
+        string value,
+        string parameterName
+    )
     {
-        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) ||
+        if (!Uri.TryCreate(
+            value,
+            UriKind.Absolute,
+            out var uri
+        ) ||
             (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
         {
-            throw new ArgumentException("An absolute HTTP or HTTPS URL is required.", parameterName);
+            throw new ArgumentException(
+                "An absolute HTTP or HTTPS URL is required.",
+                parameterName
+            );
         }
 
         return uri;

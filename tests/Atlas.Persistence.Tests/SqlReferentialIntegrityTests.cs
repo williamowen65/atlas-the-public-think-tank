@@ -21,14 +21,23 @@ public sealed class SqlReferentialIntegrityTests
         }
         using (var context = database.Open())
         {
-            context.CommunityRows.Add(new CommunityRow { Id = Guid.NewGuid(), Name = "Invalid community",
-                Description = "", OwnerParticipantId = Guid.NewGuid(), Status = "Active",
-                CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow });
+            context.CommunityRows.Add(new CommunityRow {
+                Id = Guid.NewGuid(),
+                Name = "Invalid community",
+                Description = "",
+                OwnerParticipantId = Guid.NewGuid(),
+                Status = "Active",
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            });
             AssertForeignKeyViolation(() => context.SaveChanges());
         }
         using var reloaded = database.Open();
         Assert.IsNull(reloaded.NodeRows.Single(row => row.Id == nodeId).DescriptionId);
-        Assert.AreEqual(0, reloaded.CommunityRows.Count());
+        Assert.AreEqual(
+            0,
+            reloaded.CommunityRows.Count()
+        );
     }
 
     [TestMethod]
@@ -40,8 +49,11 @@ public sealed class SqlReferentialIntegrityTests
         var documentId = Guid.NewGuid();
         using (var context = database.Open())
         {
-            context.DocumentRows.Add(new DocumentRow { Id = documentId,
-                CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow });
+            context.DocumentRows.Add(new DocumentRow {
+                Id = documentId,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            });
             var node = context.NodeRows.Single(row => row.Id == nodeId);
             node.DescriptionId = documentId;
             node.AuthorId = participantId;
@@ -58,7 +70,10 @@ public sealed class SqlReferentialIntegrityTests
             AssertForeignKeyViolation(() => context.SaveChanges());
         }
         using var reloaded = database.Open();
-        Assert.AreEqual(documentId, reloaded.NodeRows.Single(row => row.Id == nodeId).DescriptionId);
+        Assert.AreEqual(
+            documentId,
+            reloaded.NodeRows.Single(row => row.Id == nodeId).DescriptionId
+        );
         Assert.IsTrue(reloaded.ParticipantRows.Any(row => row.Id == participantId));
         Assert.IsTrue(reloaded.DocumentRows.Any(row => row.Id == documentId));
     }
@@ -82,6 +97,9 @@ public sealed class SqlReferentialIntegrityTests
     {
         var error = Assert.Throws<DbUpdateException>(save);
         Assert.IsInstanceOfType<SqlException>(error.InnerException);
-        Assert.AreEqual(547, ((SqlException)error.InnerException!).Number);
+        Assert.AreEqual(
+            547,
+            ((SqlException)error.InnerException!).Number
+        );
     }
 }

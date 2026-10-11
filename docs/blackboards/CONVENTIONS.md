@@ -5,6 +5,12 @@ blackboards readable, editable, and traceable. They are guidance for creating a
 strong first draft; a blackboard remains an exploratory companion to the
 authoritative Markdown requirements and implementation.
 
+## Preserve authored layouts when updating behavior
+
+- Update existing labels, workflow details and links in place. Preserve custom element IDs, positions, groups and arrow bindings when they still communicate the workflow.
+- Treat replacing a canvas with a new layout as a separate, explicit design change. A backend change alone does not require discarding the authored visualization.
+- State remaining limits accurately: coordinated SQL writes can roll back together while event delivery remains outside that transaction.
+
 ## Organize one cohesive subject on one canvas
 
 - Keep related workflows in one Excalidraw file when they share concepts and

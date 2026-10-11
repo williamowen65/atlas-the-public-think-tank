@@ -51,7 +51,10 @@ public sealed class ConsoleIdentitySession(IServiceScopeFactory scopes) : IModer
     /// requiring 2FA because it has no second-factor UI; 2FA belongs to the future REST API/web login flow.
     /// A successful password check is not enough by itself: the account must also satisfy the Atlas Member policy.
     /// </summary>
-    public async Task<SignInResult> SignInAsync(string email, string password)
+    public async Task<SignInResult> SignInAsync(
+        string email,
+        string password
+    )
     {
         // Always discard any previous in-memory session before attempting a new login.
         SignOut();
@@ -64,14 +67,22 @@ public sealed class ConsoleIdentitySession(IServiceScopeFactory scopes) : IModer
         // The console has no second-factor flow and never grants these accounts a session.
         if (await users.GetTwoFactorEnabledAsync(user)) return SignInResult.TwoFactorRequired;
         var signIn = services.GetRequiredService<SignInManager<AtlasIdentityUser>>();
-        var result = await signIn.CheckPasswordSignInAsync(user, password, lockoutOnFailure: true);
+        var result = await signIn.CheckPasswordSignInAsync(
+            user,
+            password,
+            lockoutOnFailure: true
+        );
         if (!result.Succeeded) return result;
         // Build the ClaimsPrincipal that represents this authenticated Identity user. It contains the claims/roles
         // that Atlas authorization policies inspect, similar to the User principal a web request would normally have.
         var principal = await services.GetRequiredService<IUserClaimsPrincipalFactory<AtlasIdentityUser>>()
             .CreateAsync(user);
         if (!(await services.GetRequiredService<IAuthorizationService>()
-                .AuthorizeAsync(principal, null, AtlasPolicies.Member)).Succeeded) return SignInResult.NotAllowed;
+                .AuthorizeAsync(
+                    principal,
+                    null,
+                    AtlasPolicies.Member
+                )).Succeeded) return SignInResult.NotAllowed;
         _principal = principal;
         // Remember Identity's current security stamp. Identity changes this value when security-sensitive account
         // state changes (for example, a password/security update), allowing RefreshAsync to invalidate this session.
@@ -95,7 +106,11 @@ public sealed class ConsoleIdentitySession(IServiceScopeFactory scopes) : IModer
         var user = await users.GetUserAsync(_principal);
         if (user is null || _securityStamp != await users.GetSecurityStampAsync(user) ||
             !(await services.GetRequiredService<IAuthorizationService>()
-                .AuthorizeAsync(_principal, null, AtlasPolicies.Member)).Succeeded)
+                .AuthorizeAsync(
+                    _principal,
+                    null,
+                    AtlasPolicies.Member
+                )).Succeeded)
         {
             SignOut();
             return false;
@@ -104,8 +119,14 @@ public sealed class ConsoleIdentitySession(IServiceScopeFactory scopes) : IModer
         // Atlas-domain profile (display name, bio, active state, etc.). The shared GUID links the two records.
         var row = await services.GetRequiredService<AtlasDataContext>().ParticipantRows.AsNoTracking()
             .SingleAsync(row => row.Id == user.Id);
-        Participant = Atlas.Participants.Participants.Participant.Reconstitute(new ParticipantId(row.Id),
-            row.DisplayName, row.Bio, row.IsActive, row.CreatedAt, row.UpdatedAt);
+        Participant = Atlas.Participants.Participants.Participant.Reconstitute(
+            new ParticipantId(row.Id),
+            row.DisplayName,
+            row.Bio,
+            row.IsActive,
+            row.CreatedAt,
+            row.UpdatedAt
+        );
         return true;
     }
 

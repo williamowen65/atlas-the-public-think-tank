@@ -5,7 +5,13 @@ public interface IDiscoveryService
 {
     const int PageSize = 3;
     DiscoveryPage DiscoverPage(DiscoveryQuery query);
-    DiscoveryPage DiscoverAuthoredPage(DiscoveryQuery query, IReadOnlyCollection<Guid> authoredNodeIds);
+    DiscoveryPage DiscoverAuthoredPage(
+        DiscoveryQuery query,
+        IReadOnlyCollection<Guid> authoredNodeIds
+    );
     IReadOnlyList<RankedDiscoveryItem> Discover(DiscoveryQuery query);
-    IReadOnlyList<RankedDiscoveryItem> DiscoverAuthored(DiscoveryQuery query, IReadOnlyCollection<Guid> authoredNodeIds);
+    IReadOnlyList<RankedDiscoveryItem> DiscoverAuthored(
+        DiscoveryQuery query,
+        IReadOnlyCollection<Guid> authoredNodeIds
+    );
 }

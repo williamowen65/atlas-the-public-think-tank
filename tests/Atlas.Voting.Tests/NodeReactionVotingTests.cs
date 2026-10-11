@@ -20,15 +20,23 @@ public sealed class NodeReactionVotingTests
         var upvote = castVote.Execute(
             target,
             new ParticipantId(Guid.NewGuid()),
-            NodeReactionVote.Upvote);
+            NodeReactionVote.Upvote
+        );
         var downvote = castVote.Execute(
             target,
             new ParticipantId(Guid.NewGuid()),
-            NodeReactionVote.Downvote);
+            NodeReactionVote.Downvote
+        );
 
         Assert.IsInstanceOfType<NodeReactionVote>(upvote.Value);
-        Assert.AreEqual(NodeReactionVote.Upvote, upvote.Value.Value);
-        Assert.AreEqual(NodeReactionVote.Downvote, downvote.Value.Value);
+        Assert.AreEqual(
+            NodeReactionVote.Upvote,
+            upvote.Value.Value
+        );
+        Assert.AreEqual(
+            NodeReactionVote.Downvote,
+            downvote.Value.Value
+        );
     }
 
     [TestMethod]
@@ -45,7 +53,8 @@ public sealed class NodeReactionVotingTests
             castVote.Execute(
                 new NodeReactionVoteTarget(Guid.NewGuid()),
                 new ParticipantId(Guid.NewGuid()),
-                value));
+                value
+            ));
     }
 
     [TestMethod]
@@ -55,14 +64,33 @@ public sealed class NodeReactionVotingTests
         var castVote = CreateCastVote(repository);
         var target = new NodeReactionVoteTarget(Guid.NewGuid());
 
-        castVote.Execute(target, new ParticipantId(Guid.NewGuid()), NodeReactionVote.Upvote);
-        castVote.Execute(target, new ParticipantId(Guid.NewGuid()), NodeReactionVote.Upvote);
-        castVote.Execute(target, new ParticipantId(Guid.NewGuid()), NodeReactionVote.Upvote);
-        castVote.Execute(target, new ParticipantId(Guid.NewGuid()), NodeReactionVote.Downvote);
+        castVote.Execute(
+            target,
+            new ParticipantId(Guid.NewGuid()),
+            NodeReactionVote.Upvote
+        );
+        castVote.Execute(
+            target,
+            new ParticipantId(Guid.NewGuid()),
+            NodeReactionVote.Upvote
+        );
+        castVote.Execute(
+            target,
+            new ParticipantId(Guid.NewGuid()),
+            NodeReactionVote.Upvote
+        );
+        castVote.Execute(
+            target,
+            new ParticipantId(Guid.NewGuid()),
+            NodeReactionVote.Downvote
+        );
 
         var summary = new GetNodeReactionVoteSummary(repository).Execute(target);
 
-        Assert.AreEqual(2, summary.Score);
+        Assert.AreEqual(
+            2,
+            summary.Score
+        );
     }
 
     [TestMethod]
@@ -73,12 +101,29 @@ public sealed class NodeReactionVotingTests
         var target = new NodeReactionVoteTarget(Guid.NewGuid());
         var participantId = new ParticipantId(Guid.NewGuid());
 
-        var original = castVote.Execute(target, participantId, NodeReactionVote.Upvote);
-        var changed = castVote.Execute(target, participantId, NodeReactionVote.Downvote);
+        var original = castVote.Execute(
+            target,
+            participantId,
+            NodeReactionVote.Upvote
+        );
+        var changed = castVote.Execute(
+            target,
+            participantId,
+            NodeReactionVote.Downvote
+        );
 
-        Assert.AreEqual(original.Id, changed.Id);
-        Assert.HasCount(1, repository.GetTargetVotes(target));
-        Assert.AreEqual(-1, new GetNodeReactionVoteSummary(repository).Execute(target).Score);
+        Assert.AreEqual(
+            original.Id,
+            changed.Id
+        );
+        Assert.HasCount(
+            1,
+            repository.GetTargetVotes(target)
+        );
+        Assert.AreEqual(
+            -1,
+            new GetNodeReactionVoteSummary(repository).Execute(target).Score
+        );
     }
 
     [TestMethod]
@@ -89,15 +134,31 @@ public sealed class NodeReactionVotingTests
         var original = new NodeReactionVoteTarget(Guid.NewGuid());
         var replacement = new NodeReactionVoteTarget(Guid.NewGuid());
 
-        castVote.Execute(original, new ParticipantId(Guid.NewGuid()), NodeReactionVote.Upvote);
+        castVote.Execute(
+            original,
+            new ParticipantId(Guid.NewGuid()),
+            NodeReactionVote.Upvote
+        );
 
         var originalSummary = new GetNodeReactionVoteSummary(repository).Execute(original);
         var replacementSummary = new GetNodeReactionVoteSummary(repository).Execute(replacement);
 
-        Assert.AreEqual(1, originalSummary.Score);
-        Assert.AreEqual(0, replacementSummary.Score);
-        Assert.HasCount(1, repository.GetTargetVotes(original));
-        Assert.HasCount(0, repository.GetTargetVotes(replacement));
+        Assert.AreEqual(
+            1,
+            originalSummary.Score
+        );
+        Assert.AreEqual(
+            0,
+            replacementSummary.Score
+        );
+        Assert.HasCount(
+            1,
+            repository.GetTargetVotes(original)
+        );
+        Assert.HasCount(
+            0,
+            repository.GetTargetVotes(replacement)
+        );
     }
 
     [TestMethod]
@@ -108,18 +169,33 @@ public sealed class NodeReactionVotingTests
         var sharedId = Guid.NewGuid();
         var participantId = new ParticipantId(Guid.NewGuid());
 
-        castVote.Execute(new NodeVoteTarget(sharedId), participantId, 8);
-        castVote.Execute(new NodeReactionVoteTarget(sharedId), participantId, NodeReactionVote.Upvote);
+        castVote.Execute(
+            new NodeVoteTarget(sharedId),
+            participantId,
+            8
+        );
+        castVote.Execute(
+            new NodeReactionVoteTarget(sharedId),
+            participantId,
+            NodeReactionVote.Upvote
+        );
 
-        Assert.HasCount(1, repository.GetTargetVotes(new NodeVoteTarget(sharedId)));
-        Assert.HasCount(1, repository.GetTargetVotes(new NodeReactionVoteTarget(sharedId)));
+        Assert.HasCount(
+            1,
+            repository.GetTargetVotes(new NodeVoteTarget(sharedId))
+        );
+        Assert.HasCount(
+            1,
+            repository.GetTargetVotes(new NodeReactionVoteTarget(sharedId))
+        );
     }
 
     private static CastVote CreateCastVote(IVoteRepository repository)
     {
         return new CastVote(
             repository,
-            new VoteMutationPolicy(new AlwaysEligibleVoting()));
+            new VoteMutationPolicy(new AlwaysEligibleVoting())
+        );
     }
 
     private sealed class AlwaysEligibleVoting : IVotingEligibility

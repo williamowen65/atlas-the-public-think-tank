@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -16,8 +16,15 @@ namespace Atlas.Persistence.Migrations
                 table: "Roles",
                 keyColumn: "Id",
                 keyValue: new Guid("94000000-0000-4000-8000-000000000002"),
-                columns: new[] { "Name", "NormalizedName" },
-                values: new object[] { "GlobalModerator", "GLOBALMODERATOR" });
+                columns: new[] {
+                    "Name",
+                    "NormalizedName"
+                },
+                values: new object[] {
+                    "GlobalModerator",
+                    "GLOBALMODERATOR"
+                }
+            );
         }
 
         /// <inheritdoc />
@@ -28,8 +35,15 @@ namespace Atlas.Persistence.Migrations
                 table: "Roles",
                 keyColumn: "Id",
                 keyValue: new Guid("94000000-0000-4000-8000-000000000002"),
-                columns: new[] { "Name", "NormalizedName" },
-                values: new object[] { "Moderator", "MODERATOR" });
+                columns: new[] {
+                    "Name",
+                    "NormalizedName"
+                },
+                values: new object[] {
+                    "Moderator",
+                    "MODERATOR"
+                }
+            );
         }
     }
 }

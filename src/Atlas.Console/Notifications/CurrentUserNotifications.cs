@@ -13,20 +13,40 @@ namespace Atlas.ConsoleApp.Notifications;
 /// </summary>
 public sealed class CurrentUserNotifications(
     IAuthenticatedActor authenticatedActor,
-    NotificationService notifications)
+    NotificationService notifications
+)
 {
-    public IReadOnlyList<Notification> Page(int offset, int limit) =>
-        notifications.Page(authenticatedActor.ParticipantId, offset, limit);
+    public IReadOnlyList<Notification> Page(
+        int offset,
+        int limit
+    ) =>
+        notifications.Page(
+            authenticatedActor.ParticipantId,
+            offset,
+            limit
+        );
 
     public NotificationPreferences Preferences() =>
-        notifications.Preferences(authenticatedActor.ParticipantId, authenticatedActor.ParticipantId);
+        notifications.Preferences(
+            authenticatedActor.ParticipantId,
+            authenticatedActor.ParticipantId
+        );
 
     public void SavePreferences(NotificationPreferences preferences) =>
-        notifications.SavePreferences(authenticatedActor.ParticipantId, preferences);
+        notifications.SavePreferences(
+            authenticatedActor.ParticipantId,
+            preferences
+        );
 
     public void MarkRead(Guid notificationId) =>
-        notifications.MarkRead(authenticatedActor.ParticipantId, notificationId);
+        notifications.MarkRead(
+            authenticatedActor.ParticipantId,
+            notificationId
+        );
 
     public void Dismiss(Guid notificationId) =>
-        notifications.Dismiss(authenticatedActor.ParticipantId, notificationId);
+        notifications.Dismiss(
+            authenticatedActor.ParticipantId,
+            notificationId
+        );
 }

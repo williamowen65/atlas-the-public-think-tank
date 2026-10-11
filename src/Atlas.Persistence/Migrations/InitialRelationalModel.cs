@@ -6,7 +6,13 @@ internal sealed class InitialRelationalModel : ModelSnapshot
     protected override void BuildModel(ModelBuilder modelBuilder) => ConfigureSnapshot(modelBuilder);
     internal static void ConfigureSnapshot(ModelBuilder model)
     {
-        model.HasAnnotation("ProductVersion", "10.0.0").HasAnnotation("Relational:MaxIdentifierLength", 128);
+        model.HasAnnotation(
+            "ProductVersion",
+            "10.0.0"
+        ).HasAnnotation(
+            "Relational:MaxIdentifierLength",
+            128
+        );
         model.UseIdentityColumns();
         model.Entity<NodeRow>(entity =>
         {

@@ -1,6 +1,9 @@
 namespace Atlas.ConsoleApp.Storage;
 
-internal sealed record DemoParticipant(string Email, string DisplayName);
+internal sealed record DemoParticipant(
+    string Email,
+    string DisplayName
+);
 
 /// <summary>
 /// Demo identities are created through Atlas registration. Generated IDs are then reused by every
@@ -12,11 +15,26 @@ internal static class DemoParticipants
 
     public static readonly DemoParticipant[] Accounts =
     [
-        new("demo01@example.test", "Demo User 01"),
-        new("demo02@example.test", "Demo User 02"),
-        new("demo03@example.test", "Demo User 03"),
-        new("demo04@example.test", "Demo User 04"),
-        new("demo05@example.test", "Demo User 05"),
+        new(
+            "demo01@example.test",
+            "Demo User 01"
+        ),
+        new(
+            "demo02@example.test",
+            "Demo User 02"
+        ),
+        new(
+            "demo03@example.test",
+            "Demo User 03"
+        ),
+        new(
+            "demo04@example.test",
+            "Demo User 04"
+        ),
+        new(
+            "demo05@example.test",
+            "Demo User 05"
+        ),
     ];
 
     public static Guid User01Id { get; private set; }
@@ -28,7 +46,10 @@ internal static class DemoParticipants
     public static void SetIds(IReadOnlyList<Guid> ids)
     {
         if (ids.Count != Accounts.Length || ids.Any(id => id == Guid.Empty))
-            throw new ArgumentException("All demo participant IDs are required.", nameof(ids));
+            throw new ArgumentException(
+                "All demo participant IDs are required.",
+                nameof(ids)
+            );
 
         User01Id = ids[0];
         User02Id = ids[1];

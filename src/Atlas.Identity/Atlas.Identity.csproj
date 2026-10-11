@@ -10,4 +10,5 @@
     <ProjectReference Include="../Atlas.Participants/Atlas.Participants.csproj" />
     <ProjectReference Include="../Atlas.Moderation/Atlas.Moderation.csproj" />
   </ItemGroup>
+  <ItemGroup><ProjectReference Include="../Atlas.Contracts/Atlas.Contracts.csproj" /></ItemGroup>
 </Project>

@@ -21,7 +21,7 @@ A requirement is Verified only when linked automated evidence supports its crite
 ## Useful follow-up coverage
 
 - Conflicting updates to the same record and losing first-insert recovery.
-- Multi-save failures and orphan cleanup.
+- Coordinated multi-save rollback and error propagation, including real SQL document-insert failure; broader failure coverage and detached-content cleanup remain follow-ups.
 - Reusable graph-wide cycle policy.
 - Durable event publication and external delivery recovery.
 - Production identity and protected lifecycle operations.

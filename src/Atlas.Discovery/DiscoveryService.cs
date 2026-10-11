@@ -12,35 +12,69 @@ public sealed class DiscoveryService : IDiscoveryService
     }
 
     public DiscoveryPage DiscoverPage(DiscoveryQuery query)
-        => Page(DiscoverCore(query, null), query.Page);
+        => Page(
+            DiscoverCore(
+                query,
+                null
+            ),
+            query.Page
+        );
 
-    public DiscoveryPage DiscoverAuthoredPage(DiscoveryQuery query, IReadOnlyCollection<Guid> authoredNodeIds)
+    public DiscoveryPage DiscoverAuthoredPage(
+        DiscoveryQuery query,
+        IReadOnlyCollection<Guid> authoredNodeIds
+    )
     {
         ArgumentNullException.ThrowIfNull(authoredNodeIds);
-        return Page(DiscoverCore(query, authoredNodeIds.ToHashSet()), query.Page);
+        return Page(
+            DiscoverCore(
+                query,
+                authoredNodeIds.ToHashSet()
+            ),
+            query.Page
+        );
     }
 
-    private static DiscoveryPage Page(IReadOnlyList<RankedDiscoveryItem> results, int page)
+    private static DiscoveryPage Page(
+        IReadOnlyList<RankedDiscoveryItem> results,
+        int page
+    )
     {
         var offset = ((long)page - 1) * IDiscoveryService.PageSize;
         var items = offset >= results.Count
             ? Array.Empty<RankedDiscoveryItem>()
             : results.Skip((int)offset).Take(IDiscoveryService.PageSize).ToArray();
-        return new DiscoveryPage(items, results.Count, page, IDiscoveryService.PageSize);
+        return new DiscoveryPage(
+            items,
+            results.Count,
+            page,
+            IDiscoveryService.PageSize
+        );
     }
 
     public IReadOnlyList<RankedDiscoveryItem> Discover(DiscoveryQuery query)
-        => DiscoverCore(query, null);
+        => DiscoverCore(
+            query,
+            null
+        );
 
     /// <summary>Ranks an explicitly scoped author listing, retaining moderated placeholders.</summary>
-    public IReadOnlyList<RankedDiscoveryItem> DiscoverAuthored(DiscoveryQuery query,
-        IReadOnlyCollection<Guid> authoredNodeIds)
+    public IReadOnlyList<RankedDiscoveryItem> DiscoverAuthored(
+        DiscoveryQuery query,
+        IReadOnlyCollection<Guid> authoredNodeIds
+    )
     {
         ArgumentNullException.ThrowIfNull(authoredNodeIds);
-        return DiscoverCore(query, authoredNodeIds.ToHashSet());
+        return DiscoverCore(
+            query,
+            authoredNodeIds.ToHashSet()
+        );
     }
 
-    private IReadOnlyList<RankedDiscoveryItem> DiscoverCore(DiscoveryQuery query, HashSet<Guid>? authoredIds)
+    private IReadOnlyList<RankedDiscoveryItem> DiscoverCore(
+        DiscoveryQuery query,
+        HashSet<Guid>? authoredIds
+    )
     {
         ArgumentNullException.ThrowIfNull(query);
         Validate(query);
@@ -74,48 +108,87 @@ public sealed class DiscoveryService : IDiscoveryService
                 DateOnly.FromDateTime(candidate.CreatedAt.DateTime) <= query.CreatedThrough.Value)
             .Where(candidate => string.IsNullOrWhiteSpace(search) ||
                 (!candidate.IsModerationExcluded &&
-                    (candidate.Title.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                     candidate.SearchableContent.Contains(search, StringComparison.OrdinalIgnoreCase))))
+                    (candidate.Title.Contains(
+                        search,
+                        StringComparison.OrdinalIgnoreCase
+                    ) ||
+                     candidate.SearchableContent.Contains(
+                         search,
+                         StringComparison.OrdinalIgnoreCase
+                     ))))
             .Select(candidate => new
             {
                 Candidate = candidate,
-                Score = Score(candidate, search)
+                Score = Score(
+                    candidate,
+                    search
+                )
             })
             .OrderByDescending(item => item.Score)
             .ThenByDescending(item => item.Candidate.VoteCount)
             .ThenByDescending(item => item.Candidate.UpdatedAt)
-            .ThenBy(item => item.Candidate.Title, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(
+                item => item.Candidate.Title,
+                StringComparer.OrdinalIgnoreCase
+            )
             .ThenBy(item => item.Candidate.NodeId)
             .ToList();
 
-        return ranked.Select((item, index) => new RankedDiscoveryItem(
+        return ranked.Select((
+            item,
+            index
+        ) => new RankedDiscoveryItem(
             item.Candidate.NodeId,
             index + 1,
             item.Score,
             item.Candidate.VoteCount,
-            item.Candidate.AverageVote)).ToList();
+            item.Candidate.AverageVote
+        )).ToList();
     }
 
     private static void Validate(DiscoveryQuery query)
     {
         if (query.Page < 1)
-            throw new ArgumentOutOfRangeException(nameof(query), "Page must be positive.");
+            throw new ArgumentOutOfRangeException(
+                nameof(query),
+                "Page must be positive."
+            );
         if (query.MinimumVoteCount < 0 || query.MaximumVoteCount < 0)
-            throw new ArgumentOutOfRangeException(nameof(query), "Vote-count bounds cannot be negative.");
+            throw new ArgumentOutOfRangeException(
+                nameof(query),
+                "Vote-count bounds cannot be negative."
+            );
         if (query.MinimumVoteCount.HasValue && query.MaximumVoteCount.HasValue &&
             query.MinimumVoteCount.Value > query.MaximumVoteCount.Value)
-            throw new ArgumentException("Minimum vote count cannot exceed maximum vote count.", nameof(query));
-        if (query.MinimumAverageVote is < 0 or > 10 || query.MaximumAverageVote is < 0 or > 10)
-            throw new ArgumentOutOfRangeException(nameof(query), "Average-vote bounds must be from 0 through 10.");
+            throw new ArgumentException(
+                "Minimum vote count cannot exceed maximum vote count.",
+                nameof(query)
+            );
+        if (query.MinimumAverageVote is { } minimum && !double.IsFinite(minimum) ||
+            query.MaximumAverageVote is { } maximum && !double.IsFinite(maximum) ||
+            query.MinimumAverageVote is < 0 or > 10 || query.MaximumAverageVote is < 0 or > 10)
+            throw new ArgumentOutOfRangeException(
+                nameof(query),
+                "Average-vote bounds must be from 0 through 10."
+            );
         if (query.MinimumAverageVote.HasValue && query.MaximumAverageVote.HasValue &&
             query.MinimumAverageVote.Value > query.MaximumAverageVote.Value)
-            throw new ArgumentException("Minimum average vote cannot exceed maximum average vote.", nameof(query));
+            throw new ArgumentException(
+                "Minimum average vote cannot exceed maximum average vote.",
+                nameof(query)
+            );
         if (query.CreatedFrom.HasValue && query.CreatedThrough.HasValue &&
             query.CreatedFrom.Value > query.CreatedThrough.Value)
-            throw new ArgumentException("Created-from date cannot follow created-through date.", nameof(query));
+            throw new ArgumentException(
+                "Created-from date cannot follow created-through date.",
+                nameof(query)
+            );
     }
 
-    private static double Score(DiscoveryCandidate candidate, string? search)
+    private static double Score(
+        DiscoveryCandidate candidate,
+        string? search
+    )
     {
         // Average rating is primary; vote count breaks confidence ties without
         // allowing popularity alone to overpower the 0-10 quality signal.
@@ -125,7 +198,10 @@ public sealed class DiscoveryService : IDiscoveryService
         // A title match is more intentional than a match elsewhere in the
         // searchable projection, so search results receive a small boost.
         if (!string.IsNullOrWhiteSpace(search) &&
-            candidate.Title.Contains(search, StringComparison.OrdinalIgnoreCase))
+            candidate.Title.Contains(
+                search,
+                StringComparison.OrdinalIgnoreCase
+            ))
         {
             score += 0.1d;
         }

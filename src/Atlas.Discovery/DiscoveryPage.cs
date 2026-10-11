@@ -5,7 +5,8 @@ public sealed record DiscoveryPage(
     IReadOnlyList<RankedDiscoveryItem> Items,
     int TotalCount,
     int Page,
-    int PageSize)
+    int PageSize
+)
 {
     public bool HasNextPage => (long)Page * PageSize < TotalCount;
 }

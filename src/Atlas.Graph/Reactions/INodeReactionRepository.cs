@@ -15,7 +15,10 @@ public interface INodeReactionRepository
     IReadOnlyCollection<NodeReaction> GetActiveForNode(NodeId nodeId);
 
     /// <summary>Loads the active association for one node and definition.</summary>
-    NodeReaction? GetActive(NodeId nodeId, ReactionDefinitionId tagDefinitionId);
+    NodeReaction? GetActive(
+        NodeId nodeId,
+        ReactionDefinitionId tagDefinitionId
+    );
 
     /// <summary>Persists the current association state.</summary>
     void Save(NodeReaction nodeTag);

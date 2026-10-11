@@ -15,8 +15,16 @@ public sealed class Document
     public DateTimeOffset CreatedAt { get; }
     public DateTimeOffset UpdatedAt { get; private set; }
 
-    public Document(IEnumerable<BlockId> blockIds, DateTimeOffset createdAt)
-        : this(DocumentId.New(), blockIds, createdAt, createdAt)
+    public Document(
+        IEnumerable<BlockId> blockIds,
+        DateTimeOffset createdAt
+    )
+        : this(
+            DocumentId.New(),
+            blockIds,
+            createdAt,
+            createdAt
+        )
     {
     }
 
@@ -24,25 +32,39 @@ public sealed class Document
         DocumentId id,
         IEnumerable<BlockId> blockIds,
         DateTimeOffset createdAt,
-        DateTimeOffset updatedAt)
+        DateTimeOffset updatedAt
+    )
     {
+        ArgumentNullException.ThrowIfNull(id);
+        if (id.Value == Guid.Empty) throw new ArgumentException(
+            "A document ID is required.",
+            nameof(id)
+        );
         ArgumentNullException.ThrowIfNull(blockIds);
 
         if (updatedAt < createdAt)
         {
             throw new ArgumentException(
                 "Updated time cannot precede created time.",
-                nameof(updatedAt));
+                nameof(updatedAt)
+            );
         }
 
         Id = id;
-        CreatedAt = createdAt;
-        UpdatedAt = updatedAt;
+        CreatedAt = createdAt.ToUniversalTime();
+        UpdatedAt = updatedAt.ToUniversalTime();
         _blockIds = blockIds.ToList();
 
+        if (_blockIds.Any(block => block is null)) throw new ArgumentException(
+            "Block IDs cannot be null.",
+            nameof(blockIds)
+        );
         if (_blockIds.Count != _blockIds.Distinct().Count())
         {
-            throw new ArgumentException("A document cannot contain the same block more than once.", nameof(blockIds));
+            throw new ArgumentException(
+                "A document cannot contain the same block more than once.",
+                nameof(blockIds)
+            );
         }
     }
 
@@ -50,8 +72,10 @@ public sealed class Document
     public void AddBlock(
         BlockId blockId,
         DateTimeOffset changedAt,
-        int? index = null)
+        int? index = null
+    )
     {
+        ArgumentNullException.ThrowIfNull(blockId);
         if (_blockIds.Contains(blockId))
         {
             throw new InvalidOperationException("The document already contains this block.");
@@ -64,16 +88,21 @@ public sealed class Document
             throw new ArgumentOutOfRangeException(nameof(index));
         }
 
-        _blockIds.Insert(insertionIndex, blockId);
         ChangedAt(changedAt);
+        _blockIds.Insert(
+            insertionIndex,
+            blockId
+        );
     }
 
     /// <summary>Changes composition order without changing the block's stable identity.</summary>
     public void MoveBlock(
         BlockId blockId,
         int newIndex,
-        DateTimeOffset changedAt)
+        DateTimeOffset changedAt
+    )
     {
+        ArgumentNullException.ThrowIfNull(blockId);
         var currentIndex = _blockIds.IndexOf(blockId);
 
         if (currentIndex < 0)
@@ -91,20 +120,28 @@ public sealed class Document
             return;
         }
 
-        _blockIds.RemoveAt(currentIndex);
-        _blockIds.Insert(newIndex, blockId);
         ChangedAt(changedAt);
+        _blockIds.RemoveAt(currentIndex);
+        _blockIds.Insert(
+            newIndex,
+            blockId
+        );
     }
 
     /// <summary>Removes a block from this composition without deleting the block entity.</summary>
-    public void RemoveBlock(BlockId blockId, DateTimeOffset changedAt)
+    public void RemoveBlock(
+        BlockId blockId,
+        DateTimeOffset changedAt
+    )
     {
-        if (!_blockIds.Remove(blockId))
+        ArgumentNullException.ThrowIfNull(blockId);
+        if (!_blockIds.Contains(blockId))
         {
             throw new InvalidOperationException("The document does not contain this block.");
         }
 
         ChangedAt(changedAt);
+        _blockIds.Remove(blockId);
     }
 
     /// <summary>Restores persisted state without generating a new document identity.</summary>
@@ -112,8 +149,14 @@ public sealed class Document
         DocumentId id,
         IEnumerable<BlockId> blockIds,
         DateTimeOffset createdAt,
-        DateTimeOffset updatedAt) =>
-        new(id, blockIds, createdAt, updatedAt);
+        DateTimeOffset updatedAt
+    ) =>
+        new(
+            id,
+            blockIds,
+            createdAt,
+            updatedAt
+        );
 
     private void ChangedAt(DateTimeOffset changedAt)
     {
@@ -121,9 +164,10 @@ public sealed class Document
         {
             throw new ArgumentException(
                 "Changed time cannot precede the current updated time.",
-                nameof(changedAt));
+                nameof(changedAt)
+            );
         }
 
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 }

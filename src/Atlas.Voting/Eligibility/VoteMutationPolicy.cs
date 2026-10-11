@@ -30,7 +30,8 @@ namespace Atlas.Voting.Eligibility
         /// </summary>
         public void EnsureAllowed(
             VoteTarget target,
-            ParticipantId participantId)
+            ParticipantId participantId
+        )
         {
             ArgumentNullException.ThrowIfNull(target);
             ArgumentNullException.ThrowIfNull(participantId);

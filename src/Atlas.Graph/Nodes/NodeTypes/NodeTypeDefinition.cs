@@ -1,4 +1,4 @@
-﻿namespace Atlas.Graph.Nodes.NodeTypes;
+namespace Atlas.Graph.Nodes.NodeTypes;
 
 /// <summary>Defines a governed Graph node type, including naming, pluralization, ownership, and lifecycle rules.</summary>
 public sealed class NodeTypeDefinition
@@ -31,8 +31,22 @@ public sealed class NodeTypeDefinition
         bool isArchived,
         bool autoPluralize,
         DateTimeOffset createdAt,
-        DateTimeOffset updatedAt)
+        DateTimeOffset updatedAt
+    )
     {
+        if (id.Value == Guid.Empty) throw new ArgumentException(
+            "A node type ID is required.",
+            nameof(id)
+        );
+        if (!isSystemDefined && string.IsNullOrWhiteSpace(ownerId)) throw new ArgumentException(
+            "A custom type requires an owner.",
+            nameof(ownerId)
+        );
+        if (isSystemDefined && ownerId is not null) throw new ArgumentException(
+            "A system type cannot have a custom owner.",
+            nameof(ownerId)
+        );
+        if (updatedAt < createdAt) throw new ArgumentException("Update time cannot precede creation.");
         Id = id;
         Name = ValidateName(name);
         Description = ValidateDescription(description);
@@ -40,8 +54,8 @@ public sealed class NodeTypeDefinition
         IsSystemDefined = isSystemDefined;
         IsArchived = isArchived;
         AutoPluralize = autoPluralize;
-        CreatedAt = createdAt;
-        UpdatedAt = updatedAt;
+        CreatedAt = createdAt.ToUniversalTime();
+        UpdatedAt = updatedAt.ToUniversalTime();
     }
 
     /// <summary>Creates custom during the current workflow.</summary>
@@ -50,13 +64,15 @@ public sealed class NodeTypeDefinition
         string description,
         string ownerId,
         DateTimeOffset createdAt,
-        bool autoPluralize = true)
+        bool autoPluralize = true
+    )
     {
         if (string.IsNullOrWhiteSpace(ownerId))
         {
             throw new ArgumentException(
                 "A custom node type requires an owner.",
-                nameof(ownerId));
+                nameof(ownerId)
+            );
         }
 
         return new NodeTypeDefinition(
@@ -68,7 +84,8 @@ public sealed class NodeTypeDefinition
             isArchived: false,
             autoPluralize,
             createdAt,
-            createdAt);
+            createdAt
+        );
     }
 
     /// <summary>Creates system defined during the current workflow.</summary>
@@ -76,7 +93,8 @@ public sealed class NodeTypeDefinition
         string name,
         string description,
         DateTimeOffset createdAt,
-        bool autoPluralize = true)
+        bool autoPluralize = true
+    )
     {
         return new NodeTypeDefinition(
             NodeTypeId.New(),
@@ -87,7 +105,8 @@ public sealed class NodeTypeDefinition
             isArchived: false,
             autoPluralize,
             createdAt,
-            createdAt);
+            createdAt
+        );
     }
 
     /// <summary>Rebuilds the domain object from persisted state without replaying creation behavior.</summary>
@@ -100,7 +119,8 @@ public sealed class NodeTypeDefinition
         bool isArchived,
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt,
-        bool autoPluralize = true)
+        bool autoPluralize = true
+    )
     {
         if (updatedAt < createdAt)
         {
@@ -117,7 +137,8 @@ public sealed class NodeTypeDefinition
             isArchived,
             autoPluralize,
             createdAt,
-            updatedAt);
+            updatedAt
+        );
     }
 
     /// <summary>Changes the validated name and advances the modification timestamp when the value differs.</summary>
@@ -125,9 +146,13 @@ public sealed class NodeTypeDefinition
         string newName,
         string actorId,
         bool actorIsModerator,
-        DateTimeOffset changedAt)
+        DateTimeOffset changedAt
+    )
     {
-        EnsureCanEdit(actorId, actorIsModerator);
+        EnsureCanEdit(
+            actorId,
+            actorIsModerator
+        );
 
         var validatedName = ValidateName(newName);
 
@@ -136,8 +161,9 @@ public sealed class NodeTypeDefinition
             return;
         }
 
+        if (changedAt < UpdatedAt) throw new ArgumentException("Change time cannot precede the current update time.");
         Name = validatedName;
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 
     /// <summary>Changes the description while enforcing node-type editing rules.</summary>
@@ -145,9 +171,13 @@ public sealed class NodeTypeDefinition
         string newDescription,
         string actorId,
         bool actorIsModerator,
-        DateTimeOffset changedAt)
+        DateTimeOffset changedAt
+    )
     {
-        EnsureCanEdit(actorId, actorIsModerator);
+        EnsureCanEdit(
+            actorId,
+            actorIsModerator
+        );
 
         var validatedDescription =
             ValidateDescription(newDescription);
@@ -157,8 +187,9 @@ public sealed class NodeTypeDefinition
             return;
         }
 
+        if (changedAt < UpdatedAt) throw new ArgumentException("Change time cannot precede the current update time.");
         Description = validatedDescription;
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 
 
@@ -167,40 +198,51 @@ public sealed class NodeTypeDefinition
         bool autoPluralize,
         string actorId,
         bool actorIsModerator,
-        DateTimeOffset changedAt)
+        DateTimeOffset changedAt
+    )
     {
-        EnsureCanEdit(actorId, actorIsModerator);
+        EnsureCanEdit(
+            actorId,
+            actorIsModerator
+        );
 
         if (AutoPluralize == autoPluralize)
         {
             return;
         }
 
+        if (changedAt < UpdatedAt) throw new ArgumentException("Change time cannot precede the current update time.");
         AutoPluralize = autoPluralize;
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 
     /// <summary>Moves the aggregate into its archived lifecycle state and records the transition when applicable.</summary>
     public void Archive(
         string actorId,
         bool actorIsModerator,
-        DateTimeOffset archivedAt)
+        DateTimeOffset archivedAt
+    )
     {
-        EnsureCanEdit(actorId, actorIsModerator);
+        EnsureCanEdit(
+            actorId,
+            actorIsModerator
+        );
 
         if (IsArchived)
         {
             return;
         }
 
+        if (archivedAt < UpdatedAt) throw new ArgumentException("Change time cannot precede the current update time.");
         IsArchived = true;
-        UpdatedAt = archivedAt;
+        UpdatedAt = archivedAt.ToUniversalTime();
     }
 
     /// <summary>Enforces can edit before the operation continues.</summary>
     private void EnsureCanEdit(
         string actorId,
-        bool actorIsModerator)
+        bool actorIsModerator
+    )
     {
         if (IsSystemDefined && !actorIsModerator)
         {
@@ -222,7 +264,8 @@ public sealed class NodeTypeDefinition
         {
             throw new ArgumentException(
                 "A node type name is required.",
-                nameof(name));
+                nameof(name)
+            );
         }
 
         name = name.Trim();
@@ -231,7 +274,8 @@ public sealed class NodeTypeDefinition
         {
             throw new ArgumentException(
                 "A node type name cannot exceed 50 characters.",
-                nameof(name));
+                nameof(name)
+            );
         }
 
         return name;
@@ -247,7 +291,8 @@ public sealed class NodeTypeDefinition
         {
             throw new ArgumentException(
                 "A node type description cannot exceed 500 characters.",
-                nameof(description));
+                nameof(description)
+            );
         }
 
         return description;

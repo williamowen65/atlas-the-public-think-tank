@@ -15,16 +15,30 @@ public class ParticipantTests
         var participant = new Participant(
             "  Alice  ",
             "  Interested in climate policy.  ",
-            createdAt);
+            createdAt
+        );
 
-        Assert.AreNotEqual(Guid.Empty, participant.Id.Value);
-        Assert.AreEqual("Alice", participant.DisplayName);
+        Assert.AreNotEqual(
+            Guid.Empty,
+            participant.Id.Value
+        );
+        Assert.AreEqual(
+            "Alice",
+            participant.DisplayName
+        );
         Assert.AreEqual(
             "Interested in climate policy.",
-            participant.Bio);
+            participant.Bio
+        );
         Assert.IsTrue(participant.IsActive);
-        Assert.AreEqual(createdAt, participant.CreatedAt);
-        Assert.AreEqual(createdAt, participant.UpdatedAt);
+        Assert.AreEqual(
+            createdAt,
+            participant.CreatedAt
+        );
+        Assert.AreEqual(
+            createdAt,
+            participant.UpdatedAt
+        );
     }
 
     /// <summary>Verifies that constructor without bio defaults to empty.</summary>
@@ -33,9 +47,13 @@ public class ParticipantTests
     {
         var participant = new Participant(
             "Alice",
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow
+        );
 
-        Assert.AreEqual(string.Empty, participant.Bio);
+        Assert.AreEqual(
+            string.Empty,
+            participant.Bio
+        );
     }
 
     /// <summary>Verifies that constructor with bio over maximum length throws.</summary>
@@ -45,8 +63,12 @@ public class ParticipantTests
         Assert.Throws<ArgumentException>(
             () => new Participant(
                 "Alice",
-                new string('a', Participant.MaximumBioLength + 1),
-                DateTimeOffset.UtcNow));
+                new string(
+                    'a',
+                    Participant.MaximumBioLength + 1
+                ),
+                DateTimeOffset.UtcNow
+            ));
     }
 
     /// <summary>Verifies that update profile changes name bio and timestamp.</summary>
@@ -56,17 +78,28 @@ public class ParticipantTests
         var participant = new Participant(
             "Alice",
             "Old bio",
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow
+        );
         var changedAt = participant.CreatedAt.AddMinutes(1);
 
         participant.UpdateProfile(
             "Alice Smith",
             "New bio",
-            changedAt);
+            changedAt
+        );
 
-        Assert.AreEqual("Alice Smith", participant.DisplayName);
-        Assert.AreEqual("New bio", participant.Bio);
-        Assert.AreEqual(changedAt, participant.UpdatedAt);
+        Assert.AreEqual(
+            "Alice Smith",
+            participant.DisplayName
+        );
+        Assert.AreEqual(
+            "New bio",
+            participant.Bio
+        );
+        Assert.AreEqual(
+            changedAt,
+            participant.UpdatedAt
+        );
     }
 
     /// <summary>Verifies that update profile with unchanged values is no op.</summary>
@@ -76,15 +109,20 @@ public class ParticipantTests
         var participant = new Participant(
             "Alice",
             "Bio",
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow
+        );
         var originalUpdatedAt = participant.UpdatedAt;
 
         participant.UpdateProfile(
             participant.DisplayName,
             participant.Bio,
-            originalUpdatedAt.AddMinutes(1));
+            originalUpdatedAt.AddMinutes(1)
+        );
 
-        Assert.AreEqual(originalUpdatedAt, participant.UpdatedAt);
+        Assert.AreEqual(
+            originalUpdatedAt,
+            participant.UpdatedAt
+        );
     }
 
     /// <summary>Verifies that update profile with invalid bio does not partially rename.</summary>
@@ -94,16 +132,27 @@ public class ParticipantTests
         var participant = new Participant(
             "Alice",
             "Bio",
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow
+        );
 
         Assert.Throws<ArgumentException>(
             () => participant.UpdateProfile(
                 "Changed name",
-                new string('a', Participant.MaximumBioLength + 1),
-                participant.CreatedAt.AddMinutes(1)));
+                new string(
+                    'a',
+                    Participant.MaximumBioLength + 1
+                ),
+                participant.CreatedAt.AddMinutes(1)
+            ));
 
-        Assert.AreEqual("Alice", participant.DisplayName);
-        Assert.AreEqual("Bio", participant.Bio);
+        Assert.AreEqual(
+            "Alice",
+            participant.DisplayName
+        );
+        Assert.AreEqual(
+            "Bio",
+            participant.Bio
+        );
     }
 
     /// <summary>Verifies that reconstitute restores bio.</summary>
@@ -120,10 +169,20 @@ public class ParticipantTests
             "Stored bio",
             isActive: true,
             createdAt,
-            updatedAt);
+            updatedAt
+        );
 
-        Assert.AreEqual(id, participant.Id);
-        Assert.AreEqual("Stored bio", participant.Bio);
-        Assert.AreEqual(updatedAt, participant.UpdatedAt);
+        Assert.AreEqual(
+            id,
+            participant.Id
+        );
+        Assert.AreEqual(
+            "Stored bio",
+            participant.Bio
+        );
+        Assert.AreEqual(
+            updatedAt,
+            participant.UpdatedAt
+        );
     }
 }

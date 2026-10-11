@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -14,7 +14,8 @@ namespace Atlas.Voting.Votes
             {
                 throw new ArgumentException(
                     "Parcipant ID cannot be empty.",
-                    nameof(participantId));
+                    nameof(participantId)
+                );
             }
 
             Id = participantId;

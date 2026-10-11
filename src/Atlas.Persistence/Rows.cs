@@ -12,13 +12,27 @@ public sealed class NodeRow
     public List<Guid>? RequestedSubNodeTypeIds
     {
         get => RequestedTypes.OrderBy(row => row.Position).Select(row => row.TypeId).ToList();
-        set => RequestedTypes = (value ?? []).Select((id, position) => new NodeRequestedTypeRow { NodeId = Id, Position = position, TypeId = id }).ToList();
+        set => RequestedTypes = (value ?? []).Select((
+            id,
+            position
+        ) => new NodeRequestedTypeRow {
+            NodeId = Id,
+            Position = position,
+            TypeId = id
+        }).ToList();
     }
     public List<NodeParentRow> Parents { get; set; } = [];
     public List<Guid>? ParentNodeIds
     {
         get => Parents.OrderBy(row => row.Position).Select(row => row.ParentNodeId).ToList();
-        set => Parents = (value ?? []).Select((id, position) => new NodeParentRow { NodeId = Id, Position = position, ParentNodeId = id }).ToList();
+        set => Parents = (value ?? []).Select((
+            id,
+            position
+        ) => new NodeParentRow {
+            NodeId = Id,
+            Position = position,
+            ParentNodeId = id
+        }).ToList();
     }
     public string Status { get; set; } = string.Empty;
     public DateTimeOffset CreatedAt { get; set; }
@@ -45,7 +59,14 @@ public sealed class DocumentRow
     public List<Guid> BlockIds
     {
         get => Blocks.OrderBy(row => row.Position).Select(row => row.BlockId).ToList();
-        set => Blocks = value.Select((id, position) => new DocumentBlockRow { DocumentId = Id, Position = position, BlockId = id }).ToList();
+        set => Blocks = value.Select((
+            id,
+            position
+        ) => new DocumentBlockRow {
+            DocumentId = Id,
+            Position = position,
+            BlockId = id
+        }).ToList();
     }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }

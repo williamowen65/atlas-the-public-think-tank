@@ -11,28 +11,63 @@ public sealed class CommunityMembership
     public DateTimeOffset? LeftAt { get; private set; }
     public bool IsActive => LeftAt is null;
 
-    public CommunityMembership(CommunityId communityId, Guid participantId, DateTimeOffset joinedAt)
-        : this(communityId, participantId, joinedAt, null)
+    public CommunityMembership(
+        CommunityId communityId,
+        Guid participantId,
+        DateTimeOffset joinedAt
+    )
+        : this(
+            communityId,
+            participantId,
+            joinedAt,
+            null
+        )
     {
     }
 
-    private CommunityMembership(CommunityId communityId, Guid participantId, DateTimeOffset joinedAt, DateTimeOffset? leftAt)
+    private CommunityMembership(
+        CommunityId communityId,
+        Guid participantId,
+        DateTimeOffset joinedAt,
+        DateTimeOffset? leftAt
+    )
     {
-        if (participantId == Guid.Empty) throw new ArgumentException("A membership participant is required.", nameof(participantId));
+        if (communityId.Value == Guid.Empty) throw new ArgumentException(
+            "A community ID is required.",
+            nameof(communityId)
+        );
+        if (participantId == Guid.Empty) throw new ArgumentException(
+            "A membership participant is required.",
+            nameof(participantId)
+        );
         if (leftAt < joinedAt) throw new ArgumentException("Leave time cannot precede join time.");
         CommunityId = communityId;
         ParticipantId = participantId;
-        JoinedAt = joinedAt;
-        LeftAt = leftAt;
+        JoinedAt = joinedAt.ToUniversalTime();
+        LeftAt = leftAt?.ToUniversalTime();
     }
 
-    public static CommunityMembership Reconstitute(CommunityId communityId, Guid participantId, DateTimeOffset joinedAt, DateTimeOffset? leftAt) =>
-        new(communityId, participantId, joinedAt, leftAt);
+    public static CommunityMembership Reconstitute(
+        CommunityId communityId,
+        Guid participantId,
+        DateTimeOffset joinedAt,
+        DateTimeOffset? leftAt
+    ) =>
+        new(
+            communityId,
+            participantId,
+            joinedAt,
+            leftAt
+        );
 
     public void Join(DateTimeOffset joinedAt)
     {
         if (IsActive) return;
-        JoinedAt = joinedAt;
+        if (joinedAt < LeftAt) throw new ArgumentException(
+            "Rejoin time cannot precede the previous leave time.",
+            nameof(joinedAt)
+        );
+        JoinedAt = joinedAt.ToUniversalTime();
         LeftAt = null;
     }
 
@@ -40,6 +75,6 @@ public sealed class CommunityMembership
     {
         if (!IsActive) return;
         if (leftAt < JoinedAt) throw new ArgumentException("Leave time cannot precede join time.");
-        LeftAt = leftAt;
+        LeftAt = leftAt.ToUniversalTime();
     }
 }

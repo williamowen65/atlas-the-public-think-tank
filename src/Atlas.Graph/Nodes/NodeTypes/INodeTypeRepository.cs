@@ -1,4 +1,4 @@
-﻿namespace Atlas.Graph.Nodes.NodeTypes;
+namespace Atlas.Graph.Nodes.NodeTypes;
 
 /// <summary>Defines the persistence operations required by the Graph boundary for node types.</summary>
 public interface INodeTypeRepository

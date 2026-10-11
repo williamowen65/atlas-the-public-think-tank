@@ -8,7 +8,10 @@ namespace Atlas.ConsoleApp.Identity;
 /// <summary>Interactive account entry and local operator confirmation; passwords are never echoed.</summary>
 internal static class ConsoleAccountCommands
 {
-    public static async Task<bool> SignInOrRegisterAsync(IServiceScopeFactory scopes, ConsoleIdentitySession session)
+    public static async Task<bool> SignInOrRegisterAsync(
+        IServiceScopeFactory scopes,
+        ConsoleIdentitySession session
+    )
     {
         while (true)
         {
@@ -40,14 +43,24 @@ internal static class ConsoleAccountCommands
                 }
                 using var scope = scopes.CreateScope();
                 var result = await scope.ServiceProvider.GetRequiredService<AtlasAccounts>()
-                    .RegisterAsync(email, password, displayName);
+                    .RegisterAsync(
+                        email,
+                        password,
+                        displayName
+                    );
                 ConsoleUi.Pause(result.Result.Succeeded
                     ? "Account created. Email confirmation is required before sign-in. For local development, run the console with --confirm-email in another terminal."
-                    : string.Join(Environment.NewLine, result.Result.Errors.Select(error => error.Description)));
+                    : string.Join(
+                        Environment.NewLine,
+                        result.Result.Errors.Select(error => error.Description)
+                    ));
             }
             else
             {
-                var result = await session.SignInAsync(email, password);
+                var result = await session.SignInAsync(
+                    email,
+                    password
+                );
                 if (result.Succeeded) return true;
                 ConsoleUi.Pause(result.IsLockedOut ? "Account is temporarily locked. Try again later."
                     : result.IsNotAllowed ? "Sign-in is unavailable. Confirm the email and check that the account/profile has access."
@@ -59,14 +72,18 @@ internal static class ConsoleAccountCommands
 
     public static async Task<bool> SignInAsync(
         IServiceScopeFactory scopes,
-        ConsoleIdentitySession session)
+        ConsoleIdentitySession session
+    )
     {
         Console.Clear();
         Console.WriteLine("ATLAS — SIGN IN");
         Console.Write("Email: ");
         var email = Console.ReadLine() ?? "";
         var password = ReadPassword("Password: ");
-        var result = await session.SignInAsync(email, password);
+        var result = await session.SignInAsync(
+            email,
+            password
+        );
 
         if (result.Succeeded) return true;
 
@@ -99,10 +116,17 @@ internal static class ConsoleAccountCommands
 
         using var scope = scopes.CreateScope();
         var result = await scope.ServiceProvider.GetRequiredService<AtlasAccounts>()
-            .RegisterAsync(email, password, displayName);
+            .RegisterAsync(
+                email,
+                password,
+                displayName
+            );
         ConsoleUi.Pause(result.Result.Succeeded
             ? "Account created. Email confirmation is required before sign-in. For local development, run the console with --confirm-email in another terminal."
-            : string.Join(Environment.NewLine, result.Result.Errors.Select(error => error.Description)));
+            : string.Join(
+                Environment.NewLine,
+                result.Result.Errors.Select(error => error.Description)
+            ));
     }
 
     /// <summary>Trusted local operator utility, not email ownership verification or a public confirmation endpoint.</summary>
@@ -129,9 +153,15 @@ internal static class ConsoleAccountCommands
         // This console command deliberately skips the delivery/ownership-verification step and is therefore
         // only a trusted local operator utility.
         var token = await users.GenerateEmailConfirmationTokenAsync(user);
-        var result = await users.ConfirmEmailAsync(user, token);
+        var result = await users.ConfirmEmailAsync(
+            user,
+            token
+        );
         Console.WriteLine(result.Succeeded ? "Email confirmed. You can now sign in."
-            : string.Join(Environment.NewLine, result.Errors.Select(error => error.Description)));
+            : string.Join(
+                Environment.NewLine,
+                result.Errors.Select(error => error.Description)
+            ));
     }
 
     private static string ReadPassword(string prompt)

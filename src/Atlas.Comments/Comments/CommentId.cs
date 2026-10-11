@@ -7,7 +7,10 @@ public readonly record struct CommentId
     public CommentId(Guid value)
     {
         if (value == Guid.Empty)
-            throw new ArgumentException("A comment ID is required.", nameof(value));
+            throw new ArgumentException(
+                "A comment ID is required.",
+                nameof(value)
+            );
 
         Value = value;
     }

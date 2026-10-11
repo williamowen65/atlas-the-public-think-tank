@@ -30,17 +30,45 @@ public class NodeReconstitutionTests
             [requestedTypeId],
             [parentId],
             createdAt,
-            updatedAt);
+            updatedAt
+        );
 
-        Assert.AreEqual(id, node.Id);
-        Assert.AreEqual(descriptionId, node.DescriptionId);
-        Assert.AreEqual(typeId, node.TypeId);
-        Assert.AreEqual(authorId, node.AuthorId);
-        Assert.AreEqual(NodeStatus.Archived, node.Status);
-        Assert.AreEqual(createdAt, node.CreatedAt);
-        Assert.AreEqual(updatedAt, node.UpdatedAt);
-        Assert.AreEqual(requestedTypeId, node.RequestedSubNodeTypes.Single().TypeId);
-        Assert.AreEqual(parentId, node.ParentNodeIds.Single());
+        Assert.AreEqual(
+            id,
+            node.Id
+        );
+        Assert.AreEqual(
+            descriptionId,
+            node.DescriptionId
+        );
+        Assert.AreEqual(
+            typeId,
+            node.TypeId
+        );
+        Assert.AreEqual(
+            authorId,
+            node.AuthorId
+        );
+        Assert.AreEqual(
+            NodeStatus.Archived,
+            node.Status
+        );
+        Assert.AreEqual(
+            createdAt,
+            node.CreatedAt
+        );
+        Assert.AreEqual(
+            updatedAt,
+            node.UpdatedAt
+        );
+        Assert.AreEqual(
+            requestedTypeId,
+            node.RequestedSubNodeTypes.Single().TypeId
+        );
+        Assert.AreEqual(
+            parentId,
+            node.ParentNodeIds.Single()
+        );
     }
 
     /// <summary>Verifies that reconstitute does not record domain events.</summary>
@@ -61,10 +89,17 @@ public class NodeReconstitutionTests
 
         var node = NodeTestFactory.Reconstitute(
             requestedTypeIds: [requestedTypeId, requestedTypeId],
-            parentIds: [parentId, parentId]);
+            parentIds: [parentId, parentId]
+        );
 
-        Assert.HasCount(1, node.RequestedSubNodeTypes);
-        Assert.HasCount(1, node.ParentNodeIds);
+        Assert.HasCount(
+            1,
+            node.RequestedSubNodeTypes
+        );
+        Assert.HasCount(
+            1,
+            node.ParentNodeIds
+        );
     }
 
     /// <summary>Verifies that reconstitute when updated precedes created throws.</summary>
@@ -76,7 +111,8 @@ public class NodeReconstitutionTests
         Assert.Throws<ArgumentException>(
             () => NodeTestFactory.Reconstitute(
                 createdAt: createdAt,
-                updatedAt: createdAt.AddTicks(-1)));
+                updatedAt: createdAt.AddTicks(-1)
+            ));
     }
 
     /// <summary>Verifies that reconstitute with null requested types throws.</summary>
@@ -94,7 +130,8 @@ public class NodeReconstitutionTests
                 null!,
                 [],
                 DateTimeOffset.UtcNow,
-                DateTimeOffset.UtcNow));
+                DateTimeOffset.UtcNow
+            ));
     }
 
     /// <summary>Verifies that reconstitute with null parents throws.</summary>
@@ -112,7 +149,8 @@ public class NodeReconstitutionTests
                 [],
                 null!,
                 DateTimeOffset.UtcNow,
-                DateTimeOffset.UtcNow));
+                DateTimeOffset.UtcNow
+            ));
     }
 
     /// <summary>Verifies that reconstitute with self as parent throws.</summary>
@@ -124,7 +162,8 @@ public class NodeReconstitutionTests
         Assert.Throws<InvalidOperationException>(
             () => NodeTestFactory.Reconstitute(
                 id: id,
-                parentIds: [id]));
+                parentIds: [id]
+            ));
     }
 
     /// <summary>Verifies that reconstitute with empty parent id throws.</summary>

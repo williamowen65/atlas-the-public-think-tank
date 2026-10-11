@@ -19,19 +19,38 @@ public class NodeParentBehaviorTests
         node.AttachToParent(
             parentId,
             node.AuthorId.Value,
-            attachedAt);
+            attachedAt
+        );
 
-        Assert.AreEqual(attachedAt, node.UpdatedAt);
+        Assert.AreEqual(
+            attachedAt,
+            node.UpdatedAt
+        );
 
         var message = node.DomainEvents
             .OfType<NodeParentAttachedV1>()
             .Single();
 
-        Assert.AreEqual(node.Id.Value, message.NodeId);
-        Assert.AreEqual(parentId.Value, message.ParentNodeId);
-        Assert.AreEqual(node.DescriptionId.Value, message.DescriptionId);
-        Assert.AreEqual(node.AuthorId.Value, message.AuthorId);
-        Assert.AreEqual(attachedAt, message.OccurredAt);
+        Assert.AreEqual(
+            node.Id.Value,
+            message.NodeId
+        );
+        Assert.AreEqual(
+            parentId.Value,
+            message.ParentNodeId
+        );
+        Assert.AreEqual(
+            node.DescriptionId.Value,
+            message.DescriptionId
+        );
+        Assert.AreEqual(
+            node.AuthorId.Value,
+            message.AuthorId
+        );
+        Assert.AreEqual(
+            attachedAt,
+            message.OccurredAt
+        );
     }
 
     /// <summary>Verifies that attach to parent when already attached preserves timestamp.</summary>
@@ -43,16 +62,21 @@ public class NodeParentBehaviorTests
         node.AttachToParent(
             parentId,
             node.AuthorId.Value,
-            node.CreatedAt.AddMinutes(1));
+            node.CreatedAt.AddMinutes(1)
+        );
         var originalUpdatedAt = node.UpdatedAt;
         node.ClearDomainEvents();
 
         node.AttachToParent(
             parentId,
             node.AuthorId.Value,
-            originalUpdatedAt.AddMinutes(1));
+            originalUpdatedAt.AddMinutes(1)
+        );
 
-        Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);
+        Assert.AreEqual(
+            originalUpdatedAt,
+            node.UpdatedAt
+        );
         Assert.IsEmpty(node.DomainEvents);
     }
 
@@ -65,26 +89,46 @@ public class NodeParentBehaviorTests
         node.AttachToParent(
             parentId,
             node.AuthorId.Value,
-            node.CreatedAt.AddMinutes(1));
+            node.CreatedAt.AddMinutes(1)
+        );
         node.ClearDomainEvents();
         var detachedAt = node.UpdatedAt.AddMinutes(1);
 
         node.DetachFromParent(
             parentId,
             node.AuthorId.Value,
-            detachedAt);
+            detachedAt
+        );
 
-        Assert.AreEqual(detachedAt, node.UpdatedAt);
+        Assert.AreEqual(
+            detachedAt,
+            node.UpdatedAt
+        );
 
         var message = node.DomainEvents
             .OfType<NodeParentDetachedV1>()
             .Single();
 
-        Assert.AreEqual(node.Id.Value, message.NodeId);
-        Assert.AreEqual(parentId.Value, message.ParentNodeId);
-        Assert.AreEqual(node.DescriptionId.Value, message.DescriptionId);
-        Assert.AreEqual(node.AuthorId.Value, message.AuthorId);
-        Assert.AreEqual(detachedAt, message.OccurredAt);
+        Assert.AreEqual(
+            node.Id.Value,
+            message.NodeId
+        );
+        Assert.AreEqual(
+            parentId.Value,
+            message.ParentNodeId
+        );
+        Assert.AreEqual(
+            node.DescriptionId.Value,
+            message.DescriptionId
+        );
+        Assert.AreEqual(
+            node.AuthorId.Value,
+            message.AuthorId
+        );
+        Assert.AreEqual(
+            detachedAt,
+            message.OccurredAt
+        );
     }
 
     /// <summary>Verifies that detach from parent when not attached is no op.</summary>
@@ -98,9 +142,13 @@ public class NodeParentBehaviorTests
         node.DetachFromParent(
             NodeId.New(),
             node.AuthorId.Value,
-            originalUpdatedAt.AddMinutes(1));
+            originalUpdatedAt.AddMinutes(1)
+        );
 
-        Assert.AreEqual(originalUpdatedAt, node.UpdatedAt);
+        Assert.AreEqual(
+            originalUpdatedAt,
+            node.UpdatedAt
+        );
         Assert.IsEmpty(node.DomainEvents);
     }
 
@@ -114,7 +162,8 @@ public class NodeParentBehaviorTests
             () => node.DetachFromParent(
                 new NodeId(Guid.Empty),
                 node.AuthorId.Value,
-                DateTimeOffset.UtcNow));
+                DateTimeOffset.UtcNow
+            ));
     }
 
     /// <summary>Verifies that detach from parent with own id throws.</summary>
@@ -127,6 +176,7 @@ public class NodeParentBehaviorTests
             () => node.DetachFromParent(
                 node.Id,
                 node.AuthorId.Value,
-                DateTimeOffset.UtcNow));
+                DateTimeOffset.UtcNow
+            ));
     }
 }

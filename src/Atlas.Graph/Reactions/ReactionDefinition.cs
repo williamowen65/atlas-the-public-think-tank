@@ -27,16 +27,23 @@ public sealed class ReactionDefinition
         Guid createdByParticipantId,
         bool isSuppressed,
         DateTimeOffset createdAt,
-        DateTimeOffset updatedAt)
+        DateTimeOffset updatedAt
+    )
     {
         if (id.Value == Guid.Empty)
         {
-            throw new ArgumentException("A reaction definition ID is required.", nameof(id));
+            throw new ArgumentException(
+                "A reaction definition ID is required.",
+                nameof(id)
+            );
         }
 
         if (createdByParticipantId == Guid.Empty)
         {
-            throw new ArgumentException("A reaction curator is required.", nameof(createdByParticipantId));
+            throw new ArgumentException(
+                "A reaction curator is required.",
+                nameof(createdByParticipantId)
+            );
         }
 
         if (updatedAt < createdAt)
@@ -49,17 +56,24 @@ public sealed class ReactionDefinition
         Description = CleanDescription(description);
         var expectedNormalizedText = Normalize(Text);
 
-        if (!string.Equals(normalizedText, expectedNormalizedText, StringComparison.Ordinal))
+        if (!string.Equals(
+            normalizedText,
+            expectedNormalizedText,
+            StringComparison.Ordinal
+        ))
         {
-            throw new ArgumentException("Normalized reaction text does not match its display text.", nameof(normalizedText));
+            throw new ArgumentException(
+                "Normalized reaction text does not match its display text.",
+                nameof(normalizedText)
+            );
         }
 
         Id = id;
         NormalizedText = normalizedText;
         CreatedByParticipantId = createdByParticipantId;
         IsSuppressed = isSuppressed;
-        CreatedAt = createdAt;
-        UpdatedAt = updatedAt;
+        CreatedAt = createdAt.ToUniversalTime();
+        UpdatedAt = updatedAt.ToUniversalTime();
     }
 
     /// <summary>Creates a definition for the curated reaction catalog.</summary>
@@ -68,7 +82,8 @@ public sealed class ReactionDefinition
         string emoji,
         string description,
         Guid createdByParticipantId,
-        DateTimeOffset createdAt)
+        DateTimeOffset createdAt
+    )
     {
         var cleanedText = CleanDisplayText(text);
 
@@ -81,7 +96,8 @@ public sealed class ReactionDefinition
             createdByParticipantId,
             isSuppressed: false,
             createdAt,
-            createdAt);
+            createdAt
+        );
     }
 
     /// <summary>Rebuilds a persisted definition without replaying creation behavior.</summary>
@@ -94,7 +110,8 @@ public sealed class ReactionDefinition
         Guid createdByParticipantId,
         bool isSuppressed,
         DateTimeOffset createdAt,
-        DateTimeOffset updatedAt)
+        DateTimeOffset updatedAt
+    )
     {
         return new ReactionDefinition(
             id,
@@ -105,11 +122,15 @@ public sealed class ReactionDefinition
             createdByParticipantId,
             isSuppressed,
             createdAt,
-            updatedAt);
+            updatedAt
+        );
     }
 
     /// <summary>Suppresses the reusable definition while retaining its identity and history.</summary>
-    public void Suppress(bool actorIsModerator, DateTimeOffset suppressedAt)
+    public void Suppress(
+        bool actorIsModerator,
+        DateTimeOffset suppressedAt
+    )
     {
         if (!actorIsModerator)
         {
@@ -122,7 +143,7 @@ public sealed class ReactionDefinition
         }
 
         IsSuppressed = true;
-        UpdatedAt = suppressedAt;
+        UpdatedAt = suppressedAt.ToUniversalTime();
     }
 
     /// <summary>Produces the stable comparison form used for lookup and duplicate detection.</summary>
@@ -138,20 +159,26 @@ public sealed class ReactionDefinition
     {
         if (string.IsNullOrWhiteSpace(text))
         {
-            throw new ArgumentException("Reaction text is required.", nameof(text));
+            throw new ArgumentException(
+                "Reaction text is required.",
+                nameof(text)
+            );
         }
 
         var cleaned = string.Join(
             " ",
             text.Split(
                 (char[]?)null,
-                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+            )
+        );
 
         if (cleaned.Length > MaximumTextLength)
         {
             throw new ArgumentException(
                 $"Reaction text cannot exceed {MaximumTextLength} characters.",
-                nameof(text));
+                nameof(text)
+            );
         }
 
         return cleaned;
@@ -161,7 +188,10 @@ public sealed class ReactionDefinition
     {
         if (string.IsNullOrWhiteSpace(emoji))
         {
-            throw new ArgumentException("A reaction emoji is required.", nameof(emoji));
+            throw new ArgumentException(
+                "A reaction emoji is required.",
+                nameof(emoji)
+            );
         }
 
         return emoji.Trim();
@@ -171,7 +201,10 @@ public sealed class ReactionDefinition
     {
         if (string.IsNullOrWhiteSpace(description))
         {
-            throw new ArgumentException("A reaction description is required.", nameof(description));
+            throw new ArgumentException(
+                "A reaction description is required.",
+                nameof(description)
+            );
         }
 
         var cleaned = description.Trim();
@@ -179,7 +212,8 @@ public sealed class ReactionDefinition
         {
             throw new ArgumentException(
                 $"Reaction description cannot exceed {MaximumDescriptionLength} characters.",
-                nameof(description));
+                nameof(description)
+            );
         }
 
         return cleaned;

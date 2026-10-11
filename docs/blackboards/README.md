@@ -1,18 +1,16 @@
 # Architecture blackboards
 
 These blackboards are exploratory visual companions to Atlas's authoritative
-Markdown documentation.
+Markdown documentation. We try to update them alongside behavior changes; they can still drift, so check their linked code and context map when reviewing.
+
+The [Node creation board](workflows/Nodes/NodeCreation.excalidraw) restores the custom 213-element layout from before the PTT-87 replacement (commit `0fa7943`). PTT-121 updates its labels and links for SQL, pre-write construction, topology coordination, rollback and post-commit events while preserving the original geometry and arrow bindings.
 
 - [Blackboard conventions](CONVENTIONS.md) describe the shared layout,
   editability, connection, traceability, and visual-language rules to apply to
   future workflow boards.
 
-- [PTT-68 current-state architecture](PTT-68-CURRENT-STATE.excalidraw) visualizes
-  the implemented system, current interactions, boundary gaps, and candidate
-  future domains discovered during PTT-68.
-- [PTT-68 system blackboard](SYSTEM-BLACKBOARD.excalidraw) is the larger
-  zoomable system graph. It places commands, use cases, event ports, current
-  interactions, gaps, and candidate domains around their related boundaries.
+- [PTT-130 transaction flow](workflows/Persistence/PTT-130-TRANSACTION-FLOW.excalidraw) shows how reference checks and Content/Graph saves share one EF context and SQL transaction, then commit or roll back together. See the [code walkthrough](workflows/Persistence/PTT-130-TRANSACTION-FLOW.md).
+- [System Blackboard](SYSTEM-BLACKBOARD.excalidraw) is the single root-level system overview: hosts, domains, Identity, shared infrastructure, persistence, events and remaining boundaries. Detailed workflows live under their subject folders.
 - [Reusable Node Tags](workflows/Node%20Tags/NodeTags.excalidraw) maps tag
   definition reuse, node-specific application, mutation authority, author
   disposition, lifecycle audit history, persistence, display, and the future
@@ -51,10 +49,7 @@ Open the `.excalidraw` files in Excalidraw to pan, zoom, and edit each board.
 Keep related areas on the same canvas unless the board becomes too crowded to
 review.
 
-The current-state architecture board is a compact summary. The system
-blackboard is intentionally much larger and is designed to be panned and
-zoomed: boundary names remain visible from a distance, while ports, event
-timing, and gap notes become readable when zoomed in.
+System Blackboard is intentionally high-level. Use the subject workflow boards for operation details, transaction mechanics and test evidence.
 
 ## Viewing and reviewing
 

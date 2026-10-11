@@ -18,8 +18,14 @@ internal static partial class DemoData
                 RequestedSubNodeTypeIds = [ Guid.Parse("0328981f-7b76-4bcb-ad04-99b4ed74fd23"), Guid.Parse("53057519-9a26-4b02-a884-56dcf82159ed"), Guid.Parse("a3000000-0000-4000-8000-000000000001") ],
                 ParentNodeIds = [  ],
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T15:20:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T15:43:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T15:20:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T15:43:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeRow
             {
@@ -31,8 +37,14 @@ internal static partial class DemoData
                 RequestedSubNodeTypeIds = [ Guid.Parse("a2e82ee2-12ba-49fc-9160-c2b864d4f42f"), Guid.Parse("df57b39d-efba-4398-84e0-6a7d4214287f"), Guid.Parse("0328981f-7b76-4bcb-ad04-99b4ed74fd23"), Guid.Parse("60d8ba45-8b78-4593-838b-ffd15af69746") ],
                 ParentNodeIds = [  ],
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T15:20:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T15:43:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T15:20:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T15:43:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeRow
             {
@@ -44,8 +56,14 @@ internal static partial class DemoData
                 RequestedSubNodeTypeIds = [ Guid.Parse("53057519-9a26-4b02-a884-56dcf82159ed"), Guid.Parse("0328981f-7b76-4bcb-ad04-99b4ed74fd23"), Guid.Parse("df57b39d-efba-4398-84e0-6a7d4214287f") ],
                 ParentNodeIds = [  ],
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T15:20:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T15:43:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T15:20:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T15:43:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeRow
             {
@@ -57,8 +75,14 @@ internal static partial class DemoData
                 RequestedSubNodeTypeIds = [ Guid.Parse("df57b39d-efba-4398-84e0-6a7d4214287f"), Guid.Parse("a2e82ee2-12ba-49fc-9160-c2b864d4f42f"), Guid.Parse("60d8ba45-8b78-4593-838b-ffd15af69746") ],
                 ParentNodeIds = [  ],
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T15:20:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T15:43:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T15:20:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T15:43:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeRow
             {
@@ -70,8 +94,14 @@ internal static partial class DemoData
                 RequestedSubNodeTypeIds = [ Guid.Parse("a2e82ee2-12ba-49fc-9160-c2b864d4f42f"), Guid.Parse("df57b39d-efba-4398-84e0-6a7d4214287f"), Guid.Parse("0328981f-7b76-4bcb-ad04-99b4ed74fd23") ],
                 ParentNodeIds = [  ],
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T15:20:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T15:43:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T15:20:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T15:43:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeRow
             {
@@ -83,8 +113,14 @@ internal static partial class DemoData
                 RequestedSubNodeTypeIds = [ Guid.Parse("a3000000-0000-4000-8000-000000000001"), Guid.Parse("0328981f-7b76-4bcb-ad04-99b4ed74fd23"), Guid.Parse("a2e82ee2-12ba-49fc-9160-c2b864d4f42f") ],
                 ParentNodeIds = [  ],
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T15:20:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T15:43:00+00:00", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T15:20:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T15:43:00+00:00",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeRow
             {
@@ -96,8 +132,14 @@ internal static partial class DemoData
                 RequestedSubNodeTypeIds = [  ],
                 ParentNodeIds = [ Guid.Parse("b1000000-0000-4000-8000-000000000001") ],
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T16:46:57.176Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T16:46:57.176Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T16:46:57.176Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T16:46:57.176Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeRow
             {
@@ -109,8 +151,14 @@ internal static partial class DemoData
                 RequestedSubNodeTypeIds = [  ],
                 ParentNodeIds = [ Guid.Parse("b1000000-0000-4000-8000-000000000007") ],
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T16:46:57.176Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T16:46:57.176Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T16:46:57.176Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T16:46:57.176Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeRow
             {
@@ -122,8 +170,14 @@ internal static partial class DemoData
                 RequestedSubNodeTypeIds = [ Guid.Parse("a2e82ee2-12ba-49fc-9160-c2b864d4f42f"), Guid.Parse("0328981f-7b76-4bcb-ad04-99b4ed74fd23") ],
                 ParentNodeIds = [ Guid.Parse("b1000000-0000-4000-8000-000000000001") ],
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:12:32.348Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:12:32.348Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:12:32.348Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:12:32.348Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeRow
             {
@@ -135,8 +189,14 @@ internal static partial class DemoData
                 RequestedSubNodeTypeIds = [ Guid.Parse("a2e82ee2-12ba-49fc-9160-c2b864d4f42f"), Guid.Parse("df57b39d-efba-4398-84e0-6a7d4214287f"), Guid.Parse("0328981f-7b76-4bcb-ad04-99b4ed74fd23") ],
                 ParentNodeIds = [ Guid.Parse("b1000000-0000-4000-8000-000000000009"), Guid.Parse("b1000000-0000-4000-8000-000000000005") ],
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:12:32.348Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:12:32.348Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:12:32.348Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:12:32.348Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeRow
             {
@@ -148,8 +208,14 @@ internal static partial class DemoData
                 RequestedSubNodeTypeIds = [ Guid.Parse("df57b39d-efba-4398-84e0-6a7d4214287f") ],
                 ParentNodeIds = [ Guid.Parse("b1000000-0000-4000-8000-000000000010") ],
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:12:32.348Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:12:32.348Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:12:32.348Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:12:32.348Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeRow
             {
@@ -161,8 +227,14 @@ internal static partial class DemoData
                 RequestedSubNodeTypeIds = [ Guid.Parse("a2e82ee2-12ba-49fc-9160-c2b864d4f42f"), Guid.Parse("df57b39d-efba-4398-84e0-6a7d4214287f") ],
                 ParentNodeIds = [ Guid.Parse("b1000000-0000-4000-8000-000000000009") ],
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:12:32.348Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:12:32.348Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:12:32.348Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:12:32.348Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeRow
             {
@@ -174,8 +246,14 @@ internal static partial class DemoData
                 RequestedSubNodeTypeIds = [ Guid.Parse("a2e82ee2-12ba-49fc-9160-c2b864d4f42f"), Guid.Parse("df57b39d-efba-4398-84e0-6a7d4214287f") ],
                 ParentNodeIds = [ Guid.Parse("b1000000-0000-4000-8000-000000000003"), Guid.Parse("b1000000-0000-4000-8000-000000000006") ],
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:19:14.273Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:19:14.273Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:19:14.273Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:19:14.273Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeRow
             {
@@ -187,8 +265,14 @@ internal static partial class DemoData
                 RequestedSubNodeTypeIds = [ Guid.Parse("0328981f-7b76-4bcb-ad04-99b4ed74fd23"), Guid.Parse("53057519-9a26-4b02-a884-56dcf82159ed"), Guid.Parse("a2e82ee2-12ba-49fc-9160-c2b864d4f42f"), Guid.Parse("df57b39d-efba-4398-84e0-6a7d4214287f") ],
                 ParentNodeIds = [ Guid.Parse("b1000000-0000-4000-8000-000000000013") ],
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:36:49.048Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:36:49.048Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:36:49.048Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:36:49.048Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeRow
             {
@@ -200,8 +284,14 @@ internal static partial class DemoData
                 RequestedSubNodeTypeIds = [ Guid.Parse("53057519-9a26-4b02-a884-56dcf82159ed"), Guid.Parse("a2e82ee2-12ba-49fc-9160-c2b864d4f42f"), Guid.Parse("df57b39d-efba-4398-84e0-6a7d4214287f") ],
                 ParentNodeIds = [ Guid.Parse("b1000000-0000-4000-8000-000000000014") ],
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:36:49.048Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:36:49.048Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:36:49.048Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:36:49.048Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeRow
             {
@@ -213,8 +303,14 @@ internal static partial class DemoData
                 RequestedSubNodeTypeIds = [ Guid.Parse("a2e82ee2-12ba-49fc-9160-c2b864d4f42f"), Guid.Parse("0328981f-7b76-4bcb-ad04-99b4ed74fd23"), Guid.Parse("df57b39d-efba-4398-84e0-6a7d4214287f") ],
                 ParentNodeIds = [ Guid.Parse("b1000000-0000-4000-8000-000000000015") ],
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:36:49.048Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:36:49.048Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:36:49.048Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:36:49.048Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeRow
             {
@@ -226,8 +322,14 @@ internal static partial class DemoData
                 RequestedSubNodeTypeIds = [ Guid.Parse("0328981f-7b76-4bcb-ad04-99b4ed74fd23"), Guid.Parse("df57b39d-efba-4398-84e0-6a7d4214287f") ],
                 ParentNodeIds = [ Guid.Parse("b1000000-0000-4000-8000-000000000014") ],
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:36:49.048Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:36:49.048Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:36:49.048Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:36:49.048Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeRow
             {
@@ -239,8 +341,14 @@ internal static partial class DemoData
                 RequestedSubNodeTypeIds = [ Guid.Parse("a2e82ee2-12ba-49fc-9160-c2b864d4f42f"), Guid.Parse("53057519-9a26-4b02-a884-56dcf82159ed"), Guid.Parse("df57b39d-efba-4398-84e0-6a7d4214287f") ],
                 ParentNodeIds = [ Guid.Parse("b1000000-0000-4000-8000-000000000014") ],
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:48:43.289Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:48:43.289Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:48:43.289Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:48:43.289Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeRow
             {
@@ -252,8 +360,14 @@ internal static partial class DemoData
                 RequestedSubNodeTypeIds = [ Guid.Parse("a2e82ee2-12ba-49fc-9160-c2b864d4f42f"), Guid.Parse("0328981f-7b76-4bcb-ad04-99b4ed74fd23"), Guid.Parse("a3000000-0000-4000-8000-000000000001"), Guid.Parse("53057519-9a26-4b02-a884-56dcf82159ed") ],
                 ParentNodeIds = [ Guid.Parse("b1000000-0000-4000-8000-000000000023") ],
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:48:43.289Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T18:02:36.726Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:48:43.289Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T18:02:36.726Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeRow
             {
@@ -265,8 +379,14 @@ internal static partial class DemoData
                 RequestedSubNodeTypeIds = [ Guid.Parse("0328981f-7b76-4bcb-ad04-99b4ed74fd23"), Guid.Parse("df57b39d-efba-4398-84e0-6a7d4214287f") ],
                 ParentNodeIds = [ Guid.Parse("b1000000-0000-4000-8000-000000000019") ],
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:48:43.289Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:48:43.289Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:48:43.289Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:48:43.289Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeRow
             {
@@ -278,8 +398,14 @@ internal static partial class DemoData
                 RequestedSubNodeTypeIds = [ Guid.Parse("a2e82ee2-12ba-49fc-9160-c2b864d4f42f"), Guid.Parse("df57b39d-efba-4398-84e0-6a7d4214287f") ],
                 ParentNodeIds = [ Guid.Parse("b1000000-0000-4000-8000-000000000020") ],
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:48:43.289Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:48:43.289Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:48:43.289Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:48:43.289Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeRow
             {
@@ -291,8 +417,14 @@ internal static partial class DemoData
                 RequestedSubNodeTypeIds = [ Guid.Parse("a2e82ee2-12ba-49fc-9160-c2b864d4f42f"), Guid.Parse("0328981f-7b76-4bcb-ad04-99b4ed74fd23"), Guid.Parse("df57b39d-efba-4398-84e0-6a7d4214287f") ],
                 ParentNodeIds = [ Guid.Parse("b1000000-0000-4000-8000-000000000019") ],
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T17:48:43.289Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T17:48:43.289Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:48:43.289Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T17:48:43.289Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeRow
             {
@@ -304,8 +436,14 @@ internal static partial class DemoData
                 RequestedSubNodeTypeIds = [ Guid.Parse("a2e82ee2-12ba-49fc-9160-c2b864d4f42f"), Guid.Parse("0328981f-7b76-4bcb-ad04-99b4ed74fd23"), Guid.Parse("a3000000-0000-4000-8000-000000000001") ],
                 ParentNodeIds = [  ],
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T18:02:36.726Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T18:02:36.726Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T18:02:36.726Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T18:02:36.726Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             new NodeRow
             {
@@ -317,8 +455,14 @@ internal static partial class DemoData
                 RequestedSubNodeTypeIds = [ Guid.Parse("a2e82ee2-12ba-49fc-9160-c2b864d4f42f"), Guid.Parse("0328981f-7b76-4bcb-ad04-99b4ed74fd23") ],
                 ParentNodeIds = [ Guid.Parse("b1000000-0000-4000-8000-000000000023") ],
                 Status = "Active",
-                CreatedAt = DateTimeOffset.Parse("2026-09-28T18:02:36.726Z", System.Globalization.CultureInfo.InvariantCulture),
-                UpdatedAt = DateTimeOffset.Parse("2026-09-28T18:02:36.726Z", System.Globalization.CultureInfo.InvariantCulture),
+                CreatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T18:02:36.726Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                UpdatedAt = DateTimeOffset.Parse(
+                    "2026-09-28T18:02:36.726Z",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
         });
     }

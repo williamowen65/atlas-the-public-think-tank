@@ -9,7 +9,10 @@ public sealed class InMemoryEventPublisher
     {
         var eventType = typeof(TEvent);
 
-        if (!_subscribers.TryGetValue(eventType, out var handlers))
+        if (!_subscribers.TryGetValue(
+            eventType,
+            out var handlers
+        ))
         {
             handlers = [];
             _subscribers[eventType] = handlers;
@@ -31,9 +34,12 @@ public sealed class InMemoryEventPublisher
         Console.WriteLine();
         Console.WriteLine(
             $"[EVENT BUS] Publishing {eventType.Name} at " +
-            $"{DateTimeOffset.UtcNow:O}.");
+            $"{AtlasTime.UtcNow:O}.");
 
-        if (!_subscribers.TryGetValue(eventType, out var handlers))
+        if (!_subscribers.TryGetValue(
+            eventType,
+            out var handlers
+        ))
         {
             Console.WriteLine(
                 $"[EVENT BUS] No subscribers accepted {eventType.Name}.");

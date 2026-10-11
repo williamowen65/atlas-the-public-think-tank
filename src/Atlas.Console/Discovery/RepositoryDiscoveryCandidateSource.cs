@@ -30,7 +30,8 @@ internal sealed class RepositoryDiscoveryCandidateSource : IDiscoveryCandidateSo
         IVoteRepository votes,
         ICommunityNodeRepository communityNodes,
         INodeReactionRepository nodeReactions,
-        IModerationCaseRepository moderationCases)
+        IModerationCaseRepository moderationCases
+    )
     {
         _nodes = nodes;
         _documents = documents;
@@ -51,7 +52,10 @@ internal sealed class RepositoryDiscoveryCandidateSource : IDiscoveryCandidateSo
             var document = _documents.GetById(new DocumentId(node.DescriptionId.Value));
             var content = document is null
                 ? string.Empty
-                : string.Join(' ', _documents.GetBlocks(document).Select(SearchableText));
+                : string.Join(
+                    ' ',
+                    _documents.GetBlocks(document).Select(SearchableText)
+                );
             var communityIds = _communityNodes.GetByNode(node.Id.Value)
                 .Select(association => association.CommunityId.Value)
                 .ToList();
@@ -72,7 +76,8 @@ internal sealed class RepositoryDiscoveryCandidateSource : IDiscoveryCandidateSo
                 summary.AverageVote,
                 communityIds,
                 reactionIds,
-                excludedIds.Contains(node.Id.Value));
+                excludedIds.Contains(node.Id.Value)
+            );
         }).ToList();
     }
 

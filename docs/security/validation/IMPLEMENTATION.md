@@ -1,0 +1,219 @@
+# Validation implementation in PR #337
+
+[PTT-128](https://thepublicthinktank.atlassian.net/browse/PTT-128), [PTT-129](https://thepublicthinktank.atlassian.net/browse/PTT-129) and [PTT-130](https://thepublicthinktank.atlassian.net/browse/PTT-130) are implemented together on the PTT-121 branch. The cards remain separate traceability units; review the code and evidence in this PR.
+
+## Local values and history — PTT-128
+
+Consumers reject empty/default Graph, Comment, Community and Vote IDs and runtime null required objects. Graph, Participant, Community and node-type changes cannot move their update time backward. Equal timestamps remain allowed in these domains; existing Comment and Vote mutations still require a strictly later time. An intentional repeated-operation no-op preserves history without requiring a new timestamp. Membership rejoin cannot precede the last leave.
+
+Comment removal status, removal time and update time must agree. Moderation decision, review and restoration fields must form a complete, chronological history. Reaction changes construct and validate their audit entry before applying lifecycle/disposition changes. Notification identities are constructor-validated and immutable; delivery history is read-only outside the aggregate, and read/dismiss/delivery operations validate chronology.
+
+| Enforcement | Focused evidence |
+|---|---|
+| [Node](../../../src/Atlas.Graph/Node.cs), [node types](../../../src/Atlas.Graph/Nodes/NodeTypes/NodeTypeDefinition.cs), [reactions](../../../src/Atlas.Graph/Reactions/NodeReaction.cs) | [ValidationBoundaryTests](../../../tests/Atlas.Graph.Tests/ValidationBoundaryTests.cs): defaults/nulls, unchanged values/parents/events, audit rejection |
+| [Participant](../../../src/Atlas.Participants/Participants/Participant.cs), [Community](../../../src/Atlas.Communities/Communities/Community.cs), [membership](../../../src/Atlas.Communities/Memberships/CommunityMembership.cs) | [Participant boundary tests](../../../tests/Atlas.Participants.Tests/ValidationBoundaryTests.cs), [Community validation tests](../../../tests/Atlas.Communities.Tests/ValidationTests.cs): earlier edits, deactivation, rejoin, deliberate no-ops |
+| [Document](../../../src/Atlas.Content/Documents/Document.cs), [Comment](../../../src/Atlas.Comments/Comments/Comment.cs), [Vote](../../../src/Atlas.Voting/Model/Vote.cs) | [Content validation tests](../../../tests/Atlas.Console.Tests/ContentValidationTests.cs), [Comment validation tests](../../../tests/Atlas.Comments.Tests/ValidationTests.cs), [Vote boundary tests](../../../tests/Atlas.Voting.Tests/ValidationBoundaryTests.cs) |
+| [ModerationCase](../../../src/Atlas.Moderation/ModerationCase.cs), [Notifications](../../../src/Atlas.Notifications/Notifications.cs) | [Moderation validation tests](../../../tests/Atlas.Moderation.Tests/ValidationTests.cs), [Notification domain tests](../../../tests/Atlas.Notifications.Tests/NotificationDomainTests.cs): restored state and direct entity construction |
+
+### Shared time policy
+
+[AtlasTime](../../../src/Atlas.Contracts/Operations/AtlasTime.cs) uses .NET `TimeProvider.System` in production and a scoped provider in controlled tests. Backend current-time calls use this source. [Node creation](../../../src/Atlas.Console/NodeCreationService.cs) captures UTC once and reuses it for the block, document, node and creation events. Aggregate properties normalize timestamp offsets to UTC without changing the represented instant; reconstitution preserves that instant and validates history.
+
+The application supplies time to domain methods so tests and reconstitution can use known timestamps. Future ordinary API requests must not choose audit times. Display converts UTC to the viewer's time zone, using a time-zone identifier where daylight-saving rules matter. Clock synchronization across hosts and clock adjustments remain deployment concerns; a timestamp is not a concurrency version.
+
+## References and relationships — PTT-129
+
+A reference check asks: **“Does this ID identify a record of the expected kind, and is that record available for this operation?”** The application decides which references it needs; the host's lookup implementation answers using stored facts. This is one part of validation. Aggregate value/history checks, authorization and graph ancestry checks still have their own owners.
+
+### How the pieces fit together
+
+| Piece | Responsibility | Where to read it |
+|---|---|---|
+| `IReferenceLookup` | Defines the question an adapter must answer: `IsAvailable(kind, id, requireActive)` returns a boolean. The interface contains no database queries. | [Contracts: ReferenceValidation.cs](../../../src/Atlas.Contracts/Operations/ReferenceValidation.cs) |
+| `ReferenceValidation.Require` | Rejects an empty ID, checks that the supplied adapter implements the contract, calls `IsAvailable`, and throws if the reference is unavailable. It turns a boolean answer into an enforced precondition. | [Contracts: ReferenceValidation.cs](../../../src/Atlas.Contracts/Operations/ReferenceValidation.cs) |
+| Application service | Chooses the required references and whether availability or existence alone is needed, then calls `Require` before changing state or saving. | [NodeCreationService](../../../src/Atlas.Console/NodeCreationService.cs), [CommunityService](../../../src/Atlas.Communities/Communities/CommunityService.cs) |
+| `SqlRepository` | Implements the lookup once in the host's storage layer. Its `kind` switch selects EF queries for Participants, Nodes, Documents, Blocks, NodeTypes, Communities or NodeReactions. | [Console storage: SqlRepository](../../../src/Atlas.Console/Storage/SqlRepository.cs) |
+| Concrete SQL repository | Supplies its domain's persistence operations and inherits the shared lookup implementation. It does not need to repeat `IsAvailable`. | [SqlNodeRepository](../../../src/Atlas.Console/Storage/SqlNodeRepository.cs), [SqlCommunityRepository](../../../src/Atlas.Console/Storage/SqlCommunityRepository.cs) |
+| Database context | Provides access to the mapped tables in the shared Atlas database. The SQL lookup uses these tables directly through EF. | [AtlasDataContext](../../../src/Atlas.Persistence/AtlasDataContext.cs) |
+
+**The contract is a capability; inheritance is how the current SQL adapter provides it.** For example, `SqlNodeRepository` inherits from `SqlRepository`, which implements `IReferenceLookup`. A `SqlNodeRepository` instance therefore supports both `INodeRepository` and `IReferenceLookup`.
+
+This code lives in the Console project because Console is the current host/composition layer. “Host” means the backend that wires services to adapters, not a browser or form. A future REST host can provide the same capability without putting SQL queries into domain aggregates.
+
+### Follow one call: validate a Node's author
+
+[NodeCreationService.Create](../../../src/Atlas.Console/NodeCreationService.cs) receives `nodes` as an `INodeRepository`. In the SQL-backed host, the actual object is a `SqlNodeRepository`. It calls:
+
+```csharp
+ReferenceValidation.Require(nodes, "Participant", authorId);
+```
+
+1. **The helper checks the input and capability.** An empty `authorId` is rejected immediately. Although the parameter's declared type is `INodeRepository`, the runtime object also implements `IReferenceLookup` through its base class. `Require` checks for that interface; an adapter without it fails explicitly.
+2. **The same repository instance answers the lookup.** `Require` calls its inherited `IsAvailable("Participant", authorId, true)`. There is no separate lookup object created and no call to `SqlParticipantRepository` here.
+3. **The shared implementation queries the appropriate table.** The `"Participant"` branch asks EF whether `ParticipantRows` contains that ID with `IsActive == true`. A Node repository can answer this cross-domain question because its shared base implementation has access to the common Atlas database context.
+4. **The answer controls continuation.** `false` causes `Require` to throw before Node construction or writes. `true` lets the service proceed to its other reference checks and local aggregate validation. It does not establish that the caller is authenticated or authorized.
+
+```mermaid
+sequenceDiagram
+    participant Service as NodeCreationService
+    participant Guard as ReferenceValidation
+    participant Repo as SqlNodeRepository
+    participant Context as AtlasDataContext
+    participant DB as SQL Server
+    Service->>Guard: Require(nodes, Participant, authorId)
+    Guard->>Guard: Check nonempty ID and IReferenceLookup
+    Guard->>Repo: IsAvailable(Participant, authorId, true)
+    Note over Repo: Inherited from SqlRepository
+    Repo->>Context: Query ParticipantRows for active author
+    Context->>DB: Execute parameterized existence query
+    DB-->>Context: Match or no match
+    Context-->>Repo: Boolean result
+    Repo-->>Guard: Available or unavailable
+    alt Available
+        Guard-->>Service: Return and continue validation
+    else Missing or inactive
+        Guard-->>Service: Throw and stop before mutation or saves
+    end
+```
+
+The caller chooses the policy; `SqlRepository.IsAvailable` is the central implementation of the **reference availability facts**, rather than all validation. With `requireActive: true` (the helper's default), Participants must be active, NodeTypes unarchived, Communities active, and Nodes active and not currently hidden by moderation. An active reaction also needs an available parent Node. Documents and Blocks currently have only an existence check. With `requireActive: false`, these branches check existence while allowing references to records that are now inactive, archived or hidden. Unsupported kinds return `false`.
+
+The current wiring passes the repository object into the helper and discovers its lookup capability at runtime; the individual domain repository interfaces do not themselves require `IReferenceLookup`. Test adapters that exercise these services must explicitly implement that capability too. If another backend replaces SQL, it must provide equivalent facts and policy behavior.
+
+### How reference checks connect to saving
+
+The [operation boundary](../../../src/Atlas.Contracts/Operations/OperationBoundary.cs) starts the SQL transaction before these service checks. [SqlOperationBoundary](../../../src/Atlas.Console/Storage/SqlOperationBoundary.cs) lets the lookup and subsequent repository saves reuse that operation's database context. Node creation validates the author/types/optional parent, constructs valid local objects, then saves the block, document and Node. [SqlDocumentRepository](../../../src/Atlas.Console/Storage/SqlDocumentRepository.cs) verifies block references, and [SqlNodeRepository.Save](../../../src/Atlas.Console/Storage/SqlNodeRepository.cs) repeats its reference and ancestry checks before the Node write. Those save-boundary checks also protect callers using the repository directly.
+
+SQL foreign keys remain the final protection for mapped relationships. A successful lookup does not replace those constraints, authorize an actor, or detect a transitive graph cycle. The graph traversal described below handles ancestry; the transaction and competing-write protection are covered under [PTT-130](#complete-operations--ptt-130).
+
+### Policies by operation
+
+| Operation | Enforced policy |
+|---|---|
+| Create Node | Active author, existing description document and blocks, existing unarchived selected/requested types, active and publicly available parent |
+| Change/request Node types | Resolve new types before changing the aggregate; preserve existing type references that are not being changed |
+| Attach parent | Active, publicly available child/parent and active actor; check full ancestry and detect stale loaded relationship state before mutation |
+| Create/join/associate Community | Active owner/participant and active community; associations require an active, publicly available Node. Leaving/removing retains history. |
+| Add/edit/reply Comment | Active actor and available Node; reject unsupported target kinds. Replies inherit their parent's target and cannot predate it. Removed ancestors may receive replies, preserving the existing thread policy. |
+| Cast/change Vote | Active participant; target kind must resolve to an active, publicly available Node or an active reaction on such a Node |
+| Notification request | Active actor/recipient and supported kind/Node subject; discussion requires an available Node, moderation may refer to a hidden Node. Validate before duplicate/self shortcuts. |
+| Preserving existing references | Existing references may remain when their participant/type/parent later becomes inactive; creation and new relationships require availability. SQL FKs retain mapped existence protection. |
+
+
+### Preserving existing references
+
+An **existing reference** is a stored relationship that remains after the referenced record becomes unavailable for new operations. This does not mean database version history or a saved copy of an earlier record.
+
+For example:
+
+- A node keeps its author ID after the author's account is deactivated.
+- A node keeps its existing type ID after that type is archived; assigning a different type requires an available type.
+- Hiding a parent node does not delete its stored parent/child relationships or its subtree.
+
+**Existence** means the referenced record is still present; mapped SQL foreign keys enforce this. **Availability** adds operation-specific requirements, such as being active and not hidden. Preserve unchanged references during an otherwise permitted update, but check availability when creating or changing a relationship.
+
+Keeping a relationship stored does not grant access to hidden content. Visibility and authorization still apply.
+
+[NodeRelationshipService](../../../src/Atlas.Graph/Nodes/NodeRelationshipService.cs) validates relationships and type proposals before mutation. [GraphRelationshipValidation](../../../src/Atlas.Graph/Nodes/GraphRelationshipValidation.cs) traverses ancestry to reject direct/transitive cycles and missing parents, while allowing several parents and shared ancestors. [SqlNodeRepository](../../../src/Atlas.Console/Storage/SqlNodeRepository.cs) repeats graph/reference checks at the write boundary.
+
+Evidence: [Graph boundary tests](../../../tests/Atlas.Graph.Tests/ValidationBoundaryTests.cs), [SQL operation tests](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs) for missing documents/types, inactive authors, missing/wrong-kind/hidden vote targets and competing parent links; [Comment tests](../../../tests/Atlas.Comments.Tests/CommentTests.cs) for unavailable targets; [Notification tests](../../../tests/Atlas.Notifications.Tests/NotificationDomainTests.cs) for shortcut validation. This is evidence for these named scenarios, not every possible reference combination.
+
+## Complete operations — PTT-130
+
+See the [Excalidraw transaction-flow blackboard](../../blackboards/workflows/Persistence/PTT-130-TRANSACTION-FLOW.excalidraw) to follow node creation from the outer boundary through reference queries and nested saves to commit or rollback.
+
+### Problem: several saves must succeed together
+
+A complete operation is one application action, even when it touches several repositories. For example, creating a node saves its description block, its document, and then the node.
+
+If each save commits independently, the block and document can remain in SQL when the node save fails. Each individual save succeeded, but the user's action is only partly complete. The operation boundary puts all those writes in one transaction: commit after the entire action succeeds, or roll back if any step throws.
+
+A shared EF context alone does not provide this guarantee. The shared **transaction** keeps earlier `SaveChanges` calls from becoming permanent until the outer operation commits.
+
+### Transaction workflow
+
+1. **Begin the transaction** before the operation's database checks and writes.
+2. **Run the operation:** queries and `SaveChanges()` calls use the same EF context and transaction. `SaveChanges()` sends changes to SQL without committing the outer transaction.
+3. **Commit** if the entire operation succeeds, or **roll back** if it fails.
+4. **Dispose** the transaction and context to clean up.
+
+Node creation and parent changes also acquire the graph application lock before their checks. Metadata edits do not request it. Other repository families use the transaction without requesting that named lock. Once acquired, the graph lock remains held until the outer transaction commits or rolls back.
+
+“Close the transaction” therefore means deciding whether to commit or roll back, then cleaning up—not simply finishing the last `SaveChanges()` call.
+
+### Which class implements the interface?
+
+| Piece | What it does |
+|---|---|
+| [IOperationBoundary](../../../src/Atlas.Contracts/Operations/OperationBoundary.cs) | Contract for executing a callback as one complete operation. |
+| [OperationBoundary.Execute](../../../src/Atlas.Contracts/Operations/OperationBoundary.cs) | Application-facing helper. Checks whether the supplied repository implements the contract and calls it. Without that capability, it runs the callback directly; this fallback does not promise SQL atomicity. |
+| [SqlRepository](../../../src/Atlas.Console/Storage/SqlRepository.cs) | Implements `IOperationBoundary`. Concrete SQL repositories inherit this capability. Its `Execute` method delegates to the static SQL helper below. |
+| [SqlOperationBoundary](../../../src/Atlas.Console/Storage/SqlOperationBoundary.cs) | Static implementation helper, so it does **not** implement the interface. Owns the context, transaction, write lock and commit/cleanup logic. |
+
+For example, [NodeCreationService.Create](../../../src/Atlas.Console/NodeCreationService.cs) passes its Node repository to `OperationBoundary.Execute`. The runtime `SqlNodeRepository` inherits `SqlRepository.Execute`, which calls `SqlOperationBoundary.Execute`.
+
+### How repositories share the operation
+
+The outermost SQL boundary opens one `AtlasDataContext` and starts a serializable transaction. It stores that context in the current execution scope using `AsyncLocal`. Repository queries and saves obtain it through `SqlOperationBoundary.Open`.
+
+This allows the Content and Graph repository calls in node creation to use the same context and transaction. The domain objects do not receive an EF context; sharing happens inside the SQL adapters.
+
+Nested boundary calls join the existing operation rather than opening or committing another transaction. A nested topology boundary or full Node save also acquires the graph lock before running its callback, even if a Content repository started the outer transaction. Only the outermost call commits. A failure disposes the uncommitted transaction, rolling back its writes. Different connection configurations are rejected rather than combined. This context is scoped to the operation, not shared globally across users.
+
+### Why also acquire a write lock?
+
+Rollback solves partial completion. A second problem is **competing checks and writes**: two operations can each inspect valid state, then together produce an invalid result.
+
+For example, one operation attaches A beneath B while another attaches B beneath A. If each checks ancestry before either change is visible, both might conclude that its own proposal has no cycle.
+
+[SqlRepository.WriteLockResource](../../../src/Atlas.Console/Storage/SqlRepository.cs) defaults to no named lock. [NodeTopologyBoundary](../../../src/Atlas.Graph/Nodes/NodeTopologyBoundary.cs) requests the topology capability for creation and attaching parents. [SqlNodeRepository.ExecuteTopology](../../../src/Atlas.Console/Storage/SqlNodeRepository.cs) supplies it using `AtlasGraphTopology`; ordinary Node operation boundaries request no named lock. The boundary calls SQL Server's `sp_getapplock` for that resource before topology checks and writes:
+
+- **Application lock:** SQL Server coordinates access to a named resource. This is not a new database table or an instruction to lock every row.
+- **Exclusive:** only one cooperating operation in the same database can hold this named lock at a time. Another waits until the first finishes, then performs its checks against the resulting state.
+- **Transaction-owned:** `@LockOwner='Transaction'` ties the lock's lifetime to the transaction. SQL Server releases it when the transaction commits or rolls back.
+- **Timeout:** the current code waits up to 15 seconds. Failure to acquire the lock stops the operation and is translated into `OperationConflictException`.
+
+The transaction provides all-or-nothing writes for every repository family. The named lock makes Node creation and parent changes take turns through their checks and saves. Content, votes, communities, moderation and other repositories do not request it; their serializable transactions and database constraints protect competing database changes. SQL deadlocks and constraint failures are translated into operation conflicts, so callers may need to reload and retry.
+
+The graph lock remains deliberately shared across topology changes: changes to different nodes can collectively create a transitive cycle, so one lock per node would not be sufficient. Renames, archive/restore, type changes and requested-type edits use [INodeRepository.SaveMetadata](../../../src/Atlas.Graph/Nodes/INodeRepository.cs), which preserves stored parents and does not request this lock. A stale metadata edit therefore cannot overwrite a newer parent relationship. Full `Save` still coordinates creation and parent replacement; callers editing metadata must use `SaveMetadata`. A held graph lock does not by itself block unrelated Content or vote writes, although normal SQL row/range locks can still cause blocking. Direct SQL that skips the graph lock does not participate in graph coordination. This is not a general stale-form/version check.
+
+**Policy for other domains:** The shared topology lock is a conservative choice for graph-wide rules, especially cycle prevention. Other domains do not need their own application lock merely because topology changes have one. They still use transactions, SQL Server's ordinary row/range locks and database constraints; having no named application lock does not mean having no protection. For example, a profile edit can proceed while a topology operation holds `AtlasGraphTopology`, subject to ordinary SQL blocking if both operations touch the same data.
+
+Add a named application lock only when a specific domain rule could be broken by concurrent operations and the existing transaction isolation and constraints do not adequately enforce it. Document that rule, choose a resource name shared by all operations that could break it, and test the competing operations. Revisit this decision as workflows change; custom locks are not a requirement for every domain.
+
+**Monitoring the lock:** SQL Server exposes current application-lock holders and waiters through its monitoring views; Atlas does not need a manually built queue. Each operation has its own context and transaction, while cooperating topology changes request the graph lock. For future performance monitoring, measure waiting-session counts, lock acquisition time, time holding the lock and timeout counts. Live database views provide snapshots; application metrics can show trends over time. The full discovery proposal and diagnostic SQL are recorded in [PTTD-36](https://thepublicthinktank.atlassian.net/browse/PTTD-36).
+
+### Workflows and evidence
+
+The linked tests cover injected failures and a real SQL document-insert rejection, then check that the transaction left no partial result in SQL.
+
+| Workflow | Writes committed or rolled back together | Failure-path evidence |
+|---|---|---|
+| [NodeCreationService](../../../src/Atlas.Console/NodeCreationService.cs) | Block, document, Node and parent relationship | [FailedNodeSaveRollsBackBlocksAndDocument](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L26) and [SqlDocumentInsertFailureDuringNodeCreationRollsBackEarlierBlockSave](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L512) |
+| [CommunityService.Create](../../../src/Atlas.Communities/Communities/CommunityService.cs) | Community and owner membership | [FailedOwnerMembershipRollsBackCommunity](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L46) |
+| [Reaction replacement](../../../src/Atlas.Graph/Reactions/NodeReactionApplicationService.cs) | Replacement and old association's supersession/audit | [FailedSupersessionSaveRollsBackReplacement](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L81) |
+| [Grouped moderation](../../../src/Atlas.Moderation/ModerationService.cs) | All decisions, review requests or restorations in the group | [FailedSecondModerationSaveRollsBackWholeGroup](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L62) and [FailedGroupedReviewAndRestorationPreservePersistedHistory](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L297) |
+
+The document-insert test uses unmodified SQL repositories and a test-only constraint in its disposable database. It observes the earlier block write, checks that SQL error 547 reaches the caller as `OperationConflictException`, and verifies rollback removes the block and leaves no document, document-block association or Node. This proves that specific failure path; it does not cover every possible persistence failure.
+
+All named tests above are in [SqlOperationValidationTests](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs). Further tests cover [competing community names](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L107) and [vote inserts](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L323), [competing moderator decisions](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L136), [opposite parent attachments](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L207) and [translation of a SQL unique violation](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L193) into [OperationConflictException](../../../src/Atlas.Contracts/Operations/OperationBoundary.cs). Additional SQL tests prove that [metadata renames, Content and vote writes finish while a graph lock is held](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L387), and [stale metadata saves preserve newly added parents](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L486). They also show that [direct competing Node saves cannot create a three-node cycle](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L347), and [nested topology operations acquire the lock without committing early or leaking it after rollback](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L444). Constraints remain final protection. No EF model or migration change is required.
+
+### Limits to retain during review
+
+This slice protects the workflows described above. Keep these limits in mind when reviewing or adding a new operation:
+
+- **Creation and parent changes share one graph lock.** These operations take turns, even when they affect different nodes, because their combined changes could create a cycle. Metadata edits such as rename do not request it. A future lock per node would need tests proving that cycles involving several nodes are still prevented.
+
+- **One operation uses one database and runs its repository calls sequentially.** Nested calls share its context and transaction. Do not run parallel database calls inside that operation: the shared EF context is not safe for concurrent use. The concurrent tests simulate separate requests, each with its own operation context.
+
+- **The guarantees depend on using the operation boundaries and repositories.** A new workflow that writes directly through `DbContext` can skip the application’s reference checks and graph lock. SQL constraints still apply, but they do not enforce every domain rule. In-memory adapters without [IOperationBoundary](../../../src/Atlas.Contracts/Operations/OperationBoundary.cs) also do not provide the SQL rollback guarantee.
+
+- **Rollback restores database state, not objects already changed in memory.** Local validation rejects invalid proposals before changing the object. If a later save fails, however, the caller’s object may still contain the attempted change even though SQL rolled it back. Reload the object from storage before retrying.
+
+- **Transactions do not prevent every stale-form overwrite.** Two forms can hold older copies of the same object. This slice does not add a universal version check that rejects every save based on an outdated copy. Some relationship operations check for changes, and metadata saves preserve stored parents, but general stale-object protection remains separate work.
+
+- **Database writes and external delivery are separate.** A notification can be saved successfully while its later email or other external delivery fails. Likewise, rolling back SQL does not undo an event already sent outside the transaction. A reliable delivery mechanism, such as an outbox that records pending messages in the transaction and sends them afterward, remains future work.
+
+- **Poll and chart references cannot yet be checked for existence.** Their IDs can be checked locally, but confirming that the referenced poll or chart exists is deferred until those domains are implemented.
+
+- **Other security work remains outside this slice.** Resource limits are tracked in [PTT-122](https://thepublicthinktank.atlassian.net/browse/PTT-122), broader failure-path coverage in [PTT-123](https://thepublicthinktank.atlassian.net/browse/PTT-123), and future browser/HTTP boundaries in [PTT-125](https://thepublicthinktank.atlassian.net/browse/PTT-125).

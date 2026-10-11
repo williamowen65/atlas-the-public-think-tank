@@ -4,26 +4,27 @@ Related requirements: [GRA-001](../requirements/REQUIREMENTS.md#gra-001), [GRA-0
 
 ## Create a node with a description
 
-**Actor:** selected participant  
+**Actor:** authenticated participant
+
 **Goal:** publish a new node with separately owned descriptive content.
 
 ### Preconditions
 
-- The participant exists.
+- The authenticated participant exists and is active.
 - The selected node type exists and is active.
-- Any selected parent identifiers exist.
+- Any selected parents exist and are available for creation.
 - The requested parent attachment would not create a graph cycle.
 
 ### Normal sequence
 
-1. The host gathers title, description body, node type, and requested sub-node types.
-2. Content creates a Document and generates its DocumentId.
-3. The Content repository saves the Document.
-4. The host supplies that ID to Graph as the node's DescriptionId.
-5. Graph creates the Node, its NodeId, and a `NodeCreatedV1` event.
-6. The Graph repository saves the Node.
-7. The host publishes recorded events.
-8. Registered subscribers handle or ignore each event.
+1. The host gathers title, description body, node type and requested sub-node types.
+2. NodeCreationService enters the topology boundary: SQL starts a transaction and acquires the graph lock.
+3. Check author/type/parent availability and construct a Markdown block, Document and Node proposal using one AtlasTime UTC timestamp. Content and Graph generate their IDs in memory.
+4. Give Graph the DocumentId as DescriptionId. The Node constructor records [NodeCreatedV1](../../src/Atlas.Contracts/Graph/V1/NodeLifecycleEvents.cs) in memory using the shared Atlas.Contracts event definition. Attaching an optional parent after ancestry validation also records `NodeParentAttachedV1`. These events are recorded before persistence and have not yet been published.
+5. Save the block, document and Node through repositories sharing the operation context and transaction.
+6. Commit the outer transaction only after every save succeeds; the service returns the Node.
+7. After commit, the host publishes `NodeCreatedV1` and any recorded `NodeParentAttachedV1` through the in-memory event bus, outside the SQL transaction.
+8. Registered subscribers handle each event synchronously. The [Console-owned Content observer](../../src/Atlas.Console/Content/ObserveNodeLifecycleInContent.cs) receives `NodeCreatedV1` and checks its DescriptionId against the committed document. Events without registered handlers have no subscriber action.
 9. The host clears successfully dispatched events and displays the new node.
 
 ### Persistent result
@@ -33,15 +34,15 @@ Related requirements: [GRA-001](../requirements/REQUIREMENTS.md#gra-001), [GRA-0
 - The Document does not contain the Node entity.
 - The Node does not contain the Document entity.
 
-### Current failure gap
+### Transaction and failure behavior
 
-If the document is saved and node creation then fails, the prototype may retain an orphaned document. Before distributed deployment, choose a compensation, cleanup, or process-management policy.
+[NodeCreationService](../../src/Atlas.Console/NodeCreationService.cs) constructs the proposed block, document and Node before persistence, then saves them in one shared topology-coordinated SQL transaction. Failure rolls back all related writes; caller objects must be reloaded before retrying. Event dispatch follows successful commit and remains outside the transaction. See [failure-path evidence](../security/validation/IMPLEMENTATION.md#workflows-and-evidence).
 
 ## Archive and restore
 
 Graph owns the state transition and records the corresponding versioned event. The host saves the node before dispatching the event. Subscribers decide independently whether the change requires action in their own boundary.
 
-Authorization for these node mutations is not yet fully enforced behind a Graph application use case; see [AUT-002](../requirements/REQUIREMENTS.md#aut-002).
+Graph mutations enforce author permission; Console supplies the authenticated actor. Further domain-service organization is tracked separately; see [AUT-002](../requirements/REQUIREMENTS.md#aut-002).
 
 ## Moderation visibility
 

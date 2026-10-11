@@ -1,4 +1,4 @@
-﻿namespace Atlas.ConsoleApp;
+namespace Atlas.ConsoleApp;
 
 /// <summary>
 /// Contains voting information prepared for displaying a node.
@@ -6,4 +6,5 @@
 public sealed record NodeVoteSummary(
     int VoteCount,
     double? AverageVote,
-    int? CurrentParticipantVote);
+    int? CurrentParticipantVote
+);

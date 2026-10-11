@@ -15,7 +15,8 @@ public class UpdateParticipantProfileTests
         var participant = new Participant(
             "Alice",
             "Old bio",
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow
+        );
         repository.Save(participant);
         var workflow = new UpdateParticipantProfile(repository);
         var changedAt = participant.CreatedAt.AddMinutes(1);
@@ -25,12 +26,25 @@ public class UpdateParticipantProfileTests
             participant.Id,
             "Alice Smith",
             "New bio",
-            changedAt);
+            changedAt
+        );
 
-        Assert.AreEqual("Alice Smith", updated.DisplayName);
-        Assert.AreEqual("New bio", updated.Bio);
-        Assert.AreEqual(changedAt, updated.UpdatedAt);
-        Assert.AreEqual(2, repository.SaveCount);
+        Assert.AreEqual(
+            "Alice Smith",
+            updated.DisplayName
+        );
+        Assert.AreEqual(
+            "New bio",
+            updated.Bio
+        );
+        Assert.AreEqual(
+            changedAt,
+            updated.UpdatedAt
+        );
+        Assert.AreEqual(
+            2,
+            repository.SaveCount
+        );
     }
 
     /// <summary>Verifies that execute when actor does not own profile throws without saving.</summary>
@@ -41,7 +55,8 @@ public class UpdateParticipantProfileTests
         var participant = new Participant(
             "Bob",
             "Bob's bio",
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow
+        );
         repository.Save(participant);
         var workflow = new UpdateParticipantProfile(repository);
 
@@ -51,11 +66,21 @@ public class UpdateParticipantProfileTests
                 participant.Id,
                 "Changed Bob",
                 "Changed bio",
-                DateTimeOffset.UtcNow));
+                DateTimeOffset.UtcNow
+            ));
 
-        Assert.AreEqual("Bob", participant.DisplayName);
-        Assert.AreEqual("Bob's bio", participant.Bio);
-        Assert.AreEqual(1, repository.SaveCount);
+        Assert.AreEqual(
+            "Bob",
+            participant.DisplayName
+        );
+        Assert.AreEqual(
+            "Bob's bio",
+            participant.Bio
+        );
+        Assert.AreEqual(
+            1,
+            repository.SaveCount
+        );
     }
 
     /// <summary>Verifies that execute when profile does not exist throws.</summary>
@@ -72,9 +97,13 @@ public class UpdateParticipantProfileTests
                 participantId,
                 "Alice",
                 "Bio",
-                DateTimeOffset.UtcNow));
+                DateTimeOffset.UtcNow
+            ));
 
-        Assert.AreEqual(0, repository.SaveCount);
+        Assert.AreEqual(
+            0,
+            repository.SaveCount
+        );
     }
 
     /// <summary>Provides an in-memory participant repository for authorization workflow tests.</summary>

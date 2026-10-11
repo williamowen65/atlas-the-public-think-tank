@@ -5,43 +5,50 @@ public abstract record NodeLifecycleEventV1(
     Guid NodeId,
     Guid DescriptionId,
     Guid AuthorId,
-    DateTimeOffset OccurredAt);
+    DateTimeOffset OccurredAt
+);
 
 /// <summary>Reports that a Graph node was created and identifies its external references.</summary>
 public sealed record NodeCreatedV1(
     Guid NodeId,
     Guid DescriptionId,
     Guid AuthorId,
-    DateTimeOffset OccurredAt)
+    DateTimeOffset OccurredAt
+)
     : NodeLifecycleEventV1(
         NodeId,
         DescriptionId,
         AuthorId,
-        OccurredAt);
+        OccurredAt
+    );
 
 /// <summary>Reports that a Graph node entered the archived lifecycle state.</summary>
 public sealed record NodeArchivedV1(
     Guid NodeId,
     Guid DescriptionId,
     Guid AuthorId,
-    DateTimeOffset OccurredAt)
+    DateTimeOffset OccurredAt
+)
     : NodeLifecycleEventV1(
         NodeId,
         DescriptionId,
         AuthorId,
-        OccurredAt);
+        OccurredAt
+    );
 
 /// <summary>Reports that a Graph node returned to the active lifecycle state.</summary>
 public sealed record NodeRestoredV1(
     Guid NodeId,
     Guid DescriptionId,
     Guid AuthorId,
-    DateTimeOffset OccurredAt)
+    DateTimeOffset OccurredAt
+)
     : NodeLifecycleEventV1(
         NodeId,
         DescriptionId,
         AuthorId,
-        OccurredAt);
+        OccurredAt
+    );
 
 /// <summary>Reports that a parent relationship was attached to a Graph node.</summary>
 public sealed record NodeParentAttachedV1(
@@ -49,12 +56,14 @@ public sealed record NodeParentAttachedV1(
     Guid ParentNodeId,
     Guid DescriptionId,
     Guid AuthorId,
-    DateTimeOffset OccurredAt)
+    DateTimeOffset OccurredAt
+)
     : NodeLifecycleEventV1(
         NodeId,
         DescriptionId,
         AuthorId,
-        OccurredAt);
+        OccurredAt
+    );
 
 /// <summary>Reports that a parent relationship was detached from a Graph node.</summary>
 public sealed record NodeParentDetachedV1(
@@ -62,9 +71,11 @@ public sealed record NodeParentDetachedV1(
     Guid ParentNodeId,
     Guid DescriptionId,
     Guid AuthorId,
-    DateTimeOffset OccurredAt)
+    DateTimeOffset OccurredAt
+)
     : NodeLifecycleEventV1(
         NodeId,
         DescriptionId,
         AuthorId,
-        OccurredAt);
+        OccurredAt
+    );

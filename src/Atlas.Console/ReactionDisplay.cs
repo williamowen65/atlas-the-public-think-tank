@@ -15,9 +15,14 @@ public static class ReactionDisplay
         Node node,
         INodeReactionRepository nodeTags,
         IReactionDefinitionRepository definitions,
-        IVoteRepository votes)
+        IVoteRepository votes
+    )
     {
-        var matchingTags = ResolveActive(node, nodeTags, definitions)
+        var matchingTags = ResolveActive(
+            node,
+            nodeTags,
+            definitions
+        )
             .Where(item => votes.GetTargetVotes(
                 new NodeReactionVoteTarget(item.Association.Id.Value)).Count > 0)
             .ToList();
@@ -41,8 +46,14 @@ public static class ReactionDisplay
         }
 
         return remaining > 0
-            ? $"{string.Join(", ", labels)} +{remaining}"
-            : string.Join(", ", labels);
+            ? $"{string.Join(
+                ", ",
+                labels
+            )} +{remaining}"
+            : string.Join(
+                ", ",
+                labels
+            );
     }
 
     /// <summary>Writes the complete active reaction set for a node detail view.</summary>
@@ -51,9 +62,14 @@ public static class ReactionDisplay
         INodeReactionRepository nodeTags,
         IReactionDefinitionRepository definitions,
         IVoteRepository votes,
-        ParticipantId? participantId = null)
+        ParticipantId? participantId = null
+    )
     {
-        var active = ResolveActive(node, nodeTags, definitions)
+        var active = ResolveActive(
+            node,
+            nodeTags,
+            definitions
+        )
             .Where(item => votes.GetTargetVotes(
                 new NodeReactionVoteTarget(item.Association.Id.Value)).Count > 0)
             .ToList();
@@ -70,11 +86,19 @@ public static class ReactionDisplay
         {
             foreach (var item in active)
             {
-                WriteTagWithScore(item, votes, participantId);
+                WriteTagWithScore(
+                    item,
+                    votes,
+                    participantId
+                );
             }
         }
 
-        var superseded = ResolveAll(node, nodeTags, definitions)
+        var superseded = ResolveAll(
+            node,
+            nodeTags,
+            definitions
+        )
             .Where(item => item.Association.LifecycleState == NodeReactionLifecycleState.Superseded)
             .ToList();
 
@@ -83,16 +107,27 @@ public static class ReactionDisplay
             Console.WriteLine("Superseded (history):");
             foreach (var item in superseded)
             {
-                WriteTagWithScore(item, votes, participantId);
+                WriteTagWithScore(
+                    item,
+                    votes,
+                    participantId
+                );
             }
         }
     }
 
     /// <summary>Writes author-hidden and disputed tags for an explicit review action.</summary>
-    public static void WriteHiddenAndDisputed(Node node, INodeReactionRepository nodeTags,
-        IReactionDefinitionRepository definitions)
+    public static void WriteHiddenAndDisputed(
+        Node node,
+        INodeReactionRepository nodeTags,
+        IReactionDefinitionRepository definitions
+    )
     {
-        var items = ResolveActive(node, nodeTags, definitions)
+        var items = ResolveActive(
+            node,
+            nodeTags,
+            definitions
+        )
             .Where(item => item.Association.Disposition is NodeReactionDisposition.Hidden or NodeReactionDisposition.Disputed)
             .ToList();
         Console.WriteLine(items.Count == 0 ? "No hidden or disputed tags." : "HIDDEN OR DISPUTED TAGS");
@@ -106,7 +141,8 @@ public static class ReactionDisplay
     public static IReadOnlyList<(NodeReaction Association, ReactionDefinition Definition)> ResolveActive(
         Node node,
         INodeReactionRepository nodeTags,
-        IReactionDefinitionRepository definitions)
+        IReactionDefinitionRepository definitions
+    )
     {
         return nodeTags
             .GetActiveForNode(node.Id)
@@ -126,7 +162,8 @@ public static class ReactionDisplay
     public static IReadOnlyList<(NodeReaction Association, ReactionDefinition Definition)> ResolveAll(
         Node node,
         INodeReactionRepository nodeTags,
-        IReactionDefinitionRepository definitions)
+        IReactionDefinitionRepository definitions
+    )
     {
         return nodeTags.GetAll()
             .Where(association => association.NodeId == node.Id)
@@ -145,11 +182,13 @@ public static class ReactionDisplay
     private static void WriteTagWithScore(
         (NodeReaction Association, ReactionDefinition Definition) item,
         IVoteRepository votes,
-        ParticipantId? participantId)
+        ParticipantId? participantId
+    )
     {
         var summary = new GetNodeReactionVoteSummary(votes).Execute(
             new NodeReactionVoteTarget(item.Association.Id.Value),
-            participantId);
+            participantId
+        );
         var myVote = summary.CurrentParticipantVote switch
         {
             1 => ", my vote: up",

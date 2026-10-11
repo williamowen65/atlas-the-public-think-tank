@@ -20,7 +20,8 @@ public sealed class UpdateParticipantProfile
         ParticipantId profileId,
         string displayName,
         string bio,
-        DateTimeOffset changedAt)
+        DateTimeOffset changedAt
+    )
     {
         if (actorId != profileId)
         {
@@ -35,7 +36,8 @@ public sealed class UpdateParticipantProfile
         participant.UpdateProfile(
             displayName,
             bio,
-            changedAt);
+            changedAt
+        );
 
         _participants.Save(participant);
         return participant;

@@ -16,11 +16,16 @@ public static class AtlasPolicies
 public sealed record AtlasRoleRequirement(params string[] Roles) : IAuthorizationRequirement;
 
 /// <summary>Uses current stored roles and profile eligibility rather than trusting stale role claims.</summary>
-public sealed class AtlasRoleHandler(AtlasAccounts accounts, AtlasDataContext database)
+public sealed class AtlasRoleHandler(
+    AtlasAccounts accounts,
+    AtlasDataContext database
+)
     : AuthorizationHandler<AtlasRoleRequirement>
 {
-    protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context,
-        AtlasRoleRequirement requirement)
+    protected override async Task HandleRequirementAsync(
+        AuthorizationHandlerContext context,
+        AtlasRoleRequirement requirement
+    )
     {
         var participant = await accounts.ResolveParticipantAsync(context.User);
         if (participant is null) return;
@@ -41,7 +46,7 @@ public sealed class IdentityModeratorAuthorization(AtlasDataContext database) : 
          join membership in database.UserRoles on user.Id equals membership.UserId
          join role in database.Roles on membership.RoleId equals role.Id
          where user.Id == participantId && participant.IsActive && user.EmailConfirmed &&
-               (!user.LockoutEnabled || user.LockoutEnd == null || user.LockoutEnd <= DateTimeOffset.UtcNow) &&
+               (!user.LockoutEnabled || user.LockoutEnd == null || user.LockoutEnd <= AtlasTime.UtcNow) &&
                (role.Name == AtlasRoles.GlobalModerator || role.Name == AtlasRoles.Administrator)
          select user.Id).Any();
 }

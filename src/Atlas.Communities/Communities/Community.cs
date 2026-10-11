@@ -14,8 +14,21 @@ public sealed class Community
     public DateTimeOffset CreatedAt { get; }
     public DateTimeOffset UpdatedAt { get; private set; }
 
-    public Community(string name, string description, Guid ownerParticipantId, DateTimeOffset createdAt)
-        : this(CommunityId.New(), name, description, ownerParticipantId, CommunityStatus.Active, createdAt, createdAt)
+    public Community(
+        string name,
+        string description,
+        Guid ownerParticipantId,
+        DateTimeOffset createdAt
+    )
+        : this(
+            CommunityId.New(),
+            name,
+            description,
+            ownerParticipantId,
+            CommunityStatus.Active,
+            createdAt,
+            createdAt
+        )
     {
     }
 
@@ -26,13 +39,22 @@ public sealed class Community
         Guid ownerParticipantId,
         CommunityStatus status,
         DateTimeOffset createdAt,
-        DateTimeOffset updatedAt)
+        DateTimeOffset updatedAt
+    )
     {
+        if (!Enum.IsDefined(status)) throw new ArgumentOutOfRangeException(nameof(status));
         if (ownerParticipantId == Guid.Empty)
         {
-            throw new ArgumentException("A community owner is required.", nameof(ownerParticipantId));
+            throw new ArgumentException(
+                "A community owner is required.",
+                nameof(ownerParticipantId)
+            );
         }
 
+        if (id.Value == Guid.Empty) throw new ArgumentException(
+            "A community ID is required.",
+            nameof(id)
+        );
         if (updatedAt < createdAt)
         {
             throw new ArgumentException("Updated time cannot precede created time.");
@@ -43,8 +65,8 @@ public sealed class Community
         Description = ValidateDescription(description);
         OwnerParticipantId = ownerParticipantId;
         Status = status;
-        CreatedAt = createdAt;
-        UpdatedAt = updatedAt;
+        CreatedAt = createdAt.ToUniversalTime();
+        UpdatedAt = updatedAt.ToUniversalTime();
     }
 
     public static Community Reconstitute(
@@ -54,41 +76,76 @@ public sealed class Community
         Guid ownerParticipantId,
         CommunityStatus status,
         DateTimeOffset createdAt,
-        DateTimeOffset updatedAt) =>
-        new(id, name, description, ownerParticipantId, status, createdAt, updatedAt);
+        DateTimeOffset updatedAt
+    ) =>
+        new(
+            id,
+            name,
+            description,
+            ownerParticipantId,
+            status,
+            createdAt,
+            updatedAt
+        );
 
-    public void Rename(Guid actorParticipantId, string name, DateTimeOffset changedAt)
+    public void Rename(
+        Guid actorParticipantId,
+        string name,
+        DateTimeOffset changedAt
+    )
     {
         EnsureOwner(actorParticipantId);
         var validated = ValidateName(name);
         if (Name == validated) return;
+        EnsureTime(changedAt);
         Name = validated;
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 
-    public void ChangeDescription(Guid actorParticipantId, string description, DateTimeOffset changedAt)
+    public void ChangeDescription(
+        Guid actorParticipantId,
+        string description,
+        DateTimeOffset changedAt
+    )
     {
         EnsureOwner(actorParticipantId);
         var validated = ValidateDescription(description);
         if (Description == validated) return;
+        EnsureTime(changedAt);
         Description = validated;
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 
-    public void Archive(Guid actorParticipantId, DateTimeOffset changedAt)
+    public void Archive(
+        Guid actorParticipantId,
+        DateTimeOffset changedAt
+    )
     {
         EnsureOwner(actorParticipantId);
         if (Status == CommunityStatus.Archived) return;
+        EnsureTime(changedAt);
         Status = CommunityStatus.Archived;
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
     }
 
-    public void Restore(Guid actorParticipantId, DateTimeOffset changedAt)
+    public void Restore(
+        Guid actorParticipantId,
+        DateTimeOffset changedAt
+    )
     {
         EnsureOwner(actorParticipantId);
         if (Status == CommunityStatus.Active) return;
+        EnsureTime(changedAt);
         Status = CommunityStatus.Active;
-        UpdatedAt = changedAt;
+        UpdatedAt = changedAt.ToUniversalTime();
+    }
+
+    private void EnsureTime(DateTimeOffset at)
+    {
+        if (at < UpdatedAt) throw new ArgumentException(
+            "Change time cannot precede the current update time.",
+            nameof(at)
+        );
     }
 
     private void EnsureOwner(Guid actorParticipantId)
@@ -101,16 +158,25 @@ public sealed class Community
 
     private static string ValidateName(string name)
     {
-        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("A community name is required.", nameof(name));
+        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException(
+            "A community name is required.",
+            nameof(name)
+        );
         var trimmed = name.Trim();
-        if (trimmed.Length > MaximumNameLength) throw new ArgumentException($"A community name cannot exceed {MaximumNameLength} characters.", nameof(name));
+        if (trimmed.Length > MaximumNameLength) throw new ArgumentException(
+            $"A community name cannot exceed {MaximumNameLength} characters.",
+            nameof(name)
+        );
         return trimmed;
     }
 
     private static string ValidateDescription(string description)
     {
         var trimmed = description?.Trim() ?? string.Empty;
-        if (trimmed.Length > MaximumDescriptionLength) throw new ArgumentException($"A community description cannot exceed {MaximumDescriptionLength} characters.", nameof(description));
+        if (trimmed.Length > MaximumDescriptionLength) throw new ArgumentException(
+            $"A community description cannot exceed {MaximumDescriptionLength} characters.",
+            nameof(description)
+        );
         return trimmed;
     }
 }

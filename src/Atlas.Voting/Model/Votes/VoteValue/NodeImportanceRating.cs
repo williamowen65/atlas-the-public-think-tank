@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -17,9 +17,10 @@ namespace Atlas.Voting.Value
             else
             {
                 throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        "Node importance rating must be between 0 and 10.");
+                    nameof(value),
+                    value,
+                    "Node importance rating must be between 0 and 10."
+                );
             }
         }
 

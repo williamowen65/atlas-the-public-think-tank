@@ -16,7 +16,8 @@ namespace Atlas.Voting
 
         public UndoVote(
             IVoteRepository voteRepository,
-            VoteMutationPolicy mutationPolicy)
+            VoteMutationPolicy mutationPolicy
+        )
         {
             _voteRepository = voteRepository;
             _mutationPolicy = mutationPolicy;
@@ -28,25 +29,34 @@ namespace Atlas.Voting
         /// </summary>
         public bool Execute(
             VoteTarget target,
-            ParticipantId participantId)
+            ParticipantId participantId
+        )
         {
-            _mutationPolicy.EnsureAllowed(
-                target,
-                participantId);
-
-            var existingVote =
-                _voteRepository.GetByParticipantAndTarget(
-                    participantId,
-                    target);
-
-            if (existingVote is null)
+            return OperationBoundary.Execute(
+                _voteRepository,
+                () =>
             {
-                return false;
+                _mutationPolicy.EnsureAllowed(
+                    target,
+                    participantId
+                );
+
+                var existingVote =
+                    _voteRepository.GetByParticipantAndTarget(
+                        participantId,
+                        target
+                    );
+
+                if (existingVote is null)
+                {
+                    return false;
+                }
+
+                _voteRepository.Delete(existingVote.Id);
+
+                return true;
             }
-
-            _voteRepository.Delete(existingVote.Id);
-
-            return true;
+            );
         }
 
     }

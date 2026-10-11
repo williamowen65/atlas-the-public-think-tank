@@ -14,7 +14,8 @@ public sealed record RequestedSubNodeType
         {
             throw new ArgumentException(
                 "A requested sub-node type ID is required.",
-                nameof(typeId));
+                nameof(typeId)
+            );
         }
 
         TypeId = typeId;

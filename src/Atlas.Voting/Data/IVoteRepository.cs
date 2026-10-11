@@ -14,7 +14,8 @@ namespace Atlas.Voting.Data
         /// <summary>Loads the current vote owned by a participant for a target.</summary>
         Vote? GetByParticipantAndTarget(
             ParticipantId participantId,
-            VoteTarget voteTarget);
+            VoteTarget voteTarget
+        );
 
         /// <summary>Loads a domain object by its boundary-owned identifier.</summary>
         Vote? GetById(VoteId id);

@@ -1,4 +1,4 @@
-﻿namespace Atlas.Graph.Nodes;
+namespace Atlas.Graph.Nodes;
 
 /// <summary>Represents a validated node title.</summary>
 public sealed record NodeTitle
@@ -14,7 +14,8 @@ public sealed record NodeTitle
         {
             throw new ArgumentException(
                 "A node title is required.",
-                nameof(value));
+                nameof(value)
+            );
         }
 
         value = value.Trim();
@@ -23,7 +24,8 @@ public sealed record NodeTitle
         {
             throw new ArgumentException(
                 $"A node title cannot exceed {MaximumLength} characters.",
-                nameof(value));
+                nameof(value)
+            );
         }
 
         Value = value;

@@ -18,7 +18,7 @@ Normalize ordered references, audits, and delivery attempts into child tables. U
 
 - Domain objects remain independent of EF Core and are explicitly reconstituted from rows.
 - Each repository save updates one addressed record plus owned children in a transaction.
-- Multi-save workflows and event publication need separate consistency design.
+- Coordinated multi-save workflows now use the shared operation transaction; independent calls need an explicit boundary. Event publication still needs reliable-delivery design. See [ADR-0005](ADR-0005-enforce-concurrency-at-domain-persistence-boundaries.md).
 - Polymorphic targets are outside ordinary foreign-key enforcement.
 - SQL integration tests exercise actual SQL Server constraints and checked-in migrations.
 - Splitting contexts or deploying independent services would require a deliberate later migration.

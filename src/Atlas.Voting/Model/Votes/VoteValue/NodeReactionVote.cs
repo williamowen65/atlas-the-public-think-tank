@@ -17,7 +17,8 @@ public sealed class NodeReactionVote : IVoteValue
             throw new ArgumentOutOfRangeException(
                 nameof(value),
                 value,
-                "A node-reaction vote must be an upvote (+1) or downvote (-1).");
+                "A node-reaction vote must be an upvote (+1) or downvote (-1)."
+            );
         }
 
         Value = value;

@@ -10,7 +10,8 @@ public static class DescriptionBlockCommands
     public static void Run(
         Node node,
         IDocumentRepository documents,
-        Guid actorParticipantId)
+        Guid actorParticipantId
+    )
     {
         // Description composition can only be changed by the node's author.
         node.EnsureAuthoredBy(actorParticipantId);
@@ -32,7 +33,10 @@ public static class DescriptionBlockCommands
             Console.WriteLine($"Document: {document.Id}");
             Console.WriteLine();
 
-            WriteBlocks(document, documents);
+            WriteBlocks(
+                document,
+                documents
+            );
 
             Console.WriteLine();
             Console.WriteLine("1. Add block");
@@ -45,16 +49,28 @@ public static class DescriptionBlockCommands
             switch (Console.ReadLine())
             {
                 case "1":
-                    AddBlock(document, documents);
+                    AddBlock(
+                        document,
+                        documents
+                    );
                     break;
                 case "2":
-                    UpdateBlock(document, documents);
+                    UpdateBlock(
+                        document,
+                        documents
+                    );
                     break;
                 case "3":
-                    ReorderBlock(document, documents);
+                    ReorderBlock(
+                        document,
+                        documents
+                    );
                     break;
                 case "4":
-                    RemoveBlock(document, documents);
+                    RemoveBlock(
+                        document,
+                        documents
+                    );
                     break;
                 case "5":
                     managing = false;
@@ -68,7 +84,8 @@ public static class DescriptionBlockCommands
 
     private static void WriteBlocks(
         Document document,
-        IDocumentRepository documents)
+        IDocumentRepository documents
+    )
     {
         // The repository resolves IDs in document order, so this list is the
         // exact composition the eventual graphical UI will render.
@@ -113,7 +130,8 @@ public static class DescriptionBlockCommands
 
     private static void AddBlock(
         Document document,
-        IDocumentRepository documents)
+        IDocumentRepository documents
+    )
     {
         Console.WriteLine();
         Console.WriteLine("1. Markdown text");
@@ -125,7 +143,7 @@ public static class DescriptionBlockCommands
         Console.WriteLine("0. Cancel");
         Console.Write("Block type: ");
 
-        var now = DateTimeOffset.UtcNow;
+        var now = AtlasTime.UtcNow;
         ContentBlock? block = Console.ReadLine() switch
         {
             "1" => NewMarkdown(now),
@@ -148,7 +166,10 @@ public static class DescriptionBlockCommands
 
         if (!string.IsNullOrWhiteSpace(positionText))
         {
-            if (!int.TryParse(positionText, out var position) ||
+            if (!int.TryParse(
+                positionText,
+                out var position
+            ) ||
                 position < 1 || position > document.BlockIds.Count + 1)
             {
                 ConsoleUi.Pause("That position is not valid.");
@@ -160,55 +181,109 @@ public static class DescriptionBlockCommands
 
         // Persist the payload first so a saved document never references a
         // block that cannot be loaded.
-        documents.SaveBlock(block);
-        document.AddBlock(block.Id, DateTimeOffset.UtcNow, index);
-        documents.Save(document);
+        OperationBoundary.Execute(
+            documents,
+            () =>
+        {
+            document.AddBlock(
+                block.Id,
+                now,
+                index
+            );
+            documents.SaveBlock(block);
+            documents.Save(document);
+        }
+        );
         ConsoleUi.Pause($"Added {block.Kind} block {block.Id}.");
     }
 
     private static void UpdateBlock(
         Document document,
-        IDocumentRepository documents)
+        IDocumentRepository documents
+    )
     {
-        var block = SelectBlock(document, documents, "Block to update");
+        var block = SelectBlock(
+            document,
+            documents,
+            "Block to update"
+        );
         if (block is null) return;
 
-        var now = DateTimeOffset.UtcNow;
+        var now = AtlasTime.UtcNow;
 
         switch (block)
         {
             case MarkdownTextBlock text:
                 Console.Write("New Markdown: ");
-                text.Update(Console.ReadLine() ?? string.Empty, now);
+                text.Update(
+                    Console.ReadLine() ?? string.Empty,
+                    now
+                );
                 break;
             case ImageBlock image:
                 Console.Write($"Image URL ({image.Url}): ");
-                var imageResource = Keep(Console.ReadLine(), image.Url);
+                var imageResource = Keep(
+                    Console.ReadLine(),
+                    image.Url
+                );
                 Console.Write($"Alt text ({image.AltText}): ");
-                var alt = Keep(Console.ReadLine(), image.AltText);
+                var alt = Keep(
+                    Console.ReadLine(),
+                    image.AltText
+                );
                 Console.Write($"Caption ({image.Caption}): ");
-                image.Update(imageResource, alt, Console.ReadLine(), now);
+                image.Update(
+                    imageResource,
+                    alt,
+                    Console.ReadLine(),
+                    now
+                );
                 break;
             case VideoBlock video:
                 Console.Write($"Video URL ({video.Url}): ");
-                var videoResource = Keep(Console.ReadLine(), video.Url);
+                var videoResource = Keep(
+                    Console.ReadLine(),
+                    video.Url
+                );
                 Console.Write($"Caption ({video.Caption}): ");
-                video.Update(videoResource, Console.ReadLine(), now);
+                video.Update(
+                    videoResource,
+                    Console.ReadLine(),
+                    now
+                );
                 break;
             case LinkPreviewBlock link:
                 Console.Write($"URL ({link.Url}): ");
-                var url = Keep(Console.ReadLine(), link.Url.ToString());
+                var url = Keep(
+                    Console.ReadLine(),
+                    link.Url.ToString()
+                );
                 Console.Write($"Title ({link.Title}): ");
-                var title = Keep(Console.ReadLine(), link.Title);
+                var title = Keep(
+                    Console.ReadLine(),
+                    link.Title
+                );
                 Console.Write($"Description ({link.Description}): ");
-                link.UpdatePreview(url, title, Console.ReadLine(), now);
+                link.UpdatePreview(
+                    url,
+                    title,
+                    Console.ReadLine(),
+                    now
+                );
                 break;
             case PollReferenceBlock:
                 ConsoleUi.Pause("This poll reference has no editable block content yet.");
                 return;
             case ChartReferenceBlock chart:
                 Console.Write($"Title ({chart.Title}): ");
-                chart.Update(chart.ChartId, Keep(Console.ReadLine(), chart.Title), now);
+                chart.Update(
+                    chart.ChartId,
+                    Keep(
+                        Console.ReadLine(),
+                        chart.Title
+                    ),
+                    now
+                );
                 break;
         }
 
@@ -216,13 +291,23 @@ public static class DescriptionBlockCommands
         ConsoleUi.Pause($"Updated {block.Kind} block; its ID remains {block.Id}.");
     }
 
-    private static void ReorderBlock(Document document, IDocumentRepository documents)
+    private static void ReorderBlock(
+        Document document,
+        IDocumentRepository documents
+    )
     {
-        var block = SelectBlock(document, documents, "Block to move");
+        var block = SelectBlock(
+            document,
+            documents,
+            "Block to move"
+        );
         if (block is null) return;
 
         Console.Write($"New position (1-{document.BlockIds.Count}): ");
-        if (!int.TryParse(Console.ReadLine(), out var position) ||
+        if (!int.TryParse(
+            Console.ReadLine(),
+            out var position
+        ) ||
             position < 1 || position > document.BlockIds.Count)
         {
             ConsoleUi.Pause("That position is not valid.");
@@ -232,19 +317,30 @@ public static class DescriptionBlockCommands
         document.MoveBlock(
             block.Id,
             position - 1,
-            DateTimeOffset.UtcNow);
+            AtlasTime.UtcNow
+        );
         documents.Save(document);
         ConsoleUi.Pause($"Moved block {block.Id} to position {position}.");
     }
 
-    private static void RemoveBlock(Document document, IDocumentRepository documents)
+    private static void RemoveBlock(
+        Document document,
+        IDocumentRepository documents
+    )
     {
-        var block = SelectBlock(document, documents, "Block to remove");
+        var block = SelectBlock(
+            document,
+            documents,
+            "Block to remove"
+        );
         if (block is null) return;
 
         // Removal changes this document's composition only. The stored block is
         // retained until orphan cleanup semantics are deliberately defined.
-        document.RemoveBlock(block.Id, DateTimeOffset.UtcNow);
+        document.RemoveBlock(
+            block.Id,
+            AtlasTime.UtcNow
+        );
         documents.Save(document);
         ConsoleUi.Pause(
             $"Removed block {block.Id} from the description. Its stored record is retained.");
@@ -253,7 +349,8 @@ public static class DescriptionBlockCommands
     private static ContentBlock? SelectBlock(
         Document document,
         IDocumentRepository documents,
-        string prompt)
+        string prompt
+    )
     {
         var blocks = documents.GetBlocks(document).ToList();
         if (blocks.Count == 0)
@@ -263,7 +360,10 @@ public static class DescriptionBlockCommands
         }
 
         Console.Write($"{prompt} (1-{blocks.Count}, 0 cancels): ");
-        if (!int.TryParse(Console.ReadLine(), out var selection) ||
+        if (!int.TryParse(
+            Console.ReadLine(),
+            out var selection
+        ) ||
             selection < 0 || selection > blocks.Count)
         {
             ConsoleUi.Pause("That block selection is not valid.");
@@ -276,7 +376,10 @@ public static class DescriptionBlockCommands
     private static MarkdownTextBlock NewMarkdown(DateTimeOffset now)
     {
         Console.Write("Markdown: ");
-        return new MarkdownTextBlock(Console.ReadLine() ?? string.Empty, now);
+        return new MarkdownTextBlock(
+            Console.ReadLine() ?? string.Empty,
+            now
+        );
     }
 
     private static ImageBlock NewImage(DateTimeOffset now)
@@ -286,7 +389,12 @@ public static class DescriptionBlockCommands
         Console.Write("Alternative text: ");
         var altText = Console.ReadLine();
         Console.Write("Caption (optional): ");
-        return new ImageBlock(resourceUrl ?? string.Empty, altText ?? string.Empty, Console.ReadLine(), now);
+        return new ImageBlock(
+            resourceUrl ?? string.Empty,
+            altText ?? string.Empty,
+            Console.ReadLine(),
+            now
+        );
     }
 
     private static VideoBlock NewVideo(DateTimeOffset now)
@@ -294,7 +402,11 @@ public static class DescriptionBlockCommands
         Console.Write("Video URL: ");
         var resourceUrl = Console.ReadLine();
         Console.Write("Caption (optional): ");
-        return new VideoBlock(resourceUrl ?? string.Empty, Console.ReadLine(), now);
+        return new VideoBlock(
+            resourceUrl ?? string.Empty,
+            Console.ReadLine(),
+            now
+        );
     }
 
     private static LinkPreviewBlock NewLinkPreview(DateTimeOffset now)
@@ -304,7 +416,12 @@ public static class DescriptionBlockCommands
         Console.Write("Title: ");
         var title = Console.ReadLine();
         Console.Write("Description (optional): ");
-        return new LinkPreviewBlock(url ?? string.Empty, title ?? string.Empty, Console.ReadLine(), now);
+        return new LinkPreviewBlock(
+            url ?? string.Empty,
+            title ?? string.Empty,
+            Console.ReadLine(),
+            now
+        );
     }
 
     private static PollReferenceBlock NewPollReference(DateTimeOffset now)
@@ -315,10 +432,16 @@ public static class DescriptionBlockCommands
     private static ChartReferenceBlock NewChartReference(DateTimeOffset now)
     {
         Console.Write("Title (optional): ");
-        return new ChartReferenceBlock(Console.ReadLine(), now);
+        return new ChartReferenceBlock(
+            Console.ReadLine(),
+            now
+        );
     }
 
-    private static string Keep(string? replacement, string current) =>
+    private static string Keep(
+        string? replacement,
+        string current
+    ) =>
         string.IsNullOrWhiteSpace(replacement) ? current : replacement;
 
 }
