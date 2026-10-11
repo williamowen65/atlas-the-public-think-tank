@@ -8,12 +8,13 @@ Open the [editable Excalidraw blackboard](PTT-130-TRANSACTION-FLOW.excalidraw) t
 
 | Step | Code |
 |---|---|
-| Wrap the complete node-creation callback | [NodeCreationService](../../src/Atlas.Console/NodeCreationService.cs) |
-| Detect the repository's boundary capability | [OperationBoundary.Execute and IOperationBoundary](../../src/Atlas.Contracts/Operations/OperationBoundary.cs) |
-| Implement the interface and delegate execution | [SqlRepository.Execute](../../src/Atlas.Console/Storage/SqlRepository.cs) |
-| Own or join the transaction, expose the current context | [SqlOperationBoundary.Execute and Open](../../src/Atlas.Console/Storage/SqlOperationBoundary.cs) |
-| Save Content rows through inherited helpers | [SqlDocumentRepository](../../src/Atlas.Console/Storage/SqlDocumentRepository.cs) |
-| Save Graph rows through inherited helpers | [SqlNodeRepository](../../src/Atlas.Console/Storage/SqlNodeRepository.cs) |
+| Wrap the complete node-creation callback | [NodeCreationService](../../../../src/Atlas.Console/NodeCreationService.cs) |
+| Request Graph topology coordination | [NodeTopologyBoundary and INodeTopologyBoundary](../../../../src/Atlas.Graph/Nodes/NodeTopologyBoundary.cs) |
+| Fall back to the ordinary operation capability where needed | [OperationBoundary.Execute and IOperationBoundary](../../../../src/Atlas.Contracts/Operations/OperationBoundary.cs) |
+| Implement the interface and delegate execution | [SqlRepository.Execute](../../../../src/Atlas.Console/Storage/SqlRepository.cs) |
+| Own or join the transaction, expose the current context | [SqlOperationBoundary.Execute and Open](../../../../src/Atlas.Console/Storage/SqlOperationBoundary.cs) |
+| Save Content rows through inherited helpers | [SqlDocumentRepository](../../../../src/Atlas.Console/Storage/SqlDocumentRepository.cs) |
+| Save Graph rows through inherited helpers | [SqlNodeRepository](../../../../src/Atlas.Console/Storage/SqlNodeRepository.cs) |
 
 `Current` is an `AsyncLocal` execution-scope value. It is not a context shared globally across requests. A nested call opens a temporary candidate to verify its connection string, then disposes it. A topology boundary also acquires its graph lock on the current transaction before running its callback. Repository context leases borrow `Current`. A borrowed context lease does not dispose the outer context.
 
@@ -23,4 +24,4 @@ The named AtlasGraphTopology application lock makes Node creation and parent cha
 
 The shared context is not safe for parallel repository work. Different connection strings cannot join the same operation. SQL rollback does not rewind mutated domain objects in memory or roll back external event delivery.
 
-See [the implementation explanation and failure-injection evidence](../security/validation/IMPLEMENTATION.md#complete-operations--ptt-130).
+See [the implementation explanation and failure-injection evidence](../../../security/validation/IMPLEMENTATION.md#complete-operations--ptt-130).

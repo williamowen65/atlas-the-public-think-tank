@@ -120,7 +120,7 @@ Evidence: [Graph boundary tests](../../../tests/Atlas.Graph.Tests/ValidationBoun
 
 ## Complete operations — PTT-130
 
-See the [Excalidraw transaction-flow blackboard](../../blackboards/PTT-130-TRANSACTION-FLOW.excalidraw) to follow node creation from the outer boundary through reference queries and nested saves to commit or rollback.
+See the [Excalidraw transaction-flow blackboard](../../blackboards/workflows/Persistence/PTT-130-TRANSACTION-FLOW.excalidraw) to follow node creation from the outer boundary through reference queries and nested saves to commit or rollback.
 
 ### Problem: several saves must succeed together
 
