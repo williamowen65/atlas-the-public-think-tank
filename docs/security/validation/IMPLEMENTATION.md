@@ -120,6 +120,8 @@ Evidence: [Graph boundary tests](../../../tests/Atlas.Graph.Tests/ValidationBoun
 
 ## Complete operations — PTT-130
 
+See the [transaction-flow blackboard](../../blackboards/PTT-130-TRANSACTION-FLOW.md) to follow node creation from the outer boundary through reference queries and nested saves to commit or rollback.
+
 ### Problem: several saves must succeed together
 
 A complete operation is one application action, even when it touches several repositories. For example, creating a node saves its description block, its document, and then the node.

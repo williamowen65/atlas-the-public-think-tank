@@ -5,10 +5,26 @@ using Microsoft.EntityFrameworkCore;
 namespace Atlas.ConsoleApp.Storage;
 
 /// <summary>Provides scoped EF queries and saves only the addressed entity.</summary>
+/// <param name="contextFactory">Optional factory for fresh contexts, commonly supplied by SQL tests.
+/// When omitted, SqlStorage.Open uses the connection configured by the host. All repositories joining
+/// one operation must produce contexts with exactly the same connection string.</param>
 public abstract class SqlRepository(Func<AtlasDataContext>? contextFactory = null) : IOperationBoundary, IReferenceLookup
 {
+    /// <summary>Creates a candidate context using the injected factory, or the host-configured SqlStorage factory.</summary>
+    /// <remarks>
+    /// This factory does not itself join a transaction; SqlOperationBoundary.Open determines which context the caller uses.
+    /// </remarks>
     private AtlasDataContext Open() => contextFactory is null ? SqlStorage.Open() : contextFactory();
+    /// <summary>Implements IOperationBoundary by delegating the callback and context factory to the SQL helper.</summary>
+    /// <remarks>
+    /// Nested calls join the outer operation, so repository saves cannot commit that operation early.
+    /// </remarks>
     public T Execute<T>(Func<T> operation) => SqlOperationBoundary.Execute(Open, operation);
+    /// <summary>Answers reference existence and optional availability checks using the operation context.</summary>
+    /// <remarks>
+    /// When requireActive is false, inactive, archived or hidden records may still satisfy existence.
+    /// Documents and blocks have existence-only checks; unsupported kinds return false. This does not authorize the caller.
+    /// </remarks>
     public bool IsAvailable(string kind, Guid id, bool requireActive)
     {
         using var lease = SqlOperationBoundary.Open(Open);
@@ -29,12 +45,20 @@ public abstract class SqlRepository(Func<AtlasDataContext>? contextFactory = nul
         };
     }
 
+    /// <summary>Materializes all rows and mapped child collections without tracking for domain reconstitution.</summary>
+    /// <remarks>
+    /// Uses the outer context when present, otherwise a short-lived standalone context.
+    /// </remarks>
     protected List<T> ReadRows<T>() where T : class
     {
         using var lease = SqlOperationBoundary.Open(Open);
         var database = lease.Context;
         return IncludeChildren(database, database.Set<T>().AsNoTracking()).ToList();
     }
+    /// <summary>Applies an EF-translatable predicate and optional query composition before materializing untracked rows.</summary>
+    /// <remarks>
+    /// Includes mapped child collections; callers can add ordering or other query operators through compose.
+    /// </remarks>
     protected List<T> QueryRows<T>(Expression<Func<T, bool>> predicate,
         Func<IQueryable<T>, IQueryable<T>>? compose = null) where T : class
     {
@@ -43,6 +67,10 @@ public abstract class SqlRepository(Func<AtlasDataContext>? contextFactory = nul
         var query = IncludeChildren(database, database.Set<T>().AsNoTracking()).Where(predicate);
         return (compose is null ? query : compose(query)).ToList();
     }
+    /// <summary>Finds a row by its ordered primary-key values and loads mapped child collections.</summary>
+    /// <remarks>
+    /// EF Find may return an already tracked row from the shared context; returns null when no row exists.
+    /// </remarks>
     protected T? FindRow<T>(params object[] keys) where T : class
     {
         using var lease = SqlOperationBoundary.Open(Open);
@@ -53,7 +81,12 @@ public abstract class SqlRepository(Func<AtlasDataContext>? contextFactory = nul
                 database.Entry(row).Collection(navigation.Name).Load();
         return row;
     }
+    /// <summary>Starts or joins an operation boundary before inserting or replacing the addressed row.</summary>
     protected void SaveRow<T>(T row) where T : class => Execute(() => { SaveRowCore(row); return true; });
+    /// <summary>Prepares row values, finds the existing primary key, and inserts or updates that entity.</summary>
+    /// <remarks>
+    /// Mapped child collections are replaced after their old rows are removed. SaveChanges flushes SQL within the current transaction; it does not commit the outer operation.
+    /// </remarks>
     private void SaveRowCore<T>(T row) where T : class
     {
         using var lease = SqlOperationBoundary.Open(Open);
@@ -84,6 +117,10 @@ public abstract class SqlRepository(Func<AtlasDataContext>? contextFactory = nul
         database.SaveChanges();
 
     }
+    /// <summary>Adds eager loading for every mapped collection navigation needed to reconstitute the domain object.</summary>
+    /// <remarks>
+    /// Rejects row types that are not part of the EF model.
+    /// </remarks>
     private static IQueryable<T> IncludeChildren<T>(AtlasDataContext database, IQueryable<T> query) where T : class
     {
         var entity = database.Model.FindEntityType(typeof(T)) ?? throw new InvalidOperationException("Unknown EF entity.");
@@ -91,7 +128,12 @@ public abstract class SqlRepository(Func<AtlasDataContext>? contextFactory = nul
             query = query.Include(navigation.Name);
         return query;
     }
+    /// <summary>Starts or joins an operation boundary before deleting a row by its primary-key values.</summary>
     protected void DeleteRow<T>(params object[] keys) where T : class => Execute(() => { DeleteRowCore<T>(keys); return true; });
+    /// <summary>Deletes the addressed row when present and flushes within the current transaction.</summary>
+    /// <remarks>
+    /// A missing row is a no-op; mapped database constraints and delete rules still apply.
+    /// </remarks>
     private void DeleteRowCore<T>(params object[] keys) where T : class
     {
         using var lease = SqlOperationBoundary.Open(Open);
