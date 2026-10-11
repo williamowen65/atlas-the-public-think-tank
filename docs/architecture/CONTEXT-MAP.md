@@ -37,6 +37,15 @@ Graph stores AuthorId and DescriptionId rather than Participant/Document objects
 
 Vote TargetId, Comment TargetId, and Notification SubjectId are polymorphic; their kind determines the target table, so ordinary foreign keys do not enforce those targets. Poll/chart references, occurrence IDs, and opaque type owner strings also remain outside ordinary FK enforcement.
 
+### Existence and availability checks
+
+- [IReferenceLookup.IsAvailable(kind, id, requireActive)](../../src/Atlas.Contracts/Operations/ReferenceValidation.cs) is the shared lookup contract. It lets a workflow ask about a reference without importing another domain's entity or SQL model.
+- [ReferenceValidation.Require](../../src/Atlas.Contracts/Operations/ReferenceValidation.cs) checks the ID and calls that capability on the supplied repository. The SQL adapters inherit its implementation from [SqlRepository](../../src/Atlas.Console/Storage/SqlRepository.cs).
+- With `requireActive: false`, the lookup checks existence. With `true`, it also applies the implemented availability policy for that kind—for example, rejecting inactive participants or archived/hidden Nodes. Not every kind has an active state.
+- This lookup complements foreign keys, including checks for supported polymorphic targets. It does not authorize the caller, traverse ancestry or prove that every future reference kind is supported.
+
+See [reference policies and call flow](../security/validation/IMPLEMENTATION.md#references-and-relationships--ptt-129).
+
 ## Startup and events
 
 Program.cs reads User Secrets, then environment variables. ATLAS_SQL_CONNECTION_STRING configures SqlStorage, which applies checked-in migrations. Optional --seed-demo inserts typed demo rows into an empty database and exits. Normal startup constructs repositories/services and Identity-backed session services, ensures system Node types, registers subscribers, and starts ConsoleApplication with anonymous browsing and sign-in/registration.
@@ -54,12 +63,17 @@ The host publishes recorded events after relevant saves. Dispatch is synchronous
 
 [NodeCreationWorkflow](../../src/Atlas.Console/NodeCreationWorkflow.cs) collects input and delegates to [NodeCreationService](../../src/Atlas.Console/NodeCreationService.cs). The service constructs the proposed block, document and Node before writing, validates references and ancestry, and saves Content then Graph inside one topology-coordinated SQL transaction. A later save failure rolls back earlier writes. The host publishes recorded events after the service returns successfully; dispatch is outside the transaction. See [workflow evidence and limits](../security/validation/IMPLEMENTATION.md#workflows-and-evidence).
 
-## Current gaps
+## Implemented topology coordination
 
-- Keep new topology entry points behind graph coordination; database foreign keys alone do not prevent cycles.
+- **Graph defines the capability and graph rules.** [NodeTopologyBoundary / INodeTopologyBoundary](../../src/Atlas.Graph/Nodes/NodeTopologyBoundary.cs) expresses the topology operation; [NodeRelationshipService](../../src/Atlas.Graph/Nodes/NodeRelationshipService.cs) checks proposed attachments.
+- **The SQL adapter supplies the database mechanism.** [SqlNodeRepository.ExecuteTopology](../../src/Atlas.Console/Storage/SqlNodeRepository.cs) requests the shared graph application lock through [SqlOperationBoundary](../../src/Atlas.Console/Storage/SqlOperationBoundary.cs). SQL remains in infrastructure; Graph does not need an EF or SQL dependency.
+- **Creation and parent changes are already coordinated.** Full Node saves also check ancestry under that lock. Metadata saves preserve parents and do not request it.
+
+When adding a new topology entry point, use this existing boundary rather than bypassing it. This is maintenance guidance, not an outstanding implementation gap. Moving Console-owned creation orchestration into reusable/domain services is separate organizational work tracked in [PTT-131](https://thepublicthinktank.atlassian.net/browse/PTT-131).
+
+## Current gaps
 - Define relationship-node cardinality and global type-name concurrency rules.
 - Define a general stale-object/version policy and host retry behavior for translated operation conflicts.
-- Extend rollback/failure evidence when new multi-save workflows are added; existing coordinated workflows already share a transaction.
 - Add durable integration messaging, future HTTP/browser authentication boundaries, rate limits, and real delivery adapters.
 - Optimize materialized Discovery/ancestry queries and adopt stable feed pagination where needed.
 - Complete event compatibility/metadata and lifecycle policy before service extraction.
