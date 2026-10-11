@@ -7,6 +7,7 @@ Markdown documentation.
   editability, connection, traceability, and visual-language rules to apply to
   future workflow boards.
 
+- [PTT-130 transaction flow](PTT-130-TRANSACTION-FLOW.excalidraw) shows how reference checks and Content/Graph saves share one EF context and SQL transaction, then commit or roll back together. See the [code walkthrough](PTT-130-TRANSACTION-FLOW.md).
 - [PTT-68 current-state architecture](PTT-68-CURRENT-STATE.excalidraw) visualizes
   the implemented system, current interactions, boundary gaps, and candidate
   future domains discovered during PTT-68.
