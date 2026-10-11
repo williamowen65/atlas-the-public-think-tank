@@ -4,15 +4,24 @@ This first review slice, [PTT-121](https://thepublicthinktank.atlassian.net/brow
 
 Validation answers whether a proposed value or operation is valid. Authorization answers whether the caller may perform it. Both are required, and a future form's dropdowns or validation messages cannot replace backend enforcement.
 
+- [Implementation overview](IMPLEMENTATION.md): the implemented workflows, test evidence and practical limits.
 - [Domain review](DOMAIN-REVIEW.md): expectations, enforcement locations, automated evidence and remaining gaps across the MVP domains.
 - [Persistence and SQL](PERSISTENCE.md): EF parameterization, database constraints and their limits.
 - [Authorization review](../authorization/README.md): caller identity and permissions.
 
 ## Review method
 
-Review public constructors, reconstitution paths, mutation methods, services, Console adapters and SQL repositories. For each entry point consider null/default values, empty IDs, undefined enum casts, text normalization and bounds, finite numbers, collection duplicates/order, missing references, lifecycle rules, timestamps and partial changes on rejection. Inspect tests as evidence; distinguish code inspection from an automated assertion. Use backend methods directly in regression tests so Console choices cannot conceal a gap.
+Review constructors, reconstitution, mutation methods, services, Console adapters and SQL repositories. For each entry point:
 
-The traceability unit is **expectation → owning enforcement → test or inspected code → fix or follow-up**. Existing tests are reused rather than duplicated. A test filename below identifies an evidence source, not proof of every possible input combination.
+- **Check values:** null/default values, empty IDs, undefined enums, text normalization and bounds, and finite numbers.
+- **Check collections and state:** duplicates, ordering, lifecycle rules and timestamps.
+- **Check relationships:** missing references and whether the referenced record is available for the operation.
+- **Check failure behavior:** rejection should not leave partial changes; coordinated SQL writes should roll back together.
+- **Check the evidence:** distinguish an inspected code path from a rule actually asserted by a test. Call backend methods directly so Console choices cannot conceal a gap.
+
+Track each rule as **expectation → owning enforcement → test or inspected code → fix or follow-up**.
+
+Reuse existing tests rather than duplicating them. A linked test file identifies an evidence source; it does not prove every possible input combination.
 
 For column meanings, reference validity and trust between layers, see [Reading the inventory](DOMAIN-REVIEW.md#reading-the-inventory).
 
@@ -34,7 +43,7 @@ Domain entry points still need checks because:
 
 These local-value and state-consistency changes are implemented in this PR and tracked by [PTT-128](https://thepublicthinktank.atlassian.net/browse/PTT-128).
 
-## Changes in this slice
+## Initial review fixes
 
 | Finding | Change | Regression evidence |
 |---|---|---|
@@ -45,6 +54,16 @@ These local-value and state-consistency changes are implemented in this PR and t
 | Undefined lifecycle/disposition enum integers were accepted | Reject undefined Node, Community, Comment and reaction/audit enums at relevant domain entry points | [Graph ValidationTests](../../../tests/Atlas.Graph.Tests/ValidationTests.cs), [Communities ValidationTests](../../../tests/Atlas.Communities.Tests/ValidationTests.cs) and [Comments ValidationTests](../../../tests/Atlas.Comments.Tests/ValidationTests.cs) |
 | Decided moderation records could have no decision timestamp or an oversized rationale | Reconstitution now requires time and the same 2,000-character normalized rationale bound as decisions | [ValidationTests.DecidedCaseRequiresDecisionTimeAndBoundedRationale](../../../tests/Atlas.Moderation.Tests/ValidationTests.cs) |
 | Communities tests were absent from the rewrite CI matrix | Add the existing test project to CI | [.github/workflows/AtlasRewriteTests.yml](../../../.github/workflows/AtlasRewriteTests.yml) |
+
+## Current workflow summary
+
+The follow-up implementation adds these protections to the initial fixes:
+
+- **Complete operations share a transaction.** Related writes commit together or roll back together. See the [workflow and evidence table](IMPLEMENTATION.md#workflows-and-evidence).
+- **Creation and parent changes share the graph lock.** This protects cycle checks across nodes. Metadata edits use [SaveMetadata](../../../src/Atlas.Graph/Nodes/INodeRepository.cs), preserve stored parents and do not request that lock. Ordinary SQL locks still apply.
+- **Tests cover specific failure and concurrency paths.** These include a real SQL document-insert rejection after the block was saved, error propagation to the caller, and rollback. Other tests cover competing graph changes, metadata writes while the graph lock is held, and stale metadata saves preserving newer parents.
+
+For the boundaries of these guarantees, read [Limits to retain during review](IMPLEMENTATION.md#limits-to-retain-during-review). For how domain checks, application workflows and SQL constraints work together, read [data integrity and its layers](PERSISTENCE.md#what-data-integrity-means).
 
 No EF model or migration changes are required by this slice.
 
@@ -58,7 +77,11 @@ The three follow-up cards are now part of PR #337 on the PTT-121 branch:
 | [PTT-129](https://thepublicthinktank.atlassian.net/browse/PTT-129) | Backend reference availability, graph ancestry, target kinds and notification shortcuts | [References and relationships](IMPLEMENTATION.md#references-and-relationships--ptt-129) |
 | [PTT-130](https://thepublicthinktank.atlassian.net/browse/PTT-130) | Shared SQL transactions, rollback, competing writes and useful conflict errors | [Complete operations](IMPLEMENTATION.md#complete-operations--ptt-130) |
 
-Start with the [implementation overview](IMPLEMENTATION.md), then use the domain tables for individual rules. The overview names test scenarios and explains the transaction/clock policies and limits.
+Suggested reading order:
+
+1. [Implementation overview](IMPLEMENTATION.md): workflows, shared clock, transactions and linked test scenarios.
+2. [Domain review](DOMAIN-REVIEW.md): individual expectations, enforcement and gaps.
+3. [Persistence](PERSISTENCE.md): SQL safety, integrity layers and their limits, plus [browser and network concerns](PERSISTENCE.md#browser-and-network-concerns).
 
 ## Remaining work
 
