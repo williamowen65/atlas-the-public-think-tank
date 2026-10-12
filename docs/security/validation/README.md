@@ -83,6 +83,8 @@ Suggested reading order:
 2. [Domain review](DOMAIN-REVIEW.md): individual expectations, enforcement and gaps.
 3. [Persistence](PERSISTENCE.md): SQL safety, integrity layers and their limits, plus [browser and network concerns](PERSISTENCE.md#browser-and-network-concerns).
 
+- [Node creation quota draft](NODE-CREATION-QUOTA.md): provisional PTT-133 policy, concurrency, migration and review questions.
+
 ## Remaining work
 
 | Work | Tracking |
