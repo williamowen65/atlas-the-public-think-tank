@@ -45,6 +45,9 @@ public sealed class NodeCreationService(
                 "Node",
                 parent.Value
             );
+            // Reject before writing Content. The repository repeats the check on insert
+            // so direct SQL repository creation cannot bypass the quota capability.
+            if (nodes is INodeCreationQuota quota) quota.EnsureCreationAllowed(authorId);
             var now = AtlasTime.UtcNow;
             var block = new MarkdownTextBlock(
                 markdown,

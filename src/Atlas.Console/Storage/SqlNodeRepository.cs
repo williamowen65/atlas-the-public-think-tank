@@ -6,8 +6,28 @@ using Atlas.ConsoleApp.Discovery;
 namespace Atlas.ConsoleApp.Storage;
 
 /// <summary>Maps domain objects directly to EF Core rows in SQL Server.</summary>
-public sealed class SqlNodeRepository(Func<AtlasDataContext>? contextFactory = null) : SqlRepository(contextFactory), INodeRepository, IDiscoveryNodeReader, INodeTopologyBoundary
+public sealed class SqlNodeRepository(Func<AtlasDataContext>? contextFactory = null, NodeCreationQuotaPolicy? quotaPolicy = null) : SqlRepository(contextFactory), INodeRepository, IDiscoveryNodeReader, INodeTopologyBoundary, INodeCreationQuota
 {
+    private readonly NodeCreationQuotaPolicy _quotaPolicy = quotaPolicy ?? NodeCreationQuotaPolicy.Default;
+
+    /// <summary>Advisory allowance; another committed creation can change it immediately.</summary>
+    public NodeCreationAllowance GetCreationAllowance(Guid participantId)
+    {
+        if (participantId == Guid.Empty) throw new ArgumentException("A participant is required.", nameof(participantId));
+        var now = AtlasTime.UtcNow;
+        // Limit the SQL result to the newest policy.Limit rows, using the participant/time index.
+        var history = QueryRows<NodeCreationQuotaRow>(
+            row => row.ParticipantId == participantId && row.CreatedAt > now - _quotaPolicy.Window,
+            query => query.OrderByDescending(row => row.CreatedAt).Take(_quotaPolicy.Limit));
+        return _quotaPolicy.Evaluate(history.Select(row => row.CreatedAt), now);
+    }
+
+    public void EnsureCreationAllowed(Guid participantId)
+    {
+        var allowance = GetCreationAllowance(participantId);
+        if (allowance.Remaining == 0) throw new NodeCreationQuotaExceededException(allowance);
+    }
+
     /// <summary>Coordinates creation and parent changes before graph checks and saves.</summary>
     /// <remarks>Metadata edits use the ordinary boundary and never request this named lock.</remarks>
     public T ExecuteTopology<T>(Func<T> operation) => ExecuteWithLock(
@@ -54,6 +74,9 @@ public sealed class SqlNodeRepository(Func<AtlasDataContext>? contextFactory = n
         if (metadataOnly && previous is null) throw new InvalidOperationException("Metadata edits require an existing node.");
 
         // Require existing references throughout. Creation and newly selected types additionally require availability.
+        // A full save already holds AtlasGraphTopology. Check and consume in that same
+        // transaction so overlapping requests cannot both take the final slot.
+        if (previous is null) EnsureCreationAllowed(node.AuthorId.Value);
         ReferenceValidation.Require(
             this,
             "Participant",
@@ -104,6 +127,17 @@ public sealed class SqlNodeRepository(Func<AtlasDataContext>? contextFactory = n
             ToStorage(node),
             metadataOnly ? [nameof(NodeRow.Parents)] : []
         );
+        if (previous is null)
+        {
+            // Use the server clock, not the Node's supplied timestamp. A failed later
+            // write rolls back both this ledger entry and the complete creation workflow.
+            SaveRow(new NodeCreationQuotaRow
+            {
+                NodeId = node.Id.Value,
+                ParticipantId = node.AuthorId.Value,
+                CreatedAt = AtlasTime.UtcNow
+            });
+        }
     }
 
 

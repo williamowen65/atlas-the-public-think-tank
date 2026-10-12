@@ -28,6 +28,16 @@ namespace Atlas.Persistence.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Atlas.Persistence.NodeCreationQuotaRow", b =>
+            {
+                b.Property<Guid>("NodeId").ValueGeneratedNever().HasColumnType("uniqueidentifier");
+                b.Property<Guid>("ParticipantId").HasColumnType("uniqueidentifier");
+                b.Property<DateTimeOffset>("CreatedAt").HasColumnType("datetimeoffset");
+                b.HasKey("NodeId");
+                b.HasIndex("ParticipantId", "CreatedAt");
+                b.ToTable("NodeCreationQuotaRows");
+            });
+
             modelBuilder.Entity(
                 "Atlas.Persistence.BlockRow",
                 b =>

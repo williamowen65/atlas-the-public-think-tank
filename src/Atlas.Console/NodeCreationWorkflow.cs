@@ -36,6 +36,20 @@ public static class NodeCreationWorkflow
             Console.WriteLine();
         }
 
+        // This display is advisory. The atomic save rechecks after acquiring the graph lock.
+        if (nodes is INodeCreationQuota quota)
+        {
+            var allowance = quota.GetCreationAllowance(authorParticipantId);
+            Console.WriteLine($"Node allowance: {allowance.Remaining} of {allowance.Limit} remaining per rolling {allowance.Window.TotalHours:g} hours.");
+            if (allowance.NextSlotAt is { } nextSlot)
+                Console.WriteLine($"Next slot available: {nextSlot:yyyy-MM-dd HH:mm:ss} UTC (slots return individually).");
+            if (allowance.Remaining == 0)
+            {
+                ConsoleUi.Pause(new NodeCreationQuotaExceededException(allowance).Message);
+                return null;
+            }
+        }
+
         Console.Write("Title: ");
         var title = Console.ReadLine();
 
@@ -81,6 +95,14 @@ public static class NodeCreationWorkflow
             Console.WriteLine(
                 $"[ATLAS.GRAPH] Saved node {node.Id} with " +
                 $"description reference {node.DescriptionId}.");
+
+            if (nodes is INodeCreationQuota updatedQuota)
+            {
+                var allowance = updatedQuota.GetCreationAllowance(authorParticipantId);
+                Console.WriteLine($"Remaining Node allowance: {allowance.Remaining}/{allowance.Limit}.");
+                if (allowance.NextSlotAt is { } nextSlot)
+                    Console.WriteLine($"Next slot available: {nextSlot:yyyy-MM-dd HH:mm:ss} UTC.");
+            }
 
             foreach (var domainEvent in node.DomainEvents)
             {
