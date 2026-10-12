@@ -73,7 +73,7 @@ public static class NodeCreationWorkflow
                 authorParticipantId.ToString()
             );
 
-        if (requestedSubNodeTypes.Count == 0)
+        if (requestedSubNodeTypes is null)
         {
             return null;
         }

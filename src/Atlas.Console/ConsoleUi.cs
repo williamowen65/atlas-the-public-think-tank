@@ -67,7 +67,8 @@ public static class ConsoleUi
     }
 
 
-    public static IReadOnlyCollection<NodeTypeDefinition>
+    /// <summary>Reads optional child-Node type requests; null means cancelled or invalid input.</summary>
+    public static IReadOnlyCollection<NodeTypeDefinition>?
         ReadRequestedSubNodeTypes(
             INodeTypeRepository nodeTypes,
             string ownerId
@@ -75,30 +76,15 @@ public static class ConsoleUi
     {
         var allTypes = nodeTypes.GetAll();
 
+        // Comments have their own domain. Requested types only describe actual child Nodes.
         var availableTypes = allTypes
-            .Where(type =>
-                !type.IsArchived &&
-                !string.Equals(
-                    type.Name,
-                    "Comment",
-                    StringComparison.OrdinalIgnoreCase
-                ))
+            .Where(type => !type.IsArchived)
             .OrderBy(type => type.Name)
             .ToList();
 
-        var commentType = allTypes
-            .Single(type =>
-                string.Equals(
-                    type.Name,
-                    "Comment",
-                    StringComparison.OrdinalIgnoreCase
-                ));
-
         Console.WriteLine();
         Console.WriteLine(
-            "Every node requests Comment sub-nodes by default.");
-        Console.WriteLine(
-            "Select any additional requested sub-node types:");
+            "Select requested sub-node types (comments are separate):");
 
         for (var index = 0; index < availableTypes.Count; index++)
         {
@@ -112,13 +98,15 @@ public static class ConsoleUi
             $"{createTypeSelection}. Create a custom type");
         Console.WriteLine();
         Console.Write(
-            "Selections (comma-separated, blank for Comment only): ");
+            "Selections (comma-separated, blank for none, 0 cancels): ");
 
         var input = Console.ReadLine();
 
+        // Empty is a valid request list; null distinguishes cancellation/invalid input.
+        if (input is null || input.Trim() == "0") return null;
         if (string.IsNullOrWhiteSpace(input))
         {
-            return [commentType];
+            return [];
         }
 
         var selections = new List<int>();
@@ -138,16 +126,21 @@ public static class ConsoleUi
             {
                 Pause(
                     $"'{value}' is not a valid sub-node type selection.");
-                return [];
+                return null;
             }
 
             selections.Add(selection);
         }
 
+        if (selections.Count == 0)
+        {
+            Pause("Select a type number, or leave the input blank for none.");
+            return null;
+        }
+
         var selectedTypes = selections
             .Where(selection => selection != createTypeSelection)
             .Select(selection => availableTypes[selection - 1])
-            .Prepend(commentType)
             .ToList();
 
         if (selections.Contains(createTypeSelection))
@@ -159,7 +152,7 @@ public static class ConsoleUi
 
             if (customType is null)
             {
-                return [];
+                return null;
             }
 
             selectedTypes.Add(customType);

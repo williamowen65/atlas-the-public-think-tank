@@ -1198,7 +1198,7 @@ public static class NodeCommands
                 actorParticipantId.ToString()
             );
 
-        if (selectedTypes.Count == 0)
+        if (selectedTypes is null)
         {
             return;
         }
