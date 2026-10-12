@@ -47,7 +47,19 @@ The ledger timestamp comes from the shared server clock, not the Node object's s
 
 ## Migration and lifecycle
 
-`AddNodeCreationQuota` creates an empty indexed ledger. Existing Nodes do not occupy slots; accounting starts with ordinary new creations. A locally applied earlier draft migration will not rerun when its source changes. Any previous entries expire naturally from the allowance; changing this draft does not silently delete committed local data.
+Migration generation belongs to the developer's local workflow. This PR changes the EF model but includes no quota migration/designer or changed model snapshot. Generate and review them locally before applying the database update.
+
+The new table is defined by NodeCreationQuotaRow, the NodeCreationQuotaRows DbSet and model.Entity<NodeCreationQuotaRow> in AtlasDataContext. EF should scaffold its primary key, columns and participant/time index.
+
+```bash
+dotnet tool restore
+dotnet ef migrations add AddNodeCreationQuota --project src/Atlas.Persistence
+dotnet ef database update --project src/Atlas.Persistence
+```
+
+Inspect and commit the generated Up/Down and snapshot changes. Create an empty table, with no existing-Node backfill. SQL CI will report pending model changes until these artifacts are committed; the PR remains draft.
+
+If an earlier draft migration was already applied locally, resolve that migration-history state first. Do not blindly apply another table-creation migration to the same database. Pulling these changes does not undo a database update.
 
 Ledger rows intentionally have no cascading Node FK: deleting/archiving a Node cannot erase its consumption. The rows currently have no automated cleanup. A retention plan may purge sufficiently old rows after deciding the maximum supported window and account-deletion/privacy policy. This is history storage, not an unbounded query result: allowance reads are limited in SQL.
 
