@@ -12,6 +12,10 @@ Draft implementation for [PTT-133](https://thepublicthinktank.atlassian.net/brow
 - `NodeCreationQuotaExceededException.Allowance` exposes structured data (`Limit`, `Window`, `Remaining`, `CheckedAt`, `NextSlotAt`, `RetryAfter`) for future UI/API handling. UI can convert timestamps to the user's timezone and maintain a countdown.
 - The allowance display is advisory. Another request may consume a slot before the user submits; the save always rechecks atomically.
 
+## Terminology
+
+**Ledger:** A ledger is the record of successful Node creations that consumed quota. Each NodeCreationQuotaRow records the Node ID, participant ID and accounting timestamp; NodeCreationQuotaRows is the SQL table holding those records. Trusted exempt operations do not add entries, and failed transactions leave none committed. “Ledger” names this ordinary quota-history table; it is not another service or special database mechanism. See the [shared glossary](../../glossary/GLOSSARY.md).
+
 ## Where the code lives
 
 | Piece | Responsibility |
@@ -20,7 +24,7 @@ Draft implementation for [PTT-133](https://thepublicthinktank.atlassian.net/brow
 | [INodeCreationQuota](../../../src/Atlas.Graph/Nodes/NodeCreationQuota.cs) | Optional repository capability for allowance/validation; shared host-facing data contract |
 | [NodeCreationService](../../../src/Atlas.Console/NodeCreationService.cs) | Early check inside the topology transaction, before Content writes |
 | [SqlNodeRepository](../../../src/Atlas.Console/Storage/SqlNodeRepository.cs) | Rechecks every new repository insert and records consumption; updates do not consume |
-| [NodeCreationQuotaRow](../../../src/Atlas.Persistence/NodeCreationQuotaRow.cs) | Durable creation ledger, independent of Node lifecycle |
+| [NodeCreationQuotaRow](../../../src/Atlas.Persistence/NodeCreationQuotaRow.cs) | One record of a successful creation that consumed quota; stored independently of Node lifecycle |
 | [NodeCreationWorkflow](../../../src/Atlas.Console/NodeCreationWorkflow.cs) | Console display and friendly quota errors |
 
 Root/sub-Node sharing is per participant: creating a child beneath someone else's Node consumes only the creator's allowance, never the parent's author's allowance.
