@@ -83,6 +83,10 @@ See Microsoft's [EF Core SQL query guidance](https://learn.microsoft.com/en-us/e
 
 The test requires a real SQL Server and `ATLAS_SQL_TEST_CONNECTION_STRING`; CI supplies both. It covers that path alongside domain tests and production-source review. It does not prove that every future SQL query will be safe.
 
+## Resetting the local application database
+
+See the [Persistence README PowerShell reset script](../../../src/Atlas.Persistence/README.md#reset-the-local-database-to-demo-seed-data-powershell) to delete the local application database, apply committed migrations and restore demo seed data. This is separate from the disposable databases used by SQL tests below.
+
 ## Local SQL test configuration
 
 Persistence, Identity and Console SQL tests share one configuration:
