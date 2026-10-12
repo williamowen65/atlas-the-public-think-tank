@@ -12,7 +12,7 @@ The extracted in-memory engine is the reference for SQL parity, not a performanc
 
 Implement the port in Persistence and switch Console composition only after parity and SQL integration checks pass. Apply predicates, aggregate vote statistics, calculate scores, count matches, order and Skip/Take before materialization. Use existence predicates for community/reaction membership to avoid multiplying votes through joins. Batch-load display data for the selected IDs; inspect the downstream Console display path as well as Discovery itself for query fan-out.
 
-Preserve the score: `(AverageVote ?? 0) + log10(VoteCount + 1) / 100`, plus 0.1 for a case-insensitive title search match. Order by score descending, count descending, updated time descending, ordinal-ignore-case title ascending, then GUID ascending. SQL collation and SQL Server GUID ordering do not automatically match these .NET semantics; demonstrate parity or define an explicit equivalent sort key before switching implementations. Content search must preserve the current block-specific searchable fields and case behavior.
+Preserve the score: `(AverageVote ?? 0) + log10(VoteCount + 1) / 100`, plus 0.1 for a case/accent-insensitive title search match. Order by score descending, count descending, updated time descending, case/accent-insensitive title ascending, then GUID ascending. SQL collation and SQL Server GUID ordering do not automatically match these .NET semantics; demonstrate parity or define an explicit equivalent sort key before switching implementations. Content search must preserve the current block-specific searchable fields and case behavior.
 
 Created-date bounds currently use the candidate timestamp's calendar date. Review stored offsets before assuming UTC date predicates are equivalent. Average filters exclude unrated candidates. Reaction filters require every selected definition. Public results exclude hidden nodes; authored scope can include hidden placeholders, but text searches never match hidden candidates. Scope IDs do not establish caller authorization.
 
@@ -31,3 +31,15 @@ Specify invalidation dependencies for votes, reactions, content, links, archive/
 ## Verification
 
 Run `dotnet test tests/Atlas.Discovery.Tests/Atlas.Discovery.Tests.csproj` and the Console and Moderation suites for this extraction. The authoring environment has no .NET SDK; local execution was unavailable. The repository PR workflow supplies .NET 10 and runs these suites. SQL performance measurements are outstanding.
+
+## Discovery text collation decision
+
+Use `Latin1_General_100_CI_AI_SC` explicitly on NodeRows.Title and BlockRows Markdown, AltText, Caption, Title and Description. Existing nvarchar storage preserves Unicode, including supplementary characters under the SC collation. CI ignores case and AI ignores accents for SQL search/equality/sorting; original spelling is stored unchanged. No storage conversion to UTF-8 is needed. There is no single culturally correct ordering for every language; this is Atlas's shared default, not locale-specific sorting.
+
+The column migration updates existing databases, not just newly created ones. Down removes explicit overrides and restores inheritance from the database default. Identity/account identifiers, URLs and unique community/reaction keys retain their previous comparison rules. This slice intentionally configures Discovery content rather than changing the entire database's authentication and uniqueness semantics. Future SQL search over URL fields should apply the search collation at the expression boundary, without redefining URL identity.
+
+The in-memory reference now uses invariant case/accent-insensitive matching and sorting, including the title-match score boost. This is an intentional product behavior change: cafe can find Café. .NET invariant comparisons and SQL Windows collation are not guaranteed equivalent for every Unicode sequence; parity fixtures are still required before SQL cutover. GUID and remaining ranking rules are unchanged.
+
+Tests cover migrated SQL title/content matching, preservation of Unicode/original text, and case/accent-insensitive title scoring through the current service. Local .NET/SQL execution remains unavailable in the authoring environment; CI must validate the manually authored migration, target model and snapshot.
+
+References: https://learn.microsoft.com/en-us/sql/relational-databases/collations/collation-and-unicode-support and https://learn.microsoft.com/en-us/sql/relational-databases/collations/set-or-change-the-column-collation

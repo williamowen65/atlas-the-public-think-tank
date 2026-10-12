@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace Atlas.Discovery;
 
 /// <summary>Reference query implementation; materializes all candidates before paging.</summary>
@@ -108,14 +110,8 @@ public sealed class InMemoryDiscoveryReadQuery : IDiscoveryReadQuery
                 DateOnly.FromDateTime(candidate.CreatedAt.DateTime) <= query.CreatedThrough.Value)
             .Where(candidate => string.IsNullOrWhiteSpace(search) ||
                 (!candidate.IsModerationExcluded &&
-                    (candidate.Title.Contains(
-                        search,
-                        StringComparison.OrdinalIgnoreCase
-                    ) ||
-                     candidate.SearchableContent.Contains(
-                         search,
-                         StringComparison.OrdinalIgnoreCase
-                     ))))
+                    (ContainsText(candidate.Title, search) ||
+                     ContainsText(candidate.SearchableContent, search))))
             .Select(candidate => new
             {
                 Candidate = candidate,
@@ -129,7 +125,7 @@ public sealed class InMemoryDiscoveryReadQuery : IDiscoveryReadQuery
             .ThenByDescending(item => item.Candidate.UpdatedAt)
             .ThenBy(
                 item => item.Candidate.Title,
-                StringComparer.OrdinalIgnoreCase
+                StringComparer.Create(CultureInfo.InvariantCulture, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace)
             )
             .ThenBy(item => item.Candidate.NodeId)
             .ToList();
@@ -146,6 +142,10 @@ public sealed class InMemoryDiscoveryReadQuery : IDiscoveryReadQuery
         )).ToList();
     }
 
+    private static bool ContainsText(string text, string search) =>
+        CultureInfo.InvariantCulture.CompareInfo.IndexOf(
+            text, search, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) >= 0;
+
     private static double Score(
         DiscoveryCandidate candidate,
         string? search
@@ -159,10 +159,7 @@ public sealed class InMemoryDiscoveryReadQuery : IDiscoveryReadQuery
         // A title match is more intentional than a match elsewhere in the
         // searchable projection, so search results receive a small boost.
         if (!string.IsNullOrWhiteSpace(search) &&
-            candidate.Title.Contains(
-                search,
-                StringComparison.OrdinalIgnoreCase
-            ))
+            ContainsText(candidate.Title, search))
         {
             score += 0.1d;
         }

@@ -57,6 +57,13 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
         base.OnModelCreating(model);
         ConfigureModel(model);
         IdentityModel.Configure(model);
+        model.Entity<NodeRow>().Property(row => row.Title).UseCollation(DiscoveryTextCollation.Name);
+        model.Entity<BlockRow>().Property(row => row.Markdown).UseCollation(DiscoveryTextCollation.Name);
+        model.Entity<BlockRow>().Property(row => row.AltText).UseCollation(DiscoveryTextCollation.Name);
+        model.Entity<BlockRow>().Property(row => row.Caption).UseCollation(DiscoveryTextCollation.Name);
+        model.Entity<BlockRow>().Property(row => row.Title).UseCollation(DiscoveryTextCollation.Name);
+        model.Entity<BlockRow>().Property(row => row.Description).UseCollation(DiscoveryTextCollation.Name);
+
     }
 
     internal static void ConfigureModel(ModelBuilder model)

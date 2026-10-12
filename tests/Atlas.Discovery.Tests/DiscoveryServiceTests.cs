@@ -586,6 +586,19 @@ public sealed class DiscoveryServiceTests
         }
     }
 
+    [TestMethod]
+    public void Discovery_matches_accents_and_case_and_applies_title_boost()
+    {
+        var title = Candidate("Café", average: 5, votes: 2);
+        var content = Candidate("Other", average: 5, votes: 2, content: "CAFÉ evidence");
+        var service = Service(content, title);
+        var results = service.Discover(new DiscoveryQuery(SearchText: "cafe"));
+        CollectionAssert.AreEqual(new[] { title.NodeId, content.NodeId }, results.Select(item => item.NodeId).ToArray());
+        Assert.AreEqual(0.1d, results[0].RankingScore - results[1].RankingScore, 0.000001d);
+        var hidden = title with { IsModerationExcluded = true };
+        Assert.IsEmpty(Service(hidden).DiscoverAuthored(new DiscoveryQuery(SearchText: "CAFE"), [hidden.NodeId]));
+    }
+
     private sealed class RejectReadSource : IDiscoveryCandidateSource
     {
         public IReadOnlyCollection<DiscoveryCandidate> GetCandidates() =>
