@@ -38,6 +38,39 @@ public sealed class SqlNodeCreationQuotaTests
     }
 
     [TestMethod]
+    public void TrustedCreationDoesNotConsumeAllowanceAndScopeEndsAfterFailure()
+    {
+        using var database = SqlTestDatabase.Create();
+        using var clock = AtlasTime.Use(new Clock(Now));
+        var actor = database.AddParticipant();
+        var type = AddType(database);
+        var nodes = new SqlNodeRepository(database.Open, new NodeCreationQuotaPolicy(1, TimeSpan.FromHours(2)));
+        var service = new NodeCreationService(nodes, new SqlDocumentRepository(database.Open));
+
+        // Imports may exceed the ordinary cap without spending the author's slot.
+        nodes.ExecuteTrustedCreation(() =>
+        {
+            for (var index = 0; index < 3; index++)
+                service.Create($"Imported {index}", "Description", type.Id, actor, []);
+            return true;
+        });
+        Assert.AreEqual(1, nodes.GetCreationAllowance(actor).Remaining);
+        service.Create("Ordinary creation", "Description", type.Id, actor, []);
+
+        // A failed trusted operation restores the scope and rolls back its writes.
+        Assert.ThrowsExactly<InvalidOperationException>(() => nodes.ExecuteTrustedCreation<bool>(() =>
+        {
+            service.Create("Rolled back import", "Description", type.Id, actor, []);
+            throw new InvalidOperationException("Import failure");
+        }));
+        Assert.ThrowsExactly<NodeCreationQuotaExceededException>(() =>
+            service.Create("Still limited", "Description", type.Id, actor, []));
+        using var check = database.Open();
+        Assert.AreEqual(1, check.NodeCreationQuotaRows.Count());
+        Assert.AreEqual(4, check.NodeRows.Count());
+    }
+
+    [TestMethod]
     public void ConsoleCreationWithNoCommentTypeAndNoRequestedTypesSucceeds()
     {
         using var database = SqlTestDatabase.Create();

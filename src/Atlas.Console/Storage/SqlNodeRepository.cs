@@ -10,6 +10,20 @@ public sealed class SqlNodeRepository(Func<AtlasDataContext>? contextFactory = n
 {
     private readonly NodeCreationQuotaPolicy _quotaPolicy = quotaPolicy ?? NodeCreationQuotaPolicy.Default;
 
+    // Infrastructure-only scope: the trusted host must authorize admin callers first.
+    private readonly AsyncLocal<int> _trustedCreationDepth = new();
+
+    /// <summary>Run trusted seed/import/admin work without checking or consuming user slots.</summary>
+    /// <remarks>Use this repository throughout the callback. Normal validation and topology
+    /// transactions remain active. Never expose this capability as a client-supplied flag.</remarks>
+    public T ExecuteTrustedCreation<T>(Func<T> operation) => ExecuteTopology(() =>
+    {
+        ArgumentNullException.ThrowIfNull(operation);
+        _trustedCreationDepth.Value++;
+        try { return operation(); }
+        finally { _trustedCreationDepth.Value--; }
+    });
+
     /// <summary>Advisory allowance; another committed creation can change it immediately.</summary>
     public NodeCreationAllowance GetCreationAllowance(Guid participantId)
     {
@@ -24,6 +38,7 @@ public sealed class SqlNodeRepository(Func<AtlasDataContext>? contextFactory = n
 
     public void EnsureCreationAllowed(Guid participantId)
     {
+        if (_trustedCreationDepth.Value > 0) return;
         var allowance = GetCreationAllowance(participantId);
         if (allowance.Remaining == 0) throw new NodeCreationQuotaExceededException(allowance);
     }
@@ -127,7 +142,7 @@ public sealed class SqlNodeRepository(Func<AtlasDataContext>? contextFactory = n
             ToStorage(node),
             metadataOnly ? [nameof(NodeRow.Parents)] : []
         );
-        if (previous is null)
+        if (previous is null && _trustedCreationDepth.Value == 0)
         {
             // Use the server clock, not the Node's supplied timestamp. A failed later
             // write rolls back both this ledger entry and the complete creation workflow.

@@ -36,9 +36,8 @@ public partial class AddNodeCreationQuota : Migration
                 "CreatedAt"
             }
         );
-        // Existing authored Nodes count immediately. Old rows naturally fall outside the
-        // rolling window; historical creations already physically deleted cannot be recovered.
-        migrationBuilder.Sql("INSERT INTO NodeCreationQuotaRows (NodeId, ParticipantId, CreatedAt) SELECT Id, AuthorId, CreatedAt FROM NodeRows WHERE AuthorId IS NOT NULL;");
+        // Start accounting from rollout. Existing Nodes do not consume user slots.
+
     }
 
     protected override void Down(MigrationBuilder migrationBuilder) =>

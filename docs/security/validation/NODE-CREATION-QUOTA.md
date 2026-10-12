@@ -1,6 +1,6 @@
 # Node creation quota — PTT-133
 
-Draft implementation for [PTT-133](https://thepublicthinktank.atlassian.net/browse/PTT-133). **The provisional default is 3 Nodes per rolling 2 hours**, chosen within the requested 1–3-hour range. Review the allowance and window before merging; this is not a settled product policy.
+Draft implementation for [PTT-133](https://thepublicthinktank.atlassian.net/browse/PTT-133). **The agreed starting policy is 3 Nodes per rolling 2 hours, with bursts allowed.**
 
 ## Policy and user feedback
 
@@ -23,6 +23,8 @@ Draft implementation for [PTT-133](https://thepublicthinktank.atlassian.net/brow
 | [NodeCreationQuotaRow](../../../src/Atlas.Persistence/NodeCreationQuotaRow.cs) | Durable creation ledger, independent of Node lifecycle |
 | [NodeCreationWorkflow](../../../src/Atlas.Console/NodeCreationWorkflow.cs) | Console display and friendly quota errors |
 
+Root/sub-Node sharing is per participant: creating a child beneath someone else's Node consumes only the creator's allowance, never the parent's author's allowance.
+
 Policy can be injected into `SqlNodeRepository`; absent injection uses the provisional default. This draft does not add a settings UI or dynamic per-account tier system. Ordinary Console calls derive the author from the authenticated actor. A future API must likewise use trusted identity rather than accepting a request's arbitrary author ID.
 
 ## Concurrency, explained
@@ -41,11 +43,13 @@ The ledger timestamp comes from the shared server clock, not the Node object's s
 
 ## Migration and lifecycle
 
-`AddNodeCreationQuota` creates an indexed ledger and backfills existing authored Nodes using their stored creation timestamps. Recent existing Nodes therefore count at rollout; older ones fall outside the window. Past physically deleted Nodes cannot be reconstructed. Decide whether that rollout policy is wanted before merging.
+`AddNodeCreationQuota` creates an empty indexed ledger. Existing Nodes do not occupy slots; accounting starts with ordinary new creations. A locally applied earlier draft migration will not rerun when its source changes. Any previous entries expire naturally from the allowance; changing this draft does not silently delete committed local data.
 
 Ledger rows intentionally have no cascading Node FK: deleting/archiving a Node cannot erase its consumption. The rows currently have no automated cleanup. A retention plan may purge sufficiently old rows after deciding the maximum supported window and account-deletion/privacy policy. This is history storage, not an unbounded query result: allowance reads are limited in SQL.
 
-There is no automatic ordinary-repository exemption. SQL inserts through `SqlNodeRepository` count; seeding/import code writing directly through DbContext is privileged infrastructure and can bypass this application policy. Review those paths explicitly. The optional interface does not impose SQL quotas on non-SQL/in-memory repository implementations.
+Trusted seed/import/admin operations can use `SqlNodeRepository.ExecuteTrustedCreation` around their callback, using the same repository. Validation and rollback still apply, but no user slots are checked or consumed. The host must authorize admin callers before using it; never expose this as a client flag. It does not automatically exempt every ordinary post by an administrator.
+
+The existing `SqlStorage.SeedDemoDataAsync` path writes rows directly and already bypasses user creation checks. That privileged path remains available. Repository-based import/admin tools now have an explicit exemption capability. Non-SQL/in-memory repositories without the quota interface do not provide SQL accounting.
 
 ## Tests and limits
 
@@ -55,13 +59,18 @@ There is no automatic ordinary-repository exemption. SQL inserts through `SqlNod
 
 Clock rollback may extend the wait because future ledger timestamps remain counted; quotas do not synchronize server clocks. Cache, HTTP rate throttling, multi-account abuse controls and reputation/karma-based reply permissions are separate features. The quota slows sustained creation but permits a burst up to the allowance; add a minimum spacing rule only if that is a separate agreed product requirement.
 
-## Questions for review
+## Ledger retention and account deletion
 
-1. Is **3 Nodes per rolling 2 hours** the right starting policy, or should it be 3 per hour / 3 per 3 hours / another combination?
-2. Should root Nodes and sub-Nodes share one allowance as implemented?
-3. Is allowing all available slots in a short burst acceptable, or do you also want a minimum delay between creations?
-4. Should recent existing Nodes count when the migration is applied?
-5. Which seed/import/administrator operations need explicitly trusted exceptions?
-6. What ledger retention/account-deletion policy should follow this draft?
+The ledger stores Node ID, participant ID and accounting timestamp, not post text.
 
-No karma/reputation threshold is included. A Node-specific setting requiring reputation to reply/create sub-Nodes needs a separate authorization/product proposal.
+- **Retention:** decide when expired entries can be purged. They no longer affect the two-hour allowance, but may be useful for audit or later policy changes. No automatic cleanup is implemented yet.
+- **Account deletion:** decide whether participant-linked entries should be removed or anonymized when an account is deleted, and whether justified audit retention is needed.
+- There is no cascading deletion of this history. A future deletion/cleanup workflow must apply the chosen policy explicitly so deleting a Node cannot refund a recent slot.
+
+## Decisions and remaining review
+
+Confirmed: 3 per rolling 2 hours; bursts allowed; roots/sub-Nodes count toward the creator's allowance; no existing-Node backfill; trusted seed/import/admin operations can bypass.
+
+Still open: ledger retention/account-deletion handling and integration of authorized admin/import callers as those tools are introduced.
+
+No karma/reputation threshold is included. Node-specific reputation requirements need a separate product/authorization proposal.
