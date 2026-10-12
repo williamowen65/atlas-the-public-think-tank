@@ -136,34 +136,16 @@ For every implemented new bound, test:
 
 This document records inspected code and proposed work. It does not claim new enforcement or new passing tests.
 
-## Per-participant Node creation quota
+## Work handled separately
 
-A limit on one document does not stop someone from creating many valid Nodes. PTT-122 also includes a proposed **maximum number of successful Node creations per authenticated participant within a defined time window**, to reduce spam and cumulative storage/work.
-
-The count and window are not chosen yet. For example, a rolling 24-hour window is an option; it is not an enforced policy or an agreed daily allowance.
-
-Review decisions:
-
-- **Allowance and window:** choose the count from legitimate Atlas contribution patterns. A rolling window avoids a reset-boundary burst; a calendar-day allowance needs an explicit reset/time-zone rule.
-- **Identity:** derive the participant from the trusted authenticated actor. A supplied author ID must not select someone else's allowance.
-- **What counts:** count successfully committed Node creations. Failed/rolled-back attempts do not consume the creation quota; separate request-rate controls can bound repeated failed attempts.
-- **No reset through removal:** archiving, hiding or removing a Node should not refund its creation allowance. Otherwise repeated create/remove cycles bypass the policy.
-- **Atomic enforcement:** check/reserve allowance and save the complete creation workflow together. Concurrent requests and multiple hosts must not both consume the last slot. Choose a durable counter/history or transactional query design; a cache alone is not the source of truth.
-- **Boundary ownership:** enforce this through application-level Node creation coordination backed by persistence, shared by Console and future API. One Node aggregate cannot know how many other Nodes its author created.
-- **Coverage:** inventory all creation paths, including direct repository writes. Define trusted import/seeding exemptions explicitly so new production paths cannot accidentally bypass the quota.
-- **User feedback:** return a clear quota-exceeded result and when creation becomes available again. Edits, reads and unrelated participation should remain available.
-- **Fairness:** a per-account quota reduces spam but does not stop attackers using many accounts. Account trust and additional abuse controls remain separate design work.
-
-Focused tests should cover the final allowed creation, rejection beyond the cap, exact window boundaries using the shared clock, rollback without quota consumption, concurrent requests competing for the last slot, and archive/removal not refunding quota.
-
-This is a current-backend product quota proposal in PTT-122, not solely a deferred HTTP feature. PTT-125 can add transport-level request throttling earlier in the request path. No quota is implemented by this review document.
+Per-participant Node creation quotas are implemented and reviewed under [PTT-133](https://thepublicthinktank.atlassian.net/browse/PTT-133) in [PR #343](https://github.com/williamowen65/atlas-the-public-think-tank/pull/343). The policy, enforcement, exemptions and test evidence belong to that slice rather than the remaining proposals in this document.
 
 ## Deferred HTTP and media controls
 
 Coordinate with PTT-125 and future API work:
 
 - Request body bytes, JSON depth, multipart/upload bytes, request rates and timeouts.
-- Request throttling and additional account-abuse controls complementing the application-level Node creation quota above.
+- Request throttling and additional account-abuse controls complementing the application-level Node creation quota tracked in PTT-133.
 - Cancellation before/during expensive queries and graph traversal.
 - URL-fetch response bytes, redirect/time budgets and destination policy if previews are fetched remotely.
 - Image/video storage limits: current blocks store references, so a short URL says nothing about remote media size.
