@@ -3,7 +3,7 @@
 ## Start here
 
 - **Current implementation:** EF handles filtering, vote aggregates, scoring, ordering, totals, paging and ordinary card metadata. SQL helpers handle recursive paths and ordered text summaries.
-- **Current expected reads:** cold/new page **5**, repeated cached page **1**, changed filter with reused cards **3**, beyond-last page **2**.
+- **Current expected reads:** cold/new root-only page **6**, repeated cached page **1**, changed filter with reused cards **3**, beyond-last page **2**.
 - **Historical timings below:** measured before the EF refactor. They are not measurements of the current EF queries.
 - **Current verification:** [refactor CI run 38331824386](https://github.com/williamowen65/atlas-the-public-think-tank/actions/runs/38331824386) passed all 29 Discovery SQL tests and the SQL Persistence, Identity and Console jobs. Use that run's artifact for the refactored query plans and measurements.
 - **Code walkthrough:** [DiscoveryReadFlow.md](../blackboards/workflows/Discovery/DiscoveryReadFlow.md).
@@ -46,12 +46,13 @@ Use A, B and C as the first three ranked node IDs, and D, E and F as the next th
    - The application caches start empty.
    - Count and rank the results in SQL; return A, B and C.
    - Load and cache three cards: A, B and C.
-   - Expected database reads: **5**.
+   - Expected database reads: **6**.
      - [Committed revision — execute `Single` to check cache freshness.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L94)
      - [Total count — execute the filtered `Count`.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L119)
      - [Ranked page — execute ordered `Skip`/`Take` with `ToList`.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L143)
      - [EF card metadata — execute the selected-ID projection with `ToDictionary`.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L248)
      - [SQL card summaries — execute `DiscoveryCards.sql` with `ToList`.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L254)
+     - [Ancestor/root check — execute a batched EF hop; stop immediately for roots.](../../src/Atlas.Persistence/Discovery/DiscoveryBreadcrumbReader.cs)
 2. **Repeat page 1 with the same filters**
    - Check the committed revisions, then reuse the cached page and its three cards.
    - These are **three detail-cache hits**, not three newly loaded cards.
@@ -69,12 +70,13 @@ Use A, B and C as the first three ranked node IDs, and D, E and F as the next th
 4. **Request page 2 without the text filter**
    - Return D, E and F, with global ranks 4, 5 and 6.
    - Load three new cards. Across pages 1 and 2, **six distinct cards have been loaded**.
-   - Expected database reads: **5**.
+   - Expected database reads: **6**.
      - [Committed revision — execute `Single` to check cache freshness.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L94)
      - [Total count — execute the filtered `Count`.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L119)
      - [Ranked page — execute ordered `Skip`/`Take` with `ToList`.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L143)
      - [EF card metadata — execute the selected-ID projection with `ToDictionary`.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L248)
      - [SQL card summaries — execute `DiscoveryCards.sql` with `ToList`.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L254)
+     - [Ancestor/root check — execute a batched EF hop; stop immediately for roots.](../../src/Atlas.Persistence/Discovery/DiscoveryBreadcrumbReader.cs)
 5. **Request a page beyond the result set**
    - Check revisions and total; return an empty page.
    - Skip ranking and card reads because there are no selected IDs.
@@ -84,6 +86,8 @@ Use A, B and C as the first three ranked node IDs, and D, E and F as the next th
 
 **Why the report mentions six reused cards:** it counts six successful detail lookups across steps 2 and 3. Those are two reuses of the same three cards, not six distinct cards already cached before the filter change.
 
+The fixture nodes are roots, so one batched hop query establishes that there are no ancestors. A deep graph needs up to three hop queries; cold reads are bounded at eight rather than always six. Breadcrumbs no longer expand complete routes.
+
 ## What each database read does
 
 | Read | Purpose | Example |
@@ -92,16 +96,17 @@ Use A, B and C as the first three ranked node IDs, and D, E and F as the next th
 | Total count | Count all nodes matching the filters | Eight matches, even though only three appear on page 1 |
 | Ranked page | Order matches and select the requested slice | Page 2 skips three and returns ranks 4–6 |
 | EF card metadata | Load labels, status/date and comment counts for selected IDs | One batch for A, B and C |
+| Ancestor/root hop | Read one parent step for selected IDs; stop at roots or after three hops | This root-only fixture needs one hop query |
 | SQL card summaries | Load recursive breadcrumbs and ordered display summaries | One batch for the same selected IDs |
 
 - These counts cover Discovery's database reads, not the entire Console operation.
 - Reading an authenticated participant's own ratings adds a separate batch.
 - Both card queries operate on the selected IDs; there is no repository query per card.
 
-## Are five reads optimal?
+## Are these read counts optimal?
 
 - **No claim of an absolute minimum is made.** The assertions document the current design and detect unexpected extra reads.
-- Example: metadata and summaries previously shared one raw-SQL statement. That used **four** cold reads. Splitting ordinary metadata into readable EF adds one read.
+- Example: metadata and summaries previously shared one raw-SQL statement. That used **four** cold reads. Splitting ordinary metadata into readable EF adds one read; bounded breadcrumbs now add one to three EF hop reads.
 - Count and page could also be combined in a different design; handling an empty/out-of-range page and obtaining its total still needs deliberate treatment.
 - A fully cached request uses one revision read because this design checks committed freshness on every request. Zero reads would require a different invalidation/freshness mechanism.
 - Fewer reads are not automatically faster: statement complexity, compilation, rows examined and network latency also matter.
@@ -171,7 +176,7 @@ These details refer to the historical run above, not the EF-generated plans.
 - Selected statements are **replayed afterward** with `SET STATISTICS XML ON`.
 - SQL Server returns actual execution-plan XML from those replayed executions, saved as `.sqlplan` files.
 - Therefore the saved plan is not from the exact execution timed by the stopwatch.
-- In the EF version, plans 0–5 correspond to count, ranked page, EF metadata, SQL summaries, filtered count and filtered page. Check the statement text inside each plan to confirm its identity.
+- In the EF version, plans 0–6 correspond to count, ranked page, EF metadata, SQL summaries, the root-hop check, filtered count and filtered page. Check the statement text inside each plan to confirm its identity.
 - Open a downloaded `.sqlplan` in SQL Server Management Studio to see its graphical plan. A text editor shows the underlying XML.
 - Start by comparing actual versus estimated rows, rows read versus returned, index accesses, sorts and warning properties.
 - GitHub Actions uploads `TestResults/discovery-*` as `discovery-sql-evidence`.

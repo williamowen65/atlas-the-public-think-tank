@@ -1,5 +1,5 @@
--- SQL exception: recursive multi-parent breadcrumbs have no recursive LINQ operator
--- in the current EF provider. Keep traversal, cycle guards and ordered path joining here.
+-- Breadcrumbs are now bounded EF hop reads in DiscoveryBreadcrumbReader.
+-- No recursive path traversal occurs in this summary query.
 -- Ordered block/reaction/community text also uses STRING_AGG WITHIN GROUP; preserving
 -- that order avoids changing cross-block descriptions and established card formatting.
 -- EF handles ordinary type/author/status/date/comment metadata in ReadCards instead.
@@ -31,33 +31,12 @@ WITH Selected AS (
         WHERE NodeId = n.Id AND Status = 2 AND VisibilityRestoredAt IS NULL
         ORDER BY DecidedAt DESC, Id
     ) m
-), Paths AS (
-    -- Start at each selected node's parents, then walk upward through every path.
-    -- Visited records GUIDs to stop cycles; PathOrder preserves parent positions.
-    -- Both recursive branches explicitly share the same text type and collation.
-    SELECT s.Id AS SelectedId, p.ParentNodeId AS AncestorId,
-           CONVERT(nvarchar(max), CONCAT(a.TypeName, N' · ', CASE WHEN a.IsHidden = 1 THEN a.Notice ELSE a.Title END)) COLLATE Latin1_General_100_CI_AI_SC AS Breadcrumb,
-           CONVERT(nvarchar(max), CONCAT(N'/', s.Id, N'/', p.ParentNodeId, N'/')) AS Visited,
-           CONVERT(nvarchar(max), RIGHT(CONCAT(N'0000000000', p.Position), 10)) AS PathOrder
-    FROM Selected s
-    JOIN NodeParents p ON p.NodeId = s.Id
-    JOIN PublicNodes a ON a.Id = p.ParentNodeId
-    UNION ALL
-    SELECT path.SelectedId, p.ParentNodeId,
-           CONVERT(nvarchar(max), CONCAT(a.TypeName, N' · ', CASE WHEN a.IsHidden = 1 THEN a.Notice ELSE a.Title END, N' → ', path.Breadcrumb)) COLLATE Latin1_General_100_CI_AI_SC,
-           CONVERT(nvarchar(max), CONCAT(path.Visited, p.ParentNodeId, N'/')),
-           CONVERT(nvarchar(max), CONCAT(path.PathOrder, N'/', RIGHT(CONCAT(N'0000000000', p.Position), 10)))
-    FROM Paths path
-    JOIN NodeParents p ON p.NodeId = path.AncestorId
-    JOIN PublicNodes a ON a.Id = p.ParentNodeId
-    WHERE CHARINDEX(CONCAT(N'/', p.ParentNodeId, N'/'), path.Visited) = 0
 )
 -- Assemble one card per selected ID. Empty summaries receive Console-friendly defaults.
 SELECT n.Id AS NodeId,
        CASE WHEN n.IsHidden = 1 THEN n.Notice ELSE n.Title END AS Title,
        CASE WHEN n.IsHidden = 1 THEN n.Notice WHEN n.DescriptionId IS NULL THEN N'Description document not found.'
             ELSE COALESCE(description.Text, N'No description has been provided.') END AS Description,
-       COALESCE(paths.Text, N'Root node') AS Breadcrumb,
        COALESCE(children.Text, N'None') AS SubNodes,
        CASE
            WHEN reactions.Text IS NULL THEN N'—'
@@ -84,11 +63,6 @@ OUTER APPLY (
     FROM DocumentBlocks link
     JOIN BlockRows b ON b.Id = link.BlockId WHERE link.DocumentId = n.DescriptionId AND n.IsHidden = 0
 ) description
--- Combine completed root-to-parent paths; a node without parents displays Root node.
-OUTER APPLY (
-    SELECT STRING_AGG(CONVERT(nvarchar(max), path.Breadcrumb), N' | ') WITHIN GROUP (ORDER BY path.PathOrder) AS Text
-    FROM Paths path WHERE path.SelectedId = n.Id AND NOT EXISTS (SELECT 1 FROM NodeParents p WHERE p.NodeId = path.AncestorId)
-) paths
 -- Include requested child types even when their count is zero.
 -- Return JSON so C# can apply the shared count-aware pluralization rules.
 OUTER APPLY (
@@ -130,5 +104,3 @@ OUTER APPLY (
     FROM CommunityNodeRows link
     JOIN CommunityRows c ON c.Id = link.CommunityId WHERE link.NodeId = n.Id
 ) communities
--- Allow deep graphs; the Visited guard above prevents endlessly traversing cycles.
-OPTION (MAXRECURSION 0)

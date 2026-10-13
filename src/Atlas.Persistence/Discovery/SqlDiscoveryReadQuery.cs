@@ -176,7 +176,8 @@ public sealed class SqlDiscoveryReadQuery(
             }
 
             // 8. Load only missing cards. ReadCards uses one EF metadata batch and one
-            // SQL summary batch; an empty missing list returns without either query.
+            // SQL summary batch plus up to three bounded EF breadcrumb hops.
+            // An empty missing list returns without any card query.
             var loaded = ReadCards(db, missing.ToArray());
             foreach (var card in loaded.Values)
             {
@@ -248,13 +249,14 @@ public sealed class SqlDiscoveryReadQuery(
             .TagWith("Discovery card metadata")
             .ToDictionary(node => node.NodeId);
 
-        // Recursive multi-parent paths and ordered text aggregation remain isolated SQL.
+        // Only ordered display aggregation remains SQL; breadcrumbs use bounded EF hops.
         // Their specific translation limits are documented in DiscoveryCards.sql.
         var sql = ReadResource("DiscoveryCards.sql");
         var rows = db.Database.SqlQueryRaw<CardRow>(
             sql,
             new SqlParameter("@ids", JsonSerializer.Serialize(ids)))
             .ToList();
+        var breadcrumbs = DiscoveryBreadcrumbReader.ReadFirstPages(db, ids);
         return rows.ToDictionary(
             row => row.NodeId,
             row => new DiscoveryCard(
@@ -265,12 +267,15 @@ public sealed class SqlDiscoveryReadQuery(
                 metadata[row.NodeId].Status,
                 metadata[row.NodeId].CreatedAt,
                 row.Description,
-                row.Breadcrumb,
+                breadcrumbs[row.NodeId].DisplayText,
                 FormatChildren(row.SubNodes),
                 row.Reactions,
                 row.Communities,
                 metadata[row.NodeId].CommentCount,
-                row.IsHidden));
+                row.IsHidden)
+            {
+                BreadcrumbSegment = breadcrumbs[row.NodeId]
+            });
     }
 
     /// <summary>Converts SQL child-count JSON to labels using the shared pluralization policy.</summary>
@@ -307,7 +312,6 @@ public sealed class SqlDiscoveryReadQuery(
         public Guid NodeId { get; set; }
         public string Title { get; set; } = "";
         public string Description { get; set; } = "";
-        public string Breadcrumb { get; set; } = "";
         public string SubNodes { get; set; } = "";
         public string Reactions { get; set; } = "";
         public string Communities { get; set; } = "";

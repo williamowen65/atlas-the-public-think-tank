@@ -464,60 +464,12 @@ public static class NodeDisplay
                 (visibility.IsHidden ? visibility.Notice : item.Title.Value);
         }
 
-        IEnumerable<string> Paths(
-            Node current,
-            HashSet<NodeId> visited
-        )
-        {
-            if (!visited.Add(current.Id))
-                return new[] {
-                    "[Circular parent link]"
-                };
-
-            if (current.ParentNodeIds.Count == 0)
-                return new[] {
-                    Segment(current)
-                };
-
-            var paths = new List<string>();
-            foreach (var parentId in current.ParentNodeIds)
-            {
-                var parent = nodes.GetById(parentId);
-                if (parent is null)
-                {
-                    paths.Add($"Unknown ({parentId}) → {Segment(current)}");
-                    continue;
-                }
-
-                paths.AddRange(Paths(
-                    parent,
-                    new HashSet<NodeId>(visited)
-                )
-                    .Select(path => $"{path} → {Segment(current)}"));
-            }
-
-            return paths;
-        }
-
-        var ancestorPaths = node.ParentNodeIds.SelectMany(parentId =>
-        {
-            var parent = nodes.GetById(parentId);
-            return parent is null
-                ? new[] {
-                    $"Unknown ({parentId})"
-                }
-                : Paths(
-                    parent,
-                    new HashSet<NodeId> {
-                        node.Id
-                    }
-                );
-        });
-
-        return string.Join(
-            " | ",
-            ancestorPaths
-        );
+        // Cards and opened-node views both show only the first three ancestors.
+        // Use Explore parents to continue or choose an alternative route.
+        var segment = AncestorNavigation.ReadSegment(node, nodes, new HashSet<NodeId>());
+        return string.Join(" → ", segment.Items.Select(Segment)) +
+            (segment.CycleDetected ? " → [Circular parent link]" : segment.HasMore ? " → …" : "") +
+            (segment.HasAlternativeRoutes ? " [other parent routes available]" : "");
     }
 
     private static void WriteBreadcrumb(

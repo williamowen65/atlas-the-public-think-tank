@@ -72,7 +72,7 @@ public sealed class DiscoveryEdgeCaseTests
         using var cache = new DiscoveryCache();
         var query = new SqlDiscoveryReadQuery(fixture.Open, cache);
         Assert.AreEqual("2 Ideas", query.DiscoverPage(new(SearchText: "Parent")).Items.Single().Card!.SubNodes);
-        Assert.AreEqual("Idea · Root → Idea · Parent", query.DiscoverPage(new(SearchText: "Child one")).Items.Single().Card!.Breadcrumb);
+        Assert.AreEqual("Idea · Parent → Idea · Root", query.DiscoverPage(new(SearchText: "Child one")).Items.Single().Card!.Breadcrumb);
         using (var db = fixture.Open())
         {
             db.ModerationCaseRows.Add(new ModerationCaseRow { Id = Guid.NewGuid(), NodeId = root.NodeId, ReporterId = root.AuthorParticipantId, Reason = "Spam", ReportedTitle = root.Title, Status = 2, PublicReason = 1, CreatedAt = now });

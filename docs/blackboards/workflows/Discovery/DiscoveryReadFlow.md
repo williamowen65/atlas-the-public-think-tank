@@ -15,7 +15,7 @@ Open [the editable blackboard](DiscoveryReadFlow.excalidraw). Its numbered regio
 2. `Read` opens its own context and serializable transaction. It reads the singleton `DiscoveryRevisionRow` before attempting any cache lookup. That lock remains until the read commits.
 3. `DiscoveryCache.PageKey` hashes the filters, selected page, page size, authored scope and hidden visibility policy. The ordering-policy prefix and committed page revision also participate. It is a lookup key, not a paging cursor or authorization token.
 4. A page miss calls `DiscoveryEfQuery.Build`. This constructs an `IQueryable`; it does not enumerate candidates. EF translates optional predicates, vote count/average, moderation visibility and scoring into SQL. `Count` gets the total; ordering, `Skip` and `Take` select the page in SQL.
-5. Each selected ID is checked in the separate detail cache. Missing cards use two fixed batches: an EF metadata projection and the SQL summary projection. Ordinary labels, dates, status and comment counts are in EF. Recursive ancestry and ordered display text remain in SQL.
+5. Each selected ID is checked in the separate detail cache. Missing cards use two fixed batches: an EF metadata projection and the SQL summary projection. Ordinary labels, dates, status and comment counts are in EF. Breadcrumb ancestry is read in up to three bounded EF hops; ordered display text remains in SQL.
 6. After the read commits, the adapter publishes immutable page/card entries and attaches cards to ranked results. Personal participant ratings are queried separately, without shared caching.
 
 ## 2. Pagination
@@ -35,13 +35,20 @@ Every read checks the committed revision row, including cache hits and other app
 ## Why some SQL remains
 
 - `DiscoverySearchContent.sql` is a composable SELECT used only during text search. Its ordered cross-block `STRING_AGG ... WITHIN GROUP` preserves phrases spanning adjacent fields/blocks. A simple EF `Any` over individual blocks would change behavior. The current query does not have a suitable ordered aggregate LINQ translation.
-- `DiscoveryCards.sql` handles recursive multi-parent paths with cycle guards and ordered text summaries. The current EF query provider does not expose recursive ancestry through a LINQ operator. Ordered aggregation stays alongside this traversal. Its child-type JSON could move to another EF batch; it remains here to avoid a further round trip, not because child counts inherently require raw SQL.
+- `DiscoveryCards.sql` now handles ordered text summaries only. The former recursive traversal was replaced by bounded EF ancestor hops. Its child-type JSON could move to another EF batch; it remains here to avoid a further round trip, not because child counts inherently require raw SQL.
 - Revision updates remain parameterized SQL inside the write transaction so increments are atomic and do not depend on reading a tracked revision first.
 
 This reduces SQL-specific code; it does not promise drop-in portability. Explicit SQL Server collations and the remaining SQL helpers must be reviewed when changing providers. No schema or migration change is required by this refactor.
 
 ## Reads and verification
 
-A cold page or a new page with missing cards uses five reads: revision, count, ranked IDs, EF metadata, SQL summaries. A fully cached page uses one revision read. A changed filter reusing all cards uses three. An out-of-range page uses two. Personalized votes add a separate batch.
+A cold root-only page uses six reads: revision, count, ranked IDs, EF metadata, SQL summaries and one batched ancestor/root check. Deeper cards need up to three hop queries, making eight cold reads at most. A fully cached page uses one revision read. A changed filter reusing all cards uses three. An out-of-range page uses two. Personalized votes add a separate batch.
 
 `DiscoverySqlParityTests`, `DiscoveryCacheTests`, and `DiscoveryPerformanceTests` verify behavior, freshness and read counts. Performance figures recorded before this EF refactor are historical; the new generated queries require fresh CI evidence.
+
+## Breadcrumb segments
+
+- Read at most three ancestors toward the root, nearest first. Cards show the first segment and an ellipsis for continuation.
+- Follow the first stored parent by default, with an alternative-route notice instead of expanding every branch.
+- Explore parents offers branch choices and ancestor segments in sets of three; N continues above the last ancestor.
+- See [bounded breadcrumb pagination](../../../architecture/discovery-read-query.md#bounded-breadcrumb-pagination) and `DiscoveryBreadcrumbReader` for the structured continuation contract.

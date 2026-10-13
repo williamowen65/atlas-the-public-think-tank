@@ -169,6 +169,8 @@ public sealed class DiscoveryCache : IDisposable
             card.SubNodes.Length +
             card.Reactions.Length +
             card.Communities.Length);
+        // Structured breadcrumb segments are also retained by the cached card.
+        size += card.BreadcrumbSegment?.Items.Sum(item => 128L + 2L * item.Label.Length) ?? 0;
         if (size > Math.Min(128 * 1024, _detailBudget))
         {
             RejectedEntries++;
