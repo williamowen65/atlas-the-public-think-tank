@@ -1,211 +1,63 @@
 namespace Atlas.Discovery;
 
-/// <summary>Filters, searches, and ranks the content exposed to consumers.</summary>
-public sealed class DiscoveryService : IDiscoveryService
+/// <summary>Validates Discovery requests before delegating to a read-query implementation.</summary>
+public sealed class DiscoveryService : IDiscoveryService, IDiscoveryAuthorListing, IDiscoveryPersonalVotes
 {
-    private readonly IDiscoveryCandidateSource _source;
+    private readonly IDiscoveryReadQuery _query;
 
-    public DiscoveryService(IDiscoveryCandidateSource source)
-    {
-        ArgumentNullException.ThrowIfNull(source);
-        _source = source;
-    }
-
-    public DiscoveryPage DiscoverPage(DiscoveryQuery query)
-        => Page(
-            DiscoverCore(
-                query,
-                null
-            ),
-            query.Page
-        );
-
-    public DiscoveryPage DiscoverAuthoredPage(
-        DiscoveryQuery query,
-        IReadOnlyCollection<Guid> authoredNodeIds
-    )
-    {
-        ArgumentNullException.ThrowIfNull(authoredNodeIds);
-        return Page(
-            DiscoverCore(
-                query,
-                authoredNodeIds.ToHashSet()
-            ),
-            query.Page
-        );
-    }
-
-    private static DiscoveryPage Page(
-        IReadOnlyList<RankedDiscoveryItem> results,
-        int page
-    )
-    {
-        var offset = ((long)page - 1) * IDiscoveryService.PageSize;
-        var items = offset >= results.Count
-            ? Array.Empty<RankedDiscoveryItem>()
-            : results.Skip((int)offset).Take(IDiscoveryService.PageSize).ToArray();
-        return new DiscoveryPage(
-            items,
-            results.Count,
-            page,
-            IDiscoveryService.PageSize
-        );
-    }
-
-    public IReadOnlyList<RankedDiscoveryItem> Discover(DiscoveryQuery query)
-        => DiscoverCore(
-            query,
-            null
-        );
-
-    /// <summary>Ranks an explicitly scoped author listing, retaining moderated placeholders.</summary>
-    public IReadOnlyList<RankedDiscoveryItem> DiscoverAuthored(
-        DiscoveryQuery query,
-        IReadOnlyCollection<Guid> authoredNodeIds
-    )
-    {
-        ArgumentNullException.ThrowIfNull(authoredNodeIds);
-        return DiscoverCore(
-            query,
-            authoredNodeIds.ToHashSet()
-        );
-    }
-
-    private IReadOnlyList<RankedDiscoveryItem> DiscoverCore(
-        DiscoveryQuery query,
-        HashSet<Guid>? authoredIds
-    )
+    /// <summary>Accepts the storage query used after request validation.</summary>
+    public DiscoveryService(IDiscoveryReadQuery query)
     {
         ArgumentNullException.ThrowIfNull(query);
-        Validate(query);
-        var search = query.SearchText?.Trim();
-        var reactions = query.ReactionDefinitionIds ?? Array.Empty<Guid>();
-
-        var ranked = _source.GetCandidates()
-            .Where(candidate => authoredIds is null
-                ? !candidate.IsModerationExcluded
-                : authoredIds.Contains(candidate.NodeId))
-            .Where(candidate => query.IsArchived is null
-                ? query.IncludeArchived || !candidate.IsArchived
-                : candidate.IsArchived == query.IsArchived.Value)
-            .Where(candidate => query.NodeTypeId is null || candidate.NodeTypeId == query.NodeTypeId.Value)
-            .Where(candidate => query.AuthorParticipantId is null || candidate.AuthorParticipantId == query.AuthorParticipantId.Value)
-            .Where(candidate => query.CommunityId is null ||
-                candidate.CommunityIds.Contains(query.CommunityId.Value))
-            .Where(candidate => reactions.All(
-                reactionId => candidate.ReactionDefinitionIds.Contains(reactionId)))
-            .Where(candidate => query.MinimumVoteCount is null ||
-                candidate.VoteCount >= query.MinimumVoteCount.Value)
-            .Where(candidate => query.MaximumVoteCount is null ||
-                candidate.VoteCount <= query.MaximumVoteCount.Value)
-            .Where(candidate => query.MinimumAverageVote is null ||
-                candidate.AverageVote >= query.MinimumAverageVote.Value)
-            .Where(candidate => query.MaximumAverageVote is null ||
-                candidate.AverageVote <= query.MaximumAverageVote.Value)
-            .Where(candidate => query.CreatedFrom is null ||
-                DateOnly.FromDateTime(candidate.CreatedAt.DateTime) >= query.CreatedFrom.Value)
-            .Where(candidate => query.CreatedThrough is null ||
-                DateOnly.FromDateTime(candidate.CreatedAt.DateTime) <= query.CreatedThrough.Value)
-            .Where(candidate => string.IsNullOrWhiteSpace(search) ||
-                (!candidate.IsModerationExcluded &&
-                    (candidate.Title.Contains(
-                        search,
-                        StringComparison.OrdinalIgnoreCase
-                    ) ||
-                     candidate.SearchableContent.Contains(
-                         search,
-                         StringComparison.OrdinalIgnoreCase
-                     ))))
-            .Select(candidate => new
-            {
-                Candidate = candidate,
-                Score = Score(
-                    candidate,
-                    search
-                )
-            })
-            .OrderByDescending(item => item.Score)
-            .ThenByDescending(item => item.Candidate.VoteCount)
-            .ThenByDescending(item => item.Candidate.UpdatedAt)
-            .ThenBy(
-                item => item.Candidate.Title,
-                StringComparer.OrdinalIgnoreCase
-            )
-            .ThenBy(item => item.Candidate.NodeId)
-            .ToList();
-
-        return ranked.Select((
-            item,
-            index
-        ) => new RankedDiscoveryItem(
-            item.Candidate.NodeId,
-            index + 1,
-            item.Score,
-            item.Candidate.VoteCount,
-            item.Candidate.AverageVote
-        )).ToList();
+        _query = query;
     }
 
+    /// <summary>Validates the author and delegates SQL-backed authored paging.</summary>
+    public DiscoveryPage DiscoverAuthorPage(DiscoveryQuery query, Guid authorParticipantId)
+    {
+        Validate(query);
+        if (authorParticipantId == Guid.Empty) throw new ArgumentException("An author is required.", nameof(authorParticipantId));
+        return ((IDiscoveryAuthorListing)_query).DiscoverAuthorPage(query, authorParticipantId);
+    }
+
+    /// <summary>Reads personal ratings separately from the shared public card cache.</summary>
+    public IReadOnlyDictionary<Guid, int> ReadParticipantVotes(Guid participantId, IReadOnlyCollection<Guid> nodeIds) =>
+        _query is IDiscoveryPersonalVotes votes ? votes.ReadParticipantVotes(participantId, nodeIds) : new Dictionary<Guid, int>();
+
+    /// <summary>Validates and requests one public result page.</summary>
+    public DiscoveryPage DiscoverPage(DiscoveryQuery query)
+    {
+        Validate(query);
+        return _query.DiscoverPage(query);
+    }
+
+    /// <summary>Validates and requests one page within the supplied authored IDs.</summary>
+    public DiscoveryPage DiscoverAuthoredPage(DiscoveryQuery query, IReadOnlyCollection<Guid> authoredNodeIds)
+    {
+        ArgumentNullException.ThrowIfNull(authoredNodeIds);
+        Validate(query);
+        return _query.DiscoverAuthoredPage(query, authoredNodeIds);
+    }
+
+    /// <summary>Supports the existing unpaged contract; normal Console browsing uses pages.</summary>
+    public IReadOnlyList<RankedDiscoveryItem> Discover(DiscoveryQuery query)
+    {
+        Validate(query);
+        return _query.Discover(query);
+    }
+
+    /// <summary>Supports unpaged authored results for existing callers.</summary>
+    public IReadOnlyList<RankedDiscoveryItem> DiscoverAuthored(DiscoveryQuery query, IReadOnlyCollection<Guid> authoredNodeIds)
+    {
+        ArgumentNullException.ThrowIfNull(authoredNodeIds);
+        Validate(query);
+        return _query.DiscoverAuthored(query, authoredNodeIds);
+    }
+
+    /// <summary>Rejects invalid requests before they reach storage.</summary>
     private static void Validate(DiscoveryQuery query)
     {
-        if (query.Page < 1)
-            throw new ArgumentOutOfRangeException(
-                nameof(query),
-                "Page must be positive."
-            );
-        if (query.MinimumVoteCount < 0 || query.MaximumVoteCount < 0)
-            throw new ArgumentOutOfRangeException(
-                nameof(query),
-                "Vote-count bounds cannot be negative."
-            );
-        if (query.MinimumVoteCount.HasValue && query.MaximumVoteCount.HasValue &&
-            query.MinimumVoteCount.Value > query.MaximumVoteCount.Value)
-            throw new ArgumentException(
-                "Minimum vote count cannot exceed maximum vote count.",
-                nameof(query)
-            );
-        if (query.MinimumAverageVote is { } minimum && !double.IsFinite(minimum) ||
-            query.MaximumAverageVote is { } maximum && !double.IsFinite(maximum) ||
-            query.MinimumAverageVote is < 0 or > 10 || query.MaximumAverageVote is < 0 or > 10)
-            throw new ArgumentOutOfRangeException(
-                nameof(query),
-                "Average-vote bounds must be from 0 through 10."
-            );
-        if (query.MinimumAverageVote.HasValue && query.MaximumAverageVote.HasValue &&
-            query.MinimumAverageVote.Value > query.MaximumAverageVote.Value)
-            throw new ArgumentException(
-                "Minimum average vote cannot exceed maximum average vote.",
-                nameof(query)
-            );
-        if (query.CreatedFrom.HasValue && query.CreatedThrough.HasValue &&
-            query.CreatedFrom.Value > query.CreatedThrough.Value)
-            throw new ArgumentException(
-                "Created-from date cannot follow created-through date.",
-                nameof(query)
-            );
-    }
-
-    private static double Score(
-        DiscoveryCandidate candidate,
-        string? search
-    )
-    {
-        // Average rating is primary; vote count breaks confidence ties without
-        // allowing popularity alone to overpower the 0-10 quality signal.
-        var score = candidate.AverageVote ?? 0d;
-        score += Math.Log10(candidate.VoteCount + 1) / 100d;
-
-        // A title match is more intentional than a match elsewhere in the
-        // searchable projection, so search results receive a small boost.
-        if (!string.IsNullOrWhiteSpace(search) &&
-            candidate.Title.Contains(
-                search,
-                StringComparison.OrdinalIgnoreCase
-            ))
-        {
-            score += 0.1d;
-        }
-
-        return score;
+        ArgumentNullException.ThrowIfNull(query);
+        DiscoveryQueryValidation.Validate(query);
     }
 }

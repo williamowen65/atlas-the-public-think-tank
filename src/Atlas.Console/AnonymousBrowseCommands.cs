@@ -120,11 +120,10 @@ public static class AnonymousBrowseCommands
             // Keep result numbers distinct across pages, and map selections back to this page.
             var firstNumber = DiscoveryPaging.FirstNumber(resultPage);
             var results = resultPage.Items.ToList();
-            var available = results
-                .Select(result => nodes.GetById(new NodeId(result.NodeId)))
-                .Where(node => node is not null)
-                .Cast<Node>()
-                .ToList();
+            var hasCards = results.All(result => result.Card is not null);
+            var available = hasCards ? new List<Node>() : results
+                .Select(result => nodes.GetById(new NodeId(result.NodeId))).OfType<Node>().ToList();
+            var displayedCount = hasCards ? results.Count : available.Count;
 
             if (!Console.IsOutputRedirected) Console.Clear();
             Console.WriteLine("DISCOVERY");
@@ -137,9 +136,14 @@ public static class AnonymousBrowseCommands
             Console.WriteLine($"Status: {(isArchived is null ? "All" : isArchived.Value ? "Archived" : "Active")}");
             Console.WriteLine();
 
-            for (var index = 0; index < available.Count; index++)
+            for (var index = 0; index < displayedCount; index++)
             {
                 var result = results[index];
+                if (hasCards)
+                {
+                    NodeDisplay.WriteDiscoveryCard(result, firstNumber + index);
+                    continue;
+                }
                 NodeDisplay.WriteTableRow(
                     available[index],
                     nodes,
@@ -160,12 +164,12 @@ public static class AnonymousBrowseCommands
                     moderation: moderation
                 );
             }
-            if (available.Count == 0) Console.WriteLine("No nodes match the current filters.");
+            if (displayedCount == 0) Console.WriteLine("No nodes match the current filters.");
 
             Console.WriteLine();
             DiscoveryPaging.WriteSummary(
                 resultPage,
-                available.Count
+                displayedCount
             );
             Console.WriteLine("Node number to view; S text; C community; T node type; A author; U status; X clear; 0 return.");
             DiscoveryPaging.WriteNavigation(resultPage);
@@ -245,35 +249,120 @@ public static class AnonymousBrowseCommands
             if (!int.TryParse(
                 input,
                 out var selection
-            ) || selection < firstNumber || selection >= firstNumber + available.Count)
+            ) || selection < firstNumber || selection >= firstNumber + displayedCount)
             {
                 ConsoleUi.Pause("That is not a valid selection."); continue;
             }
 
-            var node = available[selection - firstNumber];
-            var ranked = results[selection - firstNumber];
+            var node = hasCards ? nodes.GetById(new NodeId(results[selection - firstNumber].NodeId)) : available[selection - firstNumber];
+            if (node is null) continue;
+            ViewNode(node, nodes, nodeTypes, documents, participants, nodeTags,
+                tagDefinitions, votes, communities, communityNodes, comments, moderation);
+        }
+    }
+
+    /// <summary>Public node actions never receive an actor or mutation services.</summary>
+    public static void ViewNode(
+        Node node,
+        INodeRepository nodes,
+        INodeTypeRepository nodeTypes,
+        IDocumentRepository documents,
+        IParticipantRepository participants,
+        INodeReactionRepository nodeTags,
+        IReactionDefinitionRepository tagDefinitions,
+        IVoteRepository votes,
+        ICommunityRepository communities,
+        ICommunityNodeRepository communityNodes,
+        ICommentRepository comments,
+        ModerationService moderation)
+    {
+        while (true)
+        {
             if (!Console.IsOutputRedirected) Console.Clear();
-            NodeDisplay.WriteDetails(
-                node,
-                nodes,
-                nodeTypes,
-                documents,
-                participants,
-                nodeTags,
-                tagDefinitions,
-                votes,
-                communities,
-                communityNodes,
-                comments,
-                null,
-                ranked.VoteCount,
-                ranked.AverageVote,
-                null,
-                moderation: moderation
-            );
+            var summary = new Atlas.Voting.GetVoteSummary(votes)
+                .Execute(new Atlas.Voting.Target.NodeVoteTarget(node.Id.Value));
+            NodeDisplay.WriteDetails(node, nodes, nodeTypes, documents, participants,
+                nodeTags, tagDefinitions, votes, communities, communityNodes, comments,
+                null, summary.VoteCount, summary.AverageVote, null, moderation: moderation);
             Console.WriteLine();
-            Console.WriteLine("Read-only public view. Sign in to contribute or modify Atlas content.");
-            ConsoleUi.Pause();
+            Console.WriteLine("Actions (as Anonymous)");
+            Console.WriteLine("  Explore:");
+            Console.WriteLine("    7 Select sub-node · 11 Author profile · 15 View votes");
+            Console.WriteLine("    17 View communities · 19 View comments");
+            Console.WriteLine(node.ParentNodeIds.Count == 0
+                ? "    24 Browse ancestors [disabled — root node]"
+                : "    24 Browse ancestors");
+            Console.WriteLine("  Contribute [disabled — sign in as an active participant]");
+            Console.WriteLine("    20 Return to previous page");
+            Console.Write("Selection: ");
+            var input = Console.ReadLine()?.Trim();
+            // Blank/EOF also returns, supporting the former pause-only public view.
+            if (input is "20" or "0" || string.IsNullOrWhiteSpace(input)) return;
+            switch (input)
+            {
+                case "7":
+                    var children = nodes.GetChildren(node.Id).OrderBy(child => child.CreatedAt).ToArray();
+                    var selected = SelectId(children.Select(child =>
+                        (child.Id.Value, NodeDisplay.PublicTitle(child, moderation))).ToArray(), "sub-node");
+                    if (selected is { } childId)
+                        node = children.Single(child => child.Id.Value == childId);
+                    break;
+                case "24":
+                    node = NodeCommands.SelectAncestor(node, nodes, nodeTypes, moderation) ?? node;
+                    break;
+                case "11":
+                    var author = participants.GetById(new ParticipantId(node.AuthorId.Value));
+                    Console.WriteLine("AUTHOR PROFILE");
+                    Console.WriteLine(author is null ? "Author profile not found."
+                        : $"{author.DisplayName}\n{author.Bio}\nStatus: {(author.IsActive ? "Active" : "Inactive")}");
+                    ConsoleUi.Pause();
+                    break;
+                case "15":
+                    Console.WriteLine("NODE VOTES");
+                    var records = votes.GetTargetVotes(new Atlas.Voting.Target.NodeVoteTarget(node.Id.Value));
+                    foreach (var vote in records)
+                    {
+                        var voter = participants.GetById(new ParticipantId(vote.ParticipantId.Id));
+                        Console.WriteLine($"{voter?.DisplayName ?? "Unknown participant"}: {vote.Value.Value}");
+                    }
+                    if (records.Count == 0) Console.WriteLine("No participants have voted on this node.");
+                    ConsoleUi.Pause();
+                    break;
+                case "17":
+                    Console.WriteLine("NODE COMMUNITIES");
+                    var links = communityNodes.GetByNode(node.Id.Value);
+                    foreach (var link in links)
+                    {
+                        var community = communities.GetById(link.CommunityId);
+                        if (community is not null) Console.WriteLine($"{community.Name}: {community.Description}");
+                    }
+                    if (links.Count == 0) Console.WriteLine("No communities linked.");
+                    ConsoleUi.Pause();
+                    break;
+                case "19":
+                    Console.WriteLine("COMMENTS (read only)");
+                    // Do not bypass moderation by exposing related discussion text here.
+                    if (moderation.Visibility(node.Id.Value).IsHidden)
+                    {
+                        ConsoleUi.Pause("Comments are unavailable while this node is hidden.");
+                        break;
+                    }
+                    var discussion = comments.GetByTarget(CommentTarget.Node(node.Id.Value));
+                    foreach (var comment in discussion.OrderBy(comment => comment.CreatedAt))
+                    {
+                        var name = participants.GetById(new ParticipantId(comment.AuthorParticipantId))?.DisplayName ?? "Unknown participant";
+                        Console.WriteLine($"{name}: {(comment.IsRemoved ? "[removed]" : comment.Body)}");
+                    }
+                    if (discussion.Count == 0) Console.WriteLine("No comments yet.");
+                    ConsoleUi.Pause();
+                    break;
+                case "1" or "2" or "3" or "4" or "5" or "6" or "8" or "9" or "10" or "12" or "13" or "14" or "16" or "18" or "21" or "22" or "23":
+                    ConsoleUi.Pause("Sign in as an active participant to contribute. Anonymous exploration is read only.");
+                    break;
+                default:
+                    ConsoleUi.Pause("That is not a valid exploration action.");
+                    break;
+            }
         }
     }
 

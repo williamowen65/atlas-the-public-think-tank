@@ -20,6 +20,63 @@ namespace Atlas.ConsoleApp.Tests;
 public sealed class AnonymousDiscoveryTests
 {
     [TestMethod]
+    public void Anonymous_node_actions_allow_exploration_and_reject_contribution_commands()
+    {
+        var (pages, output) = Browse(1, "1\n13\n\n19\n\n15\n\n17\n\n11\n\n24\n\n20\n0\n");
+        StringAssert.Contains(output, "Actions (as Anonymous)");
+        StringAssert.Contains(output, "  Explore:");
+        StringAssert.Contains(output, "Contribute [disabled");
+        StringAssert.Contains(output, "Sign in as an active participant to contribute");
+        StringAssert.Contains(output, "COMMENTS (read only)");
+        StringAssert.Contains(output, "NODE VOTES");
+        StringAssert.Contains(output, "NODE COMMUNITIES");
+        StringAssert.Contains(output, "AUTHOR PROFILE");
+        StringAssert.Contains(output, "This is a root node with no ancestors");
+        Assert.IsGreaterThanOrEqualTo(2, pages.Count, "Returning from node exploration must restore Discovery.");
+    }
+
+    [TestMethod]
+    public void Anonymous_node_actions_navigate_children_and_parents_without_writes()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var type = NodeTypeDefinition.CreateSystemDefined("Idea", "Ideas", now);
+        var author = new NodeAuthorId(Guid.NewGuid());
+        var root = new Node(new NodeTitle("Public root"), new NodeDescriptionId(Guid.NewGuid()), type.Id, author, now);
+        var child = Node.Reconstitute(new NodeId(Guid.NewGuid()), new NodeTitle("Public child"),
+            new NodeDescriptionId(Guid.NewGuid()), type.Id, author, NodeStatus.Active, [], [root.Id], now, now);
+        var nodes = Stub<INodeRepository>((method, args) => method.Name switch
+        {
+            "GetById" => (NodeId)args![0]! == root.Id ? root : child,
+            "GetChildren" => (NodeId)args![0]! == root.Id ? new[] { child } : Array.Empty<Node>(),
+            "Save" or "SaveMetadata" => throw new AssertFailedException("Anonymous navigation attempted a write."),
+            _ => EmptyValue(method.ReturnType)
+        });
+        var types = Stub<INodeTypeRepository>((method, _) => method.Name == "GetById" ? type : EmptyValue(method.ReturnType));
+        var originalInput = System.Console.In;
+        var originalOutput = System.Console.Out;
+        using var reader = new StringReader("7\n1\n24\n1\n20\n");
+        using var writer = new StringWriter();
+        try
+        {
+            System.Console.SetIn(reader);
+            System.Console.SetOut(writer);
+            AnonymousBrowseCommands.ViewNode(root, nodes, types, Stub<IDocumentRepository>(),
+                Stub<IParticipantRepository>(), Stub<INodeReactionRepository>(), Stub<IReactionDefinitionRepository>(),
+                Stub<IVoteRepository>(), Stub<ICommunityRepository>(), Stub<ICommunityNodeRepository>(),
+                Stub<ICommentRepository>(), new ModerationService(Stub<IModerationCaseRepository>(), Stub<IModeratorAuthorization>()));
+        }
+        finally
+        {
+            System.Console.SetIn(originalInput);
+            System.Console.SetOut(originalOutput);
+        }
+        var output = writer.ToString();
+        StringAssert.Contains(output, "Public child");
+        StringAssert.Contains(output, "ANCESTORS (nearest first, up to three)");
+        Assert.AreEqual(3, output.Split("Actions (as Anonymous)").Length - 1);
+    }
+
+    [TestMethod]
     public void UpperAndLowerCaseCommandsNavigateAnonymousDiscoveryPages()
     {
         var (pages, output) = Browse(
@@ -175,10 +232,22 @@ public sealed class AnonymousDiscoveryTests
         );
     }
 
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public void Batched_cards_render_without_loading_domain_nodes(bool authenticated)
+    {
+        var (pages, output) = Browse(7, "N\nN\nP\n0\n", authenticated, useCards: true);
+        CollectionAssert.AreEqual(new[] { 1, 2, 3, 2 }, pages.ToArray());
+        StringAssert.Contains(output, "7. Idea · Node 7");
+        StringAssert.Contains(output, "Batched description");
+    }
+
     private static (IReadOnlyList<int> Pages, string Output) Browse(
         int count,
         string input,
-        bool authenticated = false
+        bool authenticated = false,
+        bool useCards = false
     )
     {
         var now = new DateTimeOffset(
@@ -206,25 +275,12 @@ public sealed class AnonymousDiscoveryTests
             new NodeAuthorId(author),
             now
         )).ToList();
-        var candidates = nodes.Select(n => new DiscoveryCandidate(
-            n.Id.Value,
-            n.Title.Value,
-            "",
-            type.Id.Value,
-            author,
-            false,
-            now,
-            now,
-            0,
-            null,
-            [],
-            []
-        )).ToList();
-        var discovery = new RecordingDiscovery(new DiscoveryService(new CandidateSource(candidates)));
+        var discovery = new RecordingDiscovery(new DiscoveryService(new FixedQuery(nodes.Select((node, index) =>
+            new RankedDiscoveryItem(node.Id.Value, index + 1, 5, 1, 5, useCards ? new DiscoveryCard(node.Id.Value, node.Title.Value, "Idea", "Author", "Active", now, "Batched description", "Root node", "None", "—", "None", 0, false) : null)).ToArray())));
         var nodeRepository = Stub<INodeRepository>((
             method,
             args
-        ) => method.Name == "GetById"
+        ) => useCards ? throw new AssertFailedException("Batched card rendering must not query Node aggregates.") : method.Name == "GetById"
             ? nodes.SingleOrDefault(n => n.Id == (NodeId)args![0]!) : EmptyValue(method.ReturnType));
         var types = Stub<INodeTypeRepository>((
             method,
@@ -239,7 +295,7 @@ public sealed class AnonymousDiscoveryTests
         {
             System.Console.SetIn(reader);
             System.Console.SetOut(writer);
-            // Exercise the actual anonymous input/render loop with real Discovery filtering and slicing.
+            // Exercise the actual input/render loop using fixed ranked pages from the read port.
             if (authenticated)
             {
                 // Exercise the authenticated browse loop; contribution services are unused here.
@@ -354,9 +410,13 @@ public sealed class AnonymousDiscoveryTests
         );
     }
 
-    private sealed class CandidateSource(IReadOnlyCollection<DiscoveryCandidate> candidates) : IDiscoveryCandidateSource
+    private sealed class FixedQuery(IReadOnlyList<RankedDiscoveryItem> items) : IDiscoveryReadQuery
     {
-        public IReadOnlyCollection<DiscoveryCandidate> GetCandidates() => candidates;
+        public DiscoveryPage DiscoverPage(DiscoveryQuery query) => new(
+            items.Skip((query.Page - 1) * IDiscoveryService.PageSize).Take(IDiscoveryService.PageSize).ToArray(), items.Count, query.Page, IDiscoveryService.PageSize);
+        public DiscoveryPage DiscoverAuthoredPage(DiscoveryQuery query, IReadOnlyCollection<Guid> ids) => DiscoverPage(query);
+        public IReadOnlyList<RankedDiscoveryItem> Discover(DiscoveryQuery query) => items;
+        public IReadOnlyList<RankedDiscoveryItem> DiscoverAuthored(DiscoveryQuery query, IReadOnlyCollection<Guid> ids) => items;
     }
 
     private sealed class RecordingDiscovery(IDiscoveryService inner) : IDiscoveryService

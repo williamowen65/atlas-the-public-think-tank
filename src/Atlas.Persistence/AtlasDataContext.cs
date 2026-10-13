@@ -1,3 +1,4 @@
+using Atlas.Persistence.Discovery;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -26,6 +27,93 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
     public DbSet<ModerationCaseRow> ModerationCaseRows => Set<ModerationCaseRow>();
     public DbSet<NotificationRow> NotificationRows => Set<NotificationRow>();
     public DbSet<NotificationPreferencesRow> NotificationPreferencesRows => Set<NotificationPreferencesRow>();
+
+    /// <summary>
+    /// Saves tracked rows and advances the Discovery cache revisions in the same transaction.
+    /// A failed save or a caller's rollback undoes both database changes.
+    /// </summary>
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        // Detect pending additions, edits and deletions before EF resets their tracked states.
+        // Page means ranked results may change; Detail means public card data may change too.
+        var change = DiscoveryInvalidation.Changes(this);
+        if (!change.Page)
+            return base.SaveChanges(acceptAllChangesOnSuccess);
+
+        // Reuse a caller's transaction without taking ownership of it. Otherwise create one
+        // so the revision UPDATE and EF's row writes succeed or roll back together.
+        using var transaction = Database.CurrentTransaction is null
+            ? Database.BeginTransaction()
+            : null;
+
+        AdvanceDiscovery(change.Detail);
+        var count = base.SaveChanges(acceptAllChangesOnSuccess);
+
+        // Only commit a transaction created here. An outer transaction remains the caller's job.
+        // Disposing our uncommitted transaction on an exception rolls back its database writes.
+        transaction?.Commit();
+        return count;
+    }
+
+    /// <summary>
+    /// Asynchronously saves tracked rows and Discovery revisions atomically. When a caller
+    /// already owns a transaction, that caller decides when to commit or roll back both.
+    /// </summary>
+    public override async Task<int> SaveChangesAsync(
+        bool acceptAllChangesOnSuccess,
+        CancellationToken cancellationToken = default)
+    {
+        // 1. Classify tracked changes while their original values and pending states are available.
+        // Changes also runs DetectChanges, so ordinary property edits are included.
+        var change = DiscoveryInvalidation.Changes(this);
+
+        // Unrelated writes, such as notification delivery, need no Discovery revision update.
+        // base calls EF's implementation rather than calling this override again.
+        if (!change.Page)
+            return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+
+        // 2. A null local variable means we joined an existing transaction, not that writes
+        // run without one. await using asynchronously disposes only a transaction we create.
+        await using var transaction = Database.CurrentTransaction is null
+            ? await Database.BeginTransactionAsync(cancellationToken)
+            : null;
+
+        // 3. Increment the singleton revision before saving the tracked rows, within that
+        // same transaction. SQL increments the stored values directly, avoiding a lost update
+        // from two writers reading and then replacing the same revision value.
+        // Every relevant write advances PageVersion; DetailVersion advances only when needed.
+        // Interpolated values become SQL parameters. Cancellation is passed to each async call.
+        var countUpdated = await Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE DiscoveryRevisions SET PageVersion = PageVersion + 1, DetailVersion = DetailVersion + {(change.Detail ? 1 : 0)} WHERE Id = 1",
+            cancellationToken);
+
+        // Exactly one revision row must exist. Stop instead of saving data that caches could
+        // mistake for unchanged data. The migration seeds this row; demo seeding is not required.
+        if (countUpdated != 1)
+            throw new InvalidOperationException("Discovery revision is missing; apply the pending migration.");
+
+        // 4. Let EF persist the pending rows. The bool controls whether EF accepts the tracked
+        // changes after a successful save; it does not commit a caller-owned transaction.
+        // count is EF's saved state-entry count and excludes the separate revision SQL update.
+        var count = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+
+        // 5. Commit only our own transaction. Otherwise leave commit/rollback to the caller.
+        // No in-memory cache is cleared here: discovery readers compare these database revisions
+        // with their cache keys and stop reusing entries from older revisions.
+        if (transaction is not null)
+            await transaction.CommitAsync(cancellationToken);
+
+        return count;
+    }
+
+    /// <summary>Advances the singleton revision for synchronous saves inside their transaction.</summary>
+    private void AdvanceDiscovery(bool details)
+    {
+        // Use an atomic, parameterized database increment, matching the asynchronous path.
+        // A missing singleton indicates that the required schema/seed migration is not applied.
+        if (Database.ExecuteSqlInterpolated($"UPDATE DiscoveryRevisions SET PageVersion = PageVersion + 1, DetailVersion = DetailVersion + {(details ? 1 : 0)} WHERE Id = 1") != 1)
+            throw new InvalidOperationException("Discovery revision is missing; apply the pending migration.");
+    }
 
     // Repository saves call this before tracking/saving a newly mapped row graph.
     // Audit entries and delivery attempts arrive as lists without database identities.
@@ -56,7 +144,32 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
     {
         base.OnModelCreating(model);
         ConfigureModel(model);
+        // One database-wide revision row lets readers detect stale page/card cache entries.
+        // HasData records migration seed data; it does not insert a row on every context creation.
+        model.Entity<DiscoveryRevisionRow>(entity =>
+        {
+            entity.ToTable("DiscoveryRevisions");
+            entity.HasKey(row => row.Id);
+            entity.Property(row => row.Id).ValueGeneratedNever();
+            entity.HasData(new DiscoveryRevisionRow { Id = 1 });
+        });
+        // Support discovery aggregates and lookups by their target keys. Included columns
+        // let SQL Server answer relevant reads from the index without fetching the base row.
+        model.Entity<VoteRow>().HasIndex(row => new { row.TargetType, row.TargetId }).IncludeProperties(nameof(VoteRow.Value));
+        model.Entity<CommentRow>().HasIndex(row => new { row.TargetKind, row.TargetId });
+        model.Entity<NodeReactionRow>().HasIndex(row => new { row.NodeId, row.LifecycleState, row.ReactionDefinitionId });
+        model.Entity<ModerationCaseRow>().HasIndex(row => new { row.NodeId, row.Status, row.VisibilityRestoredAt })
+            .IncludeProperties(nameof(ModerationCaseRow.PublicReason), nameof(ModerationCaseRow.DecidedAt));
         IdentityModel.Configure(model);
+        // Searchable text uses the shared case/accent-insensitive discovery collation.
+        // This affects SQL comparisons; it does not rewrite stored text.
+        model.Entity<NodeRow>().Property(row => row.Title).UseCollation(DiscoveryTextCollation.Name);
+        model.Entity<BlockRow>().Property(row => row.Markdown).UseCollation(DiscoveryTextCollation.Name);
+        model.Entity<BlockRow>().Property(row => row.AltText).UseCollation(DiscoveryTextCollation.Name);
+        model.Entity<BlockRow>().Property(row => row.Caption).UseCollation(DiscoveryTextCollation.Name);
+        model.Entity<BlockRow>().Property(row => row.Title).UseCollation(DiscoveryTextCollation.Name);
+        model.Entity<BlockRow>().Property(row => row.Description).UseCollation(DiscoveryTextCollation.Name);
+
     }
 
     internal static void ConfigureModel(ModelBuilder model)

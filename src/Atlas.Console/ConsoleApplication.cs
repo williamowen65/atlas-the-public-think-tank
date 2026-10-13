@@ -485,13 +485,16 @@ public sealed class ConsoleApplication
             var resultPage = _discovery.DiscoverPage(query with { Page = page });
             var results = resultPage.Items.ToList();
             var firstNumber = DiscoveryPaging.FirstNumber(resultPage);
-            var nodes = results
-                .Select(result => _nodeRepository.GetById(new NodeId(result.NodeId)))
-                .Where(node => node is not null)
-                .Cast<Node>()
-                .ToList();
+            var hasCards = results.All(result => result.Card is not null);
+            var nodes = hasCards ? new List<Node>() : results
+                .Select(result => _nodeRepository.GetById(new NodeId(result.NodeId))).OfType<Node>().ToList();
+            var displayedCount = hasCards ? results.Count : nodes.Count;
+            Node? SelectedNode(int index) => hasCards ? _nodeRepository.GetById(new NodeId(results[index].NodeId)) : nodes[index];
+            var personalVotes = hasCards && _discovery is IDiscoveryPersonalVotes personal
+                ? personal.ReadParticipantVotes(_authenticatedActor.ParticipantId, results.Select(item => item.NodeId).ToArray())
+                : new Dictionary<Guid, int>();
 
-            if (nodes.Count == 0)
+            if (displayedCount == 0)
             {
                 Console.WriteLine("No nodes match the current Discovery filters.");
             }
@@ -499,9 +502,14 @@ public sealed class ConsoleApplication
             {
                 NodeDisplay.WriteTableHeader(includeCreatedDate: true);
                 var votingParticipantId = new VotingParticipantId(_authenticatedActor.ParticipantId);
-                for (var index = 0; index < nodes.Count; index++)
+                for (var index = 0; index < displayedCount; index++)
                 {
                     var result = results[index];
+                    if (hasCards)
+                    {
+                        NodeDisplay.WriteDiscoveryCard(result, firstNumber + index, personalVotes.TryGetValue(result.NodeId, out var rating) ? rating : null);
+                        continue;
+                    }
                     var myVote = _voteRepository.GetByParticipantAndTarget(
                         votingParticipantId,
                         new NodeVoteTarget(result.NodeId)
@@ -531,7 +539,7 @@ public sealed class ConsoleApplication
             Console.WriteLine();
             DiscoveryPaging.WriteSummary(
                 resultPage,
-                nodes.Count
+                displayedCount
             );
             Console.WriteLine("Enter a node number to open it, P<number> to report that Node, S text, C community, T node type, A author,");
             Console.WriteLine("U status, R reactions, V vote ranges, D created date, X clear, or 0 to return.");
@@ -553,14 +561,13 @@ public sealed class ConsoleApplication
                     out var reportNumber
                 ))
             {
-                if (reportNumber < firstNumber || reportNumber >= firstNumber + nodes.Count)
+                if (reportNumber < firstNumber || reportNumber >= firstNumber + displayedCount)
                     ConsoleUi.Pause("That node does not exist.");
                 else
-                    NodeCommands.ReportNode(
-                        nodes[reportNumber - firstNumber],
-                        _authenticatedActor.ParticipantId,
-                        _moderation
-                    );
+                {
+                    var reportedNode = SelectedNode(reportNumber - firstNumber);
+                    if (reportedNode is not null) NodeCommands.ReportNode(reportedNode, _authenticatedActor.ParticipantId, _moderation);
+                }
                 continue;
             }
             if (string.Equals(
@@ -703,14 +710,16 @@ public sealed class ConsoleApplication
                 continue;
             }
 
-            if (selection < firstNumber || selection >= firstNumber + nodes.Count)
+            if (selection < firstNumber || selection >= firstNumber + displayedCount)
             {
                 ConsoleUi.Pause("That node does not exist.");
                 continue;
             }
 
+            var selectedNode = SelectedNode(selection - firstNumber);
+            if (selectedNode is null) continue;
             NodeCommands.Run(
-                nodes[selection - firstNumber],
+                selectedNode,
                 _nodeRepository,
                 _nodeTypeRepository,
                 _documentRepository,

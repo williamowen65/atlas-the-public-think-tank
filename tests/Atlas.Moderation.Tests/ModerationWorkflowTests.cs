@@ -339,31 +339,19 @@ public sealed class ModerationWorkflowTests
 
 
 
-    private DiscoveryCandidate Candidate(bool excluded) =>
-        new(
-            _node,
-            "A Node",
-            "text",
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            false,
-            DateTimeOffset.UtcNow,
-            DateTimeOffset.UtcNow,
-            0,
-            null,
-            [],
-            [],
-            excluded
-        );
+    private RankedDiscoveryItem? Candidate(bool excluded) => excluded ? null : new(_node, 1, 0, 0, null);
 
     private sealed class Moderator(Guid id) : IModeratorAuthorization
     {
         public bool IsAtlasModerator(Guid participantId) => participantId == id;
     }
 
-    private sealed class Source(params DiscoveryCandidate[] candidates) : IDiscoveryCandidateSource
+    private sealed class Source(params RankedDiscoveryItem?[] candidates) : IDiscoveryReadQuery
     {
-        public IReadOnlyCollection<DiscoveryCandidate> GetCandidates() => candidates;
+        public IReadOnlyList<RankedDiscoveryItem> Discover(DiscoveryQuery query) => candidates.OfType<RankedDiscoveryItem>().ToArray();
+        public IReadOnlyList<RankedDiscoveryItem> DiscoverAuthored(DiscoveryQuery query, IReadOnlyCollection<Guid> ids) => Discover(query);
+        public DiscoveryPage DiscoverPage(DiscoveryQuery query) => new(Discover(query), candidates.Count(item => item is not null), query.Page, IDiscoveryService.PageSize);
+        public DiscoveryPage DiscoverAuthoredPage(DiscoveryQuery query, IReadOnlyCollection<Guid> ids) => DiscoverPage(query);
     }
 
     private sealed class Cases : IModerationCaseRepository, IReferenceLookup

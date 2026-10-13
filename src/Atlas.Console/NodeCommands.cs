@@ -128,13 +128,15 @@ public static class NodeCommands
             Console.WriteLine("    1 Rename · 2 Description blocks · 3 Change type");
             Console.WriteLine("    4 Archive · 5 Restore · 6 Requested sub-node types");
             Console.WriteLine("    9 Attach to parent · 10 Detach from parent · 16 Manage communities");
-            Console.WriteLine("  Explore and contribute:");
-            Console.WriteLine("    7 Select sub-node · 8 Add sub-node · 11 Author profile");
+            Console.WriteLine("  Explore:");
+            Console.WriteLine("    7 Select sub-node · 11 Author profile · 15 View votes");
             Console.WriteLine(node.ParentNodeIds.Count == 0
                 ? "    24 Browse ancestors [disabled — root node]"
                 : "    24 Browse ancestors");
-            Console.WriteLine("    12 Manage reactions · 13 " + (myVote is null ? "Vote" : "Change vote") + " · 14 Undo vote · 15 View votes");
-            Console.WriteLine("    17 View communities · 18 Add comment · 19 View comments");
+            Console.WriteLine("    17 View communities · 19 View comments");
+            Console.WriteLine("  Contribute (active participants):");
+            Console.WriteLine("    8 Add sub-node · 12 Manage reactions · 13 " + (myVote is null ? "Vote" : "Change vote") + " · 14 Undo vote");
+            Console.WriteLine("    18 Add comment");
             Console.WriteLine(moderation.Visibility(node.Id.Value).IsHidden
                 ? "    21 Report node [disabled — already hidden]"
                 : "    21 Report node");
@@ -867,13 +869,12 @@ public static class NodeCommands
             : selectedGroup.Children[nodeSelection - 1];
     }
 
-    /// <summary>Lets the reader open any parent or more distant ancestor.</summary>
-    private static Node? SelectAncestor(
+    /// <summary>Pages upward along a selected parent route, three ancestor nodes at a time.</summary>
+    internal static Node? SelectAncestor(
         Node node,
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,
-        ModerationService moderation
-    )
+        ModerationService moderation)
     {
         if (node.ParentNodeIds.Count == 0)
         {
@@ -881,54 +882,100 @@ public static class NodeCommands
             return null;
         }
 
-        var ancestors = new List<(Node Node, int Depth)>();
-        var visited = new HashSet<NodeId> {
-            node.Id
-        };
-        var pending = new Queue<(NodeId Id, int Depth)>(
-            node.ParentNodeIds.Select(id => (id, 1)));
-
-        while (pending.Count > 0)
+        var cursor = node;
+        var visited = new HashSet<NodeId> { node.Id };
+        while (true)
         {
-            var (id, depth) = pending.Dequeue();
-            if (!visited.Add(id))
+            // At page boundaries, let the reader pick which immediate parent to follow.
+            // Inside a segment, the first stored parent is the provisional default.
+            var route = SelectParentRoute(cursor, nodes, moderation);
+            if (route is null)
+            {
+                return null;
+            }
+            var segment = AncestorNavigation.ReadSegment(cursor, nodes, visited, route);
+            Console.WriteLine();
+            Console.WriteLine("ANCESTORS (nearest first, up to three)");
+            for (var index = 0; index < segment.Items.Count; index++)
+            {
+                var ancestor = segment.Items[index];
+                var type = nodeTypes.GetById(ancestor.TypeId)?.Name ?? "Unknown type";
+                Console.WriteLine($"{index + 1}. {type} · {NodeDisplay.PublicTitle(ancestor, moderation)}");
+            }
+            if (segment.HasAlternativeRoutes)
+            {
+                Console.WriteLine("Other routes exist. Open an ancestor and explore its parents to choose a different branch there.");
+            }
+            if (segment.CycleDetected)
+            {
+                Console.WriteLine("[Circular parent link] — traversal stopped.");
+            }
+            if (segment.HasMore)
+            {
+                Console.WriteLine("N. Next three ancestors toward the root");
+            }
+            Console.WriteLine("0. Cancel");
+            Console.Write("Ancestor: ");
+            var input = Console.ReadLine()?.Trim();
+            if (string.Equals(input, "N", StringComparison.OrdinalIgnoreCase) && segment.HasMore)
+            {
+                cursor = segment.Items[^1];
                 continue;
-
-            var ancestor = nodes.GetById(id);
-            if (ancestor is null)
-                continue;
-
-            ancestors.Add((ancestor, depth));
-            foreach (var parentId in ancestor.ParentNodeIds)
-                pending.Enqueue((parentId, depth + 1));
-        }
-
-        Console.WriteLine();
-        Console.WriteLine("ANCESTORS (nearest first)");
-        for (var index = 0; index < ancestors.Count; index++)
-        {
-            var (ancestor, depth) = ancestors[index];
-            var type = nodeTypes.GetById(ancestor.TypeId)?.Name ?? "Unknown type";
-            var title = NodeDisplay.PublicTitle(
-                ancestor,
-                moderation
-            );
-            Console.WriteLine($"{index + 1}. {(depth == 1 ? "Parent" : "Ancestor")} · {type} · {title}");
-        }
-
-        Console.WriteLine("0. Cancel");
-        Console.Write("Ancestor: ");
-        if (!int.TryParse(
-            Console.ReadLine(),
-            out var selection
-        ) ||
-            selection < 0 || selection > ancestors.Count)
-        {
+            }
+            if (int.TryParse(input, out var selection) && selection >= 0 && selection <= segment.Items.Count)
+            {
+                return selection == 0 ? null : segment.Items[selection - 1];
+            }
             ConsoleUi.Pause("That is not a valid ancestor selection.");
             return null;
         }
+    }
 
-        return selection == 0 ? null : ancestors[selection - 1].Node;
+    /// <summary>Offers immediate parent routes in sets of three, without loading all parent Nodes.</summary>
+    private static NodeId? SelectParentRoute(Node node, INodeRepository nodes, ModerationService moderation)
+    {
+        if (node.ParentNodeIds.Count == 1)
+        {
+            return node.ParentNodeIds.First();
+        }
+        var offset = 0;
+        while (true)
+        {
+            var ids = node.ParentNodeIds.Skip(offset).Take(3).ToArray();
+            Console.WriteLine("Choose a parent route:");
+            for (var index = 0; index < ids.Length; index++)
+            {
+                var parent = nodes.GetById(ids[index]);
+                Console.WriteLine($"{index + 1}. {(parent is null ? "Unknown" : NodeDisplay.PublicTitle(parent, moderation))}");
+            }
+            if (offset + ids.Length < node.ParentNodeIds.Count)
+            {
+                Console.WriteLine("N. More parent routes");
+            }
+            if (offset > 0)
+            {
+                Console.WriteLine("P. Previous parent routes");
+            }
+            Console.WriteLine("0. Cancel");
+            Console.Write("Route: ");
+            var input = Console.ReadLine()?.Trim().ToUpperInvariant();
+            if (input == "N" && offset + ids.Length < node.ParentNodeIds.Count)
+            {
+                offset += 3;
+                continue;
+            }
+            if (input == "P" && offset > 0)
+            {
+                offset -= 3;
+                continue;
+            }
+            if (int.TryParse(input, out var choice) && choice >= 0 && choice <= ids.Length)
+            {
+                return choice == 0 ? null : ids[choice - 1];
+            }
+            ConsoleUi.Pause("That is not a valid parent route.");
+            return null;
+        }
     }
 
     /// <summary>Displays author profile in the console workflow.</summary>

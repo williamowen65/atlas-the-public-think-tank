@@ -10,7 +10,6 @@ using Atlas.ConsoleApp.Content;
 using Atlas.ConsoleApp.Eventing;
 using Atlas.ConsoleApp.Storage;
 using Atlas.ConsoleApp.Voting;
-using Atlas.ConsoleApp.Discovery;
 using Atlas.Content.Documents;
 using Atlas.Discovery;
 using Atlas.Moderation;
@@ -143,15 +142,9 @@ var undoVote =
         voteMutationPolicy
     );
 
-IDiscoveryCandidateSource discoverySource = new RepositoryDiscoveryCandidateSource(
-    (IDiscoveryNodeReader)nodeRepository,
-    documentRepository,
-    voteRepository,
-    communityNodeRepository,
-    nodeTagRepository,
-    moderationCases
-);
-IDiscoveryService discovery = new DiscoveryService(discoverySource);
+using var discoveryCache = new Atlas.Persistence.Discovery.DiscoveryCache();
+IDiscoveryService discovery = new DiscoveryService(
+    new Atlas.Persistence.Discovery.SqlDiscoveryReadQuery(SqlStorage.Open, discoveryCache));
 
 var eventPublisher = new InMemoryEventPublisher();
 INotificationRepository notificationRepository = new SqlNotificationRepository();

@@ -71,9 +71,11 @@ public static class ParticipantDisplay
         IReadOnlyCollection<Node> nodes
     )
     {
-        var authoredNodeCount = nodes.Count(
-            node => node.AuthorId.Value == participant.Id.Value);
+        WriteProfile(participant, nodes.Count(node => node.AuthorId.Value == participant.Id.Value));
+    }
 
+    public static void WriteProfile(Participant participant, int authoredNodeCount)
+    {
         Console.WriteLine("PARTICIPANT PROFILE");
         Console.WriteLine("-------------------");
         Console.WriteLine($"Display name: {participant.DisplayName}");

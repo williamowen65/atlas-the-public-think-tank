@@ -6,6 +6,8 @@
     <UserSecretsId>02103f3e-daff-4644-b045-6eb5f00889eb</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../Atlas.Discovery/Atlas.Discovery.csproj" />
+    <EmbeddedResource Include="Discovery/*.sql" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.12" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.12" />

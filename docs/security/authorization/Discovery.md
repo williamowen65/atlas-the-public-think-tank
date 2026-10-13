@@ -12,3 +12,12 @@
 ## Review note
 
 Discovery is primarily a public read boundary, so most operations intentionally have no actor. Its security responsibility is chiefly **visibility filtering**: ordinary search must not reveal content excluded by Moderation.
+
+## Anonymous Console node exploration
+
+- Public Discovery selection opens `AnonymousBrowseCommands.ViewNode`, with **Actions (as Anonymous)**.
+- Explore: sub-nodes, three-node ancestor segments/parent route choices, author profile, votes, linked communities and read-only comments. Return restores the Discovery listing and filters.
+- Contribute remains disabled for anonymous users. Typing an authenticated edit/vote/comment/report command is rejected; the public loop receives no actor or mutation services.
+- Authenticated node actions are grouped into Explore and Contribute. Existing active-participant authentication and domain authorization still govern contributions.
+- Node/ancestor labels retain moderation redaction. Hidden-node comments are unavailable in the public action loop; removed comment bodies are replaced by a removal marker.
+- Anonymous exploration does not create a dummy participant or personal vote context.

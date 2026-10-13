@@ -19,5 +19,6 @@ internal static partial class DemoData
         SeedCommunityNode(database);
         SeedComment(database);
         SeedModerationCase(database);
+        SeedBreadcrumbDemo(database);
     }
 }

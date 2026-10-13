@@ -353,15 +353,13 @@ public sealed class SqlIdentityTests
             var context = scope.ServiceProvider.GetRequiredService<AtlasDataContext>();
             await context.GetService<Microsoft.EntityFrameworkCore.Migrations.IMigrator>()
                 .MigrateAsync("20260929202249_AddReferentialIntegrity");
-            context.ParticipantRows.Add(new ParticipantRow {
-                Id = id,
-                DisplayName = "Existing demo",
-                Bio = "Keep",
-                IsActive = true,
-                CreatedAt = DateTimeOffset.UtcNow,
-                UpdatedAt = DateTimeOffset.UtcNow
-            });
-            await context.SaveChangesAsync();
+            // Seed the historical schema directly: today's SaveChanges hooks require
+            // tables introduced after this migration (including DiscoveryRevisions).
+            var now = DateTimeOffset.UtcNow;
+            await context.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO ParticipantRows (Id, DisplayName, Bio, IsActive, CreatedAt, UpdatedAt)
+                VALUES ({id}, N'Existing demo', N'Keep', 1, {now}, {now})
+                """);
             await context.Database.MigrateAsync();
             Assert.AreEqual(
                 "Keep",

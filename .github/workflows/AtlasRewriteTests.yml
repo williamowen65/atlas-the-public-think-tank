@@ -82,6 +82,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - name: Discovery read model
+            project: tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj
+            filter: '--filter FullyQualifiedName~Discovery'
           - name: Persistence
             project: tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj
           - name: Identity
@@ -110,9 +113,18 @@ jobs:
         with:
           dotnet-version: '10.0.x'
       - name: Check migrations match the EF model
+        if: matrix.name != 'Discovery read model'
         run: |
           dotnet tool restore
           dotnet restore src/Atlas.Persistence/Atlas.Persistence.csproj
           dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence
       - name: Test ${{ matrix.name }} against SQL Server
-        run: dotnet test "${{ matrix.project }}" --configuration Release --verbosity normal
+        run: dotnet test "${{ matrix.project }}" --configuration Release --verbosity normal ${{ matrix.filter }}
+
+      - name: Upload Discovery SQL performance evidence
+        if: matrix.name == 'Discovery read model' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: discovery-sql-evidence
+          path: tests/Atlas.Persistence.Tests/TestResults/discovery-*
+          if-no-files-found: ignore

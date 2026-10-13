@@ -1,9 +1,10 @@
 using Atlas.Discovery;
+using Atlas.Persistence.Discovery;
 
-namespace Atlas.Discovery.Tests;
+namespace Atlas.Persistence.Tests;
 
 [TestClass]
-public sealed class DiscoveryServiceTests
+public sealed class DiscoverySqlParityTests
 {
     private static readonly Guid CommunityA = Guid.NewGuid();
     private static readonly Guid ReactionA = Guid.NewGuid();
@@ -566,7 +567,7 @@ public sealed class DiscoveryServiceTests
     [TestMethod]
     public void DiscoverRejectsNonFiniteBoundsBeforeReadingCandidates()
     {
-        var service = new DiscoveryService(new RejectReadSource());
+        var service = new DiscoveryService(new RejectReadQuery());
         foreach (var value in new[] {
             double.NaN,
             double.PositiveInfinity,
@@ -586,19 +587,43 @@ public sealed class DiscoveryServiceTests
         }
     }
 
-    private sealed class RejectReadSource : IDiscoveryCandidateSource
+    [TestMethod]
+    public void Discovery_matches_accents_and_case_and_applies_title_boost()
     {
-        public IReadOnlyCollection<DiscoveryCandidate> GetCandidates() =>
-            throw new AssertFailedException("Invalid input must be rejected before querying candidates.");
+        var title = Candidate("Café", average: 5, votes: 2);
+        var content = Candidate("Other", average: 5, votes: 2, content: "CAFÉ evidence");
+        var service = Service(content, title);
+        var results = service.Discover(new DiscoveryQuery(SearchText: "cafe"));
+        CollectionAssert.AreEqual(new[] { title.NodeId, content.NodeId }, results.Select(item => item.NodeId).ToArray());
+        Assert.AreEqual(0.1d, results[0].RankingScore - results[1].RankingScore, 0.000001d);
+        var hidden = title with { IsModerationExcluded = true };
+        Assert.IsEmpty(Service(hidden).DiscoverAuthored(new DiscoveryQuery(SearchText: "CAFE"), [hidden.NodeId]));
     }
 
-    private static DiscoveryService Service(params DiscoveryCandidate[] candidates) =>
-        new(new MemorySource(candidates));
+    private sealed class RejectReadQuery : IDiscoveryReadQuery
+    {
+        public DiscoveryPage DiscoverPage(DiscoveryQuery query) => throw new AssertFailedException("Invalid input reached storage.");
+        public DiscoveryPage DiscoverAuthoredPage(DiscoveryQuery query, IReadOnlyCollection<Guid> ids) => DiscoverPage(query);
+        public IReadOnlyList<RankedDiscoveryItem> Discover(DiscoveryQuery query) => throw new AssertFailedException("Invalid input reached storage.");
+        public IReadOnlyList<RankedDiscoveryItem> DiscoverAuthored(DiscoveryQuery query, IReadOnlyCollection<Guid> ids) => Discover(query);
+    }
+
+    private readonly List<SqlTestDatabase> _databases = [];
+    [TestCleanup]
+    public void Cleanup() { foreach (var database in _databases) database.Dispose(); }
+
+    private DiscoveryService Service(params DiscoveryCandidate[] candidates)
+    {
+        var database = SqlTestDatabase.Create(useCurrentModel: true);
+        _databases.Add(database);
+        DiscoverySqlFixture.Seed(database, candidates);
+        return new DiscoveryService(new SqlDiscoveryReadQuery(database.Open));
+    }
 
     private static DiscoveryCandidate Candidate(
         string title,
         double? average,
-        int votes = 0,
+        int votes = 1,
         string content = "",
         bool archived = false,
         DateTimeOffset? createdAt = null,
@@ -617,15 +642,10 @@ public sealed class DiscoveryServiceTests
             archived,
             createdAt ?? updatedAt ?? DateTimeOffset.UtcNow,
             updatedAt ?? createdAt ?? DateTimeOffset.UtcNow,
-            votes,
+            average is null ? 0 : votes,
             average,
             communities ?? Array.Empty<Guid>(),
             reactions ?? Array.Empty<Guid>()
         );
 
-    private sealed class MemorySource(IReadOnlyCollection<DiscoveryCandidate> candidates)
-        : IDiscoveryCandidateSource
-    {
-        public IReadOnlyCollection<DiscoveryCandidate> GetCandidates() => candidates;
-    }
 }

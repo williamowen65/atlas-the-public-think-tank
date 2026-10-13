@@ -38,15 +38,13 @@ public static class ParticipantCommands
                 return;
             }
 
-            var authoredNodes = nodes
-                .GetByAuthor(new NodeAuthorId(participant.Id.Value))
-                .ToList();
+            var sqlListing = discovery as IDiscoveryAuthorListing;
+            var authoredNodes = sqlListing is null ? nodes.GetByAuthor(new NodeAuthorId(participant.Id.Value)).ToList() : new List<Node>();
+            var authoredCount = sqlListing is null ? authoredNodes.Count :
+                sqlListing.DiscoverAuthorPage(new DiscoveryQuery(IncludeArchived: true), participant.Id.Value).TotalCount;
 
             Console.Clear();
-            ParticipantDisplay.WriteProfile(
-                participant,
-                authoredNodes
-            );
+            ParticipantDisplay.WriteProfile(participant, authoredCount);
             Console.WriteLine();
             Console.WriteLine("1. Edit profile");
             Console.WriteLine("2. View authored nodes");
@@ -194,22 +192,19 @@ public static class ParticipantCommands
             Console.WriteLine($"Votes: {query.MinimumVoteCount?.ToString() ?? "any"}–{query.MaximumVoteCount?.ToString() ?? "any"}; Average: {query.MinimumAverageVote?.ToString() ?? "any"}–{query.MaximumAverageVote?.ToString() ?? "any"}; Created: {query.CreatedFrom?.ToString() ?? "any"}–{query.CreatedThrough?.ToString() ?? "any"}");
             Console.WriteLine();
             // Refresh after edits; the profile's initial count may be stale on return.
-            var authored = nodes.GetByAuthor(new NodeAuthorId(participant.Id.Value)).ToList();
+            var sqlListing = discovery as IDiscoveryAuthorListing;
+            var authored = sqlListing is null ? nodes.GetByAuthor(new NodeAuthorId(participant.Id.Value)).ToList() : new List<Node>();
             var byId = authored.ToDictionary(node => node.Id.Value);
-            var pages = discovery is null ? null : Enumerable.Range(
-                1,
-                visiblePages
-            )
-                .Select(page => discovery.DiscoverAuthoredPage(
-                    query with { Page = page },
-                    byId.Keys.ToList()
-                ))
-                .ToList();
+            var pages = discovery is null ? null : Enumerable.Range(1, visiblePages)
+                .Select(page => sqlListing is not null
+                    ? sqlListing.DiscoverAuthorPage(query with { Page = page }, participant.Id.Value)
+                    : discovery.DiscoverAuthoredPage(query with { Page = page }, byId.Keys.ToList())).ToList();
             var ranked = pages?.SelectMany(page => page.Items).ToList();
-            var ordered = ranked is null ? authored : ranked
-                .Where(item => byId.ContainsKey(item.NodeId))
-                .Select(item => byId[item.NodeId]).ToList();
-            if (ordered.Count == 0) Console.WriteLine("No authored nodes.");
+            var ordered = ranked is null ? authored : ranked.Where(item => byId.ContainsKey(item.NodeId)).Select(item => byId[item.NodeId]).ToList();
+            var displayedCount = sqlListing is null ? ordered.Count : ranked!.Count;
+            if (displayedCount == 0) Console.WriteLine("No authored nodes.");
+            else if (sqlListing is not null)
+                for (var index = 0; index < ranked!.Count; index++) NodeDisplay.WriteDiscoveryCard(ranked[index], index + 1);
             else
             {
                 NodeDisplay.WriteTableHeader(includeCreatedDate: true);
@@ -234,7 +229,7 @@ public static class ParticipantCommands
                     );
             }
             Console.WriteLine();
-            if (pages is not null) Console.WriteLine($"Showing {ordered.Count} of {pages[^1].TotalCount} matching nodes.");
+            if (pages is not null) Console.WriteLine($"Showing {displayedCount} of {pages[^1].TotalCount} matching nodes.");
             Console.WriteLine("Node number to open; S search, C community, R reactions, V vote ranges, D created date, X clear, 0 return.");
             if (pages is not null && pages[^1].HasNextPage) Console.WriteLine("N to load the next page.");
             Console.Write("Selection: ");
@@ -262,14 +257,18 @@ public static class ParticipantCommands
             if (!int.TryParse(
                 input,
                 out var selection
-            ) || selection < 1 || selection > ordered.Count)
+            ) || selection < 1 || selection > displayedCount)
             {
                 ConsoleUi.Pause("That node does not exist.");
                 continue;
             }
             if (openNode is null)
                 ConsoleUi.Pause("Node navigation is unavailable in this view.");
-            else openNode(ordered[selection - 1]);
+            else
+            {
+                var selected = sqlListing is null ? ordered[selection - 1] : nodes.GetById(new NodeId(ranked![selection - 1].NodeId));
+                if (selected is not null) openNode(selected);
+            }
         }
     }
 }
