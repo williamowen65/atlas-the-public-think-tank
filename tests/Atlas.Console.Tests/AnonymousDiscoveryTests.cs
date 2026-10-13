@@ -32,7 +32,7 @@ public sealed class AnonymousDiscoveryTests
         StringAssert.Contains(output, "NODE COMMUNITIES");
         StringAssert.Contains(output, "AUTHOR PROFILE");
         StringAssert.Contains(output, "This is a root node with no ancestors");
-        Assert.IsTrue(pages.Count >= 2, "Returning from node exploration must restore Discovery.");
+        Assert.IsGreaterThanOrEqualTo(2, pages.Count, "Returning from node exploration must restore Discovery.");
     }
 
     [TestMethod]

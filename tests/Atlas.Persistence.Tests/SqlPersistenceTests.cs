@@ -69,7 +69,7 @@ public sealed class SqlPersistenceTests
                 visited.AddRange(segment.Items.Select(item => item.NodeId));
                 if (segment.ContinuationNodeId is not Guid next)
                     break;
-                Assert.IsTrue(segment.DisplayText.Contains("…"));
+                Assert.Contains("…", segment.DisplayText, StringComparison.Ordinal);
                 cursor = next;
             } while (segmentSizes.Count < 5);
             CollectionAssert.AreEqual(new[] { 3, 3, 3, 1 }, segmentSizes.ToArray());
