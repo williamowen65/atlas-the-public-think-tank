@@ -1,0 +1,75 @@
+-- One batched projection for selected IDs. No EF entities or domain graphs are materialized.
+WITH Selected AS (
+    SELECT CONVERT(uniqueidentifier, [value]) AS Id FROM OPENJSON(@ids)
+), PublicNodes AS (
+    SELECT n.*, COALESCE(t.Name, N'Unknown') AS TypeName,
+           CAST(CASE WHEN m.Id IS NULL THEN 0 ELSE 1 END AS bit) AS IsHidden,
+           CONCAT(N'[Hidden by moderator: ', CASE m.PublicReason WHEN 1 THEN N'Spam' WHEN 2 THEN N'Harassment'
+               WHEN 3 THEN N'Unsafe content' WHEN 4 THEN N'Off topic' ELSE N'Other' END, N']') AS Notice
+    FROM NodeRows n LEFT JOIN NodeTypeRows t ON t.Id = n.TypeId
+    OUTER APPLY (SELECT TOP(1) Id, PublicReason FROM ModerationCaseRows
+        WHERE NodeId = n.Id AND Status = 2 AND VisibilityRestoredAt IS NULL
+        ORDER BY DecidedAt DESC, Id) m
+), Paths AS (
+    SELECT s.Id AS SelectedId, p.ParentNodeId AS AncestorId,
+           CONVERT(nvarchar(max), CONCAT(a.TypeName, N' · ', CASE WHEN a.IsHidden = 1 THEN a.Notice ELSE a.Title END)) AS Breadcrumb,
+           CONVERT(nvarchar(max), CONCAT(N'/', s.Id, N'/', p.ParentNodeId, N'/')) AS Visited,
+           CONVERT(nvarchar(max), RIGHT(CONCAT(N'0000000000', p.Position), 10)) AS PathOrder
+    FROM Selected s JOIN NodeParents p ON p.NodeId = s.Id JOIN PublicNodes a ON a.Id = p.ParentNodeId
+    UNION ALL
+    SELECT path.SelectedId, p.ParentNodeId,
+           CONVERT(nvarchar(max), CONCAT(a.TypeName, N' · ', CASE WHEN a.IsHidden = 1 THEN a.Notice ELSE a.Title END, N' → ', path.Breadcrumb)),
+           CONVERT(nvarchar(max), CONCAT(path.Visited, p.ParentNodeId, N'/')),
+           CONVERT(nvarchar(max), CONCAT(path.PathOrder, N'/', RIGHT(CONCAT(N'0000000000', p.Position), 10)))
+    FROM Paths path JOIN NodeParents p ON p.NodeId = path.AncestorId JOIN PublicNodes a ON a.Id = p.ParentNodeId
+    WHERE CHARINDEX(CONCAT(N'/', p.ParentNodeId, N'/'), path.Visited) = 0
+)
+SELECT n.Id AS NodeId, CASE WHEN n.IsHidden = 1 THEN n.Notice ELSE n.Title END AS Title,
+       n.TypeName, COALESCE(author.DisplayName, N'Unknown') AS AuthorName, n.Status, n.CreatedAt,
+       CASE WHEN n.IsHidden = 1 THEN n.Notice WHEN n.DescriptionId IS NULL THEN N'Description document not found.'
+            ELSE COALESCE(description.Text, N'No description has been provided.') END AS Description,
+       COALESCE(paths.Text, N'Root node') AS Breadcrumb,
+       COALESCE(children.Text, N'None') AS SubNodes,
+       COALESCE(reactions.Text, N'—') AS Reactions,
+       COALESCE(communities.Text, N'None') AS Communities,
+       (SELECT COUNT(*) FROM CommentRows c WHERE c.TargetKind = N'Node' AND c.TargetId = n.Id) AS CommentCount,
+       n.IsHidden
+FROM Selected s JOIN PublicNodes n ON n.Id = s.Id LEFT JOIN ParticipantRows author ON author.Id = n.AuthorId
+OUTER APPLY (
+    SELECT STRING_AGG(CONVERT(nvarchar(max), CASE b.Kind
+        WHEN N'markdown' THEN COALESCE(b.Markdown, N'')
+        WHEN N'image' THEN CONCAT(N'Image: ', b.AltText, N' (', b.Url COLLATE Latin1_General_100_CI_AI_SC, N')')
+        WHEN N'video' THEN CONCAT(N'Video: ', b.Caption, N' (', b.Url COLLATE Latin1_General_100_CI_AI_SC, N')')
+        WHEN N'link-preview' THEN CONCAT(N'Link: ', b.Title, N' (', b.Url COLLATE Latin1_General_100_CI_AI_SC, N') — ', b.Description)
+        WHEN N'poll-reference' THEN N'Poll'
+        WHEN N'chart-reference' THEN CONCAT(N'Chart: ', b.Title) ELSE b.Kind END), NCHAR(10) + NCHAR(10))
+        WITHIN GROUP (ORDER BY link.Position) AS Text
+    FROM DocumentBlocks link JOIN BlockRows b ON b.Id = link.BlockId WHERE link.DocumentId = n.DescriptionId AND n.IsHidden = 0
+) description
+OUTER APPLY (
+    SELECT STRING_AGG(CONVERT(nvarchar(max), path.Breadcrumb), N' | ') WITHIN GROUP (ORDER BY path.PathOrder) AS Text
+    FROM Paths path WHERE path.SelectedId = n.Id AND NOT EXISTS (SELECT 1 FROM NodeParents p WHERE p.NodeId = path.AncestorId)
+) paths
+OUTER APPLY (
+    SELECT STRING_AGG(CONVERT(nvarchar(max), CONCAT(k.Count, N' ', t.Name)), N' · ') WITHIN GROUP (ORDER BY t.Name) AS Text
+    FROM (SELECT types.TypeId, COUNT(child.Id) AS Count FROM (
+            SELECT requested.TypeId FROM NodeRequestedTypes requested WHERE requested.NodeId = n.Id
+            UNION SELECT c.TypeId FROM NodeParents p JOIN NodeRows c ON c.Id = p.NodeId WHERE p.ParentNodeId = n.Id
+         ) types
+         LEFT JOIN NodeRows child ON child.TypeId = types.TypeId AND EXISTS (SELECT 1 FROM NodeParents p WHERE p.NodeId = child.Id AND p.ParentNodeId = n.Id)
+         GROUP BY types.TypeId) k JOIN NodeTypeRows t ON t.Id = k.TypeId
+) children
+OUTER APPLY (
+    SELECT STRING_AGG(CONVERT(nvarchar(max), r.Label), N', ') WITHIN GROUP (ORDER BY r.CreatedAt, r.SortId) AS Text
+    FROM (SELECT TOP(3) CONCAT(d.Emoji, N' ', d.Text, N' (', votes.Score, N')') AS Label, nr.CreatedAt,
+            CONVERT(char(36), nr.Id) COLLATE Latin1_General_100_BIN2 AS SortId
+          FROM NodeReactionRows nr JOIN ReactionDefinitionRows d ON d.Id = nr.ReactionDefinitionId
+          CROSS APPLY (SELECT SUM(Value) AS Score FROM VoteRows v WHERE v.TargetType = N'NodeReaction' AND v.TargetId = nr.Id) votes
+          WHERE nr.NodeId = n.Id AND nr.LifecycleState = N'Active' AND d.IsSuppressed = 0 AND votes.Score IS NOT NULL
+          ORDER BY nr.CreatedAt, CONVERT(char(36), nr.Id) COLLATE Latin1_General_100_BIN2) r
+) reactions
+OUTER APPLY (
+    SELECT STRING_AGG(CONVERT(nvarchar(max), c.Name), N', ') WITHIN GROUP (ORDER BY c.Name) AS Text
+    FROM CommunityNodeRows link JOIN CommunityRows c ON c.Id = link.CommunityId WHERE link.NodeId = n.Id
+) communities
+OPTION (MAXRECURSION 0)

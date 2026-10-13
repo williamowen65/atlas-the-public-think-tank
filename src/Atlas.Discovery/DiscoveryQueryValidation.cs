@@ -1,8 +1,8 @@
 namespace Atlas.Discovery;
 
-internal static class DiscoveryQueryValidation
+public static class DiscoveryQueryValidation
 {
-    internal static void Validate(DiscoveryQuery query)
+    public static void Validate(DiscoveryQuery query)
     {
         if (query.Page < 1)
             throw new ArgumentOutOfRangeException(

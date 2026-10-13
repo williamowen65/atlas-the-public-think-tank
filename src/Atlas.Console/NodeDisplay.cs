@@ -138,6 +138,25 @@ public static class NodeDisplay
         )}");
     }
 
+    /// <summary>Renders a batched immutable Discovery card without repository fan-out.</summary>
+    public static void WriteDiscoveryCard(Atlas.Discovery.RankedDiscoveryItem item, int number, int? currentVote = null)
+    {
+        var card = item.Card ?? throw new ArgumentException("Discovery card is required.");
+        Console.WriteLine();
+        WriteWrapped($"{number}. {card.TypeName} · ", card.Title);
+        Console.WriteLine();
+        WriteBreadcrumb(card.Breadcrumb);
+        Console.WriteLine($"   By {card.AuthorName} · {card.Status} · Created {card.CreatedAt:yyyy-MM-dd}");
+        Console.WriteLine();
+        WriteWrapped("   ", card.Description);
+        Console.WriteLine();
+        Console.WriteLine($"   Importance: {FormatVoteCount(item.VoteCount)} votes · avg {FormatAverageVote(item.AverageVote)} · my rating {FormatCurrentParticipantVote(currentVote)}");
+        WriteWrapped("   Sub-nodes: ", card.SubNodes);
+        WriteWrapped("   Reactions: ", card.Reactions);
+        WriteWrapped("   Communities: ", card.Communities);
+        Console.WriteLine($"   Comments: {card.CommentCount}");
+    }
+
     /// <summary>Writes details to the console display.</summary>
     public static void WriteDetails(
         Node node,

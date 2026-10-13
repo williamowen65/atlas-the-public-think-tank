@@ -1,12 +1,11 @@
 using Atlas.Persistence;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
-using Atlas.ConsoleApp.Discovery;
 
 namespace Atlas.ConsoleApp.Storage;
 
 /// <summary>Maps domain objects directly to EF Core rows in SQL Server.</summary>
-public sealed class SqlNodeRepository(Func<AtlasDataContext>? contextFactory = null, NodeCreationQuotaPolicy? quotaPolicy = null) : SqlRepository(contextFactory), INodeRepository, IDiscoveryNodeReader, INodeTopologyBoundary, INodeCreationQuota
+public sealed class SqlNodeRepository(Func<AtlasDataContext>? contextFactory = null, NodeCreationQuotaPolicy? quotaPolicy = null) : SqlRepository(contextFactory), INodeRepository, INodeTopologyBoundary, INodeCreationQuota
 {
     private readonly NodeCreationQuotaPolicy _quotaPolicy = quotaPolicy ?? NodeCreationQuotaPolicy.Default;
 
@@ -57,13 +56,12 @@ public sealed class SqlNodeRepository(Func<AtlasDataContext>? contextFactory = n
     // These queries currently load and reconstitute all Nodes, then filter in memory.
     private IReadOnlyCollection<Node> All() => ReadRows<NodeRow>().Select(ToDomain).ToList();
     public IReadOnlyCollection<Node> GetChildren(NodeId parentId) => All().Where(node => node.ParentNodeIds.Contains(parentId)).ToList();
-    public IReadOnlyCollection<Node> GetByAuthor(NodeAuthorId authorId) => All().Where(node => node.AuthorId == authorId).ToList();
+    public IReadOnlyCollection<Node> GetByAuthor(NodeAuthorId authorId) => QueryRows<NodeRow>(row => row.AuthorId == authorId.Value).Select(ToDomain).ToList();
     public IReadOnlyCollection<Node> GetParentCandidates(
         NodeId childId,
         IReadOnlyCollection<NodeId> existingParentIds
     ) =>
         All().Where(node => node.Id != childId && !existingParentIds.Contains(node.Id)).ToList();
-    IReadOnlyCollection<Node> IDiscoveryNodeReader.ReadNodesForDiscovery() => All();
     /// <summary>Persists a complete node, including its parents, under graph coordination.</summary>
     public void Save(Node node) => ExecuteTopology(() => { SaveCore(
         node,

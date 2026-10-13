@@ -9,7 +9,7 @@ public sealed class DiscoveryReadQueryTests
     public void Page_requests_use_page_port_without_loading_unpaged_results()
     {
         var port = new PageOnlyQuery();
-        var service = DiscoveryService.FromReadQuery(port);
+        var service = new DiscoveryService(port);
         var query = new DiscoveryQuery(Page: 2);
         Assert.AreSame(port.Page, service.DiscoverPage(query));
         Assert.AreSame(query, port.LastQuery);
@@ -24,7 +24,7 @@ public sealed class DiscoveryReadQueryTests
     public void Invalid_requests_are_rejected_before_reaching_storage()
     {
         var port = new PageOnlyQuery();
-        var service = DiscoveryService.FromReadQuery(port);
+        var service = new DiscoveryService(port);
         Assert.Throws<ArgumentOutOfRangeException>(() => service.DiscoverPage(new DiscoveryQuery(Page: 0)));
         Assert.Throws<ArgumentOutOfRangeException>(() => service.DiscoverAuthoredPage(new DiscoveryQuery(MinimumAverageVote: double.NaN), []));
         Assert.Throws<ArgumentException>(() => service.Discover(new DiscoveryQuery(MinimumVoteCount: 4, MaximumVoteCount: 2)));

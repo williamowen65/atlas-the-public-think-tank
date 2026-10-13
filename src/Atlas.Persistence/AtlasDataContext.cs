@@ -1,3 +1,4 @@
+using Atlas.Persistence.Discovery;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -26,6 +27,38 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
     public DbSet<ModerationCaseRow> ModerationCaseRows => Set<ModerationCaseRow>();
     public DbSet<NotificationRow> NotificationRows => Set<NotificationRow>();
     public DbSet<NotificationPreferencesRow> NotificationPreferencesRows => Set<NotificationPreferencesRow>();
+
+    // Generations change in the same transaction as the data. Failed saves and outer
+    // operation rollbacks therefore cannot invalidate or publish attempted state.
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        var change = DiscoveryInvalidation.Changes(this);
+        if (!change.Page) return base.SaveChanges(acceptAllChangesOnSuccess);
+        using var transaction = Database.CurrentTransaction is null ? Database.BeginTransaction() : null;
+        AdvanceDiscovery(change.Detail);
+        var count = base.SaveChanges(acceptAllChangesOnSuccess);
+        transaction?.Commit();
+        return count;
+    }
+
+    public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        var change = DiscoveryInvalidation.Changes(this);
+        if (!change.Page) return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        await using var transaction = Database.CurrentTransaction is null ? await Database.BeginTransactionAsync(cancellationToken) : null;
+        var countUpdated = await Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE DiscoveryRevisions SET PageVersion = PageVersion + 1, DetailVersion = DetailVersion + {(change.Detail ? 1 : 0)} WHERE Id = 1", cancellationToken);
+        if (countUpdated != 1) throw new InvalidOperationException("Discovery revision is missing; apply the pending migration.");
+        var count = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        if (transaction is not null) await transaction.CommitAsync(cancellationToken);
+        return count;
+    }
+
+    private void AdvanceDiscovery(bool details)
+    {
+        if (Database.ExecuteSqlInterpolated($"UPDATE DiscoveryRevisions SET PageVersion = PageVersion + 1, DetailVersion = DetailVersion + {(details ? 1 : 0)} WHERE Id = 1") != 1)
+            throw new InvalidOperationException("Discovery revision is missing; apply the pending migration.");
+    }
 
     // Repository saves call this before tracking/saving a newly mapped row graph.
     // Audit entries and delivery attempts arrive as lists without database identities.
@@ -56,6 +89,16 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
     {
         base.OnModelCreating(model);
         ConfigureModel(model);
+        model.Entity<DiscoveryRevisionRow>(entity =>
+        {
+            entity.ToTable("DiscoveryRevisions");
+            entity.HasKey(row => row.Id);
+            entity.Property(row => row.Id).ValueGeneratedNever();
+            entity.HasData(new DiscoveryRevisionRow { Id = 1 });
+        });
+        model.Entity<VoteRow>().HasIndex(row => new { row.TargetType, row.TargetId });
+        model.Entity<NodeReactionRow>().HasIndex(row => new { row.NodeId, row.LifecycleState, row.ReactionDefinitionId });
+        model.Entity<ModerationCaseRow>().HasIndex(row => new { row.NodeId, row.Status, row.VisibilityRestoredAt });
         IdentityModel.Configure(model);
         model.Entity<NodeRow>().Property(row => row.Title).UseCollation(DiscoveryTextCollation.Name);
         model.Entity<BlockRow>().Property(row => row.Markdown).UseCollation(DiscoveryTextCollation.Name);

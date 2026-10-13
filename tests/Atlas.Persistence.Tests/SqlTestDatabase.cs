@@ -8,13 +8,14 @@ namespace Atlas.Persistence.Tests;
 internal sealed class SqlTestDatabase : IDisposable
 {
     private readonly DbContextOptions<AtlasDataContext> _options;
-    private SqlTestDatabase(string connection)
+    private SqlTestDatabase(string connection, bool useCurrentModel)
     {
         _options = new DbContextOptionsBuilder<AtlasDataContext>().UseSqlServer(connection).Options;
         using var database = Open();
-        database.Database.Migrate();
+        if (useCurrentModel) database.Database.EnsureCreated();
+        else database.Database.Migrate();
     }
-    public static SqlTestDatabase Create()
+    public static SqlTestDatabase Create(bool useCurrentModel = false)
     {
         // Local projects share one secrets file; CI environment values take precedence.
         var configuration = new ConfigurationBuilder()
@@ -28,7 +29,7 @@ internal sealed class SqlTestDatabase : IDisposable
         {
             InitialCatalog = $"AtlasRepositoryTests_{Guid.NewGuid():N}"
         }.ConnectionString;
-        return new SqlTestDatabase(connection);
+        return new SqlTestDatabase(connection, useCurrentModel);
     }
     public AtlasDataContext Open() => new(_options);
     public Guid AddParticipant(Guid? id = null)

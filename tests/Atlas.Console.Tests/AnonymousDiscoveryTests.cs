@@ -206,21 +206,8 @@ public sealed class AnonymousDiscoveryTests
             new NodeAuthorId(author),
             now
         )).ToList();
-        var candidates = nodes.Select(n => new DiscoveryCandidate(
-            n.Id.Value,
-            n.Title.Value,
-            "",
-            type.Id.Value,
-            author,
-            false,
-            now,
-            now,
-            0,
-            null,
-            [],
-            []
-        )).ToList();
-        var discovery = new RecordingDiscovery(new DiscoveryService(new CandidateSource(candidates)));
+        var discovery = new RecordingDiscovery(new DiscoveryService(new FixedQuery(nodes.Select((node, index) =>
+            new RankedDiscoveryItem(node.Id.Value, index + 1, 5, 1, 5)).ToArray())));
         var nodeRepository = Stub<INodeRepository>((
             method,
             args
@@ -354,9 +341,13 @@ public sealed class AnonymousDiscoveryTests
         );
     }
 
-    private sealed class CandidateSource(IReadOnlyCollection<DiscoveryCandidate> candidates) : IDiscoveryCandidateSource
+    private sealed class FixedQuery(IReadOnlyList<RankedDiscoveryItem> items) : IDiscoveryReadQuery
     {
-        public IReadOnlyCollection<DiscoveryCandidate> GetCandidates() => candidates;
+        public DiscoveryPage DiscoverPage(DiscoveryQuery query) => new(
+            items.Skip((query.Page - 1) * IDiscoveryService.PageSize).Take(IDiscoveryService.PageSize).ToArray(), items.Count, query.Page, IDiscoveryService.PageSize);
+        public DiscoveryPage DiscoverAuthoredPage(DiscoveryQuery query, IReadOnlyCollection<Guid> ids) => DiscoverPage(query);
+        public IReadOnlyList<RankedDiscoveryItem> Discover(DiscoveryQuery query) => items;
+        public IReadOnlyList<RankedDiscoveryItem> DiscoverAuthored(DiscoveryQuery query, IReadOnlyCollection<Guid> ids) => items;
     }
 
     private sealed class RecordingDiscovery(IDiscoveryService inner) : IDiscoveryService

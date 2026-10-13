@@ -1,21 +1,25 @@
 namespace Atlas.Discovery;
 
 /// <summary>Validates Discovery requests before delegating to a read-query implementation.</summary>
-public sealed class DiscoveryService : IDiscoveryService
+public sealed class DiscoveryService : IDiscoveryService, IDiscoveryAuthorListing, IDiscoveryPersonalVotes
 {
     private readonly IDiscoveryReadQuery _query;
 
-    public DiscoveryService(IDiscoveryCandidateSource source)
-        : this(new InMemoryDiscoveryReadQuery(source)) { }
-
-    private DiscoveryService(IDiscoveryReadQuery query)
+    public DiscoveryService(IDiscoveryReadQuery query)
     {
         ArgumentNullException.ThrowIfNull(query);
         _query = query;
     }
 
-    /// <summary>Composes a database-backed read query without requiring a candidate source.</summary>
-    public static DiscoveryService FromReadQuery(IDiscoveryReadQuery query) => new(query);
+    public DiscoveryPage DiscoverAuthorPage(DiscoveryQuery query, Guid authorParticipantId)
+    {
+        Validate(query);
+        if (authorParticipantId == Guid.Empty) throw new ArgumentException("An author is required.", nameof(authorParticipantId));
+        return ((IDiscoveryAuthorListing)_query).DiscoverAuthorPage(query, authorParticipantId);
+    }
+
+    public IReadOnlyDictionary<Guid, int> ReadParticipantVotes(Guid participantId, IReadOnlyCollection<Guid> nodeIds) =>
+        _query is IDiscoveryPersonalVotes votes ? votes.ReadParticipantVotes(participantId, nodeIds) : new Dictionary<Guid, int>();
 
     public DiscoveryPage DiscoverPage(DiscoveryQuery query)
     {

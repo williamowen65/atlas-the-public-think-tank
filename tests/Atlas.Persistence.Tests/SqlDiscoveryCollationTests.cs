@@ -9,7 +9,7 @@ public sealed class SqlDiscoveryCollationTests
     [TestMethod]
     public void Migrated_columns_match_case_and_accents_and_preserve_unicode()
     {
-        using var fixture = SqlTestDatabase.Create();
+        using var fixture = SqlTestDatabase.Create(useCurrentModel: true);
         using var database = fixture.Open();
         var now = DateTimeOffset.UtcNow;
         var node = new NodeRow { Id = Guid.NewGuid(), Title = "Café 世界 🐋", Status = "Active", CreatedAt = now, UpdatedAt = now };

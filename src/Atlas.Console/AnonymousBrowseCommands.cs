@@ -120,11 +120,10 @@ public static class AnonymousBrowseCommands
             // Keep result numbers distinct across pages, and map selections back to this page.
             var firstNumber = DiscoveryPaging.FirstNumber(resultPage);
             var results = resultPage.Items.ToList();
-            var available = results
-                .Select(result => nodes.GetById(new NodeId(result.NodeId)))
-                .Where(node => node is not null)
-                .Cast<Node>()
-                .ToList();
+            var hasCards = results.All(result => result.Card is not null);
+            var available = hasCards ? new List<Node>() : results
+                .Select(result => nodes.GetById(new NodeId(result.NodeId))).OfType<Node>().ToList();
+            var displayedCount = hasCards ? results.Count : available.Count;
 
             if (!Console.IsOutputRedirected) Console.Clear();
             Console.WriteLine("DISCOVERY");
@@ -137,9 +136,14 @@ public static class AnonymousBrowseCommands
             Console.WriteLine($"Status: {(isArchived is null ? "All" : isArchived.Value ? "Archived" : "Active")}");
             Console.WriteLine();
 
-            for (var index = 0; index < available.Count; index++)
+            for (var index = 0; index < displayedCount; index++)
             {
                 var result = results[index];
+                if (hasCards)
+                {
+                    NodeDisplay.WriteDiscoveryCard(result, firstNumber + index);
+                    continue;
+                }
                 NodeDisplay.WriteTableRow(
                     available[index],
                     nodes,
@@ -160,12 +164,12 @@ public static class AnonymousBrowseCommands
                     moderation: moderation
                 );
             }
-            if (available.Count == 0) Console.WriteLine("No nodes match the current filters.");
+            if (displayedCount == 0) Console.WriteLine("No nodes match the current filters.");
 
             Console.WriteLine();
             DiscoveryPaging.WriteSummary(
                 resultPage,
-                available.Count
+                displayedCount
             );
             Console.WriteLine("Node number to view; S text; C community; T node type; A author; U status; X clear; 0 return.");
             DiscoveryPaging.WriteNavigation(resultPage);
@@ -245,12 +249,13 @@ public static class AnonymousBrowseCommands
             if (!int.TryParse(
                 input,
                 out var selection
-            ) || selection < firstNumber || selection >= firstNumber + available.Count)
+            ) || selection < firstNumber || selection >= firstNumber + displayedCount)
             {
                 ConsoleUi.Pause("That is not a valid selection."); continue;
             }
 
-            var node = available[selection - firstNumber];
+            var node = hasCards ? nodes.GetById(new NodeId(results[selection - firstNumber].NodeId)) : available[selection - firstNumber];
+            if (node is null) continue;
             var ranked = results[selection - firstNumber];
             if (!Console.IsOutputRedirected) Console.Clear();
             NodeDisplay.WriteDetails(
