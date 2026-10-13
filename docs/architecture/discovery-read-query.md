@@ -1,112 +1,294 @@
-# SQL-backed Discovery and layered caching (PTT-132)
+# Discovery reads, pagination and caching (PTT-132)
 
-Discovery runs through `DiscoveryService` → `IDiscoveryReadQuery` → `SqlDiscoveryReadQuery` in Persistence. Console uses this SQL implementation for anonymous, authenticated and authored listings. There is no production in-memory query or candidate-source adapter. The previous behavior assertions now run against isolated SQL fixtures; their input records are test data, not a second ranking implementation.
+## Start here
 
-## Query and display behavior
+- **Discovery runs in the database.** EF builds the filtering, statistics, ranking and paging queries. There is no production in-memory ranking implementation.
 
-SQL applies all supported filters, computes vote aggregates and ranking scores, counts matches, orders results, and applies OFFSET/FETCH before materialization. Normal pages contain three ranked IDs/statistics. EF metadata and SQL summary batches return immutable display cards for only those IDs. Up to three batched EF ancestor hops provide bounded breadcrumb segments; all complete ancestor routes are no longer expanded. Console renders those cards without per-node repository calls. It loads a domain Node only when the user opens/reports it. Authenticated participant profiles obtain authored totals from the SQL listing rather than loading every authored aggregate.
+- **The host owns the cache.** Console startup creates it, passes it to the query adapter and disposes it when the startup scope exits.
 
-The score remains `(AverageVote ?? 0) + log10(VoteCount + 1) / 100`, plus 0.1 for a title search match. Order is score descending, vote count descending, updated time descending, title ascending under the selected collation, then GUID ascending. Canonical GUID text under `Latin1_General_100_BIN2` preserves .NET Guid ordering rather than SQL Server's native uniqueidentifier ordering. Ranks are global across pages. Offset calculations use long arithmetic, including pages beyond the result set; there is no candidate cap.
+- **Pages and cards are different.** A page identifies the selected nodes and their ranks. A card contains the public information displayed for one node.
 
-Text search uses EF Contains translation with escaped parameters, so `%`, `_` and `[` are literal search characters. Searchable block fields and ordered space-separated concatenation preserve searches spanning adjacent fields or blocks. Poll IDs are not searchable. Community/reaction membership uses EXISTS predicates, avoiding join multiplication of votes. Every selected reaction must be active; definition suppression affects card display but does not alter the existing association-filter rule. Average bounds exclude unvoted nodes. Dates compare the timestamp's stored calendar day with SQL date parameters, including the full DateOnly range.
+- **Breadcrumbs are bounded.** Each segment contains up to three ancestor nodes toward a root, rather than every complete ancestor route.
 
-Count, page and cards share a serializable read transaction. Each request reflects one committed database view. Separate page requests can shift when votes/content change; cursor paging would require a product/API decision about ranking changes. Unpaged methods remain for existing contracts/tests, but Console page flows do not call them.
+- For a visual explanation, open the [read-flow blackboard](../blackboards/workflows/Discovery/DiscoveryReadFlow.excalidraw) or its [code walkthrough](../blackboards/workflows/Discovery/DiscoveryReadFlow.md). The [performance guide](discovery-performance.md) explains the test sequence and links individual database reads to code.
+
+## Follow the request through the code
+
+1. **Console constructs a request.**
+   - [ConsoleApplication.cs](../../src/Atlas.Console/ConsoleApplication.cs) and [AnonymousBrowseCommands.cs](../../src/Atlas.Console/AnonymousBrowseCommands.cs) collect filters and a page number.
+   - [DiscoveryQuery](../../src/Atlas.Discovery/DiscoveryQuery.cs) is the request record, not a query executor.
+
+2. **The service validates and delegates.**
+   - [DiscoveryService](../../src/Atlas.Discovery/DiscoveryService.cs) rejects invalid requests before storage access.
+   - `IDiscoveryReadQuery` is the storage boundary; [SqlDiscoveryReadQuery](../../src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs) implements it.
+   - Both have `DiscoverPage` methods. The service delegates to the adapter; this does not execute the query twice.
+
+3. **The adapter resolves a page and its cards.**
+   - `Read` opens its own EF context and serializable read transaction.
+   - It checks committed cache revisions, then looks for reusable ranked results.
+   - On a page miss, it executes count and paging queries.
+   - It resolves selected cards separately, loading only missing details.
+   - After the read transaction commits, it publishes new cache entries and returns the results.
+
+## EF query execution: building versus running
+
+- [DiscoveryEfQuery.Build](../../src/Atlas.Persistence/Discovery/DiscoveryEfQuery.cs) returns an `IQueryable`. This is a deferred query expression: building it does not load all candidate nodes.
+
+- `Where`, `Select`, `OrderBy`, `Skip` and `Take` describe the database work. EF translates the supported expressions into SQL.
+
+- `Count()` executes the total-count query. `ToList()` executes the selected-page query and materializes only its results.
+
+- `TagWith("Discovery count")` adds an identifying comment to generated SQL. It helps identify statements in logs and execution plans; it does not execute an additional query.
+
+- Ordinary card labels, status/date and comment counts use an EF metadata batch. Ordered descriptions and other display summaries use a separate SQL batch for the same IDs.
+
+- Listing flows do not reconstruct every domain `Node`. Opening or reporting a node uses its domain repository workflow. Authored-profile totals come from the database listing rather than loading all authored aggregates.
+
+## Ranking and result-page pagination
+
+- **Importance score:** `(AverageVote ?? 0) + log10(VoteCount + 1) / 100`, with an additional `0.1` when the search text matches the title.
+  - `?? 0` gives an unvoted node a zero average for scoring.
+  - The small participation term distinguishes otherwise similar averages.
+  - This is Atlas importance ranking, not full-text relevance ranking.
+
+- **Stable ordering:** score descending, vote count descending, updated time descending, title ascending, then canonical GUID text ascending.
+  - Title ordering uses the Discovery collation.
+  - Binary comparison of canonical GUID text preserves the earlier .NET-compatible tie-breaker; SQL Server's native GUID ordering differs.
+
+- **Page size:** three results. Offset is `(page - 1) * 3`, calculated using long arithmetic.
+  - Example: eight matches, page two → skip three → take three → global ranks 4, 5 and 6.
+  - An offset at or beyond the total returns an empty page without running the ranked-row query.
+  - An offset below the int-sized count safely fits EF's `Skip(int)`.
+
+- A request's count, ranked IDs, card details and breadcrumb hops share one serializable read transaction.
+  - A later request can see a changed ordering after a vote or edit.
+  - This is offset paging, not a frozen multi-request snapshot or cursor API.
+  - Unpaged contracts remain for existing callers/tests; normal Console browsing uses pages.
+
+## Filters and search behavior
+
+- **Text:** case/accent-insensitive substring matching over titles and searchable description-block fields.
+  - EF `Contains` translation escapes parameters; `%`, `_` and `[` remain literal search characters.
+  - Ordered space-separated block text allows a phrase to span adjacent fields or blocks.
+  - Poll reference IDs are not searchable.
+  - This is not SQL Server full-text search; it does not provide the legacy FREETEXTTABLE relevance behavior.
+
+- **Membership:** community and reaction filters use existence checks rather than joins that could multiply vote rows.
+  - Every requested reaction must have an active association.
+  - Suppressed reaction definitions affect card display but do not change the association-filter rule.
+
+- **Average bounds:** unvoted nodes are excluded because their actual average is null, even though scoring uses zero as its fallback.
+
+- **Dates:** EF compares the timestamp's stored calendar date with the requested bounds, including the full DateOnly range. This is not a conversion to the viewer's local date.
+
+- **Moderation versus archive:** public Discovery excludes moderation-hidden nodes; archive inclusion is a separate request setting.
+  - Authored listings may show hidden nodes as placeholders, not their original titles/descriptions.
+  - Hidden text never matches search; ancestor labels are also redacted.
+  - Authored scope limits the listing. It is not permission to reveal hidden original content.
 
 ## Unicode and collation
 
-`Latin1_General_100_CI_AI_SC` is explicit on NodeRows.Title and BlockRows Markdown, AltText, Caption, Title and Description. Existing nvarchar storage preserves original Unicode text and spelling; CI ignores case, AI ignores accents and SC supports supplementary characters. No UTF-8 storage conversion is required. SQL is the authoritative text ordering/search implementation; there is no requirement to match a .NET linguistic comparer for every Unicode sequence. The intentional policy change means cafe finds Café.
+- `Latin1_General_100_CI_AI_SC` is explicit on node titles and block Markdown, AltText, Caption, Title and Description.
 
-URL columns retain their previous identity/equality semantics. URL text participating in Discovery concatenation receives the search/display collation at the expression boundary to avoid collation conflicts. Identity/account identifiers and unique community/reaction keys retain their existing rules. This is a Discovery text policy, not a database-wide change or a claim that one collation gives culturally correct ordering for every language.
+| Suffix | Meaning | Example or purpose |
+|---|---|---|
+| CI | Case-insensitive comparison | `CAFE` and `cafe` compare equivalently |
+| AI | Accent-insensitive comparison | `cafe` can find `Café` |
+| SC | Supplementary-character support | Supports Unicode characters beyond the basic multilingual plane |
 
-## Host wiring and cache lifetime
+- Existing `nvarchar` storage preserves the original text. Matching `Café` with `cafe` does not rewrite its spelling, and no UTF-8 storage conversion is required.
 
-- **Console is the composition root:** [Program.cs](../../src/Atlas.Console/Program.cs) creates the cache and connects the Discovery components. A composition root is the host startup code that constructs and connects services.
-- The startup sequence is equivalent to the following (namespace prefixes omitted for readability):
+- SQL defines the search/title ordering policy. One collation is not a promise of culturally ideal sorting for every language or exact equivalence with every .NET linguistic comparer.
+
+- URL identity/equality, Identity identifiers and unique community/reaction keys retain their existing rules. URL text participating in concatenated Discovery search/display receives explicit expression collation to avoid conflicts.
+
+## Console wiring and cache ownership
+
+- [Program.cs](../../src/Atlas.Console/Program.cs) is the **composition root**: the startup code that constructs and connects these components.
 
 ```csharp
+// Namespace prefixes omitted for readability.
 using var discoveryCache = new DiscoveryCache();
 IDiscoveryService discovery = new DiscoveryService(
     new SqlDiscoveryReadQuery(SqlStorage.Open, discoveryCache));
 ```
 
-- **Console creates and owns `DiscoveryCache`.** The same instance is reused across browsing requests, and `using var` disposes it when the owning startup scope exits.
-- **`SqlDiscoveryReadQuery` receives the cache.** It does not create one lazily. It also receives `SqlStorage.Open`, the factory used to create a fresh EF context for each read.
-- **`DiscoveryService` receives the query adapter**, validates requests and delegates. It does not own cache creation or disposal.
-- The constructor's `DiscoveryCache? cache = null` permits callers/tests to omit caching. Without a cache, both page and detail reuse are disabled; the database read still works. Normal Console startup supplies the cache.
-- Cache entries live only in that process. Another Console instance or API process has independent memory caches; committed database revisions coordinate their freshness.
+- **Console creates, owns and disposes the cache.** It reuses the same instance across browsing requests.
 
-### Future REST API host
+- **The adapter receives it.** `SqlDiscoveryReadQuery` does not create a cache lazily. `SqlStorage.Open` supplies a fresh context for each read.
 
-- Its startup/dependency-injection wiring must explicitly provide the cache if reuse is wanted; it will not inherit the Console's cache.
-- Plan one host-managed cache per database configuration with application lifetime. Recreating it per HTTP request would discard cross-request reuse. Dispose it at host shutdown.
-- Supply a context factory so reads create/dispose their own EF contexts. Do not capture a request-scoped context inside an application-lifetime query adapter or cache.
-- Wire the query adapter into `DiscoveryService`, then use the service from endpoints.
-- Keep authenticated participant ratings outside the shared public cache.
-- This is a wiring guide, not an implemented API registration. Review the current serializing gate and database transaction behavior for concurrent HTTP workloads before carrying it over unchanged.
+- **The service receives the adapter.** `DiscoveryService` validates/delegates; it does not manage cache lifetime.
 
-## Bounded caches
+- **Caching is optional.** Omitting `DiscoveryCache? cache = null` disables both page and detail reuse; the database read still works. Normal Console startup supplies the cache.
 
-Console owns and disposes one `DiscoveryCache` per process/database. Page caching can be disabled by constructing the SQL adapter without a cache. No DbContext, EF-tracked row, mutable domain aggregate or personalized vote is cached.
+### Future REST API wiring
 
-| Layer | Entry and key | Default budget/freshness |
+- Provide an application-lifetime cache per database configuration if reuse is wanted. A new cache per HTTP request would lose cross-request reuse.
+
+- Supply a context factory and dispose each context after its read. Do not capture a request-scoped context in a long-lived adapter/cache.
+
+- Inject the adapter into `DiscoveryService` and use the service from endpoints. Keep personal participant ratings out of shared cards.
+
+- Each API process has its own cache; it does not inherit Console memory. Committed database revisions coordinate freshness across instances.
+
+- This is host-wiring guidance, not an implemented API registration. Review the serializing gate and transaction behavior for concurrent HTTP workloads before reusing them unchanged.
+
+## Two bounded cache layers
+
+| Layer | Stored data | Default budget/lifetime |
 |---|---|---|
-| Ranked page | Immutable IDs, global ranks, scores, statistics and total; SHA-256 of normalized filters, ordered/deduplicated reaction IDs and authored scope, page, size, ordering version, visibility scope and committed page generation | 1 MiB estimated entry sizes; 30-second absolute expiration |
-| Display detail | Immutable public card keyed by node identity and committed detail generation; independent of filter/page | 8 MiB estimated entry sizes; 30-second absolute expiration; maximum entry 128 KiB |
-| Personalized ratings | Fresh SQL batch keyed by the authenticated host participant and selected page IDs | Never shared/cached |
+| Ranked page | Selected IDs, global ranks, scores, statistics and total | 1 MiB estimated sizes; 30-second absolute expiration |
+| Detail card | Immutable public node display fields and bounded breadcrumb segment | 8 MiB estimated sizes; 30-second absolute expiration; maximum entry 128 KiB |
+| Personal ratings | Queried fresh for the authenticated participant and selected IDs | Not shared/cached |
 
-Whitespace normalization, sorted sets and explicit scope fields make equivalent requests reusable without assuming Unicode case-folding equivalence outside SQL. A changed filter can miss the page cache while reusing the same detail cards. Cache counters expose page/detail hits/misses and oversized-entry rejections. Oversized descriptions are returned without being cached. The cache rejects reuse across different database connection configurations.
+- **Page key:** a hash of filters, page number/size, authored scope and visibility policy, plus an ordering-policy prefix and committed page revision.
+  - It is a cache lookup key, not a cursor or authorization token.
+  - Search text is trimmed; set-like inputs are sorted/deduplicated.
+  - Case/accents are preserved in the key rather than assuming SQL and .NET normalization are identical.
 
-A fixed instance gate coordinates concurrent misses without an unbounded dictionary of per-filter locks. This simple Console baseline serializes reads within one instance; it does not pretend to be a high-throughput distributed cache. Other instances have independent bounded memory caches and coordinate freshness through the database generation row. Expiration controls reuse/memory, not moderation correctness.
+- **Detail key:** `(DetailVersion, NodeId)`. It is independent of the filter and result-page number.
+  - Example: changing a filter returns the same three IDs → recompute the ranked page → reuse those three display cards.
+  - If it returns uncached IDs, their cards must be loaded.
 
-## Commit, rollback and visibility correctness
+- **Size budgets are estimates**, not exact managed-heap measurements. Oversized content is still returned to the caller but is not cached.
 
-The model defines a seeded singleton `DiscoveryRevisions` row with separate page and detail generations. `AtlasDataContext.SaveChanges` and its async counterpart increment generations atomically in the same transaction as relevant writes, joining an existing repository operation transaction when present. An unsuccessful save or outer rollback rolls back the generation update as well. New cache entries are published only after a successful read transaction completes.
+- Counters expose hits, misses and oversized-entry rejections. No DbContext, EF-tracked entity, mutable domain aggregate or personal vote is cached.
 
-Each request reads the committed generation row under a shared serializable lock before using cached page/detail entries. Writers update that row under an exclusive transaction lock. Consequently a committed hide, restore, archive, rating or content change cannot reuse an earlier generation; a cached page cannot bypass current visibility. The read lock stays until the page/cards are resolved. As with any ordinary read, a later commit can occur after its read transaction completes; this is not indefinite stale-cache exposure.
+- `BindDatabase` remembers the connection configuration and rejects sharing one cache across different configurations. It does not locate or create a database.
 
-| Change | Page generation | Detail generation |
+- The gate is an in-process lock coordinating reads and counter updates. `_uncachedGate` is the fallback lock object when there is no cache—not another cache.
+  - This deliberately serializes reads through that gate.
+  - It is a simple correctness baseline, not a high-throughput distributed-cache design.
+
+## Cache invalidation: when old entries stop being reusable
+
+- [DiscoveryRevisionRow](../../src/Atlas.Persistence/Discovery/DiscoveryRevisionRow.cs) is a seeded singleton row, Id = 1, with `PageVersion` and `DetailVersion`.
+  - These are freshness generations, not node limits, page numbers or timestamps.
+
+- [DiscoveryInvalidation](../../src/Atlas.Persistence/Discovery/DiscoveryInvalidation.cs) classifies pending tracked writes. [AtlasDataContext.SaveChanges](../../src/Atlas.Persistence/AtlasDataContext.cs) advances the applicable counters once per relevant save.
+
+| Change | Page version | Detail version |
 |---|---|---|
-| Node importance votes | Advance: ranking/statistics may change | Retain: title/body/card metadata unchanged |
-| Reaction votes | Advance conservatively | Advance: reaction scores change |
-| Node creation/title/type/author/archive/restore; topology/requested types | Advance | Advance |
-| Documents, block contents and document/block links | Advance | Advance |
-| Community records/links; reaction associations/definitions | Advance | Advance |
-| Moderation decisions/hide/restore | Advance | Advance |
+| Node importance votes | Advance | Retain |
+| Reaction votes | Advance conservatively | Advance |
+| Node metadata, topology, types/requested types | Advance | Advance |
+| Documents, blocks and their links | Advance | Advance |
+| Community records/links, reaction associations/definitions | Advance | Advance |
+| Moderation hide/restore | Advance | Advance |
 | Participant labels and comments | Advance conservatively | Advance |
-| Unrelated Identity tokens, notification delivery and quota ledger entries | Retain | Retain |
+| Unrelated Identity tokens, notification delivery and quota ledger | Retain | Retain |
 
-Detail invalidation is deliberately coarse across all cards for relevant metadata changes; page invalidation is database-wide. This trades fine-grained write throughput for a small, auditable correctness baseline. It still provides detail reuse across filter changes and node-rating updates. Per-node versions/read models are possible later if measurement justifies them.
+- **Example: node vote.** Ranking/statistics may change, so the page key changes. Its public description and labels have not changed, so detail cards can remain reusable.
 
-Public queries exclude hidden nodes. Authored queries include only their supplied IDs or requested author and render hidden titles/descriptions as moderation placeholders. Hidden text never matches search. Authored scope is a listing restriction, not authorization to reveal original content. Ancestor paths redact hidden ancestors. SQL integration tests cover hide/restore across independently cached instances.
+- **Example: moderation hide.** Both versions advance. Neither the old ranked page nor its old card may be reused.
 
-All application writes affecting Discovery must use AtlasDataContext.SaveChanges. Direct administrative SQL, ExecuteUpdate/ExecuteDelete and imports that bypass it must advance both generations in the same transaction as their data changes:
+- Invalidation is deliberately database-wide, not per-node. Relevant metadata changes make older detail keys unusable across all cards. Finer-grained invalidation is a later optimization to measure.
+
+- Old entries need not be physically deleted immediately: new revisions produce different keys. Expiration/eviction governs retention; revision checking governs committed freshness.
+
+## Transactions, commits and rollbacks
+
+- A relevant write and its revision increment happen in the **same transaction**. SaveChanges joins an existing repository transaction or owns one when needed.
+  - Failure or outer rollback undoes both the data and the counter increments.
+
+- Each read checks the committed revision under a shared serializable lock before using caches. Writers update that row under an exclusive transaction lock.
+  - The read holds its lock until count/page/card work finishes.
+  - A committed visibility change cannot be bypassed by using an older cache generation.
+  - Another write may commit after the read finishes; this guarantee concerns that read's committed view, not indefinite freshness of data already displayed.
+
+- New cache entries are published only after the read transaction commits. Failed read attempts are not published.
+
+- Direct administrative SQL, imports and ExecuteUpdate/ExecuteDelete can bypass SaveChanges. They must advance both revisions in the same transaction as relevant changes:
 
 ```sql
 UPDATE DiscoveryRevisions
-SET PageVersion = PageVersion + 1, DetailVersion = DetailVersion + 1
+SET PageVersion = PageVersion + 1,
+    DetailVersion = DetailVersion + 1
 WHERE Id = 1;
 ```
 
-Do not reset a live database's generation row while processes retain cached entries; stop/restart the application for a complete database reset.
+- Do not reset the live revision row while processes retain cached entries. Stop/restart application processes for a complete database reset.
 
-## Verification and profiling
+## Breadcrumb pages toward the root
 
-`DiscoverySqlParityTests` retains explicit assertions for ordering, paging, totals, filters, authored visibility and title-match boosts. `DiscoveryEdgeCaseTests` covers accent-insensitive title ties, equivalent GUID tie-breaking, timestamp calendar dates, full date bounds, literal wildcard input and searches across ordered blocks. `DiscoveryCacheTests` covers filter-change detail reuse, vote updates, successful commits, failed async saves, explicit rollbacks, concurrent misses, separate app-instance caches, hide/restore, content/relationship changes, oversized entries and personalized isolation. These exercise SQL, not an in-memory query.
+- [DiscoveryBreadcrumbReader](../../src/Atlas.Persistence/Discovery/DiscoveryBreadcrumbReader.cs) reads **up to three ancestor nodes**, nearest first, along one route.
+  - It uses up to three batched EF hop queries for selected cards.
+  - It follows the first stored parent position by default and flags alternatives.
+  - It does not expand every route or load a fourth ancestor to detect continuation.
 
-`DiscoveryPerformanceTests` uses 100, 1,000 and 10,000 nodes with persisted ratings. It asserts three materialized ranked results/cards per page and query counts of six on a cold root-only page, one on a warm page, three after a filter change that reuses cards, six on a new root-only page and two beyond the result set. It captures timings, reserved database bytes and actual SQL execution plans for unfiltered count/ranking/cards and text-filtered count/ranking. The SQL CI job uploads `discovery-sql-evidence`; measurements and plan review are recorded in [the performance notes](discovery-performance.md).
+- `DiscoveryCard.BreadcrumbSegment` contains items, a continuation node ID, an alternative-route indicator and a cycle indicator.
+  - Example: child → A → B → C → D. First segment: A, B, C. Continue above C to receive D and any further ancestors.
+  - `ReadPage` accepts visited IDs to stop cycles across successive segments.
+  - Hosts own transaction scope; separate requests do not promise one frozen graph view.
 
-The model adds target-first vote, active-reaction membership and moderation-visibility indexes. Existing document-link, parent, community-link and primary-key indexes support batched joins. Free-text substring search still requires examining matching text and ranking requires processing matching statistics; database-side execution does not make those costs disappear. Plans and larger workload measurements should guide any later full-text search, cursor API or derived-summary work.
+- Display text ends with an ellipsis when more ancestors exist. Hidden ancestors use moderation notices. Roots, unavailable links or cycles can end a segment early.
 
-## Developer-generated migration
+- Console Explore parents offers three ancestors at a time; N continues above the last one. Immediate-parent route choices are also offered in sets of three.
+  - Inside a segment, the first stored parent is provisional.
+  - Open an intermediate ancestor and explore its parents to choose another branch there.
+  - The future scrollable breadcrumb/path-feed route-switching UI remains open.
 
-AI instructions in `src/Atlas.Persistence/AGENTS.md` prohibit generating or editing migrations/snapshots. The model changes are complete, but the developer must generate/review/commit the collation, indexes and seeded revision-table migration. No migration or snapshot is authored by this implementation.
+## Why some raw SQL remains
 
-From the solution root, run these commands individually in PowerShell:
+- **Breadcrumb recursion no longer requires SQL.** The three-hop bound made it practical to express traversal in EF.
+
+- [DiscoverySearchContent.sql](../../src/Atlas.Persistence/Discovery/DiscoverySearchContent.sql) preserves ordered concatenation across description fields/blocks. Checking each block independently would lose matches spanning boundaries.
+
+- [DiscoveryCards.sql](../../src/Atlas.Persistence/Discovery/DiscoveryCards.sql) preserves ordered display aggregation. Its child-type JSON could move into another EF batch, but remains here to avoid a further round trip.
+
+- Ordered aggregation uses SQL Server-specific `STRING_AGG ... WITHIN GROUP`; the current query does not have a suitable ordered aggregate LINQ translation. Atomic revision increments also remain parameterized SQL.
+
+- EF expresses more of the implementation, but portability is not automatic. Changing providers still requires reviewing collations, translations and these SQL helpers.
+
+## Database reads and performance limits
+
+| Request | Expected reads |
+|---|---:|
+| Cold root-only page | 6 |
+| Cold page with deeper breadcrumbs | Up to 8 |
+| Fully cached page | 1 |
+| Changed filter reusing all selected cards | 3 |
+| Beyond-last page | 2 |
+
+- Cold work consists of revision, total count, ranked IDs, EF metadata, SQL summaries and one to three breadcrumb hops. Hop queries batch selected IDs rather than querying each card separately.
+
+- Authenticated personal ratings add a separate batch. These numbers count Discovery reads, not every operation in the Console.
+
+- The counts document this implementation; they are not a claim of the fewest possible reads. Batching differently could reduce round trips at the expense of query complexity.
+
+- Returning only three results bounds application materialization. SQL may still examine thousands of candidates to rank them or inspect their text. Database-side paging does not make database cost constant.
+
+- Vote, reaction and moderation indexes support the query paths, alongside document/parent/community and primary-key indexes. Plans and realistic workloads should guide later search, statistics, invalidation or cursor changes.
+
+## Tests and evidence
+
+| Test group | What it checks |
+|---|---|
+| DiscoverySqlParityTests | Expected filters, ranking, totals, paging, authored visibility and title boosts |
+| DiscoveryEdgeCaseTests | Accent/GUID ties, calendar dates, extreme bounds, literal wildcards and cross-block search |
+| DiscoveryCacheTests | Reuse, invalidation, commits/rollbacks, misses, cross-instance visibility, oversized entries and personal isolation |
+| DiscoveryBreadcrumbTests | Bounded deep segments, continuation, branches, roots, hidden ancestors and cycles |
+| AncestorNavigationTests | Console route choice, bounded reads and continuation |
+| DiscoveryPerformanceTests | 100/1,000/10,000-node root fixtures, query counts, timings, reserved space and actual plans |
+
+- SQL behavior tests run against isolated databases; their fixture records are test data, not a second in-memory query implementation.
+
+- The SQL Discovery CI job uploads `discovery-sql-evidence`. See the [performance guide](discovery-performance.md) for interpretation and linked read locations.
+
+- Earlier raw-SQL and pre-breadcrumb timings/plans are historical. Use the matching commit/run's evidence when evaluating the current implementation.
+
+## Migration status and developer workflow
+
+- The developer-generated collation/index/revision-table migration is already committed in this PR. The later EF/readability/breadcrumb changes do not require another migration.
+
+- [Persistence AGENTS.md](../../src/Atlas.Persistence/AGENTS.md) requires AI to change model configuration and provide commands, leaving migration generation/review to the developer.
+
+- For a future model change, run commands individually from the solution root, using a migration name describing that change:
 
 ```powershell
 dotnet tool restore
-dotnet ef migrations add CompleteDiscoveryReadModel --project src/Atlas.Persistence
-# Review the generated migration, designer and snapshot before applying.
+dotnet ef migrations add YourDescriptiveMigrationName --project src/Atlas.Persistence
+# Review the migration, designer and snapshot before applying.
 dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence
 dotnet ef database update --project src/Atlas.Persistence
 dotnet test tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj
@@ -115,23 +297,12 @@ dotnet test tests/Atlas.Console.Tests/Atlas.Console.Tests.csproj
 dotnet test tests/Atlas.Moderation.Tests/Atlas.Moderation.Tests.csproj
 ```
 
-If a local collation-only migration has already been generated but has not been applied or committed, remove it with EF tooling before generating the combined migration. If it has already been applied/committed, keep it and generate an additional migration for the remaining read-model changes.
+- Preserve developer-generated migration history. If a collation-only migration has already been applied/committed, retain it and generate any remaining changes separately rather than removing it.
 
-SQL Discovery CI uses EnsureCreated only for disposable, uniquely named current-model fixtures. It validates behavior before the developer creates migrations. The ordinary migration/model check and migrated repository integration jobs remain intact and require the generated migration. Current-model tests are not evidence that a missing migration can deploy successfully.
+- Current-model Discovery fixtures use EnsureCreated on disposable, uniquely named databases. Ordinary migrated integration jobs and pending-model checks separately verify the migration path. EnsureCreated alone does not prove deployability through migrations.
 
-References: [SQL Server collation and Unicode support](https://learn.microsoft.com/en-us/sql/relational-databases/collations/collation-and-unicode-support) and [column collation changes](https://learn.microsoft.com/en-us/sql/relational-databases/collations/set-or-change-the-column-collation).
+## References
 
-## EF readability refactor
+- [SQL Server collation and Unicode support](https://learn.microsoft.com/en-us/sql/relational-databases/collations/collation-and-unicode-support)
 
-Filtering, vote aggregates, scoring, count and ordered Skip/Take now use `DiscoveryEfQuery` and deferred EF LINQ. Card metadata uses a page-restricted EF projection; ordered text summaries remain isolated SQL; breadcrumbs now use bounded EF hops. The metadata split adds one read, and bounded breadcrumbs add one to three hop reads (six to eight cold reads total) while fully cached reads remain one. See the [walkthrough and blackboard](../blackboards/workflows/Discovery/DiscoveryReadFlow.md) for the code sequence and SQL exceptions. Earlier performance measurements describe the previous raw-SQL implementation and must not be attributed to the EF queries.
-
-## Bounded breadcrumb pagination
-
-- A breadcrumb page contains **three ancestor nodes**, moving from the immediate parent toward a root, not three complete routes.
-- `DiscoveryBreadcrumbReader` uses at most three EF hop queries, batched across selected cards. Each hop follows the first stored parent position and records whether alternatives exist. It does not enumerate all ancestor routes or load a fourth node to detect continuation.
-- `DiscoveryCard.BreadcrumbSegment` exposes immutable items, a continuation node ID, alternative-route and cycle indicators. Continue above that ID with `ReadPage`, supplying visited IDs to stop cycles across segments. Keep successive reads in a host-managed read transaction when a consistent view is required.
-- Display text is nearest-first, ends in an ellipsis when more ancestors exist, and redacts moderated titles. The ancestor page may stop before three items at a root, missing link or cycle.
-- Console opened-node displays use the same three-node bound. Explore parents reads three ancestors at a time; N continues above the last one. Multiple immediate parents are offered in sets of three. Inside a segment the stored first parent is provisional; open an intermediate ancestor and explore its parents to select another branch.
-- Root-only performance fixtures now use six cold/new-page reads: the previous five plus one batched root-hop check. Deep pages can add up to three breadcrumb queries, for eight cold reads. Fully cached pages still use one revision read; filter changes with reused cards still use three; beyond-last pages use two.
-- Breadcrumb recursion has been removed from `DiscoveryCards.sql`. Raw SQL remains for ordered display aggregation and ordered searchable block text, not for ancestor traversal. No schema/migration change is needed.
-- A future frontend can use the structured continuation for a scrollable breadcrumb or path feed. Its visual route-switching design remains open; the Console policy is a bounded provisional behavior.
+- [Column collation changes](https://learn.microsoft.com/en-us/sql/relational-databases/collations/set-or-change-the-column-collation)
