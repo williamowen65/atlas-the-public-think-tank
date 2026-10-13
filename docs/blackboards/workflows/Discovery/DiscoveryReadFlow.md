@@ -2,6 +2,13 @@
 
 Open [the editable blackboard](DiscoveryReadFlow.excalidraw). Its numbered regions follow the code below. This board complements the older Discovery domain board; it focuses on storage reads, paging and cache freshness.
 
+## Before a request: Console startup wiring
+
+- [Console Program.cs](../../../../src/Atlas.Console/Program.cs) creates one `DiscoveryCache` and passes it to `SqlDiscoveryReadQuery` together with the `SqlStorage.Open` context factory.
+- Console wraps that adapter in `DiscoveryService`. The service delegates reads; it does not construct the cache.
+- Console owns cache disposal and reuses the instance across requests. Omitting the optional cache disables reuse, not database access.
+- A future REST API must supply its own host-lifetime cache and per-read context factory. See [host wiring and cache lifetime](../../../architecture/discovery-read-query.md#host-wiring-and-cache-lifetime).
+
 ## 1. One request
 
 1. `DiscoveryService` validates the filters. `SqlDiscoveryReadQuery.Read` trims search text and normalizes set inputs.

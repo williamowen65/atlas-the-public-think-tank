@@ -18,6 +18,32 @@ Count, page and cards share a serializable read transaction. Each request reflec
 
 URL columns retain their previous identity/equality semantics. URL text participating in Discovery concatenation receives the search/display collation at the expression boundary to avoid collation conflicts. Identity/account identifiers and unique community/reaction keys retain their existing rules. This is a Discovery text policy, not a database-wide change or a claim that one collation gives culturally correct ordering for every language.
 
+## Host wiring and cache lifetime
+
+- **Console is the composition root:** [Program.cs](../../src/Atlas.Console/Program.cs) creates the cache and connects the Discovery components. A composition root is the host startup code that constructs and connects services.
+- The startup sequence is equivalent to the following (namespace prefixes omitted for readability):
+
+```csharp
+using var discoveryCache = new DiscoveryCache();
+IDiscoveryService discovery = new DiscoveryService(
+    new SqlDiscoveryReadQuery(SqlStorage.Open, discoveryCache));
+```
+
+- **Console creates and owns `DiscoveryCache`.** The same instance is reused across browsing requests, and `using var` disposes it when the owning startup scope exits.
+- **`SqlDiscoveryReadQuery` receives the cache.** It does not create one lazily. It also receives `SqlStorage.Open`, the factory used to create a fresh EF context for each read.
+- **`DiscoveryService` receives the query adapter**, validates requests and delegates. It does not own cache creation or disposal.
+- The constructor's `DiscoveryCache? cache = null` permits callers/tests to omit caching. Without a cache, both page and detail reuse are disabled; the database read still works. Normal Console startup supplies the cache.
+- Cache entries live only in that process. Another Console instance or API process has independent memory caches; committed database revisions coordinate their freshness.
+
+### Future REST API host
+
+- Its startup/dependency-injection wiring must explicitly provide the cache if reuse is wanted; it will not inherit the Console's cache.
+- Plan one host-managed cache per database configuration with application lifetime. Recreating it per HTTP request would discard cross-request reuse. Dispose it at host shutdown.
+- Supply a context factory so reads create/dispose their own EF contexts. Do not capture a request-scoped context inside an application-lifetime query adapter or cache.
+- Wire the query adapter into `DiscoveryService`, then use the service from endpoints.
+- Keep authenticated participant ratings outside the shared public cache.
+- This is a wiring guide, not an implemented API registration. Review the current serializing gate and database transaction behavior for concurrent HTTP workloads before carrying it over unchanged.
+
 ## Bounded caches
 
 Console owns and disposes one `DiscoveryCache` per process/database. Page caching can be disabled by constructing the SQL adapter without a cache. No DbContext, EF-tracked row, mutable domain aggregate or personalized vote is cached.
