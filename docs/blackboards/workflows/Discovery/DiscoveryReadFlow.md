@@ -20,17 +20,45 @@ Open [the editable blackboard](DiscoveryReadFlow.excalidraw). Its numbered regio
 
 ## 2. Pagination
 
-The page size is three. Offset is `(page - 1) * 3`, calculated with long arithmetic. For eight matches, page two skips three and takes three, returning global ranks four through six. Page three returns ranks seven and eight. An offset at or beyond the count returns an empty page without executing its ranked-row query.
+- **Page size:** three nodes. The offset is how many matching nodes to skip: `(page - 1) * 3`.
 
-Ordering is score descending, vote count descending, updated time descending, title ascending under the Discovery collation, then canonical GUID text ascending under binary collation. The GUID tie-breaker preserves the earlier .NET ordering policy. Since the total is an int, a long offset below the total can safely be cast for EF's `Skip(int)`.
+- **Eight matching nodes:**
+  - Page 1 skips zero and returns ranks 1, 2 and 3.
+  - Page 2 skips three and returns ranks 4, 5 and 6.
+  - Page 3 skips six and returns ranks 7 and 8.
+  - Page 4 is beyond the matching total and returns an empty page without a ranked-row query.
 
-Each request has a consistent committed view; different page requests can shift after writes. This is offset paging, not cursor paging or a snapshot spanning several requests.
+- **Sort rules:** the next rule only decides the order when all earlier values tie. See [the database ordering](../../../../src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs).
+  1. Higher ranking score first.
+  2. More votes first if scores tie.
+  3. Most recently updated first if score and vote count tie.
+  4. Title in ascending order under the Discovery text collation if the first three values tie.
+  5. Canonical GUID text in ascending binary order if titles also tie. This final rule makes equal results deterministic and preserves the earlier .NET GUID ordering policy.
+
+- **Example:** two nodes have equal scores. One has 12 votes and one has 5. The node with 12 votes comes first, regardless of their updated times. Updated time only decides when their vote counts also tie.
+
+- **Where paging happens:** EF sends the filtering, sorting and page selection to the database. The application receives the selected nodes rather than assembling all matching candidates first. The offset uses long arithmetic and is checked against the matching total before conversion to EF's `Skip(int)`.
+
+- **Between requests:** if votes or other data change after page 1, nodes can move before page 2 is requested. Each discovery read has its own consistent transaction; there is no snapshot held across the user's separate page requests.
 
 ## 3. Cache invalidation
 
-`DiscoveryInvalidation.Changes` classifies tracked EF writes. `AtlasDataContext.SaveChanges` updates the appropriate revision numbers in the same transaction as those writes. Failure or outer rollback undoes both. Node importance votes change ranking/statistics and advance only the page revision. Changes to public details or moderation advance both revisions.
+- **Why invalidate:** cached ordering, statistics, display text or breadcrumb links can become outdated after a saved change. Invalidation means preventing a new request from reusing that outdated result.
 
-Every read checks the committed revision row, including cache hits and other app instances. The old cache entries need not be actively deleted: the new revision produces different keys. Thirty-second expiration and size budgets bound reuse and retention; they are not the moderation freshness mechanism.
+- **Example: a new node importance vote.**
+  - [DiscoveryInvalidation.Changes](../../../../src/Atlas.Persistence/Discovery/DiscoveryInvalidation.cs) recognizes that ranking/statistics may change.
+  - [AtlasDataContext.SaveChanges](../../../../src/Atlas.Persistence/AtlasDataContext.cs) increments PageVersion, for example from 7 to 8, in the same transaction as the vote write.
+  - The next discovery read checks the committed revision and constructs a page key containing version 8.
+  - A cached page keyed with version 7 does not match that key, so the reader obtains a fresh ranked page.
+  - DetailVersion stays unchanged for a node importance vote. Public display cards, including their first breadcrumb segments, can still be reused; the new ranked page carries the updated vote statistics.
+
+- **Changes to public details:** titles, content, parent links, moderation visibility, reactions, comments and related labels advance both revisions. The new DetailVersion also prevents reuse of outdated cards.
+
+- **Rollback:** row writes and revision increments share a transaction. If it rolls back, both are undone; a failed operation does not leave a committed revision increase.
+
+- **Old entries need not be deleted immediately:** [cache keys](../../../../src/Atlas.Persistence/Discovery/DiscoveryCache.cs) contain revisions. Readers use current keys and therefore do not select older entries, even if those entries remain in memory temporarily.
+
+- **Expiry and memory limits:** the 30-second expiry and size budgets limit retention. Revision checks are what prevent stale reuse after a committed change, including moderation changes. Each app instance checks the shared database revision before cache lookup.
 
 ## Why some SQL remains
 
