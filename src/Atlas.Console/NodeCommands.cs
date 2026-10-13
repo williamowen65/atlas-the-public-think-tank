@@ -128,13 +128,15 @@ public static class NodeCommands
             Console.WriteLine("    1 Rename · 2 Description blocks · 3 Change type");
             Console.WriteLine("    4 Archive · 5 Restore · 6 Requested sub-node types");
             Console.WriteLine("    9 Attach to parent · 10 Detach from parent · 16 Manage communities");
-            Console.WriteLine("  Explore and contribute:");
-            Console.WriteLine("    7 Select sub-node · 8 Add sub-node · 11 Author profile");
+            Console.WriteLine("  Explore:");
+            Console.WriteLine("    7 Select sub-node · 11 Author profile · 15 View votes");
             Console.WriteLine(node.ParentNodeIds.Count == 0
                 ? "    24 Browse ancestors [disabled — root node]"
                 : "    24 Browse ancestors");
-            Console.WriteLine("    12 Manage reactions · 13 " + (myVote is null ? "Vote" : "Change vote") + " · 14 Undo vote · 15 View votes");
-            Console.WriteLine("    17 View communities · 18 Add comment · 19 View comments");
+            Console.WriteLine("    17 View communities · 19 View comments");
+            Console.WriteLine("  Contribute (active participants):");
+            Console.WriteLine("    8 Add sub-node · 12 Manage reactions · 13 " + (myVote is null ? "Vote" : "Change vote") + " · 14 Undo vote");
+            Console.WriteLine("    18 Add comment");
             Console.WriteLine(moderation.Visibility(node.Id.Value).IsHidden
                 ? "    21 Report node [disabled — already hidden]"
                 : "    21 Report node");
@@ -868,7 +870,7 @@ public static class NodeCommands
     }
 
     /// <summary>Pages upward along a selected parent route, three ancestor nodes at a time.</summary>
-    private static Node? SelectAncestor(
+    internal static Node? SelectAncestor(
         Node node,
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,

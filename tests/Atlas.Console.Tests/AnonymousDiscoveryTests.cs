@@ -20,6 +20,22 @@ namespace Atlas.ConsoleApp.Tests;
 public sealed class AnonymousDiscoveryTests
 {
     [TestMethod]
+    public void Anonymous_node_actions_allow_exploration_and_reject_contribution_commands()
+    {
+        var (pages, output) = Browse(1, "1\n13\n\n19\n\n15\n\n17\n\n11\n\n24\n\n20\n0\n");
+        StringAssert.Contains(output, "Actions (as Anonymous)");
+        StringAssert.Contains(output, "  Explore:");
+        StringAssert.Contains(output, "Contribute [disabled");
+        StringAssert.Contains(output, "Sign in as an active participant to contribute");
+        StringAssert.Contains(output, "COMMENTS (read only)");
+        StringAssert.Contains(output, "NODE VOTES");
+        StringAssert.Contains(output, "NODE COMMUNITIES");
+        StringAssert.Contains(output, "AUTHOR PROFILE");
+        StringAssert.Contains(output, "This is a root node with no ancestors");
+        Assert.IsTrue(pages.Count >= 2, "Returning from node exploration must restore Discovery.");
+    }
+
+    [TestMethod]
     public void UpperAndLowerCaseCommandsNavigateAnonymousDiscoveryPages()
     {
         var (pages, output) = Browse(
