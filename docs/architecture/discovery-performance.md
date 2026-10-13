@@ -1,10 +1,118 @@
-# Discovery SQL performance evidence
+# Discovery performance: a guide to the evidence
 
-> Historical baseline before the EF readability refactor. These timings/plans describe the earlier implementation. Current cold/new-page read counts are five because EF metadata and SQL summaries are separate batches; fresh measurements must come from the refactored CI run.
+## Start here
 
-The [SQL Discovery CI run 38327316002](https://github.com/williamowen65/atlas-the-public-think-tank/actions/runs/38327316002) passed all 29 Discovery SQL behavior/cache/performance tests against SQL Server 2022. All eleven regular unit-test jobs also passed. Its `discovery-sql-evidence` artifact contains measurements and fifteen actual execution plans: unfiltered count/page/cards and text-filtered count/page at three dataset sizes.
+- **Current implementation:** EF handles filtering, vote aggregates, scoring, ordering, totals, paging and ordinary card metadata. SQL helpers handle recursive paths and ordered text summaries.
+- **Current expected reads:** cold/new page **5**, repeated cached page **1**, changed filter with reused cards **3**, beyond-last page **2**.
+- **Historical timings below:** measured before the EF refactor. They are not measurements of the current EF queries.
+- **Current verification:** [refactor CI run 38331824386](https://github.com/williamowen65/atlas-the-public-think-tank/actions/runs/38331824386) passed all 29 Discovery SQL tests and the SQL Persistence, Identity and Console jobs. Use that run's artifact for the refactored query plans and measurements.
+- **Code walkthrough:** [DiscoveryReadFlow.md](../blackboards/workflows/Discovery/DiscoveryReadFlow.md).
+- **Editable blackboard:** [DiscoveryReadFlow.excalidraw](../blackboards/workflows/Discovery/DiscoveryReadFlow.excalidraw).
 
-Each fixture node has one document, one Unicode Markdown block (16 repetitions of a short climate-adaptation sentence), an author/type, and one persisted importance rating cycling through 0–10. Separate behavior fixtures cover multiple content kinds, communities, reactions, ancestors, archive and moderation. These are synthetic baselines, not a production capacity forecast or a comparison against the previous application.
+## What is a “detail card”?
+
+- A `DiscoveryCard` is the **display data for one node in a listing**, not the full domain `Node` object.
+- It contains the node ID, title, type/author labels, status/date, description, breadcrumb, child counts, reactions, communities, comment count and hidden-state indicator.
+- It is immutable and contains no participant-specific vote. Personal ratings are queried separately.
+- The page cache stores **which nodes appear, their ranks/statistics and the total count**.
+- The detail cache stores **what to display for each selected node**.
+- Separating these lets a new filter produce a new ranked page while reusing display data for the same nodes.
+- Opening or reporting a node still loads the domain object through the appropriate workflow.
+
+## What the fixture contains
+
+The test runs once for each size: 100, 1,000 and 10,000.
+
+| Data | At the 10,000 size |
+|---|---:|
+| Nodes | 10,000 |
+| Description documents | 10,000 |
+| Markdown blocks | 10,000 |
+| Node importance ratings | 10,000 |
+| Participants | 1 |
+| Node types | 1 |
+
+- Each node has one document, one block and one vote from the same participant.
+- Vote values cycle through 0–10.
+- Each block repeats a short Unicode climate-adaptation sentence 16 times.
+- This tests increasing stored data volume, **not** 10,000 concurrent users.
+- Other behavior fixtures cover communities, multiple block kinds, reactions, ancestry, archive and moderation.
+
+## Walk through the test and its cache reuse
+
+Use A, B and C as the first three ranked node IDs, and D, E and F as the next three.
+
+1. **First request: page 1, no filter**
+   - The application caches start empty.
+   - Count and rank the results in SQL; return A, B and C.
+   - Load and cache three cards: A, B and C.
+   - Expected database reads: **5**.
+2. **Repeat page 1 with the same filters**
+   - Check the committed revisions, then reuse the cached page and its three cards.
+   - These are **three detail-cache hits**, not three newly loaded cards.
+   - Expected database reads: **1**.
+3. **Change the text filter to `Node`**
+   - The filter changes the page key, so count/ranking must be queried again.
+   - Every fixture title contains `Node`; the same top three IDs are returned in this fixture.
+   - Reuse A, B and C from the detail cache: **three more detail-cache hits**.
+   - Expected database reads: **3**.
+   - A different filter returning uncached IDs would need card reads too.
+4. **Request page 2 without the text filter**
+   - Return D, E and F, with global ranks 4, 5 and 6.
+   - Load three new cards. Across pages 1 and 2, **six distinct cards have been loaded**.
+   - Expected database reads: **5**.
+5. **Request a page beyond the result set**
+   - Check revisions and total; return an empty page.
+   - Skip ranking and card reads because there are no selected IDs.
+   - Expected database reads: **2**.
+
+**Why the report mentions six reused cards:** it counts six successful detail lookups across steps 2 and 3. Those are two reuses of the same three cards, not six distinct cards already cached before the filter change.
+
+## What each database read does
+
+| Read | Purpose | Example |
+|---|---|---|
+| Committed revision | Check whether cached results still match committed writes | A moderator hides a node; the next read cannot reuse the old revision |
+| Total count | Count all nodes matching the filters | Eight matches, even though only three appear on page 1 |
+| Ranked page | Order matches and select the requested slice | Page 2 skips three and returns ranks 4–6 |
+| EF card metadata | Load labels, status/date and comment counts for selected IDs | One batch for A, B and C |
+| SQL card summaries | Load recursive breadcrumbs and ordered display summaries | One batch for the same selected IDs |
+
+- These counts cover Discovery's database reads, not the entire Console operation.
+- Reading an authenticated participant's own ratings adds a separate batch.
+- Both card queries operate on the selected IDs; there is no repository query per card.
+
+## Are five reads optimal?
+
+- **No claim of an absolute minimum is made.** The assertions document the current design and detect unexpected extra reads.
+- Example: metadata and summaries previously shared one raw-SQL statement. That used **four** cold reads. Splitting ordinary metadata into readable EF adds one read.
+- Count and page could also be combined in a different design; handling an empty/out-of-range page and obtaining its total still needs deliberate treatment.
+- A fully cached request uses one revision read because this design checks committed freshness on every request. Zero reads would require a different invalidation/freshness mechanism.
+- Fewer reads are not automatically faster: statement complexity, compilation, rows examined and network latency also matter.
+- The proven property is **bounded selected-page data returned to the application**, with fixed batch counts for these fixture scenarios.
+- SQL may still examine thousands of matching nodes to choose the best three. Pagination does not make database work constant.
+
+## Read the measurement file
+
+| Field | Interpretation |
+|---|---|
+| Cold page | Stopwatch time for the first request with empty application caches; SQL Server's own caches are not deliberately cleared |
+| Warm/cached page | Stopwatch time for a repeated request, including the revision check |
+| Filter-change page | Time to recompute the filtered page while eligible cards are reused |
+| Reserved database bytes | Reserved table/index space across the model, including fixed Identity overhead; not just text payload size |
+| Ranked IDs/cards 3/3 | Three ranked results and three public cards returned to the application |
+| Page/detail hits and misses | Cumulative lookup counters across the request sequence, not counts of distinct nodes |
+
+- Query counts and returned-result sizes are **assertions**.
+- Timings are **observations**, without a speed threshold.
+- One measurement per scenario is not an average, percentile or production capacity forecast.
+- “Cold” includes compilation and transient runner conditions; it means empty application caches, not a fully reset SQL Server.
+
+## Historical timing baseline (before the EF refactor)
+
+- [Run 38327316002](https://github.com/williamowen65/atlas-the-public-think-tank/actions/runs/38327316002) passed the 29 Discovery SQL tests and all eleven regular unit-test jobs.
+- Its artifact contains fifteen plans: unfiltered count/page/cards and filtered count/page, at each of three sizes.
+- Its read counts were **4/1/3/4/2**, because card metadata and summaries were still one query.
 
 | Nodes/documents/blocks/ratings (each) | Reserved database bytes | Cold page (ms) | Cached page (ms) | Changed text filter (ms) | Ranked rows/cards returned |
 |---|---:|---:|---:|---:|---:|
@@ -12,30 +120,63 @@ Each fixture node has one document, one Unicode Markdown block (16 repetitions o
 | 1,000 | 7,602,176 | 119.09 | 2.19 | 38.09 | 3 / 3 |
 | 10,000 | 27,918,336 | 742.21 | 1.97 | 282.53 | 3 / 3 |
 
-Reserved bytes come from sys.dm_db_partition_stats and include all model tables/indexes, including fixed Identity/model overhead; this is not merely content-text size.
+## Historical execution-plan findings: 10,000-node fixture
 
-These single cold/warm measurements include application/database round trips and, on cold calls, SQL compilation; do not treat them as stable percentiles. Filters and data distribution affect SQL work. Cache-hit totals/statistics remain protected by a committed-generation read, so a warm hit still makes one SQL call.
+These details refer to the historical run above, not the EF-generated plans.
 
-All three sizes assert query counts of 4 for a cold page, 1 for the repeated page, 3 for a changed filter reusing eligible details, 4 for the next page, and 2 for a page beyond the result set. The changed filter and repeated page reused six detail cards total; the first/next pages loaded six cards total. Selected-page materialization stays at three ranked references and three immutable cards rather than all candidate/domain graphs.
+- **Unfiltered count**
+  - Returned one total after scanning 10,000 node rows and the moderation-visibility index.
+  - SQL eliminated vote/content aggregates that the count did not need.
+  - Captured execution: 5 ms; reported compilation: 158 ms.
+- **Ranking/page**
+  - Top/Sort returned three results after evaluating 10,000 matching nodes.
+  - The vote index included `Value`, avoiding clustered vote lookups from an earlier baseline.
+  - Captured execution: 61 ms; reported compilation: 143 ms.
+  - GUID conversion produced a cardinality-estimation warning. Its purpose was to preserve the .NET-compatible tie-breaker.
+- **Combined cards**
+  - Returned three rows using document/parent/community, reaction and comment indexes.
+  - No operator reported more than 1,000 rows read in that captured card plan.
+  - Execution rounded to 0 ms; compilation was 218 ms. A displayed zero does not mean literally no work.
+  - The JSON input estimate was 50 IDs versus three actual IDs.
+  - An excessive-grant warning reported about 2,008 KiB requested, with no recorded grant memory used in this simple root-node fixture.
+- **Text-filtered count/page**
+  - Examined 10,000 nodes and document/block lookups for concatenated searchable text.
+  - Captured execution: 88 ms for count; 169 ms for ranking/page.
+  - Only three results reached the application; their cards were reused.
+- **Other warnings and memory**
+  - No sort-spill warning appeared.
+  - Ranking requested about 2,296 KiB and recorded 1,528 KiB used.
+  - Conversion/formatting warnings remain evidence to investigate, not proof of an incorrect result or an optimal plan.
 
-## Actual-plan review (10,000-node description fixture)
+## How plans and artifacts are generated
 
-- Unfiltered count: one count is returned after a NodeRows scan of 10,000 rows and a moderation-visibility index scan. SQL eliminates vote/content aggregates when the count predicates do not depend on them. The captured execution took 5 ms; reported compilation took 158 ms.
-- Ranking/page: Top/Sort returns three rows after evaluating statistics for 10,000 matching nodes. The target-first vote index includes Value, removing the clustered vote lookups seen in the earlier baseline. Captured execution took 61 ms; reported compilation took 143 ms. GUID conversion still produces a cardinality-estimation warning; this preserves the .NET-compatible tie-breaker. A persisted canonical sort key is a later, measured schema option.
-- Cards: the projection returns three rows through page-linked joins; no operator reports more than 1,000 rows read in this card plan. It uses the document/parent/community indexes, typed OPENJSON, active-reaction index and comment-target index. Card execution rounded to 0 ms in the captured plan; compilation took 218 ms. OPENJSON's estimate of 50 versus three actual IDs and wide string formatting contribute to an excessive-grant warning: roughly 2,008 KiB requested while this simple root-node fixture used no recorded grant memory.
-- Text-filtered count/page: SQL reads the 10,000 node rows and performs indexed document-link/block lookups for searchable concatenations. Captured executions took 88 ms for count and 169 ms for page/ranking. The application still materializes only three results and reuses the already cached cards. Free-text filtering costs database work even when matching the title.
-- No sort-spill warning appears. Ranking requests roughly 2,296 KiB (1,528 KiB recorded use). Formatting/canonical-ID conversions retain cardinality-estimation warnings; they are recorded rather than treated as proof that every plan is optimal.
+- `DiscoveryPerformanceTests` uses a command interceptor to record executed SQL and parameter values.
+- Stopwatch measurements are collected during the request sequence.
+- Selected statements are **replayed afterward** with `SET STATISTICS XML ON`.
+- SQL Server returns actual execution-plan XML from those replayed executions, saved as `.sqlplan` files.
+- Therefore the saved plan is not from the exact execution timed by the stopwatch.
+- In the EF version, plans 0–5 correspond to count, ranked page, EF metadata, SQL summaries, filtered count and filtered page. Check the statement text inside each plan to confirm its identity.
+- Open a downloaded `.sqlplan` in SQL Server Management Studio to see its graphical plan. A text editor shows the underlying XML.
+- Start by comparing actual versus estimated rows, rows read versus returned, index accesses, sorts and warning properties.
+- GitHub Actions uploads `TestResults/discovery-*` as `discovery-sql-evidence`.
 
-Cold timings include first-use compilation and transient runner/database conditions. They explain why one 10,000-node cold page is substantially slower than a warm page; these measurements are not stable percentiles. The covering vote index, comment-count index and typed ID projection were added after inspecting an earlier successful SQL baseline. Earlier lighter fixtures without descriptions measured 76.94/89.46/153.96 ms cold and 1.81/1.92/1.60 ms cached at 100/1,000/10,000 nodes, illustrating why description workload and compilation context must be recorded.
+## Limits and possible later improvements
 
-These plans establish bounded application materialization and working index paths, not constant database cost. A larger, more connected or more text-heavy graph can differ markedly, especially for substring search and ancestor paths. Full-text search, reusable statistics, fine-grained generations, cursor paging and further card-query/compilation tuning are possible later optimizations. The current implementation remains one SQL-authoritative query with bounded, correctly invalidated read caches.
+- These fixtures establish working reads, cache reuse and bounded application projections; they do not simulate a production workload.
+- More text, deeper ancestry, more connections, concurrent readers/writers and network distance may materially change performance.
+- Full-text search, reusable statistics, narrower invalidation, cursor paging and query/compilation tuning are future options to measure.
+- Earlier fixtures without descriptions were faster, illustrating why workload details belong alongside every timing comparison.
 
 ## Reproduce
 
-Set `ATLAS_SQL_TEST_CONNECTION_STRING` to a SQL Server test connection and run from the solution root:
+- Set `ATLAS_SQL_TEST_CONNECTION_STRING` to a SQL Server test connection.
+- Run from the solution root:
 
 ```powershell
 dotnet test tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj --filter FullyQualifiedName~DiscoveryPerformanceTests
 ```
 
-Tests create and delete uniquely named databases from the current model. They do not generate migration files. Measurements and actual plans appear under `tests/Atlas.Persistence.Tests/TestResults/discovery-*` and are uploaded by the SQL Discovery CI job. Do not commit machine-specific test output directories. Normal migration/upgrade verification remains a separate check after the developer generates and commits the required migration.
+- Tests create and delete uniquely named databases from the current model; they do not generate migration files.
+- Output appears under `tests/Atlas.Persistence.Tests/TestResults/discovery-*`.
+- Do not commit machine-specific test output directories.
+- The ordinary migrated integration jobs separately verify the developer-generated migration path.

@@ -80,6 +80,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Discovery", "Discovery", "{F0D04025-2AF7-4011-A7B5-C817B708CF22}"
 	ProjectSection(SolutionItems) = preProject
 		docs\blackboards\workflows\Discovery\DiscoveryDomain.excalidraw = docs\blackboards\workflows\Discovery\DiscoveryDomain.excalidraw
+		docs\blackboards\workflows\Discovery\DiscoveryReadFlow.excalidraw = docs\blackboards\workflows\Discovery\DiscoveryReadFlow.excalidraw
+		docs\blackboards\workflows\Discovery\DiscoveryReadFlow.md = docs\blackboards\workflows\Discovery\DiscoveryReadFlow.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Moderation", "Moderation", "{AB4F3CF6-9BCD-4AD1-80BC-8A2192D9B1D7}"
