@@ -161,6 +161,43 @@ IDiscoveryService discovery = new DiscoveryService(
   - This deliberately serializes reads through that gate.
   - It is a simple correctness baseline, not a high-throughput distributed-cache design.
 
+## When to change the page-key prefix (`order-v2`)
+
+- **Location:** the literal `order-v2:` returned by [DiscoveryCache.PageKey](../../src/Atlas.Persistence/Discovery/DiscoveryCache.cs). Change it in the same change that introduces incompatible ranked-page behavior, before that behavior is released.
+
+- **Key structure:** `order-v2:<PageVersion>:<request hash>`.
+  - The prefix versions the code's ordering/query contract.
+  - `PageVersion` tracks committed data changes.
+  - The request hash identifies filters, scope and the requested page.
+  - `v2` does not mean page two or database revision two.
+
+- **Rule:** bump to `order-v3` (then v4, etc.) when an identical request and database revision could produce a page whose membership, order, ranks, totals or statistics should no longer be considered equivalent to the previous implementation.
+  - Do not reuse an older prefix for a different contract.
+
+| Example change | Bump the prefix? | Reason |
+|---|---|---|
+| Change participation bonus or title-match boost | Yes | Identical data/request may rank differently |
+| Add relevance to importance scoring | Yes | The ranked-page contract changes |
+| Change a tie-breaker or title collation | Yes | Tied nodes may move between pages |
+| Change existing search/filter/visibility semantics | Yes | The same request may select different nodes or totals |
+| Correct an ordering, total or statistics bug | Yes, if cached results would differ | Old cached pages reflect the behavior being corrected |
+| Cast a vote, edit content, hide/restore a node | No | Relevant writes advance database revisions instead |
+| Request another page or change a filter value | No | Request fields already change the hash |
+| Change page size | Not solely for the size | PageSize is already included in the hash; bump if ranking/paging semantics also change |
+| Refactor EF code while preserving results | No | Equivalent pages remain compatible |
+| Change logging, comments, indexes or TTL | No, absent a behavior change | These do not change the meaning of ranked results |
+| Change card formatting or breadcrumb display only | Not the page prefix alone | Detail entries use separate keys; review their own invalidation/lifetime |
+
+- **Why:** a new prefix creates a separate cache namespace. Entries under the previous prefix cannot satisfy lookups under the new one, even when data revisions and filter hashes match.
+  - Old entries can expire or be evicted normally; a prefix bump does not physically delete them.
+  - It does not update the database revision row or require a schema migration by itself.
+
+- **Current limitation:** caches are process-local and normally start empty after an application restart. A normal restarted deployment already loses its old entries; the prefix still makes compatibility explicit in code and protects against reuse if entries survive a behavior transition or caching is later extended.
+  - It is not a deployment coordination mechanism: an old running instance continues using its old code/prefix.
+  - It does not invalidate detail cards or fix direct writes that bypass revision updates.
+
+- **Review steps:** decide whether behavior changed; bump the literal if necessary; update behavior assertions and any key tests/docs; explain the contract change in the PR. Preserve the prefix for a verified behavior-equivalent optimization.
+
 ## Cache invalidation: when old entries stop being reusable
 
 - [DiscoveryRevisionRow](../../src/Atlas.Persistence/Discovery/DiscoveryRevisionRow.cs) is a seeded singleton row, Id = 1, with `PageVersion` and `DetailVersion`.
