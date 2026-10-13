@@ -330,6 +330,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "validation", "validation", 
 		docs\security\validation\README.md = docs\security\validation\README.md
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "observability", "observability", "{12600001-1260-4126-8126-000000000001}"
+	ProjectSection(SolutionItems) = preProject
+		docs\security\observability\README.md = docs\security\observability\README.md
+		docs\security\observability\EVENTS.md = docs\security\observability\EVENTS.md
+		docs\security\observability\IMPLEMENTATION.md = docs\security\observability\IMPLEMENTATION.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -449,6 +456,7 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{12600001-1260-4126-8126-000000000001} = {F0977A94-B8E4-40C0-8D9A-4068A1783D59}
 		{E6534971-176C-4E34-B5C2-46CB33825694} = {C2222222-2222-4222-8222-222222222222}
 		{F0977A94-B8E4-40C0-8D9A-4068A1783D59} = {55555555-5555-4555-8555-555555555555}
 		{A143E9DE-B9C9-43DE-AA32-B8146E93AB12} = {F0977A94-B8E4-40C0-8D9A-4068A1783D59}
