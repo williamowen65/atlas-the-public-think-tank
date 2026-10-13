@@ -47,24 +47,40 @@ Use A, B and C as the first three ranked node IDs, and D, E and F as the next th
    - Count and rank the results in SQL; return A, B and C.
    - Load and cache three cards: A, B and C.
    - Expected database reads: **5**.
+     - [Committed revision — execute `Single` to check cache freshness.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L94)
+     - [Total count — execute the filtered `Count`.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L119)
+     - [Ranked page — execute ordered `Skip`/`Take` with `ToList`.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L143)
+     - [EF card metadata — execute the selected-ID projection with `ToDictionary`.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L248)
+     - [SQL card summaries — execute `DiscoveryCards.sql` with `ToList`.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L254)
 2. **Repeat page 1 with the same filters**
    - Check the committed revisions, then reuse the cached page and its three cards.
    - These are **three detail-cache hits**, not three newly loaded cards.
    - Expected database reads: **1**.
+     - [Committed revision — execute `Single` to check cache freshness.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L94)
 3. **Change the text filter to `Node`**
    - The filter changes the page key, so count/ranking must be queried again.
    - Every fixture title contains `Node`; the same top three IDs are returned in this fixture.
    - Reuse A, B and C from the detail cache: **three more detail-cache hits**.
    - Expected database reads: **3**.
+     - [Committed revision — execute `Single` to check cache freshness.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L94)
+     - [Total count — execute the filtered `Count`.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L119)
+     - [Ranked page — execute ordered `Skip`/`Take` with `ToList`.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L143)
    - A different filter returning uncached IDs would need card reads too.
 4. **Request page 2 without the text filter**
    - Return D, E and F, with global ranks 4, 5 and 6.
    - Load three new cards. Across pages 1 and 2, **six distinct cards have been loaded**.
    - Expected database reads: **5**.
+     - [Committed revision — execute `Single` to check cache freshness.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L94)
+     - [Total count — execute the filtered `Count`.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L119)
+     - [Ranked page — execute ordered `Skip`/`Take` with `ToList`.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L143)
+     - [EF card metadata — execute the selected-ID projection with `ToDictionary`.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L248)
+     - [SQL card summaries — execute `DiscoveryCards.sql` with `ToList`.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L254)
 5. **Request a page beyond the result set**
    - Check revisions and total; return an empty page.
    - Skip ranking and card reads because there are no selected IDs.
    - Expected database reads: **2**.
+     - [Committed revision — execute `Single` to check cache freshness.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L94)
+     - [Total count — execute the filtered `Count`.](https://github.com/williamowen65/atlas-the-public-think-tank/blob/61c19c383cd8af130ae25e80a509958d0123e5d7/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L119)
 
 **Why the report mentions six reused cards:** it counts six successful detail lookups across steps 2 and 3. Those are two reuses of the same three cards, not six distinct cards already cached before the filter change.
 
