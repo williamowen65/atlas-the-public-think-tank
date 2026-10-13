@@ -28,16 +28,19 @@ namespace Atlas.Persistence.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("AltText")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .UseCollation("Latin1_General_100_CI_AI_SC");
 
                     b.Property<string>("Caption")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .UseCollation("Latin1_General_100_CI_AI_SC");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .UseCollation("Latin1_General_100_CI_AI_SC");
 
                     b.Property<string>("Kind")
                         .IsRequired()
@@ -45,13 +48,15 @@ namespace Atlas.Persistence.Migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Markdown")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .UseCollation("Latin1_General_100_CI_AI_SC");
 
                     b.Property<Guid?>("ReferenceId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Title")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .UseCollation("Latin1_General_100_CI_AI_SC");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("datetimeoffset");
@@ -108,6 +113,8 @@ namespace Atlas.Persistence.Migrations
 
                     b.HasIndex("ParentCommentId")
                         .HasDatabaseName("IX_CommentRows_ParentCommentId");
+
+                    b.HasIndex("TargetKind", "TargetId");
 
                     b.ToTable("CommentRows", (string)null);
                 });
@@ -222,6 +229,30 @@ namespace Atlas.Persistence.Migrations
                     b.HasKey("NotificationId", "Position");
 
                     b.ToTable("NotificationDeliveryAttempts", (string)null);
+                });
+
+            modelBuilder.Entity("Atlas.Persistence.Discovery.DiscoveryRevisionRow", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<long>("DetailVersion")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("PageVersion")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DiscoveryRevisions", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            DetailVersion = 0L,
+                            PageVersion = 0L
+                        });
                 });
 
             modelBuilder.Entity("Atlas.Persistence.DocumentBlockRow", b =>
@@ -392,6 +423,10 @@ namespace Atlas.Persistence.Migrations
                     b.HasIndex("ReviewerId")
                         .HasDatabaseName("IX_ModerationCaseRows_ReviewerId");
 
+                    b.HasIndex("NodeId", "Status", "VisibilityRestoredAt");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("NodeId", "Status", "VisibilityRestoredAt"), new[] { "PublicReason", "DecidedAt" });
+
                     b.ToTable("ModerationCaseRows", (string)null);
                 });
 
@@ -472,6 +507,8 @@ namespace Atlas.Persistence.Migrations
                     b.HasIndex("ReactionDefinitionId")
                         .HasDatabaseName("IX_NodeReactionRows_ReactionDefinitionId");
 
+                    b.HasIndex("NodeId", "LifecycleState", "ReactionDefinitionId");
+
                     b.ToTable("NodeReactionRows", (string)null);
                 });
 
@@ -516,7 +553,8 @@ namespace Atlas.Persistence.Migrations
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(450)")
+                        .UseCollation("Latin1_General_100_CI_AI_SC");
 
                     b.Property<Guid?>("TypeId")
                         .HasColumnType("uniqueidentifier");
@@ -798,6 +836,10 @@ namespace Atlas.Persistence.Migrations
 
                     b.HasIndex("ParticipantId")
                         .HasDatabaseName("IX_VoteRows_ParticipantId");
+
+                    b.HasIndex("TargetType", "TargetId");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("TargetType", "TargetId"), new[] { "Value" });
 
                     b.HasIndex("ParticipantId", "TargetType", "TargetId")
                         .IsUnique()
