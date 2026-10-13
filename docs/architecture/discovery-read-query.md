@@ -306,6 +306,16 @@ WHERE Id = 1;
   - Open an intermediate ancestor and explore its parents to choose another branch there.
   - The future scrollable breadcrumb/path-feed route-switching UI remains open.
 
+### Which breadcrumb reads use the cache?
+
+- **Discovery card display:** the detail cache stores both the breadcrumb text and [`DiscoveryCard.BreadcrumbSegment`](../../src/Atlas.Discovery/DiscoveryCard.cs). A detail-cache hit reuses those first three ancestor labels and continuation/route indicators. See [card loading and cache lookup](../../src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs).
+
+- **Console ancestor navigation:** opening a node or using **Explore parents**, including **N** for another segment, uses [AncestorNavigation](../../src/Atlas.Console/AncestorNavigation.cs) through the node repository. This path does **not** reuse the discovery detail cache. An ancestor appearing in a cached discovery card does not mean navigating to that ancestor retrieves its node from that cache.
+
+- Relevant topology, title and moderation changes advance the detail revision, so subsequent discovery reads stop reusing breadcrumb data from older revisions. See [DiscoveryInvalidation](../../src/Atlas.Persistence/Discovery/DiscoveryInvalidation.cs).
+
+- **Possible future improvement:** if measurements show repeated ancestor navigation is expensive, share a breadcrumb reader and cache bounded segments by detail revision, starting node and selected parent route. Preserve visited-node cycle checks for each navigation request, and apply expiry/memory limits. This additional navigation cache is not implemented.
+
 ### Try the longer demo route in the Console
 
 - [SeedBreadcrumbDemo.cs](../../src/Atlas.Console/Storage/SeedData/SeedBreadcrumbDemo.cs) adds a ten-link chain below the existing Atlas root, plus community and research routes that intersect the chain. First-parent ordering keeps the long chain as the default route.
