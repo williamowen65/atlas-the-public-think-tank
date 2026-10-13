@@ -1,45 +1,96 @@
-# PTT-132: Discovery read-query baseline
+# SQL-backed Discovery and layered caching (PTT-132)
 
-Status: initial implementation slice. SQL execution and caching remain unimplemented.
+Discovery runs through `DiscoveryService` → `IDiscoveryReadQuery` → `SqlDiscoveryReadQuery` in Persistence. Console uses this SQL implementation for anonymous, authenticated and authored listings. There is no production in-memory query or candidate-source adapter. The previous behavior assertions now run against isolated SQL fixtures; their input records are test data, not a second ranking implementation.
 
-## Implemented boundary
+## Query and display behavior
 
-`DiscoveryService` validates requests and delegates to `IDiscoveryReadQuery`. Its existing candidate-source constructor wraps `InMemoryDiscoveryReadQuery`, preserving Console composition and current behavior. `FromReadQuery` accepts a storage implementation without requiring a candidate source. Page requests go directly to page methods; the facade does not fetch unpaged results or slice them again.
+SQL applies all supported filters, computes vote aggregates and ranking scores, counts matches, orders results, and applies OFFSET/FETCH before materialization. Normal pages contain three ranked IDs/statistics. A separate batched SQL statement returns immutable display cards for only those IDs, including descriptions, author/type labels, ancestor paths, child-type counts, reaction summaries, communities and comment counts. Console renders those cards without per-node repository calls. It loads a domain Node only when the user opens/reports it. Participant profiles obtain authored totals from the SQL listing rather than loading every authored aggregate.
 
-The extracted in-memory engine is the reference for SQL parity, not a performance improvement. Existing Discovery tests continue to exercise filtering, ranking, totals, archive status and authored moderation behavior through this adapter. New port tests guard against routing page requests through full-result methods and against invalid input reaching storage.
+The score remains `(AverageVote ?? 0) + log10(VoteCount + 1) / 100`, plus 0.1 for a title search match. Order is score descending, vote count descending, updated time descending, title ascending under the selected collation, then GUID ascending. Canonical GUID text under `Latin1_General_100_BIN2` preserves .NET Guid ordering rather than SQL Server's native uniqueidentifier ordering. Ranks are global across pages. Offset calculations use long arithmetic, including pages beyond the result set; there is no candidate cap.
 
-## SQL implementation requirements
+Text search uses parameterized CHARINDEX, so `%`, `_` and `[` are literal characters. Searchable block fields and ordered space-separated concatenation preserve searches spanning adjacent fields or blocks. Poll IDs are not searchable. Community/reaction membership uses EXISTS predicates, avoiding join multiplication of votes. Every selected reaction must be active; definition suppression affects card display but does not alter the existing association-filter rule. Average bounds exclude unvoted nodes. Dates compare the timestamp's stored calendar day with SQL date parameters, including the full DateOnly range.
 
-Implement the port in Persistence and switch Console composition only after parity and SQL integration checks pass. Apply predicates, aggregate vote statistics, calculate scores, count matches, order and Skip/Take before materialization. Use existence predicates for community/reaction membership to avoid multiplying votes through joins. Batch-load display data for the selected IDs; inspect the downstream Console display path as well as Discovery itself for query fan-out.
+Count, page and cards share a serializable read transaction. Each request reflects one committed database view. Separate page requests can shift when votes/content change; cursor paging would require a product/API decision about ranking changes. Unpaged methods remain for existing contracts/tests, but Console page flows do not call them.
 
-Preserve the score: `(AverageVote ?? 0) + log10(VoteCount + 1) / 100`, plus 0.1 for a case/accent-insensitive title search match. Order by score descending, count descending, updated time descending, case/accent-insensitive title ascending, then GUID ascending. SQL collation and SQL Server GUID ordering do not automatically match these .NET semantics; demonstrate parity or define an explicit equivalent sort key before switching implementations. Content search must preserve the current block-specific searchable fields and case behavior.
+## Unicode and collation
 
-Created-date bounds currently use the candidate timestamp's calendar date. Review stored offsets before assuming UTC date predicates are equivalent. Average filters exclude unrated candidates. Reaction filters require every selected definition. Public results exclude hidden nodes; authored scope can include hidden placeholders, but text searches never match hidden candidates. Scope IDs do not establish caller authorization.
+`Latin1_General_100_CI_AI_SC` is explicit on NodeRows.Title and BlockRows Markdown, AltText, Caption, Title and Description. Existing nvarchar storage preserves original Unicode text and spelling; CI ignores case, AI ignores accents and SC supports supplementary characters. No UTF-8 storage conversion is required. SQL is the authoritative text ordering/search implementation; there is no requirement to match a .NET linguistic comparer for every Unicode sequence. The intentional policy change means cafe finds Café.
 
-Keep fixed page size three and global ranks. Retain a long offset calculation for extreme page numbers and return an empty page with the correct total when beyond the result set. Start with offset paging for API compatibility. Cursor paging requires a separate contract and an explicit policy for changing rankings between requests.
+URL columns retain their previous identity/equality semantics. URL text participating in Discovery concatenation receives the search/display collation at the expression boundary to avoid collation conflicts. Identity/account identifiers and unique community/reaction keys retain their existing rules. This is a Discovery text policy, not a database-wide change or a claim that one collation gives culturally correct ordering for every language.
 
-## Evidence required before claiming SQL optimization
+## Bounded caches
 
-Compare first, later and empty pages against the reference using representative SQL fixtures, including combined filters, ranking ties, authored/hidden/archive states and unvoted nodes. Capture generated SQL, query counts, rows materialized and execution plans at increasing data sizes. Measure count and page queries separately and record consistency behavior if a write occurs between them. Add indexes based on those plans rather than assuming database execution is sufficient.
+Console owns and disposes one `DiscoveryCache` per process/database. Page caching can be disabled by constructing the SQL adapter without a cache. No DbContext, EF-tracked row, mutable domain aggregate or personalized vote is cached.
 
-## Caching work after the SQL baseline
+| Layer | Entry and key | Default budget/freshness |
+|---|---|---|
+| Ranked page | Immutable IDs, global ranks, scores, statistics and total; SHA-256 of normalized filters, ordered/deduplicated reaction IDs and authored scope, page, size, ordering version, visibility scope and committed page generation | 1 MiB estimated entry sizes; 30-second absolute expiration |
+| Display detail | Immutable public card keyed by node identity and committed detail generation; independent of filter/page | 8 MiB estimated entry sizes; 30-second absolute expiration; maximum entry 128 KiB |
+| Personalized ratings | Fresh SQL batch keyed by the authenticated host participant and selected page IDs | Never shared/cached |
 
-No cache is added in this slice. Measure SQL costs first. Query-page keys must include normalized filters, page, page size, ordering version and visibility scope. Separate bounded immutable detail entries keyed by identity from page IDs/totals, so a filter change can reuse details without duplicating graphs. Define capacity, expiration, miss coordination, per-instance versus distributed behavior and personalized-data isolation.
+Whitespace normalization, sorted sets and explicit scope fields make equivalent requests reusable without assuming Unicode case-folding equivalence outside SQL. A changed filter can miss the page cache while reusing the same detail cards. Cache counters expose page/detail hits/misses and oversized-entry rejections. Oversized descriptions are returned without being cached. The cache rejects reuse across different database connection configurations.
 
-Specify invalidation dependencies for votes, reactions, content, links, archive/restore and moderation. Publish invalidation only after successful commits; test rollback behavior. Revalidate current visibility when resolving cached IDs, so hidden content cannot survive in an old page or detail entry. Expiration alone is insufficient for moderation. Record tests proving detail reuse across filter changes and invalidation of ranking/totals separately from title/detail changes.
+A fixed instance gate coordinates concurrent misses without an unbounded dictionary of per-filter locks. This simple Console baseline serializes reads within one instance; it does not pretend to be a high-throughput distributed cache. Other instances have independent bounded memory caches and coordinate freshness through the database generation row. Expiration controls reuse/memory, not moderation correctness.
 
-## Verification
+## Commit, rollback and visibility correctness
 
-Run `dotnet test tests/Atlas.Discovery.Tests/Atlas.Discovery.Tests.csproj` and the Console and Moderation suites for this extraction. The authoring environment has no .NET SDK; local execution was unavailable. The repository PR workflow supplies .NET 10 and runs these suites. SQL performance measurements are outstanding.
+The model defines a seeded singleton `DiscoveryRevisions` row with separate page and detail generations. `AtlasDataContext.SaveChanges` and its async counterpart increment generations atomically in the same transaction as relevant writes, joining an existing repository operation transaction when present. An unsuccessful save or outer rollback rolls back the generation update as well. New cache entries are published only after a successful read transaction completes.
 
-## Discovery text collation decision
+Each request reads the committed generation row under a shared serializable lock before using cached page/detail entries. Writers update that row under an exclusive transaction lock. Consequently a committed hide, restore, archive, rating or content change cannot reuse an earlier generation; a cached page cannot bypass current visibility. The read lock stays until the page/cards are resolved. As with any ordinary read, a later commit can occur after its read transaction completes; this is not indefinite stale-cache exposure.
 
-Use `Latin1_General_100_CI_AI_SC` explicitly on NodeRows.Title and BlockRows Markdown, AltText, Caption, Title and Description. Existing nvarchar storage preserves Unicode, including supplementary characters under the SC collation. CI ignores case and AI ignores accents for SQL search/equality/sorting; original spelling is stored unchanged. No storage conversion to UTF-8 is needed. There is no single culturally correct ordering for every language; this is Atlas's shared default, not locale-specific sorting.
+| Change | Page generation | Detail generation |
+|---|---|---|
+| Node importance votes | Advance: ranking/statistics may change | Retain: title/body/card metadata unchanged |
+| Reaction votes | Advance conservatively | Advance: reaction scores change |
+| Node creation/title/type/author/archive/restore; topology/requested types | Advance | Advance |
+| Documents, block contents and document/block links | Advance | Advance |
+| Community records/links; reaction associations/definitions | Advance | Advance |
+| Moderation decisions/hide/restore | Advance | Advance |
+| Participant labels and comments | Advance conservatively | Advance |
+| Unrelated Identity tokens, notification delivery and quota ledger entries | Retain | Retain |
 
-The developer-generated column migration must update existing databases, not just newly created ones. Review the generated Down operations: they should remove explicit overrides and restore inheritance from the database default. Identity/account identifiers, URLs and unique community/reaction keys retain their previous comparison rules. This slice intentionally configures Discovery content rather than changing the entire database's authentication and uniqueness semantics. Future SQL search over URL fields should apply the search collation at the expression boundary, without redefining URL identity.
+Detail invalidation is deliberately coarse across all cards for relevant metadata changes; page invalidation is database-wide. This trades fine-grained write throughput for a small, auditable correctness baseline. It still provides detail reuse across filter changes and node-rating updates. Per-node versions/read models are possible later if measurement justifies them.
 
-The in-memory reference now uses invariant case/accent-insensitive matching and sorting, including the title-match score boost. This is an intentional product behavior change: cafe can find Café. .NET invariant comparisons and SQL Windows collation are not guaranteed equivalent for every Unicode sequence; parity fixtures are still required before SQL cutover. GUID and remaining ranking rules are unchanged.
+Public queries exclude hidden nodes. Authored queries include only their supplied IDs or requested author and render hidden titles/descriptions as moderation placeholders. Hidden text never matches search. Authored scope is a listing restriction, not authorization to reveal original content. Ancestor paths redact hidden ancestors. SQL integration tests cover hide/restore across independently cached instances.
 
-Tests are intended to cover migrated SQL title/content matching, preservation of Unicode/original text, and case/accent-insensitive title scoring through the current service. Local .NET/SQL execution remains unavailable in the authoring environment; The AI-authored migration and designer have been removed, and the prior snapshot restored. Follow `src/Atlas.Persistence/AGENTS.md`: generate and review the migration locally, then commit its generated files and snapshot before running migration-dependent SQL tests and CI.
+All application writes affecting Discovery must use AtlasDataContext.SaveChanges. Direct administrative SQL, ExecuteUpdate/ExecuteDelete and imports that bypass it must advance both generations in the same transaction as their data changes:
 
-References: https://learn.microsoft.com/en-us/sql/relational-databases/collations/collation-and-unicode-support and https://learn.microsoft.com/en-us/sql/relational-databases/collations/set-or-change-the-column-collation
+```sql
+UPDATE DiscoveryRevisions
+SET PageVersion = PageVersion + 1, DetailVersion = DetailVersion + 1
+WHERE Id = 1;
+```
+
+Do not reset a live database's generation row while processes retain cached entries; stop/restart the application for a complete database reset.
+
+## Verification and profiling
+
+`DiscoverySqlParityTests` retains explicit assertions for ordering, paging, totals, filters, authored visibility and title-match boosts. `DiscoveryEdgeCaseTests` covers accent-insensitive title ties, equivalent GUID tie-breaking, timestamp calendar dates, full date bounds, literal wildcard input and searches across ordered blocks. `DiscoveryCacheTests` covers filter-change detail reuse, vote updates, successful commits, failed async saves, explicit rollbacks, concurrent misses, separate app-instance caches, hide/restore, content/relationship changes, oversized entries and personalized isolation. These exercise SQL, not an in-memory query.
+
+`DiscoveryPerformanceTests` uses 100, 1,000 and 10,000 nodes with persisted ratings. It asserts three materialized ranked results/cards per page and query counts of four on a cold page, one on a warm page, three after a filter change that reuses cards, four on a new page and two beyond the result set. It captures timings and actual SQL execution plans for count, ranking/page and card projection. The SQL CI job uploads `discovery-sql-evidence`; measurements and plan review are recorded in [the performance notes](discovery-performance.md).
+
+The model adds target-first vote, active-reaction membership and moderation-visibility indexes. Existing document-link, parent, community-link and primary-key indexes support batched joins. Free-text substring search still requires examining matching text and ranking requires processing matching statistics; database-side execution does not make those costs disappear. Plans and larger workload measurements should guide any later full-text search, cursor API or derived-summary work.
+
+## Developer-generated migration
+
+AI instructions in `src/Atlas.Persistence/AGENTS.md` prohibit generating or editing migrations/snapshots. The model changes are complete, but the developer must generate/review/commit the collation, indexes and seeded revision-table migration. No migration or snapshot is authored by this implementation.
+
+From the solution root, run these commands individually in PowerShell:
+
+```powershell
+dotnet tool restore
+dotnet ef migrations add CompleteDiscoveryReadModel --project src/Atlas.Persistence
+# Review the generated migration, designer and snapshot before applying.
+dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence
+dotnet ef database update --project src/Atlas.Persistence
+dotnet test tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj
+dotnet test tests/Atlas.Discovery.Tests/Atlas.Discovery.Tests.csproj
+dotnet test tests/Atlas.Console.Tests/Atlas.Console.Tests.csproj
+dotnet test tests/Atlas.Moderation.Tests/Atlas.Moderation.Tests.csproj
+```
+
+If a local collation-only migration has already been generated but has not been applied or committed, remove it with EF tooling before generating the combined migration. If it has already been applied/committed, keep it and generate an additional migration for the remaining read-model changes.
+
+SQL Discovery CI uses EnsureCreated only for disposable, uniquely named current-model fixtures. It validates behavior before the developer creates migrations. The ordinary migration/model check and migrated repository integration jobs remain intact and require the generated migration. Current-model tests are not evidence that a missing migration can deploy successfully.
+
+References: [SQL Server collation and Unicode support](https://learn.microsoft.com/en-us/sql/relational-databases/collations/collation-and-unicode-support) and [column collation changes](https://learn.microsoft.com/en-us/sql/relational-databases/collations/set-or-change-the-column-collation).

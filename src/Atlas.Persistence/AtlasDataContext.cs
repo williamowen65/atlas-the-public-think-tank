@@ -96,9 +96,11 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
             entity.Property(row => row.Id).ValueGeneratedNever();
             entity.HasData(new DiscoveryRevisionRow { Id = 1 });
         });
-        model.Entity<VoteRow>().HasIndex(row => new { row.TargetType, row.TargetId });
+        model.Entity<VoteRow>().HasIndex(row => new { row.TargetType, row.TargetId }).IncludeProperties(nameof(VoteRow.Value));
+        model.Entity<CommentRow>().HasIndex(row => new { row.TargetKind, row.TargetId });
         model.Entity<NodeReactionRow>().HasIndex(row => new { row.NodeId, row.LifecycleState, row.ReactionDefinitionId });
-        model.Entity<ModerationCaseRow>().HasIndex(row => new { row.NodeId, row.Status, row.VisibilityRestoredAt });
+        model.Entity<ModerationCaseRow>().HasIndex(row => new { row.NodeId, row.Status, row.VisibilityRestoredAt })
+            .IncludeProperties(nameof(ModerationCaseRow.PublicReason), nameof(ModerationCaseRow.DecidedAt));
         IdentityModel.Configure(model);
         model.Entity<NodeRow>().Property(row => row.Title).UseCollation(DiscoveryTextCollation.Name);
         model.Entity<BlockRow>().Property(row => row.Markdown).UseCollation(DiscoveryTextCollation.Name);

@@ -162,7 +162,23 @@ public sealed class DiscoveryCacheTests
         { db.NodeRows.Single().Status = "Archived"; await db.SaveChangesAsync(); }
         Assert.IsEmpty(query.DiscoverPage(new()).Items);
         query.DiscoverPage(new(IncludeArchived: true));
-        Assert.IsTrue(cache.DetailMisses > misses);
+        Assert.IsGreaterThan(misses, cache.DetailMisses);
+    }
+
+    [TestMethod]
+    public async Task Expiration_reloads_both_layers_without_changing_results()
+    {
+        using var fixture = SqlTestDatabase.Create(useCurrentModel: true);
+        var candidate = Candidate(Guid.NewGuid(), 8);
+        DiscoverySqlFixture.Seed(fixture, candidate);
+        using var cache = new DiscoveryCache(expiration: TimeSpan.FromMilliseconds(10));
+        var query = new SqlDiscoveryReadQuery(fixture.Open, cache);
+        var first = query.DiscoverPage(new());
+        await Task.Delay(100);
+        var second = query.DiscoverPage(new());
+        Assert.AreEqual(first.Items.Single(), second.Items.Single());
+        Assert.AreEqual(2L, cache.PageMisses);
+        Assert.AreEqual(2L, cache.DetailMisses);
     }
 
 }

@@ -1,6 +1,6 @@
 -- One batched projection for selected IDs. No EF entities or domain graphs are materialized.
 WITH Selected AS (
-    SELECT CONVERT(uniqueidentifier, [value]) AS Id FROM OPENJSON(@ids)
+    SELECT Id FROM OPENJSON(@ids) WITH (Id uniqueidentifier '$')
 ), PublicNodes AS (
     SELECT n.*, COALESCE(t.Name, N'Unknown') AS TypeName,
            CAST(CASE WHEN m.Id IS NULL THEN 0 ELSE 1 END AS bit) AS IsHidden,

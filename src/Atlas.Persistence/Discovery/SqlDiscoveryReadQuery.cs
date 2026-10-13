@@ -10,14 +10,21 @@ namespace Atlas.Persistence.Discovery;
 public sealed class SqlDiscoveryReadQuery(Func<AtlasDataContext> open, DiscoveryCache? cache = null) : IDiscoveryReadQuery, IDiscoveryAuthorListing, IDiscoveryPersonalVotes
 {
     public DiscoveryPage DiscoverPage(DiscoveryQuery query) => Read(query, null, true);
-    public DiscoveryPage DiscoverAuthoredPage(DiscoveryQuery query, IReadOnlyCollection<Guid> authoredNodeIds) =>
-        Read(query, authoredNodeIds, true, true);
+    public DiscoveryPage DiscoverAuthoredPage(DiscoveryQuery query, IReadOnlyCollection<Guid> authoredNodeIds)
+    {
+        ArgumentNullException.ThrowIfNull(authoredNodeIds);
+        return Read(query, authoredNodeIds, true, true);
+    }
     public IReadOnlyList<RankedDiscoveryItem> Discover(DiscoveryQuery query) => Read(query, null, false).Items;
-    public IReadOnlyList<RankedDiscoveryItem> DiscoverAuthored(DiscoveryQuery query, IReadOnlyCollection<Guid> authoredNodeIds) =>
-        Read(query, authoredNodeIds, false, true).Items;
+    public IReadOnlyList<RankedDiscoveryItem> DiscoverAuthored(DiscoveryQuery query, IReadOnlyCollection<Guid> authoredNodeIds)
+    {
+        ArgumentNullException.ThrowIfNull(authoredNodeIds);
+        return Read(query, authoredNodeIds, false, true).Items;
+    }
 
     public DiscoveryPage DiscoverAuthorPage(DiscoveryQuery query, Guid authorParticipantId)
     {
+        ArgumentNullException.ThrowIfNull(query);
         if (authorParticipantId == Guid.Empty) throw new ArgumentException("An author is required.", nameof(authorParticipantId));
         // Intersect a requested author filter rather than silently replacing it.
         if (query.AuthorParticipantId is { } requested && requested != authorParticipantId)
@@ -98,17 +105,17 @@ public sealed class SqlDiscoveryReadQuery(Func<AtlasDataContext> open, Discovery
         {
             if (value is null) return;
             predicates.Add(predicate);
-            values.Add(new SqlParameter(name, value));
+            values.Add(name is "@from" or "@through" ? new SqlParameter(name, SqlDbType.Date) { Value = value } : new SqlParameter(name, value));
         }
         if (!includeHidden) predicates.Add("Hidden = 0");
-        if (authoredIds is not null) Filter("NodeId IN (SELECT CONVERT(uniqueidentifier, [value]) FROM OPENJSON(@authored))", "@authored", JsonSerializer.Serialize(authoredIds.Distinct()));
+        if (authoredIds is not null) Filter("NodeId IN (SELECT Id FROM OPENJSON(@authored) WITH (Id uniqueidentifier '$'))", "@authored", JsonSerializer.Serialize(authoredIds.Distinct()));
         if (query.IsArchived is { } archived) Filter("Status = @status", "@status", archived ? "Archived" : "Active");
         else if (!query.IncludeArchived) predicates.Add("Status <> N'Archived'");
         Filter("TypeId = @type", "@type", query.NodeTypeId);
         Filter("AuthorId = @author", "@author", query.AuthorParticipantId);
         Filter("EXISTS (SELECT 1 FROM CommunityNodeRows c WHERE c.NodeId = NodeStats.NodeId AND c.CommunityId = @community)", "@community", query.CommunityId);
         if (query.ReactionDefinitionIds is { Count: > 0 })
-            Filter("NOT EXISTS (SELECT 1 FROM OPENJSON(@reactions) r WHERE NOT EXISTS (SELECT 1 FROM NodeReactionRows nr WHERE nr.NodeId = NodeStats.NodeId AND nr.LifecycleState = N'Active' AND nr.ReactionDefinitionId = CONVERT(uniqueidentifier, r.[value])))", "@reactions", JsonSerializer.Serialize(query.ReactionDefinitionIds.Distinct()));
+            Filter("NOT EXISTS (SELECT 1 FROM OPENJSON(@reactions) WITH (Id uniqueidentifier '$') r WHERE NOT EXISTS (SELECT 1 FROM NodeReactionRows nr WHERE nr.NodeId = NodeStats.NodeId AND nr.LifecycleState = N'Active' AND nr.ReactionDefinitionId = r.Id))", "@reactions", JsonSerializer.Serialize(query.ReactionDefinitionIds.Distinct()));
         Filter("VoteCount >= @minCount", "@minCount", query.MinimumVoteCount);
         Filter("VoteCount <= @maxCount", "@maxCount", query.MaximumVoteCount);
         Filter("AverageVote >= @minAverage", "@minAverage", query.MinimumAverageVote);

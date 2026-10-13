@@ -4,6 +4,7 @@ public static class DiscoveryQueryValidation
 {
     public static void Validate(DiscoveryQuery query)
     {
+        ArgumentNullException.ThrowIfNull(query);
         if (query.Page < 1)
             throw new ArgumentOutOfRangeException(
                 nameof(query),
