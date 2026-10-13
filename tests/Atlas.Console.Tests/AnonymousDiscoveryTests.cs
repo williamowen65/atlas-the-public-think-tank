@@ -36,6 +36,47 @@ public sealed class AnonymousDiscoveryTests
     }
 
     [TestMethod]
+    public void Anonymous_node_actions_navigate_children_and_parents_without_writes()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var type = NodeTypeDefinition.CreateSystemDefined("Idea", "Ideas", now);
+        var author = new NodeAuthorId(Guid.NewGuid());
+        var root = new Node(new NodeTitle("Public root"), new NodeDescriptionId(Guid.NewGuid()), type.Id, author, now);
+        var child = Node.Reconstitute(new NodeId(Guid.NewGuid()), new NodeTitle("Public child"),
+            new NodeDescriptionId(Guid.NewGuid()), type.Id, author, NodeStatus.Active, [], [root.Id], now, now);
+        var nodes = Stub<INodeRepository>((method, args) => method.Name switch
+        {
+            "GetById" => (NodeId)args![0]! == root.Id ? root : child,
+            "GetChildren" => (NodeId)args![0]! == root.Id ? new[] { child } : Array.Empty<Node>(),
+            "Save" or "SaveMetadata" => throw new AssertFailedException("Anonymous navigation attempted a write."),
+            _ => EmptyValue(method.ReturnType)
+        });
+        var types = Stub<INodeTypeRepository>((method, _) => method.Name == "GetById" ? type : EmptyValue(method.ReturnType));
+        var originalInput = System.Console.In;
+        var originalOutput = System.Console.Out;
+        using var reader = new StringReader("7\n1\n24\n1\n20\n");
+        using var writer = new StringWriter();
+        try
+        {
+            System.Console.SetIn(reader);
+            System.Console.SetOut(writer);
+            AnonymousBrowseCommands.ViewNode(root, nodes, types, Stub<IDocumentRepository>(),
+                Stub<IParticipantRepository>(), Stub<INodeReactionRepository>(), Stub<IReactionDefinitionRepository>(),
+                Stub<IVoteRepository>(), Stub<ICommunityRepository>(), Stub<ICommunityNodeRepository>(),
+                Stub<ICommentRepository>(), new ModerationService(Stub<IModerationCaseRepository>(), Stub<IModeratorAuthorization>()));
+        }
+        finally
+        {
+            System.Console.SetIn(originalInput);
+            System.Console.SetOut(originalOutput);
+        }
+        var output = writer.ToString();
+        StringAssert.Contains(output, "Public child");
+        StringAssert.Contains(output, "ANCESTORS (nearest first, up to three)");
+        Assert.AreEqual(3, output.Split("Actions (as Anonymous)").Length - 1);
+    }
+
+    [TestMethod]
     public void UpperAndLowerCaseCommandsNavigateAnonymousDiscoveryPages()
     {
         var (pages, output) = Browse(
