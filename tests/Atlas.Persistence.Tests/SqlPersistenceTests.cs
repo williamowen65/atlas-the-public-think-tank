@@ -54,6 +54,28 @@ public sealed class SqlPersistenceTests
             Assert.IsTrue(database.Set<NodeParentRow>().Any());
             Assert.IsTrue(database.Set<DocumentBlockRow>().Any());
 
+            // Walk the actual seeded graph: 3 + 3 + 3 + 1 ancestors, with branch notices.
+            var cursor = Guid.Parse("b1000000-0000-4000-8000-000000000110");
+            var visited = new List<Guid> { cursor };
+            var segmentSizes = new List<int>();
+            var alternativeSegments = 0;
+            do
+            {
+                var segment = Atlas.Persistence.Discovery.DiscoveryBreadcrumbReader.ReadPage(database, cursor, visited);
+                segmentSizes.Add(segment.Items.Count);
+                if (segment.HasAlternativeRoutes)
+                    alternativeSegments++;
+                Assert.IsFalse(segment.CycleDetected);
+                visited.AddRange(segment.Items.Select(item => item.NodeId));
+                if (segment.ContinuationNodeId is not Guid next)
+                    break;
+                Assert.IsTrue(segment.DisplayText.Contains("…"));
+                cursor = next;
+            } while (segmentSizes.Count < 5);
+            CollectionAssert.AreEqual(new[] { 3, 3, 3, 1 }, segmentSizes.ToArray());
+            Assert.AreEqual(2, alternativeSegments);
+            Assert.AreEqual(Guid.Parse("b1000000-0000-4000-8000-000000000023"), visited.Last());
+
             var original = database.VoteRows.AsNoTracking().First();
             database.VoteRows.Add(new VoteRow
             {

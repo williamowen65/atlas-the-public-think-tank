@@ -289,10 +289,15 @@ WHERE Id = 1;
   - It follows the first stored parent position by default and flags alternatives.
   - It does not expand every route or load a fourth ancestor to detect continuation.
 
-- `DiscoveryCard.BreadcrumbSegment` contains items, a continuation node ID, an alternative-route indicator and a cycle indicator.
+- [`DiscoveryCard.BreadcrumbSegment`](../../src/Atlas.Discovery/DiscoveryCard.cs) contains items, a continuation node ID, an alternative-route indicator and a cycle indicator.
   - Example: child → A → B → C → D. First segment: A, B, C. Continue above C to receive D and any further ancestors.
   - `ReadPage` accepts visited IDs to stop cycles across successive segments.
-  - Hosts own transaction scope; separate requests do not promise one frozen graph view.
+
+  - The host (Console today; an API later) controls the database transaction around a breadcrumb read. The reader does not start or retain a transaction itself.
+
+  - A transaction can keep the queries for **one segment** consistent. It does not freeze the graph while a person reads the screen and later requests the next segment.
+
+  - Example: you receive A, B and C. Before you continue above C, someone changes C’s parent from D to E. The next request can show E, because it reads the current committed graph. Keeping the same route across requests would require a separate snapshot/version contract; that is not implemented here.
 
 - Display text ends with an ellipsis when more ancestors exist. Hidden ancestors use moderation notices. Roots, unavailable links or cycles can end a segment early.
 
@@ -300,6 +305,22 @@ WHERE Id = 1;
   - Inside a segment, the first stored parent is provisional.
   - Open an intermediate ancestor and explore its parents to choose another branch there.
   - The future scrollable breadcrumb/path-feed route-switching UI remains open.
+
+### Try the longer demo route in the Console
+
+- [SeedBreadcrumbDemo.cs](../../src/Atlas.Console/Storage/SeedData/SeedBreadcrumbDemo.cs) adds a ten-link chain below the existing Atlas root, plus community and research routes that intersect the chain. First-parent ordering keeps the long chain as the default route.
+
+- Search discovery for **Breadcrumb demo: ten-level route**, then open that node.
+
+- Its first breadcrumb segment shows levels **9 → 8 → 7 → …**. Continue above level 7 to see the alternative-route notice: that next segment examines level 7’s two parent links. The first segment does not inspect a fourth hop merely to find alternatives above its endpoint.
+
+- Choose **Explore parents** (action 24), then **N** to continue toward the root. The default segments contain levels **9, 8, 7**, then **6, 5, 4**, then **3, 2, 1**, then the **Atlas root**. The last segment has no ellipsis.
+
+- To try another route, open **level 7** and explore its parents: choose level 6 for the primary chain or **research route** for the alternate. Level 4 also offers **community route**. These branches reconnect with earlier ancestors without creating cycles.
+
+- This is seed content, so **no new schema migration is needed**. Run `dotnet run --project src/Atlas.Console -- --seed-demo` against an empty development database, then launch normally. The command refuses an already populated database.
+
+- For an existing local demo database, either configure a fresh development database or follow the [local reset instructions](../../src/Atlas.Persistence/README.md#reset-the-local-database-to-demo-seed-data-powershell). Resetting deletes that database’s accounts and content; it is not required just to update application code.
 
 ## Why some raw SQL remains
 
