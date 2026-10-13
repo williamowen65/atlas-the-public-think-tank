@@ -161,6 +161,41 @@ IDiscoveryService discovery = new DiscoveryService(
   - This deliberately serializes reads through that gate.
   - It is a simple correctness baseline, not a high-throughput distributed-cache design.
 
+## Cache counters are diagnostic metrics
+
+- [DiscoveryCache](../../src/Atlas.Persistence/Discovery/DiscoveryCache.cs) stores these counters as properties on the cache object. They describe observed cache activity; they do not decide whether an entry is reusable or control invalidation.
+
+| Counter | What increments it |
+|---|---|
+| PageHits | A TryPage lookup finds a reusable ranked page |
+| PageMisses | A TryPage lookup does not find its key |
+| DetailHits | A TryDetail lookup finds a reusable card |
+| DetailMisses | A TryDetail lookup does not find its version/ID key |
+| RejectedEntries | PutPage/PutDetail rejects an entry because its estimated size exceeds the configured per-entry/budget check |
+
+- **Lifetime:** totals accumulate for one cache instance. Creating a new cache starts them at zero. Different application processes have separate counters; they are not persisted in the database.
+
+- **Current consumers:** cache tests assert behavior, performance tests include the counters in measurement reports, and a developer can inspect the object in the debugger. They are not currently exported to a runtime dashboard or monitoring service.
+
+- **Hits count lookups, not distinct nodes.** Reading the same three cards twice adds six detail hits. A page hit may still need card reads if detail entries are missing.
+
+- **Misses count attempted cache lookups.** Requests with no cache do not increment these counters. Unpaged requests bypass TryPage, although they may still attempt detail lookups. A page miss does not necessarily indicate a data change: first use, new filters/pages, expiration and eviction can also produce misses.
+
+- **Rejections are not eviction totals.** MemoryCache may expire, evict or decline retention under its aggregate budget; RejectedEntries records only this wrapper's explicit oversized-entry checks. It is not a count of every unsuccessful insertion or every database error.
+
+- **Example hit rate:** page hits divided by total page lookups, using floating-point arithmetic:
+
+```csharp
+var lookups = cache.PageHits + cache.PageMisses;
+double? hitRate = lookups == 0
+    ? null // No lookups yet; a rate is not meaningful.
+    : (double)cache.PageHits / lookups;
+```
+
+- Compare rates with the workload, query counts and elapsed times. A low rate can be expected when exploring many different filters; a high rate alone does not prove good performance or correctness.
+
+- Counter updates occur under the query adapter's cache gate. A future concurrent monitoring reader should obtain a consistent snapshot under that same gate, or use an appropriate metrics/synchronization implementation; unsynchronized separate property reads are not guaranteed to describe one instant.
+
 ## When to change the page-key prefix (`order-v2`)
 
 - **Location:** the literal `order-v2:` returned by [DiscoveryCache.PageKey](../../src/Atlas.Persistence/Discovery/DiscoveryCache.cs). Change it in the same change that introduces incompatible ranked-page behavior, before that behavior is released.
