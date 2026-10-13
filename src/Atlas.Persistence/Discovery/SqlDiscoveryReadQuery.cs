@@ -13,6 +13,9 @@ namespace Atlas.Persistence.Discovery;
 /// </summary>
 public sealed class SqlDiscoveryReadQuery(
     Func<AtlasDataContext> open,
+    // The primary-constructor parameter is available throughout this class.
+    // Console Program.cs creates one DiscoveryCache and passes it here. Tests and
+    // other callers may omit it to run the same database query without cache reuse.
     DiscoveryCache? cache = null)
     : IDiscoveryReadQuery, IDiscoveryAuthorListing, IDiscoveryPersonalVotes
 {
@@ -47,12 +50,17 @@ public sealed class SqlDiscoveryReadQuery(
         return Read(query with { AuthorParticipantId = authorParticipantId }, null, true, true);
     }
 
+    // This is a lock object, not a cache. Without an injected cache, this instance
+    // still serializes its Read calls using this fallback gate.
     private readonly object _uncachedGate = new();
+
     /// <summary>Resolves ranked results and public cards against one committed database view.</summary>
     private DiscoveryPage Read(DiscoveryQuery query, IReadOnlyCollection<Guid>? authoredIds, bool paged, bool includeHidden = false)
     {
+        // 1. Validate and normalize the request before touching the database/cache.
         ArgumentNullException.ThrowIfNull(query);
         DiscoveryQueryValidation.Validate(query);
+
         // Normalize equivalent set inputs and surrounding whitespace before key generation.
         query = query with
         {
@@ -60,28 +68,61 @@ public sealed class SqlDiscoveryReadQuery(
             ReactionDefinitionIds = query.ReactionDefinitionIds?.Distinct().Order().ToArray()
         };
         authoredIds = authoredIds?.Distinct().Order().ToArray();
-        // A fixed gate avoids an unbounded dictionary of per-filter locks. It coordinates
-        // misses and the non-thread-safe cache counters without sharing any DbContext.
+
+        // 2. Coordinate this read with other reads using the same gate.
+        // cache?.Gate means “get Gate if cache exists”; ?? chooses _uncachedGate
+        // when it does not. lock allows only one caller through this gate at a time.
+        // A cache shared by multiple query instances supplies their shared gate.
+        // This process lock is separate from the database transaction locks below.
+        // It coordinates misses/counters without storing or sharing a DbContext.
         lock (cache?.Gate ?? _uncachedGate)
         {
+            // 3. Create a fresh EF context. BindDatabase does not find/create a database:
+            // it remembers this connection configuration and rejects reuse of the same
+            // cache for a different one (whose IDs/revision numbers could overlap).
+            // ?. skips this call entirely when caching was omitted.
             using var db = open();
             cache?.BindDatabase(db.Database.GetConnectionString()!);
+
             using var transaction = db.Database.BeginTransaction(IsolationLevel.Serializable);
+            // 4. Read the committed freshness counters, even when cache is absent.
+            // The singleton row has Id = 1. PageVersion and DetailVersion are generation
+            // numbers, not page numbers, node limits or timestamps. Relevant writes bump
+            // them atomically; new versions make older cache keys unusable.
             // This read holds a shared lock until count/page/cards are complete. Writers update
             // these generations in their own transaction; hidden pages cannot outlive that commit.
             var revision = db.Set<DiscoveryRevisionRow>().AsNoTracking().Single(row => row.Id == 1);
+
+            // 5. Look for a ranked page matching the request and current page revision.
+            // PageKey is a static helper, so it can be called without a cache instance.
             var key = DiscoveryCache.PageKey(query, authoredIds, revision.PageVersion, includeHidden);
+            // null! suppresses the nullable warning; it does not create a page.
+            // A successful TryPage supplies it, otherwise the database branch below does.
             DiscoveryPage page = null!;
+
+            // || short-circuits from left to right. Query storage when:
+            // - this is an unpaged request (ranked-page caching is bypassed), or
+            // - no cache was injected, or
+            // - TryPage cannot find this key (first use, new revision, expiry/eviction).
+            // Unpaged requests can still reuse detail cards if a cache exists.
             var pageMiss = !paged || cache is null || !cache.TryPage(key, out page!);
+
             if (pageMiss)
             {
+                // 6. Build deferred EF query expressions, then execute count and page.
                 // Count and page use the same filter predicates. The count includes all
                 // matches; OFFSET/FETCH limits only the ranked rows returned to the host.
                 var filtered = DiscoveryEfQuery.Build(db, query, authoredIds, includeHidden);
+                // Build returns IQueryable: no candidates have been enumerated yet.
+                // TagWith adds a SQL comment for identifying this statement in plans/logs.
+                // Count executes a database aggregate, not an in-memory list count.
                 var total = filtered.TagWith("Discovery count").Count();
+
                 var offset = paged ? ((long)query.Page - 1) * IDiscoveryService.PageSize : 0;
                 // Count is an int, so an offset below total fits Skip(int). Test the
                 // long offset first to safely handle even int.MaxValue page numbers.
+                // The ternary returns an empty list beyond the total; otherwise ToList
+                // executes the ordered/paged SQL. Only selected rows reach the application.
                 var rows = offset >= total
                     ? []
                     : filtered
@@ -101,6 +142,8 @@ public sealed class SqlDiscoveryReadQuery(
                         })
                         .TagWith("Discovery ranked page")
                         .ToList();
+
+                // Assign global ranks locally to the already selected rows, not to all nodes.
                 var items = rows.Select((row, index) => new RankedDiscoveryItem(
                     row.NodeId,
                     checked((int)offset + index + 1),
@@ -110,10 +153,16 @@ public sealed class SqlDiscoveryReadQuery(
                     .ToArray();
                 page = new DiscoveryPage(Array.AsReadOnly(items), total, query.Page, IDiscoveryService.PageSize);
             }
+
+            // 7. Resolve public display cards for the ranked IDs.
+            // cards collects both cache hits and database results for this response.
+            // missing contains IDs whose display data is absent from the detail cache;
+            // it does NOT mean the node is missing from the database.
             var cards = new Dictionary<Guid, DiscoveryCard>();
             var missing = new List<Guid>();
             // A page hit does not imply a card hit: the two layers have separate revisions.
-            // Collect missing cards before issuing one batch, avoiding a query per node.
+            // Collect missing IDs before ReadCards' fixed metadata/summary batches,
+            // avoiding a query per node. With no cache, every selected ID is missing here.
             foreach (var item in page.Items)
             {
                 if (cache is not null && cache.TryDetail(revision.DetailVersion, item.NodeId, out var card))
@@ -125,12 +174,19 @@ public sealed class SqlDiscoveryReadQuery(
                     missing.Add(item.NodeId);
                 }
             }
+
+            // 8. Load only missing cards. ReadCards uses one EF metadata batch and one
+            // SQL summary batch; an empty missing list returns without either query.
             var loaded = ReadCards(db, missing.ToArray());
             foreach (var card in loaded.Values)
             {
                 cards[card.NodeId] = card;
             }
+
+            // 9. Finish the consistent read before publishing any newly loaded entries.
+            // Exceptions before this point leave these attempted results out of the cache.
             transaction.Commit();
+
             // Publish only successfully completed committed reads. Detail entries are immutable
             // and independent of filters/ordered page IDs and contain no participant-specific votes.
             if (pageMiss && paged)
@@ -141,6 +197,9 @@ public sealed class SqlDiscoveryReadQuery(
             {
                 cache?.PutDetail(revision.DetailVersion, card);
             }
+
+            // 10. Return a copy with its public cards attached. Cached ranked pages remain
+            // separate from detail entries; personalized participant votes are not included.
             return page with
             {
                 Items = Array.AsReadOnly(page.Items
@@ -163,7 +222,7 @@ public sealed class SqlDiscoveryReadQuery(
             .ToDictionary(row => row.TargetId, row => row.Value);
     }
 
-    /// <summary>Loads display projections for the missing selected IDs in one SQL batch.</summary>
+    /// <summary>Loads missing display cards using fixed EF metadata and SQL summary batches.</summary>
     internal static Dictionary<Guid, DiscoveryCard> ReadCards(AtlasDataContext db, Guid[] ids)
     {
         if (ids.Length == 0)
