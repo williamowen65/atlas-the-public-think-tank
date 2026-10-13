@@ -154,7 +154,15 @@ public sealed class SqlDiscoveryReadQuery(Func<AtlasDataContext> open, Discovery
         var sql = ReadResource("DiscoveryCards.sql");
         var rows = db.Database.SqlQueryRaw<CardRow>(sql, new SqlParameter("@ids", JsonSerializer.Serialize(ids))).ToList();
         return rows.ToDictionary(row => row.NodeId, row => new DiscoveryCard(row.NodeId, row.Title, row.TypeName,
-            row.AuthorName, row.Status, row.CreatedAt, row.Description, row.Breadcrumb, row.SubNodes, row.Reactions, row.Communities, row.CommentCount, row.IsHidden));
+            row.AuthorName, row.Status, row.CreatedAt, row.Description, row.Breadcrumb, FormatChildren(row.SubNodes), row.Reactions, row.Communities, row.CommentCount, row.IsHidden));
+    }
+
+    private static string FormatChildren(string json)
+    {
+        if (json is "None" or "[]") return "None";
+        using var children = JsonDocument.Parse(json);
+        return string.Join(" · ", children.RootElement.EnumerateArray().Select(child =>
+            DiscoveryDisplayText.FormatTypeCount(child.GetProperty("Name").GetString()!, child.GetProperty("Count").GetInt32(), child.GetProperty("AutoPluralize").GetBoolean())));
     }
 
     private static string ReadResource(string name)

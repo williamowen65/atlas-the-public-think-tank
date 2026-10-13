@@ -38,15 +38,13 @@ public static class ParticipantCommands
                 return;
             }
 
-            var authoredNodes = nodes
-                .GetByAuthor(new NodeAuthorId(participant.Id.Value))
-                .ToList();
+            var sqlListing = discovery as IDiscoveryAuthorListing;
+            var authoredNodes = sqlListing is null ? nodes.GetByAuthor(new NodeAuthorId(participant.Id.Value)).ToList() : new List<Node>();
+            var authoredCount = sqlListing is null ? authoredNodes.Count :
+                sqlListing.DiscoverAuthorPage(new DiscoveryQuery(IncludeArchived: true), participant.Id.Value).TotalCount;
 
             Console.Clear();
-            ParticipantDisplay.WriteProfile(
-                participant,
-                authoredNodes
-            );
+            ParticipantDisplay.WriteProfile(participant, authoredCount);
             Console.WriteLine();
             Console.WriteLine("1. Edit profile");
             Console.WriteLine("2. View authored nodes");

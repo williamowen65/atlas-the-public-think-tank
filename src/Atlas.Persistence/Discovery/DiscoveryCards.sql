@@ -12,13 +12,13 @@ WITH Selected AS (
         ORDER BY DecidedAt DESC, Id) m
 ), Paths AS (
     SELECT s.Id AS SelectedId, p.ParentNodeId AS AncestorId,
-           CONVERT(nvarchar(max), CONCAT(a.TypeName, N' · ', CASE WHEN a.IsHidden = 1 THEN a.Notice ELSE a.Title END)) AS Breadcrumb,
+           CONVERT(nvarchar(max), CONCAT(a.TypeName, N' · ', CASE WHEN a.IsHidden = 1 THEN a.Notice ELSE a.Title END)) COLLATE Latin1_General_100_CI_AI_SC AS Breadcrumb,
            CONVERT(nvarchar(max), CONCAT(N'/', s.Id, N'/', p.ParentNodeId, N'/')) AS Visited,
            CONVERT(nvarchar(max), RIGHT(CONCAT(N'0000000000', p.Position), 10)) AS PathOrder
     FROM Selected s JOIN NodeParents p ON p.NodeId = s.Id JOIN PublicNodes a ON a.Id = p.ParentNodeId
     UNION ALL
     SELECT path.SelectedId, p.ParentNodeId,
-           CONVERT(nvarchar(max), CONCAT(a.TypeName, N' · ', CASE WHEN a.IsHidden = 1 THEN a.Notice ELSE a.Title END, N' → ', path.Breadcrumb)),
+           CONVERT(nvarchar(max), CONCAT(a.TypeName, N' · ', CASE WHEN a.IsHidden = 1 THEN a.Notice ELSE a.Title END, N' → ', path.Breadcrumb)) COLLATE Latin1_General_100_CI_AI_SC,
            CONVERT(nvarchar(max), CONCAT(path.Visited, p.ParentNodeId, N'/')),
            CONVERT(nvarchar(max), CONCAT(path.PathOrder, N'/', RIGHT(CONCAT(N'0000000000', p.Position), 10)))
     FROM Paths path JOIN NodeParents p ON p.NodeId = path.AncestorId JOIN PublicNodes a ON a.Id = p.ParentNodeId
@@ -37,12 +37,12 @@ SELECT n.Id AS NodeId, CASE WHEN n.IsHidden = 1 THEN n.Notice ELSE n.Title END A
 FROM Selected s JOIN PublicNodes n ON n.Id = s.Id LEFT JOIN ParticipantRows author ON author.Id = n.AuthorId
 OUTER APPLY (
     SELECT STRING_AGG(CONVERT(nvarchar(max), CASE b.Kind
-        WHEN N'markdown' THEN COALESCE(b.Markdown, N'')
+        WHEN N'markdown' THEN COALESCE(b.Markdown, N'') COLLATE Latin1_General_100_CI_AI_SC
         WHEN N'image' THEN CONCAT(N'Image: ', b.AltText, N' (', b.Url COLLATE Latin1_General_100_CI_AI_SC, N')')
         WHEN N'video' THEN CONCAT(N'Video: ', b.Caption, N' (', b.Url COLLATE Latin1_General_100_CI_AI_SC, N')')
         WHEN N'link-preview' THEN CONCAT(N'Link: ', b.Title, N' (', b.Url COLLATE Latin1_General_100_CI_AI_SC, N') — ', b.Description)
         WHEN N'poll-reference' THEN N'Poll'
-        WHEN N'chart-reference' THEN CONCAT(N'Chart: ', b.Title) ELSE b.Kind END), NCHAR(10) + NCHAR(10))
+        WHEN N'chart-reference' THEN CONCAT(N'Chart: ', b.Title) ELSE b.Kind COLLATE Latin1_General_100_CI_AI_SC END), NCHAR(10) + NCHAR(10))
         WITHIN GROUP (ORDER BY link.Position) AS Text
     FROM DocumentBlocks link JOIN BlockRows b ON b.Id = link.BlockId WHERE link.DocumentId = n.DescriptionId AND n.IsHidden = 0
 ) description
@@ -51,13 +51,14 @@ OUTER APPLY (
     FROM Paths path WHERE path.SelectedId = n.Id AND NOT EXISTS (SELECT 1 FROM NodeParents p WHERE p.NodeId = path.AncestorId)
 ) paths
 OUTER APPLY (
-    SELECT STRING_AGG(CONVERT(nvarchar(max), CONCAT(k.Count, N' ', t.Name)), N' · ') WITHIN GROUP (ORDER BY t.Name) AS Text
+    SELECT (SELECT COALESCE(t.Name, N'Unknown') AS Name, k.Count, COALESCE(t.AutoPluralize, CAST(1 AS bit)) AS AutoPluralize
     FROM (SELECT types.TypeId, COUNT(child.Id) AS Count FROM (
             SELECT requested.TypeId FROM NodeRequestedTypes requested WHERE requested.NodeId = n.Id
             UNION SELECT c.TypeId FROM NodeParents p JOIN NodeRows c ON c.Id = p.NodeId WHERE p.ParentNodeId = n.Id
          ) types
          LEFT JOIN NodeRows child ON child.TypeId = types.TypeId AND EXISTS (SELECT 1 FROM NodeParents p WHERE p.NodeId = child.Id AND p.ParentNodeId = n.Id)
-         GROUP BY types.TypeId) k JOIN NodeTypeRows t ON t.Id = k.TypeId
+         GROUP BY types.TypeId) k LEFT JOIN NodeTypeRows t ON t.Id = k.TypeId
+    ORDER BY t.Name FOR JSON PATH) AS Text
 ) children
 OUTER APPLY (
     SELECT STRING_AGG(CONVERT(nvarchar(max), r.Label), N', ') WITHIN GROUP (ORDER BY r.CreatedAt, r.SortId) AS Text
