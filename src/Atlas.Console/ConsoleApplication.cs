@@ -564,11 +564,10 @@ public sealed class ConsoleApplication
                 if (reportNumber < firstNumber || reportNumber >= firstNumber + displayedCount)
                     ConsoleUi.Pause("That node does not exist.");
                 else
-                    NodeCommands.ReportNode(
-                        SelectedNode(reportNumber - firstNumber)!,
-                        _authenticatedActor.ParticipantId,
-                        _moderation
-                    );
+                {
+                    var reportedNode = SelectedNode(reportNumber - firstNumber);
+                    if (reportedNode is not null) NodeCommands.ReportNode(reportedNode, _authenticatedActor.ParticipantId, _moderation);
+                }
                 continue;
             }
             if (string.Equals(
@@ -717,8 +716,10 @@ public sealed class ConsoleApplication
                 continue;
             }
 
+            var selectedNode = SelectedNode(selection - firstNumber);
+            if (selectedNode is null) continue;
             NodeCommands.Run(
-                SelectedNode(selection - firstNumber)!,
+                selectedNode,
                 _nodeRepository,
                 _nodeTypeRepository,
                 _documentRepository,

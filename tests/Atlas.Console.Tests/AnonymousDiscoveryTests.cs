@@ -175,10 +175,22 @@ public sealed class AnonymousDiscoveryTests
         );
     }
 
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public void Batched_cards_render_without_loading_domain_nodes(bool authenticated)
+    {
+        var (pages, output) = Browse(7, "N\nN\nP\n0\n", authenticated, useCards: true);
+        CollectionAssert.AreEqual(new[] { 1, 2, 3, 2 }, pages.ToArray());
+        StringAssert.Contains(output, "7. Idea · Node 7");
+        StringAssert.Contains(output, "Batched description");
+    }
+
     private static (IReadOnlyList<int> Pages, string Output) Browse(
         int count,
         string input,
-        bool authenticated = false
+        bool authenticated = false,
+        bool useCards = false
     )
     {
         var now = new DateTimeOffset(
@@ -207,11 +219,11 @@ public sealed class AnonymousDiscoveryTests
             now
         )).ToList();
         var discovery = new RecordingDiscovery(new DiscoveryService(new FixedQuery(nodes.Select((node, index) =>
-            new RankedDiscoveryItem(node.Id.Value, index + 1, 5, 1, 5)).ToArray())));
+            new RankedDiscoveryItem(node.Id.Value, index + 1, 5, 1, 5, useCards ? new DiscoveryCard(node.Id.Value, node.Title.Value, "Idea", "Author", "Active", now, "Batched description", "Root node", "None", "—", "None", 0, false) : null)).ToArray())));
         var nodeRepository = Stub<INodeRepository>((
             method,
             args
-        ) => method.Name == "GetById"
+        ) => useCards ? throw new AssertFailedException("Batched card rendering must not query Node aggregates.") : method.Name == "GetById"
             ? nodes.SingleOrDefault(n => n.Id == (NodeId)args![0]!) : EmptyValue(method.ReturnType));
         var types = Stub<INodeTypeRepository>((
             method,
@@ -226,7 +238,7 @@ public sealed class AnonymousDiscoveryTests
         {
             System.Console.SetIn(reader);
             System.Console.SetOut(writer);
-            // Exercise the actual anonymous input/render loop with real Discovery filtering and slicing.
+            // Exercise the actual input/render loop using fixed ranked pages from the read port.
             if (authenticated)
             {
                 // Exercise the authenticated browse loop; contribution services are unused here.
