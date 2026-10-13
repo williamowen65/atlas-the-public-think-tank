@@ -141,22 +141,23 @@ IDiscoveryService discovery = new DiscoveryService(
 | Detail card | Immutable public node display fields and bounded breadcrumb segment | 8 MiB estimated sizes; 30-second absolute expiration; maximum entry 128 KiB |
 | Personal ratings | Queried fresh for the authenticated participant and selected IDs | Not shared/cached |
 
-- **Page key:** a hash of filters, page number/size, authored scope and visibility policy, plus an ordering-policy prefix and committed page revision.
+- **Page key** — [`PageKey` construction](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/DiscoveryCache.cs#L71): a hash of filters, page number/size, authored scope and visibility policy, plus an ordering-policy prefix and committed page revision.
   - It is a cache lookup key, not a cursor or authorization token.
   - Search text is trimmed; set-like inputs are sorted/deduplicated.
   - Case/accents are preserved in the key rather than assuming SQL and .NET normalization are identical.
 
-- **Detail key:** `(DetailVersion, NodeId)`. It is independent of the filter and result-page number.
+- **Detail key** — [lookup in `TryDetail`](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/DiscoveryCache.cs#L143) and [storage in `PutDetail`](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/DiscoveryCache.cs#L158): `(DetailVersion, NodeId)`. It is independent of the filter and result-page number.
   - Example: changing a filter returns the same three IDs → recompute the ranked page → reuse those three display cards.
   - If it returns uncached IDs, their cards must be loaded.
 
-- **Size budgets are estimates**, not exact managed-heap measurements. Oversized content is still returned to the caller but is not cached.
+- **Size budgets** — [constructor budgets](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/DiscoveryCache.cs#L33), [page size accounting](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/DiscoveryCache.cs#L125) and [detail size accounting](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/DiscoveryCache.cs#L158) — **are estimates**, not exact managed-heap measurements. Oversized content is still returned to the caller but is not cached.
 
-- Counters expose hits, misses and oversized-entry rejections. No DbContext, EF-tracked entity, mutable domain aggregate or personal vote is cached.
+- [Counters](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/DiscoveryCache.cs#L26) expose hits, misses and oversized-entry rejections. See [page lookup](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/DiscoveryCache.cs#L110) and [detail lookup](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/DiscoveryCache.cs#L143) for hit/miss increments. No DbContext, EF-tracked entity, mutable domain aggregate or personal vote is cached.
 
-- `BindDatabase` remembers the connection configuration and rejects sharing one cache across different configurations. It does not locate or create a database.
+- [`BindDatabase`](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/DiscoveryCache.cs#L56) remembers the connection configuration and rejects sharing one cache across different configurations. It does not locate or create a database.
 
-- The gate is an in-process lock coordinating reads and counter updates. `_uncachedGate` is the fallback lock object when there is no cache—not another cache.
+- [The gate used by `Read`](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L78) is an in-process lock coordinating reads and counter updates. `_uncachedGate` is the fallback lock object when there is no cache—not another cache.
+  - [Shared cache gate](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/DiscoveryCache.cs#L25) coordinates adapters sharing that cache; [`_uncachedGate`](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L55) belongs to the uncached adapter instance.
   - This deliberately serializes reads through that gate.
   - It is a simple correctness baseline, not a high-throughput distributed-cache design.
 
@@ -184,7 +185,7 @@ IDiscoveryService discovery = new DiscoveryService(
 
 - Invalidation is deliberately database-wide, not per-node. Relevant metadata changes make older detail keys unusable across all cards. Finer-grained invalidation is a later optimization to measure.
 
-- Old entries need not be physically deleted immediately: new revisions produce different keys. Expiration/eviction governs retention; revision checking governs committed freshness.
+- [Revision-aware page-key lookup](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L98) and [detail lookup](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L168) make old entries unusable without deleting them immediately: new revisions produce different keys. Expiration/eviction governs retention; revision checking governs committed freshness.
 
 ## Transactions, commits and rollbacks
 
@@ -196,7 +197,7 @@ IDiscoveryService discovery = new DiscoveryService(
   - A committed visibility change cannot be bypassed by using an older cache generation.
   - Another write may commit after the read finishes; this guarantee concerns that read's committed view, not indefinite freshness of data already displayed.
 
-- New cache entries are published only after the read transaction commits. Failed read attempts are not published.
+- [Read transaction commit](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L189) precedes [page publication](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L195) and [detail publication](https://github.com/williamowen65/atlas-the-public-think-tank/blob/256fb2c79a843b777ec999bad87602c49b90e85b/src/Atlas.Persistence/Discovery/SqlDiscoveryReadQuery.cs#L199). New cache entries are published only after the read transaction commits. Failed read attempts are not published.
 
 - Direct administrative SQL, imports and ExecuteUpdate/ExecuteDelete can bypass SaveChanges. They must advance both revisions in the same transaction as relevant changes:
 
