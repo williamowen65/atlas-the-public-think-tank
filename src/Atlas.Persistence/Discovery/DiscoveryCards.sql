@@ -1,3 +1,10 @@
+-- SQL exception: recursive multi-parent breadcrumbs have no recursive LINQ operator
+-- in the current EF provider. Keep traversal, cycle guards and ordered path joining here.
+-- Ordered block/reaction/community text also uses STRING_AGG WITHIN GROUP; preserving
+-- that order avoids changing cross-block descriptions and established card formatting.
+-- EF handles ordinary type/author/status/date/comment metadata in ReadCards instead.
+-- The child-type JSON remains with these summaries to avoid another database round trip;
+-- that part could be LINQ in a separate batch, but is not inherently SQL-only.
 -- Public display cards for @ids, supplied as a JSON array of selected node GUIDs.
 -- Ranking/paging happens in SqlDiscoveryReadQuery before this batch is called.
 -- This query returns display fields, not tracked EF entities or domain aggregates.
@@ -48,10 +55,6 @@ WITH Selected AS (
 -- Assemble one card per selected ID. Empty summaries receive Console-friendly defaults.
 SELECT n.Id AS NodeId,
        CASE WHEN n.IsHidden = 1 THEN n.Notice ELSE n.Title END AS Title,
-       n.TypeName,
-       COALESCE(author.DisplayName, N'Unknown') AS AuthorName,
-       n.Status,
-       n.CreatedAt,
        CASE WHEN n.IsHidden = 1 THEN n.Notice WHEN n.DescriptionId IS NULL THEN N'Description document not found.'
             ELSE COALESCE(description.Text, N'No description has been provided.') END AS Description,
        COALESCE(paths.Text, N'Root node') AS Breadcrumb,
@@ -64,11 +67,9 @@ SELECT n.Id AS NodeId,
                    ELSE N'' END)
        END AS Reactions,
        COALESCE(communities.Text, N'None') AS Communities,
-       (SELECT COUNT(*) FROM CommentRows c WHERE c.TargetKind = N'Node' AND c.TargetId = n.Id) AS CommentCount,
        n.IsHidden
 FROM Selected s
     JOIN PublicNodes n ON n.Id = s.Id
-    LEFT JOIN ParticipantRows author ON author.Id = n.AuthorId
 -- Render content blocks in document order, separated by blank lines.
 -- Hidden nodes do not expose their description blocks.
 OUTER APPLY (

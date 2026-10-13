@@ -38,6 +38,8 @@ The [Node creation board](workflows/Nodes/NodeCreation.excalidraw) restores the 
 - [The current-state context map](../architecture/CONTEXT-MAP.md) remains the
   authoritative inventory when the blackboard and written documentation differ.
 
+- [Discovery reads, pagination and caching](workflows/Discovery/DiscoveryReadFlow.excalidraw) walks through EF queries, remaining SQL helpers, page keys and transaction-backed revisions. See the [code walkthrough](workflows/Discovery/DiscoveryReadFlow.md).
+
 ## Legend
 
 - Solid borders and arrows represent implemented components or interactions.

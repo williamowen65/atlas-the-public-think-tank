@@ -53,8 +53,8 @@ public sealed class DiscoveryPerformanceTests
         Assert.AreEqual(nodes, cold.TotalCount);
         Assert.HasCount(3, cold.Items);
         Assert.AreEqual(3, cold.Items.Count(item => item.Card is not null));
-        Assert.HasCount(4, collector.Commands); // revision, total, ranked page, batched cards
-        var plans = collector.Commands.Where(c => c.Text.Contains("WITH NodeStats") || c.Text.Contains("WITH Selected")).ToList();
+        Assert.HasCount(5, collector.Commands); // revision, total, ranked page, EF metadata, SQL summaries
+        var plans = collector.Commands.Where(c => c.Text.Contains("Discovery count") || c.Text.Contains("Discovery ranked page") || c.Text.Contains("WITH Selected") || c.Text.Contains("Discovery card metadata")).ToList();
         collector.Commands.Clear();
         watch.Restart(); query.DiscoverPage(new()); watch.Stop(); var hotMs = watch.Elapsed.TotalMilliseconds;
         Assert.HasCount(1, collector.Commands); // committed generation/visibility freshness check
@@ -62,12 +62,12 @@ public sealed class DiscoveryPerformanceTests
         watch.Restart();
         var changed = query.DiscoverPage(new(SearchText: "Node"));
         watch.Stop(); var filterMs = watch.Elapsed.TotalMilliseconds;
-        plans.AddRange(collector.Commands.Where(command => command.Text.Contains("WITH NodeStats")));
+        plans.AddRange(collector.Commands.Where(command => command.Text.Contains("Discovery count") || command.Text.Contains("Discovery ranked page")));
         Assert.HasCount(3, collector.Commands); // details reused across filter keys
         Assert.HasCount(3, changed.Items);
         collector.Commands.Clear();
         var next = query.DiscoverPage(new(Page: 2));
-        Assert.HasCount(4, collector.Commands);
+        Assert.HasCount(5, collector.Commands);
         CollectionAssert.AreEqual(new[] { 4, 5, 6 }, next.Items.Select(item => item.Rank).ToArray());
         collector.Commands.Clear();
         Assert.IsEmpty(query.DiscoverPage(new(Page: int.MaxValue)).Items);
@@ -79,7 +79,7 @@ public sealed class DiscoveryPerformanceTests
         Directory.CreateDirectory(folder);
         using var sizeRead = fixture.Open();
         var reservedBytes = sizeRead.Database.SqlQueryRaw<long>("SELECT CONVERT(bigint, SUM(reserved_page_count)) * 8192 AS [Value] FROM sys.dm_db_partition_stats").AsEnumerable().Single();
-        var report = $"Nodes/documents/blocks/ratings: {nodes} each; database reserved bytes: {reservedBytes}\nCold page: {coldMs:F2} ms; warm page: {hotMs:F2} ms; filter-change page: {filterMs:F2} ms\nQueries cold/warm/filter-change/next/beyond: 4/1/3/4/2\nMaterialized ranked IDs/cards per normal page: 3/3\nCache page hits/misses: {cache.PageHits}/{cache.PageMisses}; detail hits/misses: {cache.DetailHits}/{cache.DetailMisses}\n";
+        var report = $"Nodes/documents/blocks/ratings: {nodes} each; database reserved bytes: {reservedBytes}\nCold page: {coldMs:F2} ms; warm page: {hotMs:F2} ms; filter-change page: {filterMs:F2} ms\nQueries cold/warm/filter-change/next/beyond: 5/1/3/5/2\nMaterialized ranked IDs/cards per normal page: 3/3\nCache page hits/misses: {cache.PageHits}/{cache.PageMisses}; detail hits/misses: {cache.DetailHits}/{cache.DetailMisses}\n";
         File.WriteAllText(Path.Combine(folder, $"discovery-{nodes}-measurements.txt"), report);
         TestContext.WriteLine(report);
         // Re-execute the same parameterized statements with actual execution-plan collection.

@@ -1,5 +1,7 @@
 # Discovery SQL performance evidence
 
+> Historical baseline before the EF readability refactor. These timings/plans describe the earlier implementation. Current cold/new-page read counts are five because EF metadata and SQL summaries are separate batches; fresh measurements must come from the refactored CI run.
+
 The [SQL Discovery CI run 38327316002](https://github.com/williamowen65/atlas-the-public-think-tank/actions/runs/38327316002) passed all 29 Discovery SQL behavior/cache/performance tests against SQL Server 2022. All eleven regular unit-test jobs also passed. Its `discovery-sql-evidence` artifact contains measurements and fifteen actual execution plans: unfiltered count/page/cards and text-filtered count/page at three dataset sizes.
 
 Each fixture node has one document, one Unicode Markdown block (16 repetitions of a short climate-adaptation sentence), an author/type, and one persisted importance rating cycling through 0–10. Separate behavior fixtures cover multiple content kinds, communities, reactions, ancestors, archive and moderation. These are synthetic baselines, not a production capacity forecast or a comparison against the previous application.
