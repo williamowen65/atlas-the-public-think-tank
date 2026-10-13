@@ -30,7 +30,7 @@ SELECT n.Id AS NodeId, CASE WHEN n.IsHidden = 1 THEN n.Notice ELSE n.Title END A
             ELSE COALESCE(description.Text, N'No description has been provided.') END AS Description,
        COALESCE(paths.Text, N'Root node') AS Breadcrumb,
        COALESCE(children.Text, N'None') AS SubNodes,
-       COALESCE(reactions.Text, N'—') AS Reactions,
+       CASE WHEN reactions.Text IS NULL THEN N'—' ELSE CONCAT(reactions.Text, CASE WHEN reactionCount.Value > 3 THEN CONCAT(N' +', reactionCount.Value - 3) ELSE N'' END) END AS Reactions,
        COALESCE(communities.Text, N'None') AS Communities,
        (SELECT COUNT(*) FROM CommentRows c WHERE c.TargetKind = N'Node' AND c.TargetId = n.Id) AS CommentCount,
        n.IsHidden
@@ -69,6 +69,12 @@ OUTER APPLY (
           WHERE nr.NodeId = n.Id AND nr.LifecycleState = N'Active' AND d.IsSuppressed = 0 AND votes.Score IS NOT NULL
           ORDER BY nr.CreatedAt, CONVERT(char(36), nr.Id) COLLATE Latin1_General_100_BIN2) r
 ) reactions
+OUTER APPLY (
+    SELECT COUNT(*) AS Value FROM NodeReactionRows nr JOIN ReactionDefinitionRows d ON d.Id = nr.ReactionDefinitionId
+    WHERE nr.NodeId = n.Id AND nr.LifecycleState = N'Active' AND d.IsSuppressed = 0
+      AND EXISTS (SELECT 1 FROM VoteRows v WHERE v.TargetType = N'NodeReaction' AND v.TargetId = nr.Id)
+) reactionCount
+
 OUTER APPLY (
     SELECT STRING_AGG(CONVERT(nvarchar(max), c.Name), N', ') WITHIN GROUP (ORDER BY c.Name) AS Text
     FROM CommunityNodeRows link JOIN CommunityRows c ON c.Id = link.CommunityId WHERE link.NodeId = n.Id

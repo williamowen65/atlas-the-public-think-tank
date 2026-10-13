@@ -12,6 +12,8 @@ public sealed class DiscoveryCache : IDisposable
     private readonly MemoryCache _pages;
     private readonly MemoryCache _details;
     private readonly TimeSpan _expiration;
+    private readonly long _detailBudget;
+    private readonly long _pageBudget;
     internal object Gate { get; } = new();
     public long PageHits { get; private set; }
     public long PageMisses { get; private set; }
@@ -23,6 +25,8 @@ public sealed class DiscoveryCache : IDisposable
         TimeSpan? expiration = null)
     {
         if (pageBudgetBytes < 1024 || detailBudgetBytes < 1024) throw new ArgumentOutOfRangeException(nameof(pageBudgetBytes));
+        _detailBudget = detailBudgetBytes;
+        _pageBudget = pageBudgetBytes;
         _expiration = expiration ?? TimeSpan.FromSeconds(30);
         if (_expiration <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(expiration));
         _pages = new MemoryCache(new MemoryCacheOptions { SizeLimit = pageBudgetBytes });
@@ -51,8 +55,12 @@ public sealed class DiscoveryCache : IDisposable
         if (_pages.TryGetValue(key, out DiscoveryPage? value)) { PageHits++; page = value!; return true; }
         PageMisses++; page = null!; return false;
     }
-    internal void PutPage(string key, DiscoveryPage page) => _pages.Set(key, page,
-        new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = _expiration, Size = 512 + page.Items.Count * 128 });
+    internal void PutPage(string key, DiscoveryPage page)
+    {
+        var size = 512 + page.Items.Count * 128;
+        if (size > _pageBudget) { RejectedEntries++; return; }
+        _pages.Set(key, page, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = _expiration, Size = size });
+    }
 
     internal bool TryDetail(long version, Guid id, out DiscoveryCard card)
     {
@@ -64,7 +72,7 @@ public sealed class DiscoveryCache : IDisposable
         // Include string payloads, key and object overhead; oversized content is returned but not cached.
         var size = 512L + 2L * (card.Title.Length + card.TypeName.Length + card.AuthorName.Length + card.Status.Length +
             card.Description.Length + card.Breadcrumb.Length + card.SubNodes.Length + card.Reactions.Length + card.Communities.Length);
-        if (size > 128 * 1024) { RejectedEntries++; return; }
+        if (size > Math.Min(128 * 1024, _detailBudget)) { RejectedEntries++; return; }
         _details.Set((version, card.NodeId), card, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = _expiration, Size = size });
     }
     public void Dispose() { _pages.Dispose(); _details.Dispose(); }

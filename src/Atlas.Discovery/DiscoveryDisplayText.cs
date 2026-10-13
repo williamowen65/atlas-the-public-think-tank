@@ -20,7 +20,7 @@ public static class DiscoveryDisplayText
     }
 
     /// <summary>Pluralizes a node-type name for count-aware console output.</summary>
-    private static string PluralizeTypeName(
+    public static string PluralizeTypeName(
         string singularTypeName,
         bool autoPluralize
     )

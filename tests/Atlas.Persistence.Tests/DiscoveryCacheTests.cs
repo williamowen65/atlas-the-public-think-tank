@@ -108,4 +108,61 @@ public sealed class DiscoveryCacheTests
         Assert.AreEqual(8, query.ReadParticipantVotes(voter, [candidate.NodeId])[candidate.NodeId]);
         Assert.IsEmpty(query.ReadParticipantVotes(candidate.AuthorParticipantId, [candidate.NodeId]));
     }
+    [TestMethod]
+    public void Oversized_details_are_returned_but_not_cached_and_cache_cannot_cross_databases()
+    {
+        using var fixture = SqlTestDatabase.Create(useCurrentModel: true);
+        var candidate = Candidate(Guid.NewGuid(), 8);
+        DiscoverySqlFixture.Seed(fixture, candidate);
+        using (var db = fixture.Open()) { db.BlockRows.Single().Markdown = new string('x', 80_000); db.SaveChanges(); }
+        using var cache = new DiscoveryCache();
+        var query = new SqlDiscoveryReadQuery(fixture.Open, cache);
+        Assert.AreEqual(80_000, query.DiscoverPage(new()).Items.Single().Card!.Description.Length);
+        query.DiscoverPage(new());
+        Assert.AreEqual(1L, cache.PageHits);
+        Assert.AreEqual(2L, cache.DetailMisses);
+        Assert.AreEqual(2L, cache.RejectedEntries);
+        using var other = SqlTestDatabase.Create(useCurrentModel: true);
+        Assert.Throws<InvalidOperationException>(() => new SqlDiscoveryReadQuery(other.Open, cache).DiscoverPage(new()));
+    }
+
+    [TestMethod]
+    public async Task Related_writes_invalidate_detail_projections_and_reaction_filters()
+    {
+        using var fixture = SqlTestDatabase.Create(useCurrentModel: true);
+        var community = Guid.NewGuid(); var reaction = Guid.NewGuid();
+        var candidate = Candidate(Guid.NewGuid(), 8) with { CommunityIds = [community], ReactionDefinitionIds = [reaction] };
+        DiscoverySqlFixture.Seed(fixture, candidate);
+        using var cache = new DiscoveryCache();
+        var query = new SqlDiscoveryReadQuery(fixture.Open, cache);
+        query.DiscoverPage(new(CommunityId: community, ReactionDefinitionIds: [reaction]));
+        using (var db = fixture.Open())
+        {
+            db.CommunityRows.Single().Name = "New community name";
+            db.ParticipantRows.Single(row => row.Id == candidate.AuthorParticipantId).DisplayName = "New author name";
+            db.NodeTypeRows.Single().Name = "New type";
+            await db.SaveChangesAsync();
+        }
+        var changed = query.DiscoverPage(new(CommunityId: community, ReactionDefinitionIds: [reaction])).Items.Single().Card!;
+        Assert.AreEqual("New type", changed.TypeName);
+        Assert.AreEqual("New author name", changed.AuthorName);
+        Assert.AreEqual("New community name", changed.Communities);
+        using (var db = fixture.Open())
+        {
+            db.NodeReactionRows.Single().LifecycleState = "Removed";
+            db.CommunityNodeRows.RemoveRange(db.CommunityNodeRows);
+            db.NodeRows.Single().Title = "New title";
+            await db.SaveChangesAsync();
+        }
+        Assert.IsEmpty(query.DiscoverPage(new(CommunityId: community)).Items);
+        Assert.IsEmpty(query.DiscoverPage(new(ReactionDefinitionIds: [reaction])).Items);
+        Assert.AreEqual("New title", query.DiscoverPage(new()).Items.Single().Card!.Title);
+        var misses = cache.DetailMisses;
+        using (var db = fixture.Open())
+        { db.NodeRows.Single().Status = "Archived"; await db.SaveChangesAsync(); }
+        Assert.IsEmpty(query.DiscoverPage(new()).Items);
+        query.DiscoverPage(new(IncludeArchived: true));
+        Assert.IsTrue(cache.DetailMisses > misses);
+    }
+
 }

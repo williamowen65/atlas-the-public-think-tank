@@ -26,7 +26,12 @@ public sealed class DiscoveryPerformanceTests
                 WITH Numbers AS (SELECT TOP ({nodes}) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS Number
                     FROM sys.all_objects a CROSS JOIN sys.all_objects b)
                 INSERT INTO NodeRows (Id, Title, Status, CreatedAt, UpdatedAt)
-                SELECT NEWID(), CONCAT(N'Node ', RIGHT(CONCAT(N'000000', Number), 6)), N'Active', '2026-10-01', '2026-10-01' FROM Numbers
+                SELECT NEWID(), CONCAT(N'Node ', RIGHT(CONCAT(N'000000', Number), 6)), N'Active', '2026-10-01', '2026-10-01' FROM Numbers;
+                DECLARE @voter uniqueidentifier = NEWID();
+                INSERT INTO ParticipantRows (Id, DisplayName, Bio, IsActive, CreatedAt, UpdatedAt)
+                VALUES (@voter, N'Performance voter', N'', 1, '2026-10-01', '2026-10-01');
+                INSERT INTO VoteRows (Id, ParticipantId, TargetId, TargetType, Value, CreatedAt, UpdatedAt)
+                SELECT NEWID(), @voter, Id, N'Node', CONVERT(int, RIGHT(Title, 6)) % 11, '2026-10-01', '2026-10-01' FROM NodeRows;
                 """);
         var collector = new QueryCollector();
         using var configuration = fixture.Open();

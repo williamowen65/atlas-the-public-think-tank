@@ -330,7 +330,7 @@ public static class NodeDisplay
             if (matchingChildren.Count == 0)
             {
                 Console.WriteLine(
-                    $"    No {PluralizeTypeName(
+                    $"    No {Atlas.Discovery.DiscoveryDisplayText.PluralizeTypeName(
                         typeName,
                         autoPluralize
                     )} " +
