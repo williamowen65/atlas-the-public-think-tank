@@ -85,8 +85,17 @@ public sealed class SqlReferentialIntegrityTests
         using var context = database.Open();
         var migrator = context.GetService<IMigrator>();
         migrator.Migrate("20260929180000_InitialRelationalStorage");
-        var participantId = database.AddParticipant();
-        var nodeId = database.AddNode();
+        // Seed the historical schema without today's SaveChanges hooks, which
+        // require the DiscoveryRevisions table introduced by a later migration.
+        var participantId = Guid.NewGuid();
+        var nodeId = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+        context.Database.ExecuteSqlInterpolated($"""
+            INSERT INTO ParticipantRows (Id, DisplayName, Bio, IsActive, CreatedAt, UpdatedAt)
+            VALUES ({participantId}, N'Test participant', N'', 1, {now}, {now});
+            INSERT INTO NodeRows (Id, Title, Status, CreatedAt, UpdatedAt)
+            VALUES ({nodeId}, N'Test node', N'Active', {now}, {now});
+            """);
         migrator.Migrate();
         Assert.IsTrue(context.ParticipantRows.Any(row => row.Id == participantId));
         context.NodeRows.Single(row => row.Id == nodeId).AuthorId = Guid.NewGuid();
