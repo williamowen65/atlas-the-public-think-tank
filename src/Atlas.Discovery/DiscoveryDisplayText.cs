@@ -3,6 +3,7 @@ namespace Atlas.Discovery;
 /// <summary>Shared formatting for immutable Discovery projections and Console cards.</summary>
 public static class DiscoveryDisplayText
 {
+    /// <summary>Formats a type label with its child count, honoring the type pluralization setting.</summary>
     public static string FormatTypeCount(
         string singularTypeName,
         int count,

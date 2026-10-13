@@ -5,12 +5,14 @@ public sealed class DiscoveryService : IDiscoveryService, IDiscoveryAuthorListin
 {
     private readonly IDiscoveryReadQuery _query;
 
+    /// <summary>Accepts the storage query used after request validation.</summary>
     public DiscoveryService(IDiscoveryReadQuery query)
     {
         ArgumentNullException.ThrowIfNull(query);
         _query = query;
     }
 
+    /// <summary>Validates the author and delegates SQL-backed authored paging.</summary>
     public DiscoveryPage DiscoverAuthorPage(DiscoveryQuery query, Guid authorParticipantId)
     {
         Validate(query);
@@ -18,15 +20,18 @@ public sealed class DiscoveryService : IDiscoveryService, IDiscoveryAuthorListin
         return ((IDiscoveryAuthorListing)_query).DiscoverAuthorPage(query, authorParticipantId);
     }
 
+    /// <summary>Reads personal ratings separately from the shared public card cache.</summary>
     public IReadOnlyDictionary<Guid, int> ReadParticipantVotes(Guid participantId, IReadOnlyCollection<Guid> nodeIds) =>
         _query is IDiscoveryPersonalVotes votes ? votes.ReadParticipantVotes(participantId, nodeIds) : new Dictionary<Guid, int>();
 
+    /// <summary>Validates and requests one public result page.</summary>
     public DiscoveryPage DiscoverPage(DiscoveryQuery query)
     {
         Validate(query);
         return _query.DiscoverPage(query);
     }
 
+    /// <summary>Validates and requests one page within the supplied authored IDs.</summary>
     public DiscoveryPage DiscoverAuthoredPage(DiscoveryQuery query, IReadOnlyCollection<Guid> authoredNodeIds)
     {
         ArgumentNullException.ThrowIfNull(authoredNodeIds);
@@ -34,12 +39,14 @@ public sealed class DiscoveryService : IDiscoveryService, IDiscoveryAuthorListin
         return _query.DiscoverAuthoredPage(query, authoredNodeIds);
     }
 
+    /// <summary>Supports the existing unpaged contract; normal Console browsing uses pages.</summary>
     public IReadOnlyList<RankedDiscoveryItem> Discover(DiscoveryQuery query)
     {
         Validate(query);
         return _query.Discover(query);
     }
 
+    /// <summary>Supports unpaged authored results for existing callers.</summary>
     public IReadOnlyList<RankedDiscoveryItem> DiscoverAuthored(DiscoveryQuery query, IReadOnlyCollection<Guid> authoredNodeIds)
     {
         ArgumentNullException.ThrowIfNull(authoredNodeIds);
@@ -47,6 +54,7 @@ public sealed class DiscoveryService : IDiscoveryService, IDiscoveryAuthorListin
         return _query.DiscoverAuthored(query, authoredNodeIds);
     }
 
+    /// <summary>Rejects invalid requests before they reach storage.</summary>
     private static void Validate(DiscoveryQuery query)
     {
         ArgumentNullException.ThrowIfNull(query);

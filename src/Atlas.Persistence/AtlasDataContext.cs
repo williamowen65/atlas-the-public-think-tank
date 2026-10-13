@@ -30,10 +30,12 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
 
     // Generations change in the same transaction as the data. Failed saves and outer
     // operation rollbacks therefore cannot invalidate or publish attempted state.
+    /// <summary>Saves rows and their Discovery revisions atomically in the same transaction.</summary>
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
         var change = DiscoveryInvalidation.Changes(this);
         if (!change.Page) return base.SaveChanges(acceptAllChangesOnSuccess);
+        // Join a repository transaction when present; otherwise own and commit one here.
         using var transaction = Database.CurrentTransaction is null ? Database.BeginTransaction() : null;
         AdvanceDiscovery(change.Detail);
         var count = base.SaveChanges(acceptAllChangesOnSuccess);
@@ -41,6 +43,7 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
         return count;
     }
 
+    /// <summary>Asynchronously saves rows and revisions; an outer rollback undoes both.</summary>
     public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
         var change = DiscoveryInvalidation.Changes(this);
@@ -54,6 +57,7 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
         return count;
     }
 
+    /// <summary>Advances the singleton revision row; missing seed data is a schema error.</summary>
     private void AdvanceDiscovery(bool details)
     {
         if (Database.ExecuteSqlInterpolated($"UPDATE DiscoveryRevisions SET PageVersion = PageVersion + 1, DetailVersion = DetailVersion + {(details ? 1 : 0)} WHERE Id = 1") != 1)
