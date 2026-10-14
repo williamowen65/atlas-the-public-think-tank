@@ -19,6 +19,18 @@ SQL tests use `ATLAS_SQL_TEST_CONNECTION_STRING` in the shared user secrets or e
 
 ## Launch
 
+### Visual Studio Run button
+
+1. Pull the latest PR branch changes.
+2. Set **Atlas.Console** as the startup project in Solution Explorer.
+3. Select the **Atlas.Console** launch profile beside the green Run button, then press Run or F5.
+
+The committed [launchSettings.json](../../../src/Atlas.Console/Properties/launchSettings.json) sets `DOTNET_ENVIRONMENT=Development` automatically for that profile. No PowerShell command is needed. This is local launch configuration, not a production environment setting; do not put SQL credentials or other secrets in it.
+
+To inspect or change it in Visual Studio, open the project's **Properties → Debug → Open debug launch profiles UI**, select the profile, and inspect its environment variables. The JSON file is also directly editable if your Visual Studio version presents different menu labels.
+
+### Command line
+
 ```powershell
 $env:DOTNET_ENVIRONMENT = "Development"
 dotnet run --project src/Atlas.Console
