@@ -40,6 +40,8 @@ The [Node creation board](workflows/Nodes/NodeCreation.excalidraw) restores the 
 
 - [Discovery reads, pagination and caching](workflows/Discovery/DiscoveryReadFlow.excalidraw) walks through EF queries, remaining SQL helpers, page keys and transaction-backed revisions. See the [code walkthrough](workflows/Discovery/DiscoveryReadFlow.md).
 
+- [Observability and durable audit](workflows/Observability/ObservabilityAndAudit.excalidraw) provides a numbered review route through host wiring, four JSONL streams, SQL atomicity, outbox recovery, node-view privacy, correlation, metrics, local retention, tests and discovery instrumentation. Each card links to specific code lines. See the [linked review map](workflows/Observability/ObservabilityAndAudit.md).
+
 ## Legend
 
 - Solid borders and arrows represent implemented components or interactions.

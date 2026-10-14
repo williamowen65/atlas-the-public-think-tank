@@ -1,5 +1,7 @@
 # Security logging, audit and observability
 
+For a visual review route, open the [Observability and Audit blackboard](../../blackboards/workflows/Observability/ObservabilityAndAudit.excalidraw) or its [linked walkthrough](../../blackboards/workflows/Observability/ObservabilityAndAudit.md). Both appear in Solution Explorer under **docs → blackboards → workflows → Observability**.
+
 Status: **Local implementation and developer-generated migration added; validation in progress.** [PTT-126](https://thepublicthinktank.atlassian.net/browse/PTT-126). Source baseline: main after PR #345, reviewed 2026-10-13.
 
 ## Start here
