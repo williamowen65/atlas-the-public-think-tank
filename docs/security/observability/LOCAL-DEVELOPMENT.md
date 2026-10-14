@@ -29,6 +29,18 @@ The committed [launchSettings.json](../../../src/Atlas.Console/Properties/launch
 
 To inspect or change it in Visual Studio, open the project's **Properties → Debug → Open debug launch profiles UI**, select the profile, and inspect its environment variables. The JSON file is also directly editable if your Visual Studio version presents different menu labels.
 
+### Read logs in Solution Explorer
+
+- Expand **Atlas.Console → Logs → Observability**. The project links to the generated `.jsonl` files in the solution-root `logs/observability/` directory; it does not copy them into the project or build output.
+
+- The folder is present before the first run. Files appear after they are created and the project is reevaluated. The wildcard also includes newly rotated files. If Visual Studio does not automatically discover a new file, unload and reload **Atlas.Console** to refresh the project items.
+
+- Double-click a file to read it while the app runs. When the writer appends more records, Visual Studio can prompt to reload the open file (depending on your external-file-change settings). This is a normal editor view, not a continuously scrolling log viewer. Avoid editing these generated files while the app writes them.
+
+- `.gitignore` still excludes the actual log files. Showing a linked file in Solution Explorer does not commit it. The project also excludes these files from build/publish copying and `dotnet watch` restarts.
+
+- These links cover the default solution-root destination. If you override `ATLAS_TELEMETRY_DIRECTORY`, open that destination separately or update the project's log include path to match.
+
 ### Command line
 
 ```powershell
