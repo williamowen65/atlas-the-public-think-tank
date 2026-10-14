@@ -59,7 +59,7 @@ For workflows still owned by Console, put the semantic event into reusable coord
 
 ## Correlation through Console, API and workers
 
-- The field is named `observability_operation_id` to make its purpose explicit: linking audit, log and trace records for one workflow. It is not a participant ID or proof of permission, and it does not measure duration on its own; trace spans and elapsed-time measurements do that.
+- The field is named `observability_id` to make its purpose explicit: linking audit, log and trace records for one workflow. It is not a participant ID or proof of permission, and it does not measure duration on its own; trace spans and elapsed-time measurements do that.
 
 - Console starts a new observability operation ID for each command. Related repository calls and events share it. Do not reuse a lifetime ID for every command in one session.
 

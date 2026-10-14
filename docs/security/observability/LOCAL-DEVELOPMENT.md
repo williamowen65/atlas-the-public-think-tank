@@ -89,16 +89,18 @@ Each process uses unique filenames to avoid competing appends. Diagnostic retent
 | Rejected/failed coordinated operations | Bounded reason/outcome, never exception messages | No successful-action audit survives a rollback |
 | Audit delivery attempts | Outcome/failure diagnostic | Outbox lease, attempt count, retry time and acknowledgement state |
 
-The first slice records **persisted transitions**, not a claim of a complete semantic command journal. Several transitions may share one `observability_operation_id` (for example grouped moderation cases); one command can legitimately produce multiple records. Adding fields to EF rows does not add those values to telemetry. [AuditCapture](../../../src/Atlas.Persistence/Observability/AuditCapture.cs) is an explicit closed mapping.
+The first slice records **persisted transitions**, not a claim of a complete semantic command journal. Several transitions may share one `observability_id` (for example grouped moderation cases); one command can legitimately produce multiple records. Adding fields to EF rows does not add those values to telemetry. [AuditCapture](../../../src/Atlas.Persistence/Observability/AuditCapture.cs) is an explicit closed mapping.
 
 Direct SQL, `ExecuteUpdate` and `ExecuteDelete` bypass `SaveChanges` capture. The outbox intentionally uses conditional `ExecuteUpdate` for its own lease/status metadata; it does not generate another audit action. Future privileged bulk operations must supply explicit audit intent rather than assuming this hook covers them. Domain histories and authorization remain their owning domains' responsibility.
+
+Existing serialized SQL audit records and older files may still contain `observability_operation_id`. Newly serialized events and traces use `observability_id`; this naming change does not rewrite historical evidence or require a database migration.
 
 ## Three actual local shapes
 
 Illustrative identifiers/times below; actual generated records use the same fields. The event serializer also includes service/environment/version, actor/target metadata and optional trace/span IDs.
 
 ```json
-{"schema_version":1,"event_name":"moderation.changed","event_id":"730f52ac-a13a-40fe-a817-a81bccd5de7c","observability_operation_id":"6bf6a849-a291-4527-bd01-16b8094ed1ea","action":"hidden","outcome":"succeeded","target_kind":"moderation_case"}
+{"schema_version":1,"event_name":"moderation.changed","event_id":"730f52ac-a13a-40fe-a817-a81bccd5de7c","observability_id":"6bf6a849-a291-4527-bd01-16b8094ed1ea","action":"hidden","outcome":"succeeded","target_kind":"moderation_case"}
 ```
 
 ```json
@@ -106,7 +108,7 @@ Illustrative identifiers/times below; actual generated records use the same fiel
 ```
 
 ```json
-{"signal":"trace","operation":"storage.transaction","observability_operation_id":"6bf6a849-a291-4527-bd01-16b8094ed1ea","trace_id":"9638bb3f8ade4ae7864746418442ca77","span_id":"8a223597ac14f08a","parent_span_id":"425e1b24d9da67ae","duration_ms":12.4}
+{"signal":"trace","operation":"storage.transaction","observability_id":"6bf6a849-a291-4527-bd01-16b8094ed1ea","trace_id":"9638bb3f8ade4ae7864746418442ca77","span_id":"8a223597ac14f08a","parent_span_id":"425e1b24d9da67ae","duration_ms":12.4}
 ```
 
 These are abbreviated examples for reading, not universal cloud JSON schemas. .NET `Meter` instruments and `ActivitySource` sources are available for future OpenTelemetry subscribers. Counters emit lookup deltas at actual lookup sites, avoiding double-counting lifetime snapshots. There are no per-participant/node/search metric labels.

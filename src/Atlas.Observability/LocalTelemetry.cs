@@ -46,7 +46,7 @@ public sealed class LocalTelemetry : ITelemetryObserver, ICacheTelemetryObserver
                 TryOutput(() => _traces.Write(JsonSerializer.Serialize(new
                 {
                     signal = "trace",
-                    observability_operation_id = Telemetry.OperationId,
+                    observability_id = Telemetry.OperationId,
                     trace_id = activity.TraceId.ToString(),
                     span_id = activity.SpanId.ToString(),
                     parent_span_id = activity.ParentSpanId.ToString(),

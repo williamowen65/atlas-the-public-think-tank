@@ -72,7 +72,7 @@ The table above describes the pre-change baseline. New telemetry evidence is lin
 | `event_id` | Unique occurrence ID; preserve it when delivery retries the same record |
 | `event_name` | Stable action, such as `moderation.visibility_changed`; not user-provided text |
 | `occurred_at_utc` | Server-assigned UTC event time; distinguish it from later ingestion/export time |
-| `observability_operation_id` | Server-generated observability correlation ID shared by records from one operation; not an authentication identity. Works even without tracing |
+| `observability_id` | Server-generated observability correlation ID shared by records from one operation; not an authentication identity. Works even without tracing |
 | `actor_kind` | `participant`, `anonymous` or `system` |
 | `actor_id` | Verified participant ID for an established actor; otherwise absent. A submitted email/user ID is not an authenticated actor |
 | `target_kind`, `target_id` | Resource type and ID when available. Avoid logging complete objects |
@@ -92,7 +92,7 @@ The implemented `TelemetryEvent` contract and explicit `EventJson` projection fo
   "event_id": "8c4b817d-6520-41d4-9c30-eec174449abb",
   "event_name": "moderation.visibility_changed",
   "occurred_at_utc": "2026-10-13T21:00:00Z",
-  "observability_operation_id": "62b438d1-e332-481f-8d23-b0e5ab4781f4",
+  "observability_id": "62b438d1-e332-481f-8d23-b0e5ab4781f4",
   "actor_kind": "participant",
   "actor_id": "8593b626-5d31-4945-a401-f237c48e07cb",
   "target_kind": "node",

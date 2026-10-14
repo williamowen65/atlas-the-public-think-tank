@@ -34,7 +34,7 @@ public static class EventJson
         app_version = typeof(EventJson).Assembly.GetName().Version?.ToString(),
         event_id = value.EventId,
         occurred_at_utc = value.OccurredAtUtc,
-        observability_operation_id = value.ObservabilityOperationId,
+        observability_id = value.ObservabilityOperationId,
         event_name = Name(value.Kind),
         actor_kind = value.ActorKind,
         actor_id = value.ActorId,
