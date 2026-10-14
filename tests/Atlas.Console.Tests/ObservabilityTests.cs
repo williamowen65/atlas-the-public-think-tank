@@ -17,7 +17,7 @@ public sealed class ObservabilityTests
         var json = EventJson.Serialize(Telemetry.Create(EventKind.NodeChanged, Guid.NewGuid()));
         using var document = JsonDocument.Parse(json);
         CollectionAssert.AreEquivalent(new[] { "schema_version", "service", "environment", "app_version", "event_id", "occurred_at_utc",
-            "observability_id", "event_name", "actor_kind", "actor_id", "target_id", "target_kind", "action", "related_target_id", "moderation_reason",
+            "observability_id", "event_name", "privacy_policy", "actor_kind", "actor_id", "target_id", "target_kind", "action", "related_target_id", "moderation_reason",
             "outcome", "reason_code", "duration_ms", "trace_id", "span_id" }, document.RootElement.EnumerateObject().Select(p => p.Name).ToArray());
         Assert.AreEqual("node.changed", document.RootElement.GetProperty("event_name").GetString());
         Assert.Throws<ArgumentException>(() => EventJson.Serialize(Telemetry.Create(EventKind.SignIn) with { TraceId = "password-canary" }));
@@ -95,6 +95,61 @@ public sealed class ObservabilityTests
             var rotating = new JsonLineFile(directory, "diagnostics", maxBytes: 1024, retainedFiles: 2);
             for (var i = 0; i < 10; i++) rotating.Write(JsonSerializer.Serialize(new { padding = new string('x', 800) }));
             Assert.IsLessThanOrEqualTo(2, Directory.GetFiles(directory, "diagnostics-*.jsonl").Length);
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true); }
+    }
+
+    [TestMethod]
+    public void Node_view_policy_isolates_identity_target_and_parent_trace_on_success_and_failure()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "AtlasNodeView-" + Guid.NewGuid());
+        var actor = Guid.NewGuid();
+        try
+        {
+            using (var local = new LocalTelemetry(directory))
+            using (Telemetry.UseObserver(local))
+            using (Telemetry.BeginOperation(actor))
+            {
+                var parentId = Telemetry.OperationId;
+                var parentTrace = Activity.Current!.TraceId;
+                Telemetry.ObserveNodeView(() =>
+                {
+                    Assert.AreNotEqual(parentId, Telemetry.OperationId);
+                    Assert.AreNotEqual(parentTrace, Activity.Current!.TraceId);
+                    var value = Telemetry.Create(EventKind.NodeView);
+                    Assert.IsNull(value.ActorId);
+                    Assert.Throws<ArgumentException>(() => EventJson.Serialize(value with { TargetId = Guid.NewGuid() }));
+                    Assert.Throws<ArgumentException>(() => EventJson.Serialize(value with { ActorId = actor, ActorKind = ActorKind.Participant }));
+                });
+                Assert.Throws<InvalidOperationException>(() => Telemetry.ObserveNodeView(() => throw new InvalidOperationException("private-canary")));
+                Assert.AreEqual(parentId, Telemetry.OperationId);
+                Assert.AreEqual(actor, Telemetry.Create(EventKind.ProfileChanged).ActorId);
+            }
+            var events = Directory.GetFiles(directory, "diagnostics-*.jsonl").SelectMany(File.ReadLines).ToArray();
+            Assert.HasCount(2, events);
+            foreach (var line in events)
+            {
+                Assert.DoesNotContain(actor.ToString(), line);
+                Assert.DoesNotContain("canary", line);
+                using var json = JsonDocument.Parse(line);
+                Assert.AreEqual("read_no_identity_or_target", json.RootElement.GetProperty("privacy_policy").GetString());
+                Assert.AreEqual(JsonValueKind.Null, json.RootElement.GetProperty("target_id").ValueKind);
+            }
+            var traces = Directory.GetFiles(directory, "traces-*.jsonl").SelectMany(File.ReadLines)
+                .Select(line => JsonDocument.Parse(line)).ToArray();
+            try
+            {
+                var reads = traces.Where(x => x.RootElement.GetProperty("operation").GetString() == "NodeView").ToArray();
+                Assert.HasCount(2, reads);
+                foreach (var read in reads)
+                {
+                    Assert.AreEqual("0000000000000000", read.RootElement.GetProperty("parent_span_id").GetString());
+                    Assert.AreEqual("read_no_identity_or_target", read.RootElement.GetProperty("privacy_policy").GetString());
+                    var id = read.RootElement.GetProperty("observability_id").GetGuid();
+                    Assert.IsTrue(events.Any(line => line.Contains(id.ToString())));
+                }
+            }
+            finally { foreach (var trace in traces) trace.Dispose(); }
         }
         finally { if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true); }
     }

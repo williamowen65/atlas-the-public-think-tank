@@ -9,10 +9,11 @@ public enum EventKind
     NodeChanged, NodeTypeChanged, ContentChanged, VoteChanged, ReactionChanged,
     CommunityChanged, MembershipChanged, CommunityLinkChanged, CommentChanged,
     ModerationChanged, ProfileChanged, AccountSecurityChanged, RoleChanged, RoleDefinitionChanged,
-    NotificationChanged, DiscoveryRead, StorageWrite, AuditDelivery
+    NotificationChanged, DiscoveryRead, StorageWrite, AuditDelivery, NodeView
 }
 public enum EventOutcome { Succeeded, Denied, Failed, Conflict }
 public enum EventReason { None, NotAuthorized, InvalidInput, CredentialsRejected, LockedOut, NotAllowed, SecondFactorRequired, StorageConflict, InfrastructureFailure, CommitOutcomeUnknown, DeliveryUnavailable }
+public enum PrivacyPolicy { Standard, ReadNoIdentityOrTarget }
 public enum ActorKind { Anonymous, Participant, System }
 public enum MutationAction { None, Created, Updated, Deleted, Hidden, Restored, Dismissed, ReviewRequested, RoleAssigned, RoleRemoved, PasswordChanged, EmailConfirmed, LockoutChanged, Linked, Unlinked, Archived, Activated, Deactivated, Renamed, TypeChanged }
 public enum AuditModerationReason { Other, Spam, Harassment, UnsafeContent, OffTopic }
@@ -33,7 +34,8 @@ public sealed record TelemetryEvent(
     string? SpanId = null,
     MutationAction Action = MutationAction.None,
     Guid? RelatedTargetId = null,
-    AuditModerationReason? ModerationReason = null)
+    AuditModerationReason? ModerationReason = null,
+    PrivacyPolicy PrivacyPolicy = PrivacyPolicy.Standard)
 {
     public int SchemaVersion => 1;
 }
@@ -97,6 +99,41 @@ public static class Telemetry
         }
     }
 
+    /// <summary>
+    /// Measure detail loading/rendering without building a reading history. A new root trace
+    /// and correlation ID prevent joining this read to an authenticated parent command.
+    /// This scope never spans the interactive menu or a subsequent mutation.
+    /// </summary>
+    public static void ObserveNodeView(Action render)
+    {
+        var previous = Ambient.Value;
+        var parentActivity = Activity.Current;
+        Activity.Current = null;
+        Ambient.Value = new(previous?.Observer, Guid.NewGuid(), null, ActorKind.System);
+        try
+        {
+            using var activity = Activities.StartActivity(nameof(EventKind.NodeView));
+            var started = Stopwatch.GetTimestamp();
+            try
+            {
+                render();
+                Record(Create(EventKind.NodeView, durationMs: Stopwatch.GetElapsedTime(started).TotalMilliseconds));
+            }
+            catch (Exception error)
+            {
+                Record(Create(EventKind.NodeView,
+                    outcome: error is UnauthorizedAccessException ? EventOutcome.Denied : EventOutcome.Failed,
+                    reason: Reason(error), durationMs: Stopwatch.GetElapsedTime(started).TotalMilliseconds));
+                throw;
+            }
+        }
+        finally
+        {
+            Ambient.Value = previous;
+            Activity.Current = parentActivity;
+        }
+    }
+
     public static void CacheLookup(bool detail, bool hit)
     {
         try { (Ambient.Value?.Observer as ICacheTelemetryObserver)?.CacheLookup(detail, hit); }
@@ -126,7 +163,8 @@ public static class Telemetry
         var context = Ambient.Value;
         return new(Guid.NewGuid(), DateTimeOffset.UtcNow, context is { OperationId: var id } && id != Guid.Empty ? id : Guid.NewGuid(), kind,
             context?.ActorKind ?? ActorKind.System, context?.ActorId, targetId, outcome, reason, durationMs,
-            Activity.Current?.TraceId.ToString(), Activity.Current?.SpanId.ToString());
+            Activity.Current?.TraceId.ToString(), Activity.Current?.SpanId.ToString(),
+            PrivacyPolicy: kind == EventKind.NodeView ? PrivacyPolicy.ReadNoIdentityOrTarget : PrivacyPolicy.Standard);
     }
 
     /// <summary>Diagnostic output is best effort. A failing destination must not alter business results.</summary>

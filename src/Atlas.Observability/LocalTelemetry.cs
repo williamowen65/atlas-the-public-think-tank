@@ -51,6 +51,8 @@ public sealed class LocalTelemetry : ITelemetryObserver, ICacheTelemetryObserver
                     span_id = activity.SpanId.ToString(),
                     parent_span_id = activity.ParentSpanId.ToString(),
                     operation = activity.OperationName,
+                    privacy_policy = activity.OperationName == nameof(EventKind.NodeView)
+                        ? "read_no_identity_or_target" : "standard",
                     started_at_utc = activity.StartTimeUtc,
                     duration_ms = activity.Duration.TotalMilliseconds
                 })));

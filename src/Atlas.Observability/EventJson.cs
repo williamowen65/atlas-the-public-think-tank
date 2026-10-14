@@ -20,6 +20,12 @@ public static class EventJson
         if (!Enum.IsDefined(value.Kind) || !Enum.IsDefined(value.Outcome) || !Enum.IsDefined(value.ReasonCode)
             || !Enum.IsDefined(value.ActorKind) || !Enum.IsDefined(value.Action)
             || value.ModerationReason is { } moderation && !Enum.IsDefined(moderation)
+            || !Enum.IsDefined(value.PrivacyPolicy)
+            // A missing ID is policy, not incomplete instrumentation. Reject accidental enrichment.
+            || value.Kind == EventKind.NodeView && (value.PrivacyPolicy != PrivacyPolicy.ReadNoIdentityOrTarget
+                || value.ActorId is not null || value.TargetId is not null || value.RelatedTargetId is not null
+                || value.ActorKind != ActorKind.System || value.Action != MutationAction.None || value.ModerationReason is not null)
+            || value.Kind != EventKind.NodeView && value.PrivacyPolicy != PrivacyPolicy.Standard
             || value.EventId == Guid.Empty || value.ObservabilityOperationId == Guid.Empty
             || !double.IsFinite(value.DurationMs) || value.DurationMs < 0
             || value.ActorKind == ActorKind.Participant && (value.ActorId is null || value.ActorId == Guid.Empty)
@@ -36,6 +42,7 @@ public static class EventJson
         occurred_at_utc = value.OccurredAtUtc,
         observability_id = value.ObservabilityOperationId,
         event_name = Name(value.Kind),
+        privacy_policy = value.PrivacyPolicy,
         actor_kind = value.ActorKind,
         actor_id = value.ActorId,
         target_id = value.TargetId,
@@ -55,7 +62,7 @@ public static class EventJson
 
     private static string? Target(EventKind kind) => kind switch
     {
-        EventKind.NodeChanged => "node", EventKind.NodeTypeChanged => "node_type",
+        EventKind.NodeView or EventKind.NodeChanged => "node", EventKind.NodeTypeChanged => "node_type",
         EventKind.ModerationChanged => "moderation_case", EventKind.RoleDefinitionChanged => "role", EventKind.RoleChanged or EventKind.AccountSecurityChanged or EventKind.ProfileChanged => "participant",
         EventKind.ContentChanged => "content", EventKind.VoteChanged => "vote", EventKind.ReactionChanged => "reaction",
         EventKind.CommunityChanged or EventKind.MembershipChanged or EventKind.CommunityLinkChanged => "community",
@@ -65,6 +72,7 @@ public static class EventJson
 
     public static string Name(EventKind kind) => kind switch
     {
+        EventKind.NodeView => "node.view_completed",
         EventKind.HostStarted => "host.started", EventKind.HostStopped => "host.stopped",
         EventKind.SignIn => "identity.sign_in_completed", EventKind.SignOut => "identity.sign_out_completed",
         EventKind.Registration => "identity.registration_completed", EventKind.SessionRejected => "identity.session_rejected",

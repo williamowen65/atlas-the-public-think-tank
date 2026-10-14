@@ -95,6 +95,18 @@ Direct SQL, `ExecuteUpdate` and `ExecuteDelete` bypass `SaveChanges` capture. Th
 
 Existing serialized SQL audit records and older files may still contain `observability_operation_id`. Newly serialized events and traces use `observability_id`; this naming change does not rewrite historical evidence or require a database migration.
 
+## Node-view diagnostics and privacy
+
+- Opening or redisplaying node details emits `node.view_completed` in diagnostics, a `NodeView` trace span, and count/duration metrics. Both authenticated and anonymous views use the shared [detail renderer](../../../src/Atlas.Console/NodeDisplay.cs). This measures detail rendering and its referenced-data reads, not the entire navigation request or time waiting for menu input. Redisplaying after an action counts again; it is not a unique-view or popularity statistic.
+
+- The event explicitly says `privacy_policy: "read_no_identity_or_target"`. `actor_id` and `target_id` are intentionally null; `target_kind` is `node`. `actor_kind: "system"` describes the measurement context, not whether the viewer is signed in. `action` remains `none`: this is an observation, not a business mutation or SQL audit record.
+
+- A fresh observability ID and root trace prevent joining the view to an actor-bearing parent command. Match its diagnostic and trace using `observability_id` or `trace_id`. This intentionally gives up reconstructing which person read which node. Timestamps and local access still make these files sensitive; this is data minimization, not a guarantee of anonymity.
+
+- The [serializer](../../../src/Atlas.Observability/EventJson.cs) rejects node-view envelopes that contain actor/target/related-target IDs or omit the required policy. Do not add IDs as a debugging convenience. The [tests](../../../tests/Atlas.Console.Tests/ObservabilityTests.cs) cover successful and failed views, correlation isolation, restored caller identity and rejection of accidental enrichment.
+
+- For a slow or failed view, use its duration, bounded outcome/reason and trace to identify the instrumented operation. This first span does not expose every internal method or SQL statement. Reproduce the issue locally for content-specific investigation; do not add titles, node IDs, user input or exception messages to the telemetry envelope.
+
 ## Three actual local shapes
 
 Illustrative identifiers/times below; actual generated records use the same fields. The event serializer also includes service/environment/version, actor/target metadata and optional trace/span IDs.

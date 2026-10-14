@@ -72,6 +72,7 @@ The table above describes the pre-change baseline. New telemetry evidence is lin
 | `event_id` | Unique occurrence ID; preserve it when delivery retries the same record |
 | `event_name` | Stable action, such as `moderation.visibility_changed`; not user-provided text |
 | `occurred_at_utc` | Server-assigned UTC event time; distinguish it from later ingestion/export time |
+| `privacy_policy` | Closed collection policy; node views use `read_no_identity_or_target` and reject actor/target identifiers. See [local node-view guidance](LOCAL-DEVELOPMENT.md#node-view-diagnostics-and-privacy). |
 | `observability_id` | Server-generated observability correlation ID shared by records from one operation; not an authentication identity. Works even without tracing |
 | `actor_kind` | `participant`, `anonymous` or `system` |
 | `actor_id` | Verified participant ID for an established actor; otherwise absent. A submitted email/user ID is not an authenticated actor |
