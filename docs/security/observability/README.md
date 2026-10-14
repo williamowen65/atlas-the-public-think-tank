@@ -46,9 +46,9 @@ Existing tests verify enforcement and persistence behavior. They do not verify t
 
 ### Local output first
 
-- **Recommended first destination:** structured JSON diagnostic output on a separate stream from the interactive Console UI, such as standard error. This keeps menus readable and makes local capture possible.
+- **Local development destination:** structured JSON diagnostic files in a configured local directory excluded by `.gitignore`, separate from interactive Console output. Select destinations through explicit host environment/configuration, not by guessing which computer is running.
 
-- **Optional local files:** choose a reviewed file provider if rotating files are useful. .NET's general-purpose built-in providers do not include a generic rotating file sink. Configure size/age limits, permissions, shutdown flushing and a location outside the repository; do not write a new unbounded file writer inside domains.
+- **File management:** choose a reviewed file provider for local files. Rotation starts a new file after a size/time threshold; it does not repeatedly overwrite the active file. Retention can remove older diagnostic files under a separately configured policy. .NET's general-purpose built-in providers do not include a generic rotating file sink. Configure size/age limits, permissions, shutdown flushing and a location outside the repository; do not write a new unbounded file writer inside domains.
 
 - Redirecting a stream is useful for development, but does not by itself supply rotation, access controls or delivery guarantees. No capture command is presented as working until the provider is wired.
 
@@ -72,7 +72,7 @@ Existing tests verify enforcement and persistence behavior. They do not verify t
 | `event_id` | Unique occurrence ID; preserve it when delivery retries the same record |
 | `event_name` | Stable action, such as `moderation.visibility_changed`; not user-provided text |
 | `occurred_at_utc` | Server-assigned UTC event time; distinguish it from later ingestion/export time |
-| `operation_id` | Server-generated ID shared by records from one operation; works even without tracing |
+| `observability_operation_id` | Server-generated observability correlation ID shared by records from one operation; not an authentication identity. Works even without tracing |
 | `actor_kind` | `participant`, `anonymous` or `system` |
 | `actor_id` | Verified participant ID for an established actor; otherwise absent. A submitted email/user ID is not an authenticated actor |
 | `target_kind`, `target_id` | Resource type and ID when available. Avoid logging complete objects |
@@ -92,7 +92,7 @@ The schema is a proposal, not an existing C# type. Event-specific additions must
   "event_id": "8c4b817d-6520-41d4-9c30-eec174449abb",
   "event_name": "moderation.visibility_changed",
   "occurred_at_utc": "2026-10-13T21:00:00Z",
-  "operation_id": "62b438d1-e332-481f-8d23-b0e5ab4781f4",
+  "observability_operation_id": "62b438d1-e332-481f-8d23-b0e5ab4781f4",
   "actor_kind": "participant",
   "actor_id": "8593b626-5d31-4945-a401-f237c48e07cb",
   "target_kind": "node",
@@ -170,7 +170,7 @@ All values above are illustrative. Report bodies and hidden node content are del
 
 | Decision | Proposed starting point | Still to decide |
 |---|---|---|
-| Local diagnostics | Structured JSON separate from menus | Whether a rotating file provider is needed immediately |
+| Local diagnostics | Structured JSON files in a gitignored local folder, separate from menus | File size/time rotation thresholds and diagnostic retention |
 | First durable audit actions | Moderation visibility/decisions and privileged role/account security changes | Retention and exact privileged provisioning workflows |
 | Other mutations | Structured outcomes; preserve existing business history | Which require durable retention beyond existing domain records |
 | Observability | Operation metrics and correlated workflow traces | Sampling, targets and alert thresholds after measurement |

@@ -2,14 +2,30 @@
 
 Status: proposed work, **no runtime changes in this PR**. [Requirements](README.md) and [event catalogue](EVENTS.md).
 
+## Terms used in this plan
+
+- **Sink** means output destination. A **test sink** is a small in-memory recorder used by automated tests instead of a real file or cloud service. Tests inspect the captured events to check their fields and outcomes, and confirm fake passwords/tokens never appear. It is “sink,” not “sync”; it does not mean synchronization.
+
+- **Serialization** converts the approved event record into JSON. Tests check both the record and serialized output; checking only an object before serialization is insufficient.
+
+- **Duplicate ownership** means deciding which layer emits a particular event. For example, a failed sign-in should not be reported as three separate attempts by the session, menu and exception handler. This differs from deduplicating retried cloud deliveries by event ID.
+
+- **Rotating files** means starting a new diagnostic file at a size/time boundary. For example, `diagnostics-001.jsonl` fills, then new records go to `diagnostics-002.jsonl`. Older files can be retained or removed under a configured policy. Pending audit records are never deleted through diagnostic-file rotation.
+
+- **Audit contract** means the typed record and interface that workflows use to request required audit persistence. Atlas.Contracts is a candidate for a genuinely shared boundary contract; the word “contract” alone does not determine project ownership. Keep SQL implementation in persistence and provider wiring in the host. Review dependencies before choosing the final location.
+
+- **Durable outbox** means pending-delivery rows in SQL, saved with the audit record and business action. It is not the diagnostic output file. A later background delivery loop reads these rows, sends them and records confirmed acceptance. Process restarts do not erase pending rows.
+
+- **Worker** means that background delivery loop, not a person or a current separate service. It might eventually run inside the host or as a separate process. Its implementation/deployment is still future work.
+
 ## Suggested implementation sequence
 
 1. **Local structured logging and event context.**
 
    - Introduce stable event names, bounded outcome/reason categories and an operation context.
-   - Wire a JSON diagnostic provider in Console startup, separate from interactive menus. Evaluate an optional rotating file provider rather than building a domain file writer.
+   - Wire a JSON file provider in Console startup, writing to a configured gitignored local folder. Keep menus separate. Use explicit environment/configuration to select local files versus a future deployment exporter; no live cloud connection is needed now. Review size/time rotation and retention settings rather than building a domain file writer.
    - Instrument final account/session outcomes, authorization denials and outer operation failures first.
-   - Verify privacy, serialization, duplicate ownership and output capture with a test sink before cloud configuration.
+   - Verify approved fields/secret exclusion, JSON encoding, one responsible emitter per event and actual output capture with an in-memory recording test sink. Add temporary-file tests for real file output/rotation; these are separate from SQL audit persistence tests. No cloud account is needed.
 
 2. **Durable audit for important actions.**
 
@@ -17,7 +33,7 @@ Status: proposed work, **no runtime changes in this PR**. [Requirements](README.
    - Define the application audit contract and persist records atomically with those changes. A logger call after commit is insufficient for guaranteed audit recording.
    - Required audit records must have a durable outbox and reliable cloud delivery. Do not silently assume the existing in-memory event publisher survives process termination.
    - Review retention/access policy and privileged provisioning before claiming production audit coverage.
-   - Any schema change requires the developer-generated EF migration workflow; this documentation PR changes no schema.
+   - Any schema change requires the developer-generated EF migration workflow; this documentation PR changes no schema. The implementation PR summary must include exact tool-restore, migration-creation, pending-model verification, database-update and relevant test commands with `--project src/Atlas.Persistence`. The developer generates, reviews and commits the migration/designer/snapshot; do not generate or apply them on their behalf.
 
 3. **API and cloud integration.**
 
@@ -43,7 +59,9 @@ For workflows still owned by Console, put the semantic event into reusable coord
 
 ## Correlation through Console, API and workers
 
-- Console starts a new operation ID for each command. Related repository calls and events share it. Do not reuse a lifetime ID for every command in one session.
+- The field is named `observability_operation_id` to make its purpose explicit: linking audit, log and trace records for one workflow. It is not a participant ID or proof of permission, and it does not measure duration on its own; trace spans and elapsed-time measurements do that.
+
+- Console starts a new observability operation ID for each command. Related repository calls and events share it. Do not reuse a lifetime ID for every command in one session.
 
 - The future API creates a server operation ID per request and accepts valid trace propagation context. A caller-supplied request/correlation header must be bounded and validated; it is not an actor identity or trusted audit event ID.
 
@@ -51,11 +69,11 @@ For workflows still owned by Console, put the semantic event into reusable coord
 
 - Resolve actor identity after authentication and authorization context is available. Do not accept actor IDs from request bodies or inherited logging scopes alone.
 
-- Workers use `actor_kind=system` for their own execution while retaining a separately identified initiating actor when policy allows. They propagate the originating operation/event relationship and create a new execution span for each attempt.
+- A future outbox delivery worker uses `actor_kind=system` for its own delivery-attempt events: software initiated that attempt. It must preserve the original audit record’s participant actor, event ID and observability operation ID, rather than relabeling the human action as a system action. Each delivery attempt can have its own trace span linked back to the original operation.
 
 - Async scopes must be disposed after each operation. Tests must show that parallel requests cannot inherit one another's actor, operation ID or fields.
 
-- IP/user-agent collection is deferred. If needed for abuse defense, define trusted-proxy parsing, retention and minimization first. Never use raw IP addresses as metric labels.
+- Future API abuse defense should include controlled IP/user-agent collection. Obtain the peer address from the server and honor forwarded addresses only through configured trusted proxies. Treat user-agent text as untrusted, bounded input, never as verified identity. Define approved security-event fields, restricted access, short purpose-specific retention and minimization before enabling collection. Do not add these fields to every audit record, or use IP/user-agent values as metric labels. Console has no HTTP client IP/user-agent to collect.
 
 ## Verification without a cloud account
 
@@ -89,6 +107,16 @@ Use an in-memory recording sink for schema/privacy/correlation tests and an isol
 - Exhaust retries and fill buffers. Retain pending records for operator replay and expose backlog/failure signals. If durable capacity is exhausted, reject new required audited mutations instead of dropping audit data.
 
 - Specify and test the selected provider's durable-acceptance acknowledgement. Do not treat an in-memory exporter queue as successful delivery. Verify eventual queryability in staging and document recovery/backup limits.
+
+## Protecting audit data
+
+- SQL permissions can separate audit access from ordinary application data access. Production design should give the application/worker only needed insert/delivery-update permissions, with a separate restricted operator role for querying/export. Public application users must not receive database credentials or an audit browsing endpoint by default.
+
+- Prefer append-only audit records; delivery status belongs in outbox state. Restrict alteration/deletion of audit history. This does not make records immune to a database administrator; stronger tamper evidence and retention controls need a separate review.
+
+- Local developers can inspect their own development SQL audit records and gitignored diagnostic files. Use development data and credentials. `.gitignore` prevents routine Git inclusion; it does not encrypt files or restrict operating-system access.
+
+- Production permission provisioning and retention remain deployment work. The local implementation must still avoid public audit access and document which identities write, deliver and query records.
 
 ## Deployment decisions still open
 
