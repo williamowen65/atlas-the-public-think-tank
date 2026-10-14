@@ -698,6 +698,79 @@ namespace Atlas.Persistence.Migrations
                     b.ToTable("NotificationRows", (string)null);
                 });
 
+            modelBuilder.Entity("Atlas.Persistence.Observability.AuditOutboxRow", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("AuditRecordId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("DeliveredAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Destination")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid?>("LeaseOwner")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("LeaseUntilUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("NextAttemptAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuditRecordId", "Destination")
+                        .IsUnique();
+
+                    b.HasIndex("Destination", "DeliveredAtUtc", "NextAttemptAtUtc");
+
+                    b.ToTable("AuditOutbox", (string)null);
+                });
+
+            modelBuilder.Entity("Atlas.Persistence.Observability.AuditRecordRow", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ActorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("EventName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid>("ObservabilityOperationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("OccurredAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("PayloadJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("TargetId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ObservabilityOperationId");
+
+                    b.HasIndex("TargetId", "OccurredAtUtc");
+
+                    b.ToTable("AuditRecords", (string)null);
+                });
+
             modelBuilder.Entity("Atlas.Persistence.ParticipantRow", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1238,6 +1311,15 @@ namespace Atlas.Persistence.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired()
                         .HasConstraintName("FK_NotificationRows_ParticipantRows_RecipientParticipantId");
+                });
+
+            modelBuilder.Entity("Atlas.Persistence.Observability.AuditOutboxRow", b =>
+                {
+                    b.HasOne("Atlas.Persistence.Observability.AuditRecordRow", null)
+                        .WithMany()
+                        .HasForeignKey("AuditRecordId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Atlas.Persistence.ReactionAuditRow", b =>
