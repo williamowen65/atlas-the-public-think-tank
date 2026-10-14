@@ -62,6 +62,7 @@ public static class Telemetry
     /// <summary>Install a host/test observer in this async flow; disposal restores its predecessor.</summary>
     public static IDisposable UseObserver(ITelemetryObserver observer)
     {
+        ArgumentNullException.ThrowIfNull(observer);
         var previous = Ambient.Value;
         Ambient.Value = new(observer, Guid.Empty, null, ActorKind.Anonymous);
         return new Restore(() => Ambient.Value = previous);

@@ -19,7 +19,7 @@ internal sealed class ConsoleTelemetry : IDisposable
     public ConsoleTelemetry(IConfiguration configuration, Func<AtlasDataContext> open)
     {
         var environment = configuration["DOTNET_ENVIRONMENT"] ?? "Development";
-        if (environment != "Development")
+        if (!string.Equals(environment, "Development", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("This Console host currently supports Development telemetry only. Configure a durable cloud audit destination in the deployment host before production use.");
         DirectoryPath = Path.GetFullPath(configuration["ATLAS_TELEMETRY_DIRECTORY"] ?? Path.Combine(FindRoot(), "logs", "observability"));
         var maxBytes = ReadPositive(configuration["ATLAS_TELEMETRY_FILE_BYTES"], 5 * 1024 * 1024);

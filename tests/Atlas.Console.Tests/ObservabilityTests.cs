@@ -81,13 +81,17 @@ public sealed class ObservabilityTests
             {
                 Telemetry.Observe(EventKind.DiscoveryRead, () => 7);
                 local.CacheLookup(detail: false, hit: true);
+                using (Telemetry.Activities.StartActivity("private-canary-search")) { }
             }
             var files = Directory.GetFiles(directory);
             Assert.IsTrue(files.Any(path => Path.GetFileName(path).StartsWith("diagnostics-")));
             Assert.IsTrue(files.Any(path => Path.GetFileName(path).StartsWith("metrics-")));
             Assert.IsTrue(files.Any(path => Path.GetFileName(path).StartsWith("traces-")));
             foreach (var line in files.SelectMany(File.ReadLines))
+            {
+                Assert.DoesNotContain("canary", line);
                 using (JsonDocument.Parse(line)) { }
+            }
             var rotating = new JsonLineFile(directory, "diagnostics", maxBytes: 1024, retainedFiles: 2);
             for (var i = 0; i < 10; i++) rotating.Write(JsonSerializer.Serialize(new { padding = new string('x', 800) }));
             Assert.IsLessThanOrEqualTo(2, Directory.GetFiles(directory, "diagnostics-*.jsonl").Length);

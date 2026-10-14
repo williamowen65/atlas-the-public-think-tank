@@ -148,7 +148,7 @@ public sealed class SqlAuditTests
             report.DecisionReason = "private-canary-rationale";
             await db.SaveChangesAsync();
             var records = await db.AuditRecords.Where(row => row.EventName == "moderation.changed").ToListAsync();
-            Assert.AreEqual(2, records.Count);
+            Assert.HasCount(2, records);
             var hidden = records.Single(row => row.PayloadJson.Contains("hidden", StringComparison.Ordinal));
             Assert.AreEqual(actor, hidden.ActorId);
             using var json = System.Text.Json.JsonDocument.Parse(hidden.PayloadJson);
@@ -174,7 +174,7 @@ public sealed class SqlAuditTests
             }
             var destination = new Destination(fail: false);
             await Task.WhenAll(new AuditDelivery(open, destination).DeliverOneAsync(), new AuditDelivery(open, destination).DeliverOneAsync());
-            Assert.AreEqual(1, destination.Received.Count);
+            Assert.HasCount(1, destination.Received);
             using var check = open();
             Assert.IsNotNull((await check.AuditOutbox.SingleAsync()).DeliveredAtUtc);
         });

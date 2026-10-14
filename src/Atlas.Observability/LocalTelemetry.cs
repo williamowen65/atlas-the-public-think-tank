@@ -37,12 +37,24 @@ public sealed class LocalTelemetry : ITelemetryObserver, ICacheTelemetryObserver
         {
             ShouldListenTo = source => source.Name is SourceName or "Atlas.Contracts",
             Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-            ActivityStopped = activity => TryOutput(() => _traces.Write(JsonSerializer.Serialize(new
+            ActivityStopped = activity =>
             {
-                signal = "trace", observability_operation_id = Telemetry.OperationId, trace_id = activity.TraceId.ToString(), span_id = activity.SpanId.ToString(),
-                parent_span_id = activity.ParentSpanId.ToString(), operation = activity.OperationName,
-                started_at_utc = activity.StartTimeUtc, duration_ms = activity.Duration.TotalMilliseconds
-            })))
+                // Source names alone are not a privacy boundary: never export a future
+                // caller's arbitrary operation label (for example a search string).
+                if (activity.OperationName is not ("atlas.command" or "storage.transaction")
+                    && !Enum.GetNames<EventKind>().Contains(activity.OperationName, StringComparer.Ordinal)) return;
+                TryOutput(() => _traces.Write(JsonSerializer.Serialize(new
+                {
+                    signal = "trace",
+                    observability_operation_id = Telemetry.OperationId,
+                    trace_id = activity.TraceId.ToString(),
+                    span_id = activity.SpanId.ToString(),
+                    parent_span_id = activity.ParentSpanId.ToString(),
+                    operation = activity.OperationName,
+                    started_at_utc = activity.StartTimeUtc,
+                    duration_ms = activity.Duration.TotalMilliseconds
+                })));
+            }
         };
         ActivitySource.AddActivityListener(_listener);
     }

@@ -161,9 +161,9 @@ public static class NodeCommands
 
             Console.Write("Selection: ");
 
+            using var commandTelemetry = Telemetry.BeginOperation(actorParticipantId);
             try
             {
-                using var commandTelemetry = Telemetry.BeginOperation(actorParticipantId);
                 switch (Console.ReadLine())
                 {
                     case "1" or "2" or "3" or "4" or "5" or "6" or

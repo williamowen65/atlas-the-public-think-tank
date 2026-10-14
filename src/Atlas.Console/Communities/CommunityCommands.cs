@@ -83,6 +83,7 @@ public static class CommunityCommands
             Console.WriteLine("7. Return");
             Console.Write("Selection: ");
 
+            using var commandTelemetry = Telemetry.BeginOperation(authenticatedActor.ParticipantId);
             try
             {
                 switch (Console.ReadLine())

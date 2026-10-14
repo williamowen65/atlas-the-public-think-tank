@@ -53,6 +53,7 @@ public static class ParticipantCommands
             Console.WriteLine();
             Console.Write("Selection: ");
 
+            using var commandTelemetry = Telemetry.BeginOperation(authenticatedActor.ParticipantId);
             switch (Console.ReadLine())
             {
                 case "1":
