@@ -15,7 +15,7 @@ Status: proposed work, **no runtime changes in this PR**. [Requirements](README.
 
    - Agree on the initial required actions: moderation decisions/visibility and privileged role/account-security changes are the proposed starting set.
    - Define the application audit contract and persist records atomically with those changes. A logger call after commit is insufficient for guaranteed audit recording.
-   - Add a durable outbox only when reliable external delivery is introduced. Do not silently assume the existing in-memory event publisher survives process termination.
+   - Required audit records must have a durable outbox and reliable cloud delivery. Do not silently assume the existing in-memory event publisher survives process termination.
    - Review retention/access policy and privileged provisioning before claiming production audit coverage.
    - Any schema change requires the developer-generated EF migration workflow; this documentation PR changes no schema.
 
@@ -67,7 +67,7 @@ For workflows still owned by Console, put the semantic event into reusable coord
 | Business write failure / outer rollback | Neither business state nor successful audit persists; a sanitized failure signal may remain |
 | Required audit insert failure | Entire audited mutation rolls back |
 | Diagnostic/file/cloud sink unavailable | Defined bounded behavior; no credential leak or recursive logging; no retry of an already committed business action |
-| Outbox retry / process restart | Pending events recover; event ID stays stable; duplicates are handled; no exactly-once assertion |
+| Outbox retry / process restart | Pending events recover; event ID stays stable; duplicates are handled; exhausted retries retain records for replay; no exactly-once assertion |
 | Secret canaries in password, token, cookie, content, SQL/exception text | Captured serialized output contains none of them, including framework logs and exporter failures |
 | Malicious newlines/control characters and huge inputs | One safely encoded bounded record; no injected entries or unexpected fields |
 | Concurrent operations | Correct distinct actors/operation IDs; scopes do not leak |
@@ -76,6 +76,18 @@ For workflows still owned by Console, put the semantic event into reusable coord
 | Graceful shutdown and full buffers | Bounded flush/drain policy tested; diagnostic loss is disclosed; persisted audit remains recoverable |
 
 Use an in-memory recording sink for schema/privacy/correlation tests and an isolated SQL fixture for atomic audit/outbox tests. A live cloud account should not be needed to validate the application contract. Later staging checks must still verify the actual transport, ingestion, permissions and alert delivery.
+
+## Required cloud delivery acceptance
+
+- Persist audited changes, audit records and pending delivery atomically; rollback tests cover all three.
+
+- Simulate an unavailable cloud endpoint and restart the worker. Pending records must survive and later reach the destination with the same event IDs.
+
+- Simulate acknowledgement loss after ingestion. Retrying may duplicate delivery but must not lose the record; reconcile by event ID.
+
+- Exhaust retries and fill buffers. Retain pending records for operator replay and expose backlog/failure signals. If durable capacity is exhausted, reject new required audited mutations instead of dropping audit data.
+
+- Specify and test the selected provider's durable-acceptance acknowledgement. Do not treat an in-memory exporter queue as successful delivery. Verify eventual queryability in staging and document recovery/backup limits.
 
 ## Deployment decisions still open
 

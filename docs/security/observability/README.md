@@ -62,7 +62,7 @@ Existing tests verify enforcement and persistence behavior. They do not verify t
 
 - Changing destinations should preserve Atlas event names, field meanings and privacy rules. Host configuration and infrastructure wiring change; business rules do not.
 
-- Ordinary console logs or sampled traces cannot substitute for a durable audit ledger. An authoritative audit record should persist with the state change; a cloud copy can be delivered separately.
+- Ordinary console logs or sampled traces cannot substitute for a durable audit ledger. An authoritative audit record should persist with the state change; a cloud copy must be delivered reliably after commit for required audit records.
 
 ## Common event fields
 
@@ -115,7 +115,13 @@ All values above are illustrative. Report bodies and hidden node content are del
 
 - **Durable successful actions:** write the audit record with the business mutation in the same SQL transaction. If the business write rolls back, its success record must roll back too. Nested operations use the outer transaction, rather than publishing success after an inner `SaveChanges`.
 
-- **Cloud delivery:** if guaranteed audit export is required, persist an outbox entry with the audit record, then deliver after commit. Retries keep `event_id`; downstream ingestion must tolerate duplicates. Define bounded retry, backlog monitoring and operator recovery before enabling delivery. No exactly-once promise.
+- **Cloud delivery is required for audit records.** Persist the audit record and a durable outbox entry in the same transaction as the business change. A worker delivers it after commit. A successful business response means the action and pending audit delivery are durably stored; it does not mean cloud ingestion has already completed.
+
+- **During a cloud outage:** keep undelivered records in durable storage across process restarts. Retry with backoff and bounded individual attempts. Exhausting automatic attempts must retain the record for operator recovery/replay, not delete it. Monitor backlog count/age and delivery failures so a stalled pipeline cannot silently go unnoticed.
+
+- **Confirm delivery:** keep `event_id` stable across retries. Mark an entry delivered only after the chosen destination's documented durable-acceptance acknowledgement. A collector accepting data into memory is not sufficient evidence. Define that acknowledgement boundary and test reconciliation/queryability with the selected provider. Retries can produce duplicate copies; deduplicate by event ID rather than risk dropping the original.
+
+- **No silent loss:** required audit records are not sampled, dropped when a buffer fills, or expired while pending delivery. If durable local audit/outbox storage cannot accept a required record, reject/roll back the associated mutation. Define recovery, capacity limits and backup/restore procedures before production. This is an eventual-delivery requirement under recoverable infrastructure, not a claim that software can prevent loss after every possible storage disaster. Ordinary diagnostics and sampled traces retain their separate policies.
 
 - **Failures:** ordinary diagnostic sink failure must not silently change a business result. Durable audited writes must fail/roll back when their required local audit persistence fails. An unavailable cloud exporter should not undo an already committed local action; it leaves recoverable pending delivery.
 

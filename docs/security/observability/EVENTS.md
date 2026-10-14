@@ -45,7 +45,7 @@ Event names are suggested conventions, not a requirement to emit every listed ev
 
 - **Transaction rolls back:** no durable success audit remains. One failure/conflict signal can describe the attempted operation with a safe reason code.
 
-- **Cloud export retries:** preserve the event ID and original occurrence time; ingestion time/attempt metadata may change. Do not create a new business-action audit record for each export attempt.
+- **Required cloud audit delivery:** preserve the event ID and original occurrence time across retries and restarts. Keep the pending record until durable acceptance is acknowledged; exhausted retries retain it for operator replay. Ingestion time/attempt metadata may change. Do not create a new business-action audit record for each export attempt.
 
 ## Deliberate exclusions
 
