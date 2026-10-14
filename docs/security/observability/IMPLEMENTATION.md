@@ -1,6 +1,6 @@
 # Implementation, verification and follow-ups
 
-Status: proposed work, **no runtime changes in this PR**. [Requirements](README.md) and [event catalogue](EVENTS.md).
+Status: **local runtime implementation added; migration pending**. See [the running guide](LOCAL-DEVELOPMENT.md) for current coverage, commands and tests. The staged plan and future deployment criteria remain below. [Requirements](README.md) and [event catalogue](EVENTS.md).
 
 ## Terms used in this plan
 
@@ -33,7 +33,7 @@ Status: proposed work, **no runtime changes in this PR**. [Requirements](README.
    - Define the application audit contract and persist records atomically with those changes. A logger call after commit is insufficient for guaranteed audit recording.
    - Required audit records must have a durable outbox and reliable cloud delivery. Do not silently assume the existing in-memory event publisher survives process termination.
    - Review retention/access policy and privileged provisioning before claiming production audit coverage.
-   - Any schema change requires the developer-generated EF migration workflow; this documentation PR changes no schema. The implementation PR summary must include exact tool-restore, migration-creation, pending-model verification, database-update and relevant test commands with `--project src/Atlas.Persistence`. The developer generates, reviews and commits the migration/designer/snapshot; do not generate or apply them on their behalf.
+   - Any schema change requires the developer-generated EF migration workflow; this implementation adds audit/outbox mappings and requires the developer-generated migration. The implementation PR summary must include exact tool-restore, migration-creation, pending-model verification, database-update and relevant test commands with `--project src/Atlas.Persistence`. The developer generates, reviews and commits the migration/designer/snapshot; do not generate or apply them on their behalf.
 
 3. **API and cloud integration.**
 
@@ -41,7 +41,7 @@ Status: proposed work, **no runtime changes in this PR**. [Requirements](README.
    - Configure host/exporter destinations, secure collector transport, retention, operator access and pipeline health checks.
    - Measure baseline behavior before selecting targets, sampling and alert thresholds. Cloud dashboards/SIEM selection are deployment work.
 
-These are implementation slices, not three prerequisites for merging the exploratory requirements PR. The parent ticket remains incomplete until its agreed acceptance evidence and follow-ups are reviewed.
+The local logging, persistence and local delivery portions are now implemented; the API/cloud slice remains deferred. The parent ticket remains incomplete until its agreed acceptance evidence and follow-ups are reviewed.
 
 ## Host and domain responsibilities
 
@@ -141,7 +141,7 @@ Use an in-memory recording sink for schema/privacy/correlation tests and an isol
 | Secret/sensitive-data handling | [Allowlist and serialization requirements](README.md#sensitive-data-and-safe-serialization); future canary tests above |
 | Distinguish diagnostics, audit, metrics and alerts | [Definitions](README.md#start-here), separate durability and export rules |
 | Vendor-independent application code | Proposed host/application/persistence responsibilities; no package/vendor coupling added |
-| Testable important events without live cloud | Verification matrix above; tests not implemented in this documentation slice |
+| Testable important events without live cloud | Verification matrix above; local contract/file tests and fresh-model SQL tests added; see the running guide for validation limits |
 | Identity/API correlation | Final sign-in outcomes, per-operation context and future middleware contract |
 | Defer cloud retention/dashboards/SIEM | Explicit deployment decisions and provider examples, no provisioning |
 | Track larger implementation gaps | Linked follow-up tasks below |

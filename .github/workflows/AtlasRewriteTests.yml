@@ -85,6 +85,9 @@ jobs:
           - name: Discovery read model
             project: tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj
             filter: '--filter FullyQualifiedName~Discovery'
+          - name: Audit fresh model
+            project: tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj
+            filter: '--filter FullyQualifiedName~SqlAuditTests'
           - name: Persistence
             project: tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj
           - name: Identity
@@ -113,7 +116,7 @@ jobs:
         with:
           dotnet-version: '10.0.x'
       - name: Check migrations match the EF model
-        if: matrix.name != 'Discovery read model'
+        if: matrix.name != 'Discovery read model' && matrix.name != 'Audit fresh model'
         run: |
           dotnet tool restore
           dotnet restore src/Atlas.Persistence/Atlas.Persistence.csproj

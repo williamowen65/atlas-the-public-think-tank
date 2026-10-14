@@ -386,3 +386,6 @@ crash.log
 
 # Keep blackboards interactive; do not commit exported previews.
 /docs/blackboards/**/*.png
+
+# Local structured telemetry and audit inspection copies. SQL is authoritative.
+/logs/observability/

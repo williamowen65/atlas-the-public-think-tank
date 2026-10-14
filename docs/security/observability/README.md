@@ -1,6 +1,6 @@
 # Security logging, audit and observability
 
-Status: **Proposed requirements for review**, not implemented instrumentation. [PTT-126](https://thepublicthinktank.atlassian.net/browse/PTT-126). Source baseline: main after PR #345, reviewed 2026-10-13.
+Status: **Local implementation added; developer-generated migration pending.** [PTT-126](https://thepublicthinktank.atlassian.net/browse/PTT-126). Source baseline: main after PR #345, reviewed 2026-10-13.
 
 ## Start here
 
@@ -16,9 +16,9 @@ Status: **Proposed requirements for review**, not implemented instrumentation. [
 
 - **Alerts** are rules evaluated by monitoring infrastructure, not a separate kind of application log. For example, sustained delivery failures could notify an operator. Thresholds and recipients remain deployment decisions.
 
-This first PR defines the events and integration contract. It adds no logger provider, file writer, database audit table, exporter, dashboard or cloud dependency. Follow the [event inventory](EVENTS.md) and [implementation and verification plan](IMPLEMENTATION.md) for proposed work.
+Start with [Run and inspect local observability](LOCAL-DEVELOPMENT.md) for migration commands, local files, actual implemented coverage and recovery behavior. This PR now includes typed local diagnostics, metric/trace output, SQL audit/outbox mappings and a local delivery worker. Cloud adapters and API integration remain future work. The sections below retain the reviewed requirements; the running guide distinguishes implementation from remaining production policy.
 
-## What exists today
+## Baseline before this implementation
 
 | Current evidence | What it establishes | What it does not establish |
 |---|---|---|
@@ -28,7 +28,7 @@ This first PR defines the events and integration contract. It adds no logger pro
 | [DiscoveryCache](../../../src/Atlas.Persistence/Discovery/DiscoveryCache.cs) maintains counters | In-process diagnostic measurements, used by tests/debugging | An exported metric stream, dashboard or alert |
 | [SqlOperationBoundary](../../../src/Atlas.Console/Storage/SqlOperationBoundary.cs) coordinates commits/rollbacks | A place to integrate transaction-aware audit persistence | A durable audit outbox or guaranteed delivery today |
 
-Existing tests verify enforcement and persistence behavior. They do not verify the proposed telemetry because it has not been implemented.
+The table above describes the pre-change baseline. New telemetry evidence is linked in [the running guide](LOCAL-DEVELOPMENT.md#verification-and-current-limits).
 
 ## Proposed direction: stable events, configurable destinations
 
@@ -36,7 +36,7 @@ Existing tests verify enforcement and persistence behavior. They do not verify t
 
 - Hosts create operation context and select output destinations. Console does this in startup wiring; the future API does it in startup and request middleware.
 
-- Use .NET `ILogger<T>` for diagnostics and structured security signals. Preserve named properties instead of constructing a prose string containing all values.
+- Use the typed `ITelemetryObserver` contract for allowlisted Atlas diagnostic/security events. The local implementation deliberately does not forward arbitrary framework `ILogger` messages. A later reviewed logging-provider bridge must preserve the same privacy boundary.
 
 - Use .NET `ActivitySource` and `Meter` for workflow traces and metrics, with host-configured OpenTelemetry collection/export as a later implementation choice.
 
@@ -82,7 +82,7 @@ Existing tests verify enforcement and persistence behavior. They do not verify t
 | `trace_id`, `span_id` | Optional validated trace context, present when a span is active |
 | `duration_ms` | Optional elapsed duration for completed operations; measure elapsed time rather than subtracting wall-clock timestamps |
 
-The schema is a proposal, not an existing C# type. Event-specific additions must be allowlisted in the inventory. Identifiers are sensitive operational data even when they are not secrets.
+The implemented `TelemetryEvent` contract and explicit `EventJson` projection form the allowlist. The example below illustrates the original semantic design; the running guide shows the implemented changed-record events and their fields. Identifiers remain sensitive operational data even when they are not secrets.
 
 ### Example: a committed visibility change
 
@@ -177,7 +177,7 @@ All values above are illustrative. Report bodies and hidden node content are del
 | API context | Verified actor, generated operation ID and trace context | Transport middleware, trusted proxy/IP rules and security access policy |
 | Production destination | Configurable host/infrastructure adapters | Cloud provider, region, budget, retention, dashboards and alert recipients |
 
-No production release should claim PTT-126's instrumentation is complete based on this documentation PR. The implementation tests and deployment policies below remain work to do.
+Local implementation does not establish production cloud delivery, production access/retention policies or migration-upgrade correctness. See the running guide for implemented coverage and remaining work.
 
 ## References
 

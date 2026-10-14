@@ -1,3 +1,5 @@
+using Atlas.Contracts.Observability;
+
 namespace Atlas.Contracts.Operations;
 
 /// <summary>Persistence adapters provide an atomic boundary around a complete synchronous use case.</summary>
@@ -12,8 +14,16 @@ public static class OperationBoundary
     public static T Execute<T>(
         object repository,
         Func<T> operation
-    ) =>
-        repository is IOperationBoundary boundary ? boundary.Execute(operation) : operation();
+    )
+    {
+        using var correlation = Telemetry.JoinOperation();
+        try { return repository is IOperationBoundary boundary ? boundary.Execute(operation) : operation(); }
+        catch (Exception error)
+        {
+            Telemetry.Failure(EventKind.StorageWrite, error);
+            throw;
+        }
+    }
     public static void Execute(
         object repository,
         Action operation

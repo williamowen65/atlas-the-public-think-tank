@@ -19,6 +19,8 @@ using Atlas.Voting;
 using Atlas.Voting.Data;
 using Atlas.Voting.Target;
 
+using Atlas.Contracts.Observability;
+
 namespace Atlas.ConsoleApp;
 
 /// <summary>Coordinates interactive node commands without moving domain rules out of Graph.</summary>
@@ -161,6 +163,7 @@ public static class NodeCommands
 
             try
             {
+                using var commandTelemetry = Telemetry.BeginOperation(actorParticipantId);
                 switch (Console.ReadLine())
                 {
                     case "1" or "2" or "3" or "4" or "5" or "6" or
@@ -489,11 +492,13 @@ public static class NodeCommands
             catch (Exception exception) when (
                 exception is ArgumentException or UnauthorizedAccessException)
             {
+                Telemetry.Failure(EventKind.StorageWrite, exception);
                 ConsoleUi.Pause(
                     $"Unable to update node: {exception.Message}");
             }
             catch (InvalidOperationException exception)
             {
+                Telemetry.Failure(EventKind.StorageWrite, exception);
                 ConsoleUi.Pause(
                     $"Unable to complete action: {exception.Message}");
             }
@@ -549,6 +554,7 @@ public static class NodeCommands
         }
         catch (Exception error) when (error is ArgumentException or InvalidOperationException)
         {
+                Telemetry.Failure(EventKind.StorageWrite, error);
             ConsoleUi.Pause($"Unable to submit report: {error.Message}");
         }
     }

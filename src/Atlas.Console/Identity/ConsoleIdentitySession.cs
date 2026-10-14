@@ -1,3 +1,4 @@
+using Atlas.Contracts.Observability;
 using System.Security.Claims;
 using Atlas.Identity;
 using Atlas.Moderation;
@@ -51,10 +52,32 @@ public sealed class ConsoleIdentitySession(IServiceScopeFactory scopes) : IModer
     /// requiring 2FA because it has no second-factor UI; 2FA belongs to the future REST API/web login flow.
     /// A successful password check is not enough by itself: the account must also satisfy the Atlas Member policy.
     /// </summary>
-    public async Task<SignInResult> SignInAsync(
-        string email,
-        string password
-    )
+    public async Task<SignInResult> SignInAsync(string email, string password)
+    {
+        using var operation = Telemetry.BeginOperation();
+        try
+        {
+            var result = await SignInCoreAsync(email, password);
+            // A resolved input account is not a verified actor until the entire flow succeeds.
+            if (result.Succeeded)
+            {
+                using var authenticated = Telemetry.UseVerifiedActor(Participant!.Id.Value);
+                Telemetry.Record(Telemetry.Create(EventKind.SignIn));
+            }
+            else
+                Telemetry.Record(Telemetry.Create(EventKind.SignIn, outcome: EventOutcome.Denied,
+                    reason: result.IsLockedOut ? EventReason.LockedOut : result.RequiresTwoFactor ? EventReason.SecondFactorRequired
+                        : result.IsNotAllowed ? EventReason.NotAllowed : EventReason.CredentialsRejected));
+            return result;
+        }
+        catch (Exception error)
+        {
+            Telemetry.Record(Telemetry.Create(EventKind.SignIn, outcome: EventOutcome.Failed, reason: Telemetry.Reason(error)));
+            throw;
+        }
+    }
+
+    private async Task<SignInResult> SignInCoreAsync(string email, string password)
     {
         // Always discard any previous in-memory session before attempting a new login.
         SignOut();
@@ -112,6 +135,7 @@ public sealed class ConsoleIdentitySession(IServiceScopeFactory scopes) : IModer
                     AtlasPolicies.Member
                 )).Succeeded)
         {
+            Telemetry.Record(Telemetry.Create(EventKind.SessionRejected, outcome: EventOutcome.Denied, reason: EventReason.NotAllowed));
             SignOut();
             return false;
         }
@@ -136,6 +160,11 @@ public sealed class ConsoleIdentitySession(IServiceScopeFactory scopes) : IModer
     /// </summary>
     public void SignOut()
     {
+        if (Participant is not null)
+        {
+            using var operation = Telemetry.BeginOperation(Participant.Id.Value);
+            Telemetry.Record(Telemetry.Create(EventKind.SignOut));
+        }
         _principal = null;
         _securityStamp = null;
         Participant = null;

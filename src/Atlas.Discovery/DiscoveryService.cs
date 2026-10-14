@@ -1,3 +1,5 @@
+using Atlas.Contracts.Observability;
+
 namespace Atlas.Discovery;
 
 /// <summary>Validates Discovery requests before delegating to a read-query implementation.</summary>
@@ -17,7 +19,7 @@ public sealed class DiscoveryService : IDiscoveryService, IDiscoveryAuthorListin
     {
         Validate(query);
         if (authorParticipantId == Guid.Empty) throw new ArgumentException("An author is required.", nameof(authorParticipantId));
-        return ((IDiscoveryAuthorListing)_query).DiscoverAuthorPage(query, authorParticipantId);
+        return Telemetry.Observe(EventKind.DiscoveryRead, () => ((IDiscoveryAuthorListing)_query).DiscoverAuthorPage(query, authorParticipantId));
     }
 
     /// <summary>Reads personal ratings separately from the shared public card cache.</summary>
@@ -28,7 +30,7 @@ public sealed class DiscoveryService : IDiscoveryService, IDiscoveryAuthorListin
     public DiscoveryPage DiscoverPage(DiscoveryQuery query)
     {
         Validate(query);
-        return _query.DiscoverPage(query);
+        return Telemetry.Observe(EventKind.DiscoveryRead, () => _query.DiscoverPage(query));
     }
 
     /// <summary>Validates and requests one page within the supplied authored IDs.</summary>
@@ -36,14 +38,14 @@ public sealed class DiscoveryService : IDiscoveryService, IDiscoveryAuthorListin
     {
         ArgumentNullException.ThrowIfNull(authoredNodeIds);
         Validate(query);
-        return _query.DiscoverAuthoredPage(query, authoredNodeIds);
+        return Telemetry.Observe(EventKind.DiscoveryRead, () => _query.DiscoverAuthoredPage(query, authoredNodeIds));
     }
 
     /// <summary>Supports the existing unpaged contract; normal Console browsing uses pages.</summary>
     public IReadOnlyList<RankedDiscoveryItem> Discover(DiscoveryQuery query)
     {
         Validate(query);
-        return _query.Discover(query);
+        return Telemetry.Observe(EventKind.DiscoveryRead, () => _query.Discover(query));
     }
 
     /// <summary>Supports unpaged authored results for existing callers.</summary>
@@ -51,7 +53,7 @@ public sealed class DiscoveryService : IDiscoveryService, IDiscoveryAuthorListin
     {
         ArgumentNullException.ThrowIfNull(authoredNodeIds);
         Validate(query);
-        return _query.DiscoverAuthored(query, authoredNodeIds);
+        return Telemetry.Observe(EventKind.DiscoveryRead, () => _query.DiscoverAuthored(query, authoredNodeIds));
     }
 
     /// <summary>Rejects invalid requests before they reach storage.</summary>

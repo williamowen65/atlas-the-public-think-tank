@@ -1,6 +1,6 @@
 # Proposed event inventory
 
-[Overview and field definitions](README.md). All events below are **proposed**, not assertions that Atlas emits them today. The linked tests establish existing business/enforcement behavior; new event assertions belong to the implementation follow-ups.
+[Overview and field definitions](README.md). The semantic catalogue below remains the target design. [The running guide](LOCAL-DEVELOPMENT.md#what-is-saved-where) lists the actual changed-record events and implemented coverage; not every proposed semantic name below is emitted yet. The linked tests establish existing business/enforcement behavior; new event assertions belong to the implementation follow-ups.
 
 ## Event classes
 
