@@ -9,6 +9,10 @@ This repository contains a new version of Atlas. The application is being rebuil
 
 > **Project status:** Atlas is under active development. The current Console application is an executable reference for exercising and reviewing the domain workflows before they are exposed through a web API and user interface.
 
+## Transparency by design
+
+Atlas treats transparency as a product requirement. People should be able to inspect and question the rules, rankings, and algorithms that shape their experience—not merely view the source files. The [Atlas transparency and algorithmic accountability principles](docs/TRANSPARENCY.md) describe the project's commitments to understandable specifications, explainable results, versioned decision behavior, auditability, reproducible verification, privacy, and an open change process.
+
 ## How Atlas is organized
 
 | Boundary | Responsibility |
