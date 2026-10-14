@@ -1,6 +1,6 @@
 # Implementation, verification and follow-ups
 
-Status: **local runtime implementation added; migration pending**. See [the running guide](LOCAL-DEVELOPMENT.md) for current coverage, commands and tests. The staged plan and future deployment criteria remain below. [Requirements](README.md) and [event catalogue](EVENTS.md).
+Status: **local runtime implementation and developer-generated migration added**. See [the running guide](LOCAL-DEVELOPMENT.md) for current coverage, commands and tests. The staged plan and future deployment criteria remain below. [Requirements](README.md) and [event catalogue](EVENTS.md).
 
 ## Terms used in this plan
 
@@ -33,7 +33,7 @@ Status: **local runtime implementation added; migration pending**. See [the runn
    - Define the application audit contract and persist records atomically with those changes. A logger call after commit is insufficient for guaranteed audit recording.
    - Required audit records must have a durable outbox and reliable cloud delivery. Do not silently assume the existing in-memory event publisher survives process termination.
    - Review retention/access policy and privileged provisioning before claiming production audit coverage.
-   - Any schema change requires the developer-generated EF migration workflow; this implementation adds audit/outbox mappings and requires the developer-generated migration. The implementation PR summary must include exact tool-restore, migration-creation, pending-model verification, database-update and relevant test commands with `--project src/Atlas.Persistence`. The developer generates, reviews and commits the migration/designer/snapshot; do not generate or apply them on their behalf.
+   - Any schema change requires the developer-generated EF migration workflow; this implementation adds audit/outbox mappings; the developer-generated AddSecurityAuditOutbox migration is now committed. The implementation PR summary must include exact tool-restore, migration-creation, pending-model verification, database-update and relevant test commands with `--project src/Atlas.Persistence`. The developer generates, reviews and commits the migration/designer/snapshot; do not generate or apply them on their behalf.
 
 3. **API and cloud integration.**
 

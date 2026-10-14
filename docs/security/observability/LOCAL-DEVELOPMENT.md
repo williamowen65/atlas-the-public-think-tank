@@ -2,21 +2,20 @@
 
 This is the implemented local-development slice of PTT-126. API middleware, cloud adapters, production permissions and dashboards remain deployment follow-ups. No cloud account is needed.
 
-## First: generate the migration yourself
+## First: apply the developer-generated migration
 
-The audit/outbox model needs a new migration. **No migration, designer or model snapshot was generated or edited in this PR.** Run from the solution root against your intended local development database:
+The developer-generated `20261014195401_AddSecurityAuditOutbox` migration, designer and snapshot are now included. Do not scaffold the same migration again. Run from the solution root against your intended local development database:
 
 ```powershell
 dotnet tool restore
-dotnet ef migrations add AddSecurityAuditOutbox --project src/Atlas.Persistence
-# Review the generated migration, designer and snapshot before applying.
+# Review the committed migration before applying it.
 dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence
 dotnet ef database update --project src/Atlas.Persistence
 dotnet test tests/Atlas.Console.Tests/Atlas.Console.Tests.csproj --filter FullyQualifiedName~ObservabilityTests
 dotnet test tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj --filter FullyQualifiedName~SqlAuditTests
 ```
 
-SQL tests use `ATLAS_SQL_TEST_CONNECTION_STRING` in the shared user secrets or environment. Commit your reviewed migration/designer/snapshot. Migration consistency checks and migration-dependent SQL behavior cannot pass until that step is complete. Do not reset the database merely to add these tables; the migration should preserve existing content.
+SQL tests use `ATLAS_SQL_TEST_CONNECTION_STRING` in the shared user secrets or environment. The developer generated and committed the migration/designer/snapshot. Model consistency and migration-dependent CI now validate those committed files. Do not reset the database merely to add these tables; the migration should preserve existing content.
 
 ## Launch
 

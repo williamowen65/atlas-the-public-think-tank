@@ -1,6 +1,6 @@
 # Security logging, audit and observability
 
-Status: **Local implementation added; developer-generated migration pending.** [PTT-126](https://thepublicthinktank.atlassian.net/browse/PTT-126). Source baseline: main after PR #345, reviewed 2026-10-13.
+Status: **Local implementation and developer-generated migration added; validation in progress.** [PTT-126](https://thepublicthinktank.atlassian.net/browse/PTT-126). Source baseline: main after PR #345, reviewed 2026-10-13.
 
 ## Start here
 
