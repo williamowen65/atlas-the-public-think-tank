@@ -14,7 +14,8 @@ public enum EventKind
 public enum EventOutcome { Succeeded, Denied, Failed, Conflict }
 public enum EventReason { None, NotAuthorized, InvalidInput, CredentialsRejected, LockedOut, NotAllowed, SecondFactorRequired, StorageConflict, InfrastructureFailure, CommitOutcomeUnknown, DeliveryUnavailable }
 public enum ActorKind { Anonymous, Participant, System }
-public enum MutationAction { None, Created, Updated, Deleted, Hidden, Restored, Dismissed, ReviewRequested, RoleAssigned, RoleRemoved, PasswordChanged, EmailConfirmed, LockoutChanged, Linked, Unlinked }
+public enum MutationAction { None, Created, Updated, Deleted, Hidden, Restored, Dismissed, ReviewRequested, RoleAssigned, RoleRemoved, PasswordChanged, EmailConfirmed, LockoutChanged, Linked, Unlinked, Archived, Activated, Deactivated, Renamed, TypeChanged }
+public enum AuditModerationReason { Other, Spam, Harassment, UnsafeContent, OffTopic }
 
 /// <summary>Allowlisted event envelope. No free-form text or extension dictionary is accepted.</summary>
 public sealed record TelemetryEvent(
@@ -31,7 +32,8 @@ public sealed record TelemetryEvent(
     string? TraceId = null,
     string? SpanId = null,
     MutationAction Action = MutationAction.None,
-    Guid? RelatedTargetId = null)
+    Guid? RelatedTargetId = null,
+    AuditModerationReason? ModerationReason = null)
 {
     public int SchemaVersion => 1;
 }

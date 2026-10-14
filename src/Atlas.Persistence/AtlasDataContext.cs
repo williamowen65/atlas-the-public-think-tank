@@ -38,9 +38,8 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
     // Completed writes are published only after the outer transaction commits. Failed writes
     // leave no success diagnostic; audit/outbox rows roll back with the business rows.
     private readonly List<(Guid TransactionId, TelemetryEvent Event)> _pendingTelemetry = [];
-    public void PublishCommittedTelemetry()
+    public void PublishCommittedTelemetry(Guid transactionId)
     {
-        var transactionId = Database.CurrentTransaction?.TransactionId;
         foreach (var item in _pendingTelemetry.Where(item => item.TransactionId == transactionId))
             Telemetry.Record(item.Event);
         _pendingTelemetry.Clear();
@@ -60,12 +59,13 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
         {
             if (change.Page) AdvanceDiscovery(change.Detail);
             var count = base.SaveChanges(acceptAllChangesOnSuccess);
+            var transactionId = Database.CurrentTransaction!.TransactionId;
             committing = transaction is not null;
             transaction?.Commit();
-            _pendingTelemetry.AddRange(staged.Select(value => (Database.CurrentTransaction!.TransactionId, value)));
+            _pendingTelemetry.AddRange(staged.Select(value => (transactionId, value)));
             // An outer operation will publish only after its own commit. Its pending
             // records are associated with that transaction ID, not a later retry's transaction.
-            if (transaction is not null) PublishCommittedTelemetry();
+            if (transaction is not null) PublishCommittedTelemetry(transactionId);
             return count;
         }
         catch (Exception error)
@@ -99,12 +99,13 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
             }
             // Audit records/outbox are tracked additions, so EF inserts them in this same save.
             var count = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+            var transactionId = Database.CurrentTransaction!.TransactionId;
             committing = transaction is not null;
             if (transaction is not null) await transaction.CommitAsync(cancellationToken);
-            _pendingTelemetry.AddRange(staged.Select(value => (Database.CurrentTransaction!.TransactionId, value)));
+            _pendingTelemetry.AddRange(staged.Select(value => (transactionId, value)));
             // An outer operation will publish only after its own commit. Its pending
             // records are associated with that transaction ID, not a later retry's transaction.
-            if (transaction is not null) PublishCommittedTelemetry();
+            if (transaction is not null) PublishCommittedTelemetry(transactionId);
             return count;
         }
         catch (Exception error)

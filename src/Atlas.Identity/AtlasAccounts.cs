@@ -118,7 +118,7 @@ public sealed class AtlasAccounts(
                 null
             );
             await transaction.CommitAsync(cancellationToken);
-            database.PublishCommittedTelemetry();
+            database.PublishCommittedTelemetry(transaction.TransactionId);
             return new(
                 IdentityResult.Success,
                 participant.Id

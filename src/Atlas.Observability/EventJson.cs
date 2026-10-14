@@ -19,6 +19,7 @@ public static class EventJson
     {
         if (!Enum.IsDefined(value.Kind) || !Enum.IsDefined(value.Outcome) || !Enum.IsDefined(value.ReasonCode)
             || !Enum.IsDefined(value.ActorKind) || !Enum.IsDefined(value.Action)
+            || value.ModerationReason is { } moderation && !Enum.IsDefined(moderation)
             || value.EventId == Guid.Empty || value.ObservabilityOperationId == Guid.Empty
             || !double.IsFinite(value.DurationMs) || value.DurationMs < 0
             || value.ActorKind == ActorKind.Participant && (value.ActorId is null || value.ActorId == Guid.Empty)
@@ -41,6 +42,7 @@ public static class EventJson
         target_kind = Target(value.Kind),
         action = value.Action,
         related_target_id = value.RelatedTargetId,
+        moderation_reason = value.ModerationReason,
         outcome = value.Outcome,
         reason_code = value.ReasonCode,
         duration_ms = value.DurationMs,

@@ -122,6 +122,64 @@ public sealed class SqlAuditTests
         });
     }
 
+    [TestMethod]
+    public async Task Moderation_transition_keeps_public_reason_and_identifiers_but_excludes_private_content()
+    {
+        await WithDatabase(async open =>
+        {
+            var actor = Guid.NewGuid();
+            var node = Guid.NewGuid();
+            var now = DateTimeOffset.UtcNow;
+            using var operation = Telemetry.BeginOperation(actor);
+            using var db = open();
+            db.ParticipantRows.Add(new ParticipantRow { Id = actor, DisplayName = "Audit reporter", IsActive = true, CreatedAt = now, UpdatedAt = now });
+            db.NodeRows.Add(new NodeRow { Id = node, Title = "private-canary-title", Status = "Active", CreatedAt = now, UpdatedAt = now });
+            var report = new ModerationCaseRow
+            {
+                Id = Guid.NewGuid(), NodeId = node, ReporterId = actor, Reason = "Spam",
+                Explanation = "private-canary-report", ReportedTitle = "private-canary-title", CreatedAt = now
+            };
+            db.ModerationCaseRows.Add(report);
+            await db.SaveChangesAsync();
+            report.Status = 2;
+            report.PublicReason = 2;
+            report.ReviewerId = actor;
+            report.DecidedAt = now;
+            report.DecisionReason = "private-canary-rationale";
+            await db.SaveChangesAsync();
+            var records = await db.AuditRecords.Where(row => row.EventName == "moderation.changed").ToListAsync();
+            Assert.AreEqual(2, records.Count);
+            var hidden = records.Single(row => row.PayloadJson.Contains("hidden", StringComparison.Ordinal));
+            Assert.AreEqual(actor, hidden.ActorId);
+            using var json = System.Text.Json.JsonDocument.Parse(hidden.PayloadJson);
+            Assert.AreEqual("harassment", json.RootElement.GetProperty("moderation_reason").GetString());
+            Assert.AreEqual(node, json.RootElement.GetProperty("related_target_id").GetGuid());
+            foreach (var record in records) Assert.DoesNotContain("canary", record.PayloadJson);
+        });
+    }
+
+    [TestMethod]
+    public async Task Competing_workers_share_a_lease_and_expired_leases_recover()
+    {
+        await WithDatabase(async open =>
+        {
+            using (var db = open())
+            {
+                db.Roles.Add(new IdentityRole<Guid> { Id = Guid.NewGuid(), Name = "LeaseTest", NormalizedName = "LEASETEST" });
+                await db.SaveChangesAsync();
+                var pending = await db.AuditOutbox.SingleAsync();
+                pending.LeaseOwner = Guid.NewGuid();
+                pending.LeaseUntilUtc = DateTimeOffset.UtcNow.AddMinutes(-1);
+                await db.SaveChangesAsync();
+            }
+            var destination = new Destination(fail: false);
+            await Task.WhenAll(new AuditDelivery(open, destination).DeliverOneAsync(), new AuditDelivery(open, destination).DeliverOneAsync());
+            Assert.AreEqual(1, destination.Received.Count);
+            using var check = open();
+            Assert.IsNotNull((await check.AuditOutbox.SingleAsync()).DeliveredAtUtc);
+        });
+    }
+
     private static async Task WithDatabase(Func<Func<AtlasDataContext>, Task> test)
     {
         var config = new ConfigurationBuilder().AddUserSecrets<SqlAuditTests>(optional: true).AddEnvironmentVariables().Build();
@@ -146,7 +204,7 @@ public sealed class SqlAuditTests
     private sealed class Destination(bool fail) : IAuditDestination
     {
         public string Name => "local";
-        public List<Guid> Received { get; } = [];
+        public System.Collections.Concurrent.ConcurrentBag<Guid> Received { get; } = [];
         public Task DeliverAsync(AuditRecordRow record, CancellationToken cancellationToken)
         {
             if (fail) throw new IOException("secret-canary");

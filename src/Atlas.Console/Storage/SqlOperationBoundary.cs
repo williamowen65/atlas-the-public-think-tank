@@ -56,7 +56,7 @@ public static class SqlOperationBoundary
             var result = operation();
             committing = true;
             transaction.Commit();
-            database.PublishCommittedTelemetry();
+            database.PublishCommittedTelemetry(transaction.TransactionId);
             Telemetry.Record(Telemetry.Create(EventKind.StorageWrite, durationMs: Stopwatch.GetElapsedTime(started).TotalMilliseconds));
             return result;
         }

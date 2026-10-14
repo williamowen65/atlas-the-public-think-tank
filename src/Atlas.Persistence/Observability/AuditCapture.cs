@@ -39,9 +39,16 @@ internal static class AuditCapture
             var action = entry.State == EntityState.Added ? MutationAction.Created
                 : entry.State == EntityState.Deleted ? MutationAction.Deleted : MutationAction.Updated;
             Guid? related = null;
+            AuditModerationReason? publicReason = null;
             if (entry.Entity is ModerationCaseRow moderation)
             {
                 related = moderation.NodeId;
+                publicReason = moderation.PublicReason switch
+                {
+                    1 => AuditModerationReason.Spam, 2 => AuditModerationReason.Harassment,
+                    3 => AuditModerationReason.UnsafeContent, 4 => AuditModerationReason.OffTopic,
+                    _ => AuditModerationReason.Other
+                };
                 if (entry.State == EntityState.Modified)
                     action = Changed(nameof(ModerationCaseRow.VisibilityRestoredAt)) && moderation.VisibilityRestoredAt is not null ? MutationAction.Restored
                         : Changed(nameof(ModerationCaseRow.ReviewRequestedAt)) ? MutationAction.ReviewRequested
@@ -64,7 +71,16 @@ internal static class AuditCapture
                     : Changed(nameof(AtlasIdentityUser.EmailConfirmed)) && user.EmailConfirmed ? MutationAction.EmailConfirmed
                     : Changed(nameof(AtlasIdentityUser.LockoutEnd)) || Changed(nameof(AtlasIdentityUser.AccessFailedCount)) ? MutationAction.LockoutChanged
                     : MutationAction.Updated;
-            var value = Telemetry.Create(kind.Value, id == Guid.Empty ? null : id) with { Action = action, RelatedTargetId = related };
+            if (entry.Entity is NodeRow node && entry.State == EntityState.Modified)
+                action = Changed(nameof(NodeRow.Status)) ? node.Status == "Archived" ? MutationAction.Archived : MutationAction.Restored
+                    : Changed(nameof(NodeRow.Title)) ? MutationAction.Renamed
+                    : Changed(nameof(NodeRow.TypeId)) ? MutationAction.TypeChanged : MutationAction.Updated;
+            if (entry.Entity is ParticipantRow participant && entry.State == EntityState.Modified && Changed(nameof(ParticipantRow.IsActive)))
+                action = participant.IsActive ? MutationAction.Activated : MutationAction.Deactivated;
+            var value = Telemetry.Create(kind.Value, id == Guid.Empty ? null : id) with
+            {
+                Action = action, RelatedTargetId = related, ModerationReason = publicReason
+            };
             bool Changed(string property) => !Equals(entry.Property(property).OriginalValue, entry.Property(property).CurrentValue);
             events.Add(value);
             var required = kind is EventKind.ModerationChanged or EventKind.RoleChanged or EventKind.RoleDefinitionChanged or EventKind.AccountSecurityChanged

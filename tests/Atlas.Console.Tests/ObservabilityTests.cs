@@ -17,7 +17,7 @@ public sealed class ObservabilityTests
         var json = EventJson.Serialize(Telemetry.Create(EventKind.NodeChanged, Guid.NewGuid()));
         using var document = JsonDocument.Parse(json);
         CollectionAssert.AreEquivalent(new[] { "schema_version", "service", "environment", "app_version", "event_id", "occurred_at_utc",
-            "observability_operation_id", "event_name", "actor_kind", "actor_id", "target_id", "target_kind", "action", "related_target_id",
+            "observability_operation_id", "event_name", "actor_kind", "actor_id", "target_id", "target_kind", "action", "related_target_id", "moderation_reason",
             "outcome", "reason_code", "duration_ms", "trace_id", "span_id" }, document.RootElement.EnumerateObject().Select(p => p.Name).ToArray());
         Assert.AreEqual("node.changed", document.RootElement.GetProperty("event_name").GetString());
         Assert.Throws<ArgumentException>(() => EventJson.Serialize(Telemetry.Create(EventKind.SignIn) with { TraceId = "password-canary" }));
