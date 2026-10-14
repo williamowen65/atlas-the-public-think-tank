@@ -69,6 +69,7 @@ For workflows still owned by Console, put the semantic event into reusable coord
 | Diagnostic/file/cloud sink unavailable | Defined bounded behavior; no credential leak or recursive logging; no retry of an already committed business action |
 | Outbox retry / process restart | Pending events recover; event ID stays stable; duplicates are handled; exhausted retries retain records for replay; no exactly-once assertion |
 | Secret canaries in password, token, cookie, content, SQL/exception text | Captured serialized output contains none of them, including framework logs and exporter failures |
+| Unapproved fields and future model properties | Adding secret-bearing properties to request/domain objects never adds them to serialized events; only approved fields and value categories are emitted |
 | Malicious newlines/control characters and huge inputs | One safely encoded bounded record; no injected entries or unexpected fields |
 | Concurrent operations | Correct distinct actors/operation IDs; scopes do not leak |
 | Cache metric export and restart | No lifetime-counter double counting; page/detail outcomes are distinguished; reset behavior is explicit |

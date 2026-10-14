@@ -137,7 +137,11 @@ All values above are illustrative. Report bodies and hidden node content are del
 
 - Resolve actor IDs from trusted authenticated context. An unsuccessful sign-in can have an anonymous actor; finding an account from submitted input does not authenticate the caller. Account correlation, if needed for abuse analysis, requires a separately reviewed pseudonymous subject policy.
 
-- Use an allowlist before serialization. Redaction is a secondary safeguard, not permission to dump arbitrary objects or exception messages. Sanitize framework logs too; enabling verbose EF/Identity output can expose data outside Atlas's event schema.
+- **Construct events from an explicit allowlist before serialization.** Each event type defines approved fields and permitted value categories. Build a typed record by selecting those values deliberately; never serialize a request, domain object, dictionary of arbitrary properties or exception and then try to remove sensitive fields afterward.
+
+- **New fields require deliberate review.** Adding a property to a request/domain model must not automatically add it to logs or audit records. An event-schema addition must document its purpose, privacy impact, bounds and tests before it is permitted.
+
+- **Redaction is defense in depth.** It can catch accidental leakage but is not the primary protection. Framework/provider logs need their own reviewed category/level configuration and safe field handling; Atlas's event allowlist does not automatically govern third-party messages. Do not enable a framework category that emits forbidden data and rely on downstream cleanup.
 
 - Keep EF sensitive-data logging disabled outside deliberately controlled development. Do not log SQL parameters, request headers, URLs with query strings or exception `Data` indiscriminately.
 
