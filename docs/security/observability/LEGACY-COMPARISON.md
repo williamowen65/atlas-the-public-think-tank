@@ -21,9 +21,22 @@ The [processor](https://github.com/williamowen65/atlas-the-public-think-tank/blo
 | What is inspected | Tracked entries are snapshotted, then selected changed types are processed | DetectChanges, snapshot entries, explicitly map selected changed row types |
 | Timing | Save business changes first, construct history, then perform another save | Stage required audit/outbox rows before the base save, in the business transaction |
 | Evidence | UserHistory rows with display-oriented action text | Bounded TelemetryEvent; selected transitions also require AuditRecord + AuditOutbox rows |
+| Privacy policy | Trackable-type filter, but no equivalent explicit telemetry privacy-policy discriminator or envelope validator in this history path; action text can contain titles and vote values | Explicit Standard / ReadNoIdentityOrTarget policies, allowlisted serialization and validation; isolated node-view context |
 | Actor/context | HTTP context claims or entity fallback | Ambient operation context established by the host; operation ID and verified actor when available |
 | After commit | History construction follows base save; base save completion alone does not prove an outer transaction committed | Transaction owner confirms commit before publishing staged diagnostics; worker delivers audit copies later |
 | Coverage | Selected tracked mutations, not all reads or SQL commands | Selected tracked mutations; other instrumentation covers selected workflows. Direct SQL business writes bypass transition capture |
+
+## Privacy rules are another design change
+
+The legacy user-history path selects entity types, but it has no equivalent explicit telemetry privacy-policy discriminator or output-envelope validator. Its action text deliberately includes content titles or vote values associated with a user. This observation is specific to that history implementation, not a claim that the entire legacy application had no privacy controls.
+
+The current system makes collection rules explicit in code:
+
+- **Standard** permits approved actor/target identifiers and bounded transition metadata for operational and audit evidence. This is not anonymous telemetry; identifiers still require appropriate access and retention controls.
+- **ReadNoIdentityOrTarget** applies to NodeView. The envelope validator rejects actor, target and related-target IDs, along with mutation metadata, for these events. The node-view scope also creates a fresh operation ID and root trace, then restores the enclosing context, preventing direct linkage to the authenticated parent command.
+- **Allowlisted output** projects specific fields rather than serializing entities or arbitrary properties. Titles, vote values, credentials and exception messages are not part of this event envelope.
+
+These are enforced telemetry collection rules, distinct from a user-facing privacy notice. See [EventJson validation and projection](../../../src/Atlas.Observability/EventJson.cs#L16-L60) and [Telemetry context and node-view isolation](../../../src/Atlas.Contracts/Observability/Telemetry.cs). Missing identity/target fields on NodeView are intentional policy, not incomplete instrumentation.
 
 ## Why the timing matters
 
