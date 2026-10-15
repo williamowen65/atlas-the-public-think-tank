@@ -36,7 +36,7 @@ Related requirements: [GRA-001](../requirements/REQUIREMENTS.md#gra-001), [GRA-0
 
 ### Transaction and failure behavior
 
-[NodeCreationService](../../src/Atlas.Console/NodeCreationService.cs) constructs the proposed block, document and Node before persistence, then saves them in one shared topology-coordinated SQL transaction. Failure rolls back all related writes; caller objects must be reloaded before retrying. Event dispatch follows successful commit and remains outside the transaction. See [failure-path evidence](../security/validation/IMPLEMENTATION.md#workflows-and-evidence).
+[NodeCreationService](../../src/Atlas.Application/NodeCreationService.cs) constructs the proposed block, document and Node before persistence, then saves them in one shared topology-coordinated SQL transaction. Failure rolls back all related writes; caller objects must be reloaded before retrying. Event dispatch follows successful commit and remains outside the transaction. See [failure-path evidence](../security/validation/IMPLEMENTATION.md#workflows-and-evidence).
 
 ## Archive and restore
 

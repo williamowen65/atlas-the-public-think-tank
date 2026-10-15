@@ -1,3 +1,4 @@
+using NodeCreationService = Atlas.Application.NodeCreationService;
 using Atlas.ConsoleApp;
 using Atlas.ConsoleApp.Storage;
 using Atlas.ConsoleApp.Eventing;

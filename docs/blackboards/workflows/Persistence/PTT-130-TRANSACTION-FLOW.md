@@ -8,7 +8,7 @@ Open the [editable Excalidraw blackboard](PTT-130-TRANSACTION-FLOW.excalidraw) t
 
 | Step | Code |
 |---|---|
-| Wrap the complete node-creation callback | [NodeCreationService](../../../../src/Atlas.Console/NodeCreationService.cs) |
+| Wrap the complete node-creation callback | [NodeCreationService](../../../../src/Atlas.Application/NodeCreationService.cs) |
 | Request Graph topology coordination | [NodeTopologyBoundary and INodeTopologyBoundary](../../../../src/Atlas.Graph/Nodes/NodeTopologyBoundary.cs) |
 | Fall back to the ordinary operation capability where needed | [OperationBoundary.Execute and IOperationBoundary](../../../../src/Atlas.Contracts/Operations/OperationBoundary.cs) |
 | Implement the interface and delegate execution | [SqlRepository.Execute](../../../../src/Atlas.Console/Storage/SqlRepository.cs) |

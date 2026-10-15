@@ -187,14 +187,8 @@ public static class ConsoleUi
         Console.Write("Custom type name: ");
         var name = Console.ReadLine();
 
-        var existingType = nodeTypes
-            .GetAll()
-            .FirstOrDefault(type =>
-                string.Equals(
-                    type.Name,
-                    name?.Trim(),
-                    StringComparison.OrdinalIgnoreCase
-                ));
+        var service = new NodeTypeCreationService(nodeTypes);
+        var existingType = service.FindByName(name);
 
         if (existingType is not null)
         {
@@ -247,7 +241,7 @@ public static class ConsoleUi
 
         try
         {
-            var nodeType = NodeTypeDefinition.CreateCustom(
+            var nodeType = service.Create(
                 name ?? string.Empty,
                 description ?? string.Empty,
                 ownerId,
@@ -255,7 +249,6 @@ public static class ConsoleUi
                 autoPluralize
             );
 
-            nodeTypes.Save(nodeType);
             return nodeType;
         }
         catch (ArgumentException exception)

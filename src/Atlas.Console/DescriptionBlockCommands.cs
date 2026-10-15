@@ -1,3 +1,4 @@
+using Atlas.Application;
 using Atlas.Content.Blocks;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
@@ -10,7 +11,8 @@ public static class DescriptionBlockCommands
     public static void Run(
         Node node,
         IDocumentRepository documents,
-        Guid actorParticipantId
+        Guid actorParticipantId,
+        INodeRepository nodes
     )
     {
         // Description composition can only be changed by the node's author.
@@ -22,10 +24,12 @@ public static class DescriptionBlockCommands
             ?? throw new InvalidOperationException(
                 "The node's description document could not be found.");
 
+        var service = new NodeDescriptionService(nodes, documents);
         var managing = true;
 
         while (managing)
         {
+            document = documents.GetById(document.Id) ?? throw new InvalidOperationException("Description not found.");
             Console.Clear();
             Console.WriteLine("MANAGE DESCRIPTION BLOCKS");
             Console.WriteLine("-------------------------");
@@ -51,25 +55,37 @@ public static class DescriptionBlockCommands
                 case "1":
                     AddBlock(
                         document,
-                        documents
+                        documents,
+                        service,
+                        node.Id,
+                        actorParticipantId
                     );
                     break;
                 case "2":
                     UpdateBlock(
                         document,
-                        documents
+                        documents,
+                        service,
+                        node.Id,
+                        actorParticipantId
                     );
                     break;
                 case "3":
                     ReorderBlock(
                         document,
-                        documents
+                        documents,
+                        service,
+                        node.Id,
+                        actorParticipantId
                     );
                     break;
                 case "4":
                     RemoveBlock(
                         document,
-                        documents
+                        documents,
+                        service,
+                        node.Id,
+                        actorParticipantId
                     );
                     break;
                 case "5":
@@ -130,7 +146,10 @@ public static class DescriptionBlockCommands
 
     private static void AddBlock(
         Document document,
-        IDocumentRepository documents
+        IDocumentRepository documents,
+        NodeDescriptionService service,
+        NodeId nodeId,
+        Guid actorId
     )
     {
         Console.WriteLine();
@@ -143,15 +162,14 @@ public static class DescriptionBlockCommands
         Console.WriteLine("0. Cancel");
         Console.Write("Block type: ");
 
-        var now = AtlasTime.UtcNow;
-        ContentBlock? block = Console.ReadLine() switch
+        BlockInput? block = Console.ReadLine() switch
         {
-            "1" => NewMarkdown(now),
-            "2" => NewImage(now),
-            "3" => NewVideo(now),
-            "4" => NewLinkPreview(now),
-            "5" => NewPollReference(now),
-            "6" => NewChartReference(now),
+            "1" => NewMarkdown(),
+            "2" => NewImage(),
+            "3" => NewVideo(),
+            "4" => NewLinkPreview(),
+            "5" => NewPollReference(),
+            "6" => NewChartReference(),
             _ => null
         };
 
@@ -179,27 +197,16 @@ public static class DescriptionBlockCommands
             index = position - 1;
         }
 
-        // Persist the payload first so a saved document never references a
-        // block that cannot be loaded.
-        OperationBoundary.Execute(
-            documents,
-            () =>
-        {
-            document.AddBlock(
-                block.Id,
-                now,
-                index
-            );
-            documents.SaveBlock(block);
-            documents.Save(document);
-        }
-        );
-        ConsoleUi.Pause($"Added {block.Kind} block {block.Id}.");
+        var added = service.Add(nodeId, actorId, block, index);
+        ConsoleUi.Pause($"Added {added.Kind} block {added.Id}.");
     }
 
     private static void UpdateBlock(
         Document document,
-        IDocumentRepository documents
+        IDocumentRepository documents,
+        NodeDescriptionService service,
+        NodeId nodeId,
+        Guid actorId
     )
     {
         var block = SelectBlock(
@@ -209,16 +216,13 @@ public static class DescriptionBlockCommands
         );
         if (block is null) return;
 
-        var now = AtlasTime.UtcNow;
+        BlockInput input;
 
         switch (block)
         {
             case MarkdownTextBlock text:
                 Console.Write("New Markdown: ");
-                text.Update(
-                    Console.ReadLine() ?? string.Empty,
-                    now
-                );
+                input = new MarkdownInput(Console.ReadLine() ?? string.Empty);
                 break;
             case ImageBlock image:
                 Console.Write($"Image URL ({image.Url}): ");
@@ -232,12 +236,7 @@ public static class DescriptionBlockCommands
                     image.AltText
                 );
                 Console.Write($"Caption ({image.Caption}): ");
-                image.Update(
-                    imageResource,
-                    alt,
-                    Console.ReadLine(),
-                    now
-                );
+                input = new ImageInput(imageResource, alt, Console.ReadLine());
                 break;
             case VideoBlock video:
                 Console.Write($"Video URL ({video.Url}): ");
@@ -246,11 +245,7 @@ public static class DescriptionBlockCommands
                     video.Url
                 );
                 Console.Write($"Caption ({video.Caption}): ");
-                video.Update(
-                    videoResource,
-                    Console.ReadLine(),
-                    now
-                );
+                input = new VideoInput(videoResource, Console.ReadLine());
                 break;
             case LinkPreviewBlock link:
                 Console.Write($"URL ({link.Url}): ");
@@ -264,36 +259,28 @@ public static class DescriptionBlockCommands
                     link.Title
                 );
                 Console.Write($"Description ({link.Description}): ");
-                link.UpdatePreview(
-                    url,
-                    title,
-                    Console.ReadLine(),
-                    now
-                );
+                input = new LinkPreviewInput(url, title, Console.ReadLine());
                 break;
             case PollReferenceBlock:
                 ConsoleUi.Pause("This poll reference has no editable block content yet.");
                 return;
             case ChartReferenceBlock chart:
                 Console.Write($"Title ({chart.Title}): ");
-                chart.Update(
-                    chart.ChartId,
-                    Keep(
-                        Console.ReadLine(),
-                        chart.Title
-                    ),
-                    now
-                );
+                input = new ChartInput(Keep(Console.ReadLine(), chart.Title), chart.ChartId);
                 break;
+            default: return;
         }
 
-        documents.SaveBlock(block);
+        service.Update(nodeId, actorId, block.Id, input);
         ConsoleUi.Pause($"Updated {block.Kind} block; its ID remains {block.Id}.");
     }
 
     private static void ReorderBlock(
         Document document,
-        IDocumentRepository documents
+        IDocumentRepository documents,
+        NodeDescriptionService service,
+        NodeId nodeId,
+        Guid actorId
     )
     {
         var block = SelectBlock(
@@ -314,18 +301,16 @@ public static class DescriptionBlockCommands
             return;
         }
 
-        document.MoveBlock(
-            block.Id,
-            position - 1,
-            AtlasTime.UtcNow
-        );
-        documents.Save(document);
+        service.Move(nodeId, actorId, block.Id, position - 1);
         ConsoleUi.Pause($"Moved block {block.Id} to position {position}.");
     }
 
     private static void RemoveBlock(
         Document document,
-        IDocumentRepository documents
+        IDocumentRepository documents,
+        NodeDescriptionService service,
+        NodeId nodeId,
+        Guid actorId
     )
     {
         var block = SelectBlock(
@@ -335,13 +320,7 @@ public static class DescriptionBlockCommands
         );
         if (block is null) return;
 
-        // Removal changes this document's composition only. The stored block is
-        // retained until orphan cleanup semantics are deliberately defined.
-        document.RemoveBlock(
-            block.Id,
-            AtlasTime.UtcNow
-        );
-        documents.Save(document);
+        service.Remove(nodeId, actorId, block.Id);
         ConsoleUi.Pause(
             $"Removed block {block.Id} from the description. Its stored record is retained.");
     }
@@ -373,69 +352,36 @@ public static class DescriptionBlockCommands
         return selection == 0 ? null : blocks[selection - 1];
     }
 
-    private static MarkdownTextBlock NewMarkdown(DateTimeOffset now)
+    private static MarkdownInput NewMarkdown()
     {
         Console.Write("Markdown: ");
-        return new MarkdownTextBlock(
-            Console.ReadLine() ?? string.Empty,
-            now
-        );
+        return new MarkdownInput(Console.ReadLine() ?? string.Empty);
     }
-
-    private static ImageBlock NewImage(DateTimeOffset now)
+    private static ImageInput NewImage()
     {
-        Console.Write("Image URL: ");
-        var resourceUrl = Console.ReadLine();
-        Console.Write("Alternative text: ");
-        var altText = Console.ReadLine();
+        Console.Write("Image URL: "); var url = Console.ReadLine();
+        Console.Write("Alternative text: "); var alt = Console.ReadLine();
         Console.Write("Caption (optional): ");
-        return new ImageBlock(
-            resourceUrl ?? string.Empty,
-            altText ?? string.Empty,
-            Console.ReadLine(),
-            now
-        );
+        return new ImageInput(url ?? string.Empty, alt ?? string.Empty, Console.ReadLine());
     }
-
-    private static VideoBlock NewVideo(DateTimeOffset now)
+    private static VideoInput NewVideo()
     {
-        Console.Write("Video URL: ");
-        var resourceUrl = Console.ReadLine();
+        Console.Write("Video URL: "); var url = Console.ReadLine();
         Console.Write("Caption (optional): ");
-        return new VideoBlock(
-            resourceUrl ?? string.Empty,
-            Console.ReadLine(),
-            now
-        );
+        return new VideoInput(url ?? string.Empty, Console.ReadLine());
     }
-
-    private static LinkPreviewBlock NewLinkPreview(DateTimeOffset now)
+    private static LinkPreviewInput NewLinkPreview()
     {
-        Console.Write("URL: ");
-        var url = Console.ReadLine();
-        Console.Write("Title: ");
-        var title = Console.ReadLine();
+        Console.Write("URL: "); var url = Console.ReadLine();
+        Console.Write("Title: "); var title = Console.ReadLine();
         Console.Write("Description (optional): ");
-        return new LinkPreviewBlock(
-            url ?? string.Empty,
-            title ?? string.Empty,
-            Console.ReadLine(),
-            now
-        );
+        return new LinkPreviewInput(url ?? string.Empty, title ?? string.Empty, Console.ReadLine());
     }
-
-    private static PollReferenceBlock NewPollReference(DateTimeOffset now)
-    {
-        return new PollReferenceBlock(now);
-    }
-
-    private static ChartReferenceBlock NewChartReference(DateTimeOffset now)
+    private static PollInput NewPollReference() => new();
+    private static ChartInput NewChartReference()
     {
         Console.Write("Title (optional): ");
-        return new ChartReferenceBlock(
-            Console.ReadLine(),
-            now
-        );
+        return new ChartInput(Console.ReadLine());
     }
 
     private static string Keep(

@@ -185,7 +185,8 @@ public static class NodeCommands
                         DescriptionBlockCommands.Run(
                             node,
                             documents,
-                            actorParticipantId
+                            actorParticipantId,
+                            nodes
                         );
                         break;
 
@@ -460,7 +461,8 @@ public static class NodeCommands
                                 case "D": DescriptionBlockCommands.Run(
                                     node,
                                     documents,
-                                    actorParticipantId
+                                    actorParticipantId,
+                                    nodes
                                 ); break;
                             }
                         }
@@ -1087,17 +1089,6 @@ public static class NodeCommands
 
         var parent = candidates[selection - 1];
 
-        if (WouldCreateCycle(
-            node.Id,
-            parent,
-            nodes
-        ))
-        {
-            ConsoleUi.Pause(
-                "That link would create a circular parent chain.");
-            return;
-        }
-
         new NodeRelationshipService(nodes).Attach(
             node,
             parent.Id,
@@ -1194,47 +1185,6 @@ public static class NodeCommands
                 parent,
                 moderation
             )}.");
-    }
-
-    /// <summary>Checks the current graph before a host-coordinated parent attachment.</summary>
-    private static bool WouldCreateCycle(
-        NodeId childNodeId,
-        Node proposedParent,
-        INodeRepository nodes
-    )
-    {
-        var pending = new Stack<NodeId>(
-            proposedParent.ParentNodeIds);
-        var visited = new HashSet<NodeId>();
-
-        while (pending.Count > 0)
-        {
-            var currentId = pending.Pop();
-
-            if (currentId == childNodeId)
-            {
-                return true;
-            }
-
-            if (!visited.Add(currentId))
-            {
-                continue;
-            }
-
-            var current = nodes.GetById(currentId);
-
-            if (current is null)
-            {
-                continue;
-            }
-
-            foreach (var parentId in current.ParentNodeIds)
-            {
-                pending.Push(parentId);
-            }
-        }
-
-        return false;
     }
 
     /// <summary>Changes requested sub node types during the current workflow.</summary>

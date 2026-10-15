@@ -1,4 +1,5 @@
 using Atlas.ConsoleApp.Eventing;
+using NodeCreationCoordinator = Atlas.Application.NodeCreationService;
 using Atlas.Content.Blocks;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
@@ -80,7 +81,7 @@ public static class NodeCreationWorkflow
 
         try
         {
-            var node = new NodeCreationService(
+            var node = new NodeCreationCoordinator(
                 nodes,
                 documents
             ).Create(

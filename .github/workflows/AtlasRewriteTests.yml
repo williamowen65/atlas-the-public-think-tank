@@ -32,6 +32,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - name: Application
+            project: tests/Atlas.Application.Tests/Atlas.Application.Tests.csproj
           - name: Graph
             project: tests/Atlas.Graph.Tests/Atlas.Graph.Tests.csproj
           - name: Participants

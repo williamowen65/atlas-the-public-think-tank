@@ -1,6 +1,6 @@
 # Atlas current-state context map
 
-Atlas is a modular application hosted by Atlas.Console. Domain projects own behavior and repository contracts; Console composes them and supplies SQL repository adapters. Atlas.Persistence owns one shared EF Core context, persistence rows, Fluent API mappings, and SQL Server migrations.
+Atlas is a modular application hosted by Atlas.Console. Atlas.Application owns reusable cross-domain coordination. Domain projects own behavior and repository contracts; Console composes them and supplies SQL repository adapters. Atlas.Persistence owns one shared EF Core context, persistence rows, Fluent API mappings, and SQL Server migrations.
 
 ## Components and ownership
 
@@ -16,7 +16,8 @@ Atlas is a modular application hosted by Atlas.Console. Domain projects own beha
 | Moderation | Reports, decisions, public reasons, review requests, restoration | Stored global Identity roles supply authorization; grouped changes share a transaction. |
 | Notifications | Recipient feed, preferences, read/dismiss state, delivery attempts | Occurrence/recipient uniqueness; email/push are simulated and events are synchronous. |
 | Contracts | Versioned Graph lifecycle and notification-request payloads | Versioned payloads plus shared clock, reference and operation ports; no SQL storage ownership. |
-| Console | UI, authenticated actor, workflows, adapters, startup and event registration | Identity-backed sign-in supplies the actor; a future HTTP host will compose its own request scope. |
+| Application | Cross-domain node creation and authorized description edits | Calls domain services through repository and operation contracts; no Console/HTTP/SQL dependency. |
+| Console | UI, authenticated actor, host adapters, startup and event registration | Identity-backed sign-in supplies the actor; a future HTTP host will compose its own request scope. |
 | Persistence | AtlasDataContext, row types, mappings, constraints, migrations | Shared SQL Server infrastructure; domain projects do not depend on EF Core. |
 
 ## Persistence flow
@@ -61,7 +62,7 @@ The host publishes recorded events after relevant saves. Dispatch is synchronous
 
 ## Creation consistency
 
-[NodeCreationWorkflow](../../src/Atlas.Console/NodeCreationWorkflow.cs) collects input and delegates to [NodeCreationService](../../src/Atlas.Console/NodeCreationService.cs). The service constructs the proposed block, document and Node before writing, validates references and ancestry, and saves Content then Graph inside one topology-coordinated SQL transaction. A later save failure rolls back earlier writes. The host publishes recorded events after the service returns successfully; dispatch is outside the transaction. See [workflow evidence and limits](../security/validation/IMPLEMENTATION.md#workflows-and-evidence).
+[NodeCreationWorkflow](../../src/Atlas.Console/NodeCreationWorkflow.cs) collects input and delegates to [NodeCreationService](../../src/Atlas.Application/NodeCreationService.cs). The Application coordinator delegates preparation to Content and Graph services, then saves Content followed by Graph inside one topology-coordinated SQL transaction. See [workflow ownership](APPLICATION-WORKFLOWS.md). A later save failure rolls back earlier writes. The host publishes recorded events after the service returns successfully; dispatch is outside the transaction. See [workflow evidence and limits](../security/validation/IMPLEMENTATION.md#workflows-and-evidence).
 
 ## Implemented topology coordination
 

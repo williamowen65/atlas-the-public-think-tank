@@ -17,7 +17,7 @@ Comment removal status, removal time and update time must agree. Moderation deci
 
 ### Shared time policy
 
-[AtlasTime](../../../src/Atlas.Contracts/Operations/AtlasTime.cs) uses .NET `TimeProvider.System` in production and a scoped provider in controlled tests. Backend current-time calls use this source. [Node creation](../../../src/Atlas.Console/NodeCreationService.cs) captures UTC once and reuses it for the block, document, node and creation events. Aggregate properties normalize timestamp offsets to UTC without changing the represented instant; reconstitution preserves that instant and validates history.
+[AtlasTime](../../../src/Atlas.Contracts/Operations/AtlasTime.cs) uses .NET `TimeProvider.System` in production and a scoped provider in controlled tests. Backend current-time calls use this source. [Node creation](../../../src/Atlas.Application/NodeCreationService.cs) captures UTC once and reuses it for the block, document, node and creation events. Aggregate properties normalize timestamp offsets to UTC without changing the represented instant; reconstitution preserves that instant and validates history.
 
 The application supplies time to domain methods so tests and reconstitution can use known timestamps. Future ordinary API requests must not choose audit times. Display converts UTC to the viewer's time zone, using a time-zone identifier where daylight-saving rules matter. Clock synchronization across hosts and clock adjustments remain deployment concerns; a timestamp is not a concurrency version.
 
@@ -31,7 +31,7 @@ A reference check asks: **“Does this ID identify a record of the expected kind
 |---|---|---|
 | `IReferenceLookup` | Defines the question an adapter must answer: `IsAvailable(kind, id, requireActive)` returns a boolean. The interface contains no database queries. | [Contracts: ReferenceValidation.cs](../../../src/Atlas.Contracts/Operations/ReferenceValidation.cs) |
 | `ReferenceValidation.Require` | Rejects an empty ID, checks that the supplied adapter implements the contract, calls `IsAvailable`, and throws if the reference is unavailable. It turns a boolean answer into an enforced precondition. | [Contracts: ReferenceValidation.cs](../../../src/Atlas.Contracts/Operations/ReferenceValidation.cs) |
-| Application service | Chooses the required references and whether availability or existence alone is needed, then calls `Require` before changing state or saving. | [NodeCreationService](../../../src/Atlas.Console/NodeCreationService.cs), [CommunityService](../../../src/Atlas.Communities/Communities/CommunityService.cs) |
+| Application service | Chooses the required references and whether availability or existence alone is needed, then calls `Require` before changing state or saving. | [NodeCreationService](../../../src/Atlas.Application/NodeCreationService.cs), [CommunityService](../../../src/Atlas.Communities/Communities/CommunityService.cs) |
 | `SqlRepository` | Implements the lookup once in the host's storage layer. Its `kind` switch selects EF queries for Participants, Nodes, Documents, Blocks, NodeTypes, Communities or NodeReactions. | [Console storage: SqlRepository](../../../src/Atlas.Console/Storage/SqlRepository.cs) |
 | Concrete SQL repository | Supplies its domain's persistence operations and inherits the shared lookup implementation. It does not need to repeat `IsAvailable`. | [SqlNodeRepository](../../../src/Atlas.Console/Storage/SqlNodeRepository.cs), [SqlCommunityRepository](../../../src/Atlas.Console/Storage/SqlCommunityRepository.cs) |
 | Database context | Provides access to the mapped tables in the shared Atlas database. The SQL lookup uses these tables directly through EF. | [AtlasDataContext](../../../src/Atlas.Persistence/AtlasDataContext.cs) |
@@ -42,7 +42,7 @@ This code lives in the Console project because Console is the current host/compo
 
 ### Follow one call: validate a Node's author
 
-[NodeCreationService.Create](../../../src/Atlas.Console/NodeCreationService.cs) receives `nodes` as an `INodeRepository`. In the SQL-backed host, the actual object is a `SqlNodeRepository`. It calls:
+[NodeCreationService.Create](../../../src/Atlas.Application/NodeCreationService.cs) receives `nodes` as an `INodeRepository`. In the SQL-backed host, the actual object is a `SqlNodeRepository`. It calls:
 
 ```csharp
 ReferenceValidation.Require(nodes, "Participant", authorId);
@@ -150,7 +150,7 @@ Node creation and parent changes also acquire the graph application lock before 
 | [SqlRepository](../../../src/Atlas.Console/Storage/SqlRepository.cs) | Implements `IOperationBoundary`. Concrete SQL repositories inherit this capability. Its `Execute` method delegates to the static SQL helper below. |
 | [SqlOperationBoundary](../../../src/Atlas.Console/Storage/SqlOperationBoundary.cs) | Static implementation helper, so it does **not** implement the interface. Owns the context, transaction, write lock and commit/cleanup logic. |
 
-For example, [NodeCreationService.Create](../../../src/Atlas.Console/NodeCreationService.cs) passes its Node repository to `OperationBoundary.Execute`. The runtime `SqlNodeRepository` inherits `SqlRepository.Execute`, which calls `SqlOperationBoundary.Execute`.
+For example, [NodeCreationService.Create](../../../src/Atlas.Application/NodeCreationService.cs) passes its Node repository to `OperationBoundary.Execute`. The runtime `SqlNodeRepository` inherits `SqlRepository.Execute`, which calls `SqlOperationBoundary.Execute`.
 
 ### How repositories share the operation
 
@@ -189,7 +189,7 @@ The linked tests cover injected failures and a real SQL document-insert rejectio
 
 | Workflow | Writes committed or rolled back together | Failure-path evidence |
 |---|---|---|
-| [NodeCreationService](../../../src/Atlas.Console/NodeCreationService.cs) | Block, document, Node and parent relationship | [FailedNodeSaveRollsBackBlocksAndDocument](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L26) and [SqlDocumentInsertFailureDuringNodeCreationRollsBackEarlierBlockSave](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L512) |
+| [NodeCreationService](../../../src/Atlas.Application/NodeCreationService.cs) | Block, document, Node and parent relationship | [FailedNodeSaveRollsBackBlocksAndDocument](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L26) and [SqlDocumentInsertFailureDuringNodeCreationRollsBackEarlierBlockSave](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L512) |
 | [CommunityService.Create](../../../src/Atlas.Communities/Communities/CommunityService.cs) | Community and owner membership | [FailedOwnerMembershipRollsBackCommunity](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L46) |
 | [Reaction replacement](../../../src/Atlas.Graph/Reactions/NodeReactionApplicationService.cs) | Replacement and old association's supersession/audit | [FailedSupersessionSaveRollsBackReplacement](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L81) |
 | [Grouped moderation](../../../src/Atlas.Moderation/ModerationService.cs) | All decisions, review requests or restorations in the group | [FailedSecondModerationSaveRollsBackWholeGroup](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L62) and [FailedGroupedReviewAndRestorationPreservePersistedHistory](../../../tests/Atlas.Persistence.Tests/SqlOperationValidationTests.cs#L297) |
@@ -217,3 +217,7 @@ This slice protects the workflows described above. Keep these limits in mind whe
 - **Poll and chart references cannot yet be checked for existence.** Their IDs can be checked locally, but confirming that the referenced poll or chart exists is deferred until those domains are implemented.
 
 - **Other security work remains outside this slice.** Resource limits are tracked in [PTT-122](https://thepublicthinktank.atlassian.net/browse/PTT-122), broader failure-path coverage in [PTT-123](https://thepublicthinktank.atlassian.net/browse/PTT-123), and future browser/HTTP boundaries in [PTT-125](https://thepublicthinktank.atlassian.net/browse/PTT-125).
+
+## Reusable application coordination
+
+PTT-131 moves node creation to Atlas.Application and delegates Graph/Content work to boundary-owned services. See [ownership, transaction flow and negative-path evidence](../../architecture/APPLICATION-WORKFLOWS.md). Earlier examples describe the same operation-boundary contract; the coordinator now contains the cross-domain sequencing while domain services own validation/construction.
