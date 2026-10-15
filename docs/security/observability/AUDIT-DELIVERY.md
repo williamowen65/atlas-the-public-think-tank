@@ -2,7 +2,34 @@
 
 AuditDelivery moves a **copy of an already committed audit event** from SQL to a destination. SQL remains the authoritative history. It does not perform the original business action or create its audit evidence.
 
-Think of AuditOutbox as a shipping dock: AuditRecordRow is the package's stored contents, while AuditOutboxRow is its destination-specific delivery ticket. Multiple workers can look at tickets, but each must claim a temporary lease before attempting delivery.
+Think of AuditOutbox as a shipping dock: AuditRecordRow is the package's stored contents, while AuditOutboxRow is its destination-specific delivery ticket. The current local console runs one delivery loop per ConsoleTelemetry instance. The leasing protocol also handles competing processes: if multiple workers look at tickets, each must claim a temporary lease before attempting delivery.
+
+## How many workers run today?
+
+**The current local console starts one background delivery task per ConsoleTelemetry instance.** Normal console startup creates one instance, so one loop processes audit tickets sequentially. This is not a pool of parallel delivery workers, nor does each ticket start a new task.
+
+[ConsoleTelemetry](../../../src/Atlas.Console/Observability/ConsoleTelemetry.cs) starts that loop with `_delivery = Task.Run(async () => { ... })`. A task is a logical unit of asynchronous work, not a dedicated thread: continuations may use different thread-pool threads, and awaiting database I/O or Task.Delay does not occupy a thread waiting for completion.
+
+The loop behaves as follows:
+
+| Outcome | What the single loop does next |
+|---|---|
+| DeliverOneAsync returns true | Immediately checks again, whether the previous attempt delivered, scheduled a retry, or lost a claim race |
+| DeliverOneAsync returns false | Waits 500 ms because no ticket is currently eligible; the queue may still contain delayed or leased entries |
+| An unhandled failure reaches the host | Emits a bounded delivery-failure diagnostic, then waits 1 second before retrying |
+| Shutdown is requested | Cancellation ends the loop; Dispose synchronously waits for task completion before removing the observer and disposing local telemetry |
+
+The same loop checks backlog health approximately every 10 seconds; there is no separate health-check worker.
+
+One sequential loop provides the current local host's simple delivery lifecycle without managing parallel workers. The code does not claim a measured throughput requirement or performance advantage for this choice.
+
+### Why use leases with just one loop?
+
+One loop per console instance is not the same as one loop for the whole database. Two console processes can connect to the same database, and a future host or test can create another worker. The conditional SQL claim coordinates those independent attempts. Lease expiry also recovers abandoned work after a process stops or crashes.
+
+The A/B worker examples below explain that contention and recovery protocol; they do **not** mean the current host launches two workers. Leases reduce overlapping claims while valid, but expiry during slow delivery can still allow overlap and duplicate output.
+
+Shutdown waits for the worker to stop; it does **not** drain the entire outbox or guarantee every pending item reaches a file before exit. Committed pending entries remain in SQL for a later run, and an abandoned lease can expire so processing resumes.
 
 ## The three terms
 
