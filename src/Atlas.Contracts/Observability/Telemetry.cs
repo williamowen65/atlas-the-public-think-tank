@@ -189,8 +189,16 @@ public static class Telemetry
         return new Restore(() => Ambient.Value = previous);
     }
 
-    // Reuse an existing command context; otherwise own a temporary system scope.
-    // The no-op disposable lets both cases use the same using pattern.
+    /// <summary>
+    /// Ensure storage work has an active operation context before a transaction or save.
+    /// Reuse an existing operation ID (and actor) with a no-op disposable; otherwise
+    /// begin a temporary System operation, for example in background utilities or tests.
+    /// Events created within this scope share its ObservabilityOperationId, correlating
+    /// instrumented storage work with the enclosing command or fallback system operation.
+    /// Use with using: disposal leaves a reused context untouched, or ends the fallback
+    /// activity and restores the previous context. This does not instrument every write
+    /// automatically or add operation IDs to aggregate metric dimensions.
+    /// </summary>
     public static IDisposable JoinOperation() => Ambient.Value is { OperationId: var id } && id != Guid.Empty
         ? new Restore(() => { }) : BeginOperation(system: true);
 
