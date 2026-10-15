@@ -2,6 +2,8 @@
 
 PTT-131 now separates terminal presentation from reusable use cases and infrastructure. A future API composes the same Application and Infrastructure projects without referencing the Console executable.
 
+Follow the [visual architecture guide](diagrams/README.md) for linked UML views, workflow decision trees, transaction lifetimes and failure branches, with drill-down links to source and tests.
+
 ## What belongs where
 
 | Project | Responsibility | Examples |

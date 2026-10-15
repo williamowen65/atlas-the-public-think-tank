@@ -9,6 +9,7 @@ Atlas is currently a modular application hosted by Atlas.Console. Its projects a
 
 ## Documents
 
+- [Visual architecture guide](diagrams/README.md) connects composition UML, workflow sequences and decision trees to implementation and tests.
 - [Context map](CONTEXT-MAP.md) describes the boundaries and their relationships.
 - [Data ownership](DATA-OWNERSHIP.md) identifies the authoritative owner of records and identifiers.
 - [Voting boundary](VOTING.md) defines Voting ownership, policies, integration needs, and open decisions.
@@ -25,7 +26,7 @@ Atlas is currently a modular application hosted by Atlas.Console. Its projects a
 
 ## Current versus future topology
 
-Today, Atlas.Console references the boundary projects directly and provides persistence adapters and event dispatch. This makes boundary interactions observable without requiring distributed infrastructure.
+Today, Atlas.Console composes Application workflows, domain services, Infrastructure persistence adapters and the reusable event publisher. Application owns cross-domain orchestration; Infrastructure owns concrete SQL adapters. This makes boundary interactions observable without requiring distributed infrastructure.
 
 A future web application may first retain the same modular-monolith shape. If a boundary later becomes an independent service, its public application API and integration contracts form the migration seam.
 

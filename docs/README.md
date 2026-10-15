@@ -15,6 +15,8 @@ This directory records what Atlas must do, how its boundaries fit together, why 
 
 [PTT-94 Identity setup](PTT-94-Identity.md) covers scaffolding the migration and updating your local SQL database.
 
+Start with the [visual architecture guide](architecture/diagrams/README.md) for linked UML, process trees and transaction/event diagrams with paths into the implementation.
+
 ## How the documents connect
 
 A useful review path is:
