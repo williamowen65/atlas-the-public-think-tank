@@ -8,9 +8,13 @@ namespace Atlas.Observability;
 /// <summary>Host-side diagnostic destination and standard .NET instrumentation. No user payloads are accepted.</summary>
 public sealed class LocalTelemetry : ITelemetryObserver, ICacheTelemetryObserver, IDisposable
 {
+    // Standard .NET APIs: ActivitySource produces timed trace spans; Meter owns
+    // numeric instruments. Neither chooses a storage vendor or file by itself.
     public const string SourceName = "Atlas.Observability";
     public static readonly ActivitySource Activities = new(SourceName);
     private readonly Meter _meter = new(SourceName);
+    // Counters accumulate increments; a histogram records individual measurements
+    // that a collector can aggregate into distributions (for example latency).
     private readonly Counter<long> _events;
     private readonly Counter<long> _cache;
     private readonly Histogram<double> _duration;
@@ -31,8 +35,11 @@ public sealed class LocalTelemetry : ITelemetryObserver, ICacheTelemetryObserver
         _events = _meter.CreateCounter<long>("atlas.events.count");
         _cache = _meter.CreateCounter<long>("atlas.discovery.cache.lookups");
         _duration = _meter.CreateHistogram<double>("atlas.operation.duration", "ms");
+        // Observable gauges expose the latest value when a metric collector polls.
         _meter.CreateObservableGauge("atlas.audit.pending", () => Interlocked.Read(ref _pendingAudit), "{record}");
         _meter.CreateObservableGauge("atlas.audit.oldest_pending_age", () => Volatile.Read(ref _oldestAuditSeconds), "s");
+        // Subscribe to the two Atlas tracing sources and request their spans.
+        // When a span stops, export its allowed timing/relationship fields to JSONL.
         _listener = new ActivityListener
         {
             ShouldListenTo = source => source.Name is SourceName or "Atlas.Contracts",
@@ -63,6 +70,8 @@ public sealed class LocalTelemetry : ITelemetryObserver, ICacheTelemetryObserver
 
     public void Record(TelemetryEvent value)
     {
+        // The same validated event feeds diagnostics and .NET numeric instruments.
+        // JSONL metric examples below are written explicitly, not by a Meter listener.
         var json = EventJson.Serialize(value); // Validate before recording any signal or dimension.
         var name = EventJson.Name(value.Kind);
         var outcome = value.Outcome.ToString().ToLowerInvariant();

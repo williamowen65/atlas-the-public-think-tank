@@ -18,16 +18,23 @@ internal sealed class ConsoleTelemetry : IDisposable
 
     public ConsoleTelemetry(IConfiguration configuration, Func<AtlasDataContext> open)
     {
+        // 1. This host wires development output only; deployment needs its own adapter.
         var environment = configuration["DOTNET_ENVIRONMENT"] ?? "Development";
         if (!string.Equals(environment, "Development", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("This Console host currently supports Development telemetry only. Configure a durable cloud audit destination in the deployment host before production use.");
+        // 2. Resolve the local destination and per-stream rotation/retention settings.
         DirectoryPath = Path.GetFullPath(configuration["ATLAS_TELEMETRY_DIRECTORY"] ?? Path.Combine(FindRoot(), "logs", "observability"));
         var maxBytes = ReadPositive(configuration["ATLAS_TELEMETRY_FILE_BYTES"], 5 * 1024 * 1024);
         var retained = ReadPositive(configuration["ATLAS_TELEMETRY_RETAINED_FILES"], 5);
+        // 3. Create the adapter, install it in the current async flow, then emit startup.
+        // Keep the returned scope so shutdown can restore the previous observer.
         _local = new(DirectoryPath, maxBytes, retained);
         _observer = Telemetry.UseObserver(_local);
         Telemetry.Record(Telemetry.Create(EventKind.HostStarted));
+        // 4. SQL owns committed audit evidence. This worker delivers inspection copies
+        // outside the business transaction; AuditDelivery owns leases and retry state.
         var delivery = new AuditDelivery(open, new LocalAuditDestination(new JsonLineFile(DirectoryPath, "audit", maxBytes, retained)));
+        // Task.Run inherits the execution context (including our AsyncLocal observer).
         _delivery = Task.Run(async () =>
         {
             var nextHealthCheck = DateTimeOffset.MinValue;
@@ -36,6 +43,7 @@ internal sealed class ConsoleTelemetry : IDisposable
             {
                 try
                 {
+                    // Periodically measure the pending local backlog independently of delivery.
                     if (DateTimeOffset.UtcNow >= nextHealthCheck)
                     {
                         using var health = open();
@@ -52,10 +60,12 @@ internal sealed class ConsoleTelemetry : IDisposable
                         }
                         nextHealthCheck = DateTimeOffset.UtcNow.AddSeconds(10);
                     }
+                    // Keep draining due entries; pause when none are currently deliverable.
                     if (!await delivery.DeliverOneAsync(_stop.Token))
                         await Task.Delay(500, _stop.Token);
                 }
                 catch (OperationCanceledException) when (_stop.IsCancellationRequested) { break; }
+                // Report only a bounded failure reason, then retry without exception text.
                 catch (Exception)
                 {
                     Telemetry.Record(Telemetry.Create(EventKind.AuditDelivery, outcome: EventOutcome.Failed, reason: EventReason.DeliveryUnavailable));
@@ -80,11 +90,14 @@ internal sealed class ConsoleTelemetry : IDisposable
 
     public void Dispose()
     {
+        // Stop and join the worker before removing its output adapter.
         _stop.Cancel();
         _delivery.GetAwaiter().GetResult();
+        // Emit the final event while the observer is still installed.
         Telemetry.Record(Telemetry.Create(EventKind.HostStopped));
         if (_local.OutputFailures > 0 || Telemetry.ObserverFailures > 0)
             System.Console.Error.WriteLine("Some diagnostic output failed. SQL audit records remain authoritative; inspect file permissions and disk capacity.");
+        // Restore the enclosing observer, release listeners/meters, then the stop token.
         _observer.Dispose();
         _local.Dispose();
         _stop.Dispose();

@@ -19,6 +19,9 @@ public enum MutationAction { None, Created, Updated, Deleted, Hidden, Restored, 
 public enum AuditModerationReason { Other, Spam, Harassment, UnsafeContent, OffTopic }
 
 /// <summary>Allowlisted event envelope. No free-form text or extension dictionary is accepted.</summary>
+// A positional record generates properties and a constructor from these parameters.
+// Optional parameters below supply constructor defaults; sealed prevents inheritance.
+// The bounded fields (plus output validation), rather than sealed itself, limit logged data.
 public sealed record TelemetryEvent(
     Guid EventId,
     DateTimeOffset OccurredAtUtc,
@@ -37,6 +40,7 @@ public sealed record TelemetryEvent(
     AuditModerationReason? ModerationReason = null,
     PrivacyPolicy PrivacyPolicy = PrivacyPolicy.Standard)
 {
+    // Computed, read-only property: every envelope currently uses schema version 1.
     public int SchemaVersion => 1;
 }
 
@@ -54,10 +58,22 @@ public interface ITelemetryObserver
 /// <summary>Operation-local context. IDs correlate evidence; they never establish authentication.</summary>
 public static class Telemetry
 {
+    // Standard .NET tracing API (System.Diagnostics), not a file or cloud destination.
+    // The string names this instrumentation source so a host listener can subscribe.
+    // Contracts owns the shared vocabulary/context; host adapters own signal export.
     public static readonly ActivitySource Activities = new("Atlas.Contracts");
+    // A field holding a context slot, not a method. Its Value follows the logical
+    // execution flow across await, even when execution resumes on another thread.
+    // "Ambient" means helpers can read the current scope without a context parameter.
+    // Child flows inherit the value; this does not deep-copy the Context object.
     private static readonly AsyncLocal<Context?> Ambient = new();
+    // The header generates four properties: observer, operation ID and actor identity.
+    // The body adds per-context state; this record is not just a failure tracker.
     private sealed record Context(ITelemetryObserver? Observer, Guid OperationId, Guid? ActorId, ActorKind ActorKind)
     {
+        // A new set per Context. Reference equality identifies the same exception
+        // passing through nested catch blocks, so it is reported only once.
+        // A record `with` copy retains this set while changing actor properties.
         public HashSet<Exception> ReportedFailures { get; } = new(ReferenceEqualityComparer.Instance);
     }
 
@@ -65,8 +81,11 @@ public static class Telemetry
     public static IDisposable UseObserver(ITelemetryObserver observer)
     {
         ArgumentNullException.ThrowIfNull(observer);
+        // Save the enclosing scope, then install the host-selected output adapter.
+        // Target-typed new(...) here constructs Context from the assigned field type.
         var previous = Ambient.Value;
         Ambient.Value = new(observer, Guid.Empty, null, ActorKind.Anonymous);
+        // using/Dispose invokes this callback to put the enclosing context back.
         return new Restore(() => Ambient.Value = previous);
     }
 
@@ -77,13 +96,19 @@ public static class Telemetry
         var previous = Ambient.Value;
         Ambient.Value = new(previous?.Observer, Guid.NewGuid(), verifiedActorId,
             system ? ActorKind.System : verifiedActorId is null ? ActorKind.Anonymous : ActorKind.Participant);
+        // Begin a timed trace span. With no interested listener, this may return null.
+        // Nested activities normally inherit Activity.Current as their parent.
         var activity = Activities.StartActivity("atlas.command");
+        // Stop the span before restoring context: the stop listener still needs
+        // this operation ID when it exports the completed span.
         return new Restore(() => { activity?.Dispose(); Ambient.Value = previous; });
     }
 
     /// <summary>Observe a reusable workflow without copying inputs, search terms or exception messages.</summary>
     public static T Observe<T>(EventKind kind, Func<T> operation)
     {
+        // Unlike BeginOperation (a scope around caller code), Observe invokes the
+        // supplied delegate and measures it here. using ends the span on return/throw.
         using var activity = Activities.StartActivity(kind.ToString());
         var started = Stopwatch.GetTimestamp();
         try
@@ -136,6 +161,8 @@ public static class Telemetry
 
     public static void CacheLookup(bool detail, bool hit)
     {
+        // Cache metrics are an optional capability of the installed observer.
+        // Ordinary event observers need not implement this separate interface.
         try { (Ambient.Value?.Observer as ICacheTelemetryObserver)?.CacheLookup(detail, hit); }
         catch (Exception) { Interlocked.Increment(ref _observerFailures); }
     }
@@ -152,6 +179,8 @@ public static class Telemetry
         return new Restore(() => Ambient.Value = previous);
     }
 
+    // Reuse an existing command context; otherwise own a temporary system scope.
+    // The no-op disposable lets both cases use the same using pattern.
     public static IDisposable JoinOperation() => Ambient.Value is { OperationId: var id } && id != Guid.Empty
         ? new Restore(() => { }) : BeginOperation(system: true);
 
@@ -160,6 +189,7 @@ public static class Telemetry
     {
         if (!Enum.IsDefined(kind) || !Enum.IsDefined(outcome) || !Enum.IsDefined(reason))
             throw new ArgumentOutOfRangeException(nameof(kind));
+        // Build evidence from the active scope; constructing an event does not emit it.
         var context = Ambient.Value;
         return new(Guid.NewGuid(), DateTimeOffset.UtcNow, context is { OperationId: var id } && id != Guid.Empty ? id : Guid.NewGuid(), kind,
             context?.ActorKind ?? ActorKind.System, context?.ActorId, targetId, outcome, reason, durationMs,
@@ -194,9 +224,14 @@ public static class Telemetry
         _ => EventReason.InfrastructureFailure
     };
 
+    // Our own nested helper, not an imported framework type. The primary-constructor
+    // parameter is a callback, captured in a field until cleanup is requested.
+    // IDisposable provides deterministic scope cleanup, not garbage collection:
+    // using calls Dispose even when the scope exits through an exception.
     private sealed class Restore(Action restore) : IDisposable
     {
         private Action? _restore = restore;
+        // Clear and take the callback atomically; repeated disposal runs it only once.
         public void Dispose() => Interlocked.Exchange(ref _restore, null)?.Invoke();
     }
 }
