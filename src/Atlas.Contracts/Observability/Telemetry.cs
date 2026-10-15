@@ -55,7 +55,17 @@ public interface ITelemetryObserver
     void Record(TelemetryEvent value);
 }
 
-/// <summary>Operation-local context. IDs correlate evidence; they never establish authentication.</summary>
+/// <summary>
+/// Static facade and telemetry context manager used throughout the application; callers
+/// use this class directly rather than constructing an instance. Conceptually, it resembles
+/// dependency injection in separating callers from the host-selected observer implementation
+/// and using disposable scopes to manage lifetimes. Here, scopes manage operation context;
+/// this class does not resolve or construct services like a DI container.
+/// Although the facade is globally accessible, AsyncLocal carries the active observer,
+/// operation ID and actor within the current logical execution flow, including across await.
+/// BeginOperation returns a cleanup handle that ends its activity and restores the previous
+/// context on disposal. IDs correlate evidence; they never establish authentication.
+/// </summary>
 public static class Telemetry
 {
     // Standard .NET tracing API (System.Diagnostics), not a file or cloud destination.
