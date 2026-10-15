@@ -1,6 +1,6 @@
 # Data ownership and consistency
 
-Domains own behavior and identifiers. Console SQL repository adapters translate domain objects to persistence rows; Atlas.Persistence owns the shared EF model and migrations.
+Domains own behavior and identifiers. Atlas.Infrastructure SQL repository adapters translate domain objects to persistence rows; Atlas.Persistence owns the shared EF model and migrations.
 
 | Data | Authority / ID generation | SQL Server tables |
 |---|---|---|
@@ -35,7 +35,7 @@ Domains own behavior and identifiers. Console SQL repository adapters translate 
 
 ## Transaction boundaries
 
-[SqlRepository](../../src/Atlas.Console/Storage/SqlRepository.cs) starts a transaction for a standalone save or joins the current operation. Replaced owned children are removed and flushed before new rows with the same keys are attached. Node metadata saves preserve stored parents instead of replacing them.
+[SqlRepository](../../src/Atlas.Infrastructure/Storage/SqlRepository.cs) starts a transaction for a standalone save or joins the current operation. Replaced owned children are removed and flushed before new rows with the same keys are attached. Node metadata saves preserve stored parents instead of replacing them.
 
 The following workflows explicitly share one context and SQL transaction:
 

@@ -1,5 +1,5 @@
 using Atlas.Contracts.Notifications.V1;
-using Atlas.ConsoleApp.Storage;
+using Atlas.Infrastructure.Storage;
 using Atlas.Notifications;
 
 

@@ -149,6 +149,6 @@ These are abbreviated examples for reading, not universal cloud JSON schemas. .N
 
 - The public observer port accepts only typed events. Arbitrary framework `ILogger` messages are not exported to these files; this avoids bypassing the allowlist through EF/Identity message formatting. Reviewed framework diagnostics may be added later with their own privacy policy.
 
-- The new infrastructure is reusable; it is not a new business bounded context. [Telemetry contracts](../../../src/Atlas.Contracts/Observability/Telemetry.cs), [local infrastructure](../../../src/Atlas.Observability/LocalTelemetry.cs) and [host wiring](../../../src/Atlas.Console/Observability/ConsoleTelemetry.cs) have distinct ownership.
+- The new infrastructure is reusable; it is not a new business bounded context. [Telemetry contracts](../../../src/Atlas.Contracts/Observability/Telemetry.cs), [local infrastructure](../../../src/Atlas.Observability/LocalTelemetry.cs) and [host wiring](../../../src/Atlas.Infrastructure/Observability/LocalDevelopmentTelemetry.cs) have distinct ownership.
 
 - No API middleware, IP/user-agent collection, generic privileged provisioning API, live cloud adapter, SIEM or production dashboard is implemented in this slice.

@@ -1,4 +1,9 @@
-# Atlas.Console architecture
+# Atlas.Console: terminal host
+
+Console owns keyboard input, menus, navigation, terminal rendering, the interactive Identity session and startup composition. Reusable workflows are in Atlas.Application; concrete SQL/demo/local-telemetry adapters are in Atlas.Infrastructure. This executable is not a dependency of the application core or SQL test suites.
+
+See [thin-host ownership and API composition](../../docs/architecture/APPLICATION-WORKFLOWS.md). Program wires repositories, Identity, event handlers and optional Console diagnostic callbacks; commands invoke domain/application services rather than saving aggregates themselves.
+
 
 `Atlas.Console` is the executable host and composition root for the current Atlas prototype. It stitches the domain boundaries together, supplies SQL Server-backed repository implementations, presents interactive workflows, and dispatches integration events synchronously in memory.
 

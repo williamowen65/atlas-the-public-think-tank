@@ -137,6 +137,40 @@ public sealed class WorkflowTests
         Assert.HasCount(7, store.Blocks);
     }
 
+    [TestMethod]
+    public void NodeWorkflowPublishesOnlyAfterBoundaryCompletion()
+    {
+        var store = new Store();
+        var events = new Recorder(() => Assert.IsFalse(store.InTransaction));
+        var node = new NodeWorkflowService(store, events).Create(store, "Node", "Text", store.Type.Id, store.Actor, []);
+        Assert.HasCount(1, events.Messages);
+        Assert.IsEmpty(node.DomainEvents);
+        new NodeWorkflowService(store, events).Archive(node, store.Actor);
+        Assert.AreEqual(NodeStatus.Archived, store.GetById(node.Id)!.Status);
+        Assert.HasCount(2, events.Messages);
+        Assert.IsEmpty(node.DomainEvents);
+    }
+
+    [TestMethod]
+    public void FailedCommitDoesNotDispatchButSubscriberFailureDoesNotUndoCommit()
+    {
+        var failing = new Store { FailNodeSave = true };
+        var events = new Recorder(() => { });
+        Assert.Throws<InvalidOperationException>(() => new NodeWorkflowService(failing, events).Create(failing, "Node", "Text", failing.Type.Id, failing.Actor, []));
+        Assert.IsEmpty(events.Messages);
+        var store = new Store();
+        var brokenSubscriber = new Recorder(() => throw new InvalidOperationException("subscriber"));
+        Assert.Throws<InvalidOperationException>(() => new NodeWorkflowService(store, brokenSubscriber).Create(store, "Node", "Text", store.Type.Id, store.Actor, []));
+        Assert.HasCount(1, store.Nodes);
+        Assert.IsNotEmpty(store.Nodes.Values.Single().DomainEvents);
+    }
+
+    private sealed class Recorder(Action onPublish) : Atlas.Contracts.Events.IEventPublisher
+    {
+        public List<object> Messages { get; } = [];
+        public void Publish(object message) { onPublish(); Messages.Add(message); }
+    }
+
     private static Node Create(Store store, string title = "Node") =>
         new Creation(store, store).Create(title, "Text", store.Type.Id, store.Actor, []);
 
@@ -154,6 +188,7 @@ public sealed class WorkflowTests
         public bool FailNodeSave { get; init; }
         public int Rollbacks { get; private set; }
         private int _depth;
+        public bool InTransaction => _depth > 0;
         public Store() { Participants.Add(Actor); Types.Add(Type); }
         public bool IsAvailable(string kind, Guid id, bool active) => kind switch
         {

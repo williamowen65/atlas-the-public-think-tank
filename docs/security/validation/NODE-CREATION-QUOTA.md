@@ -23,7 +23,7 @@ Draft implementation for [PTT-133](https://thepublicthinktank.atlassian.net/brow
 | [NodeCreationQuotaPolicy](../../../src/Atlas.Graph/Nodes/NodeCreationQuota.cs) | Configurable immutable policy and pure rolling-window calculation |
 | [INodeCreationQuota](../../../src/Atlas.Graph/Nodes/NodeCreationQuota.cs) | Optional repository capability for allowance/validation; shared host-facing data contract |
 | [NodeCreationService](../../../src/Atlas.Application/NodeCreationService.cs) | Early check inside the topology transaction, before Content writes |
-| [SqlNodeRepository](../../../src/Atlas.Console/Storage/SqlNodeRepository.cs) | Rechecks every new repository insert and records consumption; updates do not consume |
+| [SqlNodeRepository](../../../src/Atlas.Infrastructure/Storage/SqlNodeRepository.cs) | Rechecks every new repository insert and records consumption; updates do not consume |
 | [NodeCreationQuotaRow](../../../src/Atlas.Persistence/NodeCreationQuotaRow.cs) | One record of a successful creation that consumed quota; stored independently of Node lifecycle |
 | [NodeCreationWorkflow](../../../src/Atlas.Console/NodeCreationWorkflow.cs) | Console display and friendly quota errors |
 

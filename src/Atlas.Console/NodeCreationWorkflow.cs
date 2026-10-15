@@ -1,5 +1,5 @@
-using Atlas.ConsoleApp.Eventing;
-using NodeCreationCoordinator = Atlas.Application.NodeCreationService;
+using Atlas.Application.Eventing;
+using NodeCreationCoordinator = Atlas.Application.NodeWorkflowService;
 using Atlas.Content.Blocks;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
@@ -83,8 +83,9 @@ public static class NodeCreationWorkflow
         {
             var node = new NodeCreationCoordinator(
                 nodes,
-                documents
+                eventPublisher
             ).Create(
+                documents,
                 title ?? string.Empty,
                 description ?? string.Empty,
                 nodeType.Id,
@@ -104,13 +105,6 @@ public static class NodeCreationWorkflow
                 if (allowance.NextSlotAt is { } nextSlot)
                     Console.WriteLine($"Next slot available: {nextSlot:yyyy-MM-dd HH:mm:ss} UTC.");
             }
-
-            foreach (var domainEvent in node.DomainEvents)
-            {
-                eventPublisher.Publish(domainEvent);
-            }
-
-            node.ClearDomainEvents();
 
             var relationship = parent is null
                 ? string.Empty

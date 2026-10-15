@@ -1,6 +1,6 @@
 # Atlas.Persistence
 
-EF Core row models, SQL Server mappings and migrations for Atlas. Domain behavior remains in the owning domain projects; SQL repositories in the Console host map domain objects to these rows.
+EF Core row models, SQL Server mappings and migrations for Atlas. Domain behavior remains in the owning domain projects; SQL repositories in Atlas.Infrastructure map domain objects to these rows.
 
 ## Reset the local database to demo seed data (PowerShell)
 

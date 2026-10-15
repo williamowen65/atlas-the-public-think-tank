@@ -1,5 +1,6 @@
+using Atlas.ConsoleApp.Diagnostics;
 using Atlas.Identity;
-using Atlas.ConsoleApp.Observability;
+using Atlas.Infrastructure.Observability;
 using Atlas.Contracts.Observability;
 using Atlas.ConsoleApp.Identity;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,10 +9,10 @@ using Atlas.Comments.Comments;
 using Atlas.Communities.Communities;
 using Atlas.Communities.Memberships;
 using Atlas.Communities.Nodes;
-using Atlas.ConsoleApp.Content;
-using Atlas.ConsoleApp.Eventing;
-using Atlas.ConsoleApp.Storage;
-using Atlas.ConsoleApp.Voting;
+using Atlas.Application.Content;
+using Atlas.Application.Eventing;
+using Atlas.Infrastructure.Storage;
+using Atlas.Application.Voting;
 using Atlas.Content.Documents;
 using Atlas.Discovery;
 using Atlas.Moderation;
@@ -42,7 +43,7 @@ using var identityServices = new ServiceCollection().AddAtlasIdentity(connection
         ValidateScopes = true
     });
 var accountScopes = identityServices.GetRequiredService<IServiceScopeFactory>();
-using var telemetry = new ConsoleTelemetry(configuration, SqlStorage.Open);
+using var telemetry = new LocalDevelopmentTelemetry(configuration, SqlStorage.Open, System.Console.Error.WriteLine);
 System.Console.WriteLine($"Local telemetry: {telemetry.DirectoryPath}");
 
 if (args.Contains(
@@ -80,7 +81,7 @@ var commentCollectionKey = "comments";
 INodeTypeRepository nodeTypeRepository =
     new SqlNodeTypeRepository();
 
-SeedSystemNodeTypes(nodeTypeRepository);
+SystemNodeTypeCatalog.Ensure(nodeTypeRepository);
 
 IDocumentRepository documentRepository =
     new SqlDocumentRepository();
@@ -150,7 +151,7 @@ using var discoveryCache = new Atlas.Persistence.Discovery.DiscoveryCache();
 IDiscoveryService discovery = new DiscoveryService(
     new Atlas.Persistence.Discovery.SqlDiscoveryReadQuery(SqlStorage.Open, discoveryCache));
 
-var eventPublisher = new InMemoryEventPublisher();
+var eventPublisher = new InMemoryEventPublisher(ConsoleEventDiagnostics.Write);
 INotificationRepository notificationRepository = new SqlNotificationRepository();
 var notificationService = new NotificationService(
     notificationRepository,
@@ -159,7 +160,7 @@ var notificationService = new NotificationService(
 eventPublisher.Subscribe<NotificationRequestedV1>(request => notificationService.Handle(request));
 
 var contentSubscriber =
-    new ObserveNodeLifecycleInContent(documentRepository);
+    new ObserveNodeLifecycleInContent(documentRepository, ConsoleEventDiagnostics.Write);
 
 eventPublisher.Subscribe<NodeCreatedV1>(
     contentSubscriber.Handle);
@@ -300,53 +301,4 @@ while (true)
     application.Run();
     session.SignOut();
     if (application.ExitRequested) break;
-}
-
-static void SeedSystemNodeTypes(
-    INodeTypeRepository nodeTypes)
-{
-    var existingTypes = nodeTypes.GetAll();
-    var createdAt = AtlasTime.UtcNow;
-
-    var systemTypes = new[]
-    {
-        ("Issue", "A problem or concern to investigate.", true),
-        ("Question", "A question that invites answers.", true),
-        ("Idea", "A proposed concept or possibility.", true),
-        ("Solution", "A proposed response to a problem.", true),
-        ("Evidence", "Information supporting or challenging a claim.", false),
-        ("Relationship", "A connection involving multiple nodes.", true),
-        ("Location", "A place associated with another node.", true)
-    };
-
-    foreach (var (name, description, autoPluralize) in systemTypes)
-    {
-        var existingType = existingTypes.SingleOrDefault(type =>
-            string.Equals(
-                type.Name,
-                name,
-                StringComparison.OrdinalIgnoreCase
-            ));
-
-        if (existingType is not null)
-        {
-            existingType.ChangeAutoPluralize(
-                autoPluralize,
-                actorId: "system",
-                actorIsModerator: true,
-                changedAt: createdAt
-            );
-
-            nodeTypes.Save(existingType);
-            continue;
-        }
-
-        nodeTypes.Save(
-            NodeTypeDefinition.CreateSystemDefined(
-                name,
-                description,
-                createdAt,
-                autoPluralize
-            ));
-    }
 }

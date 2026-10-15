@@ -8,7 +8,7 @@ Persistence means storing and retrieving Atlas data. This page separates three q
 
 ## What EF Core protects
 
-[SqlRepository](../../../src/Atlas.Console/Storage/SqlRepository.cs) uses EF LINQ queries, `Find`, tracked row changes and `SaveChanges`. Identity also uses EF-backed stores.
+[SqlRepository](../../../src/Atlas.Infrastructure/Storage/SqlRepository.cs) uses EF LINQ queries, `Find`, tracked row changes and `SaveChanges`. Identity also uses EF-backed stores.
 
 - **Values become parameters.** EF sends the SQL command and its data values separately, so user text is treated as data rather than executable SQL.
 - **Valid text stays intact.** Apostrophes, semicolons, SQL-looking phrases and Unicode do not need to be stripped as an SQL-injection defense.
@@ -18,7 +18,7 @@ For example, a name containing `O'Brien` should be stored normally. Parameteriza
 
 ### Raw SQL
 
-The initial review found no raw application SQL. The follow-up introduced a [parameterized lock command](../../../src/Atlas.Console/Storage/SqlOperationBoundary.cs) using `ExecuteSqlInterpolated`.
+The initial review found no raw application SQL. The follow-up introduced a [parameterized lock command](../../../src/Atlas.Infrastructure/Storage/SqlOperationBoundary.cs) using `ExecuteSqlInterpolated`.
 
 - Its lock resource is passed as a parameter.
 - Its SQL structure is owned by the backend, rather than built from request text.
@@ -58,7 +58,7 @@ See Microsoft's [EF Core SQL query guidance](https://learn.microsoft.com/en-us/e
   - A foreign key does not establish authorization, active status or acyclic ancestry. Ordinary foreign keys also cannot express every polymorphic target, such as a target whose kind selects which entity its ID refers to.
 
 - **Transactions and coordination protect complete operations.**
-  - [SqlOperationBoundary](../../../src/Atlas.Console/Storage/SqlOperationBoundary.cs) groups related writes so they commit together or roll back together.
+  - [SqlOperationBoundary](../../../src/Atlas.Infrastructure/Storage/SqlOperationBoundary.cs) groups related writes so they commit together or roll back together.
   - Serializable transactions and constraints protect competing database changes. Expected SQL deadlock/constraint conflicts become `OperationConflictException`.
   - Node creation and parent changes also share a graph application lock to protect cycle checks. Metadata saves preserve parents and do not request that lock.
   - See the [workflow tests](IMPLEMENTATION.md#workflows-and-evidence) and [transaction design and limits](IMPLEMENTATION.md#complete-operations--ptt-130).

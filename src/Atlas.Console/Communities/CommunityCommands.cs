@@ -1,9 +1,10 @@
+using Atlas.Contracts.Identity;
 using Atlas.Contracts.Observability;
 using Atlas.Communities.Communities;
 using Atlas.Comments.Comments;
 using Atlas.Communities.Memberships;
 using Atlas.Communities.Nodes;
-using Atlas.ConsoleApp.Eventing;
+using Atlas.Application.Eventing;
 using Atlas.Content.Documents;
 using Atlas.Graph.Nodes;
 using Atlas.Identity;
@@ -144,26 +145,26 @@ public static class CommunityCommands
                         break;
                     case "4" when isOwner:
                         Console.Write("New description: ");
-                        community.ChangeDescription(
+                        service.ChangeDescription(
+                            community,
                             authenticatedActor.ParticipantId,
                             Console.ReadLine() ?? string.Empty,
                             AtlasTime.UtcNow
                         );
-                        communities.Save(community);
                         break;
                     case "5" when isOwner:
-                        community.Archive(
+                        service.Archive(
+                            community,
                             authenticatedActor.ParticipantId,
                             AtlasTime.UtcNow
                         );
-                        communities.Save(community);
                         break;
                     case "6" when isOwner:
-                        community.Restore(
+                        service.Restore(
+                            community,
                             authenticatedActor.ParticipantId,
                             AtlasTime.UtcNow
                         );
-                        communities.Save(community);
                         break;
                     case "3" or "4" or "5" or "6":
                         ConsoleUi.Pause("This action requires the community owner.");

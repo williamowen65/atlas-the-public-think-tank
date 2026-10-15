@@ -1,3 +1,4 @@
+using Atlas.Contracts.Identity;
 using Atlas.Contracts.Observability;
 using Atlas.Content.Documents;
 using Atlas.Discovery;

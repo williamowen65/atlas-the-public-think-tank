@@ -1,13 +1,12 @@
+using Atlas.Contracts.Identity;
 using Atlas.Contracts.Observability;
 using System.Security.Claims;
 using Atlas.Identity;
 using Atlas.Moderation;
 using Atlas.Participants.Participants;
-using Atlas.Persistence;
 using Atlas.Persistence.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Atlas.ConsoleApp.Identity;
@@ -141,16 +140,7 @@ public sealed class ConsoleIdentitySession(IServiceScopeFactory scopes) : IModer
         }
         // Identity answers "is this account still authenticated/authorized?"; Participant supplies the current
         // Atlas-domain profile (display name, bio, active state, etc.). The shared GUID links the two records.
-        var row = await services.GetRequiredService<AtlasDataContext>().ParticipantRows.AsNoTracking()
-            .SingleAsync(row => row.Id == user.Id);
-        Participant = Atlas.Participants.Participants.Participant.Reconstitute(
-            new ParticipantId(row.Id),
-            row.DisplayName,
-            row.Bio,
-            row.IsActive,
-            row.CreatedAt,
-            row.UpdatedAt
-        );
+        Participant = await services.GetRequiredService<SessionParticipantQuery>().GetAsync(user.Id);
         return true;
     }
 

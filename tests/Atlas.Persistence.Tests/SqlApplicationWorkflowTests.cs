@@ -1,5 +1,5 @@
 using Atlas.Application;
-using Atlas.ConsoleApp.Storage;
+using Atlas.Infrastructure.Storage;
 using Atlas.Content.Blocks;
 using Atlas.Content.Documents;
 using Atlas.Contracts.Operations;

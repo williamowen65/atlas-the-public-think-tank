@@ -34,7 +34,7 @@ Start with [Run and inspect local observability](LOCAL-DEVELOPMENT.md) for migra
 | [Console Program](../../../src/Atlas.Console/Program.cs) and [account commands](../../../src/Atlas.Console/Identity/ConsoleAccountCommands.cs) write user-facing output | Interactive feedback and development setup | A structured log or durable audit destination |
 | [ModerationCase](../../../src/Atlas.Moderation/ModerationCase.cs) and [NodeReaction](../../../src/Atlas.Graph/Reactions/NodeReaction.cs) retain domain history | Some actions already have persisted business records | A complete security history, including denied attempts or every privileged action |
 | [DiscoveryCache](../../../src/Atlas.Persistence/Discovery/DiscoveryCache.cs) maintains counters | In-process diagnostic measurements, used by tests/debugging | An exported metric stream, dashboard or alert |
-| [SqlOperationBoundary](../../../src/Atlas.Console/Storage/SqlOperationBoundary.cs) coordinates commits/rollbacks | A place to integrate transaction-aware audit persistence | A durable audit outbox or guaranteed delivery today |
+| [SqlOperationBoundary](../../../src/Atlas.Infrastructure/Storage/SqlOperationBoundary.cs) coordinates commits/rollbacks | A place to integrate transaction-aware audit persistence | A durable audit outbox or guaranteed delivery today |
 
 The table above describes the pre-change baseline. New telemetry evidence is linked in [the running guide](LOCAL-DEVELOPMENT.md#verification-and-current-limits).
 

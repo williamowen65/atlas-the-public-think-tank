@@ -7,5 +7,13 @@
   <ItemGroup>
     <ProjectReference Include="../Atlas.Graph/Atlas.Graph.csproj" />
     <ProjectReference Include="../Atlas.Content/Atlas.Content.csproj" />
+    <ProjectReference Include="../Atlas.Contracts/Atlas.Contracts.csproj" />
+    <ProjectReference Include="../Atlas.Voting/Atlas.Voting.csproj" />
+    <ProjectReference Include="../Atlas.Participants/Atlas.Participants.csproj" />
+    <ProjectReference Include="../Atlas.Comments/Atlas.Comments.csproj" />
+    <ProjectReference Include="../Atlas.Communities/Atlas.Communities.csproj" />
+    <ProjectReference Include="../Atlas.Moderation/Atlas.Moderation.csproj" />
+    <ProjectReference Include="../Atlas.Notifications/Atlas.Notifications.csproj" />
+    <ProjectReference Include="../Atlas.Discovery/Atlas.Discovery.csproj" />
   </ItemGroup>
 </Project>
