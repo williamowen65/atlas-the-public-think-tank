@@ -8,6 +8,8 @@ Status: **Local implementation and developer-generated migration added; validati
 
 For the earlier implementation and what changed, see the [developer note comparing legacy user history with current audit capture](LEGACY-COMPARISON.md).
 
+For delivery terminology and worked examples, see [Audit delivery: leases, claims and acknowledgements](AUDIT-DELIVERY.md).
+
 ## Start here
 
 - **Logging** records individual events: an operation failed, sign-in was denied, or a database conflict occurred.

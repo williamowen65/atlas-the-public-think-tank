@@ -332,6 +332,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "validation", "validation", 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "observability", "observability", "{12600001-1260-4126-8126-000000000001}"
 	ProjectSection(SolutionItems) = preProject
+		docs\security\observability\AUDIT-DELIVERY.md = docs\security\observability\AUDIT-DELIVERY.md
 		docs\security\observability\EVENTS.md = docs\security\observability\EVENTS.md
 		docs\security\observability\IMPLEMENTATION.md = docs\security\observability\IMPLEMENTATION.md
 		docs\security\observability\LEGACY-COMPARISON.md = docs\security\observability\LEGACY-COMPARISON.md
