@@ -1,4 +1,8 @@
-using Atlas.ConsoleApp.Eventing;
+using Atlas.Application;
+using Atlas.Application.Queries;
+using Atlas.Application.Comments;
+using Atlas.Contracts.Identity;
+using Atlas.Application.Eventing;
 using Atlas.Comments.Comments;
 using Atlas.Contracts.Notifications.V1;
 using Atlas.ConsoleApp.Comments;
@@ -177,7 +181,8 @@ public static class NodeCommands
                         Rename(
                             node,
                             nodes,
-                            actorParticipantId
+                            actorParticipantId,
+                            eventPublisher
                         );
                         break;
 
@@ -185,7 +190,8 @@ public static class NodeCommands
                         DescriptionBlockCommands.Run(
                             node,
                             documents,
-                            actorParticipantId
+                            actorParticipantId,
+                            nodes
                         );
                         break;
 
@@ -199,28 +205,12 @@ public static class NodeCommands
                         break;
 
                     case "4":
-                        node.Archive(
-                            actorParticipantId,
-                            AtlasTime.UtcNow
-                        );
-                        nodes.SaveMetadata(node);
-                        PublishDomainEvents(
-                            node,
-                            eventPublisher
-                        );
+                        new NodeWorkflowService(nodes, eventPublisher).Archive(node, actorParticipantId);
                         ConsoleUi.Pause("Node archived and saved.");
                         break;
 
                     case "5":
-                        node.Restore(
-                            actorParticipantId,
-                            AtlasTime.UtcNow
-                        );
-                        nodes.SaveMetadata(node);
-                        PublishDomainEvents(
-                            node,
-                            eventPublisher
-                        );
+                        new NodeWorkflowService(nodes, eventPublisher).Restore(node, actorParticipantId);
                         ConsoleUi.Pause("Node restored and saved.");
                         break;
 
@@ -379,37 +369,17 @@ public static class NodeCommands
                     case "18":
                         CommentCommands.AddTopLevel(
                             CommentTarget.Node(node.Id.Value),
-                            new CommentService(
-                                comments,
-                                new NodeCommentTargetAvailability(nodes),
-                                new CommentModeratorAuthorization(moderation)
-                            ),
-                            authenticatedActor,
-                            created => PublishCommentNotification(
-                                created,
-                                node,
-                                comments,
-                                eventPublisher
-                            )
+                            new CommentWorkflowService(comments, nodes, moderation, eventPublisher),
+                            authenticatedActor
                         );
                         break;
 
                     case "19":
                         CommentCommands.Run(
                             CommentTarget.Node(node.Id.Value),
-                            new CommentService(
-                                comments,
-                                new NodeCommentTargetAvailability(nodes),
-                                new CommentModeratorAuthorization(moderation)
-                            ),
+                            new CommentWorkflowService(comments, nodes, moderation, eventPublisher),
                             participants,
-                            authenticatedActor,
-                            created => PublishCommentNotification(
-                                created,
-                                node,
-                                comments,
-                                eventPublisher
-                            )
+                            authenticatedActor
                         );
                         break;
 
@@ -455,12 +425,14 @@ public static class NodeCommands
                                 case "R": Rename(
                                     node,
                                     nodes,
-                                    actorParticipantId
+                                    actorParticipantId,
+                                    eventPublisher
                                 ); break;
                                 case "D": DescriptionBlockCommands.Run(
                                     node,
                                     documents,
-                                    actorParticipantId
+                                    actorParticipantId,
+                                    nodes
                                 ); break;
                             }
                         }
@@ -468,19 +440,7 @@ public static class NodeCommands
                         break;
 
                     case "23" when isAuthor && moderation.Visibility(node.Id.Value).IsHidden:
-                        var document = documents.GetById(new DocumentId(node.DescriptionId.Value));
-                        var latestEdit = document is null || document.UpdatedAt < node.UpdatedAt
-                            ? node.UpdatedAt : document.UpdatedAt;
-                        if (document is not null)
-                            foreach (var block in documents.GetBlocks(document))
-                                if (block.UpdatedAt > latestEdit) latestEdit = block.UpdatedAt;
-                        moderation.RequestNodeReview(
-                            node.Id.Value,
-                            actorParticipantId,
-                            node.AuthorId.Value,
-                            latestEdit,
-                            AtlasTime.UtcNow
-                        );
+                        new ModerationWorkflowService(nodes, documents, moderation, eventPublisher).RequestReview(node, actorParticipantId);
                         ConsoleUi.Pause("Review requested; the Node remains hidden until a moderator restores it.");
                         break;
 
@@ -504,26 +464,6 @@ public static class NodeCommands
             }
         }
 
-    }
-
-    private static void PublishCommentNotification(
-        Comment created,
-        Node node,
-        ICommentRepository comments,
-        InMemoryEventPublisher publisher
-    )
-    {
-        var parent = created.ParentCommentId is null ? null : comments.GetById(created.ParentCommentId.Value);
-        var recipient = parent?.AuthorParticipantId ?? node.AuthorId.Value;
-        publisher.Publish(new NotificationRequestedV1(
-            created.Id.Value,
-            recipient,
-            created.AuthorParticipantId,
-            parent is null ? "NodeCommented" : "CommentReplied",
-            "Node",
-            node.Id.Value,
-            created.CreatedAt
-        ));
     }
 
     public static void ReportNode(
@@ -1015,22 +955,6 @@ public static class NodeCommands
         );
     }
 
-    /// <summary>Publishes recorded domain events and clears them after dispatch.</summary>
-    private static void PublishDomainEvents(
-        Node node,
-        InMemoryEventPublisher eventPublisher
-    )
-    {
-        foreach (var domainEvent in node.DomainEvents)
-        {
-            eventPublisher.Publish(domainEvent);
-        }
-
-        node.ClearDomainEvents();
-    }
-
-
-
     /// <summary>Attaches a parent relationship and records the corresponding integration event.</summary>
     private static void AttachToParent(
         Node node,
@@ -1087,27 +1011,7 @@ public static class NodeCommands
 
         var parent = candidates[selection - 1];
 
-        if (WouldCreateCycle(
-            node.Id,
-            parent,
-            nodes
-        ))
-        {
-            ConsoleUi.Pause(
-                "That link would create a circular parent chain.");
-            return;
-        }
-
-        new NodeRelationshipService(nodes).Attach(
-            node,
-            parent.Id,
-            actorParticipantId,
-            AtlasTime.UtcNow
-        );
-        PublishDomainEvents(
-            node,
-            eventPublisher
-        );
+        new NodeWorkflowService(nodes, eventPublisher).Attach(node, parent.Id, actorParticipantId);
 
         ConsoleUi.Pause(
             $"Attached {NodeDisplay.PublicTitle(
@@ -1174,17 +1078,7 @@ public static class NodeCommands
 
         var parent = parents[selection - 1];
 
-        node.DetachFromParent(
-            parent.Id,
-            actorParticipantId,
-            AtlasTime.UtcNow
-        );
-
-        nodes.Save(node);
-        PublishDomainEvents(
-            node,
-            eventPublisher
-        );
+        new NodeWorkflowService(nodes, eventPublisher).Detach(node, parent.Id, actorParticipantId);
 
         ConsoleUi.Pause(
             $"Detached {NodeDisplay.PublicTitle(
@@ -1194,47 +1088,6 @@ public static class NodeCommands
                 parent,
                 moderation
             )}.");
-    }
-
-    /// <summary>Checks the current graph before a host-coordinated parent attachment.</summary>
-    private static bool WouldCreateCycle(
-        NodeId childNodeId,
-        Node proposedParent,
-        INodeRepository nodes
-    )
-    {
-        var pending = new Stack<NodeId>(
-            proposedParent.ParentNodeIds);
-        var visited = new HashSet<NodeId>();
-
-        while (pending.Count > 0)
-        {
-            var currentId = pending.Pop();
-
-            if (currentId == childNodeId)
-            {
-                return true;
-            }
-
-            if (!visited.Add(currentId))
-            {
-                continue;
-            }
-
-            var current = nodes.GetById(currentId);
-
-            if (current is null)
-            {
-                continue;
-            }
-
-            foreach (var parentId in current.ParentNodeIds)
-            {
-                pending.Push(parentId);
-            }
-        }
-
-        return false;
     }
 
     /// <summary>Changes requested sub node types during the current workflow.</summary>
@@ -1270,19 +1123,14 @@ public static class NodeCommands
     private static void Rename(
         Node node,
         INodeRepository nodes,
-        Guid actorParticipantId
+        Guid actorParticipantId,
+        InMemoryEventPublisher eventPublisher
     )
     {
         Console.Write("New title: ");
         var title = Console.ReadLine();
 
-        node.Rename(
-            new NodeTitle(title ?? string.Empty),
-            actorParticipantId,
-            AtlasTime.UtcNow
-        );
-
-        nodes.SaveMetadata(node);
+        new NodeWorkflowService(nodes, eventPublisher).Rename(node, actorParticipantId, title ?? string.Empty);
         ConsoleUi.Pause("Node renamed and saved.");
     }
 
@@ -1413,10 +1261,7 @@ public static class NodeCommands
         var exists = communityNodes.GetByNode(node.Id.Value).Any(x => x.CommunityId == community.Id);
         if (exists)
         {
-            communityNodes.Remove(
-                community.Id,
-                node.Id.Value
-            );
+            service.DisassociateNode(community, node.Id.Value, actorParticipantId);
             ConsoleUi.Pause($"Removed this node from {community.Name}.");
         }
         else

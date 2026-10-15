@@ -1,5 +1,8 @@
-using Atlas.ConsoleApp.Eventing;
-using Atlas.ConsoleApp.Notifications;
+using Atlas.ConsoleApp.Diagnostics;
+using Atlas.Application;
+using Atlas.Contracts.Identity;
+using Atlas.Application.Eventing;
+using Atlas.Application.Notifications;
 using Atlas.Identity;
 using Atlas.Comments.Comments;
 using Atlas.ConsoleApp.Communities;
@@ -901,22 +904,8 @@ public sealed class ConsoleApplication
                 if (action == "R")
                 {
                     Console.Write("Restoration rationale: ");
-                    _moderation.RestoreNode(
-                        _authenticatedActor.ParticipantId,
-                        group.NodeId,
-                        Console.ReadLine() ?? string.Empty,
-                        AtlasTime.UtcNow
-                    );
-                    if (node is not null)
-                        _eventPublisher.Publish(new NotificationRequestedV1(
-                            Guid.NewGuid(),
-                            node.AuthorId.Value,
-                            _authenticatedActor.ParticipantId,
-                            "NodeRestored",
-                            "Node",
-                            node.Id.Value,
-                            AtlasTime.UtcNow
-                        ));
+                    new ModerationWorkflowService(_nodeRepository, _documentRepository, _moderation, _eventPublisher)
+                        .Restore(group.NodeId, _authenticatedActor.ParticipantId, Console.ReadLine() ?? string.Empty);
                     ConsoleUi.Pause("Node visibility restored after author review.");
                     return;
                 }
@@ -940,34 +929,8 @@ public sealed class ConsoleApplication
                 Console.Write("Decision rationale: ");
                 var rationale = Console.ReadLine() ?? string.Empty;
                 var decision = action == "H" ? ModerationDecision.HideNode : ModerationDecision.Dismiss;
-                var decided = _moderation.DecideNode(
-                    _authenticatedActor.ParticipantId,
-                    group.NodeId,
-                    decision,
-                    rationale,
-                    AtlasTime.UtcNow,
-                    publicReason
-                );
-                foreach (var report in decided)
-                    _eventPublisher.Publish(new NotificationRequestedV1(
-                        report.Id,
-                        report.ReporterId,
-                        _authenticatedActor.ParticipantId,
-                        "ReportDecided",
-                        "Node",
-                        group.NodeId,
-                        AtlasTime.UtcNow
-                    ));
-                if (node is not null && action == "H")
-                    _eventPublisher.Publish(new NotificationRequestedV1(
-                        Guid.NewGuid(),
-                        node.AuthorId.Value,
-                        _authenticatedActor.ParticipantId,
-                        "NodeHidden",
-                        "Node",
-                        node.Id.Value,
-                        AtlasTime.UtcNow
-                    ));
+                var decided = new ModerationWorkflowService(_nodeRepository, _documentRepository, _moderation, _eventPublisher)
+                    .Decide(group.NodeId, _authenticatedActor.ParticipantId, decision, rationale, publicReason);
                 ConsoleUi.Pause(action == "H"
                     ? $"Node hidden on public surfaces; {decided.Count} pending report(s) closed."
                     : $"{decided.Count} pending report(s) dismissed.");
@@ -1323,7 +1286,7 @@ public sealed class ConsoleApplication
         Console.WriteLine();
 
         Console.WriteLine(
-            Storage.SqlStorage.DescribeCollection(collectionKey));
+            SqlCollectionDisplay.Describe(collectionKey));
 
         ConsoleUi.Pause();
     }

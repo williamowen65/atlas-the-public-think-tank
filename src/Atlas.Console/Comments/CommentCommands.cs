@@ -1,3 +1,5 @@
+using Atlas.Application.Comments;
+using Atlas.Contracts.Identity;
 using Atlas.Comments.Comments;
 using Atlas.Identity;
 using Atlas.Participants.Participants;
@@ -9,10 +11,9 @@ public static class CommentCommands
 {
     public static void Run(
         CommentTarget target,
-        CommentService service,
+        CommentWorkflowService service,
         IParticipantRepository participants,
-        IAuthenticatedActor authenticatedActor,
-        Action<Comment>? onCreated = null
+        IAuthenticatedActor authenticatedActor
     )
     {
         while (true)
@@ -36,8 +37,7 @@ public static class CommentCommands
                     AddTopLevel(
                         target,
                         service,
-                        authenticatedActor,
-                        onCreated
+                        authenticatedActor
                     );
                     break;
                 case "2":
@@ -45,8 +45,7 @@ public static class CommentCommands
                         thread,
                         service,
                         participants,
-                        authenticatedActor,
-                        onCreated
+                        authenticatedActor
                     );
                     break;
                 case "0":
@@ -105,30 +104,28 @@ public static class CommentCommands
 
     public static void AddTopLevel(
         CommentTarget target,
-        CommentService service,
-        IAuthenticatedActor authenticatedActor,
-        Action<Comment>? onCreated = null
+        CommentWorkflowService service,
+        IAuthenticatedActor authenticatedActor
     )
     {
         Console.Write("Comment: ");
         var body = Console.ReadLine() ?? string.Empty;
         TryChange(
-            () => { var created = service.AddTopLevel(
+            () => service.AddTopLevel(
                 target,
                 authenticatedActor.ParticipantId,
                 body,
                 AtlasTime.UtcNow
-            ); onCreated?.Invoke(created); },
+            ),
             "Comment added."
         );
     }
 
     private static void Select(
         IReadOnlyList<CommentThreadItem> thread,
-        CommentService service,
+        CommentWorkflowService service,
         IParticipantRepository participants,
-        IAuthenticatedActor authenticatedActor,
-        Action<Comment>? onCreated
+        IAuthenticatedActor authenticatedActor
     )
     {
         if (thread.Count == 0)
@@ -173,13 +170,12 @@ public static class CommentCommands
                     Console.Write("Reply: ");
                     var reply = Console.ReadLine() ?? string.Empty;
                     TryChange(
-                        () => { var created = service.Reply(
+                        () => service.Reply(
                             comment.Id,
                             authenticatedActor.ParticipantId,
                             reply,
                             AtlasTime.UtcNow
-                        );
-                            onCreated?.Invoke(created); },
+                        ),
                         "Reply added."
                     );
                     return;

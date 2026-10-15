@@ -2,13 +2,13 @@
 
 AuditDelivery moves a **copy of an already committed audit event** from SQL to a destination. SQL remains the authoritative history. It does not perform the original business action or create its audit evidence.
 
-Think of AuditOutbox as a shipping dock: AuditRecordRow is the package's stored contents, while AuditOutboxRow is its destination-specific delivery ticket. The current local console runs one delivery loop per ConsoleTelemetry instance. The leasing protocol also handles competing processes: if multiple workers look at tickets, each must claim a temporary lease before attempting delivery.
+Think of AuditOutbox as a shipping dock: AuditRecordRow is the package's stored contents, while AuditOutboxRow is its destination-specific delivery ticket. The current local console runs one delivery loop per LocalDevelopmentTelemetry instance. The leasing protocol also handles competing processes: if multiple workers look at tickets, each must claim a temporary lease before attempting delivery.
 
 ## How many workers run today?
 
-**The current local console starts one background delivery task per ConsoleTelemetry instance.** Normal console startup creates one instance, so one loop processes audit tickets sequentially. This is not a pool of parallel delivery workers, nor does each ticket start a new task.
+**The current local console starts one background delivery task per LocalDevelopmentTelemetry instance.** Normal console startup creates one instance, so one loop processes audit tickets sequentially. This is not a pool of parallel delivery workers, nor does each ticket start a new task.
 
-[ConsoleTelemetry](../../../src/Atlas.Console/Observability/ConsoleTelemetry.cs) starts that loop with `_delivery = Task.Run(async () => { ... })`. A task is a logical unit of asynchronous work, not a dedicated thread: continuations may use different thread-pool threads, and awaiting database I/O or Task.Delay does not occupy a thread waiting for completion.
+[LocalDevelopmentTelemetry](../../../src/Atlas.Infrastructure/Observability/LocalDevelopmentTelemetry.cs) starts that loop with `_delivery = Task.Run(async () => { ... })`. A task is a logical unit of asynchronous work, not a dedicated thread: continuations may use different thread-pool threads, and awaiting database I/O or Task.Delay does not occupy a thread waiting for completion.
 
 The loop behaves as follows:
 
@@ -43,7 +43,7 @@ Shutdown waits for the worker to stop; it does **not** drain the entire outbox o
 
 - **IAuditDestination** defines a destination name and DeliverAsync. Successful completion means durable acceptance; failure must throw.
 - **LocalAuditDestination** writes the stored PayloadJson through JsonLineFile, which flushes the local write to disk. It returns Task.CompletedTask because that work is synchronous.
-- **AuditDelivery** receives a context factory and a destination. DeliverOneAsync handles at most one candidate per call. ConsoleTelemetry owns the repeated background loop and shutdown.
+- **AuditDelivery** receives a context factory and a destination. DeliverOneAsync handles at most one candidate per call. LocalDevelopmentTelemetry owns the repeated background loop and shutdown.
 
 ## 1. Find an eligible ticket
 

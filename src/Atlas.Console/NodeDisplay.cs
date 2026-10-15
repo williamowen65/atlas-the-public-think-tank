@@ -1,3 +1,4 @@
+using Atlas.Application.Queries;
 using Atlas.Contracts.Observability;
 using Atlas.Content.Blocks;
 using Atlas.Comments.Comments;

@@ -24,7 +24,7 @@ Related requirements: [GRA-001](../requirements/REQUIREMENTS.md#gra-001), [GRA-0
 5. Save the block, document and Node through repositories sharing the operation context and transaction.
 6. Commit the outer transaction only after every save succeeds; the service returns the Node.
 7. After commit, the host publishes `NodeCreatedV1` and any recorded `NodeParentAttachedV1` through the in-memory event bus, outside the SQL transaction.
-8. Registered subscribers handle each event synchronously. The [Console-owned Content observer](../../src/Atlas.Console/Content/ObserveNodeLifecycleInContent.cs) receives `NodeCreatedV1` and checks its DescriptionId against the committed document. Events without registered handlers have no subscriber action.
+8. Registered subscribers handle each event synchronously. The [Console-owned Content observer](../../src/Atlas.Application/Content/ObserveNodeLifecycleInContent.cs) receives `NodeCreatedV1` and checks its DescriptionId against the committed document. Events without registered handlers have no subscriber action.
 9. The host clears successfully dispatched events and displays the new node.
 
 ### Persistent result
@@ -36,7 +36,7 @@ Related requirements: [GRA-001](../requirements/REQUIREMENTS.md#gra-001), [GRA-0
 
 ### Transaction and failure behavior
 
-[NodeCreationService](../../src/Atlas.Console/NodeCreationService.cs) constructs the proposed block, document and Node before persistence, then saves them in one shared topology-coordinated SQL transaction. Failure rolls back all related writes; caller objects must be reloaded before retrying. Event dispatch follows successful commit and remains outside the transaction. See [failure-path evidence](../security/validation/IMPLEMENTATION.md#workflows-and-evidence).
+[NodeCreationService](../../src/Atlas.Application/NodeCreationService.cs) constructs the proposed block, document and Node before persistence, then saves them in one shared topology-coordinated SQL transaction. Failure rolls back all related writes; caller objects must be reloaded before retrying. Event dispatch follows successful commit and remains outside the transaction. See [failure-path evidence](../security/validation/IMPLEMENTATION.md#workflows-and-evidence).
 
 ## Archive and restore
 

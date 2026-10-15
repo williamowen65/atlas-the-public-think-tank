@@ -1,3 +1,6 @@
+using Atlas.Application;
+using ReactionChoice = Atlas.Application.ReactionVotingService.ReactionChoice;
+using Atlas.Contracts.Identity;
 using Atlas.Graph.Nodes;
 using Atlas.Identity;
 using Atlas.Graph.Reactions;
@@ -23,10 +26,7 @@ public static class ReactionCommands
         IAuthenticatedActor authenticatedActor
     )
     {
-        var service = new NodeReactionApplicationService(
-            definitions,
-            reactions
-        );
+        var service = new ReactionVotingService(definitions, reactions, castVote, participants);
         var currentParticipant = participants.GetById(new ParticipantId(authenticatedActor.ParticipantId))
             ?? throw new InvalidOperationException("The authenticated Atlas participant was not found.");
 
@@ -41,7 +41,7 @@ public static class ReactionCommands
             Console.WriteLine($"Acting as: {currentParticipant.DisplayName}");
             Console.WriteLine();
 
-            var choices = BuildChoices(
+            var choices = ReactionVotingService.BuildChoices(
                 node,
                 definitions,
                 reactions,
@@ -80,19 +80,7 @@ public static class ReactionCommands
             try
             {
                 var choice = choices[selection - 1];
-                var association = choice.Association ?? service.Apply(
-                    node,
-                    choice.Definition.Text,
-                    authenticatedActor.ParticipantId,
-                    currentParticipant.IsActive,
-                    AtlasTime.UtcNow
-                );
-
-                castVote.Execute(
-                    new NodeReactionVoteTarget(association.Id.Value),
-                    new VotingParticipantId(authenticatedActor.ParticipantId),
-                    value.Value
-                );
+                service.Vote(node, choice.Definition.Text, authenticatedActor.ParticipantId, value.Value);
                 ConsoleUi.Pause("Your reaction vote was saved.");
             }
             catch (Exception exception) when (exception is ArgumentException or
@@ -102,43 +90,6 @@ public static class ReactionCommands
                 ConsoleUi.Pause($"Unable to vote on the reaction: {exception.Message}");
             }
         }
-    }
-
-    private static IReadOnlyList<ReactionChoice> BuildChoices(
-        Node node,
-        IReactionDefinitionRepository definitions,
-        INodeReactionRepository reactions,
-        IVoteRepository votes,
-        VotingParticipantId participantId
-    )
-    {
-        var associations = reactions.GetActiveForNode(node.Id)
-            .ToDictionary(item => item.ReactionDefinitionId);
-
-        return definitions.GetAll()
-            .Where(definition => !definition.IsSuppressed)
-            .OrderBy(definition => definition.Text)
-            .Select(definition =>
-            {
-                associations.TryGetValue(
-                    definition.Id,
-                    out var association
-                );
-                var summary = association is null
-                    ? null
-                    : new GetNodeReactionVoteSummary(votes).Execute(
-                        new NodeReactionVoteTarget(association.Id.Value),
-                        participantId
-                    );
-                return new ReactionChoice(
-                    definition,
-                    association,
-                    summary?.Score ?? 0,
-                    summary?.TotalVotes ?? 0,
-                    summary?.CurrentParticipantVote
-                );
-            })
-            .ToList();
     }
 
     private static void WriteChoices(IReadOnlyList<ReactionChoice> choices)
@@ -159,11 +110,4 @@ public static class ReactionCommands
         Console.WriteLine();
     }
 
-    private sealed record ReactionChoice(
-        ReactionDefinition Definition,
-        NodeReaction? Association,
-        int Score,
-        int TotalVotes,
-        int? CurrentParticipantVote
-    );
 }

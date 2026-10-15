@@ -9,6 +9,7 @@ Atlas is currently a modular application hosted by Atlas.Console. Its projects a
 
 ## Documents
 
+- [Visual architecture guide](diagrams/README.md) connects composition UML, workflow sequences and decision trees to implementation and tests.
 - [Context map](CONTEXT-MAP.md) describes the boundaries and their relationships.
 - [Data ownership](DATA-OWNERSHIP.md) identifies the authoritative owner of records and identifiers.
 - [Voting boundary](VOTING.md) defines Voting ownership, policies, integration needs, and open decisions.
@@ -21,14 +22,16 @@ Atlas is currently a modular application hosted by Atlas.Console. Its projects a
 - The host composes workflows and views; it does not become the owner of domain rules.
 - Published contracts are versioned and contain communication data, not domain entities.
 - Authorization is enforced at an application use-case boundary even when a UI also hides unavailable actions.
-- The Console uses SQL Server repository adapters and one shared `Atlas.Persistence.AtlasDataContext`. Domain repository interfaces remain independent of EF Core. The synchronous in-memory publisher still requires durable delivery design for production.
+- Hosts select reusable Atlas.Infrastructure SQL Server repository adapters and one shared `Atlas.Persistence.AtlasDataContext`. Domain repository interfaces remain independent of EF Core. The synchronous in-memory publisher still requires durable delivery design for production.
 
 ## Current versus future topology
 
-Today, Atlas.Console references the boundary projects directly and provides persistence adapters and event dispatch. This makes boundary interactions observable without requiring distributed infrastructure.
+Today, Atlas.Console composes Application workflows, domain services, Infrastructure persistence adapters and the reusable event publisher. Application owns cross-domain orchestration; Infrastructure owns concrete SQL adapters. This makes boundary interactions observable without requiring distributed infrastructure.
 
 A future web application may first retain the same modular-monolith shape. If a boundary later becomes an independent service, its public application API and integration contracts form the migration seam.
 
 - [Moderation boundary and first workflow](MODERATION.md)
 
 - [Notifications boundary](NOTIFICATIONS.md) documents the PTT-102 initial slice and delivery seam.
+
+See [thin-host ownership and application composition](APPLICATION-WORKFLOWS.md) for the current project layout and API reuse boundaries.
