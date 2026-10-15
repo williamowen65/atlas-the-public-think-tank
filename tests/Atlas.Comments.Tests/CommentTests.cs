@@ -1,4 +1,3 @@
-using Atlas.Application.Comments;
 using Atlas.Contracts.Operations;
 using Atlas.Comments.Comments;
 
