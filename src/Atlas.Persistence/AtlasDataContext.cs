@@ -38,6 +38,15 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
     // Completed writes are published only after the outer transaction commits. Failed writes
     // leave no success diagnostic; audit/outbox rows roll back with the business rows.
     private readonly List<(Guid TransactionId, TelemetryEvent Event)> _pendingTelemetry = [];
+    /// <summary>Publish staged diagnostics for the transaction whose commit has been confirmed.</summary>
+    /// <remarks>
+    /// The developer/caller owns the ordering: first commit the SQL transaction successfully,
+    /// then call this method with that transaction's ID. This method does not commit the
+    /// transaction or verify its outcome; calling it early could report success for work
+    /// that later rolls back. Do not call it after a failed or uncertain commit.
+    /// SaveChanges handles this ordering for transactions it owns; an outer transaction
+    /// owner must explicitly commit first and publish afterward.
+    /// </remarks>
     public void PublishCommittedTelemetry(Guid transactionId)
     {
         foreach (var item in _pendingTelemetry.Where(item => item.TransactionId == transactionId))
