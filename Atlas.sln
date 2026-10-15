@@ -344,6 +344,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Observability", "Observabil
 	ProjectSection(SolutionItems) = preProject
 		docs\blackboards\workflows\Observability\ObservabilityAndAudit.excalidraw = docs\blackboards\workflows\Observability\ObservabilityAndAudit.excalidraw
 		docs\blackboards\workflows\Observability\ObservabilityAndAudit.md = docs\blackboards\workflows\Observability\ObservabilityAndAudit.md
+		docs\blackboards\workflows\Observability\ObservabilityProcessFlow.excalidraw = docs\blackboards\workflows\Observability\ObservabilityProcessFlow.excalidraw
+		docs\blackboards\workflows\Observability\ObservabilityUml.excalidraw = docs\blackboards\workflows\Observability\ObservabilityUml.excalidraw
+		docs\blackboards\workflows\Observability\DIAGRAMS.md = docs\blackboards\workflows\Observability\DIAGRAMS.md
 	EndProjectSection
 EndProject
 Global

@@ -42,6 +42,8 @@ The [Node creation board](workflows/Nodes/NodeCreation.excalidraw) restores the 
 
 - [Observability and durable audit](workflows/Observability/ObservabilityAndAudit.excalidraw) provides a numbered review route through host wiring, four JSONL streams, SQL atomicity, outbox recovery, node-view privacy, correlation, metrics, local retention, tests and discovery instrumentation. Each card links to specific code lines. See the [linked review map](workflows/Observability/ObservabilityAndAudit.md).
 
+- [Observability process flow](workflows/Observability/ObservabilityProcessFlow.excalidraw) follows startup, scope boundaries, decisions, signal creation and audit delivery. [Observability UML](workflows/Observability/ObservabilityUml.excalidraw) explains responsibilities and patterns. See the [diagram guide](workflows/Observability/DIAGRAMS.md).
+
 ## Legend
 
 - Solid borders and arrows represent implemented components or interactions.
