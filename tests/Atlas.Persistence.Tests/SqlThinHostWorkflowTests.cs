@@ -81,7 +81,8 @@ public sealed class SqlThinHostWorkflowTests
         var service = new Atlas.Communities.Communities.CommunityService(repository,
             new SqlCommunityMembershipRepository(database.Open), new SqlCommunityNodeRepository(database.Open));
         var community = service.Create("Local group", "Original", owner, DateTimeOffset.UtcNow);
-        Assert.Throws<UnauthorizedAccessException>(() => service.ChangeDescription(community, other, "Forbidden", DateTimeOffset.UtcNow));
+        var denied = Assert.Throws<InvalidOperationException>(() => service.ChangeDescription(community, other, "Forbidden", DateTimeOffset.UtcNow));
+        Assert.AreEqual("Only the community owner may change this community.", denied.Message);
         Assert.AreEqual("Original", repository.GetById(community.Id)!.Description);
         service.ChangeDescription(community, owner, "Updated", DateTimeOffset.UtcNow);
         service.Archive(community, owner, DateTimeOffset.UtcNow);
