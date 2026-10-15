@@ -1,3 +1,4 @@
+using Atlas.Contracts.Observability;
 using Atlas.Content.Documents;
 using Atlas.Discovery;
 using Atlas.Graph.Nodes;
@@ -52,6 +53,7 @@ public static class ParticipantCommands
             Console.WriteLine();
             Console.Write("Selection: ");
 
+            using var commandTelemetry = Telemetry.BeginOperation(authenticatedActor.ParticipantId);
             switch (Console.ReadLine())
             {
                 case "1":
@@ -150,14 +152,17 @@ public static class ParticipantCommands
         }
         catch (UnauthorizedAccessException exception)
         {
+                Telemetry.Failure(EventKind.StorageWrite, exception);
             ConsoleUi.Pause($"Permission denied: {exception.Message}");
         }
         catch (ArgumentException exception)
         {
+                Telemetry.Failure(EventKind.StorageWrite, exception);
             ConsoleUi.Pause($"Unable to update profile: {exception.Message}");
         }
         catch (InvalidOperationException exception)
         {
+                Telemetry.Failure(EventKind.StorageWrite, exception);
             ConsoleUi.Pause($"Unable to update profile: {exception.Message}");
         }
 

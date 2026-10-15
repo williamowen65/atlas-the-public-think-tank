@@ -1,3 +1,4 @@
+using Atlas.Contracts.Observability;
 using Atlas.Content.Blocks;
 using Atlas.Comments.Comments;
 using Atlas.Communities.Communities;
@@ -159,6 +160,33 @@ public static class NodeDisplay
 
     /// <summary>Writes details to the console display.</summary>
     public static void WriteDetails(
+        Node node,
+        INodeRepository nodes,
+        INodeTypeRepository nodeTypes,
+        IDocumentRepository documents,
+        IParticipantRepository participants,
+        INodeReactionRepository nodeTags,
+        IReactionDefinitionRepository tagDefinitions,
+        IVoteRepository votes,
+        ICommunityRepository? communities = null,
+        ICommunityNodeRepository? communityNodes = null,
+        ICommentRepository? comments = null,
+        VotingParticipantId? votingParticipantId = null,
+        int? voteCount = null,
+        double? averageVote = null,
+        int? currentParticipantVote = null,
+        IReadOnlyDictionary<NodeId, NodeVoteSummary>? childVoteSummaries = null,
+        ModerationService? moderation = null,
+        bool showOriginalContent = false
+    )
+    {
+        // Covers both signed-in and anonymous detail rendering. Keep input prompts and
+        // mutations outside this privacy-isolated measurement; no IDs enter its envelope.
+        Telemetry.ObserveNodeView(() => WriteDetailsCore(
+            node, nodes, nodeTypes, documents, participants, nodeTags, tagDefinitions, votes, communities, communityNodes, comments, votingParticipantId, voteCount, averageVote, currentParticipantVote, childVoteSummaries, moderation, showOriginalContent));
+    }
+
+    private static void WriteDetailsCore(
         Node node,
         INodeRepository nodes,
         INodeTypeRepository nodeTypes,

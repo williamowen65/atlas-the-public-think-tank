@@ -1,4 +1,6 @@
 using System.Data;
+using System.Diagnostics;
+using Atlas.Contracts.Observability;
 using Atlas.Persistence;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -37,9 +39,13 @@ public static class SqlOperationBoundary
             );
             return operation();
         }
+        using var correlation = Telemetry.JoinOperation();
+        using var span = Atlas.Observability.LocalTelemetry.Activities.StartActivity("storage.transaction");
         using var database = open();
         // Serializable isolation protects the transaction's reads and writes until completion.
         using var transaction = database.Database.BeginTransaction(IsolationLevel.Serializable);
+        var started = Stopwatch.GetTimestamp();
+        var committing = false;
         try
         {
             AcquireLock(
@@ -48,15 +54,25 @@ public static class SqlOperationBoundary
             );
             Current.Value = database;
             var result = operation();
+            committing = true;
             transaction.Commit();
+            database.PublishCommittedTelemetry(transaction.TransactionId);
+            Telemetry.Record(Telemetry.Create(EventKind.StorageWrite, durationMs: Stopwatch.GetElapsedTime(started).TotalMilliseconds));
             return result;
         }
         catch (Exception exception) when (IsConflict(exception))
         {
+            Telemetry.Record(Telemetry.Create(EventKind.StorageWrite, outcome: EventOutcome.Conflict, reason: EventReason.StorageConflict));
             throw new OperationConflictException(
                 "The operation conflicted with another write or a database constraint. Reload and retry.",
                 exception
             );
+        }
+        catch (Exception error)
+        {
+            Telemetry.Failure(EventKind.StorageWrite, error,
+                committing ? EventReason.CommitOutcomeUnknown : Telemetry.Reason(error));
+            throw;
         }
         finally { Current.Value = null; }
     }

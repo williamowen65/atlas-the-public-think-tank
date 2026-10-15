@@ -1,3 +1,4 @@
+using Atlas.Contracts.Observability;
 using Atlas.Communities.Communities;
 using Atlas.Comments.Comments;
 using Atlas.Communities.Memberships;
@@ -82,6 +83,7 @@ public static class CommunityCommands
             Console.WriteLine("7. Return");
             Console.Write("Selection: ");
 
+            using var commandTelemetry = Telemetry.BeginOperation(authenticatedActor.ParticipantId);
             try
             {
                 switch (Console.ReadLine())
@@ -170,8 +172,10 @@ public static class CommunityCommands
                     default: ConsoleUi.Pause("That is not a valid selection."); break;
                 }
             }
-            catch (ArgumentException exception) { ConsoleUi.Pause(exception.Message); }
-            catch (InvalidOperationException exception) { ConsoleUi.Pause(exception.Message); }
+            catch (ArgumentException exception) {
+                Telemetry.Failure(EventKind.StorageWrite, exception); ConsoleUi.Pause(exception.Message); }
+            catch (InvalidOperationException exception) {
+                Telemetry.Failure(EventKind.StorageWrite, exception); ConsoleUi.Pause(exception.Message); }
         }
     }
 }

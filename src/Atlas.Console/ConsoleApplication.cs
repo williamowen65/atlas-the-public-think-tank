@@ -21,6 +21,8 @@ using Atlas.Voting.Data;
 using Atlas.Voting.Target;
 using VotingParticipantId = Atlas.Voting.Votes.ParticipantId;
 
+using Atlas.Contracts.Observability;
+
 namespace Atlas.ConsoleApp;
 
 /// <summary>Runs the console host and coordinates user-facing workflows across Atlas boundaries.</summary>
@@ -155,6 +157,7 @@ public sealed class ConsoleApplication
 
             Console.Write("Selection: ");
 
+            using var commandTelemetry = Telemetry.BeginOperation(_authenticatedActor.ParticipantId);
             switch (Console.ReadLine())
             {
                 case "1":
@@ -973,6 +976,7 @@ public sealed class ConsoleApplication
         }
         catch (Exception error) when (error is ArgumentException or UnauthorizedAccessException or InvalidOperationException)
         {
+                Telemetry.Failure(EventKind.StorageWrite, error);
             ConsoleUi.Pause($"Unable to decide report: {error.Message}");
         }
     }
@@ -1127,8 +1131,10 @@ public sealed class ConsoleApplication
             );
             ConsoleUi.Pause($"Created {community.Name}. You are its owner and first member.");
         }
-        catch (ArgumentException exception) { ConsoleUi.Pause(exception.Message); }
-        catch (InvalidOperationException exception) { ConsoleUi.Pause(exception.Message); }
+        catch (ArgumentException exception) {
+                Telemetry.Failure(EventKind.StorageWrite, exception); ConsoleUi.Pause(exception.Message); }
+        catch (InvalidOperationException exception) {
+                Telemetry.Failure(EventKind.StorageWrite, exception); ConsoleUi.Pause(exception.Message); }
     }
 
     private void BrowseCommunities()

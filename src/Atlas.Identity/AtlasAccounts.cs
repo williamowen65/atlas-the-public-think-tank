@@ -1,3 +1,4 @@
+using Atlas.Contracts.Observability;
 using System.Data;
 using System.Security.Claims;
 using Atlas.Participants.Participants;
@@ -27,7 +28,25 @@ public sealed class AtlasAccounts(
     /// AtlasAccounts owns coordinated account/profile creation; email delivery and HTTP confirmation belong to the host.
     /// The console's --confirm-email command is only a local-development substitute for that future delivery flow.
     /// </summary>
-    public async Task<AccountRegistration> RegisterAsync(
+    public async Task<AccountRegistration> RegisterAsync(string email, string password, string displayName, CancellationToken cancellationToken = default)
+    {
+        using var operation = Telemetry.BeginOperation();
+        try
+        {
+            var result = await RegisterCoreAsync(email, password, displayName, cancellationToken);
+            Telemetry.Record(Telemetry.Create(EventKind.Registration, result.ParticipantId?.Value,
+                result.Result.Succeeded ? EventOutcome.Succeeded : EventOutcome.Denied,
+                result.Result.Succeeded ? EventReason.None : EventReason.InvalidInput));
+            return result;
+        }
+        catch (Exception error)
+        {
+            Telemetry.Record(Telemetry.Create(EventKind.Registration, outcome: EventOutcome.Failed, reason: Telemetry.Reason(error)));
+            throw;
+        }
+    }
+
+    private async Task<AccountRegistration> RegisterCoreAsync(
         string email,
         string password,
         string displayName,
@@ -99,6 +118,7 @@ public sealed class AtlasAccounts(
                 null
             );
             await transaction.CommitAsync(cancellationToken);
+            database.PublishCommittedTelemetry(transaction.TransactionId);
             return new(
                 IdentityResult.Success,
                 participant.Id

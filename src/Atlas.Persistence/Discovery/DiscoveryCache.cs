@@ -1,3 +1,4 @@
+using Atlas.Contracts.Observability;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -112,11 +113,13 @@ public sealed class DiscoveryCache : IDisposable
         if (_pages.TryGetValue(key, out DiscoveryPage? value))
         {
             PageHits++;
+            Telemetry.CacheLookup(detail: false, hit: true);
             page = value!;
             return true;
         }
 
         PageMisses++;
+        Telemetry.CacheLookup(detail: false, hit: false);
         page = null!;
         return false;
     }
@@ -145,11 +148,13 @@ public sealed class DiscoveryCache : IDisposable
         if (_details.TryGetValue((version, id), out DiscoveryCard? value))
         {
             DetailHits++;
+            Telemetry.CacheLookup(detail: true, hit: true);
             card = value!;
             return true;
         }
 
         DetailMisses++;
+        Telemetry.CacheLookup(detail: true, hit: false);
         card = null!;
         return false;
     }

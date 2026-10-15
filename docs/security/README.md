@@ -23,6 +23,6 @@ The structure was established by PTT-97, the pre-UI application security baselin
 | `negative-paths/` | PTT-123 | Security-relevant failure and rejection behavior |
 | `abuse-prevention/` | PTT-124 | Rate limiting and repeated-request abuse responsibilities |
 | `api-browser/` | PTT-125 | Future HTTP, API, and browser security controls |
-| `observability/` | PTT-126 | Security logging, audit, and observability requirements |
+| [observability/](observability/README.md) | PTT-126 | Security logging, audit, and observability requirements |
 
 Only the review area currently being worked should be created. Empty placeholder folders/files are intentionally avoided.

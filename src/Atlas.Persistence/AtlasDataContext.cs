@@ -1,3 +1,5 @@
+using Atlas.Contracts.Observability;
+using Atlas.Persistence.Observability;
 using Atlas.Persistence.Discovery;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
@@ -28,89 +30,113 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
     public DbSet<NotificationRow> NotificationRows => Set<NotificationRow>();
     public DbSet<NotificationPreferencesRow> NotificationPreferencesRows => Set<NotificationPreferencesRow>();
 
-    /// <summary>
-    /// Saves tracked rows and advances the Discovery cache revisions in the same transaction.
-    /// A failed save or a caller's rollback undoes both database changes.
-    /// </summary>
+    /// <summary>Required by deployed hosts; local development acknowledges only its file destination.</summary>
+    public bool RequireCloudAuditDelivery { get; set; }
+    public DbSet<AuditRecordRow> AuditRecords => Set<AuditRecordRow>();
+    public DbSet<AuditOutboxRow> AuditOutbox => Set<AuditOutboxRow>();
+
+    // Completed writes are published only after the outer transaction commits. Failed writes
+    // leave no success diagnostic; audit/outbox rows roll back with the business rows.
+    private readonly List<(Guid TransactionId, TelemetryEvent Event)> _pendingTelemetry = [];
+    /// <summary>Publish staged diagnostics for the transaction whose commit has been confirmed.</summary>
+    /// <remarks>
+    /// The developer/caller owns the ordering: first commit the SQL transaction successfully,
+    /// then call this method with that transaction's ID. This method does not commit the
+    /// transaction or verify its outcome; calling it early could report success for work
+    /// that later rolls back. Do not call it after a failed or uncertain commit.
+    /// SaveChanges handles this ordering for transactions it owns; an outer transaction
+    /// owner must explicitly commit first and publish afterward.
+    /// </remarks>
+    public void PublishCommittedTelemetry(Guid transactionId)
+    {
+        foreach (var item in _pendingTelemetry.Where(item => item.TransactionId == transactionId))
+            Telemetry.Record(item.Event);
+        _pendingTelemetry.Clear();
+    }
+
+    /// <summary>Save business rows, selected audit evidence, delivery intent and revisions atomically.</summary>
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
-        // Detect pending additions, edits and deletions before EF resets their tracked states.
-        // Page means ranked results may change; Detail means public card data may change too.
+        using var correlation = Telemetry.JoinOperation();
         var change = DiscoveryInvalidation.Changes(this);
-        if (!change.Page)
-            return base.SaveChanges(acceptAllChangesOnSuccess);
-
-        // Reuse a caller's transaction without taking ownership of it. Otherwise create one
-        // so the revision UPDATE and EF's row writes succeed or roll back together.
-        using var transaction = Database.CurrentTransaction is null
-            ? Database.BeginTransaction()
-            : null;
-
-        AdvanceDiscovery(change.Detail);
-        var count = base.SaveChanges(acceptAllChangesOnSuccess);
-
-        // Only commit a transaction created here. An outer transaction remains the caller's job.
-        // Disposing our uncommitted transaction on an exception rolls back its database writes.
-        transaction?.Commit();
-        return count;
+        using var transaction = Database.CurrentTransaction is null ? Database.BeginTransaction() : null;
+        // Select only approved transition metadata. Audit/outbox additions join this save;
+        // no cloud or file write is attempted while the SQL transaction is open.
+        var staged = AuditCapture.Stage(this);
+        var committing = false;
+        try
+        {
+            if (change.Page) AdvanceDiscovery(change.Detail);
+            var count = base.SaveChanges(acceptAllChangesOnSuccess);
+            var transactionId = Database.CurrentTransaction!.TransactionId;
+            committing = transaction is not null;
+            transaction?.Commit();
+            _pendingTelemetry.AddRange(staged.Select(value => (transactionId, value)));
+            // An outer operation will publish only after its own commit. Its pending
+            // records are associated with that transaction ID, not a later retry's transaction.
+            if (transaction is not null) PublishCommittedTelemetry(transactionId);
+            return count;
+        }
+        catch (Exception error)
+        {
+            Telemetry.Failure(EventKind.StorageWrite, error,
+                committing ? EventReason.CommitOutcomeUnknown : Telemetry.Reason(error));
+            RemoveUncommittedAudit(staged);
+            throw;
+        }
     }
 
-    /// <summary>
-    /// Asynchronously saves tracked rows and Discovery revisions atomically. When a caller
-    /// already owns a transaction, that caller decides when to commit or roll back both.
-    /// </summary>
-    public override async Task<int> SaveChangesAsync(
-        bool acceptAllChangesOnSuccess,
-        CancellationToken cancellationToken = default)
+    /// <summary>Async equivalent: an outer transaction still owns its commit and telemetry publication.</summary>
+    public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
-        // 1. Classify tracked changes while their original values and pending states are available.
-        // Changes also runs DetectChanges, so ordinary property edits are included.
+        // Classify before EF accepts tracked states, then join or create the transaction.
+        using var correlation = Telemetry.JoinOperation();
         var change = DiscoveryInvalidation.Changes(this);
-
-        // Unrelated writes, such as notification delivery, need no Discovery revision update.
-        // base calls EF's implementation rather than calling this override again.
-        if (!change.Page)
-            return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
-
-        // 2. A null local variable means we joined an existing transaction, not that writes
-        // run without one. await using asynchronously disposes only a transaction we create.
         await using var transaction = Database.CurrentTransaction is null
-            ? await Database.BeginTransactionAsync(cancellationToken)
-            : null;
-
-        // 3. Increment the singleton revision before saving the tracked rows, within that
-        // same transaction. SQL increments the stored values directly, avoiding a lost update
-        // from two writers reading and then replacing the same revision value.
-        // Every relevant write advances PageVersion; DetailVersion advances only when needed.
-        // Interpolated values become SQL parameters. Cancellation is passed to each async call.
-        var countUpdated = await Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE DiscoveryRevisions SET PageVersion = PageVersion + 1, DetailVersion = DetailVersion + {(change.Detail ? 1 : 0)} WHERE Id = 1",
-            cancellationToken);
-
-        // Exactly one revision row must exist. Stop instead of saving data that caches could
-        // mistake for unchanged data. The migration seeds this row; demo seeding is not required.
-        if (countUpdated != 1)
-            throw new InvalidOperationException("Discovery revision is missing; apply the pending migration.");
-
-        // 4. Let EF persist the pending rows. The bool controls whether EF accepts the tracked
-        // changes after a successful save; it does not commit a caller-owned transaction.
-        // count is EF's saved state-entry count and excludes the separate revision SQL update.
-        var count = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
-
-        // 5. Commit only our own transaction. Otherwise leave commit/rollback to the caller.
-        // No in-memory cache is cleared here: discovery readers compare these database revisions
-        // with their cache keys and stop reusing entries from older revisions.
-        if (transaction is not null)
-            await transaction.CommitAsync(cancellationToken);
-
-        return count;
+            ? await Database.BeginTransactionAsync(cancellationToken) : null;
+        // Select only approved transition metadata. Audit/outbox additions join this save;
+        // no cloud or file write is attempted while the SQL transaction is open.
+        var staged = AuditCapture.Stage(this);
+        var committing = false;
+        try
+        {
+            if (change.Page)
+            {
+                var updated = await Database.ExecuteSqlInterpolatedAsync(
+                    $"UPDATE DiscoveryRevisions SET PageVersion = PageVersion + 1, DetailVersion = DetailVersion + {(change.Detail ? 1 : 0)} WHERE Id = 1", cancellationToken);
+                if (updated != 1) throw new InvalidOperationException("Discovery revision is missing; apply the pending migration.");
+            }
+            // Audit records/outbox are tracked additions, so EF inserts them in this same save.
+            var count = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+            var transactionId = Database.CurrentTransaction!.TransactionId;
+            committing = transaction is not null;
+            if (transaction is not null) await transaction.CommitAsync(cancellationToken);
+            _pendingTelemetry.AddRange(staged.Select(value => (transactionId, value)));
+            // An outer operation will publish only after its own commit. Its pending
+            // records are associated with that transaction ID, not a later retry's transaction.
+            if (transaction is not null) PublishCommittedTelemetry(transactionId);
+            return count;
+        }
+        catch (Exception error)
+        {
+            Telemetry.Failure(EventKind.StorageWrite, error,
+                committing ? EventReason.CommitOutcomeUnknown : Telemetry.Reason(error));
+            RemoveUncommittedAudit(staged);
+            throw;
+        }
     }
 
-    /// <summary>Advances the singleton revision for synchronous saves inside their transaction.</summary>
+    private void RemoveUncommittedAudit(List<TelemetryEvent> staged)
+    {
+        var ids = staged.Select(value => value.EventId).ToHashSet();
+        foreach (var entry in ChangeTracker.Entries().ToArray())
+            if (entry.Entity is AuditRecordRow record && ids.Contains(record.Id)
+                || entry.Entity is AuditOutboxRow delivery && ids.Contains(delivery.AuditRecordId))
+                entry.State = EntityState.Detached;
+    }
+
     private void AdvanceDiscovery(bool details)
     {
-        // Use an atomic, parameterized database increment, matching the asynchronous path.
-        // A missing singleton indicates that the required schema/seed migration is not applied.
         if (Database.ExecuteSqlInterpolated($"UPDATE DiscoveryRevisions SET PageVersion = PageVersion + 1, DetailVersion = DetailVersion + {(details ? 1 : 0)} WHERE Id = 1") != 1)
             throw new InvalidOperationException("Discovery revision is missing; apply the pending migration.");
     }
@@ -143,6 +169,26 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
     protected override void OnModelCreating(ModelBuilder model)
     {
         base.OnModelCreating(model);
+        model.Entity<AuditRecordRow>(entity =>
+        {
+            entity.ToTable("AuditRecords");
+            entity.HasKey(row => row.Id);
+            entity.Property(row => row.Id).ValueGeneratedNever();
+            entity.Property(row => row.EventName).HasMaxLength(100).IsRequired();
+            entity.Property(row => row.PayloadJson).IsRequired();
+            entity.HasIndex(row => row.ObservabilityOperationId);
+            entity.HasIndex(row => new { row.TargetId, row.OccurredAtUtc });
+        });
+        model.Entity<AuditOutboxRow>(entity =>
+        {
+            entity.ToTable("AuditOutbox");
+            entity.HasKey(row => row.Id);
+            entity.Property(row => row.Id).ValueGeneratedNever();
+            entity.Property(row => row.Destination).HasMaxLength(20).IsRequired();
+            entity.HasIndex(row => new { row.AuditRecordId, row.Destination }).IsUnique();
+            entity.HasIndex(row => new { row.Destination, row.DeliveredAtUtc, row.NextAttemptAtUtc });
+            entity.HasOne<AuditRecordRow>().WithMany().HasForeignKey(row => row.AuditRecordId).OnDelete(DeleteBehavior.Restrict);
+        });
         ConfigureModel(model);
         // One database-wide revision row lets readers detect stale page/card cache entries.
         // HasData records migration seed data; it does not insert a row on every context creation.

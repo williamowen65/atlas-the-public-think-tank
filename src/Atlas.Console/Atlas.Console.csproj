@@ -33,4 +33,15 @@
     <ProjectReference Include="..\Atlas.Voting\Atlas.Voting.csproj" />
   </ItemGroup>
 
+  <!-- Link generated development logs into Solution Explorer without copying or publishing them.
+       The wildcard includes rotated files when Visual Studio reevaluates the project. -->
+  <ItemGroup>
+    <Folder Include="Logs\Observability\" />
+    <None Include="../../logs/observability/**/*.jsonl"
+          Link="Logs/Observability/%(RecursiveDir)%(Filename)%(Extension)"
+          CopyToOutputDirectory="Never"
+          CopyToPublishDirectory="Never"
+          Watch="false" />
+  </ItemGroup>
+
 </Project>

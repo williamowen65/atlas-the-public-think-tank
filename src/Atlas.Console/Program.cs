@@ -1,4 +1,6 @@
 using Atlas.Identity;
+using Atlas.ConsoleApp.Observability;
+using Atlas.Contracts.Observability;
 using Atlas.ConsoleApp.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Atlas.ConsoleApp;
@@ -40,6 +42,8 @@ using var identityServices = new ServiceCollection().AddAtlasIdentity(connection
         ValidateScopes = true
     });
 var accountScopes = identityServices.GetRequiredService<IServiceScopeFactory>();
+using var telemetry = new ConsoleTelemetry(configuration, SqlStorage.Open);
+System.Console.WriteLine($"Local telemetry: {telemetry.DirectoryPath}");
 
 if (args.Contains(
     "--seed-demo",
@@ -165,6 +169,7 @@ eventPublisher.Subscribe<NodeArchivedV1>(
 
 while (true)
 {
+    using var commandTelemetry = Telemetry.BeginOperation();
     System.Console.Clear();
     System.Console.WriteLine("ATLAS");
     System.Console.WriteLine("-----");
