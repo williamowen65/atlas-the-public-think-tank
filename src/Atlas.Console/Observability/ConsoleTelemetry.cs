@@ -8,6 +8,13 @@ using Microsoft.EntityFrameworkCore;
 namespace Atlas.ConsoleApp.Observability;
 
 /// <summary>Owns local files and a recoverable SQL-to-file delivery loop. Cloud wiring remains a separate host adapter.</summary>
+/// <remarks>
+/// Future production wiring should live in a separate file/class rather than mixing
+/// local and production implementations here. Keep this local file-based option available
+/// alongside the production option, with the host selecting the appropriate implementation.
+/// This development-only implementation is sufficient for the current host; introduce
+/// the separate production implementation when deployment requires it.
+/// </remarks>
 internal sealed class ConsoleTelemetry : IDisposable
 {
     private readonly LocalTelemetry _local;
