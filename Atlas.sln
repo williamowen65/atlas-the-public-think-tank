@@ -334,6 +334,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "observability", "observabil
 	ProjectSection(SolutionItems) = preProject
 		docs\security\observability\EVENTS.md = docs\security\observability\EVENTS.md
 		docs\security\observability\IMPLEMENTATION.md = docs\security\observability\IMPLEMENTATION.md
+		docs\security\observability\LEGACY-COMPARISON.md = docs\security\observability\LEGACY-COMPARISON.md
 		docs\security\observability\LOCAL-DEVELOPMENT.md = docs\security\observability\LOCAL-DEVELOPMENT.md
 		docs\security\observability\README.md = docs\security\observability\README.md
 	EndProjectSection
