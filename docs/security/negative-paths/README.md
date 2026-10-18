@@ -49,14 +49,14 @@ Each row records a reviewed operation family, not exhaustive coverage of every p
 
 ## New evidence versus existing evidence
 
-This slice adds nine parameterized node/description denial cases, two comment service tests and one SQL cross-domain rejection test. It also adds a quota telemetry regression and the small classification fix it requires. The SQL test checks committed success-audit absence, not that denial diagnostics are suppressed. No schema change or new request limiter is introduced.
+This slice adds nine parameterized node/description denial cases, two comment service tests and one SQL cross-domain rejection test. It also adds a quota telemetry regression and the small classification fix it requires. The MVP extension adds Content URL policy tests and deep/malformed thread-read tests, with URL validation and iterative traversal implementations. The SQL test checks committed success-audit absence, not that denial diagnostics are suppressed. No schema change or new request limiter is introduced.
 
 ## Limits and remaining work
 
 - In-memory tests show method ordering, unchanged caller state and emitted messages; SQL integration tests establish committed database behavior. A skipped SQL test is not a passing verification.
 - The test helpers accept actor IDs to exercise policy. A future API must prove identity server-side and must not accept the actor, roles or trusted-import flag from request content.
 - Named tests establish selected scenarios, not complete security proof. Permission combinations, race conditions and new routes need continuing review.
-- Expensive comment-thread traversal and other collection-wide reads need bounds/load testing before exposing them broadly ([PTT-138](https://thepublicthinktank.atlassian.net/browse/PTT-138)). Current value-size limits and output paging alone do not bound all backend work.
+- Comment traversal now uses an explicit stack and rejects malformed structure. Deep valid threads are supported; collection-wide reads still need paging/work budgets and load testing before exposing them broadly ([PTT-138](https://thepublicthinktank.atlassian.net/browse/PTT-138)). Current value-size limits and output paging alone do not bound all backend work.
 - API request/connection limits, cancellation/timeouts, forwarded-IP trust, account/IP throttling, 429 mapping and browser controls remain explicit API work. See [abuse responsibilities](../abuse-prevention/README.md#api-acceptance-requirements).
 - Quota-ledger retention and account-deletion policy remain open ([PTT-139](https://thepublicthinktank.atlassian.net/browse/PTT-139)). Historical evidence should not silently become permanent retention.
 
@@ -73,3 +73,9 @@ dotnet test tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj
 ```
 
 SQL tests require `ATLAS_SQL_TEST_CONNECTION_STRING` through the existing shared user secrets or environment. CI runs the SQL suites against SQL Server. Continue to run other affected domain suites as their behavior changes; the inventory links their existing coverage.
+
+## MVP extension: safe URL forms and deep discussions
+
+[ContentUrlPolicyTests](../../../tests/Atlas.Application.Tests/ContentUrlPolicyTests.cs) exercises rejected schemes, credentials, raw controls, ambiguous backslashes, relative media compatibility, oversized URLs and reconstitution. Rejected edits preserve original fields and timestamps. This does not classify destinations as trustworthy or sanitize links embedded in Markdown.
+
+[CommentTests](../../../tests/Atlas.Comments.Tests/CommentTests.cs) includes a 20,000-comment valid thread read plus orphan/cycle rejection. Existing branching/order tests remain in force. These tests protect reliable reading, not an anti-discussion depth limit. See [MVP protections and limits](../abuse-prevention/README.md#mvp-protections-implemented-in-this-pr).

@@ -2,7 +2,7 @@
 
 [Security index](../README.md) · [Negative-path evidence](../negative-paths/README.md) · [Node quota](../validation/NODE-CREATION-QUOTA.md)
 
-PTT-124 records the MVP protections and the requirements for the next API host. This review preserves the agreed creation policy rather than adding arbitrary restrictions to every operation.
+PTT-124 records the MVP protections and the requirements for the next API host. This review preserves the agreed creation policy rather than adding arbitrary restrictions to every operation. It also implements URL-form validation for content blocks and iterative comment-thread traversal.
 
 ## What already slows node spam
 
@@ -11,6 +11,24 @@ The current policy allows **3 node creations per rolling 2 hours per participant
 The SQL adapter atomically checks and consumes the allowance with node creation. Failed transactions consume nothing; archive/delete cannot refund a recent creation. Trusted import/seed work is an explicit server-side capability, never a client option. The limit is account-based and does not stop someone using several accounts. The allowance shown before submission is advisory; the atomic save is authoritative.
 
 The product policy remains provisional and configurable in code. This review does not tighten it or add minimum spacing. See [quota implementation and SQL tests](../validation/NODE-CREATION-QUOTA.md).
+
+## Legitimate use versus overload
+
+A deep discussion, frequent drafting, or several title edits is not inherently abusive. The inventory below identifies where repeated or unusually expensive work could overwhelm the system; it does not define those ordinary behaviors as violations.
+
+The broad “thousands of hits in seconds from one source” concern belongs at the API/edge boundary: reject excessive traffic before invoking backend work, using verified-user and appropriate IP/client/global concurrency budgets. Individual limits can complement that broad budget for unusually costly operations. No Console-only catch-all counter is introduced here.
+
+## MVP protections implemented in this PR
+
+| Protection | What it preserves / what it does not promise |
+|---|---|
+| Shared Content URL validation | Link previews require bounded HTTP(S) URLs without credentials, raw controls or backslashes. Image/video blocks accept those URLs or simple relative asset paths; executable/data/file schemes and protocol-relative hosts are rejected. Existing valid links and simple media paths remain supported. This is syntax/scheme validation, not malware, reputation or destination screening. |
+| Iterative comment-thread traversal | Keeps valid deep discussions, stable depth-first order and existing reply behavior without growing the C# call stack. Detects duplicate/unreachable parent structure rather than silently omitting corrupt replies. No depth cap or new posting restriction. It still materializes a thread; paging/cancellation/work budgets remain PTT-138. |
+| Negative-path regressions | Unsafe URL creation/edit/reconstitution and malformed thread structure fail explicitly; rejected edits preserve payload/timestamps. A 20,000-comment deep valid thread remains readable. |
+
+The URL check performs no DNS lookup or network fetch and does not block private/local destinations as an SSRF defense. Any future preview-fetch service needs separate destination/network protections. URLs embedded inside Markdown remain untrusted content for a future renderer to sanitize; this block-field validator does not parse or secure Markdown/HTML. A syntactically valid HTTPS link can still point to a malicious site.
+
+New writes and reconstitution share the URL rules. Existing media values with unsafe schemes, credentials, encoded/complex relative syntax or controls must be corrected before they can load. No schema migration, automatic rewrite or database scan is performed. Simple existing paths such as `media/image-1` are preserved.
 
 ## Four different protections
 
@@ -29,7 +47,7 @@ None substitutes for the others. Voting uniqueness limits current influence but 
 |---|---|
 | Node creation flood | Graph policy + Application SQL quota ledger enforce pacing atomically; API must retain this backend check and add request throttling before expensive work. |
 | Repeated title/description edits | Authorship and value validation exist. Creation quota does not apply. API must budget mutation rate/concurrency; future backend shared policy only if a product rule is agreed. |
-| Comments/replies and deep threads | Actor/target availability, ownership and body-size validation exist. No comment throughput quota or universal depth/read-work budget. API throttling plus bounded thread traversal/pagination require implementation/testing. |
+| Comments/replies and deep threads | Actor/target availability, ownership and body-size validation exist. Iterative traversal now avoids recursion and rejects malformed structure, while preserving deep threads. No comment throughput quota or overall read-work budget; paging and API throttling remain follow-ups. |
 | Voting/reaction churn | Eligibility, one current vote per actor/target, target availability and transactional association/vote exist. API should limit repeated mutation traffic, not treat uniqueness as a rate limiter. |
 | Registration/sign-in, token/reset/email requests | Identity checks credentials, confirmation, active profile and account lockout (5 failed attempts / 15 minutes). API must also budget IP/client traffic, registration and outbound email work. Account lockout alone can be abused to deny someone else access. |
 | Search/filter/deep paging/ancestry | Discovery validates inputs and SQL performs page queries; bounded breadcrumb segments exist. API needs query cost/timeouts, request/concurrency budgets and bounded pagination; returning few items does not imply cheap computation. |
@@ -37,7 +55,7 @@ None substitutes for the others. Voting uniqueness limits current influence but 
 | Reporting/moderation queue flooding | Actor/role checks and lifecycle rules exist. API should budget reports and privileged actions without preventing legitimate reporting; define duplicate/batch policies explicitly. |
 | Notification amplification | Recipient ownership, preferences and occurrence deduplication exist. Bound upstream producers and future outbound queues/retries. One unique event per spam comment can still produce many notifications. |
 | Multiple accounts and distributed clients | No mature anti-Sybil/reputation system. Do not claim the participant quota or IP limits solve coordinated abuse. Evaluate additional policy from observed use. |
-| Rich text/links/images and malicious content | Current validation bounds values, not every unsafe URL or rendered document. The eventual browser host must safely render untrusted text and validate allowed URL schemes; no server-side fetch of arbitrary URLs should be introduced without SSRF protections. |
+| Rich text/links/images and malicious content | Content now rejects unsafe URL forms in link-preview/image/video fields. This does not sanitize Markdown or prove destination safety. The eventual browser host must safely render untrusted text; no server-side fetch of arbitrary URLs should be introduced without SSRF protections. |
 | Audit/diagnostic flooding and history growth | Allowlisted bounded event fields, local rotation and durable audit outbox exist. Deployment must bound queue/storage growth, restrict access and define retention/cleanup. Do not drop required audit silently to hide pressure. |
 | Operator/import bypass | Only trusted server-side callers may use ExecuteTrustedCreation. API authorization and audited operator workflows must gate it; ordinary administrators' posts are not automatically exempt. |
 

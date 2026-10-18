@@ -21,8 +21,8 @@ Content owns documents, block identities, ordered composition, block payloads, a
 | Kind | Owned data | Validation |
 |---|---|---|
 | markdown | Markdown source | maximum length |
-| image | URL, alt text, caption | URL and alt text required |
-| video | URL, caption | URL required |
+| image | URL, alt text, caption | HTTP(S) URL or simple relative asset path; alt text required |
+| video | URL, caption | HTTP(S) URL or simple relative asset path required |
 | link-preview | URL, title, description | absolute HTTP(S) URL and title required |
 | poll-reference | poll ID | non-empty identifier |
 | chart-reference | chart ID, title | non-empty identifier |
@@ -32,3 +32,6 @@ Markdown provides headings and inline formatting; there is no Header block. Spec
 ## Persistence boundary
 
 DocumentRows stores identity and timestamps. DocumentBlocks stores ordered (DocumentId, Position, BlockId) links. BlockRows stores a Kind discriminator, shared metadata, and nullable payload columns; the adapter populates only the selected kind's fields. Unused columns remain NULL. Blocks are saved before their document links. Standalone saves are transactional. [DescriptionBlockCommands](../../src/hosts/Atlas.Console/DescriptionBlockCommands.cs) wraps block addition and document composition in one operation boundary; [NodeCreationService](../../src/Atlas.Application/NodeCreationService.cs) also groups its block, document and Node writes. A failed later save rolls back earlier writes. Independent calls outside an operation remain separate. Detached-block retention/deletion is still deferred. See [transaction limits](../security/validation/IMPLEMENTATION.md#limits-to-retain-during-review).
+## URL-form policy
+
+Content rejects executable/data/file URI schemes, embedded credentials, raw control characters, backslashes and protocol-relative hosts. Absolute URLs are HTTP(S) and at most 500 characters. Media may also use simple relative asset paths; link previews require absolute URLs. Create, update and reconstitution use the same checks, and invalid updates preserve the original payload/time. This does not scan destination reputation, sanitize Markdown or implement SSRF protection for a future fetcher. See [implemented MVP protections](../security/abuse-prevention/README.md#mvp-protections-implemented-in-this-pr).

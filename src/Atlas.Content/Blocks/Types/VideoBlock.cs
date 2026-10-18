@@ -33,10 +33,9 @@ public sealed class VideoBlock : ContentBlock
             updatedAt
         )
     {
-        Url = Required(
+        Url = MediaUrl(
             url,
-            nameof(url),
-            500
+            nameof(url)
         );
         Caption = Optional(
             caption,
@@ -51,10 +50,9 @@ public sealed class VideoBlock : ContentBlock
         DateTimeOffset changedAt
     )
     {
-        var validatedUrl = Required(
+        var validatedUrl = MediaUrl(
             url,
-            nameof(url),
-            500
+            nameof(url)
         );
         var validatedCaption = Optional(
             caption,

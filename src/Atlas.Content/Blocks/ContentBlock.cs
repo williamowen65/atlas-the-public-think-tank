@@ -102,25 +102,37 @@ public abstract class ContentBlock
         return normalized;
     }
 
-    /// <summary>Accepts only absolute HTTP or HTTPS addresses.</summary>
-    protected static Uri HttpUrl(
-        string value,
-        string parameterName
-    )
+    /// <summary>Accepts bounded absolute HTTP(S) links without credentials or ambiguous separators.</summary>
+    /// <remarks>This checks URL form, not destination trust. It performs no DNS lookup or network fetch.</remarks>
+    protected static Uri HttpUrl(string value, string parameterName)
     {
-        if (!Uri.TryCreate(
-            value,
-            UriKind.Absolute,
-            out var uri
-        ) ||
-            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
-        {
-            throw new ArgumentException(
-                "An absolute HTTP or HTTPS URL is required.",
-                parameterName
-            );
-        }
-
+        var normalized = UrlText(value, parameterName);
+        if (!Uri.TryCreate(normalized, UriKind.Absolute, out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps) ||
+            string.IsNullOrWhiteSpace(uri.Host) || !string.IsNullOrEmpty(uri.UserInfo))
+            throw new ArgumentException("An absolute HTTP or HTTPS URL without embedded credentials is required.", parameterName);
         return uri;
+    }
+
+    /// <summary>Accepts HTTP(S) media URLs or simple relative asset paths, never executable URI schemes.</summary>
+    protected static string MediaUrl(string value, string parameterName)
+    {
+        var normalized = UrlText(value, parameterName);
+        if (normalized.Contains(':'))
+            return HttpUrl(normalized, parameterName).OriginalString;
+
+        // Existing media references can be relative asset paths. Keep that format, but
+        // exclude protocol-relative hosts, schemes, encoded separators and query syntax.
+        if (normalized.StartsWith("//", StringComparison.Ordinal) ||
+            !normalized.All(c => char.IsAsciiLetterOrDigit(c) || c is '/' or '.' or '-' or '_' or '~'))
+            throw new ArgumentException("Media must be an HTTP(S) URL or a simple relative asset path.", parameterName);
+        return normalized;
+    }
+
+    private static string UrlText(string value, string parameterName)
+    {
+        if (value is not null && value.Any(c => char.IsControl(c) || c == '\\'))
+            throw new ArgumentException("URLs cannot contain control characters or backslashes.", parameterName);
+        return Required(value, parameterName, 500);
     }
 }

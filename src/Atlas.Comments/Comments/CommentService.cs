@@ -148,6 +148,8 @@ public sealed class CommentService
         );
     }
 
+    /// <summary>Read a thread in stable depth-first order without recursive call-stack growth.</summary>
+    /// <remarks>Deep valid threads remain supported. This still materializes the thread; query paging is separate work.</remarks>
     public IReadOnlyList<CommentThreadItem> GetThread(CommentTarget target)
     {
         var comments = _comments.GetByTarget(target).ToList();
@@ -165,47 +167,24 @@ public sealed class CommentService
             );
 
         var result = new List<CommentThreadItem>();
-        foreach (var root in roots)
+        var visited = new HashSet<CommentId>();
+        var pending = new Stack<(Comment Comment, int Depth)>();
+        // Reverse pushes preserve the existing oldest-first depth-first display order.
+        for (var index = roots.Count - 1; index >= 0; index--)
+            pending.Push((roots[index], 0));
+        while (pending.TryPop(out var item))
         {
-            result.Add(new CommentThreadItem(
-                root,
-                0
-            ));
-            AppendChildren(
-                root.Id,
-                1,
-                children,
-                result
-            );
+            if (!visited.Add(item.Comment.Id))
+                throw new InvalidOperationException("The stored comment thread contains duplicate or cyclic links.");
+            result.Add(new CommentThreadItem(item.Comment, item.Depth));
+            if (!children.TryGetValue(item.Comment.Id, out var directChildren)) continue;
+            for (var index = directChildren.Count - 1; index >= 0; index--)
+                pending.Push((directChildren[index], checked(item.Depth + 1)));
         }
-
+        // Never silently return a partial thread for an orphan or disconnected cycle.
+        if (result.Count != comments.Count)
+            throw new InvalidOperationException("The stored comment thread contains unreachable parent links.");
         return result;
-    }
-
-    private static void AppendChildren(
-        CommentId parentId,
-        int depth,
-        IReadOnlyDictionary<CommentId, List<Comment>> children,
-        List<CommentThreadItem> result
-    )
-    {
-        if (!children.TryGetValue(
-            parentId,
-            out var directChildren
-        )) return;
-        foreach (var child in directChildren)
-        {
-            result.Add(new CommentThreadItem(
-                child,
-                depth
-            ));
-            AppendChildren(
-                child.Id,
-                depth + 1,
-                children,
-                result
-            );
-        }
     }
 
     private Comment GetRequired(CommentId id) =>

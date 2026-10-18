@@ -26,3 +26,7 @@ The author may soft-remove their own comment. A moderator may soft-remove anothe
 ## Read thread
 
 Comments loads records for one target and orders roots and descendants by creation time. Reading remains allowed even if the target later becomes unavailable.
+
+## Deep thread reading
+
+A deep thread is legitimate discussion structure. CommentService.GetThread uses an explicit stack to retain stable depth-first order without recursive stack growth. Orphaned/cyclic stored parent links cause an explicit failure instead of an incomplete response. The method still materializes all matching comments; query paging, cancellation and work budgets remain PTT-138. No reply-depth posting cap is introduced.
