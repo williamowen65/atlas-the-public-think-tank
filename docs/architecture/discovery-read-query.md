@@ -15,7 +15,7 @@
 ## Follow the request through the code
 
 1. **Console constructs a request.**
-   - [ConsoleApplication.cs](../../src/Atlas.Console/ConsoleApplication.cs) and [AnonymousBrowseCommands.cs](../../src/Atlas.Console/AnonymousBrowseCommands.cs) collect filters and a page number.
+   - [ConsoleApplication.cs](../../src/hosts/Atlas.Console/ConsoleApplication.cs) and [AnonymousBrowseCommands.cs](../../src/hosts/Atlas.Console/AnonymousBrowseCommands.cs) collect filters and a page number.
    - [DiscoveryQuery](../../src/Atlas.Discovery/DiscoveryQuery.cs) is the request record, not a query executor.
 
 2. **The service validates and delegates.**
@@ -104,7 +104,7 @@
 
 ## Console wiring and cache ownership
 
-- [Program.cs](../../src/Atlas.Console/Program.cs) is the **composition root**: the startup code that constructs and connects these components.
+- [Program.cs](../../src/hosts/Atlas.Console/Program.cs) is the **composition root**: the startup code that constructs and connects these components.
 
 ```csharp
 // Namespace prefixes omitted for readability.
@@ -318,7 +318,7 @@ WHERE Id = 1;
 
 ### Try the longer demo route in the Console
 
-- [SeedBreadcrumbDemo.cs](../../src/Atlas.Infrastructure/Storage/SeedData/SeedBreadcrumbDemo.cs) adds a ten-link chain below the existing Atlas root, plus community and research routes that intersect the chain. First-parent ordering keeps the long chain as the default route.
+- [SeedBreadcrumbDemo.cs](../../src/Atlas.Application/Storage/SeedData/SeedBreadcrumbDemo.cs) adds a ten-link chain below the existing Atlas root, plus community and research routes that intersect the chain. First-parent ordering keeps the long chain as the default route.
 
 - Search discovery for **Breadcrumb demo: ten-level route**, then open that node.
 
@@ -328,7 +328,7 @@ WHERE Id = 1;
 
 - To try another route, open **level 7** and explore its parents: choose level 6 for the primary chain or **research route** for the alternate. Level 4 also offers **community route**. These branches reconnect with earlier ancestors without creating cycles.
 
-- This is seed content, so **no new schema migration is needed**. Run `dotnet run --project src/Atlas.Console -- --seed-demo` against an empty development database, then launch normally. The command refuses an already populated database.
+- This is seed content, so **no new schema migration is needed**. Run `dotnet run --project src/hosts/Atlas.Console -- --seed-demo` against an empty development database, then launch normally. The command refuses an already populated database.
 
 - For an existing local demo database, either configure a fresh development database or follow the [local reset instructions](../../src/Atlas.Persistence/README.md#reset-the-local-database-to-demo-seed-data-powershell). Resetting deletes that database’s accounts and content; it is not required just to update application code.
 

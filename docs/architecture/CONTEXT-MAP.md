@@ -1,6 +1,6 @@
 # Atlas current-state context map
 
-Atlas is a modular application hosted by Atlas.Console. Atlas.Application owns reusable cross-domain coordination. Domain projects own behavior and repository contracts; Console composes them; Atlas.Infrastructure supplies reusable SQL repository and transaction adapters. Atlas.Persistence owns one shared EF Core context, persistence rows, Fluent API mappings, and SQL Server migrations.
+Atlas is a modular application hosted by Atlas.Console. Atlas.Application owns reusable cross-domain coordination. Domain projects own behavior and repository contracts; Console composes them; Atlas.Application supplies reusable SQL repository and transaction adapters. Atlas.Persistence owns one shared EF Core context, persistence rows, Fluent API mappings, and SQL Server migrations.
 
 ## Components and ownership
 
@@ -16,8 +16,7 @@ Atlas is a modular application hosted by Atlas.Console. Atlas.Application owns r
 | Moderation | Reports, decisions, public reasons, review requests, restoration | Stored global Identity roles supply authorization; grouped changes share a transaction. |
 | Notifications | Recipient feed, preferences, read/dismiss state, delivery attempts | Occurrence/recipient uniqueness; email/push are simulated and events are synchronous. |
 | Contracts | Versioned Graph lifecycle and notification-request payloads | Versioned payloads plus shared clock, reference and operation ports; no SQL storage ownership. |
-| Application | Cross-domain workflows, event/notification coordination, eligibility adapters and reusable queries | Calls domain services through repository and operation contracts; no Console/HTTP/SQL dependency. |
-| Infrastructure | SQL repositories, transaction/reference adapters, demo seed and local telemetry | Reuses Persistence/Identity; no Console dependency. |
+| Application | Cross-domain workflows, event coordination, reusable queries, SQL adapters and local telemetry | Contains workflows plus Storage/Observability adapters; references Persistence and Identity, with no Console dependency. |
 | Console | UI, authenticated actor, host adapters, startup and event registration | Identity-backed sign-in supplies the actor; a future HTTP host will compose its own request scope. |
 | Persistence | AtlasDataContext, row types, mappings, constraints, migrations | Shared SQL Server infrastructure; domain projects do not depend on EF Core. |
 
@@ -42,7 +41,7 @@ Vote TargetId, Comment TargetId, and Notification SubjectId are polymorphic; the
 ### Existence and availability checks
 
 - [IReferenceLookup.IsAvailable(kind, id, requireActive)](../../src/Atlas.Contracts/Operations/ReferenceValidation.cs) is the shared lookup contract. It lets a workflow ask about a reference without importing another domain's entity or SQL model.
-- [ReferenceValidation.Require](../../src/Atlas.Contracts/Operations/ReferenceValidation.cs) checks the ID and calls that capability on the supplied repository. The SQL adapters inherit its implementation from [SqlRepository](../../src/Atlas.Infrastructure/Storage/SqlRepository.cs).
+- [ReferenceValidation.Require](../../src/Atlas.Contracts/Operations/ReferenceValidation.cs) checks the ID and calls that capability on the supplied repository. The SQL adapters inherit its implementation from [SqlRepository](../../src/Atlas.Application/Storage/SqlRepository.cs).
 - With `requireActive: false`, the lookup checks existence. With `true`, it also applies the implemented availability policy for that kind—for example, rejecting inactive participants or archived/hidden Nodes. Not every kind has an active state.
 - This lookup complements foreign keys, including checks for supported polymorphic targets. It does not authorize the caller, traverse ancestry or prove that every future reference kind is supported.
 
@@ -63,12 +62,12 @@ The host publishes recorded events after relevant saves. Dispatch is synchronous
 
 ## Creation consistency
 
-[NodeCreationWorkflow](../../src/Atlas.Console/NodeCreationWorkflow.cs) collects input and delegates to [NodeCreationService](../../src/Atlas.Application/NodeCreationService.cs). The Application coordinator delegates preparation to Content and Graph services, then saves Content followed by Graph inside one topology-coordinated SQL transaction. See [workflow ownership](APPLICATION-WORKFLOWS.md). A later save failure rolls back earlier writes. NodeWorkflowService publishes recorded events after the creation transaction returns successfully; dispatch is outside the transaction. See [workflow evidence and limits](../security/validation/IMPLEMENTATION.md#workflows-and-evidence).
+[NodeCreationWorkflow](../../src/hosts/Atlas.Console/NodeCreationWorkflow.cs) collects input and delegates to [NodeCreationService](../../src/Atlas.Application/NodeCreationService.cs). The Application coordinator delegates preparation to Content and Graph services, then saves Content followed by Graph inside one topology-coordinated SQL transaction. See [workflow ownership](APPLICATION-WORKFLOWS.md). A later save failure rolls back earlier writes. NodeWorkflowService publishes recorded events after the creation transaction returns successfully; dispatch is outside the transaction. See [workflow evidence and limits](../security/validation/IMPLEMENTATION.md#workflows-and-evidence).
 
 ## Implemented topology coordination
 
 - **Graph defines the capability and graph rules.** [NodeTopologyBoundary / INodeTopologyBoundary](../../src/Atlas.Graph/Nodes/NodeTopologyBoundary.cs) expresses the topology operation; [NodeRelationshipService](../../src/Atlas.Graph/Nodes/NodeRelationshipService.cs) checks proposed attachments.
-- **The SQL adapter supplies the database mechanism.** [SqlNodeRepository.ExecuteTopology](../../src/Atlas.Infrastructure/Storage/SqlNodeRepository.cs) requests the shared graph application lock through [SqlOperationBoundary](../../src/Atlas.Infrastructure/Storage/SqlOperationBoundary.cs). SQL remains in infrastructure; Graph does not need an EF or SQL dependency.
+- **The SQL adapter supplies the database mechanism.** [SqlNodeRepository.ExecuteTopology](../../src/Atlas.Application/Storage/SqlNodeRepository.cs) requests the shared graph application lock through [SqlOperationBoundary](../../src/Atlas.Application/Storage/SqlOperationBoundary.cs). SQL remains in infrastructure; Graph does not need an EF or SQL dependency.
 - **Creation and parent changes are already coordinated.** Full Node saves also check ancestry under that lock. Metadata saves preserve parents and do not request it.
 
 When adding a new topology entry point, use this existing boundary rather than bypassing it. This is maintenance guidance, not an outstanding implementation gap. The reusable workflow and adapter separation is implemented by [PTT-131](https://thepublicthinktank.atlassian.net/browse/PTT-131); see [thin-host ownership](APPLICATION-WORKFLOWS.md).

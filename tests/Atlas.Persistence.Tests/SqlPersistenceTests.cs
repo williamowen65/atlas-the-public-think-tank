@@ -1,4 +1,4 @@
-using Atlas.Infrastructure.Storage;
+using Atlas.Application.Storage;
 using Atlas.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Atlas.Persistence;

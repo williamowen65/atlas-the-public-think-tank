@@ -1,6 +1,6 @@
 # Thin Console host and reusable application core
 
-PTT-131 now separates terminal presentation from reusable use cases and infrastructure. A future API composes the same Application and Infrastructure projects without referencing the Console executable.
+PTT-131 now separates terminal presentation from reusable use cases and infrastructure. A future API composes the same Application backend without referencing the Console executable.
 
 Follow the [visual architecture guide](diagrams/README.md) for linked UML views, workflow decision trees, transaction lifetimes and failure branches, with drill-down links to source and tests.
 
@@ -8,10 +8,9 @@ Follow the [visual architecture guide](diagrams/README.md) for linked UML views,
 
 | Project | Responsibility | Examples |
 |---|---|---|
-| Atlas.Console | Menus, keyboard input, terminal rendering, console session lifetime, startup composition | ConsoleApplication, NodeCommands, DescriptionBlockCommands, ConsoleIdentitySession, Diagnostics |
-| Atlas.Application | Cross-domain use cases, eligibility adapters, recipient selection, event dispatch and reusable queries | NodeWorkflowService, NodeCreationService, NodeDescriptionService, CommentWorkflowService, ModerationWorkflowService, ReactionVotingService, CurrentUserNotifications, AncestorNavigation |
+| Atlas.Console (src/hosts/Atlas.Console) | Menus, keyboard input, terminal rendering, console session lifetime, startup composition | ConsoleApplication, NodeCommands, DescriptionBlockCommands, ConsoleIdentitySession, Diagnostics |
+| Atlas.Application | Cross-domain use cases, integration adapters, SQL storage, local telemetry and global usings | Workflows; Storage/Sql*Repository and seed support; Observability/LocalDevelopmentTelemetry |
 | Domain projects | Business rules and boundary-owned operations | Graph node/type services, Content DocumentService and BlockInput, CommunityService, Comments/Voting/Moderation/Notifications operations |
-| Atlas.Infrastructure | Concrete SQL repositories, transaction/reference adapters, SQL/demo startup and local telemetry lifecycle | Storage/Sql*Repository, SqlOperationBoundary, SqlStorage, SeedData, LocalDevelopmentTelemetry |
 | Atlas.Persistence | Existing EF context, rows, mappings, migrations, SQL discovery queries and audit outbox delivery | AtlasDataContext; unchanged schema/migrations |
 | Atlas.Identity | ASP.NET Identity account infrastructure, policies and current-profile query | AtlasAccounts, IdentityServices, SessionParticipantQuery |
 | Atlas.Contracts | Shared IDs/events/operation/identity ports and telemetry envelope | IAuthenticatedActor, IEventPublisher, IOperationBoundary, Telemetry |
@@ -19,22 +18,21 @@ Follow the [visual architecture guide](diagrams/README.md) for linked UML views,
 ```mermaid
 flowchart TD
     C["Console host: input, output, session, composition"] --> A["Application use cases and adapters"]
-    C --> I["Infrastructure: SQL, demo seed, local telemetry"]
-    I --> ID["Identity infrastructure"]
-    I --> P["Persistence: EF model and audit storage"]
+    A --> ID["Identity infrastructure"]
+    A --> P["Persistence: EF model and audit storage"]
     ID --> P
     A --> D["Independent domain projects"]
     D --> K["Shared Contracts"]
     P --> K
 ```
 
-Application has no reference to Console, Infrastructure, Persistence, Identity, EF or a terminal API. Infrastructure has no reference to Console. Graph and Content remain independent of each other's concrete types. Identity's caller abstraction moved to Contracts so consuming an authenticated actor does not pull account/SQL infrastructure into the application core.
+Application contains both use cases and concrete storage/observability adapters, so it references Persistence and Identity. It has no Console or terminal dependency. The repository-level infrastructure/ folder is reserved for infrastructure as code; it is not a runtime dependency. Graph and Content remain independent of each other's concrete types. Identity's caller abstraction remains in Contracts so domain consumers can use it without depending on account infrastructure.
 
 ## What opening Console should feel like
 
 The Storage, SeedData, Eventing, Content-subscriber, Voting-adapter and Notifications-workflow directories have moved out. The remaining files describe terminal screens, navigation, input parsing, rendering and session handling. Console no longer calls repository Save/SaveMetadata or constructs notification requests. It calls domain/application services, then displays their results.
 
-Program remains the composition root: it selects SQL, configures Identity, creates the local-development telemetry adapter, wires subscriptions and injects the console session. That is host work. ConsoleIdentitySession retains the principal/security stamp and interactive login behavior; SessionParticipantQuery performs its actual EF profile read outside the host. Developer SQL screens format materialized rows, while infrastructure performs the queries. Repository reads used only to render screens and presentation records such as NodeVoteSummary remain in the host; they do not own mutation rules or transaction sequencing.
+Program remains the composition root: it selects SQL, configures Identity, creates the local-development telemetry adapter, wires subscriptions and injects the console session. That is host work. ConsoleIdentitySession retains the principal/security stamp and interactive login behavior; SessionParticipantQuery performs its actual EF profile read outside the host. Developer SQL screens format materialized rows, while Application storage performs the queries. Repository reads used only to render screens and presentation records such as NodeVoteSummary remain in the host; they do not own mutation rules or transaction sequencing.
 
 Console is not intended to become a five-line program: menus and terminal rendering remain substantial. The boundary is responsibility, not file length.
 
@@ -84,7 +82,7 @@ sequenceDiagram
 ```
 
 
-NodeCreationService prepares the Content and Graph proposals before any write, using one operation timestamp. Content saves the block/document first; Graph verifies the description exists and saves the node. SqlOperationBoundary remains the same shared transaction implementation, relocated to Infrastructure. Nested repositories join it; different-database factories are rejected. Custom in-memory adapters require their own transaction capability for rollback guarantees.
+NodeCreationService prepares the Content and Graph proposals before any write, using one operation timestamp. Content saves the block/document first; Graph verifies the description exists and saves the node. SqlOperationBoundary remains the same shared transaction implementation, relocated to Application.Storage. Nested repositories join it; different-database factories are rejected. Custom in-memory adapters require their own transaction capability for rollback guarantees.
 
 NodeWorkflowService publishes recorded Graph events only after the outer creation/mutation boundary returns successfully and clears them after successful dispatch. Comment/moderation notifications also follow their domain save. Subscriber failure does not undo a committed business operation; in-memory dispatch is synchronous and non-durable. This is separate from the durable security-audit outbox. The generic publisher and Content subscriber use optional structured diagnostic notices; Console owns their terminal formatting.
 
@@ -94,12 +92,12 @@ All existing provisional poll/chart behavior is preserved. No real poll/chart do
 
 ## Verification and future API composition
 
-- Application tests reference Application only and verify host/infrastructure independence, domain independence, event ordering/failure semantics and focused workflow negative paths.
-- Persistence tests now reference Infrastructure rather than Console. They verify that infrastructure has no Console/terminal dependency and exercise real SQL repositories and workflows in CI.
+- Application tests reference Application only and verify host independence, domain independence, event ordering/failure semantics and focused workflow negative paths.
+- Persistence tests reference Application rather than Console. They verify that Application storage has no Console/terminal dependency and exercise real SQL repositories and workflows in CI.
 - The SQL Console creation regression moved to Console.Tests, where its terminal interaction belongs.
 - SQL workflow tests cover description authorization/rollback, reaction-plus-vote rollback, comment recipient selection and moderation notifications.
 - Existing domain, quota, reference, discovery, audit and transaction tests remain in their suites.
 
-For the API, reference Application, Infrastructure and Identity from the new composition root; configure repositories/context factories, event subscriptions, telemetry and the request-scoped IAuthenticatedActor. Keep HTTP models, authentication middleware, endpoint policies, rate limiting, browser controls and error/status mapping in that host. LocalDevelopmentTelemetry remains a separate development-only file adapter; production wiring belongs in a different adapter/file.
+For the API, reference Application and Identity from the new composition root; configure repositories/context factories, event subscriptions, telemetry and the request-scoped IAuthenticatedActor. Keep HTTP models, authentication middleware, endpoint policies, rate limiting, browser controls and error/status mapping in that host. LocalDevelopmentTelemetry remains a separate development-only file adapter; production wiring belongs in a different adapter/file.
 
 This finishes the thin-host separation for current implemented workflows. PTT-123 still owns the broader cross-domain negative-path inventory; PTT-124/PTT-125 own rate-limiting and HTTP/browser responsibility review. No EF schema or migration changes are required.

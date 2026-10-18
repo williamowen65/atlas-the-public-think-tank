@@ -1,9 +1,14 @@
 # Atlas.Application
 
-The reusable application core: cross-domain workflows, integration adapters, notification recipients, in-memory event dispatch and bounded queries. It references domain projects and Contracts, with no dependency on Console, HTTP, Identity infrastructure, EF or SQL implementations.
+The reusable backend shared by application hosts. It contains cross-domain workflows, integration adapters, recipient selection, synchronous event dispatch and bounded queries, alongside concrete SQL storage and local-development observability adapters.
 
-NodeWorkflowService, NodeDescriptionService, CommentWorkflowService, ReactionVotingService and ModerationWorkflowService are the operations consumed by hosts. Single-domain operations remain domain services. Hosts provide verified actors, repository implementations, event subscribers and transport-specific output.
+- `Storage/`: repository implementations, transaction/reference coordination, SQL startup and opt-in demo seeds.
+- `Observability/`: local file output and recoverable audit delivery lifecycle. Future production adapters belong in separate files/classes.
+- `GlobalUsings.cs`: common operation contracts for this project.
+- Workflow classes and domain integration folders: reusable application behavior.
 
-See [thin-host ownership and flow](../../docs/architecture/APPLICATION-WORKFLOWS.md) for project direction, transaction/event guarantees and the future API composition recipe.
+Application references domain projects, Contracts, Persistence and Identity. It has no dependency on Console or terminal APIs. Domain projects retain their own repository interfaces and business rules. The repository-level `infrastructure/` folder is reserved for infrastructure as code, not runtime adapters.
 
-The [visual architecture guide](../../docs/architecture/diagrams/README.md) connects UML wiring views to node/content, reaction, notification and transaction process diagrams, with source and test links.
+Console lives under `src/hosts/Atlas.Console`; a future API host can consume this same backend.
+
+See [ownership and composition](../../docs/architecture/APPLICATION-WORKFLOWS.md) and the [visual architecture guide](../../docs/architecture/diagrams/README.md).

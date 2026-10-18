@@ -6,7 +6,7 @@ using Atlas.Comments.Comments;
 using Atlas.Contracts.Notifications.V1;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Graph.Reactions;
-using Atlas.Infrastructure.Storage;
+using Atlas.Application.Storage;
 using Atlas.Moderation;
 using Atlas.Voting;
 using Atlas.Voting.Eligibility;
@@ -93,7 +93,7 @@ public sealed class SqlThinHostWorkflowTests
     }
 
     [TestMethod]
-    public void InfrastructureAssemblyDoesNotReferenceConsole()
+    public void ApplicationStorageDoesNotReferenceConsole()
     {
         var references = typeof(SqlNodeRepository).Assembly.GetReferencedAssemblies().Select(a => a.Name).ToList();
         Assert.DoesNotContain("Atlas.Console", references);

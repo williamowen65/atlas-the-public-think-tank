@@ -9,10 +9,10 @@ namespace Atlas.Application.Tests;
 public sealed class ArchitectureTests
 {
     [TestMethod]
-    public void ApplicationAndDomainsHaveNoHostOrInfrastructureDependency()
+    public void ApplicationAndDomainsPreserveHostAndDomainBoundaries()
     {
         var dependencies = typeof(NodeWorkflowService).Assembly.GetReferencedAssemblies().Select(a => a.Name).ToList();
-        foreach (var forbidden in new[] { "Atlas.Console", "Atlas.Infrastructure", "Atlas.Persistence", "Atlas.Identity", "System.Console" })
+        foreach (var forbidden in new[] { "Atlas.Console", "System.Console" })
             Assert.DoesNotContain(forbidden, dependencies);
         Assert.DoesNotContain("Atlas.Content", typeof(Node).Assembly.GetReferencedAssemblies().Select(a => a.Name).ToList());
         Assert.DoesNotContain("Atlas.Graph", typeof(Document).Assembly.GetReferencedAssemblies().Select(a => a.Name).ToList());

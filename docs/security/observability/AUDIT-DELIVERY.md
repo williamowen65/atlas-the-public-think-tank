@@ -8,7 +8,7 @@ Think of AuditOutbox as a shipping dock: AuditRecordRow is the package's stored 
 
 **The current local console starts one background delivery task per LocalDevelopmentTelemetry instance.** Normal console startup creates one instance, so one loop processes audit tickets sequentially. This is not a pool of parallel delivery workers, nor does each ticket start a new task.
 
-[LocalDevelopmentTelemetry](../../../src/Atlas.Infrastructure/Observability/LocalDevelopmentTelemetry.cs) starts that loop with `_delivery = Task.Run(async () => { ... })`. A task is a logical unit of asynchronous work, not a dedicated thread: continuations may use different thread-pool threads, and awaiting database I/O or Task.Delay does not occupy a thread waiting for completion.
+[LocalDevelopmentTelemetry](../../../src/Atlas.Application/Observability/LocalDevelopmentTelemetry.cs) starts that loop with `_delivery = Task.Run(async () => { ... })`. A task is a logical unit of asynchronous work, not a dedicated thread: continuations may use different thread-pool threads, and awaiting database I/O or Task.Delay does not occupy a thread waiting for completion.
 
 The loop behaves as follows:
 

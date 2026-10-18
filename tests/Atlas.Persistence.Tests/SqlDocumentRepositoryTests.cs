@@ -1,4 +1,4 @@
-using Atlas.Infrastructure.Storage;
+using Atlas.Application.Storage;
 using Atlas.Content.Blocks;
 using Atlas.Content.Documents;
 namespace Atlas.Persistence.Tests;

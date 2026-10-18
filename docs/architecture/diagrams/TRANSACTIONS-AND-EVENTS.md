@@ -29,7 +29,7 @@ classDiagram
 
 The Contracts `OperationBoundary` helper detects `IOperationBoundary`; Graph's `NodeTopologyBoundary` detects its additional capability. Without a supplied capability they execute the callback through the fallback path; that does not invent a transaction for an arbitrary repository. SQL repositories implement the capabilities and delegate to the shared SQL coordinator.
 
-Sources: [Contracts helper](../../../src/Atlas.Contracts/Operations/OperationBoundary.cs), [Graph topology capability](../../../src/Atlas.Graph/Nodes/NodeTopologyBoundary.cs), [SqlNodeRepository](../../../src/Atlas.Infrastructure/Storage/SqlNodeRepository.cs), [SQL coordinator](../../../src/Atlas.Infrastructure/Storage/SqlOperationBoundary.cs#L23).
+Sources: [Contracts helper](../../../src/Atlas.Contracts/Operations/OperationBoundary.cs), [Graph topology capability](../../../src/Atlas.Graph/Nodes/NodeTopologyBoundary.cs), [SqlNodeRepository](../../../src/Atlas.Application/Storage/SqlNodeRepository.cs), [SQL coordinator](../../../src/Atlas.Application/Storage/SqlOperationBoundary.cs#L23).
 
 ## Entering a SQL boundary
 
@@ -78,7 +78,7 @@ Sources: [NodeWorkflowService dispatch](../../../src/Atlas.Application/NodeWorkf
 
 | Preserved mechanism | New organization or intentional change |
 |---|---|
-| Shared SQL transactions, reference validation and topology coordination | SQL adapters moved from Console to Infrastructure |
+| Shared SQL transactions, reference validation and topology coordination | SQL adapters moved from Console to Application.Storage |
 | Domain ownership, availability and validation rules | Reusable Application coordinates the cross-domain paths |
 | Saving before synchronous event handling | Event publisher and recipient selection moved out of menus |
 | Graph reaction and Voting policies | Application now wraps association plus vote in one shared boundary |

@@ -15,5 +15,8 @@
     <ProjectReference Include="../Atlas.Moderation/Atlas.Moderation.csproj" />
     <ProjectReference Include="../Atlas.Notifications/Atlas.Notifications.csproj" />
     <ProjectReference Include="../Atlas.Discovery/Atlas.Discovery.csproj" />
+    <ProjectReference Include="../Atlas.Persistence/Atlas.Persistence.csproj" />
+    <ProjectReference Include="../Atlas.Identity/Atlas.Identity.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.0" />
   </ItemGroup>
 </Project>

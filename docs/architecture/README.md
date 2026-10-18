@@ -22,11 +22,11 @@ Atlas is currently a modular application hosted by Atlas.Console. Its projects a
 - The host composes workflows and views; it does not become the owner of domain rules.
 - Published contracts are versioned and contain communication data, not domain entities.
 - Authorization is enforced at an application use-case boundary even when a UI also hides unavailable actions.
-- Hosts select reusable Atlas.Infrastructure SQL Server repository adapters and one shared `Atlas.Persistence.AtlasDataContext`. Domain repository interfaces remain independent of EF Core. The synchronous in-memory publisher still requires durable delivery design for production.
+- Hosts select reusable Atlas.Application SQL Server repository adapters and one shared `Atlas.Persistence.AtlasDataContext`. Domain repository interfaces remain independent of EF Core. The synchronous in-memory publisher still requires durable delivery design for production.
 
 ## Current versus future topology
 
-Today, Atlas.Console composes Application workflows, domain services, Infrastructure persistence adapters and the reusable event publisher. Application owns cross-domain orchestration; Infrastructure owns concrete SQL adapters. This makes boundary interactions observable without requiring distributed infrastructure.
+Today, Atlas.Console composes Application workflows, domain services, Application storage adapters and the reusable event publisher. Application owns cross-domain orchestration and concrete SQL/observability adapters. The infrastructure/ folder is reserved for infrastructure as code. This makes boundary interactions observable without requiring distributed infrastructure.
 
 A future web application may first retain the same modular-monolith shape. If a boundary later becomes an independent service, its public application API and integration contracts form the migration seam.
 

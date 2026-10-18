@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.SqlClient;
 using Atlas.Communities.Communities;
 using Atlas.Communities.Memberships;
-using Atlas.Infrastructure.Storage;
+using Atlas.Application.Storage;
 using Atlas.Contracts.Operations;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;

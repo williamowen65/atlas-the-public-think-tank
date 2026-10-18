@@ -1,5 +1,5 @@
 using Atlas.Application.Eventing;
-using Atlas.Infrastructure.Storage;
+using Atlas.Application.Storage;
 using Atlas.Persistence;
 using Atlas.Graph.Nodes.NodeTypes;
 using Microsoft.Data.SqlClient;

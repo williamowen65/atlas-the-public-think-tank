@@ -1,4 +1,4 @@
-using Atlas.Infrastructure.Storage;
+using Atlas.Application.Storage;
 using Atlas.Voting;
 using Atlas.Voting.Target;
 using Atlas.Voting.Votes;

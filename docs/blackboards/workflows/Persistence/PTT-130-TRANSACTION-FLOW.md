@@ -11,10 +11,10 @@ Open the [editable Excalidraw blackboard](PTT-130-TRANSACTION-FLOW.excalidraw) t
 | Wrap the complete node-creation callback | [NodeCreationService](../../../../src/Atlas.Application/NodeCreationService.cs) |
 | Request Graph topology coordination | [NodeTopologyBoundary and INodeTopologyBoundary](../../../../src/Atlas.Graph/Nodes/NodeTopologyBoundary.cs) |
 | Fall back to the ordinary operation capability where needed | [OperationBoundary.Execute and IOperationBoundary](../../../../src/Atlas.Contracts/Operations/OperationBoundary.cs) |
-| Implement the interface and delegate execution | [SqlRepository.Execute](../../../../src/Atlas.Infrastructure/Storage/SqlRepository.cs) |
-| Own or join the transaction, expose the current context | [SqlOperationBoundary.Execute and Open](../../../../src/Atlas.Infrastructure/Storage/SqlOperationBoundary.cs) |
-| Save Content rows through inherited helpers | [SqlDocumentRepository](../../../../src/Atlas.Infrastructure/Storage/SqlDocumentRepository.cs) |
-| Save Graph rows through inherited helpers | [SqlNodeRepository](../../../../src/Atlas.Infrastructure/Storage/SqlNodeRepository.cs) |
+| Implement the interface and delegate execution | [SqlRepository.Execute](../../../../src/Atlas.Application/Storage/SqlRepository.cs) |
+| Own or join the transaction, expose the current context | [SqlOperationBoundary.Execute and Open](../../../../src/Atlas.Application/Storage/SqlOperationBoundary.cs) |
+| Save Content rows through inherited helpers | [SqlDocumentRepository](../../../../src/Atlas.Application/Storage/SqlDocumentRepository.cs) |
+| Save Graph rows through inherited helpers | [SqlNodeRepository](../../../../src/Atlas.Application/Storage/SqlNodeRepository.cs) |
 
 `Current` is an `AsyncLocal` execution-scope value. It is not a context shared globally across requests. A nested call opens a temporary candidate to verify its connection string, then disposes it. A topology boundary also acquires its graph lock on the current transaction before running its callback. Repository context leases borrow `Current`. A borrowed context lease does not dispose the outer context.
 

@@ -25,7 +25,7 @@ classDiagram
         <<interfaces>>
     }
     class SqlRepositories {
-        <<infrastructure adapters>>
+        <<Application.Storage>>
     }
     class AtlasDataContext {
         <<EF persistence>>
@@ -41,13 +41,13 @@ classDiagram
     SqlRepositories ..> AtlasDataContext : maps and saves
 ```
 
-The grouped ports stand for interfaces such as `INodeRepository`, `IDocumentRepository` and `IVoteRepository`; there is no single `RepositoryPorts` class. Application cannot reference Infrastructure, Persistence, Identity or Console. At runtime, a variable typed as a domain interface holds a SQL implementation. Dependency inversion allows the call to reach SQL without Application knowing EF types.
+The grouped ports stand for interfaces such as `INodeRepository`, `IDocumentRepository` and `IVoteRepository`; there is no single `RepositoryPorts` class. Application contains workflows and concrete SQL adapters in one project, and references Persistence and Identity. It cannot reference Console. Workflows and domains still consume repository interfaces; Application.Storage supplies the EF-backed implementations. This is a host-independent backend project rather than a persistence-independent assembly.
 
 | Role | Source |
 |---|---|
-| Configuration, repository selection, domain services, subscriptions | [Console Program](../../../src/Atlas.Console/Program.cs) |
+| Configuration, repository selection, domain services, subscriptions | [Console Program](../../../src/hosts/Atlas.Console/Program.cs) |
 | Reusable use cases and adapters | [Application project](../../../src/Atlas.Application/README.md) |
-| Concrete SQL ports | [Infrastructure Storage](../../../src/Atlas.Infrastructure/Storage) |
+| Concrete SQL ports | [Application Storage](../../../src/Atlas.Application/Storage) |
 | EF model and save/audit integration | [AtlasDataContext](../../../src/Atlas.Persistence/AtlasDataContext.cs) |
 | Dependency assertions | [ArchitectureTests](../../../tests/Atlas.Application.Tests/ArchitectureTests.cs) |
 
@@ -84,14 +84,14 @@ classDiagram
 
 Program registers the Content observer for `NodeCreatedV1` and `NodeArchivedV1`, and NotificationService for `NotificationRequestedV1`. The Content observer confirms document existence and optionally reports a diagnostic observation; it does not create/delete the description. The description is already saved during creation and retained when archived.
 
-See [publisher](../../../src/Atlas.Application/Eventing/InMemoryEventPublisher.cs), [Content observer](../../../src/Atlas.Application/Content/ObserveNodeLifecycleInContent.cs) and [Program subscriptions](../../../src/Atlas.Console/Program.cs). [Event failure semantics](TRANSACTIONS-AND-EVENTS.md#event-delivery-after-saving) matter when reviewing these arrows.
+See [publisher](../../../src/Atlas.Application/Eventing/InMemoryEventPublisher.cs), [Content observer](../../../src/Atlas.Application/Content/ObserveNodeLifecycleInContent.cs) and [Program subscriptions](../../../src/hosts/Atlas.Console/Program.cs). [Event failure semantics](TRANSACTIONS-AND-EVENTS.md#event-delivery-after-saving) matter when reviewing these arrows.
 
 ## What changes for an API host?
 
 | Reuse | Supply in the new host |
 |---|---|
 | Application workflows and domain policies | Endpoints, request models, response/error mapping |
-| Infrastructure repositories and SQL boundaries | Configuration and service lifetimes |
+| Application storage repositories and SQL boundaries | Configuration and service lifetimes |
 | Event handlers and publisher implementation | Explicit subscription wiring |
 | Contracts identity abstraction | Verified request identity through `IAuthenticatedActor` |
 

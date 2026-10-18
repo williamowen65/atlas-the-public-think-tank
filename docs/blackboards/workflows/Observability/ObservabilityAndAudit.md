@@ -8,13 +8,13 @@ The board distinguishes implemented local behavior from deferred deployment work
 
 ## 1  START HERE: host wiring and operation context
 
-- [Run button → development host](https://github.com/williamowen65/atlas-the-public-think-tank/blob/0716efbc670fc202b9dfc5a81095cf09623ffbd4/src/Atlas.Console/Program.cs#L45-L66)
+- [Run button → development host](https://github.com/williamowen65/atlas-the-public-think-tank/blob/0716efbc670fc202b9dfc5a81095cf09623ffbd4/src/hosts/Atlas.Console/Program.cs#L45-L66)
 
   • Console startup installs telemetry.
   • Launch profile selects Development.
   • No cloud account is needed.
 
-- [Host owns destinations](https://github.com/williamowen65/atlas-the-public-think-tank/blob/0716efbc670fc202b9dfc5a81095cf09623ffbd4/src/Atlas.Console/Observability/ConsoleTelemetry.cs#L19-L40)
+- [Host owns destinations](https://github.com/williamowen65/atlas-the-public-think-tank/blob/0716efbc670fc202b9dfc5a81095cf09623ffbd4/src/hosts/Atlas.Console/Observability/ConsoleTelemetry.cs#L19-L40)
 
   • Resolve logs/observability at solution root.
   • Install observer; start SQL delivery worker.
@@ -26,7 +26,7 @@ The board distinguishes implemented local behavior from deferred deployment work
   • Only verified actor IDs enter this scope.
   • Disposal restores the previous context.
 
-- [After authentication succeeds](https://github.com/williamowen65/atlas-the-public-think-tank/blob/0716efbc670fc202b9dfc5a81095cf09623ffbd4/src/Atlas.Console/Identity/ConsoleIdentitySession.cs#L57-L78)
+- [After authentication succeeds](https://github.com/williamowen65/atlas-the-public-think-tank/blob/0716efbc670fc202b9dfc5a81095cf09623ffbd4/src/hosts/Atlas.Console/Identity/ConsoleIdentitySession.cs#L57-L78)
 
   • UseVerifiedActor preserves operation ID.
   • A rejected login has no verified actor ID.
@@ -78,7 +78,7 @@ The board distinguishes implemented local behavior from deferred deployment work
   • The context joins an outer transaction.
   • Required audit insert failure rolls back.
 
-- [D. Outer owner commits first](https://github.com/williamowen65/atlas-the-public-think-tank/blob/0716efbc670fc202b9dfc5a81095cf09623ffbd4/src/Atlas.Console/Storage/SqlOperationBoundary.cs#L42-L66)
+- [D. Outer owner commits first](https://github.com/williamowen65/atlas-the-public-think-tank/blob/0716efbc670fc202b9dfc5a81095cf09623ffbd4/src/Atlas.Application/Storage/SqlOperationBoundary.cs#L42-L66)
 
   • A coordinated operation owns its commit.
   • Publish staged success events afterward.
@@ -90,7 +90,7 @@ The board distinguishes implemented local behavior from deferred deployment work
   • Success diagnostics follow confirmed commit.
   • Keep unrelated retry evidence separate.
 
-- [Failure and uncertainty](https://github.com/williamowen65/atlas-the-public-think-tank/blob/0716efbc670fc202b9dfc5a81095cf09623ffbd4/src/Atlas.Console/Storage/SqlOperationBoundary.cs#L63-L77)
+- [Failure and uncertainty](https://github.com/williamowen65/atlas-the-public-think-tank/blob/0716efbc670fc202b9dfc5a81095cf09623ffbd4/src/Atlas.Application/Storage/SqlOperationBoundary.cs#L63-L77)
 
   • SQL failure: no committed success audit.
   • Connection loss during commit: outcome
@@ -136,7 +136,7 @@ The board distinguishes implemented local behavior from deferred deployment work
 
 ## 5  NODE VIEWS: explicit privacy, useful timing
 
-- [A. One renderer for both audiences](https://github.com/williamowen65/atlas-the-public-think-tank/blob/0716efbc670fc202b9dfc5a81095cf09623ffbd4/src/Atlas.Console/NodeDisplay.cs#L162-L190)
+- [A. One renderer for both audiences](https://github.com/williamowen65/atlas-the-public-think-tank/blob/0716efbc670fc202b9dfc5a81095cf09623ffbd4/src/hosts/Atlas.Console/NodeDisplay.cs#L162-L190)
 
   • WriteDetails wraps referenced-data reads
     and rendering for signed-in/anonymous use.
@@ -206,7 +206,7 @@ The board distinguishes implemented local behavior from deferred deployment work
     percentiles reveal the slower tail.
   • Local files do not compute dashboards.
 
-- [Gauges: latest value, not a running sum](https://github.com/williamowen65/atlas-the-public-think-tank/blob/0716efbc670fc202b9dfc5a81095cf09623ffbd4/src/Atlas.Console/Observability/ConsoleTelemetry.cs#L39-L57)
+- [Gauges: latest value, not a running sum](https://github.com/williamowen65/atlas-the-public-think-tank/blob/0716efbc670fc202b9dfc5a81095cf09623ffbd4/src/hosts/Atlas.Console/Observability/ConsoleTelemetry.cs#L39-L57)
 
   • audit.pending is backlog at sample time.
   • 2, 2, 2 means still 2 pending, not 6.
@@ -226,7 +226,7 @@ The board distinguishes implemented local behavior from deferred deployment work
   • Keep five files per stream across restarts.
   • Stop the app before manual test cleanup.
 
-- [Find files in Solution Explorer](https://github.com/williamowen65/atlas-the-public-think-tank/blob/0716efbc670fc202b9dfc5a81095cf09623ffbd4/src/Atlas.Console/Atlas.Console.csproj#L36-L46)
+- [Find files in Solution Explorer](https://github.com/williamowen65/atlas-the-public-think-tank/blob/0716efbc670fc202b9dfc5a81095cf09623ffbd4/src/hosts/Atlas.Console/Atlas.Console.csproj#L36-L46)
 
   • Atlas.Console → Logs → Observability.
   • Linked wildcard uses the default log path.

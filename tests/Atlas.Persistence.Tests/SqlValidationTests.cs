@@ -1,5 +1,5 @@
 using System.Data.Common;
-using Atlas.Infrastructure.Storage;
+using Atlas.Application.Storage;
 using Atlas.Participants.Participants;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;

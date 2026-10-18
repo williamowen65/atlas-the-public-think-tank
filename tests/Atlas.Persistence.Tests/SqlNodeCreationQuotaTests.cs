@@ -1,5 +1,5 @@
 using NodeCreationService = Atlas.Application.NodeCreationService;
-using Atlas.Infrastructure.Storage;
+using Atlas.Application.Storage;
 using Atlas.Contracts.Operations;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
