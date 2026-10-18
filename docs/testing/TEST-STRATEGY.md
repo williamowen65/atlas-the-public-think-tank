@@ -28,3 +28,7 @@ A requirement is Verified only when linked automated evidence supports its crite
 - Query performance for materialized Discovery/ancestry reads.
 
 Run the affected projects and SQL integration suite when behavior changes. Documentation-only updates require source-link, stale-reference, diagram-structure, and layout verification rather than new behavior tests.
+
+## Security negative paths
+
+Use the [negative-path inventory](../security/negative-paths/README.md) for reviewed rejection scenarios and existing evidence. Assert protected state and side effects after rejection, not just the exception. Real SQL rollback, quota concurrency and audit/outbox evidence require SQL integration tests. Rate-policy versus API-throttling responsibilities are recorded in [abuse prevention](../security/abuse-prevention/README.md).

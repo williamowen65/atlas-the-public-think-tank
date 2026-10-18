@@ -1,3 +1,5 @@
+using Atlas.Contracts.Observability;
+using Atlas.Contracts.Operations;
 using Atlas.Graph.Nodes;
 
 namespace Atlas.Graph.Tests;
@@ -14,6 +16,32 @@ public sealed class NodeCreationQuotaTests
         0,
         TimeSpan.Zero
     );
+
+    /// <summary>A quota denial is a bounded, correlated policy signal, never a storage outage or a success.</summary>
+    [TestMethod]
+    public void ExhaustionIsReportedOnceAsDeniedWithQuotaReason()
+    {
+        var observer = new RecordingObserver();
+        using var observe = Telemetry.UseObserver(observer);
+        using var operation = Telemetry.BeginOperation(Guid.NewGuid());
+        var allowance = NodeCreationQuotaPolicy.Default.Evaluate([Now, Now, Now], Now);
+        var error = new NodeCreationQuotaExceededException(allowance);
+        Assert.ThrowsExactly<NodeCreationQuotaExceededException>(() =>
+            OperationBoundary.Execute(new object(), () => throw error));
+        // An outer handler sees the same exception; it must not double-count the denial.
+        Telemetry.Failure(EventKind.NodeChanged, error);
+        var recorded = observer.Events.Single();
+        Assert.AreEqual(EventOutcome.Denied, recorded.Outcome);
+        Assert.AreEqual(EventReason.QuotaExceeded, recorded.ReasonCode);
+        Assert.AreEqual(Telemetry.OperationId, recorded.ObservabilityOperationId);
+        Assert.AreSame(allowance, error.Allowance);
+    }
+
+    private sealed class RecordingObserver : ITelemetryObserver
+    {
+        public List<TelemetryEvent> Events { get; } = [];
+        public void Record(TelemetryEvent value) => Events.Add(value);
+    }
 
     [TestMethod]
     public void FinalSlotAndExactExpiryUseRollingWindow()

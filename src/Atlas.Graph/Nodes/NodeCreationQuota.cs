@@ -1,3 +1,5 @@
+using Atlas.Contracts.Observability;
+
 namespace Atlas.Graph.Nodes;
 
 /// <summary>Product policy; defaults are provisional pending PTT-133 review.</summary>
@@ -67,7 +69,7 @@ public interface INodeCreationQuota
 
 /// <summary>Expected product rejection with structured data for future HTTP/UI handling.</summary>
 public sealed class NodeCreationQuotaExceededException(NodeCreationAllowance allowance)
-    : InvalidOperationException($"Node creation limit reached: {allowance.Limit} Nodes per {allowance.Window.TotalHours:g} hours. " +
+    : OperationRejectedException($"Node creation limit reached: {allowance.Limit} Nodes per {allowance.Window.TotalHours:g} hours. " +
         $"Try again in {Math.Max(
             1,
             Math.Ceiling(allowance.RetryAfter.TotalMinutes)
@@ -75,4 +77,5 @@ public sealed class NodeCreationQuotaExceededException(NodeCreationAllowance all
         $"at {allowance.NextSlotAt:yyyy-MM-dd HH:mm:ss} UTC.")
 {
     public NodeCreationAllowance Allowance { get; } = allowance;
+    public override EventReason ReasonCode => EventReason.QuotaExceeded;
 }

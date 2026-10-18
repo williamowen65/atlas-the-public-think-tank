@@ -39,7 +39,7 @@ Event names are suggested conventions, not a requirement to emit every listed ev
 
 - **Password accepted but 2FA required:** no succeeded sign-in event yet. Record the incomplete/denied flow with a bounded reason. Console currently refuses the unsupported 2FA flow.
 
-- **Node creation denied by quota:** no `node.created` success record. Record one denied command outcome with `reason_code=quota_exceeded`; retain no submitted description.
+- **Node creation denied by quota:** no `node.created` success record. The implemented operation failure path classifies `NodeCreationQuotaExceededException` as `outcome=denied` with `reason_code=quota_exceeded`; repeated handling of the same exception in one scope is deduplicated. The responsible boundary may emit `storage.write`; this is not a successful node mutation. Retain no submitted description.
 
 - **Grouped moderation succeeds:** the durable decision/visibility record includes the node and affected report count. A shared operation ID connects related case records without treating each inner save as a separate completed action.
 

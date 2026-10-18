@@ -100,6 +100,49 @@ public sealed class SqlThinHostWorkflowTests
         Assert.DoesNotContain("System.Console", references);
     }
 
+    /// <summary>Rejected workflow calls create neither business side effects nor committed success audit/outbox rows.</summary>
+    [TestMethod]
+    public void RejectedCommentsAndModerationLeaveSqlStateAndNotificationsUnchanged()
+    {
+        using var database = SqlTestDatabase.Create();
+        var author = database.AddParticipant();
+        var outsider = database.AddParticipant();
+        var moderator = database.AddParticipant();
+        var nodes = new SqlNodeRepository(database.Open);
+        var documents = new SqlDocumentRepository(database.Open);
+        var type = new NodeTypeCreationService(new SqlNodeTypeRepository(database.Open))
+            .Create("Idea", "Ideas", author.ToString(), DateTimeOffset.UtcNow);
+        var node = new NodeCreationService(nodes, documents).Create("Node", "Text", type.Id, author, []);
+        var cases = new SqlModerationCaseRepository(database.Open);
+        var moderation = new ModerationService(cases, new Moderator(moderator));
+        var report = moderation.ReportNode(node.Id.Value, outsider, node.Title.Value, "Spam", null, DateTimeOffset.UtcNow);
+        var publisher = new InMemoryEventPublisher();
+        var requests = new List<NotificationRequestedV1>();
+        publisher.Subscribe<NotificationRequestedV1>(requests.Add);
+        var comments = new CommentWorkflowService(new SqlCommentRepository(database.Open), nodes, moderation, publisher);
+        var comment = comments.AddTopLevel(CommentTarget.Node(node.Id.Value), author, "Original", DateTimeOffset.UtcNow);
+        requests.Clear();
+        using var before = database.Open();
+        var audits = before.AuditRecords.Count();
+        var outbox = before.AuditOutbox.Count();
+
+        Assert.ThrowsExactly<UnauthorizedAccessException>(() => comments.Edit(comment.Id, outsider, "Forbidden", DateTimeOffset.UtcNow));
+        Assert.ThrowsExactly<InvalidOperationException>(() => comments.Reply(CommentId.New(), outsider, "Orphan", DateTimeOffset.UtcNow));
+        Assert.ThrowsExactly<UnauthorizedAccessException>(() =>
+            new ModerationWorkflowService(nodes, documents, moderation, publisher)
+                .Decide(node.Id.Value, outsider, ModerationDecision.HideNode, "Forbidden", PublicModerationReason.Spam));
+
+        // Fresh context checks committed SQL state, independent of caller-held objects.
+        using var after = database.Open();
+        Assert.AreEqual("Original", after.CommentRows.Single().Body);
+        Assert.AreEqual(1, after.CommentRows.Count());
+        Assert.AreEqual(ModerationStatus.Submitted, cases.GetById(report.Id)!.Status);
+        Assert.IsFalse(moderation.Visibility(node.Id.Value).IsHidden);
+        Assert.IsEmpty(requests);
+        Assert.AreEqual(audits, after.AuditRecords.Count());
+        Assert.AreEqual(outbox, after.AuditOutbox.Count());
+    }
+
     private sealed class Moderator(Guid id) : IModeratorAuthorization
     {
         public bool IsAtlasModerator(Guid participantId) => participantId == id;
