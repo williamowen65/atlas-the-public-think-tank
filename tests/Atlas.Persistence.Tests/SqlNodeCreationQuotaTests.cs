@@ -1,6 +1,5 @@
-using Atlas.ConsoleApp;
-using Atlas.ConsoleApp.Storage;
-using Atlas.ConsoleApp.Eventing;
+using NodeCreationService = Atlas.Application.NodeCreationService;
+using Atlas.Application.Storage;
 using Atlas.Contracts.Operations;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
@@ -68,41 +67,6 @@ public sealed class SqlNodeCreationQuotaTests
         using var check = database.Open();
         Assert.AreEqual(1, check.NodeCreationQuotaRows.Count());
         Assert.AreEqual(4, check.NodeRows.Count());
-    }
-
-    [TestMethod]
-    public void ConsoleCreationWithNoCommentTypeAndNoRequestedTypesSucceeds()
-    {
-        using var database = SqlTestDatabase.Create();
-        using var clock = AtlasTime.Use(new Clock(Now));
-        var actor = database.AddParticipant();
-        AddType(database);
-        var originalIn = System.Console.In;
-        var originalOut = System.Console.Out;
-        // Select the sole actual Node type, then leave requested child types blank.
-        using var input = new StringReader("TEST NODE\ntest node\n1\n\n\n");
-        using var output = new StringWriter();
-        try
-        {
-            System.Console.SetIn(input);
-            System.Console.SetOut(output);
-            var node = NodeCreationWorkflow.Create(
-                new SqlNodeRepository(database.Open),
-                new SqlNodeTypeRepository(database.Open),
-                new SqlDocumentRepository(database.Open),
-                actor,
-                new InMemoryEventPublisher());
-            Assert.IsNotNull(node);
-            Assert.IsEmpty(node.RequestedSubNodeTypes);
-            using var check = database.Open();
-            Assert.AreEqual(1, check.NodeRows.Count());
-            Assert.AreEqual(1, check.NodeCreationQuotaRows.Count());
-        }
-        finally
-        {
-            System.Console.SetIn(originalIn);
-            System.Console.SetOut(originalOut);
-        }
     }
 
     [TestMethod]

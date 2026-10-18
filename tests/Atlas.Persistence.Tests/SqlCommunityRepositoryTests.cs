@@ -1,7 +1,7 @@
 using Atlas.Communities.Communities;
 using Atlas.Communities.Memberships;
 using Atlas.Communities.Nodes;
-using Atlas.ConsoleApp.Storage;
+using Atlas.Application.Storage;
 
 namespace Atlas.Persistence.Tests;
 [TestClass]

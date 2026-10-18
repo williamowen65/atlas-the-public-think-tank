@@ -25,7 +25,7 @@ SQL tests use `ATLAS_SQL_TEST_CONNECTION_STRING` in the shared user secrets or e
 2. Set **Atlas.Console** as the startup project in Solution Explorer.
 3. Select the **Atlas.Console** launch profile beside the green Run button, then press Run or F5.
 
-The committed [launchSettings.json](../../../src/Atlas.Console/Properties/launchSettings.json) sets `DOTNET_ENVIRONMENT=Development` automatically for that profile. No PowerShell command is needed. This is local launch configuration, not a production environment setting; do not put SQL credentials or other secrets in it.
+The committed [launchSettings.json](../../../src/hosts/Atlas.Console/Properties/launchSettings.json) sets `DOTNET_ENVIRONMENT=Development` automatically for that profile. No PowerShell command is needed. This is local launch configuration, not a production environment setting; do not put SQL credentials or other secrets in it.
 
 To inspect or change it in Visual Studio, open the project's **Properties → Debug → Open debug launch profiles UI**, select the profile, and inspect its environment variables. The JSON file is also directly editable if your Visual Studio version presents different menu labels.
 
@@ -45,7 +45,7 @@ To inspect or change it in Visual Studio, open the project's **Properties → De
 
 ```powershell
 $env:DOTNET_ENVIRONMENT = "Development"
-dotnet run --project src/Atlas.Console
+dotnet run --project src/hosts/Atlas.Console
 ```
 
 The default directory is **`logs/observability/` under the solution root**, covered by `.gitignore`. The Console prints its resolved directory at startup. It also works when launched by Visual Studio: startup searches upward from the working directory and binary directory for `Atlas.sln`. Outside a source checkout, the fallback is a local application-data directory.
@@ -97,7 +97,7 @@ Existing serialized SQL audit records and older files may still contain `observa
 
 ## Node-view diagnostics and privacy
 
-- Opening or redisplaying node details emits `node.view_completed` in diagnostics, a `NodeView` trace span, and count/duration metrics. Both authenticated and anonymous views use the shared [detail renderer](../../../src/Atlas.Console/NodeDisplay.cs). This measures detail rendering and its referenced-data reads, not the entire navigation request or time waiting for menu input. Redisplaying after an action counts again; it is not a unique-view or popularity statistic.
+- Opening or redisplaying node details emits `node.view_completed` in diagnostics, a `NodeView` trace span, and count/duration metrics. Both authenticated and anonymous views use the shared [detail renderer](../../../src/hosts/Atlas.Console/NodeDisplay.cs). This measures detail rendering and its referenced-data reads, not the entire navigation request or time waiting for menu input. Redisplaying after an action counts again; it is not a unique-view or popularity statistic.
 
 - The event explicitly says `privacy_policy: "read_no_identity_or_target"`. `actor_id` and `target_id` are intentionally null; `target_kind` is `node`. `actor_kind: "system"` describes the measurement context, not whether the viewer is signed in. `action` remains `none`: this is an observation, not a business mutation or SQL audit record.
 
@@ -149,6 +149,6 @@ These are abbreviated examples for reading, not universal cloud JSON schemas. .N
 
 - The public observer port accepts only typed events. Arbitrary framework `ILogger` messages are not exported to these files; this avoids bypassing the allowlist through EF/Identity message formatting. Reviewed framework diagnostics may be added later with their own privacy policy.
 
-- The new infrastructure is reusable; it is not a new business bounded context. [Telemetry contracts](../../../src/Atlas.Contracts/Observability/Telemetry.cs), [local infrastructure](../../../src/Atlas.Observability/LocalTelemetry.cs) and [host wiring](../../../src/Atlas.Console/Observability/ConsoleTelemetry.cs) have distinct ownership.
+- The new infrastructure is reusable; it is not a new business bounded context. [Telemetry contracts](../../../src/Atlas.Contracts/Observability/Telemetry.cs), [local infrastructure](../../../src/Atlas.Observability/LocalTelemetry.cs) and [host wiring](../../../src/Atlas.Application/Observability/LocalDevelopmentTelemetry.cs) have distinct ownership.
 
 - No API middleware, IP/user-agent collection, generic privileged provisioning API, live cloud adapter, SIEM or production dashboard is implemented in this slice.

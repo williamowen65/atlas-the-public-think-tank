@@ -4224,7 +4224,7 @@
       "isDeleted": false,
       "boundElements": [],
       "updated": 1792000000000,
-      "link": "https://github.com/williamowen65/atlas-the-public-think-tank/blob/f09d47271d140191eb7c97b50a913f5d21a2053d/src/Atlas.Console/Observability/ConsoleTelemetry.cs",
+      "link": "https://github.com/williamowen65/atlas-the-public-think-tank/blob/f09d47271d140191eb7c97b50a913f5d21a2053d/src/hosts/Atlas.Console/Observability/ConsoleTelemetry.cs",
       "locked": false,
       "text": "ConsoleTelemetry : IDisposable",
       "originalText": "ConsoleTelemetry : IDisposable",

@@ -9,7 +9,7 @@
 | [Archive / restore](../../../src/Atlas.Communities/Communities/Community.cs) | Owner | Host supplies authenticated Participant ID | Community lifecycle methods → `EnsureOwner` | Community tests | Covered |
 | [Join community](../../../src/Atlas.Communities/Communities/CommunityService.cs) | Participant joining self under current open-community policy | Host should derive Participant ID from authenticated Identity | `CommunityService.Join` checks community state but does not authenticate supplied participant ID | Community tests | Host identity required |
 | [Leave community](../../../src/Atlas.Communities/Communities/CommunityService.cs) | Participant leaving self | Host should derive Participant ID from authenticated Identity | Service prevents owner leaving and requires membership, but cannot authenticate supplied participant ID | Community tests | Host identity required |
-| [Associate node with community](../../../src/Atlas.Console/NodeCommands.cs) | Node author under current Console workflow | Host supplies authenticated Participant ID | Console's node workflow permits community management only for the node author; Communities enforces active-community state | Node author gate + Community tests | Covered at current workflow boundary; future API must preserve |
+| [Associate node with community](../../../src/hosts/Atlas.Console/NodeCommands.cs) | Node author under current Console workflow | Host supplies authenticated Participant ID | Console's node workflow permits community management only for the node author; Communities enforces active-community state | Node author gate + Community tests | Covered at current workflow boundary; future API must preserve |
 
 ## Review note
 

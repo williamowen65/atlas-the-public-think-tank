@@ -24,6 +24,7 @@ public static class IdentityServices
 
         // Identity and its supporting framework services use ILogger<T> for diagnostic and security-related logging.
         services.AddLogging();
+        services.AddScoped<SessionParticipantQuery>();
 
         // Makes the current HTTP request available to services through IHttpContextAccessor. The console does not
         // have an HTTP request, but the future web host and several ASP.NET Core Identity services expect this facility.

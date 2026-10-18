@@ -1,6 +1,6 @@
 # Atlas.Persistence
 
-EF Core row models, SQL Server mappings and migrations for Atlas. Domain behavior remains in the owning domain projects; SQL repositories in the Console host map domain objects to these rows.
+EF Core row models, SQL Server mappings and migrations for Atlas. Domain behavior remains in the owning domain projects; SQL repositories in Atlas.Application map domain objects to these rows.
 
 ## Reset the local database to demo seed data (PowerShell)
 
@@ -26,11 +26,11 @@ dotnet ef database update --project src/Atlas.Persistence
 if ($LASTEXITCODE -ne 0) { throw "Database migration failed; seeding stopped." }
 
 # Seed demo accounts and content. This requires an empty database.
-dotnet run --project src/Atlas.Console -- --seed-demo
+dotnet run --project src/hosts/Atlas.Console -- --seed-demo
 if ($LASTEXITCODE -ne 0) { throw "Demo seeding failed; normal launch stopped." }
 
 # Launch the Console application normally.
-dotnet run --project src/Atlas.Console
+dotnet run --project src/hosts/Atlas.Console
 ```
 
 If you decline the drop confirmation, stop the reset instead of continuing with database update/seeding. The old database remains, and demo seeding will reject a populated database.

@@ -203,6 +203,27 @@ public sealed class CommunityService
         );
     }
 
+    public void ChangeDescription(Community community, Guid actorId, string description, DateTimeOffset at) =>
+        Change(community, actorId, () => community.ChangeDescription(actorId, description, at));
+    public void Archive(Community community, Guid actorId, DateTimeOffset at) =>
+        Change(community, actorId, () => community.Archive(actorId, at));
+    public void Restore(Community community, Guid actorId, DateTimeOffset at) =>
+        Change(community, actorId, () => community.Restore(actorId, at));
+    private void Change(Community community, Guid actorId, Action change) =>
+        OperationBoundary.Execute(_communities, () =>
+        {
+            ReferenceValidation.Require(_communities, "Participant", actorId);
+            ReferenceValidation.Require(_communities, "Community", community.Id.Value, false);
+            change(); _communities.Save(community);
+        });
+    public void DisassociateNode(Community community, Guid nodeId, Guid actorId) =>
+        OperationBoundary.Execute(_communities, () =>
+        {
+            ReferenceValidation.Require(_communities, "Participant", actorId);
+            ReferenceValidation.Require(_communities, "Community", community.Id.Value, false);
+            _nodes.Remove(community.Id, nodeId);
+        });
+
     private void EnsureUniqueName(string name)
     {
         if (_communities.GetAll().Any(existing => string.Equals(

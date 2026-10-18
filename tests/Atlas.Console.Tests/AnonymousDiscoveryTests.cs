@@ -1,3 +1,4 @@
+using Atlas.Contracts.Identity;
 using System.Reflection;
 using Atlas.Comments.Comments;
 using Atlas.Communities.Communities;

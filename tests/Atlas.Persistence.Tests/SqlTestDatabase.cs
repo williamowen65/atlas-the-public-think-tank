@@ -66,7 +66,7 @@ internal sealed class SqlTestDatabase : IDisposable
         var actor = AddParticipant();
         var node = AddNode();
         var now = DateTimeOffset.UtcNow;
-        var definitions = new Atlas.ConsoleApp.Storage.SqlReactionDefinitionRepository(Open);
+        var definitions = new Atlas.Application.Storage.SqlReactionDefinitionRepository(Open);
         var definition = Atlas.Graph.Reactions.ReactionDefinition.Create(
             "Helpful",
             "👍",
@@ -82,7 +82,7 @@ internal sealed class SqlTestDatabase : IDisposable
             actor,
             now
         );
-        new Atlas.ConsoleApp.Storage.SqlNodeReactionRepository(Open).Save(reaction);
+        new Atlas.Application.Storage.SqlNodeReactionRepository(Open).Save(reaction);
         return reaction.Id.Value;
     }
     public void Dispose()

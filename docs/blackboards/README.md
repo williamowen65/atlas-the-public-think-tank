@@ -1,5 +1,7 @@
 # Architecture blackboards
 
+For the current thin-host/application design, follow the [visual architecture guide](../architecture/diagrams/README.md). Its linked Mermaid UML and process trees render in GitHub and lead into source and tests; these Excalidraw boards remain complementary editable canvases.
+
 These blackboards are exploratory visual companions to Atlas's authoritative
 Markdown documentation. We try to update them alongside behavior changes; they can still drift, so check their linked code and context map when reviewing.
 

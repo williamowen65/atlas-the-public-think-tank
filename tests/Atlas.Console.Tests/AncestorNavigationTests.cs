@@ -1,3 +1,4 @@
+using Atlas.Application.Queries;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;
 

@@ -7,21 +7,21 @@ PTT-94 adds account infrastructure for the future HTTP host. Participants remain
 Identity migrations use `Atlas.Persistence` as the migration project and `Atlas.Console` as the startup project. These flags have separate jobs:
 
 - `--project src/Atlas.Persistence` selects the project that owns `AtlasDataContext`, the EF model snapshot, and generated migration files.
-- `--startup-project src/Atlas.Console` selects the executable EF builds/starts to obtain Atlas runtime configuration and services used to construct the context.
+- `--startup-project src/hosts/Atlas.Console` selects the executable EF builds/starts to obtain Atlas runtime configuration and services used to construct the context.
 
 When using `Atlas.Console` as the startup project, it must reference `Microsoft.EntityFrameworkCore.Design` with `PrivateAssets=all`. Keep its EF Core package version aligned with the other EF Core packages in the solution.
 
 
 
-The developer-generated `20260930213148_AddIdentityAccounts` migration, designer, and updated snapshot are checked in. The console registration/sign-in follow-up changes no EF mappings and needs no additional migration. Keep generating future migrations yourself through `dotnet ef migrations add <Name> --project src/Atlas.Persistence --startup-project src/Atlas.Console` when the model changes.
+The developer-generated `20260930213148_AddIdentityAccounts` migration, designer, and updated snapshot are checked in. The console registration/sign-in follow-up changes no EF mappings and needs no additional migration. Keep generating future migrations yourself through `dotnet ef migrations add <Name> --project src/Atlas.Persistence --startup-project src/hosts/Atlas.Console` when the model changes.
 
 ## Apply to your existing local SQL database
 
 After migration review, run:
 
 ```powershell
-dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence --startup-project src/Atlas.Console
-dotnet ef database update --project src/Atlas.Persistence --startup-project src/Atlas.Console --context AtlasDataContext
+dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence --startup-project src/hosts/Atlas.Console
+dotnet ef database update --project src/Atlas.Persistence --startup-project src/hosts/Atlas.Console --context AtlasDataContext
 ```
 
 Keep the current database and demo data. Do not reset or reseed it, and do not regenerate the earlier referential-integrity migration. Updating applies only migrations missing from `__EFMigrationsHistory`. Console startup also applies committed migrations under the existing prototype behavior; the explicit update command makes this step visible.
@@ -39,7 +39,7 @@ Without the test connection, only the model, domain-dependency, and service-wiri
 ## Use registration and sign-in
 
 ```powershell
-dotnet run --project src/Atlas.Console
+dotnet run --project src/hosts/Atlas.Console
 ```
 
 The entry menu offers Sign in, Register, and Exit. Registration creates a new Member account with a new linked Participant, asks for password confirmation, and returns to the entry menu. Password entry requires an interactive terminal and is not echoed. Existing demo profiles are browseable but cannot be selected as authenticated actors.
@@ -47,7 +47,7 @@ The entry menu offers Sign in, Register, and Exit. Registration creates a new Me
 Email confirmation is still required. Until real email delivery is connected, a trusted local operator can confirm a newly created account in a second terminal:
 
 ```powershell
-dotnet run --project src/Atlas.Console -- --confirm-email
+dotnet run --project src/hosts/Atlas.Console -- --confirm-email
 ```
 
 Enter the account email, then type `CONFIRM`. This explicitly confirms the account through Identity's token provider; it is a development operator utility, not verification that someone owns an email address, and must not become a public endpoint. It neither assigns a privileged role nor claims an existing demo profile.

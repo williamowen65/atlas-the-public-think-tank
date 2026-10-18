@@ -1,5 +1,5 @@
 using Atlas.Moderation;
-using Atlas.ConsoleApp.Storage;
+using Atlas.Application.Storage;
 namespace Atlas.Persistence.Tests;
 [TestClass]
 public sealed class SqlModerationRepositoryTests

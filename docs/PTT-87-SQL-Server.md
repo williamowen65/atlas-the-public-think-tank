@@ -5,8 +5,8 @@ Domain models and repository interfaces remain in their domains. `Atlas.Persiste
 ## Local setup
 
 1. Create a **new empty** SQL Server database (for example `Atlas`). Set `ATLAS_SQL_CONNECTION_STRING` in the console project user secrets or environment. For local Windows authentication, one example is `Server=localhost;Database=Atlas;Trusted_Connection=True;TrustServerCertificate=True`. Do not commit credentials.
-2. Run `dotnet run --project src/Atlas.Console -- --seed-demo` once. It applies the migration, creates the five demo participants through the real Identity registration flow, and then loads the dependent typed seed records from `src/Atlas.Console/Storage/SeedData/` using the generated participant IDs. The seed command refuses a populated database.
-3. Run `dotnet run --project src/Atlas.Console` to use the SQL database.
+2. Run `dotnet run --project src/hosts/Atlas.Console -- --seed-demo` once. It applies the migration, creates the five demo participants through the real Identity registration flow, and then loads the dependent typed seed records from `src/Atlas.Application/Storage/SeedData/` using the generated participant IDs. The seed command refuses a populated database.
+3. Run `dotnet run --project src/hosts/Atlas.Console` to use the SQL database.
 
 The initial relational migration is already checked in. The developer-generated `20260929202249_AddReferentialIntegrity` migration and its snapshot are now checked in; do not generate a second migration for those same relationships. Keep your existing relational database: the new migration should add constraints and indexes, without dropping tables or resetting demo data.
 
@@ -26,7 +26,7 @@ No .NET SDK or SQL Server is installed in this workspace; validation runs throug
 
 ## Model-first migration workflow
 
-`--project src/Atlas.Persistence` tells EF Core where the `AtlasDataContext`, migrations, and model snapshot live; generated migration files belong to that project. `--startup-project src/Atlas.Console` is different: it tells EF which executable project to build/start when tooling needs the application's runtime services and configuration to construct the DbContext. The Console startup project must reference `Microsoft.EntityFrameworkCore.Design` when using that route.
+`--project src/Atlas.Persistence` tells EF Core where the `AtlasDataContext`, migrations, and model snapshot live; generated migration files belong to that project. `--startup-project src/hosts/Atlas.Console` is different: it tells EF which executable project to build/start when tooling needs the application's runtime services and configuration to construct the DbContext. The Console startup project must reference `Microsoft.EntityFrameworkCore.Design` when using that route.
 
 Atlas.Persistence also has a design-time DbContext factory, so persistence-only migrations can be scaffolded without starting the Console. That is why older PTT-87 commands use `--project` plus `--context` but no `--startup-project`. Do not mix the two forms accidentally: use the Console startup-project form when following the Identity/runtime workflow documented in PTT-94; use the design-time-factory form below for persistence-only model work.
 

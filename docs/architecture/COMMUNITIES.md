@@ -19,7 +19,7 @@ The two many-to-many relationships are maintained through Community-owned record
 
 ## Consistency and failures
 
-The Console supplies SQL repository adapters for CommunityRows, CommunityMembershipRows, and CommunityNodeRows. SQL Server enforces a unique Community Name index and composite primary keys for (CommunityId, ParticipantId) and (CommunityId, NodeId). Name comparison follows the database collation; application validation also checks names case-insensitively.
+Atlas.Application supplies the SQL repository adapters selected by host composition for CommunityRows, CommunityMembershipRows, and CommunityNodeRows. SQL Server enforces a unique Community Name index and composite primary keys for (CommunityId, ParticipantId) and (CommunityId, NodeId). Name comparison follows the database collation; application validation also checks names case-insensitively.
 
 Foreign keys enforce references to existing Communities, Participants, and Nodes. NoAction prevents physical deletion while dependents exist; archive preserves references. [CommunityService.Create](../../src/Atlas.Communities/Communities/CommunityService.cs) wraps community creation and owner membership in one operation transaction. A failed membership save rolls back the community too.
 

@@ -1,11 +1,11 @@
+using NodeCreationService = Atlas.Application.NodeCreationService;
 using Atlas.Content.Blocks;
 using Atlas.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.SqlClient;
 using Atlas.Communities.Communities;
 using Atlas.Communities.Memberships;
-using Atlas.ConsoleApp;
-using Atlas.ConsoleApp.Storage;
+using Atlas.Application.Storage;
 using Atlas.Contracts.Operations;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Nodes.NodeTypes;

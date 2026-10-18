@@ -54,7 +54,7 @@ git clone https://github.com/williamowen65/atlas-the-public-think-tank.git
 cd atlas-the-public-think-tank
 dotnet restore Atlas.sln
 dotnet test Atlas.sln
-dotnet run --project src/Atlas.Console/Atlas.Console.csproj
+dotnet run --project src/hosts/Atlas.Console/Atlas.Console.csproj
 ```
 
 Before opening a pull request:

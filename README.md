@@ -34,7 +34,7 @@ Atlas currently targets [.NET 10](https://dotnet.microsoft.com/).
 git clone https://github.com/williamowen65/atlas-the-public-think-tank.git
 cd atlas-the-public-think-tank
 dotnet restore Atlas.sln
-dotnet run --project src/Atlas.Console/Atlas.Console.csproj
+dotnet run --project src/hosts/Atlas.Console/Atlas.Console.csproj
 ```
 
 Run the automated tests with:
@@ -50,7 +50,7 @@ dotnet test Atlas.sln
 - [`docs/`](docs/README.md) — requirements, architecture, contracts, workflows, testing guidance, glossary, and blackboards
 - [`legacy/`](legacy/README.md) — the earlier web application and its original README
 - [`infrastructure/`](infrastructure/README.md) — planned infrastructure as code
-- [`src/Atlas.Console/Storage/SeedData/DemoData.cs`](src/Atlas.Console/Storage/SeedData/DemoData.cs) — opt-in SQL Server demo seed records
+- [`src/hosts/Atlas.Console/Storage/SeedData/DemoData.cs`](src/hosts/Atlas.Console/Storage/SeedData/DemoData.cs) — opt-in SQL Server demo seed records
 
 For a deeper technical introduction, start with the [documentation index](docs/README.md). The [requirements baseline](docs/requirements/README.md) and [traceability matrix](docs/requirements/TRACEABILITY.md) connect intended behavior to implementation and verification.
 
