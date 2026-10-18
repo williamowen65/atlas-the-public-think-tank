@@ -4,32 +4,54 @@
 
 ## Capabilities connect an interface to SQL behavior
 
+These interfaces let domain/application code request a protected operation without embedding SQL transaction or locking code in the domain. With the current SQL adapters, the ordinary operation boundary groups work into one transaction; the topology boundary additionally coordinates graph structure changes with a named database lock.
+
+**Transaction** means related writes commit together or uncommitted writes roll back. **Topology** means the node/parent structure. Its extra lock prevents competing topology operations from interleaving their ancestry checks and writes. Ordinary transactions also take SQL locks; the named topology lock is additional coordination.
+
 ```mermaid
 classDiagram
     direction TB
-    class IOperationBoundary {
+    class IOperationBoundary["IOperationBoundary (Atlas.Contracts)"] {
         <<interface>>
         Execute(operation)
     }
-    class INodeTopologyBoundary {
+    class INodeTopologyBoundary["INodeTopologyBoundary (Atlas.Graph)"] {
         <<interface>>
         ExecuteTopology(operation)
     }
-    class SqlNodeRepository
-    class SqlOperationBoundary {
+    class SqlRepository["SqlRepository (Atlas.Application)"]
+    class SqlNodeRepository["SqlNodeRepository (Atlas.Application)"]
+    class SqlOperationBoundary["SqlOperationBoundary (Atlas.Application)"] {
         Execute(open, operation, lockResource)
         Open(open)
     }
-    class AtlasDataContext
-    IOperationBoundary <|.. SqlNodeRepository
-    INodeTopologyBoundary <|.. SqlNodeRepository
-    SqlNodeRepository ..> SqlOperationBoundary : delegates
+    class AtlasDataContext["AtlasDataContext (Atlas.Persistence)"]
+    IOperationBoundary <|.. SqlRepository : implements
+    SqlRepository <|-- SqlNodeRepository : inherits
+    INodeTopologyBoundary <|.. SqlNodeRepository : implements
+    SqlNodeRepository ..> SqlOperationBoundary : topology coordination
+    SqlRepository ..> SqlOperationBoundary : ordinary operations
     SqlOperationBoundary ..> AtlasDataContext : owns or lends context
 ```
 
+Read a **dashed line with a hollow triangle** as “implements this interface” (UML realization). A **solid line with a hollow triangle** means class inheritance. A **dashed arrow** means one class uses another. These arrows show type relationships and dependencies, not the execution order of a transaction.
+
+| Type | Defined in / responsibility |
+|---|---|
+| `IOperationBoundary` | **Atlas.Contracts** — general operation capability shared across domains |
+| `INodeTopologyBoundary` | **Atlas.Graph** — Graph-specific capability for coordinated topology work |
+| `SqlRepository` | **Atlas.Application.Storage** — base SQL adapter implementing the general operation capability |
+| `SqlNodeRepository` | **Atlas.Application.Storage** — inherits the ordinary capability and implements the topology capability |
+| `SqlOperationBoundary` | **Atlas.Application.Storage** — opens/joins the SQL transaction and acquires requested named locks |
+| `AtlasDataContext` | **Atlas.Persistence** — EF context, tracked rows and database mappings; Application storage uses it |
+
+Only the topology interface is defined by Graph; the ordinary operation interface belongs to Contracts. The implementations are in Application, while the EF context remains in the separate Persistence project. Application references Persistence rather than containing its context.
+
 The Contracts `OperationBoundary` helper detects `IOperationBoundary`; Graph's `NodeTopologyBoundary` detects its additional capability. Without a supplied capability they execute the callback through the fallback path; that does not invent a transaction for an arbitrary repository. SQL repositories implement the capabilities and delegate to the shared SQL coordinator.
 
-Sources: [Contracts helper](../../../src/Atlas.Contracts/Operations/OperationBoundary.cs), [Graph topology capability](../../../src/Atlas.Graph/Nodes/NodeTopologyBoundary.cs), [SqlNodeRepository](../../../src/Atlas.Application/Storage/SqlNodeRepository.cs), [SQL coordinator](../../../src/Atlas.Application/Storage/SqlOperationBoundary.cs#L23).
+For example, node creation enters the topology boundary: its description and node writes share the transaction, while the graph lock protects the structural checks. Rename uses the ordinary operation boundary and does not request the named topology lock. See [node workflows](NODES-AND-CONTENT.md) for the callers and the next diagram for transaction ownership.
+
+Sources: [Contracts interface and helper](../../../src/Atlas.Contracts/Operations/OperationBoundary.cs), [Graph topology interface and helper](../../../src/Atlas.Graph/Nodes/NodeTopologyBoundary.cs), [SQL base repository](../../../src/Atlas.Application/Storage/SqlRepository.cs), [SQL node repository](../../../src/Atlas.Application/Storage/SqlNodeRepository.cs), [SQL coordinator](../../../src/Atlas.Application/Storage/SqlOperationBoundary.cs#L23), [EF context](../../../src/Atlas.Persistence/AtlasDataContext.cs).
 
 ## Entering a SQL boundary
 
