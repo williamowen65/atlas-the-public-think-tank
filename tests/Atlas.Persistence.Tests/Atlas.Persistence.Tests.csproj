@@ -6,7 +6,7 @@
 	<UserSecretsId>02103f3e-daff-4644-b045-6eb5f00889eb</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MSTest" Version="4.0.2" />
+    <PackageReference Include="MSTest" Version="4.5.1" />
     <ProjectReference Include="..\..\src\Atlas.Application\Atlas.Application.csproj" />
     <ProjectReference Include="..\..\src\Atlas.Persistence\Atlas.Persistence.csproj" />
   </ItemGroup>
