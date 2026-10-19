@@ -11,13 +11,6 @@ on:
       - 'Atlas.Console.Tests/**'
       - 'Atlas.sln'
       - '.github/workflows/AtlasRewriteTests.yml'
-  pull_request:
-    paths:
-      - 'src/**'
-      - 'tests/**'
-      - 'Atlas.Console.Tests/**'
-      - 'Atlas.sln'
-      - '.github/workflows/AtlasRewriteTests.yml'
   workflow_dispatch:
 
 permissions:
