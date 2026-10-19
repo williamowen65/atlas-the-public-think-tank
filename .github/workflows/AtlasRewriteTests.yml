@@ -96,6 +96,9 @@ jobs:
           - name: Community quota fresh model
             project: tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj
             filter: '--filter FullyQualifiedName~SqlCommunityCreationQuotaTests'
+          - name: Report quota fresh model
+            project: tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj
+            filter: '--filter FullyQualifiedName~SqlReportSubmissionQuotaTests'
           - name: Persistence
             project: tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj
           - name: Identity
@@ -124,7 +127,7 @@ jobs:
         with:
           dotnet-version: '10.0.x'
       - name: Check migrations match the EF model
-        if: matrix.name != 'Discovery read model' && matrix.name != 'Audit fresh model' && matrix.name != 'Voting quota fresh model' && matrix.name != 'Community quota fresh model'
+        if: matrix.name != 'Discovery read model' && matrix.name != 'Audit fresh model' && matrix.name != 'Voting quota fresh model' && matrix.name != 'Community quota fresh model' && matrix.name != 'Report quota fresh model'
         run: |
           dotnet tool restore
           dotnet restore src/Atlas.Persistence/Atlas.Persistence.csproj

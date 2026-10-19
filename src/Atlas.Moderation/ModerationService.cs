@@ -61,9 +61,12 @@ public sealed class ModerationService
         DateTimeOffset createdAt
     )
     {
-        return OperationBoundary.Execute(
-            _cases,
-            () =>
+        return OperationBoundary.Execute(_cases, () =>
+            _cases is IReportSubmissionQuota quota
+                ? quota.ExecuteSubmission(reporterId, SubmitCore)
+                : SubmitCore());
+
+        ModerationCase SubmitCore()
         {
             ReferenceValidation.Require(
                 _cases,
@@ -85,10 +88,11 @@ public sealed class ModerationService
                 title,
                 createdAt
             );
+            // Only new reports spend slots; moderator decisions and review workflows remain available.
+            if (_cases is IReportSubmissionQuota quota) quota.EnsureSubmissionAllowed(reporterId);
             _cases.Save(item);
             return item;
         }
-        );
     }
 
     public IReadOnlyCollection<ModerationCase> Queue(Guid actorId)

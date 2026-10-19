@@ -15,3 +15,11 @@
 ## Review note
 
 This is one of the stronger authorization boundaries: privileged operations call an authorization port inside Moderation rather than trusting a host-supplied boolean. The current Identity adapter backs that port with persisted global roles. The host still must supply the actual authenticated actor ID.
+
+## Report submission budget
+
+An authenticated reporter must also have an available submission slot: three successful
+reports per rolling hour, shared across nodes. The fourth waits for a slot and gives
+retry/support guidance. This budget does not grant authorization and does not block
+moderator decisions, restoration or review requests. See the
+[report quota policy and tests](../abuse-prevention/README.md#report-submission-budget).

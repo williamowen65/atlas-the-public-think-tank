@@ -49,7 +49,7 @@ Each row records a reviewed operation family, not exhaustive coverage of every p
 
 ## New evidence versus existing evidence
 
-This slice adds nine parameterized node/description denial cases, two comment service tests and one SQL cross-domain rejection test. It also adds a quota telemetry regression and the small classification fix it requires. The MVP extension adds Content URL policy tests and deep/malformed thread-read tests, with URL validation and iterative traversal implementations. The SQL test checks committed success-audit absence, not that denial diagnostics are suppressed. The URL/thread changes require no schema change. The voting and community quota extensions below add ledger tables and require developer-generated migrations.
+This slice adds nine parameterized node/description denial cases, two comment service tests and one SQL cross-domain rejection test. It also adds a quota telemetry regression and the small classification fix it requires. The MVP extension adds Content URL policy tests and deep/malformed thread-read tests, with URL validation and iterative traversal implementations. The SQL test checks committed success-audit absence, not that denial diagnostics are suppressed. The URL/thread changes require no schema change. The voting, community and report quota extensions below add ledger tables and require developer-generated migrations.
 
 ## Limits and remaining work
 
@@ -93,3 +93,12 @@ checks persistence across repositories, separate participant budgets, no refund 
 allowed edits, exact expiry, rollback without community/membership/ledger residue, direct
 repository enforcement, backdating rejection and competing last-slot attempts.
 See [policy and migration handoff](../abuse-prevention/README.md#community-creation-budget).
+
+## Report submission quota extension
+
+[ReportSubmissionQuotaTests](../../../tests/Atlas.Moderation.Tests/ReportSubmissionQuotaTests.cs)
+checks the three-per-hour policy, fourth-report rejection, exact cutoff and support
+message. [SqlReportSubmissionQuotaTests](../../../tests/Atlas.Persistence.Tests/SqlReportSubmissionQuotaTests.cs)
+checks persisted budgets, unchanged queue/audit/outbox on rejection, independent reporters,
+unblocked moderator decisions, invalid/rolled-back submissions and concurrent last-slot
+attempts. See [policy and migration handoff](../abuse-prevention/README.md#report-submission-budget).

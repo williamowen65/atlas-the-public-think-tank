@@ -2,7 +2,7 @@
 
 [Security index](../README.md) · [Negative-path evidence](../negative-paths/README.md) · [Node quota](../validation/NODE-CREATION-QUOTA.md)
 
-PTT-124 records the MVP protections and the requirements for the next API host. This review preserves the agreed node-creation policy and adds a provisional Voting-owned action allowance and a Communities-owned creation allowance. It also implements URL-form validation for content blocks and iterative comment-thread traversal.
+PTT-124 records the MVP protections and the requirements for the next API host. This review preserves the agreed node-creation policy and adds a provisional Voting-owned action allowance a Communities-owned creation allowance, and a Moderation-owned report submission allowance. It also implements URL-form validation for content blocks and iterative comment-thread traversal.
 
 ## What already slows node spam
 
@@ -29,7 +29,7 @@ The broad “thousands of hits in seconds from one source” concern belongs at 
 
 The URL check performs no DNS lookup or network fetch and does not block private/local destinations as an SSRF defense. Any future preview-fetch service needs separate destination/network protections. URLs embedded inside Markdown remain untrusted content for a future renderer to sanitize; this block-field validator does not parse or secure Markdown/HTML. A syntactically valid HTTPS link can still point to a malicious site.
 
-New writes and reconstitution share the URL rules. Existing media values with unsafe schemes, credentials, encoded/complex relative syntax or controls must be corrected before they can load. The URL validation itself requires no schema migration, automatic rewrite or database scan. The voting and community quota ledgers do require a developer-generated migration. Simple existing paths such as `media/image-1` are preserved.
+New writes and reconstitution share the URL rules. Existing media values with unsafe schemes, credentials, encoded/complex relative syntax or controls must be corrected before they can load. The URL validation itself requires no schema migration, automatic rewrite or database scan. The voting, community and report quota ledgers do require a developer-generated migration. Simple existing paths such as `media/image-1` are preserved.
 
 ## Voting action allowance
 
@@ -58,7 +58,8 @@ None substitutes for the others. Voting uniqueness limits current influence but 
 | Search/filter/deep paging/ancestry | Discovery validates inputs and SQL performs page queries; bounded breadcrumb segments exist. API needs query cost/timeouts, request/concurrency budgets and bounded pagination; returning few items does not imply cheap computation. |
 | Community creation flood | Communities policy + Application SQL ledger enforce **one creation per participant per rolling 24 hours**. Server accounting time and participant-scoped locking prevent backdating and concurrent slot reuse. No lifetime ownership cap or karma gate. See [community creation budget](#community-creation-budget). |
 | Community membership/association churn | Ownership, active references and uniqueness protect state. Joining/leaving and linking/unlinking are **not covered by the community creation quota** and have no new throughput quota in this PR. Future API budgets must bound repeated requests separately. |
-| Reporting/moderation queue flooding | Actor/role checks and lifecycle rules exist. API should budget reports and privileged actions without preventing legitimate reporting; define duplicate/batch policies explicitly. |
+| Report submission / queue flooding | Moderation policy + SQL ledger allow **three successful reports per participant per rolling hour**; the fourth waits for an expiring slot. A support-staff message provides escalation guidance for additional legitimate concerns. See [report submission budget](#report-submission-budget). Future API throttling must also bound failed/invalid requests. |
+| Moderator decisions and review workflows | Reporter submission quota does not consume slots for or block decisions, restoration or review requests. Existing role/ownership/lifecycle checks remain; future API request budgets are separate. |
 | Notification amplification | Recipient ownership, preferences and occurrence deduplication exist. Bound upstream producers and future outbound queues/retries. One unique event per spam comment can still produce many notifications. |
 | Multiple accounts and distributed clients | No mature anti-Sybil/reputation system. Do not claim the participant quota or IP limits solve coordinated abuse. Evaluate additional policy from observed use. |
 | Rich text/links/images and malicious content | Content now rejects unsafe URL forms in link-preview/image/video fields. This does not sanitize Markdown or prove destination safety. The eventual browser host must safely render untrusted text; no server-side fetch of arbitrary URLs should be introduced without SSRF protections. |
@@ -80,7 +81,7 @@ These are requirements for implementation when the API exists, not protections a
 1. Derive participant/roles from verified identity. Treat IP/client information as host context and trust forwarded headers only from configured proxies.
 2. Define configurable budgets by operation family: authentication/registration, creation, other mutations, reports, reads/expensive queries and outbound work. Combine authenticated-user limits with appropriate anonymous/IP/global concurrency limits. Do not choose production thresholds without workload measurements.
 3. Reject throttled requests before database/content/provider work. Keep backend creation accounting authoritative across processes and restarts. A per-process HTTP limiter alone is not a distributed account quota.
-4. Return a stable machine-readable rejection with HTTP 429 and appropriate retry guidance for rate/quota exhaustion. Map the structured Allowance on NodeCreationQuotaExceededException, VoteActionQuotaExceededException and CommunityCreationQuotaExceededException without exposing internals; validation, permission denial and dependency outages remain different outcomes.
+4. Return a stable machine-readable rejection with HTTP 429 and appropriate retry guidance for rate/quota exhaustion. Map the structured Allowance on NodeCreationQuotaExceededException, VoteActionQuotaExceededException, CommunityCreationQuotaExceededException and ReportSubmissionQuotaExceededException without exposing internals; validation, permission denial and dependency outages remain different outcomes.
 5. Bound request body sizes, cancellation/deadlines, deep paging, query execution, thread traversal and queued/outbound work. Preserve ordinary recovery and moderator/operator access under pressure.
 6. Test boundary minus/at/plus cases, exact expiry, burst/recovery, distinct participants, anonymous traffic, simultaneous last-slot calls, proxy spoofing, multi-instance behavior, failures that should not consume product quota, and no writes/notifications after rejection.
 7. Check that denied/throttled traffic is observable without content/secrets in logs and without high-cardinality metric labels. Load-test the controls; do not infer capacity from unit tests.
@@ -126,13 +127,13 @@ verify the migration/upgrade path.
 
 The community ledger adds a table. Per `src/Atlas.Persistence/AGENTS.md`, migrations
 and the snapshot must be generated, reviewed and committed by the developer. If the
-voting migration has not been generated yet, one `AddVotingAndCommunityQuotas` migration
-can include both pending tables. If it has, add a separate `AddCommunityCreationQuota`
-migration instead. Do not remove an already-applied migration. From the solution root:
+voting migration has not been generated yet, one `AddAbusePreventionQuotas` migration
+can include all pending quota tables. If earlier quota migrations already exist, keep them and add a migration for the remaining
+model changes, such as `AddReportSubmissionQuota` for the report ledger. Do not remove an already-applied migration. From the solution root:
 
 ```powershell
 dotnet tool restore
-dotnet ef migrations add AddVotingAndCommunityQuotas --project src/Atlas.Persistence
+dotnet ef migrations add AddAbusePreventionQuotas --project src/Atlas.Persistence
 dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence
 dotnet ef database update --project src/Atlas.Persistence
 dotnet test tests/Atlas.Communities.Tests/Atlas.Communities.Tests.csproj
@@ -141,3 +142,66 @@ dotnet test tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj --filte
 
 No migration or snapshot is generated or edited by the assistant. Migration-dependent
 checks remain pending until the developer commits these artifacts.
+
+## Report submission budget
+
+A participant may submit **three successful reports per rolling hour** across all
+nodes. The third is accepted; the fourth is rejected until a slot expires. This is
+a provisional MVP product choice, not a measured optimal threshold. Three reports
+over five hours would allow the same initial burst while imposing a longer wait
+on legitimate reporters. Start with the shorter cooldown, observe denials and report
+outcomes, and tune the configurable `ReportSubmissionQuotaPolicy` from actual use.
+Do not assume another participant will discover and report the same issue.
+
+The error names the limit, UTC retry time, and escalation guidance:
+
+> Report limit reached: 3 reports in 60 minutes. Try again at 2026-10-19 13:00:00 UTC. For additional legitimate concerns about nodes, contact support staff.
+
+This does not introduce an email address, support endpoint or automated escalation.
+The production host must provide a discoverable support contact route for this advice
+to be actionable. Reporting remains a human moderation mechanism; no AI screening is added.
+
+`ReportSubmissionQuotaPolicy`, allowance and rejection belong to Atlas.Moderation.
+`ModerationService.ReportNode` coordinates submission; `SqlModerationCaseRepository`
+also enforces direct inserts. A reporter-scoped SQL lock covers check/write, and
+`ReportSubmissionQuotaRows` records server accounting time with a participant/time
+index. Backdating a case cannot bypass the budget. Failed/invalid/rolled-back reports
+consume nothing. Successful report and ledger writes, required audit evidence and
+delivery tickets commit together. Decisions, dismissal, hiding, restoration and review
+requests do not consume or refund submission slots. Exhausted reporters do not block
+moderators from resolving existing reports. Duplicate reports still consume slots;
+no new deduplication rule is introduced. Separate accounts have separate budgets.
+
+Report creation retains the existing `ModerationChanged` audit evidence, with no raw
+report title/explanation logged. Quota denials use the existing `Denied` / `QuotaExceeded`
+diagnostic path; no successful report audit is added on rejection. No new automatic
+alert or production dashboard is configured. Failed-request floods and coordinated
+multiple-account abuse still require API/identity protections. Non-SQL adapters must
+implement `IReportSubmissionQuota` for equivalent coordinated accounting.
+
+[ReportSubmissionQuotaTests](../../../tests/Atlas.Moderation.Tests/ReportSubmissionQuotaTests.cs)
+shows the accepted third report, blocked fourth, exact expiry, configurable window
+and full support/retry wording.
+[SqlReportSubmissionQuotaTests](../../../tests/Atlas.Persistence.Tests/SqlReportSubmissionQuotaTests.cs)
+checks persisted participant budgets, unchanged queue/audit/outbox on rejection,
+moderator access while exhausted, rollback, server accounting and competing final slots.
+Fresh-model SQL tests require a configured connection and do not verify upgrades.
+
+The new ledger requires a developer-generated migration. If no quota migrations
+exist yet, use `AddAbusePreventionQuotas` in the commands above to capture all three
+ledgers. If earlier quota migrations exist, retain them and add the remaining change:
+
+```powershell
+dotnet tool restore
+dotnet ef migrations add AddReportSubmissionQuota --project src/Atlas.Persistence
+dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence
+dotnet ef database update --project src/Atlas.Persistence
+dotnet test tests/Atlas.Moderation.Tests/Atlas.Moderation.Tests.csproj
+dotnet test tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj --filter FullyQualifiedName~SqlReportSubmissionQuotaTests
+```
+
+Per `src/Atlas.Persistence/AGENTS.md`, the developer must generate, review and commit
+the migration, designer and snapshot before migration-dependent CI passes. No such
+files are generated/edited by the assistant and no developer database is updated.
+Existing cases are not backfilled into the ledger; retention/account-deletion policy
+for this ledger belongs with the other quota ledgers in PTT-139.
