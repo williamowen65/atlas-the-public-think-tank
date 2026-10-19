@@ -79,3 +79,7 @@ SQL tests require `ATLAS_SQL_TEST_CONNECTION_STRING` through the existing shared
 [ContentUrlPolicyTests](../../../tests/Atlas.Application.Tests/ContentUrlPolicyTests.cs) exercises rejected schemes, credentials, raw controls, ambiguous backslashes, relative media compatibility, oversized URLs and reconstitution. Rejected edits preserve original fields and timestamps. This does not classify destinations as trustworthy or sanitize links embedded in Markdown.
 
 [CommentTests](../../../tests/Atlas.Comments.Tests/CommentTests.cs) includes a 20,000-comment valid thread read plus orphan/cycle rejection. Existing branching/order tests remain in force. These tests protect reliable reading, not an anti-discussion depth limit. See [MVP protections and limits](../abuse-prevention/README.md#mvp-protections-implemented-in-this-pr).
+
+## Voting action quota extension
+
+[VoteActionQuotaTests](../../../tests/Atlas.Voting.Tests/VoteActionQuotaTests.cs) and [SqlVoteActionQuotaTests](../../../tests/Atlas.Persistence.Tests/SqlVoteActionQuotaTests.cs) cover shared cast/change/undo accounting, no refunds, exact expiry, participant isolation, invalid/no-op behavior, rollback and concurrent last-slot attempts. [Migration commands and rationale](../abuse-prevention/VOTING-ACTION-QUOTA.md) distinguish fresh-model SQL testing from the pending developer-generated upgrade migration.

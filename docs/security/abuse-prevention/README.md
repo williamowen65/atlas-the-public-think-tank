@@ -2,7 +2,7 @@
 
 [Security index](../README.md) · [Negative-path evidence](../negative-paths/README.md) · [Node quota](../validation/NODE-CREATION-QUOTA.md)
 
-PTT-124 records the MVP protections and the requirements for the next API host. This review preserves the agreed creation policy rather than adding arbitrary restrictions to every operation. It also implements URL-form validation for content blocks and iterative comment-thread traversal.
+PTT-124 records the MVP protections and the requirements for the next API host. This review preserves the agreed node-creation policy and adds a provisional Voting-owned action allowance. It also implements URL-form validation for content blocks and iterative comment-thread traversal.
 
 ## What already slows node spam
 
@@ -30,6 +30,10 @@ The URL check performs no DNS lookup or network fetch and does not block private
 
 New writes and reconstitution share the URL rules. Existing media values with unsafe schemes, credentials, encoded/complex relative syntax or controls must be corrected before they can load. No schema migration, automatic rewrite or database scan is performed. Simple existing paths such as `media/image-1` are preserved.
 
+## Voting action allowance
+
+Casts, changes and successful undo now share a participant-level rolling allowance across node ratings and reaction votes. The provisional default is 60 actions per 10 minutes. Undo consumes a new slot without refunding prior work; failed transactions and absent-vote undo consume none. See [policy rationale, migration commands and tests](VOTING-ACTION-QUOTA.md). This requires a developer-generated migration before migration-dependent CI passes.
+
 ## Four different protections
 
 | Control | Purpose |
@@ -48,7 +52,7 @@ None substitutes for the others. Voting uniqueness limits current influence but 
 | Node creation flood | Graph policy + Application SQL quota ledger enforce pacing atomically; API must retain this backend check and add request throttling before expensive work. |
 | Repeated title/description edits | Authorship and value validation exist. Creation quota does not apply. API must budget mutation rate/concurrency; future backend shared policy only if a product rule is agreed. |
 | Comments/replies and deep threads | Actor/target availability, ownership and body-size validation exist. Iterative traversal now avoids recursion and rejects malformed structure, while preserving deep threads. No comment throughput quota or overall read-work budget; paging and API throttling remain follow-ups. |
-| Voting/reaction churn | Eligibility, one current vote per actor/target, target availability and transactional association/vote exist. API should limit repeated mutation traffic, not treat uniqueness as a rate limiter. |
+| Voting/reaction churn | Voting now owns a shared rolling action policy; SQL enforces durable cast/change/undo accounting under participant-scoped coordination. One-current-vote uniqueness remains separate. API must still throttle excessive requests/failed attempts before backend work. See [voting action allowance](VOTING-ACTION-QUOTA.md). |
 | Registration/sign-in, token/reset/email requests | Identity checks credentials, confirmation, active profile and account lockout (5 failed attempts / 15 minutes). API must also budget IP/client traffic, registration and outbound email work. Account lockout alone can be abused to deny someone else access. |
 | Search/filter/deep paging/ancestry | Discovery validates inputs and SQL performs page queries; bounded breadcrumb segments exist. API needs query cost/timeouts, request/concurrency budgets and bounded pagination; returning few items does not imply cheap computation. |
 | Community membership/association churn | Ownership, active references and uniqueness protect state. API should budget repeated writes and creation; no new community quota is implied here. |

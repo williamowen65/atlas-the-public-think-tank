@@ -378,6 +378,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "abuse-prevention", "abuse-prevention", "{124B0001-1230-4123-8123-000000000001}"
 	ProjectSection(SolutionItems) = preProject
 		docs\security\abuse-prevention\README.md = docs\security\abuse-prevention\README.md
+		docs\security\abuse-prevention\VOTING-ACTION-QUOTA.md = docs\security\abuse-prevention\VOTING-ACTION-QUOTA.md
 	EndProjectSection
 EndProject
 Global
