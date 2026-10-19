@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace Atlas.Api.Controllers;
 
 /// <summary>Translate community resource routes into the existing CommunityService operations.</summary>
+// Explicit controller policy is visible to CodeQL and reviewers. GET/HEAD/OPTIONS
+// remain readable; writes require the cookie/header token pair.
+[AutoValidateAntiforgeryToken]
 [ApiController, Route("api/communities")]
 public sealed class CommunitiesController(ICommunityRepository communities, ICommunityNodeRepository associations,
     CommunityService workflow, RequestActor actor) : ControllerBase

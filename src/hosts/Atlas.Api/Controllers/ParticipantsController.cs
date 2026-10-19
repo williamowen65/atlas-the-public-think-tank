@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace Atlas.Api.Controllers;
 
 /// <summary>Expose public profiles and the authenticated participant’s self-edit operation.</summary>
+// Explicit controller policy is visible to CodeQL and reviewers. GET/HEAD/OPTIONS
+// remain readable; writes require the cookie/header token pair.
+[AutoValidateAntiforgeryToken]
 [ApiController, Route("api/participants")]
 public sealed class ParticipantsController(IParticipantRepository participants, RequestActor actor) : ControllerBase
 {

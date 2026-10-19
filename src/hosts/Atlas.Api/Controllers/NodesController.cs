@@ -12,6 +12,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace Atlas.Api.Controllers;
 
 /// <summary>Map node requests to shared workflows and project safe node responses.</summary>
+// Explicit controller policy is visible to CodeQL and reviewers. GET/HEAD/OPTIONS
+// remain readable; writes require the cookie/header token pair.
+[AutoValidateAntiforgeryToken]
 [ApiController, Route("api/nodes")]
 public sealed class NodesController(INodeRepository nodes, INodeTypeRepository types, IDocumentRepository documents,
     NodeWorkflowService workflow, IDiscoveryService discovery, ModerationService moderation, RequestActor actor) : ControllerBase

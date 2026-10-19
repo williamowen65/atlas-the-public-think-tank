@@ -10,6 +10,9 @@ using Voter = Atlas.Voting.Votes.ParticipantId;
 namespace Atlas.Api.Controllers;
 
 /// <summary>Use the verified request actor for cast/change/undo; Voting owns eligibility and quotas.</summary>
+// Explicit controller policy is visible to CodeQL and reviewers. GET/HEAD/OPTIONS
+// remain readable; writes require the cookie/header token pair.
+[AutoValidateAntiforgeryToken]
 [ApiController, Authorize(Policy = AtlasPolicies.Member), Route("api")]
 public sealed class VotesController(CastVote cast, UndoVote undo, ReactionVotingService reactions, INodeRepository nodes, RequestActor actor) : ControllerBase
 {

@@ -67,7 +67,12 @@ opens the ambient telemetry scope and maps rejection categories to HTTP errors.
 Its `using` variables are disposable cleanup guards. Leaving the scope restores
 the previous async context, including when downstream code throws.
 
-The CSRF filter validates unsafe requests before an action runs. Cookies establish
+ASP.NET Core's `AutoValidateAntiforgeryToken` filter validates unsafe requests
+before an action runs. It is registered globally as a default and declared on each
+controller so reviewers and CodeQL can see the policy. `AddControllersWithViews()` registers the
+framework services that this filter requires; it does not add view routes or
+frontend files. `AntiforgeryProblemDetailsFilter` only formats rejected requests as
+JSON; it does not perform or bypass validation. Cookies establish
 the session; the CSRF header proves a write includes the paired antiforgery token.
 
 ## ApiFactory: exercise the real API inside a test

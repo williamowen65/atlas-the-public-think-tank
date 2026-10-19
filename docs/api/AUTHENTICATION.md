@@ -16,6 +16,12 @@ token after login/logout because the token is bound to the authenticated identit
 The CSRF cookie is Secure, HttpOnly and SameSite=Strict. SameSite is defense in
 depth; it does not replace token validation. The SPA can read the JSON token.
 
+The built-in ASP.NET Core `AutoValidateAntiforgeryToken` policy is applied globally
+and explicitly on controllers. Missing or invalid tokens return HTTP 400 with
+`A valid CSRF token is required.` in the JSON problem title. Controller attributes
+make the policy visible to CodeQL; they are executable protection, not scanner
+suppression comments. See [the code guide](CODE-GUIDE.md) for service registration.
+
 Sign-in requires confirmed email; registration creates an unconfirmed account.
 For local development only, configure
 `Atlas:DevelopmentMailDirectory` in user secrets to a private directory outside

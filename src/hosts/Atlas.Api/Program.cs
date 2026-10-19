@@ -13,8 +13,14 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Warning);
 builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
 builder.Services.AddAtlasApi(builder.Configuration);
-// Controllers handle routing/JSON; the global filter checks CSRF on unsafe methods.
-builder.Services.AddControllers(options => options.Filters.Add(new Atlas.Api.CsrfFilter()));
+// The built-in antiforgery filter protects every unsafe controller request, even
+// on future controllers. AddControllersWithViews registers its MVC filter services; MapControllers
+// below still exposes only JSON endpoints, with no views or frontend assets.
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
+    options.Filters.Add(new AntiforgeryProblemDetailsFilter());
+});
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ApiErrors>();
 // The browser keeps the cookie; the client sends the paired JSON token in a header.

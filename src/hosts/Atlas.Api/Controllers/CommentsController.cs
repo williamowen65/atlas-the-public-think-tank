@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace Atlas.Api.Controllers;
 
 /// <summary>Expose one sibling page at a time; delegate mutations and notification coordination to Application.</summary>
+// Explicit controller policy is visible to CodeQL and reviewers. GET/HEAD/OPTIONS
+// remain readable; writes require the cookie/header token pair.
+[AutoValidateAntiforgeryToken]
 [ApiController, Route("api")]
 public sealed class CommentsController(CommentWorkflowService workflow, Atlas.Graph.Nodes.INodeRepository nodes, Atlas.Moderation.ModerationService moderation, RequestActor actor) : ControllerBase
 {

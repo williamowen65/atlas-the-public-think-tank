@@ -10,6 +10,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace Atlas.Api.Controllers;
 
 /// <summary>Project Graph navigation and voting summaries without rendering frontend controls.</summary>
+// Explicit controller policy is visible to CodeQL and reviewers. GET/HEAD/OPTIONS
+// remain readable; writes require the cookie/header token pair.
+[AutoValidateAntiforgeryToken]
 [ApiController, Route("api/nodes/{node:guid}")]
 public sealed class NavigationController(INodeRepository nodes, ModerationService moderation, IVoteRepository votes,
     IReactionDefinitionRepository definitions, INodeReactionRepository reactions, RequestActor actor) : ControllerBase

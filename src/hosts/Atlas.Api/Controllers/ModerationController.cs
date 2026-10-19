@@ -8,6 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace Atlas.Api.Controllers;
 
 /// <summary>Separate member reporting/review from moderator-only queue and decision endpoints.</summary>
+// Explicit controller policy is visible to CodeQL and reviewers. GET/HEAD/OPTIONS
+// remain readable; writes require the cookie/header token pair.
+[AutoValidateAntiforgeryToken]
 [ApiController, Authorize(Policy = AtlasPolicies.Member), Route("api/moderation")]
 public sealed class ModerationController(ModerationService moderation, ModerationWorkflowService workflow, INodeRepository nodes, RequestActor actor) : ControllerBase
 {

@@ -53,6 +53,18 @@ public sealed class SqlWorkflowTests
             var created = await client.PostAsJsonAsync("/api/nodes", new { title="HTTP idea", markdown="Description", typeId, requestedTypeIds=Array.Empty<Guid>(), actorParticipantId=Guid.NewGuid(), roles=new[]{"Administrator"} });
             Assert.AreEqual(HttpStatusCode.Created, created.StatusCode, await created.Content.ReadAsStringAsync());
             var node = (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+            // A real authenticated cookie is insufficient for writes: both missing
+            // and forged tokens must fail before creation/archive/catalog mutations.
+            foreach (var path in new[] { "/api/nodes", $"/api/nodes/{node}/archive", "/api/catalog/reactions" })
+            {
+                client.DefaultRequestHeaders.Remove("X-CSRF-TOKEN");
+                Assert.AreEqual(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync(path, new { })).StatusCode, path);
+                client.DefaultRequestHeaders.Add("X-CSRF-TOKEN", "forged-token");
+                var rejected = await client.PostAsJsonAsync(path, new { });
+                Assert.AreEqual(HttpStatusCode.BadRequest, rejected.StatusCode, path);
+                StringAssert.Contains(await rejected.Content.ReadAsStringAsync(), "A valid CSRF token is required.");
+            }
+            await Token(client); // Restore a valid pair for the successful workflow below.
             // A second real account must not be able to rename the first author's node.
             using (var scope = factory.Services.CreateScope())
             {

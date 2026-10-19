@@ -75,16 +75,19 @@ public sealed class ApiErrors(IProblemDetailsService problems) : IExceptionHandl
     }
 }
 
-/// <summary>Enforce CSRF on every write, including anonymous login and registration.</summary>
-public sealed class CsrfFilter : Microsoft.AspNetCore.Mvc.Filters.IAsyncAuthorizationFilter
+/// <summary>Keep built-in antiforgery rejections consistent with the API's JSON errors.</summary>
+/// <remarks>This only formats a rejected result; ASP.NET Core performs token validation.</remarks>
+public sealed class AntiforgeryProblemDetailsFilter : Microsoft.AspNetCore.Mvc.Filters.IAlwaysRunResultFilter, Microsoft.AspNetCore.Mvc.Filters.IOrderedFilter
 {
-    public async Task OnAuthorizationAsync(Microsoft.AspNetCore.Mvc.Filters.AuthorizationFilterContext context)
+    // Run before ApiController's generic client-error mapping consumes the marker.
+    public int Order => int.MinValue;
+
+    public void OnResultExecuting(Microsoft.AspNetCore.Mvc.Filters.ResultExecutingContext context)
     {
-        var request = context.HttpContext.Request;
-        if (HttpMethods.IsGet(request.Method) || HttpMethods.IsHead(request.Method) || HttpMethods.IsOptions(request.Method)) return;
-        try { await context.HttpContext.RequestServices.GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
-            .ValidateRequestAsync(context.HttpContext); }
-        catch (Microsoft.AspNetCore.Antiforgery.AntiforgeryValidationException)
-        { context.Result = new BadRequestObjectResult(new ProblemDetails { Status = 400, Title = "A valid CSRF token is required." }); }
+        if (context.Result is Microsoft.AspNetCore.Mvc.Core.Infrastructure.IAntiforgeryValidationFailedResult)
+            context.Result = new BadRequestObjectResult(new ProblemDetails
+            { Status = 400, Title = "A valid CSRF token is required." });
     }
+
+    public void OnResultExecuted(Microsoft.AspNetCore.Mvc.Filters.ResultExecutedContext context) { }
 }

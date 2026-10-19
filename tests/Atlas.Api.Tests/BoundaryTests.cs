@@ -46,6 +46,23 @@ public sealed class BoundaryTests
         Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
     }
     [TestMethod]
+    [DataRow("/api/auth/register")]
+    [DataRow("/api/auth/confirm-email")]
+    public async Task Anonymous_account_writes_reject_missing_and_invalid_csrf(string path)
+    {
+        using var factory = new ApiFactory(); using var client = factory.Browser();
+        // These routes allow anonymous callers, but never bypass CSRF validation.
+        var missing = await client.PostAsJsonAsync(path, new { });
+        Assert.AreEqual(HttpStatusCode.BadRequest, missing.StatusCode);
+        var problem = await missing.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        Assert.AreEqual("A valid CSRF token is required.", problem.GetProperty("title").GetString());
+        await client.GetAsync("/api/auth/csrf");
+        client.DefaultRequestHeaders.Add("X-CSRF-TOKEN", "invalid");
+        var invalid = await client.PostAsJsonAsync(path, new { });
+        Assert.AreEqual(HttpStatusCode.BadRequest, invalid.StatusCode);
+        StringAssert.Contains(await invalid.Content.ReadAsStringAsync(), "A valid CSRF token is required.");
+    }
+    [TestMethod]
     public async Task Csrf_cookie_is_secure_and_http_only_and_api_does_not_serve_frontend()
     {
         using var factory = new ApiFactory(); using var client = factory.Browser();
@@ -89,6 +106,8 @@ public sealed class BoundaryTests
             .Any(c => c.HttpMethods.Any(m => m != "GET" && m != "HEAD")) == true);
         foreach (var action in writes)
         {
+            Assert.IsTrue(action.ControllerTypeInfo.IsDefined(typeof(Microsoft.AspNetCore.Mvc.AutoValidateAntiforgeryTokenAttribute), inherit: true),
+                $"{action.DisplayName} must expose its antiforgery policy to reviewers and CodeQL.");
             var hasAuth = action.EndpointMetadata.OfType<Microsoft.AspNetCore.Authorization.IAuthorizeData>().Any();
             Assert.IsTrue(hasAuth || action.ControllerName == "Accounts", action.DisplayName);
         }

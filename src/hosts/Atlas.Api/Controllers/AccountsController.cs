@@ -10,6 +10,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace Atlas.Api.Controllers;
 
 /// <summary>HTTP account/session adapter over Identity; cookies and confirmation delivery belong to this host.</summary>
+// Explicit controller policy is visible to CodeQL and reviewers. GET/HEAD/OPTIONS
+// remain readable; writes require the cookie/header token pair.
+[AutoValidateAntiforgeryToken]
 [ApiController, Route("api/auth"), Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("auth")]
 public sealed class AccountsController(AtlasAccounts accounts, UserManager<AtlasIdentityUser> users,
     SignInManager<AtlasIdentityUser> signIn, IAntiforgery antiforgery) : ControllerBase

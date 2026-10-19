@@ -9,6 +9,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace Atlas.Api.Controllers;
 
 /// <summary>Map allowlisted JSON block inputs to Content commands after Graph ownership checks.</summary>
+// Explicit controller policy is visible to CodeQL and reviewers. GET/HEAD/OPTIONS
+// remain readable; writes require the cookie/header token pair.
+[AutoValidateAntiforgeryToken]
 [ApiController, Route("api/nodes/{node:guid}/description")]
 public sealed class ContentController(INodeRepository nodes, IDocumentRepository documents, NodeDescriptionService workflow,
     ModerationService moderation, RequestActor actor) : ControllerBase

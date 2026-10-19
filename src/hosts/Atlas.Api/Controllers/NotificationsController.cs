@@ -5,6 +5,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace Atlas.Api.Controllers;
 
 /// <summary>Scope notification reads and changes to the current participant, never a supplied recipient ID.</summary>
+// Explicit controller policy is visible to CodeQL and reviewers. GET/HEAD/OPTIONS
+// remain readable; writes require the cookie/header token pair.
+[AutoValidateAntiforgeryToken]
 [ApiController, Authorize(Policy = AtlasPolicies.Member), Route("api/notifications")]
 public sealed class NotificationsController(NotificationService workflow, RequestActor actor) : ControllerBase
 {

@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace Atlas.Api.Controllers;
 
 /// <summary>Expose type/reaction catalog operations while preserving domain ownership and moderator rules.</summary>
+// Explicit controller policy is visible to CodeQL and reviewers. GET/HEAD/OPTIONS
+// remain readable; writes require the cookie/header token pair.
+[AutoValidateAntiforgeryToken]
 [ApiController, Route("api/catalog")]
 public sealed class CatalogController(INodeTypeRepository types, IReactionDefinitionRepository reactions,
     ModerationService moderation, RequestActor actor) : ControllerBase
