@@ -20,6 +20,28 @@ links to the implementing code on the PR branch.
 | 08 | Which actor reports, reviews, hides or restores content? | workflows section 9 |
 | 09 | How do profile edits and recipient notification actions work? | workflows sections 8 and 10 |
 | 10 | Which code runs at startup, per request, or in the background? | Code guide and API tests |
+| 11 | How does a brand-new user register, confirm email, and first sign in? | `auth.http` A1–A6 |
+| 12 | Which signup checks reject work, and what happens if local delivery fails? | AccountsController / AtlasAccounts |
+
+## Follow a new user
+
+Start at **region 11**, then use **region 12** to inspect the failure boundaries.
+
+1. Fetch anonymous CSRF, then submit registration data.
+2. The host requires Development mode and a configured private mail-drop path.
+3. `AtlasAccounts` creates the Identity user, Participant profile and Member role link in one SQL transaction.
+   - The shared participant/account ID and role come from the server.
+   - Email remains unconfirmed; no authenticated session is created.
+4. After commit, the host generates a confirmation token, writes the private JSON file, and returns 202.
+5. Copy that file's `userId` and `token` into the confirmation request.
+   - Send the anonymous CSRF pair too; these are **two different tokens**.
+6. Confirmation returns 204 and marks the email confirmed; it does not sign in.
+7. Login returns 204 with the session cookie. Fetch a fresh CSRF token for the signed-in principal, then inspect `/api/auth/session`.
+
+Local confirmation-file delivery is not part of the SQL transaction. If that file
+write fails after commit, the API can return 500 while the unconfirmed account
+already exists. Do not infer rollback from that response or expect a resend endpoint;
+production delivery/recovery is still separate work.
 
 ## What the arrows mean
 

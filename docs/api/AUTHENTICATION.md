@@ -75,6 +75,9 @@ including future actions. It does not demand a token for normal GET reads.
 
 ## Create and confirm a local development account
 
+Follow **regions 11–12** of the [signup blackboard](../blackboards/workflows/Api/ApiWorkflows.excalidraw).
+The [reading guide](../blackboards/workflows/Api/README.md#follow-a-new-user) links the HTTP steps to the server-side account transaction.
+
 Registration is currently a **Development-only** path, pending a production mail provider.
 
 1. Configure `Atlas:DevelopmentMailDirectory` in user secrets.
@@ -92,6 +95,14 @@ Registration is currently a **Development-only** path, pending a production mail
 Treat confirmation files as account-bearing secrets: restrict access and delete
 them after use. Do not commit passwords, cookies, CSRF tokens or confirmation tokens.
 Confirmation tokens are not returned by registration JSON or written to application logs.
+
+### Account commit and local delivery are separate
+
+- Account, Participant profile and Member role link commit together through `AtlasAccounts`.
+- The host generates the confirmation token and writes the private file **after** that commit.
+- A file-write failure can return **500 even though the unconfirmed account already exists**.
+- The 503 configuration guard runs before creation; it does not guarantee that a configured directory is writable.
+- There is no confirmation resend endpoint in this slice. Production delivery and recovery remain separate work.
 
 ## Still outside this slice
 
