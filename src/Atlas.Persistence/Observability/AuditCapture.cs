@@ -1,4 +1,5 @@
 using Atlas.Contracts.Observability;
+using Atlas.Contracts.Operations;
 using Atlas.Observability;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -85,7 +86,14 @@ internal static class AuditCapture
                 action = entry.State == EntityState.Deleted ? MutationAction.RoleRemoved : MutationAction.RoleAssigned;
             }
             if (entry.Entity is AtlasIdentityUser user && entry.State == EntityState.Modified)
-                action = Changed(nameof(AtlasIdentityUser.PasswordHash)) ? MutationAction.PasswordChanged
+                // Report the transition into an active lockout explicitly. Counter updates,
+                // clearing a lockout, or extending one already active retain LockoutChanged.
+                // Give this transition precedence if Identity updates several fields together.
+                action = Changed(nameof(AtlasIdentityUser.LockoutEnd))
+                    && user.LockoutEnd > AtlasTime.UtcNow
+                    && (entry.Property(nameof(AtlasIdentityUser.LockoutEnd)).OriginalValue is not DateTimeOffset previousEnd
+                        || previousEnd <= AtlasTime.UtcNow) ? MutationAction.LockoutStarted
+                    : Changed(nameof(AtlasIdentityUser.PasswordHash)) ? MutationAction.PasswordChanged
                     : Changed(nameof(AtlasIdentityUser.EmailConfirmed)) && user.EmailConfirmed ? MutationAction.EmailConfirmed
                     : Changed(nameof(AtlasIdentityUser.LockoutEnd)) || Changed(nameof(AtlasIdentityUser.AccessFailedCount)) ? MutationAction.LockoutChanged
                     : MutationAction.Updated;

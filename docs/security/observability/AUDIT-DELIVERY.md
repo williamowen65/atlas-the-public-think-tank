@@ -113,3 +113,20 @@ Database failures during selection/claim/loading, or during retry-state persiste
 This is a transactional-outbox delivery path designed for **at-least-once delivery**, assuming workers and the destination eventually become available. Duplicates are possible; exactly-once delivery is not promised. Lease expiry does not stop an existing worker. Audit files may later rotate away, while SQL remains authoritative; acknowledgement records acceptance at delivery time rather than perpetual file availability.
 
 See the [process/UML diagram guide](../../blackboards/workflows/Observability/DIAGRAMS.md), [local-development guide](LOCAL-DEVELOPMENT.md), and [legacy comparison](LEGACY-COMPARISON.md). Source links above are pinned to commit fde8a51c93c07e6c2cae00f9118be0e581975a65.
+
+## Account lockout evidence
+
+When Identity persists a transition from no active lockout to a future `LockoutEnd`,
+`AuditCapture` records `identity.account_security_changed` with action `lockout_started`.
+The affected account GUID is the target; an unsuccessful sign-in does not establish a
+verified actor. Failed-attempt counter changes, clearing a lockout and extending an
+already active lockout use `lockout_changed`. Natural expiry does not itself write a record.
+These records and their outbox tickets commit with the Identity update. Email addresses,
+passwords and password hashes are excluded. This adds an action value, not a database column.
+
+`SqlAuditTests.Fifth_failed_attempt_starts_lockout_with_private_data_excluded_from_audit`
+exercises Identity's failed-attempt mechanism: four failures do not start a lockout;
+the fifth commits one `lockout_started` record and delivery ticket. It also checks privacy
+and that extending the active lockout does not report another start. This is an automated
+integration test, not another background task. Rejected sign-ins against an already
+locked account remain separate `SignIn` / `Denied` / `LockedOut` diagnostic events.

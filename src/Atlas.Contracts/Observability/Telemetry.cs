@@ -16,7 +16,7 @@ public enum EventOutcome { Succeeded, Denied, Failed, Conflict }
 public enum EventReason { None, NotAuthorized, InvalidInput, CredentialsRejected, LockedOut, NotAllowed, SecondFactorRequired, StorageConflict, InfrastructureFailure, CommitOutcomeUnknown, DeliveryUnavailable, QuotaExceeded }
 public enum PrivacyPolicy { Standard, ReadNoIdentityOrTarget }
 public enum ActorKind { Anonymous, Participant, System }
-public enum MutationAction { None, Created, Updated, Deleted, Hidden, Restored, Dismissed, ReviewRequested, RoleAssigned, RoleRemoved, PasswordChanged, EmailConfirmed, LockoutChanged, Linked, Unlinked, Archived, Activated, Deactivated, Renamed, TypeChanged }
+public enum MutationAction { None, Created, Updated, Deleted, Hidden, Restored, Dismissed, ReviewRequested, RoleAssigned, RoleRemoved, PasswordChanged, EmailConfirmed, LockoutChanged, Linked, Unlinked, Archived, Activated, Deactivated, Renamed, TypeChanged, LockoutStarted }
 public enum AuditModerationReason { Other, Spam, Harassment, UnsafeContent, OffTopic }
 
 /// <summary>Allowlisted event envelope. No free-form text or extension dictionary is accepted.</summary>
