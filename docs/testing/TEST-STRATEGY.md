@@ -95,3 +95,8 @@ from local settings. This change does not alter the CI matrix or workflow trigge
 
 References: [MSTest execution controls](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-mstest-writing-tests-controlling-execution)
 and [runsettings process/worker configuration](https://learn.microsoft.com/en-us/visualstudio/test/configure-unit-tests-by-using-a-dot-runsettings-file).
+
+## Dependency maintenance
+
+See [reviewing automated dependency updates](DEPENDENCY-UPDATES.md) for review,
+regression testing, SQL evidence, and reasons to hold an update.
