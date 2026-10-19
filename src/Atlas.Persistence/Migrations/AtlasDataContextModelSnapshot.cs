@@ -880,6 +880,24 @@ namespace Atlas.Persistence.Migrations
                     b.ToTable("ReactionDefinitionRows", (string)null);
                 });
 
+            modelBuilder.Entity("Atlas.Persistence.VoteActionQuotaRow", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("ParticipantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParticipantId", "OccurredAt");
+
+                    b.ToTable("VoteActionQuotaRows", (string)null);
+                });
+
             modelBuilder.Entity("Atlas.Persistence.VoteRow", b =>
                 {
                     b.Property<Guid>("Id")
