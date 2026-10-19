@@ -13,6 +13,40 @@ public sealed class VoteActionQuotaTests
     private static readonly DateTimeOffset At = DateTimeOffset.Parse("2026-10-19T12:00:00Z");
 
     [TestMethod]
+    public void ExceedingQuotaExplainsLimitAndNextSlotWithoutChangingVote()
+    {
+        using var clock = AtlasTime.Use(new Clock(At));
+        var store = new QuotaStore(VoteActionQuotaPolicy.Default.Limit);
+        var actor = new ParticipantId(Guid.NewGuid());
+        var target = new NodeVoteTarget(Guid.NewGuid());
+        var cast = new CastVote(store, new VoteMutationPolicy(new Eligible()));
+
+        // Spend all 60 slots at noon; changing an existing vote also spends a slot.
+        var vote = cast.Execute(target, actor, 7);
+        for (var action = 1; action < VoteActionQuotaPolicy.Default.Limit; action++)
+            cast.Execute(target, actor, action % 2 == 0 ? 7 : 8);
+        var previousValue = vote.Value.Value;
+        var previousUpdatedAt = vote.UpdatedAt;
+
+        var rejected = Assert.ThrowsExactly<VoteActionQuotaExceededException>(
+            () => cast.Execute(target, actor, 9));
+
+        // Keep the complete user-facing wording visible here, including the UTC retry time.
+        const string expectedMessage =
+            "Voting action limit reached: 60 actions per 10 minutes. Try again at 2026-10-19 12:10:00 UTC.";
+        Assert.AreEqual(expectedMessage, rejected.Message);
+        Console.WriteLine(rejected.Message);
+        Assert.AreEqual(0, rejected.Allowance.Remaining);
+        Assert.AreEqual(TimeSpan.FromMinutes(10), rejected.Allowance.RetryAfter);
+        Assert.AreEqual(EventReason.QuotaExceeded, Telemetry.Reason(rejected));
+
+        // Rejection must neither alter the vote nor add a successful action to the ledger.
+        Assert.AreEqual(previousValue, vote.Value.Value);
+        Assert.AreEqual(previousUpdatedAt, vote.UpdatedAt);
+        Assert.HasCount(60, store.History);
+    }
+
+    [TestMethod]
     public void RollingWindowExpiresExactlyAndTighteningUsesNewestActions()
     {
         var policy = new VoteActionQuotaPolicy(2, TimeSpan.FromMinutes(10));
