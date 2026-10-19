@@ -293,7 +293,7 @@ public static class NodeDisplay
         Node node,
         ICommentRepository? comments
     ) =>
-        comments is null ? "—" : comments.GetByTarget(CommentTarget.Node(node.Id.Value)).Count.ToString();
+        comments is null ? "—" : comments.CountByTarget(CommentTarget.Node(node.Id.Value)).ToString();
 
     private static string ResolveCommunities(
         Node node,

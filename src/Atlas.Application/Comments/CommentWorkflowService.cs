@@ -18,7 +18,9 @@ public sealed class CommentWorkflowService
         _comments = comments; _nodes = nodes; _events = events;
         _service = new CommentService(comments, new NodeCommentTargetAvailability(nodes), new CommentModeratorAuthorization(moderation));
     }
-    public IReadOnlyList<CommentThreadItem> GetThread(CommentTarget target) => _service.GetThread(target);
+    /// <summary>Read one sibling page; replies are requested separately when the host expands a comment.</summary>
+    public Task<CommentPage> GetPageAsync(CommentPageRequest request, CancellationToken cancellationToken = default) =>
+        _service.GetPageAsync(request, cancellationToken);
     public Comment AddTopLevel(CommentTarget target, Guid actor, string body, DateTimeOffset at)
     {
         var comment = _service.AddTopLevel(target, actor, body, at); Notify(comment); return comment;

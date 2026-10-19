@@ -347,14 +347,7 @@ public static class AnonymousBrowseCommands
                         ConsoleUi.Pause("Comments are unavailable while this node is hidden.");
                         break;
                     }
-                    var discussion = comments.GetByTarget(CommentTarget.Node(node.Id.Value));
-                    foreach (var comment in discussion.OrderBy(comment => comment.CreatedAt))
-                    {
-                        var name = participants.GetById(new ParticipantId(comment.AuthorParticipantId))?.DisplayName ?? "Unknown participant";
-                        Console.WriteLine($"{name}: {(comment.IsRemoved ? "[removed]" : comment.Body)}");
-                    }
-                    if (discussion.Count == 0) Console.WriteLine("No comments yet.");
-                    ConsoleUi.Pause();
+                    Atlas.ConsoleApp.Comments.CommentCommands.ReadOnly(CommentTarget.Node(node.Id.Value), comments, participants);
                     break;
                 case "1" or "2" or "3" or "4" or "5" or "6" or "8" or "9" or "10" or "12" or "13" or "14" or "16" or "18" or "21" or "22" or "23":
                     ConsoleUi.Pause("Sign in as an active participant to contribute. Anonymous exploration is read only.");

@@ -341,6 +341,9 @@ public sealed class CommentTests
         public IReadOnlyCollection<Comment> GetByTarget(CommentTarget target) =>
             _items.Values.Where(x => x.Target == target).ToList();
 
+        public Task<CommentPage> ReadPageAsync(CommentPageRequest request, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException("This fixture tests mutations and legacy traversal, not paging.");
+        public int CountByTarget(CommentTarget target) => GetByTarget(target).Count;
         public int SaveCalls { get; private set; }
         public void Save(Comment comment) { _items[comment.Id] = comment; SaveCalls++; }
     }

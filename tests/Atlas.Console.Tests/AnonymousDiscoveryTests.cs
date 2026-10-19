@@ -23,7 +23,7 @@ public sealed class AnonymousDiscoveryTests
     [TestMethod]
     public void Anonymous_node_actions_allow_exploration_and_reject_contribution_commands()
     {
-        var (pages, output) = Browse(1, "1\n13\n\n19\n\n15\n\n17\n\n11\n\n24\n\n20\n0\n");
+        var (pages, output) = Browse(1, "1\n13\n\n19\n0\n15\n\n17\n\n11\n\n24\n\n20\n0\n");
         StringAssert.Contains(output, "Actions (as Anonymous)");
         StringAssert.Contains(output, "  Explore:");
         StringAssert.Contains(output, "Contribute [disabled");
@@ -391,6 +391,7 @@ public sealed class AnonymousDiscoveryTests
 
     private static object? EmptyValue(Type type)
     {
+        if (type == typeof(Task<CommentPage>)) return Task.FromResult(new CommentPage([], null));
         if (type.IsGenericType && typeof(System.Collections.IEnumerable).IsAssignableFrom(type))
             return Array.CreateInstance(
                 type.GetGenericArguments()[0],

@@ -205,7 +205,9 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
         // Support discovery aggregates and lookups by their target keys. Included columns
         // let SQL Server answer relevant reads from the index without fetching the base row.
         model.Entity<VoteRow>().HasIndex(row => new { row.TargetType, row.TargetId }).IncludeProperties(nameof(VoteRow.Value));
-        model.Entity<CommentRow>().HasIndex(row => new { row.TargetKind, row.TargetId });
+        // Equality prefix narrows to one sibling set; ordering keys support keyset seeks and TOP.
+        model.Entity<CommentRow>().HasIndex(row => new { row.TargetKind, row.TargetId, row.ParentCommentId, row.CreatedAt, row.Id })
+            .HasDatabaseName("IX_CommentRows_SiblingPage");
         model.Entity<NodeReactionRow>().HasIndex(row => new { row.NodeId, row.LifecycleState, row.ReactionDefinitionId });
         model.Entity<ModerationCaseRow>().HasIndex(row => new { row.NodeId, row.Status, row.VisibilityRestoredAt })
             .IncludeProperties(nameof(ModerationCaseRow.PublicReason), nameof(ModerationCaseRow.DecidedAt));

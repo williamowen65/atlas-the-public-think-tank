@@ -23,7 +23,7 @@ The broad “thousands of hits in seconds from one source” concern belongs at 
 | Protection | What it preserves / what it does not promise |
 |---|---|
 | Shared Content URL validation | Link previews require bounded HTTP(S) URLs without credentials, raw controls or backslashes. Image/video blocks accept those URLs or simple relative asset paths; executable/data/file schemes and protocol-relative hosts are rejected. Existing valid links and simple media paths remain supported. This is syntax/scheme validation, not malware, reputation or destination screening. |
-| Iterative comment-thread traversal | Keeps valid deep discussions, stable depth-first order and existing reply behavior without growing the C# call stack. Detects duplicate/unreachable parent structure rather than silently omitting corrupt replies. No depth cap or new posting restriction. It still materializes a thread; paging/cancellation/work budgets remain PTT-138. |
+| Iterative comment-thread traversal | Keeps valid deep discussions, stable depth-first order and existing reply behavior without growing the C# call stack. Detects duplicate/unreachable parent structure rather than silently omitting corrupt replies. No depth cap or new posting restriction. The legacy full-thread utility still materializes a thread; interactive hosts now use capped sibling queries with cancellation and on-demand replies. See [comment loading](../../workflows/COMMENTS.md). |
 | Community creation quota | One committed creation per participant per rolling 24 hours; edits/archive/restore remain allowed, and archiving does not refund creation. Separate from API request throttling and membership/association churn. |
 | Negative-path regressions | Unsafe URL creation/edit/reconstitution and malformed thread structure fail explicitly; rejected edits preserve payload/timestamps. A 20,000-comment deep valid thread remains readable. |
 
@@ -52,7 +52,7 @@ None substitutes for the others. Voting uniqueness limits current influence but 
 |---|---|
 | Node creation flood | Graph policy + Application SQL quota ledger enforce pacing atomically; API must retain this backend check and add request throttling before expensive work. |
 | Repeated title/description edits | Authorship and value validation exist. Creation quota does not apply. API must budget mutation rate/concurrency; future backend shared policy only if a product rule is agreed. |
-| Comments/replies and deep threads | Actor/target availability, ownership and body-size validation exist. Iterative traversal now avoids recursion and rejects malformed structure, while preserving deep threads. No comment throughput quota or overall read-work budget; paging and API throttling remain follow-ups. |
+| Comments/replies and deep threads | Actor/target availability, ownership and body-size validation exist. Iterative traversal now avoids recursion and rejects malformed structure, while preserving deep threads. Root/reply reads now use capped keyset pages and on-demand expansion (PTT-138); no posting/depth cap. SQL counts avoid body loading. API throttling and broader query/load budgets remain separate. |
 | Voting/reaction churn | Voting now owns a shared rolling action policy; SQL enforces durable cast/change/undo accounting under participant-scoped coordination. One-current-vote uniqueness remains separate. API must still throttle excessive requests/failed attempts before backend work. See [voting action allowance](VOTING-ACTION-QUOTA.md). |
 | Registration/sign-in, token/reset/email requests | Identity checks credentials, confirmation, active profile and account lockout (5 failed attempts / 15 minutes). API must also budget IP/client traffic, registration and outbound email work. Account lockout alone can be abused to deny someone else access. |
 | Search/filter/deep paging/ancestry | Discovery validates inputs and SQL performs page queries; bounded breadcrumb segments exist. API needs query cost/timeouts, request/concurrency budgets and bounded pagination; returning few items does not imply cheap computation. |
@@ -91,7 +91,7 @@ The future host/browser security review remains [PTT-125](https://thepublicthink
 ## Tracked follow-ups
 
 - [PTT-137: API request throttling and abuse budgets](https://thepublicthinktank.atlassian.net/browse/PTT-137) — implement with endpoints; coordinate with PTT-98 and PTT-125.
-- [PTT-138: Bound comment traversal and expensive collection reads](https://thepublicthinktank.atlassian.net/browse/PTT-138) — cover deep/wide threads and backend work limits before broad API exposure.
+- [PTT-138: Bounded comment loading](https://thepublicthinktank.atlassian.net/browse/PTT-138) — capped root/reply queries, on-demand console navigation and cancellation support; production query-plan/load validation and broader API budgets remain relevant.
 - [PTT-139: Quota ledger retention and account-deletion handling](https://thepublicthinktank.atlassian.net/browse/PTT-139) — define policy before adding cleanup.
 
 ## Community creation budget
