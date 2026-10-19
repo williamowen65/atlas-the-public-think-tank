@@ -49,7 +49,7 @@ Each row records a reviewed operation family, not exhaustive coverage of every p
 
 ## New evidence versus existing evidence
 
-This slice adds nine parameterized node/description denial cases, two comment service tests and one SQL cross-domain rejection test. It also adds a quota telemetry regression and the small classification fix it requires. The MVP extension adds Content URL policy tests and deep/malformed thread-read tests, with URL validation and iterative traversal implementations. The SQL test checks committed success-audit absence, not that denial diagnostics are suppressed. No schema change or new request limiter is introduced.
+This slice adds nine parameterized node/description denial cases, two comment service tests and one SQL cross-domain rejection test. It also adds a quota telemetry regression and the small classification fix it requires. The MVP extension adds Content URL policy tests and deep/malformed thread-read tests, with URL validation and iterative traversal implementations. The SQL test checks committed success-audit absence, not that denial diagnostics are suppressed. The URL/thread changes require no schema change. The voting and community quota extensions below add ledger tables and require developer-generated migrations.
 
 ## Limits and remaining work
 
@@ -83,3 +83,13 @@ SQL tests require `ATLAS_SQL_TEST_CONNECTION_STRING` through the existing shared
 ## Voting action quota extension
 
 [VoteActionQuotaTests](../../../tests/Atlas.Voting.Tests/VoteActionQuotaTests.cs) and [SqlVoteActionQuotaTests](../../../tests/Atlas.Persistence.Tests/SqlVoteActionQuotaTests.cs) cover shared cast/change/undo accounting, no refunds, exact expiry, participant isolation, invalid/no-op behavior, rollback and concurrent last-slot attempts. [Migration commands and rationale](../abuse-prevention/VOTING-ACTION-QUOTA.md) distinguish fresh-model SQL testing from the pending developer-generated upgrade migration.
+
+## Community creation quota extension
+
+[CommunityCreationQuotaTests](../../../tests/Atlas.Communities.Tests/CommunityCreationQuotaTests.cs)
+checks one creation per rolling 24 hours and the exact retry message.
+[SqlCommunityCreationQuotaTests](../../../tests/Atlas.Persistence.Tests/SqlCommunityCreationQuotaTests.cs)
+checks persistence across repositories, separate participant budgets, no refund on archive,
+allowed edits, exact expiry, rollback without community/membership/ledger residue, direct
+repository enforcement, backdating rejection and competing last-slot attempts.
+See [policy and migration handoff](../abuse-prevention/README.md#community-creation-budget).

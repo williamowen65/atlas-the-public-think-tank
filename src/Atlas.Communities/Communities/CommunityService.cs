@@ -28,9 +28,12 @@ public sealed class CommunityService
         DateTimeOffset createdAt
     )
     {
-        return OperationBoundary.Execute(
-            _communities,
-            () =>
+        return OperationBoundary.Execute(_communities, () =>
+            _communities is ICommunityCreationQuota quota
+                ? quota.ExecuteCreation(ownerParticipantId, CreateCore)
+                : CreateCore());
+
+        Community CreateCore()
         {
             ReferenceValidation.Require(
                 _communities,
@@ -44,6 +47,8 @@ public sealed class CommunityService
                 ownerParticipantId,
                 createdAt
             );
+            // Check before writes; SQL Save independently enforces this for direct repository callers.
+            if (_communities is ICommunityCreationQuota quota) quota.EnsureCreationAllowed(ownerParticipantId);
             _communities.Save(community);
             _memberships.Save(new CommunityMembership(
                 community.Id,
@@ -52,7 +57,6 @@ public sealed class CommunityService
             ));
             return community;
         }
-        );
     }
 
     public void Rename(

@@ -2,7 +2,7 @@
 
 [Security index](../README.md) · [Negative-path evidence](../negative-paths/README.md) · [Node quota](../validation/NODE-CREATION-QUOTA.md)
 
-PTT-124 records the MVP protections and the requirements for the next API host. This review preserves the agreed node-creation policy and adds a provisional Voting-owned action allowance. It also implements URL-form validation for content blocks and iterative comment-thread traversal.
+PTT-124 records the MVP protections and the requirements for the next API host. This review preserves the agreed node-creation policy and adds a provisional Voting-owned action allowance and a Communities-owned creation allowance. It also implements URL-form validation for content blocks and iterative comment-thread traversal.
 
 ## What already slows node spam
 
@@ -90,3 +90,52 @@ The future host/browser security review remains [PTT-125](https://thepublicthink
 - [PTT-137: API request throttling and abuse budgets](https://thepublicthinktank.atlassian.net/browse/PTT-137) — implement with endpoints; coordinate with PTT-98 and PTT-125.
 - [PTT-138: Bound comment traversal and expensive collection reads](https://thepublicthinktank.atlassian.net/browse/PTT-138) — cover deep/wide threads and backend work limits before broad API exposure.
 - [PTT-139: Quota ledger retention and account-deletion handling](https://thepublicthinktank.atlassian.net/browse/PTT-139) — define policy before adding cleanup.
+
+## Community creation budget
+
+A participant can create **one community per rolling 24 hours**. This is a Communities
+domain policy, backed by `SqlCommunityRepository` and a durable participant/time ledger.
+It does not reset at midnight. Changes, archiving and restoration do not consume slots,
+and archiving/deletion does not refund the original creation. No karma threshold or
+lifetime ownership cap is introduced. Another participant has an independent allowance.
+
+`CommunityService.Create` coordinates the check, community insert and owner membership
+in one SQL transaction. A participant-scoped SQL application lock serializes competing
+creations, and direct repository inserts enforce the same quota. Accounting uses
+`AtlasTime.UtcNow`, not supplied community timestamps. Invalid or rolled-back writes
+consume nothing. Non-SQL adapters must implement `ICommunityCreationQuota` to enforce
+the budget; an aggregate alone cannot know repository-wide creation history.
+
+Quota exhaustion returns `CommunityCreationQuotaExceededException` with remaining
+allowance, retry delay and UTC next-slot time. It reports `Denied` / `QuotaExceeded`
+through existing operation telemetry; successful creation reports `CommunityChanged`.
+These are diagnostic events, not new security audit categories or automatic alerts.
+Use diagnostics/metrics to investigate repeated attempts; cross-account abuse still
+requires future API/identity controls. Trusted demo seeding writes directly to the
+context and does not consume user slots. Existing communities are not backfilled.
+
+Tests: `CommunityCreationQuotaTests` documents the cutoff/message;
+`SqlCommunityCreationQuotaTests` exercises durable enforcement, participant isolation,
+archive/edit behavior, rollback, backdating and competing requests on a fresh model.
+SQL execution requires `ATLAS_SQL_TEST_CONNECTION_STRING`; fresh-model tests do not
+verify the migration/upgrade path.
+
+### Migration handoff
+
+The community ledger adds a table. Per `src/Atlas.Persistence/AGENTS.md`, migrations
+and the snapshot must be generated, reviewed and committed by the developer. If the
+voting migration has not been generated yet, one `AddVotingAndCommunityQuotas` migration
+can include both pending tables. If it has, add a separate `AddCommunityCreationQuota`
+migration instead. Do not remove an already-applied migration. From the solution root:
+
+```powershell
+dotnet tool restore
+dotnet ef migrations add AddVotingAndCommunityQuotas --project src/Atlas.Persistence
+dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence
+dotnet ef database update --project src/Atlas.Persistence
+dotnet test tests/Atlas.Communities.Tests/Atlas.Communities.Tests.csproj
+dotnet test tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj --filter FullyQualifiedName~SqlCommunityCreationQuotaTests
+```
+
+No migration or snapshot is generated or edited by the assistant. Migration-dependent
+checks remain pending until the developer commits these artifacts.

@@ -13,6 +13,7 @@ namespace Atlas.Persistence;
 public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
     : IdentityDbContext<AtlasIdentityUser, IdentityRole<Guid>, Guid>(options)
 {
+    public DbSet<CommunityCreationQuotaRow> CommunityCreationQuotaRows => Set<CommunityCreationQuotaRow>();
     public DbSet<VoteActionQuotaRow> VoteActionQuotaRows => Set<VoteActionQuotaRow>();
     public DbSet<NodeCreationQuotaRow> NodeCreationQuotaRows => Set<NodeCreationQuotaRow>();
     public DbSet<NodeRow> NodeRows => Set<NodeRow>();
@@ -242,6 +243,15 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
         // and caps other labels; it is not a requirement that every bounded column be indexed.
         // String lengths also consume a composite index's total byte budget.
         // Ledger entries survive Node lifecycle changes; no cascading Node FK can refund allowance.
+        model.Entity<CommunityCreationQuotaRow>(entity =>
+        {
+            entity.ToTable("CommunityCreationQuotaRows");
+            entity.HasKey(row => row.Id);
+            entity.Property(row => row.Id).ValueGeneratedNever().HasColumnType("uniqueidentifier");
+            entity.Property(row => row.ParticipantId).HasColumnType("uniqueidentifier");
+            entity.Property(row => row.OccurredAt).HasColumnType("datetimeoffset");
+            entity.HasIndex(row => new { row.ParticipantId, row.OccurredAt });
+        });
         model.Entity<VoteActionQuotaRow>(entity =>
         {
             entity.ToTable("VoteActionQuotaRows");
