@@ -202,6 +202,15 @@ public sealed class SqlAuditTests
                 Id = Guid.NewGuid(), UserName = "private-canary@example.test",
                 Email = "private-canary@example.test", EmailConfirmed = true, LockoutEnabled = true
             };
+            // Identity user IDs reference existing Atlas Participants. Keep the fixture consistent
+            // with account registration rather than weakening the database relationship.
+            var now = DateTimeOffset.UtcNow;
+            db.ParticipantRows.Add(new ParticipantRow
+            {
+                Id = user.Id, DisplayName = "Lockout test participant", IsActive = true,
+                CreatedAt = now, UpdatedAt = now
+            });
+            await db.SaveChangesAsync();
             Assert.IsTrue((await users.CreateAsync(user, "Private-canary-password-123!")).Succeeded);
 
             // Exercise Identity's real failed-attempt counter and threshold, not a fabricated audit event.
