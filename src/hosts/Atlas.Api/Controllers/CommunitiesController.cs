@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 namespace Atlas.Api.Controllers;
 
+/// <summary>Translate community resource routes into the existing CommunityService operations.</summary>
 [ApiController, Route("api/communities")]
 public sealed class CommunitiesController(ICommunityRepository communities, ICommunityNodeRepository associations,
     CommunityService workflow, RequestActor actor) : ControllerBase

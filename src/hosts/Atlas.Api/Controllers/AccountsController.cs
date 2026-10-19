@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Atlas.Api.Controllers;
 
+/// <summary>HTTP account/session adapter over Identity; cookies and confirmation delivery belong to this host.</summary>
 [ApiController, Route("api/auth"), Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("auth")]
 public sealed class AccountsController(AtlasAccounts accounts, UserManager<AtlasIdentityUser> users,
     SignInManager<AtlasIdentityUser> signIn, IAntiforgery antiforgery) : ControllerBase
@@ -17,6 +18,8 @@ public sealed class AccountsController(AtlasAccounts accounts, UserManager<Atlas
     [HttpGet("csrf")]
     public object Csrf() => new { token = antiforgery.GetAndStoreTokens(HttpContext).RequestToken };
 
+    /// <summary>Validate credentials through Identity and issue its session cookie on success.</summary>
+    // lockoutOnFailure is true; AtlasSignInManager records bounded sign-in/lockout outcomes.
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest request)
     {
@@ -25,14 +28,17 @@ public sealed class AccountsController(AtlasAccounts accounts, UserManager<Atlas
         if (!result.Succeeded) return Problem(statusCode: 401, title: "Sign-in was not completed.");
         return NoContent();
     }
+    /// <summary>Clear the session cookie, then record sign-out in the active request telemetry scope.</summary>
     [Authorize, HttpPost("logout")]
     public async Task<IActionResult> Logout()
     {
         await signIn.SignOutAsync();
+        // Record a bounded outcome, not a cookie, password or serialized account.
         Telemetry.Record(Telemetry.Create(EventKind.SignOut));
         return NoContent();
     }
 
+    /// <summary>Return the current active participant identity without exposing account/security fields.</summary>
     [Authorize, HttpGet("session")]
     public async Task<object> Session() => new { participantId = (await accounts.ResolveParticipantAsync(User))?.Value };
 

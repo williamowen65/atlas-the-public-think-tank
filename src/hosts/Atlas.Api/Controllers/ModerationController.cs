@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 namespace Atlas.Api.Controllers;
 
+/// <summary>Separate member reporting/review from moderator-only queue and decision endpoints.</summary>
 [ApiController, Authorize(Policy = AtlasPolicies.Member), Route("api/moderation")]
 public sealed class ModerationController(ModerationService moderation, ModerationWorkflowService workflow, INodeRepository nodes, RequestActor actor) : ControllerBase
 {

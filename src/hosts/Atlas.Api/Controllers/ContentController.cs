@@ -8,10 +8,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 namespace Atlas.Api.Controllers;
 
+/// <summary>Map allowlisted JSON block inputs to Content commands after Graph ownership checks.</summary>
 [ApiController, Route("api/nodes/{node:guid}/description")]
 public sealed class ContentController(INodeRepository nodes, IDocumentRepository documents, NodeDescriptionService workflow,
     ModerationService moderation, RequestActor actor) : ControllerBase
 {
+    /// <summary>Project description blocks only when the caller may see the original content.</summary>
     [HttpGet]
     public object Read(Guid node)
     {
@@ -21,12 +23,16 @@ public sealed class ContentController(INodeRepository nodes, IDocumentRepository
         var document = documents.GetById(new DocumentId(target.DescriptionId.Value)) ?? throw new KeyNotFoundException();
         return documents.GetBlocks(document).Select(View);
     }
+    /// <summary>Translate an allowlisted JSON block kind and delegate author-checked insertion.</summary>
     [Authorize(Policy = AtlasPolicies.Member), HttpPost("blocks")]
     public object Add(Guid node, BlockRequest request) => View(workflow.Add(new NodeId(node), actor.ParticipantId, request.Input(), request.Index));
+    /// <summary>Update an existing block through the node’s owning description workflow.</summary>
     [Authorize(Policy = AtlasPolicies.Member), HttpPut("blocks/{block:guid}")]
     public object Update(Guid node, Guid block, BlockRequest request) => View(workflow.Update(new NodeId(node), actor.ParticipantId, new BlockId(block), request.Input()));
+    /// <summary>Change composition order without changing the block’s payload.</summary>
     [Authorize(Policy = AtlasPolicies.Member), HttpPut("blocks/{block:guid}/position")]
     public IActionResult Move(Guid node, Guid block, PositionRequest request) { workflow.Move(new NodeId(node), actor.ParticipantId, new BlockId(block), request.Index); return NoContent(); }
+    /// <summary>Remove the block from the description composition; retained payload is domain-owned.</summary>
     [Authorize(Policy = AtlasPolicies.Member), HttpDelete("blocks/{block:guid}")]
     public IActionResult Remove(Guid node, Guid block) { workflow.Remove(new NodeId(node), actor.ParticipantId, new BlockId(block)); return NoContent(); }
     private static object View(ContentBlock b) => new { id = b.Id.Value, b.Kind, b.CreatedAt, b.UpdatedAt, content = b switch

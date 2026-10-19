@@ -9,11 +9,21 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Atlas.Api.Tests;
 
+/// <summary>Start the real Program pipeline inside an in-process test server, with test configuration.</summary>
+/// <remarks>
+/// WebApplicationFactory does not copy the API or contact the developer's running server.
+/// Each factory owns a host/service provider; its clients exercise routing, middleware and controllers.
+/// The primary-constructor parameter below is a C# constructor argument available to this class.
+/// </remarks>
 internal sealed class ApiFactory(string? connection = null) : WebApplicationFactory<Program>
 {
+    // Keep production registrations, overriding only environment, output and connection settings.
+    // Non-SQL tests use an unreachable placeholder: accidental database access should fail.
     protected override void ConfigureWebHost(IWebHostBuilder builder) => builder.UseEnvironment("Development")
         .UseSetting("Atlas:Telemetry:Enabled", "false")
         .UseSetting("ATLAS_SQL_CONNECTION_STRING", connection ?? "Server=localhost;Database=Atlas_Not_Used;Integrated Security=true;TrustServerCertificate=true");
+    // The HTTPS address is logical in TestServer: no localhost port is opened.
+    // Factory clients retain cookies, but redirects stay visible so tests can assert 401/403.
     public HttpClient Browser() => CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
 }
 

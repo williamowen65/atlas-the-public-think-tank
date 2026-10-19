@@ -9,6 +9,7 @@ using Atlas.Voting.Target;
 using Microsoft.AspNetCore.Mvc;
 namespace Atlas.Api.Controllers;
 
+/// <summary>Project Graph navigation and voting summaries without rendering frontend controls.</summary>
 [ApiController, Route("api/nodes/{node:guid}")]
 public sealed class NavigationController(INodeRepository nodes, ModerationService moderation, IVoteRepository votes,
     IReactionDefinitionRepository definitions, INodeReactionRepository reactions, RequestActor actor) : ControllerBase

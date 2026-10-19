@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 namespace Atlas.Api.Controllers;
 
+/// <summary>Expose type/reaction catalog operations while preserving domain ownership and moderator rules.</summary>
 [ApiController, Route("api/catalog")]
 public sealed class CatalogController(INodeTypeRepository types, IReactionDefinitionRepository reactions,
     ModerationService moderation, RequestActor actor) : ControllerBase

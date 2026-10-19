@@ -13,16 +13,21 @@ public sealed class RequestActor : IAuthenticatedActor
     public Guid ParticipantId => Id ?? throw new UnauthorizedAccessException();
 }
 
+/// <summary>Translate the validated HTTP principal into the actor and correlation scope used downstream.</summary>
+/// <remarks>The primary constructor receives the next middleware delegate; ASP.NET supplies InvokeAsync services per request.</remarks>
 public sealed class OperationContextMiddleware(RequestDelegate next)
 {
     public async Task InvokeAsync(HttpContext context, AtlasAccounts accounts, RequestActor actor, ApiTelemetry telemetry)
     {
+        // Recheck persisted account/profile eligibility rather than accepting an actor from JSON.
         if (context.User.Identity?.IsAuthenticated == true)
         {
             var participant = await accounts.ResolveParticipantAsync(context.User, context.RequestAborted);
             if (participant is null) { context.Response.StatusCode = 401; return; }
             actor.Id = participant.Value;
         }
+        // IDisposable handles restore the previous AsyncLocal observer/context when the
+        // downstream action finishes or throws. They are cleanup guards, not business data.
         using var observer = telemetry.Observer is null ? null : Telemetry.UseObserver(telemetry.Observer);
         using var operation = Telemetry.BeginOperation(actor.Id);
         await next(context);
@@ -35,6 +40,7 @@ public sealed class ApiErrors(IProblemDetailsService problems) : IExceptionHandl
     public async ValueTask<bool> TryHandleAsync(HttpContext context, Exception error, CancellationToken cancellationToken)
     {
         if (error is OperationCanceledException && context.RequestAborted.IsCancellationRequested) return false;
+        // Only these known quota exceptions may contribute their user-facing message.
         var retry = error switch
         {
             Atlas.Graph.Nodes.NodeCreationQuotaExceededException e => e.Allowance.RetryAfter,
@@ -45,6 +51,7 @@ public sealed class ApiErrors(IProblemDetailsService problems) : IExceptionHandl
         };
         var quota = retry is not null;
         if (retry is {} delay) context.Response.Headers.RetryAfter = Math.Max(1, (int)Math.Ceiling(delay.TotalSeconds)).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        // Other errors expose categories, never arbitrary exception/SQL text.
         var status = error switch
         {
             UnauthorizedAccessException => 403,

@@ -391,6 +391,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Api.Tests", "tests\At
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "api", "api", "{98A12500-0000-4000-8000-000000000001}"
 	ProjectSection(SolutionItems) = preProject
+		docs\api\AUTHENTICATION.md = docs\api\AUTHENTICATION.md
+		docs\api\CODE-GUIDE.md = docs\api\CODE-GUIDE.md
 		docs\api\README.md = docs\api\README.md
 		docs\api\SECURITY.md = docs\api\SECURITY.md
 		docs\api\WORKFLOWS.md = docs\api\WORKFLOWS.md
