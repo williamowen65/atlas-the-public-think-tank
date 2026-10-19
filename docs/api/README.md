@@ -7,6 +7,15 @@ SPA assets, or implement a second set of domain quotas. Actor IDs come from the
 validated Identity session, never from JSON. See [workflow parity](WORKFLOWS.md)
 and [HTTP security responsibilities](SECURITY.md).
 
+## One shared application database
+
+Console and API use the same `ATLAS_SQL_CONNECTION_STRING`, shared user-secrets ID,
+`AtlasDataContext` model and checked-in migrations. Point both hosts at the same
+server/database to see the same accounts, nodes, votes, quotas, comments and audit
+records. There is no separate API database or synchronization/copying step. Each
+host creates its own connections/contexts to that shared database. Tests alone use
+separate disposable databases.
+
 ## Run locally
 
 Use the existing migrated Atlas SQL database and shared user-secrets ID. This host

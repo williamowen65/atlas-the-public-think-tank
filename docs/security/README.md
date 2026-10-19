@@ -10,7 +10,7 @@ The structure was established by PTT-97, the pre-UI application security baselin
 - ASP.NET Core Identity establishes the authenticated account and its Atlas Participant identity.
 - Atlas application and domain rules determine what that participant may read or change.
 - Existing enforcement and tests are reused as evidence rather than duplicated.
-- HTTP/API/browser controls are documented before the host exists, but speculative middleware and endpoint protection are not implemented early.
+- HTTP controls live in the API host; browser rendering and deployment responsibilities remain explicit rather than being placed inside domains.
 - Findings should be traceable from expectation to enforcement, automated evidence, and follow-up work.
 
 ## Planned review areas
@@ -22,7 +22,7 @@ The structure was established by PTT-97, the pre-UI application security baselin
 | `resource-limits/` | PTT-122 | Bounds on user-controlled values and structures |
 | [negative-paths/](negative-paths/README.md) | PTT-123 | Security-relevant failure and rejection behavior |
 | [abuse-prevention/](abuse-prevention/README.md) | PTT-124 | Rate limiting and repeated-request abuse responsibilities |
-| `api-browser/` | PTT-125 | Future HTTP, API, and browser security controls |
+| [HTTP/API/browser responsibilities](../api/SECURITY.md) | PTT-125 | Implemented API baseline and outstanding browser/deployment controls |
 | [observability/](observability/README.md) | PTT-126 | Security logging, audit, and observability requirements |
 
 Only the review area currently being worked should be created. Empty placeholder folders/files are intentionally avoided.
