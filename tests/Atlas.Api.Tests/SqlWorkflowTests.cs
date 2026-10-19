@@ -105,6 +105,9 @@ public sealed class SqlWorkflowTests
                 Assert.AreEqual(HttpStatusCode.NotFound, (await anonymous.GetAsync($"/api/nodes/{node}/description")).StatusCode);
                 Assert.AreEqual(HttpStatusCode.NotFound, (await anonymous.GetAsync($"/api/nodes/{node}/comments")).StatusCode);
             }
+            // Restoration follows the existing author-edit -> review-request workflow.
+            await Success(await client.PutAsJsonAsync($"/api/nodes/{node}/title", new { text="Revised after moderation" }));
+            await Success(await client.PostAsync($"/api/moderation/nodes/{node}/review", null));
             await Success(await client.PostAsJsonAsync($"/api/moderation/nodes/{node}/restore", new { text="Restore after test" }));
             await Success(await client.PostAsync("/api/auth/logout", null));
             Assert.AreEqual(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/auth/session")).StatusCode);

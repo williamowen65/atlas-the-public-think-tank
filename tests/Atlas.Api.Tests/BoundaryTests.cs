@@ -47,6 +47,30 @@ public sealed class BoundaryTests
         Assert.IsTrue(response.Headers.CacheControl?.NoStore);
     }
     [TestMethod]
+    public async Task Malformed_json_and_invalid_csrf_are_rejected_before_identity_queries()
+    {
+        using var factory = new ApiFactory(); using var client = factory.Browser();
+        var token = await client.GetFromJsonAsync<System.Text.Json.JsonElement>("/api/auth/csrf");
+        client.DefaultRequestHeaders.Add("X-CSRF-TOKEN", token.GetProperty("token").GetString());
+        var malformed = await client.PostAsync("/api/auth/login", new StringContent("{", System.Text.Encoding.UTF8, "application/json"));
+        Assert.AreEqual(HttpStatusCode.BadRequest, malformed.StatusCode);
+        client.DefaultRequestHeaders.Remove("X-CSRF-TOKEN"); client.DefaultRequestHeaders.Add("X-CSRF-TOKEN", "invalid");
+        Assert.AreEqual(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/api/auth/login", new { email="a@example.test",password="not-real" })).StatusCode);
+    }
+    [TestMethod]
+    public async Task Account_request_bursts_are_throttled_even_when_inputs_are_rejected()
+    {
+        using var factory = new ApiFactory(); using var client = factory.Browser();
+        var denied = false;
+        for (var i = 0; i < 25; i++)
+        {
+            var response = await client.PostAsJsonAsync("/api/auth/login", new { });
+            if (response.StatusCode == HttpStatusCode.TooManyRequests) { denied = true; break; }
+            Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+        Assert.IsTrue(denied, "The transport budget must include rejected attempts.");
+    }
+    [TestMethod]
     public void All_write_actions_have_authorization_except_explicit_account_entry_points()
     {
         using var factory = new ApiFactory();

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Atlas.Identity;
+using Atlas.Contracts.Observability;
 using Atlas.Persistence.Identity;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
@@ -25,7 +26,12 @@ public sealed class AccountsController(AtlasAccounts accounts, UserManager<Atlas
         return NoContent();
     }
     [Authorize, HttpPost("logout")]
-    public async Task<IActionResult> Logout() { await signIn.SignOutAsync(); return NoContent(); }
+    public async Task<IActionResult> Logout()
+    {
+        await signIn.SignOutAsync();
+        Telemetry.Record(Telemetry.Create(EventKind.SignOut));
+        return NoContent();
+    }
 
     [Authorize, HttpGet("session")]
     public async Task<object> Session() => new { participantId = (await accounts.ResolveParticipantAsync(User))?.Value };
