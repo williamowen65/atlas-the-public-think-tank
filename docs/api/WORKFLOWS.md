@@ -8,7 +8,7 @@ requirements. This map describes exposed operations, not full automated coverage
 | Console capability | HTTP route family | Reused owner |
 |---|---|---|
 | Register / confirm / sign in / sign out | `/api/auth/*` | AtlasAccounts, UserManager, SignInManager |
-| Discover/filter/page nodes | `GET /api/nodes` | DiscoveryQuery / DiscoveryService |
+| Discover/filter/page nodes | `GET /api/nodes`, `/api/nodes/mine` | DiscoveryQuery / DiscoveryService |
 | Read node, children, ancestors | `/api/nodes/{id}`, `/children`, `/ancestors` | Graph, AncestorNavigation; hidden placeholders |
 | Create / rename / archive / restore | `/api/nodes`, `/{id}/title`, `/archive`, `/restore` | NodeWorkflowService |
 | Change type / request child types | `/{id}/type/{type}`, `/requested-types/{type}` | NodeWorkflowService / Graph |

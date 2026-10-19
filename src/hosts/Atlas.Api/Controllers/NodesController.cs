@@ -21,6 +21,9 @@ public sealed class NodesController(INodeRepository nodes, INodeTypeRepository t
         var page = discovery.DiscoverPage(query);
         return new { page.Items, page.TotalCount, page.Page, page.PageSize, page.HasNextPage };
     }
+    [Authorize(Policy = AtlasPolicies.Member), HttpGet("mine")]
+    public object Mine([FromQuery] DiscoveryQuery query) => discovery.DiscoverAuthoredPage(query,
+        nodes.GetByAuthor(new NodeAuthorId(actor.ParticipantId)).Select(node => node.Id.Value).ToArray());
     [HttpGet("types")]
     public object Types() => types.GetAll().Select(t => new { id = t.Id.Value, t.Name });
     [HttpGet("{id:guid}")]
@@ -57,6 +60,7 @@ public sealed class NodesController(INodeRepository nodes, INodeTypeRepository t
             return new { id = node.Id.Value, hidden = true, notice = visibility.Notice };
         return new { id = node.Id.Value, title = node.Title.Value, typeId = node.TypeId.Value,
             authorId = node.AuthorId.Value, status = node.Status.ToString(), node.CreatedAt, node.UpdatedAt,
+            requestedTypeIds = node.RequestedSubNodeTypes.Select(x => x.TypeId.Value),
             parentIds = node.ParentNodeIds.Select(x => x.Value), descriptionId = node.DescriptionId.Value };
     }
 }

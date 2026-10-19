@@ -34,19 +34,21 @@ public sealed class NodeWorkflowService(INodeRepository nodes, IEventPublisher e
         });
         Dispatch(node);
     }
-    /// <summary>Change type after checking the catalog reference and current authorship.</summary>
-    public void ChangeType(Node node, NodeTypeId typeId, Guid actorId) => Change(node, actorId, () =>
+    /// <summary>Use Graph's current-state checks when changing the node type.</summary>
+    public void ChangeType(Node node, NodeTypeId typeId, Guid actorId)
     {
-        ReferenceValidation.Require(nodes, "NodeType", typeId.Value);
-        node.ChangeType(typeId, actorId, AtlasTime.UtcNow);
-    });
-    /// <summary>Add or withdraw a requested child type without accepting an actor from transport input.</summary>
-    public void RequestType(Node node, NodeTypeId typeId, Guid actorId, bool requested) => Change(node, actorId, () =>
+        new NodeRelationshipService(nodes).ChangeType(node, typeId, actorId, AtlasTime.UtcNow);
+        Dispatch(node);
+    }
+    /// <summary>Add or withdraw one child type through Graph's complete-proposal validation.</summary>
+    public void RequestType(Node node, NodeTypeId typeId, Guid actorId, bool requested)
     {
-        ReferenceValidation.Require(nodes, "NodeType", typeId.Value);
-        if (requested) node.RequestSubNodeType(typeId, actorId, AtlasTime.UtcNow);
-        else node.StopRequestingSubNodeType(typeId, actorId, AtlasTime.UtcNow);
-    });
+        EnsureActor(node, actorId);
+        var selected = node.RequestedSubNodeTypes.Select(item => item.TypeId).Where(id => id != typeId).ToList();
+        if (requested) selected.Add(typeId);
+        new NodeRelationshipService(nodes).SetRequestedTypes(node, selected, actorId, AtlasTime.UtcNow);
+        Dispatch(node);
+    }
     private void Change(Node node, Guid actorId, Action change)
     {
         OperationBoundary.Execute(nodes, () =>

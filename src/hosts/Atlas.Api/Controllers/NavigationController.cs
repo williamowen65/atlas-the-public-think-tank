@@ -31,7 +31,7 @@ public sealed class NavigationController(INodeRepository nodes, ModerationServic
             segment.HasMore, segment.HasAlternativeRoutes, segment.CycleDetected };
     }
     [HttpGet("votes")]
-    public object Votes(Guid node) { Read(node); return new GetVoteSummary(votes).Execute(new NodeVoteTarget(node), new Atlas.Voting.Votes.ParticipantId(actor.Id ?? Guid.NewGuid())); }
+    public object Votes(Guid node) { Read(node); return new GetVoteSummary(votes).Execute(new NodeVoteTarget(node), actor.Id is {} voter ? new Atlas.Voting.Votes.ParticipantId(voter) : null); }
     [HttpGet("reactions")]
     public object Reactions(Guid node) => ReactionVotingService.BuildChoices(Read(node), definitions, reactions, votes,
         new Atlas.Voting.Votes.ParticipantId(actor.Id ?? Guid.NewGuid())).Select(x => new { id = x.Definition.Id.Value,
