@@ -1,4 +1,5 @@
 using Atlas.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Atlas.Comments.Comments;
 
 namespace Atlas.Application.Storage;
@@ -12,6 +13,40 @@ public sealed class SqlCommentRepository(Func<AtlasDataContext>? contextFactory 
     // Select comments for this exact target kind and ID, then reconstitute each result.
     public IReadOnlyCollection<Comment> GetByTarget(CommentTarget target) =>
         QueryRows<CommentRow>(row => row.TargetKind == target.Kind && row.TargetId == target.Id).Select(ToDomain).ToList();
+
+    /// <summary>Fetch only the requested sibling page and one lookahead row in SQL, never an entire target.</summary>
+    public async Task<CommentPage> ReadPageAsync(CommentPageRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+        using var lease = OpenReadContext();
+        var rows = await BuildPageQuery(lease.Context, request).ToListAsync(cancellationToken);
+        var items = rows.Take(request.Size).Select(ToDomain).ToList();
+        var next = rows.Count > request.Size && items.Count > 0
+            ? new CommentCursor(items[^1].CreatedAt, items[^1].Id) : null;
+        return new CommentPage(items, next);
+    }
+
+    // Kept separate so generated SQL (TOP, filters and cursor predicates) can be checked without a database.
+    internal static IQueryable<CommentRow> BuildPageQuery(AtlasDataContext db, CommentPageRequest request)
+    {
+        var parentId = request.ParentId?.Value;
+        var query = db.CommentRows.AsNoTracking().Where(row => row.TargetKind == request.Target.Kind
+            && row.TargetId == request.Target.Id && row.ParentCommentId == parentId);
+        if (request.After is { } after)
+            query = query.Where(row => row.CreatedAt > after.CreatedAt
+                || row.CreatedAt == after.CreatedAt && row.Id.CompareTo(after.Id.Value) > 0);
+        // SQL Server orders/comparisons use the same uniqueidentifier order, including timestamp ties.
+        return query.OrderBy(row => row.CreatedAt).ThenBy(row => row.Id).Take(request.Size + 1)
+            .TagWith("Atlas.Comments.SiblingPage");
+    }
+
+    public int CountByTarget(CommentTarget target)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        using var lease = OpenReadContext();
+        return lease.Context.CommentRows.AsNoTracking().Count(row => row.TargetKind == target.Kind && row.TargetId == target.Id);
+    }
 
     // Validate and save in one SQL operation. Nested calls join an existing transaction.
     public void Save(Comment comment) => Execute(() =>

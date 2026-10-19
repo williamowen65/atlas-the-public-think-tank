@@ -56,7 +56,7 @@ This slice adds nine parameterized node/description denial cases, two comment se
 - In-memory tests show method ordering, unchanged caller state and emitted messages; SQL integration tests establish committed database behavior. A skipped SQL test is not a passing verification.
 - The test helpers accept actor IDs to exercise policy. A future API must prove identity server-side and must not accept the actor, roles or trusted-import flag from request content.
 - Named tests establish selected scenarios, not complete security proof. Permission combinations, race conditions and new routes need continuing review.
-- Comment traversal now uses an explicit stack and rejects malformed structure. Deep valid threads are supported; collection-wide reads still need paging/work budgets and load testing before exposing them broadly ([PTT-138](https://thepublicthinktank.atlassian.net/browse/PTT-138)). Current value-size limits and output paging alone do not bound all backend work.
+- Comment traversal now uses an explicit stack and rejects malformed structure. Deep valid threads are supported; interactive comment reads now use capped root/reply pages and cancellation ([PTT-138](https://thepublicthinktank.atlassian.net/browse/PTT-138)); full-thread utility callers and broader API reads still need workload-aware review. Current value-size limits and output paging alone do not bound all backend work.
 - API request/connection limits, cancellation/timeouts, forwarded-IP trust, account/IP throttling, 429 mapping and browser controls remain explicit API work. See [abuse responsibilities](../abuse-prevention/README.md#api-acceptance-requirements).
 - Quota-ledger retention and account-deletion policy remain open ([PTT-139](https://thepublicthinktank.atlassian.net/browse/PTT-139)). Historical evidence should not silently become permanent retention.
 
@@ -102,3 +102,10 @@ message. [SqlReportSubmissionQuotaTests](../../../tests/Atlas.Persistence.Tests/
 checks persisted budgets, unchanged queue/audit/outbox on rejection, independent reporters,
 unblocked moderator decisions, invalid/rolled-back submissions and concurrent last-slot
 attempts. See [policy and migration handoff](../abuse-prevention/README.md#report-submission-budget).
+
+## PTT-138: bounded comment loading
+
+Root/reply pages reject out-of-range sizes and cross-target parents. Cancellation
+propagates to EF; Console navigation reads only selected branches. The legacy deep
+traversal/corruption tests remain, but hosts no longer materialize full threads.
+See [workflow, query evidence and migration guide](../../workflows/COMMENTS.md).

@@ -148,8 +148,23 @@ public sealed class CommentService
         );
     }
 
+    /// <summary>Load roots or direct replies on demand, without loading descendants or the full thread.</summary>
+    /// <remarks>Removed parents remain readable placeholders. Parent scope is checked before returning replies.
+    /// Cancellation propagates to the repository; a future HTTP host can pass RequestAborted.</remarks>
+    public Task<CommentPage> GetPageAsync(CommentPageRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (request.ParentId is { } parentId)
+        {
+            var parent = GetRequired(parentId);
+            if (parent.Target != request.Target) throw new ArgumentException("The parent belongs to a different discussion.", nameof(request));
+        }
+        return _comments.ReadPageAsync(request, cancellationToken);
+    }
+
     /// <summary>Read a thread in stable depth-first order without recursive call-stack growth.</summary>
-    /// <remarks>Deep valid threads remain supported. This still materializes the thread; query paging is separate work.</remarks>
+    /// <remarks>Deep valid threads remain supported. This legacy full-thread utility still materializes the thread. Interactive and future API reads must use GetPageAsync.</remarks>
     public IReadOnlyList<CommentThreadItem> GetThread(CommentTarget target)
     {
         var comments = _comments.GetByTarget(target).ToList();

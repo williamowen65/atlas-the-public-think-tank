@@ -1,273 +1,154 @@
 using Atlas.Application.Comments;
-using Atlas.Contracts.Identity;
 using Atlas.Comments.Comments;
-using Atlas.Identity;
+using Atlas.Contracts.Identity;
 using Atlas.Participants.Participants;
 
 namespace Atlas.ConsoleApp.Comments;
 
-/// <summary>Runs the threaded comment workflow for one discussion target.</summary>
+/// <summary>Browse one page of roots or direct replies, loading another branch only when selected.</summary>
 public static class CommentCommands
 {
-    public static void Run(
-        CommentTarget target,
-        CommentWorkflowService service,
-        IParticipantRepository participants,
-        IAuthenticatedActor authenticatedActor
-    )
+    public static void Run(CommentTarget target, CommentWorkflowService service,
+        IParticipantRepository participants, IAuthenticatedActor authenticatedActor) =>
+        Browse(target, request => service.GetPageAsync(request), participants, service, authenticatedActor);
+
+    /// <summary>The anonymous browser uses the same bounded queries without contribution controls.</summary>
+    public static void ReadOnly(CommentTarget target, ICommentRepository comments, IParticipantRepository participants) =>
+        Browse(target, request => comments.ReadPageAsync(request), participants, null, null);
+
+    private static void Browse(CommentTarget target, Func<CommentPageRequest, Task<CommentPage>> read,
+        IParticipantRepository participants, CommentWorkflowService? service, IAuthenticatedActor? actor)
     {
+        var location = new CommentPageRequest(target);
+        // Store only navigation positions, never previously loaded threads. No recursive UI calls.
+        var history = new Stack<CommentPageRequest>();
         while (true)
         {
-            var thread = service.GetThread(target);
-            WriteThread(
-                thread,
-                participants,
-                authenticatedActor.ParticipantId
-            );
-
-            Console.WriteLine();
-            Console.WriteLine("1. Add comment");
-            Console.WriteLine("2. Select comment");
+            var page = read(location).GetAwaiter().GetResult();
+            WritePage(page, location.ParentId, participants, actor?.ParticipantId);
+            if (actor is not null) Console.WriteLine(location.ParentId is null ? "1. Add comment" : "1. Reply to this parent");
+            Console.WriteLine("2. Select comment / view replies");
+            if (page.Next is not null) Console.WriteLine("3. Next page");
+            if (history.Count > 0) Console.WriteLine("4. Back to previous page or parent");
             Console.WriteLine("0. Return to node");
             Console.Write("Selection: ");
-
             switch (Console.ReadLine())
             {
-                case "1":
-                    AddTopLevel(
-                        target,
-                        service,
-                        authenticatedActor
-                    );
+                case null or "0": return;
+                case "1" when actor is not null:
+                    if (location.ParentId is { } parent) Reply(parent, service!, actor);
+                    else AddTopLevel(target, service!, actor);
                     break;
                 case "2":
-                    Select(
-                        thread,
-                        service,
-                        participants,
-                        authenticatedActor
-                    );
+                    Console.Write("Comment number (0 to cancel): ");
+                    if (!int.TryParse(Console.ReadLine(), out var number) || number < 0 || number > page.Items.Count)
+                    {
+                        ConsoleUi.Pause("That is not a valid comment number.");
+                        break;
+                    }
+                    if (number == 0) break;
+                    var selected = page.Items[number - 1];
+                    if (Select(selected, service, participants, actor))
+                    {
+                        history.Push(location);
+                        location = new CommentPageRequest(target, selected.Id);
+                    }
                     break;
-                case "0":
-                    return;
-                default:
-                    ConsoleUi.Pause("That is not a valid selection.");
+                case "3" when page.Next is not null:
+                    history.Push(location);
+                    location = new CommentPageRequest(target, location.ParentId, page.Next);
                     break;
+                case "4" when history.Count > 0:
+                    location = history.Pop();
+                    break;
+                default: ConsoleUi.Pause("That is not a valid selection."); break;
             }
         }
     }
 
-    private static void WriteThread(
-        IReadOnlyList<CommentThreadItem> thread,
-        IParticipantRepository participants,
-        Guid actorParticipantId
-    )
+    private static void WritePage(CommentPage page, CommentId? parent, IParticipantRepository participants, Guid? actor)
     {
         Console.Clear();
-        Console.WriteLine("COMMENTS");
-        Console.WriteLine("--------");
-        var actorDisplayName = participants
-            .GetById(new ParticipantId(actorParticipantId))
-            ?.DisplayName
-            ?? "authenticated participant";
-        Console.WriteLine($"Viewing as: {actorDisplayName}");
-        Console.WriteLine();
-
-        if (thread.Count == 0)
+        Console.WriteLine(actor is null ? "COMMENTS (read only)" : "COMMENTS");
+        Console.WriteLine(parent is null ? "Top-level comments" : $"Direct replies to {parent}");
+        Console.WriteLine("Oldest first; select a comment to open its replies.");
+        Console.WriteLine($"Showing {page.Items.Count} comments on this page.");
+        if (page.Items.Count == 0) Console.WriteLine(parent is null ? "No comments yet." : "No replies yet.");
+        for (var index = 0; index < page.Items.Count; index++)
         {
-            Console.WriteLine("No comments yet.");
-            return;
-        }
-
-        for (var index = 0; index < thread.Count; index++)
-        {
-            var item = thread[index];
-            var comment = item.Comment;
-            var indent = new string(
-                ' ',
-                item.Depth * 3
-            );
-            var author = participants
-                .GetById(new ParticipantId(comment.AuthorParticipantId))
-                ?.DisplayName ?? "Unknown participant";
-            var body = comment.IsRemoved
-                ? $"[removed: {FormatStatus(comment.Status)}]"
-                : comment.Body;
-            var ownComment = comment.AuthorParticipantId == actorParticipantId
-                ? " (yours)"
-                : string.Empty;
-
-            Console.WriteLine($"{indent}{index + 1}. {author}{ownComment}: {body}");
-            Console.WriteLine($"{indent}   {comment.CreatedAt.LocalDateTime:g}");
+            var comment = page.Items[index];
+            var author = participants.GetById(new ParticipantId(comment.AuthorParticipantId))?.DisplayName ?? "Unknown participant";
+            var body = comment.IsRemoved ? $"[removed: {FormatStatus(comment.Status)}]" : comment.Body;
+            Console.WriteLine($"{index + 1}. {author}{(comment.AuthorParticipantId == actor ? " (yours)" : "")}: {body}");
+            Console.WriteLine($"   {comment.CreatedAt.LocalDateTime:g}");
         }
     }
 
-    public static void AddTopLevel(
-        CommentTarget target,
-        CommentWorkflowService service,
-        IAuthenticatedActor authenticatedActor
-    )
+    // Return a navigation choice rather than recursively opening another browser.
+    private static bool Select(Comment comment, CommentWorkflowService? service,
+        IParticipantRepository participants, IAuthenticatedActor? actor)
     {
-        Console.Write("Comment: ");
-        var body = Console.ReadLine() ?? string.Empty;
-        TryChange(
-            () => service.AddTopLevel(
-                target,
-                authenticatedActor.ParticipantId,
-                body,
-                AtlasTime.UtcNow
-            ),
-            "Comment added."
-        );
-    }
-
-    private static void Select(
-        IReadOnlyList<CommentThreadItem> thread,
-        CommentWorkflowService service,
-        IParticipantRepository participants,
-        IAuthenticatedActor authenticatedActor
-    )
-    {
-        if (thread.Count == 0)
-        {
-            ConsoleUi.Pause("There are no comments to select.");
-            return;
-        }
-
-        Console.Write("Comment number (0 to cancel): ");
-        if (!int.TryParse(
-            Console.ReadLine(),
-            out var selection
-        ) ||
-            selection < 0 || selection > thread.Count)
-        {
-            ConsoleUi.Pause("That is not a valid comment number.");
-            return;
-        }
-
-        if (selection == 0) return;
-
-        var comment = thread[selection - 1].Comment;
         while (true)
         {
-            WriteSelected(
-                comment,
-                participants,
-                authenticatedActor.ParticipantId
-            );
-            var isAuthor = comment.AuthorParticipantId == authenticatedActor.ParticipantId;
-            var canChange = isAuthor && !comment.IsRemoved;
-
-            Console.WriteLine("1. Reply");
-            Console.WriteLine(canChange ? "2. Edit" : "2. Edit [disabled — requires active comment author]");
-            Console.WriteLine(canChange ? "3. Remove" : "3. Remove [disabled — requires active comment author]");
+            Console.Clear();
+            Console.WriteLine("COMMENT");
+            var author = participants.GetById(new ParticipantId(comment.AuthorParticipantId))?.DisplayName ?? "Unknown participant";
+            Console.WriteLine($"Author: {author}");
+            Console.WriteLine($"Status: {FormatStatus(comment.Status)}");
+            Console.WriteLine($"Created: {comment.CreatedAt.LocalDateTime:g}");
+            Console.WriteLine(comment.IsRemoved ? $"[removed: {FormatStatus(comment.Status)}]" : comment.Body);
+            var canChange = actor is not null && comment.AuthorParticipantId == actor.ParticipantId && !comment.IsRemoved;
+            if (actor is not null)
+            {
+                Console.WriteLine("1. Reply");
+                Console.WriteLine(canChange ? "2. Edit" : "2. Edit [disabled — requires active comment author]");
+                Console.WriteLine(canChange ? "3. Remove" : "3. Remove [disabled — requires active comment author]");
+            }
+            Console.WriteLine("4. View direct replies");
             Console.WriteLine("0. Return to comments");
             Console.Write("Selection: ");
-
             switch (Console.ReadLine())
             {
-                case "1":
-                    Console.Write("Reply: ");
-                    var reply = Console.ReadLine() ?? string.Empty;
-                    TryChange(
-                        () => service.Reply(
-                            comment.Id,
-                            authenticatedActor.ParticipantId,
-                            reply,
-                            AtlasTime.UtcNow
-                        ),
-                        "Reply added."
-                    );
-                    return;
+                case null or "0": return false;
+                case "4": return true;
+                case "1" when actor is not null:
+                    Reply(comment.Id, service!, actor); return false;
                 case "2" when canChange:
                     Console.Write("New comment text: ");
                     var body = Console.ReadLine() ?? string.Empty;
-                    TryChange(
-                        () => service.Edit(
-                            comment.Id,
-                            authenticatedActor.ParticipantId,
-                            body,
-                            AtlasTime.UtcNow
-                        ),
-                        "Comment updated."
-                    );
-                    return;
+                    TryChange(() => service!.Edit(comment.Id, actor!.ParticipantId, body, AtlasTime.UtcNow), "Comment updated.");
+                    return false;
                 case "3" when canChange:
                     Console.Write("Remove this comment? (y/n): ");
-                    if (string.Equals(
-                        Console.ReadLine(),
-                        "y",
-                        StringComparison.OrdinalIgnoreCase
-                    ))
-                    {
-                        TryChange(
-                            () => service.Remove(
-                                comment.Id,
-                                authenticatedActor.ParticipantId,
-                                AtlasTime.UtcNow
-                            ),
-                            "Comment removed."
-                        );
-                    }
-                    return;
-                case "2" or "3":
-                    ConsoleUi.Pause("That action requires the author of an active comment.");
-                    break;
-                case "0":
-                    return;
-                default:
-                    ConsoleUi.Pause("That is not a valid selection.");
-                    break;
+                    if (string.Equals(Console.ReadLine(), "y", StringComparison.OrdinalIgnoreCase))
+                        TryChange(() => service!.Remove(comment.Id, actor!.ParticipantId, AtlasTime.UtcNow), "Comment removed.");
+                    return false;
+                default: ConsoleUi.Pause("That is not a valid selection."); break;
             }
         }
     }
 
-    private static void WriteSelected(
-        Comment comment,
-        IParticipantRepository participants,
-        Guid actorParticipantId
-    )
+    public static void AddTopLevel(CommentTarget target, CommentWorkflowService service, IAuthenticatedActor actor)
     {
-        Console.Clear();
-        var author = participants
-            .GetById(new ParticipantId(comment.AuthorParticipantId))
-            ?.DisplayName ?? "Unknown participant";
-        Console.WriteLine("COMMENT");
-        Console.WriteLine("-------");
-        Console.WriteLine($"Author: {author}");
-        Console.WriteLine($"Status: {FormatStatus(comment.Status)}");
-        Console.WriteLine($"Created: {comment.CreatedAt.LocalDateTime:g}");
-        var actorDisplayName = participants
-            .GetById(new ParticipantId(actorParticipantId))
-            ?.DisplayName
-            ?? "authenticated participant";
-        Console.WriteLine($"Viewing as: {actorDisplayName}");
-        Console.WriteLine();
-        Console.WriteLine(comment.IsRemoved ? "[comment removed]" : comment.Body);
-        Console.WriteLine();
+        Console.Write("Comment: ");
+        var body = Console.ReadLine() ?? string.Empty;
+        TryChange(() => service.AddTopLevel(target, actor.ParticipantId, body, AtlasTime.UtcNow), "Comment added.");
     }
-
+    private static void Reply(CommentId parent, CommentWorkflowService service, IAuthenticatedActor actor)
+    {
+        Console.Write("Reply: ");
+        var body = Console.ReadLine() ?? string.Empty;
+        TryChange(() => service.Reply(parent, actor.ParticipantId, body, AtlasTime.UtcNow), "Reply added.");
+    }
     private static string FormatStatus(CommentStatus status) => status switch
     {
-        CommentStatus.Active => "Active",
-        CommentStatus.RemovedByAuthor => "Removed by author",
-        CommentStatus.RemovedByModerator => "Removed by moderator",
-        _ => status.ToString()
+        CommentStatus.Active => "Active", CommentStatus.RemovedByAuthor => "Removed by author",
+        CommentStatus.RemovedByModerator => "Removed by moderator", _ => status.ToString()
     };
-
-    private static void TryChange(
-        Action action,
-        string successMessage
-    )
+    private static void TryChange(Action action, string successMessage)
     {
-        try
-        {
-            action();
-            ConsoleUi.Pause(successMessage);
-        }
-        catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or UnauthorizedAccessException)
-        {
-            ConsoleUi.Pause($"Unable to update comments: {exception.Message}");
-        }
+        try { action(); ConsoleUi.Pause(successMessage); }
+        catch (Exception error) when (error is ArgumentException or InvalidOperationException or UnauthorizedAccessException)
+        { ConsoleUi.Pause($"Unable to update comments: {error.Message}"); }
     }
 }

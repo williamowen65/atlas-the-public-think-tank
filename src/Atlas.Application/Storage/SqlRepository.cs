@@ -82,6 +82,10 @@ public abstract class SqlRepository(Func<AtlasDataContext>? contextFactory = nul
             database.Set<T>().AsNoTracking()
         ).ToList();
     }
+    /// <summary>Borrow the current operation context, or own a standalone read context.</summary>
+    /// <remarks>For bounded async/scalar queries that should not materialize rows through QueryRows.</remarks>
+    private protected SqlOperationBoundary.ContextLease OpenReadContext() => SqlOperationBoundary.Open(Open);
+
     /// <summary>Applies an EF-translatable predicate and optional query composition before materializing untracked rows.</summary>
     /// <remarks>
     /// Includes mapped child collections; callers can add ordering or other query operators through compose.
