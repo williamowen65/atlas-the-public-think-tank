@@ -47,18 +47,24 @@ Sources: [policy and capability](../../../src/Atlas.Voting/VoteActionQuota.cs), 
 
 This extension changes the EF model. Per `src/Atlas.Persistence/AGENTS.md`, no migration, designer or model snapshot is generated/edited by the assistant. **The developer must generate, review and commit these artifacts before migration-dependent tests/CI can pass.** No database update has been applied on the developer's behalf.
 
+This PR also adds a [community creation ledger](README.md#community-creation-budget).
+If neither quota migration exists yet, generate one combined migration as shown below.
+If the voting migration already exists locally, keep it and generate the remaining
+community change with `dotnet ef migrations add AddCommunityCreationQuota --project src/Atlas.Persistence`.
+Review the existing migration history first; do not generate duplicate table creation.
+
 From the solution root in PowerShell:
 
 ```powershell
 dotnet tool restore
-dotnet ef migrations add AddVoteActionQuota --project src/Atlas.Persistence
+dotnet ef migrations add AddVotingAndCommunityQuotas --project src/Atlas.Persistence
 dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence
 dotnet ef database update --project src/Atlas.Persistence
 dotnet test tests/Atlas.Voting.Tests/Atlas.Voting.Tests.csproj
 dotnet test tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj --filter "FullyQualifiedName~SqlVoteActionQuotaTests|FullyQualifiedName~SqlVoteRepositoryTests"
 ```
 
-Inspect that Up creates `VoteActionQuotaRows` (Id PK, ParticipantId, OccurredAt, participant/time index), Down removes it, and the generated snapshot matches. Start with an empty ledger: existing current votes do not represent historical action counts and are not backfilled. Review migration history first if a local draft exists; do not blindly scaffold duplicate table creation. Connection strings remain in the existing user-secrets/environment configuration, never source control.
+For a combined migration, also verify `CommunityCreationQuotaRows` and its participant/time index. Inspect that Up creates `VoteActionQuotaRows` (Id PK, ParticipantId, OccurredAt, participant/time index), Down removes it, and the generated snapshot matches. Start with an empty ledger: existing current votes do not represent historical action counts and are not backfilled. Review migration history first if a local draft exists; do not blindly scaffold duplicate table creation. Connection strings remain in the existing user-secrets/environment configuration, never source control.
 
 ## Evidence and limitations
 
