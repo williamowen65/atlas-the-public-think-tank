@@ -82,6 +82,30 @@ public sealed class SqlWorkflowTests
             StringAssert.Contains(await quota.Content.ReadAsStringAsync(), "quota");
             await Success(await client.PutAsJsonAsync("/api/participants/me", new { displayName="Updated API participant", bio="Updated over HTTP" }));
             Assert.AreEqual(HttpStatusCode.Forbidden, (await client.GetAsync("/api/moderation/queue")).StatusCode);
+            await Success(await client.GetAsync("/api/nodes?page=1&searchText=HTTP"));
+            await Success(await client.PostAsJsonAsync($"/api/nodes/{node}/description/blocks", new { kind="markdown", text="Another block" }));
+            await Success(await client.GetAsync($"/api/nodes/{node}/description"));
+            await Success(await client.GetAsync("/api/notifications?size=20"));
+            await Success(await client.PostAsJsonAsync("/api/catalog/node-types", new { name="HTTP custom type", description="Created over HTTP", autoPluralize=true }));
+            await Success(await client.PostAsJsonAsync($"/api/moderation/nodes/{node}/reports", new { reason="Spam", explanation="Review this test node" }));
+            using (var scope = factory.Services.CreateScope())
+            {
+                var users = scope.ServiceProvider.GetRequiredService<UserManager<AtlasIdentityUser>>();
+                var user = (await users.FindByEmailAsync("api@example.test"))!;
+                Assert.IsTrue((await users.AddToRoleAsync(user, AtlasRoles.GlobalModerator)).Succeeded);
+            }
+            // Current stored roles are consulted even though the cookie predates this grant.
+            await Success(await client.GetAsync("/api/moderation/queue"));
+            await Success(await client.PostAsJsonAsync($"/api/moderation/nodes/{node}/decision", new { decision=1, rationale="Test moderation", reason=1 }));
+            using (var anonymous = factory.Browser())
+            {
+                var hidden = await anonymous.GetFromJsonAsync<JsonElement>($"/api/nodes/{node}");
+                Assert.IsTrue(hidden.GetProperty("hidden").GetBoolean());
+                Assert.IsFalse(hidden.TryGetProperty("title", out _));
+                Assert.AreEqual(HttpStatusCode.NotFound, (await anonymous.GetAsync($"/api/nodes/{node}/description")).StatusCode);
+                Assert.AreEqual(HttpStatusCode.NotFound, (await anonymous.GetAsync($"/api/nodes/{node}/comments")).StatusCode);
+            }
+            await Success(await client.PostAsJsonAsync($"/api/moderation/nodes/{node}/restore", new { text="Restore after test" }));
             await Success(await client.PostAsync("/api/auth/logout", null));
             Assert.AreEqual(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/auth/session")).StatusCode);
         }
