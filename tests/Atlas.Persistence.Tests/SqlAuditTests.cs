@@ -1,5 +1,8 @@
 using Atlas.Contracts.Observability;
 using Atlas.Persistence.Observability;
+using Atlas.Persistence.Identity;
+using Microsoft.Extensions.DependencyInjection;
+using System.Text.Json;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -177,6 +180,74 @@ public sealed class SqlAuditTests
             Assert.HasCount(1, destination.Received);
             using var check = open();
             Assert.IsNotNull((await check.AuditOutbox.SingleAsync()).DeliveredAtUtc);
+        });
+    }
+
+    [TestMethod]
+    public async Task Fifth_failed_attempt_starts_lockout_with_private_data_excluded_from_audit()
+    {
+        await WithDatabase(async open =>
+        {
+            using var operation = Telemetry.BeginOperation(); // Unverified caller, not the account owner.
+            using var db = open();
+            using var services = new ServiceCollection().AddLogging().AddSingleton(db)
+                .AddIdentityCore<AtlasIdentityUser>(options =>
+                {
+                    options.Lockout.MaxFailedAccessAttempts = 5;
+                    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+                }).AddEntityFrameworkStores<AtlasDataContext>().Services.BuildServiceProvider();
+            var users = services.GetRequiredService<UserManager<AtlasIdentityUser>>();
+            var user = new AtlasIdentityUser
+            {
+                Id = Guid.NewGuid(), UserName = "private-canary@example.test",
+                Email = "private-canary@example.test", EmailConfirmed = true, LockoutEnabled = true
+            };
+            // Identity user IDs reference existing Atlas Participants. Keep the fixture consistent
+            // with account registration rather than weakening the database relationship.
+            var now = DateTimeOffset.UtcNow;
+            db.ParticipantRows.Add(new ParticipantRow
+            {
+                Id = user.Id, DisplayName = "Lockout test participant", IsActive = true,
+                CreatedAt = now, UpdatedAt = now
+            });
+            await db.SaveChangesAsync();
+            Assert.IsTrue((await users.CreateAsync(user, "Private-canary-password-123!")).Succeeded);
+
+            // Exercise Identity's real failed-attempt counter and threshold, not a fabricated audit event.
+            for (var attempt = 1; attempt <= 4; attempt++)
+                Assert.IsTrue((await users.AccessFailedAsync(user)).Succeeded);
+            Assert.IsFalse(await users.IsLockedOutAsync(user));
+            var beforeThreshold = await db.AuditRecords.ToListAsync();
+            Assert.IsFalse(beforeThreshold.Any(row => row.PayloadJson.Contains("lockout_started")));
+
+            Assert.IsTrue((await users.AccessFailedAsync(user)).Succeeded);
+            Assert.IsTrue(await users.IsLockedOutAsync(user));
+            // Read from a new context to prove the evidence and delivery ticket were committed.
+            using (var check = open())
+            {
+                var records = await check.AuditRecords.Where(row => row.TargetId == user.Id).ToListAsync();
+                var started = records.Single(row => row.PayloadJson.Contains("lockout_started"));
+                Assert.AreEqual("identity.account_security_changed", started.EventName);
+                Assert.IsNull(started.ActorId); // A failed login never verifies the actor's identity.
+                using var json = JsonDocument.Parse(started.PayloadJson);
+                Assert.AreEqual("lockout_started", json.RootElement.GetProperty("action").GetString());
+                Assert.AreEqual(user.Id, json.RootElement.GetProperty("target_id").GetGuid());
+                Assert.IsTrue(await check.AuditOutbox.AnyAsync(row => row.AuditRecordId == started.Id));
+                foreach (var record in records)
+                {
+                    Assert.DoesNotContain("canary", record.PayloadJson);
+                    Assert.DoesNotContain(user.PasswordHash!, record.PayloadJson);
+                }
+                Console.WriteLine(started.PayloadJson);
+            }
+
+            // Extending an existing lockout changes its state but does not start another lockout.
+            Assert.IsTrue((await users.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow.AddMinutes(30))).Succeeded);
+            using var final = open();
+            var actions = (await final.AuditRecords.Where(row => row.TargetId == user.Id).ToListAsync())
+                .Select(row => JsonSerializer.Deserialize<JsonElement>(row.PayloadJson).GetProperty("action").GetString()).ToList();
+            Assert.AreEqual(1, actions.Count(action => action == "lockout_started"));
+            Assert.Contains("lockout_changed", actions);
         });
     }
 

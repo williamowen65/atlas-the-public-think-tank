@@ -236,6 +236,90 @@ public sealed class CommentTests
         );
     }
 
+    /// <summary>Rejection must preserve the comment, not merely throw an exception.</summary>
+    [TestMethod]
+    public void OutsiderEditAndRemovePreserveBodyStatusAndSaveCount()
+    {
+        var repo = new MemoryRepository();
+        var service = new CommentService(repo, new AvailableTargets(), new NoModerators());
+        var root = service.AddTopLevel(CommentTarget.Node(Guid.NewGuid()), Guid.NewGuid(), "Original", DateTimeOffset.UtcNow);
+        var before = (root.Body, root.Status, root.UpdatedAt);
+        var outsider = Guid.NewGuid();
+        Assert.ThrowsExactly<UnauthorizedAccessException>(() => service.Edit(root.Id, outsider, "Forbidden", root.CreatedAt.AddMinutes(1)));
+        Assert.ThrowsExactly<UnauthorizedAccessException>(() => service.Remove(root.Id, outsider, root.CreatedAt.AddMinutes(1)));
+        Assert.AreEqual(before, (root.Body, root.Status, root.UpdatedAt));
+        Assert.AreEqual(1, repo.SaveCalls);
+    }
+
+    /// <summary>An unavailable target rejects new comments and replies without growing the thread.</summary>
+    [TestMethod]
+    public void UnavailableTargetRejectsCreationAndReplyWithoutSaving()
+    {
+        var repo = new MemoryRepository();
+        var availability = new AvailableTargets();
+        var service = new CommentService(repo, availability, new NoModerators());
+        var target = CommentTarget.Node(Guid.NewGuid());
+        var root = service.AddTopLevel(target, Guid.NewGuid(), "Original", DateTimeOffset.UtcNow);
+        availability.Available = false;
+        Assert.ThrowsExactly<InvalidOperationException>(() => service.AddTopLevel(target, root.AuthorParticipantId, "Spam", root.CreatedAt.AddMinutes(1)));
+        Assert.ThrowsExactly<InvalidOperationException>(() => service.Reply(root.Id, root.AuthorParticipantId, "Spam", root.CreatedAt.AddMinutes(1)));
+        Assert.AreEqual(1, repo.SaveCalls);
+        Assert.HasCount(1, service.GetThread(target));
+    }
+
+    /// <summary>Depth is valid discussion structure, not an abuse verdict or a recursion limit.</summary>
+    [TestMethod]
+    public void DeepThreadRemainsReadableInOrderWithoutRecursion()
+    {
+        var repo = new MemoryRepository();
+        var target = CommentTarget.Node(Guid.NewGuid());
+        var actor = Guid.NewGuid();
+        var at = DateTimeOffset.UtcNow;
+        CommentId? parent = null;
+        const int count = 20_000;
+        for (var index = 0; index < count; index++)
+        {
+            var comment = new Comment(target, parent, actor, index.ToString(), at.AddTicks(index));
+            repo.Save(comment);
+            parent = comment.Id;
+        }
+        var service = new CommentService(repo, new AvailableTargets(), new NoModerators());
+        var thread = service.GetThread(target);
+        Assert.HasCount(count, thread);
+        Assert.AreEqual(0, thread[0].Depth);
+        Assert.AreEqual(count - 1, thread[^1].Depth);
+        Assert.AreEqual((count - 1).ToString(), thread[^1].Comment.Body);
+        Assert.AreEqual(count, repo.SaveCalls); // Reading adds no writes.
+    }
+
+    [TestMethod]
+    public void OrphanedStoredThreadIsReportedInsteadOfSilentlyOmittingComments()
+    {
+        var repo = new MemoryRepository();
+        var target = CommentTarget.Node(Guid.NewGuid());
+        repo.Save(new Comment(target, CommentId.New(), Guid.NewGuid(), "Orphan", DateTimeOffset.UtcNow));
+        var service = new CommentService(repo, new AvailableTargets(), new NoModerators());
+        Assert.ThrowsExactly<InvalidOperationException>(() => service.GetThread(target));
+        Assert.AreEqual(1, repo.SaveCalls);
+    }
+
+    [TestMethod]
+    public void DisconnectedStoredCycleFailsWithoutHidingCorruptReplies()
+    {
+        var repo = new MemoryRepository();
+        var target = CommentTarget.Node(Guid.NewGuid());
+        var actor = Guid.NewGuid();
+        var at = DateTimeOffset.UtcNow;
+        var first = CommentId.New();
+        var second = CommentId.New();
+        repo.Save(new Comment(target, null, actor, "Valid root", at));
+        repo.Save(Comment.Reconstitute(first, target, second, actor, "A", CommentStatus.Active, at, at, null));
+        repo.Save(Comment.Reconstitute(second, target, first, actor, "B", CommentStatus.Active, at, at, null));
+        var service = new CommentService(repo, new AvailableTargets(), new NoModerators());
+        Assert.ThrowsExactly<InvalidOperationException>(() => service.GetThread(target));
+        Assert.AreEqual(3, repo.SaveCalls);
+    }
+
     private sealed class AvailableTargets : ICommentTargetAvailability
     {
         public bool Available { get; set; } = true;
@@ -257,7 +341,8 @@ public sealed class CommentTests
         public IReadOnlyCollection<Comment> GetByTarget(CommentTarget target) =>
             _items.Values.Where(x => x.Target == target).ToList();
 
-        public void Save(Comment comment) => _items[comment.Id] = comment;
+        public int SaveCalls { get; private set; }
+        public void Save(Comment comment) { _items[comment.Id] = comment; SaveCalls++; }
     }
     private sealed class NoModerators : ICommentModeratorAuthorization
     {

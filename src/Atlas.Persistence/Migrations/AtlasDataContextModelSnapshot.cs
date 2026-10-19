@@ -119,6 +119,24 @@ namespace Atlas.Persistence.Migrations
                     b.ToTable("CommentRows", (string)null);
                 });
 
+            modelBuilder.Entity("Atlas.Persistence.CommunityCreationQuotaRow", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("ParticipantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParticipantId", "OccurredAt");
+
+                    b.ToTable("CommunityCreationQuotaRows", (string)null);
+                });
+
             modelBuilder.Entity("Atlas.Persistence.CommunityMembershipRow", b =>
                 {
                     b.Property<Guid>("CommunityId")
@@ -878,6 +896,42 @@ namespace Atlas.Persistence.Migrations
                         .HasDatabaseName("IX_ReactionDefinitionRows_CreatedByParticipantId");
 
                     b.ToTable("ReactionDefinitionRows", (string)null);
+                });
+
+            modelBuilder.Entity("Atlas.Persistence.ReportSubmissionQuotaRow", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("ParticipantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParticipantId", "OccurredAt");
+
+                    b.ToTable("ReportSubmissionQuotaRows", (string)null);
+                });
+
+            modelBuilder.Entity("Atlas.Persistence.VoteActionQuotaRow", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("ParticipantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParticipantId", "OccurredAt");
+
+                    b.ToTable("VoteActionQuotaRows", (string)null);
                 });
 
             modelBuilder.Entity("Atlas.Persistence.VoteRow", b =>

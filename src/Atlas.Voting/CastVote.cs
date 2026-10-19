@@ -29,8 +29,9 @@ namespace Atlas.Voting
             int voteValue
         )
         {
-            return OperationBoundary.Execute(
+            return VoteActionBoundary.Execute(
                 _voteRepository,
+                participantId,
                 () =>
             {
                 var now = AtlasTime.UtcNow;
@@ -44,6 +45,9 @@ namespace Atlas.Voting
                         participantId,
                         target
                     );
+
+                // Check before mutating an existing aggregate; Save rechecks/consumes atomically.
+                VoteActionBoundary.EnsureAllowed(_voteRepository, participantId);
 
                 if (existingVote is null)
                 {

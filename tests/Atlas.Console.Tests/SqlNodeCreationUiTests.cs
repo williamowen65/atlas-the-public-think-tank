@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 namespace Atlas.ConsoleApp.Tests;
 
 [TestClass]
+[DoNotParallelize] // Console input/output are process-wide, including when SQL tests are enabled.
 public sealed class SqlNodeCreationUiTests
 {
     [TestMethod]

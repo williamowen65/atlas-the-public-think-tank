@@ -1,0 +1,19 @@
+{
+  "solution": {
+    "path": "Atlas.sln",
+    "projects": [
+      "tests\\Atlas.Application.Tests\\Atlas.Application.Tests.csproj",
+      "tests\\Atlas.Comments.Tests\\Atlas.Comments.Tests.csproj",
+      "tests\\Atlas.Communities.Tests\\Atlas.Communities.Tests.csproj",
+      "tests\\Atlas.Console.Tests\\Atlas.Console.Tests.csproj",
+      "tests\\Atlas.Discovery.Tests\\Atlas.Discovery.Tests.csproj",
+      "tests\\Atlas.Graph.Tests\\Atlas.Graph.Tests.csproj",
+      "tests\\Atlas.Identity.Tests\\Atlas.Identity.Tests.csproj",
+      "tests\\Atlas.Moderation.Tests\\Atlas.Moderation.Tests.csproj",
+      "tests\\Atlas.Notifications.Tests\\Atlas.Notifications.Tests.csproj",
+      "tests\\Atlas.Participants.Tests\\Atlas.Participants.Tests.csproj",
+      "tests\\Atlas.Persistence.Tests\\Atlas.Persistence.Tests.csproj",
+      "tests\\Atlas.Voting.Tests\\Atlas.Voting.Tests.csproj"
+    ]
+  }
+}

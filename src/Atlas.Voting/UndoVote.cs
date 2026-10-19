@@ -32,8 +32,9 @@ namespace Atlas.Voting
             ParticipantId participantId
         )
         {
-            return OperationBoundary.Execute(
+            return VoteActionBoundary.Execute(
                 _voteRepository,
+                participantId,
                 () =>
             {
                 _mutationPolicy.EnsureAllowed(
@@ -52,6 +53,8 @@ namespace Atlas.Voting
                     return false;
                 }
 
+                // Missing-vote undo above is a no-op. A real undo consumes a new action.
+                VoteActionBoundary.EnsureAllowed(_voteRepository, participantId);
                 _voteRepository.Delete(existingVote.Id);
 
                 return true;

@@ -165,6 +165,77 @@ public sealed class WorkflowTests
         Assert.IsNotEmpty(store.Nodes.Values.Single().DomainEvents);
     }
 
+    /// <summary>A valid participant still cannot mutate a node owned by somebody else.</summary>
+    [TestMethod]
+    [DataRow("rename")]
+    [DataRow("archive")]
+    [DataRow("restore")]
+    [DataRow("attach")]
+    [DataRow("detach")]
+    public void RejectedNodeMutationLeavesStateAndEventsUnchanged(string command)
+    {
+        var store = new Store();
+        var node = Create(store);
+        node.ClearDomainEvents();
+        var outsider = Guid.NewGuid();
+        store.Participants.Add(outsider);
+        var before = (node.Title.Value, node.Status, node.UpdatedAt);
+        var parents = node.ParentNodeIds.ToArray();
+        var published = new Recorder(() => { });
+        var workflow = new NodeWorkflowService(store, published);
+
+        Assert.ThrowsExactly<UnauthorizedAccessException>(() =>
+        {
+            switch (command)
+            {
+                case "rename": workflow.Rename(node, outsider, "Forbidden"); break;
+                case "archive": workflow.Archive(node, outsider); break;
+                case "restore": workflow.Restore(node, outsider); break;
+                case "attach": workflow.Attach(node, NodeId.New(), outsider); break;
+                case "detach": workflow.Detach(node, NodeId.New(), outsider); break;
+            }
+        });
+
+        // Check both the caller's aggregate and observable workflow effects.
+        Assert.AreEqual(before, (node.Title.Value, node.Status, node.UpdatedAt));
+        CollectionAssert.AreEqual(parents, node.ParentNodeIds.ToArray());
+        Assert.IsEmpty(node.DomainEvents);
+        Assert.IsEmpty(published.Messages);
+        Assert.HasCount(1, store.Nodes);
+    }
+
+    /// <summary>Every description entry point enforces ownership before touching payload or composition.</summary>
+    [TestMethod]
+    [DataRow("add")]
+    [DataRow("update")]
+    [DataRow("move")]
+    [DataRow("remove")]
+    public void RejectedDescriptionMutationPreservesPayloadCompositionAndTimestamp(string command)
+    {
+        var store = new Store();
+        var node = Create(store);
+        var document = store.Documents.Values.Single();
+        var block = (MarkdownTextBlock)store.GetBlockById(document.BlockIds.Single())!;
+        var before = (block.Markdown, block.UpdatedAt, document.UpdatedAt);
+        var outsider = Guid.NewGuid();
+        store.Participants.Add(outsider);
+        var service = new NodeDescriptionService(store, store);
+
+        Assert.ThrowsExactly<UnauthorizedAccessException>(() =>
+        {
+            switch (command)
+            {
+                case "add": service.Add(node.Id, outsider, new MarkdownInput("Forbidden")); break;
+                case "update": service.Update(node.Id, outsider, block.Id, new MarkdownInput("Forbidden")); break;
+                case "move": service.Move(node.Id, outsider, block.Id, 0); break;
+                case "remove": service.Remove(node.Id, outsider, block.Id); break;
+            }
+        });
+        Assert.AreEqual(before, (block.Markdown, block.UpdatedAt, document.UpdatedAt));
+        CollectionAssert.AreEqual(new[] { block.Id }, document.BlockIds.ToArray());
+        Assert.HasCount(1, store.Blocks);
+    }
+
     private sealed class Recorder(Action onPublish) : Atlas.Contracts.Events.IEventPublisher
     {
         public List<object> Messages { get; } = [];

@@ -28,3 +28,70 @@ A requirement is Verified only when linked automated evidence supports its crite
 - Query performance for materialized Discovery/ancestry reads.
 
 Run the affected projects and SQL integration suite when behavior changes. Documentation-only updates require source-link, stale-reference, diagram-structure, and layout verification rather than new behavior tests.
+
+## Security negative paths
+
+Use the [negative-path inventory](../security/negative-paths/README.md) for reviewed rejection scenarios and existing evidence. Assert protected state and side effects after rejection, not just the exception. Real SQL rollback, quota concurrency and audit/outbox evidence require SQL integration tests. Rate-policy versus API-throttling responsibilities are recorded in [abuse prevention](../security/abuse-prevention/README.md).
+
+## Local parallel execution
+
+Use [Atlas.Rewrite.Tests.slnf](../../Atlas.Rewrite.Tests.slnf) to run all 12 rewrite test
+projects and build their dependencies without running the separate legacy CloudTests
+project. [parallel.runsettings](../../tests/parallel.runsettings) defaults to up to two
+testhost processes and two class workers per host. Build once, then run without building:
+
+```powershell
+dotnet build Atlas.Rewrite.Tests.slnf
+dotnet test Atlas.Rewrite.Tests.slnf --no-build --settings tests/parallel.runsettings -m:2
+```
+
+There are separate concurrency controls:
+
+| Control | What it limits |
+|---|---|
+| MSBuild `-m:N` | Concurrent project work; solution test projects can overlap |
+| `RunConfiguration.MaxCpuCount` | Testhost processes within each VSTest invocation, not a global CPU cap |
+| `MSTest.Parallelize.Workers` | Test workers inside each test assembly |
+
+A solution invocation can have one VSTest invocation per project. These controls can
+multiply; they do not pin cores or guarantee a global number of active tests. Start
+with two project slots and two class workers. On an eight-core machine, try four
+project slots with two class workers, then compare elapsed time and SQL/RAM usage:
+
+```powershell
+dotnet test Atlas.Rewrite.Tests.slnf --no-build --settings tests/parallel.runsettings -m:4 -- RunConfiguration.MaxCpuCount=1 MSTest.Parallelize.Workers=2
+```
+
+In Visual Studio, select **Test > Configure Run Settings > Select Solution Wide
+runsettings File** and choose `tests/parallel.runsettings`; enable **Run Tests In
+Parallel** in Test Explorer. The CLI MSBuild project limit does not configure the IDE.
+
+### What may overlap
+
+- Independent test projects have separate processes, so their static state and Console
+  streams are separate. Existing Graph, Participants, Voting, Application and Console
+  assembly parallelization remains; the settings file selects conservative class scope.
+- Communities, Comments, Discovery, Notifications and Moderation now opt into class-level
+  execution; each class's methods remain sequential.
+- Persistence classes can overlap because SQL fixtures create GUID-named databases
+  and independently clean up. `SqlNodeCreationQuotaTests` remains nonparallel because
+  it redirects Console streams. Its explicit concurrency scenarios still create their
+  own coordinated tasks.
+- Console fixtures that redirect input/output are marked `DoNotParallelize`, including
+  the SQL creation-UI fixture. MSTest runs opted-out fixtures separately from parallel
+  fixtures in the same assembly. Identity retains its assembly-wide sequential policy
+  pending a separate fixture review.
+
+`AtlasTime` and telemetry context/observer overrides use AsyncLocal rather than changing
+process-wide values. Do not infer that arbitrary new static state, environment changes
+or a shared EF DbContext is safe to parallelize. Mark new process-wide fixtures explicitly.
+
+SQL tests need the existing shared user secret or `ATLAS_SQL_TEST_CONNECTION_STRING`;
+a fast run containing SQL skips is not full SQL verification. More simultaneous
+database creation can become slower through SQL CPU, disk, memory or connection contention.
+No speedup is promised from raising the limits; compare runs on the same machine.
+GitHub's matrix already runs independent jobs; its hosted-runner capacity is separate
+from local settings. This change does not alter the CI matrix or workflow triggers.
+
+References: [MSTest execution controls](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-mstest-writing-tests-controlling-execution)
+and [runsettings process/worker configuration](https://learn.microsoft.com/en-us/visualstudio/test/configure-unit-tests-by-using-a-dot-runsettings-file).

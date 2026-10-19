@@ -14,3 +14,13 @@
 ## Review note
 
 Owner-managed community mutations have domain authorization. Create/join/leave rely on the host supplying the authenticated Participant ID. For node association, the current product behavior is now explicit: the **node author** may manage that node's community associations. The current Console enforces the Graph author gate before entering that workflow; a future API must preserve the same cross-boundary authorization before calling Communities.
+
+## Creation budget is separate from authorization
+
+An authenticated participant who may create a community must also have an available
+creation slot: **one creation per rolling 24 hours**, enforced by Communities policy
+and SQL persistence. Authentication/ownership checks remain necessary; a slot does
+not grant permission to act as another participant. Renaming, editing, archiving,
+restoring, joining/leaving and associating nodes do not consume creation slots.
+See [policy, enforcement and migration handoff](../abuse-prevention/README.md#community-creation-budget)
+and [quota regressions](../../../tests/Atlas.Persistence.Tests/SqlCommunityCreationQuotaTests.cs).

@@ -1,3 +1,4 @@
+using Atlas.Contracts.Operations;
 using System.Diagnostics;
 
 namespace Atlas.Contracts.Observability;
@@ -12,10 +13,10 @@ public enum EventKind
     NotificationChanged, DiscoveryRead, StorageWrite, AuditDelivery, NodeView
 }
 public enum EventOutcome { Succeeded, Denied, Failed, Conflict }
-public enum EventReason { None, NotAuthorized, InvalidInput, CredentialsRejected, LockedOut, NotAllowed, SecondFactorRequired, StorageConflict, InfrastructureFailure, CommitOutcomeUnknown, DeliveryUnavailable }
+public enum EventReason { None, NotAuthorized, InvalidInput, CredentialsRejected, LockedOut, NotAllowed, SecondFactorRequired, StorageConflict, InfrastructureFailure, CommitOutcomeUnknown, DeliveryUnavailable, QuotaExceeded }
 public enum PrivacyPolicy { Standard, ReadNoIdentityOrTarget }
 public enum ActorKind { Anonymous, Participant, System }
-public enum MutationAction { None, Created, Updated, Deleted, Hidden, Restored, Dismissed, ReviewRequested, RoleAssigned, RoleRemoved, PasswordChanged, EmailConfirmed, LockoutChanged, Linked, Unlinked, Archived, Activated, Deactivated, Renamed, TypeChanged }
+public enum MutationAction { None, Created, Updated, Deleted, Hidden, Restored, Dismissed, ReviewRequested, RoleAssigned, RoleRemoved, PasswordChanged, EmailConfirmed, LockoutChanged, Linked, Unlinked, Archived, Activated, Deactivated, Renamed, TypeChanged, LockoutStarted }
 public enum AuditModerationReason { Other, Spam, Harassment, UnsafeContent, OffTopic }
 
 /// <summary>Allowlisted event envelope. No free-form text or extension dictionary is accepted.</summary>
@@ -157,7 +158,7 @@ public static class Telemetry
             catch (Exception error)
             {
                 Record(Create(EventKind.NodeView,
-                    outcome: error is UnauthorizedAccessException ? EventOutcome.Denied : EventOutcome.Failed,
+                    outcome: error is UnauthorizedAccessException or OperationRejectedException ? EventOutcome.Denied : EventOutcome.Failed,
                     reason: Reason(error), durationMs: Stopwatch.GetElapsedTime(started).TotalMilliseconds));
                 throw;
             }
@@ -231,12 +232,13 @@ public static class Telemetry
         if (context is not null)
             lock (context.ReportedFailures)
                 if (!context.ReportedFailures.Add(error)) return;
-        Record(Create(kind, outcome: error is UnauthorizedAccessException ? EventOutcome.Denied : EventOutcome.Failed,
+        Record(Create(kind, outcome: error is UnauthorizedAccessException or OperationRejectedException ? EventOutcome.Denied : EventOutcome.Failed,
             reason: reason ?? Reason(error)));
     }
 
     public static EventReason Reason(Exception error) => error switch
     {
+        OperationRejectedException rejection => rejection.ReasonCode,
         UnauthorizedAccessException => EventReason.NotAuthorized,
         ArgumentException => EventReason.InvalidInput,
         _ => EventReason.InfrastructureFailure

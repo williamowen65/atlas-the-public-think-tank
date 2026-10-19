@@ -37,10 +37,9 @@ public sealed class ImageBlock : ContentBlock
             updatedAt
         )
     {
-        Url = Required(
+        Url = MediaUrl(
             url,
-            nameof(url),
-            500
+            nameof(url)
         );
         AltText = Required(
             altText,
@@ -61,10 +60,9 @@ public sealed class ImageBlock : ContentBlock
         DateTimeOffset changedAt
     )
     {
-        var validatedUrl = Required(
+        var validatedUrl = MediaUrl(
             url,
-            nameof(url),
-            500
+            nameof(url)
         );
         var validatedAltText = Required(
             altText,
