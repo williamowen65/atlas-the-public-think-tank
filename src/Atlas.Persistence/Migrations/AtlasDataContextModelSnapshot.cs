@@ -114,7 +114,8 @@ namespace Atlas.Persistence.Migrations
                     b.HasIndex("ParentCommentId")
                         .HasDatabaseName("IX_CommentRows_ParentCommentId");
 
-                    b.HasIndex("TargetKind", "TargetId");
+                    b.HasIndex("TargetKind", "TargetId", "ParentCommentId", "CreatedAt", "Id")
+                        .HasDatabaseName("IX_CommentRows_SiblingPage");
 
                     b.ToTable("CommentRows", (string)null);
                 });
