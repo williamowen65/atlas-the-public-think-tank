@@ -1,31 +1,62 @@
+# See HTTP-GUIDE.md and AUTHENTICATION.md before sending requests.
+# Keep cookies enabled; run one request at a time, with private variable values.
 @baseUrl = https://localhost:7240
-@csrfToken = REPLACE_FROM_CSRF_RESPONSE
-@email = demo01@example.test
+@csrfToken = REPLACE_WITH_CURRENT_PRINCIPAL_CSRF_TOKEN
+@email = REPLACE_WITH_LOCAL_EMAIL
 @password = REPLACE_WITH_LOCAL_PASSWORD
+@userId = REPLACE_WITH_CONFIRMATION_USER_GUID
+@confirmationToken = REPLACE_FROM_PRIVATE_MAIL_DROP
 
-### 200; retain the CSRF cookie and copy token into your private editor variable.
+### A1. Prepare anonymous token — Accounts.Csrf
+# 200; retain CSRF cookie and copy JSON token into private csrfToken.
 GET {{baseUrl}}/api/auth/csrf
 
-### 204 + HttpOnly session cookie; 400 without CSRF; 401 on unsuccessful sign-in.
-POST {{baseUrl}}/api/auth/login
-Content-Type: application/json
-X-CSRF-TOKEN: {{csrfToken}}
-
-{"email":"{{email}}","password":"{{password}}"}
-
-### Fetch a fresh CSRF token after login; keep cookies between requests.
-GET {{baseUrl}}/api/auth/csrf
-
-### 200 when authenticated; 401 without a valid session.
-GET {{baseUrl}}/api/auth/session
-
-### 204; refresh CSRF token after logout before logging in again.
-POST {{baseUrl}}/api/auth/logout
-X-CSRF-TOKEN: {{csrfToken}}
-
-### 202 with configured Development mail directory; 503 without delivery configuration.
+### A2. Optional development registration — Accounts.Register
+# 202 only with Development mail drop configured; 503 otherwise.
 POST {{baseUrl}}/api/auth/register
 Content-Type: application/json
 X-CSRF-TOKEN: {{csrfToken}}
 
-{"email":"{{email}}","password":"{{password}}","displayName":"HTTP participant"}
+{
+  "email": "{{email}}",
+  "password": "{{password}}",
+  "displayName": "HTTP participant"
+}
+
+### A3. Optional email confirmation — Accounts.Confirm
+# 204; use confirmation payload from private mail drop; this does not log in.
+POST {{baseUrl}}/api/auth/confirm-email
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{
+  "userId": "{{userId}}",
+  "token": "{{confirmationToken}}"
+}
+
+### A4. Sign in — Accounts.Login
+# 204 + session cookie on success; 401 generic denial.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### A5. Refresh token after login; replace csrfToken before sending writes
+# Same principal may reuse this token; do not reuse the anonymous token.
+GET {{baseUrl}}/api/auth/csrf
+
+### A6. Inspect session — Accounts.Session
+# 200 with a valid session; 401 otherwise.
+GET {{baseUrl}}/api/auth/session
+
+### A7. Sign out — Accounts.Logout
+# 204; session deletion cookies. Refresh anonymous CSRF afterwards.
+POST {{baseUrl}}/api/auth/logout
+X-CSRF-TOKEN: {{csrfToken}}
+
+### A8. Refresh anonymous token before another login or anonymous write
+GET {{baseUrl}}/api/auth/csrf

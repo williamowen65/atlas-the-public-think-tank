@@ -33,16 +33,28 @@ Run the affected projects and SQL integration suite when behavior changes. Docum
 
 Use the [negative-path inventory](../security/negative-paths/README.md) for reviewed rejection scenarios and existing evidence. Assert protected state and side effects after rejection, not just the exception. Real SQL rollback, quota concurrency and audit/outbox evidence require SQL integration tests. Rate-policy versus API-throttling responsibilities are recorded in [abuse prevention](../security/abuse-prevention/README.md).
 
+## Why the solution filter lives under tests
+
+`tests/Atlas.Rewrite.Tests.slnf` is a **solution filter**, not an application project
+or another copy of the code. It refers to `../Atlas.sln`, selects the 13 rewrite
+test projects, and builds their referenced application/domain dependencies.
+
+- Use it for a focused local rewrite test run or open it in Visual Studio.
+- It excludes the separate legacy CloudTests / old web application toolchain.
+- Its project paths are relative to the referenced solution, so they still start with `tests\`.
+- CI currently runs projects explicitly in its matrix; the filter is a local convenience.
+- Keeping it under `tests/` groups test selection beside `parallel.runsettings`.
+
 ## Local parallel execution
 
-Use [Atlas.Rewrite.Tests.slnf](../../Atlas.Rewrite.Tests.slnf) to run all 12 rewrite test
+Use [Atlas.Rewrite.Tests.slnf](../../tests/Atlas.Rewrite.Tests.slnf) to run all 13 rewrite test
 projects and build their dependencies without running the separate legacy CloudTests
 project. [parallel.runsettings](../../tests/parallel.runsettings) defaults to up to two
 testhost processes and two class workers per host. Build once, then run without building:
 
 ```powershell
-dotnet build Atlas.Rewrite.Tests.slnf
-dotnet test Atlas.Rewrite.Tests.slnf --no-build --settings tests/parallel.runsettings -m:2
+dotnet build tests/Atlas.Rewrite.Tests.slnf
+dotnet test tests/Atlas.Rewrite.Tests.slnf --no-build --settings tests/parallel.runsettings -m:2
 ```
 
 There are separate concurrency controls:
@@ -59,7 +71,7 @@ with two project slots and two class workers. On an eight-core machine, try four
 project slots with two class workers, then compare elapsed time and SQL/RAM usage:
 
 ```powershell
-dotnet test Atlas.Rewrite.Tests.slnf --no-build --settings tests/parallel.runsettings -m:4 -- RunConfiguration.MaxCpuCount=1 MSTest.Parallelize.Workers=2
+dotnet test tests/Atlas.Rewrite.Tests.slnf --no-build --settings tests/parallel.runsettings -m:4 -- RunConfiguration.MaxCpuCount=1 MSTest.Parallelize.Workers=2
 ```
 
 In Visual Studio, select **Test > Configure Run Settings > Select Solution Wide

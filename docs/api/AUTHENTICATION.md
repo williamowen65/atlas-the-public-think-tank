@@ -1,35 +1,100 @@
 # Cookies, CSRF and accounts
 
-[Back to the API starting guide](README.md).
+[API start](README.md) · [Workflow blackboard](../blackboards/workflows/Api/ApiWorkflows.excalidraw) · [Request guide](HTTP-GUIDE.md)
 
-## Browser authentication
+## Start here: two different pieces of state
 
-A successful password login issues an eight-hour, non-sliding HttpOnly, Secure,
-SameSite=Lax `__Host-Atlas.Session` cookie. The server validates the account and
-active profile; protected policies check current persisted roles. JavaScript does
-not need to store the session in localStorage. The API returns 401/403 instead of
-redirecting to an HTML login page.
+| Piece | Held by | Purpose |
+|---|---|---|
+| `__Host-Atlas.Session` | Browser cookie jar; HttpOnly | Identify the signed-in account |
+| `__Host-Atlas.Csrf` | Browser cookie jar; HttpOnly | One half of the antiforgery pair |
+| JSON `token` → `X-CSRF-TOKEN` | Client memory / private HTTP editor variable | The other half, submitted explicitly on writes |
 
-Before any POST/PUT/DELETE, including login, obtain `/api/auth/csrf`. Keep the
-antiforgery cookie and send the returned token in `X-CSRF-TOKEN`. Fetch a fresh
-token after login/logout because the token is bound to the authenticated identity.
-The CSRF cookie is Secure, HttpOnly and SameSite=Strict. SameSite is defense in
-depth; it does not replace token validation. The SPA can read the JSON token.
+- **Session cookie:** Secure, SameSite=Lax; the encrypted ticket expires after eight hours.
+  - Login is non-persistent: this is a browser-session cookie, rather than a “remember me” cookie.
+  - Expiration does not slide forward with activity.
+  - Identity validates the account; protected policies check persisted roles.
+- **CSRF cookie:** Secure, HttpOnly, SameSite=Strict.
+  - JavaScript reads the token from the JSON response, not from this cookie.
+  - The browser sends the cookie; the client explicitly sends the matching header.
+- Do not store the session cookie in localStorage or copy it into request JSON.
 
-The built-in ASP.NET Core `AutoValidateAntiforgeryToken` policy is applied globally
-and explicitly on controllers. Missing or invalid tokens return HTTP 400 with
-`A valid CSRF token is required.` in the JSON problem title. Controller attributes
-make the policy visible to CodeQL; they are executable protection, not scanner
-suppression comments. See [the code guide](CODE-GUIDE.md) for service registration.
+## Sign in, use the API, then sign out
 
-Sign-in requires confirmed email; registration creates an unconfirmed account.
-For local development only, configure
-`Atlas:DevelopmentMailDirectory` in user secrets to a private directory outside
-the checkout; registration writes the confirmation payload there. Submit it to
-`/api/auth/confirm-email`. These are account-bearing secrets; restrict access and
-delete them after use. Tokens are not returned in JSON or application logs.
-Without development delivery configured, registration fails with 503 before
-creating an account. Production email delivery/recovery is not silently simulated.
-Two-factor enrollment/challenges remain PTT-127; accounts requiring 2FA are denied
-rather than bypassing the second factor.
+Use [auth.http](auth.http), keeping the same client cookie jar throughout.
 
+1. **Prepare anonymously:** `GET /api/auth/csrf`.
+   - Retain the returned cookie.
+   - Copy JSON `token` into your private `csrfToken` variable.
+2. **Sign in:** `POST /api/auth/login`.
+   - Send email/password JSON and `X-CSRF-TOKEN`.
+   - Success: **204**, with the session cookie set by Identity.
+   - Failure: **401**, with a generic sign-in message.
+3. **Refresh after login:** `GET /api/auth/csrf`.
+   - Replace the header variable with this token: tokens are bound to the current principal.
+   - You do not need a fresh token before every write while the principal remains unchanged.
+4. **Use the session:** `GET /api/auth/session`, then your workflow requests.
+   - Reads generally need no CSRF header; protected reads still need the session.
+   - POST/PUT/DELETE requests need the session when protected **and** the CSRF pair.
+5. **Sign out:** `POST /api/auth/logout`, with the current session and CSRF pair.
+   - Success: **204**; Identity sends deletion cookies for its session.
+   - Honor those `Set-Cookie` responses; the client cookie jar removes the session.
+6. **Return to anonymous state:** clear your client-side user state and cached token.
+   - Fetch `GET /api/auth/csrf` again before another anonymous write or login.
+   - Logout does not promise to delete the separate CSRF cookie; refreshing the token is what matters.
+
+If the session expires or becomes invalid:
+
+- A protected request returns **401** rather than redirecting to an HTML login page.
+- Refresh the anonymous CSRF token, sign in again, then refresh the authenticated token.
+- **403** means an authenticated caller lacks permission; signing in again does not grant ownership or a role.
+- **400** with `A valid CSRF token is required.` means the cookie/header token pair is missing, invalid or belongs to a different principal.
+
+Logout clears this client's cookie. It is not a new server-side “revoke every copied cookie on every device” facility.
+
+## What CSRF protection prevents
+
+A malicious website can try to make a visitor's browser submit a request to Atlas.
+Browsers can attach cookies automatically, so the existence of a session cookie
+alone does not establish that Atlas's own client intended a write.
+
+- Atlas requires a second value that the legitimate client obtains from `/api/auth/csrf`.
+- A different origin cannot normally read that JSON response under the browser's same-origin policy.
+- The attacker therefore cannot simply supply a valid cookie/header pair on the victim's behalf.
+- Login and registration are protected too: a forced login can attach the victim's later actions to an attacker's account.
+- SameSite cookies provide another defense; they do not replace token validation.
+
+**Why the policy is everywhere:** it protects unsafe controller requests by default,
+including future actions. It does not demand a token for normal GET reads.
+
+- ASP.NET Core's built-in `AutoValidateAntiforgeryToken` is registered globally.
+- Explicit controller attributes expose the same policy to readers and CodeQL.
+- `AntiforgeryProblemDetailsFilter` only formats rejection as JSON; the framework validates tokens.
+- These checks do not replace authentication, authorization, quotas, or protection against XSS.
+- The future SPA's origin/CORS/cookie deployment still needs its own review.
+
+## Create and confirm a local development account
+
+Registration is currently a **Development-only** path, pending a production mail provider.
+
+1. Configure `Atlas:DevelopmentMailDirectory` in user secrets.
+   - Choose a private directory outside the checkout.
+   - Without it, registration returns **503 before creating an account**.
+2. Fetch an anonymous CSRF token, then `POST /api/auth/register`.
+   - Success: **202**; the account is unconfirmed.
+3. Read the confirmation payload in that private directory.
+   - Copy `userId` and `token` into private HTTP editor variables.
+   - The confirmation token is different from the CSRF token.
+4. Send `POST /api/auth/confirm-email` with the confirmation payload **and** the anonymous CSRF pair.
+   - Success: **204**. Confirmation does not sign the user in.
+5. Follow the sign-in sequence above.
+
+Treat confirmation files as account-bearing secrets: restrict access and delete
+them after use. Do not commit passwords, cookies, CSRF tokens or confirmation tokens.
+Confirmation tokens are not returned by registration JSON or written to application logs.
+
+## Still outside this slice
+
+- Production email delivery and password recovery.
+- Shared durable encrypted Data Protection keys for production instances.
+- Two-factor enrollment/challenges: **PTT-127**. Accounts requiring a second factor are denied rather than bypassing it.

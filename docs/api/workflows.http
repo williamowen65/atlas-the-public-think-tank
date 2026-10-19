@@ -1,70 +1,482 @@
+# Complete non-account route examples; see HTTP-GUIDE.md for prerequisites.
+# Choose optional cycles deliberately. Mutations alter the shared development DB.
+# Use the same cookie jar as auth.http, and a fresh token after switching users.
 @baseUrl = https://localhost:7240
-@csrfToken = REPLACE_WITH_CURRENT_PRINCIPAL_TOKEN
+@csrfToken = REPLACE_WITH_AUTHENTICATED_CSRF_TOKEN
 @nodeId = REPLACE_WITH_NODE_GUID
 @typeId = REPLACE_WITH_TYPE_GUID
+@parentId = REPLACE_WITH_PARENT_GUID
+@blockId = REPLACE_WITH_BLOCK_GUID
 @commentId = REPLACE_WITH_COMMENT_GUID
 @communityId = REPLACE_WITH_COMMUNITY_GUID
+@participantId = REPLACE_WITH_PARTICIPANT_GUID
+@associationId = REPLACE_WITH_ASSOCIATION_GUID
+@reactionId = REPLACE_WITH_REACTION_GUID
+@notificationId = REPLACE_WITH_NOTIFICATION_GUID
+@afterAt = REPLACE_WITH_NEXT_AFTERAT_TIMESTAMP
+@afterId = REPLACE_WITH_NEXT_AFTERID_GUID
 
-### Public paged Discovery. 200; query validation produces 400.
+# 1. Discovery and navigation
+# ------------------------------------------------------------
+
+### 1.1 — Navigation.Children
+# 200 on success; permission and domain state checks apply.
+GET {{baseUrl}}/api/nodes/{{nodeId}}/children?offset=0&size=20
+
+### 1.2 — Navigation.Ancestors
+# 200 on success; permission and domain state checks apply.
+GET {{baseUrl}}/api/nodes/{{nodeId}}/ancestors?firstParent={{parentId}}
+
+### 1.3 — Navigation.Votes
+# 200 on success; permission and domain state checks apply.
+GET {{baseUrl}}/api/nodes/{{nodeId}}/votes
+
+### 1.4 — Navigation.Reactions
+# 200 on success; permission and domain state checks apply.
+GET {{baseUrl}}/api/nodes/{{nodeId}}/reactions
+
+### 1.5 — Nodes.Discover
+# 200 on success; permission and domain state checks apply.
 GET {{baseUrl}}/api/nodes?page=1&searchText=Atlas
 
-### Public node type catalog; select an active type ID for creation.
-GET {{baseUrl}}/api/catalog/node-types
+### 1.6 — Nodes.Mine
+# 200 on success; permission and domain state checks apply.
+GET {{baseUrl}}/api/nodes/mine?page=1
 
-### 201; authenticated author comes from session, never request JSON.
+### 1.7 — Nodes.Types
+# 200 on success; permission and domain state checks apply.
+GET {{baseUrl}}/api/nodes/types
+
+### 1.8 — Nodes.Get
+# 200 on success; permission and domain state checks apply.
+GET {{baseUrl}}/api/nodes/{{nodeId}}
+
+# 2. Node creation, types, parents and lifecycle
+# ------------------------------------------------------------
+
+### 2.1 — Nodes.Create
+# 201; copy response id into nodeId. Domain creation quotas still apply.
 POST {{baseUrl}}/api/nodes
 Content-Type: application/json
 X-CSRF-TOKEN: {{csrfToken}}
 
-{"title":"An HTTP idea","markdown":"A description","typeId":"{{typeId}}","requestedTypeIds":[]}
+{
+  "title": "An HTTP idea",
+  "markdown": "A description",
+  "typeId": "{{typeId}}",
+  "parentId": null,
+  "requestedTypeIds": []
+}
 
-### 200; hidden public node details are replaced by a notice.
-GET {{baseUrl}}/api/nodes/{{nodeId}}
-
-### 204; 403 for another author.
+### 2.2 — Nodes.Rename
+# 204 on success; permission and domain state checks apply.
 PUT {{baseUrl}}/api/nodes/{{nodeId}}/title
 Content-Type: application/json
 X-CSRF-TOKEN: {{csrfToken}}
 
-{"text":"Updated title"}
+{
+  "text": "Updated title"
+}
 
-### 204; existing domain vote-action quota produces 429 with Retry-After.
+### 2.3 — Nodes.Archive
+# 204; author archives their node. This is different from moderator hiding.
+POST {{baseUrl}}/api/nodes/{{nodeId}}/archive
+X-CSRF-TOKEN: {{csrfToken}}
+
+### 2.4 — Nodes.Restore
+# 204; author restores their own archived node.
+POST {{baseUrl}}/api/nodes/{{nodeId}}/restore
+X-CSRF-TOKEN: {{csrfToken}}
+
+### 2.5 — Nodes.Attach
+# 204; valid parent required; Graph checks topology/cycles.
+PUT {{baseUrl}}/api/nodes/{{nodeId}}/parents/{{parentId}}
+X-CSRF-TOKEN: {{csrfToken}}
+
+### 2.6 — Nodes.Detach
+# 204; remove this parent link, not the parent node.
+DELETE {{baseUrl}}/api/nodes/{{nodeId}}/parents/{{parentId}}
+X-CSRF-TOKEN: {{csrfToken}}
+
+### 2.7 — Nodes.Type
+# 204 on success; permission and domain state checks apply.
+PUT {{baseUrl}}/api/nodes/{{nodeId}}/type/{{typeId}}
+X-CSRF-TOKEN: {{csrfToken}}
+
+### 2.8 — Nodes.RequestType
+# 204; request a child type allowed by the complete Graph proposal.
+PUT {{baseUrl}}/api/nodes/{{nodeId}}/requested-types/{{typeId}}
+X-CSRF-TOKEN: {{csrfToken}}
+
+### 2.9 — Nodes.WithdrawType
+# 204; withdraw a requested child type.
+DELETE {{baseUrl}}/api/nodes/{{nodeId}}/requested-types/{{typeId}}
+X-CSRF-TOKEN: {{csrfToken}}
+
+# 3. Description block composition
+# ------------------------------------------------------------
+
+### 3.1 — Content.Read
+# 200 on success; permission and domain state checks apply.
+GET {{baseUrl}}/api/nodes/{{nodeId}}/description
+
+### 3.2 — Content.Add
+# 200 on success; permission and domain state checks apply.
+POST {{baseUrl}}/api/nodes/{{nodeId}}/description/blocks
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{
+  "kind": "markdown",
+  "text": "A new block",
+  "index": 0
+}
+
+### 3.3 — Content.Update
+# 200 on success; permission and domain state checks apply.
+PUT {{baseUrl}}/api/nodes/{{nodeId}}/description/blocks/{{blockId}}
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{
+  "kind": "markdown",
+  "text": "Updated block"
+}
+
+### 3.4 — Content.Move
+# 204 on success; permission and domain state checks apply.
+PUT {{baseUrl}}/api/nodes/{{nodeId}}/description/blocks/{{blockId}}/position
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{
+  "index": 0
+}
+
+### 3.5 — Content.Remove
+# 204 on success; permission and domain state checks apply.
+DELETE {{baseUrl}}/api/nodes/{{nodeId}}/description/blocks/{{blockId}}
+X-CSRF-TOKEN: {{csrfToken}}
+
+# 4. Ratings and reactions
+# ------------------------------------------------------------
+
+### 4.1 — Votes.Vote
+# 204; cast/change a 0–10 rating; each mutation is subject to the action quota.
 PUT {{baseUrl}}/api/nodes/{{nodeId}}/vote
 Content-Type: application/json
 X-CSRF-TOKEN: {{csrfToken}}
 
-{"value":7}
+{
+  "value": 7
+}
 
-### 204; undo consumes an action and does not refund earlier quota.
+### 4.2 — Votes.Undo
+# 204; undo consumes an action, without refunding earlier quota.
 DELETE {{baseUrl}}/api/nodes/{{nodeId}}/vote
 X-CSRF-TOKEN: {{csrfToken}}
 
-### 200; roots only. Follow next.afterAt/afterId as a pair.
+### 4.3 — Votes.Reaction
+# 204; apply/vote on a reaction by text. Select an existing catalog text.
+PUT {{baseUrl}}/api/nodes/{{nodeId}}/reactions/vote
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{
+  "text": "Useful",
+  "value": 1
+}
+
+### 4.4 — Votes.UndoReaction
+# 204; use associationId from the node reaction read, not the definition ID.
+DELETE {{baseUrl}}/api/reactions/{{associationId}}/vote
+X-CSRF-TOKEN: {{csrfToken}}
+
+# 5. Comments and replies
+# ------------------------------------------------------------
+
+### 5.1 — Comments.Page
+# 200; roots only; use the extra examples below for replies and the next page.
 GET {{baseUrl}}/api/nodes/{{nodeId}}/comments?size=20
 
-### 200; direct replies only, not the entire descendant tree.
-GET {{baseUrl}}/api/nodes/{{nodeId}}/comments?parent={{commentId}}&size=20
-
-### 200; author comes from the cookie.
+### 5.2 — Comments.Add
+# 200 on success; permission and domain state checks apply.
 POST {{baseUrl}}/api/nodes/{{nodeId}}/comments
 Content-Type: application/json
 X-CSRF-TOKEN: {{csrfToken}}
 
-{"body":"A comment through HTTP"}
+{
+  "body": "A root comment"
+}
 
-### 200; domain quota allows one creation per rolling 24 hours.
+### 5.3 — Comments.Reply
+# 200 on success; permission and domain state checks apply.
+POST {{baseUrl}}/api/comments/{{commentId}}/replies
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{
+  "body": "A reply"
+}
+
+### 5.4 — Comments.Edit
+# 204 on success; permission and domain state checks apply.
+PUT {{baseUrl}}/api/comments/{{commentId}}
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{
+  "body": "Edited comment"
+}
+
+### 5.5 — Comments.Remove
+# 204; retain a removed placeholder, not its body.
+DELETE {{baseUrl}}/api/comments/{{commentId}}
+X-CSRF-TOKEN: {{csrfToken}}
+
+### 5.extra. Expand only this comment’s direct replies
+GET {{baseUrl}}/api/nodes/{{nodeId}}/comments?parent={{commentId}}&size=20
+
+### 5.extra. Next roots page; copy both next cursor fields from previous response
+# Keep node and parent scope unchanged. Stop when next is null.
+GET {{baseUrl}}/api/nodes/{{nodeId}}/comments?size=20&afterAt={{afterAt}}&afterId={{afterId}}
+
+# 6. Communities and membership
+# ------------------------------------------------------------
+
+### 6.1 — Communities.Page
+# 200 on success; permission and domain state checks apply.
+GET {{baseUrl}}/api/communities?offset=0&size=20
+
+### 6.2 — Communities.Get
+# 200 on success; permission and domain state checks apply.
+GET {{baseUrl}}/api/communities/{{communityId}}
+
+### 6.3 — Communities.Nodes
+# 200 on success; permission and domain state checks apply.
+GET {{baseUrl}}/api/communities/{{communityId}}/nodes?offset=0&size=20
+
+### 6.4 — Communities.Create
+# 200; copy id into communityId. One creation per rolling 24 hours.
 POST {{baseUrl}}/api/communities
 Content-Type: application/json
 X-CSRF-TOKEN: {{csrfToken}}
 
-{"name":"HTTP community","description":"A shared discussion"}
+{
+  "name": "HTTP community",
+  "description": "A shared discussion"
+}
 
-### 204; join the existing community.
+### 6.5 — Communities.Rename
+# 204 on success; permission and domain state checks apply.
+PUT {{baseUrl}}/api/communities/{{communityId}}/name
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{
+  "text": "Renamed community"
+}
+
+### 6.6 — Communities.Describe
+# 204 on success; permission and domain state checks apply.
+PUT {{baseUrl}}/api/communities/{{communityId}}/description
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{
+  "text": "Updated community description"
+}
+
+### 6.7 — Communities.Archive
+# 204 on success; permission and domain state checks apply.
+POST {{baseUrl}}/api/communities/{{communityId}}/archive
+X-CSRF-TOKEN: {{csrfToken}}
+
+### 6.8 — Communities.Restore
+# 204 on success; permission and domain state checks apply.
+POST {{baseUrl}}/api/communities/{{communityId}}/restore
+X-CSRF-TOKEN: {{csrfToken}}
+
+### 6.9 — Communities.Join
+# 204 on success; permission and domain state checks apply.
 PUT {{baseUrl}}/api/communities/{{communityId}}/membership
 X-CSRF-TOKEN: {{csrfToken}}
 
-### 200; only this participant's in-app notifications.
-GET {{baseUrl}}/api/notifications?size=20
+### 6.10 — Communities.Leave
+# 204 on success; permission and domain state checks apply.
+DELETE {{baseUrl}}/api/communities/{{communityId}}/membership
+X-CSRF-TOKEN: {{csrfToken}}
 
-### 200 for GlobalModerator; 403 for ordinary Member; 401 anonymous.
+### 6.11 — Communities.Associate
+# 204 on success; permission and domain state checks apply.
+PUT {{baseUrl}}/api/communities/{{communityId}}/nodes/{{nodeId}}
+X-CSRF-TOKEN: {{csrfToken}}
+
+### 6.12 — Communities.Disassociate
+# 204; current API requires the community owner.
+DELETE {{baseUrl}}/api/communities/{{communityId}}/nodes/{{nodeId}}
+X-CSRF-TOKEN: {{csrfToken}}
+
+# 7. Shared catalogs
+# ------------------------------------------------------------
+
+### 7.1 — Catalog.Types
+# 200 on success; permission and domain state checks apply.
+GET {{baseUrl}}/api/catalog/node-types
+
+### 7.2 — Catalog.CreateType
+# 200 on success; permission and domain state checks apply.
+POST {{baseUrl}}/api/catalog/node-types
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{
+  "name": "HTTP example type",
+  "description": "A custom type",
+  "autoPluralize": true
+}
+
+### 7.3 — Catalog.UpdateType
+# 204 on success; permission and domain state checks apply.
+PUT {{baseUrl}}/api/catalog/node-types/{{typeId}}
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{
+  "name": "HTTP edited type",
+  "description": "Updated type",
+  "autoPluralize": true
+}
+
+### 7.4 — Catalog.Archive
+# 204; use a mutable user-created type, not a system definition.
+POST {{baseUrl}}/api/catalog/node-types/{{typeId}}/archive
+X-CSRF-TOKEN: {{csrfToken}}
+
+### 7.5 — Catalog.Reactions
+# 200 on success; permission and domain state checks apply.
+GET {{baseUrl}}/api/catalog/reactions
+
+### 7.6 — Catalog.CreateReaction
+# 200 on success; permission and domain state checks apply.
+POST {{baseUrl}}/api/catalog/reactions
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{
+  "text": "Useful",
+  "emoji": "💡",
+  "description": "Adds useful information"
+}
+
+### 7.7 — Catalog.Suppress
+# 204; requires GlobalModerator.
+POST {{baseUrl}}/api/catalog/reactions/{{reactionId}}/suppress
+X-CSRF-TOKEN: {{csrfToken}}
+
+# 8. Profiles
+# ------------------------------------------------------------
+
+### 8.1 — Participants.Page
+# 200 on success; permission and domain state checks apply.
+GET {{baseUrl}}/api/participants?offset=0&size=20
+
+### 8.2 — Participants.Get
+# 200 on success; permission and domain state checks apply.
+GET {{baseUrl}}/api/participants/{{participantId}}
+
+### 8.3 — Participants.Update
+# 200 on success; permission and domain state checks apply.
+PUT {{baseUrl}}/api/participants/me
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{
+  "displayName": "HTTP participant",
+  "bio": "Exploring Atlas"
+}
+
+# 9. Reporting and moderation
+# ------------------------------------------------------------
+
+### 9.1 — Moderation.Report
+# 200; legitimate member report; domain report quota still applies.
+POST {{baseUrl}}/api/moderation/nodes/{{nodeId}}/reports
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{
+  "reason": "Spam",
+  "explanation": "Example report: replace with a legitimate reason."
+}
+
+### 9.2 — Moderation.Review
+# 204; author edits a hidden node before requesting review.
+POST {{baseUrl}}/api/moderation/nodes/{{nodeId}}/review
+X-CSRF-TOKEN: {{csrfToken}}
+
+### 9.3 — Moderation.Queue
+# 200; requires GlobalModerator; reports are grouped by node.
 GET {{baseUrl}}/api/moderation/queue
+
+### 9.4 — Moderation.History
+# 200; requires GlobalModerator.
+GET {{baseUrl}}/api/moderation/nodes/{{nodeId}}/history
+
+### 9.5 — Moderation.Decide
+# 204; GlobalModerator. decision 0=Dismiss, 1=HideNode; reason 1=Spam.
+POST {{baseUrl}}/api/moderation/nodes/{{nodeId}}/decision
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{
+  "decision": 1,
+  "rationale": "Example moderator rationale",
+  "reason": 1
+}
+
+### 9.6 — Moderation.Restore
+# 204; GlobalModerator; follow the required author-edit/review-request path.
+POST {{baseUrl}}/api/moderation/nodes/{{nodeId}}/restore
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{
+  "text": "Restored after author revision"
+}
+
+# 10. Notifications and preferences
+# ------------------------------------------------------------
+
+### 10.1 — Notifications.Page
+# 200 on success; permission and domain state checks apply.
+GET {{baseUrl}}/api/notifications?offset=0&size=20
+
+### 10.2 — Notifications.Read
+# 204 on success; permission and domain state checks apply.
+PUT {{baseUrl}}/api/notifications/{{notificationId}}/read
+X-CSRF-TOKEN: {{csrfToken}}
+
+### 10.3 — Notifications.Dismiss
+# 204 on success; permission and domain state checks apply.
+DELETE {{baseUrl}}/api/notifications/{{notificationId}}
+X-CSRF-TOKEN: {{csrfToken}}
+
+### 10.4 — Notifications.Preferences
+# 200 on success; permission and domain state checks apply.
+GET {{baseUrl}}/api/notifications/preferences
+
+### 10.5 — Notifications.Preferences
+# 204 on success; permission and domain state checks apply.
+PUT {{baseUrl}}/api/notifications/preferences
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{
+  "discussionInApp": true,
+  "moderationInApp": true,
+  "discussionEmail": false,
+  "moderationEmail": false,
+  "discussionPush": false,
+  "moderationPush": false
+}

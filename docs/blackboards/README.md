@@ -46,6 +46,8 @@ The [Node creation board](workflows/Nodes/NodeCreation.excalidraw) restores the 
 
 - [Observability process flow](workflows/Observability/ObservabilityProcessFlow.excalidraw) follows startup, scope boundaries, decisions, signal creation and audit delivery. [Observability UML](workflows/Observability/ObservabilityUml.excalidraw) explains responsibilities and patterns. See the [diagram guide](workflows/Observability/DIAGRAMS.md).
 
+- [API endpoint workflows](workflows/Api/ApiWorkflows.excalidraw) follows users through sessions, CSRF, the middleware pipeline and grouped resource cycles. See the [numbered reading guide](workflows/Api/README.md) and linked manual HTTP examples.
+
 ## Legend
 
 - Solid borders and arrows represent implemented components or interactions.

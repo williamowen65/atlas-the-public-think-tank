@@ -1,5 +1,7 @@
 # Console / HTTP workflow map
 
+[Visual workflow tour](../blackboards/workflows/Api/README.md) · [Complete endpoint index](ENDPOINTS.md) · [Send the requests](HTTP-GUIDE.md)
+
 The API reuses application transactions, topology coordination, events and durable
 quotas. Navigation menus become resource URLs; session state becomes an Identity
 cookie. Frontend controls and developer-only database inspection are not API parity

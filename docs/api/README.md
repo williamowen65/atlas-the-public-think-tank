@@ -37,7 +37,11 @@ Use [auth.http](auth.http) in your editor to obtain a CSRF token and sign in. Ke
 cookies between requests, then obtain a fresh CSRF token after login. The browser
 sends the session cookie; write requests also send `X-CSRF-TOKEN`.
 
-[workflows.http](workflows.http) contains node, voting, comment and community examples.
+Use the [workflow blackboard](../blackboards/workflows/Api/ApiWorkflows.excalidraw)
+to follow session, CSRF, middleware and grouped endpoint cycles.
+
+[workflows.http](workflows.http) covers every non-account controller route. The
+[request guide](HTTP-GUIDE.md) explains prerequisites, IDs and optional cycles.
 Fill placeholders in private editor settings; do not commit real passwords, cookies
 or tokens. See [authentication explained](AUTHENTICATION.md) for the full sequence,
 local email confirmation, cookie lifetime and remaining production work.
@@ -46,6 +50,9 @@ local email confirmation, cookie lifetime and remaining production work.
 
 | You want to understand… | Start here |
 |---|---|
+| A visual tour of endpoints, sessions and CSRF | [Blackboard guide](../blackboards/workflows/Api/README.md) |
+| How to send each example request | [HTTP request guide](HTTP-GUIDE.md) |
+| Every controller method and its HTTP example | [Endpoint index](ENDPOINTS.md) |
 | What Program, dependency injection and ApiFactory do | [Code walkthrough](CODE-GUIDE.md) |
 | Which console workflows have HTTP routes | [Workflow map](WORKFLOWS.md) |
 | Cookies, login and CSRF | [Authentication](AUTHENTICATION.md) |
@@ -60,7 +67,7 @@ framework nor static-file hosting; cross-origin cookies/CORS need a separate rev
 
 ```powershell
 dotnet test tests/Atlas.Api.Tests
-dotnet test Atlas.Rewrite.Tests.slnf --settings tests/parallel.runsettings
+dotnet test tests/Atlas.Rewrite.Tests.slnf --settings tests/parallel.runsettings
 ```
 
 Set the shared `ATLAS_SQL_TEST_CONNECTION_STRING` secret to run the HTTP/SQL journey.

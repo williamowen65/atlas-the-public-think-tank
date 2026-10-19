@@ -226,13 +226,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		LICENSE = LICENSE
 		NOTICE.md = NOTICE.md
 		README.md = README.md
-		Atlas.Rewrite.Tests.slnf = Atlas.Rewrite.Tests.slnf
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{11111111-1111-4111-8111-111111111111}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{22222222-2222-4222-8222-222222222222}"
 	ProjectSection(SolutionItems) = preProject
+		tests\Atlas.Rewrite.Tests.slnf = tests\Atlas.Rewrite.Tests.slnf
 		tests\parallel.runsettings = tests\parallel.runsettings
 	EndProjectSection
 EndProject
@@ -393,11 +393,19 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "api", "api", "{98A12500-000
 	ProjectSection(SolutionItems) = preProject
 		docs\api\AUTHENTICATION.md = docs\api\AUTHENTICATION.md
 		docs\api\CODE-GUIDE.md = docs\api\CODE-GUIDE.md
+		docs\api\ENDPOINTS.md = docs\api\ENDPOINTS.md
+		docs\api\HTTP-GUIDE.md = docs\api\HTTP-GUIDE.md
 		docs\api\README.md = docs\api\README.md
 		docs\api\SECURITY.md = docs\api\SECURITY.md
 		docs\api\WORKFLOWS.md = docs\api\WORKFLOWS.md
 		docs\api\auth.http = docs\api\auth.http
 		docs\api\workflows.http = docs\api\workflows.http
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Api", "Api", "{98A12500-0000-4000-8000-000000000002}"
+	ProjectSection(SolutionItems) = preProject
+		docs\blackboards\workflows\Api\ApiWorkflows.excalidraw = docs\blackboards\workflows\Api\ApiWorkflows.excalidraw
+		docs\blackboards\workflows\Api\README.md = docs\blackboards\workflows\Api\README.md
 	EndProjectSection
 EndProject
 Global
@@ -539,6 +547,7 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{98A12500-0000-4000-8000-000000000002} = {C2222222-2222-4222-8222-222222222222}
 		{123B0001-1230-4123-8123-000000000001} = {F0977A94-B8E4-40C0-8D9A-4068A1783D59}
 		{124B0001-1230-4123-8123-000000000001} = {F0977A94-B8E4-40C0-8D9A-4068A1783D59}
 		{131A0001-1310-4131-8131-000000000001} = {11111111-1111-4111-8111-111111111111}

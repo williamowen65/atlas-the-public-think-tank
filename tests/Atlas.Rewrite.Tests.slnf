@@ -1,6 +1,6 @@
 {
   "solution": {
-    "path": "Atlas.sln",
+    "path": "../Atlas.sln",
     "projects": [
       "tests\\Atlas.Application.Tests\\Atlas.Application.Tests.csproj",
       "tests\\Atlas.Comments.Tests\\Atlas.Comments.Tests.csproj",
