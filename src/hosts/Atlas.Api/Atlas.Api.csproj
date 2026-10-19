@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><UserSecretsId>02103f3e-daff-4644-b045-6eb5f00889eb</UserSecretsId></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../../Atlas.Application/Atlas.Application.csproj" /></ItemGroup>
+</Project>

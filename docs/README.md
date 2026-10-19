@@ -57,3 +57,7 @@ Documentation should remain usable from a phone:
 - Preserve a genuinely wide matrix only when side-by-side comparison is more
   important than mobile readability, such as a requirements traceability
   matrix.
+
+## HTTP host
+
+See [Atlas JSON API](api/README.md) for workflow parity, cookie/CSRF security, and version-controlled HTTP examples.

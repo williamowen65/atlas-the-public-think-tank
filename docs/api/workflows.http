@@ -1,0 +1,70 @@
+@baseUrl = https://localhost:7240
+@csrfToken = REPLACE_WITH_CURRENT_PRINCIPAL_TOKEN
+@nodeId = REPLACE_WITH_NODE_GUID
+@typeId = REPLACE_WITH_TYPE_GUID
+@commentId = REPLACE_WITH_COMMENT_GUID
+@communityId = REPLACE_WITH_COMMUNITY_GUID
+
+### Public paged Discovery. 200; query validation produces 400.
+GET {{baseUrl}}/api/nodes?page=1&searchText=Atlas
+
+### Public node type catalog; select an active type ID for creation.
+GET {{baseUrl}}/api/catalog/node-types
+
+### 201; authenticated author comes from session, never request JSON.
+POST {{baseUrl}}/api/nodes
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{"title":"An HTTP idea","markdown":"A description","typeId":"{{typeId}}","requestedTypeIds":[]}
+
+### 200; hidden public node details are replaced by a notice.
+GET {{baseUrl}}/api/nodes/{{nodeId}}
+
+### 204; 403 for another author.
+PUT {{baseUrl}}/api/nodes/{{nodeId}}/title
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{"text":"Updated title"}
+
+### 204; existing domain vote-action quota produces 429 with Retry-After.
+PUT {{baseUrl}}/api/nodes/{{nodeId}}/vote
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{"value":7}
+
+### 204; undo consumes an action and does not refund earlier quota.
+DELETE {{baseUrl}}/api/nodes/{{nodeId}}/vote
+X-CSRF-TOKEN: {{csrfToken}}
+
+### 200; roots only. Follow next.afterAt/afterId as a pair.
+GET {{baseUrl}}/api/nodes/{{nodeId}}/comments?size=20
+
+### 200; direct replies only, not the entire descendant tree.
+GET {{baseUrl}}/api/nodes/{{nodeId}}/comments?parent={{commentId}}&size=20
+
+### 200; author comes from the cookie.
+POST {{baseUrl}}/api/nodes/{{nodeId}}/comments
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{"body":"A comment through HTTP"}
+
+### 200; domain quota allows one creation per rolling 24 hours.
+POST {{baseUrl}}/api/communities
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{"name":"HTTP community","description":"A shared discussion"}
+
+### 204; join the existing community.
+PUT {{baseUrl}}/api/communities/{{communityId}}/membership
+X-CSRF-TOKEN: {{csrfToken}}
+
+### 200; only this participant's in-app notifications.
+GET {{baseUrl}}/api/notifications?size=20
+
+### 200 for GlobalModerator; 403 for ordinary Member; 401 anonymous.
+GET {{baseUrl}}/api/moderation/queue

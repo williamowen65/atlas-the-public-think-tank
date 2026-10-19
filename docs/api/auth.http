@@ -1,0 +1,31 @@
+@baseUrl = https://localhost:7240
+@csrfToken = REPLACE_FROM_CSRF_RESPONSE
+@email = demo01@example.test
+@password = REPLACE_WITH_LOCAL_PASSWORD
+
+### 200; retain the CSRF cookie and copy token into your private editor variable.
+GET {{baseUrl}}/api/auth/csrf
+
+### 204 + HttpOnly session cookie; 400 without CSRF; 401 on unsuccessful sign-in.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{"email":"{{email}}","password":"{{password}}"}
+
+### Fetch a fresh CSRF token after login; keep cookies between requests.
+GET {{baseUrl}}/api/auth/csrf
+
+### 200 when authenticated; 401 without a valid session.
+GET {{baseUrl}}/api/auth/session
+
+### 204; refresh CSRF token after logout before logging in again.
+POST {{baseUrl}}/api/auth/logout
+X-CSRF-TOKEN: {{csrfToken}}
+
+### 202 with configured Development mail directory; 503 without delivery configuration.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{"email":"{{email}}","password":"{{password}}","displayName":"HTTP participant"}
