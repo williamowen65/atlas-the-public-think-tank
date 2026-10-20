@@ -109,7 +109,7 @@
       touchPointer = { id: event.pointerId, y: event.clientY };
       touchScrollOrigin = reel.scrollTop;
     }
-    if (event.pointerType === 'touch' || event.button !== 0) return;
+    if (event.pointerType === 'touch') return;
     reel.focus({ preventScroll: true });
     drag = { id: event.pointerId, y: event.clientY, top: reel.scrollTop, moved: false };
     dragging = true;
@@ -152,6 +152,7 @@
   }
 
   function scrollEnd() {
+    if (drag) return;
     touchScrollOrigin = null;
     lensPull = 0;
     pulling = false;
@@ -160,7 +161,6 @@
   function handleWheel(event: WheelEvent) {
     if (disabled || event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
     event.preventDefault();
-    syncTarget = null;
     // Normalize line/page wheels and accumulate small trackpad deltas.
     if (event.timeStamp - wheelTime > 180) wheelRemainder = 0;
     wheelTime = event.timeStamp;
