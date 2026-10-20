@@ -7,6 +7,8 @@ using Atlas.Identity;
 using Atlas.Persistence;
 using Atlas.Persistence.Identity;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -126,6 +128,55 @@ public sealed class SqlWorkflowTests
         }
         finally { await database.Database.EnsureDeletedAsync(); }
     }
+    [TestMethod]
+    public async Task Recovery_uses_private_delivery_and_Identity_token_validation()
+    {
+        var config = new ConfigurationBuilder().AddUserSecrets<SqlWorkflowTests>(true).AddEnvironmentVariables().Build();
+        var template = config["ATLAS_SQL_TEST_CONNECTION_STRING"];
+        if (string.IsNullOrWhiteSpace(template)) Assert.Inconclusive("Configure ATLAS_SQL_TEST_CONNECTION_STRING.");
+        var connection = new SqlConnectionStringBuilder(template) { InitialCatalog = "AtlasRecovery_" + Guid.NewGuid().ToString("N") }.ConnectionString;
+        var mail = Path.Combine(Path.GetTempPath(), "atlas-mail-" + Guid.NewGuid().ToString("N"));
+        using var root = new ApiFactory(connection);
+        using var factory = root.WithWebHostBuilder(b => b.UseSetting("Atlas:DevelopmentMailDirectory", mail));
+        var options = new DbContextOptionsBuilder<AtlasDataContext>().UseSqlServer(connection).Options;
+        await using var database = new AtlasDataContext(options);
+        await database.Database.EnsureCreatedAsync();
+        try
+        {
+            using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+                { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
+            await Token(client);
+            const string email = "recover@example.test", oldPassword = "Atlas_Old_125!Password", newPassword = "Atlas_New_125!Password";
+            Assert.AreEqual(HttpStatusCode.Accepted, (await client.PostAsJsonAsync("/api/auth/register",
+                new { email, password = oldPassword, displayName = "Recovery test" })).StatusCode);
+            var confirm = JsonDocument.Parse(await File.ReadAllTextAsync(Directory.GetFiles(mail).Single())).RootElement.Clone();
+            File.Delete(Directory.GetFiles(mail).Single());
+            // Unknown and unconfirmed accounts both receive the same accepted response and no reset delivery.
+            foreach (var address in new[] { "unknown@example.test", email })
+                Assert.AreEqual(HttpStatusCode.Accepted, (await client.PostAsJsonAsync("/api/auth/forgot-password", new { email = address })).StatusCode);
+            Assert.AreEqual(0, Directory.GetFiles(mail).Length);
+            Assert.AreEqual(HttpStatusCode.Accepted, (await client.PostAsJsonAsync("/api/auth/resend-confirmation", new { email })).StatusCode);
+            Assert.AreEqual(1, Directory.GetFiles(mail).Length);
+            File.Delete(Directory.GetFiles(mail).Single());
+            Assert.AreEqual(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/api/auth/confirm-email",
+                new { userId = confirm.GetProperty("userId").GetGuid(), token = confirm.GetProperty("token").GetString() })).StatusCode);
+            Assert.AreEqual(HttpStatusCode.Accepted, (await client.PostAsJsonAsync("/api/auth/forgot-password", new { email })).StatusCode);
+            using var resetFile = JsonDocument.Parse(await File.ReadAllTextAsync(Directory.GetFiles(mail).Single()));
+            var token = resetFile.RootElement.GetProperty("token").GetString();
+            Assert.AreEqual("reset-password", resetFile.RootElement.GetProperty("purpose").GetString());
+            Assert.AreEqual(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/api/auth/reset-password", new { email, token = "invalid", newPassword })).StatusCode);
+            Assert.AreEqual(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/api/auth/reset-password", new { email, token, newPassword })).StatusCode);
+            Assert.AreEqual(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/api/auth/reset-password", new { email, token, newPassword })).StatusCode);
+            Assert.AreEqual(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/api/auth/login", new { email, password = oldPassword })).StatusCode);
+            Assert.AreEqual(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/api/auth/login", new { email, password = newPassword })).StatusCode);
+        }
+        finally
+        {
+            await database.Database.EnsureDeletedAsync();
+            if (Directory.Exists(mail)) Directory.Delete(mail, true);
+        }
+    }
+
     private static async Task Token(HttpClient client)
     {
         var json = await client.GetFromJsonAsync<JsonElement>("/api/auth/csrf");

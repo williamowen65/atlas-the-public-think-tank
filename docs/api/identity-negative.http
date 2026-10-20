@@ -1,0 +1,102 @@
+# Independent manual rejection checks, not a Run All script. Use disposable local accounts.
+# Sign out first and retain the anonymous cookie/CSRF pair. See auth.http and HTTP-GUIDE.md.
+# Each file has its own variables. Real tokens/passwords belong only in private settings.
+# 20 account requests/minute/source IP; 429 can supersede expected outcomes below.
+@baseUrl = https://localhost:7240
+@csrfToken = REPLACE_WITH_CURRENT_ANONYMOUS_CSRF_TOKEN
+@email = REPLACE_WITH_CONFIRMED_LOCAL_EMAIL
+@unconfirmedEmail = REPLACE_WITH_UNCONFIRMED_LOCAL_EMAIL
+@unconfirmedPassword = REPLACE_WITH_UNCONFIRMED_ACCOUNT_PASSWORD
+@newPassword = REPLACE_WITH_VALID_NEW_PASSWORD
+@resetToken = REPLACE_WITH_VALID_UNUSED_RESET_TOKEN
+@userId = REPLACE_WITH_LOCAL_USER_GUID
+
+### N1. Prepare anonymous CSRF for checks that require valid headers
+GET {{baseUrl}}/api/auth/csrf
+
+### N2. Missing CSRF on login: 400, before credential validation
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{email}}", "password": "intentionally-wrong" }
+
+### N3. Invalid CSRF on reset request: 400
+POST {{baseUrl}}/api/auth/forgot-password
+Content-Type: application/json
+X-CSRF-TOKEN: deliberately-invalid
+
+{ "email": "{{email}}" }
+
+### N4. Unknown reset-request email: 202, no private file should be created
+POST {{baseUrl}}/api/auth/forgot-password
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{ "email": "does-not-exist@example.invalid" }
+
+### N5. Unconfirmed account reset request: 202, no reset file should be created
+POST {{baseUrl}}/api/auth/forgot-password
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{ "email": "{{unconfirmedEmail}}" }
+
+### N6. Incorrect password: 401 generic response
+# A failure increments Identity's failed-access count. Do not repeat on an account you need.
+# Five failed attempts can lock the account for 15 minutes; correct login then also fails.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{ "email": "{{email}}", "password": "intentionally-wrong" }
+
+### N7. Correct password, unconfirmed email: 401 generic response
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{ "email": "{{unconfirmedEmail}}", "password": "{{unconfirmedPassword}}" }
+
+### N8. Invalid reset token: 400; password stays unchanged
+POST {{baseUrl}}/api/auth/reset-password
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{ "email": "{{email}}", "token": "intentionally-invalid", "newPassword": "{{newPassword}}" }
+
+### N9. Weak replacement password with a valid unused reset token: 400
+# Obtain a valid reset token with identity-recovery.http R2 first; do not log in between.
+POST {{baseUrl}}/api/auth/reset-password
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{ "email": "{{email}}", "token": "{{resetToken}}", "newPassword": "short" }
+
+### N10. Invalid confirmation token: 400
+POST {{baseUrl}}/api/auth/confirm-email
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{ "userId": "{{userId}}", "token": "intentionally-invalid" }
+
+### N11. Anonymous session read: 401 (no redirect)
+GET {{baseUrl}}/api/auth/session
+
+### N12. Anonymous logout: 401 (no redirect)
+POST {{baseUrl}}/api/auth/logout
+X-CSRF-TOKEN: {{csrfToken}}
+
+### N13. Invalid email format: 400 validation response
+POST {{baseUrl}}/api/auth/forgot-password
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{ "email": "not-an-email" }
+
+# Additional manual cases:
+# - In a second private cookie jar, verify a CSRF header from the first jar fails (400).
+# - Request a reset, change password successfully, then replay that reset token (R4: 400).
+# - For expiry, retain a token beyond the configured provider lifespan; expect reset 400.
+# - To examine rate limiting, repeat N1 until this IP's account budget is exhausted (429).
+# - Test Production mail routes separately: register/forgot/resend must return 503 with valid CSRF.
+# - Deletion has no route yet. Do not simulate it by deleting SQL rows; see ACCOUNT-LIFECYCLE.md.

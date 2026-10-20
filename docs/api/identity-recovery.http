@@ -1,0 +1,80 @@
+# Manual Identity recovery. See ACCOUNT-LIFECYCLE.md. Run one request at a time.
+# Start signed out (auth.http A7/A8 if necessary), retaining cookies.
+# Use a disposable Development account; never commit real values.
+# All account requests share 20/minute/source IP. A 429 means wait before continuing.
+@baseUrl = https://localhost:7240
+@csrfToken = REPLACE_WITH_CURRENT_ANONYMOUS_CSRF_TOKEN
+@email = REPLACE_WITH_CONFIRMED_LOCAL_EMAIL
+@newPassword = REPLACE_WITH_NEW_LOCAL_PASSWORD
+@resetToken = REPLACE_FROM_RESET_PASSWORD_MAIL_PAYLOAD
+@userId = REPLACE_FROM_CONFIRM_EMAIL_MAIL_PAYLOAD
+@confirmationToken = REPLACE_FROM_CONFIRM_EMAIL_MAIL_PAYLOAD
+@unconfirmedEmail = REPLACE_WITH_UNCONFIRMED_LOCAL_EMAIL
+
+### R1. Get anonymous CSRF; copy JSON token into csrfToken, retain cookie
+GET {{baseUrl}}/api/auth/csrf
+
+### R2. Request password reset
+# 202 generically; confirmed active account creates purpose=reset-password JSON in
+# src/hosts/Atlas.Api/development-mail/ (or configured override). No token in response.
+# Copy token from that private file into resetToken; do not use the confirmation token.
+# 503 outside Development until production delivery exists.
+POST {{baseUrl}}/api/auth/forgot-password
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{ "email": "{{email}}" }
+
+### R3. Apply new password
+# 204 success, 400 generic failure. Does not sign in, clear lockout or reactivate a profile.
+POST {{baseUrl}}/api/auth/reset-password
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{ "email": "{{email}}", "token": "{{resetToken}}", "newPassword": "{{newPassword}}" }
+
+### R4. Replay the consumed token from R3
+# After successful R3, expect 400. Keep the same token; do not request a replacement first.
+POST {{baseUrl}}/api/auth/reset-password
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{ "email": "{{email}}", "token": "{{resetToken}}", "newPassword": "{{newPassword}}" }
+
+### R5. Login with the new password
+# 204. Then run R6 and use the authenticated token for subsequent writes.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{ "email": "{{email}}", "password": "{{newPassword}}" }
+
+### R6. Refresh CSRF after login; copy returned token before any writes
+GET {{baseUrl}}/api/auth/csrf
+
+### R7. Verify authenticated session (200)
+GET {{baseUrl}}/api/auth/session
+
+### R8. Logout (204); requires the authenticated csrfToken from R6
+POST {{baseUrl}}/api/auth/logout
+X-CSRF-TOKEN: {{csrfToken}}
+
+### R9. Refresh anonymous CSRF for the separate resend scenario
+# Copy JSON token into csrfToken. Create a separate unconfirmed user with auth.http first.
+GET {{baseUrl}}/api/auth/csrf
+
+### R10. Resend confirmation for that unconfirmed user
+# 202 generically; eligible account creates purpose=confirm-email payload.
+# Copy its userId/token into the separate confirmation variables above.
+POST {{baseUrl}}/api/auth/resend-confirmation
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{ "email": "{{unconfirmedEmail}}" }
+
+### R11. Confirm the unconfirmed account (204); does not log in
+POST {{baseUrl}}/api/auth/confirm-email
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{ "userId": "{{userId}}", "token": "{{confirmationToken}}" }

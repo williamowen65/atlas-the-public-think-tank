@@ -79,3 +79,15 @@ new migration. The current implementation combines PTT-98 and PTT-125.
 See [API logging and telemetry](LOGGING.md) for terminal formatting, local file locations, and security coverage gaps.
 
 [API hardening plan](HARDENING-PLAN.md): limits, oversized requests, proxies, recovery, Data Protection and HTTP telemetry.
+
+[Account lifecycle](ACCOUNT-LIFECYCLE.md): MVP scope, recovery routes and account-deletion behavior.
+
+## Manual Identity requests
+
+- [auth.http](auth.http): register, confirm, login, session and logout.
+- [identity-recovery.http](identity-recovery.http): reset/resend workflows and consumed-token replay.
+- [identity-negative.http](identity-negative.http): CSRF, credentials, token and validation failures.
+
+Run requests individually with cookies enabled. Copy the returned CSRF token after every
+login/logout into the file you are using; keep credentials and private mail tokens untracked.
+These are manual checks with expected outcomes, not automatically verified test results.

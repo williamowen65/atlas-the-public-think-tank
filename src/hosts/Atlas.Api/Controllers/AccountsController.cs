@@ -15,7 +15,7 @@ namespace Atlas.Api.Controllers;
 [AutoValidateAntiforgeryToken]
 [ApiController, Route("api/auth"), Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("auth")]
 public sealed class AccountsController(AtlasAccounts accounts, UserManager<AtlasIdentityUser> users,
-    SignInManager<AtlasIdentityUser> signIn, IAntiforgery antiforgery) : ControllerBase
+    SignInManager<AtlasIdentityUser> signIn, IAntiforgery antiforgery, DevelopmentAccountMail mail) : ControllerBase
 {
     /// <summary>Get a CSRF token before writes, and get a fresh one after login/logout.</summary>
     [HttpGet("csrf")]
@@ -46,27 +46,59 @@ public sealed class AccountsController(AtlasAccounts accounts, UserManager<Atlas
     public async Task<object> Session() => new { participantId = (await accounts.ResolveParticipantAsync(User))?.Value };
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register(RegisterRequest request, [FromServices] IWebHostEnvironment environment,
-        [FromServices] IConfiguration configuration, CancellationToken cancellationToken)
+    public async Task<IActionResult> Register(RegisterRequest request, CancellationToken cancellationToken)
     {
         // No production mail provider has been selected. Fail before creating an
         // unusable account; never expose confirmation/reset tokens in JSON or logs.
-        if (!environment.IsDevelopment())
+        if (!mail.IsAvailable)
             return Problem(statusCode: 503, title: "Account email delivery is not configured.");
-        // Resolve against the host content root, not the shell's working directory.
-        // No user secret is needed for local development; an override remains optional.
-        var configuredDirectory = configuration["Atlas:DevelopmentMailDirectory"];
-        var directory = Path.GetFullPath(string.IsNullOrWhiteSpace(configuredDirectory)
-            ? "development-mail" : configuredDirectory, environment.ContentRootPath);
         var registration = await accounts.RegisterAsync(request.Email, request.Password, request.DisplayName, cancellationToken);
         if (!registration.Result.Succeeded) return Problem(statusCode: 400, title: "Registration could not be completed.");
         var user = (await users.FindByIdAsync(registration.ParticipantId!.Value.ToString()))!;
         var token = await users.GenerateEmailConfirmationTokenAsync(user);
-        Directory.CreateDirectory(directory);
-        await System.IO.File.WriteAllTextAsync(Path.Combine(directory, Guid.NewGuid()+".json"),
-            System.Text.Json.JsonSerializer.Serialize(new { userId = user.Id, token }), cancellationToken);
+        await mail.WriteAsync("confirm-email", user.Id, token, cancellationToken);
         return Accepted();
     }
+    /// <summary>Generic response avoids disclosing whether a confirmed active account exists.</summary>
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword(EmailRequest request, CancellationToken cancellationToken)
+    {
+        if (!mail.IsAvailable)
+            return Problem(statusCode: 503, title: "Account email delivery is not configured.");
+        var user = await users.FindByEmailAsync(request.Email);
+        if (user is not null && await users.IsEmailConfirmedAsync(user)
+            && await accounts.HasActiveProfileAsync(user.Id, cancellationToken))
+            await mail.WriteAsync("reset-password", user.Id,
+                await users.GeneratePasswordResetTokenAsync(user), cancellationToken);
+        return Accepted();
+    }
+
+    /// <summary>Identity verifies purpose, expiry and password policy, and updates the security stamp.</summary>
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(ResetPasswordRequest request, CancellationToken cancellationToken)
+    {
+        var user = await users.FindByEmailAsync(request.Email);
+        if (user is null || !await users.IsEmailConfirmedAsync(user)
+            || !await accounts.HasActiveProfileAsync(user.Id, cancellationToken)
+            || !(await users.ResetPasswordAsync(user, request.Token, request.NewPassword)).Succeeded)
+            return Problem(statusCode: 400, title: "Password reset could not be completed.");
+        // Do not automatically sign in or clear lockouts; existing session revalidation remains Identity-owned.
+        return NoContent();
+    }
+
+    [HttpPost("resend-confirmation")]
+    public async Task<IActionResult> ResendConfirmation(EmailRequest request, CancellationToken cancellationToken)
+    {
+        if (!mail.IsAvailable)
+            return Problem(statusCode: 503, title: "Account email delivery is not configured.");
+        var user = await users.FindByEmailAsync(request.Email);
+        if (user is not null && !await users.IsEmailConfirmedAsync(user)
+            && await accounts.HasActiveProfileAsync(user.Id, cancellationToken))
+            await mail.WriteAsync("confirm-email", user.Id,
+                await users.GenerateEmailConfirmationTokenAsync(user), cancellationToken);
+        return Accepted();
+    }
+
     [HttpPost("confirm-email")]
     public async Task<IActionResult> Confirm(ConfirmationRequest request)
     {
@@ -80,3 +112,7 @@ public sealed record LoginRequest([Required, EmailAddress, MaxLength(256)] strin
 public sealed record RegisterRequest([Required, EmailAddress, MaxLength(256)] string Email, [Required, MaxLength(1024)] string Password,
     [Required, MaxLength(100)] string DisplayName);
 public sealed record ConfirmationRequest(Guid UserId, [Required, MaxLength(4096)] string Token);
+
+public sealed record EmailRequest([Required, EmailAddress, MaxLength(256)] string Email);
+public sealed record ResetPasswordRequest([Required, EmailAddress, MaxLength(256)] string Email,
+    [Required, MaxLength(4096)] string Token, [Required, MaxLength(1024)] string NewPassword);

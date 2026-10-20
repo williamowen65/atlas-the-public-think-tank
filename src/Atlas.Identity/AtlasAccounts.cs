@@ -132,6 +132,10 @@ public sealed class AtlasAccounts(
         }
     }
 
+    /// <summary>Recovery must not reactivate a closed/inactive Atlas profile.</summary>
+    public Task<bool> HasActiveProfileAsync(Guid userId, CancellationToken cancellationToken = default) =>
+        database.ParticipantRows.AsNoTracking().AnyAsync(row => row.Id == userId && row.IsActive, cancellationToken);
+
     /// <summary>Translates an authenticated framework principal to an active, persisted Participant.</summary>
     public async Task<ParticipantId?> ResolveParticipantAsync(
         ClaimsPrincipal principal,

@@ -103,6 +103,9 @@ public sealed class BoundaryTests
     [TestMethod]
     [DataRow("/api/auth/register")]
     [DataRow("/api/auth/confirm-email")]
+    [DataRow("/api/auth/forgot-password")]
+    [DataRow("/api/auth/reset-password")]
+    [DataRow("/api/auth/resend-confirmation")]
     public async Task Anonymous_account_writes_reject_missing_and_invalid_csrf(string path)
     {
         using var factory = new ApiFactory(); using var client = factory.Browser();

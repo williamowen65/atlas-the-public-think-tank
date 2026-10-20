@@ -4,6 +4,7 @@
 @csrfToken = REPLACE_WITH_CURRENT_PRINCIPAL_CSRF_TOKEN
 @email = REPLACE_WITH_LOCAL_EMAIL
 @password = REPLACE_WITH_LOCAL_PASSWORD
+@displayName = REPLACE_WITH_UNIQUE_DISPLAY_NAME
 @userId = REPLACE_WITH_CONFIRMATION_USER_GUID
 @confirmationToken = REPLACE_FROM_PRIVATE_MAIL_DROP
 
@@ -20,7 +21,7 @@ X-CSRF-TOKEN: {{csrfToken}}
 {
   "email": "{{email}}",
   "password": "{{password}}",
-  "displayName": "HTTP participant"
+  "displayName": "{{displayName}}"
 }
 
 ### A3. Optional email confirmation — Accounts.Confirm
@@ -60,3 +61,6 @@ X-CSRF-TOKEN: {{csrfToken}}
 
 ### A8. Refresh anonymous token before another login or anonymous write
 GET {{baseUrl}}/api/auth/csrf
+
+# Continue with identity-recovery.http for reset/resend, or identity-negative.http for rejection checks.
+# Keep the same cookie jar; copy the current CSRF token into each file's private variables.

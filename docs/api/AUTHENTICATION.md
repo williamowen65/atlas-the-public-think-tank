@@ -106,10 +106,14 @@ Confirmation tokens are not returned by registration JSON or written to applicat
 - The host generates the confirmation token and writes the private file **after** that commit.
 - A file-write failure can return **500 even though the unconfirmed account already exists**.
 - The Development-only guard runs before creation; the default or overridden directory must still be writable.
-- There is no confirmation resend endpoint in this slice. Production delivery and recovery remain separate work.
+- Confirmation resend is available through `/api/auth/resend-confirmation`; production delivery remains separate work.
 
 ## Still outside this slice
 
-- Production email delivery and password recovery.
+- Production email delivery. Development password recovery and confirmation resend are implemented; see [Account lifecycle](ACCOUNT-LIFECYCLE.md).
 - Shared durable encrypted Data Protection keys for production instances.
 - Two-factor enrollment/challenges: **PTT-127**. Accounts requiring a second factor are denied rather than bypassing it.
+
+## Recovery and account closure
+
+See [Account lifecycle](ACCOUNT-LIFECYCLE.md) for implemented recovery routes, private delivery, and the account-deletion policy still to decide.

@@ -73,3 +73,13 @@ its request. Example coverage is not a claim that every branch is automatically 
 Comment pages return `next.afterAt` and `next.afterId`. Supply both together,
 keep the same node/parent scope, and stop when `next` is null. Expanding replies
 uses `parent=commentId`; it does not load the entire descendant tree.
+
+## Manual Identity requests
+
+- [auth.http](auth.http): register, confirm, login, session and logout.
+- [identity-recovery.http](identity-recovery.http): reset/resend workflows and consumed-token replay.
+- [identity-negative.http](identity-negative.http): CSRF, credentials, token and validation failures.
+
+Run requests individually with cookies enabled. Copy the returned CSRF token after every
+login/logout into the file you are using; keep credentials and private mail tokens untracked.
+These are manual checks with expected outcomes, not automatically verified test results.

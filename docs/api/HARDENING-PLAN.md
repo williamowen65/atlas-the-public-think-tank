@@ -1,5 +1,9 @@
 # API security decisions before the frontend
 
+Current MVP scope and recovery implementation supersede the planning notes below: see
+[Account lifecycle](ACCOUNT-LIFECYCLE.md). Proxy/shared-key/distributed deployment work is
+out of scope for this MVP change. Recovery routes are now implemented.
+
 This is an implementation review and proposal, not a completed production security audit.
 Values labelled proposed are starting points for local/load testing, not tuned production guarantees.
 
@@ -74,26 +78,11 @@ broader distributed and edge policies.
 registers Data Protection. Identity provides `GeneratePasswordResetTokenAsync` and
 `ResetPasswordAsync`; we should use those rather than build token cryptography.
 
-The custom AccountsController currently exposes CSRF, register, confirm-email, login,
-logout and session. It does not expose forgot-password, reset-password or confirmation
-resend endpoints. Registering Identity services does not map scaffolded UI or these custom
-API routes. Views are unnecessary: JSON endpoints can orchestrate the same UserManager APIs.
-
-A subsequent API slice can implement:
-
-1. Request reset: validate the email; return a generic accepted response for unknown,
-   unconfirmed and eligible accounts; generate/deliver only for eligible accounts.
-2. Reset: validate the supplied token and new password with Identity; return safe errors;
-   define existing-session invalidation and do not automatically sign the user in.
-3. Confirmation resend: generic response, bounded delivery frequency, safe retry behavior.
-4. Development delivery through a shared mail-drop adapter; production through a chosen
-   provider. Never put reset tokens in public JSON, diagnostics or terminal output.
-5. Tests for invalid/expired/reused tokens, eligibility, password policy, enumeration-safe
-   responses, delivery failures and existing-session behavior.
-
-Choose token lifetimes explicitly. Production email also needs sender/domain verification,
-secret configuration, retry/cost controls and delivery failure handling. No provider is
-selected by this PR, and no reset endpoint is claimed as implemented.
+The custom AccountsController now exposes forgot-password, reset-password and confirmation
+resend in addition to registration/confirmation/login/logout/session. See
+[Account lifecycle](ACCOUNT-LIFECYCLE.md) for the implemented request contracts, development
+delivery, security-stamp behavior and test status. It reuses UserManager rather than
+implementing token cryptography. No views are required. Production mail delivery is deferred.
 
 ## Data Protection keys versus HTTPS
 
