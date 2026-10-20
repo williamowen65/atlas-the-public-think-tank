@@ -1,13 +1,8 @@
 name: Atlas Web and Storybook
 
 on:
-  pull_request:
-    branches: [main]
-    paths: ['src/hosts/Atlas.Web/**', '.github/workflows/AtlasWeb.yml']
   push:
-    branches: [main]
     paths: ['src/hosts/Atlas.Web/**', '.github/workflows/AtlasWeb.yml']
-  workflow_dispatch:
 
 permissions:
   contents: read
