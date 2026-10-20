@@ -2,8 +2,8 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
 // The iframe URL opens just the rendered story, without the Storybook sidebar.
-const story = (name: string, group = 'examples') =>
-  `http://127.0.0.1:6006/iframe.html?id=${group}-actionbutton--${name}&viewMode=story`;
+const story = (name: string) =>
+  `http://127.0.0.1:6006/iframe.html?id=examples-actionbutton--${name}&viewMode=story`;
 
 /** Given an enabled isolated story, keyboard activation invokes its callback. */
 test('enabled story responds to keyboard activation', async ({ page }) => {
@@ -26,7 +26,7 @@ test('disabled story rejects activation', async ({ page }) => {
 /** Long fixture text remains within a narrow viewport instead of overflowing. */
 test('long label fits a narrow viewport', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
-  await page.goto(story('long-label', 'foundation'));
+  await page.goto(story('long-label'));
   await expect(page.getByRole('button')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
 });

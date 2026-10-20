@@ -448,10 +448,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "lib", "lib", "{672DF342-F26
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "components", "components", "{521ABBBD-85E8-52E6-A079-53D481AD3649}"
 	ProjectSection(SolutionItems) = preProject
-		src\hosts\Atlas.Web\src\lib\components\ActionButton.stories.ts = src\hosts\Atlas.Web\src\lib\components\ActionButton.stories.ts
 		src\hosts\Atlas.Web\src\lib\components\ActionButton.svelte = src\hosts\Atlas.Web\src\lib\components\ActionButton.svelte
-		src\hosts\Atlas.Web\src\lib\components\ActionButtonExample.stories.ts = src\hosts\Atlas.Web\src\lib\components\ActionButtonExample.stories.ts
-		src\hosts\Atlas.Web\src\lib\components\ActionButtonExample.svelte = src\hosts\Atlas.Web\src\lib\components\ActionButtonExample.svelte
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "routes", "routes", "{08CDBE3B-B834-5FB8-86D4-56DEB43DD35C}"
@@ -464,6 +461,16 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "about", "about", "{26A76BF6-89C5-5351-A132-4C95AC3EEE70}"
 	ProjectSection(SolutionItems) = preProject
 		src\hosts\Atlas.Web\src\routes\about\+page.svelte = src\hosts\Atlas.Web\src\routes\about\+page.svelte
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "storybook", "storybook", "{FBF44C2B-5F8A-5878-9032-39C401591068}"
+	ProjectSection(SolutionItems) = preProject
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ActionButton", "ActionButton", "{925B9725-45C6-529B-949E-EE3DC0FD5174}"
+	ProjectSection(SolutionItems) = preProject
+		src\hosts\Atlas.Web\storybook\ActionButton\ActionButton.stories.ts = src\hosts\Atlas.Web\storybook\ActionButton\ActionButton.stories.ts
+		src\hosts\Atlas.Web\storybook\ActionButton\ActionButtonExample.svelte = src\hosts\Atlas.Web\storybook\ActionButton\ActionButtonExample.svelte
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{DA01D4DA-FEF2-52E0-9DD1-BFD393C0D93B}"
@@ -617,6 +624,8 @@ Global
 		{521ABBBD-85E8-52E6-A079-53D481AD3649} = {672DF342-F26F-5F6A-B67E-BB9601526761}
 		{08CDBE3B-B834-5FB8-86D4-56DEB43DD35C} = {267261CE-52C8-58ED-92D2-EA60A7AA98B8}
 		{26A76BF6-89C5-5351-A132-4C95AC3EEE70} = {08CDBE3B-B834-5FB8-86D4-56DEB43DD35C}
+		{FBF44C2B-5F8A-5878-9032-39C401591068} = {14314500-0000-4000-8000-000000000001}
+		{925B9725-45C6-529B-949E-EE3DC0FD5174} = {FBF44C2B-5F8A-5878-9032-39C401591068}
 		{DA01D4DA-FEF2-52E0-9DD1-BFD393C0D93B} = {14314500-0000-4000-8000-000000000001}
 		{98A12500-0000-4000-8000-000000000002} = {C2222222-2222-4222-8222-222222222222}
 		{123B0001-1230-4123-8123-000000000001} = {F0977A94-B8E4-40C0-8D9A-4068A1783D59}
