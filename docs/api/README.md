@@ -73,3 +73,7 @@ dotnet test tests/Atlas.Rewrite.Tests.slnf --settings tests/parallel.runsettings
 Set the shared `ATLAS_SQL_TEST_CONNECTION_STRING` secret to run the HTTP/SQL journey.
 Without it, that test skips; a skip is not SQL verification. This host requires no
 new migration. The current implementation combines PTT-98 and PTT-125.
+
+## Inspect server output
+
+See [API logging and telemetry](LOGGING.md) for terminal formatting, local file locations, and security coverage gaps.

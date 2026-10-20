@@ -25,3 +25,30 @@ types from request JSON. `.http` samples must never contain real credentials.
 
 Sources: [ASP.NET Core antiforgery](https://learn.microsoft.com/aspnet/core/security/anti-request-forgery?view=aspnetcore-10.0),
 [controller APIs](https://learn.microsoft.com/aspnet/core/web-api/?view=aspnetcore-10.0).
+
+## Review the current HTTP limits
+
+| Limit | Current value and scope | Practical boundary |
+|---|---|---|
+| Account routes | 20 requests per one-minute fixed window per connection source IP; no queue | Includes CSRF/session reads, register, confirm, login and logout. Shared NAT clients share a budget. Multiple API instances each have their own budget. |
+| Global concurrency | 64 active requests per process; no queue | Bounds simultaneous work, not requests per minute or total ingress traffic. |
+| Request body | 64 KiB at Kestrel | Does not establish per-field collection/depth budgets or protect a different upstream server by itself. |
+| Domain quotas | Existing node/vote/community/report policies | Separate from HTTP limits; inspect each operation's existing policy. |
+
+Middleware saturation returns 429; it currently has no structured ProblemDetails
+body or Retry-After contract. Domain quota exceptions already include Retry-After.
+Do not invent a retry time for concurrency saturation, whose next slot is unknown.
+
+Next focused checks for this PR are HTTP tests for fixed-window saturation,
+concurrency rejection, oversized bodies, and registration outside Development.
+Tests should exercise the real pipeline without depending on a developer SQL server.
+These are recommended additions, not claims of existing coverage.
+
+Before public hosting, prioritize trusted proxy configuration and allowed hosts,
+shared encrypted Data Protection keys, production email/recovery, distributed
+abuse budgets (PTT-137), and edge/global load controls (PTT-142). Choose allowed
+origins when the frontend topology is known. Do not trust arbitrary forwarded-IP
+headers to bypass the current source-IP budget.
+
+See [logging and telemetry](LOGGING.md) for inspection steps and known HTTP
+rejection/host-attribution gaps.
