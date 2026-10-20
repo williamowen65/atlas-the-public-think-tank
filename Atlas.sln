@@ -435,6 +435,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".storybook", ".storybook", 
 		src\hosts\Atlas.Web\.storybook\preview.ts = src\hosts\Atlas.Web\.storybook\preview.ts
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{9BCB1EEB-D037-5DCD-B957-79EA46082919}"
+	ProjectSection(SolutionItems) = preProject
+		src\hosts\Atlas.Web\docs\STORYBOOK-WORKBENCH.md = src\hosts\Atlas.Web\docs\STORYBOOK-WORKBENCH.md
+		src\hosts\Atlas.Web\docs\SVELTEKIT.md = src\hosts\Atlas.Web\docs\SVELTEKIT.md
+	EndProjectSection
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{267261CE-52C8-58ED-92D2-EA60A7AA98B8}"
 	ProjectSection(SolutionItems) = preProject
 		src\hosts\Atlas.Web\src\app.html = src\hosts\Atlas.Web\src\app.html
@@ -449,6 +455,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "components", "components", "{521ABBBD-85E8-52E6-A079-53D481AD3649}"
 	ProjectSection(SolutionItems) = preProject
 		src\hosts\Atlas.Web\src\lib\components\ActionButton.svelte = src\hosts\Atlas.Web\src\lib\components\ActionButton.svelte
+		src\hosts\Atlas.Web\src\lib\components\VotingDial.svelte = src\hosts\Atlas.Web\src\lib\components\VotingDial.svelte
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "routes", "routes", "{08CDBE3B-B834-5FB8-86D4-56DEB43DD35C}"
@@ -473,9 +480,30 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ActionButton", "ActionButto
 		src\hosts\Atlas.Web\storybook\ActionButton\ActionButtonExample.svelte = src\hosts\Atlas.Web\storybook\ActionButton\ActionButtonExample.svelte
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Compositions", "Compositions", "{5B930464-C34F-509B-97C3-51A9C7446A70}"
+	ProjectSection(SolutionItems) = preProject
+		src\hosts\Atlas.Web\storybook\Compositions\VotingCard.stories.ts = src\hosts\Atlas.Web\storybook\Compositions\VotingCard.stories.ts
+		src\hosts\Atlas.Web\storybook\Compositions\VotingCardExample.svelte = src\hosts\Atlas.Web\storybook\Compositions\VotingCardExample.svelte
+		src\hosts\Atlas.Web\storybook\Compositions\VotingComparison.stories.ts = src\hosts\Atlas.Web\storybook\Compositions\VotingComparison.stories.ts
+		src\hosts\Atlas.Web\storybook\Compositions\VotingComparison.svelte = src\hosts\Atlas.Web\storybook\Compositions\VotingComparison.svelte
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "StylesAndLayout", "StylesAndLayout", "{5A9A5914-A08E-5AC3-976C-40A5175F2782}"
+	ProjectSection(SolutionItems) = preProject
+		src\hosts\Atlas.Web\storybook\StylesAndLayout\StylePlayground.svelte = src\hosts\Atlas.Web\storybook\StylesAndLayout\StylePlayground.svelte
+		src\hosts\Atlas.Web\storybook\StylesAndLayout\StylesAndLayout.stories.ts = src\hosts\Atlas.Web\storybook\StylesAndLayout\StylesAndLayout.stories.ts
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "VotingDial", "VotingDial", "{FFD11B97-DF11-5D93-B319-451101B84566}"
+	ProjectSection(SolutionItems) = preProject
+		src\hosts\Atlas.Web\storybook\VotingDial\VotingDial.stories.ts = src\hosts\Atlas.Web\storybook\VotingDial\VotingDial.stories.ts
+		src\hosts\Atlas.Web\storybook\VotingDial\VotingDialExample.svelte = src\hosts\Atlas.Web\storybook\VotingDial\VotingDialExample.svelte
+	EndProjectSection
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{DA01D4DA-FEF2-52E0-9DD1-BFD393C0D93B}"
 	ProjectSection(SolutionItems) = preProject
 		src\hosts\Atlas.Web\tests\components.spec.ts = src\hosts\Atlas.Web\tests\components.spec.ts
+		src\hosts\Atlas.Web\tests\workbench.spec.ts = src\hosts\Atlas.Web\tests\workbench.spec.ts
 	EndProjectSection
 EndProject
 Global
@@ -619,6 +647,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{14314500-0000-4000-8000-000000000001} = {131A0001-1310-4131-8131-000000000001}
 		{F92B921B-50B9-5535-B63F-E2BA8E94AF4E} = {14314500-0000-4000-8000-000000000001}
+		{9BCB1EEB-D037-5DCD-B957-79EA46082919} = {14314500-0000-4000-8000-000000000001}
 		{267261CE-52C8-58ED-92D2-EA60A7AA98B8} = {14314500-0000-4000-8000-000000000001}
 		{672DF342-F26F-5F6A-B67E-BB9601526761} = {267261CE-52C8-58ED-92D2-EA60A7AA98B8}
 		{521ABBBD-85E8-52E6-A079-53D481AD3649} = {672DF342-F26F-5F6A-B67E-BB9601526761}
@@ -626,6 +655,9 @@ Global
 		{26A76BF6-89C5-5351-A132-4C95AC3EEE70} = {08CDBE3B-B834-5FB8-86D4-56DEB43DD35C}
 		{FBF44C2B-5F8A-5878-9032-39C401591068} = {14314500-0000-4000-8000-000000000001}
 		{925B9725-45C6-529B-949E-EE3DC0FD5174} = {FBF44C2B-5F8A-5878-9032-39C401591068}
+		{5B930464-C34F-509B-97C3-51A9C7446A70} = {FBF44C2B-5F8A-5878-9032-39C401591068}
+		{5A9A5914-A08E-5AC3-976C-40A5175F2782} = {FBF44C2B-5F8A-5878-9032-39C401591068}
+		{FFD11B97-DF11-5D93-B319-451101B84566} = {FBF44C2B-5F8A-5878-9032-39C401591068}
 		{DA01D4DA-FEF2-52E0-9DD1-BFD393C0D93B} = {14314500-0000-4000-8000-000000000001}
 		{98A12500-0000-4000-8000-000000000002} = {C2222222-2222-4222-8222-222222222222}
 		{123B0001-1230-4123-8123-000000000001} = {F0977A94-B8E4-40C0-8D9A-4068A1783D59}

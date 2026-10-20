@@ -3,7 +3,7 @@ import ActionButtonExample from './ActionButtonExample.svelte';
 
 // One story group demonstrates the reusable button with observable callback results.
 const meta = {
-  title: 'Examples/ActionButton',
+  title: 'Components/ActionButton',
   component: ActionButtonExample,
   argTypes: {
     label: { control: 'text' },

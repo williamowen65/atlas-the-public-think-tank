@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 
 // The iframe URL opens just the rendered story, without the Storybook sidebar.
 const story = (name: string) =>
-  `http://127.0.0.1:6006/iframe.html?id=examples-actionbutton--${name}&viewMode=story`;
+  `http://127.0.0.1:6006/iframe.html?id=components-actionbutton--${name}&viewMode=story`;
 
 /** Given an enabled isolated story, keyboard activation invokes its callback. */
 test('enabled story responds to keyboard activation', async ({ page }) => {
