@@ -12,19 +12,33 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Atlas.Api.Tests;
 
-/// <summary>Start the real Program pipeline inside an in-process test server, with test configuration.</summary>
+/// <summary>
+/// Build a test host from the existing Atlas.Api Program so tests can send requests through its real middleware.
+/// This does not create a domain, generate an API project, or connect to the API running in your IDE.
+/// </summary>
 /// <remarks>
 /// WebApplicationFactory does not copy the API or contact the developer's running server.
 /// Each factory owns a host/service provider; its clients exercise routing, middleware and controllers.
+/// WebApplicationFactory normally uses in-memory TestServer; UseKestrel switches a derived factory to real sockets.
+/// WithWebHostBuilder derives a factory with test-specific host settings. ConfigureServices adjusts that
+/// host's dependency-injection registrations, while CreateClient creates the client that sends HTTP requests.
+/// Merely constructing the factory does not send a request; accessing Services or creating clients starts it.
 /// The primary-constructor parameter below is a C# constructor argument available to this class.
 /// </remarks>
 internal sealed class ApiFactory(string? connection = null) : WebApplicationFactory<Program>
 {
-    // Keep production registrations, overriding only environment, output and connection settings.
+    // Keep the application's real service registrations, but select Development and disable local telemetry output.
+    // The optional connection argument is supplied only by SQL workflow tests; these are not domain factories.
     // Non-SQL tests use an unreachable placeholder: accidental database access should fail.
     protected override void ConfigureWebHost(IWebHostBuilder builder) => builder.UseEnvironment("Development")
         .UseSetting("Atlas:Telemetry:Enabled", "false")
         .UseSetting("ATLAS_SQL_CONNECTION_STRING", connection ?? "Server=localhost;Database=Atlas_Not_Used;Integrated Security=true;TrustServerCertificate=true");
+    /// <summary>
+    /// Create a browser-like HTTP client with an independent cookie jar; it retains cookies across its own requests.
+    /// With no login cookie it starts anonymous. Two calls create separate client sessions, not two browser windows.
+    /// </summary>
+    // A cookie jar stores server-issued cookies and attaches matching cookies to later requests.
+    // No page rendering, JavaScript, or browser enforcement of CORS/SameSite is simulated by this helper.
     // The HTTPS address is logical in TestServer: no localhost port is opened.
     // Factory clients retain cookies, but redirects stay visible so tests can assert 401/403.
     public HttpClient Browser() => CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
