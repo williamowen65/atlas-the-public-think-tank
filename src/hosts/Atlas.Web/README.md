@@ -13,6 +13,8 @@ npm run storybook
 
 Open http://127.0.0.1:6006. Use the Foundation / ActionButton stories and Controls panel to change the label and disabled state. A story is a named setup condition for a component. `args` supplies its inputs; the render fixture supplies a callback and visible result. These fixtures require no account, database, or running API.
 
+A decorator is a reusable wrapper that supplies layout or context around a story. No decorator is needed for this first button; global styles are imported by `.storybook/preview.ts`.
+
 In another terminal, `npm run dev` opens the minimal integration harness at http://127.0.0.1:5173. Both surfaces import `src/components/ActionButton.ts`; editing that module updates both. This button proves the tooling, rather than prescribing Atlas's eventual design.
 
 ## Source structure and the deferred SPA choice
@@ -45,10 +47,14 @@ On a Linux machine missing browser libraries, use `npx playwright install --with
 
 The checks cover enabled keyboard activation, rejected disabled activation, narrow-screen wrapping, accessibility rules for the enabled story, and shared-component behavior in the web harness. Accessibility automation cannot establish complete accessibility: still review keyboard navigation, assistive technology, contrast, and actual product workflows.
 
-Storybook provides isolated scenarios; Playwright supplies real browser interaction and assertions. This overlaps browser automation tools such as Selenium, but these component checks do not replace later full-app journeys for registration, sessions, navigation, and real API behavior. Direct Playwright checks are used here instead of the React/Vue-oriented Vitest addon, allowing the HTML renderer to remain independent of a SPA choice.
+Storybook provides isolated scenarios; Playwright supplies real browser interaction and assertions. This overlaps browser automation tools such as Selenium, but these component checks do not replace later full-app journeys for registration, sessions, navigation, and real API behavior. Direct Playwright checks are used here because Storybook’s Vitest addon does not support the interim HTML renderer. This allows the workbench to remain independent of a SPA choice.
 
 GitHub Actions installs locked dependencies and Chromium, builds both surfaces, and runs the same checks without SQL, secrets, a public Storybook URL, or a paid visual service. Failed runs retain an HTML report and browser traces for seven days. Open reports with `npx playwright show-report`; inspect a trace with `npx playwright show-trace <trace.zip>`. No Storybook deployment is configured. Storybook telemetry is disabled in both commands and configuration.
 
 ## Next decisions
 
 Research the SPA framework before expanding the component library (PTT-146). Evaluate component ergonomics, routing, state needs, testing, maintenance, licensing, and eventual SEO/share previews. Framework selection and deployment remain separate decisions. The Storybook workflow can be reviewed now with only a small web composition.
+
+## CI verification evidence
+
+The initial [browser job](https://github.com/williamowen65/atlas-the-public-think-tank/actions/runs/39465794887) passed all five tests. A subsequent [negative verification run](https://github.com/williamowen65/atlas-the-public-think-tank/actions/runs/39465964351) deliberately replaced the enabled callback expectation with an incorrect string to prove the job rejects a failed assertion and retains failure evidence. The correct expectation is restored in the final PR state; the intentionally incorrect assertion is not part of the resulting code.
