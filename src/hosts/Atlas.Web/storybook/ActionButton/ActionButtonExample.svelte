@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ActionButton from './ActionButton.svelte';
+  import ActionButton from '../../src/lib/components/ActionButton.svelte';
 
   interface Props {
     label?: string;

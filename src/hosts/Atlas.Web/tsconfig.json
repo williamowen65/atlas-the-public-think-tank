@@ -11,5 +11,14 @@
     "strict": true,
     "moduleResolution": "Bundler"
   },
-  "include": ["src/**/*.ts", "src/**/*.svelte", ".storybook/**/*.ts", "tests/**/*.ts", "playwright.config.ts", "vite.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.svelte",
+    ".storybook/**/*.ts",
+    "tests/**/*.ts",
+    "playwright.config.ts",
+    "vite.config.ts",
+    "storybook/**/*.ts",
+    "storybook/**/*.svelte"
+  ]
 }

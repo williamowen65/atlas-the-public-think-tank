@@ -19,17 +19,16 @@ In another terminal:
 npm run storybook
 ```
 
-Open http://127.0.0.1:6006. Foundation / ActionButton shows the production component directly with enabled, disabled and long-label inputs. Examples / ActionButton adds a visible callback result. No API, SQL, credentials or session is required.
+Open http://127.0.0.1:6006. Examples / ActionButton is the single button story group. Enabled, Disabled and Long Label are scenarios within that group; the Enabled scenario shows a visible callback result. No API, SQL, credentials or session is required.
 
 ## Where the markup lives
 
 | File | Responsibility |
 | --- | --- |
 | `src/lib/components/ActionButton.svelte` | Actual reusable button HTML and callback contract |
-| `src/lib/components/ActionButton.stories.ts` | Direct component scenarios; inputs only, no duplicate HTML |
-| `src/lib/components/ActionButtonExample.svelte` | Small demo composition with reactive status text |
-| `src/lib/components/ActionButtonExample.stories.ts` | Enabled/disabled scenarios for that demo |
-| `src/routes/+page.svelte` | Home page imports the same demo, which imports the shared button |
+| `storybook/ActionButton/ActionButtonExample.svelte` | Small demo composition with reactive status text |
+| `storybook/ActionButton/ActionButton.stories.ts` | Enabled, disabled and long-label scenarios for that demo |
+| `src/routes/+page.svelte` | Home page imports the production button directly and owns its page state |
 | `src/routes/+layout.svelte` | Shared navigation, styles and page outlet |
 | `src/routes/about/+page.svelte` | Second route proving SvelteKit navigation |
 | `src/app.html` | SvelteKit's HTML document shell |
@@ -38,7 +37,9 @@ Open http://127.0.0.1:6006. Foundation / ActionButton shows the production compo
 
 There is no handwritten DOM assembly or application `src/main.ts`. SvelteKit handles bootstrapping. The remaining `.storybook/main.ts` is configuration, not the page entry point. Solution Explorer mirrors the source folders; install the Svelte editor extension for `.svelte` language support where your IDE supports it. `npm run check` remains the authoritative component/type check.
 
-A component owns its HTML. A story supplies a named setup through `args`; it does not recreate production markup. A decorator wraps stories with shared layout/context when needed; the first button needs none. The status message belongs to the demonstration, not the production button. Its `$state` is local example state, not Redux.
+A component owns its HTML. A story supplies a named setup through `args`; it does not recreate production markup. A decorator wraps stories with shared layout/context when needed; the first button needs none. All story files and Storybook-only Svelte wrappers live under `storybook/`, outside production `src/`. The app imports only the reusable button, never a Storybook example. `.storybook/` holds tool configuration; `storybook/` holds the examples themselves. The status message belongs to the demonstration, not the production button. Its `$state` is local example state, not Redux.
+
+Storybook uses the metadata title `Examples/ActionButton` for the sidebar group. Each named story export adds a scenario beneath it: Enabled, Disabled and Long Label. These are three setups of the same component, not three component implementations. There is no second Foundation group.
 
 ## Understanding package.json
 
