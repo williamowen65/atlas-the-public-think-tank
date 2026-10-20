@@ -391,6 +391,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.Api.Tests", "tests\At
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "api", "api", "{98A12500-0000-4000-8000-000000000001}"
 	ProjectSection(SolutionItems) = preProject
+		docs\api\ACCOUNT-LIFECYCLE.md = docs\api\ACCOUNT-LIFECYCLE.md
+		docs\api\HARDENING-PLAN.md = docs\api\HARDENING-PLAN.md
+		docs\api\LOGGING.md = docs\api\LOGGING.md
+		docs\api\identity-closure.http = docs\api\identity-closure.http
+		docs\api\identity-negative.http = docs\api\identity-negative.http
+		docs\api\identity-recovery.http = docs\api\identity-recovery.http
 		docs\api\AUTHENTICATION.md = docs\api\AUTHENTICATION.md
 		docs\api\CODE-GUIDE.md = docs\api\CODE-GUIDE.md
 		docs\api\ENDPOINTS.md = docs\api\ENDPOINTS.md
