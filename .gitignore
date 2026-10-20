@@ -397,3 +397,9 @@ http-client.env.json.user
 
 # Local account confirmation payloads (never serve or commit these files).
 /src/hosts/Atlas.Api/development-mail/
+
+# Atlas.Web generated artifacts
+/src/hosts/Atlas.Web/dist/
+/src/hosts/Atlas.Web/storybook-static/
+/src/hosts/Atlas.Web/playwright-report/
+/src/hosts/Atlas.Web/test-results/
