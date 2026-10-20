@@ -8,5 +8,4 @@ const meta = {
 } satisfies Meta<typeof VotingCardExample>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const Standard: Story = {};
-export const Compact: Story = { args: { compact: true } };
+export const Playground: Story = {};

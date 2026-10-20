@@ -4,11 +4,11 @@ This workbench is for trying UI states before assembling the website. The three 
 
 | Area | Purpose | Current examples |
 | --- | --- | --- |
-| Styles and Layout | Isolate shared colors, typography, spacing, surfaces and responsive grids | Playground / Layout and Narrow |
-| Components | One reusable component with multiple controlled scenarios | ActionButton and VotingDial |
-| Compositions | Several production components or content regions working together | Node voting preview, standard and compact |
+| Styles and Layout | Isolate shared colors, typography, spacing, surfaces and responsive grids | Typography / Playground |
+| Components | One story per reusable component; variations through Controls | ActionButton and VotingDial |
+| Compositions | Several production components or content regions working together | Node voting preview and independent voting comparison |
 
-Each metadata `title` sets a slash-separated sidebar path. Each named story export creates one scenario beneath that path. An example wrapper holds local demonstration state but imports the production component; it does not duplicate the component implementation. There is one ActionButton group, with no separate Foundation/Examples split.
+Each metadata `title` sets a slash-separated sidebar path. Each group currently exports only one Playground story to keep navigation simple. Use Controls for compact, disabled, label and selection variations instead of separate sidebar entries. An example wrapper holds local demonstration state but imports the production component; it does not duplicate the component implementation. There is one ActionButton group, with no separate Foundation/Examples split.
 
 ## Global styles versus individual controls
 
@@ -16,7 +16,7 @@ Each metadata `title` sets a slash-separated sidebar path. Each named story expo
 
 The Storybook **Theme** toolbar chooses light/dark tokens and **Density** chooses comfortable/compact spacing. These globals apply across stories and remain selected when switching stories. The preview decorator puts the selected values on the preview document; CSS resolves the shared tokens. Global styles are therefore deliberately separate from each component's arguments. The app currently uses default light/comfortable tokens; this does not implement an application theme preference screen or persistence.
 
-The style playground's Controls change only its grid columns and container width. Use those together with viewport resizing and keyboard focus to inspect wrapping and rhythm. Component Controls change only that component fixture's inputs. Theme and density live in the toolbar rather than being repeated as props on every component.
+The typography playground's Controls change body font size, line height, heading scale, paragraph spacing and heading-to-text spacing. The reset button restores the defaults defined in the story and updates Controls as well. Refresh is not a reset: Storybook can retain edited arguments in the URL/current story state. For any other story, use the Controls panel's reset action to restore its args; global Theme/Density are separate toolbar values and should be returned to light/comfortable there. These edits do not modify source files. Use those together with viewport resizing and keyboard focus to inspect wrapping and rhythm. Component Controls change only that component fixture's inputs. Theme and density live in the toolbar rather than being repeated as props on every component.
 
 A future header, NodeCard and feed can consume the same tokens and be reviewed separately or in compositions. Compositions should use fixture data/callbacks at first; they need not become real routes. Real route navigation remains an app test, because Storybook's navigation mocks do not prove deployed URL behavior.
 
@@ -36,7 +36,7 @@ The repeated stylesheet issue is concrete: `_voteDial.cshtml` renders a `<style>
 
 ## New voting prototypes and their limits
 
-`VotingDial.svelte` preserves the average / selection / people-and-total hierarchy. Standard shows neighboring numbers vertically. Compact places a reduced control alongside its summary for tighter cards. Unrated (`null`) is distinct from the valid rating zero. Other scenarios include disabled and a compact comment-layout exploration.
+`VotingDial.svelte` preserves the average / selection / people-and-total hierarchy. Standard shows neighboring numbers vertically. Compact places a reduced control alongside its summary for tighter cards. Unrated (`null`) is distinct from the valid rating zero. Use the disabled and compact Controls, and edit the label to explore comment-layout wording. Set initialValue to null for unrated or zero for a zero rating.
 
 The caller owns `value`; the component reports `onChange(value)` and never fetches or saves. The wrapper displays `Preview selection` and labels average/total as unchanged fixtures. This prevents a local UI experiment from pretending an API vote was saved. The comment story explores space and wording only; it does not add numerical comment ratings to the current domain or replace comment reactions.
 

@@ -2,12 +2,12 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
 // The iframe URL opens just the rendered story, without the Storybook sidebar.
-const story = (name: string) =>
-  `http://127.0.0.1:6006/iframe.html?id=components-actionbutton--${name}&viewMode=story`;
+const story = (args = '') =>
+  `http://127.0.0.1:6006/iframe.html?id=components-actionbutton--playground&viewMode=story&args=${args}`;
 
 /** Given an enabled isolated story, keyboard activation invokes its callback. */
 test('enabled story responds to keyboard activation', async ({ page }) => {
-  await page.goto(story('enabled'));
+  await page.goto(story());
   const button = page.getByRole('button', { name: 'Try action' });
   await button.focus();
   await page.keyboard.press('Enter');
@@ -16,7 +16,7 @@ test('enabled story responds to keyboard activation', async ({ page }) => {
 
 /** Given a disabled story, even an attempted click must not invoke its callback. */
 test('disabled story rejects activation', async ({ page }) => {
-  await page.goto(story('disabled'));
+  await page.goto(story('disabled:true'));
   const button = page.getByRole('button', { name: 'Try action' });
   await expect(button).toBeDisabled();
   await button.click({ force: true });
@@ -26,7 +26,7 @@ test('disabled story rejects activation', async ({ page }) => {
 /** Long fixture text remains within a narrow viewport instead of overflowing. */
 test('long label fits a narrow viewport', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
-  await page.goto(story('long-label'));
+  await page.goto(story('label:Explore another way to understand this issue together'));
   await expect(page.getByRole('button')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
 });
@@ -40,7 +40,7 @@ test('shared component works in the web composition', async ({ page }) => {
 
 /** Given the enabled fixture, automated accessibility rules find no violations. */
 test('enabled story passes automated accessibility checks', async ({ page }) => {
-  await page.goto(story('enabled'));
+  await page.goto(story());
   await expect(page.getByRole('button', { name: 'Try action' })).toBeVisible();
   const results = await new AxeBuilder({ page }).include('#storybook-root').analyze();
   expect(results.violations).toEqual([]);

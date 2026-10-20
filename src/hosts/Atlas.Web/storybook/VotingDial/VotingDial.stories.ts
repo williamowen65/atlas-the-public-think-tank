@@ -14,9 +14,4 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Standard: Story = {};
-export const Compact: Story = { args: { compact: true } };
-export const Unrated: Story = { args: { initialValue: null, average: null, totalVotes: 0 } };
-export const Zero: Story = { args: { initialValue: 0 } };
-export const Disabled: Story = { args: { disabled: true } };
-export const CommentExploration: Story = { args: { compact: true, label: 'Comment rating preview' } };
+export const Playground: Story = {};
