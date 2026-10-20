@@ -15,10 +15,15 @@ const meta = {
     headingGap: { control: { type: 'range', min: 0, max: 32, step: 2 } },
     onReset: { control: false, table: { disable: true } },
   },
-  render: (args) => {
-    const [, updateArgs] = useArgs();
-    return { Component: StylePlayground, props: { ...args, onReset: () => updateArgs(defaults) } };
-  },
+  decorators: [
+    (story, context) => {
+      // Storybook owns this hook context in both development and static builds.
+      const [, updateArgs] = useArgs();
+      return story({
+        args: { ...context.args, onReset: () => updateArgs(defaults) },
+      });
+    },
+  ],
 } satisfies Meta<typeof StylePlayground>;
 export default meta;
 type Story = StoryObj<typeof meta>;

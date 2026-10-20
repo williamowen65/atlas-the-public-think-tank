@@ -87,3 +87,13 @@ test('typography reset restores code defaults', async ({ page }) => {
   await expect(page.locator('.specimen')).toHaveCSS('font-size', '16px');
   await expect(page.locator('.specimen p').first()).toHaveCSS('margin-bottom', '16px');
 });
+
+/** The interactive development renderer must support initial render, args and reset. */
+test('typography development server renders and resets after argument updates', async ({ page }) => {
+  await page.goto('http://127.0.0.1:6007/iframe.html?id=styles-and-layout-typography--playground&viewMode=story&args=fontSize:24');
+  await expect(page.getByRole('heading', { name: 'Atlas typography' })).toBeVisible();
+  await expect(page.locator('.specimen')).toHaveCSS('font-size', '24px');
+  await page.getByRole('button', { name: 'Reset typography to code defaults' }).click();
+  await expect(page.locator('.specimen')).toHaveCSS('font-size', '16px');
+  await expect(page.getByText('Storybook preview hooks can only be called', { exact: false })).toHaveCount(0);
+});

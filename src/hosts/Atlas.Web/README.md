@@ -73,7 +73,7 @@ Run these commands from `src/hosts/Atlas.Web`. From the repository root, the equ
 | `npm run check` | After component/TypeScript changes, before committing, or when investigating editor diagnostics. | Generates SvelteKit types, then checks Svelte and TypeScript using `tsconfig.json`. Finishes with diagnostics and a success/failure exit code. It does not build output or run browser tests. |
 | `npm run build` | To verify the application can be packaged, or before browser tests after application changes. | Runs `check` first; only if it passes does Vite build the static app into `dist/`. Finishes rather than keeping a server running. |
 | `npm run build-storybook` | To verify stories can be packaged, or before browser tests after component/story changes. | Builds static Storybook into `storybook-static/`, with telemetry disabled. Finishes without starting a server or deploying anything. |
-| `npm test` | To run browser checks when both built outputs already reflect the source being tested. | Playwright starts the temporary app and Storybook servers, runs Chromium assertions, writes reports/traces as configured and stops the servers. It does **not** rebuild those outputs. |
+| `npm test` | To run browser checks when both built outputs already reflect the source being tested. | Playwright starts the temporary app, built Storybook and development Storybook servers, runs Chromium assertions, writes reports/traces as configured and stops the servers. It does **not** rebuild those outputs. |
 | `npm run test:ci` | Before submitting a frontend change, for a complete local validation pass, and in GitHub Actions. | Sequentially builds/checks the app, builds Storybook and runs the browser tests. `&&` stops the sequence at the first failing command. It finishes with an exit code suitable for CI. |
 | `prepare` lifecycle / `npm run prepare` | Normally runs automatically during a standard local `npm install` or `npm ci`. Run it manually only when you want to regenerate SvelteKit metadata. | Runs `svelte-kit sync` to generate framework configuration/types in `.svelte-kit/`. It does not perform the full type check, build or browser tests. `npm run check` also syncs, so manual execution is usually unnecessary. |
 
@@ -104,7 +104,7 @@ These files configure different tools and stages. They are text source files: `.
 | [.storybook/main.ts](.storybook/main.ts) | Storybook development and build | Finds story files, selects the SvelteKit renderer, enables addons and disables Storybook telemetry. Despite its name, it does not start the application. |
 | [.storybook/preview.ts](.storybook/preview.ts) | Storybook's story-rendering environment | Imports shared styles and configures preview parameters, including accessibility behavior. This affects the stories being displayed. |
 | [storybook-preview.config.ts](storybook-preview.config.ts) | Plain Vite preview, launched by Playwright | Serves the already-built `storybook-static/` directory during tests. It intentionally omits the SvelteKit plugin. It does not configure story appearance or build Storybook. |
-| [playwright.config.ts](playwright.config.ts) | `npm test` | Test directory, Chromium, timeouts, CI retries, HTML reports and retained failure traces. Starts and stops both temporary servers: application on port 4173 and built Storybook on port 6006. |
+| [playwright.config.ts](playwright.config.ts) | `npm test` | Test directory, Chromium, timeouts, CI retries, HTML reports and retained failure traces. Starts and stops temporary servers: application on port 4173, built Storybook on port 6006 and development Storybook on port 6007 for its renderer regression check. |
 | [src/routes/+layout.ts](src/routes/+layout.ts) | SvelteKit routing/rendering | Sets `ssr = false` for this client-rendered SPA. This is a route option file, distinct from the layout component's markup. |
 | [src/app.html](src/app.html) | SvelteKit document generation | Outer HTML shell, language and viewport. SvelteKit fills its head/body placeholders; page and component HTML belongs in `.svelte` files. |
 
@@ -120,7 +120,7 @@ The command relationships are:
 
 - `npm run dev` → application Vite config → SvelteKit/Svelte config → pages and components.
 - `npm run storybook` → Storybook main config → preview config → isolated Svelte stories.
-- `npm run test:ci` → application check/build → Storybook build → Playwright → the two temporary preview servers.
+- `npm run test:ci` → application check/build → Storybook build → Playwright → the preview servers and development Storybook regression server.
 
 Generated `.svelte-kit/tsconfig.json` and other `.svelte-kit/` files are owned by SvelteKit. Recreate them with `npx svelte-kit sync` (also included in installation/check commands); change the project configuration rather than editing generated files.
 
@@ -144,7 +144,7 @@ On Linux with missing browser libraries, use `npx playwright install --with-deps
 - `npm run check`: generate SvelteKit types and run Svelte/TypeScript diagnostics.
 - `npm run build`: check and build the static application.
 - `npm run build-storybook`: build the isolated Svelte workbench.
-- `npm test`: serve both built outputs temporarily and run Chromium checks.
+- `npm test`: serve both built outputs and development Storybook temporarily, then run Chromium checks.
 
 Rebuild after editing source because tests intentionally target built output. Storybook's static preview uses its own plain Vite config; the web preview uses SvelteKit's route fallback.
 

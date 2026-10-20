@@ -13,6 +13,13 @@ export default defineConfig({
   },
   webServer: [
     {
+      // Exercise the actual development renderer as well as static build output.
+      command: 'npx storybook dev --ci --no-open --disable-telemetry --host 127.0.0.1 --port 6007',
+      url: 'http://127.0.0.1:6007',
+      timeout: 120_000,
+      reuseExistingServer: false,
+    },
+    {
       command: 'npx vite preview --host 127.0.0.1 --port 4173 --strictPort',
       url: 'http://127.0.0.1:4173',
       reuseExistingServer: false,
