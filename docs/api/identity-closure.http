@@ -1,0 +1,46 @@
+# Account closure is irreversible. Use a disposable local account with posts/comments.
+# Current policy preserves contributions and shows Deleted user; credentials/name/bio are removed.
+# Owned communities must be transferred first (409); no transfer endpoint is added by this slice.
+# Sign in using auth.http, then fetch authenticated CSRF and copy it here. Keep the cookie jar.
+@baseUrl = https://localhost:7240
+@csrfToken = REPLACE_WITH_AUTHENTICATED_CSRF_TOKEN
+@password = REPLACE_WITH_DISPOSABLE_ACCOUNT_PASSWORD
+@participantId = REPLACE_WITH_DISPOSABLE_PARTICIPANT_GUID
+@nodeId = REPLACE_WITH_A_POST_OWNED_BY_THIS_ACCOUNT
+
+### D1. Capture session participantId before closure (200)
+GET {{baseUrl}}/api/auth/session
+
+### D2. Fetch authenticated CSRF; copy JSON token above
+GET {{baseUrl}}/api/auth/csrf
+
+### D3. Optional incorrect-password check (400); account must remain usable
+POST {{baseUrl}}/api/auth/delete-account
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{ "password": "intentionally-wrong" }
+
+### D4. Close the disposable account (204, session cookie cleared)
+# 409 if it owns a community; nothing is deleted in that case.
+POST {{baseUrl}}/api/auth/delete-account
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{ "password": "{{password}}" }
+
+### D5. Former session now denied (401)
+GET {{baseUrl}}/api/auth/session
+
+### D6. Public author placeholder (200, Deleted user, deleted=true, empty bio)
+GET {{baseUrl}}/api/participants/{{participantId}}
+
+### D7. Post still readable (200 if otherwise public and unhidden)
+GET {{baseUrl}}/api/nodes/{{nodeId}}
+
+### D8. Comments still readable under existing visibility rules
+GET {{baseUrl}}/api/nodes/{{nodeId}}/comments
+
+# Fetch a fresh anonymous CSRF before testing failed login or recovery via the other files.
+# A new registration with the old email is a new participant; it does not reclaim old contributions.
+# Account closure does not scrub names/self-identifying information inside authored post/comment text.

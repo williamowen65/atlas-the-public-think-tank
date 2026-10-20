@@ -23,6 +23,8 @@ public sealed class ParticipantsController(IParticipantRepository participants, 
     public object Get(Guid id)
     {
         var p = participants.GetById(new ParticipantId(id));
+        if (p is { IsActive: false, DisplayName: AtlasAccounts.DeletedDisplayName })
+            return new { id = p.Id.Value, displayName = AtlasAccounts.DeletedDisplayName, bio = "", deleted = true };
         return p is { IsActive: true } ? View(p) : throw new KeyNotFoundException();
     }
     [Authorize(Policy = AtlasPolicies.Member), HttpPut("me")]

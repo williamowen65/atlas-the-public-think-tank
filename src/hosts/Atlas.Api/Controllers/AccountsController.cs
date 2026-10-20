@@ -59,6 +59,21 @@ public sealed class AccountsController(AtlasAccounts accounts, UserManager<Atlas
         await mail.WriteAsync("confirm-email", user.Id, token, cancellationToken);
         return Accepted();
     }
+    /// <summary>Close this account, retain contributions under a deleted-user placeholder, and clear this session.</summary>
+    [Authorize, HttpPost("delete-account")]
+    public async Task<IActionResult> DeleteAccount(DeleteAccountRequest request, CancellationToken cancellationToken)
+    {
+        var participant = await accounts.ResolveParticipantAsync(User, cancellationToken);
+        if (participant is null) return Unauthorized();
+        var result = await accounts.DeleteAccountAsync(participant.Value.Value, request.Password, cancellationToken);
+        if (!result.Succeeded)
+            return Problem(statusCode: result.Errors.Any(e => e.Code == "CommunityOwnership") ? 409 : 400,
+                title: result.Errors.Any(e => e.Code == "CommunityOwnership")
+                    ? "Transfer community ownership before closing the account." : "Account closure could not be completed.");
+        await signIn.SignOutAsync();
+        return NoContent();
+    }
+
     /// <summary>Generic response avoids disclosing whether a confirmed active account exists.</summary>
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword(EmailRequest request, CancellationToken cancellationToken)
@@ -116,3 +131,5 @@ public sealed record ConfirmationRequest(Guid UserId, [Required, MaxLength(4096)
 public sealed record EmailRequest([Required, EmailAddress, MaxLength(256)] string Email);
 public sealed record ResetPasswordRequest([Required, EmailAddress, MaxLength(256)] string Email,
     [Required, MaxLength(4096)] string Token, [Required, MaxLength(1024)] string NewPassword);
+
+public sealed record DeleteAccountRequest([Required, MaxLength(1024)] string Password);

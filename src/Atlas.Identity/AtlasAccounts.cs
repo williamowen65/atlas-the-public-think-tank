@@ -132,6 +132,38 @@ public sealed class AtlasAccounts(
         }
     }
 
+    public const string DeletedDisplayName = "Deleted user";
+
+    /// <summary>Remove credentials and identifying profile fields, retaining contribution references.</summary>
+    public async Task<IdentityResult> DeleteAccountAsync(Guid userId, string password, CancellationToken cancellationToken = default)
+    {
+        var user = await users.FindByIdAsync(userId.ToString());
+        if (user is null || !await users.CheckPasswordAsync(user, password))
+            return Failure("CredentialsRejected", "Account closure could not be completed.").Result;
+        await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        try
+        {
+            var profile = await database.ParticipantRows.SingleOrDefaultAsync(p => p.Id == userId && p.IsActive, cancellationToken);
+            if (profile is null) return Failure("InactiveProfile", "Account closure could not be completed.").Result;
+            // Do not strand a community with no active owner. Ownership transfer is a separate policy/workflow.
+            if (await database.CommunityRows.AnyAsync(c => c.OwnerParticipantId == userId, cancellationToken))
+                return Failure("CommunityOwnership", "Transfer community ownership before closing the account.").Result;
+            profile.DisplayName = DeletedDisplayName;
+            profile.Bio = string.Empty;
+            profile.IsActive = false;
+            profile.UpdatedAt = AtlasTime.UtcNow;
+            // Identity removes credential/contact data and its dependent role/login/token records.
+            // The Participant row remains so posts, comments and audit references remain valid.
+            var result = await users.DeleteAsync(user);
+            if (!result.Succeeded) return result;
+            await database.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            database.PublishCommittedTelemetry(transaction.TransactionId);
+            return IdentityResult.Success;
+        }
+        finally { database.ChangeTracker.Clear(); }
+    }
+
     /// <summary>Recovery must not reactivate a closed/inactive Atlas profile.</summary>
     public Task<bool> HasActiveProfileAsync(Guid userId, CancellationToken cancellationToken = default) =>
         database.ParticipantRows.AsNoTracking().AnyAsync(row => row.Id == userId && row.IsActive, cancellationToken);

@@ -99,4 +99,4 @@ X-CSRF-TOKEN: {{csrfToken}}
 # - For expiry, retain a token beyond the configured provider lifespan; expect reset 400.
 # - To examine rate limiting, repeat N1 until this IP's account budget is exhausted (429).
 # - Test Production mail routes separately: register/forgot/resend must return 503 with valid CSRF.
-# - Deletion has no route yet. Do not simulate it by deleting SQL rows; see ACCOUNT-LIFECYCLE.md.
+# - Account closure: see identity-closure.http; use a disposable account, not direct SQL deletion.

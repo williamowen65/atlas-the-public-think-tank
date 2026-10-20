@@ -169,6 +169,31 @@ public sealed class SqlWorkflowTests
             Assert.AreEqual(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/api/auth/reset-password", new { email, token, newPassword })).StatusCode);
             Assert.AreEqual(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/api/auth/login", new { email, password = oldPassword })).StatusCode);
             Assert.AreEqual(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/api/auth/login", new { email, password = newPassword })).StatusCode);
+            await Token(client);
+            var session = await client.GetFromJsonAsync<JsonElement>("/api/auth/session");
+            var participantId = session.GetProperty("participantId").GetGuid();
+            var type = NodeTypeDefinition.CreateSystemDefined("Closure idea", "Retained content", DateTimeOffset.UtcNow);
+            new SqlNodeTypeRepository(() => new AtlasDataContext(options)).Save(type);
+            var created = await client.PostAsJsonAsync("/api/nodes", new
+                { title = "Retained post", markdown = "Retained body", typeId = type.Id.Value, requestedTypeIds = Array.Empty<Guid>() });
+            Assert.AreEqual(HttpStatusCode.Created, created.StatusCode);
+            var node = (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+            await Success(await client.PostAsJsonAsync($"/api/nodes/{node}/comments", new { body = "Retained comment" }));
+            Assert.AreEqual(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/api/auth/delete-account", new { password = "wrong" })).StatusCode);
+            Assert.AreEqual(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/api/auth/delete-account", new { password = newPassword })).StatusCode);
+            Assert.AreEqual(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/auth/session")).StatusCode);
+            var tombstone = await client.GetFromJsonAsync<JsonElement>($"/api/participants/{participantId}");
+            Assert.AreEqual("Deleted user", tombstone.GetProperty("displayName").GetString());
+            Assert.IsTrue(tombstone.GetProperty("deleted").GetBoolean());
+            Assert.IsTrue((await client.GetAsync($"/api/nodes/{node}")).IsSuccessStatusCode);
+            var comments = await client.GetAsync($"/api/nodes/{node}/comments");
+            Assert.IsTrue(comments.IsSuccessStatusCode);
+            StringAssert.Contains(await comments.Content.ReadAsStringAsync(), "Retained comment");
+            Assert.IsFalse(await database.Users.AnyAsync(u => u.Id == participantId));
+            var profile = await database.ParticipantRows.AsNoTracking().SingleAsync(p => p.Id == participantId);
+            Assert.IsFalse(profile.IsActive);
+            Assert.AreEqual("Deleted user", profile.DisplayName);
+            Assert.AreEqual(string.Empty, profile.Bio);
         }
         finally
         {

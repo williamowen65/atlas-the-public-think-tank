@@ -91,3 +91,5 @@ See [API logging and telemetry](LOGGING.md) for terminal formatting, local file 
 Run requests individually with cookies enabled. Copy the returned CSRF token after every
 login/logout into the file you are using; keep credentials and private mail tokens untracked.
 These are manual checks with expected outcomes, not automatically verified test results.
+
+[identity-closure.http](identity-closure.http) tests password-confirmed account closure and retained contributions with a disposable account.

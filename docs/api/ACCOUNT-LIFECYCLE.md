@@ -51,35 +51,31 @@ the configured stamp revalidation behavior. Immediate global revocation needs a 
 explicit contract/test. Delivery errors may produce a server error; generic accepted
 responses are not a claim of constant timing or guaranteed mail delivery.
 
-## Account deletion: current behavior, not an implemented feature
+## Account deletion: accepted policy and implemented workflow
 
-There is no account-delete or self-service deactivation endpoint/application workflow.
-Identity credential deletion and deletion of Atlas contributions are different operations.
-Posts/comments reference the Participant record, not the credential record. The mappings
-use non-cascading (`NoAction`) Participant relationships for node authors, comment authors,
-votes/reactions, community ownership/membership, moderation references and notifications.
+POST `/api/auth/delete-account` requires a signed-in active account, its password,
+and the authenticated CSRF pair. Success (204) removes the Identity credential/contact
+record, replaces profile name with `Deleted user`, clears bio, deactivates the retained
+Participant, and clears the caller's session cookie. Identity deletion and profile
+changes commit together. Existing session cookies on other clients fail persisted
+eligibility checks because the user is gone. Recovery cannot restore this account.
 
-Consequently, removing credentials alone is not a contribution deletion/anonymization
-workflow. Removing a referenced Participant row is blocked by the database rather than
-silently cascading through posts and discussion threads. Neither action transfers a
-community's ownership, anonymizes display names, removes profile text or resolves votes.
-Public reads can still expose the stored author/profile information. Recovery must not
-be used to reactivate a deliberately inactive profile; its active-profile guard prevents that.
+Posts/comments, votes/reactions, and relationship references remain. The public profile
+endpoint returns a minimal `deleted=true` placeholder; inactive profiles remain excluded
+from the participant directory. Discovery caches are invalidated by the Participant
+write, so the former display name is not served from a stale cached card. No schema
+migration is required. The retained GUID still correlates the former user's contributions;
+this is account/profile anonymization, not complete unlinkability or erasure. Authored
+content, audit history, backups and already-written diagnostics are not rewritten.
 
-Product decision required before exposing closure:
+Closure is blocked with 409 if the user owns a community, pending ownership transfer.
+This avoids silently stranding a community or destroying its content. Membership and
+votes remain historical references. Ownership transfer itself is not implemented here.
+Wrong-password closure returns generic 400 without modifying the account. Re-registering
+an old email creates a new Participant; it cannot reclaim the retained contributions.
 
-- Recommended MVP direction: close login access, retain an inactive author placeholder
-  and preserve posts/comments so discussions and shared graph structure remain usable.
-- Decide whether to anonymize display name/bio and remove credential/contact data, how
-  to present the placeholder, and what happens to owned communities and existing votes.
-- Decide whether closure is reversible deactivation or irreversible deletion. Do not call
-  deactivation deletion, or promise complete erasure while retaining identifying content.
-
-Once selected, implement one coordinated application operation with password/recent-auth
-verification and CSRF, session invalidation, transaction boundaries and audit behavior.
-Test a user who owns nodes, comments, votes, community membership/ownership and an active
-session, then verify preserved/removed records and rejected future writes/recovery.
-No destructive account/content policy has been guessed or exposed by this PR.
+See [identity-closure.http](identity-closure.http) for deliberate manual checks using a
+disposable account. Do not use Run All against an account you want to keep.
 
 ## Validation status
 
@@ -87,7 +83,7 @@ Added a SQL-backed HTTP recovery scenario for private delivery, confirmation/res
 unknown/unconfirmed requests, invalid and reused reset tokens, and old/new password login.
 Added recovery routes to missing/invalid-CSRF boundary tests. Tests require the .NET SDK;
 the SQL scenario also requires ATLAS_SQL_TEST_CONNECTION_STRING. They have not been run
-in the editing environment. Account deletion tests await the product policy above.
+in the editing environment. The SQL scenario also closes an account with a post/comment, checks wrong-password rejection, retained content, the deleted profile and removed credentials. These assertions have not been run here.
 
 ## Manual Identity requests
 

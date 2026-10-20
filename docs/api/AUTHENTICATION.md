@@ -116,4 +116,4 @@ Confirmation tokens are not returned by registration JSON or written to applicat
 
 ## Recovery and account closure
 
-See [Account lifecycle](ACCOUNT-LIFECYCLE.md) for implemented recovery routes, private delivery, and the account-deletion policy still to decide.
+See [Account lifecycle](ACCOUNT-LIFECYCLE.md) for implemented recovery routes, private delivery, and password-confirmed closure preserving contributions under Deleted user.
