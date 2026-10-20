@@ -2,6 +2,11 @@
 
 PTT-143, PTT-144 and PTT-145 deliver the foundation from [PTTD-31](https://thepublicthinktank.atlassian.net/browse/PTTD-31). SvelteKit is the selected frontend framework. Svelte components provide declarative HTML, reactive state and callbacks; SvelteKit supplies the application structure and router. [PTT-148](https://thepublicthinktank.atlassian.net/browse/PTT-148) tracks Redux Toolkit configuration separately.
 
+## Learning guides
+
+- [SvelteKit orientation](docs/SVELTEKIT.md): route folders, plus files, dynamic pages, layouts, rendering, SSR and our static deployment choice.
+- [Storybook workbench](docs/STORYBOOK-WORKBENCH.md): styles/layout, components/compositions, global themes and density, legacy dial inspection and voting prototype limits.
+
 ## Start here
 
 Install Node.js 24 LTS. From this directory:
@@ -19,7 +24,7 @@ In another terminal:
 npm run storybook
 ```
 
-Open http://127.0.0.1:6006. Examples / ActionButton is the single button story group. Enabled, Disabled and Long Label are scenarios within that group; the Enabled scenario shows a visible callback result. No API, SQL, credentials or session is required.
+Open http://127.0.0.1:6006. Components / ActionButton is the single button story group. Enabled, Disabled and Long Label are scenarios within that group; the Enabled scenario shows a visible callback result. No API, SQL, credentials or session is required.
 
 ## Where the markup lives
 
@@ -39,7 +44,7 @@ There is no handwritten DOM assembly or application `src/main.ts`. SvelteKit han
 
 A component owns its HTML. A story supplies a named setup through `args`; it does not recreate production markup. A decorator wraps stories with shared layout/context when needed; the first button needs none. All story files and Storybook-only Svelte wrappers live under `storybook/`, outside production `src/`. The app imports only the reusable button, never a Storybook example. `.storybook/` holds tool configuration; `storybook/` holds the examples themselves. The status message belongs to the demonstration, not the production button. Its `$state` is local example state, not Redux.
 
-Storybook uses the metadata title `Examples/ActionButton` for the sidebar group. Each named story export adds a scenario beneath it: Enabled, Disabled and Long Label. These are three setups of the same component, not three component implementations. There is no second Foundation group.
+Storybook uses the metadata title `Components/ActionButton` for the sidebar group. Each named story export adds a scenario beneath it: Enabled, Disabled and Long Label. These are three setups of the same component, not three component implementations. The top-level paths are Styles and Layout, Components and Compositions; no separate Foundation/Examples groups remain.
 
 ## Understanding package.json
 
@@ -143,7 +148,7 @@ On Linux with missing browser libraries, use `npx playwright install --with-deps
 
 Rebuild after editing source because tests intentionally target built output. Storybook's static preview uses its own plain Vite config; the web preview uses SvelteKit's route fallback.
 
-The six browser checks cover enabled keyboard activation, disabled behavior, long text on narrow screens, shared-component web composition, initial automated accessibility, and routing (client navigation, Back, direct entry). Accessibility automation is partial; manual keyboard and assistive-technology review is still necessary. These fixture tests do not replace future complete user journeys against the real API.
+Browser checks cover enabled keyboard activation, disabled behavior, long text on narrow screens, shared-component web composition, initial automated accessibility, and routing (client navigation, Back, direct entry). Accessibility automation is partial; manual keyboard and assistive-technology review is still necessary. These fixture tests do not replace future complete user journeys against the real API.
 
 GitHub Actions runs on relevant pushes only, including pushes to PR branches. It installs locked dependencies and Chromium, checks/builds both surfaces and runs the browser suite. Failure reports and traces are retained for seven days. Open a report with `npx playwright show-report` or a trace with `npx playwright show-trace <trace.zip>`. No public Storybook hosting, SQL, external secrets or paid visual service is required. Storybook telemetry is disabled.
 
