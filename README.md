@@ -74,4 +74,4 @@ The [JSON API guide](docs/api/README.md) covers local HTTPS, cookie/CSRF authent
 
 ### Frontend component workbench
 
-Start with [Atlas.Web and Storybook](src/hosts/Atlas.Web/README.md) for isolated components, the minimal shared-component web harness, and browser tests. The SPA framework remains undecided.
+Start with [Atlas.Web and Storybook](src/hosts/Atlas.Web/README.md) for isolated components, the minimal shared-component web harness, and browser tests. The frontend uses SvelteKit with declarative Svelte components shared with Storybook.

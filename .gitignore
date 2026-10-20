@@ -403,3 +403,5 @@ http-client.env.json.user
 /src/hosts/Atlas.Web/storybook-static/
 /src/hosts/Atlas.Web/playwright-report/
 /src/hosts/Atlas.Web/test-results/
+
+/src/hosts/Atlas.Web/.svelte-kit/

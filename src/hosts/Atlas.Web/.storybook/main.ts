@@ -1,9 +1,8 @@
-import type { StorybookConfig } from '@storybook/html-vite';
+import type { StorybookConfig } from '@storybook/sveltekit';
 
-// HTML is an interim renderer so the workbench does not select a SPA framework.
 const config: StorybookConfig = {
   stories: ['../src/**/*.stories.ts'],
-  framework: '@storybook/html-vite',
+  framework: '@storybook/sveltekit',
   addons: ['@storybook/addon-docs', '@storybook/addon-a11y'],
   core: { disableTelemetry: true },
 };

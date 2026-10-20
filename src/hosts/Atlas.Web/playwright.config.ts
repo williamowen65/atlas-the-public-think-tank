@@ -18,7 +18,7 @@ export default defineConfig({
       reuseExistingServer: false,
     },
     {
-      command: 'npx vite preview --outDir storybook-static --host 127.0.0.1 --port 6006 --strictPort',
+      command: 'npx vite preview --config storybook-preview.config.ts --outDir storybook-static --host 127.0.0.1 --port 6006 --strictPort',
       url: 'http://127.0.0.1:6006',
       reuseExistingServer: false,
     },

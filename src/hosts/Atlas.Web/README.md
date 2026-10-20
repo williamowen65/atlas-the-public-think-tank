@@ -1,60 +1,78 @@
-# Atlas.Web component workbench
+# Atlas.Web: SvelteKit and Storybook
 
-PTT-143, PTT-144, PTT-145 implement the starting point from [PTTD-31](https://thepublicthinktank.atlassian.net/browse/PTTD-31). The priority is isolated component development and automated browser checks. There is no selected SPA framework, router, state library, API integration, or production page design yet.
+PTT-143, PTT-144 and PTT-145 deliver the foundation from [PTTD-31](https://thepublicthinktank.atlassian.net/browse/PTTD-31). SvelteKit is the selected frontend framework. Svelte components provide declarative HTML, reactive state and callbacks; SvelteKit supplies the application structure and router. [PTT-148](https://thepublicthinktank.atlassian.net/browse/PTT-148) tracks Redux Toolkit configuration separately.
 
 ## Start here
 
-Install Node.js 24 LTS, then run these commands from this directory:
+Install Node.js 24 LTS. From this directory:
 
 ```sh
 npm ci
+npm run dev
+```
+
+Open http://127.0.0.1:5173. The home page demonstrates the shared button; the navigation link opens `/about` through SvelteKit's client router. Browser Back and direct entry to `/about` are covered by browser tests.
+
+In another terminal:
+
+```sh
 npm run storybook
 ```
 
-Open http://127.0.0.1:6006. Use the Foundation / ActionButton stories and Controls panel to change the label and disabled state. A story is a named setup condition for a component. `args` supplies its inputs; the render fixture supplies a callback and visible result. These fixtures require no account, database, or running API.
+Open http://127.0.0.1:6006. Foundation / ActionButton shows the production component directly with enabled, disabled and long-label inputs. Examples / ActionButton adds a visible callback result. No API, SQL, credentials or session is required.
 
-A decorator is a reusable wrapper that supplies layout or context around a story. No decorator is needed for this first button; global styles are imported by `.storybook/preview.ts`.
+## Where the markup lives
 
-In another terminal, `npm run dev` opens the minimal integration harness at http://127.0.0.1:5173. Both surfaces import `src/components/ActionButton.ts`; editing that module updates both. This button proves the tooling, rather than prescribing Atlas's eventual design.
-
-## Source structure and the deferred SPA choice
-
-| Location | Responsibility |
+| File | Responsibility |
 | --- | --- |
-| `../Atlas.Api` | Existing C# HTTP host and Identity |
-| `Atlas.Web/package.json` | Independently runnable frontend workspace |
-| `.storybook/` | Storybook renderer, addon, and preview configuration |
-| `src/components/` | Shared rendering code and colocated story scenarios |
-| `src/main.ts` | Tiny web composition proving reuse |
-| `tests/` | Browser checks against built stories and web composition |
+| `src/lib/components/ActionButton.svelte` | Actual reusable button HTML and callback contract |
+| `src/lib/components/ActionButton.stories.ts` | Direct component scenarios; inputs only, no duplicate HTML |
+| `src/lib/components/ActionButtonExample.svelte` | Small demo composition with reactive status text |
+| `src/lib/components/ActionButtonExample.stories.ts` | Enabled/disabled scenarios for that demo |
+| `src/routes/+page.svelte` | Home page imports the same demo, which imports the shared button |
+| `src/routes/+layout.svelte` | Shared navigation, styles and page outlet |
+| `src/routes/about/+page.svelte` | Second route proving SvelteKit navigation |
+| `src/app.html` | SvelteKit's HTML document shell |
+| `.storybook/main.ts` | Storybook's SvelteKit adapter, story paths and addons |
+| `.storybook/preview.ts` | Shared Storybook styles and preview settings |
 
-Atlas.Api is a sibling of Atlas.Web, not nested within it. Storybook is a separate command and browser surface within the same npm workspace; it is not a C# project or a deployed application dependency. Atlas.sln exposes the workspace files as solution items for discoverability. npm commands still build and test them independently of dotnet.
+There is no handwritten DOM assembly or application `src/main.ts`. SvelteKit handles bootstrapping. The remaining `.storybook/main.ts` is configuration, not the page entry point. Solution Explorer mirrors the source folders; install the Svelte editor extension for `.svelte` language support where your IDE supports it. `npm run check` remains the authoritative component/type check.
 
-The interim renderer is Storybook HTML with Vite and TypeScript. Components currently return native DOM elements. This deliberately avoids selecting React, Vue, Svelte, a custom-element architecture, or an application state model. Choosing a framework later will require revisiting the renderer and possibly adapting these small render functions; this is not a promise of zero migration cost. Keep the initial sample small until that decision is researched.
+A component owns its HTML. A story supplies a named setup through `args`; it does not recreate production markup. A decorator wraps stories with shared layout/context when needed; the first button needs none. The status message belongs to the demonstration, not the production button. Its `$state` is local example state, not Redux.
 
-Redux remains a candidate for application state, not a prerequisite for Storybook or a choice made here. Consider its need alongside the eventual framework and real shared-state requirements. Storybook itself may contain React dependencies for its developer interface; that does not make Atlas a React application. React's [current MIT license](https://github.com/react/react/blob/main/LICENSE) contains no restriction on competing with Facebook.
+## App, API and deployment boundaries
 
-For the MVP, the working assumption is one public origin: `/` for the SPA and `/api` for the API. Source layout does not decide hosting. A later task can have ASP.NET serve built assets or route one public origin to separate processes. This harness makes no API requests and does not weaken HTTPS, cookies, CORS, or CSRF. PTT-147 covers that integration.
+Atlas.Web and Atlas.Api remain sibling projects. Atlas.Api continues to own backend and Identity workflows. Storybook is an independently runnable developer/test surface inside the web workspace, not a deployed runtime dependency.
 
-## Run the CI checks locally
+This slice uses SvelteKit's static adapter with client rendering (`ssr = false`). `npm run build` outputs `dist/`, including `index.html` as the SPA fallback. It needs no separate production Node server. The likely MVP public origin remains `/` for the web and `/api` for the backend. Production hosting must serve real assets first and apply the SPA fallback only to frontend routes, never swallow `/api` errors or missing asset requests. That hosting integration is not implemented here.
+
+Pure client rendering has startup and SEO/share-preview tradeoffs. Revisit prerendering, server rendering and per-node social metadata before public launch; choosing SvelteKit leaves those options available but this setup does not implement them. No backend is duplicated in SvelteKit and no API/CSRF/cookie behavior is changed. PTT-147 covers real API integration and secure local HTTPS/proxy behavior.
+
+## Build and test
 
 ```sh
 npx playwright install chromium
 npm run test:ci
 ```
 
-On a Linux machine missing browser libraries, use `npx playwright install --with-deps chromium`. `npm run build` type-checks and builds the web harness. `npm run build-storybook` produces local static workbench files. `npm test` starts temporary servers for those built outputs, runs Chromium checks, and stops the servers. Build again after changing source; tests intentionally target built artifacts.
+On Linux with missing browser libraries, use `npx playwright install --with-deps chromium`. Commands:
 
-The checks cover enabled keyboard activation, rejected disabled activation, narrow-screen wrapping, accessibility rules for the enabled story, and shared-component behavior in the web harness. Accessibility automation cannot establish complete accessibility: still review keyboard navigation, assistive technology, contrast, and actual product workflows.
+- `npm run check`: generate SvelteKit types and run Svelte/TypeScript diagnostics.
+- `npm run build`: check and build the static application.
+- `npm run build-storybook`: build the isolated Svelte workbench.
+- `npm test`: serve both built outputs temporarily and run Chromium checks.
 
-Storybook provides isolated scenarios; Playwright supplies real browser interaction and assertions. This overlaps browser automation tools such as Selenium, but these component checks do not replace later full-app journeys for registration, sessions, navigation, and real API behavior. Direct Playwright checks are used here because Storybook’s Vitest addon does not support the interim HTML renderer. This allows the workbench to remain independent of a SPA choice.
+Rebuild after editing source because tests intentionally target built output. Storybook's static preview uses its own plain Vite config; the web preview uses SvelteKit's route fallback.
 
-GitHub Actions installs locked dependencies and Chromium, builds both surfaces, and runs the same checks without SQL, secrets, a public Storybook URL, or a paid visual service. Failed runs retain an HTML report and browser traces for seven days. Open reports with `npx playwright show-report`; inspect a trace with `npx playwright show-trace <trace.zip>`. No Storybook deployment is configured. Storybook telemetry is disabled in both commands and configuration.
+The six browser checks cover enabled keyboard activation, disabled behavior, long text on narrow screens, shared-component web composition, initial automated accessibility, and routing (client navigation, Back, direct entry). Accessibility automation is partial; manual keyboard and assistive-technology review is still necessary. These fixture tests do not replace future complete user journeys against the real API.
 
-## Next decisions
+GitHub Actions runs on relevant pushes only, including pushes to PR branches. It installs locked dependencies and Chromium, checks/builds both surfaces and runs the browser suite. Failure reports and traces are retained for seven days. Open a report with `npx playwright show-report` or a trace with `npx playwright show-trace <trace.zip>`. No public Storybook hosting, SQL, external secrets or paid visual service is required. Storybook telemetry is disabled.
 
-Research the SPA framework before expanding the component library (PTT-146). Evaluate component ergonomics, routing, state needs, testing, maintenance, licensing, and eventual SEO/share previews. Framework selection and deployment remain separate decisions. The Storybook workflow can be reviewed now with only a small web composition.
+The earlier HTML-renderer foundation verified that a deliberately incorrect assertion fails CI ([negative verification run](https://github.com/williamowen65/atlas-the-public-think-tank/actions/runs/39465964351)); that incorrect assertion was restored. The current Svelte conversion preserves those behavioral checks and adds routing coverage.
 
-## CI verification evidence
+## References
 
-The initial [browser job](https://github.com/williamowen65/atlas-the-public-think-tank/actions/runs/39465794887) passed all five tests. A subsequent [negative verification run](https://github.com/williamowen65/atlas-the-public-think-tank/actions/runs/39465964351) deliberately replaced the enabled callback expectation with an incorrect string to prove the job rejects a failed assertion and retains failure evidence. The correct expectation is restored in the final PR state; the intentionally incorrect assertion is not part of the resulting code.
+- https://storybook.js.org/docs/get-started/frameworks/sveltekit
+- https://svelte.dev/docs/kit/routing
+- https://svelte.dev/docs/kit/single-page-apps
+- https://svelte.dev/docs/svelte/$state

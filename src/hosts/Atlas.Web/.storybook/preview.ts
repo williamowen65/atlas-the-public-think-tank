@@ -1,4 +1,4 @@
-import type { Preview } from '@storybook/html-vite';
+import type { Preview } from '@storybook/sveltekit';
 import '../src/styles.css';
 
 const preview: Preview = {
