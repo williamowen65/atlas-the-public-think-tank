@@ -24,7 +24,7 @@ In another terminal:
 npm run storybook
 ```
 
-Open http://127.0.0.1:6006. Components / ActionButton is the single button story group. Enabled, Disabled and Long Label are scenarios within that group; the Enabled scenario shows a visible callback result. No API, SQL, credentials or session is required.
+Open http://127.0.0.1:6006. Components / ActionButton is the single button story group. There is one Playground story; use Controls to change label and disabled state. No API, SQL, credentials or session is required.
 
 ## Where the markup lives
 
@@ -32,7 +32,7 @@ Open http://127.0.0.1:6006. Components / ActionButton is the single button story
 | --- | --- |
 | `src/lib/components/ActionButton.svelte` | Actual reusable button HTML and callback contract |
 | `storybook/ActionButton/ActionButtonExample.svelte` | Small demo composition with reactive status text |
-| `storybook/ActionButton/ActionButton.stories.ts` | Enabled, disabled and long-label scenarios for that demo |
+| `storybook/ActionButton/ActionButton.stories.ts` | Single Playground story with editable Controls |
 | `src/routes/+page.svelte` | Home page imports the production button directly and owns its page state |
 | `src/routes/+layout.svelte` | Shared navigation, styles and page outlet |
 | `src/routes/about/+page.svelte` | Second route proving SvelteKit navigation |
@@ -44,7 +44,7 @@ There is no handwritten DOM assembly or application `src/main.ts`. SvelteKit han
 
 A component owns its HTML. A story supplies a named setup through `args`; it does not recreate production markup. A decorator wraps stories with shared layout/context when needed; the first button needs none. All story files and Storybook-only Svelte wrappers live under `storybook/`, outside production `src/`. The app imports only the reusable button, never a Storybook example. `.storybook/` holds tool configuration; `storybook/` holds the examples themselves. The status message belongs to the demonstration, not the production button. Its `$state` is local example state, not Redux.
 
-Storybook uses the metadata title `Components/ActionButton` for the sidebar group. Each named story export adds a scenario beneath it: Enabled, Disabled and Long Label. These are three setups of the same component, not three component implementations. The top-level paths are Styles and Layout, Components and Compositions; no separate Foundation/Examples groups remain.
+Storybook uses the metadata title `Components/ActionButton` for the sidebar group. Each group now contains one Playground story. Variations are selected in Controls rather than duplicated in the sidebar. The typography playground has an explicit reset-to-code-defaults button; other argument edits can be reset in the Controls panel. Refreshing may retain edited story arguments and is not a reset. The top-level paths are Styles and Layout, Components and Compositions; no separate Foundation/Examples groups remain.
 
 ## Understanding package.json
 
