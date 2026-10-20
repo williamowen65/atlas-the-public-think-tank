@@ -51,9 +51,13 @@ public sealed class AccountsController(AtlasAccounts accounts, UserManager<Atlas
     {
         // No production mail provider has been selected. Fail before creating an
         // unusable account; never expose confirmation/reset tokens in JSON or logs.
-        var directory = configuration["Atlas:DevelopmentMailDirectory"];
-        if (!environment.IsDevelopment() || string.IsNullOrWhiteSpace(directory))
+        if (!environment.IsDevelopment())
             return Problem(statusCode: 503, title: "Account email delivery is not configured.");
+        // Resolve against the host content root, not the shell's working directory.
+        // No user secret is needed for local development; an override remains optional.
+        var configuredDirectory = configuration["Atlas:DevelopmentMailDirectory"];
+        var directory = Path.GetFullPath(string.IsNullOrWhiteSpace(configuredDirectory)
+            ? "development-mail" : configuredDirectory, environment.ContentRootPath);
         var registration = await accounts.RegisterAsync(request.Email, request.Password, request.DisplayName, cancellationToken);
         if (!registration.Result.Succeeded) return Problem(statusCode: 400, title: "Registration could not be completed.");
         var user = (await users.FindByIdAsync(registration.ParticipantId!.Value.ToString()))!;

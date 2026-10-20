@@ -80,12 +80,16 @@ The [reading guide](../blackboards/workflows/Api/README.md#follow-a-new-user) li
 
 Registration is currently a **Development-only** path, pending a production mail provider.
 
-1. Configure `Atlas:DevelopmentMailDirectory` in user secrets.
-   - Choose a private directory outside the checkout.
-   - Without it, registration returns **503 before creating an account**.
+1. Run the API in the `Development` environment. No mail setting or user secret is required.
+   - The default directory is `src/hosts/Atlas.Api/development-mail/`, under the API host content root and ignored by Git.
+   - The directory is created when the first confirmation payload is written. It is not served over HTTP.
+   - Optional: set `Atlas:DevelopmentMailDirectory` to override it. Relative paths resolve against the API content root; absolute paths are used directly.
+   - Outside Development, registration returns **503 before creating an account**, even with an override.
 2. Fetch an anonymous CSRF token, then `POST /api/auth/register`.
    - Success: **202**; the account is unconfirmed.
-3. Read the confirmation payload in that private directory.
+3. Open the generated `<guid>.json` file in that directory.
+   - This is a development substitute for email delivery, not an HTML email or a message sent to an inbox.
+   - It contains only `userId` and `token`; the account/profile are stored in SQL, and the password is not written to the file.
    - Copy `userId` and `token` into private HTTP editor variables.
    - The confirmation token is different from the CSRF token.
 4. Send `POST /api/auth/confirm-email` with the confirmation payload **and** the anonymous CSRF pair.
@@ -101,7 +105,7 @@ Confirmation tokens are not returned by registration JSON or written to applicat
 - Account, Participant profile and Member role link commit together through `AtlasAccounts`.
 - The host generates the confirmation token and writes the private file **after** that commit.
 - A file-write failure can return **500 even though the unconfirmed account already exists**.
-- The 503 configuration guard runs before creation; it does not guarantee that a configured directory is writable.
+- The Development-only guard runs before creation; the default or overridden directory must still be writable.
 - There is no confirmation resend endpoint in this slice. Production delivery and recovery remain separate work.
 
 ## Still outside this slice

@@ -68,7 +68,7 @@ its request. Example coverage is not a claim that every branch is automatically 
 - **429:** a domain quota or host limiter rejects work.
   - Domain quota responses include a safe message and `Retry-After`.
   - Do not assume the host's concurrency/source limiter supplies the same body/header.
-- **503:** development registration delivery is not configured.
+- **503:** registration is unavailable outside Development until production email delivery is configured.
 
 Comment pages return `next.afterAt` and `next.afterId`. Supply both together,
 keep the same node/parent scope, and stop when `next` is null. Expanding replies

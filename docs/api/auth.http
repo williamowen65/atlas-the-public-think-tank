@@ -12,7 +12,7 @@
 GET {{baseUrl}}/api/auth/csrf
 
 ### A2. Optional development registration — Accounts.Register
-# 202 only with Development mail drop configured; 503 otherwise.
+# 202 in Development (default: src/hosts/Atlas.Api/development-mail/); 503 outside Development.
 POST {{baseUrl}}/api/auth/register
 Content-Type: application/json
 X-CSRF-TOKEN: {{csrfToken}}

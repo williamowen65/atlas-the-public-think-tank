@@ -394,3 +394,6 @@ crash.log
 http-client.private.env.json
 .http-client.private.env.json
 http-client.env.json.user
+
+# Local account confirmation payloads (never serve or commit these files).
+/src/hosts/Atlas.Api/development-mail/
