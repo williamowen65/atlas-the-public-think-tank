@@ -40,6 +40,49 @@ There is no handwritten DOM assembly or application `src/main.ts`. SvelteKit han
 
 A component owns its HTML. A story supplies a named setup through `args`; it does not recreate production markup. A decorator wraps stories with shared layout/context when needed; the first button needs none. The status message belongs to the demonstration, not the production button. Its `$state` is local example state, not Redux.
 
+## Understanding package.json
+
+`package.json` is npm's project manifest. It records the package identity, module format, runtime requirements, dependencies and named commands. JSON does not support comments, so explanations live here rather than being inserted into the manifest.
+
+| Setting | Why it is here |
+| --- | --- |
+| `name: "@atlas/web"` | Identifies this frontend workspace. `@atlas` is the package-name scope; it does not register an npm organization or publish anything. |
+| `version: "0.0.0"` | Placeholder version for this application workspace. It is not the version of SvelteKit, the API or a deployed release. |
+| `private: true` | Prevents accidental publication of this workspace through npm. It does **not** make the repository private, restrict website access or prevent deployment of built files. |
+| `type: "module"` | Makes Node treat this package's `.js` files as ES modules, so files such as `svelte.config.js` can use `import` and `export`. TypeScript files are handled by their tooling. This setting does not select a UI framework or a rendering mode. |
+| `engines.node: ">=22.12.0"` | Declares the minimum supported Node version. Our documented/CI baseline is Node 24 LTS. The field does not install Node; npm may warn rather than refuse an unsupported version, depending on its configuration. |
+| `scripts` | Names repeatable commands. npm makes local dependency executables available to them, so `vite` and `svelte-check` do not need global installations. |
+| `devDependencies` | Tools and libraries needed to develop, check, build and test this static frontend. Some, such as Svelte, contribute code to the built browser assets; “dev” does not mean none of their code can reach the browser. The deployed static output does not run npm or need a production `node_modules` directory. |
+
+The lockfile records exact resolved versions. In the manifest, an exact version pins that request; `^` generally permits compatible minor/patch updates for versions at least 1.0, while `~` generally permits patch updates. Use normal dependency-update review and commit the resulting lockfile.
+
+### When to run each script
+
+Run these commands from `src/hosts/Atlas.Web`. From the repository root, the equivalent is `npm --prefix src/hosts/Atlas.Web run <script>`. The `test` script also has the shorthand `npm test`.
+
+| Script / command | When to run it | What happens / when it finishes |
+| --- | --- | --- |
+| `npm run dev` | While developing pages, layouts, routing or checking components inside the actual app. | Starts the SvelteKit development server, normally on port 5173, with updates as you edit. It keeps running until Ctrl+C. It is not a production build or a test run. |
+| `npm run storybook` | While developing or reviewing isolated component states and controls. | Starts Storybook on port 6006, keeps running and updates stories as you edit. Open the URL manually because `--no-open` disables automatic browser launch. Telemetry is disabled. |
+| `npm run check` | After component/TypeScript changes, before committing, or when investigating editor diagnostics. | Generates SvelteKit types, then checks Svelte and TypeScript using `tsconfig.json`. Finishes with diagnostics and a success/failure exit code. It does not build output or run browser tests. |
+| `npm run build` | To verify the application can be packaged, or before browser tests after application changes. | Runs `check` first; only if it passes does Vite build the static app into `dist/`. Finishes rather than keeping a server running. |
+| `npm run build-storybook` | To verify stories can be packaged, or before browser tests after component/story changes. | Builds static Storybook into `storybook-static/`, with telemetry disabled. Finishes without starting a server or deploying anything. |
+| `npm test` | To run browser checks when both built outputs already reflect the source being tested. | Playwright starts the temporary app and Storybook servers, runs Chromium assertions, writes reports/traces as configured and stops the servers. It does **not** rebuild those outputs. |
+| `npm run test:ci` | Before submitting a frontend change, for a complete local validation pass, and in GitHub Actions. | Sequentially builds/checks the app, builds Storybook and runs the browser tests. `&&` stops the sequence at the first failing command. It finishes with an exit code suitable for CI. |
+| `prepare` lifecycle / `npm run prepare` | Normally runs automatically during a standard local `npm install` or `npm ci`. Run it manually only when you want to regenerate SvelteKit metadata. | Runs `svelte-kit sync` to generate framework configuration/types in `.svelte-kit/`. It does not perform the full type check, build or browser tests. `npm run check` also syncs, so manual execution is usually unnecessary. |
+
+`--host 127.0.0.1` binds development servers to the local machine rather than exposing them to other devices. Playwright also uses local addresses. Both interactive Storybook and its test server use port 6006, so stop the interactive Storybook server before running browser tests; Playwright deliberately refuses to reuse an existing server.
+
+### Typical command choices
+
+- **First checkout or after pulling dependency changes:** `npm ci`. It installs the lockfile's dependencies, replaces the existing install and runs the prepare lifecycle unless lifecycle scripts are disabled. Use `npm install` when intentionally changing dependencies and updating the lockfile.
+- **Work on a component:** `npm run storybook`; optionally also `npm run dev` in another terminal to inspect app composition.
+- **Quick validation while coding:** `npm run check`.
+- **Full validation before review:** stop interactive Storybook, install Chromium once with `npx playwright install chromium`, then run `npm run test:ci`.
+- **Repeat browser tests without source changes:** `npm test`. After changing components/pages/stories, rebuild the affected outputs or use `test:ci` to avoid testing stale files.
+
+These scripts do not start Atlas.Api, connect to SQL, configure Redux, or deploy the application. Those remain separate workflows.
+
 ## Configuration reference
 
 These files configure different tools and stages. They are text source files: `.ts` means TypeScript, `.js` means JavaScript, and `.json` is structured configuration. Playwright's saved `trace.zip` is a generated archive, not a configuration file.
