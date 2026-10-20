@@ -123,7 +123,7 @@ public sealed class AccountsController(
 
         // Verify the password and close the account while retaining its contributions.
         var result = await accounts.DeleteAccountAsync(
-            participant.Value.Value,
+            participant.Value,
             request.Password,
             cancellationToken
         );
