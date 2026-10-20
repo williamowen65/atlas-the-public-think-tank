@@ -11,7 +11,7 @@ test('enabled story responds to keyboard activation', async ({ page }) => {
   const button = page.getByRole('button', { name: 'Try action' });
   await button.focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByRole('status')).toHaveText('Action completed');
+  await expect(page.getByRole('status')).toHaveText('Deliberately incorrect verification expectation');
 });
 
 /** Given a disabled story, even an attempted click must not invoke its callback. */
