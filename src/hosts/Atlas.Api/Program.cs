@@ -68,7 +68,7 @@ app.UseRateLimiter();
 // Authentication reads the cookie; authorization evaluates the endpoint's policy.
 app.UseAuthentication();
 app.UseAuthorization();
-// Resolve the participant and open the ambient telemetry scope around the endpoint.
+// Resolve the participant and enrich the existing HTTP telemetry scope.
 app.UseMiddleware<OperationContextMiddleware>();
 // 3. Expose controller actions and start listening. No view/static-file fallback exists.
 app.MapControllers();

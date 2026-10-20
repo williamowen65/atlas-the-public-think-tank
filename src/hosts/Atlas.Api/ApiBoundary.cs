@@ -53,6 +53,7 @@ public sealed class ApiErrors(IProblemDetailsService problems) : IExceptionHandl
         // Other errors expose categories, never arbitrary exception/SQL text.
         var status = error switch
         {
+            BadHttpRequestException { StatusCode: StatusCodes.Status413PayloadTooLarge } => 413,
             UnauthorizedAccessException => 403,
             KeyNotFoundException => 404,
             ArgumentException => 400,
@@ -67,6 +68,7 @@ public sealed class ApiErrors(IProblemDetailsService problems) : IExceptionHandl
             ProblemDetails = new ProblemDetails { Status = status, Extensions = { ["code"] = quota ? "quota_exceeded" : "request_failed" }, Title = status switch
             {
                 400 => "Invalid request.", 403 => "This operation is not permitted.", 404 => "Resource not found.",
+                413 => "Request body too large.",
                 429 => error.Message,
                 409 => "The operation conflicts with the current state.", _ => "An unexpected error occurred."
             }}

@@ -127,7 +127,7 @@ Added tests cover captured/restored host attribution, bounded host validation, e
 account request returning 429, cache headers, and Production registration returning 503
 even with a mail-path override. The latter tests avoid SQL by taking short-circuit paths.
 The .NET SDK was unavailable in the editing environment, so these tests have not been run.
-Real Kestrel body-limit and controlled concurrency tests remain outstanding.
+Real Kestrel body-limit and controlled concurrency tests have now been added in HttpAbuseTests; they remain unrun in this environment. See [PTT-125 review](PTT-125-REVIEW.md).
 
 ## References
 

@@ -8,6 +8,8 @@
 the compiler places the statements into the executable entry point. We do not
 write a surrounding `Main` method ourselves.
 
+See [Controller reference](CONTROLLER-REFERENCE.md) for attributes, filter order and inherited response helpers.
+
 Read it in three passes:
 
 1. **Register services.** Describe how to obtain controllers, Identity, shared
@@ -32,14 +34,15 @@ These are request stages, not startup service registrations:
 
 | Order | Stage | What to look for |
 |---|---|---|
+| 0 | HTTP telemetry scope | Capture host/correlation and selected final rejection categories |
 | 1 | Exception handler | Wraps downstream exceptions; `ApiErrors` maps known failures safely |
 | 2 | HSTS outside Development, HTTPS redirection | Establish transport expectations; use HTTPS locally for Secure cookies |
-| 3 | Response headers | `no-store`, `nosniff`, `no-referrer` |
+| 3 | Response headers | `no-cache, no-store`, `Pragma: no-cache`, `nosniff`, `no-referrer` |
 | 4 | Routing | Identify the selected endpoint before its policies and budgets run |
 | 5 | Rate limiting | Host concurrency ceiling and account-route source budget; may stop with 429 |
 | 6 | Authentication | Read/validate the cookie and establish `HttpContext.User` |
 | 7 | Authorization | Enforce endpoint authentication/role policies; may stop with 401/403 |
-| 8 | OperationContextMiddleware | Resolve the participant and open the telemetry operation scope |
+| 8 | OperationContextMiddleware | Resolve the participant and enrich the existing HTTP operation scope |
 | 9 | MVC filters and model binding | CSRF authorization filter on unsafe methods, then DTO binding/validation |
 | 10 | Controller → Application → domains/persistence | Existing rules, quotas, transactions and event semantics; return JSON |
 

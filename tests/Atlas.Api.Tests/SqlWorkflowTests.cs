@@ -82,6 +82,8 @@ public sealed class SqlWorkflowTests
                 await Success(await otherClient.PostAsJsonAsync("/api/auth/login", new { email="other@example.test", password="Atlas_Test_Only_125!Password" }));
                 await Token(otherClient);
                 Assert.AreEqual(HttpStatusCode.Forbidden, (await otherClient.PutAsJsonAsync($"/api/nodes/{node}/title", new { text="Forged title" })).StatusCode);
+                // An authenticated Member is not a global moderator and cannot inspect the queue.
+                Assert.AreEqual(HttpStatusCode.Forbidden, (await otherClient.GetAsync("/api/moderation/queue")).StatusCode);
             }
             var unchanged = await client.GetFromJsonAsync<JsonElement>($"/api/nodes/{node}");
             Assert.AreEqual("HTTP idea", unchanged.GetProperty("title").GetString());

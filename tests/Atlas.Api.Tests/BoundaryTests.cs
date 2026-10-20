@@ -169,7 +169,13 @@ public sealed class BoundaryTests
             Assert.IsTrue(action.ControllerTypeInfo.IsDefined(typeof(Microsoft.AspNetCore.Mvc.AutoValidateAntiforgeryTokenAttribute), inherit: true),
                 $"{action.DisplayName} must expose its antiforgery policy to reviewers and CodeQL.");
             var hasAuth = action.EndpointMetadata.OfType<Microsoft.AspNetCore.Authorization.IAuthorizeData>().Any();
-            Assert.IsTrue(hasAuth || action.ControllerName == "Accounts", action.DisplayName);
+            var anonymousAccountEntryPoints = new[]
+            {
+                "Register", "Login", "Confirm", "ForgotPassword", "ResetPassword", "ResendConfirmation"
+            };
+            var intentionalAnonymousWrite = action.ControllerName == "Accounts"
+                && anonymousAccountEntryPoints.Contains(action.ActionName);
+            Assert.IsTrue(hasAuth || intentionalAnonymousWrite, action.DisplayName);
         }
     }
 }

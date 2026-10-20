@@ -54,3 +54,5 @@ See [logging and telemetry](LOGGING.md) for inspection steps and known HTTP
 rejection/host-attribution gaps.
 
 See [the hardening plan](HARDENING-PLAN.md) for concrete proposals, examples, framework responsibilities, implemented telemetry changes and outstanding tests.
+
+For the current implementation/test matrix and MVP boundaries, see [PTT-125 review](PTT-125-REVIEW.md).
