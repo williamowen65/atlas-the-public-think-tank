@@ -53,7 +53,9 @@ if (!app.Environment.IsDevelopment()) app.UseHsts();
 app.UseHttpsRedirection();
 app.Use(async (context, next) =>
 {
-    context.Response.Headers.CacheControl = "no-store";
+    // Match antiforgery cache policy so token responses need no header override.
+    context.Response.Headers.CacheControl = "no-cache, no-store";
+    context.Response.Headers.Pragma = "no-cache";
     context.Response.Headers["X-Content-Type-Options"] = "nosniff";
     context.Response.Headers["Referrer-Policy"] = "no-referrer";
     await next();
