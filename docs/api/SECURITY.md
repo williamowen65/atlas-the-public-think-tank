@@ -52,3 +52,5 @@ headers to bypass the current source-IP budget.
 
 See [logging and telemetry](LOGGING.md) for inspection steps and known HTTP
 rejection/host-attribution gaps.
+
+See [the hardening plan](HARDENING-PLAN.md) for concrete proposals, examples, framework responsibilities, implemented telemetry changes and outstanding tests.

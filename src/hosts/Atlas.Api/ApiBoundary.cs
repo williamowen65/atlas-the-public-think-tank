@@ -17,7 +17,7 @@ public sealed class RequestActor : IAuthenticatedActor
 /// <remarks>The primary constructor receives the next middleware delegate; ASP.NET supplies InvokeAsync services per request.</remarks>
 public sealed class OperationContextMiddleware(RequestDelegate next)
 {
-    public async Task InvokeAsync(HttpContext context, AtlasAccounts accounts, RequestActor actor, ApiTelemetry telemetry)
+    public async Task InvokeAsync(HttpContext context, AtlasAccounts accounts, RequestActor actor)
     {
         // Recheck persisted account/profile eligibility rather than accepting an actor from JSON.
         if (context.User.Identity?.IsAuthenticated == true)
@@ -26,10 +26,9 @@ public sealed class OperationContextMiddleware(RequestDelegate next)
             if (participant is null) { context.Response.StatusCode = 401; return; }
             actor.Id = participant.Value;
         }
-        // IDisposable handles restore the previous AsyncLocal observer/context when the
-        // downstream action finishes or throws. They are cleanup guards, not business data.
-        using var observer = telemetry.Observer is null ? null : Telemetry.UseObserver(telemetry.Observer);
-        using var operation = Telemetry.BeginOperation(actor.Id);
+        // The outer HTTP scope owns correlation and output, including early rejections.
+        // Enrich only after persisted eligibility has been checked.
+        using var verified = actor.Id is { } id ? Telemetry.UseVerifiedActor(id) : null;
         await next(context);
     }
 }
@@ -90,4 +89,27 @@ public sealed class AntiforgeryProblemDetailsFilter : Microsoft.AspNetCore.Mvc.F
     }
 
     public void OnResultExecuted(Microsoft.AspNetCore.Mvc.Filters.ResultExecutedContext context) { }
+}
+
+/// <summary>Observe safe rejection categories even when rate limits or authorization short-circuit.</summary>
+public sealed class HttpTelemetryMiddleware(RequestDelegate next)
+{
+    public async Task InvokeAsync(HttpContext context, ApiTelemetry telemetry)
+    {
+        using var host = Telemetry.UseHost(TelemetryHost.Api);
+        using var observer = telemetry.Observer is null ? null : Telemetry.UseObserver(telemetry.Observer);
+        using var operation = Telemetry.BeginOperation();
+        await next(context);
+        var reason = context.Response.StatusCode switch
+        {
+            400 or 413 => EventReason.InvalidInput,
+            401 or 403 => EventReason.NotAuthorized,
+            429 => EventReason.QuotaExceeded,
+            _ => (EventReason?)null
+        };
+        if (reason is { } rejection)
+            // No actor, target, IP, URL, headers, payload or exception text is recorded.
+            Telemetry.Record(Telemetry.Create(EventKind.HttpRejected,
+                outcome: EventOutcome.Denied, reason: rejection));
+    }
 }

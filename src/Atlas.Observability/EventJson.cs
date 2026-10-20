@@ -17,7 +17,7 @@ public static class EventJson
     // even the contract cannot silently extend the serialized privacy boundary.
     public static string Serialize(TelemetryEvent value)
     {
-        if (!Enum.IsDefined(value.Kind) || !Enum.IsDefined(value.Outcome) || !Enum.IsDefined(value.ReasonCode)
+        if (!Enum.IsDefined(value.Host) || !Enum.IsDefined(value.Kind) || !Enum.IsDefined(value.Outcome) || !Enum.IsDefined(value.ReasonCode)
             || !Enum.IsDefined(value.ActorKind) || !Enum.IsDefined(value.Action)
             || value.ModerationReason is { } moderation && !Enum.IsDefined(moderation)
             || !Enum.IsDefined(value.PrivacyPolicy)
@@ -35,7 +35,7 @@ public static class EventJson
         return JsonSerializer.Serialize(new
     {
         schema_version = value.SchemaVersion,
-        service = "atlas-console",
+        service = value.Host == TelemetryHost.Api ? "atlas-api" : "atlas-console",
         environment = "development",
         app_version = typeof(EventJson).Assembly.GetName().Version?.ToString(),
         event_id = value.EventId,
@@ -73,6 +73,7 @@ public static class EventJson
     public static string Name(EventKind kind) => kind switch
     {
         EventKind.NodeView => "node.view_completed",
+        EventKind.HttpRejected => "http.request_rejected",
         EventKind.HostStarted => "host.started", EventKind.HostStopped => "host.stopped",
         EventKind.SignIn => "identity.sign_in_completed", EventKind.SignOut => "identity.sign_out_completed",
         EventKind.Registration => "identity.registration_completed", EventKind.SessionRejected => "identity.session_rejected",

@@ -47,6 +47,8 @@ builder.Services.AddRateLimiter(options =>
 });
 // 2. Create the host, then assemble the middleware pipeline in request order.
 var app = builder.Build();
+// Observe the final status after error handling, including early middleware denials.
+app.UseMiddleware<HttpTelemetryMiddleware>();
 // Wrap downstream execution so exceptions become safe JSON ProblemDetails.
 app.UseExceptionHandler();
 if (!app.Environment.IsDevelopment()) app.UseHsts();

@@ -24,6 +24,7 @@ public sealed class ApiAuditWorker(ApiTelemetry telemetry, Func<AtlasDataContext
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (telemetry.DirectoryPath is null) return;
+        using var host = Telemetry.UseHost(TelemetryHost.Api);
         using var observer = Telemetry.UseObserver(telemetry.Observer!);
         var delivery = new AuditDelivery(open, new LocalAuditDestination(new JsonLineFile(telemetry.DirectoryPath, "audit")));
         while (!stoppingToken.IsCancellationRequested)

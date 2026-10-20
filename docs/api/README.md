@@ -77,3 +77,5 @@ new migration. The current implementation combines PTT-98 and PTT-125.
 ## Inspect server output
 
 See [API logging and telemetry](LOGGING.md) for terminal formatting, local file locations, and security coverage gaps.
+
+[API hardening plan](HARDENING-PLAN.md): limits, oversized requests, proxies, recovery, Data Protection and HTTP telemetry.

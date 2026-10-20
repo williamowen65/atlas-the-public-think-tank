@@ -1,3 +1,6 @@
+using Atlas.Api;
+using Atlas.Contracts.Observability;
+using Microsoft.AspNetCore.Http;
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
@@ -30,6 +33,58 @@ internal sealed class ApiFactory(string? connection = null) : WebApplicationFact
 [TestClass]
 public sealed class BoundaryTests
 {
+    private sealed class HttpEventSink : ITelemetryObserver
+    {
+        public List<TelemetryEvent> Events { get; } = [];
+        public void Record(TelemetryEvent value) => Events.Add(value);
+    }
+
+    [TestMethod]
+    public async Task Early_rejection_has_API_origin_and_no_actor_or_target()
+    {
+        using var factory = new ApiFactory();
+        var sink = new HttpEventSink();
+        using var observer = Telemetry.UseObserver(sink);
+        var context = new DefaultHttpContext();
+        var middleware = new HttpTelemetryMiddleware(c =>
+        {
+            c.Response.StatusCode = 429;
+            return Task.CompletedTask;
+        });
+        await middleware.InvokeAsync(context, factory.Services.GetRequiredService<ApiTelemetry>());
+        var value = sink.Events.Single();
+        Assert.AreEqual(EventKind.HttpRejected, value.Kind);
+        Assert.AreEqual(TelemetryHost.Api, value.Host);
+        Assert.AreEqual(EventReason.QuotaExceeded, value.ReasonCode);
+        Assert.IsNull(value.ActorId);
+        Assert.IsNull(value.TargetId);
+        Assert.AreNotEqual(Guid.Empty, value.ObservabilityOperationId);
+    }
+
+    [TestMethod]
+    public async Task Account_routes_reject_request_21_in_the_same_fixed_window_without_SQL()
+    {
+        using var factory = new ApiFactory(); using var client = factory.Browser();
+        for (var i = 0; i < 20; i++)
+            Assert.AreEqual(HttpStatusCode.OK, (await client.GetAsync("/api/auth/csrf")).StatusCode);
+        Assert.AreEqual(HttpStatusCode.TooManyRequests, (await client.GetAsync("/api/auth/csrf")).StatusCode);
+    }
+
+    [TestMethod]
+    public async Task Production_registration_is_unavailable_even_with_a_mail_override()
+    {
+        using var factory = new ApiFactory();
+        using var production = factory.WithWebHostBuilder(builder => builder.UseEnvironment("Production")
+            .UseSetting("Atlas:DevelopmentMailDirectory", "unused-test-mail"));
+        using var client = production.CreateClient(new WebApplicationFactoryClientOptions
+            { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
+        var csrf = await client.GetFromJsonAsync<System.Text.Json.JsonElement>("/api/auth/csrf");
+        client.DefaultRequestHeaders.Add("X-CSRF-TOKEN", csrf.GetProperty("token").GetString());
+        var response = await client.PostAsJsonAsync("/api/auth/register",
+            new { email = "test@example.test", password = "Atlas_Test_Only!Password", displayName = "Test" });
+        Assert.AreEqual(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+    }
+
     [TestMethod]
     public async Task Anonymous_mutation_is_401_without_redirect_or_database_access()
     {
@@ -72,6 +127,8 @@ public sealed class BoundaryTests
         StringAssert.Contains(await response.Content.ReadAsStringAsync(), "token");
         Assert.AreEqual(HttpStatusCode.NotFound, (await client.GetAsync("/")).StatusCode);
         Assert.IsTrue(response.Headers.CacheControl?.NoStore);
+        Assert.IsTrue(response.Headers.CacheControl?.NoCache);
+        CollectionAssert.Contains(response.Headers.Pragma.Select(x => x.Name).ToArray(), "no-cache");
     }
     [TestMethod]
     public async Task Malformed_json_and_invalid_csrf_are_rejected_before_identity_queries()

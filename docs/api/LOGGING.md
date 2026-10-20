@@ -44,21 +44,15 @@ Get-Content ./src/hosts/Atlas.Api/bin/Debug/net10.0/logs/observability/diagnosti
 Review a registration/confirmation/login, a successful mutation and a rejected
 operation. Check bounded event/reason names, timestamps, correlation IDs, and the
 absence of passwords, tokens, submitted text and raw request URLs. HTTP rejections
-before `OperationContextMiddleware` (including rate limits and authorization) do
-not pass through its business telemetry scope. Existing domain diagnostics are not
-a complete HTTP access or security-rejection log.
+before `OperationContextMiddleware` (including rate limits and authorization) now produce bounded `http.request_rejected` diagnostics in an outer scope. These are
+not durable business audits or a complete access log.
 
 ## Known gaps to review next
 
-- `EventJson` currently hardcodes `service = "atlas-console"` and environment
-  `development`, including API-originated events and captured audit payloads.
-  Correct host attribution requires coordinated diagnostic and audit capture work;
-  the delivery worker must not relabel an event based on which host delivered it.
+- Events now retain `atlas-api` / `atlas-console` origin at creation, including saved audit payloads. Historical records are unchanged. The environment label still needs production configuration.
 - API lifecycle messages currently come from framework logging; they are not
   automatically emitted as Atlas `host.started` / `host.stopped` events.
-- Add bounded HTTP rejection observations (status, policy/reason, route template,
-  correlation) without raw URLs, request bodies, identities or per-IP dimensions.
-  Define aggregation/sampling before generating a warning for every rejected request.
+- Selected early HTTP rejections now emit bounded category diagnostics; production aggregation/sampling remains follow-up.
 - Review repeated audit-worker warnings during SQL outages and local output failure
   visibility; do not hide the underlying failure by globally raising log levels.
 - PTT-136 covers production exporters, access, retention and alerting. Local file
