@@ -11,6 +11,23 @@ namespace Atlas.ConsoleApp.Tests;
 public sealed class ObservabilityTests
 {
     [TestMethod]
+    public async Task Host_attribution_is_captured_before_delivery_and_restored_across_async_scopes()
+    {
+        var original = Telemetry.Create(EventKind.SignIn).Host;
+        TelemetryEvent api;
+        using (Telemetry.UseHost(TelemetryHost.Api))
+        {
+            await Task.Yield();
+            using var operation = Telemetry.BeginOperation();
+            api = Telemetry.Create(EventKind.AccountSecurityChanged);
+        }
+        Assert.AreEqual(original, Telemetry.Create(EventKind.SignIn).Host);
+        using var json = JsonDocument.Parse(EventJson.Serialize(api));
+        Assert.AreEqual("atlas-api", json.RootElement.GetProperty("service").GetString());
+        Assert.Throws<ArgumentException>(() => EventJson.Serialize(api with { Host = (TelemetryHost)999 }));
+    }
+
+    [TestMethod]
     public void Events_allow_only_reviewed_fields_and_bounded_values()
     {
         using var operation = Telemetry.BeginOperation(Guid.NewGuid());

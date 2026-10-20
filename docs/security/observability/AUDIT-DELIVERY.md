@@ -19,13 +19,22 @@ The loop behaves as follows:
 | An unhandled failure reaches the host | Emits a bounded delivery-failure diagnostic, then waits 1 second before retrying |
 | Shutdown is requested | Cancellation ends the loop; Dispose synchronously waits for task completion before removing the observer and disposing local telemetry |
 
-The same loop checks backlog health approximately every 10 seconds; there is no separate health-check worker.
+The Console loop checks backlog health approximately every 10 seconds; there is no separate health-check worker.
 
 One sequential loop provides the current local host's simple delivery lifecycle without managing parallel workers. The code does not claim a measured throughput requirement or performance advantage for this choice.
 
+The Development API host also starts **one loop per API process**, implemented by
+[ApiAuditWorker](../../../src/hosts/Atlas.Api/ApiTelemetry.cs) as a hosted background
+service. It uses the same AuditDelivery protocol and shared SQL outbox. Running
+Console and API together therefore means two independent loops may compete for
+eligible tickets; the database lease still decides which attempt owns each ticket.
+API shutdown uses hosted-service cancellation. Unlike the Console adapter, this
+initial API worker does not yet sample backlog health periodically. PTT-136 owns
+production export and operational health wiring.
+
 ### Why use leases with just one loop?
 
-One loop per console instance is not the same as one loop for the whole database. Two console processes can connect to the same database, and a future host or test can create another worker. The conditional SQL claim coordinates those independent attempts. Lease expiry also recovers abandoned work after a process stops or crashes.
+One loop per console instance is not the same as one loop for the whole database. Two console processes can connect to the same database, and the API host or a test can create another worker. The conditional SQL claim coordinates those independent attempts. Lease expiry also recovers abandoned work after a process stops or crashes.
 
 The A/B worker examples below explain that contention and recovery protocol; they do **not** mean the current host launches two workers. Leases reduce overlapping claims while valid, but expiry during slow delivery can still allow overlap and duplicate output.
 

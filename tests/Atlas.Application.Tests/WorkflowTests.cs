@@ -172,6 +172,9 @@ public sealed class WorkflowTests
     [DataRow("restore")]
     [DataRow("attach")]
     [DataRow("detach")]
+    [DataRow("type")]
+    [DataRow("request-type")]
+    [DataRow("withdraw-type")]
     public void RejectedNodeMutationLeavesStateAndEventsUnchanged(string command)
     {
         var store = new Store();
@@ -193,6 +196,9 @@ public sealed class WorkflowTests
                 case "restore": workflow.Restore(node, outsider); break;
                 case "attach": workflow.Attach(node, NodeId.New(), outsider); break;
                 case "detach": workflow.Detach(node, NodeId.New(), outsider); break;
+                case "type": workflow.ChangeType(node, store.Type.Id, outsider); break;
+                case "request-type": workflow.RequestType(node, store.Type.Id, outsider, true); break;
+                case "withdraw-type": workflow.RequestType(node, store.Type.Id, outsider, false); break;
             }
         });
 

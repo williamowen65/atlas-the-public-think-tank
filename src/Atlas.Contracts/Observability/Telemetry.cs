@@ -4,13 +4,15 @@ using System.Diagnostics;
 namespace Atlas.Contracts.Observability;
 
 /// <summary>Closed event vocabulary: callers cannot insert payloads, credentials or arbitrary properties.</summary>
+public enum TelemetryHost { Console, Api }
+
 public enum EventKind
 {
     HostStarted, HostStopped, SignIn, SignOut, Registration, SessionRejected,
     NodeChanged, NodeTypeChanged, ContentChanged, VoteChanged, ReactionChanged,
     CommunityChanged, MembershipChanged, CommunityLinkChanged, CommentChanged,
     ModerationChanged, ProfileChanged, AccountSecurityChanged, RoleChanged, RoleDefinitionChanged,
-    NotificationChanged, DiscoveryRead, StorageWrite, AuditDelivery, NodeView
+    NotificationChanged, DiscoveryRead, StorageWrite, AuditDelivery, NodeView, HttpRejected
 }
 public enum EventOutcome { Succeeded, Denied, Failed, Conflict }
 public enum EventReason { None, NotAuthorized, InvalidInput, CredentialsRejected, LockedOut, NotAllowed, SecondFactorRequired, StorageConflict, InfrastructureFailure, CommitOutcomeUnknown, DeliveryUnavailable, QuotaExceeded }
@@ -39,7 +41,8 @@ public sealed record TelemetryEvent(
     MutationAction Action = MutationAction.None,
     Guid? RelatedTargetId = null,
     AuditModerationReason? ModerationReason = null,
-    PrivacyPolicy PrivacyPolicy = PrivacyPolicy.Standard)
+    PrivacyPolicy PrivacyPolicy = PrivacyPolicy.Standard,
+    TelemetryHost Host = TelemetryHost.Console)
 {
     // Computed, read-only property: every envelope currently uses schema version 1.
     public int SchemaVersion => 1;
@@ -78,6 +81,16 @@ public static class Telemetry
     // "Ambient" means helpers can read the current scope without a context parameter.
     // Child flows inherit the value; this does not deep-copy the Context object.
     private static readonly AsyncLocal<Context?> Ambient = new();
+    private static readonly AsyncLocal<TelemetryHost> Host = new();
+
+    /// <summary>Capture the emitting host on each event, before any delayed audit delivery.</summary>
+    public static IDisposable UseHost(TelemetryHost host)
+    {
+        if (!Enum.IsDefined(host)) throw new ArgumentOutOfRangeException(nameof(host));
+        var previous = Host.Value;
+        Host.Value = host;
+        return new Restore(() => Host.Value = previous);
+    }
     // The header generates four properties: observer, operation ID and actor identity.
     // The body adds per-context state; this record is not just a failure tracker.
     private sealed record Context(ITelemetryObserver? Observer, Guid OperationId, Guid? ActorId, ActorKind ActorKind)
@@ -213,7 +226,8 @@ public static class Telemetry
         return new(Guid.NewGuid(), DateTimeOffset.UtcNow, context is { OperationId: var id } && id != Guid.Empty ? id : Guid.NewGuid(), kind,
             context?.ActorKind ?? ActorKind.System, context?.ActorId, targetId, outcome, reason, durationMs,
             Activity.Current?.TraceId.ToString(), Activity.Current?.SpanId.ToString(),
-            PrivacyPolicy: kind == EventKind.NodeView ? PrivacyPolicy.ReadNoIdentityOrTarget : PrivacyPolicy.Standard);
+            PrivacyPolicy: kind == EventKind.NodeView ? PrivacyPolicy.ReadNoIdentityOrTarget : PrivacyPolicy.Standard,
+            Host: Host.Value);
     }
 
     /// <summary>Diagnostic output is best effort. A failing destination must not alter business results.</summary>

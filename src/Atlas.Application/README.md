@@ -9,6 +9,6 @@ The reusable backend shared by application hosts. It contains cross-domain workf
 
 Application references domain projects, Contracts, Persistence and Identity. It has no dependency on Console or terminal APIs. Domain projects retain their own repository interfaces and business rules. The repository-level `infrastructure/` folder is reserved for infrastructure as code, not runtime adapters.
 
-Console lives under `src/hosts/Atlas.Console`; a future API host can consume this same backend.
+Console lives under `src/hosts/Atlas.Console`; the JSON API lives under `src/hosts/Atlas.Api`. Both consume this backend. See [HTTP workflow mapping](../../docs/api/WORKFLOWS.md).
 
 See [ownership and composition](../../docs/architecture/APPLICATION-WORKFLOWS.md) and the [visual architecture guide](../../docs/architecture/diagrams/README.md).

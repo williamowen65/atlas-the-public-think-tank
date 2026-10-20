@@ -35,6 +35,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - name: API
+            project: tests/Atlas.Api.Tests/Atlas.Api.Tests.csproj
           - name: Application
             project: tests/Atlas.Application.Tests/Atlas.Application.Tests.csproj
           - name: Graph
@@ -87,6 +89,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - name: API fresh model
+            project: tests/Atlas.Api.Tests/Atlas.Api.Tests.csproj
           - name: Discovery read model
             project: tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj
             filter: '--filter FullyQualifiedName~Discovery'
@@ -133,7 +137,7 @@ jobs:
         with:
           dotnet-version: '10.0.x'
       - name: Check migrations match the EF model
-        if: matrix.name != 'Discovery read model' && matrix.name != 'Audit fresh model' && matrix.name != 'Voting quota fresh model' && matrix.name != 'Community quota fresh model' && matrix.name != 'Report quota fresh model' && matrix.name != 'Comment paging fresh model'
+        if: matrix.name != 'API fresh model' && matrix.name != 'Discovery read model' && matrix.name != 'Audit fresh model' && matrix.name != 'Voting quota fresh model' && matrix.name != 'Community quota fresh model' && matrix.name != 'Report quota fresh model' && matrix.name != 'Comment paging fresh model'
         run: |
           dotnet tool restore
           dotnet restore src/Atlas.Persistence/Atlas.Persistence.csproj

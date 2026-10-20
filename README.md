@@ -7,7 +7,7 @@ Atlas is an open-source platform for thinking through complex public problems to
 
 This repository contains a new version of Atlas. The application is being rebuilt around explicit **bounded contexts**: focused parts of the system that each own a particular set of concepts and rules. This keeps the growing platform understandable while allowing its features to work together through documented boundaries.
 
-> **Project status:** Atlas is under active development. The current Console application is an executable reference for exercising and reviewing the domain workflows before they are exposed through a web API and user interface.
+> **Project status:** Atlas is under active development. The current Console application is an executable reference for exercising and reviewing the domain workflows alongside the JSON API host. The frontend is a separate, future project.
 
 ## How Atlas is organized
 
@@ -50,7 +50,7 @@ dotnet test Atlas.sln
 - [`docs/`](docs/README.md) — requirements, architecture, contracts, workflows, testing guidance, glossary, and blackboards
 - [`legacy/`](legacy/README.md) — the earlier web application and its original README
 - [`infrastructure/`](infrastructure/README.md) — planned infrastructure as code
-- [`src/hosts/Atlas.Console/Storage/SeedData/DemoData.cs`](src/hosts/Atlas.Console/Storage/SeedData/DemoData.cs) — opt-in SQL Server demo seed records
+- [`src/Atlas.Application/Storage/SeedData/DemoData.cs`](src/Atlas.Application/Storage/SeedData/DemoData.cs) — opt-in SQL Server demo seed records
 
 For a deeper technical introduction, start with the [documentation index](docs/README.md). The [requirements baseline](docs/requirements/README.md) and [traceability matrix](docs/requirements/TRACEABILITY.md) connect intended behavior to implementation and verification.
 
@@ -69,3 +69,5 @@ The previous Atlas web application is preserved under [`legacy/`](legacy/). Its 
 ## License
 
 Atlas is licensed under the [GNU Affero General Public License version 3](LICENSE). Copyright and trademark information is recorded in [NOTICE.md](NOTICE.md).
+
+The [JSON API guide](docs/api/README.md) covers local HTTPS, cookie/CSRF authentication, workflow parity and version-controlled `.http` requests.

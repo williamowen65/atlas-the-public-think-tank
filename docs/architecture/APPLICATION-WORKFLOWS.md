@@ -1,6 +1,6 @@
 # Thin Console host and reusable application core
 
-PTT-131 now separates terminal presentation from reusable use cases and infrastructure. A future API composes the same Application backend without referencing the Console executable.
+PTT-131 now separates terminal presentation from reusable use cases and infrastructure. The [JSON API host](../api/README.md) composes the same Application backend without referencing the Console executable. Both hosts use the same configured SQL database.
 
 Follow the [visual architecture guide](diagrams/README.md) for linked UML views, workflow decision trees, transaction lifetimes and failure branches, with drill-down links to source and tests.
 
@@ -9,6 +9,7 @@ Follow the [visual architecture guide](diagrams/README.md) for linked UML views,
 | Project | Responsibility | Examples |
 |---|---|---|
 | Atlas.Console (src/hosts/Atlas.Console) | Menus, keyboard input, terminal rendering, console session lifetime, startup composition | ConsoleApplication, NodeCommands, DescriptionBlockCommands, ConsoleIdentitySession, Diagnostics |
+| Atlas.Api (src/hosts/Atlas.Api) | HTTP routing, JSON DTOs, cookie/CSRF authentication, request scope and API composition | Controllers, ApiServices, ApiBoundary, ApiTelemetry |
 | Atlas.Application | Cross-domain use cases, integration adapters, SQL storage, local telemetry and global usings | Workflows; Storage/Sql*Repository and seed support; Observability/LocalDevelopmentTelemetry |
 | Domain projects | Business rules and boundary-owned operations | Graph node/type services, Content DocumentService and BlockInput, CommunityService, Comments/Voting/Moderation/Notifications operations |
 | Atlas.Persistence | Existing EF context, rows, mappings, migrations, SQL discovery queries and audit outbox delivery | AtlasDataContext; unchanged schema/migrations |
@@ -18,6 +19,8 @@ Follow the [visual architecture guide](diagrams/README.md) for linked UML views,
 ```mermaid
 flowchart TD
     C["Console host: input, output, session, composition"] --> A["Application use cases and adapters"]
+    H["API host: HTTP, JSON, cookie session"] --> A
+    H --> ID
     A --> ID["Identity infrastructure"]
     A --> P["Persistence: EF model and audit storage"]
     ID --> P
@@ -88,9 +91,9 @@ NodeWorkflowService publishes recorded Graph events only after the outer creatio
 
 Reaction application plus voting now share one operation boundary, so a rejected vote does not leave a newly applied reaction behind. Existing domain authorization, reference checks, quota enforcement and repository validation remain in force. Node operations check current persisted authorship; description edits reload the node and check ownership per mutation. Hosts establish identity; an arbitrary actor Guid is not authentication. API controllers must map request DTOs and verified identity into these operations rather than accept domain objects from callers.
 
-All existing provisional poll/chart behavior is preserved. No real poll/chart domain, durable domain-event transport, new limiter or API endpoint is introduced.
+All existing provisional poll/chart behavior is preserved. The original PTT-131 extraction introduced no real poll/chart domain or durable domain-event transport. PTT-98/PTT-125 now add the JSON API adapter; see its [workflow map](../api/WORKFLOWS.md).
 
-## Verification and future API composition
+## Verification and API composition
 
 - Application tests reference Application only and verify host independence, domain independence, event ordering/failure semantics and focused workflow negative paths.
 - Persistence tests reference Application rather than Console. They verify that Application storage has no Console/terminal dependency and exercise real SQL repositories and workflows in CI.

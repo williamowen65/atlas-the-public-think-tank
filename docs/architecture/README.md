@@ -3,7 +3,7 @@
 - [Communities bounded context](COMMUNITIES.md)
 - [Discovery bounded context](DISCOVERY.md)
 
-Atlas is currently a modular application hosted by Atlas.Console. Its projects are treated as bounded contexts so they can evolve toward independently deployed services without sharing domain entities.
+Atlas is currently a modular application hosted by Atlas.Console and the JSON Atlas.Api host. Its projects are treated as bounded contexts so they can evolve toward independently deployed services without sharing domain entities.
 
 - [Identity infrastructure](IDENTITY.md) defines account/profile mapping and host authorization.
 
@@ -35,3 +35,5 @@ A future web application may first retain the same modular-monolith shape. If a 
 - [Notifications boundary](NOTIFICATIONS.md) documents the PTT-102 initial slice and delivery seam.
 
 See [thin-host ownership and application composition](APPLICATION-WORKFLOWS.md) for the current project layout and API reuse boundaries.
+
+The [JSON API](../api/README.md) adds an HTTP adapter without frontend views or assets; see its [security responsibility map](../api/SECURITY.md) before deployment.

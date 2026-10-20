@@ -15,7 +15,7 @@ separate forms of analysis.
 3. Restore/build the rewrite and run its test projects. Run SQL Server integration
    tests for persistence/Identity changes. Skipped SQL tests are not passing SQL evidence.
 4. Check advisories for direct and transitive packages with
-   `dotnet list Atlas.Rewrite.Tests.slnf package --vulnerable --include-transitive`.
+   `dotnet list tests/Atlas.Rewrite.Tests.slnf package --vulnerable --include-transitive`.
    A clean audit only covers the advisories known to the configured sources.
 5. Resolve conflicts against current main without removing existing security fixes.
    Keep EF runtime, design package and local tool versions aligned. Do not generate

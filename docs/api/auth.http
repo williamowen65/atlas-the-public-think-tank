@@ -1,0 +1,66 @@
+# See HTTP-GUIDE.md and AUTHENTICATION.md before sending requests.
+# Keep cookies enabled; run one request at a time, with private variable values.
+@baseUrl = https://localhost:7240
+@csrfToken = REPLACE_WITH_CURRENT_PRINCIPAL_CSRF_TOKEN
+@email = REPLACE_WITH_LOCAL_EMAIL
+@password = REPLACE_WITH_LOCAL_PASSWORD
+@displayName = REPLACE_WITH_UNIQUE_DISPLAY_NAME
+@userId = REPLACE_WITH_CONFIRMATION_USER_GUID
+@confirmationToken = REPLACE_FROM_PRIVATE_MAIL_DROP
+
+### A1. Prepare anonymous token — Accounts.Csrf
+# 200; retain CSRF cookie and copy JSON token into private csrfToken.
+GET {{baseUrl}}/api/auth/csrf
+
+### A2. Optional development registration — Accounts.Register
+# 202 in Development (default: src/hosts/Atlas.Api/development-mail/); 503 outside Development.
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}",
+  "displayName": "{{displayName}}"
+}
+
+### A3. Optional email confirmation — Accounts.Confirm
+# 204; use confirmation payload from private mail drop; this does not log in.
+POST {{baseUrl}}/api/auth/confirm-email
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{
+  "userId": "{{userId}}",
+  "token": "{{confirmationToken}}"
+}
+
+### A4. Sign in — Accounts.Login
+# 204 + session cookie on success; 401 generic denial.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+X-CSRF-TOKEN: {{csrfToken}}
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### A5. Refresh token after login; replace csrfToken before sending writes
+# Same principal may reuse this token; do not reuse the anonymous token.
+GET {{baseUrl}}/api/auth/csrf
+
+### A6. Inspect session — Accounts.Session
+# 200 with a valid session; 401 otherwise.
+GET {{baseUrl}}/api/auth/session
+
+### A7. Sign out — Accounts.Logout
+# 204; session deletion cookies. Refresh anonymous CSRF afterwards.
+POST {{baseUrl}}/api/auth/logout
+X-CSRF-TOKEN: {{csrfToken}}
+
+### A8. Refresh anonymous token before another login or anonymous write
+GET {{baseUrl}}/api/auth/csrf
+
+# Continue with identity-recovery.http for reset/resend, or identity-negative.http for rejection checks.
+# Keep the same cookie jar; copy the current CSRF token into each file's private variables.

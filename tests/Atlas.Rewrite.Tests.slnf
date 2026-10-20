@@ -1,6 +1,6 @@
 {
   "solution": {
-    "path": "Atlas.sln",
+    "path": "../Atlas.sln",
     "projects": [
       "tests\\Atlas.Application.Tests\\Atlas.Application.Tests.csproj",
       "tests\\Atlas.Comments.Tests\\Atlas.Comments.Tests.csproj",
@@ -13,7 +13,8 @@
       "tests\\Atlas.Notifications.Tests\\Atlas.Notifications.Tests.csproj",
       "tests\\Atlas.Participants.Tests\\Atlas.Participants.Tests.csproj",
       "tests\\Atlas.Persistence.Tests\\Atlas.Persistence.Tests.csproj",
-      "tests\\Atlas.Voting.Tests\\Atlas.Voting.Tests.csproj"
+      "tests\\Atlas.Voting.Tests\\Atlas.Voting.Tests.csproj",
+      "tests\\Atlas.Api.Tests\\Atlas.Api.Tests.csproj"
     ]
   }
 }

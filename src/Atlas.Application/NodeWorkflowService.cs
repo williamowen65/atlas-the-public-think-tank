@@ -34,6 +34,21 @@ public sealed class NodeWorkflowService(INodeRepository nodes, IEventPublisher e
         });
         Dispatch(node);
     }
+    /// <summary>Use Graph's current-state checks when changing the node type.</summary>
+    public void ChangeType(Node node, NodeTypeId typeId, Guid actorId)
+    {
+        new NodeRelationshipService(nodes).ChangeType(node, typeId, actorId, AtlasTime.UtcNow);
+        Dispatch(node);
+    }
+    /// <summary>Add or withdraw one child type through Graph's complete-proposal validation.</summary>
+    public void RequestType(Node node, NodeTypeId typeId, Guid actorId, bool requested)
+    {
+        EnsureActor(node, actorId);
+        var selected = node.RequestedSubNodeTypes.Select(item => item.TypeId).Where(id => id != typeId).ToList();
+        if (requested) selected.Add(typeId);
+        new NodeRelationshipService(nodes).SetRequestedTypes(node, selected, actorId, AtlasTime.UtcNow);
+        Dispatch(node);
+    }
     private void Change(Node node, Guid actorId, Action change)
     {
         OperationBoundary.Execute(nodes, () =>
