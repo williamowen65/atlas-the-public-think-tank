@@ -1,7 +1,9 @@
 /* Shared tokens: the app and Storybook import this same stylesheet. */
 
 :root {
-  font-family: system-ui, sans-serif;
+  font-family: var(--atlas-font-family, system-ui, sans-serif);
+  font-size: var(--atlas-font-size, 16px);
+  line-height: var(--atlas-line-height, normal);
   --atlas-bg: #f5f7fa;
   --atlas-surface: #ffffff;
   --atlas-text: #172b38;

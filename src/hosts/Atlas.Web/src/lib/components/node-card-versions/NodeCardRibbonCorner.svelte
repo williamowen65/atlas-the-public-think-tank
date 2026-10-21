@@ -58,8 +58,8 @@
 
 <style lang="scss">
   .node-card {
-    --card-padding: 1.25rem;
-    --dial-text-gap: 1rem;
+    --card-padding: var(--atlas-card-padding, 1.25rem);
+    --dial-text-gap: var(--atlas-dial-text-gap, 1rem);
     --atlas-breadcrumb-bottom-space: 0px;
     max-width: 48rem;
     width: 100%;
@@ -72,12 +72,12 @@
       padding: var(--card-padding) var(--card-padding) .5rem;
     }
     h2 {
-      margin: 0 0 .5rem;
-      font-size: clamp(1.35rem, 4vw, 1.9rem);
+      margin: 0 0 var(--atlas-heading-gap, .5rem);
+      font-size: calc(clamp(1.35rem, 4vw, 1.9rem) * var(--atlas-heading-scale, 1.5) / 1.5);
       line-height: 1.2;
     }
     p {
-      line-height: 1.65;
+      line-height: var(--atlas-line-height, 1.65);
     }
   }
 
@@ -170,7 +170,7 @@
 
   .description {
     display: flow-root;
-    margin: 0 0 .65rem;
+    margin: 0 0 var(--atlas-paragraph-gap, .65rem);
     white-space: pre-line;
   }
 
@@ -219,8 +219,8 @@
 
   @media (max-width: 380px) {
     .node-card {
-      --card-padding: .75rem;
-      --dial-text-gap: .6rem;
+      --card-padding: var(--atlas-card-padding-narrow, .75rem);
+      --dial-text-gap: var(--atlas-dial-text-gap, .6rem);
     }
     .node-card header, .body {
       padding-inline: var(--card-padding);

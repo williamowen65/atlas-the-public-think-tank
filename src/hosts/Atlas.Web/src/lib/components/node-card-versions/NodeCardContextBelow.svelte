@@ -76,7 +76,7 @@
     }
     h2 {
       margin: .7rem 0 .5rem;
-      font-size: clamp(1.35rem, 4vw, 1.9rem);
+      font-size: calc(clamp(1.35rem, 4vw, 1.9rem) * var(--atlas-heading-scale, 1.5) / 1.5);
       line-height: 1.2;
     }
     h3 {
@@ -85,7 +85,7 @@
       color: var(--atlas-muted);
     }
     p {
-      line-height: 1.65;
+      line-height: var(--atlas-line-height, 1.65);
     }
   }
 
@@ -132,7 +132,7 @@
   }
 
   .description {
-    margin: 0 0 .65rem;
+    margin: 0 0 var(--atlas-paragraph-gap, .65rem);
     white-space: pre-line;
   }
 

@@ -285,7 +285,7 @@ Select `ribbon-split` in the Atlas node story's presentation Control (available 
 
 ## PTT-146: shell and scrolling feed prototypes
 
-Three separate stories each expose one Playground: **Components/Header**, **Components/Footer**, and **Compositions/Feed**. Header/Footer are shared presentational components with wrapping navigation. The isolated feed story uses live anonymous Atlas API data, without a surrounding app shell or Storybook node fixtures.
+Three separate stories each expose one Playground: **Layout/Header**, **Layout/Footer**, and **Compositions/Feed**. Header/Footer are shared presentational components with wrapping navigation. The isolated feed story uses live anonymous Atlas API data, without a surrounding app shell or Storybook node fixtures.
 
 `NodeFeed.svelte` accepts display items, loading/error/end state and callbacks. It contains no fetch/session/database logic. An IntersectionObserver requests another page within 240px of the bottom; the always-available Load more button supports keyboard use and browsers without observer-triggered loading. Errors suspend automatic loading until Retry. The caller-owned guard prevents overlapping requests; successful pages append in order and deduplicate IDs. Existing cards remain mounted. There is no virtualization or durable feed cursor yet; the current page-number API can change order while people vote.
 
@@ -294,3 +294,11 @@ Three separate stories each expose one Playground: **Components/Header**, **Comp
 The SPA root composes those same components. `/components` preserves the original action-button integration example. Run `npm run dev` alongside Atlas.Api to browse the feed in the SPA, or `npm run storybook:api` for the isolated stories. Both development servers use the existing anonymous loopback proxy and GET allowlist. Static hosting still needs a separately configured API/reverse proxy; Vite's development proxy is not a production service.
 
 Browser CI intercepts API HTTP responses (no backend/database required) to verify scroll append, deduplication, moderation filtering, failure/retry, end-of-feed, narrow containment and shared SPA composition. These checks do not prove live backend ranking stability, authenticated actions, production API hosting, or large-feed performance. The header/footer are layout prototypes, without new account/session behavior.
+
+## Shared style experiments in Storybook
+
+Header and Footer appear under `Layout/` (the slash in their story title defines the navigation group). `Styles and Layout/Typography` is a playground and spacing reference. Its Controls include font family, base font size, line height, heading scale, paragraph/heading gaps, shared spacing, normal/narrow card padding, dial/text gap, corner radius, and eight color tokens.
+
+Changing these Controls publishes a Storybook global and applies shared CSS variables across components and compositions as you switch stories in the same Storybook session. Font size scales rem-based measurements. Card inset and ribbon/title spacing share the same padding token; narrow card padding remains separately adjustable. Components with intentionally fixed local dimensions (such as dial row geometry) retain those dimensions.
+
+Empty color Controls inherit the Theme toolbar palette. Explicit colors override Theme until cleared or reset; explicit spacing overrides Density. **Reset styles to code defaults** restores every style Control, including clearing color overrides. Storybook's globals and per-story Controls are exploration state, not edits to source SCSS or the separate SPA. Promote an approved palette/spacing/font into shared SCSS to make it an app default. The specimen records established card/spacing conventions and notes color pairs to check in the Accessibility panel.

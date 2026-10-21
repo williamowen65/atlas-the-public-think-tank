@@ -62,11 +62,11 @@ test('SPA composes the shared shell and live feed at narrow widths', async ({ pa
 
 test('header and footer each have a separate isolated Playground', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
-  await page.goto('http://127.0.0.1:6006/iframe.html?id=components-header--playground&viewMode=story');
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=layout-header--playground&viewMode=story');
   await expect(page.getByRole('navigation', { name: 'Main navigation' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Discover', exact: true })).toHaveAttribute('aria-current', 'page');
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
-  await page.goto('http://127.0.0.1:6006/iframe.html?id=components-footer--playground&viewMode=story');
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=layout-footer--playground&viewMode=story');
   await expect(page.getByRole('navigation', { name: 'Footer navigation' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
 });
