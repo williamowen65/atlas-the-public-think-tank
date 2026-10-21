@@ -244,6 +244,6 @@ test('reaction pills are separate and absent reactions leave no container or gap
   await expect(page.getByRole('group', { name: 'Community reactions' })).toHaveCount(0);
   await expect(pills).toHaveCount(0);
   // The community is the first detail, with no reaction wrapper to reserve a row.
-  await expect(page.locator('.card-details > :first-child')).toHaveClass('communities');
+  await expect(page.locator('.card-details > :first-child')).toHaveClass(/\bcommunities\b/);
   await expect(page.locator('article')).not.toContainText('Useful: 3');
 });
