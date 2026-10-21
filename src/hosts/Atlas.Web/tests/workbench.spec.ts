@@ -176,3 +176,21 @@ test('unrated color changes when zero is selected', async ({ page }) => {
   expect(await window.evaluate(el => getComputedStyle(el).backgroundColor)).not.toBe(before);
   await expect(page.getByRole('spinbutton')).toHaveAttribute('aria-valuenow', '0');
 });
+
+/** Small trackpad deltas give directional feedback even before changing a vote. */
+test('wheel lens follows direction and recenters, while compact stays fixed', async ({ page }) => {
+  for (const compact of [false, true]) {
+    await page.goto(story(`components-votingdial--playground&args=compact:${compact}`));
+    const dial = page.getByRole('spinbutton');
+    const lens = page.locator('.selection-window');
+    await expect(dial).toHaveAttribute('aria-valuenow', '5');
+    await dial.dispatchEvent('wheel', { deltaY: 10 });
+    const first = await lens.evaluate(el => new DOMMatrix(getComputedStyle(el).transform).m42);
+    expect(compact ? first === 0 : first < 0).toBe(true);
+    await dial.dispatchEvent('wheel', { deltaY: -20 });
+    const reverse = await lens.evaluate(el => new DOMMatrix(getComputedStyle(el).transform).m42);
+    expect(compact ? reverse === 0 : reverse > 0).toBe(true);
+    await expect(dial).toHaveAttribute('aria-valuenow', '5');
+    await expect(lens).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
+  }
+});

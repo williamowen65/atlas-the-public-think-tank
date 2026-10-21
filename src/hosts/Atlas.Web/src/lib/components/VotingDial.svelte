@@ -28,6 +28,10 @@
   let touchScrollOrigin: number | null = null;
   let wheelRemainder = 0;
   let wheelTime = 0;
+  let wheelPullDistance = 0;
+  let wheelRelease: ReturnType<typeof setTimeout> | undefined;
+
+  $effect(() => () => clearTimeout(wheelRelease));
 
   // Read the rendered row size so zoom and font-size changes keep the same threshold.
   function rowHeight() {
@@ -41,6 +45,9 @@
     const locked = disabled;
     if (!reel) return;
     if (locked) {
+      clearTimeout(wheelRelease);
+      wheelRelease = undefined;
+      wheelPullDistance = 0;
       lensPull = 0;
       pulling = false;
       touchPointer = null;
@@ -107,6 +114,9 @@
   // the same direct manipulation on desktop without replacing touch physics.
   function pointerDown(event: PointerEvent) {
     if (disabled) return;
+    clearTimeout(wheelRelease);
+    wheelRelease = undefined;
+    wheelPullDistance = 0;
     syncTarget = null;
     if (event.button !== 0) return;
     pulling = true;
@@ -157,7 +167,7 @@
   }
 
   function scrollEnd() {
-    if (drag) return;
+    if (drag || wheelRelease !== undefined) return;
     touchScrollOrigin = null;
     lensPull = 0;
     pulling = false;
@@ -167,9 +177,25 @@
     if (disabled || event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
     event.preventDefault();
     // Normalize line/page wheels and accumulate small trackpad deltas.
-    if (event.timeStamp - wheelTime > 180) wheelRemainder = 0;
+    const distance = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? reel.clientHeight : 1);
+    if (!distance) return;
+    if (event.timeStamp - wheelTime > 180) {
+      wheelRemainder = 0;
+      wheelPullDistance = 0;
+    }
     wheelTime = event.timeStamp;
-    wheelRemainder += event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? reel.clientHeight : 1);
+    if (Math.sign(distance) !== Math.sign(wheelPullDistance)) wheelPullDistance = 0;
+    wheelPullDistance += distance;
+    pulling = true;
+    // Positive wheel deltas move the reel upward, matching an upward pointer pull.
+    pullLens(-wheelPullDistance);
+    clearTimeout(wheelRelease);
+    wheelRelease = setTimeout(() => {
+      wheelRelease = undefined;
+      wheelPullDistance = 0;
+      scrollEnd();
+    }, 220);
+    wheelRemainder += distance;
     const steps = Math.trunc(wheelRemainder / rowHeight());
     if (steps) {
       wheelRemainder -= steps * rowHeight();
