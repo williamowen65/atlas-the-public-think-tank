@@ -38,8 +38,8 @@
         {/if}
         <div class="navigation-details">
           {@render comments()}
-          {#if node.subNodeSummary && node.subNodeSummary !== 'None'}<span class="text-action connection-summary">{node.subNodeSummary}</span>{/if}
-          {#each node.related as related}<span class="text-action connection-summary">{related.typeName}: {related.title}</span>{/each}
+          {#if node.subNodeSummary && node.subNodeSummary !== 'None'}<span class="navigation-separator" aria-hidden="true"> · </span><span class="text-action connection-summary">{node.subNodeSummary}</span>{/if}
+          {#each node.related as related}<span class="navigation-separator" aria-hidden="true"> · </span><span class="text-action connection-summary">{related.typeName}: {related.title}</span>{/each}
         </div>
       </div>
   </div>
@@ -55,11 +55,14 @@
 {/snippet}
 
 {#snippet comments()}
-  <button class="text-action" type="button" disabled={!onComments} onclick={() => onComments?.(node.id)}>{node.commentCount} {node.commentCount === 1 ? 'comment' : 'comments'}</button>
+  <button class="text-action" type="button" disabled={!onComments} onclick={() => onComments?.(node.id)}>{node.commentCount} {node.commentCount === 1 ? 'Comment' : 'Comments'}</button>
 {/snippet}
 
 <style lang="scss">
   .node-card {
+    --card-padding: 1.25rem;
+    --dial-text-gap: 1rem;
+    --atlas-breadcrumb-bottom-space: 0px;
     max-width: 48rem;
     width: 100%;
     border: 1px solid var(--atlas-border);
@@ -68,7 +71,7 @@
     color: var(--atlas-text);
     overflow-wrap: anywhere;
     header {
-      padding: 1.25rem 1.25rem .5rem;
+      padding: 1.25rem var(--card-padding) .5rem;
     }
     h2 {
       margin: .7rem 0 .5rem;
@@ -83,6 +86,7 @@
   .ribbon-context {
     min-width: 0;
     padding: .75rem 0 0;
+    margin-bottom: var(--card-padding);
   }
 
   .ribbon-context + header {
@@ -127,8 +131,8 @@
       text-align: right;
       margin-top: .35rem;
       .text-action { padding-block: .15rem; }
+      .navigation-separator { font-size: .9rem; }
       .connection-summary {
-        margin-inline-start: .75rem;
         text-decoration: none;
         color: var(--atlas-muted);
         cursor: default;
@@ -145,13 +149,13 @@
   }
 
   .body {
-    padding: .5rem 1.25rem 1rem;
+    padding: .5rem var(--card-padding) 1rem;
     display: flow-root;
   }
 
   .dial {
     float: left;
-    margin: 0 1rem .6rem -.4rem;
+    margin: 0 var(--dial-text-gap) .6rem -.4rem;
   }
 
   .description {
@@ -201,11 +205,12 @@
   }
 
   @media (max-width: 380px) {
-    .node-card header, .body, .communities {
-      padding-inline: .75rem;
+    .node-card {
+      --card-padding: .75rem;
+      --dial-text-gap: .6rem;
     }
-    .dial {
-      margin-right: .6rem;
+    .node-card header, .body, .communities {
+      padding-inline: var(--card-padding);
     }
   }
 </style>

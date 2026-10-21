@@ -103,6 +103,8 @@
 
 <style lang="scss">
   nav {
+    display: block;
+    margin: 0;
     min-width: 0;
     max-width: 100%;
   }
@@ -124,7 +126,7 @@
     width: max-content;
     list-style: none;
     margin: 0;
-    padding: .3rem 1.15rem .5rem 0;
+    padding: .3rem 1.15rem var(--atlas-breadcrumb-bottom-space, .5rem) 0;
   }
 
   li {

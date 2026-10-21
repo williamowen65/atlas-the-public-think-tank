@@ -165,7 +165,8 @@ test('live-only card navigates an off-page ancestor by ID and keeps both present
   await expect(page.locator('article .body .reactions strong')).toHaveText('3');
   await expect(page.locator('article .body .reactions span')).toHaveCSS('border-radius', '999px');
   await expect(page.locator('article .body .navigation-details')).toContainText('Ideas: 2');
-  await expect(page.locator('article .body .navigation-details')).toContainText('4 comments');
+  await expect(page.locator('article .body .navigation-details')).toContainText('4 Comments');
+  await expect(page.locator('.navigation-details .navigation-separator')).toHaveText('·');
   await expect(page.locator('article .body .navigation-details')).not.toContainText('Connected nodes:');
   const navigationStyle = await page.locator('.navigation-details').evaluate(el => {
     const comment = el.querySelector('button')!; const connection = el.querySelector('.connection-summary')!;
@@ -262,11 +263,20 @@ test('standalone card versions preserve mobile layout and offer a raised desktop
   await expect(page.locator('article')).toHaveAttribute('data-presentation', 'ribbon-responsive');
   const desktop = await page.locator('article').evaluate(el => ({
     header: el.querySelector('header')!.getBoundingClientRect().toJSON(),
-    dial: el.querySelector('.dial')!.getBoundingClientRect().toJSON(),
+    dial: el.querySelector('.voting-dial')!.getBoundingClientRect().toJSON(),
+    selector: el.querySelector('.selector')!.getBoundingClientRect().toJSON(),
+    title: el.querySelector('h2')!.getBoundingClientRect().toJSON(),
+    paragraph: el.querySelector('.description')!.getBoundingClientRect().toJSON(),
+    breadcrumbBottom: el.querySelector('nav li')!.getBoundingClientRect().bottom,
+    padding: parseFloat(getComputedStyle(el.querySelector('header')!).paddingRight),
     height: el.getBoundingClientRect().height,
   }));
   expect(desktop.dial.top).toBeLessThan(desktop.header.bottom);
   expect(desktop.header.left).toBeGreaterThan(desktop.dial.left);
+  // Preserve the float layout's 16px margin + 6.4px inner dial padding.
+  expect(desktop.title.left - desktop.selector.right).toBeCloseTo(22.4, 0);
+  expect(desktop.paragraph.left - desktop.selector.right).toBeCloseTo(22.4, 0);
+  expect(desktop.title.top - desktop.breadcrumbBottom).toBeCloseTo(desktop.padding, 0);
   expect(desktop.height).toBeLessThan(ribbonHeight);
   await page.setViewportSize({ width: 320, height: 1000 });
   const mobile = await page.locator('article').evaluate(el => ({

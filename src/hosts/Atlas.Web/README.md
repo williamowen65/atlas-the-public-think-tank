@@ -268,3 +268,5 @@ than relying only on a document-load event. Browser coverage checks right alignm
 scrolling/focus, mobile containment, navigation, accessibility and the original candidate.
 
 The dedicated authored short-description idea is tracked in [PTTD-38](https://thepublicthinktank.atlassian.net/browse/PTTD-38). Preview text still comes from content blocks. Reaction pills display total vote counts, not net scores; unused choices are omitted. The ribbon card renders only structured reaction pills; empty/loading/failed reaction lists reserve no reaction row. Failures show a retry note outside the card rather than a comma-separated summary pill. Comments and connected-node counts share one plain-text line (wrapping on narrow screens), without a Connected nodes label.
+
+Ribbon card spacing uses a 1.25rem (20px) side inset, also used between breadcrumb and title. Narrow screens use .75rem (12px). The responsive desktop dial column sizes to its content with the same 1rem text gap as the float layout (about 22px from the visible selector including its inner padding). Comments are capitalized and separated from connected-node counts with the same middle dot treatment.
