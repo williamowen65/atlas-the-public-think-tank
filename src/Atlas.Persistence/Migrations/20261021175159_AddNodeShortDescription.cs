@@ -28,3 +28,4 @@ namespace Atlas.Persistence.Migrations
         }
     }
 }
+x
