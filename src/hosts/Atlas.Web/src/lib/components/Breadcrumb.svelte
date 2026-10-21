@@ -73,6 +73,7 @@
 
 {#if allItems.length || more}
   <nav aria-label="Node breadcrumb">
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex (Native scrolling needs keyboard focus for display-only ancestor labels.) -->
     <div class="viewport" role="group" aria-label="Scrollable ancestor path" tabindex="0" use:revealNewest={allItems}>
       <ol>
         {#if more && loadOlder}
