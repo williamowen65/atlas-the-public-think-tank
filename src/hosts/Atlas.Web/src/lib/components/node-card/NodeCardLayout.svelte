@@ -97,6 +97,11 @@
     padding: .75rem 0 0;
   }
 
+  .ribbon-context + header {
+    padding-top: 0;
+    h2 { margin-top: 0; }
+  }
+
   .title-type { color: var(--atlas-accent); }
 
   .communities {
