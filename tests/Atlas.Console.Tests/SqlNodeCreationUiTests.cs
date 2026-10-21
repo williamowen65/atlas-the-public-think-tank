@@ -31,10 +31,10 @@ public sealed class SqlNodeCreationUiTests
                 db.SaveChanges();
             }
             new SqlNodeTypeRepository(Open).Save(NodeTypeDefinition.CreateSystemDefined("Idea", "Ideas", DateTimeOffset.UtcNow));
-            using var input = new StringReader("TEST NODE\ntest node\n1\n\n\n"); using var output = new StringWriter();
+            using var input = new StringReader("TEST NODE\nA concise introduction\ntest node\n1\n\n\n"); using var output = new StringWriter();
             System.Console.SetIn(input); System.Console.SetOut(output);
             var node = NodeCreationWorkflow.Create(new SqlNodeRepository(Open), new SqlNodeTypeRepository(Open), new SqlDocumentRepository(Open), actor, new InMemoryEventPublisher());
-            Assert.IsNotNull(node); Assert.IsEmpty(node.RequestedSubNodeTypes);
+            Assert.IsNotNull(node); Assert.AreEqual("A concise introduction", node.ShortDescription); Assert.IsEmpty(node.RequestedSubNodeTypes);
             using var check = Open(); Assert.AreEqual(1, check.NodeRows.Count()); Assert.AreEqual(1, check.NodeCreationQuotaRows.Count());
         }
         finally

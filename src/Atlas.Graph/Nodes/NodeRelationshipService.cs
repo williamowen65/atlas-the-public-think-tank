@@ -65,7 +65,8 @@ public sealed class NodeRelationshipService(INodeRepository nodes)
                 node.RequestedSubNodeTypes.Select(request => request.TypeId),
                 node.ParentNodeIds,
                 node.CreatedAt,
-                node.UpdatedAt
+                node.UpdatedAt,
+                node.ShortDescription
             );
             Apply(proposal);
             Apply(node);

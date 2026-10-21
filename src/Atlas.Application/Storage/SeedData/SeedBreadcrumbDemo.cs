@@ -39,6 +39,7 @@ internal static partial class DemoData
             {
                 Id = nodeId,
                 Title = title,
+                ShortDescription = "Explore a deep ancestor ribbon with intersecting routes and passive pagination toward the Atlas root.",
                 DescriptionId = documentId,
                 TypeId = ideaType,
                 AuthorId = DemoParticipants.User01Id,

@@ -5,6 +5,8 @@ public static class DiscoveryQueryValidation
     public static void Validate(DiscoveryQuery query)
     {
         ArgumentNullException.ThrowIfNull(query);
+        if (query.NodeId == Guid.Empty)
+            throw new ArgumentException("A node ID cannot be empty.", nameof(query));
         if (query.Page < 1)
             throw new ArgumentOutOfRangeException(
                 nameof(query),

@@ -71,3 +71,7 @@ The previous Atlas web application is preserved under [`legacy/`](legacy/). Its 
 Atlas is licensed under the [GNU Affero General Public License version 3](LICENSE). Copyright and trademark information is recorded in [NOTICE.md](NOTICE.md).
 
 The [JSON API guide](docs/api/README.md) covers local HTTPS, cookie/CSRF authentication, workflow parity and version-controlled `.http` requests.
+
+### Frontend component workbench
+
+Start with [Atlas.Web and Storybook](src/hosts/Atlas.Web/README.md) for isolated components, the minimal shared-component web harness, and browser tests. The frontend uses SvelteKit with declarative Svelte components shared with Storybook.

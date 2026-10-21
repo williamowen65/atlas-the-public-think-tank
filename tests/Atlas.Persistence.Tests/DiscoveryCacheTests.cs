@@ -10,6 +10,35 @@ public sealed class DiscoveryCacheTests
     private static DiscoveryCandidate Candidate(Guid id, double average, int votes = 1) => new(id, "Café " + id, "evidence", Guid.NewGuid(), Guid.NewGuid(), false, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, votes, average, [], []);
 
     [TestMethod]
+    public void Node_id_lookup_is_exact_cached_and_still_obeys_visibility_and_filters()
+    {
+        using var fixture = SqlTestDatabase.Create(useCurrentModel: true);
+        var a = Candidate(Guid.NewGuid(), 8); var b = Candidate(Guid.NewGuid(), 5);
+        DiscoverySqlFixture.Seed(fixture, a, b);
+        using var cache = new DiscoveryCache();
+        var query = new SqlDiscoveryReadQuery(fixture.Open, cache);
+        Assert.AreEqual(a.NodeId, query.DiscoverPage(new(NodeId: a.NodeId)).Items.Single().NodeId);
+        Assert.AreEqual(b.NodeId, query.DiscoverPage(new(NodeId: b.NodeId)).Items.Single().NodeId);
+        Assert.AreEqual(a.NodeId, query.DiscoverPage(new(NodeId: a.NodeId)).Items.Single().NodeId);
+        Assert.AreEqual(1L, cache.PageHits);
+        Assert.IsEmpty(query.DiscoverPage(new(NodeId: Guid.NewGuid())).Items);
+        Assert.IsEmpty(query.DiscoverPage(new(NodeId: a.NodeId, SearchText: "missing search term")).Items);
+        using (var db = fixture.Open())
+        {
+            db.NodeRows.Single(row => row.Id == a.NodeId).Status = "Archived";
+            db.SaveChanges();
+        }
+        Assert.IsEmpty(query.DiscoverPage(new(NodeId: a.NodeId)).Items);
+        Assert.AreEqual(a.NodeId, query.DiscoverPage(new(NodeId: a.NodeId, IncludeArchived: true)).Items.Single().NodeId);
+        using (var db = fixture.Open())
+        {
+            db.ModerationCaseRows.Add(new ModerationCaseRow { Id = Guid.NewGuid(), NodeId = a.NodeId, ReporterId = a.AuthorParticipantId, ReportedTitle = a.Title, Reason = "Spam", Status = 2, PublicReason = 1, CreatedAt = DateTimeOffset.UtcNow });
+            db.SaveChanges();
+        }
+        Assert.IsEmpty(query.DiscoverPage(new(NodeId: a.NodeId, IncludeArchived: true)).Items);
+    }
+
+    [TestMethod]
     public void Filter_changes_reuse_details_and_node_votes_invalidate_only_pages()
     {
         using var fixture = SqlTestDatabase.Create(useCurrentModel: true);

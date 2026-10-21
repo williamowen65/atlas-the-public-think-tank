@@ -20,6 +20,8 @@ public sealed class Node
         _parentNodeIds.AsReadOnly();
 
     public NodeId Id { get; }
+    public const int ShortDescriptionMaxLength = 280;
+    public string ShortDescription { get; private set; }
     public NodeTitle Title { get; private set; }
     public NodeTypeId TypeId { get; private set; }
     public NodeStatus Status { get; private set; }
@@ -34,7 +36,8 @@ public sealed class Node
         NodeDescriptionId descriptionId,
         NodeTypeId typeId,
         NodeAuthorId authorId,
-        DateTimeOffset createdAt
+        DateTimeOffset createdAt,
+        string shortDescription = ""
     )
         : this(
             title,
@@ -42,7 +45,8 @@ public sealed class Node
             typeId,
             authorId,
             [],
-            createdAt
+            createdAt,
+            shortDescription
         )
     {
     }
@@ -54,7 +58,8 @@ public sealed class Node
         NodeTypeId typeId,
         NodeAuthorId authorId,
         IEnumerable<NodeTypeId> requestedSubNodeTypeIds,
-        DateTimeOffset createdAt
+        DateTimeOffset createdAt,
+        string shortDescription = ""
     )
     {
         ValidateValues(
@@ -65,6 +70,7 @@ public sealed class Node
         );
         Id = NodeId.New();
         Title = title;
+        ShortDescription = NormalizeShortDescription(shortDescription);
         DescriptionId = descriptionId;
         TypeId = typeId;
         AuthorId = authorId;
@@ -95,7 +101,8 @@ public sealed class Node
         IEnumerable<NodeTypeId> requestedSubNodeTypeIds,
         IEnumerable<NodeId> parentNodeIds,
         DateTimeOffset createdAt,
-        DateTimeOffset updatedAt
+        DateTimeOffset updatedAt,
+        string shortDescription = ""
     )
     {
         if (id.Value == Guid.Empty) throw new ArgumentException(
@@ -118,6 +125,7 @@ public sealed class Node
 
         Id = id;
         Title = title;
+        ShortDescription = NormalizeShortDescription(shortDescription);
         DescriptionId = descriptionId;
         TypeId = typeId;
         AuthorId = authorId;
@@ -141,7 +149,8 @@ public sealed class Node
         NodeAuthorId authorId,
         NodeStatus status,
         DateTimeOffset createdAt,
-        DateTimeOffset updatedAt
+        DateTimeOffset updatedAt,
+        string shortDescription = ""
     )
     {
         return Reconstitute(
@@ -154,7 +163,8 @@ public sealed class Node
             [],
             [],
             createdAt,
-            updatedAt
+            updatedAt,
+            shortDescription
         );
     }
 
@@ -168,7 +178,8 @@ public sealed class Node
         NodeStatus status,
         IEnumerable<NodeTypeId> requestedSubNodeTypeIds,
         DateTimeOffset createdAt,
-        DateTimeOffset updatedAt
+        DateTimeOffset updatedAt,
+        string shortDescription = ""
     )
     {
         return Reconstitute(
@@ -181,7 +192,8 @@ public sealed class Node
             requestedSubNodeTypeIds,
             [],
             createdAt,
-            updatedAt
+            updatedAt,
+            shortDescription
         );
     }
 
@@ -196,7 +208,8 @@ public sealed class Node
         IEnumerable<NodeTypeId> requestedSubNodeTypeIds,
         IEnumerable<NodeId> parentNodeIds,
         DateTimeOffset createdAt,
-        DateTimeOffset updatedAt
+        DateTimeOffset updatedAt,
+        string shortDescription = ""
     )
     {
         return new Node(
@@ -209,8 +222,29 @@ public sealed class Node
             requestedSubNodeTypeIds,
             parentNodeIds,
             createdAt,
-            updatedAt
+            updatedAt,
+            shortDescription
         );
+    }
+
+    /// <summary>Updates the concise plain-text card introduction independently of content blocks.</summary>
+    public void ChangeShortDescription(string text, Guid actorParticipantId, DateTimeOffset changedAt)
+    {
+        EnsureAuthoredBy(actorParticipantId);
+        var next = NormalizeShortDescription(text);
+        if (ShortDescription == next) return;
+        EnsureTime(changedAt);
+        ShortDescription = next;
+        UpdatedAt = changedAt.ToUniversalTime();
+    }
+
+    private static string NormalizeShortDescription(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var normalized = text.Trim();
+        if (normalized.Length > ShortDescriptionMaxLength)
+            throw new ArgumentException($"Short description cannot exceed {ShortDescriptionMaxLength} characters.", nameof(text));
+        return normalized;
     }
 
     /// <summary>Changes the validated name and advances the modification timestamp when the value differs.</summary>

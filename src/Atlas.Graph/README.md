@@ -231,3 +231,7 @@ multiple branches.
 
 The remaining work is primarily policy, scale, authorization, and richer link
 semantics rather than a missing core graph structure.
+
+### Short descriptions
+
+`Node.ShortDescription` is an authored plain-text introduction with a 280 UTF-16 code-unit limit. Construction, reconstitution, and `ChangeShortDescription` trim surrounding whitespace and reject oversized/null text. Mutation requires the node author and a nondecreasing timestamp, independently of the Content document. Empty introductions remain valid for existing records/import compatibility; API and Console creation require one. Persistence maps the value directly to `NodeRows.ShortDescription`, and Discovery returns it separately from its full document rendering.

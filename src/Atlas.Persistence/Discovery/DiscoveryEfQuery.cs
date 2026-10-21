@@ -14,6 +14,8 @@ internal static class DiscoveryEfQuery
         bool includeHidden)
     {
         var nodes = db.NodeRows.AsNoTracking();
+        if (request.NodeId is { } nodeId)
+            nodes = nodes.Where(node => node.Id == nodeId);
         if (authoredIds is not null)
         {
             var ids = authoredIds.ToArray();
@@ -64,6 +66,7 @@ internal static class DiscoveryEfQuery
         {
             NodeId = node.Id,
             Title = node.Title,
+            ShortDescription = node.ShortDescription,
             UpdatedAt = node.UpdatedAt,
             Hidden = db.ModerationCaseRows.Any(report => report.NodeId == node.Id &&
                 report.Status == 2 && report.VisibilityRestoredAt == null),
@@ -100,7 +103,7 @@ internal static class DiscoveryEfQuery
             var content = db.Database.SqlQueryRaw<SearchContent>(
                 SqlDiscoveryReadQuery.ReadResource("DiscoverySearchContent.sql"));
             candidates = candidates.Where(node => !node.Hidden &&
-                (node.Title.Contains(search) || content.Any(blocks =>
+                (node.Title.Contains(search) || node.ShortDescription.Contains(search) || content.Any(blocks =>
                     blocks.NodeId == node.NodeId && blocks.Text.Contains(search))));
         }
 
@@ -108,6 +111,7 @@ internal static class DiscoveryEfQuery
         {
             NodeId = node.NodeId,
             Title = node.Title,
+            ShortDescription = node.ShortDescription,
             UpdatedAt = node.UpdatedAt,
             Hidden = node.Hidden,
             VoteCount = node.VoteCount,
@@ -122,6 +126,7 @@ internal static class DiscoveryEfQuery
     {
         public Guid NodeId { get; set; }
         public string Title { get; set; } = "";
+        public string ShortDescription { get; set; } = "";
         public DateTimeOffset UpdatedAt { get; set; }
         public bool Hidden { get; set; }
         public int VoteCount { get; set; }

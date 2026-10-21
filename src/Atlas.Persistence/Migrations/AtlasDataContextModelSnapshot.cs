@@ -564,6 +564,13 @@ namespace Atlas.Persistence.Migrations
                     b.Property<Guid?>("DescriptionId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("ShortDescription")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(280)
+                        .HasColumnType("nvarchar(280)")
+                        .HasDefaultValue("");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(450)
