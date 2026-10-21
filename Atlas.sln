@@ -444,7 +444,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{267261CE-52C8-58ED-92D2-EA60A7AA98B8}"
 	ProjectSection(SolutionItems) = preProject
 		src\hosts\Atlas.Web\src\app.html = src\hosts\Atlas.Web\src\app.html
-		src\hosts\Atlas.Web\src\styles.css = src\hosts\Atlas.Web\src\styles.css
+		src\hosts\Atlas.Web\src\styles.scss = src\hosts\Atlas.Web\src\styles.scss
 		src\hosts\Atlas.Web\src\vite-env.d.ts = src\hosts\Atlas.Web\src\vite-env.d.ts
 	EndProjectSection
 EndProject

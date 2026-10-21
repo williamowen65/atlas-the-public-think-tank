@@ -26,6 +26,19 @@ npm run storybook
 
 Open http://127.0.0.1:6006. Components / ActionButton is the single button story group. There is one Playground story; use Controls to change label and disabled state. No API, SQL, credentials or session is required.
 
+## Styling with Sass
+
+Use SCSS (Sass with braces and semicolons) for styles. The `sass` development dependency and existing `vitePreprocess()` in `svelte.config.js` compile it automatically. `npm run dev` and `npm run storybook` watch changes and update the preview; the existing build and CI commands compile production CSS. Do not run a separate Sass watcher, generate sibling `.css` files, or commit generated CSS.
+
+- Component-specific styles stay in that component's `<style lang="scss">` block. Svelte scopes their selectors so they do not affect unrelated components. No stylesheet import is needed for this block.
+- Shared tokens and application-wide rules live in `src/styles.scss`. The app layout and Storybook preview each import that source as the entry point for their respective build.
+- Use one declaration per line, blank lines between rules, shallow nesting for related selectors, and `&` for states such as `&.dragging` or `&:focus-visible`. Nest compact overrides under `.compact`.
+- Keep runtime theme/density values as CSS custom properties. Sass runs at build time; CSS variables still respond to the Theme and Density controls in the browser.
+
+A style block in a Svelte source file is compiler input, not markup repeated for each mounted component. Production builds extract and bundle its scoped CSS into shared assets; rendering twenty voting dials does not emit twenty copies of the stylesheet. Development tooling may inject/update a style tag for hot reload, shared across instances. The multiple-dial browser test also checks that no style blocks appear inside the rendered dials.
+
+See the [Vite preprocessor guide](https://vite.dev/guide/features.html#css-pre-processors) and [Svelte Vite preprocessing guide](https://github.com/sveltejs/vite-plugin-svelte/blob/main/docs/preprocess.md).
+
 ## Where the markup lives
 
 | File | Responsibility |

@@ -11,6 +11,11 @@
 </div>
 <p class="fixture-note">Independent local selections; no votes are submitted.</p>
 
-<style>
-  .comparison { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--atlas-space); }
+<style lang="scss">
+  .comparison {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--atlas-space);
+  }
 </style>

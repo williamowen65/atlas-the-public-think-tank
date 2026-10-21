@@ -12,7 +12,7 @@ Each metadata `title` sets a slash-separated sidebar path. Each group currently 
 
 ## Global styles versus individual controls
 
-`src/styles.css` is the single shared stylesheet imported by the app layout and `.storybook/preview.ts`. Its CSS custom properties define the starter visual tokens: background, surface, text, muted text, accent/on-accent, border, focus, spacing and radius. This is an initial style foundation, not a commitment to Bootstrap, Tailwind or another CSS framework.
+`src/styles.scss` is the single shared SCSS stylesheet imported by the app layout and `.storybook/preview.ts`. Its CSS custom properties define the starter visual tokens: background, surface, text, muted text, accent/on-accent, border, focus, spacing and radius. Component and example styles use scoped `<style lang="scss">` blocks, readable declarations and nested state/layout rules. The installed Sass compiler runs automatically through Vite/Svelte preprocessing in development, Storybook, builds and CI. See [the styling workflow](../README.md#styling-with-sass) for file ownership, imports and why styles are shared across instances. This is an initial style foundation, not a commitment to Bootstrap, Tailwind or another CSS framework.
 
 The Storybook **Theme** toolbar chooses light/dark tokens and **Density** chooses comfortable/compact spacing. These globals apply across stories and remain selected when switching stories. The preview decorator puts the selected values on the preview document; CSS resolves the shared tokens. Global styles are therefore deliberately separate from each component's arguments. The app currently uses default light/comfortable tokens; this does not implement an application theme preference screen or persistence.
 

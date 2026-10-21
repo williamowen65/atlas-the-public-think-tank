@@ -16,7 +16,17 @@
   <VotingDial label="Node importance" {value} average={7.4} totalVotes={21} {compact} onChange={(next) => value = next} />
 </article>
 
-<style>
-  .card-preview { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--atlas-space); max-width: 55rem; }
-  .card-preview > div { flex: 1 1 16rem; min-width: 0; }
+<style lang="scss">
+  .card-preview {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--atlas-space);
+    max-width: 55rem;
+  }
+
+  .card-preview > div {
+    flex: 1 1 16rem;
+    min-width: 0;
+  }
 </style>
