@@ -102,7 +102,7 @@ internal static class DiscoveryEfQuery
             var content = db.Database.SqlQueryRaw<SearchContent>(
                 SqlDiscoveryReadQuery.ReadResource("DiscoverySearchContent.sql"));
             candidates = candidates.Where(node => !node.Hidden &&
-                (node.Title.Contains(search) || content.Any(blocks =>
+                (node.Title.Contains(search) || node.ShortDescription.Contains(search) || content.Any(blocks =>
                     blocks.NodeId == node.NodeId && blocks.Text.Contains(search))));
         }
 

@@ -175,6 +175,7 @@ public sealed class SqlWorkflowTests
             {
                 title = "HTTP idea",
                 markdown = "Description",
+                shortDescription = "A concise HTTP idea introduction",
                 typeId,
                 requestedTypeIds = Array.Empty<Guid>(),
                 actorParticipantId = Guid.NewGuid(),
@@ -274,6 +275,10 @@ public sealed class SqlWorkflowTests
     /// </summary>
     private static async Task ExerciseVotesCommentsAndCommunityQuota(HttpClient client, Guid node)
     {
+        await Success(await client.PutAsJsonAsync($"/api/nodes/{node}/short-description", new { text = "Updated short introduction" }));
+        var updatedIntroduction = await client.GetFromJsonAsync<JsonElement>($"/api/nodes/{node}");
+        Assert.AreEqual("Updated short introduction", updatedIntroduction.GetProperty("shortDescription").GetString());
+        Assert.AreEqual(HttpStatusCode.BadRequest, (await client.PutAsJsonAsync($"/api/nodes/{node}/short-description", new { text = new string('x', 281) })).StatusCode);
         await Success(await client.PutAsJsonAsync($"/api/nodes/{node}/vote", new
         {
             value = 7
@@ -581,6 +586,7 @@ public sealed class SqlWorkflowTests
             {
                 title = "Retained post",
                 markdown = "Retained body",
+                shortDescription = "A retained introduction",
                 typeId = type.Id.Value,
                 requestedTypeIds = Array.Empty<Guid>()
             }

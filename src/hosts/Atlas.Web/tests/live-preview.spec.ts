@@ -4,7 +4,7 @@ import { expect, test } from '@playwright/test';
 const preview = 'http://127.0.0.1:6006/iframe.html?id=compositions-atlas-node--playground&viewMode=story';
 const item = (id: string, title: string, hidden = false) => ({
   nodeId: id, rank: 1, rankingScore: 1, voteCount: 12, averageVote: 7.5,
-  card: { nodeId: id, title, typeName: 'Question', authorName: 'API author', status: 'Active', createdAt: '2026-09-28T15:20:00Z', description: 'Content from the API response.', breadcrumb: 'Root question', subNodes: 'Ideas: 2', reactions: 'Useful: 3', communities: 'Local community', commentCount: 4, isHidden: hidden },
+  card: { nodeId: id, title, typeName: 'Question', authorName: 'API author', status: 'Active', createdAt: '2026-09-28T15:20:00Z', description: 'Full content that belongs on the detail page.', shortDescription: 'Content from the API response.', breadcrumb: 'Root question', subNodes: 'Ideas: 2', reactions: 'Useful: 3', communities: 'Local community', commentCount: 4, isHidden: hidden },
 });
 
 test('live nodes support selection, search, paging and refresh without submitting votes', async ({ page }) => {
@@ -176,8 +176,10 @@ test('live-only card navigates an off-page ancestor by ID and keeps both present
   await expect(page.locator('article h2')).toHaveText('Question: Current child');
   await expect(page.locator('article header')).not.toContainText('Local community');
   await expect(page.getByRole('group', { name: 'Communities', exact: true })).toHaveText('Community: Local community');
-  await page.getByRole('button', { name: 'Read more' }).click();
-  await expect(page.getByRole('button', { name: 'Show less' })).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByRole('button', { name: 'Read more' })).toBeDisabled();
+  await expect(page.locator('.description')).toContainText('Content from the API response.');
+  await expect(page.locator('.description')).not.toContainText('Actual API description.');
+  await expect(page.locator('.description')).toHaveCSS('max-height', 'none');
   const results = await new AxeBuilder({ page }).include('#storybook-root').analyze();
   expect(results.violations).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
@@ -186,7 +188,7 @@ test('live-only card navigates an off-page ancestor by ID and keeps both present
   expect(requested.at(-1)?.searchParams.get('NodeId')).toBe(ancestor);
   expect(requested.at(-1)?.searchParams.get('SearchText')).toBeNull();
   expect(requested.at(-1)?.searchParams.get('IncludeArchived')).toBe('true');
-  await expect(page.getByRole('button', { name: 'Read more' })).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByRole('button', { name: 'Read more' })).toBeDisabled();
   await expect(nav).toHaveCount(0);
   const titleInset = await page.locator('article').evaluate(el => ({
     top: el.querySelector('h2')!.getBoundingClientRect().top - el.getBoundingClientRect().top - el.clientTop,
@@ -198,8 +200,7 @@ test('live-only card navigates an off-page ancestor by ID and keeps both present
   await page.goto(`${preview}&args=presentation:context-below`);
   await expect(page.locator('article')).toHaveAttribute('data-presentation', 'context-below');
   await expect(page.getByRole('heading', { name: 'Current child', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Read more' }).click();
-  await expect(page.getByRole('button', { name: 'Show less' })).toBeVisible();
+  await expect(page.locator('.description .read-more')).toBeDisabled();
 });
 
 test('unavailable ancestor shows an error and can return to Discovery', async ({ page }) => {
@@ -232,7 +233,7 @@ test('reaction pills are separate and absent reactions leave no container or gap
       { associationId: 'one', text: 'Useful', emoji: '💡', totalVotes: 3 },
       { associationId: 'two', text: 'Worth exploring', emoji: '🔎', totalVotes: 2 },
     ] });
-    return route.fulfill({ json: { items: [{ ...item('b1000000-0000-4000-8000-000000000001', 'Compact node'), card: { ...item('b1000000-0000-4000-8000-000000000001', 'Compact node').card, subNodes: '2 Ideas · 1 Question', description: 'A longer introduction with useful context. '.repeat(40) } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
+    return route.fulfill({ json: { items: [{ ...item('b1000000-0000-4000-8000-000000000001', 'Compact node'), card: { ...item('b1000000-0000-4000-8000-000000000001', 'Compact node').card, subNodes: '2 Ideas · 1 Question', shortDescription: 'A longer introduction with useful context. '.repeat(5) } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
   });
   await page.goto(preview);
   const pills = page.locator('article .reaction-pill');
@@ -272,7 +273,7 @@ test('standalone card versions preserve mobile layout and offer a raised desktop
   await page.route('**/atlas-preview-api/**', route => {
     if (route.request().url().endsWith('/reactions')) return route.fulfill({ json: [] });
     const entry = item('b1000000-0000-4000-8000-000000000001', 'Layout comparison');
-    return route.fulfill({ json: { items: [{ ...entry, card: { ...entry.card, description: 'A concise introduction for comparing card arrangements.' } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
+    return route.fulfill({ json: { items: [{ ...entry, card: { ...entry.card, shortDescription: 'A concise introduction for comparing card arrangements.' } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
   });
   await page.setViewportSize({ width: 1024, height: 1000 });
   await page.goto(`${preview}&args=presentation:ribbon`);
@@ -292,7 +293,7 @@ test('standalone card versions preserve mobile layout and offer a raised desktop
     card: el.getBoundingClientRect().toJSON(),
     community: el.querySelector('.communities')!.getBoundingClientRect().toJSON(),
     navigation: el.querySelector('.navigation-details')!.getBoundingClientRect().toJSON(),
-    action: el.querySelector('.read-more button')!.getBoundingClientRect().toJSON(),
+    action: el.querySelector('.description .read-more')!.getBoundingClientRect().toJSON(),
     communityFont: getComputedStyle(el.querySelector('.communities')!).fontSize,
     navigationFont: getComputedStyle(el.querySelector('.navigation-details')!).fontSize,
   }));
@@ -307,7 +308,8 @@ test('standalone card versions preserve mobile layout and offer a raised desktop
   expect(desktop.community.top).toBeGreaterThan(desktop.dial.bottom);
   expect(Math.abs(desktop.community.top - desktop.navigation.top)).toBeLessThan(4);
   expect(desktop.communityFont).toBe(desktop.navigationFont);
-  expect((desktop.action.left + desktop.action.right) / 2).toBeCloseTo((desktop.card.left + desktop.card.right) / 2, 0);
+  expect(desktop.action.top).toBeGreaterThanOrEqual(desktop.paragraph.top);
+  expect(desktop.action.bottom).toBeLessThanOrEqual(desktop.paragraph.bottom + 1);
   await page.setViewportSize({ width: 320, height: 1000 });
   const mobile = await page.locator('article').evaluate(el => ({
     headerBottom: el.querySelector('header')!.getBoundingClientRect().bottom,

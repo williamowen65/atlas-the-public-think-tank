@@ -23,6 +23,7 @@ public sealed class HttpAbuseTests
     /// </summary>
     [TestMethod]
     [DataRow("POST", "/api/nodes")]
+    [DataRow("PUT", "/api/nodes/11111111-1111-4111-8111-111111111111/short-description")]
     [DataRow("POST", "/api/communities")]
     [DataRow("PUT", "/api/participants/me")]
     [DataRow("PUT", "/api/nodes/11111111-1111-4111-8111-111111111111/vote")]

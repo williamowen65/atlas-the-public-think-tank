@@ -2,11 +2,8 @@
   import VotingDial from '../VotingDial.svelte';
 
   import type { NodeCardProps } from './types';
-  let { node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onComments }: NodeCardProps = $props();
-  let expanded = $state(false);
+  let { node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onReadMore, onComments }: NodeCardProps = $props();
   const instance = $props.id();
-  const nodeId = $derived(node.id);
-  $effect(() => { nodeId; expanded = false; });
 </script>
 
 <article class="node-card" data-presentation="context-below" aria-labelledby={`${instance}-title`}>
@@ -24,8 +21,9 @@
     <aside class="dial" aria-label="Importance rating">
       <VotingDial label="Node importance" {value} {average} {totalVotes} disabled={node.status === 'Archived'} onChange={onVote} />
     </aside>
-    <p class="description" class:expanded id={`${instance}-description`}>{node.description}</p>
-    <button class="text-action" type="button" aria-expanded={expanded} aria-controls={`${instance}-description`} onclick={() => expanded = !expanded}>{expanded ? 'Show less' : 'Read more'}</button>
+    <p class="description" id={`${instance}-description`}>{node.description}{' '}
+        <button class="text-action read-more" type="button" disabled={!onReadMore} onclick={() => onReadMore?.(node.id)}>Read more</button>
+      </p>
     {#if node.requestedTypes.length}
       <p class="invitation">Help develop this node with: <strong>{node.requestedTypes.join(', ')}</strong>.</p>
     {/if}
@@ -136,12 +134,9 @@
   .description {
     margin: 0 0 .65rem;
     white-space: pre-line;
-    max-height: 8.25em;
-    overflow: hidden;
-    &.expanded {
-      max-height: none;
-    }
   }
+
+  .read-more { padding: 0; white-space: nowrap; }
 
   .invitation {
     font-size: .9rem;

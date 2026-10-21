@@ -291,6 +291,10 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
                 .HasColumnType("nvarchar(450)")
                 .HasMaxLength(450)
                 .IsRequired();
+            entity.Property(row => row.ShortDescription)
+                .HasMaxLength(280)
+                .HasDefaultValue("")
+                .IsRequired();
             entity.Property<Guid?>("DescriptionId")
                 .HasColumnType("uniqueidentifier");
             entity.Property<Guid?>("TypeId")

@@ -5,6 +5,7 @@ public sealed class NodeRow
 {
     public Guid Id { get; set; }
     public string Title { get; set; } = string.Empty;
+    public string ShortDescription { get; set; } = string.Empty;
     public Guid? DescriptionId { get; set; }
     public Guid? TypeId { get; set; }
     public Guid? AuthorId { get; set; }

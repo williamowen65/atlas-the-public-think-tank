@@ -74,7 +74,8 @@ public sealed class NodesController(
             new NodeTypeId(request.TypeId),
             actor.ParticipantId,
             request.RequestedTypeIds.Select(x => new NodeTypeId(x)),
-            request.ParentId is { } parent ? new NodeId(parent) : null
+            request.ParentId is { } parent ? new NodeId(parent) : null,
+            request.ShortDescription
         );
 
         // Return the new resource location with its visibility-aware projection.
@@ -86,6 +87,14 @@ public sealed class NodesController(
     public IActionResult Rename(Guid id, TextRequest request)
     {
         workflow.Rename(Load(id), actor.ParticipantId, request.Text);
+        return NoContent();
+    }
+
+    /// <summary>Update the authored card introduction without editing the content document.</summary>
+    [Authorize(Policy = AtlasPolicies.Member), HttpPut("{id:guid}/short-description")]
+    public IActionResult ChangeShortDescription(Guid id, ShortDescriptionRequest request)
+    {
+        workflow.ChangeShortDescription(Load(id), actor.ParticipantId, request.Text);
         return NoContent();
     }
 
@@ -184,6 +193,7 @@ public sealed class NodesController(
         {
             id = node.Id.Value,
             title = node.Title.Value,
+            node.ShortDescription,
             typeId = node.TypeId.Value,
             authorId = node.AuthorId.Value,
             status = node.Status.ToString(),
@@ -201,7 +211,10 @@ public sealed record CreateNodeRequest(
     [Required, MaxLength(32000)] string Markdown,
     Guid TypeId,
     Guid? ParentId,
-    [Required, MaxLength(50)] Guid[] RequestedTypeIds
+    [Required, MaxLength(50)] Guid[] RequestedTypeIds,
+    [Required, MaxLength(Node.ShortDescriptionMaxLength)] string ShortDescription
 );
+
+public sealed record ShortDescriptionRequest([Required, MaxLength(Node.ShortDescriptionMaxLength)] string Text);
 
 public sealed record TextRequest([Required, MaxLength(32000)] string Text);

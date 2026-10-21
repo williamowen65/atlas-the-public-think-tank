@@ -1,18 +1,14 @@
 <script lang="ts">
-  import ActionButton from '../ActionButton.svelte';
   import VotingDial from '../VotingDial.svelte';
 
   import Breadcrumb from '../Breadcrumb.svelte';
   import type { NodeCardProps } from './types';
-  let { node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onComments, hasMoreAncestors = false, loadOlderAncestors }: NodeCardProps = $props();
-  let expanded = $state(false);
+  let { node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onReadMore, onComments, hasMoreAncestors = false, loadOlderAncestors }: NodeCardProps = $props();
   const instance = $props.id();
-  const nodeId = $derived(node.id);
   const connectionLabels = $derived([
     ...(node.subNodeSummary && node.subNodeSummary !== 'None' ? node.subNodeSummary.split(' · ') : []),
     ...node.related.map(related => `${related.typeName}: ${related.title}`),
   ]);
-  $effect(() => { nodeId; expanded = false; });
 </script>
 
 <article class="node-card" data-presentation="ribbon" aria-labelledby={`${instance}-title`}>
@@ -30,15 +26,14 @@
       <VotingDial label="Node importance" {value} {average} {totalVotes} disabled={node.status === 'Archived'} onChange={onVote} />
     </aside>
     <div class="content-stack">
-      <p class="description" class:expanded id={`${instance}-description`}>{node.description}</p>
+      <p class="description" id={`${instance}-description`}>{node.description}{' '}
+        <button class="text-action read-more" type="button" disabled={!onReadMore} onclick={() => onReadMore?.(node.id)}>Read more</button>
+      </p>
       {#if node.requestedTypes.length}
         <p class="invitation">Help develop this node with: <strong>{node.requestedTypes.join(', ')}</strong>.</p>
       {/if}
       {@render reactions()}
     </div>
-  </div>
-  <div class="read-more">
-    <ActionButton label={expanded ? 'Show less' : 'Read more'} {expanded} controls={`${instance}-description`} onActivate={() => expanded = !expanded} />
   </div>
   <div class="card-details">
     {#if node.communities.length}
@@ -103,13 +98,6 @@
   }
 
   .title-type { color: var(--atlas-accent); }
-
-  .read-more {
-    clear: both;
-    display: flex;
-    justify-content: center;
-    padding: 0 var(--card-padding) .75rem;
-  }
 
   [data-presentation] {
     .card-details {
@@ -180,12 +168,9 @@
   .description {
     margin: 0 0 .65rem;
     white-space: pre-line;
-    max-height: 8.25em;
-    overflow: hidden;
-    &.expanded {
-      max-height: none;
-    }
   }
+
+  .read-more { padding: 0; white-space: nowrap; }
 
   .invitation {
     font-size: .9rem;

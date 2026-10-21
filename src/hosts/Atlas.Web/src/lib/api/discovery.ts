@@ -4,7 +4,7 @@ import type { NodeCardData } from '../components/NodeCard.svelte';
 interface DiscoveryCard {
   nodeId: string; title: string; typeName: string; authorName: string; status: string;
   breadcrumbSegment?: { items: { nodeId: string; label: string }[]; continuationNodeId: string | null; hasAlternativeRoutes: boolean; cycleDetected: boolean };
-  createdAt: string; description: string; breadcrumb: string; subNodes: string;
+  createdAt: string; description: string; shortDescription: string; breadcrumb: string; subNodes: string;
   reactions: string; communities: string; commentCount: number; isHidden: boolean;
 }
 interface DiscoveryItem { nodeId: string; voteCount: number; averageVote: number | null; card: DiscoveryCard | null }
@@ -33,7 +33,7 @@ export function discoveryCard(item: DiscoveryItem): NodeCardData | null {
   return {
     id: item.nodeId, title: card.title, typeName: card.typeName, authorName: card.authorName,
     status: card.status === 'Archived' ? 'Archived' : 'Active', createdAt: card.createdAt,
-    description: card.description, communities: card.communities ? [card.communities] : [],
+    description: card.shortDescription ?? '', communities: card.communities ? [card.communities] : [],
     breadcrumb: card.breadcrumbSegment ? [...card.breadcrumbSegment.items].reverse().map(item => ({ id: item.nodeId, title: item.label })) : card.breadcrumb ? [{ title: card.breadcrumb }] : [], related: [], requestedTypes: [], reactions: [],
     reactionSummary: card.reactions, subNodeSummary: card.subNodes, commentCount: card.commentCount,
   };

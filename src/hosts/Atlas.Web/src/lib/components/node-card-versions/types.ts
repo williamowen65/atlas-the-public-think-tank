@@ -28,5 +28,6 @@ export interface NodeCardProps {
   totalVotes?: number;
   onVote?: (value: number) => void;
   onNavigate?: (id: string) => void;
+  onReadMore?: (id: string) => void;
   onComments?: (id: string) => void;
 }

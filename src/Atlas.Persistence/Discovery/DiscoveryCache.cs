@@ -170,7 +170,7 @@ public sealed class DiscoveryCache : IDisposable
             card.TypeName.Length +
             card.AuthorName.Length +
             card.Status.Length +
-            card.Description.Length +
+            card.Description.Length + card.ShortDescription.Length +
             card.Breadcrumb.Length +
             card.SubNodes.Length +
             card.Reactions.Length +

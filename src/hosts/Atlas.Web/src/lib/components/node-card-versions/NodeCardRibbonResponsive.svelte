@@ -1,18 +1,14 @@
 <script lang="ts">
-  import ActionButton from '../ActionButton.svelte';
   import VotingDial from '../VotingDial.svelte';
 
   import Breadcrumb from '../Breadcrumb.svelte';
   import type { NodeCardProps } from './types';
-  let { node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onComments, hasMoreAncestors = false, loadOlderAncestors }: NodeCardProps = $props();
-  let expanded = $state(false);
+  let { node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onReadMore, onComments, hasMoreAncestors = false, loadOlderAncestors }: NodeCardProps = $props();
   const instance = $props.id();
-  const nodeId = $derived(node.id);
   const connectionLabels = $derived([
     ...(node.subNodeSummary && node.subNodeSummary !== 'None' ? node.subNodeSummary.split(' · ') : []),
     ...node.related.map(related => `${related.typeName}: ${related.title}`),
   ]);
-  $effect(() => { nodeId; expanded = false; });
 </script>
 
 <article class="node-card" data-presentation="ribbon-responsive" aria-labelledby={`${instance}-title`}>
@@ -30,15 +26,14 @@
       <VotingDial label="Node importance" {value} {average} {totalVotes} disabled={node.status === 'Archived'} onChange={onVote} />
     </aside>
     <div class="content-stack">
-      <p class="description" class:expanded id={`${instance}-description`}>{node.description}</p>
+      <p class="description" id={`${instance}-description`}>{node.description}{' '}
+        <button class="text-action read-more" type="button" disabled={!onReadMore} onclick={() => onReadMore?.(node.id)}>Read more</button>
+      </p>
       {#if node.requestedTypes.length}
         <p class="invitation">Help develop this node with: <strong>{node.requestedTypes.join(', ')}</strong>.</p>
       {/if}
       {@render reactions()}
     </div>
-  </div>
-  <div class="read-more">
-    <ActionButton label={expanded ? 'Show less' : 'Read more'} {expanded} controls={`${instance}-description`} onActivate={() => expanded = !expanded} />
   </div>
   <div class="card-details">
     {#if node.communities.length}
@@ -103,13 +98,6 @@
   }
 
   .title-type { color: var(--atlas-accent); }
-
-  .read-more {
-    clear: both;
-    display: flex;
-    justify-content: center;
-    padding: 0 var(--card-padding) .75rem;
-  }
 
   [data-presentation] {
     .card-details {
@@ -180,12 +168,9 @@
   .description {
     margin: 0 0 .65rem;
     white-space: pre-line;
-    max-height: 8.25em;
-    overflow: hidden;
-    &.expanded {
-      max-height: none;
-    }
   }
+
+  .read-more { padding: 0; white-space: nowrap; }
 
   .invitation {
     font-size: .9rem;
@@ -239,7 +224,7 @@
       display: grid;
       grid-template-columns: max-content minmax(0, 1fr);
       column-gap: var(--dial-text-gap);
-      grid-template-rows: auto min-content auto auto auto;
+      grid-template-rows: auto min-content auto auto;
     }
     .ribbon-context { grid-column: 1 / -1; grid-row: 1; }
     .node-card header { grid-column: 2; grid-row: 2; min-width: 0; padding-inline: 0 var(--card-padding); }
@@ -251,8 +236,7 @@
       margin: .5rem 0 0 .75rem;
     }
     .content-stack { grid-column: 2; grid-row: 3; align-self: start; min-width: 0; margin-right: var(--card-padding); }
-    .read-more { grid-column: 1 / -1; grid-row: 4; }
-    .card-details { grid-column: 1 / -1; grid-row: 5; min-width: 0; }
+    .card-details { grid-column: 1 / -1; grid-row: 4; min-width: 0; }
 
   }
 </style>
