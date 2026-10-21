@@ -200,7 +200,7 @@ test('live-only card navigates an off-page ancestor by ID and keeps both present
   await page.goto(`${preview}&args=presentation:context-below`);
   await expect(page.locator('article')).toHaveAttribute('data-presentation', 'context-below');
   await expect(page.getByRole('heading', { name: 'Current child', exact: true })).toBeVisible();
-  await expect(page.locator('.description .read-more')).toBeDisabled();
+  await expect(page.locator('.description .read-more button')).toBeDisabled();
 });
 
 test('unavailable ancestor shows an error and can return to Discovery', async ({ page }) => {
@@ -293,7 +293,7 @@ test('standalone card versions preserve mobile layout and offer a raised desktop
     card: el.getBoundingClientRect().toJSON(),
     community: el.querySelector('.communities')!.getBoundingClientRect().toJSON(),
     navigation: el.querySelector('.navigation-details')!.getBoundingClientRect().toJSON(),
-    action: el.querySelector('.description .read-more')!.getBoundingClientRect().toJSON(),
+    action: el.querySelector('.description .read-more button')!.getBoundingClientRect().toJSON(),
     communityFont: getComputedStyle(el.querySelector('.communities')!).fontSize,
     navigationFont: getComputedStyle(el.querySelector('.navigation-details')!).fontSize,
   }));
@@ -308,7 +308,9 @@ test('standalone card versions preserve mobile layout and offer a raised desktop
   expect(desktop.community.top).toBeGreaterThan(desktop.dial.bottom);
   expect(Math.abs(desktop.community.top - desktop.navigation.top)).toBeLessThan(4);
   expect(desktop.communityFont).toBe(desktop.navigationFont);
-  expect(desktop.action.top).toBeGreaterThanOrEqual(desktop.paragraph.top);
+  expect(desktop.action.top).toBeGreaterThan(desktop.paragraph.top);
+  expect((desktop.action.left + desktop.action.right) / 2).toBeCloseTo((desktop.paragraph.left + desktop.paragraph.right) / 2, 0);
+  await expect(page.locator('.description .read-more button')).toHaveClass(/atlas-action/);
   expect(desktop.action.bottom).toBeLessThanOrEqual(desktop.paragraph.bottom + 1);
   await page.setViewportSize({ width: 320, height: 1000 });
   const mobile = await page.locator('article').evaluate(el => ({

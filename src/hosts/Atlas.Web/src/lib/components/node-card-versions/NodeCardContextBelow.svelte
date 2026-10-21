@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ActionButton from '../ActionButton.svelte';
   import VotingDial from '../VotingDial.svelte';
 
   import type { NodeCardProps } from './types';
@@ -21,9 +22,7 @@
     <aside class="dial" aria-label="Importance rating">
       <VotingDial label="Node importance" {value} {average} {totalVotes} disabled={node.status === 'Archived'} onChange={onVote} />
     </aside>
-    <p class="description" id={`${instance}-description`}>{node.description}{' '}
-        <button class="text-action read-more" type="button" disabled={!onReadMore} onclick={() => onReadMore?.(node.id)}>Read more</button>
-      </p>
+    <p class="description" id={`${instance}-description`}>{node.description}<span class="read-more"><ActionButton label="Read more" disabled={!onReadMore} onActivate={() => onReadMore?.(node.id)} /></span></p>
     {#if node.requestedTypes.length}
       <p class="invitation">Help develop this node with: <strong>{node.requestedTypes.join(', ')}</strong>.</p>
     {/if}
@@ -136,7 +135,7 @@
     white-space: pre-line;
   }
 
-  .read-more { padding: 0; white-space: nowrap; }
+  .read-more { display: flex; justify-content: center; margin-top: .5rem; white-space: normal; }
 
   .invitation {
     font-size: .9rem;
