@@ -411,11 +411,12 @@ test('corner action floats at the description end above the navigation counts', 
         const textTop = range.getClientRects()[0].top;
         const action = el.querySelector('.read-more button')!.getBoundingClientRect();
         const navigation = el.querySelector('.navigation-details')!.getBoundingClientRect();
-        return { paragraph: paragraph.toJSON(), action: action.toJSON(), navigation: navigation.toJSON(), textTop,
+        return { paragraph: paragraph.toJSON(), action: action.toJSON(), navigation: navigation.toJSON(), textTop, bylineBottom: el.querySelector('header .byline:last-child')!.getBoundingClientRect().bottom,
           float: getComputedStyle(el.querySelector('.read-more')!).cssFloat };
       });
       expect(geometry.float).toBe('right');
       expect(geometry.textTop - geometry.paragraph.top).toBeLessThan(5);
+      if (width >= 768) expect(geometry.paragraph.top - geometry.bylineBottom).toBeLessThan(10);
       expect(geometry.action.right).toBeCloseTo(geometry.paragraph.right, 0);
       expect(geometry.action.left).toBeGreaterThan(geometry.paragraph.left);
       expect(geometry.navigation.top).toBeGreaterThanOrEqual(geometry.action.bottom);
