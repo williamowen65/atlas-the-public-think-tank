@@ -74,7 +74,14 @@
 {#if allItems.length || more}
   <nav aria-label="Node breadcrumb">
     <!-- svelte-ignore a11y_no_noninteractive_tabindex (Native scrolling needs keyboard focus for display-only ancestor labels.) -->
-    <div class="viewport" role="group" aria-label="Scrollable ancestor path" tabindex="0" use:revealNewest={allItems}>
+    <div class="viewport" role="group" aria-label="Scrollable ancestor path" tabindex="0" use:revealNewest={allItems}
+      onfocusin={event => {
+        const target = event.target;
+        // Prepend anchoring settles first, then reveal a newly focused ancestor.
+        if (target instanceof HTMLElement && target !== event.currentTarget) {
+          requestAnimationFrame(() => { if (target.isConnected) target.scrollIntoView({ block: 'nearest', inline: 'nearest' }); });
+        }
+      }}>
       <ol>
         {#if more && loadOlder}
           <li class="load-older"><button type="button" disabled={loading} onclick={requestOlder}>{loading ? 'Loading…' : 'Load older ancestors'}</button></li>
