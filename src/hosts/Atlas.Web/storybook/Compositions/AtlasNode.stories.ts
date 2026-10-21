@@ -4,7 +4,7 @@ import LiveNodePreview from '../NodeCard/LiveNodePreview.svelte';
 const meta = {
   title: 'Compositions/Atlas node',
   component: LiveNodePreview,
-  args: { presentation: 'ribbon' },
+  args: { presentation: 'ribbon-responsive' },
   argTypes: {
     presentation: { type: 'string', control: 'select', options: ['ribbon', 'context-below', 'ribbon-responsive'], description: 'Compare standalone card versions using the same live Atlas data.' },
   },
