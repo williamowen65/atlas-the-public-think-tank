@@ -197,7 +197,11 @@ test('style Controls carry across Storybook layout and composition stories and r
   await expect(canvas.locator('html')).toHaveCSS('font-size', '20px');
   async function select(id: string, group: string) {
     const item = page.locator(`[data-item-id="${id}"]`);
-    if (!await item.isVisible()) await page.locator(`[data-item-id="${group}"]`).click();
+    if (!await item.isVisible()) {
+      const component = page.locator(`[data-item-id="${id.split('--')[0]}"]`);
+      if (!await component.isVisible()) await page.locator(`[data-item-id="${group}"]`).click();
+      if (!await item.isVisible() && await component.isVisible()) await component.click();
+    }
     await item.click();
   }
   await select('layout-header--playground', 'layout');
