@@ -164,10 +164,10 @@ test('live-only card navigates an off-page ancestor by ID and keeps both present
   await expect(page.locator('article footer')).toHaveCount(0);
   await expect(page.locator('article .body .reactions strong')).toHaveText('3');
   await expect(page.locator('article .body .reactions span')).toHaveCSS('border-radius', '999px');
-  await expect(page.locator('article .body .navigation-details')).toContainText('Ideas: 2');
-  await expect(page.locator('article .body .navigation-details')).toContainText('4 Comments');
+  await expect(page.locator('article .navigation-details')).toContainText('Ideas: 2');
+  await expect(page.locator('article .navigation-details')).toContainText('4 Comments');
   await expect(page.locator('.navigation-details .navigation-separator')).toHaveText('·');
-  await expect(page.locator('article .body .navigation-details')).not.toContainText('Connected nodes:');
+  await expect(page.locator('article .navigation-details')).not.toContainText('Connected nodes:');
   const navigationStyle = await page.locator('.navigation-details').evaluate(el => {
     const comment = el.querySelector('button')!; const connection = el.querySelector('.connection-summary')!;
     return { sameLine: Math.abs(comment.getBoundingClientRect().top - connection.getBoundingClientRect().top) < 4, commentFont: getComputedStyle(comment).fontSize, connectionFont: getComputedStyle(connection).fontSize };
@@ -188,6 +188,11 @@ test('live-only card navigates an off-page ancestor by ID and keeps both present
   expect(requested.at(-1)?.searchParams.get('IncludeArchived')).toBe('true');
   await expect(page.getByRole('button', { name: 'Read more' })).toHaveAttribute('aria-expanded', 'false');
   await expect(nav).toHaveCount(0);
+  const titleInset = await page.locator('article').evaluate(el => ({
+    top: el.querySelector('h2')!.getBoundingClientRect().top - el.getBoundingClientRect().top - el.clientTop,
+    padding: parseFloat(getComputedStyle(el.querySelector('header')!).paddingRight),
+  }));
+  expect(titleInset.top).toBeCloseTo(titleInset.padding, 0);
   await page.getByRole('button', { name: 'Back to Discovery' }).click();
   await expect(page.getByRole('heading', { name: 'Question: Current child', exact: true })).toBeVisible();
   await page.goto(`${preview}&args=presentation:context-below`);
@@ -227,7 +232,7 @@ test('reaction pills are separate and absent reactions leave no container or gap
       { associationId: 'one', text: 'Useful', emoji: '💡', totalVotes: 3 },
       { associationId: 'two', text: 'Worth exploring', emoji: '🔎', totalVotes: 2 },
     ] });
-    return route.fulfill({ json: { items: [{ ...item('b1000000-0000-4000-8000-000000000001', 'Compact node'), card: { ...item('b1000000-0000-4000-8000-000000000001', 'Compact node').card, subNodes: '2 Ideas · 1 Question' } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
+    return route.fulfill({ json: { items: [{ ...item('b1000000-0000-4000-8000-000000000001', 'Compact node'), card: { ...item('b1000000-0000-4000-8000-000000000001', 'Compact node').card, subNodes: '2 Ideas · 1 Question', description: 'A longer introduction with useful context. '.repeat(40) } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
   });
   await page.goto(preview);
   const pills = page.locator('article .reaction-pill');
@@ -250,11 +255,15 @@ test('reaction pills are separate and absent reactions leave no container or gap
   });
   expect(separatorGaps).toHaveLength(4);
   for (const gap of separatorGaps) expect(gap).toBeCloseTo(separatorGaps[0], 1);
+  const contentHeight = await page.locator('.content-stack').evaluate(el => el.getBoundingClientRect().height);
+  const pillsHeight = await page.locator('.reactions').evaluate(el => el.getBoundingClientRect().height);
   empty = true;
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await expect(page.getByRole('group', { name: 'Community reactions' })).toHaveCount(0);
   await expect(pills).toHaveCount(0);
-  // The community is the first detail, with no reaction wrapper to reserve a row.
+  const emptyHeight = await page.locator('.content-stack').evaluate(el => el.getBoundingClientRect().height);
+  expect(contentHeight - emptyHeight).toBeCloseTo(pillsHeight, 0);
+  // Community and navigation share the bottom row, independent of reactions.
   await expect(page.locator('.card-details > :first-child')).toHaveClass(/\bcommunities\b/);
   await expect(page.locator('article')).not.toContainText('Useful: 3');
 });
@@ -280,6 +289,12 @@ test('standalone card versions preserve mobile layout and offer a raised desktop
     breadcrumbBottom: el.querySelector('nav li')!.getBoundingClientRect().bottom,
     padding: parseFloat(getComputedStyle(el.querySelector('header')!).paddingRight),
     height: el.getBoundingClientRect().height,
+    card: el.getBoundingClientRect().toJSON(),
+    community: el.querySelector('.communities')!.getBoundingClientRect().toJSON(),
+    navigation: el.querySelector('.navigation-details')!.getBoundingClientRect().toJSON(),
+    action: el.querySelector('.read-more button')!.getBoundingClientRect().toJSON(),
+    communityFont: getComputedStyle(el.querySelector('.communities')!).fontSize,
+    navigationFont: getComputedStyle(el.querySelector('.navigation-details')!).fontSize,
   }));
   expect(desktop.dial.top).toBeLessThan(desktop.header.bottom);
   expect(desktop.header.left).toBeGreaterThan(desktop.dial.left);
@@ -288,6 +303,11 @@ test('standalone card versions preserve mobile layout and offer a raised desktop
   expect(desktop.paragraph.left - desktop.selector.right).toBeCloseTo(22.4, 0);
   expect(desktop.title.top - desktop.breadcrumbBottom).toBeCloseTo(desktop.padding, 0);
   expect(desktop.height).toBeLessThan(ribbonHeight);
+  expect(desktop.community.left - desktop.card.left).toBeCloseTo(desktop.padding + 1, 0);
+  expect(desktop.community.top).toBeGreaterThan(desktop.dial.bottom);
+  expect(Math.abs(desktop.community.top - desktop.navigation.top)).toBeLessThan(4);
+  expect(desktop.communityFont).toBe(desktop.navigationFont);
+  expect((desktop.action.left + desktop.action.right) / 2).toBeCloseTo((desktop.card.left + desktop.card.right) / 2, 0);
   await page.setViewportSize({ width: 320, height: 1000 });
   const mobile = await page.locator('article').evaluate(el => ({
     headerBottom: el.querySelector('header')!.getBoundingClientRect().bottom,

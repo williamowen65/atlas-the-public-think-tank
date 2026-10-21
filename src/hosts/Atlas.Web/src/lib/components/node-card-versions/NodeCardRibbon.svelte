@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ActionButton from '../ActionButton.svelte';
   import VotingDial from '../VotingDial.svelte';
 
   import Breadcrumb from '../Breadcrumb.svelte';
@@ -28,23 +29,27 @@
     <aside class="dial" aria-label="Importance rating">
       <VotingDial label="Node importance" {value} {average} {totalVotes} disabled={node.status === 'Archived'} onChange={onVote} />
     </aside>
-    <p class="description" class:expanded id={`${instance}-description`}>{node.description}</p>
-    <button class="text-action" type="button" aria-expanded={expanded} aria-controls={`${instance}-description`} onclick={() => expanded = !expanded}>{expanded ? 'Show less' : 'Read more'}</button>
-    {#if node.requestedTypes.length}
-      <p class="invitation">Help develop this node with: <strong>{node.requestedTypes.join(', ')}</strong>.</p>
-    {/if}
-      <div class="card-details">
-        {@render reactions()}
-        {#if node.communities.length}
-          <div class="communities" role="group" aria-label="Communities">
-            <strong>{node.communities.length === 1 ? 'Community' : 'Communities'}:</strong> {node.communities.join(', ')}
-          </div>
-        {/if}
-        <div class="navigation-details">
-          {@render comments()}
-          {#each connectionLabels as label}<span class="navigation-separator" aria-hidden="true">·</span><span class="text-action connection-summary">{label}</span>{/each}
-        </div>
+    <div class="content-stack">
+      <p class="description" class:expanded id={`${instance}-description`}>{node.description}</p>
+      {#if node.requestedTypes.length}
+        <p class="invitation">Help develop this node with: <strong>{node.requestedTypes.join(', ')}</strong>.</p>
+      {/if}
+      {@render reactions()}
+    </div>
+  </div>
+  <div class="read-more">
+    <ActionButton label={expanded ? 'Show less' : 'Read more'} {expanded} controls={`${instance}-description`} onActivate={() => expanded = !expanded} />
+  </div>
+  <div class="card-details">
+    {#if node.communities.length}
+      <div class="communities" role="group" aria-label="Communities">
+        <strong>{node.communities.length === 1 ? 'Community' : 'Communities'}:</strong> {node.communities.join(', ')}
       </div>
+    {/if}
+    <div class="navigation-details">
+      {@render comments()}
+      {#each connectionLabels as label}<span class="navigation-separator" aria-hidden="true">·</span><span class="text-action connection-summary">{label}</span>{/each}
+    </div>
   </div>
 
 </article>
@@ -74,10 +79,10 @@
     color: var(--atlas-text);
     overflow-wrap: anywhere;
     header {
-      padding: 1.25rem var(--card-padding) .5rem;
+      padding: var(--card-padding) var(--card-padding) .5rem;
     }
     h2 {
-      margin: .7rem 0 .5rem;
+      margin: 0 0 .5rem;
       font-size: clamp(1.35rem, 4vw, 1.9rem);
       line-height: 1.2;
     }
@@ -99,17 +104,22 @@
 
   .title-type { color: var(--atlas-accent); }
 
-  .communities {
-    padding: .75rem 1.25rem;
-    border-top: 1px solid var(--atlas-border);
-    font-size: .85rem;
-    color: var(--atlas-muted);
+  .read-more {
+    clear: both;
+    display: flex;
+    justify-content: center;
+    padding: 0 var(--card-padding) .75rem;
   }
 
-  [data-presentation='ribbon'] {
+  [data-presentation] {
     .card-details {
-      margin-top: .35rem;
-      font-size: .85rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: .35rem 1rem;
+      padding: 0 var(--card-padding) 1rem;
+      font-size: .9rem;
       color: var(--atlas-muted);
     }
     .reactions {
@@ -126,7 +136,7 @@
       }
     }
     .communities {
-      margin: .4rem 0;
+      margin: 0;
       padding: 0;
       border: 0;
     }
@@ -138,7 +148,7 @@
       column-gap: .35em;
       font-size: .9rem;
       text-align: right;
-      margin-top: .35rem;
+      margin-left: auto;
       .text-action { padding-block: .15rem; }
       .navigation-separator { font-size: .9rem; }
       .connection-summary {
@@ -218,7 +228,7 @@
       --card-padding: .75rem;
       --dial-text-gap: .6rem;
     }
-    .node-card header, .body, .communities {
+    .node-card header, .body {
       padding-inline: var(--card-padding);
     }
   }

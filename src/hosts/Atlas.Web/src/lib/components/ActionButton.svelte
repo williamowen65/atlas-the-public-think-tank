@@ -2,17 +2,21 @@
   interface Props {
     label: string;
     disabled?: boolean;
+    expanded?: boolean;
+    controls?: string;
     onActivate?: () => void;
   }
 
   // The component owns its actual HTML. Pages and stories supply only inputs.
-  let { label, disabled = false, onActivate }: Props = $props();
+  let { label, disabled = false, expanded, controls, onActivate }: Props = $props();
 </script>
 
 <button
   type="button"
   class="atlas-action"
   {disabled}
+  aria-expanded={expanded}
+  aria-controls={controls}
   onclick={() => onActivate?.()}
 >
   {label}
