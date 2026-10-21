@@ -3,7 +3,7 @@
   import { onMount } from 'svelte';
   import type { NodeCardPresentation } from '../../src/lib/components/NodeCard.svelte';
   import NodeCard from '../../src/lib/components/NodeCard.svelte';
-  import { readDiscovery, readOlderAncestors, discoveryCard, type DiscoveryPage } from '../../src/lib/api/discovery';
+  import { readDiscovery, readOlderAncestors, readReactions, discoveryCard, type DiscoveryPage } from '../../src/lib/api/discovery';
 
   let { presentation = 'ribbon' }: { presentation?: NodeCardPresentation } = $props();
   async function loadOlderAncestors(id?: string) {
@@ -19,6 +19,8 @@
   let detailId = $state('');
   let ratings = $state<Record<string, number>>({});
   let notice = $state('');
+  let reactions = $state<{ label: string; count: number }[] | null>(null);
+  let reactionError = $state('');
   const feedback = createVoteFeedback();
   function choose(value: number) {
     if (!selected) return;
@@ -35,6 +37,22 @@
   const selected = $derived(items.find(item => item.node.id === selectedId) ?? items[0]);
 
   $effect(() => { selected?.node.id; feedback.cancel(); ratings = {}; notice = ''; });
+
+  $effect(() => {
+    const id = selected?.node.id;
+    result; // Refresh reaction totals when Discovery is refreshed too.
+    reactions = null;
+    reactionError = '';
+    if (!id) return;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    void readReactions(id, controller.signal).then(value => {
+      if (!controller.signal.aborted) reactions = value;
+    }).catch(() => {
+      if (!controller.signal.aborted) reactionError = 'Reaction totals could not be loaded; showing the available summary.';
+    }).finally(() => clearTimeout(timeout));
+    return () => { controller.abort(); clearTimeout(timeout); };
+  });
 
   async function load(page = 1, query = appliedSearch, nodeId = '') {
     request?.abort();
@@ -98,9 +116,10 @@
           {#each items as item}<option value={item.node.id}>{item.node.typeName}: {item.node.title}</option>{/each}
         </select>
       </label>
-      <NodeCard hasMoreAncestors={selected.hasMoreAncestors} {loadOlderAncestors} {presentation} node={selected.node} average={selected.average} totalVotes={selected.totalVotes}
+      <NodeCard hasMoreAncestors={selected.hasMoreAncestors} {loadOlderAncestors} {presentation} node={{ ...selected.node, reactions: reactions ?? [], reactionSummary: reactions === null ? selected.node.reactionSummary : undefined }} average={selected.average} totalVotes={selected.totalVotes}
         value={ratings[selected.node.id] ?? null} onVote={choose} onNavigate={navigate} />
       <p role="status">{ratings[selected.node.id] === undefined ? 'No local rating selected' : `Local preview selection: ${ratings[selected.node.id]} out of 10. Not submitted.`}</p>
+      {#if reactionError}<p role="note">{reactionError}</p>{/if}
       {#if notice}<p role="note">{notice}</p>{/if}
     {:else}<p role="status">No displayable nodes on this page. Try another search or page.</p>{/if}
   {/if}

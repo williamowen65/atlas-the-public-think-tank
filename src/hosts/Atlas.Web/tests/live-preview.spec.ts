@@ -16,6 +16,10 @@ test('live nodes support selection, search, paging and refresh without submittin
     const second = url.searchParams.get('Page') === '2';
     await route.fulfill({ json: { items: second ? [item('new', 'A newly entered node')] : [item('one', 'Database question'), item('two', 'Database second node'), item('hidden', 'Hidden private title', true)], totalCount: 4, page: second ? 2 : 1, pageSize: 3, hasNextPage: !second } });
   });
+  await page.route('**/atlas-preview-api/nodes/*/reactions', route => route.fulfill({ json: [
+    { associationId: 'applied', text: 'Useful', emoji: '💡', totalVotes: 3 },
+    { associationId: null, text: 'Unused', emoji: '', totalVotes: 0 },
+  ] }));
   await page.goto(preview);
   await expect(page.getByRole('heading', { name: 'Question: Database question', exact: true })).toBeVisible();
   await expect(page.locator('.average')).toHaveText('7.5');
@@ -48,6 +52,10 @@ test('live preview handles empty results and API failure with retry', async ({ p
   await page.route('**/atlas-preview-api/**', route => fail
     ? route.fulfill({ status: 503, body: 'Unavailable' })
     : route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 3, hasNextPage: false } }));
+  await page.route('**/atlas-preview-api/nodes/*/reactions', route => route.fulfill({ json: [
+    { associationId: 'applied', text: 'Useful', emoji: '💡', totalVotes: 3 },
+    { associationId: null, text: 'Unused', emoji: '', totalVotes: 0 },
+  ] }));
   await page.goto(preview);
   await expect(page.getByRole('alert')).toContainText('HTTP 503');
   fail = false;
@@ -104,6 +112,10 @@ test('API breadcrumb prepends older pages, retries failures and stops at root', 
       continuationNodeId: ids[1], hasAlternativeRoutes: false, cycleDetected: false,
     } } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
   });
+  await page.route('**/atlas-preview-api/nodes/*/reactions', route => route.fulfill({ json: [
+    { associationId: 'applied', text: 'Useful', emoji: '💡', totalVotes: 3 },
+    { associationId: null, text: 'Unused', emoji: '', totalVotes: 0 },
+  ] }));
   await page.goto(preview);
   const nav = page.getByRole('navigation', { name: 'Node breadcrumb' });
   await nav.getByRole('button', { name: 'Load older ancestors' }).click();
@@ -135,6 +147,10 @@ test('live-only card navigates an off-page ancestor by ID and keeps both present
     } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
   });
   await page.setViewportSize({ width: 320, height: 900 });
+  await page.route('**/atlas-preview-api/nodes/*/reactions', route => route.fulfill({ json: [
+    { associationId: 'applied', text: 'Useful', emoji: '💡', totalVotes: 3 },
+    { associationId: null, text: 'Unused', emoji: '', totalVotes: 0 },
+  ] }));
   await page.goto(preview);
   const nav = page.getByRole('navigation', { name: 'Node breadcrumb' });
   await expect(nav).toBeVisible();
@@ -145,9 +161,14 @@ test('live-only card navigates an off-page ancestor by ID and keeps both present
   }));
   expect(Math.abs(positions.left - positions.ribbon)).toBeLessThan(1);
   expect(positions.scrollbar).toBe('none');
+  await expect(page.locator('article footer')).toHaveCount(0);
+  await expect(page.locator('article .body .reactions strong')).toHaveText('3');
+  await expect(page.locator('article .body .reactions span')).toHaveCSS('border-radius', '999px');
+  await expect(page.locator('article .body .navigation-details')).toContainText('Connected nodes: Ideas: 2');
+  await expect(page.locator('article .body .navigation-details')).toContainText('4 comments');
   await expect(page.locator('article h2')).toHaveText('Question: Current child');
   await expect(page.locator('article header')).not.toContainText('Local community');
-  await expect(page.getByRole('region', { name: 'Communities', exact: true })).toHaveText('Community: Local community');
+  await expect(page.getByRole('group', { name: 'Communities', exact: true })).toHaveText('Community: Local community');
   await page.getByRole('button', { name: 'Read more' }).click();
   await expect(page.getByRole('button', { name: 'Show less' })).toHaveAttribute('aria-expanded', 'true');
   const results = await new AxeBuilder({ page }).include('#storybook-root').analyze();
@@ -177,6 +198,10 @@ test('unavailable ancestor shows an error and can return to Discovery', async ({
       items: [{ nodeId: 'b1000000-0000-4000-8000-000000000001', label: 'Parent' }], continuationNodeId: null,
     } } }], totalCount: fail ? 0 : 1, page: 1, pageSize: 3, hasNextPage: false } });
   });
+  await page.route('**/atlas-preview-api/nodes/*/reactions', route => route.fulfill({ json: [
+    { associationId: 'applied', text: 'Useful', emoji: '💡', totalVotes: 3 },
+    { associationId: null, text: 'Unused', emoji: '', totalVotes: 0 },
+  ] }));
   await page.goto(preview);
   await expect(page.getByRole('heading', { name: 'Question: Visible child' })).toBeVisible();
   fail = true;

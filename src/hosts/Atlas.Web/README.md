@@ -48,8 +48,8 @@ be viewed, while hidden or missing nodes produce an unavailable message with Ret
 No login is needed. Anonymous dial attempts briefly show the attempted selection, then
 return to neutral (unrated, centered on 5). They never cast a database vote. The standalone
 VotingDial story retains its isolated accepted/anonymous/failed outcome simulations;
-these make no API requests. Node-card comments and reactions currently display API
-summaries; no discussion is fabricated. Discovery descriptions remain plain text rather
+these make no API requests. Node-card comments and connected nodes currently display API
+summaries; reactions use individual public vote totals from the reactions endpoint; no discussion is fabricated. Discovery descriptions remain plain text rather
 than a complete content-block renderer.
 
 One-time prerequisites are the .NET SDK used by Atlas.Api, your existing migrated SQL database and shared connection-string secret, and a development HTTPS certificate. Follow [the API setup guide](../../../docs/api/README.md#1-start-the-server) if these are not already configured. The launcher does not migrate, seed or reset your database.
@@ -227,7 +227,9 @@ arrows, with four alternating colors and a visible focus treatment. The native s
 is hidden while touch, trackpad and keyboard scrolling remain available. The ribbon
 touches the card’s left inner border; header/body spacing stays local to those sections.
 The ribbon presentation puts the node type before the title in the same heading and
-labels communities below the connected-node area.
+keeps reaction pills and the labeled community inside the main body beside/under
+the intro text and dial. Comments and connected-node text form a right-aligned stack
+in that same body; the ribbon candidate has no separate bottom sections.
 
 `Compositions/Node voting preview → Playground` has a **presentation** Control:
 `ribbon` places this component above the title; `current` preserves the original card
@@ -245,7 +247,7 @@ A Load older ancestors button also supports keyboard use and paths too short to 
 The local API adapter consumes Discovery's structured `breadcrumbSegment` (reversing
 its nearest-first order) and reads older pages from the existing public
 `GET /api/nodes/{id}/ancestors` endpoint. The development proxy admits only node-list
-and ancestor-segment GETs, strips credentials, and continues to reject writes and
+and ancestor/reaction GETs, strips credentials, and continues to reject writes and
 other routes. Discovery now supports an optional NodeId filter, included in its cache
 key and applied before ranking/paging with all existing visibility rules. Exact-ID
 reads include archived nodes and do not inherit the search text. Older API responses
@@ -256,3 +258,5 @@ Legacy references: `legacy/www.thepublicthinktank.com/Views/Shared/_Breadcrumb.c
 and `wwwroot/css/breadcrumb.css`. The new component handles updates and resizes rather
 than relying only on a document-load event. Browser coverage checks right alignment,
 scrolling/focus, mobile containment, navigation, accessibility and the original candidate.
+
+The dedicated authored short-description idea is tracked in [PTTD-38](https://thepublicthinktank.atlassian.net/browse/PTTD-38). Preview text still comes from content blocks. Reaction pills display total vote counts, not net scores; unused choices are omitted. If reactions fail to load, the card retains its available formatted summary with an explanatory note.

@@ -47,3 +47,13 @@ export async function readOlderAncestors(id: string, signal: AbortSignal): Promi
   if (!Array.isArray(page.items) || typeof page.hasMore !== 'boolean') throw new Error('Unexpected ancestor response.');
   return { items: [...page.items].reverse(), hasMore: page.hasMore };
 }
+
+/** Read individual public reaction totals rather than parsing the formatted summary. */
+export async function readReactions(id: string, signal: AbortSignal): Promise<NodeCardData['reactions']> {
+  const response = await fetch(`/atlas-preview-api/nodes/${encodeURIComponent(id)}/reactions`, { credentials: 'omit', signal });
+  if (!response.ok) throw new Error('Reaction totals could not be loaded.');
+  const choices = await response.json() as { associationId: string | null; text: string; emoji: string; totalVotes: number }[];
+  if (!Array.isArray(choices)) throw new Error('Unexpected reaction response.');
+  return choices.filter(choice => choice.associationId && choice.totalVotes > 0)
+    .map(choice => ({ label: `${choice.emoji} ${choice.text}`.trim(), count: choice.totalVotes }));
+}

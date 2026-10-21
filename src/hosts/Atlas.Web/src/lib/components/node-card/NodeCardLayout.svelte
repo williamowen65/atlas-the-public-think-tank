@@ -6,7 +6,8 @@
   let { node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onComments, presentation, hasMoreAncestors = false, loadOlderAncestors }: NodeCardProps & { presentation: NodeCardPresentation } = $props();
   let expanded = $state(false);
   const instance = $props.id();
-  $effect(() => { node.id; expanded = false; });
+  const nodeId = $derived(node.id);
+  $effect(() => { nodeId; expanded = false; });
 </script>
 
 <article class="node-card" data-presentation={presentation} aria-labelledby={`${instance}-title`}>
@@ -37,11 +38,46 @@
     {#if node.requestedTypes.length}
       <p class="invitation">Help develop this node with: <strong>{node.requestedTypes.join(', ')}</strong>.</p>
     {/if}
+    {#if presentation === 'ribbon'}
+      <div class="card-details">
+        {@render reactions()}
+        {#if node.communities.length}
+          <div class="communities" role="group" aria-label="Communities">
+            <strong>{node.communities.length === 1 ? 'Community' : 'Communities'}:</strong> {node.communities.join(', ')}
+          </div>
+        {/if}
+        <div class="navigation-details">
+          {@render comments()}
+          {@render connections()}
+        </div>
+      </div>
+    {/if}
   </div>
 
   {#if presentation === 'current' && node.breadcrumb.length}
     <p class="breadcrumb" aria-label="Context">{node.breadcrumb.map(item => item.title).join(' / ')}</p>
   {/if}
+  {#if presentation === 'current'}
+    {@render connections()}
+    <footer>
+      {@render reactions()}
+      {@render comments()}
+    </footer>
+  {/if}
+</article>
+
+{#snippet reactions()}
+    <div class="reactions" role="group" aria-label="Community reactions">
+      {#if node.reactionSummary && node.reactionSummary !== 'None'}<span>{node.reactionSummary}</span>{/if}
+      {#each node.reactions as reaction}<span>{reaction.label} <strong>{reaction.count}</strong></span>{/each}
+    </div>
+{/snippet}
+
+{#snippet comments()}
+  <button class="text-action" type="button" disabled={!onComments} onclick={() => onComments?.(node.id)}>{node.commentCount} {node.commentCount === 1 ? 'comment' : 'comments'}</button>
+{/snippet}
+
+{#snippet connections()}
   {#if node.subNodeSummary}<p class="breadcrumb">Connected nodes: {node.subNodeSummary}</p>{/if}
   {#if node.related.length}
     <section class="related" aria-label="Connected nodes">
@@ -51,20 +87,7 @@
       {/each}
     </section>
   {/if}
-  {#if presentation === 'ribbon' && node.communities.length}
-    <section class="communities" aria-label="Communities">
-      <strong>{node.communities.length === 1 ? 'Community' : 'Communities'}:</strong> {node.communities.join(', ')}
-    </section>
-  {/if}
-  <footer>
-    <div class="reactions" aria-label="Community reactions">
-      {#if node.reactionSummary}<span>{node.reactionSummary}</span>{/if}
-      {#each node.reactions as reaction}<span>{reaction.label} <strong>{reaction.count}</strong></span>{/each}
-    </div>
-    <button class="text-action" type="button" disabled={!onComments} onclick={() => onComments?.(node.id)}>{node.commentCount} {node.commentCount === 1 ? 'comment' : 'comments'}</button>
-  </footer>
-</article>
-
+{/snippet}
 <style lang="scss">
   .node-card {
     max-width: 48rem;
@@ -109,6 +132,44 @@
     border-top: 1px solid var(--atlas-border);
     font-size: .85rem;
     color: var(--atlas-muted);
+  }
+
+  [data-presentation='ribbon'] {
+    .card-details {
+      margin-top: .35rem;
+      font-size: .85rem;
+      color: var(--atlas-muted);
+    }
+    .reactions {
+      display: block;
+      line-height: 2.4;
+      span {
+        display: inline-block;
+        margin: .15rem .35rem .15rem 0;
+        padding: .1rem .65rem;
+        border: 1px solid var(--atlas-border);
+        border-radius: 999px;
+        background: var(--atlas-surface);
+        line-height: 1.7;
+      }
+    }
+    .communities {
+      margin: .4rem 0;
+      padding: 0;
+      border: 0;
+    }
+    .navigation-details {
+      text-align: right;
+      margin-top: .35rem;
+      .breadcrumb, .related {
+        padding: 0;
+        margin: .25rem 0;
+        border: 0;
+      }
+      h3 { margin-top: .25rem; }
+      .related button { width: auto; margin-left: auto; text-align: right; }
+      .text-action { padding-block: .15rem; }
+    }
   }
 
   .eyebrow {
