@@ -18,7 +18,7 @@ export interface NodeCardData {
   status: 'Active' | 'Archived';
 }
 
-export type NodeCardPresentation = 'context-below' | 'ribbon' | 'ribbon-responsive' | 'ribbon-split';
+export type NodeCardPresentation = 'context-below' | 'ribbon' | 'ribbon-responsive' | 'ribbon-split' | 'ribbon-corner';
 export interface NodeCardProps {
   node: NodeCardData;
   hasMoreAncestors?: boolean;

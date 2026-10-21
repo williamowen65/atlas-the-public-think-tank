@@ -346,8 +346,7 @@ test('split details version groups metadata above a centered bottom action', asy
     ] });
     return route.fulfill({ json: { items: [item('split-node', 'Split layout')], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
   });
-  // Initial story selection exposes the experiment; earlier layouts stay selectable.
-  await page.goto(preview.replace('&args=presentation:ribbon-responsive', ''));
+  await page.goto(preview.replace('presentation:ribbon-responsive', 'presentation:ribbon-split'));
   const card = page.locator('article');
   await expect(card).toHaveAttribute('data-presentation', 'ribbon-split');
   await expect(card.locator('header .byline')).toContainText('Community: Local community');
@@ -381,4 +380,38 @@ test('split details version groups metadata above a centered bottom action', asy
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await expect(card.locator('.reactions')).toHaveCount(0);
   await expect(card.locator('.read-more button')).toBeVisible();
+});
+
+test('corner action floats at the description end above the navigation counts', async ({ page }) => {
+  let description = 'A concise introduction with enough space to sit beside the action.';
+  await page.route('**/atlas-preview-api/**', route => {
+    if (route.request().url().endsWith('/reactions')) return route.fulfill({ json: [] });
+    const entry = item('corner-node', 'Corner layout');
+    return route.fulfill({ json: { items: [{ ...entry, card: { ...entry.card, shortDescription: description } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
+  });
+  await page.goto(preview.replace('&args=presentation:ribbon-responsive', ''));
+  const card = page.locator('article');
+  await expect(card).toHaveAttribute('data-presentation', 'ribbon-corner');
+  for (const text of [description, 'Explore practical approaches and evidence together. '.repeat(5)]) {
+    description = text;
+    await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+    for (const width of [1024, 640, 320]) {
+      await page.setViewportSize({ width, height: 1000 });
+      const geometry = await card.evaluate(el => {
+        const paragraph = el.querySelector('.description')!.getBoundingClientRect();
+        const action = el.querySelector('.read-more button')!.getBoundingClientRect();
+        const navigation = el.querySelector('.navigation-details')!.getBoundingClientRect();
+        return { paragraph: paragraph.toJSON(), action: action.toJSON(), navigation: navigation.toJSON(),
+          float: getComputedStyle(el.querySelector('.read-more')!).cssFloat };
+      });
+      expect(geometry.float).toBe('right');
+      expect(geometry.action.right).toBeCloseTo(geometry.paragraph.right, 0);
+      expect(geometry.action.left).toBeGreaterThan(geometry.paragraph.left);
+      expect(geometry.navigation.top).toBeGreaterThanOrEqual(geometry.action.bottom);
+      expect(geometry.action.bottom).toBeLessThanOrEqual(geometry.paragraph.bottom + 1);
+      await expect(card.locator('.description')).toContainText(text);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    }
+  }
+  await expect(card.locator('.read-more button')).toHaveClass(/atlas-action/);
 });

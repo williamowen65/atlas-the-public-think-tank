@@ -5,6 +5,7 @@
 <script lang="ts">
   import NodeCardContextBelow from './node-card-versions/NodeCardContextBelow.svelte';
   import NodeCardRibbon from './node-card-versions/NodeCardRibbon.svelte';
+  import NodeCardRibbonCorner from './node-card-versions/NodeCardRibbonCorner.svelte';
   import NodeCardRibbonSplit from './node-card-versions/NodeCardRibbonSplit.svelte';
   import NodeCardRibbonResponsive from './node-card-versions/NodeCardRibbonResponsive.svelte';
   import type { NodeCardProps, NodeCardPresentation } from './node-card-versions/types';
@@ -13,6 +14,8 @@
 
 {#if presentation === 'context-below'}
   <NodeCardContextBelow {...props} />
+{:else if presentation === 'ribbon-corner'}
+  <NodeCardRibbonCorner {...props} />
 {:else if presentation === 'ribbon-split'}
   <NodeCardRibbonSplit {...props} />
 {:else if presentation === 'ribbon-responsive'}

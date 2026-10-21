@@ -277,4 +277,8 @@ Cards use Discovery's `shortDescription` (Graph-owned, at most 280 UTF-16 code u
 
 ### Split details card experiment
 
-Select `ribbon-split` in the Atlas node story's presentation Control (the initial Storybook selection). This standalone version keeps the responsive dial/header, moves community into the author/date byline, splits reactions and comments/node-type counts into two wrapping halves below the description, and places the shared Read more ActionButton in a full-width centered bottom row. With no reactions their container is omitted. Existing versions remain selectable, and NodeCard's application default remains `ribbon`.
+Select `ribbon-split` in the Atlas node story's presentation Control (available alongside the other versions). This standalone version keeps the responsive dial/header, moves community into the author/date byline, splits reactions and comments/node-type counts into two wrapping halves below the description, and places the shared Read more ActionButton in a full-width centered bottom row. With no reactions their container is omitted. Existing versions remain selectable, and NodeCard's application default remains `ribbon`.
+
+### Corner action card experiment
+
+`ribbon-corner` is the initial Atlas node Storybook selection. It preserves the split version's community byline and wrapping reaction/count groups, but floats the shared Read more ActionButton at the right end of the description. The last text line can share space with the action; the paragraph contains the float so comments and node counts stay below it. The action has no full-width bottom row. `ribbon-split` and all earlier versions remain selectable.
