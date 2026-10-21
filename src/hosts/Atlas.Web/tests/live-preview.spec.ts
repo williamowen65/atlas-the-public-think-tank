@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
-const preview = 'http://127.0.0.1:6006/iframe.html?id=compositions-node-voting-preview--playground&viewMode=story';
+const preview = 'http://127.0.0.1:6006/iframe.html?id=compositions-atlas-node--playground&viewMode=story';
 const item = (id: string, title: string, hidden = false) => ({
   nodeId: id, rank: 1, rankingScore: 1, voteCount: 12, averageVote: 7.5,
   card: { nodeId: id, title, typeName: 'Question', authorName: 'API author', status: 'Active', createdAt: '2026-09-28T15:20:00Z', description: 'Content from the API response.', breadcrumb: 'Root question', subNodes: 'Ideas: 2', reactions: 'Useful: 3', communities: 'Local community', commentCount: 4, isHidden: hidden },
@@ -189,8 +189,8 @@ test('live-only card navigates an off-page ancestor by ID and keeps both present
   await expect(nav).toHaveCount(0);
   await page.getByRole('button', { name: 'Back to Discovery' }).click();
   await expect(page.getByRole('heading', { name: 'Question: Current child', exact: true })).toBeVisible();
-  await page.goto(`${preview}&args=presentation:current`);
-  await expect(page.locator('article')).toHaveAttribute('data-presentation', 'current');
+  await page.goto(`${preview}&args=presentation:context-below`);
+  await expect(page.locator('article')).toHaveAttribute('data-presentation', 'context-below');
   await expect(page.getByRole('heading', { name: 'Current child', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Read more' }).click();
   await expect(page.getByRole('button', { name: 'Show less' })).toBeVisible();
@@ -246,4 +246,40 @@ test('reaction pills are separate and absent reactions leave no container or gap
   // The community is the first detail, with no reaction wrapper to reserve a row.
   await expect(page.locator('.card-details > :first-child')).toHaveClass(/\bcommunities\b/);
   await expect(page.locator('article')).not.toContainText('Useful: 3');
+});
+
+test('standalone card versions preserve mobile layout and offer a raised desktop dial', async ({ page }) => {
+  await page.route('**/atlas-preview-api/**', route => {
+    if (route.request().url().endsWith('/reactions')) return route.fulfill({ json: [] });
+    const entry = item('b1000000-0000-4000-8000-000000000001', 'Layout comparison');
+    return route.fulfill({ json: { items: [{ ...entry, card: { ...entry.card, description: 'A concise introduction for comparing card arrangements.' } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
+  });
+  await page.setViewportSize({ width: 1024, height: 1000 });
+  await page.goto(`${preview}&args=presentation:ribbon`);
+  await expect(page.locator('article')).toHaveAttribute('data-presentation', 'ribbon');
+  const ribbonHeight = await page.locator('article').evaluate(el => el.getBoundingClientRect().height);
+  await page.goto(`${preview}&args=presentation:ribbon-responsive`);
+  await expect(page.locator('article')).toHaveAttribute('data-presentation', 'ribbon-responsive');
+  const desktop = await page.locator('article').evaluate(el => ({
+    header: el.querySelector('header')!.getBoundingClientRect().toJSON(),
+    dial: el.querySelector('.dial')!.getBoundingClientRect().toJSON(),
+    height: el.getBoundingClientRect().height,
+  }));
+  expect(desktop.dial.top).toBeLessThan(desktop.header.bottom);
+  expect(desktop.header.left).toBeGreaterThan(desktop.dial.left);
+  expect(desktop.height).toBeLessThan(ribbonHeight);
+  await page.setViewportSize({ width: 320, height: 1000 });
+  const mobile = await page.locator('article').evaluate(el => ({
+    headerBottom: el.querySelector('header')!.getBoundingClientRect().bottom,
+    dialTop: el.querySelector('.dial')!.getBoundingClientRect().top,
+  }));
+  expect(mobile.dialTop).toBeGreaterThanOrEqual(mobile.headerBottom);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  await page.getByRole('spinbutton').focus();
+  await page.keyboard.press('End');
+  await expect(page.getByRole('spinbutton')).toHaveAttribute('aria-valuenow', '10');
+  await expect(page.getByRole('status')).toHaveText('No local rating selected');
+  await page.goto(`${preview}&args=presentation:context-below`);
+  await expect(page.locator('article')).toHaveAttribute('data-presentation', 'context-below');
+  await expect(page.getByRole('heading', { name: 'Layout comparison', exact: true })).toBeVisible();
 });

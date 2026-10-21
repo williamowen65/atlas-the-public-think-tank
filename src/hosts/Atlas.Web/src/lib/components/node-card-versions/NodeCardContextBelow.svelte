@@ -1,31 +1,22 @@
 <script lang="ts">
   import VotingDial from '../VotingDial.svelte';
 
-  import Breadcrumb from '../Breadcrumb.svelte';
-  import type { NodeCardProps, NodeCardPresentation } from './types';
-  let { node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onComments, presentation, hasMoreAncestors = false, loadOlderAncestors }: NodeCardProps & { presentation: NodeCardPresentation } = $props();
+  import type { NodeCardProps } from './types';
+  let { node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onComments }: NodeCardProps = $props();
   let expanded = $state(false);
   const instance = $props.id();
   const nodeId = $derived(node.id);
   $effect(() => { nodeId; expanded = false; });
 </script>
 
-<article class="node-card" data-presentation={presentation} aria-labelledby={`${instance}-title`}>
-  {#if presentation === 'ribbon' && node.breadcrumb.length}
-    <div class="ribbon-context"><Breadcrumb items={node.breadcrumb} {onNavigate} hasMore={hasMoreAncestors} loadOlder={loadOlderAncestors} /></div>
-  {/if}
+<article class="node-card" data-presentation="context-below" aria-labelledby={`${instance}-title`}>
   <header>
-    {#if presentation === 'current'}
       <div class="eyebrow">
         <span class="type">{node.typeName}</span>
         {#each node.communities as community}<span>{community}</span>{/each}
         {#if node.status === 'Archived'}<span>Archived</span>{/if}
       </div>
       <h2 id={`${instance}-title`}>{node.title}</h2>
-    {:else}
-      <h2 id={`${instance}-title`}><span class="title-type">{node.typeName}:</span> {node.title}</h2>
-      {#if node.status === 'Archived'}<p class="byline">Archived</p>{/if}
-    {/if}
     <p class="byline">By {node.authorName} <span aria-hidden="true">·</span> <time datetime={node.createdAt}>{new Date(node.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</time></p>
   </header>
 
@@ -38,33 +29,16 @@
     {#if node.requestedTypes.length}
       <p class="invitation">Help develop this node with: <strong>{node.requestedTypes.join(', ')}</strong>.</p>
     {/if}
-    {#if presentation === 'ribbon'}
-      <div class="card-details">
-        {@render reactions()}
-        {#if node.communities.length}
-          <div class="communities" role="group" aria-label="Communities">
-            <strong>{node.communities.length === 1 ? 'Community' : 'Communities'}:</strong> {node.communities.join(', ')}
-          </div>
-        {/if}
-        <div class="navigation-details">
-          {@render comments()}
-          {#if node.subNodeSummary && node.subNodeSummary !== 'None'}<span class="text-action connection-summary">{node.subNodeSummary}</span>{/if}
-          {#each node.related as related}<span class="text-action connection-summary">{related.typeName}: {related.title}</span>{/each}
-        </div>
-      </div>
-    {/if}
   </div>
 
-  {#if presentation === 'current' && node.breadcrumb.length}
+  {#if node.breadcrumb.length}
     <p class="breadcrumb" aria-label="Context">{node.breadcrumb.map(item => item.title).join(' / ')}</p>
   {/if}
-  {#if presentation === 'current'}
     {@render connections()}
     <footer>
       {@render reactions()}
       {@render comments()}
     </footer>
-  {/if}
 </article>
 
 {#snippet reactions()}
@@ -117,61 +91,15 @@
     }
   }
 
-  .ribbon-context {
-    min-width: 0;
-    padding: .75rem 0 0;
-  }
 
-  .ribbon-context + header {
-    padding-top: 0;
-    h2 { margin-top: 0; }
-  }
 
-  .title-type { color: var(--atlas-accent); }
 
-  .communities {
-    padding: .75rem 1.25rem;
-    border-top: 1px solid var(--atlas-border);
-    font-size: .85rem;
-    color: var(--atlas-muted);
-  }
 
-  [data-presentation='ribbon'] {
-    .card-details {
-      margin-top: .35rem;
-      font-size: .85rem;
-      color: var(--atlas-muted);
-    }
-    .reactions {
-      display: block;
-      line-height: 2.4;
-      span {
-        display: inline-block;
-        margin: .15rem .35rem .15rem 0;
-        padding: .1rem .65rem;
-        border: 1px solid var(--atlas-border);
-        border-radius: 999px;
-        background: var(--atlas-surface);
-        line-height: 1.7;
-      }
-    }
-    .communities {
-      margin: .4rem 0;
-      padding: 0;
-      border: 0;
-    }
-    .navigation-details {
-      text-align: right;
-      margin-top: .35rem;
-      .text-action { padding-block: .15rem; }
-      .connection-summary {
-        margin-inline-start: .75rem;
-        text-decoration: none;
-        color: var(--atlas-muted);
-        cursor: default;
-      }
-    }
-  }
+
+
+
+
+
 
   .eyebrow {
     display: flex;
@@ -285,7 +213,7 @@
   }
 
   @media (max-width: 380px) {
-    .node-card header, .body, .related, footer, .breadcrumb, .communities {
+    .node-card header, .body, .related, footer, .breadcrumb {
       padding-inline: .75rem;
     }
     .dial {

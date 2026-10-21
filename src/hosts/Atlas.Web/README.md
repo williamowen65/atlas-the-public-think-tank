@@ -37,7 +37,7 @@ npm run storybook:api
 
 This starts Atlas.Api with its HTTPS launch profile and Storybook together, with labeled output. Ctrl+C stops both. If either process exits, the other is stopped too. If you already started Atlas.Api in Visual Studio, use `npm run storybook` instead to avoid starting a second API on the same port.
 
-Open http://127.0.0.1:6006, then **Compositions → Node voting preview → Playground**.
+Open http://127.0.0.1:6006, then **Compositions → Atlas node → Playground**.
 The node-card preview always loads public Atlas API data: search, paging, node selection,
 Refresh and ancestor navigation. There is no fixture source or simulated node-card mode.
 The presentation Control compares the ribbon card with the original card using the same
@@ -231,12 +231,20 @@ keeps reaction pills and the labeled community inside the main body beside/under
 the intro text and dial. Comments and connected-node text form a right-aligned stack
 in that same body; the ribbon candidate has no separate bottom sections.
 
-`Compositions/Node voting preview → Playground` has a **presentation** Control:
-`ribbon` places this component above the title; `current` preserves the original card
-with its text context below the body. Both use the same live API adapter and vote
-feedback. `NodeCard.svelte` selects a concrete component in `components/node-card/`;
-the two candidates currently share `NodeCardLayout.svelte` and its behavior. They can
-acquire different markup as the designs diverge without copying voting logic.
+`Compositions/Atlas node → Playground` has one **presentation** Control:
+
+- `context-below`: type badge/header and plain context below the description.
+- `ribbon`: breadcrumb above the header, with the dial beside the description.
+- `ribbon-responsive`: the ribbon arrangement on mobile; at 48rem and wider the
+  dial shares the header area, with header/content indented beside it.
+
+`NodeCard.svelte` selects the version; its default remains `ribbon`. These descriptive
+names do not indicate which version is active. Each file in `components/node-card-versions/`
+owns its complete markup, local state and scoped SCSS. There is no shared NodeCardLayout
+or layout wrapper. The versions reuse VotingDial, Breadcrumb and shared data/props types;
+API loading, navigation and voting feedback remain in their caller. This deliberately
+allows designs to diverge independently, with some repeated markup/styles between files.
+The responsive version is an additional candidate, not a replacement for the ribbon.
 
 Breadcrumb items accept a title and optional node ID, oldest first. The parent owns
 navigation; live ancestor clicks select the exact requested node through Discovery. The shared
