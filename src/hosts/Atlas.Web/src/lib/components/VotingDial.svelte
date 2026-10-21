@@ -86,6 +86,11 @@
     }
   }
 
+  // Standard lens follows the pull; compact keeps a fixed selection window.
+  function pullLens(distance: number) {
+    lensPull = compact ? 0 : Math.max(-16, Math.min(16, distance * .3));
+  }
+
   function handleScroll() {
     if (disabled) return;
     if (syncTarget !== null) {
@@ -93,7 +98,7 @@
       return;
     }
     if (touchScrollOrigin !== null) {
-      lensPull = Math.max(-10, Math.min(10, (touchScrollOrigin - reel.scrollTop) * .18));
+      pullLens(touchScrollOrigin - reel.scrollTop);
     }
     select(10 - Math.round(reel.scrollTop / rowHeight()));
   }
@@ -119,11 +124,11 @@
   function pointerMove(event: PointerEvent) {
     if (disabled) return;
     if (touchPointer?.id === event.pointerId) {
-      lensPull = Math.max(-10, Math.min(10, (event.clientY - touchPointer.y) * .18));
+      pullLens(event.clientY - touchPointer.y);
       return;
     }
     if (!drag || drag.id !== event.pointerId) return;
-    lensPull = Math.max(-10, Math.min(10, (event.clientY - drag.y) * .18));
+    pullLens(event.clientY - drag.y);
     const distance = drag.y - event.clientY;
     if (Math.abs(distance) > 3) drag.moved = true;
     reel.scrollTop = drag.top + distance;
@@ -176,7 +181,7 @@
 <section class:compact class="voting-dial" aria-label={label}>
   <strong class="average" aria-label={average === null ? 'No average rating' : `Average rating: ${average.toFixed(1)}`}>{average === null ? '—' : average.toFixed(1)}</strong>
   <div class="selector" class:unrated={value === null} class:disabled>
-    <div class="selection-window" class:pulling style:transform={`translateY(${lensPull}px)`} aria-hidden="true"></div>
+    <div class="selection-window" class:pulling style:transform={`translateY(${compact ? 0 : lensPull}px)`} aria-hidden="true"></div>
     <div
       bind:this={reel} class="reel" class:dragging role="spinbutton" tabindex={disabled ? -1 : 0}
       aria-label={label} aria-valuemin={0} aria-valuemax={10}

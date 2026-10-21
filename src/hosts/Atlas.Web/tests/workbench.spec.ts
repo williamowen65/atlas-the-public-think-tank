@@ -122,7 +122,13 @@ test('dial supports wheel and dragging in both layouts', async ({ page }) => {
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.down();
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 - 44, { steps: 8 });
-    await expect(page.locator('.selection-window')).not.toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
+    if (compact) {
+      await expect(page.locator('.selection-window')).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
+    } else {
+      // A 44px pull now shifts the standard lens by 13.2px (previously 7.92px).
+      await expect.poll(() => page.locator('.selection-window').evaluate(el =>
+        Math.abs(new DOMMatrix(getComputedStyle(el).transform).m42))).toBeGreaterThan(12);
+    }
     await page.mouse.up();
     await expect(page.locator('.selection-window')).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
     await expect(dial).toHaveAttribute('aria-valuenow', '2');
