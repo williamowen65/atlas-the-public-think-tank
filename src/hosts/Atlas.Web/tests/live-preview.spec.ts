@@ -397,14 +397,25 @@ test('corner action floats at the description end above the navigation counts', 
     await page.getByRole('button', { name: 'Refresh', exact: true }).click();
     for (const width of [1024, 640, 320]) {
       await page.setViewportSize({ width, height: 1000 });
-      const geometry = await card.evaluate(el => {
+      await expect.poll(() => card.evaluate(el => {
         const paragraph = el.querySelector('.description')!.getBoundingClientRect();
         const action = el.querySelector('.read-more button')!.getBoundingClientRect();
+        return Math.abs(paragraph.bottom - action.bottom);
+      })).toBeLessThan(1);
+      const geometry = await card.evaluate(el => {
+        const paragraphElement = el.querySelector('.description')!;
+        const paragraph = paragraphElement.getBoundingClientRect();
+        const text = [...paragraphElement.childNodes].find(node => node.nodeType === Node.TEXT_NODE && node.textContent!.trim())!;
+        const range = document.createRange();
+        range.selectNodeContents(text);
+        const textTop = range.getClientRects()[0].top;
+        const action = el.querySelector('.read-more button')!.getBoundingClientRect();
         const navigation = el.querySelector('.navigation-details')!.getBoundingClientRect();
-        return { paragraph: paragraph.toJSON(), action: action.toJSON(), navigation: navigation.toJSON(),
+        return { paragraph: paragraph.toJSON(), action: action.toJSON(), navigation: navigation.toJSON(), textTop,
           float: getComputedStyle(el.querySelector('.read-more')!).cssFloat };
       });
       expect(geometry.float).toBe('right');
+      expect(geometry.textTop - geometry.paragraph.top).toBeLessThan(5);
       expect(geometry.action.right).toBeCloseTo(geometry.paragraph.right, 0);
       expect(geometry.action.left).toBeGreaterThan(geometry.paragraph.left);
       expect(geometry.navigation.top).toBeGreaterThanOrEqual(geometry.action.bottom);

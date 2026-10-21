@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { bottomCornerAction } from '../../actions/bottomCornerAction';
   import ActionButton from '../ActionButton.svelte';
   import VotingDial from '../VotingDial.svelte';
 
@@ -27,7 +28,7 @@
       <VotingDial label="Node importance" {value} {average} {totalVotes} disabled={node.status === 'Archived'} onChange={onVote} />
     </aside>
     <div class="content-stack">
-      <p class="description" id={`${instance}-description`}>{node.description}<span class="read-more"><ActionButton label="Read more" disabled={!onReadMore} onActivate={() => onReadMore?.(node.id)} /></span></p>
+      <p class="description" use:bottomCornerAction id={`${instance}-description`}><span class="read-more"><ActionButton label="Read more" disabled={!onReadMore} onActivate={() => onReadMore?.(node.id)} /></span>{node.description}</p>
       {#if node.requestedTypes.length}
         <p class="invitation">Help develop this node with: <strong>{node.requestedTypes.join(', ')}</strong>.</p>
       {/if}
@@ -175,7 +176,8 @@
 
   .read-more {
     float: right;
-    margin: .25rem 0 .25rem .75rem;
+    margin: var(--corner-top, 0px) 0 0 .75rem;
+    shape-outside: inset(var(--corner-top, 0px) 0 0 0);
     white-space: normal;
   }
 
@@ -231,7 +233,7 @@
       display: grid;
       grid-template-columns: max-content minmax(0, 1fr);
       column-gap: var(--dial-text-gap);
-      grid-template-rows: auto min-content auto auto;
+      grid-template-rows: auto max-content 1fr auto;
     }
     .ribbon-context { grid-column: 1 / -1; grid-row: 1; }
     .node-card header { grid-column: 2; grid-row: 2; min-width: 0; padding-inline: 0 var(--card-padding); }
@@ -242,7 +244,7 @@
       float: none;
       margin: .5rem 0 0 .75rem;
     }
-    .content-stack { grid-column: 2; grid-row: 3; align-self: start; min-width: 0; margin-right: var(--card-padding); }
+    .content-stack { grid-column: 2; grid-row: 3; align-self: stretch; min-width: 0; margin-right: var(--card-padding); }
     .card-details { grid-column: 1 / -1; grid-row: 4; min-width: 0; }
 
   }
