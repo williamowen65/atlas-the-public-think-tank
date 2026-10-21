@@ -33,7 +33,7 @@ test('long label fits a narrow viewport', async ({ page }) => {
 
 /** The integration page imports the same component and receives its callback. */
 test('shared component works in the web composition', async ({ page }) => {
-  await page.goto('http://127.0.0.1:4173');
+  await page.goto('http://127.0.0.1:4173/components');
   await page.getByRole('button', { name: 'Try action' }).click();
   await expect(page.getByRole('status')).toHaveText('Action completed');
 });
@@ -48,7 +48,7 @@ test('enabled story passes automated accessibility checks', async ({ page }) => 
 
 /** Client-side links retain the document; Back and direct URLs resolve routes. */
 test('SvelteKit routes support client navigation, Back and direct entry', async ({ page }) => {
-  await page.goto('http://127.0.0.1:4173');
+  await page.goto('http://127.0.0.1:4173/components');
   await expect(page.getByRole('button', { name: 'Try action' })).toBeVisible();
 
   // A full document reload would erase this marker; client navigation keeps it.

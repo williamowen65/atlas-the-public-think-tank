@@ -1,0 +1,43 @@
+<script lang="ts" module>
+  import type { NodeCardData } from './NodeCard.svelte';
+  export interface FeedItem { node: NodeCardData; average: number | null; totalVotes: number; reactionError?: boolean; hasMoreAncestors?: boolean }
+</script>
+<script lang="ts">
+  import NodeCard, { type NodeCardPresentation } from './NodeCard.svelte';
+  import type { LoadOlderAncestors } from './Breadcrumb.svelte';
+  let { items, loading = false, hasMore = false, error = '', presentation = 'ribbon-corner', onLoadMore, onNavigate, loadOlderAncestors }: {
+    items: FeedItem[]; loading?: boolean; hasMore?: boolean; error?: string;
+    presentation?: NodeCardPresentation; onLoadMore?: () => void; onNavigate?: (id: string) => void; loadOlderAncestors?: LoadOlderAncestors;
+  } = $props();
+  let tail: HTMLDivElement;
+  $effect(() => {
+    items.length;
+    if (typeof IntersectionObserver === 'undefined' || !tail || loading || error || !hasMore || !onLoadMore) return;
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) onLoadMore?.();
+    }, { rootMargin: '0px 0px 240px 0px' });
+    observer.observe(tail);
+    return () => observer.disconnect();
+  });
+</script>
+<section class="node-feed" aria-label="Node feed" aria-busy={loading}>
+  <ul aria-label="Nodes">
+    {#each items as item (item.node.id)}
+      <li><NodeCard node={item.node} {presentation} average={item.average} totalVotes={item.totalVotes} {onNavigate} {loadOlderAncestors} hasMoreAncestors={item.hasMoreAncestors ?? false} />
+        {#if item.reactionError}<p class="note">Reaction totals are unavailable for this node.</p>{/if}
+      </li>
+    {/each}
+  </ul>
+  <div class="feed-tail" bind:this={tail}>
+    {#if error}<p role="alert">{error}</p>{/if}
+    <p role="status">{loading ? 'Loading nodes…' : !items.length ? (error ? 'No nodes loaded.' : 'No nodes found.') : `${items.length} nodes shown${hasMore ? '.' : ' · You’re all caught up.'}`}</p>
+    {#if hasMore || error}<button type="button" disabled={loading || !onLoadMore} onclick={onLoadMore}>{error ? 'Retry loading nodes' : 'Load more nodes'}</button>{/if}
+  </div>
+</section>
+<style lang="scss">
+  .node-feed {max-width:48rem;margin-inline:auto;min-width:0;}
+  ul {list-style:none;padding:0;margin:0;display:grid;gap:1.25rem;}li{min-width:0;}
+  .feed-tail {text-align:center;padding:1.5rem .5rem;color:var(--atlas-muted);}
+  button {font:inherit;padding:.6rem 1rem;border:1px solid var(--atlas-border);border-radius:var(--atlas-radius);background:var(--atlas-surface);color:var(--atlas-accent);cursor:pointer;}
+  .note {font-size:.85rem;color:var(--atlas-muted);}
+</style>

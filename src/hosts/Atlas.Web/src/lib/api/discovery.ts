@@ -40,8 +40,8 @@ export function discoveryCard(item: DiscoveryItem): NodeCardData | null {
 }
 
 /** The existing endpoint returns nearest-first; presentation pages are oldest-first. */
-export async function readOlderAncestors(id: string, signal: AbortSignal): Promise<BreadcrumbPage> {
-  const response = await fetch(`/atlas-preview-api/nodes/${encodeURIComponent(id)}/ancestors`, { credentials: 'omit', signal });
+export async function readOlderAncestors(id: string, signal: AbortSignal, base = '/atlas-preview-api'): Promise<BreadcrumbPage> {
+  const response = await fetch(`${base}/nodes/${encodeURIComponent(id)}/ancestors`, { credentials: 'omit', signal });
   if (!response.ok) throw new Error(`Could not load older ancestors (HTTP ${response.status}).`);
   const page = await response.json() as { items: { id: string; title: string }[]; hasMore: boolean };
   if (!Array.isArray(page.items) || typeof page.hasMore !== 'boolean') throw new Error('Unexpected ancestor response.');
@@ -49,8 +49,8 @@ export async function readOlderAncestors(id: string, signal: AbortSignal): Promi
 }
 
 /** Read individual public reaction totals rather than parsing the formatted summary. */
-export async function readReactions(id: string, signal: AbortSignal): Promise<NodeCardData['reactions']> {
-  const response = await fetch(`/atlas-preview-api/nodes/${encodeURIComponent(id)}/reactions`, { credentials: 'omit', signal });
+export async function readReactions(id: string, signal: AbortSignal, base = '/atlas-preview-api'): Promise<NodeCardData['reactions']> {
+  const response = await fetch(`${base}/nodes/${encodeURIComponent(id)}/reactions`, { credentials: 'omit', signal });
   if (!response.ok) throw new Error('Reaction totals could not be loaded.');
   const choices = await response.json() as { associationId: string | null; text: string; emoji: string; totalVotes: number }[];
   if (!Array.isArray(choices)) throw new Error('Unexpected reaction response.');
