@@ -73,7 +73,7 @@
 
 {#if allItems.length || more}
   <nav aria-label="Node breadcrumb">
-    <div class="viewport" use:revealNewest={allItems}>
+    <div class="viewport" role="group" aria-label="Scrollable ancestor path" tabindex="0" use:revealNewest={allItems}>
       <ol>
         {#if more && loadOlder}
           <li class="load-older"><button type="button" disabled={loading} onclick={requestOlder}>{loading ? 'Loading…' : 'Load older ancestors'}</button></li>
@@ -143,6 +143,10 @@
       border-radius: .2rem 0 0 .2rem;
       button, span { padding-inline-start: .75rem; }
     }
+  }
+
+  .load-older button {
+    min-width: 13rem;
   }
 
   button, span {
