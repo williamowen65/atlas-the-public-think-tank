@@ -79,7 +79,7 @@
         {#if more && loadOlder}
           <li class="load-older"><button type="button" disabled={loading} onclick={requestOlder}>{loading ? 'Loading…' : 'Load older ancestors'}</button></li>
         {/if}
-        {#each allItems as item, index}
+        {#each allItems as item, index (item.id ?? index)}
           <li style:z-index={allItems.length - index}>
             {#if item.id && onNavigate}
               <button type="button" onclick={() => onNavigate?.(item.id!)}>{item.title}</button>

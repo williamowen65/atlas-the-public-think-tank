@@ -25,7 +25,8 @@ test('ribbon shows newest ancestor first, scrolls to older items and fits mobile
   await nav.getByRole('button').first().focus();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('status')).toHaveText('What future is worth building?');
-  await expect.poll(() => viewport.evaluate(el => el.scrollLeft)).toBeLessThan(10);
+  await expect(nav.getByRole('button').first()).toBeFocused();
+  await expect(nav.getByRole('button').first()).toBeInViewport({ ratio: .9 });
   await viewport.evaluate(el => { el.scrollLeft = el.scrollWidth; });
   await page.setViewportSize({ width: 420, height: 800 });
   await expect.poll(() => viewport.evaluate(el => el.scrollWidth - el.clientWidth - el.scrollLeft)).toBeLessThanOrEqual(1);

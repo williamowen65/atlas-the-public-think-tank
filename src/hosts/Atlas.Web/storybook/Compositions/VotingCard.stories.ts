@@ -6,7 +6,7 @@ const meta = {
   component: LiveNodePreview,
   args: { presentation: 'ribbon' },
   argTypes: {
-    presentation: { control: 'select', options: ['ribbon', 'current'], description: 'Compare both card presentations with live Atlas data.' },
+    presentation: { type: 'string', control: 'select', options: ['ribbon', 'current'], description: 'Compare both card presentations with live Atlas data.' },
   },
 } satisfies Meta<typeof LiveNodePreview>;
 export default meta;
