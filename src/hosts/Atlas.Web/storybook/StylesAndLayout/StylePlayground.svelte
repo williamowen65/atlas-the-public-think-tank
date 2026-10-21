@@ -1,11 +1,13 @@
 <script lang="ts">
+  import ActionButton from '../../src/lib/components/ActionButton.svelte';
+
   let { fontSize = 16, lineHeight = 1.6, headingScale = 1.5, paragraphGap = 16, headingGap = 12, onReset }: {
     fontSize?: number; lineHeight?: number; headingScale?: number;
     paragraphGap?: number; headingGap?: number; onReset?: () => void;
   } = $props();
 </script>
 
-<button class="atlas-action" type="button" onclick={() => onReset?.()}>Reset typography to code defaults</button>
+<ActionButton label="Reset typography to code defaults" onActivate={() => onReset?.()} />
 <p class="fixture-note">Typography Controls affect only this specimen. Theme and Density in the toolbar affect all stories.</p>
 <section class="specimen" style:font-size={`${fontSize}px`} style:line-height={lineHeight}
   style:--heading-scale={headingScale} style:--paragraph-gap={`${paragraphGap}px`} style:--heading-gap={`${headingGap}px`}>

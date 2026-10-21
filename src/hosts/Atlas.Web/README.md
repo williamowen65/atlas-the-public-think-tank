@@ -30,6 +30,7 @@ Open http://127.0.0.1:6006. Components / ActionButton is the single button story
 
 Use SCSS (Sass with braces and semicolons) for styles. The `sass` development dependency and existing `vitePreprocess()` in `svelte.config.js` compile it automatically. `npm run dev` and `npm run storybook` watch changes and update the preview; the existing build and CI commands compile production CSS. Do not run a separate Sass watcher, generate sibling `.css` files, or commit generated CSS.
 
+- ActionButton owns its button appearance and disabled state; the typography reset uses ActionButton rather than a global button class.
 - Component-specific styles stay in that component's `<style lang="scss">` block. Svelte scopes their selectors so they do not affect unrelated components. No stylesheet import is needed for this block.
 - Shared tokens and application-wide rules live in `src/styles.scss`. The app layout and Storybook preview each import that source as the entry point for their respective build.
 - Use one declaration per line, blank lines between rules, shallow nesting for related selectors, and `&` for states such as `&.dragging` or `&:focus-visible`. Nest compact overrides under `.compact`.

@@ -17,3 +17,24 @@
 >
   {label}
 </button>
+
+<style lang="scss">
+  .atlas-action {
+    font: inherit;
+    padding: .65rem 1rem;
+    border: 2px solid var(--atlas-accent);
+    border-radius: var(--atlas-radius);
+    background: var(--atlas-accent);
+    color: var(--atlas-on-accent);
+    cursor: pointer;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+
+    &:disabled {
+      background: var(--atlas-bg);
+      border-color: var(--atlas-border);
+      color: var(--atlas-muted);
+      cursor: default;
+    }
+  }
+</style>
