@@ -66,6 +66,7 @@ internal static class DiscoveryEfQuery
         {
             NodeId = node.Id,
             Title = node.Title,
+            ShortDescription = node.ShortDescription,
             UpdatedAt = node.UpdatedAt,
             Hidden = db.ModerationCaseRows.Any(report => report.NodeId == node.Id &&
                 report.Status == 2 && report.VisibilityRestoredAt == null),
@@ -110,6 +111,7 @@ internal static class DiscoveryEfQuery
         {
             NodeId = node.NodeId,
             Title = node.Title,
+            ShortDescription = node.ShortDescription,
             UpdatedAt = node.UpdatedAt,
             Hidden = node.Hidden,
             VoteCount = node.VoteCount,
@@ -124,6 +126,7 @@ internal static class DiscoveryEfQuery
     {
         public Guid NodeId { get; set; }
         public string Title { get; set; } = "";
+        public string ShortDescription { get; set; } = "";
         public DateTimeOffset UpdatedAt { get; set; }
         public bool Hidden { get; set; }
         public int VoteCount { get; set; }
