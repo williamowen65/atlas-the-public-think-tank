@@ -227,7 +227,7 @@ test('reaction pills are separate and absent reactions leave no container or gap
       { associationId: 'one', text: 'Useful', emoji: '💡', totalVotes: 3 },
       { associationId: 'two', text: 'Worth exploring', emoji: '🔎', totalVotes: 2 },
     ] });
-    return route.fulfill({ json: { items: [item('b1000000-0000-4000-8000-000000000001', 'Compact node')], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
+    return route.fulfill({ json: { items: [{ ...item('b1000000-0000-4000-8000-000000000001', 'Compact node'), card: { ...item('b1000000-0000-4000-8000-000000000001', 'Compact node').card, subNodes: '2 Ideas · 1 Question' } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
   });
   await page.goto(preview);
   const pills = page.locator('article .reaction-pill');
@@ -240,6 +240,16 @@ test('reaction pills are separate and absent reactions leave no container or gap
     return Math.abs(comment.top - connection.top) < 4;
   });
   expect(sameLine).toBe(true);
+  const separatorGaps = await navigation.evaluate(el => {
+    const children = [...el.children];
+    return children.filter(child => child.classList.contains('navigation-separator')).flatMap(dot => {
+      const rect = dot.getBoundingClientRect();
+      return [rect.left - dot.previousElementSibling!.getBoundingClientRect().right,
+        dot.nextElementSibling!.getBoundingClientRect().left - rect.right];
+    });
+  });
+  expect(separatorGaps).toHaveLength(4);
+  for (const gap of separatorGaps) expect(gap).toBeCloseTo(separatorGaps[0], 1);
   empty = true;
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await expect(page.getByRole('group', { name: 'Community reactions' })).toHaveCount(0);

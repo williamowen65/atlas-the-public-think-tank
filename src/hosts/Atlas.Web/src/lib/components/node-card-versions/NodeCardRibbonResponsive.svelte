@@ -7,6 +7,10 @@
   let expanded = $state(false);
   const instance = $props.id();
   const nodeId = $derived(node.id);
+  const connectionLabels = $derived([
+    ...(node.subNodeSummary && node.subNodeSummary !== 'None' ? node.subNodeSummary.split(' · ') : []),
+    ...node.related.map(related => `${related.typeName}: ${related.title}`),
+  ]);
   $effect(() => { nodeId; expanded = false; });
 </script>
 
@@ -38,8 +42,7 @@
         {/if}
         <div class="navigation-details">
           {@render comments()}
-          {#if node.subNodeSummary && node.subNodeSummary !== 'None'}<span class="navigation-separator" aria-hidden="true"> · </span><span class="text-action connection-summary">{node.subNodeSummary}</span>{/if}
-          {#each node.related as related}<span class="navigation-separator" aria-hidden="true"> · </span><span class="text-action connection-summary">{related.typeName}: {related.title}</span>{/each}
+          {#each connectionLabels as label}<span class="navigation-separator" aria-hidden="true">·</span><span class="text-action connection-summary">{label}</span>{/each}
         </div>
       </div>
   </div>
@@ -128,6 +131,12 @@
       border: 0;
     }
     .navigation-details {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      align-items: baseline;
+      column-gap: .35em;
+      font-size: .9rem;
       text-align: right;
       margin-top: .35rem;
       .text-action { padding-block: .15rem; }
