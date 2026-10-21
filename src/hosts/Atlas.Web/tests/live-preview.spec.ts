@@ -164,8 +164,14 @@ test('live-only card navigates an off-page ancestor by ID and keeps both present
   await expect(page.locator('article footer')).toHaveCount(0);
   await expect(page.locator('article .body .reactions strong')).toHaveText('3');
   await expect(page.locator('article .body .reactions span')).toHaveCSS('border-radius', '999px');
-  await expect(page.locator('article .body .navigation-details')).toContainText('Connected nodes: Ideas: 2');
+  await expect(page.locator('article .body .navigation-details')).toContainText('Ideas: 2');
   await expect(page.locator('article .body .navigation-details')).toContainText('4 comments');
+  await expect(page.locator('article .body .navigation-details')).not.toContainText('Connected nodes:');
+  const navigationStyle = await page.locator('.navigation-details').evaluate(el => {
+    const comment = el.querySelector('button')!; const connection = el.querySelector('.connection-summary')!;
+    return { sameLine: Math.abs(comment.getBoundingClientRect().top - connection.getBoundingClientRect().top) < 4, commentFont: getComputedStyle(comment).fontSize, connectionFont: getComputedStyle(connection).fontSize };
+  });
+  expect(navigationStyle.commentFont).toBe(navigationStyle.connectionFont);
   await expect(page.locator('article h2')).toHaveText('Question: Current child');
   await expect(page.locator('article header')).not.toContainText('Local community');
   await expect(page.getByRole('group', { name: 'Communities', exact: true })).toHaveText('Community: Local community');
@@ -210,4 +216,34 @@ test('unavailable ancestor shows an error and can return to Discovery', async ({
   fail = false;
   await page.getByRole('button', { name: 'Retry' }).click();
   await expect(page.getByRole('heading', { name: 'Question: Visible child' })).toBeVisible();
+});
+
+
+test('reaction pills are separate and absent reactions leave no container or gap', async ({ page }) => {
+  let empty = false;
+  await page.route('**/atlas-preview-api/**', route => {
+    if (route.request().url().endsWith('/reactions')) return route.fulfill({ json: empty ? [] : [
+      { associationId: 'one', text: 'Useful', emoji: '💡', totalVotes: 3 },
+      { associationId: 'two', text: 'Worth exploring', emoji: '🔎', totalVotes: 2 },
+    ] });
+    return route.fulfill({ json: { items: [item('b1000000-0000-4000-8000-000000000001', 'Compact node')], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
+  });
+  await page.goto(preview);
+  const pills = page.locator('article .reaction-pill');
+  await expect(pills).toHaveCount(2);
+  await expect(pills).toHaveText(['💡 Useful 3', '🔎 Worth exploring 2']);
+  const navigation = page.locator('.navigation-details');
+  const sameLine = await navigation.evaluate(el => {
+    const comment = el.querySelector('button')!.getBoundingClientRect();
+    const connection = el.querySelector('.connection-summary')!.getBoundingClientRect();
+    return Math.abs(comment.top - connection.top) < 4;
+  });
+  expect(sameLine).toBe(true);
+  empty = true;
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+  await expect(page.getByRole('group', { name: 'Community reactions' })).toHaveCount(0);
+  await expect(pills).toHaveCount(0);
+  // The community is the first detail, with no reaction wrapper to reserve a row.
+  await expect(page.locator('.card-details > :first-child')).toHaveClass('communities');
+  await expect(page.locator('article')).not.toContainText('Useful: 3');
 });

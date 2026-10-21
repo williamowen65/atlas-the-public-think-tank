@@ -48,7 +48,8 @@
         {/if}
         <div class="navigation-details">
           {@render comments()}
-          {@render connections()}
+          {#if node.subNodeSummary && node.subNodeSummary !== 'None'}<span class="text-action connection-summary">{node.subNodeSummary}</span>{/if}
+          {#each node.related as related}<span class="text-action connection-summary">{related.typeName}: {related.title}</span>{/each}
         </div>
       </div>
     {/if}
@@ -67,10 +68,11 @@
 </article>
 
 {#snippet reactions()}
+  {#if node.reactions.length}
     <div class="reactions" role="group" aria-label="Community reactions">
-      {#if node.reactionSummary && node.reactionSummary !== 'None'}<span>{node.reactionSummary}</span>{/if}
-      {#each node.reactions as reaction}<span>{reaction.label} <strong>{reaction.count}</strong></span>{/each}
+      {#each node.reactions as reaction}<span class="reaction-pill">{reaction.label} <strong>{reaction.count}</strong></span>{/each}
     </div>
+  {/if}
 {/snippet}
 
 {#snippet comments()}
@@ -161,14 +163,13 @@
     .navigation-details {
       text-align: right;
       margin-top: .35rem;
-      .breadcrumb, .related {
-        padding: 0;
-        margin: .25rem 0;
-        border: 0;
-      }
-      h3 { margin-top: .25rem; }
-      .related button { width: auto; margin-left: auto; text-align: right; }
       .text-action { padding-block: .15rem; }
+      .connection-summary {
+        margin-inline-start: .75rem;
+        text-decoration: none;
+        color: var(--atlas-muted);
+        cursor: default;
+      }
     }
   }
 

@@ -49,7 +49,7 @@
     void readReactions(id, controller.signal).then(value => {
       if (!controller.signal.aborted) reactions = value;
     }).catch(() => {
-      if (!controller.signal.aborted) reactionError = 'Reaction totals could not be loaded; showing the available summary.';
+      if (!controller.signal.aborted) reactionError = 'Reaction totals could not be loaded. Refresh to retry.';
     }).finally(() => clearTimeout(timeout));
     return () => { controller.abort(); clearTimeout(timeout); };
   });
@@ -116,7 +116,7 @@
           {#each items as item}<option value={item.node.id}>{item.node.typeName}: {item.node.title}</option>{/each}
         </select>
       </label>
-      <NodeCard hasMoreAncestors={selected.hasMoreAncestors} {loadOlderAncestors} {presentation} node={{ ...selected.node, reactions: reactions ?? [], reactionSummary: reactions === null ? selected.node.reactionSummary : undefined }} average={selected.average} totalVotes={selected.totalVotes}
+      <NodeCard hasMoreAncestors={selected.hasMoreAncestors} {loadOlderAncestors} {presentation} node={{ ...selected.node, reactions: reactions ?? [], reactionSummary: undefined }} average={selected.average} totalVotes={selected.totalVotes}
         value={ratings[selected.node.id] ?? null} onVote={choose} onNavigate={navigate} />
       <p role="status">{ratings[selected.node.id] === undefined ? 'No local rating selected' : `Local preview selection: ${ratings[selected.node.id]} out of 10. Not submitted.`}</p>
       {#if reactionError}<p role="note">{reactionError}</p>{/if}
