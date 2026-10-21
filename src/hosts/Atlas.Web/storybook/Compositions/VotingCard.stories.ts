@@ -8,7 +8,7 @@ const meta = {
   component: VotingCardExample,
   args: { source: 'fixtures', selectedNode: 'question', onSelect: () => {} },
   argTypes: {
-    source: { control: 'select', options: ['fixtures', 'local-api'], description: 'Local API loads real public nodes; all voting stays local.' },
+    source: { type: 'string', control: 'select', options: ['fixtures', 'local-api'], description: 'Local API loads real public nodes; all voting stays local.' },
     selectedNode: { control: 'select', options: fixtureOptions, description: 'Select a fixture node; connected-node clicks update this Control too.' },
     onSelect: { control: false, table: { disable: true } },
   },
