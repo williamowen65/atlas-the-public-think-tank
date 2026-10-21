@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { createVoteFeedback } from '../shared/voteFeedback';
   import { onMount } from 'svelte';
   import NodeCard from '../../src/lib/components/NodeCard.svelte';
   import { readDiscovery, discoveryCard, type DiscoveryPage } from '../../src/lib/api/discovery';
@@ -10,12 +11,23 @@
   let appliedSearch = '';
   let selectedId = $state('');
   let ratings = $state<Record<string, number>>({});
+  let notice = $state('');
+  const feedback = createVoteFeedback();
+  function choose(value: number) {
+    if (!selected) return;
+    const id = selected.node.id;
+    ratings[id] = value;
+    notice = '';
+    feedback.settle('anonymous', message => { delete ratings[id]; if (selected?.node.id === id) notice = message; });
+  }
   let request: AbortController | null = null;
   const items = $derived((result?.items ?? []).flatMap(item => {
     const node = discoveryCard(item);
     return node ? [{ node, average: item.averageVote, totalVotes: item.voteCount }] : [];
   }));
   const selected = $derived(items.find(item => item.node.id === selectedId) ?? items[0]);
+
+  $effect(() => { selected?.node.id; feedback.cancel(); ratings = {}; notice = ''; });
 
   async function load(page = 1, query = appliedSearch) {
     request?.abort();
@@ -47,7 +59,7 @@
 </script>
 
 <section class="live-preview" aria-label="Local API node preview" aria-busy={loading}>
-  <p class="fixture-note">Local Atlas API · anonymous browsing. Rating changes stay in this preview and do not cast votes. Averages and totals come from Atlas.</p>
+  <p class="fixture-note">Local Atlas API · anonymous browsing. Anonymous rating attempts return to neutral; no votes are cast. Averages and totals come from Atlas.</p>
   <form onsubmit={(event) => { event.preventDefault(); void load(1, search); }}>
     <label>Search nodes <input bind:value={search} type="search" /></label>
     <button type="submit" disabled={loading}>Search</button>
@@ -73,8 +85,9 @@
         </select>
       </label>
       <NodeCard node={selected.node} average={selected.average} totalVotes={selected.totalVotes}
-        value={ratings[selected.node.id] ?? null} onVote={(value) => ratings[selected.node.id] = value} />
+        value={ratings[selected.node.id] ?? null} onVote={choose} />
       <p role="status">{ratings[selected.node.id] === undefined ? 'No local rating selected' : `Local preview selection: ${ratings[selected.node.id]} out of 10. Not submitted.`}</p>
+      {#if notice}<p role="note">{notice}</p>{/if}
     {:else}<p role="status">No displayable nodes on this page. Try another search or page.</p>{/if}
   {/if}
 </section>

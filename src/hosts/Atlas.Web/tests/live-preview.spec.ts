@@ -26,6 +26,9 @@ test('live nodes support selection, search, paging and refresh without submittin
   await page.getByRole('spinbutton').focus();
   await page.keyboard.press('End');
   await expect(page.getByRole('status')).toHaveText('Local preview selection: 10 out of 10. Not submitted.');
+  await expect(page.getByRole('status')).toHaveText('No local rating selected');
+  await expect(page.getByRole('spinbutton')).toHaveAttribute('aria-valuetext', /Unrated/);
+  await expect.poll(() => page.getByRole('spinbutton').evaluate(el => el.scrollTop)).toBe(220);
   await page.getByRole('button', { name: 'Next page' }).click();
   await expect(page.getByRole('heading', { name: 'A newly entered node' })).toBeVisible();
   await page.getByRole('button', { name: 'Previous page' }).click();
@@ -61,4 +64,25 @@ test('fixture stories never contact API and dev proxy rejects writes', async ({ 
   expect(contacted).toBe(false);
   const response = await request.post('http://127.0.0.1:6007/atlas-preview-api/nodes');
   expect(response.status()).toBe(405);
+});
+
+
+test('uncast fixture selections reset to neutral and accepted simulations stay selected', async ({ page }) => {
+  for (const outcome of ['anonymous', 'failed']) {
+    await page.goto(`http://127.0.0.1:6006/iframe.html?id=components-votingdial--playground&viewMode=story&args=initialValue:!null;voteOutcome:${outcome}`);
+    const dial = page.getByRole('spinbutton');
+    await dial.focus();
+    await page.keyboard.press('End');
+    await expect(dial).toHaveAttribute('aria-valuenow', '10');
+    await expect(page.getByRole('status')).toHaveText('No rating selected');
+    await expect(dial).toHaveAttribute('aria-valuetext', /Unrated/);
+    await expect.poll(() => dial.evaluate(el => el.scrollTop)).toBe(220);
+    await expect(page.locator('.selector')).toHaveClass(/unrated/);
+    await expect(page.getByRole('note')).toContainText(outcome === 'anonymous' ? 'Sign in' : 'could not be saved');
+  }
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=components-votingdial--playground&viewMode=story&args=voteOutcome:accepted');
+  await page.getByRole('spinbutton').focus();
+  await page.keyboard.press('Home');
+  await page.waitForTimeout(800);
+  await expect(page.getByRole('spinbutton')).toHaveAttribute('aria-valuenow', '0');
 });

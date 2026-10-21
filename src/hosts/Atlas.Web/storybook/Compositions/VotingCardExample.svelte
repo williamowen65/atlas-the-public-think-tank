@@ -1,13 +1,23 @@
 <script lang="ts">
+  import { createVoteFeedback, type VoteOutcome } from '../shared/voteFeedback';
   import LiveNodePreview from '../NodeCard/LiveNodePreview.svelte';
   import NodeCard from '../../src/lib/components/NodeCard.svelte';
   import { nodeFixtures } from '../NodeCard/nodeFixtures';
 
-  let { source = 'fixtures', selectedNode = 'question', onSelect }: { source?: 'fixtures' | 'local-api'; selectedNode?: string; onSelect?: (key: string) => void } = $props();
+  let { source = 'fixtures', voteOutcome = 'accepted', selectedNode = 'question', onSelect }: { source?: 'fixtures' | 'local-api'; voteOutcome?: VoteOutcome; selectedNode?: string; onSelect?: (key: string) => void } = $props();
   let ratings = $state<Record<string, number>>({});
   let discussion = $state<string | null>(null);
   const fixture = $derived(nodeFixtures[selectedNode] ?? nodeFixtures.question);
   const value = $derived(ratings[fixture.node.id] ?? null);
+  let notice = $state('');
+  const feedback = createVoteFeedback();
+  $effect(() => { selectedNode; source; voteOutcome; feedback.cancel(); notice = ''; if (voteOutcome !== 'accepted') ratings = {}; });
+  function choose(next: number) {
+    const id = fixture.node.id;
+    ratings[id] = next;
+    notice = '';
+    feedback.settle(voteOutcome, message => { delete ratings[id]; notice = message; });
+  }
   function navigate(id: string) {
     const match = Object.entries(nodeFixtures).find(([, item]) => item.node.id === id);
     if (match) onSelect?.(match[0]);
@@ -20,8 +30,9 @@
 <div class="preview">
   <p class="fixture-note">Example nodes · local interaction preview. Ratings, discussion and totals are fixtures; nothing is saved.</p>
   <NodeCard node={fixture.node} average={fixture.average} totalVotes={fixture.totalVotes} {value}
-    onVote={(next) => ratings[fixture.node.id] = next} onNavigate={navigate} onComments={(id) => discussion = discussion === id ? null : id} />
+    onVote={choose} onNavigate={navigate} onComments={(id) => discussion = discussion === id ? null : id} />
   <p role="status">{value === null ? 'No rating selected' : `Preview selection: ${value} out of 10`}</p>
+  {#if notice}<p role="note">{notice}</p>{/if}
   {#if discussion === fixture.node.id}
     <section class="discussion" aria-label="Discussion preview">
       <h3>Discussion</h3>

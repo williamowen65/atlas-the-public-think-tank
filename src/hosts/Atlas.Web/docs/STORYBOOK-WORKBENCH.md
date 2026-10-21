@@ -63,3 +63,10 @@ Open **Compositions / Node voting preview / Playground**, then choose **selected
 Fixture IDs, titles and first description paragraphs follow `DemoData.SeedNode` / `SeedBlock`; additional text, author display names, associations, discussion and aggregates are illustrative. They are not a database snapshot. The legacy reference is `_issue-card.cshtml`; the current Discovery projection is `Atlas.Discovery/DiscoveryCard.cs`.
 
 Storybook can run real event handlers and controlled state. The source Control now also offers **local-api**: see [local API setup and the combined launcher](../README.md#preview-real-local-nodes). This reads the actual public Discovery projection through a development-only anonymous proxy. The reusable adapter supplies actual title, content, author, type, timestamp, community/context text, reactions/child summaries, comments count and vote aggregates. The browser selector, search, paging and refresh operate on database results. Ratings remain local and no authentication/session is forwarded. Static builds and CI continue using fixtures or intercepted responses. Full blocks, live discussions/links and signed-in writes remain follow-ups.
+
+
+## Uncast vote feedback
+
+The live API card is anonymous: selecting a value is an attempt, not a saved rating. After 650ms without another selection change it returns to neutral (`value = null`, centered on 5), restores the unrated color and explains that sign-in is needed. Switching nodes also clears anonymous attempts.
+
+The dial and fixture-card Playground expose `voteOutcome`: `accepted` retains a simulated successful selection, `anonymous` resets with sign-in feedback, and `failed` resets with retry feedback. These scenarios never write to the API. The live source always uses anonymous behavior regardless of this fixture Control. The shared story helper cancels pending callbacks when unmounted. The production dial remains caller-controlled; a future authenticated adapter must handle server rejection, network failure or canceled submission by returning the dial to null. This slice demonstrates those outcomes rather than claiming authenticated casting is implemented.
