@@ -19,7 +19,7 @@
   <header>
       <h2 id={`${instance}-title`}><span class="title-type">{node.typeName}:</span> {node.title}</h2>
       {#if node.status === 'Archived'}<p class="byline">Archived</p>{/if}
-    <p class="byline">By {node.authorName} <span aria-hidden="true">·</span> <time datetime={node.createdAt}>{new Date(node.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</time>{#if node.communities.length} <span aria-hidden="true">·</span> <span class="communities" role="group" aria-label="Communities">{node.communities.length === 1 ? 'Community' : 'Communities'}: {node.communities.join(', ')}</span>{/if}</p>
+    <p class="byline"><span>By {node.authorName}</span><span class="byline-separator" aria-hidden="true">·</span><time datetime={node.createdAt}>{new Date(node.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</time>{#if node.communities.length}<span class="byline-separator" aria-hidden="true">·</span><span class="communities" role="group" aria-label="Communities">{node.communities.length === 1 ? 'Community' : 'Communities'}: {node.communities.join(', ')}</span>{/if}</p>
   </header>
 
   <div class="body">
@@ -149,6 +149,8 @@
   }
 
 
+
+  .byline-separator { margin-inline: .35em; }
 
   .byline {
     margin: 0;
