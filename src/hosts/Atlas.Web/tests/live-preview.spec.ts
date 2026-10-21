@@ -309,10 +309,19 @@ test('standalone card versions preserve mobile layout and offer a raised desktop
   expect(Math.abs(desktop.community.top - desktop.navigation.top)).toBeLessThan(4);
   expect(desktop.communityFont).toBe(desktop.navigationFont);
   expect(desktop.action.top).toBeGreaterThan(desktop.paragraph.top);
-  expect((desktop.action.left + desktop.action.right) / 2).toBeCloseTo((desktop.paragraph.left + desktop.paragraph.right) / 2, 0);
+  expect((desktop.action.left + desktop.action.right) / 2).toBeCloseTo((desktop.card.left + desktop.card.right) / 2, 0);
   await expect(page.locator('.description .read-more button')).toHaveClass(/atlas-action/);
   expect(desktop.action.bottom).toBeLessThanOrEqual(desktop.paragraph.bottom + 1);
-  await page.setViewportSize({ width: 320, height: 1000 });
+  expect(desktop.action.left).toBeGreaterThan(desktop.dial.right);
+  expect(desktop.action.top).toBeLessThan(desktop.dial.bottom);
+  for (const width of [900, 640, 380, 320]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await expect.poll(async () => page.locator('article').evaluate(el => {
+      const card = el.getBoundingClientRect();
+      const action = el.querySelector('.read-more button')!.getBoundingClientRect();
+      return Math.abs((action.left + action.right - card.left - card.right) / 2);
+    })).toBeLessThan(1);
+  }
   const mobile = await page.locator('article').evaluate(el => ({
     headerBottom: el.querySelector('header')!.getBoundingClientRect().bottom,
     dialTop: el.querySelector('.dial')!.getBoundingClientRect().top,

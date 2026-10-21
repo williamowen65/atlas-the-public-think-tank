@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { centerInCard } from '../../actions/centerInCard';
   import ActionButton from '../ActionButton.svelte';
   import VotingDial from '../VotingDial.svelte';
 
@@ -27,7 +28,7 @@
       <VotingDial label="Node importance" {value} {average} {totalVotes} disabled={node.status === 'Archived'} onChange={onVote} />
     </aside>
     <div class="content-stack">
-      <p class="description" id={`${instance}-description`}>{node.description}<span class="read-more"><ActionButton label="Read more" disabled={!onReadMore} onActivate={() => onReadMore?.(node.id)} /></span></p>
+      <p class="description" id={`${instance}-description`}>{node.description}<span class="read-more" use:centerInCard><ActionButton label="Read more" disabled={!onReadMore} onActivate={() => onReadMore?.(node.id)} /></span></p>
       {#if node.requestedTypes.length}
         <p class="invitation">Help develop this node with: <strong>{node.requestedTypes.join(', ')}</strong>.</p>
       {/if}
@@ -169,7 +170,13 @@
     white-space: pre-line;
   }
 
-  .read-more { display: flex; justify-content: center; margin-top: .5rem; white-space: normal; }
+  .read-more {
+    display: flex;
+    justify-content: center;
+    margin-top: .5rem;
+    white-space: normal;
+    :global(button) { translate: var(--card-center-offset, 0px) 0; }
+  }
 
   .invitation {
     font-size: .9rem;
