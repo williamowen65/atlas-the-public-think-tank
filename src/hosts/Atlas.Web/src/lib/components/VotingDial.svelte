@@ -199,7 +199,9 @@
   <span class="vote-count" role="img" aria-label={`${totalVotes} votes`}>
     <svg viewBox="0 0 56 44" aria-hidden="true">
       <circle cx="28" cy="7" r="6"/><circle cx="10" cy="12" r="5"/><circle cx="46" cy="12" r="5"/>
-      <path d="M15 44V27a13 13 0 0 1 26 0v17ZM1 41V25a9 9 0 0 1 12-8v24ZM43 41V17a9 9 0 0 1 12 8v16Z"/>
+      <!-- Full side bodies overlap behind the central figure. -->
+      <path d="M1 41V26a9 9 0 0 1 18 0v15ZM37 41V26a9 9 0 0 1 18 0v15Z"/>
+      <path d="M15 44V27a13 13 0 0 1 26 0v17Z"/>
     </svg>
     <span class="count" aria-hidden="true">{totalVotes.toLocaleString()}</span>
   </span>
