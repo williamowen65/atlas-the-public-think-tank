@@ -16,6 +16,7 @@
   let search = $state('');
   let appliedSearch = '';
   let selectedId = $state('');
+  let detailId = $state('');
   let ratings = $state<Record<string, number>>({});
   let notice = $state('');
   const feedback = createVoteFeedback();
@@ -35,7 +36,7 @@
 
   $effect(() => { selected?.node.id; feedback.cancel(); ratings = {}; notice = ''; });
 
-  async function load(page = 1, query = appliedSearch) {
+  async function load(page = 1, query = appliedSearch, nodeId = '') {
     request?.abort();
     const controller = new AbortController();
     request = controller;
@@ -43,10 +44,14 @@
     error = '';
     const timeout = setTimeout(() => controller.abort(), 10000);
     try {
-      const data = await readDiscovery('/atlas-preview-api', page, query, controller.signal);
+      const data = await readDiscovery('/atlas-preview-api', page, query, controller.signal, nodeId || undefined);
       if (request !== controller) return;
       result = data;
-      appliedSearch = query;
+      if (nodeId && !data.items.some(item => item.nodeId === nodeId && item.card && !item.card.isHidden)) {
+        throw new Error('This ancestor is unavailable or hidden. Return to Discovery to continue browsing.');
+      }
+      detailId = nodeId;
+      if (!nodeId) appliedSearch = query;
       if (!data.items.some(item => item.nodeId === selectedId)) selectedId = '';
     } catch (cause) {
       if (request !== controller) return;
@@ -58,6 +63,8 @@
     }
   }
 
+  function navigate(id: string) { void load(1, '', id); }
+
   onMount(() => {
     void load();
     return () => { request?.abort(); request = null; };
@@ -65,11 +72,12 @@
 </script>
 
 <section class="live-preview" aria-label="Local API node preview" aria-busy={loading}>
-  <p class="fixture-note">Local Atlas API · anonymous browsing. Anonymous rating attempts return to neutral; no votes are cast. Averages and totals come from Atlas.</p>
+  <p class="preview-note">Local Atlas API · anonymous browsing. Anonymous rating attempts return to neutral; no votes are cast. Averages and totals come from Atlas.</p>
   <form onsubmit={(event) => { event.preventDefault(); void load(1, search); }}>
     <label>Search nodes <input bind:value={search} type="search" /></label>
     <button type="submit" disabled={loading}>Search</button>
-    <button type="button" disabled={loading} onclick={() => void load(result?.page ?? 1)}>Refresh</button>
+    <button type="button" disabled={loading} onclick={() => void load(result?.page ?? 1, detailId ? '' : appliedSearch, detailId)}>Refresh</button>
+    {#if detailId}<button type="button" disabled={loading} onclick={() => void load(1, appliedSearch)}>Back to Discovery</button>{/if}
   </form>
   {#if loading}<p role="status">Loading Atlas nodes…</p>
   {:else if error}
@@ -91,7 +99,7 @@
         </select>
       </label>
       <NodeCard hasMoreAncestors={selected.hasMoreAncestors} {loadOlderAncestors} {presentation} node={selected.node} average={selected.average} totalVotes={selected.totalVotes}
-        value={ratings[selected.node.id] ?? null} onVote={choose} />
+        value={ratings[selected.node.id] ?? null} onVote={choose} onNavigate={navigate} />
       <p role="status">{ratings[selected.node.id] === undefined ? 'No local rating selected' : `Local preview selection: ${ratings[selected.node.id]} out of 10. Not submitted.`}</p>
       {#if notice}<p role="note">{notice}</p>{/if}
     {:else}<p role="status">No displayable nodes on this page. Try another search or page.</p>{/if}

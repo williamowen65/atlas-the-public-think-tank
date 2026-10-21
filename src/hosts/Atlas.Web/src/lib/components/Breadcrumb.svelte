@@ -105,8 +105,8 @@
     overflow-x: auto;
     overscroll-behavior-x: contain;
     visibility: hidden;
-    // Keep the native scrollbar available for discovering and scrolling older context.
-    scrollbar-width: thin;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
     &:global([data-ready='true']) {
       visibility: visible;
     }
@@ -117,7 +117,7 @@
     width: max-content;
     list-style: none;
     margin: 0;
-    padding: .3rem 1.15rem .5rem .2rem;
+    padding: .3rem 1.15rem .5rem 0;
   }
 
   li {

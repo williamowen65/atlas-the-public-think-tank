@@ -494,10 +494,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Compositions", "Compositions", "{5B930464-C34F-509B-97C3-51A9C7446A70}"
 	ProjectSection(SolutionItems) = preProject
 		src\hosts\Atlas.Web\storybook\Compositions\VotingCard.stories.ts = src\hosts\Atlas.Web\storybook\Compositions\VotingCard.stories.ts
-		src\hosts\Atlas.Web\storybook\NodeCard\nodeFixtures.ts = src\hosts\Atlas.Web\storybook\NodeCard\nodeFixtures.ts
 		src\hosts\Atlas.Web\storybook\shared\voteFeedback.ts = src\hosts\Atlas.Web\storybook\shared\voteFeedback.ts
 		src\hosts\Atlas.Web\storybook\NodeCard\LiveNodePreview.svelte = src\hosts\Atlas.Web\storybook\NodeCard\LiveNodePreview.svelte
-		src\hosts\Atlas.Web\storybook\Compositions\VotingCardExample.svelte = src\hosts\Atlas.Web\storybook\Compositions\VotingCardExample.svelte
 		src\hosts\Atlas.Web\storybook\Compositions\VotingComparison.stories.ts = src\hosts\Atlas.Web\storybook\Compositions\VotingComparison.stories.ts
 		src\hosts\Atlas.Web\storybook\Compositions\VotingComparison.svelte = src\hosts\Atlas.Web\storybook\Compositions\VotingComparison.svelte
 	EndProjectSection

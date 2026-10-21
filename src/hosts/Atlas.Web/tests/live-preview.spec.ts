@@ -1,6 +1,7 @@
+import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
-const preview = 'http://127.0.0.1:6006/iframe.html?id=compositions-node-voting-preview--playground&viewMode=story&args=source:local-api';
+const preview = 'http://127.0.0.1:6006/iframe.html?id=compositions-node-voting-preview--playground&viewMode=story';
 const item = (id: string, title: string, hidden = false) => ({
   nodeId: id, rank: 1, rankingScore: 1, voteCount: 12, averageVote: 7.5,
   card: { nodeId: id, title, typeName: 'Question', authorName: 'API author', status: 'Active', createdAt: '2026-09-28T15:20:00Z', description: 'Content from the API response.', breadcrumb: 'Root question', subNodes: 'Ideas: 2', reactions: 'Useful: 3', communities: 'Local community', commentCount: 4, isHidden: hidden },
@@ -16,13 +17,13 @@ test('live nodes support selection, search, paging and refresh without submittin
     await route.fulfill({ json: { items: second ? [item('new', 'A newly entered node')] : [item('one', 'Database question'), item('two', 'Database second node'), item('hidden', 'Hidden private title', true)], totalCount: 4, page: second ? 2 : 1, pageSize: 3, hasNextPage: !second } });
   });
   await page.goto(preview);
-  await expect(page.getByRole('heading', { name: 'Database question', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Question: Database question', exact: true })).toBeVisible();
   await expect(page.locator('.average')).toHaveText('7.5');
   await expect(page.locator('.vote-count')).toHaveAccessibleName('12 votes');
   await expect(page.locator('.node-card')).toContainText('Local community');
   await expect(page.getByRole('option', { name: /Hidden private title/ })).toHaveCount(0);
   await page.getByLabel('Node on this page').selectOption('two');
-  await expect(page.getByRole('heading', { name: 'Database second node' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Question: Database second node' })).toBeVisible();
   await page.getByRole('spinbutton').focus();
   await page.keyboard.press('End');
   await expect(page.getByRole('status')).toHaveText('Local preview selection: 10 out of 10. Not submitted.');
@@ -30,7 +31,7 @@ test('live nodes support selection, search, paging and refresh without submittin
   await expect(page.getByRole('spinbutton')).toHaveAttribute('aria-valuetext', /Unrated/);
   await expect.poll(() => page.getByRole('spinbutton').evaluate(el => el.scrollTop)).toBe(220);
   await page.getByRole('button', { name: 'Next page' }).click();
-  await expect(page.getByRole('heading', { name: 'A newly entered node' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Question: A newly entered node' })).toBeVisible();
   await page.getByRole('button', { name: 'Previous page' }).click();
   await page.getByLabel('Search nodes').fill('housing');
   await page.getByRole('button', { name: 'Search', exact: true }).click();
@@ -116,4 +117,72 @@ test('API breadcrumb prepends older pages, retries failures and stops at root', 
   expect(blocked.status()).toBe(404);
   const write = await request.post('http://127.0.0.1:6007/atlas-preview-api/nodes/' + ids[0] + '/ancestors');
   expect(write.status()).toBe(405);
+});
+
+
+test('live-only card navigates an off-page ancestor by ID and keeps both presentations', async ({ page }) => {
+  const nodeId = 'b1000000-0000-4000-8000-000000000010';
+  const ancestor = 'b1000000-0000-4000-8000-000000000001';
+  const requested: URL[] = [];
+  await page.route('**/atlas-preview-api/**', async route => {
+    const url = new URL(route.request().url());
+    requested.push(url);
+    const detail = url.searchParams.get('NodeId') === ancestor;
+    const entry = item(detail ? ancestor : nodeId, detail ? 'Ancestor outside search' : 'Current child');
+    await route.fulfill({ json: { items: [{ ...entry, card: { ...entry.card,
+      description: 'Actual API description. '.repeat(80),
+      breadcrumbSegment: { items: detail ? [] : [{ nodeId: ancestor, label: 'Ancestor outside search' }], continuationNodeId: null, hasAlternativeRoutes: false, cycleDetected: false },
+    } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
+  });
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto(preview);
+  const nav = page.getByRole('navigation', { name: 'Node breadcrumb' });
+  await expect(nav).toBeVisible();
+  const positions = await page.locator('article').evaluate(el => ({
+    left: el.getBoundingClientRect().left + el.clientLeft,
+    ribbon: el.querySelector('nav')!.getBoundingClientRect().left,
+    scrollbar: getComputedStyle(el.querySelector('.viewport')!).scrollbarWidth,
+  }));
+  expect(Math.abs(positions.left - positions.ribbon)).toBeLessThan(1);
+  expect(positions.scrollbar).toBe('none');
+  await expect(page.locator('article h2')).toHaveText('Question: Current child');
+  await expect(page.locator('article header')).not.toContainText('Local community');
+  await expect(page.getByRole('region', { name: 'Communities', exact: true })).toHaveText('Community: Local community');
+  await page.getByRole('button', { name: 'Read more' }).click();
+  await expect(page.getByRole('button', { name: 'Show less' })).toHaveAttribute('aria-expanded', 'true');
+  const results = await new AxeBuilder({ page }).include('#storybook-root').analyze();
+  expect(results.violations).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  await nav.getByRole('button', { name: 'Ancestor outside search', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Question: Ancestor outside search', exact: true })).toBeVisible();
+  expect(requested.at(-1)?.searchParams.get('NodeId')).toBe(ancestor);
+  expect(requested.at(-1)?.searchParams.get('SearchText')).toBeNull();
+  expect(requested.at(-1)?.searchParams.get('IncludeArchived')).toBe('true');
+  await expect(page.getByRole('button', { name: 'Read more' })).toHaveAttribute('aria-expanded', 'false');
+  await expect(nav).toHaveCount(0);
+  await page.getByRole('button', { name: 'Back to Discovery' }).click();
+  await expect(page.getByRole('heading', { name: 'Question: Current child', exact: true })).toBeVisible();
+  await page.goto(`${preview}&args=presentation:current`);
+  await expect(page.locator('article')).toHaveAttribute('data-presentation', 'current');
+  await expect(page.getByRole('heading', { name: 'Current child', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Read more' }).click();
+  await expect(page.getByRole('button', { name: 'Show less' })).toBeVisible();
+});
+
+test('unavailable ancestor shows an error and can return to Discovery', async ({ page }) => {
+  let fail = false;
+  await page.route('**/atlas-preview-api/**', route => {
+    const entry = item('child', 'Visible child');
+    return route.fulfill({ json: { items: fail ? [] : [{ ...entry, card: { ...entry.card, breadcrumbSegment: {
+      items: [{ nodeId: 'b1000000-0000-4000-8000-000000000001', label: 'Parent' }], continuationNodeId: null,
+    } } }], totalCount: fail ? 0 : 1, page: 1, pageSize: 3, hasNextPage: false } });
+  });
+  await page.goto(preview);
+  await expect(page.getByRole('heading', { name: 'Question: Visible child' })).toBeVisible();
+  fail = true;
+  await page.getByRole('navigation').getByRole('button', { name: 'Parent', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('unavailable or hidden');
+  fail = false;
+  await page.getByRole('button', { name: 'Retry' }).click();
+  await expect(page.getByRole('heading', { name: 'Question: Visible child' })).toBeVisible();
 });

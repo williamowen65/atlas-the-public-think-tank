@@ -14,12 +14,17 @@
     <div class="ribbon-context"><Breadcrumb items={node.breadcrumb} {onNavigate} hasMore={hasMoreAncestors} loadOlder={loadOlderAncestors} /></div>
   {/if}
   <header>
-    <div class="eyebrow">
-      <span class="type">{node.typeName}</span>
-      {#each node.communities as community}<span>{community}</span>{/each}
-      {#if node.status === 'Archived'}<span>Archived</span>{/if}
-    </div>
-    <h2 id={`${instance}-title`}>{node.title}</h2>
+    {#if presentation === 'current'}
+      <div class="eyebrow">
+        <span class="type">{node.typeName}</span>
+        {#each node.communities as community}<span>{community}</span>{/each}
+        {#if node.status === 'Archived'}<span>Archived</span>{/if}
+      </div>
+      <h2 id={`${instance}-title`}>{node.title}</h2>
+    {:else}
+      <h2 id={`${instance}-title`}><span class="title-type">{node.typeName}:</span> {node.title}</h2>
+      {#if node.status === 'Archived'}<p class="byline">Archived</p>{/if}
+    {/if}
     <p class="byline">By {node.authorName} <span aria-hidden="true">·</span> <time datetime={node.createdAt}>{new Date(node.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</time></p>
   </header>
 
@@ -44,6 +49,11 @@
       {#each node.related as related}
         <button type="button" disabled={!onNavigate} onclick={() => onNavigate?.(related.id)}><span>{related.typeName}</span> {related.title} <span aria-hidden="true">↗</span></button>
       {/each}
+    </section>
+  {/if}
+  {#if presentation === 'ribbon' && node.communities.length}
+    <section class="communities" aria-label="Communities">
+      <strong>{node.communities.length === 1 ? 'Community' : 'Communities'}:</strong> {node.communities.join(', ')}
     </section>
   {/if}
   <footer>
@@ -84,7 +94,16 @@
 
   .ribbon-context {
     min-width: 0;
-    padding: .75rem .75rem 0;
+    padding: .75rem 0 0;
+  }
+
+  .title-type { color: var(--atlas-accent); }
+
+  .communities {
+    padding: .75rem 1.25rem;
+    border-top: 1px solid var(--atlas-border);
+    font-size: .85rem;
+    color: var(--atlas-muted);
   }
 
   .eyebrow {
@@ -199,7 +218,7 @@
   }
 
   @media (max-width: 380px) {
-    .node-card header, .body, .related, footer, .breadcrumb {
+    .node-card header, .body, .related, footer, .breadcrumb, .communities {
       padding-inline: .75rem;
     }
     .dial {

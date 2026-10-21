@@ -14,6 +14,8 @@ internal static class DiscoveryEfQuery
         bool includeHidden)
     {
         var nodes = db.NodeRows.AsNoTracking();
+        if (request.NodeId is { } nodeId)
+            nodes = nodes.Where(node => node.Id == nodeId);
         if (authoredIds is not null)
         {
             var ids = authoredIds.ToArray();

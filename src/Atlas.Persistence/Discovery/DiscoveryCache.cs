@@ -80,6 +80,7 @@ public sealed class DiscoveryCache : IDisposable
         // Preserve text case/accents here: SQL owns linguistic comparison rules.
         var request = new
         {
+            query.NodeId,
             query.SearchText,
             query.CommunityId,
             query.NodeTypeId,

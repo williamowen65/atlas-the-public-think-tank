@@ -1,24 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/sveltekit';
-import { useArgs } from 'storybook/preview-api';
-import VotingCardExample from './VotingCardExample.svelte';
-import { fixtureOptions } from '../NodeCard/nodeFixtures';
+import LiveNodePreview from '../NodeCard/LiveNodePreview.svelte';
 
 const meta = {
   title: 'Compositions/Node voting preview',
-  component: VotingCardExample,
-  args: { presentation: 'ribbon', voteOutcome: 'accepted', source: 'fixtures', selectedNode: 'question', onSelect: () => {} },
+  component: LiveNodePreview,
+  args: { presentation: 'ribbon' },
   argTypes: {
-    presentation: { control: 'select', options: ['ribbon', 'current'], description: 'Compare the ribbon card with the preserved original using the same data and behavior.' },
-    voteOutcome: { type: 'string', control: 'select', options: ['accepted', 'anonymous', 'failed'], description: 'Fixture cast simulation. Local API mode is always anonymous and resets.' },
-    source: { type: 'string', control: 'select', options: ['fixtures', 'local-api'], description: 'Local API loads real public nodes; all voting stays local.' },
-    selectedNode: { control: 'select', options: fixtureOptions, description: 'Select a fixture node; connected-node clicks update this Control too.' },
-    onSelect: { control: false, table: { disable: true } },
+    presentation: { control: 'select', options: ['ribbon', 'current'], description: 'Compare both card presentations with live Atlas data.' },
   },
-  decorators: [(story, context) => {
-    const [, updateArgs] = useArgs();
-    return story({ args: { ...context.args, onSelect: (selectedNode: string) => updateArgs({ selectedNode }) } });
-  }],
-} satisfies Meta<typeof VotingCardExample>;
+} satisfies Meta<typeof LiveNodePreview>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Playground: Story = {};

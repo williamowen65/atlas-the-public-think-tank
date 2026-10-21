@@ -37,9 +37,20 @@ npm run storybook:api
 
 This starts Atlas.Api with its HTTPS launch profile and Storybook together, with labeled output. Ctrl+C stops both. If either process exits, the other is stopped too. If you already started Atlas.Api in Visual Studio, use `npm run storybook` instead to avoid starting a second API on the same port.
 
-Open http://127.0.0.1:6006, then **Compositions → Node voting preview → Playground**. Set the **source** Control to **local-api**. The page loads public database nodes and their actual averages/counts, with search, paging, a node dropdown and Refresh. Refresh also picks up newly created or edited content. The **selectedNode** Control applies only to the bundled fixtures; use the in-preview selector for database nodes.
+Open http://127.0.0.1:6006, then **Compositions → Node voting preview → Playground**.
+The node-card preview always loads public Atlas API data: search, paging, node selection,
+Refresh and ancestor navigation. There is no fixture source or simulated node-card mode.
+The presentation Control compares the ribbon card with the original card using the same
+live reader. Clicking an ancestor fetches that exact ID through Discovery, even outside
+the current page/search; Back to Discovery restores the search. Archived ancestors can
+be viewed, while hidden or missing nodes produce an unavailable message with Retry.
 
-No login is needed. This phase only reads public Discovery data. Anonymous dial attempts briefly show the attempted selection, then return to neutral (unrated, centered on 5). They never cast a database vote. The standalone dial and fixture card expose a voteOutcome Control to simulate accepted, anonymous or failed submissions. Only the accepted simulation retains a selection; this mode also makes no network write. Anonymous/failure simulations reset after 650ms without another selection change and show feedback. The reusable dial remains caller-controlled: a real voting adapter must commit its value only after success and reset to null when a cast is rejected or unavailable. Standalone VotingDial and fixture stories make no API requests. Discussion and linked-node navigation remain fixture-only; the live card displays the API's summary text without inventing individual links or reaction counts. Discovery descriptions are displayed as plain text, not a complete content-block renderer.
+No login is needed. Anonymous dial attempts briefly show the attempted selection, then
+return to neutral (unrated, centered on 5). They never cast a database vote. The standalone
+VotingDial story retains its isolated accepted/anonymous/failed outcome simulations;
+these make no API requests. Node-card comments and reactions currently display API
+summaries; no discussion is fabricated. Discovery descriptions remain plain text rather
+than a complete content-block renderer.
 
 One-time prerequisites are the .NET SDK used by Atlas.Api, your existing migrated SQL database and shared connection-string secret, and a development HTTPS certificate. Follow [the API setup guide](../../../docs/api/README.md#1-start-the-server) if these are not already configured. The launcher does not migrate, seed or reset your database.
 
@@ -50,7 +61,7 @@ $env:ATLAS_STORYBOOK_API_URL = "https://localhost:7240"
 npm run storybook:api
 ```
 
-The variable changes the proxy destination; configure the API's listening port to match separately. Only loopback HTTP(S) origins are accepted. Storybook's development server proxies anonymous GET requests from `/atlas-preview-api/nodes` to `/api/nodes`; it rejects writes and strips authentication cookies/headers and response cookies. It accepts the local API's development certificate without changing browser/production TLS settings. No CORS changes or login secrets are needed. This proxy is absent from static Storybook builds: use the development command for live data, and fixture mode for static builds. When API loading fails, the preview gives setup guidance and Retry instead of silently substituting fake content.
+The variable changes the proxy destination; configure the API's listening port to match separately. Only loopback HTTP(S) origins are accepted. Storybook's development server proxies anonymous GET requests from `/atlas-preview-api/nodes` to `/api/nodes`; it rejects writes and strips authentication cookies/headers and response cookies. It accepts the local API's development certificate without changing browser/production TLS settings. No CORS changes or login secrets are needed. This proxy is absent from static Storybook builds: use the development command for live data. A static node-card preview also requests the API, so it needs a host that routes the preview endpoint. CI intercepts those requests using Playwright. When API loading fails, the preview gives setup guidance and Retry instead of silently substituting fake content.
 
 The reusable read adapter lives in `src/lib/api/discovery.ts`; the Storybook-only loader owns selection, request cancellation, timeout and loading/error states. Browser CI uses intercepted contract-shaped responses and verifies that requests stay read-only; it does not connect to your SQL Server. A real database smoke check must be done with your local API running. Authenticated previews and durable voting remain a later, explicit mode tied to a selected node.
 
@@ -212,17 +223,21 @@ becomes visible. Scrolling to the left edge loads the next three older ancestors
 Prepending preserves the visible position; a new path resets to the newest item.
 Resizing keeps the newest item in view when already scrolled to that end. Older ancestors remain accessible
 through native horizontal scrolling and keyboard focus. CSS pseudo-elements form the
-arrows, with four alternating colors and a visible focus treatment.
+arrows, with four alternating colors and a visible focus treatment. The native scrollbar
+is hidden while touch, trackpad and keyboard scrolling remain available. The ribbon
+touches the card’s left inner border; header/body spacing stays local to those sections.
+The ribbon presentation puts the node type before the title in the same heading and
+labels communities below the connected-node area.
 
 `Compositions/Node voting preview → Playground` has a **presentation** Control:
 `ribbon` places this component above the title; `current` preserves the original card
-with its text context below the body. Both use the same fixtures/API adapter and vote
+with its text context below the body. Both use the same live API adapter and vote
 feedback. `NodeCard.svelte` selects a concrete component in `components/node-card/`;
 the two candidates currently share `NodeCardLayout.svelte` and its behavior. They can
 acquire different markup as the designs diverge without copying voting logic.
 
 Breadcrumb items accept a title and optional node ID, oldest first. The parent owns
-navigation; fixture ancestor clicks update the selectedNode Control. The shared
+navigation; live ancestor clicks select the exact requested node through Discovery. The shared
 component accepts an asynchronous `loadOlder` callback and `hasMore` flag, prevents
 concurrent loads, stops at the root or repeated ancestors, and offers retry on failure.
 A Load older ancestors button also supports keyboard use and paths too short to scroll.
@@ -231,9 +246,10 @@ The local API adapter consumes Discovery's structured `breadcrumbSegment` (rever
 its nearest-first order) and reads older pages from the existing public
 `GET /api/nodes/{id}/ancestors` endpoint. The development proxy admits only node-list
 and ancestor-segment GETs, strips credentials, and continues to reject writes and
-other routes. No backend changes are needed. Older API responses without a segment
-retain their formatted text summary. API ancestor labels currently remain display-only:
-the live preview still has no node-detail navigation adapter. The standalone breadcrumb
+other routes. Discovery now supports an optional NodeId filter, included in its cache
+key and applied before ranking/paging with all existing visibility rules. Exact-ID
+reads include archived nodes and do not inherit the search text. Older API responses
+without a structured segment retain their formatted text summary. The standalone breadcrumb
 story simulates bounded asynchronous pages, with Depth controlling the entire route.
 
 Legacy references: `legacy/www.thepublicthinktank.com/Views/Shared/_Breadcrumb.cshtml`

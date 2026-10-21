@@ -13,8 +13,9 @@ export interface DiscoveryPage {
 }
 
 /** Anonymous read only. The caller supplies an API base and owns request cancellation. */
-export async function readDiscovery(base: string, page: number, search: string, signal: AbortSignal): Promise<DiscoveryPage> {
+export async function readDiscovery(base: string, page: number, search: string, signal: AbortSignal, nodeId?: string): Promise<DiscoveryPage> {
   const query = new URLSearchParams({ Page: String(page) });
+  if (nodeId) { query.set('NodeId', nodeId); query.set('IncludeArchived', 'true'); }
   if (search.trim()) query.set('SearchText', search.trim());
   const response = await fetch(`${base}/nodes?${query}`, { method: 'GET', credentials: 'omit', signal });
   if (!response.ok) throw new Error(`Atlas API returned HTTP ${response.status}.`);

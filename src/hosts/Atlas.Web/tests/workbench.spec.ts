@@ -77,14 +77,6 @@ test('global theme and density apply across story types', async ({ page }) => {
   }
 });
 
-/** The card composition receives a dial selection without any live API. */
-test('card composition observes voting callbacks', async ({ page }) => {
-  await page.goto(story('compositions-node-voting-preview--playground'));
-  await page.getByRole('spinbutton').focus();
-  await page.keyboard.press('ArrowUp');
-  await expect(page.getByRole('status')).toHaveText('Preview selection: 5 out of 10');
-});
-
 /** Reset restores code-defined typography arguments rather than reloading edited args. */
 test('typography reset restores code defaults', async ({ page }) => {
   await page.goto(story('styles-and-layout-typography--playground&args=fontSize:24;paragraphGap:40'));
@@ -192,42 +184,5 @@ test('wheel lens follows direction and recenters, while compact stays fixed', as
     expect(compact ? reverse === 0 : reverse > 0).toBe(true);
     await expect(dial).toHaveAttribute('aria-valuenow', '5');
     await expect(lens).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
-  }
-});
-
-/** Card callbacks navigate fixtures, preserve per-node votes and expand local content. */
-test('node card preview supports connected nodes and independent ratings', async ({ page }) => {
-  await page.goto(story('compositions-node-voting-preview--playground'));
-  await expect(page.getByRole('heading', { name: 'What ideas could help make the world better?' })).toBeVisible();
-  await page.getByRole('button', { name: 'Read more' }).click();
-  await expect(page.getByRole('button', { name: 'Show less' })).toHaveAttribute('aria-expanded', 'true');
-  await page.getByRole('spinbutton').focus();
-  await page.keyboard.press('End');
-  await expect(page.getByRole('status')).toHaveText('Preview selection: 10 out of 10');
-  await page.getByRole('button', { name: 'Issue Homelessness' }).click();
-  await expect(page.getByRole('heading', { name: 'Homelessness', exact: true })).toBeVisible();
-  await expect(page.getByRole('status')).toHaveText('No rating selected');
-  await expect(page.getByRole('button', { name: 'Read more' })).toHaveAttribute('aria-expanded', 'false');
-  await page.getByRole('button', { name: '1 comment' }).click();
-  await expect(page.getByRole('region', { name: 'Discussion preview' })).toContainText('housing insecurity');
-  await page.getByRole('button', { name: 'Question What ideas could help make the world better?' }).click();
-  await expect(page.getByRole('status')).toHaveText('Preview selection: 10 out of 10');
-  await page.getByRole('button', { name: 'Idea Learn from solutions that already work' }).click();
-  await expect(page.locator('.vote-count')).toHaveAccessibleName('0 votes');
-  await page.getByRole('button', { name: '0 comments' }).click();
-  await expect(page.getByRole('region', { name: 'Discussion preview' })).toContainText('No comments yet.');
-});
-
-/** Fixture args also work in dev; card and floating dial fit mobile in both themes. */
-test('node card selection renders in development and stays accessible on mobile', async ({ page }) => {
-  await page.goto('http://127.0.0.1:6007/iframe.html?id=compositions-node-voting-preview--playground&viewMode=story&args=selectedNode:idea');
-  await expect(page.getByRole('heading', { name: 'Learn from solutions that already work' })).toBeVisible();
-  for (const theme of ['light', 'dark']) {
-    await page.setViewportSize({ width: 320, height: 900 });
-    await page.goto(story('compositions-node-voting-preview--playground', `theme:${theme}`));
-    await expect(page.getByRole('spinbutton')).toBeVisible();
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
-    const results = await new AxeBuilder({ page }).include('#storybook-root').analyze();
-    expect(results.violations).toEqual([]);
   }
 });
