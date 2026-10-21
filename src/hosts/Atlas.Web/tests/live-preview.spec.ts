@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
-const preview = 'http://127.0.0.1:6006/iframe.html?id=compositions-atlas-node--playground&viewMode=story';
+const preview = 'http://127.0.0.1:6006/iframe.html?id=compositions-atlas-node--playground&viewMode=story&args=presentation:ribbon-responsive';
 const item = (id: string, title: string, hidden = false) => ({
   nodeId: id, rank: 1, rankingScore: 1, voteCount: 12, averageVote: 7.5,
   card: { nodeId: id, title, typeName: 'Question', authorName: 'API author', status: 'Active', createdAt: '2026-09-28T15:20:00Z', description: 'Full content that belongs on the detail page.', shortDescription: 'Content from the API response.', breadcrumb: 'Root question', subNodes: 'Ideas: 2', reactions: 'Useful: 3', communities: 'Local community', commentCount: 4, isHidden: hidden },
@@ -197,7 +197,7 @@ test('live-only card navigates an off-page ancestor by ID and keeps both present
   expect(titleInset.top).toBeCloseTo(titleInset.padding, 0);
   await page.getByRole('button', { name: 'Back to Discovery' }).click();
   await expect(page.getByRole('heading', { name: 'Question: Current child', exact: true })).toBeVisible();
-  await page.goto(`${preview}&args=presentation:context-below`);
+  await page.goto(`${preview.replace('&args=presentation:ribbon-responsive', '')}&args=presentation:context-below`);
   await expect(page.locator('article')).toHaveAttribute('data-presentation', 'context-below');
   await expect(page.getByRole('heading', { name: 'Current child', exact: true })).toBeVisible();
   await expect(page.locator('.description .read-more button')).toBeDisabled();
@@ -276,10 +276,10 @@ test('standalone card versions preserve mobile layout and offer a raised desktop
     return route.fulfill({ json: { items: [{ ...entry, card: { ...entry.card, shortDescription: 'A concise introduction for comparing card arrangements.' } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
   });
   await page.setViewportSize({ width: 1024, height: 1000 });
-  await page.goto(`${preview}&args=presentation:ribbon`);
+  await page.goto(`${preview.replace('&args=presentation:ribbon-responsive', '')}&args=presentation:ribbon`);
   await expect(page.locator('article')).toHaveAttribute('data-presentation', 'ribbon');
   const ribbonHeight = await page.locator('article').evaluate(el => el.getBoundingClientRect().height);
-  await page.goto(`${preview}&args=presentation:ribbon-responsive`);
+  await page.goto(`${preview.replace('&args=presentation:ribbon-responsive', '')}&args=presentation:ribbon-responsive`);
   await expect(page.locator('article')).toHaveAttribute('data-presentation', 'ribbon-responsive');
   const desktop = await page.locator('article').evaluate(el => ({
     header: el.querySelector('header')!.getBoundingClientRect().toJSON(),
@@ -332,7 +332,53 @@ test('standalone card versions preserve mobile layout and offer a raised desktop
   await page.keyboard.press('End');
   await expect(page.getByRole('spinbutton')).toHaveAttribute('aria-valuenow', '10');
   await expect(page.getByRole('status')).toHaveText('No local rating selected');
-  await page.goto(`${preview}&args=presentation:context-below`);
+  await page.goto(`${preview.replace('&args=presentation:ribbon-responsive', '')}&args=presentation:context-below`);
   await expect(page.locator('article')).toHaveAttribute('data-presentation', 'context-below');
   await expect(page.getByRole('heading', { name: 'Layout comparison', exact: true })).toBeVisible();
+});
+
+test('split details version groups metadata above a centered bottom action', async ({ page }) => {
+  let empty = false;
+  await page.route('**/atlas-preview-api/**', route => {
+    if (route.request().url().endsWith('/reactions')) return route.fulfill({ json: empty ? [] : [
+      { associationId: 'one', text: 'Useful', emoji: '💡', totalVotes: 3 },
+      { associationId: 'two', text: 'Worth exploring together', emoji: '🔎', totalVotes: 2 },
+    ] });
+    return route.fulfill({ json: { items: [item('split-node', 'Split layout')], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
+  });
+  // Initial story selection exposes the experiment; earlier layouts stay selectable.
+  await page.goto(preview.replace('&args=presentation:ribbon-responsive', ''));
+  const card = page.locator('article');
+  await expect(card).toHaveAttribute('data-presentation', 'ribbon-split');
+  await expect(card.locator('header .byline')).toContainText('Community: Local community');
+  await expect(card.locator('.card-details .communities')).toHaveCount(0);
+  await expect(card.locator('.reaction-pill')).toHaveCount(2);
+  for (const width of [1024, 640, 320]) {
+    await page.setViewportSize({ width, height: 1000 });
+    const geometry = await card.evaluate(el => {
+      const rect = (selector: string) => el.querySelector(selector)!.getBoundingClientRect();
+      const outer = el.getBoundingClientRect();
+      const action = rect('.read-more button');
+      const reactions = rect('.reactions');
+      const navigation = rect('.navigation-details');
+      const details = rect('.card-details');
+      return { offset: (action.left + action.right - outer.left - outer.right) / 2,
+        actionTop: action.top, detailsBottom: details.bottom, dialBottom: rect('.dial').bottom,
+        reactionRight: reactions.right, navigationLeft: navigation.left,
+        reactionWidth: reactions.width, navigationWidth: navigation.width,
+        reactionTop: reactions.top, navigationTop: navigation.top };
+    });
+    expect(Math.abs(geometry.offset)).toBeLessThan(1);
+    expect(geometry.actionTop).toBeGreaterThanOrEqual(geometry.detailsBottom);
+    expect(geometry.actionTop).toBeGreaterThanOrEqual(geometry.dialBottom);
+    expect(geometry.reactionRight).toBeLessThan(geometry.navigationLeft);
+    expect(geometry.reactionWidth).toBeCloseTo(geometry.navigationWidth, 0);
+    expect(geometry.reactionTop).toBeCloseTo(geometry.navigationTop, 0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+  }
+  await expect(card.locator('.read-more button')).toHaveClass(/atlas-action/);
+  empty = true;
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+  await expect(card.locator('.reactions')).toHaveCount(0);
+  await expect(card.locator('.read-more button')).toBeVisible();
 });

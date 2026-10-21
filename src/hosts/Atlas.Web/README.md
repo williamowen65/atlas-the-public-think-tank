@@ -274,3 +274,7 @@ Ribbon card spacing uses a 1.25rem (20px) side inset, also used between breadcru
 ### Concise node introductions
 
 Cards use Discovery's `shortDescription` (Graph-owned, at most 280 UTF-16 code units), never a content-block excerpt. They display it in full without line clamping, with the existing ActionButton centered against the full card on a new line directly after the text, inside the description flow. A shared resize action compensates for the dial column without moving the button below it. `onReadMore(nodeId)` is caller-owned navigation to the future detail page; when absent, the action is disabled and never expands the card. Storybook currently has no detail-page destination. Full content blocks remain separate API resources. Update the API/database using [the pending short-description migration instructions](../../Atlas.Persistence/README.md#node-short-description-pending-migration) and reseed local demo data to preview the authored introductions; old rows default to an empty introduction.
+
+### Split details card experiment
+
+Select `ribbon-split` in the Atlas node story's presentation Control (the initial Storybook selection). This standalone version keeps the responsive dial/header, moves community into the author/date byline, splits reactions and comments/node-type counts into two wrapping halves below the description, and places the shared Read more ActionButton in a full-width centered bottom row. With no reactions their container is omitted. Existing versions remain selectable, and NodeCard's application default remains `ribbon`.

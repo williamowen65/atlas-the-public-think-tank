@@ -461,6 +461,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "components", "components", 
 		src\hosts\Atlas.Web\src\lib\components\Breadcrumb.svelte = src\hosts\Atlas.Web\src\lib\components\Breadcrumb.svelte
 		src\hosts\Atlas.Web\src\lib\components\node-card-versions\types.ts = src\hosts\Atlas.Web\src\lib\components\node-card-versions\types.ts
 		src\hosts\Atlas.Web\src\lib\components\node-card-versions\NodeCardRibbonResponsive.svelte = src\hosts\Atlas.Web\src\lib\components\node-card-versions\NodeCardRibbonResponsive.svelte
+		src\hosts\Atlas.Web\src\lib\components\node-card-versions\NodeCardRibbonSplit.svelte = src\hosts\Atlas.Web\src\lib\components\node-card-versions\NodeCardRibbonSplit.svelte
 		src\hosts\Atlas.Web\src\lib\components\node-card-versions\NodeCardContextBelow.svelte = src\hosts\Atlas.Web\src\lib\components\node-card-versions\NodeCardContextBelow.svelte
 		src\hosts\Atlas.Web\src\lib\components\node-card-versions\NodeCardRibbon.svelte = src\hosts\Atlas.Web\src\lib\components\node-card-versions\NodeCardRibbon.svelte
 		src\hosts\Atlas.Web\storybook\Breadcrumb\Breadcrumb.stories.ts = src\hosts\Atlas.Web\storybook\Breadcrumb\Breadcrumb.stories.ts
