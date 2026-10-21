@@ -456,6 +456,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "components", "components", 
 	ProjectSection(SolutionItems) = preProject
 		src\hosts\Atlas.Web\src\lib\components\ActionButton.svelte = src\hosts\Atlas.Web\src\lib\components\ActionButton.svelte
 		src\hosts\Atlas.Web\src\lib\components\VotingDial.svelte = src\hosts\Atlas.Web\src\lib\components\VotingDial.svelte
+		src\hosts\Atlas.Web\src\lib\components\NodeCard.svelte = src\hosts\Atlas.Web\src\lib\components\NodeCard.svelte
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "routes", "routes", "{08CDBE3B-B834-5FB8-86D4-56DEB43DD35C}"
@@ -483,6 +484,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Compositions", "Compositions", "{5B930464-C34F-509B-97C3-51A9C7446A70}"
 	ProjectSection(SolutionItems) = preProject
 		src\hosts\Atlas.Web\storybook\Compositions\VotingCard.stories.ts = src\hosts\Atlas.Web\storybook\Compositions\VotingCard.stories.ts
+		src\hosts\Atlas.Web\storybook\NodeCard\nodeFixtures.ts = src\hosts\Atlas.Web\storybook\NodeCard\nodeFixtures.ts
 		src\hosts\Atlas.Web\storybook\Compositions\VotingCardExample.svelte = src\hosts\Atlas.Web\storybook\Compositions\VotingCardExample.svelte
 		src\hosts\Atlas.Web\storybook\Compositions\VotingComparison.stories.ts = src\hosts\Atlas.Web\storybook\Compositions\VotingComparison.stories.ts
 		src\hosts\Atlas.Web\storybook\Compositions\VotingComparison.svelte = src\hosts\Atlas.Web\storybook\Compositions\VotingComparison.svelte

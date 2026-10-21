@@ -1,32 +1,43 @@
 <script lang="ts">
-  import VotingDial from '../../src/lib/components/VotingDial.svelte';
+  import NodeCard from '../../src/lib/components/NodeCard.svelte';
+  import { nodeFixtures } from '../NodeCard/nodeFixtures';
 
-  let { compact = false }: { compact?: boolean } = $props();
-  let value = $state<number | null>(null);
+  let { selectedNode = 'question', onSelect }: { selectedNode?: string; onSelect?: (key: string) => void } = $props();
+  let ratings = $state<Record<string, number>>({});
+  let discussion = $state<string | null>(null);
+  const fixture = $derived(nodeFixtures[selectedNode] ?? nodeFixtures.question);
+  const value = $derived(ratings[fixture.node.id] ?? null);
+  function navigate(id: string) {
+    const match = Object.entries(nodeFixtures).find(([, item]) => item.node.id === id);
+    if (match) onSelect?.(match[0]);
+  }
 </script>
 
-<article class="atlas-panel card-preview">
-  <div>
-    <p class="fixture-note">Example node card composition</p>
-    <h2>Community-owned internet networks</h2>
-    <p>How might communities improve access to reliable information?</p>
-    <p role="status">{value === null ? 'No rating selected' : `Preview selection: ${value} out of 10`}</p>
-    <p class="fixture-note">Fixture content. Selection does not submit a vote.</p>
-  </div>
-  <VotingDial label="Node importance" {value} average={7.4} totalVotes={21} {compact} onChange={(next) => value = next} />
-</article>
+<div class="preview">
+  <p class="fixture-note">Example nodes · local interaction preview. Ratings, discussion and totals are fixtures; nothing is saved.</p>
+  <NodeCard node={fixture.node} average={fixture.average} totalVotes={fixture.totalVotes} {value}
+    onVote={(next) => ratings[fixture.node.id] = next} onNavigate={navigate} onComments={(id) => discussion = discussion === id ? null : id} />
+  <p role="status">{value === null ? 'No rating selected' : `Preview selection: ${value} out of 10`}</p>
+  {#if discussion === fixture.node.id}
+    <section class="discussion" aria-label="Discussion preview">
+      <h3>Discussion</h3>
+      {#each fixture.comments as comment}<p>{comment}</p>{:else}<p>No comments yet.</p>{/each}
+    </section>
+  {/if}
+</div>
 
 <style lang="scss">
-  .card-preview {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: var(--atlas-space);
-    max-width: 55rem;
+  .preview {
+    max-width: 48rem;
   }
 
-  .card-preview > div {
-    flex: 1 1 16rem;
-    min-width: 0;
+  .discussion {
+    padding: var(--atlas-space);
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
+    background: var(--atlas-surface);
+    p {
+      line-height: 1.6;
+    }
   }
 </style>

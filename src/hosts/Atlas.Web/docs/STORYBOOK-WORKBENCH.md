@@ -52,3 +52,14 @@ Review keyboard and screen-reader usability, pointer target sizes, narrow layout
 Current browser coverage exercises wheel, mouse dragging, native touch scrolling/snap and keyboard selection in standard/compact layouts, count placement and removed labels, rated/unrated color changes, zero versus unrated, disabled controls, multiple instances, shared theme/density application, stylesheet duplication and basic accessibility. Existing ActionButton and actual SvelteKit route tests remain.
 
 Next component slices can add header states, a complete NodeCard and a seeded feed/list composition. These are directions, not implemented production pages. Redux (PTT-148), live API/session integration (PTT-147), durable voting, production theming and final CSS-framework selection remain separate.
+
+
+## Node card preview
+
+`src/lib/components/NodeCard.svelte` is a reusable presentation component with its own scoped SCSS. It carries forward the legacy card's left-floating dial and wrapping description, author/date, contextual path, expand/collapse and footer. It presents current Atlas node types, communities, requested child types, reactions, connected nodes and comment counts rather than assuming every node is an Issue or Solution. Only the normal dial is used; compact is unchanged.
+
+Open **Compositions / Node voting preview / Playground**, then choose **selectedNode** in Controls: question, issue or idea. Connected-node buttons update the same argument and its Control. Read more expands the description. Each fixture remembers its own local rating until the story remounts; selecting a new node resets its expanded view. Comments opens an illustrative local discussion, including an empty state. No votes or comments are submitted, and average/count fixtures stay unchanged.
+
+Fixture IDs, titles and first description paragraphs follow `DemoData.SeedNode` / `SeedBlock`; additional text, author display names, associations, discussion and aggregates are illustrative. They are not a database snapshot. The legacy reference is `_issue-card.cshtml`; the current Discovery projection is `Atlas.Discovery/DiscoveryCard.cs`.
+
+Storybook can run real event handlers and controlled state, as demonstrated here. A live read mode could later call `GET /api/nodes` and adapt its Discovery projection into `NodeCardData`, then separately obtain personalized votes and aggregates. The API's current descriptions/communities/reactions include display strings; this structured card view model is intentionally not a claim that the HTTP response already has this shape. Keep data loading, authentication/CSRF and writes in an application/container adapter, with fixtures or mocked requests for deterministic component review. This slice does not implement that adapter, a full block renderer, moderation placeholders, posting, share/follow or durable discussion.
