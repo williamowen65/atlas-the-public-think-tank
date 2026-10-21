@@ -14,6 +14,9 @@ internal static class DiscoveryEfQuery
         bool includeHidden)
     {
         var nodes = db.NodeRows.AsNoTracking();
+        if (request.ParentNodeId is { } parentId)
+            nodes = nodes.Where(node => node.Parents.Any(link => link.ParentNodeId == parentId)
+                && !db.ModerationCaseRows.Any(report => report.NodeId == parentId && report.Status == 2 && report.VisibilityRestoredAt == null));
         if (request.NodeId is { } nodeId)
             nodes = nodes.Where(node => node.Id == nodeId);
         if (authoredIds is not null)

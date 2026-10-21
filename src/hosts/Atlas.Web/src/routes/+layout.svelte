@@ -7,7 +7,7 @@
 </script>
 <a class="skip-link" href="#main-content">Skip to content</a>
 <div class="app-shell">
-  <AtlasHeader active={page.url.pathname === '/about' ? 'about' : page.url.pathname === '/components' ? 'components' : 'discover'} />
+  <AtlasHeader active={page.url.pathname === '/new' ? 'create' : page.url.pathname === '/about' ? 'about' : page.url.pathname === '/components' ? 'components' : 'discover'} />
   <main id="main-content">{@render children()}</main>
   <AtlasFooter />
 </div>

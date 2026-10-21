@@ -5,9 +5,9 @@
 <script lang="ts">
   import NodeCard, { type NodeCardPresentation } from './NodeCard.svelte';
   import type { LoadOlderAncestors } from './Breadcrumb.svelte';
-  let { items, loading = false, hasMore = false, error = '', presentation = 'ribbon-corner', onLoadMore, onNavigate, loadOlderAncestors }: {
+  let { items, loading = false, hasMore = false, error = '', presentation = 'ribbon-corner', onLoadMore, onNavigate, onReadMore, loadOlderAncestors }: {
     items: FeedItem[]; loading?: boolean; hasMore?: boolean; error?: string;
-    presentation?: NodeCardPresentation; onLoadMore?: () => void; onNavigate?: (id: string) => void; loadOlderAncestors?: LoadOlderAncestors;
+    presentation?: NodeCardPresentation; onLoadMore?: () => void; onNavigate?: (id: string) => void; onReadMore?: (id: string) => void; loadOlderAncestors?: LoadOlderAncestors;
   } = $props();
   let tail: HTMLDivElement;
   $effect(() => {
@@ -23,7 +23,7 @@
 <section class="node-feed" aria-label="Node feed" aria-busy={loading}>
   <ul aria-label="Nodes">
     {#each items as item (item.node.id)}
-      <li><NodeCard node={item.node} {presentation} average={item.average} totalVotes={item.totalVotes} {onNavigate} {loadOlderAncestors} hasMoreAncestors={item.hasMoreAncestors ?? false} />
+      <li><NodeCard node={item.node} {presentation} average={item.average} totalVotes={item.totalVotes} {onNavigate} {onReadMore} {loadOlderAncestors} hasMoreAncestors={item.hasMoreAncestors ?? false} />
         {#if item.reactionError}<p class="note">Reaction totals are unavailable for this node.</p>{/if}
       </li>
     {/each}

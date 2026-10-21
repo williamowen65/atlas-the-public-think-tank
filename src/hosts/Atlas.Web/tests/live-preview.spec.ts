@@ -176,7 +176,7 @@ test('live-only card navigates an off-page ancestor by ID and keeps both present
   await expect(page.locator('article h2')).toHaveText('Question: Current child');
   await expect(page.locator('article header')).not.toContainText('Local community');
   await expect(page.getByRole('group', { name: 'Communities', exact: true })).toHaveText('Community: Local community');
-  await expect(page.getByRole('button', { name: 'Read more' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Read more' })).toBeEnabled();
   await expect(page.locator('.description')).toContainText('Content from the API response.');
   await expect(page.locator('.description')).not.toContainText('Actual API description.');
   await expect(page.locator('.description')).toHaveCSS('max-height', 'none');
@@ -188,7 +188,7 @@ test('live-only card navigates an off-page ancestor by ID and keeps both present
   expect(requested.at(-1)?.searchParams.get('NodeId')).toBe(ancestor);
   expect(requested.at(-1)?.searchParams.get('SearchText')).toBeNull();
   expect(requested.at(-1)?.searchParams.get('IncludeArchived')).toBe('true');
-  await expect(page.getByRole('button', { name: 'Read more' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Read more' })).toBeEnabled();
   await expect(nav).toHaveCount(0);
   const titleInset = await page.locator('article').evaluate(el => ({
     top: el.querySelector('h2')!.getBoundingClientRect().top - el.getBoundingClientRect().top - el.clientTop,
@@ -200,7 +200,7 @@ test('live-only card navigates an off-page ancestor by ID and keeps both present
   await page.goto(`${preview.replace('&args=presentation:ribbon-responsive', '')}&args=presentation:context-below`);
   await expect(page.locator('article')).toHaveAttribute('data-presentation', 'context-below');
   await expect(page.getByRole('heading', { name: 'Current child', exact: true })).toBeVisible();
-  await expect(page.locator('.description .read-more button')).toBeDisabled();
+  await expect(page.locator('.description .read-more button')).toBeEnabled();
 });
 
 test('unavailable ancestor shows an error and can return to Discovery', async ({ page }) => {

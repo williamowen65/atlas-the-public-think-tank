@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { openNodeStory } from '../shared/navigation';
   import { createVoteFeedback } from '../shared/voteFeedback';
   import { onMount } from 'svelte';
   import type { NodeCardPresentation } from '../../src/lib/components/NodeCard.svelte';
@@ -117,7 +118,7 @@
         </select>
       </label>
       <NodeCard hasMoreAncestors={selected.hasMoreAncestors} {loadOlderAncestors} {presentation} node={{ ...selected.node, reactions: reactions ?? [], reactionSummary: undefined }} average={selected.average} totalVotes={selected.totalVotes}
-        value={ratings[selected.node.id] ?? null} onVote={choose} onNavigate={navigate} />
+        value={ratings[selected.node.id] ?? null} onVote={choose} onNavigate={navigate} onReadMore={openNodeStory} />
       <p role="status">{ratings[selected.node.id] === undefined ? 'No local rating selected' : `Local preview selection: ${ratings[selected.node.id]} out of 10. Not submitted.`}</p>
       {#if reactionError}<p role="note">{reactionError}</p>{/if}
       {#if notice}<p role="note">{notice}</p>{/if}

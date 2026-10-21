@@ -1,10 +1,11 @@
 <script lang="ts">
-  let { active = 'discover' }: { active?: 'discover' | 'about' | 'components' } = $props();
+  let { active = 'discover' }: { active?: 'discover' | 'about' | 'components' | 'create' } = $props();
 </script>
 <header class="atlas-header" id="page-top">
   <a class="brand" href="/" aria-label="Atlas home"><strong>Atlas</strong><span>The Public Think Tank</span></a>
   <nav aria-label="Main navigation">
     <a href="/" aria-current={active === 'discover' ? 'page' : undefined}>Discover</a>
+    <a href="/new" aria-current={active === 'create' ? 'page' : undefined}>Create node</a>
     <a href="/about" aria-current={active === 'about' ? 'page' : undefined}>About this foundation</a>
     <a href="/components" aria-current={active === 'components' ? 'page' : undefined}>Component example</a>
   </nav>

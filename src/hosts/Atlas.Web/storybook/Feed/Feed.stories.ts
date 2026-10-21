@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/sveltekit';
-import LiveNodeFeed from '../../src/lib/components/LiveNodeFeed.svelte';
+import LiveNodeFeed from './FeedExample.svelte';
 const meta = {
   title: 'Compositions/Feed', component: LiveNodeFeed,
   args: { presentation: 'ribbon-corner' },
