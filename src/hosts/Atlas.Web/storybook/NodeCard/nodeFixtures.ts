@@ -17,14 +17,14 @@ export const nodeFixtures: Record<string, { node: NodeCardData; average: number 
   issue: {
     node: { ...defaults, id: issue, title: 'Homelessness', typeName: 'Issue', authorName: 'Demo participant 02',
       description: "Homelessness affects people's safety, health, and ability to build a stable life. Listening to people affected and understanding the causes can help communities address the issue in ways that meet people's needs.\n\nHousing, health care, employment, and support networks intersect here. A useful next step is to understand how these factors differ across communities and what people with lived experience identify as the most urgent needs.\n\nConnect evidence and proposed responses so readers can follow the reasoning behind an idea, consider its limits, and see what remains uncertain.",
-      communities: ['Community wellbeing'], breadcrumb: ['What ideas could help make the world better?'], requestedTypes: ['Questions', 'Evidence', 'Ideas', 'Solutions'], commentCount: 1,
+      communities: ['Community wellbeing'], breadcrumb: [{ id: question, title: 'What ideas could help make the world better?' }], requestedTypes: ['Questions', 'Evidence', 'Ideas', 'Solutions'], commentCount: 1,
       reactions: [{ label: 'Important context', count: 8 }], related: [{ id: idea, title: 'Learn from solutions that already work', typeName: 'Idea' }, { id: question, title: 'What ideas could help make the world better?', typeName: 'Question' }] },
     average: 8.1, totalVotes: 34, comments: ['It would help to hear directly from people who have experienced housing insecurity.'],
   },
   idea: {
     node: { ...defaults, id: idea, title: 'Learn from solutions that already work', typeName: 'Idea', authorName: 'Demo participant 04',
       description: 'People are already finding effective ways to address difficult problems. Studying what worked, for whom, and under what conditions could help others adapt promising approaches without assuming that one solution fits everywhere.\n\nStart with a clear account of the original context. What resources were required? Who participated? What changed, and how was that change measured?\n\nSharing both successes and limitations helps another community decide what to adapt. Evidence and thoughtful questions can turn an inspiring example into something others can evaluate and build on.',
-      communities: ['The Public Think Tank'], breadcrumb: ['What ideas could help make the world better?'], requestedTypes: ['Evidence', 'Questions'], commentCount: 0,
+      communities: ['The Public Think Tank'], breadcrumb: [{ id: question, title: 'What ideas could help make the world better?' }], requestedTypes: ['Evidence', 'Questions'], commentCount: 0,
       reactions: [], related: [{ id: question, title: 'What ideas could help make the world better?', typeName: 'Question' }] },
     average: null, totalVotes: 0, comments: [],
   },

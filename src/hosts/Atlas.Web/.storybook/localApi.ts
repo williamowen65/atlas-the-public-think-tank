@@ -12,7 +12,7 @@ export const anonymousPreview: Plugin = {
         response.end('This preview only supports anonymous reads.');
         return;
       }
-      if (!/^\/atlas-preview-api\/nodes(?:\?|$)/.test(request.url)) {
+      if (!/^\/atlas-preview-api\/nodes(?:\?|$)/.test(request.url) && !/^\/atlas-preview-api\/nodes\/[0-9a-f-]{36}\/ancestors(?:\?|$)/i.test(request.url)) {
         response.statusCode = 404;
         response.end('Only public node discovery is available in this preview.');
         return;

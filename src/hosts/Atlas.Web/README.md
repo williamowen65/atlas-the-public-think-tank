@@ -202,3 +202,41 @@ The earlier HTML-renderer foundation verified that a deliberately incorrect asse
 - https://svelte.dev/docs/kit/routing
 - https://svelte.dev/docs/kit/single-page-apps
 - https://svelte.dev/docs/svelte/$state
+
+### Breadcrumb and node card presentations
+
+`Components/Breadcrumb → Playground` isolates the legacy-inspired arrow ribbon. Use
+Depth to explore empty, short and overflowing paths. Items run from oldest to newest;
+the rightmost item is the newest ancestor. The ribbon scrolls to the right before it
+becomes visible. Scrolling to the left edge loads the next three older ancestors.
+Prepending preserves the visible position; a new path resets to the newest item.
+Resizing keeps the newest item in view when already scrolled to that end. Older ancestors remain accessible
+through native horizontal scrolling and keyboard focus. CSS pseudo-elements form the
+arrows, with four alternating colors and a visible focus treatment.
+
+`Compositions/Node voting preview → Playground` has a **presentation** Control:
+`ribbon` places this component above the title; `current` preserves the original card
+with its text context below the body. Both use the same fixtures/API adapter and vote
+feedback. `NodeCard.svelte` selects a concrete component in `components/node-card/`;
+the two candidates currently share `NodeCardLayout.svelte` and its behavior. They can
+acquire different markup as the designs diverge without copying voting logic.
+
+Breadcrumb items accept a title and optional node ID, oldest first. The parent owns
+navigation; fixture ancestor clicks update the selectedNode Control. The shared
+component accepts an asynchronous `loadOlder` callback and `hasMore` flag, prevents
+concurrent loads, stops at the root or repeated ancestors, and offers retry on failure.
+A Load older ancestors button also supports keyboard use and paths too short to scroll.
+
+The local API adapter consumes Discovery's structured `breadcrumbSegment` (reversing
+its nearest-first order) and reads older pages from the existing public
+`GET /api/nodes/{id}/ancestors` endpoint. The development proxy admits only node-list
+and ancestor-segment GETs, strips credentials, and continues to reject writes and
+other routes. No backend changes are needed. Older API responses without a segment
+retain their formatted text summary. API ancestor labels currently remain display-only:
+the live preview still has no node-detail navigation adapter. The standalone breadcrumb
+story simulates bounded asynchronous pages, with Depth controlling the entire route.
+
+Legacy references: `legacy/www.thepublicthinktank.com/Views/Shared/_Breadcrumb.cshtml`
+and `wwwroot/css/breadcrumb.css`. The new component handles updates and resizes rather
+than relying only on a document-load event. Browser coverage checks right alignment,
+scrolling/focus, mobile containment, navigation, accessibility and the original candidate.

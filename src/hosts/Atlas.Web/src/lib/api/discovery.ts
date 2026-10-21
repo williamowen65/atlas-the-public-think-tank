@@ -1,7 +1,9 @@
+import type { BreadcrumbPage } from '../components/Breadcrumb.svelte';
 import type { NodeCardData } from '../components/NodeCard.svelte';
 
 interface DiscoveryCard {
   nodeId: string; title: string; typeName: string; authorName: string; status: string;
+  breadcrumbSegment?: { items: { nodeId: string; label: string }[]; continuationNodeId: string | null; hasAlternativeRoutes: boolean; cycleDetected: boolean };
   createdAt: string; description: string; breadcrumb: string; subNodes: string;
   reactions: string; communities: string; commentCount: number; isHidden: boolean;
 }
@@ -31,7 +33,16 @@ export function discoveryCard(item: DiscoveryItem): NodeCardData | null {
     id: item.nodeId, title: card.title, typeName: card.typeName, authorName: card.authorName,
     status: card.status === 'Archived' ? 'Archived' : 'Active', createdAt: card.createdAt,
     description: card.description, communities: card.communities ? [card.communities] : [],
-    breadcrumb: card.breadcrumb ? [card.breadcrumb] : [], related: [], requestedTypes: [], reactions: [],
+    breadcrumb: card.breadcrumbSegment ? [...card.breadcrumbSegment.items].reverse().map(item => ({ id: item.nodeId, title: item.label })) : card.breadcrumb ? [{ title: card.breadcrumb }] : [], related: [], requestedTypes: [], reactions: [],
     reactionSummary: card.reactions, subNodeSummary: card.subNodes, commentCount: card.commentCount,
   };
+}
+
+/** The existing endpoint returns nearest-first; presentation pages are oldest-first. */
+export async function readOlderAncestors(id: string, signal: AbortSignal): Promise<BreadcrumbPage> {
+  const response = await fetch(`/atlas-preview-api/nodes/${encodeURIComponent(id)}/ancestors`, { credentials: 'omit', signal });
+  if (!response.ok) throw new Error(`Could not load older ancestors (HTTP ${response.status}).`);
+  const page = await response.json() as { items: { id: string; title: string }[]; hasMore: boolean };
+  if (!Array.isArray(page.items) || typeof page.hasMore !== 'boolean') throw new Error('Unexpected ancestor response.');
+  return { items: [...page.items].reverse(), hasMore: page.hasMore };
 }

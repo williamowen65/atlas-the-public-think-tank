@@ -1,9 +1,15 @@
 <script lang="ts">
   import { createVoteFeedback } from '../shared/voteFeedback';
   import { onMount } from 'svelte';
+  import type { NodeCardPresentation } from '../../src/lib/components/NodeCard.svelte';
   import NodeCard from '../../src/lib/components/NodeCard.svelte';
-  import { readDiscovery, discoveryCard, type DiscoveryPage } from '../../src/lib/api/discovery';
+  import { readDiscovery, readOlderAncestors, discoveryCard, type DiscoveryPage } from '../../src/lib/api/discovery';
 
+  let { presentation = 'ribbon' }: { presentation?: NodeCardPresentation } = $props();
+  async function loadOlderAncestors(id?: string) {
+    if (!id) return { items: [], hasMore: false };
+    return readOlderAncestors(id, AbortSignal.timeout(10000));
+  }
   let result = $state<DiscoveryPage | null>(null);
   let loading = $state(false);
   let error = $state('');
@@ -23,7 +29,7 @@
   let request: AbortController | null = null;
   const items = $derived((result?.items ?? []).flatMap(item => {
     const node = discoveryCard(item);
-    return node ? [{ node, average: item.averageVote, totalVotes: item.voteCount }] : [];
+    return node ? [{ node, hasMoreAncestors: !!item.card?.breadcrumbSegment?.continuationNodeId, average: item.averageVote, totalVotes: item.voteCount }] : [];
   }));
   const selected = $derived(items.find(item => item.node.id === selectedId) ?? items[0]);
 
@@ -84,7 +90,7 @@
           {#each items as item}<option value={item.node.id}>{item.node.typeName}: {item.node.title}</option>{/each}
         </select>
       </label>
-      <NodeCard node={selected.node} average={selected.average} totalVotes={selected.totalVotes}
+      <NodeCard hasMoreAncestors={selected.hasMoreAncestors} {loadOlderAncestors} {presentation} node={selected.node} average={selected.average} totalVotes={selected.totalVotes}
         value={ratings[selected.node.id] ?? null} onVote={choose} />
       <p role="status">{ratings[selected.node.id] === undefined ? 'No local rating selected' : `Local preview selection: ${ratings[selected.node.id]} out of 10. Not submitted.`}</p>
       {#if notice}<p role="note">{notice}</p>{/if}

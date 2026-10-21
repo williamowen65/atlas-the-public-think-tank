@@ -6,8 +6,9 @@ import { fixtureOptions } from '../NodeCard/nodeFixtures';
 const meta = {
   title: 'Compositions/Node voting preview',
   component: VotingCardExample,
-  args: { voteOutcome: 'accepted', source: 'fixtures', selectedNode: 'question', onSelect: () => {} },
+  args: { presentation: 'ribbon', voteOutcome: 'accepted', source: 'fixtures', selectedNode: 'question', onSelect: () => {} },
   argTypes: {
+    presentation: { control: 'select', options: ['ribbon', 'current'], description: 'Compare the ribbon card with the preserved original using the same data and behavior.' },
     voteOutcome: { type: 'string', control: 'select', options: ['accepted', 'anonymous', 'failed'], description: 'Fixture cast simulation. Local API mode is always anonymous and resets.' },
     source: { type: 'string', control: 'select', options: ['fixtures', 'local-api'], description: 'Local API loads real public nodes; all voting stays local.' },
     selectedNode: { control: 'select', options: fixtureOptions, description: 'Select a fixture node; connected-node clicks update this Control too.' },

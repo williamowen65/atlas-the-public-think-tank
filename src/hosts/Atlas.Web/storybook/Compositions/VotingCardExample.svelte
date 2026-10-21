@@ -1,10 +1,11 @@
 <script lang="ts">
   import { createVoteFeedback, type VoteOutcome } from '../shared/voteFeedback';
   import LiveNodePreview from '../NodeCard/LiveNodePreview.svelte';
+  import type { NodeCardPresentation } from '../../src/lib/components/NodeCard.svelte';
   import NodeCard from '../../src/lib/components/NodeCard.svelte';
   import { nodeFixtures } from '../NodeCard/nodeFixtures';
 
-  let { source = 'fixtures', voteOutcome = 'accepted', selectedNode = 'question', onSelect }: { source?: 'fixtures' | 'local-api'; voteOutcome?: VoteOutcome; selectedNode?: string; onSelect?: (key: string) => void } = $props();
+  let { presentation = 'ribbon', source = 'fixtures', voteOutcome = 'accepted', selectedNode = 'question', onSelect }: { presentation?: NodeCardPresentation; source?: 'fixtures' | 'local-api'; voteOutcome?: VoteOutcome; selectedNode?: string; onSelect?: (key: string) => void } = $props();
   let ratings = $state<Record<string, number>>({});
   let discussion = $state<string | null>(null);
   const fixture = $derived(nodeFixtures[selectedNode] ?? nodeFixtures.question);
@@ -25,11 +26,11 @@
 </script>
 
 {#if source === 'local-api'}
-  <LiveNodePreview />
+  <LiveNodePreview {presentation} />
 {:else}
 <div class="preview">
   <p class="fixture-note">Example nodes · local interaction preview. Ratings, discussion and totals are fixtures; nothing is saved.</p>
-  <NodeCard node={fixture.node} average={fixture.average} totalVotes={fixture.totalVotes} {value}
+  <NodeCard {presentation} node={fixture.node} average={fixture.average} totalVotes={fixture.totalVotes} {value}
     onVote={choose} onNavigate={navigate} onComments={(id) => discussion = discussion === id ? null : id} />
   <p role="status">{value === null ? 'No rating selected' : `Preview selection: ${value} out of 10`}</p>
   {#if notice}<p role="note">{notice}</p>{/if}

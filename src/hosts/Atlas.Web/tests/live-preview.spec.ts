@@ -86,3 +86,34 @@ test('uncast fixture selections reset to neutral and accepted simulations stay s
   await page.waitForTimeout(800);
   await expect(page.getByRole('spinbutton')).toHaveAttribute('aria-valuenow', '0');
 });
+
+test('API breadcrumb prepends older pages, retries failures and stops at root', async ({ page, request }) => {
+  const ids = Array.from({ length: 5 }, (_, i) => `b1000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`);
+  let failed = false;
+  let calls = 0;
+  await page.route('**/atlas-preview-api/**', async route => {
+    if (route.request().url().includes('/ancestors')) {
+      calls++;
+      if (!failed) { failed = true; return route.fulfill({ status: 503 }); }
+      return route.fulfill({ json: { items: [{ id: ids[0], title: 'Oldest ancestor' }], hasMore: false } });
+    }
+    const entry = item(ids[4], 'Paged breadcrumb node');
+    await route.fulfill({ json: { items: [{ ...entry, card: { ...entry.card, breadcrumbSegment: {
+      items: [{ nodeId: ids[3], label: 'Nearest ancestor' }, { nodeId: ids[2], label: 'Middle ancestor' }, { nodeId: ids[1], label: 'Older ancestor' }],
+      continuationNodeId: ids[1], hasAlternativeRoutes: false, cycleDetected: false,
+    } } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
+  });
+  await page.goto(preview);
+  const nav = page.getByRole('navigation', { name: 'Node breadcrumb' });
+  await nav.getByRole('button', { name: 'Load older ancestors' }).click();
+  await expect(nav.getByRole('alert')).toContainText('HTTP 503');
+  await nav.getByRole('button', { name: 'Retry' }).click();
+  await expect(nav).toContainText('Oldest ancestor');
+  await expect(nav.getByRole('button', { name: 'Load older ancestors' })).toHaveCount(0);
+  expect(calls).toBe(2);
+  expect(await nav.locator('li').allTextContents()).toEqual(['Oldest ancestor', 'Older ancestor', 'Middle ancestor', 'Nearest ancestor']);
+  const blocked = await request.get('http://127.0.0.1:6007/atlas-preview-api/nodes/' + ids[0] + '/votes');
+  expect(blocked.status()).toBe(404);
+  const write = await request.post('http://127.0.0.1:6007/atlas-preview-api/nodes/' + ids[0] + '/ancestors');
+  expect(write.status()).toBe(405);
+});
