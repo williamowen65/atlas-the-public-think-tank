@@ -201,7 +201,7 @@
       <circle cx="28" cy="7" r="6"/><circle cx="10" cy="12" r="5"/><circle cx="46" cy="12" r="5"/>
       <!-- Full side bodies overlap behind the central figure. -->
       <path d="M1 41V26a9 9 0 0 1 18 0v15ZM37 41V26a9 9 0 0 1 18 0v15Z"/>
-      <path d="M15 44V27a13 13 0 0 1 26 0v17Z"/>
+      <path d="M12 44V30a16 16 0 0 1 32 0v14Z"/>
     </svg>
     <span class="count" aria-hidden="true">{totalVotes.toLocaleString()}</span>
   </span>
