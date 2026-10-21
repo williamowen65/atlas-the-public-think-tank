@@ -1,8 +1,9 @@
 <script lang="ts">
+  import LiveNodePreview from '../NodeCard/LiveNodePreview.svelte';
   import NodeCard from '../../src/lib/components/NodeCard.svelte';
   import { nodeFixtures } from '../NodeCard/nodeFixtures';
 
-  let { selectedNode = 'question', onSelect }: { selectedNode?: string; onSelect?: (key: string) => void } = $props();
+  let { source = 'fixtures', selectedNode = 'question', onSelect }: { source?: 'fixtures' | 'local-api'; selectedNode?: string; onSelect?: (key: string) => void } = $props();
   let ratings = $state<Record<string, number>>({});
   let discussion = $state<string | null>(null);
   const fixture = $derived(nodeFixtures[selectedNode] ?? nodeFixtures.question);
@@ -13,6 +14,9 @@
   }
 </script>
 
+{#if source === 'local-api'}
+  <LiveNodePreview />
+{:else}
 <div class="preview">
   <p class="fixture-note">Example nodes · local interaction preview. Ratings, discussion and totals are fixtures; nothing is saved.</p>
   <NodeCard node={fixture.node} average={fixture.average} totalVotes={fixture.totalVotes} {value}
@@ -25,6 +29,8 @@
     </section>
   {/if}
 </div>
+
+{/if}
 
 <style lang="scss">
   .preview {

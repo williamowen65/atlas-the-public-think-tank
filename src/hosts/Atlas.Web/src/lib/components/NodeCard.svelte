@@ -12,6 +12,8 @@
     related: { id: string; title: string; typeName: string }[];
     requestedTypes: string[];
     reactions: { label: string; count: number }[];
+    reactionSummary?: string;
+    subNodeSummary?: string;
     commentCount: number;
     status: 'Active' | 'Archived';
   }
@@ -59,6 +61,7 @@
   {#if node.breadcrumb.length}
     <p class="breadcrumb" aria-label="Context">{node.breadcrumb.join(' / ')}</p>
   {/if}
+  {#if node.subNodeSummary}<p class="breadcrumb">Connected nodes: {node.subNodeSummary}</p>{/if}
   {#if node.related.length}
     <section class="related" aria-label="Connected nodes">
       <h3>Explore the connections</h3>
@@ -69,6 +72,7 @@
   {/if}
   <footer>
     <div class="reactions" aria-label="Community reactions">
+      {#if node.reactionSummary}<span>{node.reactionSummary}</span>{/if}
       {#each node.reactions as reaction}<span>{reaction.label} <strong>{reaction.count}</strong></span>{/each}
     </div>
     <button class="text-action" type="button" disabled={!onComments} onclick={() => onComments?.(node.id)}>{node.commentCount} {node.commentCount === 1 ? 'comment' : 'comments'}</button>

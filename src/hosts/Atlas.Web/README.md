@@ -26,6 +26,34 @@ npm run storybook
 
 Open http://127.0.0.1:6006. Components / ActionButton is the single button story group. There is one Playground story; use Controls to change label and disabled state. No API, SQL, credentials or session is required.
 
+## Preview real local nodes
+
+Once your existing Atlas development database is configured, start both hosts from this directory:
+
+```powershell
+npm ci
+npm run storybook:api
+```
+
+This starts Atlas.Api with its HTTPS launch profile and Storybook together, with labeled output. Ctrl+C stops both. If either process exits, the other is stopped too. If you already started Atlas.Api in Visual Studio, use `npm run storybook` instead to avoid starting a second API on the same port.
+
+Open http://127.0.0.1:6006, then **Compositions → Node voting preview → Playground**. Set the **source** Control to **local-api**. The page loads public database nodes and their actual averages/counts, with search, paging, a node dropdown and Refresh. Refresh also picks up newly created or edited content. The **selectedNode** Control applies only to the bundled fixtures; use the in-preview selector for database nodes.
+
+No login is needed. This phase only reads public Discovery data. All dial changes remain local; they never cast a database vote. Standalone VotingDial and fixture stories make no API requests. Discussion and linked-node navigation remain fixture-only; the live card displays the API's summary text without inventing individual links or reaction counts. Discovery descriptions are displayed as plain text, not a complete content-block renderer.
+
+One-time prerequisites are the .NET SDK used by Atlas.Api, your existing migrated SQL database and shared connection-string secret, and a development HTTPS certificate. Follow [the API setup guide](../../../docs/api/README.md#1-start-the-server) if these are not already configured. The launcher does not migrate, seed or reset your database.
+
+The default API origin is `https://localhost:7240`. For a different local port, set this **before** starting Storybook (the proxy reads it at startup):
+
+```powershell
+$env:ATLAS_STORYBOOK_API_URL = "https://localhost:7240"
+npm run storybook:api
+```
+
+The variable changes the proxy destination; configure the API's listening port to match separately. Only loopback HTTP(S) origins are accepted. Storybook's development server proxies anonymous GET requests from `/atlas-preview-api/nodes` to `/api/nodes`; it rejects writes and strips authentication cookies/headers and response cookies. It accepts the local API's development certificate without changing browser/production TLS settings. No CORS changes or login secrets are needed. This proxy is absent from static Storybook builds: use the development command for live data, and fixture mode for static builds. When API loading fails, the preview gives setup guidance and Retry instead of silently substituting fake content.
+
+The reusable read adapter lives in `src/lib/api/discovery.ts`; the Storybook-only loader owns selection, request cancellation, timeout and loading/error states. Browser CI uses intercepted contract-shaped responses and verifies that requests stay read-only; it does not connect to your SQL Server. A real database smoke check must be done with your local API running. Authenticated previews and durable voting remain a later, explicit mode tied to a selected node.
+
 ## Styling with Sass
 
 Use SCSS (Sass with braces and semicolons) for styles. The `sass` development dependency and existing `vitePreprocess()` in `svelte.config.js` compile it automatically. `npm run dev` and `npm run storybook` watch changes and update the preview; the existing build and CI commands compile production CSS. Do not run a separate Sass watcher, generate sibling `.css` files, or commit generated CSS.
