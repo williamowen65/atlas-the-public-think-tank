@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import LiveProfilePage from './LiveProfilePage.svelte';
   import SessionControl from './SessionControl.svelte';
   import { commentRequest } from '../api/comments';
