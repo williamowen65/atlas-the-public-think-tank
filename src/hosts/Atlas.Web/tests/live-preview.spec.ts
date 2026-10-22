@@ -30,8 +30,8 @@ test('live nodes support selection, search, paging and refresh without submittin
   await expect(page.getByRole('heading', { name: 'Question: Database second node' })).toBeVisible();
   await page.getByRole('spinbutton').focus();
   await page.keyboard.press('End');
-  await expect(page.getByRole('status')).toHaveText('Local preview selection: 10 out of 10. Not submitted.');
-  await expect(page.getByRole('status')).toHaveText('No local rating selected');
+  await expect(page.getByRole('dialog', { name: 'Sign in to vote' })).toBeVisible();
+  await page.getByRole('button', { name: 'Close', exact: true }).click();
   await expect(page.getByRole('spinbutton')).toHaveAttribute('aria-valuetext', /Unrated/);
   await expect.poll(() => page.getByRole('spinbutton').evaluate(el => el.scrollTop)).toBe(220);
   await page.getByRole('button', { name: 'Next page' }).click();
@@ -331,7 +331,8 @@ test('standalone card versions preserve mobile layout and offer a raised desktop
   await page.getByRole('spinbutton').focus();
   await page.keyboard.press('End');
   await expect(page.getByRole('spinbutton')).toHaveAttribute('aria-valuenow', '10');
-  await expect(page.getByRole('status')).toHaveText('No local rating selected');
+  await expect(page.getByRole('dialog', { name: 'Sign in to vote' })).toBeVisible();
+  await page.getByRole('button', { name: 'Close', exact: true }).click();
   await page.goto(`${preview.replace('&args=presentation:ribbon-responsive', '')}&args=presentation:context-below`);
   await expect(page.locator('article')).toHaveAttribute('data-presentation', 'context-below');
   await expect(page.getByRole('heading', { name: 'Layout comparison', exact: true })).toBeVisible();
@@ -426,4 +427,14 @@ test('corner action floats at the description end above the navigation counts', 
     }
   }
   await expect(card.locator('.read-more button')).toHaveClass(/atlas-action/);
+});
+
+
+test.beforeEach(async ({ page }) => {
+  await page.route('**/atlas-comments-api/**', route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/votes')) return route.fulfill({ json: { voteCount: 12, averageVote: 7.5, currentParticipantVote: null } });
+    if (path.endsWith('/auth/csrf')) return route.fulfill({ json: { token: 'fixture-token' } });
+    return route.fulfill({ status: 401, json: {} });
+  });
 });

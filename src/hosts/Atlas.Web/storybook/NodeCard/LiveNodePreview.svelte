@@ -1,6 +1,6 @@
 <script lang="ts">
   import { openNodeStory } from '../shared/navigation';
-  import { createVoteFeedback } from '../shared/voteFeedback';
+  import LiveVotingDial from '../../src/lib/components/LiveVotingDial.svelte';
   import { onMount } from 'svelte';
   import type { NodeCardPresentation } from '../../src/lib/components/NodeCard.svelte';
   import NodeCard from '../../src/lib/components/NodeCard.svelte';
@@ -18,18 +18,8 @@
   let appliedSearch = '';
   let selectedId = $state('');
   let detailId = $state('');
-  let ratings = $state<Record<string, number>>({});
-  let notice = $state('');
   let reactions = $state<{ label: string; count: number }[] | null>(null);
   let reactionError = $state('');
-  const feedback = createVoteFeedback();
-  function choose(value: number) {
-    if (!selected) return;
-    const id = selected.node.id;
-    ratings[id] = value;
-    notice = '';
-    feedback.settle('anonymous', message => { delete ratings[id]; if (selected?.node.id === id) notice = message; });
-  }
   let request: AbortController | null = null;
   const items = $derived((result?.items ?? []).flatMap(item => {
     const node = discoveryCard(item);
@@ -37,7 +27,6 @@
   }));
   const selected = $derived(items.find(item => item.node.id === selectedId) ?? items[0]);
 
-  $effect(() => { selected?.node.id; feedback.cancel(); ratings = {}; notice = ''; });
 
   $effect(() => {
     const id = selected?.node.id;
@@ -91,7 +80,7 @@
 </script>
 
 <section class="live-preview" aria-label="Local API node preview" aria-busy={loading}>
-  <p class="preview-note">Local Atlas API · anonymous browsing. Anonymous rating attempts return to neutral; no votes are cast. Averages and totals come from Atlas.</p>
+  <p class="preview-note">Live Atlas API · sign in when prompted to cast a rating. Averages and totals come from Atlas.</p>
   <form onsubmit={(event) => { event.preventDefault(); void load(1, search); }}>
     <label>Search nodes <input bind:value={search} type="search" /></label>
     <button type="submit" disabled={loading}>Search</button>
@@ -118,10 +107,8 @@
         </select>
       </label>
       <NodeCard hasMoreAncestors={selected.hasMoreAncestors} {loadOlderAncestors} {presentation} node={{ ...selected.node, reactions: reactions ?? [], reactionSummary: undefined }} average={selected.average} totalVotes={selected.totalVotes}
-        value={ratings[selected.node.id] ?? null} onVote={choose} onNavigate={navigate} onReadMore={openNodeStory} onChildType={openNodeStory} onComments={id => openNodeStory(id, 'comments')} />
-      <p role="status">{ratings[selected.node.id] === undefined ? 'No local rating selected' : `Local preview selection: ${ratings[selected.node.id]} out of 10. Not submitted.`}</p>
+        onNavigate={navigate} onReadMore={openNodeStory} onChildType={openNodeStory} onComments={id => openNodeStory(id, 'comments')}>{#snippet voting()}{#if selected}{#key selected.node.id}<LiveVotingDial nodeId={selected.node.id} initialAverage={selected.average} initialTotalVotes={selected.totalVotes} archived={selected.node.status === 'Archived'} />{/key}{/if}{/snippet}</NodeCard>
       {#if reactionError}<p role="note">{reactionError}</p>{/if}
-      {#if notice}<p role="note">{notice}</p>{/if}
     {:else}<p role="status">No displayable nodes on this page. Try another search or page.</p>{/if}
   {/if}
 </section>

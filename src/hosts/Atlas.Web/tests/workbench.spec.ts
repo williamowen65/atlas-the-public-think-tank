@@ -217,3 +217,13 @@ test('style Controls carry across Storybook layout and composition stories and r
   await expect(canvas.getByRole('contentinfo')).toBeVisible();
   await expect(canvas.locator('html')).toHaveCSS('font-size', '16px');
 });
+
+
+test.beforeEach(async ({ page }) => {
+  await page.route('**/atlas-comments-api/**', route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/votes')) return route.fulfill({ json: { voteCount: 0, averageVote: null, currentParticipantVote: null } });
+    if (path.endsWith('/auth/csrf')) return route.fulfill({ json: { token: 'fixture-token' } });
+    return route.fulfill({ status: 401, json: {} });
+  });
+});

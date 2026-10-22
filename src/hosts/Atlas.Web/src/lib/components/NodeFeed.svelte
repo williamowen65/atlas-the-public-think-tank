@@ -3,10 +3,11 @@
   export interface FeedItem { node: NodeCardData; average: number | null; totalVotes: number; reactionError?: boolean; hasMoreAncestors?: boolean }
 </script>
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import NodeCard, { type NodeCardPresentation } from './NodeCard.svelte';
   import type { LoadOlderAncestors } from './Breadcrumb.svelte';
-  let { items, loading = false, hasMore = false, error = '', presentation = 'ribbon-corner', onLoadMore, onNavigate, onReadMore, onComments, onChildType, loadOlderAncestors }: {
-    items: FeedItem[]; loading?: boolean; hasMore?: boolean; error?: string;
+  let { renderVoting, items, loading = false, hasMore = false, error = '', presentation = 'ribbon-corner', onLoadMore, onNavigate, onReadMore, onComments, onChildType, loadOlderAncestors }: {
+    renderVoting?: Snippet<[FeedItem]>; items: FeedItem[]; loading?: boolean; hasMore?: boolean; error?: string;
     presentation?: NodeCardPresentation; onLoadMore?: () => void; onNavigate?: (id: string) => void; onReadMore?: (id: string) => void; loadOlderAncestors?: LoadOlderAncestors; onChildType?: (id: string, typeId: string) => void; onComments?: (id: string) => void;
   } = $props();
   let tail: HTMLDivElement;
@@ -23,7 +24,8 @@
 <section class="node-feed" aria-label="Node feed" aria-busy={loading}>
   <ul aria-label="Nodes">
     {#each items as item (item.node.id)}
-      <li><NodeCard node={item.node} {presentation} average={item.average} totalVotes={item.totalVotes} {onNavigate} {onReadMore} {onComments} {onChildType} {loadOlderAncestors} hasMoreAncestors={item.hasMoreAncestors ?? false} />
+      {#snippet voting()}{#if renderVoting}{@render renderVoting(item)}{/if}{/snippet}
+      <li><NodeCard voting={renderVoting ? voting : undefined} node={item.node} {presentation} average={item.average} totalVotes={item.totalVotes} {onNavigate} {onReadMore} {onComments} {onChildType} {loadOlderAncestors} hasMoreAncestors={item.hasMoreAncestors ?? false} />
         {#if item.reactionError}<p class="note">Reaction totals are unavailable for this node.</p>{/if}
       </li>
     {/each}

@@ -92,3 +92,13 @@ test('empty feed stops pagination and exposes its empty state', async ({ page })
   await expect(page.getByRole('button', { name: 'Load more nodes' })).toHaveCount(0);
   expect(requests).toBe(1);
 });
+
+
+test.beforeEach(async ({ page }) => {
+  await page.route('**/atlas-comments-api/**', route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/votes')) return route.fulfill({ json: { voteCount: 0, averageVote: null, currentParticipantVote: null } });
+    if (path.endsWith('/auth/csrf')) return route.fulfill({ json: { token: 'fixture-token' } });
+    return route.fulfill({ status: 401, json: {} });
+  });
+});

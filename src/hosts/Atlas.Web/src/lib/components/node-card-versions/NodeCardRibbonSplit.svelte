@@ -4,7 +4,7 @@
 
   import Breadcrumb from '../Breadcrumb.svelte';
   import type { NodeCardProps } from './types';
-  let { node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onReadMore, onChildType, onComments, hasMoreAncestors = false, loadOlderAncestors }: NodeCardProps = $props();
+  let { voting, node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onReadMore, onChildType, onComments, hasMoreAncestors = false, loadOlderAncestors }: NodeCardProps = $props();
   const instance = $props.id();
   const connectionLabels = $derived([
     ...(!node.childTypes?.length && node.subNodeSummary && node.subNodeSummary !== 'None' ? node.subNodeSummary.split(' · ') : []),
@@ -24,7 +24,7 @@
 
   <div class="body">
     <aside class="dial" aria-label="Importance rating">
-      <VotingDial label="Node importance" {value} {average} {totalVotes} disabled={node.status === 'Archived'} onChange={onVote} />
+      {#if voting}{@render voting()}{:else}<VotingDial label="Node importance" {value} {average} {totalVotes} disabled={node.status === 'Archived'} onChange={onVote} />{/if}
     </aside>
     <div class="content-stack">
       <p class="description" id={`${instance}-description`}>{node.description}</p>

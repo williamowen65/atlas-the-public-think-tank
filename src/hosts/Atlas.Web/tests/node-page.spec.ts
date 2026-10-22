@@ -7,6 +7,7 @@ const types = [{ id: idea, name: 'Idea', autoPluralize: true, pluralName: 'Ideas
 const entry = (id = root) => ({ nodeId: id, averageVote: 7, voteCount: 2, card: { title: id === root ? 'A live question' : 'A child idea', shortDescription: 'A concise introduction.', typeName: 'Question', authorName: 'Author', status: 'Active', createdAt: '2026-10-21T12:00:00Z', breadcrumb: '', subNodes: '1 Idea · 0 Evidence', childTypes: [{ typeId: idea, label: '1 Idea', count: 1 }, { typeId: evidence, label: '0 Evidence', count: 0 }], communities: 'Atlas', commentCount: 1, isHidden: false } });
 async function mock(page: Page) {
   await page.route('**/atlas-comments-api/**', route => {
+    if (new URL(route.request().url()).pathname.endsWith('/votes')) return route.fulfill({ json: { voteCount: 0, averageVote: null, currentParticipantVote: null } });
     if (route.request().url().endsWith('/auth/session')) return route.fulfill({ json: { participantId: 'participant' } });
     return route.fulfill({ json: { displayName: 'Author' } });
   });

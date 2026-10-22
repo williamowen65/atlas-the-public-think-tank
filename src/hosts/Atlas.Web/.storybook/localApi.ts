@@ -63,9 +63,10 @@ export const commentsPreview: Plugin = {
       const path = request.url.split('?')[0];
       const guid = '[0-9a-f-]{36}';
       const method = request.method ?? 'GET';
-      const readable = /^\/atlas-comments-api\/auth\/(csrf|session)$/.test(path)
+      const readable = new RegExp(`^/atlas-comments-api/nodes/${guid}/votes$`, 'i').test(path) || /^\/atlas-comments-api\/auth\/(csrf|session)$/.test(path)
         || new RegExp(`^/atlas-comments-api/participants/${guid}$`, 'i').test(path);
-      const writable = method === 'POST' && (['/atlas-comments-api/nodes', '/atlas-comments-api/catalog/node-types'].includes(path) || /^\/atlas-comments-api\/auth\/(login|logout)$/.test(path)
+      const nodeVote = ['PUT', 'DELETE'].includes(method) && new RegExp(`^/atlas-comments-api/nodes/${guid}/vote$`, 'i').test(path);
+      const writable = nodeVote || method === 'POST' && (['/atlas-comments-api/nodes', '/atlas-comments-api/catalog/node-types'].includes(path) || /^\/atlas-comments-api\/auth\/(login|logout)$/.test(path)
         || new RegExp(`^/atlas-comments-api/nodes/${guid}/comments$`, 'i').test(path)
         || new RegExp(`^/atlas-comments-api/comments/${guid}/replies$`, 'i').test(path))
         || ['PUT', 'DELETE'].includes(method) && new RegExp(`^/atlas-comments-api/comments/${guid}$`, 'i').test(path);

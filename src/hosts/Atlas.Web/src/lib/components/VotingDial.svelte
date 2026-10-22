@@ -4,6 +4,7 @@
     value?: number | null;
     average?: number | null;
     totalVotes?: number;
+    hasVoted?: boolean;
     compact?: boolean;
     disabled?: boolean;
     onChange?: (value: number) => void;
@@ -11,9 +12,10 @@
 
   let {
     label = 'Node importance', value = null, average = null,
-    totalVotes = 0, compact = false, disabled = false, onChange,
+    totalVotes = 0, hasVoted, compact = false, disabled = false, onChange,
   }: Props = $props();
 
+  const marked = $derived(hasVoted ?? value !== null);
   const ratings = Array.from({ length: 11 }, (_, index) => 10 - index);
   let reel: HTMLDivElement;
   let dragging = $state(false);
@@ -204,9 +206,9 @@
   }
 </script>
 
-<section class:compact class="voting-dial" aria-label={label}>
+<section class:compact class:voted={marked} class="voting-dial" aria-label={label}>
   <strong class="average" aria-label={average === null ? 'No average rating' : `Average rating: ${average.toFixed(1)}`}>{average === null ? '—' : average.toFixed(1)}</strong>
-  <div class="selector" class:unrated={value === null} class:disabled>
+  <div class="selector" class:unrated={!marked} class:disabled>
     <div class="selection-window" class:pulling style:transform={`translateY(${compact ? 0 : lensPull}px)`} aria-hidden="true"></div>
     <div
       bind:this={reel} class="reel" class:dragging role="spinbutton" tabindex={disabled ? -1 : 0}

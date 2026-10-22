@@ -1,3 +1,4 @@
+import type { Snippet } from 'svelte';
 import type { BreadcrumbItem, LoadOlderAncestors } from '../Breadcrumb.svelte';
 /** Presentation data: adapt API projections to this model at the application boundary. */
 export interface NodeCardData {
@@ -22,6 +23,7 @@ export interface NodeCardData {
 export type NodeCardPresentation = 'context-below' | 'ribbon' | 'ribbon-responsive' | 'ribbon-split' | 'ribbon-corner';
 export interface NodeCardProps {
   node: NodeCardData;
+  voting?: Snippet;
   hasMoreAncestors?: boolean;
   loadOlderAncestors?: LoadOlderAncestors;
   value?: number | null;

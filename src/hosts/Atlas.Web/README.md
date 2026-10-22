@@ -345,3 +345,14 @@ Open **Components/Node form** for a root, or **Add <type>** on a node page for a
 Custom type creation and node creation are separate backend operations. If the type saves but the node fails, the form explains the partial result and reuses that type ID on an unchanged retry. The per-type AutoPluralize setting is submitted rather than guessed. The type remains saved if the draft is abandoned. Community selection is still future work.
 
 `tests/node-creation.spec.ts` covers signed-out gating, sign-in, root creation in Storybook/SPA, child-parent preservation, CSRF headers, custom-type pluralization preferences, and draft-preserving partial retries. Existing isolated draft checks use a fixture session and make no writes until submission. Full tests run in CI; real session cookies, authorization, quotas and persisted node data should also be checked manually against the running API.
+
+
+### Live node importance voting
+
+The main node-page dial, live feed cards (including child feeds), and Atlas-node composition use `LiveVotingDial`; presentation components accept a voting snippet and remain independent of fetch/session logic. Creation forms keep their noninteractive dial.
+
+The existing `GET /api/nodes/{id}/votes` supplies voteCount, averageVote and currentParticipantVote from Voting’s existing summary use case. The browser does not calculate averages or increment vote totals. A settled gesture sends one CSRF-protected PUT with the selected integer (including zero), then refreshes the summary. Changing an existing vote follows the same path. Confirmed votes use the accent-colored lens. A small Undo vote control appears only for an existing rating, supports keyboard activation, calls DELETE, and refreshes the summary. Successful undo returns focus to the dial.
+
+An anonymous attempt returns to neutral and opens a dismissible native sign-in dialog using SessionControl. Escape and Close dismiss it. After signing in, select the rating again; an uncast gesture is never silently submitted. Other failures restore the last confirmed selection and retain server totals. If the write succeeds but the summary refresh fails, the UI reports that distinction and offers Retry totals. Archived nodes remain disabled. Session changes re-read the current participant’s status. No cross-browser real-time updates are included.
+
+The existing local session bridge now additionally permits only node vote-summary GETs and node-vote PUT/DELETEs, with its same origin checks, Atlas cookie filtering and backend antiforgery protection. The anonymous reader remains unchanged. Restart the combined API/Storybook command after pulling proxy changes. Browser fixtures in `tests/voting.spec.ts` cover confirmed state, server totals, zero ratings, reload, changing/undoing votes, sign-in prompts, failure rollback and keyboard controls. Test execution is deferred to CI/manual verification.

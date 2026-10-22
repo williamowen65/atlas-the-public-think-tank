@@ -4,7 +4,7 @@
   import VotingDial from '../VotingDial.svelte';
 
   import type { NodeCardProps } from './types';
-  let { node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onReadMore, onChildType, onComments }: NodeCardProps = $props();
+  let { voting, node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onReadMore, onChildType, onComments }: NodeCardProps = $props();
   const instance = $props.id();
 </script>
 
@@ -21,7 +21,7 @@
 
   <div class="body">
     <aside class="dial" aria-label="Importance rating">
-      <VotingDial label="Node importance" {value} {average} {totalVotes} disabled={node.status === 'Archived'} onChange={onVote} />
+      {#if voting}{@render voting()}{:else}<VotingDial label="Node importance" {value} {average} {totalVotes} disabled={node.status === 'Archived'} onChange={onVote} />{/if}
     </aside>
     <p class="description" id={`${instance}-description`}>{node.description}<span class="read-more" use:centerInCard><ActionButton label="Read more" disabled={!onReadMore} onActivate={() => onReadMore?.(node.id)} /></span></p>
     {#if node.requestedTypes.length}

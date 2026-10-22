@@ -6,7 +6,7 @@
   import type { LoadOlderAncestors } from './Breadcrumb.svelte';
   import Breadcrumb from './Breadcrumb.svelte';
   import VotingDial from './VotingDial.svelte';
-  let { revealChildren = false, node, blocks, types, active, onTabChange, onAddChild, onNavigate, hasMoreAncestors = false, loadOlderAncestors, average = null, totalVotes = 0, children }: { revealChildren?: boolean; node: NodeCardData; blocks: ContentBlock[]; types: NodeType[]; active: string; onTabChange: (id: string) => void; onAddChild: (id?: string) => void; onNavigate?: (id: string) => void; hasMoreAncestors?: boolean; loadOlderAncestors?: LoadOlderAncestors; average?: number | null; totalVotes?: number; children: Snippet } = $props();
+  let { voting, revealChildren = false, node, blocks, types, active, onTabChange, onAddChild, onNavigate, hasMoreAncestors = false, loadOlderAncestors, average = null, totalVotes = 0, children }: { voting?: Snippet; revealChildren?: boolean; node: NodeCardData; blocks: ContentBlock[]; types: NodeType[]; active: string; onTabChange: (id: string) => void; onAddChild: (id?: string) => void; onNavigate?: (id: string) => void; hasMoreAncestors?: boolean; loadOlderAncestors?: LoadOlderAncestors; average?: number | null; totalVotes?: number; children: Snippet } = $props();
   const instance = $props.id();
   const tabs = $derived([
     { id: 'comments', name: `${node.commentCount} ${node.commentCount === 1 ? 'Comment' : 'Comments'}` },
@@ -52,7 +52,7 @@
   {#if node.breadcrumb.length}<div class="ribbon-context"><Breadcrumb items={node.breadcrumb} {onNavigate} hasMore={hasMoreAncestors} loadOlder={loadOlderAncestors} /></div>{/if}
   <header><h1>{node.typeName}: {node.title}</h1><p class="byline">By {node.authorName} · <time datetime={node.createdAt}>{new Date(node.createdAt).toLocaleDateString()}</time>{#if node.communities.length} · Community: {node.communities.join(', ')}{/if}</p>{#if node.status === 'Archived'}<p>Archived</p>{/if}</header>
   <div class="post-body">
-    <aside class="dial" aria-label="Importance rating"><VotingDial label="Node importance" {average} {totalVotes} disabled /></aside>
+    <aside class="dial" aria-label="Importance rating">{#if voting}{@render voting()}{:else}<VotingDial label="Node importance" {average} {totalVotes} disabled />{/if}</aside>
     <p class="description">{node.description}</p>
     <ContentBlocks {blocks} />
   </div>
