@@ -6,11 +6,12 @@
   import type { LoadOlderAncestors } from './Breadcrumb.svelte';
   import Breadcrumb from './Breadcrumb.svelte';
   import VotingDial from './VotingDial.svelte';
-  let { onOpenProfile, voting, revealChildren = false, node, blocks, types, active, onTabChange, onAddChild, onNavigate, hasMoreAncestors = false, loadOlderAncestors, average = null, totalVotes = 0, children }: { voting?: Snippet; revealChildren?: boolean; node: NodeCardData; blocks: ContentBlock[]; types: NodeType[]; active: string; onTabChange: (id: string) => void; onAddChild: (id?: string) => void; onNavigate?: (id: string) => void; onOpenProfile?: (id: string) => void; hasMoreAncestors?: boolean; loadOlderAncestors?: LoadOlderAncestors; average?: number | null; totalVotes?: number; children: Snippet } = $props();
+  let { onOpenProfile, voting, revealChildren = false, node, blocks, types, active, draftTab, onTabChange, onAddChild, onNavigate, hasMoreAncestors = false, loadOlderAncestors, average = null, totalVotes = 0, children }: { voting?: Snippet; revealChildren?: boolean; node: NodeCardData; blocks: ContentBlock[]; types: NodeType[]; active: string; draftTab?: { id: string; name: string }; onTabChange: (id: string) => void; onAddChild: (id?: string) => void; onNavigate?: (id: string) => void; onOpenProfile?: (id: string) => void; hasMoreAncestors?: boolean; loadOlderAncestors?: LoadOlderAncestors; average?: number | null; totalVotes?: number; children: Snippet } = $props();
   const instance = $props.id();
   const tabs = $derived([
     { id: 'comments', name: `${node.commentCount} ${node.commentCount === 1 ? 'Comment' : 'Comments'}` },
     ...(node.childTypes ?? []).map(type => ({ id: type.typeId, name: type.label })),
+    ...(draftTab && !(node.childTypes ?? []).some(type => type.typeId === draftTab.id) ? [draftTab] : []),
   ]);
   function reveal(tabs: HTMLDivElement) {
     if (!revealChildren) return;
