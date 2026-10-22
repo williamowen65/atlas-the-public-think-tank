@@ -1,17 +1,80 @@
 <script lang="ts">
-  let { active = 'discover' }: { active?: 'discover' | 'about' | 'components' | 'create' } = $props();
+  let { active = 'discover', authenticated = false, displayName = 'Atlas User' }: {
+    active?: 'discover' | 'about' | 'components' | 'create';
+    authenticated?: boolean;
+    displayName?: string;
+  } = $props();
+  let searching = $state(false);
+  let searchText = $state('');
+  let menuOpen = $state(false);
+  const initial = $derived(displayName.trim().charAt(0).toUpperCase() || 'U');
+  function submitSearch(event: SubmitEvent) {
+    event.preventDefault();
+    const query = searchText.trim();
+    if (query) window.location.assign('/?search=' + encodeURIComponent(query));
+  }
 </script>
+
 <header class="atlas-header" id="page-top">
   <a class="brand" href="/" aria-label="Atlas home"><strong>Atlas</strong><span>The Public Think Tank</span></a>
-  <nav aria-label="Main navigation">
-    <a href="/" aria-current={active === 'discover' ? 'page' : undefined}>Discover</a>
-    <a href="/new" aria-current={active === 'create' ? 'page' : undefined}>Create node</a>
-    <a href="/about" aria-current={active === 'about' ? 'page' : undefined}>About this foundation</a>
-    <a href="/components" aria-current={active === 'components' ? 'page' : undefined}>Component example</a>
-  </nav>
+  <form class:expanded={searching} class="search" role="search" onsubmit={submitSearch}>
+    <label class="sr-only" for="atlas-search">Search Atlas</label>
+    <input id="atlas-search" type="search" placeholder="Search Atlas" bind:value={searchText} />
+    <button type="submit" aria-label="Submit search">⌕</button>
+    {#if searching}<button type="button" class="close-search" onclick={() => searching = false} aria-label="Close search">×</button>{/if}
+  </form>
+  <div class="right-group">
+    <nav class="primary" aria-label="Main navigation">
+      <a href="/" aria-current={active === 'discover' ? 'page' : undefined}>Discover</a>
+      <a href="/new" aria-current={active === 'create' ? 'page' : undefined}>Create</a>
+    </nav>
+    {#if authenticated}
+      <div class="account">
+        <button type="button" class="avatar" aria-label="Open account menu" aria-expanded={menuOpen} onclick={() => menuOpen = !menuOpen}>{initial}</button>
+        {#if menuOpen}
+          <nav class="account-menu" aria-label="Account navigation">
+            <a href="/me">My profile</a>
+            <a href="/me/drafts">My drafts</a>
+            <a href="/me/settings">Settings</a>
+            <hr />
+            <a href="/about">About Atlas</a>
+            <a href="/feedback">Give feedback</a>
+            <hr />
+            <a href="/logout">Log out</a>
+          </nav>
+        {/if}
+      </div>
+    {:else}
+      <div class="auth"><a href="/login">Log in</a><a class="signup" href="/register">Sign up</a></div>
+    {/if}
+    <button class="mobile-search" aria-label="Expand search" type="button" onclick={() => searching = !searching}>⌕</button>
+    <details class="mobile-menu">
+      <summary aria-label="Open navigation menu">☰</summary>
+      <nav aria-label="Mobile navigation">
+        <a href="/">Discover</a><a href="/new">Create</a>
+        {#if authenticated}
+          <a href="/me">My profile</a><a href="/me/drafts">My drafts</a><a href="/me/settings">Settings</a>
+          <a href="/logout">Log out</a>
+        {:else}
+          <a href="/login">Log in</a><a href="/register">Sign up</a>
+        {/if}
+        <a href="/about">About Atlas</a><a href="/feedback">Give feedback</a>
+      </nav>
+    </details>
+  </div>
 </header>
 <style lang="scss">
-  .atlas-header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:1rem 2rem; padding:1rem 0; border-bottom:1px solid var(--atlas-border); }
-  .brand { display:flex; flex-direction:column; color:var(--atlas-text); text-decoration:none; strong {font-size:1.8rem;} span {font-size:.85rem;color:var(--atlas-muted);} }
-  nav { margin:0; align-items:center; font-size:.9rem; a[aria-current] {font-weight:700;text-underline-offset:.3em;} }
+  .atlas-header {position:relative;display:grid;grid-template-columns:minmax(11rem,1fr) minmax(12rem,24rem) minmax(max-content,1fr);align-items:center;gap:1rem;padding:1rem 0;border-bottom:1px solid var(--atlas-border);}
+  .brand {display:flex;flex-direction:column;color:var(--atlas-text);text-decoration:none;strong{font-size:1.8rem;}span{font-size:.85rem;color:var(--atlas-muted);}}
+  .search {display:flex;align-items:center;min-width:0;border:1px solid var(--atlas-border);border-radius:.5rem;input{min-width:0;flex:1;border:0;background:transparent;color:var(--atlas-text);padding:.55rem;}button{border:0;background:transparent;color:var(--atlas-text);cursor:pointer;font-size:1.4rem;padding:0 .65rem;}.close-search{display:none;}}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+  .right-group{display:flex;align-items:center;justify-content:flex-end;gap:1rem;min-width:0;}
+  .primary,.auth{display:flex;align-items:center;gap:1rem;white-space:nowrap;font-size:.9rem;}
+  a{color:var(--atlas-text);text-decoration:none;}a:hover{text-decoration:underline;}a[aria-current]{font-weight:700;text-underline-offset:.3em;}
+  .signup{border:1px solid var(--atlas-border);border-radius:.5rem;padding:.45rem .7rem;}
+  .account{position:relative;}.avatar{width:2.25rem;height:2.25rem;border:1px solid var(--atlas-border);border-radius:50%;background:var(--atlas-surface);color:var(--atlas-text);cursor:pointer;font-weight:700;}
+  .account-menu{position:absolute;z-index:20;right:0;top:calc(100% + .5rem);min-width:12rem;display:flex;flex-direction:column;gap:.15rem;background:var(--atlas-surface);border:1px solid var(--atlas-border);border-radius:.5rem;padding:.5rem;box-shadow:0 8px 24px #0002;a{padding:.5rem;border-radius:.25rem;}hr{width:100%;border:0;border-top:1px solid var(--atlas-border);}}
+  .mobile-search,.mobile-menu{display:none;}
+  @media(max-width:850px){.atlas-header{grid-template-columns:auto 1fr;}.search{grid-column:1/-1;grid-row:2;width:100%;}.right-group{grid-column:2;grid-row:1;}}
+  @media(max-width:560px){.atlas-header{grid-template-columns:1fr auto;}.brand span{display:none;}.primary,.auth,.account{display:none;}.mobile-search{display:block;border:0;background:none;color:var(--atlas-text);font-size:1.5rem;cursor:pointer;}.mobile-menu{display:block;position:relative;summary{cursor:pointer;list-style:none;font-size:1.3rem;}nav{position:absolute;z-index:20;right:0;top:100%;min-width:11rem;display:flex;flex-direction:column;background:var(--atlas-surface);border:1px solid var(--atlas-border);border-radius:.5rem;padding:.75rem;gap:.75rem;}}.search{display:none;}.search.expanded{display:flex;}.search.expanded .close-search{display:block;}}
 </style>
