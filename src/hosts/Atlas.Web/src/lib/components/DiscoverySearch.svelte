@@ -6,6 +6,11 @@
   let { onExpandedChange }: { onExpandedChange?: (expanded: boolean) => void } = $props();
   let types = $state<NodeType[]>([]);
   let expanded = $state(false);
+  let searchRegion: HTMLElement;
+  function dismissOutside(event: PointerEvent) {
+    if (expanded && event.target instanceof Node && !searchRegion?.contains(event.target)) expanded = false;
+  }
+  function dismissEscape(event: KeyboardEvent) { if (event.key === 'Escape') expanded = false; }
   $effect(() => onExpandedChange?.(expanded));
   let input = $state('');
   let applied = $state('');
@@ -65,7 +70,8 @@
   $effect(() => { const controller = new AbortController(); void readTypes('/atlas-preview-api', controller.signal).then(t => types = t).catch(() => {}); return () => controller.abort(); });
 
 </script>
-<section class="filter-bar" aria-label="Filter discovery">
+<svelte:window onpointerdown={dismissOutside} onkeydown={dismissEscape} />
+<section bind:this={searchRegion} class="filter-bar" aria-label="Filter discovery">
   <form class="search-line" onsubmit={event => { event.preventDefault(); apply(input); }}>
     <label class="sr-only" for="discovery-query">Search nodes and filters</label>
     <input id="discovery-query" bind:value={input} placeholder="Search nodes or try type:Idea votes:5..100" />
@@ -83,7 +89,7 @@
       <label>Created after<input type="date" value={editing.filters.from ?? ''} onchange={e => token('from', e.currentTarget.value)} /></label>
       <label>Created before<input type="date" value={editing.filters.through ?? ''} onchange={e => token('through', e.currentTarget.value)} /></label>
       <label class="check"><input type="checkbox" checked={editing.filters.archived ?? false} onchange={e => token('archived', e.currentTarget.checked ? 'true' : '')} /> Include archived nodes</label>
-      <div class="apply-row"><button type="button" onclick={() => apply('')}>Clear filters</button><button type="button" onclick={() => apply(pending)} disabled={editing.errors.length > 0}>Apply filters</button>{#if pending !== applied}<span>Changes not yet applied</span>{/if}</div>
+      <div class="apply-row"><button type="button" onclick={() => { apply(''); expanded = false; }}>Clear filters</button><button type="button" onclick={() => { if (!editing.errors.length) { apply(pending); expanded = false; } }} disabled={editing.errors.length > 0}>Apply filters</button>{#if pending !== applied}<span>Changes not yet applied</span>{/if}</div>
       {#if editing.errors.length}<p role="alert" class="validation">{editing.errors.join(" · ")}</p>{/if}
       <p class="hint">Visual filters update the search syntax above. You can also type filters directly, such as <code>type:Idea</code>, <code>votes:5..100</code>, <code>average:7..10</code>, <code>from:2026-01-01</code>, <code>author:ID</code>, or <code>community:ID</code>. Text searches node content only for now.</p>
     </div>
