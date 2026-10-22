@@ -2,9 +2,16 @@
   import { goto } from '$app/navigation';
   import SessionControl from '$lib/components/SessionControl.svelte';
   import { listDrafts, deleteDraft, type SavedDraft } from '$lib/api/privateDrafts';
+  import { readTypes, type NodeType } from '$lib/api/nodePage';
   let owner = $state<string | null>(null);
   let drafts = $state<SavedDraft[]>([]);
   let confirmId = $state('');
+  let types = $state<NodeType[]>([]);
+  $effect(() => { if (owner) { void readTypes('/atlas-preview-api', AbortSignal.timeout(10000)).then(result => types = result).catch(() => { types = []; }); } else types = []; });
+  function typeName(draft: SavedDraft): string {
+    if (draft.data.newType) return draft.data.newType.name || 'New node type';
+    return types.find(type => type.id === draft.data.typeId)?.name ?? (draft.data.typeId ? 'Node type unavailable' : 'No node type selected');
+  }
   function sessionChanged(id: string | null) { owner = id; drafts = id ? listDrafts(id) : []; confirmId = ''; }
   function remove(id: string) {
     if (!owner) return;
@@ -25,7 +32,7 @@
     <ul>
       {#each drafts as draft (draft.id)}
         <li>
-          <h2>{draft.data.title || 'Untitled draft'}</h2>
+          <h2><span class="draft-type">{typeName(draft)}</span> <span class="draft-title">{draft.data.title || 'Untitled draft'}</span></h2>
           <p>{draft.data.shortDescription || 'No description yet.'}</p>
           <small>Saved {new Date(draft.updatedAt).toLocaleString()}</small>
           <div class="actions">
@@ -46,5 +53,5 @@
   {/if}
 </section>
 <style>
-  .drafts{max-width:52rem;margin:2rem auto;min-width:0;}ul{padding:0;list-style:none;display:grid;gap:1rem;}li{padding:1rem;border:1px solid var(--atlas-border);border-radius:var(--atlas-radius);background:var(--atlas-surface);}h2{margin:.25rem 0;}small{color:var(--atlas-muted);}.actions{display:flex;align-items:center;flex-wrap:wrap;gap:.6rem;margin-top:1rem;}button{font:inherit;cursor:pointer;padding:.5rem .75rem;}
+  .drafts{max-width:52rem;margin:2rem auto;min-width:0;}ul{padding:0;list-style:none;display:grid;gap:1rem;}li{padding:1rem;border:1px solid var(--atlas-border);border-radius:var(--atlas-radius);background:var(--atlas-surface);}h2{margin:.25rem 0;display:flex;flex-wrap:wrap;align-items:baseline;gap:.5rem;}.draft-type{font-size:.8em;color:var(--atlas-muted);font-weight:600;}.draft-title{font-weight:700;}small{color:var(--atlas-muted);}.actions{display:flex;align-items:center;flex-wrap:wrap;gap:.6rem;margin-top:1rem;}button{font:inherit;cursor:pointer;padding:.5rem .75rem;}
 </style>
