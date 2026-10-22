@@ -45,8 +45,9 @@
         if (key === 'votes') { filters.minVotes = low; filters.maxVotes = high; }
         else { filters.minAverage = low; filters.maxAverage = high; }
       } else if (key === 'from' || key === 'through') {
-        if (/^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v))) if (key === 'from') filters.from = v; else filters.through = v;
-        else errors.push('Invalid date: ' + v);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v))) {
+          if (key === 'from') filters.from = v; else filters.through = v;
+        } else errors.push('Invalid date: ' + v);
       } else if (key === 'archived') {
         if (v === 'true') filters.archived = true;
         else if (v !== 'false') errors.push('Use archived:true or archived:false');
