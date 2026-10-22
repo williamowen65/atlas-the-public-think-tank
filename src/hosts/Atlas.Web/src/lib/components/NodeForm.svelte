@@ -45,8 +45,8 @@
     <section aria-label="Content preview"><MarkdownContent text={markdown} /></section>
   </div>
   <footer>
-    <div class="contributions"><label for={`${instance}-requested`}>Requested contributions</label><select id={`${instance}-requested`} bind:value={requestedType} onchange={() => { if (requestedType && !requestedTypeIds.includes(requestedType)) requestedTypeIds = [...requestedTypeIds, requestedType]; requestedType = ''; }}><option value="">Add a contribution type…</option>{#each types as type}<option value={type.id} disabled={requestedTypeIds.includes(type.id)}>{type.name}</option>{/each}</select>
-      {#if requestedTypeIds.length}<ul aria-label="Requested contribution types">{#each requestedTypeIds as id}<li>{types.find(type => type.id === id)?.name}<button type="button" aria-label={`Remove ${types.find(type => type.id === id)?.name} contribution`} onclick={() => requestedTypeIds = requestedTypeIds.filter(value => value !== id)}>×</button></li>{/each}</ul>{/if}
+    <div class="contributions"><label for={`${instance}-requested`}>Requested contributions</label><select id={`${instance}-requested`} bind:value={requestedType} onchange={() => { if (requestedType && !requestedTypeIds.includes(requestedType)) requestedTypeIds = [...requestedTypeIds, requestedType]; requestedType = ''; }}><option value="">Add a contribution type…</option>{#each types as type}<option value={type.id} disabled={requestedTypeIds.includes(type.id)}>{type.pluralName ?? type.name}</option>{/each}</select>
+      {#if requestedTypeIds.length}<ul aria-label="Requested contribution types">{#each requestedTypeIds as id}<li>{types.find(type => type.id === id)?.pluralName ?? types.find(type => type.id === id)?.name}<button type="button" aria-label={`Remove ${types.find(type => type.id === id)?.pluralName ?? types.find(type => type.id === id)?.name} contribution`} onclick={() => requestedTypeIds = requestedTypeIds.filter(value => value !== id)}>×</button></li>{/each}</ul>{/if}
     </div>
   </footer>
   <div class="actions"><button type="submit" disabled={!onSubmit || submitting}>{submitting ? 'Creating…' : 'Create node'}</button></div>

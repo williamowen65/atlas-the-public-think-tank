@@ -3,7 +3,7 @@ const root = 'b1000000-0000-4000-8000-000000000001';
 const child = 'b1000000-0000-4000-8000-000000000002';
 const idea = 'a1000000-0000-4000-8000-000000000001';
 const evidence = 'a1000000-0000-4000-8000-000000000002';
-const types = [{ id: idea, name: 'Idea' }, { id: evidence, name: 'Evidence' }];
+const types = [{ id: idea, name: 'Idea', autoPluralize: true, pluralName: 'Ideas' }, { id: evidence, name: 'Evidence', autoPluralize: false, pluralName: 'Evidence' }];
 const entry = (id = root) => ({ nodeId: id, averageVote: 7, voteCount: 2, card: { title: id === root ? 'A live question' : 'A child idea', shortDescription: 'A concise introduction.', typeName: 'Question', authorName: 'Author', status: 'Active', createdAt: '2026-10-21T12:00:00Z', breadcrumb: '', subNodes: '1 Idea', communities: 'Atlas', commentCount: 1, isHidden: false } });
 async function mock(page: Page) {
   const urls: URL[] = [];
@@ -60,7 +60,13 @@ test('root form previews a new type and never writes to the API', async ({ page 
   await expect(page.getByRole('button', { name: 'Preview draft' })).toHaveCount(0);
   await expect(page.getByRole('spinbutton')).toHaveAttribute('aria-disabled', 'true');
   await expect(page.getByText('0 Comments', { exact: true })).toHaveCount(0);
-  await page.getByLabel('Requested contributions', { exact: true }).selectOption(evidence);
+  const contributions = page.getByLabel('Requested contributions', { exact: true });
+  await expect(contributions.getByRole('option', { name: 'Ideas', exact: true })).toHaveCount(1);
+  await expect(contributions.getByRole('option', { name: 'Evidence', exact: true })).toHaveCount(1);
+  await contributions.selectOption(idea);
+  await expect(page.getByRole('list', { name: 'Requested contribution types' })).toContainText('Ideas');
+  await page.getByRole('button', { name: 'Remove Ideas contribution' }).click();
+  await contributions.selectOption(evidence);
   await expect(page.getByRole('list', { name: 'Requested contribution types' })).toContainText('Evidence');
   await page.getByRole('button', { name: 'Remove Evidence contribution' }).click();
   await expect(page.getByRole('list', { name: 'Requested contribution types' })).toHaveCount(0);

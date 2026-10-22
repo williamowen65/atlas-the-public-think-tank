@@ -344,6 +344,24 @@ public sealed class SqlWorkflowTests
             }
         ));
         await Success(await client.PostAsJsonAsync(
+            "/api/catalog/node-types",
+            new
+            {
+                name = "HTTP evidence",
+                description = "Uncountable contribution type",
+                autoPluralize = false
+            }
+        ));
+        using (var catalog = JsonDocument.Parse(await client.GetStringAsync("/api/catalog/node-types")))
+        {
+            var customType = catalog.RootElement.EnumerateArray()
+                .Single(type => type.GetProperty("name").GetString() == "HTTP custom type");
+            Assert.AreEqual("HTTP custom types", customType.GetProperty("pluralName").GetString());
+            var evidenceType = catalog.RootElement.EnumerateArray()
+                .Single(type => type.GetProperty("name").GetString() == "HTTP evidence");
+            Assert.AreEqual("HTTP evidence", evidenceType.GetProperty("pluralName").GetString());
+        }
+        await Success(await client.PostAsJsonAsync(
             $"/api/moderation/nodes/{node}/reports",
             new
             {

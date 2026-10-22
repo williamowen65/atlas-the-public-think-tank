@@ -1,4 +1,4 @@
-export interface NodeType { id: string; name: string; description?: string; isArchived?: boolean }
+export interface NodeType { id: string; name: string; pluralName?: string; autoPluralize?: boolean; description?: string; isArchived?: boolean }
 export interface ContentBlock { id: string; kind: string; content: { markdown?: string; url?: string; altText?: string; caption?: string; title?: string; description?: string; pollId?: string; chartId?: string } }
 export interface NodeDetail { id: string; title: string; shortDescription: string; requestedTypeIds: string[]; status: string; hidden?: boolean }
 export interface Comment { id: string; authorId: string; body: string | null; status: string; createdAt: string }
