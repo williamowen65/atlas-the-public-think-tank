@@ -5,7 +5,7 @@
 
   import Breadcrumb from '../Breadcrumb.svelte';
   import type { NodeCardProps } from './types';
-  let { voting, node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onReadMore, onChildType, onComments, hasMoreAncestors = false, loadOlderAncestors }: NodeCardProps = $props();
+  let { onOpenProfile, voting, node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onReadMore, onChildType, onComments, hasMoreAncestors = false, loadOlderAncestors }: NodeCardProps = $props();
   const instance = $props.id();
   const connectionLabels = $derived([
     ...(!node.childTypes?.length && node.subNodeSummary && node.subNodeSummary !== 'None' ? node.subNodeSummary.split(' · ') : []),
@@ -20,7 +20,7 @@
   <header>
       <h2 id={`${instance}-title`}><span class="title-type">{node.typeName}:</span> {node.title}</h2>
       {#if node.status === 'Archived'}<p class="byline">Archived</p>{/if}
-    <p class="byline"><span>By {node.authorName}</span><span class="byline-separator" aria-hidden="true">·</span><time datetime={node.createdAt}>{new Date(node.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</time>{#if node.communities.length}<span class="byline-separator" aria-hidden="true">·</span><span class="communities" role="group" aria-label="Communities">{node.communities.length === 1 ? 'Community' : 'Communities'}: {node.communities.join(', ')}</span>{/if}</p>
+    <p class="byline"><span>By {#if node.authorId}<a href={`/profiles?id=${encodeURIComponent(node.authorId)}`} onclick={event => { if (onOpenProfile && node.authorId) { event.preventDefault(); onOpenProfile(node.authorId); } }}>{node.authorName}</a>{:else}{node.authorName}{/if}</span><span class="byline-separator" aria-hidden="true">·</span><time datetime={node.createdAt}>{new Date(node.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</time>{#if node.communities.length}<span class="byline-separator" aria-hidden="true">·</span><span class="communities" role="group" aria-label="Communities">{node.communities.length === 1 ? 'Community' : 'Communities'}: {node.communities.join(', ')}</span>{/if}</p>
   </header>
 
   <div class="body">
