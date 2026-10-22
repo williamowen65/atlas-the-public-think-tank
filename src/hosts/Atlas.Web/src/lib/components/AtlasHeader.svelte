@@ -1,4 +1,7 @@
 <script lang="ts">
+  import DiscoverySearch from './DiscoverySearch.svelte';
+  import { page } from '$app/state';
+  import { onMount } from 'svelte';
   import { commentRequest } from '../api/comments';
   let { active = 'discover', authenticated = false, displayName = 'Atlas User', onNavigate }: {
     active?: 'discover' | 'about' | 'components' | 'create';
@@ -7,7 +10,21 @@
     onNavigate?: (destination: 'discover' | 'create' | 'login' | 'register' | 'profile') => void;
   } = $props();
   let searching = $state(false);
-  let searchText = $state('');
+  let filtersOpen = $state(false);
+  let headerVisible = $state(true);
+  let lastScroll = 0;
+  onMount(() => {
+    lastScroll = window.scrollY;
+    const onScroll = () => {
+      const next = window.scrollY;
+      if (filtersOpen || next < 40 || next < lastScroll - 3) headerVisible = true;
+      else if (next > lastScroll + 3 && next > 100) headerVisible = false;
+      lastScroll = next;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  });
+
   let menuOpen = $state(false);
   let loggingOut = $state(false);
   let logoutError = $state('');
@@ -34,22 +51,12 @@
   }
   function closeOnNavigation() { menuOpen = false; }
   const initial = $derived(displayName.trim().charAt(0).toUpperCase() || 'U');
-  function submitSearch(event: SubmitEvent) {
-    event.preventDefault();
-    const query = searchText.trim();
-    if (query) window.location.assign('/?search=' + encodeURIComponent(query));
-  }
 </script>
 
 <svelte:window onpointerdown={closeOnOutside} onkeydown={closeOnEscape} onpopstate={closeOnNavigation} />
-<header class="atlas-header" id="page-top">
+<header class="atlas-header" class:hidden={!headerVisible} id="page-top">
   <a class="brand" href="/" aria-label="Atlas home"><strong>Atlas</strong><span>The Public Think Tank</span></a>
-  <form class:expanded={searching} class="search" role="search" onsubmit={submitSearch}>
-    <label class="sr-only" for="atlas-search">Search Atlas</label>
-    <input id="atlas-search" type="search" placeholder="Search Atlas" bind:value={searchText} />
-    <button type="submit" aria-label="Submit search" onclick={(event) => { if (window.matchMedia("(max-width: 560px)").matches && !searching) { event.preventDefault(); searching = true; } }}>⌕</button>
-    {#if searching}<button type="button" class="close-search" onclick={() => searching = false} aria-label="Close search">×</button>{/if}
-  </form>
+  <div class="search-slot"><DiscoverySearch onExpandedChange={open => { filtersOpen = open; if (open) headerVisible = true; }} /></div>
   {#if logoutError}<p class="logout-error" role="alert">{logoutError}</p>{/if}
   <div class="right-group">
     <nav class="primary" aria-label="Main navigation">
@@ -81,7 +88,7 @@
         <a href="/">Discover</a><a href="/new">Create</a>
         {#if authenticated}
           <a href="/me">My profile</a><a href="/me/drafts">My drafts</a><a href="/me/settings">Settings</a>
-          <a href="/logout">Log out</a>
+          <button type="button" class="logout-action" onclick={() => void logOut()}>Log out</button>
         {:else}
           <a href="/login">Log in</a><a href="/register">Sign up</a>
         {/if}
@@ -91,7 +98,10 @@
   </div>
 </header>
 <style lang="scss">
-  .atlas-header { position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;column-gap:clamp(1rem,2vw,2rem);padding:1rem 0;border-bottom:0; }
+  .atlas-header { position:sticky;top:0;z-index:30;background:var(--atlas-surface);transition:transform .18s ease;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;column-gap:clamp(1rem,2vw,2rem);padding:1rem 0;border-bottom:0; }
+  .atlas-header.hidden{transform:translateY(calc(-100% - 1rem));pointer-events:none;}
+  .search-slot{min-width:0;align-self:center;}
+  .search-slot :global(.filter-bar){padding:.25rem 0;border-top:0;}
   .atlas-header::after{content:'';position:absolute;bottom:0;left:50%;width:100vw;transform:translateX(-50%);border-bottom:1px solid var(--atlas-border);pointer-events:none;}
   .brand {display:flex;flex-direction:column;justify-content:center;color:var(--atlas-text);text-decoration:none;white-space:nowrap;strong{font-size:1.8rem;}span{font-size:.85rem;color:var(--atlas-muted);}}
   .search {display:flex;align-items:center;width:100%;min-width:0;border:1px solid var(--atlas-border);border-radius:.5rem;box-sizing:border-box;input{min-width:0;width:100%;flex:1;border:0;background:transparent;color:var(--atlas-text);padding:.55rem;}button{flex-shrink:0;border:0;background:transparent;color:var(--atlas-text);cursor:pointer;font-size:1.4rem;padding:0 .65rem;}.close-search{display:none;}}
@@ -111,12 +121,12 @@
     .brand span{display:none;}
     .primary,.auth,.account{display:none;}
     .mobile-menu{display:block;position:relative;summary{cursor:pointer;list-style:none;font-size:1.3rem;}nav{position:absolute;z-index:20;right:0;top:100%;min-width:11rem;display:flex;flex-direction:column;background:var(--atlas-surface);border:1px solid var(--atlas-border);border-radius:.5rem;padding:.75rem;gap:.75rem;}}
-    .search{grid-column:2;grid-row:1;width:2.75rem;border:0;}
-    .search input{display:none;}
-    .search.expanded{grid-column:1/3;grid-row:1;width:100%;border:1px solid var(--atlas-border);}
-    .search.expanded input{display:block;}
-    .search.expanded .close-search{display:block;}
-    .atlas-header:has(.search.expanded) .brand{display:none;}
+    .search-slot{grid-column:1/3;grid-row:2;}
+
+
+
+
+
     .right-group{grid-column:3;grid-row:1;}
   }
 </style>
