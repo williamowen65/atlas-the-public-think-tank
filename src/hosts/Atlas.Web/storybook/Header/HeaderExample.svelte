@@ -9,7 +9,7 @@
       discover: 'compositions-feed--playground',
       create: 'components-node-form--playground',
       login: 'components-sign-in--playground',
-      register: 'components-sign-in--playground',
+      register: 'components-sign-in--register',
       profile: 'compositions-profile-page--playground'
     };
     openStory(stories[destination]);
