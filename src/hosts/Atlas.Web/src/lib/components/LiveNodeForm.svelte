@@ -20,6 +20,7 @@
   }
   function savePrivateDraft() {
     if (!participantId || !currentDraft) return;
+    if (!currentDraft.title.trim()) { savedNotice = 'Enter a title before saving your draft.'; return; }
     try { const id = ownerDraftId || crypto.randomUUID(); putDraft(participantId, { id, ownerId: participantId, updatedAt: new Date().toISOString(), data: currentDraft }); ownerDraftId = id; savedNotice = 'Saved privately in this browser. Open My drafts to find it.'; }
     catch { savedNotice = 'Draft could not be saved in this browser.'; }
   }
