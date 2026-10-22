@@ -1,5 +1,5 @@
 <script lang="ts" module>
-  export interface NodeDraft { title: string; shortDescription: string; markdown: string; typeId: string | null; requestedTypeIds: string[]; parentId?: string; newType?: { name: string; description: string } }
+  export interface NodeDraft { title: string; shortDescription: string; markdown: string; typeId: string | null; requestedTypeIds: string[]; parentId?: string; newType?: { name: string; description: string; autoPluralize?: boolean } }
 </script>
 <script lang="ts">
   import VotingDial from './VotingDial.svelte';
@@ -21,21 +21,21 @@
       control.closest('form')?.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
     });
   }
-  let typeName = $state(''); let typeDescription = $state('');
+  let typeName = $state(''); let typeDescription = $state(''); let autoPluralize = $state(true);
   const instance = $props.id();
   $effect(() => { if (!typeId && types.length) typeId = initialTypeId || types[0].id; });
-  function draft(): NodeDraft { return { title: title.trim(), shortDescription: shortDescription.trim(), markdown, typeId: typeId === 'new' ? null : typeId, requestedTypeIds, parentId, ...(typeId === 'new' ? { newType: { name: typeName.trim(), description: typeDescription.trim() } } : {}) }; }
+  function draft(): NodeDraft { return { title: title.trim(), shortDescription: shortDescription.trim(), markdown, typeId: typeId === 'new' ? null : typeId, requestedTypeIds, parentId, ...(typeId === 'new' ? { newType: { name: typeName.trim(), description: typeDescription.trim(), autoPluralize } } : {}) }; }
   $effect(() => { onPreview?.(draft()); });
 </script>
 <form class="node-form atlas-panel" aria-label={parentId ? 'Create child node' : 'Create root node'} onsubmit={event => { event.preventDefault(); onSubmit?.(draft()); }}>
   {#if path.length}<div class="ribbon-context"><Breadcrumb items={path} /></div>{/if}
   <header>
-    <p class="note">{parentId ? 'Add a child node' : 'Create a root node'} · Live draft</p>
+    <p class="note">{parentId ? 'Add a child node' : 'Create a root node'} · Draft</p>
     <div class="title-row">
       <div class="type-field"><label for={`${instance}-type`}>Node type</label><select use:reveal id={`${instance}-type`} bind:value={typeId} required>{#each types as type}<option value={type.id}>{type.name}</option>{/each}<option value="new">Define a new node type…</option></select></div>
       <div class="title-field"><label for={`${instance}-title`}>Title</label><input id={`${instance}-title`} bind:value={title} placeholder="Give your node a title" required maxlength="450" /></div>
     </div>
-    {#if typeId === 'new'}<fieldset><legend>New node type</legend><label for={`${instance}-type-name`}>Type name</label><input id={`${instance}-type-name`} bind:value={typeName} required maxlength="100" /><label for={`${instance}-type-description`}>Type description</label><textarea id={`${instance}-type-description`} bind:value={typeDescription} maxlength="500"></textarea></fieldset>{/if}
+    {#if typeId === 'new'}<fieldset><legend>New node type</legend><label for={`${instance}-type-name`}>Type name</label><input id={`${instance}-type-name`} bind:value={typeName} required maxlength="100" /><label for={`${instance}-type-description`}>Type description</label><textarea id={`${instance}-type-description`} bind:value={typeDescription} maxlength="500"></textarea><label class="plural-choice"><input type="checkbox" bind:checked={autoPluralize} /> Automatically pluralize this type</label></fieldset>{/if}
   </header>
   <div class="intro">
     <VotingDial label="Node importance" disabled />
@@ -50,9 +50,10 @@
     </div>
   </footer>
   <div class="actions"><button type="submit" disabled={!onSubmit || submitting}>{submitting ? 'Creating…' : 'Create node'}</button></div>
-  {#if !onSubmit}<p class="note">Live draft only. Sign-in and saving are not connected yet; nothing is posted.</p>{/if}
+  {#if !onSubmit}<p class="note">Preview only. Saving is unavailable in this view.</p>{/if}
 </form>
 <style lang="scss">
+  .plural-choice{display:flex;gap:.5rem;align-items:center;margin-top:.5rem;}.plural-choice input{width:auto;}
   .node-form{max-width:48rem;width:100%;margin-inline:auto;padding:0;overflow-wrap:anywhere;scroll-margin-top:1rem;}
   .ribbon-context{min-width:0;padding:.75rem 0 0;margin-bottom:var(--atlas-card-padding,1.25rem);--atlas-breadcrumb-bottom-space:0px;}
   header,.intro,.content-editor,footer,.actions,.node-form>p{padding-inline:var(--atlas-card-padding,1.25rem);}header{padding-top:.75rem;}label{display:block;font-size:.85rem;margin-bottom:.25rem;}.title-row{display:flex;flex-wrap:wrap;gap:.75rem;align-items:end;}.type-field{flex:1 1 10rem;min-width:0;}.title-field{flex:3 1 16rem;min-width:0;}.title-field input{font-size:1.3rem;font-weight:600;}

@@ -6,6 +6,10 @@ const evidence = 'a1000000-0000-4000-8000-000000000002';
 const types = [{ id: idea, name: 'Idea', autoPluralize: true, pluralName: 'Ideas' }, { id: evidence, name: 'Evidence', autoPluralize: false, pluralName: 'Evidence' }];
 const entry = (id = root) => ({ nodeId: id, averageVote: 7, voteCount: 2, card: { title: id === root ? 'A live question' : 'A child idea', shortDescription: 'A concise introduction.', typeName: 'Question', authorName: 'Author', status: 'Active', createdAt: '2026-10-21T12:00:00Z', breadcrumb: '', subNodes: '1 Idea · 0 Evidence', childTypes: [{ typeId: idea, label: '1 Idea', count: 1 }, { typeId: evidence, label: '0 Evidence', count: 0 }], communities: 'Atlas', commentCount: 1, isHidden: false } });
 async function mock(page: Page) {
+  await page.route('**/atlas-comments-api/**', route => {
+    if (route.request().url().endsWith('/auth/session')) return route.fulfill({ json: { participantId: 'participant' } });
+    return route.fulfill({ json: { displayName: 'Author' } });
+  });
   const urls: URL[] = [];
   await page.route('**/atlas-preview-api/**', route => {
     const url = new URL(route.request().url()); urls.push(url);
@@ -42,7 +46,7 @@ test('Read more opens the matching node story; tabs load child feeds and a paren
   await expect.poll(async () => (await form.boundingBox())?.y).toBeGreaterThanOrEqual(0);
   await expect.poll(async () => (await form.boundingBox())?.y ?? Infinity).toBeLessThan(150);
   await expect(page.getByRole('tabpanel').locator('form')).toHaveCount(1);
-  await expect(page.getByRole('button', { name: 'Create node', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Create node', exact: true })).toBeEnabled();
 });
 
 test('root form previews a new type and never writes to the API', async ({ page }) => {

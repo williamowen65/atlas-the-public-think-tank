@@ -49,7 +49,7 @@ export function localApiProxy(): ProxyOptions {
   };
 }
 
-/** Separate, narrowly scoped session bridge for local comment authoring. */
+/** Separate, narrowly scoped session bridge for local comment and node authoring. */
 export const commentsPreview: Plugin = {
   name: 'atlas-comments-preview',
   configureServer(server) {
@@ -65,7 +65,7 @@ export const commentsPreview: Plugin = {
       const method = request.method ?? 'GET';
       const readable = /^\/atlas-comments-api\/auth\/(csrf|session)$/.test(path)
         || new RegExp(`^/atlas-comments-api/participants/${guid}$`, 'i').test(path);
-      const writable = method === 'POST' && (/^\/atlas-comments-api\/auth\/(login|logout)$/.test(path)
+      const writable = method === 'POST' && (['/atlas-comments-api/nodes', '/atlas-comments-api/catalog/node-types'].includes(path) || /^\/atlas-comments-api\/auth\/(login|logout)$/.test(path)
         || new RegExp(`^/atlas-comments-api/nodes/${guid}/comments$`, 'i').test(path)
         || new RegExp(`^/atlas-comments-api/comments/${guid}/replies$`, 'i').test(path))
         || ['PUT', 'DELETE'].includes(method) && new RegExp(`^/atlas-comments-api/comments/${guid}$`, 'i').test(path);
