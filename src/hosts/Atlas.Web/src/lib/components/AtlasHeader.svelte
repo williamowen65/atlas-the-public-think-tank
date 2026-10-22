@@ -8,6 +8,14 @@
   let searching = $state(false);
   let searchText = $state('');
   let menuOpen = $state(false);
+  let accountElement: HTMLDivElement;
+  function closeOnOutside(event: PointerEvent) {
+    if (menuOpen && event.target instanceof Node && !accountElement?.contains(event.target)) menuOpen = false;
+  }
+  function closeOnEscape(event: KeyboardEvent) {
+    if (event.key === 'Escape') menuOpen = false;
+  }
+  function closeOnNavigation() { menuOpen = false; }
   const initial = $derived(displayName.trim().charAt(0).toUpperCase() || 'U');
   function submitSearch(event: SubmitEvent) {
     event.preventDefault();
@@ -16,6 +24,7 @@
   }
 </script>
 
+<svelte:window onpointerdown={closeOnOutside} onkeydown={closeOnEscape} onpopstate={closeOnNavigation} />
 <header class="atlas-header" id="page-top">
   <a class="brand" href="/" aria-label="Atlas home"><strong>Atlas</strong><span>The Public Think Tank</span></a>
   <form class:expanded={searching} class="search" role="search" onsubmit={submitSearch}>
@@ -30,10 +39,10 @@
       <a href="/new" onclick={event => { if (onNavigate) { event.preventDefault(); onNavigate('create'); } }} aria-current={active === 'create' ? 'page' : undefined}>Create</a>
     </nav>
     {#if authenticated}
-      <div class="account">
+      <div class="account" bind:this={accountElement}>
         <button type="button" class="avatar" aria-label="Open account menu" aria-expanded={menuOpen} onclick={() => menuOpen = !menuOpen}>{initial}</button>
         {#if menuOpen}
-          <nav class="account-menu" aria-label="Account navigation">
+          <nav class="account-menu" aria-label="Account navigation" onclick={closeOnNavigation}>
             <a href="/me" onclick={event => { if (onNavigate) { event.preventDefault(); onNavigate("profile"); } }}>My profile</a>
             <a href="/me/drafts">My drafts</a>
             <a href="/me/settings">Settings</a>
