@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { replaceState } from '$app/navigation';
   import { page } from '$app/state';
   import { readTypes, type NodeType } from '$lib/api/nodePage';
@@ -9,6 +10,16 @@
   $effect(() => onExpandedChange?.(expanded));
   let input = $state('');
   let applied = $state('');
+  let pending = $state('');
+  const editing = $derived(parse(pending));
+  const storageKey = 'atlas.discovery.query.v1';
+  onMount(() => {
+    const current = page.url.searchParams.get('q') ?? page.url.searchParams.get('search');
+    let stored: string | null = null;
+    try { stored = localStorage.getItem(storageKey); } catch { /* Storage may be unavailable. */ }
+    if (current === null && stored) apply(stored);
+    else { applied = current ?? ''; input = applied; pending = applied; }
+  });
   const keys = ['type', 'author', 'community', 'votes', 'average', 'from', 'through', 'archived'] as const;
   const uuid = /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
   function parse(value: string) {
@@ -47,23 +58,24 @@
   function apply(value: string) {
     const result = parse(value);
     if (result.errors.length) { input = value; return; }
-    applied = value.trim(); input = applied;
+    applied = value.trim(); input = applied; pending = applied;
+    try { if (applied) localStorage.setItem(storageKey, applied); else localStorage.removeItem(storageKey); } catch { /* Storage is optional. */ }
     const url = new URL(window.location.href);
     if (applied) url.searchParams.set('q', applied); else url.searchParams.delete('q');
     replaceState(url.pathname + url.search, page.state);
   }
   function token(key: string, value: string) {
-    const parts = (input.match(/"[^"]*"|\S+/g) ?? []).filter(p => !p.toLowerCase().startsWith(key + ':'));
+    const parts = (pending.match(/"[^"]*"|\S+/g) ?? []).filter(p => !p.toLowerCase().startsWith(key + ':'));
     if (value) parts.push(key + ':' + (value.includes(' ') ? '"' + value + '"' : value));
-    apply(parts.join(' '));
+    pending = parts.join(' ');
   }
   function remove(key: string) {
     if (key === 'text') apply((input.match(/"[^"]*"|\S+/g) ?? []).filter(p => keys.some(k => p.toLowerCase().startsWith(k + ':'))).join(' '));
-    else token(key, '');
+    else { token(key, ''); apply(pending); }
   }
   $effect(() => {
     const q = page.url.searchParams.get('q') ?? page.url.searchParams.get('search') ?? '';
-    if (q !== applied) { applied = q; input = q; }
+    if (q !== applied) { applied = q; input = q; pending = q; }
   });
   $effect(() => { const controller = new AbortController(); void readTypes('/atlas-preview-api', controller.signal).then(t => types = t).catch(() => {}); return () => controller.abort(); });
 
@@ -89,14 +101,16 @@
   {/if}
   {#if expanded}
     <div class="toolbox">
-      <label>Node type<select value={parsed.filters.typeId ?? ''} onchange={e => token('type', e.currentTarget.value)}><option value="">All types</option>{#each types as type}<option value={type.id}>{type.name}</option>{/each}</select></label>
-      <label>Minimum votes<input type="number" min="0" value={parsed.filters.minVotes ?? ''} onchange={e => token('votes', (e.currentTarget.value || parsed.filters.maxVotes !== undefined) ? `${e.currentTarget.value}..${parsed.filters.maxVotes ?? ''}` : '')} /></label>
+      <label>Node type<select value={editing.filters.typeId ?? ''} onchange={e => token('type', e.currentTarget.value)}><option value="">All types</option>{#each types as type}<option value={type.id}>{type.name}</option>{/each}</select></label>
+      <label>Minimum votes<input type="number" min="0" value={editing.filters.minVotes ?? ''} onchange={e => token('votes', (e.currentTarget.value || editing.filters.maxVotes !== undefined) ? `${e.currentTarget.value}..${parsed.filters.maxVotes ?? ''}` : '')} /></label>
       <label>Maximum votes<input type="number" min="0" value={parsed.filters.maxVotes ?? ''} onchange={e => token('votes', (e.currentTarget.value || parsed.filters.minVotes !== undefined) ? `${parsed.filters.minVotes ?? ''}..${e.currentTarget.value}` : '')} /></label>
-      <label>Minimum average (0–10)<input type="number" min="0" max="10" step=".1" value={parsed.filters.minAverage ?? ''} onchange={e => token('average', (e.currentTarget.value || parsed.filters.maxAverage !== undefined) ? `${e.currentTarget.value}..${parsed.filters.maxAverage ?? ''}` : '')} /></label>
+      <label>Minimum average (0–10)<input type="number" min="0" max="10" step=".1" value={editing.filters.minAverage ?? ''} onchange={e => token('average', (e.currentTarget.value || editing.filters.maxAverage !== undefined) ? `${e.currentTarget.value}..${parsed.filters.maxAverage ?? ''}` : '')} /></label>
       <label>Maximum average (0–10)<input type="number" min="0" max="10" step=".1" value={parsed.filters.maxAverage ?? ''} onchange={e => token('average', (e.currentTarget.value || parsed.filters.minAverage !== undefined) ? `${parsed.filters.minAverage ?? ''}..${e.currentTarget.value}` : '')} /></label>
       <label>Created after<input type="date" value={parsed.filters.from ?? ''} onchange={e => token('from', e.currentTarget.value)} /></label>
       <label>Created before<input type="date" value={parsed.filters.through ?? ''} onchange={e => token('through', e.currentTarget.value)} /></label>
-      <label class="check"><input type="checkbox" checked={parsed.filters.archived ?? false} onchange={e => token('archived', e.currentTarget.checked ? 'true' : '')} /> Include archived nodes</label>
+      <label class="check"><input type="checkbox" checked={editing.filters.archived ?? false} onchange={e => token('archived', e.currentTarget.checked ? 'true' : '')} /> Include archived nodes</label>
+      <div class="apply-row"><button type="button" onclick={() => apply(pending)} disabled={editing.errors.length > 0}>Apply filters</button>{#if pending !== applied}<span>Changes not yet applied</span>{/if}</div>
+      {#if editing.errors.length}<p role="alert" class="validation">{editing.errors.join(" · ")}</p>{/if}
       <p class="hint">Visual filters update the search syntax above. You can also type filters directly, such as <code>type:Idea</code>, <code>votes:5..100</code>, <code>average:7..10</code>, <code>from:2026-01-01</code>, <code>author:ID</code>, or <code>community:ID</code>. Text searches node content only for now.</p>
     </div>
   {/if}
@@ -112,6 +126,7 @@
   .toolbox{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:.75rem;margin-top:.85rem;padding-top:.85rem;border-top:1px solid var(--atlas-border);max-height:55vh;overflow-y:auto;}
   .toolbox label{display:flex;flex-direction:column;gap:.3rem;font-size:.85rem;}.toolbox input,.toolbox select{width:100%;box-sizing:border-box;}
   .toolbox .check{flex-direction:row;align-items:center;}.toolbox .check input{width:auto;}
+  .apply-row{grid-column:1/-1;display:flex;align-items:center;gap:.75rem;}.apply-row span{font-size:.85rem;color:var(--atlas-muted);}
   .hint{grid-column:1/-1;font-size:.8rem;margin:0;}.validation{color:var(--atlas-text);font-size:.85rem;margin:.5rem 0;}
   .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
 
