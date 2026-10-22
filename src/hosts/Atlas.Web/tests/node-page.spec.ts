@@ -35,6 +35,13 @@ test('Read more opens the matching node story; tabs load child feeds and a paren
   await page.getByRole('button', { name: 'Add Idea', exact: true }).click();
   await expect(page.getByRole('form', { name: 'Create child node' })).toBeVisible();
   await expect(page.getByLabel('Node type', { exact: true })).toHaveValue(idea);
+  await expect(page.getByLabel('Node type', { exact: true })).toBeFocused();
+  const form = page.getByRole('form', { name: 'Create child node' });
+  await expect(page.getByRole('tabpanel').getByRole('form')).toHaveCount(1);
+  await expect(form.getByRole('navigation')).toContainText('A live question');
+  await expect.poll(async () => (await form.boundingBox())?.y).toBeGreaterThanOrEqual(0);
+  await expect.poll(async () => (await form.boundingBox())?.y ?? Infinity).toBeLessThan(150);
+  await expect(page.getByRole('tabpanel').locator('form')).toHaveCount(1);
   await expect(page.getByRole('button', { name: 'Create node', exact: true })).toBeDisabled();
 });
 
@@ -47,9 +54,18 @@ test('root form previews a new type and never writes to the API', async ({ page 
   await page.getByLabel('Node type', { exact: true }).selectOption('new');
   await page.getByLabel('Type name', { exact: true }).fill('Observation');
   await page.getByLabel('Content (Markdown)', { exact: true }).fill('## Supporting content\n\nA longer explanation.');
-  await page.getByRole('button', { name: 'Preview draft' }).click();
-  await expect(page.getByRole('region', { name: 'Draft preview' })).toContainText('Observation');
-  await expect(page.getByRole('status')).toHaveText('Draft preview only. Nothing has been saved.');
+  await expect(page.getByRole('region', { name: 'Content preview' })).toContainText('Supporting content');
+  await page.getByLabel('Content (Markdown)', { exact: true }).fill('## Revised content');
+  await expect(page.getByRole('region', { name: 'Content preview' })).toContainText('Revised content');
+  await expect(page.getByRole('button', { name: 'Preview draft' })).toHaveCount(0);
+  await expect(page.getByRole('spinbutton')).toHaveAttribute('aria-disabled', 'true');
+  await expect(page.getByText('0 Comments', { exact: true })).toBeVisible();
+  await page.getByLabel('Requested contributions', { exact: true }).selectOption(evidence);
+  await expect(page.getByRole('list', { name: 'Requested contribution types' })).toContainText('Evidence');
+  await page.getByRole('button', { name: 'Remove Evidence contribution' }).click();
+  await expect(page.getByRole('list', { name: 'Requested contribution types' })).toHaveCount(0);
+  await page.setViewportSize({ width: 320, height: 720 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
   expect(writes).toEqual([]);
 });
 
