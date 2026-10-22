@@ -59,7 +59,7 @@ test('root form previews a new type and never writes to the API', async ({ page 
   await expect(page.getByRole('region', { name: 'Content preview' })).toContainText('Revised content');
   await expect(page.getByRole('button', { name: 'Preview draft' })).toHaveCount(0);
   await expect(page.getByRole('spinbutton')).toHaveAttribute('aria-disabled', 'true');
-  await expect(page.getByText('0 Comments', { exact: true })).toBeVisible();
+  await expect(page.getByText('0 Comments', { exact: true })).toHaveCount(0);
   await page.getByLabel('Requested contributions', { exact: true }).selectOption(evidence);
   await expect(page.getByRole('list', { name: 'Requested contribution types' })).toContainText('Evidence');
   await page.getByRole('button', { name: 'Remove Evidence contribution' }).click();
