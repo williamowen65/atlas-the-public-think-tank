@@ -1,11 +1,11 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { page } from '$app/state';
+  import { discoveryQuery } from '$lib/state/discoveryQuery.svelte';
   import LiveNodeFeed from '$lib/components/LiveNodeFeed.svelte';
   import { readTypes, type NodeType } from '$lib/api/nodePage';
   import type { DiscoveryFilters } from '$lib/api/discovery';
   let types = $state<NodeType[]>([]);
-  const query = $derived(page.url.searchParams.get('q') ?? page.url.searchParams.get('search') ?? '');
+  const query = $derived(discoveryQuery.value);
   const parsed = $derived.by(() => {
     const filters: DiscoveryFilters = {}; const text: string[] = [];
     for (const part of query.match(/"[^"]*"|\S+/g) ?? []) {
