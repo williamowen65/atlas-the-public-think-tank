@@ -1,6 +1,7 @@
 import type { BreadcrumbPage } from '../components/Breadcrumb.svelte';
 import type { NodeCardData } from '../components/NodeCard.svelte';
 
+export interface DiscoveryFilters { parentId?: string; typeId?: string; authorId?: string; communityId?: string; minVotes?: number; maxVotes?: number; minAverage?: number; maxAverage?: number; from?: string; through?: string; archived?: boolean }
 interface DiscoveryCard {
   childTypes?: { typeId: string; label: string; count: number }[];
   nodeId: string; title: string; typeName: string; authorName: string; authorId?: string | null; status: string;
@@ -14,12 +15,20 @@ export interface DiscoveryPage {
 }
 
 /** Anonymous read only. The caller supplies an API base and owns request cancellation. */
-export async function readDiscovery(base: string, page: number, search: string, signal: AbortSignal, nodeId?: string, filters?: { parentId?: string; typeId?: string; authorId?: string }): Promise<DiscoveryPage> {
+export async function readDiscovery(base: string, page: number, search: string, signal: AbortSignal, nodeId?: string, filters?: DiscoveryFilters): Promise<DiscoveryPage> {
   const query = new URLSearchParams({ Page: String(page) });
   if (nodeId) { query.set('NodeId', nodeId); query.set('IncludeArchived', 'true'); }
   if (filters?.parentId) query.set('ParentNodeId', filters.parentId);
   if (filters?.typeId) query.set('NodeTypeId', filters.typeId);
   if (filters?.authorId) query.set('AuthorParticipantId', filters.authorId);
+  if (filters?.communityId) query.set('CommunityId', filters.communityId);
+  if (filters?.minVotes !== undefined) query.set('MinimumVoteCount', String(filters.minVotes));
+  if (filters?.maxVotes !== undefined) query.set('MaximumVoteCount', String(filters.maxVotes));
+  if (filters?.minAverage !== undefined) query.set('MinimumAverageVote', String(filters.minAverage));
+  if (filters?.maxAverage !== undefined) query.set('MaximumAverageVote', String(filters.maxAverage));
+  if (filters?.from) query.set('CreatedFrom', filters.from);
+  if (filters?.through) query.set('CreatedThrough', filters.through);
+  if (filters?.archived) query.set('IncludeArchived', 'true');
   if (search.trim()) query.set('SearchText', search.trim());
   const response = await fetch(`${base}/nodes?${query}`, { method: 'GET', credentials: 'omit', signal });
   if (!response.ok) throw new Error(`Atlas API returned HTTP ${response.status}.`);
