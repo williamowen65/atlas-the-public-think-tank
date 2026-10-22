@@ -12,7 +12,7 @@ export const anonymousPreview: Plugin = {
         response.end('This preview only supports anonymous reads.');
         return;
       }
-      if (!/^\/atlas-preview-api\/nodes(?:\?|$)/.test(request.url)
+      if (!/^\/atlas-preview-api\/participants(?:\?|\/\w|$)/.test(request.url) && !/^\/atlas-preview-api\/nodes(?:\?|$)/.test(request.url)
         && !/^\/atlas-preview-api\/catalog\/node-types(?:\?|$)/.test(request.url)
         && !/^\/atlas-preview-api\/nodes\/[0-9a-f-]{36}(?:\/(?:ancestors|reactions|description|comments))?(?:\?|$)/i.test(request.url)) {
         response.statusCode = 404;
@@ -66,7 +66,7 @@ export const commentsPreview: Plugin = {
       const readable = new RegExp(`^/atlas-comments-api/nodes/${guid}/votes$`, 'i').test(path) || /^\/atlas-comments-api\/auth\/(csrf|session)$/.test(path)
         || new RegExp(`^/atlas-comments-api/participants/${guid}$`, 'i').test(path);
       const nodeVote = ['PUT', 'DELETE'].includes(method) && new RegExp(`^/atlas-comments-api/nodes/${guid}/vote$`, 'i').test(path);
-      const writable = nodeVote || method === 'POST' && (['/atlas-comments-api/nodes', '/atlas-comments-api/catalog/node-types'].includes(path) || /^\/atlas-comments-api\/auth\/(login|logout)$/.test(path)
+      const writable = nodeVote || method === 'POST' && (['/atlas-comments-api/nodes', '/atlas-comments-api/catalog/node-types', '/atlas-comments-api/auth/register'].includes(path) || /^\/atlas-comments-api\/auth\/(login|logout)$/.test(path)
         || new RegExp(`^/atlas-comments-api/nodes/${guid}/comments$`, 'i').test(path)
         || new RegExp(`^/atlas-comments-api/comments/${guid}/replies$`, 'i').test(path))
         || ['PUT', 'DELETE'].includes(method) && new RegExp(`^/atlas-comments-api/comments/${guid}$`, 'i').test(path);
