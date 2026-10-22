@@ -1,6 +1,7 @@
 import type { NodeDraft } from '../components/NodeForm.svelte';
+import type { BreadcrumbItem } from '../components/Breadcrumb.svelte';
 
-export interface SavedDraft { id: string; ownerId: string; updatedAt: string; data: NodeDraft }
+export interface SavedDraft { id: string; ownerId: string; updatedAt: string; data: NodeDraft; breadcrumb?: BreadcrumbItem[]; parentTitle?: string }
 const prefix = 'atlas:private-node-drafts:v1:';
 const key = (owner: string) => prefix + owner;
 function valid(value: unknown): value is SavedDraft {
