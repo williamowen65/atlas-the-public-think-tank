@@ -4,7 +4,7 @@
   import NodeFeed, { type FeedItem } from './NodeFeed.svelte';
   import { readDiscovery, discoveryCard, readReactions, readOlderAncestors } from '../api/discovery';
   import type { NodeCardPresentation } from './NodeCard.svelte';
-  let { presentation = 'ribbon-corner', apiBase = '/atlas-preview-api', parentId, typeId, onOpenNode }: { presentation?: NodeCardPresentation; apiBase?: string; parentId?: string; typeId?: string; onOpenNode?: (id: string, typeId?: string) => void } = $props();
+  let { presentation = 'ribbon-corner', apiBase = '/atlas-preview-api', parentId, typeId, authorId, onOpenNode }: { presentation?: NodeCardPresentation; apiBase?: string; parentId?: string; typeId?: string; authorId?: string; onOpenNode?: (id: string, typeId?: string) => void } = $props();
   let items = $state<FeedItem[]>([]);
   let loading = $state(false);
   let error = $state('');
@@ -19,7 +19,7 @@
     const current = controller;
     const timeout = setTimeout(() => current.abort(), 10000);
     try {
-      const page = await readDiscovery(apiBase, nextPage, '', current.signal, undefined, { parentId, typeId });
+      const page = await readDiscovery(apiBase, nextPage, '', current.signal, undefined, { parentId, typeId, authorId });
       if (page.page !== nextPage) throw new Error('Unexpected page');
       const additions: FeedItem[] = [];
       for (const entry of page.items) {
