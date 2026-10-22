@@ -6,12 +6,12 @@
   import Breadcrumb, { type BreadcrumbItem } from './Breadcrumb.svelte';
   import MarkdownContent from './MarkdownContent.svelte';
   import type { NodeType } from '../api/nodePage';
-  let { types, parentId, parentTitle, initialTypeId = '', breadcrumb = [], focusOnMount = false, onPreview, onSubmit, submitting = false }: {
-    types: NodeType[]; parentId?: string; parentTitle?: string; initialTypeId?: string; breadcrumb?: BreadcrumbItem[]; focusOnMount?: boolean;
+  let { initialDraft, types, parentId, parentTitle, initialTypeId = '', breadcrumb = [], focusOnMount = false, onPreview, onSubmit, submitting = false }: {
+    types: NodeType[]; initialDraft?: NodeDraft; parentId?: string; parentTitle?: string; initialTypeId?: string; breadcrumb?: BreadcrumbItem[]; focusOnMount?: boolean;
     onPreview?: (draft: NodeDraft) => void; onSubmit?: (draft: NodeDraft) => void; submitting?: boolean;
   } = $props();
-  let title = $state(''); let shortDescription = $state(''); let markdown = $state('');
-  let typeId = $state(''); let requestedTypeIds = $state<string[]>([]);
+  let title = $state(initialDraft?.title ?? ''); let shortDescription = $state(initialDraft?.shortDescription ?? ''); let markdown = $state(initialDraft?.markdown ?? '');
+  let typeId = $state(initialDraft?.newType ? 'new' : initialDraft?.typeId ?? ''); let requestedTypeIds = $state<string[]>(initialDraft?.requestedTypeIds ?? []);
   let requestedType = $state('');
   const path = $derived(parentId ? [...breadcrumb, { id: parentId, title: parentTitle ?? parentId }] : breadcrumb);
   function reveal(control: HTMLSelectElement) {
@@ -21,7 +21,7 @@
       control.closest('form')?.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
     });
   }
-  let typeName = $state(''); let typeDescription = $state(''); let autoPluralize = $state(true);
+  let typeName = $state(initialDraft?.newType?.name ?? ''); let typeDescription = $state(initialDraft?.newType?.description ?? ''); let autoPluralize = $state(initialDraft?.newType?.autoPluralize ?? true);
   const instance = $props.id();
   $effect(() => { if (!typeId && types.length) typeId = initialTypeId || types[0].id; });
   function draft(): NodeDraft { return { title: title.trim(), shortDescription: shortDescription.trim(), markdown, typeId: typeId === 'new' ? null : typeId, requestedTypeIds, parentId, ...(typeId === 'new' ? { newType: { name: typeName.trim(), description: typeDescription.trim(), autoPluralize } } : {}) }; }
