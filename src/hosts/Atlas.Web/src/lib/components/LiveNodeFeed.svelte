@@ -45,12 +45,8 @@
       if (!disposed) loading = false;
     }
   }
-  onMount(() => { return () => { disposed = true; controller?.abort(); }; });
-  $effect(() => {
-    search; JSON.stringify(filters); parentId; typeId; authorId;
-    controller?.abort(); controller = undefined; loading = false;
-    items = []; nextPage = 1; hasMore = true; error = '';
-    void load();
-  });
+  // Parent views key the feed when their filters change. Avoid an effect that
+  // reads and writes loading/items, which can repeatedly restart requests.
+  onMount(() => { void load(); return () => { disposed = true; controller?.abort(); }; });
 </script>
 <NodeFeed {onOpenProfile} onComments={id => onOpenNode ? onOpenNode(id, 'comments') : window.location.assign(`/nodes?id=${encodeURIComponent(id)}&type=comments#contributions`)} onChildType={(id, childType) => onOpenNode ? onOpenNode(id, childType) : window.location.assign(`/nodes?id=${encodeURIComponent(id)}&type=${encodeURIComponent(childType)}#contributions`)} onReadMore={onOpenNode ?? (id => window.location.assign(`/nodes?id=${encodeURIComponent(id)}`))} onNavigate={onOpenNode} {items} {loading} {hasMore} {error} {presentation} onLoadMore={() => void load()} loadOlderAncestors={id => id ? readOlderAncestors(id, AbortSignal.timeout(10000), apiBase) : Promise.resolve({ items: [], hasMore: false })}>{#snippet renderVoting(item)}<LiveVotingDial nodeId={item.node.id} initialAverage={item.average} initialTotalVotes={item.totalVotes} archived={item.node.status === 'Archived'} />{/snippet}</NodeFeed>
