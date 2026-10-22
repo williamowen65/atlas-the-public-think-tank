@@ -4,12 +4,16 @@
   import { listDrafts, deleteDraft, type SavedDraft } from '$lib/api/privateDrafts';
   import { readTypes, type NodeType } from '$lib/api/nodePage';
   import Breadcrumb, { type BreadcrumbItem } from '$lib/components/Breadcrumb.svelte';
-  import { readDiscovery, discoveryCard } from '$lib/api/discovery';
+  import { readDiscovery, discoveryCard, readOlderAncestors } from '$lib/api/discovery';
   let owner = $state<string | null>(null);
   let drafts = $state<SavedDraft[]>([]);
   let confirmId = $state('');
   let types = $state<NodeType[]>([]);
   let resolvedPaths = $state<Record<string, BreadcrumbItem[]>>({});
+  let moreAncestors = $state<Record<string, boolean>>({});
+  function loadOlder(draft: SavedDraft, oldestId?: string) {
+    return readOlderAncestors(oldestId ?? draft.data.parentId!, AbortSignal.timeout(10000), '/atlas-preview-api');
+  }
   $effect(() => {
     const entries = drafts.filter(draft => draft.data.parentId && !draft.parentTitle);
     for (const entry of entries) {
@@ -18,7 +22,10 @@
       resolvedPaths[entry.id] = entry.breadcrumb ?? [];
       void readDiscovery('/atlas-preview-api', 1, '', AbortSignal.timeout(10000), parentId).then(page => {
         const parent = page.items.map(discoveryCard).find(item => item?.id === parentId);
-        if (parent) resolvedPaths[entry.id] = [...parent.breadcrumb, { id: parentId, title: parent.title }];
+        if (parent) {
+          resolvedPaths[entry.id] = [...parent.breadcrumb, { id: parentId, title: parent.title }];
+          moreAncestors[entry.id] = !!page.items.find(item => item.nodeId === parentId)?.card?.breadcrumbSegment?.continuationNodeId;
+        }
       }).catch(() => { /* The parent may be unavailable or deleted. */ });
     }
   });
@@ -31,7 +38,7 @@
     if (draft.data.newType) return draft.data.newType.name || 'New node type';
     return types.find(type => type.id === draft.data.typeId)?.name ?? (draft.data.typeId ? 'Node type unavailable' : 'No node type selected');
   }
-  function sessionChanged(id: string | null) { owner = id; drafts = id ? listDrafts(id) : []; confirmId = ''; }
+  function sessionChanged(id: string | null) { owner = id; drafts = id ? listDrafts(id) : []; resolvedPaths = {}; moreAncestors = {}; confirmId = ''; }
   function remove(id: string) {
     if (!owner) return;
     try { deleteDraft(owner, id); drafts = listDrafts(owner); confirmId = ''; }
@@ -51,7 +58,7 @@
     <ul>
       {#each drafts as draft (draft.id)}
         <li>
-          {#if draft.data.parentId}<div class="draft-breadcrumb"><Breadcrumb items={draftPath(draft)} onNavigate={id => void goto('/nodes?id=' + encodeURIComponent(id))} /></div>{/if}
+          {#if draft.data.parentId}<div class="draft-breadcrumb"><Breadcrumb items={draftPath(draft)} hasMore={moreAncestors[draft.id] ?? false} loadOlder={oldestId => loadOlder(draft, oldestId)} onNavigate={id => void goto('/nodes?id=' + encodeURIComponent(id))} /></div>{/if}
           <h2><span class="draft-type">{typeName(draft)}</span> <span class="draft-title">{draft.data.title || 'Untitled draft'}</span></h2>
           <p>{draft.data.shortDescription || 'No description yet.'}</p>
           <small>Saved {new Date(draft.updatedAt).toLocaleString()}</small>
@@ -73,5 +80,5 @@
   {/if}
 </section>
 <style>
-  .drafts{max-width:52rem;margin:2rem auto;min-width:0;}ul{padding:0;list-style:none;display:grid;gap:1rem;}li{padding:1rem;border:1px solid var(--atlas-border);border-radius:var(--atlas-radius);background:var(--atlas-surface);} .draft-breadcrumb{max-width:100%;min-width:0;margin-bottom:.75rem;}h2{margin:.25rem 0;display:flex;flex-wrap:wrap;align-items:baseline;gap:.5rem;}.draft-type{font-size:.8em;color:var(--atlas-muted);font-weight:600;}.draft-title{font-weight:700;}small{color:var(--atlas-muted);}.actions{display:flex;align-items:center;flex-wrap:wrap;gap:.6rem;margin-top:1rem;}button{font:inherit;cursor:pointer;padding:.5rem .75rem;}
+  .drafts{width:100%;max-width:52rem;margin:2rem auto;min-width:0;}ul{padding:0;list-style:none;display:grid;gap:1rem;min-width:0;}li{width:100%;max-width:48rem;min-width:0;padding:0 1rem 1rem;border:1px solid var(--atlas-border);border-radius:var(--atlas-radius);background:var(--atlas-surface);overflow:hidden;} .draft-breadcrumb{width:calc(100% + 2rem);max-width:calc(100% + 2rem);min-width:0;margin:0 -1rem .75rem;padding:.75rem 0 0;--atlas-breadcrumb-bottom-space:0px;}h2{margin:.25rem 0;display:flex;flex-wrap:wrap;align-items:baseline;gap:.5rem;}.draft-type{font-size:.8em;color:var(--atlas-muted);font-weight:600;}.draft-title{font-weight:700;}small{color:var(--atlas-muted);}.actions{display:flex;align-items:center;flex-wrap:wrap;gap:.6rem;margin-top:1rem;}button{font:inherit;cursor:pointer;padding:.5rem .75rem;}
 </style>
