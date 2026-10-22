@@ -5,6 +5,8 @@ public sealed record DiscoveryCard(Guid NodeId, string Title, string TypeName, s
     string Status, DateTimeOffset CreatedAt, string Description, string Breadcrumb,
     string SubNodes, string Reactions, string Communities, int CommentCount, bool IsHidden)
 {
+    public Guid? AuthorId { get; init; }
+
     public IReadOnlyList<DiscoveryChildType> ChildTypes { get; init; } = Array.Empty<DiscoveryChildType>();
 
     public string ShortDescription { get; init; } = "";
