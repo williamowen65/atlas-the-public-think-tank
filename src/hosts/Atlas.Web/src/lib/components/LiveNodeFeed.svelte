@@ -4,7 +4,7 @@
   import NodeFeed, { type FeedItem } from './NodeFeed.svelte';
   import { readDiscovery, discoveryCard, readReactions, readOlderAncestors } from '../api/discovery';
   import type { NodeCardPresentation } from './NodeCard.svelte';
-  let { presentation = 'ribbon-corner', apiBase = '/atlas-preview-api', parentId, typeId, authorId, onOpenNode }: { presentation?: NodeCardPresentation; apiBase?: string; parentId?: string; typeId?: string; authorId?: string; onOpenNode?: (id: string, typeId?: string) => void } = $props();
+  let { presentation = 'ribbon-corner', apiBase = '/atlas-preview-api', parentId, typeId, authorId, onOpenNode, onOpenProfile }: { presentation?: NodeCardPresentation; apiBase?: string; parentId?: string; typeId?: string; authorId?: string; onOpenNode?: (id: string, typeId?: string) => void; onOpenProfile?: (id: string) => void } = $props();
   let items = $state<FeedItem[]>([]);
   let loading = $state(false);
   let error = $state('');
@@ -46,4 +46,4 @@
   }
   onMount(() => { void load(); return () => { disposed = true; controller?.abort(); }; });
 </script>
-<NodeFeed onComments={id => onOpenNode ? onOpenNode(id, 'comments') : window.location.assign(`/nodes?id=${encodeURIComponent(id)}&type=comments#contributions`)} onChildType={(id, childType) => onOpenNode ? onOpenNode(id, childType) : window.location.assign(`/nodes?id=${encodeURIComponent(id)}&type=${encodeURIComponent(childType)}#contributions`)} onReadMore={onOpenNode ?? (id => window.location.assign(`/nodes?id=${encodeURIComponent(id)}`))} onNavigate={onOpenNode} {items} {loading} {hasMore} {error} {presentation} onLoadMore={() => void load()} loadOlderAncestors={id => id ? readOlderAncestors(id, AbortSignal.timeout(10000), apiBase) : Promise.resolve({ items: [], hasMore: false })}>{#snippet renderVoting(item)}<LiveVotingDial nodeId={item.node.id} initialAverage={item.average} initialTotalVotes={item.totalVotes} archived={item.node.status === 'Archived'} />{/snippet}</NodeFeed>
+<NodeFeed {onOpenProfile} onComments={id => onOpenNode ? onOpenNode(id, 'comments') : window.location.assign(`/nodes?id=${encodeURIComponent(id)}&type=comments#contributions`)} onChildType={(id, childType) => onOpenNode ? onOpenNode(id, childType) : window.location.assign(`/nodes?id=${encodeURIComponent(id)}&type=${encodeURIComponent(childType)}#contributions`)} onReadMore={onOpenNode ?? (id => window.location.assign(`/nodes?id=${encodeURIComponent(id)}`))} onNavigate={onOpenNode} {items} {loading} {hasMore} {error} {presentation} onLoadMore={() => void load()} loadOlderAncestors={id => id ? readOlderAncestors(id, AbortSignal.timeout(10000), apiBase) : Promise.resolve({ items: [], hasMore: false })}>{#snippet renderVoting(item)}<LiveVotingDial nodeId={item.node.id} initialAverage={item.average} initialTotalVotes={item.totalVotes} archived={item.node.status === 'Archived'} />{/snippet}</NodeFeed>
