@@ -11,7 +11,6 @@
   let error = $state('');
   let page = $state(0);
   let hasMore = $state(false);
-  let revision = $state(0);
   const currentId = $derived(participantId || selected);
   async function loadProfile(id: string) {
     if (!id) return;
@@ -32,7 +31,7 @@
     finally { loading = false; }
   }
   onMount(() => { void loadDirectory(true); });
-  $effect(() => { if (currentId) { revision = revision + 1; void loadProfile(currentId); } });
+  $effect(() => { if (currentId) void loadProfile(currentId); });
 </script>
 <section class="profile-page" aria-label="Public participant profile">
   <nav class="profile-navigation" aria-label="Profile navigation">
