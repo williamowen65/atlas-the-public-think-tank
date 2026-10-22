@@ -1,10 +1,32 @@
 <script lang="ts">
   let { tagline = 'A place to connect questions, evidence, and ideas.' }: { tagline?: string } = $props();
+  const year = new Date().getFullYear();
+  const groups = [
+    { title: 'Explore', links: [{text:'Discover',href:'/'},{text:'Create a contribution',href:'/new'},{text:'How Atlas works',href:'/about#how-it-works'},{text:'Guides',href:'/guides'}]},
+    { title: 'About', links: [{text:'About Atlas',href:'/about'},{text:'Our mission',href:'/about#mission'},{text:'GitHub',href:'https://github.com/williamowen65/atlas-the-public-think-tank'}]},
+    { title: 'Get involved', links: [{text:'Give feedback',href:'/feedback'},{text:'Become a tester',href:'/testers'},{text:'Support Atlas',href:'/support'},{text:'Donate',href:'/support#donate'}]},
+    { title: 'Help & legal', links: [{text:'Help & support',href:'/support'},{text:'Privacy policy',href:'/privacy'},{text:'Terms of use',href:'/terms'}]}
+  ];
 </script>
 <footer class="atlas-footer">
-  <div><strong>Atlas · The Public Think Tank</strong><p>{tagline}</p></div>
-  <nav aria-label="Footer navigation"><a href="/about">About Atlas</a><a href="#page-top">Back to top</a></nav>
+  <div class="footer-links">
+    {#each groups as group}
+      <nav aria-label={group.title}>
+        <strong>{group.title}</strong>
+        {#each group.links as link}<a href={link.href}>{link.text}</a>{/each}
+      </nav>
+    {/each}
+  </div>
+  <div class="footer-bottom">
+    <div><strong>Atlas · The Public Think Tank</strong><p>{tagline}</p></div>
+    <span>© {year} Atlas</span>
+  </div>
 </footer>
 <style lang="scss">
-  .atlas-footer {display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:1rem 2rem;padding:1.5rem 0;margin-top:2rem;border-top:1px solid var(--atlas-border);font-size:.85rem;color:var(--atlas-muted);p{margin:.4rem 0;max-width:40rem;}nav{margin:0;}}
+  .atlas-footer{padding:2rem 0;margin-top:2rem;border-top:1px solid var(--atlas-border);font-size:.9rem;color:var(--atlas-muted);}
+  .footer-links{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1.5rem 2rem;margin-bottom:2rem;}
+  nav{display:flex;flex-direction:column;align-items:flex-start;gap:.6rem;strong{color:var(--atlas-text);margin-bottom:.3rem;}a{color:var(--atlas-muted);text-decoration:none;}a:hover{text-decoration:underline;}}
+  .footer-bottom{border-top:1px solid var(--atlas-border);padding-top:1.5rem;display:flex;justify-content:space-between;align-items:baseline;gap:1rem 2rem;flex-wrap:wrap;p{margin:.4rem 0;max-width:40rem;}}
+  @media(max-width:700px){.footer-links{grid-template-columns:repeat(2,minmax(0,1fr));}}
+  @media(max-width:360px){.footer-links{grid-template-columns:1fr;}}
 </style>
