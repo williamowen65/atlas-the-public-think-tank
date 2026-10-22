@@ -30,7 +30,7 @@
         if (detail.hidden) throw new Error('Unavailable');
         if (controller.signal.aborted) return;
         node = { ...display, reactions }; hasMoreAncestors = !!entry!.card?.breadcrumbSegment?.continuationNodeId; blocks = content; average = entry!.averageVote; totalVotes = entry!.voteCount;
-        active = catalog.some(type => type.id === selectedType) ? selectedType : 'comments';
+        active = display.childTypes?.some(type => type.typeId === selectedType) ? selectedType : 'comments';
         types = [...catalog].sort((a, b) => Number(detail.requestedTypeIds.includes(b.id)) - Number(detail.requestedTypeIds.includes(a.id)));
       } catch { if (!controller.signal.aborted) error = 'This node is unavailable or could not be loaded.'; }
       finally { if (!controller.signal.aborted) loading = false; }
@@ -40,9 +40,9 @@
 </script>
 {#if loading}<p role="status">Loading node…</p>{:else if error}<p role="alert">{error}</p><button onclick={() => retry++}>Retry node</button>{:else if node}
   {#key node.id}
-    <NodePage revealChildren={!!initialTypeId && active === initialTypeId} {hasMoreAncestors} loadOlderAncestors={id => id ? readOlderAncestors(id, AbortSignal.timeout(10000), apiBase) : Promise.resolve({ items: [], hasMore: false })} {node} {blocks} {types} {active} {average} {totalVotes} onNavigate={openNode} onTabChange={id => active = id} onAddChild={id => { createType = id ?? types[0]?.id ?? ''; if (createType) active = createType; }}>
+    <NodePage revealChildren={!!initialTypeId && active === initialTypeId} {hasMoreAncestors} loadOlderAncestors={id => id ? readOlderAncestors(id, AbortSignal.timeout(10000), apiBase) : Promise.resolve({ items: [], hasMore: false })} {node} {blocks} {types} {active} {average} {totalVotes} onNavigate={openNode} onTabChange={id => active = id} onAddChild={id => { createType = id ?? types[0]?.id ?? ''; if (node?.childTypes?.some(type => type.typeId === createType)) active = createType; }}>
       {#if createType !== null}<div class="child-form"><button onclick={() => createType = null}>Close child form</button>{#key createType}<LiveNodeForm parentId={node.id} parentTitle={node.title} initialTypeId={createType} breadcrumb={node.breadcrumb} focusOnMount {apiBase} />{/key}</div>{/if}
-      {#key active}{#if active === 'comments'}<CommentsPanel nodeId={node.id} {apiBase} />{:else}<LiveNodeFeed parentId={node.id} typeId={active} {apiBase} onOpenNode={openNode} />{/if}{/key}
+      {#key active}{#if active === 'comments'}<CommentsPanel nodeId={node.id} {apiBase} onAdded={() => { if (node) node = { ...node, commentCount: node.commentCount + 1 }; }} />{:else}<LiveNodeFeed parentId={node.id} typeId={active} {apiBase} onOpenNode={openNode} />{/if}{/key}
     </NodePage>
   {/key}
 {/if}

@@ -29,7 +29,7 @@ test('Read more opens the matching node story; tabs load child feeds and a paren
   await expect(page.getByText('A public comment', { exact: true })).toBeVisible();
   await expect(page.locator('.content-blocks script')).toHaveCount(0);
   expect(urls.some(url => url.searchParams.get('NodeId') === root)).toBe(true);
-  await page.getByRole('tab', { name: 'Idea', exact: true }).click();
+  await page.getByRole('tab', { name: '1 Idea', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Question: A child idea' })).toBeVisible();
   expect(urls.some(url => url.searchParams.get('ParentNodeId') === root && url.searchParams.get('NodeTypeId') === idea)).toBe(true);
   await page.getByRole('button', { name: 'Add Idea', exact: true }).click();
@@ -81,9 +81,9 @@ test('SPA Read more opens a node page and child tabs support keyboard navigation
   await page.goto('http://127.0.0.1:4173');
   await page.getByRole('button', { name: 'Read more', exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/nodes\\?id=${root}`));
-  const comments = page.getByRole('tab', { name: 'Comments', exact: true });
+  const comments = page.getByRole('tab', { name: '1 Comment', exact: true });
   await comments.focus(); await page.keyboard.press('ArrowRight');
-  await expect(page.getByRole('tab', { name: 'Evidence', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tab', { name: '1 Idea', exact: true })).toHaveAttribute('aria-selected', 'true');
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
 });
 
@@ -129,7 +129,7 @@ test('node page keeps a full-width ribbon and wraps post content around the dial
 
 
 for (const destination of ['storybook', 'spa']) {
-  for (const contribution of [{ typeId: idea, label: '1 Idea', tab: 'Idea' }, { typeId: evidence, label: '0 Evidence', tab: 'Evidence' }]) {
+  for (const contribution of [{ typeId: idea, label: '1 Idea', tab: '1 Idea' }, { typeId: evidence, label: '0 Evidence', tab: '0 Evidence' }]) {
     test(`${destination} contribution button opens and reveals ${contribution.label}`, async ({ page }) => {
       const urls = await mock(page);
       if (contribution.typeId === evidence) {
@@ -160,3 +160,18 @@ for (const destination of ['storybook', 'spa']) {
     });
   }
 }
+
+
+test('node-page tabs use count-aware labels for only requested and populated contribution types', async ({ page }) => {
+  await mock(page);
+  const question = 'a1000000-0000-4000-8000-000000000003';
+  const goal = 'a1000000-0000-4000-8000-000000000004';
+  await page.route('**/atlas-preview-api/catalog/node-types', route => route.fulfill({ json: [...types, { id: question, name: 'Question', pluralName: 'Questions', autoPluralize: true }, { id: goal, name: 'Goal', pluralName: 'Goals', autoPluralize: true }] }));
+  await page.route(`**/atlas-preview-api/nodes/${root}`, route => route.fulfill({ json: { id: root, requestedTypeIds: [question, evidence], status: 'Active' } }));
+  await page.route('**/atlas-preview-api/nodes?**', route => route.fulfill({ json: { items: [{ ...entry(), card: { ...entry().card, childTypes: [{ typeId: evidence, label: '0 Evidence', count: 0 }, { typeId: idea, label: '2 Ideas', count: 2 }, { typeId: question, label: '0 Questions', count: 0 }] } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } }));
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=compositions-node-page--playground&viewMode=story');
+  await expect(page.getByRole('tab')).toHaveText(['1 Comment', '0 Evidence', '2 Ideas', '0 Questions']);
+  await expect(page.getByRole('tab', { name: /Goals?/ })).toHaveCount(0);
+  await page.getByRole('tab', { name: '0 Questions', exact: true }).click();
+  await expect(page.getByRole('tab', { name: '0 Questions', exact: true })).toHaveAttribute('aria-selected', 'true');
+});

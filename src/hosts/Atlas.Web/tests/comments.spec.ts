@@ -76,6 +76,7 @@ test('sign-in enables posting, replies and author-only editing/removal with CSRF
   await page.getByLabel('Add a comment', { exact: true }).fill('My new comment');
   await page.getByRole('button', { name: 'Post comment', exact: true }).click();
   await expect(page.getByText('My new comment', { exact: true })).toBeVisible();
+  await expect(page.getByRole('tab', { name: '4 Comments', exact: true })).toBeVisible();
   const opening = page.locator(`article[data-comment-id="${first}"]`);
   await opening.getByRole('button', { name: 'Edit', exact: true }).click();
   await page.getByLabel('Edit comment', { exact: true }).fill('Edited opening thought');
@@ -85,12 +86,14 @@ test('sign-in enables posting, replies and author-only editing/removal with CSRF
   await page.getByLabel('Your reply', { exact: true }).fill('A reply from me');
   await page.getByRole('button', { name: 'Post reply', exact: true }).click();
   await expect(page.getByText('A reply from me', { exact: true })).toBeVisible();
+  await expect(page.getByRole('tab', { name: '5 Comments', exact: true })).toBeVisible();
   await expect(page.getByRole('article', { name: 'Comment by Taylor' }).getByRole('button', { name: 'Edit', exact: true })).toHaveCount(0);
   const edited = page.locator('article.comment').filter({ has: page.getByText('Edited opening thought', { exact: true }) });
   await edited.getByRole('button', { name: 'Remove', exact: true }).first().click();
   await page.getByRole('button', { name: 'Remove comment', exact: true }).click();
   await expect(page.getByText('Edited opening thought', { exact: true })).toHaveCount(0);
   await expect(page.getByText('A reply from me', { exact: true })).toBeVisible();
+  await expect(page.getByRole('tab', { name: '5 Comments', exact: true })).toBeVisible();
   expect(writes.some(write => write.method === 'PUT' && write.path.endsWith(`/comments/${first}`))).toBe(true);
   expect(writes.some(write => write.path.endsWith(`/comments/${first}/replies`))).toBe(true);
   expect(writes.some(write => write.method === 'DELETE')).toBe(true);
@@ -123,7 +126,7 @@ test('feed comment control opens and positions the Comments tab', async ({ page 
   await setup(page);
   await page.goto('http://127.0.0.1:6006/iframe.html?id=compositions-feed--playground&viewMode=story');
   await page.getByRole('button', { name: '3 Comments', exact: true }).click();
-  await expect(page.getByRole('tab', { name: 'Comments', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tab', { name: '3 Comments', exact: true })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByText('An opening thought', { exact: true })).toBeVisible();
   const tabs = page.getByRole('tablist');
   await expect.poll(async () => Math.abs(((await tabs.boundingBox())?.y ?? Infinity) - 20)).toBeLessThanOrEqual(2);

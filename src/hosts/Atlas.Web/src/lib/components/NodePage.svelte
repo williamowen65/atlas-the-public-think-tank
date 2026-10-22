@@ -8,7 +8,10 @@
   import VotingDial from './VotingDial.svelte';
   let { revealChildren = false, node, blocks, types, active, onTabChange, onAddChild, onNavigate, hasMoreAncestors = false, loadOlderAncestors, average = null, totalVotes = 0, children }: { revealChildren?: boolean; node: NodeCardData; blocks: ContentBlock[]; types: NodeType[]; active: string; onTabChange: (id: string) => void; onAddChild: (id?: string) => void; onNavigate?: (id: string) => void; hasMoreAncestors?: boolean; loadOlderAncestors?: LoadOlderAncestors; average?: number | null; totalVotes?: number; children: Snippet } = $props();
   const instance = $props.id();
-  const tabs = $derived([{ id: 'comments', name: 'Comments' }, ...types]);
+  const tabs = $derived([
+    { id: 'comments', name: `${node.commentCount} ${node.commentCount === 1 ? 'Comment' : 'Comments'}` },
+    ...(node.childTypes ?? []).map(type => ({ id: type.typeId, name: type.label })),
+  ]);
   function reveal(tabs: HTMLDivElement) {
     if (!revealChildren) return;
     const card = tabs.closest<HTMLElement>('.node-page')!;
@@ -54,7 +57,7 @@
     <ContentBlocks {blocks} />
   </div>
   {#if node.reactions.length}<div class="reactions" role="group" aria-label="Community reactions">{#each node.reactions as reaction}<span>{reaction.label} <strong>{reaction.count}</strong></span>{/each}</div>{/if}
-  <div class="add"><button onclick={() => onAddChild(active === 'comments' ? undefined : active)} disabled={node.status === 'Archived'}>Add {active === 'comments' ? 'a child node' : types.find(type => type.id === active)?.name}</button></div>
+  <div class="add"><button onclick={() => onAddChild(active === 'comments' ? undefined : active)} disabled={node.status === 'Archived'}>Add {active === 'comments' ? 'a child node' : types.find(type => type.id === active)?.name ?? 'a child node'}</button></div>
   <div class="tabs" use:reveal role="tablist" aria-label="Node discussions and child types">{#each tabs as tab, index}<button role="tab" id={`${instance}-${tab.id}`} aria-selected={active === tab.id} aria-controls={`${instance}-panel`} tabindex={active === tab.id ? 0 : -1} onclick={() => onTabChange(tab.id)} onkeydown={event => key(event, index)}>{tab.name}</button>{/each}</div>
   <div role="tabpanel" id={`${instance}-panel`} aria-labelledby={`${instance}-${active}`} tabindex="0">{@render children()}</div>
 </article>

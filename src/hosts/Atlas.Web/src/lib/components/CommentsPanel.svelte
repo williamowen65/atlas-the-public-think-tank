@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import LiveComments from './LiveComments.svelte';
   import { commentRequest, CommentRequestError } from '../api/comments';
-  let { nodeId, apiBase = '/atlas-preview-api', sessionBase = '/atlas-comments-api' }: { nodeId: string; apiBase?: string; sessionBase?: string } = $props();
+  let { nodeId, apiBase = '/atlas-preview-api', sessionBase = '/atlas-comments-api', onAdded }: { nodeId: string; apiBase?: string; sessionBase?: string; onAdded?: () => void } = $props();
   let participantId = $state<string | null>(null);
   let checking = $state(true); let busy = $state(false); let error = $state('');
   let email = $state(''); let password = $state('');
@@ -40,7 +40,7 @@
     <button disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
   </form></details>{/if}
   {#if error}<p role="alert">{error}</p>{/if}
-  <LiveComments {nodeId} {apiBase} {sessionBase} {participantId} />
+  <LiveComments {nodeId} {apiBase} {sessionBase} {participantId} {onAdded} />
 </section>
 <style lang="scss">
   h2{margin:0;}header p{color:var(--atlas-muted);margin:.4rem 0 1rem;}.session{display:flex;align-items:center;justify-content:space-between;gap:1rem;}.sign-in{margin-bottom:1rem;}summary{cursor:pointer;color:var(--atlas-accent);}form{display:grid;gap:.5rem;margin-top:.75rem;max-width:24rem;}input,button{font:inherit;}input{min-width:0;padding:.6rem;border:1px solid var(--atlas-border);border-radius:var(--atlas-radius);background:var(--atlas-surface);color:var(--atlas-text);}button{padding:.5rem .75rem;cursor:pointer;}button:disabled{cursor:default;}

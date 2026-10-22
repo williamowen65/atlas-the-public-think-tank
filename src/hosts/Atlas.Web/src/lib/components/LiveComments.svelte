@@ -3,7 +3,7 @@
   import LiveComments from './LiveComments.svelte';
   import { readJson, type Comment, type CommentPage } from '../api/nodePage';
   import { commentRequest } from '../api/comments';
-  let { nodeId, parentId, apiBase = '/atlas-preview-api', sessionBase = '/atlas-comments-api', participantId = null, showComposer = true, depth = 0 }: { nodeId: string; parentId?: string; apiBase?: string; sessionBase?: string; participantId?: string | null; showComposer?: boolean; depth?: number } = $props();
+  let { nodeId, parentId, apiBase = '/atlas-preview-api', sessionBase = '/atlas-comments-api', participantId = null, showComposer = true, depth = 0, onAdded }: { nodeId: string; parentId?: string; apiBase?: string; sessionBase?: string; participantId?: string | null; showComposer?: boolean; depth?: number; onAdded?: () => void } = $props();
   let items = $state<Comment[]>([]); let next = $state<CommentPage['next']>(null); let started = $state(false); let loading = $state(false); let error = $state(''); let open = $state<string[]>([]);
   let names = $state<Record<string, string>>({}); let text = $state(''); let saving = $state(false); let actionError = $state(''); let notice = $state('');
   let editing = $state<string | null>(null); let editText = $state(''); let removing = $state<string | null>(null); let replyTarget = $state<string | null>(null);
@@ -30,7 +30,7 @@
     if (saving || !text.trim() || !participantId) return; saving = true; actionError = ''; notice = '';
     try {
       const comment = await commentRequest<Comment>(sessionBase, parentId ? `comments/${encodeURIComponent(parentId)}/replies` : `nodes/${encodeURIComponent(nodeId)}/comments`, 'POST', { body: text.trim() }, signal());
-      if (!controller.signal.aborted) { items = [...items.filter(item => item.id !== comment.id), comment]; text = ''; notice = parentId ? 'Reply posted.' : 'Comment posted.'; }
+      if (!controller.signal.aborted) { items = [...items.filter(item => item.id !== comment.id), comment]; text = ''; notice = parentId ? 'Reply posted.' : 'Comment posted.'; onAdded?.(); }
     } catch (cause) { if (!controller.signal.aborted) actionError = cause instanceof Error ? cause.message : 'Could not post comment.'; } finally { saving = false; }
   }
   async function saveEdit(id: string) {
@@ -64,7 +64,7 @@
         {#if participantId === comment.authorId && comment.body !== null}<button class="text-button" disabled={saving} onclick={() => { editing = comment.id; editText = comment.body ?? ''; }}>Edit</button><button class="text-button" disabled={saving} onclick={() => removing = comment.id}>Remove</button>{/if}
       </div>
       {#if removing === comment.id}<div class="confirm" role="group" aria-label="Confirm comment removal"><p>Remove this comment? Replies will remain in the discussion.</p><button disabled={saving} onclick={() => void remove(comment.id)}>Remove comment</button><button disabled={saving} onclick={() => removing = null}>Keep comment</button></div>{/if}
-      {#if open.includes(comment.id)}<LiveComments {nodeId} parentId={comment.id} {apiBase} {sessionBase} {participantId} showComposer={replyTarget === comment.id} depth={depth + 1} />{/if}
+      {#if open.includes(comment.id)}<LiveComments {nodeId} parentId={comment.id} {apiBase} {sessionBase} {participantId} {onAdded} showComposer={replyTarget === comment.id} depth={depth + 1} />{/if}
     </article></li>{/each}
   </ol>
   {#if error}<p role="alert">{error}</p>{/if}
