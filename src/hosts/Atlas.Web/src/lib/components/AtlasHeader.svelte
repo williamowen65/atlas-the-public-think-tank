@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { commentRequest } from '../api/comments';
   let { active = 'discover', authenticated = false, displayName = 'Atlas User', onNavigate }: {
     active?: 'discover' | 'about' | 'components' | 'create';
     authenticated?: boolean;
@@ -8,6 +9,22 @@
   let searching = $state(false);
   let searchText = $state('');
   let menuOpen = $state(false);
+  let loggingOut = $state(false);
+  let logoutError = $state('');
+  async function logOut() {
+    if (loggingOut) return;
+    loggingOut = true;
+    logoutError = '';
+    menuOpen = false;
+    try {
+      await commentRequest('/atlas-comments-api', 'auth/logout', 'POST');
+      window.dispatchEvent(new Event('atlas-session-changed'));
+      window.location.assign('/');
+    } catch {
+      logoutError = 'Could not log out. Please try again.';
+      loggingOut = false;
+    }
+  }
   let accountElement: HTMLDivElement;
   function closeOnOutside(event: PointerEvent) {
     if (menuOpen && event.target instanceof Node && !accountElement?.contains(event.target)) menuOpen = false;
@@ -33,6 +50,7 @@
     <button type="submit" aria-label="Submit search" onclick={(event) => { if (window.matchMedia("(max-width: 560px)").matches && !searching) { event.preventDefault(); searching = true; } }}>⌕</button>
     {#if searching}<button type="button" class="close-search" onclick={() => searching = false} aria-label="Close search">×</button>{/if}
   </form>
+  {#if logoutError}<p class="logout-error" role="alert">{logoutError}</p>{/if}
   <div class="right-group">
     <nav class="primary" aria-label="Main navigation">
       <a href="/" onclick={event => { if (onNavigate) { event.preventDefault(); onNavigate('discover'); } }} aria-current={active === 'discover' ? 'page' : undefined}>Discover</a>
@@ -50,7 +68,7 @@
             <a href="/about">About Atlas</a>
             <a href="/feedback">Give feedback</a>
             <hr />
-            <a href="/logout">Log out</a>
+            <button type="button" class="logout-action" disabled={loggingOut} onclick={() => void logOut()}>{loggingOut ? 'Logging out…' : 'Log out'}</button>
           </nav>
         {/if}
       </div>
@@ -84,6 +102,8 @@
   .signup{border:1px solid var(--atlas-border);border-radius:.5rem;padding:.45rem .7rem;}
   .account{position:relative;}.avatar{width:2.25rem;height:2.25rem;border:1px solid var(--atlas-border);border-radius:50%;background:var(--atlas-surface);color:var(--atlas-text);cursor:pointer;font-weight:700;}
   .account-menu{position:absolute;z-index:20;right:0;top:calc(100% + .5rem);min-width:12rem;display:flex;flex-direction:column;gap:.15rem;background:var(--atlas-surface);border:1px solid var(--atlas-border);border-radius:.5rem;padding:.5rem;box-shadow:0 8px 24px #0002;a{padding:.5rem;border-radius:.25rem;}hr{width:100%;border:0;border-top:1px solid var(--atlas-border);}}
+  .logout-action{font:inherit;color:var(--atlas-text);background:transparent;border:0;text-align:left;cursor:pointer;padding:.5rem;border-radius:.25rem;}.logout-action:hover{text-decoration:underline;}.logout-action:disabled{opacity:.6;cursor:default;}
+  .logout-error{grid-column:1/-1;color:var(--atlas-text);margin:.25rem 0;}
   .mobile-menu{display:none;}
   @media(max-width:850px){.brand span{font-size:.75rem;}.right-group{gap:.65rem;}.primary,.auth{gap:.65rem;}}
   @media(max-width:560px){
