@@ -4,7 +4,7 @@ const child = 'b1000000-0000-4000-8000-000000000002';
 const idea = 'a1000000-0000-4000-8000-000000000001';
 const evidence = 'a1000000-0000-4000-8000-000000000002';
 const types = [{ id: idea, name: 'Idea', autoPluralize: true, pluralName: 'Ideas' }, { id: evidence, name: 'Evidence', autoPluralize: false, pluralName: 'Evidence' }];
-const entry = (id = root) => ({ nodeId: id, averageVote: 7, voteCount: 2, card: { title: id === root ? 'A live question' : 'A child idea', shortDescription: 'A concise introduction.', typeName: 'Question', authorName: 'Author', status: 'Active', createdAt: '2026-10-21T12:00:00Z', breadcrumb: '', subNodes: '1 Idea', communities: 'Atlas', commentCount: 1, isHidden: false } });
+const entry = (id = root) => ({ nodeId: id, averageVote: 7, voteCount: 2, card: { title: id === root ? 'A live question' : 'A child idea', shortDescription: 'A concise introduction.', typeName: 'Question', authorName: 'Author', status: 'Active', createdAt: '2026-10-21T12:00:00Z', breadcrumb: '', subNodes: '1 Idea · 0 Evidence', childTypes: [{ typeId: idea, label: '1 Idea', count: 1 }, { typeId: evidence, label: '0 Evidence', count: 0 }], communities: 'Atlas', commentCount: 1, isHidden: false } });
 async function mock(page: Page) {
   const urls: URL[] = [];
   await page.route('**/atlas-preview-api/**', route => {
@@ -126,3 +126,26 @@ test('node page keeps a full-width ribbon and wraps post content around the dial
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   }
 });
+
+
+for (const destination of ['storybook', 'spa']) {
+  for (const contribution of [{ typeId: idea, label: '1 Idea', tab: 'Idea' }, { typeId: evidence, label: '0 Evidence', tab: 'Evidence' }]) {
+    test(`${destination} contribution button opens and reveals ${contribution.label}`, async ({ page }) => {
+      const urls = await mock(page);
+      await page.goto(destination === 'storybook'
+        ? 'http://127.0.0.1:6006/iframe.html?id=compositions-feed--playground&viewMode=story'
+        : 'http://127.0.0.1:4173');
+      const button = page.getByRole('button', { name: contribution.label, exact: true });
+      await expect(button).toHaveCSS('cursor', 'pointer');
+      await button.focus();
+      await page.keyboard.press('Enter');
+      await expect(page).toHaveURL(destination === 'storybook' ? /compositions-node-page/ : /nodes\?id=/);
+      const tab = page.getByRole('tab', { name: contribution.tab, exact: true });
+      await expect(tab).toHaveAttribute('aria-selected', 'true');
+      await expect(tab).toBeFocused();
+      await expect.poll(async () => (await tab.boundingBox())?.y ?? Infinity).toBeLessThan(150);
+      await expect.poll(() => urls.some(url => url.searchParams.get('ParentNodeId') === root && url.searchParams.get('NodeTypeId') === contribution.typeId)).toBe(true);
+      await expect(page.getByRole('heading', { name: 'Question: A child idea' })).toBeVisible();
+    });
+  }
+}

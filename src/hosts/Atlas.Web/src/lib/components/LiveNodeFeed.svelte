@@ -3,7 +3,7 @@
   import NodeFeed, { type FeedItem } from './NodeFeed.svelte';
   import { readDiscovery, discoveryCard, readReactions, readOlderAncestors } from '../api/discovery';
   import type { NodeCardPresentation } from './NodeCard.svelte';
-  let { presentation = 'ribbon-corner', apiBase = '/atlas-preview-api', parentId, typeId, onOpenNode }: { presentation?: NodeCardPresentation; apiBase?: string; parentId?: string; typeId?: string; onOpenNode?: (id: string) => void } = $props();
+  let { presentation = 'ribbon-corner', apiBase = '/atlas-preview-api', parentId, typeId, onOpenNode }: { presentation?: NodeCardPresentation; apiBase?: string; parentId?: string; typeId?: string; onOpenNode?: (id: string, typeId?: string) => void } = $props();
   let items = $state<FeedItem[]>([]);
   let loading = $state(false);
   let error = $state('');
@@ -45,4 +45,4 @@
   }
   onMount(() => { void load(); return () => { disposed = true; controller?.abort(); }; });
 </script>
-<NodeFeed onReadMore={onOpenNode ?? (id => window.location.assign(`/nodes?id=${encodeURIComponent(id)}`))} onNavigate={onOpenNode} {items} {loading} {hasMore} {error} {presentation} onLoadMore={() => void load()} loadOlderAncestors={id => id ? readOlderAncestors(id, AbortSignal.timeout(10000), apiBase) : Promise.resolve({ items: [], hasMore: false })} />
+<NodeFeed onChildType={(id, childType) => onOpenNode ? onOpenNode(id, childType) : window.location.assign(`/nodes?id=${encodeURIComponent(id)}&type=${encodeURIComponent(childType)}#contributions`)} onReadMore={onOpenNode ?? (id => window.location.assign(`/nodes?id=${encodeURIComponent(id)}`))} onNavigate={onOpenNode} {items} {loading} {hasMore} {error} {presentation} onLoadMore={() => void load()} loadOlderAncestors={id => id ? readOlderAncestors(id, AbortSignal.timeout(10000), apiBase) : Promise.resolve({ items: [], hasMore: false })} />

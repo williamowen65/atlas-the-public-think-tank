@@ -2,6 +2,7 @@ import type { BreadcrumbPage } from '../components/Breadcrumb.svelte';
 import type { NodeCardData } from '../components/NodeCard.svelte';
 
 interface DiscoveryCard {
+  childTypes?: { typeId: string; label: string; count: number }[];
   nodeId: string; title: string; typeName: string; authorName: string; status: string;
   breadcrumbSegment?: { items: { nodeId: string; label: string }[]; continuationNodeId: string | null; hasAlternativeRoutes: boolean; cycleDetected: boolean };
   createdAt: string; description: string; shortDescription: string; breadcrumb: string; subNodes: string;
@@ -37,6 +38,7 @@ export function discoveryCard(item: DiscoveryItem): NodeCardData | null {
     status: card.status === 'Archived' ? 'Archived' : 'Active', createdAt: card.createdAt,
     description: card.shortDescription ?? '', communities: card.communities ? [card.communities] : [],
     breadcrumb: card.breadcrumbSegment ? [...card.breadcrumbSegment.items].reverse().map(item => ({ id: item.nodeId, title: item.label })) : card.breadcrumb ? [{ title: card.breadcrumb }] : [], related: [], requestedTypes: [], reactions: [],
+    childTypes: card.childTypes ?? [],
     reactionSummary: card.reactions, subNodeSummary: card.subNodes, commentCount: card.commentCount,
   };
 }

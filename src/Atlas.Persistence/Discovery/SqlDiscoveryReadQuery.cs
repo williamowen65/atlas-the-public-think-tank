@@ -276,8 +276,20 @@ public sealed class SqlDiscoveryReadQuery(
                 row.IsHidden)
             {
                 ShortDescription = row.IsHidden ? row.Description : metadata[row.NodeId].ShortDescription,
+                ChildTypes = row.IsHidden ? Array.Empty<DiscoveryChildType>() : ReadChildTypes(row.SubNodes),
                 BreadcrumbSegment = breadcrumbs[row.NodeId]
             });
+    }
+
+    private static IReadOnlyList<DiscoveryChildType> ReadChildTypes(string json)
+    {
+        if (json is "None" or "[]") return Array.Empty<DiscoveryChildType>();
+        using var children = JsonDocument.Parse(json);
+        return Array.AsReadOnly(children.RootElement.EnumerateArray().Select(child =>
+            new DiscoveryChildType(
+                child.GetProperty("TypeId").GetGuid(),
+                DiscoveryDisplayText.FormatTypeCount(child.GetProperty("Name").GetString()!, child.GetProperty("Count").GetInt32(), child.GetProperty("AutoPluralize").GetBoolean()),
+                child.GetProperty("Count").GetInt32())).ToArray());
     }
 
     /// <summary>Converts SQL child-count JSON to labels using the shared pluralization policy.</summary>

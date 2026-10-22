@@ -11,6 +11,7 @@ export interface NodeCardData {
   breadcrumb: BreadcrumbItem[];
   related: { id: string; title: string; typeName: string }[];
   requestedTypes: string[];
+  childTypes?: { typeId: string; label: string; count: number }[];
   reactions: { label: string; count: number }[];
   reactionSummary?: string;
   subNodeSummary?: string;
@@ -29,5 +30,6 @@ export interface NodeCardProps {
   onVote?: (value: number) => void;
   onNavigate?: (id: string) => void;
   onReadMore?: (id: string) => void;
+  onChildType?: (id: string, typeId: string) => void;
   onComments?: (id: string) => void;
 }

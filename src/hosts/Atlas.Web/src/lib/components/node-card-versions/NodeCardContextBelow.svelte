@@ -4,7 +4,7 @@
   import VotingDial from '../VotingDial.svelte';
 
   import type { NodeCardProps } from './types';
-  let { node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onReadMore, onComments }: NodeCardProps = $props();
+  let { node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onReadMore, onChildType, onComments }: NodeCardProps = $props();
   const instance = $props.id();
 </script>
 
@@ -52,7 +52,8 @@
 {/snippet}
 
 {#snippet connections()}
-  {#if node.subNodeSummary}<p class="breadcrumb">Connected nodes: {node.subNodeSummary}</p>{/if}
+  {#if node.childTypes?.length}<p class="breadcrumb">Connected nodes: {#each node.childTypes as contribution}<button class="text-action" type="button" disabled={!onChildType} onclick={() => onChildType?.(node.id, contribution.typeId)}>{contribution.label}</button> {/each}</p>{/if}
+  {#if !node.childTypes?.length && node.subNodeSummary}<p class="breadcrumb">Connected nodes: {node.subNodeSummary}</p>{/if}
   {#if node.related.length}
     <section class="related" aria-label="Connected nodes">
       <h3>Explore the connections</h3>

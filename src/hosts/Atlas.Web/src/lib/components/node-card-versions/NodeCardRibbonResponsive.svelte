@@ -5,10 +5,10 @@
 
   import Breadcrumb from '../Breadcrumb.svelte';
   import type { NodeCardProps } from './types';
-  let { node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onReadMore, onComments, hasMoreAncestors = false, loadOlderAncestors }: NodeCardProps = $props();
+  let { node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onReadMore, onChildType, onComments, hasMoreAncestors = false, loadOlderAncestors }: NodeCardProps = $props();
   const instance = $props.id();
   const connectionLabels = $derived([
-    ...(node.subNodeSummary && node.subNodeSummary !== 'None' ? node.subNodeSummary.split(' · ') : []),
+    ...(!node.childTypes?.length && node.subNodeSummary && node.subNodeSummary !== 'None' ? node.subNodeSummary.split(' · ') : []),
     ...node.related.map(related => `${related.typeName}: ${related.title}`),
   ]);
 </script>
@@ -43,6 +43,7 @@
     {/if}
     <div class="navigation-details">
       {@render comments()}
+      {#each node.childTypes ?? [] as contribution}<span class="navigation-separator" aria-hidden="true">·</span><button class="text-action connection-summary" type="button" disabled={!onChildType} onclick={() => onChildType?.(node.id, contribution.typeId)}>{contribution.label}</button>{/each}
       {#each connectionLabels as label}<span class="navigation-separator" aria-hidden="true">·</span><span class="text-action connection-summary">{label}</span>{/each}
     </div>
   </div>
@@ -143,6 +144,8 @@
         text-decoration: none;
         color: var(--atlas-muted);
         cursor: default;
+        &:is(button):not(:disabled) { cursor: pointer; }
+        &:is(button):not(:disabled):hover { color: var(--atlas-accent); text-decoration: underline; }
       }
     }
   }

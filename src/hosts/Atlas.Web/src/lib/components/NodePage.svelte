@@ -6,9 +6,16 @@
   import type { LoadOlderAncestors } from './Breadcrumb.svelte';
   import Breadcrumb from './Breadcrumb.svelte';
   import VotingDial from './VotingDial.svelte';
-  let { node, blocks, types, active, onTabChange, onAddChild, onNavigate, hasMoreAncestors = false, loadOlderAncestors, average = null, totalVotes = 0, children }: { node: NodeCardData; blocks: ContentBlock[]; types: NodeType[]; active: string; onTabChange: (id: string) => void; onAddChild: (id?: string) => void; onNavigate?: (id: string) => void; hasMoreAncestors?: boolean; loadOlderAncestors?: LoadOlderAncestors; average?: number | null; totalVotes?: number; children: Snippet } = $props();
+  let { revealChildren = false, node, blocks, types, active, onTabChange, onAddChild, onNavigate, hasMoreAncestors = false, loadOlderAncestors, average = null, totalVotes = 0, children }: { revealChildren?: boolean; node: NodeCardData; blocks: ContentBlock[]; types: NodeType[]; active: string; onTabChange: (id: string) => void; onAddChild: (id?: string) => void; onNavigate?: (id: string) => void; hasMoreAncestors?: boolean; loadOlderAncestors?: LoadOlderAncestors; average?: number | null; totalVotes?: number; children: Snippet } = $props();
   const instance = $props.id();
   const tabs = $derived([{ id: 'comments', name: 'Comments' }, ...types]);
+  function reveal(tabs: HTMLDivElement) {
+    if (revealChildren) requestAnimationFrame(() => {
+      if (!tabs.isConnected) return;
+      tabs.querySelector<HTMLElement>('[aria-selected="true"]')?.focus({ preventScroll: true });
+      tabs.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+    });
+  }
   function key(event: KeyboardEvent, index: number) { let next = index; if (event.key === 'ArrowRight') next = (index + 1) % tabs.length; else if (event.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length; else if (event.key === 'Home') next = 0; else if (event.key === 'End') next = tabs.length - 1; else return; event.preventDefault(); onTabChange(tabs[next].id); document.getElementById(`${instance}-${tabs[next].id}`)?.focus(); }
 </script>
 <article class="node-page atlas-panel">
@@ -21,7 +28,7 @@
   </div>
   {#if node.reactions.length}<div class="reactions" role="group" aria-label="Community reactions">{#each node.reactions as reaction}<span>{reaction.label} <strong>{reaction.count}</strong></span>{/each}</div>{/if}
   <div class="add"><button onclick={() => onAddChild(active === 'comments' ? undefined : active)} disabled={node.status === 'Archived'}>Add {active === 'comments' ? 'a child node' : types.find(type => type.id === active)?.name}</button></div>
-  <div class="tabs" role="tablist" aria-label="Node discussions and child types">{#each tabs as tab, index}<button role="tab" id={`${instance}-${tab.id}`} aria-selected={active === tab.id} aria-controls={`${instance}-panel`} tabindex={active === tab.id ? 0 : -1} onclick={() => onTabChange(tab.id)} onkeydown={event => key(event, index)}>{tab.name}</button>{/each}</div>
+  <div class="tabs" use:reveal role="tablist" aria-label="Node discussions and child types">{#each tabs as tab, index}<button role="tab" id={`${instance}-${tab.id}`} aria-selected={active === tab.id} aria-controls={`${instance}-panel`} tabindex={active === tab.id ? 0 : -1} onclick={() => onTabChange(tab.id)} onkeydown={event => key(event, index)}>{tab.name}</button>{/each}</div>
   <div role="tabpanel" id={`${instance}-panel`} aria-labelledby={`${instance}-${active}`} tabindex="0">{@render children()}</div>
 </article>
 <style lang="scss">
@@ -44,7 +51,7 @@
   .reactions { display: flex; flex-wrap: wrap; gap: .5rem; padding: .5rem var(--card-padding) 0; font-size: .85rem; color: var(--atlas-muted); }
   .reactions span { border: 1px solid var(--atlas-border); border-radius: 999px; padding: .2rem .6rem; }
   .add { display: flex; justify-content: flex-end; padding: .5rem var(--card-padding); }
-  .tabs { display: flex; flex-wrap: wrap; gap: .4rem; border-bottom: 1px solid var(--atlas-border); padding: 0 var(--card-padding) .75rem; }
+  .tabs { scroll-margin-top: 1rem; display: flex; flex-wrap: wrap; gap: .4rem; border-bottom: 1px solid var(--atlas-border); padding: 0 var(--card-padding) .75rem; }
   button { font: inherit; padding: .5rem .75rem; cursor: pointer; max-width: 100%; overflow-wrap: anywhere; }
   [aria-selected=true] { font-weight: bold; background: var(--atlas-accent); color: var(--atlas-on-accent); }
   [role=tabpanel] { padding: 1rem var(--card-padding) var(--card-padding); min-width: 0; }
