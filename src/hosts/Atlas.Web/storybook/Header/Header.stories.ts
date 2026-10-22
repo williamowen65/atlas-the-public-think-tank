@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/sveltekit';
-import AtlasHeader from '../../src/lib/components/AtlasHeader.svelte';
+import AtlasHeader from './HeaderExample.svelte';
 
 const meta = {
   title: 'Layout/Header',
