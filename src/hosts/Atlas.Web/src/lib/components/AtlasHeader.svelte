@@ -20,7 +20,7 @@
   <form class:expanded={searching} class="search" role="search" onsubmit={submitSearch}>
     <label class="sr-only" for="atlas-search">Search Atlas</label>
     <input id="atlas-search" type="search" placeholder="Search Atlas" bind:value={searchText} />
-    <button type="submit" aria-label="Submit search">⌕</button>
+    <button type="submit" aria-label="Submit search" onclick={(event) => { if (window.matchMedia("(max-width: 560px)").matches && !searching) { event.preventDefault(); searching = true; } }}>⌕</button>
     {#if searching}<button type="button" class="close-search" onclick={() => searching = false} aria-label="Close search">×</button>{/if}
   </form>
   <div class="right-group">
@@ -47,7 +47,6 @@
     {:else}
       <div class="auth"><a href="/login">Log in</a><a class="signup" href="/register">Sign up</a></div>
     {/if}
-    <button class="mobile-search" aria-label="Expand search" type="button" onclick={() => searching = !searching}>⌕</button>
     <details class="mobile-menu">
       <summary aria-label="Open navigation menu">☰</summary>
       <nav aria-label="Mobile navigation">
@@ -64,9 +63,9 @@
   </div>
 </header>
 <style lang="scss">
-  .atlas-header {position:relative;display:grid;grid-template-columns:minmax(11rem,1fr) minmax(12rem,24rem) minmax(max-content,1fr);align-items:center;gap:1rem;padding:1rem 0;border-bottom:1px solid var(--atlas-border);}
-  .brand {display:flex;flex-direction:column;color:var(--atlas-text);text-decoration:none;strong{font-size:1.8rem;}span{font-size:.85rem;color:var(--atlas-muted);}}
-  .search {display:flex;align-items:center;min-width:0;border:1px solid var(--atlas-border);border-radius:.5rem;input{min-width:0;flex:1;border:0;background:transparent;color:var(--atlas-text);padding:.55rem;}button{border:0;background:transparent;color:var(--atlas-text);cursor:pointer;font-size:1.4rem;padding:0 .65rem;}.close-search{display:none;}}
+  .atlas-header { position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;column-gap:clamp(1rem,2vw,2rem);padding:1rem 0;border-bottom:1px solid var(--atlas-border); }
+  .brand {display:flex;flex-direction:column;justify-content:center;color:var(--atlas-text);text-decoration:none;white-space:nowrap;strong{font-size:1.8rem;}span{font-size:.85rem;color:var(--atlas-muted);}}
+  .search {display:flex;align-items:center;width:100%;min-width:0;border:1px solid var(--atlas-border);border-radius:.5rem;box-sizing:border-box;input{min-width:0;width:100%;flex:1;border:0;background:transparent;color:var(--atlas-text);padding:.55rem;}button{flex-shrink:0;border:0;background:transparent;color:var(--atlas-text);cursor:pointer;font-size:1.4rem;padding:0 .65rem;}.close-search{display:none;}}
   .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
   .right-group{display:flex;align-items:center;justify-content:flex-end;gap:1rem;min-width:0;}
   .primary,.auth{display:flex;align-items:center;gap:1rem;white-space:nowrap;font-size:.9rem;}
@@ -74,7 +73,19 @@
   .signup{border:1px solid var(--atlas-border);border-radius:.5rem;padding:.45rem .7rem;}
   .account{position:relative;}.avatar{width:2.25rem;height:2.25rem;border:1px solid var(--atlas-border);border-radius:50%;background:var(--atlas-surface);color:var(--atlas-text);cursor:pointer;font-weight:700;}
   .account-menu{position:absolute;z-index:20;right:0;top:calc(100% + .5rem);min-width:12rem;display:flex;flex-direction:column;gap:.15rem;background:var(--atlas-surface);border:1px solid var(--atlas-border);border-radius:.5rem;padding:.5rem;box-shadow:0 8px 24px #0002;a{padding:.5rem;border-radius:.25rem;}hr{width:100%;border:0;border-top:1px solid var(--atlas-border);}}
-  .mobile-search,.mobile-menu{display:none;}
-  @media(max-width:850px){.atlas-header{grid-template-columns:auto 1fr;}.search{grid-column:1/-1;grid-row:2;width:100%;}.right-group{grid-column:2;grid-row:1;}}
-  @media(max-width:560px){.atlas-header{grid-template-columns:1fr auto;}.brand span{display:none;}.primary,.auth,.account{display:none;}.mobile-search{display:block;border:0;background:none;color:var(--atlas-text);font-size:1.5rem;cursor:pointer;}.mobile-menu{display:block;position:relative;summary{cursor:pointer;list-style:none;font-size:1.3rem;}nav{position:absolute;z-index:20;right:0;top:100%;min-width:11rem;display:flex;flex-direction:column;background:var(--atlas-surface);border:1px solid var(--atlas-border);border-radius:.5rem;padding:.75rem;gap:.75rem;}}.search{display:none;}.search.expanded{display:flex;}.search.expanded .close-search{display:block;}}
+  .mobile-menu{display:none;}
+  @media(max-width:850px){.brand span{font-size:.75rem;}.right-group{gap:.65rem;}.primary,.auth{gap:.65rem;}}
+  @media(max-width:560px){
+    .atlas-header{grid-template-columns:minmax(0,1fr) auto auto;gap:.6rem;}
+    .brand span{display:none;}
+    .primary,.auth,.account{display:none;}
+    .mobile-menu{display:block;position:relative;summary{cursor:pointer;list-style:none;font-size:1.3rem;}nav{position:absolute;z-index:20;right:0;top:100%;min-width:11rem;display:flex;flex-direction:column;background:var(--atlas-surface);border:1px solid var(--atlas-border);border-radius:.5rem;padding:.75rem;gap:.75rem;}}
+    .search{grid-column:2;grid-row:1;width:2.75rem;border:0;}
+    .search input{display:none;}
+    .search.expanded{grid-column:1/3;grid-row:1;width:100%;border:1px solid var(--atlas-border);}
+    .search.expanded input{display:block;}
+    .search.expanded .close-search{display:block;}
+    .atlas-header:has(.search.expanded) .brand{display:none;}
+    .right-group{grid-column:3;grid-row:1;}
+  }
 </style>
