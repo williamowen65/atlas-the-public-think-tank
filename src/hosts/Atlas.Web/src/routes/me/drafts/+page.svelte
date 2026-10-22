@@ -3,10 +3,29 @@
   import SessionControl from '$lib/components/SessionControl.svelte';
   import { listDrafts, deleteDraft, type SavedDraft } from '$lib/api/privateDrafts';
   import { readTypes, type NodeType } from '$lib/api/nodePage';
+  import Breadcrumb, { type BreadcrumbItem } from '$lib/components/Breadcrumb.svelte';
+  import { readDiscovery, discoveryCard } from '$lib/api/discovery';
   let owner = $state<string | null>(null);
   let drafts = $state<SavedDraft[]>([]);
   let confirmId = $state('');
   let types = $state<NodeType[]>([]);
+  let resolvedPaths = $state<Record<string, BreadcrumbItem[]>>({});
+  $effect(() => {
+    const entries = drafts.filter(draft => draft.data.parentId && !draft.parentTitle);
+    for (const entry of entries) {
+      const parentId = entry.data.parentId!;
+      if (resolvedPaths[entry.id]) continue;
+      resolvedPaths[entry.id] = entry.breadcrumb ?? [];
+      void readDiscovery('/atlas-preview-api', 1, '', AbortSignal.timeout(10000), parentId).then(page => {
+        const parent = page.items.map(discoveryCard).find(item => item?.id === parentId);
+        if (parent) resolvedPaths[entry.id] = [...parent.breadcrumb, { id: parentId, title: parent.title }];
+      }).catch(() => { /* The parent may be unavailable or deleted. */ });
+    }
+  });
+  function draftPath(draft: SavedDraft): BreadcrumbItem[] {
+    if (!draft.data.parentId) return [];
+    return resolvedPaths[draft.id] ?? [...(draft.breadcrumb ?? []), { id: draft.data.parentId, title: draft.parentTitle ?? 'Parent node' }];
+  }
   $effect(() => { if (owner) { void readTypes('/atlas-preview-api', AbortSignal.timeout(10000)).then(result => types = result).catch(() => { types = []; }); } else types = []; });
   function typeName(draft: SavedDraft): string {
     if (draft.data.newType) return draft.data.newType.name || 'New node type';
@@ -32,6 +51,7 @@
     <ul>
       {#each drafts as draft (draft.id)}
         <li>
+          {#if draft.data.parentId}<div class="draft-breadcrumb"><Breadcrumb items={draftPath(draft)} onNavigate={id => void goto('/nodes?id=' + encodeURIComponent(id))} /></div>{/if}
           <h2><span class="draft-type">{typeName(draft)}</span> <span class="draft-title">{draft.data.title || 'Untitled draft'}</span></h2>
           <p>{draft.data.shortDescription || 'No description yet.'}</p>
           <small>Saved {new Date(draft.updatedAt).toLocaleString()}</small>
@@ -53,5 +73,5 @@
   {/if}
 </section>
 <style>
-  .drafts{max-width:52rem;margin:2rem auto;min-width:0;}ul{padding:0;list-style:none;display:grid;gap:1rem;}li{padding:1rem;border:1px solid var(--atlas-border);border-radius:var(--atlas-radius);background:var(--atlas-surface);}h2{margin:.25rem 0;display:flex;flex-wrap:wrap;align-items:baseline;gap:.5rem;}.draft-type{font-size:.8em;color:var(--atlas-muted);font-weight:600;}.draft-title{font-weight:700;}small{color:var(--atlas-muted);}.actions{display:flex;align-items:center;flex-wrap:wrap;gap:.6rem;margin-top:1rem;}button{font:inherit;cursor:pointer;padding:.5rem .75rem;}
+  .drafts{max-width:52rem;margin:2rem auto;min-width:0;}ul{padding:0;list-style:none;display:grid;gap:1rem;}li{padding:1rem;border:1px solid var(--atlas-border);border-radius:var(--atlas-radius);background:var(--atlas-surface);} .draft-breadcrumb{max-width:100%;min-width:0;margin-bottom:.75rem;}h2{margin:.25rem 0;display:flex;flex-wrap:wrap;align-items:baseline;gap:.5rem;}.draft-type{font-size:.8em;color:var(--atlas-muted);font-weight:600;}.draft-title{font-weight:700;}small{color:var(--atlas-muted);}.actions{display:flex;align-items:center;flex-wrap:wrap;gap:.6rem;margin-top:1rem;}button{font:inherit;cursor:pointer;padding:.5rem .75rem;}
 </style>
