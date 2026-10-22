@@ -1,8 +1,9 @@
 <script lang="ts">
-  let { active = 'discover', authenticated = false, displayName = 'Atlas User' }: {
+  let { active = 'discover', authenticated = false, displayName = 'Atlas User', onNavigate }: {
     active?: 'discover' | 'about' | 'components' | 'create';
     authenticated?: boolean;
     displayName?: string;
+    onNavigate?: (destination: 'discover' | 'create' | 'login' | 'register' | 'profile') => void;
   } = $props();
   let searching = $state(false);
   let searchText = $state('');
@@ -25,15 +26,15 @@
   </form>
   <div class="right-group">
     <nav class="primary" aria-label="Main navigation">
-      <a href="/" aria-current={active === 'discover' ? 'page' : undefined}>Discover</a>
-      <a href="/new" aria-current={active === 'create' ? 'page' : undefined}>Create</a>
+      <a href="/" onclick={event => { if (onNavigate) { event.preventDefault(); onNavigate('discover'); } }} aria-current={active === 'discover' ? 'page' : undefined}>Discover</a>
+      <a href="/new" onclick={event => { if (onNavigate) { event.preventDefault(); onNavigate('create'); } }} aria-current={active === 'create' ? 'page' : undefined}>Create</a>
     </nav>
     {#if authenticated}
       <div class="account">
         <button type="button" class="avatar" aria-label="Open account menu" aria-expanded={menuOpen} onclick={() => menuOpen = !menuOpen}>{initial}</button>
         {#if menuOpen}
           <nav class="account-menu" aria-label="Account navigation">
-            <a href="/me">My profile</a>
+            <a href="/me" onclick={event => { if (onNavigate) { event.preventDefault(); onNavigate("profile"); } }}>My profile</a>
             <a href="/me/drafts">My drafts</a>
             <a href="/me/settings">Settings</a>
             <hr />
@@ -45,7 +46,7 @@
         {/if}
       </div>
     {:else}
-      <div class="auth"><a href="/login">Log in</a><a class="signup" href="/register">Sign up</a></div>
+      <div class="auth"><a href="/login" onclick={event => { if (onNavigate) { event.preventDefault(); onNavigate("login"); } }}>Log in</a><a class="signup" href="/register" onclick={event => { if (onNavigate) { event.preventDefault(); onNavigate("register"); } }}>Sign up</a></div>
     {/if}
     <details class="mobile-menu">
       <summary aria-label="Open navigation menu">☰</summary>
