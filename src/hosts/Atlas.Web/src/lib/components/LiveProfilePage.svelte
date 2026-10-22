@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import LiveNodeFeed from './LiveNodeFeed.svelte';
   import { commentRequest } from '../api/comments';
-  let { participantId = '', apiBase = '/atlas-preview-api', onOpenNode }: { participantId?: string; apiBase?: string; onOpenNode?: (id: string) => void } = $props();
+  let { participantId = '', apiBase = '/atlas-preview-api', onOpenNode, onOpenProfile }: { participantId?: string; apiBase?: string; onOpenNode?: (id: string) => void; onOpenProfile?: (id: string) => void } = $props();
   type Profile = { id: string; displayName: string; bio: string; createdAt?: string; deleted?: boolean };
   let profile = $state<Profile | null>(null);
   let profiles = $state<Profile[]>([]);
@@ -54,7 +54,7 @@
     </header>
     {#if !profile.deleted}
       <h2>Published contributions</h2>
-      {#key profile.id}<LiveNodeFeed authorId={profile.id} {apiBase} {onOpenNode} />{/key}
+      {#key profile.id}<LiveNodeFeed authorId={profile.id} {apiBase} {onOpenNode} {onOpenProfile} />{/key}
     {/if}
   {/if}
 </section>
