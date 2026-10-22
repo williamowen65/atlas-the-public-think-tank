@@ -48,3 +48,61 @@ export function localApiProxy(): ProxyOptions {
     },
   };
 }
+
+/** Separate, narrowly scoped session bridge for local comment authoring. */
+export const commentsPreview: Plugin = {
+  name: 'atlas-comments-preview',
+  configureServer(server) {
+    server.middlewares.use((request, response, next) => {
+      if (!request.url?.startsWith('/atlas-comments-api')) return next();
+      const host = request.headers.host ?? '';
+      const hostname = host.replace(/:\d+$/, '');
+      if (!['localhost', '127.0.0.1', '[::1]'].includes(hostname)) {
+        response.statusCode = 403; response.end('Local comments require a loopback host.'); return;
+      }
+      const path = request.url.split('?')[0];
+      const guid = '[0-9a-f-]{36}';
+      const method = request.method ?? 'GET';
+      const readable = /^\/atlas-comments-api\/auth\/(csrf|session)$/.test(path)
+        || new RegExp(`^/atlas-comments-api/participants/${guid}$`, 'i').test(path);
+      const writable = method === 'POST' && (/^\/atlas-comments-api\/auth\/(login|logout)$/.test(path)
+        || new RegExp(`^/atlas-comments-api/nodes/${guid}/comments$`, 'i').test(path)
+        || new RegExp(`^/atlas-comments-api/comments/${guid}/replies$`, 'i').test(path))
+        || ['PUT', 'DELETE'].includes(method) && new RegExp(`^/atlas-comments-api/comments/${guid}$`, 'i').test(path);
+      if (!(method === 'GET' && readable) && !writable) {
+        response.statusCode = 405; response.end('Unsupported comment operation.'); return;
+      }
+      // Reject cross-site writes before forwarding cookies. Backend CSRF remains mandatory.
+      if (writable) {
+        const origin = request.headers.origin;
+        if (!origin || ![`http://${host}`, `https://${host}`].includes(origin)
+          || request.headers['sec-fetch-site'] === 'cross-site') {
+          response.statusCode = 403; response.end('Same-origin requests are required.'); return;
+        }
+      }
+      next();
+    });
+  },
+};
+
+export function commentsApiProxy(): ProxyOptions {
+  const options = localApiProxy();
+  return {
+    ...options,
+    rewrite: path => path.replace(/^\/atlas-comments-api/, '/api'),
+    configure(proxy) {
+      proxy.on('proxyReq', request => {
+        request.removeHeader('authorization');
+        const cookies = String(request.getHeader('cookie') ?? '').split(';').map(cookie => cookie.trim())
+          .filter(cookie => /^__Host-Atlas\.(?:Csrf|Session(?:C\d+)?)=/.test(cookie));
+        if (cookies.length) request.setHeader('cookie', cookies.join('; ')); else request.removeHeader('cookie');
+      });
+      proxy.on('proxyRes', response => {
+        // Preserve Secure/HttpOnly/SameSite and __Host semantics; never weaken API cookies.
+        const cookies = response.headers['set-cookie']?.filter(cookie => /^__Host-Atlas\.(?:Csrf|Session(?:C\d+)?)=/.test(cookie));
+        if (cookies?.length) response.headers['set-cookie'] = cookies; else delete response.headers['set-cookie'];
+        response.headers['cache-control'] = 'no-store';
+      });
+    },
+  };
+}

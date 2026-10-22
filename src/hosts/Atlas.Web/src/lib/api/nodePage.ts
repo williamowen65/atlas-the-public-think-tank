@@ -1,7 +1,7 @@
 export interface NodeType { id: string; name: string; pluralName?: string; autoPluralize?: boolean; description?: string; isArchived?: boolean }
 export interface ContentBlock { id: string; kind: string; content: { markdown?: string; url?: string; altText?: string; caption?: string; title?: string; description?: string; pollId?: string; chartId?: string } }
 export interface NodeDetail { id: string; title: string; shortDescription: string; requestedTypeIds: string[]; status: string; hidden?: boolean }
-export interface Comment { id: string; authorId: string; body: string | null; status: string; createdAt: string }
+export interface Comment { id: string; authorId: string; body: string | null; status: string; createdAt: string; updatedAt?: string; parentId?: string | null }
 export interface CommentPage { items: Comment[]; next: { afterAt: string; afterId: string } | null }
 export async function readJson<T>(base: string, path: string, signal: AbortSignal): Promise<T> {
   const response = await fetch(`${base}/${path}`, { credentials: 'omit', signal });
