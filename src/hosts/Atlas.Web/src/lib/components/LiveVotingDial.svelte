@@ -10,6 +10,8 @@
   let loading = $state(true); let busy = $state(false); let notice = $state(''); let error = $state(''); let refreshFailed = $state(false); let login = $state(false);
   let container = $state<HTMLDivElement>();
   let dialog = $state<HTMLDialogElement>();
+  let confirmDialog = $state<HTMLDialogElement>();
+  let pending = $state<number | null>(null);
   let timer: ReturnType<typeof setTimeout> | undefined;
   const controller = new AbortController();
   const signal = () => AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]);
@@ -26,17 +28,34 @@
   onMount(() => {
     average = initialAverage; totalVotes = initialTotalVotes;
     void refresh().catch(() => { if (!controller.signal.aborted) { error = 'Could not load your voting status.'; refreshFailed = true; } }).finally(() => loading = false);
-    const sessionChanged = () => { clearTimeout(timer); void retry(); };
+    const sessionChanged = () => { clearTimeout(timer); cancelPending(); void retry(); };
     window.addEventListener('atlas-session-changed', sessionChanged);
     return () => { controller.abort(); clearTimeout(timer); window.removeEventListener('atlas-session-changed', sessionChanged); };
   });
   $effect(() => { if (login && dialog && !dialog.open) dialog.showModal(); });
+  function cancelPending() {
+    clearTimeout(timer);
+    pending = null;
+    value = confirmed;
+    confirmDialog?.close();
+  }
   function choose(next: number) {
-    if (busy || archived || loading) return;
+    if (busy || archived || loading || pending !== null) return;
     clearTimeout(timer); value = next; notice = ''; error = '';
     if (next === confirmed) return;
-    // Commit once the gesture settles, rather than writing every wheel/drag step.
-    timer = setTimeout(() => void save(next), 450);
+    // Wait for wheel/drag momentum to settle, then request explicit confirmation.
+    timer = setTimeout(() => {
+      if (controller.signal.aborted || busy) return;
+      pending = next;
+      void tick().then(() => { if (pending === next && confirmDialog && !confirmDialog.open) confirmDialog.showModal(); });
+    }, 450);
+  }
+  function approve() {
+    const next = pending;
+    if (next === null) return;
+    pending = null;
+    confirmDialog?.close();
+    void save(next);
   }
   async function save(next: number | null) {
     clearTimeout(timer); if (busy || archived) return;
@@ -67,6 +86,12 @@
   {#if error}<small role="alert">{error}</small>{/if}
   {#if refreshFailed}<button class="undo" onclick={() => void retry()} disabled={busy}>Retry totals</button>{/if}
 </div>
+<dialog bind:this={confirmDialog} class="vote-login" aria-labelledby="vote-confirm-title" oncancel={cancelPending} onclose={() => { if (pending !== null) cancelPending(); }}>
+  <h2 id="vote-confirm-title">Confirm your importance rating</h2>
+  <p>Does this contribution deserve attention? Rate how important it is to explore or consider, from <strong>0 (not important)</strong> to <strong>10 (very important)</strong>.</p>
+  <p>Your proposed rating is <strong>{pending ?? '—'} out of 10</strong>. Your rating contributes to the community average.</p>
+  <div class="vote-actions"><button type="button" onclick={cancelPending}>Cancel</button><button type="button" class="confirm" onclick={approve} disabled={pending === null}>Confirm rating</button></div>
+</dialog>
 <dialog bind:this={dialog} class="vote-login" aria-label="Sign in to vote" oncancel={() => login = false} onclose={() => login = false}>
   {#if login}<h2>Sign in to vote</h2><p>Your rating wasn’t saved. Sign in, then choose your rating again.</p>
     <SessionControl {sessionBase} expanded prompt="Sign in to Atlas" onSession={id => { if (id) { close(); void retry(); } }} />
@@ -74,5 +99,5 @@
   {/if}
 </dialog>
 <style lang="scss">
-  .live-voting{width:min-content;min-width:4.3rem;text-align:center;}small{display:block;font-size:.75rem;line-height:1.3;overflow-wrap:anywhere;margin:.3rem 0;}.undo{display:block;margin:.25rem auto 0;padding:.15rem .25rem;border:0;background:transparent;color:var(--atlas-muted);font:inherit;font-size:.75rem;cursor:pointer;white-space:nowrap;}.undo:hover{text-decoration:underline;color:var(--atlas-accent);}.undo:disabled{cursor:default;opacity:.6;}.vote-login{box-sizing:border-box;width:min(28rem,calc(100vw - 2rem));max-height:calc(100dvh - 2rem);overflow:auto;padding:1.25rem;border:1px solid var(--atlas-border);border-radius:var(--atlas-radius);color:var(--atlas-text);background:var(--atlas-surface);text-align:left;}.vote-login::backdrop{background:#0007;}.vote-login h2{margin-top:0;}.dismiss{font:inherit;margin-top:1rem;padding:.4rem .75rem;cursor:pointer;}
+  .live-voting{width:min-content;min-width:4.3rem;text-align:center;}small{display:block;font-size:.75rem;line-height:1.3;overflow-wrap:anywhere;margin:.3rem 0;}.undo{display:block;margin:.25rem auto 0;padding:.15rem .25rem;border:0;background:transparent;color:var(--atlas-muted);font:inherit;font-size:.75rem;cursor:pointer;white-space:nowrap;}.undo:hover{text-decoration:underline;color:var(--atlas-accent);}.undo:disabled{cursor:default;opacity:.6;}.vote-login{box-sizing:border-box;width:min(28rem,calc(100vw - 2rem));max-height:calc(100dvh - 2rem);overflow:auto;padding:1.25rem;border:1px solid var(--atlas-border);border-radius:var(--atlas-radius);color:var(--atlas-text);background:var(--atlas-surface);text-align:left;}.vote-login::backdrop{background:#0007;}.vote-login h2{margin-top:0;}.vote-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:.75rem;margin-top:1rem;}.vote-actions button{font:inherit;padding:.5rem .75rem;cursor:pointer;}.vote-actions .confirm{background:var(--atlas-accent);color:var(--atlas-on-accent);border:0;border-radius:.35rem;}.dismiss{font:inherit;margin-top:1rem;padding:.4rem .75rem;cursor:pointer;}
 </style>
