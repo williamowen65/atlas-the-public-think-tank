@@ -4,4 +4,4 @@
   let { nodeId = '', initialTypeId = '' }: { nodeId?: string; initialTypeId?: string } = $props();
 </script>
 <button onclick={() => openStory('compositions-feed--playground')}>Back to feed</button>
-<LiveNodePage {nodeId} {initialTypeId} onOpenNode={openNodeStory} />
+<LiveNodePage {nodeId} {initialTypeId} onOpenNode={openNodeStory} onOpenProfile={id => openStory('compositions-profile-page--playground')} />
