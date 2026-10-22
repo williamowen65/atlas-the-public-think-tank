@@ -4,7 +4,7 @@
   import VotingDial from '../VotingDial.svelte';
 
   import type { NodeCardProps } from './types';
-  let { voting, node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onReadMore, onChildType, onComments }: NodeCardProps = $props();
+  let { onOpenProfile, voting, node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onReadMore, onChildType, onComments }: NodeCardProps = $props();
   const instance = $props.id();
 </script>
 
@@ -16,7 +16,7 @@
         {#if node.status === 'Archived'}<span>Archived</span>{/if}
       </div>
       <h2 id={`${instance}-title`}>{node.title}</h2>
-    <p class="byline">By {node.authorName} <span aria-hidden="true">·</span> <time datetime={node.createdAt}>{new Date(node.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</time></p>
+    <p class="byline">By {#if node.authorId}<a href={`/profiles?id=${encodeURIComponent(node.authorId)}`} onclick={event => { if (onOpenProfile && node.authorId) { event.preventDefault(); onOpenProfile(node.authorId); } }}>{node.authorName}</a>{:else}{node.authorName}{/if} <span aria-hidden="true">·</span> <time datetime={node.createdAt}>{new Date(node.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</time></p>
   </header>
 
   <div class="body">
