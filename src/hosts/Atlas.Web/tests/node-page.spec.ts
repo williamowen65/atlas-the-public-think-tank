@@ -132,6 +132,14 @@ for (const destination of ['storybook', 'spa']) {
   for (const contribution of [{ typeId: idea, label: '1 Idea', tab: 'Idea' }, { typeId: evidence, label: '0 Evidence', tab: 'Evidence' }]) {
     test(`${destination} contribution button opens and reveals ${contribution.label}`, async ({ page }) => {
       const urls = await mock(page);
+      if (contribution.typeId === evidence) {
+        await page.route('**/atlas-preview-api/nodes?**', async route => {
+          const url = new URL(route.request().url());
+          if (!url.searchParams.has('ParentNodeId')) return route.fallback();
+          urls.push(url);
+          return route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 3, hasNextPage: false } });
+        });
+      }
       await page.goto(destination === 'storybook'
         ? 'http://127.0.0.1:6006/iframe.html?id=compositions-feed--playground&viewMode=story'
         : 'http://127.0.0.1:4173');
@@ -143,9 +151,12 @@ for (const destination of ['storybook', 'spa']) {
       const tab = page.getByRole('tab', { name: contribution.tab, exact: true });
       await expect(tab).toHaveAttribute('aria-selected', 'true');
       await expect(tab).toBeFocused();
-      await expect.poll(async () => (await tab.boundingBox())?.y ?? Infinity).toBeLessThan(150);
+      const tabs = page.getByRole('tablist', { name: 'Node discussions and child types' });
+      await expect.poll(async () => Math.abs(((await tabs.boundingBox())?.y ?? Infinity) - 20)).toBeLessThanOrEqual(2);
       await expect.poll(() => urls.some(url => url.searchParams.get('ParentNodeId') === root && url.searchParams.get('NodeTypeId') === contribution.typeId)).toBe(true);
-      await expect(page.getByRole('heading', { name: 'Question: A child idea' })).toBeVisible();
+      if (contribution.typeId === evidence) await expect(page.getByText('No nodes found.', { exact: true })).toBeVisible();
+      else await expect(page.getByRole('heading', { name: 'Question: A child idea' })).toBeVisible();
+      await expect.poll(async () => Math.abs(((await tabs.boundingBox())?.y ?? Infinity) - 20)).toBeLessThanOrEqual(2);
     });
   }
 }

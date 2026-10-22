@@ -10,15 +10,42 @@
   const instance = $props.id();
   const tabs = $derived([{ id: 'comments', name: 'Comments' }, ...types]);
   function reveal(tabs: HTMLDivElement) {
-    if (revealChildren) requestAnimationFrame(() => {
-      if (!tabs.isConnected) return;
+    if (!revealChildren) return;
+    const card = tabs.closest<HTMLElement>('.node-page')!;
+    let frame = 0;
+    let stopped = false;
+    const align = () => {
+      if (stopped || !tabs.isConnected) return;
+      card.style.setProperty('--discussion-tabs-height', `${tabs.getBoundingClientRect().height}px`);
+      // A short/empty child feed still needs enough document height to reach this offset.
+      const delta = tabs.getBoundingClientRect().top - 20;
+      if (Math.abs(delta) > 1) window.scrollBy({ top: delta, behavior: 'instant' });
+    };
+    const schedule = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(align); };
+    const observer = new ResizeObserver(schedule);
+    const events = ['wheel', 'touchstart', 'pointerdown', 'keydown'] as const;
+    const stop = () => {
+      stopped = true;
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      for (const event of events) window.removeEventListener(event, stop, true);
+      clearTimeout(timeout);
+    };
+    // Re-align during initial feed/image/font layout, but never fight user interaction.
+    observer.observe(card);
+    observer.observe(tabs);
+    for (const event of events) window.addEventListener(event, stop, { capture: true, passive: true });
+    const timeout = setTimeout(stop, 10000);
+    frame = requestAnimationFrame(() => {
       tabs.querySelector<HTMLElement>('[aria-selected="true"]')?.focus({ preventScroll: true });
-      tabs.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+      schedule();
     });
+    void document.fonts.ready.then(schedule);
+    return { destroy: stop };
   }
   function key(event: KeyboardEvent, index: number) { let next = index; if (event.key === 'ArrowRight') next = (index + 1) % tabs.length; else if (event.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length; else if (event.key === 'Home') next = 0; else if (event.key === 'End') next = tabs.length - 1; else return; event.preventDefault(); onTabChange(tabs[next].id); document.getElementById(`${instance}-${tabs[next].id}`)?.focus(); }
 </script>
-<article class="node-page atlas-panel">
+<article class="node-page atlas-panel" class:reveal-children={revealChildren}>
   {#if node.breadcrumb.length}<div class="ribbon-context"><Breadcrumb items={node.breadcrumb} {onNavigate} hasMore={hasMoreAncestors} loadOlder={loadOlderAncestors} /></div>{/if}
   <header><h1>{node.typeName}: {node.title}</h1><p class="byline">By {node.authorName} · <time datetime={node.createdAt}>{new Date(node.createdAt).toLocaleDateString()}</time>{#if node.communities.length} · Community: {node.communities.join(', ')}{/if}</p>{#if node.status === 'Archived'}<p>Archived</p>{/if}</header>
   <div class="post-body">
@@ -51,10 +78,14 @@
   .reactions { display: flex; flex-wrap: wrap; gap: .5rem; padding: .5rem var(--card-padding) 0; font-size: .85rem; color: var(--atlas-muted); }
   .reactions span { border: 1px solid var(--atlas-border); border-radius: 999px; padding: .2rem .6rem; }
   .add { display: flex; justify-content: flex-end; padding: .5rem var(--card-padding); }
-  .tabs { scroll-margin-top: 1rem; display: flex; flex-wrap: wrap; gap: .4rem; border-bottom: 1px solid var(--atlas-border); padding: 0 var(--card-padding) .75rem; }
+  .tabs { scroll-margin-top: 20px; display: flex; flex-wrap: wrap; gap: .4rem; border-bottom: 1px solid var(--atlas-border); padding: 0 var(--card-padding) .75rem; }
   button { font: inherit; padding: .5rem .75rem; cursor: pointer; max-width: 100%; overflow-wrap: anywhere; }
   [aria-selected=true] { font-weight: bold; background: var(--atlas-accent); color: var(--atlas-on-accent); }
   [role=tabpanel] { padding: 1rem var(--card-padding) var(--card-padding); min-width: 0; }
+  .reveal-children [role=tabpanel] {
+    box-sizing: border-box;
+    min-height: calc(100dvh - var(--discussion-tabs-height, 60px) - 20px);
+  }
   @media(max-width:380px) {
     .node-page { --card-padding: var(--atlas-card-padding-narrow,.75rem); --dial-text-gap: var(--atlas-dial-text-gap,.6rem); }
   }

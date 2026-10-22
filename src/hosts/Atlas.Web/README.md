@@ -320,3 +320,5 @@ Node page layout follows the standard ribbon card: the breadcrumb spans the card
 Requested contribution options and selections use the catalog API’s `pluralName`, computed by the backend shared formatter with each type’s `AutoPluralize` setting. Single-node type selection retains the singular name; the browser does not invent pluralization rules.
 
 Contribution summaries on feed and Atlas-node cards are buttons with their existing text styling plus pointer/hover feedback. Discovery supplies stable type IDs and count-aware labels for the union of requested types (including zero counts) and actual child types. Clicking opens the node page with that type selected, focuses its tab and scrolls to its feed after loading, in both Storybook and the SPA.
+
+Child-feed navigation positions the type-tab strip 20px below the viewport top. The destination reserves enough height for empty/short feeds and corrects initial layout shifts from feed loading, images and fonts. Alignment stops on user interaction.
