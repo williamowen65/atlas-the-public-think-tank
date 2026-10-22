@@ -54,7 +54,7 @@
 </script>
 
 <svelte:window onpointerdown={closeOnOutside} onkeydown={closeOnEscape} onpopstate={closeOnNavigation} />
-<header class="atlas-header" class:hidden={!headerVisible} id="page-top">
+<header class="atlas-header" class:hidden={!headerVisible} class:filters-open={filtersOpen} id="page-top">
   <a class="brand" href="/" aria-label="Atlas home"><strong>Atlas</strong><span>The Public Think Tank</span></a>
   <div class="search-slot"><DiscoverySearch onExpandedChange={open => { filtersOpen = open; if (open) headerVisible = true; }} /></div>
   {#if logoutError}<p class="logout-error" role="alert">{logoutError}</p>{/if}
@@ -101,6 +101,9 @@
   .atlas-header { position:sticky;top:0;z-index:30;background:var(--atlas-surface);transition:transform .18s ease;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;column-gap:clamp(1rem,2vw,2rem);padding:1rem 0;border-bottom:0; }
   .atlas-header.hidden{transform:translateY(calc(-100% - 1rem));pointer-events:none;}
   .search-slot{min-width:0;align-self:center;}
+  .atlas-header.filters-open .search-slot{grid-column:1/-1;grid-row:2;}
+  .atlas-header.filters-open .right-group{grid-column:3;grid-row:1;}
+  .atlas-header.filters-open .brand{grid-column:1;grid-row:1;}
   .search-slot :global(.filter-bar){padding:.25rem 0;border-top:0;}
   .atlas-header::after{content:'';position:absolute;bottom:0;left:50%;width:100vw;transform:translateX(-50%);border-bottom:1px solid var(--atlas-border);pointer-events:none;}
   .brand {display:flex;flex-direction:column;justify-content:center;color:var(--atlas-text);text-decoration:none;white-space:nowrap;strong{font-size:1.8rem;}span{font-size:.85rem;color:var(--atlas-muted);}}
