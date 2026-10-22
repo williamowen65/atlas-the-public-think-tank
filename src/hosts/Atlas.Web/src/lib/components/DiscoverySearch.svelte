@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { replaceState } from '$app/navigation';
-  import { page } from '$app/state';
+  import { discoveryQuery, setDiscoveryQuery, restoreDiscoveryQuery } from '$lib/state/discoveryQuery.svelte';
   import { readTypes, type NodeType } from '$lib/api/nodePage';
   import type { DiscoveryFilters } from '$lib/api/discovery';
   let { onExpandedChange }: { onExpandedChange?: (expanded: boolean) => void } = $props();
@@ -12,15 +11,7 @@
   let applied = $state('');
   let pending = $state('');
   const editing = $derived(parse(pending));
-  const storageKey = 'atlas.discovery.query.v1';
-  onMount(() => {
-    const current = page.url.searchParams.get('q') ?? page.url.searchParams.get('search');
-    let stored: string | null = null;
-    try { stored = localStorage.getItem(storageKey); } catch { /* Storage may be unavailable. */ }
-    if (current === null && stored) apply(stored);
-    else { applied = current ?? ''; input = applied; pending = applied; }
-  });
-  const keys = ['type', 'author', 'community', 'votes', 'average', 'from', 'through', 'archived'] as const;
+  onMount(() => { restoreDiscoveryQuery(); });
   const uuid = /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
   function parse(value: string) {
     const filters: DiscoveryFilters = {};
@@ -55,27 +46,20 @@
     }
     return { text: words.join(' ').trim(), filters, errors };
   }
-  const parsed = $derived(parse(applied));
   function apply(value: string) {
     const result = parse(value);
     if (result.errors.length) { input = value; return; }
-    applied = value.trim(); input = applied; pending = applied;
-    try { if (applied) localStorage.setItem(storageKey, applied); else localStorage.removeItem(storageKey); } catch { /* Storage is optional. */ }
-    const url = new URL(window.location.href);
-    if (applied) url.searchParams.set('q', applied); else url.searchParams.delete('q');
-    replaceState(url.pathname + url.search, page.state);
+    setDiscoveryQuery(value);
+    applied = discoveryQuery.value; input = applied; pending = applied;
   }
   function token(key: string, value: string) {
     const parts = (pending.match(/"[^"]*"|\S+/g) ?? []).filter(p => !p.toLowerCase().startsWith(key + ':'));
     if (value) parts.push(key + ':' + (value.includes(' ') ? '"' + value + '"' : value));
     pending = parts.join(' ');
-  }
-  function remove(key: string) {
-    if (key === 'text') apply((input.match(/"[^"]*"|\S+/g) ?? []).filter(p => keys.some(k => p.toLowerCase().startsWith(k + ':'))).join(' '));
-    else { token(key, ''); apply(pending); }
+    input = pending;
   }
   $effect(() => {
-    const q = page.url.searchParams.get('q') ?? page.url.searchParams.get('search') ?? '';
+    const q = discoveryQuery.value;
     if (q !== applied) { applied = q; input = q; pending = q; }
   });
   $effect(() => { const controller = new AbortController(); void readTypes('/atlas-preview-api', controller.signal).then(t => types = t).catch(() => {}); return () => controller.abort(); });
@@ -89,28 +73,17 @@
     <button type="button" aria-expanded={expanded} onclick={() => expanded = !expanded}>Filters {expanded ? '▴' : '▾'}</button>
   </form>
   {#if parse(input).errors.length}<p class="validation" role="alert">{parse(input).errors.join(' · ')}</p>{/if}
-  {#if applied}
-    <div class="chips" aria-label="Active filters">
-      {#if parsed.text}<button onclick={() => remove('text')}>{parsed.text} ×</button>{/if}
-      {#each keys as key}
-        {#if (applied.match(/"[^"]*"|\S+/g) ?? []).some(part => part.toLowerCase().startsWith(key + ':'))}
-          <button onclick={() => remove(key)}>{(applied.match(/"[^"]*"|\S+/g) ?? []).find(part => part.toLowerCase().startsWith(key + ':'))} ×</button>
-        {/if}
-      {/each}
-      <button class="clear" onclick={() => apply('')}>Clear all</button>
-    </div>
-  {/if}
   {#if expanded}
     <div class="toolbox">
       <label>Node type<select value={editing.filters.typeId ?? ''} onchange={e => token('type', e.currentTarget.value)}><option value="">All types</option>{#each types as type}<option value={type.id}>{type.name}</option>{/each}</select></label>
-      <label>Minimum votes<input type="number" min="0" value={editing.filters.minVotes ?? ''} onchange={e => token('votes', (e.currentTarget.value || editing.filters.maxVotes !== undefined) ? `${e.currentTarget.value}..${parsed.filters.maxVotes ?? ''}` : '')} /></label>
-      <label>Maximum votes<input type="number" min="0" value={parsed.filters.maxVotes ?? ''} onchange={e => token('votes', (e.currentTarget.value || parsed.filters.minVotes !== undefined) ? `${parsed.filters.minVotes ?? ''}..${e.currentTarget.value}` : '')} /></label>
-      <label>Minimum average (0–10)<input type="number" min="0" max="10" step=".1" value={editing.filters.minAverage ?? ''} onchange={e => token('average', (e.currentTarget.value || editing.filters.maxAverage !== undefined) ? `${e.currentTarget.value}..${parsed.filters.maxAverage ?? ''}` : '')} /></label>
-      <label>Maximum average (0–10)<input type="number" min="0" max="10" step=".1" value={parsed.filters.maxAverage ?? ''} onchange={e => token('average', (e.currentTarget.value || parsed.filters.minAverage !== undefined) ? `${parsed.filters.minAverage ?? ''}..${e.currentTarget.value}` : '')} /></label>
-      <label>Created after<input type="date" value={parsed.filters.from ?? ''} onchange={e => token('from', e.currentTarget.value)} /></label>
-      <label>Created before<input type="date" value={parsed.filters.through ?? ''} onchange={e => token('through', e.currentTarget.value)} /></label>
+      <label>Minimum votes<input type="number" min="0" value={editing.filters.minVotes ?? ''} onchange={e => token('votes', (e.currentTarget.value || editing.filters.maxVotes !== undefined) ? `${e.currentTarget.value}..${editing.filters.maxVotes ?? ''}` : '')} /></label>
+      <label>Maximum votes<input type="number" min="0" value={editing.filters.maxVotes ?? ''} onchange={e => token('votes', (e.currentTarget.value || editing.filters.minVotes !== undefined) ? `${editing.filters.minVotes ?? ''}..${e.currentTarget.value}` : '')} /></label>
+      <label>Minimum average (0–10)<input type="number" min="0" max="10" step=".1" value={editing.filters.minAverage ?? ''} onchange={e => token('average', (e.currentTarget.value || editing.filters.maxAverage !== undefined) ? `${e.currentTarget.value}..${editing.filters.maxAverage ?? ''}` : '')} /></label>
+      <label>Maximum average (0–10)<input type="number" min="0" max="10" step=".1" value={editing.filters.maxAverage ?? ''} onchange={e => token('average', (e.currentTarget.value || editing.filters.minAverage !== undefined) ? `${editing.filters.minAverage ?? ''}..${e.currentTarget.value}` : '')} /></label>
+      <label>Created after<input type="date" value={editing.filters.from ?? ''} onchange={e => token('from', e.currentTarget.value)} /></label>
+      <label>Created before<input type="date" value={editing.filters.through ?? ''} onchange={e => token('through', e.currentTarget.value)} /></label>
       <label class="check"><input type="checkbox" checked={editing.filters.archived ?? false} onchange={e => token('archived', e.currentTarget.checked ? 'true' : '')} /> Include archived nodes</label>
-      <div class="apply-row"><button type="button" onclick={() => apply(pending)} disabled={editing.errors.length > 0}>Apply filters</button>{#if pending !== applied}<span>Changes not yet applied</span>{/if}</div>
+      <div class="apply-row"><button type="button" onclick={() => apply('')}>Clear filters</button><button type="button" onclick={() => apply(pending)} disabled={editing.errors.length > 0}>Apply filters</button>{#if pending !== applied}<span>Changes not yet applied</span>{/if}</div>
       {#if editing.errors.length}<p role="alert" class="validation">{editing.errors.join(" · ")}</p>{/if}
       <p class="hint">Visual filters update the search syntax above. You can also type filters directly, such as <code>type:Idea</code>, <code>votes:5..100</code>, <code>average:7..10</code>, <code>from:2026-01-01</code>, <code>author:ID</code>, or <code>community:ID</code>. Text searches node content only for now.</p>
     </div>
