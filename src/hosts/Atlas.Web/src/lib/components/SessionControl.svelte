@@ -4,7 +4,7 @@
   let { sessionBase = '/atlas-comments-api', prompt = 'Sign in to Atlas', expanded = false, focusOnMount = false, onSession }: { sessionBase?: string; prompt?: string; expanded?: boolean; focusOnMount?: boolean; onSession?: (id: string | null) => void } = $props();
   let participantId = $state<string | null>(null);
   let checking = $state(true); let busy = $state(false); let error = $state('');
-  let email = $state(''); let password = $state('');
+  let email = $state(''); let password = $state(''); let displayName = $state(''); let registering = $state(false); let registered = $state(false);
   let generation = 0;
   const instance = $props.id();
   const controller = new AbortController();
@@ -44,6 +44,18 @@
     } catch { if (!controller.signal.aborted) error = 'Sign-in was not completed. Check your credentials and account confirmation, then try again.'; }
     finally { password = ''; busy = false; }
   }
+  async function register() {
+    if (busy) return;
+    busy = true; error = '';
+    try {
+      await commentRequest(sessionBase, 'auth/register', 'POST', { email, password, displayName }, AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]));
+      registered = true; registering = false;
+    } catch (cause) {
+      error = cause instanceof CommentRequestError && cause.status === 503
+        ? 'Registration requires local email delivery to be configured.'
+        : 'Registration was not completed. Check your information and try again.';
+    } finally { password = ''; busy = false; }
+  }
   async function signOut() {
     if (busy) return; busy = true; error = '';
     try { await commentRequest(sessionBase, 'auth/logout', 'POST', undefined, AbortSignal.any([controller.signal, AbortSignal.timeout(10000)])); participantId = null; onSession?.(null); window.dispatchEvent(new Event('atlas-session-changed')); }
@@ -54,11 +66,13 @@
 <div class="session-control">
   {#if checking}<p role="status">Checking sign-in…</p>
   {:else if participantId}<div class="session"><span>Signed in</span><button onclick={() => void signOut()} disabled={busy}>Sign out</button></div>
-  {:else}<details class="sign-in" open={expanded} use:reveal><summary>{prompt}</summary><form aria-label="Sign in to Atlas" onsubmit={event => { event.preventDefault(); void signIn(); }}>
+  {:else}<details class="sign-in" open={expanded} use:reveal><summary>{prompt}</summary>{#if registered}<p role="status">Account created. Confirm your email through the development email workflow, then sign in.</p>{/if}
+  <form aria-label={registering ? 'Create an Atlas account' : 'Sign in to Atlas'} onsubmit={event => { event.preventDefault(); if (registering) void register(); else void signIn(); }}>
+    {#if registering}<label for={`${instance}-name`}>Display name</label><input id={`${instance}-name`} bind:value={displayName} required maxlength="100" autocomplete="nickname" />{/if}
     <label for={`${instance}-email`}>Email</label><input id={`${instance}-email`} type="email" bind:value={email} autocomplete="username" required maxlength="256" />
-    <label for={`${instance}-password`}>Password</label><input id={`${instance}-password`} type="password" bind:value={password} autocomplete="current-password" required maxlength="1024" />
-    <button disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
-  </form></details>{/if}
+    <label for={`${instance}-password`}>Password</label><input id={`${instance}-password`} type="password" bind:value={password} autocomplete={registering ? "new-password" : "current-password"} required maxlength="1024" />
+    <button disabled={busy}>{busy ? 'Please wait…' : registering ? 'Create account' : 'Sign in'}</button>
+  </form><button type="button" class="switch-mode" onclick={() => { registering = !registering; error = ''; }}>{registering ? 'Already have an account? Sign in' : 'New to Atlas? Create an account'}</button></details>{/if}
   {#if error}<p role="alert">{error}</p><button onclick={() => void refresh()} disabled={busy}>Retry sign-in connection</button>{/if}
 </div>
 <style lang="scss">
