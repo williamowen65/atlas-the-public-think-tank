@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { commentRequest, CommentRequestError } from '../api/comments';
-  let { sessionBase = '/atlas-comments-api', prompt = 'Sign in to Atlas', expanded = false, startRegister = false, focusOnMount = false, onSession }: { sessionBase?: string; prompt?: string; expanded?: boolean; startRegister?: boolean; focusOnMount?: boolean; onSession?: (id: string | null) => void } = $props();
+  let { sessionBase = '/atlas-comments-api', prompt = 'Sign in to Atlas', expanded = false, startRegister = false, focusOnMount = false, hideWhenSignedIn = false, onSession }: { sessionBase?: string; prompt?: string; expanded?: boolean; startRegister?: boolean; focusOnMount?: boolean; hideWhenSignedIn?: boolean; onSession?: (id: string | null) => void } = $props();
   let participantId = $state<string | null>(null);
   let checking = $state(true); let busy = $state(false); let error = $state('');
   let email = $state(''); let password = $state(''); let displayName = $state(''); let registering = $state(startRegister); let registered = $state(false);
@@ -65,6 +65,7 @@
 </script>
 <div class="session-control">
   {#if checking}<p role="status">Checking sign-in…</p>
+  {:else if participantId && hideWhenSignedIn}<!-- Authentication helper is hidden once signed in; use the header account menu to sign out. -->
   {:else if participantId}<div class="session"><span>Signed in</span><button onclick={() => void signOut()} disabled={busy}>Sign out</button></div>
   {:else}<details class="sign-in" open={expanded} use:reveal><summary>{prompt}</summary>{#if registered}<p role="status">Account created. Confirm your email through the development email workflow, then sign in.</p>{/if}
   <form aria-label={registering ? 'Create an Atlas account' : 'Sign in to Atlas'} onsubmit={event => { event.preventDefault(); if (registering) void register(); else void signIn(); }}>
