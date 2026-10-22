@@ -2,7 +2,6 @@
   export interface NodeDraft { title: string; shortDescription: string; markdown: string; typeId: string | null; requestedTypeIds: string[]; parentId?: string; newType?: { name: string; description: string; autoPluralize?: boolean } }
 </script>
 <script lang="ts">
-  import VotingDial from './VotingDial.svelte';
   import Breadcrumb, { type BreadcrumbItem } from './Breadcrumb.svelte';
   import MarkdownContent from './MarkdownContent.svelte';
   import type { NodeType } from '../api/nodePage';
@@ -38,7 +37,6 @@
     {#if typeId === 'new'}<fieldset><legend>New node type</legend><label for={`${instance}-type-name`}>Type name</label><input id={`${instance}-type-name`} bind:value={typeName} required maxlength="100" /><label for={`${instance}-type-description`}>Type description</label><textarea id={`${instance}-type-description`} bind:value={typeDescription} maxlength="500"></textarea><label class="plural-choice"><input type="checkbox" bind:checked={autoPluralize} /> Automatically pluralize this type</label></fieldset>{/if}
   </header>
   <div class="intro">
-    <VotingDial label="Node importance" disabled />
     <div class="summary"><label for={`${instance}-short`}>Short description</label><textarea id={`${instance}-short`} bind:value={shortDescription} placeholder="Introduce your idea…" required maxlength="280" rows="5" aria-describedby={`${instance}-remaining`}></textarea><small id={`${instance}-remaining`}>{shortDescription.length}/280 characters</small></div>
   </div>
   <div class="content-editor"><label for={`${instance}-content`}>Content (Markdown)</label><textarea id={`${instance}-content`} bind:value={markdown} placeholder="Develop your node here…" required maxlength="32000" rows="6"></textarea>
