@@ -1,5 +1,5 @@
 <script lang="ts">
-  let { tagline = 'A place to connect questions, evidence, and ideas.' }: { tagline?: string } = $props();
+  let { tagline = 'A place to connect questions, evidence, and ideas.', onNavigate }: { tagline?: string; onNavigate?: (href: string) => void } = $props();
   const year = new Date().getFullYear();
   const groups = [
     { title: 'Explore', links: [{text:'Discover',href:'/'},{text:'Create a contribution',href:'/new'},{text:'How Atlas works',href:'/about#how-it-works'},{text:'Guides',href:'/guides'}]},
@@ -13,7 +13,7 @@
     {#each groups as group}
       <nav aria-label={group.title}>
         <strong>{group.title}</strong>
-        {#each group.links as link}<a href={link.href}>{link.text}</a>{/each}
+        {#each group.links as link}<a href={link.href} onclick={event => { if (onNavigate && link.href.startsWith("/")) { event.preventDefault(); onNavigate(link.href); } }}>{link.text}</a>{/each}
       </nav>
     {/each}
   </div>
