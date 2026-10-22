@@ -80,3 +80,43 @@ test('SPA Read more opens a node page and child tabs support keyboard navigation
   await expect(page.getByRole('tab', { name: 'Evidence', exact: true })).toHaveAttribute('aria-selected', 'true');
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
 });
+
+
+test('node page keeps a full-width ribbon and wraps post content around the dial', async ({ page }) => {
+  await mock(page);
+  await page.route('**/atlas-preview-api/nodes/*/reactions', route => route.fulfill({ json: [{ associationId: 'helpful', text: 'Helpful', emoji: '👍', totalVotes: 2 }] }));
+  await page.route('**/atlas-preview-api/nodes/*/description', route => route.fulfill({ json: [{ id: 'body', kind: 'markdown', content: { markdown: 'Supporting detail. '.repeat(150) } }] }));
+  await page.route('**/atlas-preview-api/nodes?**', route => route.fulfill({ json: { items: [{ ...entry(), card: { ...entry().card, breadcrumb: 'A parent question' } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } }));
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=compositions-node-page--playground&viewMode=story');
+  const card = page.locator('.node-page');
+  await expect(card.getByRole('heading', { name: 'Question: A live question' })).toBeVisible();
+  for (const width of [800, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    const layout = await card.evaluate(el => {
+      const bounds = el.getBoundingClientRect();
+      const ribbon = el.querySelector('nav')!.getBoundingClientRect();
+      const dial = el.querySelector('.dial')!.getBoundingClientRect();
+      const text = el.querySelector('.content-blocks p')!.firstChild!;
+      const range = document.createRange();
+      range.setStart(text, 0); range.setEnd(text, 1);
+      const first = range.getBoundingClientRect();
+      let wrapsBelow = false;
+      for (let index = 0; index < text.textContent!.length; index++) {
+        range.setStart(text, index); range.setEnd(text, index + 1);
+        const rect = range.getBoundingClientRect();
+        if (rect.top > dial.bottom && rect.left < dial.right) { wrapsBelow = true; break; }
+      }
+      const content = el.querySelector('.content-blocks')!.getBoundingClientRect();
+      const reactions = el.querySelector('.reactions')!.getBoundingClientRect();
+      const actions = el.querySelector('.add')!.getBoundingClientRect();
+      return { left: ribbon.left - bounds.left, right: bounds.right - ribbon.right, startsBesideDial: first.top < dial.bottom && first.left >= dial.right, wrapsBelow, reactionsAfterContent: reactions.top >= content.bottom, actionsAfterReactions: actions.top >= reactions.bottom };
+    });
+    expect(layout.left).toBeCloseTo(1, 0);
+    expect(layout.right).toBeCloseTo(1, 0);
+    expect(layout.startsBesideDial).toBe(true);
+    expect(layout.wrapsBelow).toBe(true);
+    expect(layout.reactionsAfterContent).toBe(true);
+    expect(layout.actionsAfterReactions).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+  }
+});
