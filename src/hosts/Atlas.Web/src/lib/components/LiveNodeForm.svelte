@@ -7,7 +7,7 @@
   import { readTypes, type NodeType } from '../api/nodePage';
   import { commentRequest, CommentRequestError } from '../api/comments';
   import { readDiscovery, discoveryCard } from '../api/discovery';
-  let { draftId, parentId, parentTitle, initialTypeId, breadcrumb = [], focusOnMount = false, apiBase = '/atlas-preview-api', sessionBase = '/atlas-comments-api', onCreated }: { draftId?: string; parentId?: string; parentTitle?: string; initialTypeId?: string; breadcrumb?: BreadcrumbItem[]; focusOnMount?: boolean; apiBase?: string; sessionBase?: string; onCreated?: (id: string) => void } = $props();
+  let { draftId, parentId, parentTitle, initialTypeId, breadcrumb = [], focusOnMount = false, apiBase = '/atlas-preview-api', sessionBase = '/atlas-comments-api', onCreated, onDraftChange, onRegisterClose }: { draftId?: string; parentId?: string; parentTitle?: string; initialTypeId?: string; breadcrumb?: BreadcrumbItem[]; focusOnMount?: boolean; apiBase?: string; sessionBase?: string; onCreated?: (id: string) => void; onDraftChange?: (draft: NodeDraft | null) => void; onRegisterClose?: (close: () => Promise<boolean>) => void } = $props();
   let types = $state<NodeType[]>([]); let error = $state(''); let loading = $state(true);
   let participantId = $state<string | null>(null); let hasDraft = $state(false); let submitting = $state(false); let saveError = $state(''); let createdId = $state(''); let createdType = $state<{ key: string; id: string } | null>(null);
   let controller: AbortController;
@@ -30,18 +30,19 @@
     if (id && draftId) { const found = listDrafts(id).find(item => item.id === draftId); if (found) { savedDraft = found.data; ownerDraftId = found.id; savedBreadcrumb = found.breadcrumb; savedParentTitle = found.parentTitle;
       if (found.data.parentId && !found.parentTitle) void resolveParentPath(found.data.parentId).then(result => { if (result && participantId === id) { savedBreadcrumb = result.breadcrumb; savedParentTitle = result.parentTitle; } }); } }
   }
-  async function savePrivateDraft() {
-    if (!participantId || !currentDraft) return;
-    if (!currentDraft.title.trim()) { savedNotice = 'Enter a title before saving your draft.'; return; }
+  async function savePrivateDraft(): Promise<boolean> {
+    if (!participantId || !currentDraft) return false;
+    if (!currentDraft.title.trim()) { savedNotice = 'Enter a title before saving your draft.'; return false; }
     try {
       const id = ownerDraftId || crypto.randomUUID();
       let ancestry = { breadcrumb: savedBreadcrumb ?? breadcrumb, parentTitle: savedParentTitle ?? parentTitle };
       if (currentDraft.parentId && !ancestry.parentTitle) ancestry = await resolveParentPath(currentDraft.parentId) ?? ancestry;
       putDraft(participantId, { id, ownerId: participantId, updatedAt: new Date().toISOString(), data: currentDraft, breadcrumb: ancestry.breadcrumb, parentTitle: ancestry.parentTitle });
-      ownerDraftId = id; savedNotice = 'Saved privately in this browser. Open My drafts to find it.';
+      ownerDraftId = id; savedNotice = 'Saved privately in this browser. Open My drafts to find it.'; return true;
     }
-    catch { savedNotice = 'Draft could not be saved in this browser.'; }
+    catch { savedNotice = 'Draft could not be saved in this browser.'; return false; }
   }
+  onRegisterClose?.(savePrivateDraft);
   const signal = () => AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]);
   async function load() { loading = true; error = ''; controller?.abort(); controller = new AbortController(); try { types = await readTypes(apiBase, signal()); } catch { if (!controller.signal.aborted) error = 'Could not load node types.'; } finally { loading = false; } }
   onMount(() => { void load(); return () => controller?.abort(); });
@@ -78,7 +79,7 @@
   {:else}
     <SessionControl {sessionBase} hideWhenSignedIn prompt={parentId ? 'Sign in to add a child node' : 'Sign in to create a node'} expanded {focusOnMount} onSession={sessionChanged} />
     {#if loading}<p role="status">Loading node types…</p>{:else if error}<p role="alert">{error}</p><button onclick={() => void load()}>Retry node types</button>{:else if hasDraft}
-      <fieldset class="draft-fields" disabled={submitting || !participantId}><NodeForm {types} parentId={savedDraft?.parentId ?? parentId} parentTitle={savedParentTitle ?? parentTitle} {initialTypeId} breadcrumb={savedBreadcrumb ?? breadcrumb} initialDraft={savedDraft} focusOnMount {submitting} onPreview={draft => { currentDraft = draft; }} onSubmit={save} /></fieldset>
+      <fieldset class="draft-fields" disabled={submitting || !participantId}><NodeForm {types} parentId={savedDraft?.parentId ?? parentId} parentTitle={savedParentTitle ?? parentTitle} {initialTypeId} breadcrumb={savedBreadcrumb ?? breadcrumb} initialDraft={savedDraft} focusOnMount {submitting} onPreview={draft => { currentDraft = draft; onDraftChange?.(draft); }} onSubmit={save} /></fieldset>
       {#if participantId}<button type="button" onclick={savePrivateDraft} disabled={submitting}>Save private draft</button> <a href="/me/drafts">My drafts</a>{/if}
       {#if savedNotice}<p role="status">{savedNotice}</p>{/if}
     {/if}
