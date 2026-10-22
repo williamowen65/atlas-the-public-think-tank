@@ -4,3 +4,4 @@ const meta = { title: 'Components/Sign in', component: SessionControl, args: { e
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Playground: Story = {};
+export const Register: Story = { args: { expanded: true, startRegister: true } };
