@@ -6,12 +6,12 @@
   type Profile = { id: string; displayName: string; bio: string; createdAt?: string; deleted?: boolean };
   let profile = $state<Profile | null>(null);
   let profiles = $state<Profile[]>([]);
-  let selected = $state('');
+  let selected = $state(participantId);
   let loading = $state(true);
   let error = $state('');
   let page = $state(0);
   let hasMore = $state(false);
-  const currentId = $derived(participantId || selected);
+  const currentId = $derived(selected);
   async function loadProfile(id: string) {
     if (!id) return;
     loading = true; error = ''; profile = null;
