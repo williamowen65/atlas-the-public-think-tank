@@ -6,6 +6,7 @@ export interface NodeCardData {
   title: string;
   typeName: string;
   authorName: string;
+  authorId?: string;
   createdAt: string;
   description: string;
   communities: string[];
