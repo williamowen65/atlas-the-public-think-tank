@@ -24,7 +24,7 @@
 </footer>
 <style lang="scss">
   .atlas-footer{padding:2rem 0;margin-top:2rem;border-top:1px solid var(--atlas-border);font-size:.9rem;color:var(--atlas-muted);}
-  .footer-links{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1.5rem 2rem;margin:0 auto 2rem;padding-inline:clamp(1rem,3vw,3rem);max-width:80rem;box-sizing:border-box;}
+  .footer-links{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1.5rem 2rem;margin:0 auto 2rem;padding-inline:clamp(1rem,3vw,3rem);width:100%;max-width:80rem;box-sizing:border-box;}
   nav{display:flex;flex-direction:column;align-items:flex-start;gap:.6rem;strong{color:var(--atlas-text);margin-bottom:.3rem;}a{color:var(--atlas-muted);text-decoration:none;}a:hover{text-decoration:underline;}}
   .footer-bottom{border-top:1px solid var(--atlas-border);padding-top:1.5rem;display:flex;flex-direction:column;align-items:center;text-align:center;gap:.75rem;p{margin:.4rem 0;max-width:40rem;}}
   @media(max-width:700px){.footer-links{grid-template-columns:repeat(2,minmax(0,1fr));}}
