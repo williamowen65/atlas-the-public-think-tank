@@ -8,14 +8,14 @@
   const query = $derived(page.url.searchParams.get('q') ?? page.url.searchParams.get('search') ?? '');
   const parsed = $derived.by(() => {
     const filters: DiscoveryFilters = {}; const text: string[] = [];
-    for (const part of query.match(/"[^"]*"|\\S+/g) ?? []) {
+    for (const part of query.match(/"[^"]*"|\S+/g) ?? []) {
       const m = /^(type|author|community|votes|average|from|through|archived):(.+)$/i.exec(part);
       if (!m) { text.push(part); continue; }
       const key = m[1].toLowerCase(), v = m[2].replace(/^"|"$/g, '');
       if (key === 'type') filters.typeId = types.find(t => t.id.toLowerCase() === v.toLowerCase() || t.name.toLowerCase() === v.toLowerCase())?.id;
       if (key === 'author') filters.authorId = v;
       if (key === 'community') filters.communityId = v;
-      if (key === 'votes' || key === 'average') { const range = /^(\\d+(?:\\.\\d+)?)?\\.\\.(\\d+(?:\\.\\d+)?)?$/.exec(v); if (range) { if (key === 'votes') { filters.minVotes = range[1] ? Number(range[1]) : undefined; filters.maxVotes = range[2] ? Number(range[2]) : undefined; } else { filters.minAverage = range[1] ? Number(range[1]) : undefined; filters.maxAverage = range[2] ? Number(range[2]) : undefined; } } }
+      if (key === 'votes' || key === 'average') { const range = /^(\d+(?:\.\d+)?)?\.\.(\d+(?:\.\d+)?)?$/.exec(v); if (range) { if (key === 'votes') { filters.minVotes = range[1] ? Number(range[1]) : undefined; filters.maxVotes = range[2] ? Number(range[2]) : undefined; } else { filters.minAverage = range[1] ? Number(range[1]) : undefined; filters.maxAverage = range[2] ? Number(range[2]) : undefined; } } }
       if (key === 'from') filters.from = v;
       if (key === 'through') filters.through = v;
       if (key === 'archived') filters.archived = v === 'true';
