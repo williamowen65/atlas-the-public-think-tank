@@ -13,7 +13,7 @@
   --atlas-border: #687887;
   --atlas-focus: #9b4a00;
   --atlas-space: 1rem;
-  --atlas-radius: .5rem;
+  --atlas-radius: 0.5rem;
   color: var(--atlas-text);
   background: var(--atlas-bg);
 }
@@ -30,7 +30,7 @@
 }
 
 :root[data-density='compact'] {
-  --atlas-space: .5rem;
+  --atlas-space: 0.5rem;
 }
 
 * {
@@ -72,7 +72,7 @@ nav {
 }
 
 .fixture-note {
-  font-size: .85rem;
+  font-size: 0.85rem;
   color: var(--atlas-muted);
 }
 

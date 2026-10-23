@@ -3,4 +3,5 @@
   import { openNodeStory, openProfileStory } from '../shared/navigation';
   let { participantId = '' }: { participantId?: string } = $props();
 </script>
+
 <LiveProfilePage {participantId} onOpenNode={openNodeStory} onOpenProfile={openProfileStory} />

@@ -4,4 +4,5 @@
   import { openNodeStory, openProfileStory } from '../shared/navigation';
   let { presentation = 'ribbon-corner' }: { presentation?: NodeCardPresentation } = $props();
 </script>
+
 <LiveNodeFeed {presentation} onOpenNode={openNodeStory} onOpenProfile={openProfileStory} />

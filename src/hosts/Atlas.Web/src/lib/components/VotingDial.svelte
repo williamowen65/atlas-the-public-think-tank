@@ -11,8 +11,14 @@
   }
 
   let {
-    label = 'Node importance', value = null, average = null,
-    totalVotes = 0, hasVoted, compact = false, disabled = false, onChange,
+    label = 'Node importance',
+    value = null,
+    average = null,
+    totalVotes = 0,
+    hasVoted,
+    compact = false,
+    disabled = false,
+    onChange,
   }: Props = $props();
 
   const marked = $derived(hasVoted ?? value !== null);
@@ -81,7 +87,10 @@
     if (disabled) return;
     next = Math.max(0, Math.min(10, next));
     syncTarget = (10 - next) * rowHeight();
-    reel.scrollTo({ top: syncTarget, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+    reel.scrollTo({
+      top: syncTarget,
+      behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+    });
     select(next);
   }
 
@@ -91,13 +100,18 @@
       event.preventDefault();
       if (event.key === 'Home') moveTo(0);
       else if (event.key === 'End') moveTo(10);
-      else moveTo(value === null ? 5 : value + (event.key === 'ArrowUp' || event.key === 'ArrowRight' ? 1 : -1));
+      else
+        moveTo(
+          value === null
+            ? 5
+            : value + (event.key === 'ArrowUp' || event.key === 'ArrowRight' ? 1 : -1),
+        );
     }
   }
 
   // Standard lens follows the pull; compact keeps a fixed selection window.
   function pullLens(distance: number) {
-    lensPull = compact ? 0 : Math.max(-16, Math.min(16, distance * .3));
+    lensPull = compact ? 0 : Math.max(-16, Math.min(16, distance * 0.3));
   }
 
   function handleScroll() {
@@ -151,7 +165,11 @@
     if (touchPointer?.id === event.pointerId) {
       touchPointer = null;
       // Native panning cancels the pointer stream; keep the lens until scrollend.
-      if (event.type === 'pointercancel' || Math.abs(reel.scrollTop - (touchScrollOrigin ?? reel.scrollTop)) > 1) return;
+      if (
+        event.type === 'pointercancel' ||
+        Math.abs(reel.scrollTop - (touchScrollOrigin ?? reel.scrollTop)) > 1
+      )
+        return;
       touchScrollOrigin = null;
     }
     if (!drag || drag.id === event.pointerId) {
@@ -164,7 +182,10 @@
     dragging = false;
     if (reel.hasPointerCapture(event.pointerId)) reel.releasePointerCapture(event.pointerId);
     if (disabled) return;
-    const offset = previous.moved || event.type !== 'pointerup' ? 0 : event.clientY - reel.getBoundingClientRect().top - reel.clientHeight / 2;
+    const offset =
+      previous.moved || event.type !== 'pointerup'
+        ? 0
+        : event.clientY - reel.getBoundingClientRect().top - reel.clientHeight / 2;
     moveTo(10 - Math.round((reel.scrollTop + offset) / rowHeight()));
   }
 
@@ -179,7 +200,8 @@
     if (disabled || event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
     event.preventDefault();
     // Normalize line/page wheels and accumulate small trackpad deltas.
-    const distance = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? reel.clientHeight : 1);
+    const distance =
+      event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? reel.clientHeight : 1);
     if (!distance) return;
     if (event.timeStamp - wheelTime > 180) {
       wheelRemainder = 0;
@@ -207,29 +229,59 @@
 </script>
 
 <section class:compact class:voted={marked} class="voting-dial" aria-label={label}>
-  <strong class="average" aria-label={average === null ? 'No average rating' : `Average rating: ${average.toFixed(1)}`}>{average === null ? '—' : average.toFixed(1)}</strong>
+  <strong
+    class="average"
+    aria-label={average === null ? 'No average rating' : `Average rating: ${average.toFixed(1)}`}
+    >{average === null ? '—' : average.toFixed(1)}</strong
+  >
   <div class="selector" class:unrated={!marked} class:disabled>
-    <div class="selection-window" class:pulling style:transform={`translateY(${compact ? 0 : lensPull}px)`} aria-hidden="true"></div>
     <div
-      bind:this={reel} class="reel" class:dragging role="spinbutton" tabindex={disabled ? -1 : 0}
-      aria-label={label} aria-valuemin={0} aria-valuemax={10}
+      class="selection-window"
+      class:pulling
+      style:transform={`translateY(${compact ? 0 : lensPull}px)`}
+      aria-hidden="true"
+    ></div>
+    <div
+      bind:this={reel}
+      class="reel"
+      class:dragging
+      role="spinbutton"
+      tabindex={disabled ? -1 : 0}
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={10}
       aria-valuenow={value === null ? undefined : value}
-      aria-valuetext={value === null ? 'Unrated. Scroll, drag or use arrow keys to choose a rating.' : `${value} out of 10`}
-      aria-disabled={disabled} onkeydown={handleKey} onscroll={handleScroll} onscrollend={scrollEnd}
-      onpointerdown={pointerDown} onpointermove={pointerMove} onpointerup={pointerEnd}
-      onpointercancel={pointerEnd} onlostpointercapture={pointerEnd} onwheel={handleWheel}
+      aria-valuetext={value === null
+        ? 'Unrated. Scroll, drag or use arrow keys to choose a rating.'
+        : `${value} out of 10`}
+      aria-disabled={disabled}
+      onkeydown={handleKey}
+      onscroll={handleScroll}
+      onscrollend={scrollEnd}
+      onpointerdown={pointerDown}
+      onpointermove={pointerMove}
+      onpointerup={pointerEnd}
+      onpointercancel={pointerEnd}
+      onlostpointercapture={pointerEnd}
+      onwheel={handleWheel}
     >
       {#each ratings as rating}
-        <span class="rating" class:selected={rating === (value ?? 5)} aria-hidden="true">{rating}</span>
+        <span class="rating" class:selected={rating === (value ?? 5)} aria-hidden="true"
+          >{rating}</span
+        >
       {/each}
     </div>
   </div>
   <span class="vote-count" role="img" aria-label={`${totalVotes} votes`}>
     <svg viewBox="0 0 56 44" aria-hidden="true">
-      <circle cx="28" cy="7" r="6"/><circle cx="10" cy="12" r="5"/><circle cx="46" cy="12" r="5"/>
+      <circle cx="28" cy="7" r="6" /><circle cx="10" cy="12" r="5" /><circle
+        cx="46"
+        cy="12"
+        r="5"
+      />
       <!-- Full side bodies overlap behind the central figure. -->
-      <path d="M1 41V26a9 9 0 0 1 18 0v15ZM37 41V26a9 9 0 0 1 18 0v15Z"/>
-      <path d="M12 44V30a16 16 0 0 1 32 0v14Z"/>
+      <path d="M1 41V26a9 9 0 0 1 18 0v15ZM37 41V26a9 9 0 0 1 18 0v15Z" />
+      <path d="M12 44V30a16 16 0 0 1 32 0v14Z" />
     </svg>
     <span class="count" aria-hidden="true">{totalVotes.toLocaleString()}</span>
   </span>
@@ -240,9 +292,9 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: .4rem;
+    gap: 0.4rem;
     width: max-content;
-    padding: .4rem;
+    padding: 0.4rem;
     color: var(--atlas-text);
   }
 
@@ -250,9 +302,9 @@
     display: grid;
     place-items: center;
     min-width: 3.5rem;
-    padding: .2rem .4rem;
+    padding: 0.2rem 0.4rem;
     border: 2px solid var(--atlas-border);
-    border-radius: .25rem;
+    border-radius: 0.25rem;
     font-size: 1.15rem;
     font-variant-numeric: tabular-nums;
   }
@@ -262,7 +314,7 @@
     position: relative;
     width: 3.5rem;
     border: 2px solid var(--atlas-accent);
-    border-radius: .5rem;
+    border-radius: 0.5rem;
     background: var(--atlas-bg);
   }
 
@@ -284,7 +336,7 @@
     height: var(--row-height);
     background: var(--atlas-accent);
     pointer-events: none;
-    border-radius: .2rem;
+    border-radius: 0.2rem;
     box-shadow: inset 0 0 0 2px var(--atlas-accent);
     transition: transform 180ms ease-out;
   }
@@ -304,7 +356,7 @@
     touch-action: pan-y;
     cursor: grab;
     user-select: none;
-    border-radius: .35rem;
+    border-radius: 0.35rem;
 
     &::-webkit-scrollbar {
       display: none;
@@ -354,17 +406,17 @@
   .count {
     position: relative;
     margin-top: 1rem;
-    padding: 0 .3rem;
+    padding: 0 0.3rem;
     color: var(--atlas-on-accent);
     background: var(--atlas-accent);
-    border-radius: .15rem;
-    font-size: .85rem;
+    border-radius: 0.15rem;
+    font-size: 0.85rem;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
   }
 
   .disabled {
-    opacity: .55;
+    opacity: 0.55;
 
     .reel {
       overflow: hidden;

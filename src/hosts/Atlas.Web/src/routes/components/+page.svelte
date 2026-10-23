@@ -10,8 +10,5 @@
 </svelte:head>
 
 <h1>Atlas component integration</h1>
-<ActionButton
-  label="Try action"
-  onActivate={() => message = 'Action completed'}
-/>
+<ActionButton label="Try action" onActivate={() => (message = 'Action completed')} />
 <p role="status">{message}</p>

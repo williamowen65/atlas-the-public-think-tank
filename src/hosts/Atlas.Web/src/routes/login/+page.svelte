@@ -8,6 +8,7 @@
     if (participantId) void goto('/');
   }
 </script>
+
 <svelte:head><title>Sign in · Atlas</title></svelte:head>
 <h1>Sign in</h1>
 <SessionControl expanded onSession={signedIn} />

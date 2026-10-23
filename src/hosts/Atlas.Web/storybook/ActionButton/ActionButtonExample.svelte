@@ -12,10 +12,6 @@
 
 <!-- Demonstration wrapper: the status message observes the button callback. -->
 <section aria-label="Action button example">
-  <ActionButton
-    {label}
-    {disabled}
-    onActivate={() => message = 'Action completed'}
-  />
+  <ActionButton {label} {disabled} onActivate={() => (message = 'Action completed')} />
   <p role="status">{message}</p>
 </section>

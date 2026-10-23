@@ -25,7 +25,7 @@
 <style lang="scss">
   .atlas-action {
     font: inherit;
-    padding: .65rem 1rem;
+    padding: 0.65rem 1rem;
     border: 2px solid var(--atlas-accent);
     border-radius: var(--atlas-radius);
     background: var(--atlas-accent);

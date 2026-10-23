@@ -9,7 +9,10 @@
   import NodeCardRibbonSplit from './node-card-versions/NodeCardRibbonSplit.svelte';
   import NodeCardRibbonResponsive from './node-card-versions/NodeCardRibbonResponsive.svelte';
   import type { NodeCardProps, NodeCardPresentation } from './node-card-versions/types';
-  let { presentation = 'ribbon', ...props }: NodeCardProps & { presentation?: NodeCardPresentation } = $props();
+  let {
+    presentation = 'ribbon',
+    ...props
+  }: NodeCardProps & { presentation?: NodeCardPresentation } = $props();
 </script>
 
 {#if presentation === 'context-below'}
