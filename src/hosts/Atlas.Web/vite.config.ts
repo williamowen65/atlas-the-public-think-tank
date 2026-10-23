@@ -1,6 +1,6 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
-import { anonymousPreview, localApiProxy, commentsPreview, commentsApiProxy } from './.storybook/localApi';
+import { anonymousPreview, localApiProxy, commentsPreview, commentsApiProxy } from './dev/localApi';
 
 export default defineConfig({
   plugins: [sveltekit(), anonymousPreview, commentsPreview],
