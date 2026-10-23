@@ -3,7 +3,7 @@
   import { onMount } from 'svelte';
   import { commentRequest } from '../api/comments';
   let { active = null, authenticated = false, displayName = 'Atlas User', onNavigate }: {
-    active?: 'discover' | 'communities' | 'create' | null;
+    active?: 'discover' | 'communities' | 'create' | 'login' | 'register' | null;
     authenticated?: boolean;
     displayName?: string;
     onNavigate?: (destination: 'discover' | 'create' | 'login' | 'register' | 'profile') => void;
@@ -80,7 +80,7 @@
         {/if}
       </div>
     {:else}
-      <div class="auth"><a href="/login" onclick={event => { if (onNavigate) { event.preventDefault(); onNavigate("login"); } }}>Log in</a><a class="signup" href="/register" onclick={event => { if (onNavigate) { event.preventDefault(); onNavigate("register"); } }}>Sign up</a></div>
+      <div class="auth"><a href="/login" aria-current={active === 'login' ? 'page' : undefined} onclick={event => { if (onNavigate) { event.preventDefault(); onNavigate("login"); } }}>Log in</a><a class="signup" href="/register" aria-current={active === 'register' ? 'page' : undefined} onclick={event => { if (onNavigate) { event.preventDefault(); onNavigate("register"); } }}>Sign up</a></div>
     {/if}
     <details class="mobile-menu">
       <summary aria-label="Open navigation menu">☰</summary>
