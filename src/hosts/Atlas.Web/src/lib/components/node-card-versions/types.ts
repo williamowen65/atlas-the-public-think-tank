@@ -25,6 +25,7 @@ export type NodeCardPresentation = 'context-below' | 'ribbon' | 'ribbon-responsi
 export interface NodeCardProps {
   node: NodeCardData;
   voting?: Snippet;
+  reactionControls?: Snippet;
   hasMoreAncestors?: boolean;
   loadOlderAncestors?: LoadOlderAncestors;
   value?: number | null;
