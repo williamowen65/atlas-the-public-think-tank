@@ -17,6 +17,8 @@
   let bio = $state('');
   let communities = $state<Community[]>([]);
   const isOwner = $derived(!!participantId && sessionId === participantId);
+  const ownedCommunities = $derived(communities.filter(c => c.ownerParticipantId === profile?.id));
+  const joinedCommunities = $derived(communities.filter(c => c.isMember && c.ownerParticipantId !== profile?.id));
   async function loadProfile(id: string, signal: AbortSignal) {
     loading = true; error = ''; profile = null; communities = [];
     try {
@@ -73,11 +75,12 @@
       <div class="profile-details"><div class="profile-title"><h1>{profile.displayName}</h1>{#if isOwner && !profile.deleted}<button type="button" class="edit-profile" aria-label={editing ? 'Cancel editing' : 'Edit my profile'} title={editing ? 'Cancel editing' : 'Edit my profile'} onclick={() => { editing = !editing; notice = ''; }}>✎</button>{/if}</div>
         {#if profile.createdAt}<p class="muted">Member since {new Date(profile.createdAt).toLocaleDateString()}</p>{/if}
         <p>{profile.bio || (profile.deleted ? 'This account has been deleted.' : 'No public bio yet.')}</p>
+        {#if ownedCommunities.length}<p class="community-line"><strong>Community owner of:</strong> {#each ownedCommunities as community, i (community.id)}{#if i > 0}, {/if}<a href={'/communities/' + community.id}>{community.name}</a>{/each}</p>{/if}
+        {#if joinedCommunities.length}<p class="community-line"><strong>Member of:</strong> {#each joinedCommunities as community, i (community.id)}{#if i > 0}, {/if}<a href={'/communities/' + community.id}>{community.name}</a>{/each}</p>{/if}
       </div>
     </header>
     {#if editing && isOwner}<form onsubmit={event => { event.preventDefault(); void save(); }}><label for="profile-display-name">Display name</label><input id="profile-display-name" bind:value={displayName} maxlength="100" required /><label for="profile-bio">Public biography</label><textarea id="profile-bio" bind:value={bio} maxlength="500" rows="5"></textarea><button disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</button></form>{/if}
     {#if notice}<p role="status">{notice}</p>{/if}
-    <section class="profile-communities"><h2>Communities</h2><h3>Owned</h3><ul>{#each communities.filter(c => c.ownerParticipantId === profile?.id) as community (community.id)}<li><a href={'/communities/' + community.id}>{community.name}</a></li>{:else}<li>None yet.</li>{/each}</ul><h3>Joined</h3><ul>{#each communities.filter(c => c.isMember && c.ownerParticipantId !== profile?.id) as community (community.id)}<li><a href={'/communities/' + community.id}>{community.name}</a></li>{:else}<li>None yet.</li>{/each}</ul></section>
     {#if !profile.deleted}
       <h2>Published contributions</h2>
       {#key profile.id}<LiveNodeFeed authorId={profile.id} {apiBase} {onOpenNode} {onOpenProfile} />{/key}
@@ -89,7 +92,9 @@
   button{font:inherit;padding:.45rem;max-width:100%;cursor:pointer;}
   .profile-title{display:flex;align-items:center;gap:.7rem;}.edit-profile{border:1px solid var(--atlas-border);border-radius:.4rem;background:transparent;color:var(--atlas-text);}
   .profile-details{min-width:0;flex:1;}form{display:grid;gap:.65rem;max-width:36rem;margin:1rem 0;}input,textarea{font:inherit;padding:.65rem;background:var(--atlas-surface);color:var(--atlas-text);border:1px solid var(--atlas-border);border-radius:var(--atlas-radius);}
-  .profile-communities{margin-top:1.5rem;}
+  .community-line{margin:.35rem 0;font-size:.9rem;line-height:1.5;overflow-wrap:anywhere;}
+  .community-line a{color:inherit;text-decoration:none;}
+  .community-line a:hover,.community-line a:focus-visible{text-decoration:underline;}
   .profile-header{display:flex;align-items:flex-start;gap:1.25rem;padding:1.5rem;border:1px solid var(--atlas-border);border-radius:var(--atlas-radius);background:var(--atlas-surface);}
   .avatar{display:grid;place-items:center;flex:0 0 4rem;height:4rem;border-radius:50%;background:var(--atlas-accent);color:var(--atlas-on-accent);font-size:2rem;font-weight:700;}
   h1{margin:0;}h2{margin:2rem 0 1rem;}.muted{color:var(--atlas-muted);font-size:.9rem;}
