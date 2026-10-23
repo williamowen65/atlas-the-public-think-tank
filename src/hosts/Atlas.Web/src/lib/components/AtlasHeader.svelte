@@ -1,10 +1,9 @@
 <script lang="ts">
   import DiscoverySearch from './DiscoverySearch.svelte';
-  import { page } from '$app/state';
   import { onMount } from 'svelte';
   import { commentRequest } from '../api/comments';
-  let { active = 'discover', authenticated = false, displayName = 'Atlas User', onNavigate }: {
-    active?: 'discover' | 'about' | 'components' | 'create';
+  let { active = null, authenticated = false, displayName = 'Atlas User', onNavigate }: {
+    active?: 'discover' | 'communities' | 'create' | null;
     authenticated?: boolean;
     displayName?: string;
     onNavigate?: (destination: 'discover' | 'create' | 'login' | 'register' | 'profile') => void;
@@ -61,7 +60,7 @@
   <div class="right-group">
     <nav class="primary" aria-label="Main navigation">
       <a href="/" onclick={event => { if (onNavigate) { event.preventDefault(); onNavigate('discover'); } }} aria-current={active === 'discover' ? 'page' : undefined}>Discover</a>
-      <a href="/communities">Communities</a>
+      <a href="/communities" aria-current={active === 'communities' ? 'page' : undefined}>Communities</a>
       <a href="/new" onclick={event => { if (onNavigate) { event.preventDefault(); onNavigate('create'); } }} aria-current={active === 'create' ? 'page' : undefined}>Create</a>
     </nav>
     {#if authenticated}
