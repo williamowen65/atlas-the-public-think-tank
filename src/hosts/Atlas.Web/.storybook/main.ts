@@ -1,6 +1,6 @@
 import type { StorybookConfig } from '@storybook/sveltekit';
 import { mergeConfig } from 'vite';
-import { anonymousPreview, localApiProxy, commentsPreview, commentsApiProxy } from './localApi';
+import { anonymousPreview, localApiProxy, commentsPreview, commentsApiProxy } from '../dev/localApi';
 
 const config: StorybookConfig = {
   viteFinal: async (config, { configType }) => configType === 'DEVELOPMENT'
