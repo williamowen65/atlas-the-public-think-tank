@@ -21,7 +21,7 @@
   <header>
       <h2 id={`${instance}-title`}><span class="title-type">{node.typeName}:</span> {node.title}</h2>
       {#if node.status === 'Archived'}<p class="byline">Archived</p>{/if}
-    <p class="byline">By {#if node.authorId}<a href={`/profiles?id=${encodeURIComponent(node.authorId)}`} onclick={event => { if (onOpenProfile && node.authorId) { event.preventDefault(); onOpenProfile(node.authorId); } }}>{node.authorName}</a>{:else}{node.authorName}{/if} <span aria-hidden="true">·</span> <time datetime={node.createdAt}>{new Date(node.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</time></p>
+    <p class="byline">By {#if node.authorId}<a href={`/profiles?id=${encodeURIComponent(node.authorId)}`} onclick={event => { if (onOpenProfile && node.authorId) { event.preventDefault(); onOpenProfile(node.authorId); } }}>{node.authorName}</a>{:else}{node.authorName}{/if} <span aria-hidden="true">·</span> <time datetime={node.createdAt}>{new Date(node.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</time>{#if node.communities.length} <span class="byline-separator" aria-hidden="true">·</span> {node.communities.length === 1 ? 'Community' : 'Communities'}: <CommunityLinks nodeId={node.id} names={node.communities} />{/if}</p>
   </header>
 
   <div class="body">
@@ -37,12 +37,7 @@
     </div>
   </div>
   <div class="card-details">
-    {#if node.communities.length}
-      <div class="communities" role="group" aria-label="Communities">
-        <strong>{node.communities.length === 1 ? 'Community' : 'Communities'}:</strong> <CommunityLinks nodeId={node.id} names={node.communities} />
-      </div>
-    {/if}
-    <div class="navigation-details">
+<div class="navigation-details">
       {@render comments()}
       {#each node.childTypes ?? [] as contribution}<span class="navigation-separator" aria-hidden="true">·</span><button class="text-action connection-summary" type="button" disabled={!onChildType} onclick={() => onChildType?.(node.id, contribution.typeId)}>{contribution.label}</button>{/each}
       {#each connectionLabels as label}<span class="navigation-separator" aria-hidden="true">·</span><span class="text-action connection-summary">{label}</span>{/each}
@@ -155,6 +150,7 @@
 
 
 
+  .byline-separator { margin-inline: .35em; }
   .byline {
     a { color: inherit; text-decoration: none; &:hover, &:focus-visible { text-decoration: underline; } }
     margin: 0;
