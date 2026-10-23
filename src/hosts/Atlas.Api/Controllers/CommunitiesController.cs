@@ -40,6 +40,13 @@ public sealed class CommunitiesController(
     [HttpGet("{id:guid}")]
     public object Get(Guid id) => View(Load(id));
 
+    /// <summary>Read communities associated with a node without altering its graph parents.</summary>
+    [HttpGet("node/{nodeId:guid}")]
+    public object ForNode(Guid nodeId) => associations.GetByNode(nodeId)
+        .Select(a => communities.GetById(a.CommunityId))
+        .Where(c => c is not null)
+        .Select(c => View(c!));
+
     /// <summary>Community membership and ownership summaries for participant profiles.</summary>
     [HttpGet("participant/{participantId:guid}")]
     public object ParticipantCommunities(Guid participantId) => communities.GetAll()
