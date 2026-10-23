@@ -69,7 +69,7 @@
         <button type="button" class="avatar" aria-label="Open account menu" aria-expanded={menuOpen} onclick={() => menuOpen = !menuOpen}>{initial}</button>
         {#if menuOpen}
           <nav class="account-menu" aria-label="Account navigation" onclick={closeOnNavigation}>
-            <a href="/me" onclick={event => { if (onNavigate) { event.preventDefault(); onNavigate("profile"); } }}>My profile</a>
+            <a href="/profiles" onclick={event => { if (onNavigate) { event.preventDefault(); onNavigate("profile"); } }}>My profile</a>
             <a href="/me/drafts">My drafts</a>
             <a href="/me/settings">Settings</a>
             <hr />
@@ -88,7 +88,7 @@
       <nav aria-label="Mobile navigation">
         <a href="/">Discover</a><a href="/communities">Communities</a><a href="/new">Create</a>
         {#if authenticated}
-          <a href="/me">My profile</a><a href="/me/drafts">My drafts</a><a href="/me/settings">Settings</a>
+          <a href="/profiles">My profile</a><a href="/me/drafts">My drafts</a><a href="/me/settings">Settings</a>
           <button type="button" class="logout-action" onclick={() => void logOut()}>Log out</button>
         {:else}
           <a href="/login">Log in</a><a href="/register">Sign up</a>
