@@ -5,7 +5,7 @@
 
   import Breadcrumb from '../Breadcrumb.svelte';
   import type { NodeCardProps } from './types';
-  let { reactionControls, onOpenProfile, voting, node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onReadMore, onChildType, onComments, hasMoreAncestors = false, loadOlderAncestors }: NodeCardProps = $props();
+  let { reactionControls, onOpenProfile, voting, node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onReadMore, onChildType, onComments, hasMoreAncestors = false, loadOlderAncestors, apiBase }: NodeCardProps = $props();
   const instance = $props.id();
   const connectionLabels = $derived([
     ...(!node.childTypes?.length && node.subNodeSummary && node.subNodeSummary !== 'None' ? node.subNodeSummary.split(' · ') : []),
@@ -15,7 +15,7 @@
 
 <article class="node-card" data-presentation="ribbon-split" aria-labelledby={`${instance}-title`}>
   {#if node.breadcrumb.length}
-    <div class="ribbon-context"><Breadcrumb items={node.breadcrumb} {onNavigate} hasMore={hasMoreAncestors} loadOlder={loadOlderAncestors} /></div>
+    <div class="ribbon-context"><Breadcrumb items={node.breadcrumb} originId={node.id} {apiBase} {onNavigate} hasMore={hasMoreAncestors} loadOlder={loadOlderAncestors} /></div>
   {/if}
   <header>
       <h2 id={`${instance}-title`}><span class="title-type">{node.typeName}:</span> {node.title}</h2>
