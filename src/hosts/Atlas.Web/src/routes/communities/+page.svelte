@@ -40,7 +40,7 @@
   <div class="directory">
     {#each visible as community (community.id)}
       <article><h2><a href={'/communities/' + community.id}>{community.name}</a></h2><p>{community.description}</p><small>{community.memberCount} members · {community.nodeCount} nodes</small></article>
-    {:else if !loading && !error}<p>No communities match your search.</p>{/each}
+    {:else}<p>{loading ? 'Loading communities…' : 'No communities match your search.'}</p>{/each}
   </div>
   <section class="create">
     <h2>Create a community</h2>
