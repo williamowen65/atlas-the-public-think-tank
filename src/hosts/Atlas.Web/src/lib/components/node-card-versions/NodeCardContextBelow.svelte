@@ -13,11 +13,10 @@
   <header>
       <div class="eyebrow">
         <span class="type">{node.typeName}</span>
-        {#if node.communities.length}<span><CommunityLinks nodeId={node.id} names={node.communities} /></span>{/if}
         {#if node.status === 'Archived'}<span>Archived</span>{/if}
       </div>
       <h2 id={`${instance}-title`}>{node.title}</h2>
-    <p class="byline">By {#if node.authorId}<a href={`/profiles?id=${encodeURIComponent(node.authorId)}`} onclick={event => { if (onOpenProfile && node.authorId) { event.preventDefault(); onOpenProfile(node.authorId); } }}>{node.authorName}</a>{:else}{node.authorName}{/if} <span aria-hidden="true">·</span> <time datetime={node.createdAt}>{new Date(node.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</time></p>
+    <p class="byline">By {#if node.authorId}<a href={`/profiles?id=${encodeURIComponent(node.authorId)}`} onclick={event => { if (onOpenProfile && node.authorId) { event.preventDefault(); onOpenProfile(node.authorId); } }}>{node.authorName}</a>{:else}{node.authorName}{/if} <span aria-hidden="true">·</span> <time datetime={node.createdAt}>{new Date(node.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</time>{#if node.communities.length} <span class="byline-separator" aria-hidden="true">·</span> {node.communities.length === 1 ? 'Community' : 'Communities'}: <CommunityLinks nodeId={node.id} names={node.communities} />{/if}</p>
   </header>
 
   <div class="body">
@@ -119,6 +118,7 @@
     }
   }
 
+  .byline-separator { margin-inline: .35em; }
   .byline {
     a { color: inherit; text-decoration: none; &:hover, &:focus-visible { text-decoration: underline; } }
     margin: 0;
