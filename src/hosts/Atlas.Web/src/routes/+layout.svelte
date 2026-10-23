@@ -27,7 +27,7 @@
 </script>
 <a class="skip-link" href="#main-content">Skip to content</a>
 <div class="app-shell">
-  <AtlasHeader {authenticated} {displayName} active={page.url.pathname === '/' ? 'discover' : page.url.pathname.startsWith('/communities') ? 'communities' : page.url.pathname === '/new' ? 'create' : null} />
+  <AtlasHeader {authenticated} {displayName} active={page.url.pathname === '/' ? 'discover' : page.url.pathname.startsWith('/communities') ? 'communities' : page.url.pathname === '/new' ? 'create' : page.url.pathname === '/login' ? 'login' : page.url.pathname === '/register' ? 'register' : null} />
   <main id="main-content">{@render children()}</main>
   <AtlasFooter />
 </div>
