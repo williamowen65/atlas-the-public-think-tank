@@ -12,6 +12,7 @@
   let dialog = $state<HTMLDialogElement>();
   let confirmDialog = $state<HTMLDialogElement>();
   let pending = $state<number | null>(null);
+  let pendingUndo = $state(false);
   let timer: ReturnType<typeof setTimeout> | undefined;
   const controller = new AbortController();
   const signal = () => AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]);
@@ -36,6 +37,7 @@
   function cancelPending() {
     clearTimeout(timer);
     pending = null;
+    pendingUndo = false;
     value = confirmed;
     confirmDialog?.close();
   }
@@ -50,10 +52,18 @@
       void tick().then(() => { if (pending === next && confirmDialog && !confirmDialog.open) confirmDialog.showModal(); });
     }, 450);
   }
-  function approve() {
-    const next = pending;
-    if (next === null) return;
+  function requestUndo() {
+    if (busy || loading || archived || confirmed === null) return;
+    clearTimeout(timer);
     pending = null;
+    pendingUndo = true;
+    void tick().then(() => { if (pendingUndo && confirmDialog && !confirmDialog.open) confirmDialog.showModal(); });
+  }
+  function approve() {
+    if (!pendingUndo && pending === null) return;
+    const next = pendingUndo ? null : pending;
+    pending = null;
+    pendingUndo = false;
     confirmDialog?.close();
     void save(next);
   }
@@ -80,17 +90,22 @@
 </script>
 <div bind:this={container} class="live-voting" aria-busy={busy}>
   <VotingDial label="Node importance" {value} {average} {totalVotes} hasVoted={confirmed !== null} disabled={archived || busy || loading} onChange={choose} />
-  {#if confirmed !== null && !archived}<button class="undo" type="button" disabled={busy || loading} onclick={() => void save(null)} aria-label="Undo your node importance vote">Undo vote</button>{/if}
+  {#if confirmed !== null && !archived}<button class="undo" type="button" disabled={busy || loading} onclick={requestUndo} aria-label="Undo your node importance vote">Undo vote</button>{/if}
   {#if busy}<small role="status">Saving…</small>{/if}
   {#if notice}<small role="status">{notice}</small>{/if}
   {#if error}<small role="alert">{error}</small>{/if}
   {#if refreshFailed}<button class="undo" onclick={() => void retry()} disabled={busy}>Retry totals</button>{/if}
 </div>
-<dialog bind:this={confirmDialog} class="vote-login" aria-labelledby="vote-confirm-title" oncancel={cancelPending} onclose={() => { if (pending !== null) cancelPending(); }}>
-  <h2 id="vote-confirm-title">Confirm your importance rating</h2>
-  <p>Does this contribution deserve attention? Rate how important it is to explore or consider, from <strong>0 (not important)</strong> to <strong>10 (very important)</strong>.</p>
-  <p>Your proposed rating is <strong>{pending ?? '—'} out of 10</strong>. Your rating contributes to the community average.</p>
-  <div class="vote-actions"><button type="button" onclick={cancelPending}>Cancel</button><button type="button" class="confirm" onclick={approve} disabled={pending === null}>Confirm rating</button></div>
+<dialog bind:this={confirmDialog} class="vote-login" aria-labelledby="vote-confirm-title" oncancel={cancelPending} onclose={() => { if (pending !== null || pendingUndo) cancelPending(); }}>
+  {#if pendingUndo}
+    <h2 id="vote-confirm-title">Undo your importance rating?</h2>
+    <p>Your current rating of <strong>{confirmed} out of 10</strong> will be removed from the community average and vote count.</p>
+  {:else}
+    <h2 id="vote-confirm-title">Confirm your importance rating</h2>
+    <p>Does this contribution deserve attention? Rate how important it is to explore or consider, from <strong>0 (not important)</strong> to <strong>10 (very important)</strong>.</p>
+    <p>Your proposed rating is <strong>{pending ?? '—'} out of 10</strong>. Your rating contributes to the community average.</p>
+  {/if}
+  <div class="vote-actions"><button type="button" onclick={cancelPending}>Cancel</button><button type="button" class="confirm" onclick={approve} disabled={!pendingUndo && pending === null}>{pendingUndo ? 'Confirm undo' : 'Confirm rating'}</button></div>
 </dialog>
 <dialog bind:this={dialog} class="vote-login" aria-label="Sign in to vote" oncancel={() => login = false} onclose={() => login = false}>
   {#if login}<h2>Sign in to vote</h2><p>Your rating wasn’t saved. Sign in, then choose your rating again.</p>
