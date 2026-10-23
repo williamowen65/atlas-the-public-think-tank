@@ -61,6 +61,7 @@
   <div class="right-group">
     <nav class="primary" aria-label="Main navigation">
       <a href="/" onclick={event => { if (onNavigate) { event.preventDefault(); onNavigate('discover'); } }} aria-current={active === 'discover' ? 'page' : undefined}>Discover</a>
+      <a href="/communities">Communities</a>
       <a href="/new" onclick={event => { if (onNavigate) { event.preventDefault(); onNavigate('create'); } }} aria-current={active === 'create' ? 'page' : undefined}>Create</a>
     </nav>
     {#if authenticated}
@@ -85,7 +86,7 @@
     <details class="mobile-menu">
       <summary aria-label="Open navigation menu">☰</summary>
       <nav aria-label="Mobile navigation">
-        <a href="/">Discover</a><a href="/new">Create</a>
+        <a href="/">Discover</a><a href="/communities">Communities</a><a href="/new">Create</a>
         {#if authenticated}
           <a href="/me">My profile</a><a href="/me/drafts">My drafts</a><a href="/me/settings">Settings</a>
           <button type="button" class="logout-action" onclick={() => void logOut()}>Log out</button>
