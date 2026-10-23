@@ -12,7 +12,7 @@
     totalVotes: number;
     currentParticipantVote: number | null;
   }
-  let { nodeId, archived = false, apiBase = '/atlas-comments-api' }: {
+  let { nodeId, archived = false, apiBase = '/atlas-preview-api' }: {
     nodeId: string; archived?: boolean; apiBase?: string
   } = $props();
   let choices = $state<Choice[]>([]);
@@ -22,11 +22,13 @@
   let signIn = $state(false);
   let error = $state('');
   let controller: AbortController;
+  let requestGeneration = 0;
   const active = $derived(choices.filter(c => c.totalVotes > 0 || c.currentParticipantVote !== null));
   async function refresh() {
+    const generation = ++requestGeneration;
     const result = await commentRequest<Choice[]>(apiBase, `nodes/${encodeURIComponent(nodeId)}/reactions`, 'GET', undefined, controller.signal);
     if (!Array.isArray(result)) throw new Error('Invalid reaction response');
-    choices = result;
+    if (!controller.signal.aborted && generation === requestGeneration) { choices = result; error = ''; }
   }
   onMount(() => {
     controller = new AbortController();
