@@ -2,56 +2,82 @@
   import { onMount } from 'svelte';
   import LiveNodeFeed from './LiveNodeFeed.svelte';
   import { commentRequest } from '../api/comments';
+  import type { Community } from '../api/communities';
   let { participantId = '', apiBase = '/atlas-preview-api', onOpenNode, onOpenProfile }: { participantId?: string; apiBase?: string; onOpenNode?: (id: string) => void; onOpenProfile?: (id: string) => void } = $props();
   type Profile = { id: string; displayName: string; bio: string; createdAt?: string; deleted?: boolean };
   let profile = $state<Profile | null>(null);
-  let profiles = $state<Profile[]>([]);
-  let selected = $state(participantId);
   let loading = $state(true);
   let error = $state('');
-  let page = $state(0);
-  let hasMore = $state(false);
-  const currentId = $derived(selected);
-  async function loadProfile(id: string) {
-    if (!id) return;
-    loading = true; error = ''; profile = null;
-    try { profile = await commentRequest<Profile>(apiBase, 'participants/' + encodeURIComponent(id)); }
-    catch { error = 'Could not load this public profile.'; }
-    finally { loading = false; }
-  }
-  async function loadDirectory(reset = false) {
+  let sessionId = $state<string | null>(null);
+  let sessionReady = $state(false);
+  let editing = $state(false);
+  let saving = $state(false);
+  let notice = $state('');
+  let displayName = $state('');
+  let bio = $state('');
+  let communities = $state<Community[]>([]);
+  const isOwner = $derived(!!participantId && sessionId === participantId);
+  async function loadProfile(id: string, signal: AbortSignal) {
+    loading = true; error = ''; profile = null; communities = [];
     try {
-      const offset = reset ? 0 : page * 20;
-      const batch = await commentRequest<Profile[]>(apiBase, 'participants?offset=' + offset + '&size=20');
-      profiles = reset ? batch : [...profiles, ...batch];
-      page = reset ? 1 : page + 1;
-      hasMore = batch.length === 20;
-      if (!currentId && profiles.length) selected = profiles[0].id;
-    } catch { error = 'Could not load public participants.'; }
-    finally { loading = false; }
+      const result = await commentRequest<Profile>(apiBase, 'participants/' + encodeURIComponent(id), 'GET', undefined, signal);
+      if (signal.aborted) return;
+      profile = result; displayName = result.displayName; bio = result.bio ?? '';
+      try {
+        const associated = await commentRequest<Community[]>(apiBase, 'communities/participant/' + encodeURIComponent(id), 'GET', undefined, signal);
+        if (!signal.aborted) communities = associated;
+      } catch { /* A missing community service should not hide the profile. */ }
+    } catch { if (!signal.aborted) error = 'Could not load this public profile.'; }
+    finally { if (!signal.aborted) loading = false; }
   }
-  onMount(() => { void loadDirectory(true); });
-  $effect(() => { if (currentId) void loadProfile(currentId); });
+  async function checkSession() {
+    try {
+      const session = await commentRequest<{ participantId: string | null }>('/atlas-comments-api', 'auth/session');
+      sessionId = session.participantId;
+    } catch { sessionId = null; }
+    finally { sessionReady = true; }
+  }
+  onMount(() => {
+    void checkSession();
+    const changed = () => void checkSession();
+    window.addEventListener('atlas-session-changed', changed);
+    return () => window.removeEventListener('atlas-session-changed', changed);
+  });
+  $effect(() => {
+    const id = participantId;
+    editing = false; notice = '';
+    if (!id) { profile = null; loading = false; return; }
+    const controller = new AbortController();
+    void loadProfile(id, controller.signal);
+    return () => controller.abort();
+  });
+  async function save() {
+    if (!isOwner || saving || !profile) return;
+    saving = true; notice = '';
+    try {
+      await commentRequest('/atlas-comments-api', 'participants/me', 'PUT', { displayName, bio });
+      profile = { ...profile, displayName, bio };
+      editing = false; notice = 'Profile saved.';
+      window.dispatchEvent(new Event('atlas-session-changed'));
+    } catch { notice = 'Profile changes could not be saved. Please try again.'; }
+    finally { saving = false; }
+  }
 </script>
 <section class="profile-page" aria-label="Public participant profile">
-  <nav class="profile-navigation" aria-label="Profile navigation">
-    <label for="participant-picker">View a participant</label>
-    <select id="participant-picker" value={currentId} onchange={event => { selected = event.currentTarget.value; }}>
-      {#if currentId && !profiles.some(p => p.id === currentId)}<option value={currentId}>Current profile</option>{/if}
-      {#each profiles as participant}<option value={participant.id}>{participant.displayName}</option>{/each}
-    </select>
-    {#if hasMore}<button type="button" onclick={() => void loadDirectory()}>Load more participants</button>{/if}
-  </nav>
+  {#if !participantId}<p>Select a participant to view their public profile.</p>{/if}
   {#if loading && !profile}<p role="status">Loading profile…</p>{/if}
   {#if error}<p role="alert">{error}</p>{/if}
   {#if profile}
     <header class="profile-header">
       <div class="avatar" aria-hidden="true">{profile.displayName.charAt(0).toUpperCase()}</div>
-      <div><h1>{profile.displayName}</h1>
+      <div class="profile-details"><div class="profile-title"><h1>{profile.displayName}</h1>{#if isOwner && !profile.deleted}<button type="button" class="edit-profile" aria-label={editing ? 'Cancel editing' : 'Edit my profile'} title={editing ? 'Cancel editing' : 'Edit my profile'} onclick={() => { editing = !editing; notice = ''; }}>✎</button>{/if}</div>
         {#if profile.createdAt}<p class="muted">Member since {new Date(profile.createdAt).toLocaleDateString()}</p>{/if}
         <p>{profile.bio || (profile.deleted ? 'This account has been deleted.' : 'No public bio yet.')}</p>
       </div>
     </header>
+    {#if editing && isOwner}<form onsubmit={event => { event.preventDefault(); void save(); }}><label for="profile-display-name">Display name</label><input id="profile-display-name" bind:value={displayName} maxlength="100" required /><label for="profile-bio">Public biography</label><textarea id="profile-bio" bind:value={bio} maxlength="500" rows="5"></textarea><button disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</button></form>{/if}
+    {#if notice}<p role="status">{notice}</p>{/if}
+    <section class="profile-communities"><h2>Communities</h2><h3>Owned</h3><ul>{#each communities.filter(c => c.ownerParticipantId === profile?.id) as community (community.id)}<li><a href={'/communities/' + community.id}>{community.name}</a></li>{:else}<li>None yet.</li>{/each}</ul><h3>Joined</h3><ul>{#each communities.filter(c => c.isMember && c.ownerParticipantId !== profile?.id) as community (community.id)}<li><a href={'/communities/' + community.id}>{community.name}</a></li>{:else}<li>None yet.</li>{/each}</ul></section>
     {#if !profile.deleted}
       <h2>Published contributions</h2>
       {#key profile.id}<LiveNodeFeed authorId={profile.id} {apiBase} {onOpenNode} {onOpenProfile} />{/key}
@@ -60,8 +86,10 @@
 </section>
 <style lang="scss">
   .profile-page{max-width:70rem;margin-inline:auto;min-width:0;}
-  .profile-navigation{display:flex;flex-wrap:wrap;align-items:center;gap:.75rem;margin:0 0 1.25rem;}
-  select,button{font:inherit;padding:.45rem;max-width:100%;}
+  button{font:inherit;padding:.45rem;max-width:100%;cursor:pointer;}
+  .profile-title{display:flex;align-items:center;gap:.7rem;}.edit-profile{border:1px solid var(--atlas-border);border-radius:.4rem;background:transparent;color:var(--atlas-text);}
+  .profile-details{min-width:0;flex:1;}form{display:grid;gap:.65rem;max-width:36rem;margin:1rem 0;}input,textarea{font:inherit;padding:.65rem;background:var(--atlas-surface);color:var(--atlas-text);border:1px solid var(--atlas-border);border-radius:var(--atlas-radius);}
+  .profile-communities{margin-top:1.5rem;}
   .profile-header{display:flex;align-items:flex-start;gap:1.25rem;padding:1.5rem;border:1px solid var(--atlas-border);border-radius:var(--atlas-radius);background:var(--atlas-surface);}
   .avatar{display:grid;place-items:center;flex:0 0 4rem;height:4rem;border-radius:50%;background:var(--atlas-accent);color:var(--atlas-on-accent);font-size:2rem;font-weight:700;}
   h1{margin:0;}h2{margin:2rem 0 1rem;}.muted{color:var(--atlas-muted);font-size:.9rem;}
