@@ -143,7 +143,6 @@
       text-align: right;
       margin-left: auto;
       flex: 1 1 0;
-      min-width: 0;
       .text-action { padding-block: .15rem; }
       .navigation-separator { font-size: .9rem; }
       .connection-summary {
