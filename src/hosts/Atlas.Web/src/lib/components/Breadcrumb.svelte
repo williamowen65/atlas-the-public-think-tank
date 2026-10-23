@@ -23,8 +23,18 @@
   let breadcrumbList: HTMLOListElement | undefined;
   function toggleRouteMenu(event: MouseEvent) {
     if (openRouteMenu) { openRouteMenu = false; return; }
-    const rect = event.currentTarget instanceof HTMLElement ? event.currentTarget.getBoundingClientRect() : null;
-    if (rect) menuPosition = { top: rect.bottom + 4, left: Math.max(8, Math.min(rect.left, window.innerWidth - 340)) };
+    const trigger = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+    const segment = trigger?.closest('li');
+    const rect = segment?.getBoundingClientRect();
+    if (rect) {
+      // Align the menu's right edge with the chevron-side edge of the full breadcrumb segment.
+      // The menu grows leftwards beneath the segment rather than projecting into the next crumb.
+      const menuWidth = Math.min(320, window.innerWidth - 16);
+      menuPosition = {
+        top: rect.bottom + 2,
+        left: Math.max(8, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 8)),
+      };
+    }
     openRouteMenu = true;
   }
   function selectRoute(route: BreadcrumbRoute) {
