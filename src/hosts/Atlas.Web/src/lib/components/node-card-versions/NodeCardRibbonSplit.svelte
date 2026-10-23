@@ -1,5 +1,6 @@
 <script lang="ts">
   import ActionButton from '../ActionButton.svelte';
+  import CommunityLinks from '../CommunityLinks.svelte';
   import VotingDial from '../VotingDial.svelte';
 
   import Breadcrumb from '../Breadcrumb.svelte';
@@ -19,7 +20,7 @@
   <header>
       <h2 id={`${instance}-title`}><span class="title-type">{node.typeName}:</span> {node.title}</h2>
       {#if node.status === 'Archived'}<p class="byline">Archived</p>{/if}
-    <p class="byline"><span>By {#if node.authorId}<a href={`/profiles?id=${encodeURIComponent(node.authorId)}`} onclick={event => { if (onOpenProfile && node.authorId) { event.preventDefault(); onOpenProfile(node.authorId); } }}>{node.authorName}</a>{:else}{node.authorName}{/if}</span><span class="byline-separator" aria-hidden="true">·</span><time datetime={node.createdAt}>{new Date(node.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</time>{#if node.communities.length}<span class="byline-separator" aria-hidden="true">·</span><span class="communities" role="group" aria-label="Communities">{node.communities.length === 1 ? 'Community' : 'Communities'}: {node.communities.join(', ')}</span>{/if}</p>
+    <p class="byline"><span>By {#if node.authorId}<a href={`/profiles?id=${encodeURIComponent(node.authorId)}`} onclick={event => { if (onOpenProfile && node.authorId) { event.preventDefault(); onOpenProfile(node.authorId); } }}>{node.authorName}</a>{:else}{node.authorName}{/if}</span><span class="byline-separator" aria-hidden="true">·</span><time datetime={node.createdAt}>{new Date(node.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</time>{#if node.communities.length}<span class="byline-separator" aria-hidden="true">·</span><span class="communities" role="group" aria-label="Communities">{node.communities.length === 1 ? 'Community' : 'Communities'}: <CommunityLinks nodeId={node.id} names={node.communities} /></span>{/if}</p>
   </header>
 
   <div class="body">
@@ -158,6 +159,7 @@
   .byline-separator { margin-inline: .35em; }
 
   .byline {
+    a { color: inherit; text-decoration: none; &:hover, &:focus-visible { text-decoration: underline; } }
     margin: 0;
     font-size: .85rem;
     color: var(--atlas-muted);
@@ -198,7 +200,8 @@
     font: inherit;
     font-size: .9rem;
     cursor: pointer;
-    text-decoration: underline;
+    text-decoration: none;
+    &:not(:disabled):hover { text-decoration: underline; }
   }
 
 
