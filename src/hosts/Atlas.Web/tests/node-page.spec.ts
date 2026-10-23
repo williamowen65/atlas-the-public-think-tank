@@ -8,6 +8,7 @@ const entry = (id = root) => ({ nodeId: id, averageVote: 7, voteCount: 2, card: 
 async function mock(page: Page) {
   await page.route('**/atlas-session-api/**', route => {
     if (new URL(route.request().url()).pathname.endsWith('/votes')) return route.fulfill({ json: { voteCount: 0, averageVote: null, currentParticipantVote: null } });
+    if (route.request().url().endsWith('/reactions')) return route.fulfill({ json: [] });
     if (route.request().url().endsWith('/auth/session')) return route.fulfill({ json: { participantId: 'participant' } });
     return route.fulfill({ json: { displayName: 'Author' } });
   });
@@ -63,7 +64,8 @@ test('root form previews a new type and never writes to the API', async ({ page 
   await page.getByLabel('Content (Markdown)', { exact: true }).fill('## Revised content');
   await expect(page.getByRole('region', { name: 'Content preview' })).toContainText('Revised content');
   await expect(page.getByRole('button', { name: 'Preview draft' })).toHaveCount(0);
-  await expect(page.getByRole('spinbutton')).toHaveAttribute('aria-disabled', 'true');
+  // Creation drafts have no voting interaction.
+  await expect(page.getByRole('spinbutton')).toHaveCount(0);
   await expect(page.getByText('0 Comments', { exact: true })).toHaveCount(0);
   const contributions = page.getByLabel('Requested contributions', { exact: true });
   await expect(contributions.getByRole('option', { name: 'Ideas', exact: true })).toHaveCount(1);
@@ -95,7 +97,7 @@ test('SPA Read more opens a node page and child tabs support keyboard navigation
 
 test('node page keeps a full-width ribbon and wraps post content around the dial', async ({ page }) => {
   await mock(page);
-  await page.route('**/atlas-public-api/nodes/*/reactions', route => route.fulfill({ json: [{ associationId: 'helpful', text: 'Helpful', emoji: '👍', totalVotes: 2 }] }));
+  await page.route('**/atlas-session-api/nodes/*/reactions', route => route.fulfill({ json: [{ id: 'helpful', associationId: 'helpful', text: 'Helpful', emoji: '👍', score: 2, totalVotes: 2, currentParticipantVote: null }] }));
   await page.route('**/atlas-public-api/nodes/*/description', route => route.fulfill({ json: [{ id: 'body', kind: 'markdown', content: { markdown: 'Supporting detail. '.repeat(150) } }] }));
   await page.route('**/atlas-public-api/nodes?**', route => route.fulfill({ json: { items: [{ ...entry(), card: { ...entry().card, breadcrumb: 'A parent question' } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } }));
   await page.goto('http://127.0.0.1:6006/iframe.html?id=compositions-node-page--playground&viewMode=story');
@@ -118,7 +120,7 @@ test('node page keeps a full-width ribbon and wraps post content around the dial
         if (rect.top > dial.bottom && rect.left < dial.right) { wrapsBelow = true; break; }
       }
       const content = el.querySelector('.content-blocks')!.getBoundingClientRect();
-      const reactions = el.querySelector('.reactions')!.getBoundingClientRect();
+      const reactions = el.querySelector('.node-reactions')!.getBoundingClientRect();
       const actions = el.querySelector('.add')!.getBoundingClientRect();
       return { left: ribbon.left - bounds.left, right: bounds.right - ribbon.right, startsBesideDial: first.top < dial.bottom && first.left >= dial.right, wrapsBelow, reactionsAfterContent: reactions.top >= content.bottom, actionsAfterReactions: actions.top >= reactions.bottom };
     });

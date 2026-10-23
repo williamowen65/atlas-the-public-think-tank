@@ -17,6 +17,7 @@ async function setup(page: Page, anonymous = false) {
     if (path.endsWith('/votes')) return route.fulfill({ json: { ...summary, currentParticipantVote: signedIn ? summary.currentParticipantVote : null } });
     if (path.endsWith('/auth/session')) return signedIn ? route.fulfill({ json: { participantId: 'voter' } }) : route.fulfill({ status: 401, json: {} });
     if (path.endsWith('/auth/csrf')) return route.fulfill({ json: { token: 'csrf-fixture' } });
+    if (request.method() === 'GET' && path.endsWith('/reactions')) return route.fulfill({ json: [] });
     expect(request.headers()['x-csrf-token']).toBe('csrf-fixture');
     if (path.endsWith('/auth/login')) { signedIn = true; return route.fulfill({ status: 204 }); }
     if (path.endsWith('/vote')) {
@@ -38,6 +39,10 @@ test('node-page votes persist, use server totals, restore on reload and support 
   await expect(dial).toHaveAttribute('aria-disabled', 'false');
   await expect(page.locator('.average')).toHaveText('5.0');
   await dial.focus(); await page.keyboard.press('End');
+  // Selecting a value must not send a write until the user confirms it.
+  await expect(page.getByRole('dialog', { name: 'Confirm your importance rating', exact: true })).toBeVisible();
+  expect(fixture.mutations).toEqual([]);
+  await page.getByRole('button', { name: 'Confirm rating', exact: true }).click();
   await expect(page.locator('.average')).toHaveText('6.3');
   await expect(page.locator('.vote-count')).toHaveAccessibleName('4 votes');
   await expect(page.locator('.voting-dial')).toHaveClass(/voted/);
@@ -46,12 +51,14 @@ test('node-page votes persist, use server totals, restore on reload and support 
   await page.reload();
   await expect(dial).toHaveAttribute('aria-valuenow', '10');
   await dial.focus(); await page.keyboard.press('Home');
+  await page.getByRole('button', { name: 'Confirm rating', exact: true }).click();
   await expect(dial).toHaveAttribute('aria-disabled', 'false');
   await expect(page.locator('.average')).toHaveText('3.8');
   await expect(page.locator('.vote-count')).toHaveAccessibleName('4 votes');
   await expect(dial).toHaveAttribute('aria-valuenow', '0');
   const undo = page.getByRole('button', { name: 'Undo your node importance vote' });
   await undo.focus(); await page.keyboard.press('Enter');
+  await page.getByRole('button', { name: 'Confirm undo', exact: true }).click();
   await expect(dial).toHaveAttribute('aria-valuetext', /Unrated/);
   await expect(page.locator('.average')).toHaveText('5.0');
   await expect(page.locator('.vote-count')).toHaveAccessibleName('3 votes');
@@ -65,18 +72,21 @@ test('anonymous rating rolls back and opens a dismissible sign-in prompt', async
   const dial = page.getByRole('spinbutton');
   await expect(dial).toHaveAttribute('aria-disabled', 'false');
   await dial.focus(); await page.keyboard.press('End');
+  await page.getByRole('button', { name: 'Confirm rating', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Sign in to vote' });
   await expect(dialog).toBeVisible();
   await expect(dial).toHaveAttribute('aria-valuetext', /Unrated/);
   expect(fixture.mutations).toEqual([]);
   await page.keyboard.press('Escape'); await expect(dialog).not.toBeVisible();
-  await dial.focus(); await page.keyboard.press('End'); await expect(dialog).toBeVisible();
+  await dial.focus(); await page.keyboard.press('End');
+  await page.getByRole('button', { name: 'Confirm rating', exact: true }).click(); await expect(dialog).toBeVisible();
   await dialog.getByLabel('Email', { exact: true }).fill('voter@example.test');
   await dialog.getByLabel('Password', { exact: true }).fill('fixture-password');
   await dialog.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(dialog).not.toBeVisible();
   await expect(dial).toHaveAttribute('aria-disabled', 'false');
   await dial.focus(); await page.keyboard.press('End');
+  await page.getByRole('button', { name: 'Confirm rating', exact: true }).click();
   await expect(page.locator('.vote-count')).toHaveAccessibleName('4 votes');
 });
 
@@ -85,7 +95,27 @@ test('failed voting returns the dial to its confirmed state without inventing to
   const dial = page.getByRole('spinbutton');
   await expect(dial).toHaveAttribute('aria-disabled', 'false');
   await dial.focus(); await page.keyboard.press('End');
+  await page.getByRole('button', { name: 'Confirm rating', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('not permitted');
+  await expect(dial).toHaveAttribute('aria-valuetext', /Unrated/);
+  await expect(page.locator('.average')).toHaveText('5.0');
+  await expect(page.locator('.vote-count')).toHaveAccessibleName('3 votes');
+  expect(fixture.mutations).toEqual([]);
+});
+
+
+test('cancelling a proposed rating leaves the confirmed vote and server totals unchanged', async ({ page }) => {
+  const fixture = await setup(page);
+  await page.goto(story);
+  const dial = page.getByRole('spinbutton', { name: 'Node importance', exact: true });
+  await expect(dial).toHaveAttribute('aria-disabled', 'false');
+  await dial.focus();
+  await page.keyboard.press('End');
+  const confirmation = page.getByRole('dialog', { name: 'Confirm your importance rating', exact: true });
+  await expect(confirmation).toBeVisible();
+  expect(fixture.mutations).toEqual([]);
+  await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(confirmation).not.toBeVisible();
   await expect(dial).toHaveAttribute('aria-valuetext', /Unrated/);
   await expect(page.locator('.average')).toHaveText('5.0');
   await expect(page.locator('.vote-count')).toHaveAccessibleName('3 votes');

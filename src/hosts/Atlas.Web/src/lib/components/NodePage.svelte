@@ -19,8 +19,15 @@
     const card = tabs.closest<HTMLElement>('.node-page')!;
     let frame = 0;
     let stopped = false;
+    let focused = false;
     const align = () => {
       if (stopped || !tabs.isConnected) return;
+      // ResizeObserver may replace the first scheduled frame. Keep focus in the
+      // alignment callback so that rescheduling cannot silently cancel it.
+      if (!focused) {
+        tabs.querySelector<HTMLElement>('[aria-selected="true"]')?.focus({ preventScroll: true });
+        focused = true;
+      }
       card.style.setProperty('--discussion-tabs-height', `${tabs.getBoundingClientRect().height}px`);
       // A short/empty child feed still needs enough document height to reach this offset.
       const delta = tabs.getBoundingClientRect().top - 20;
@@ -41,10 +48,7 @@
     observer.observe(tabs);
     for (const event of events) window.addEventListener(event, stop, { capture: true, passive: true });
     const timeout = setTimeout(stop, 10000);
-    frame = requestAnimationFrame(() => {
-      tabs.querySelector<HTMLElement>('[aria-selected="true"]')?.focus({ preventScroll: true });
-      schedule();
-    });
+    schedule();
     void document.fonts.ready.then(schedule);
     return { destroy: stop };
   }

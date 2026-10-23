@@ -22,8 +22,33 @@ jobs:
           cache: npm
           cache-dependency-path: src/hosts/Atlas.Web/package-lock.json
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:ci
+      - name: Read Playwright version
+        id: playwright-version
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Restore Chromium cache
+        id: chromium-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ steps.playwright-version.outputs.version }}-chromium-shell-v1
+      - name: Install Chromium system dependencies
+        run: npx playwright install-deps chromium
+      - name: Download Chromium on cache miss
+        if: steps.chromium-cache.outputs.cache-hit != 'true'
+        run: npx playwright install chromium --only-shell
+      # Save before tests so a failing test run still primes the next push's cache.
+      - name: Save Chromium cache
+        if: steps.chromium-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ steps.chromium-cache.outputs.cache-primary-key }}
+      - name: Build Atlas Web and check types
+        run: npm run build
+      - name: Build Storybook
+        run: npm run build-storybook
+      - name: Run Playwright tests
+        run: npm test
       - name: Retain browser failure evidence
         if: failure()
         uses: actions/upload-artifact@v4

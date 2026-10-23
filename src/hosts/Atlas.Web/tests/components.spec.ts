@@ -53,7 +53,7 @@ test('SvelteKit routes support client navigation, Back and direct entry', async 
 
   // A full document reload would erase this marker; client navigation keeps it.
   await page.evaluate(() => { document.documentElement.dataset.navigationProbe = 'retained'; });
-  await page.getByRole('link', { name: 'About this foundation' }).click();
+  await page.getByRole('link', { name: 'About Atlas', exact: true }).click();
   await expect(page).toHaveURL('http://127.0.0.1:4173/about');
   await expect(page.getByRole('heading', { name: 'About this foundation' })).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('data-navigation-probe', 'retained');

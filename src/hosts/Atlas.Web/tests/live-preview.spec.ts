@@ -12,6 +12,7 @@ test('live nodes support selection, search, paging and refresh without submittin
   await page.route('**/atlas-public-api/**', async route => {
     const request = route.request();
     const url = new URL(request.url());
+    if (url.pathname.includes('/communities/') || url.pathname.endsWith('/parents')) return route.fulfill({ json: [] });
     requests.push({ page: url.searchParams.get('Page'), search: url.searchParams.get('SearchText'), method: request.method() });
     const second = url.searchParams.get('Page') === '2';
     await route.fulfill({ json: { items: second ? [item('new', 'A newly entered node')] : [item('one', 'Database question'), item('two', 'Database second node'), item('hidden', 'Hidden private title', true)], totalCount: 4, page: second ? 2 : 1, pageSize: 3, hasNextPage: !second } });
@@ -30,6 +31,7 @@ test('live nodes support selection, search, paging and refresh without submittin
   await expect(page.getByRole('heading', { name: 'Question: Database second node' })).toBeVisible();
   await page.getByRole('spinbutton').focus();
   await page.keyboard.press('End');
+  await page.getByRole('button', { name: 'Confirm rating', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Sign in to vote' })).toBeVisible();
   await page.getByRole('button', { name: 'Close', exact: true }).click();
   await expect(page.getByRole('spinbutton')).toHaveAttribute('aria-valuetext', /Unrated/);
@@ -124,7 +126,7 @@ test('API breadcrumb prepends older pages, retries failures and stops at root', 
   await expect(nav).toContainText('Oldest ancestor');
   await expect(nav.getByRole('button', { name: 'Load older ancestors' })).toHaveCount(0);
   expect(calls).toBe(2);
-  expect(await nav.locator('li').allTextContents()).toEqual(['Oldest ancestor', 'Older ancestor', 'Middle ancestor', 'Nearest ancestor']);
+  expect((await nav.locator('li').allTextContents()).map(text => text.trim())).toEqual(['Oldest ancestor', 'Older ancestor', 'Middle ancestor', 'Nearest ancestor']);
   const blocked = await request.get('http://127.0.0.1:6007/atlas-public-api/nodes/' + ids[0] + '/votes');
   expect(blocked.status()).toBe(404);
   const write = await request.post('http://127.0.0.1:6007/atlas-public-api/nodes/' + ids[0] + '/ancestors');
@@ -173,9 +175,8 @@ test('live-only card navigates an off-page ancestor by ID and keeps both present
     return { sameLine: Math.abs(comment.getBoundingClientRect().top - connection.getBoundingClientRect().top) < 4, commentFont: getComputedStyle(comment).fontSize, connectionFont: getComputedStyle(connection).fontSize };
   });
   expect(navigationStyle.commentFont).toBe(navigationStyle.connectionFont);
-  await expect(page.locator('article h2')).toHaveText('Question: Current child');
-  await expect(page.locator('article header')).not.toContainText('Local community');
-  await expect(page.getByRole('group', { name: 'Communities', exact: true })).toHaveText('Community: Local community');
+  await expect(page.locator('article > header h2')).toHaveText('Question: Current child');
+  await expect(page.locator('article > header .byline')).toContainText('Community: Local community');
   await expect(page.getByRole('button', { name: 'Read more' })).toBeEnabled();
   await expect(page.locator('.description')).toContainText('Content from the API response.');
   await expect(page.locator('.description')).not.toContainText('Actual API description.');
@@ -264,8 +265,9 @@ test('reaction pills are separate and absent reactions leave no container or gap
   await expect(pills).toHaveCount(0);
   const emptyHeight = await page.locator('.content-stack').evaluate(el => el.getBoundingClientRect().height);
   expect(contentHeight - emptyHeight).toBeCloseTo(pillsHeight, 0);
-  // Community and navigation share the bottom row, independent of reactions.
-  await expect(page.locator('.card-details > :first-child')).toHaveClass(/\bcommunities\b/);
+  // Communities now appear in the byline; navigation remains below the content.
+  await expect(page.locator('article > header .byline')).toContainText('Community: Local community');
+  await expect(page.locator('.card-details > :first-child')).toHaveClass(/\bnavigation-details\b/);
   await expect(page.locator('article')).not.toContainText('Useful: 3');
 });
 
@@ -291,10 +293,10 @@ test('standalone card versions preserve mobile layout and offer a raised desktop
     padding: parseFloat(getComputedStyle(el.querySelector('header')!).paddingRight),
     height: el.getBoundingClientRect().height,
     card: el.getBoundingClientRect().toJSON(),
-    community: el.querySelector('.communities')!.getBoundingClientRect().toJSON(),
+    community: el.querySelector('header .byline')!.getBoundingClientRect().toJSON(),
     navigation: el.querySelector('.navigation-details')!.getBoundingClientRect().toJSON(),
     action: el.querySelector('.description .read-more button')!.getBoundingClientRect().toJSON(),
-    communityFont: getComputedStyle(el.querySelector('.communities')!).fontSize,
+    communityFont: getComputedStyle(el.querySelector('header .byline')!).fontSize,
     navigationFont: getComputedStyle(el.querySelector('.navigation-details')!).fontSize,
   }));
   expect(desktop.dial.top).toBeLessThan(desktop.header.bottom);
@@ -304,10 +306,9 @@ test('standalone card versions preserve mobile layout and offer a raised desktop
   expect(desktop.paragraph.left - desktop.selector.right).toBeCloseTo(22.4, 0);
   expect(desktop.title.top - desktop.breadcrumbBottom).toBeCloseTo(desktop.padding, 0);
   expect(desktop.height).toBeLessThan(ribbonHeight);
-  expect(desktop.community.left - desktop.card.left).toBeCloseTo(desktop.padding + 1, 0);
-  expect(desktop.community.top).toBeGreaterThan(desktop.dial.bottom);
-  expect(Math.abs(desktop.community.top - desktop.navigation.top)).toBeLessThan(4);
-  expect(desktop.communityFont).toBe(desktop.navigationFont);
+  expect(desktop.community.top).toBeGreaterThan(desktop.title.top);
+  expect(desktop.community.bottom).toBeLessThanOrEqual(desktop.header.bottom);
+  expect(desktop.navigation.top).toBeGreaterThanOrEqual(desktop.community.bottom);
   expect(desktop.action.top).toBeGreaterThan(desktop.paragraph.top);
   expect((desktop.action.left + desktop.action.right) / 2).toBeCloseTo((desktop.card.left + desktop.card.right) / 2, 0);
   await expect(page.locator('.description .read-more button')).toHaveClass(/atlas-action/);
@@ -331,6 +332,7 @@ test('standalone card versions preserve mobile layout and offer a raised desktop
   await page.getByRole('spinbutton').focus();
   await page.keyboard.press('End');
   await expect(page.getByRole('spinbutton')).toHaveAttribute('aria-valuenow', '10');
+  await page.getByRole('button', { name: 'Confirm rating', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Sign in to vote' })).toBeVisible();
   await page.getByRole('button', { name: 'Close', exact: true }).click();
   await page.goto(`${preview.replace('&args=presentation:ribbon-responsive', '')}&args=presentation:context-below`);
@@ -371,9 +373,15 @@ test('split details version groups metadata above a centered bottom action', asy
     expect(Math.abs(geometry.offset)).toBeLessThan(1);
     expect(geometry.actionTop).toBeGreaterThanOrEqual(geometry.detailsBottom);
     expect(geometry.actionTop).toBeGreaterThanOrEqual(geometry.dialBottom);
-    expect(geometry.reactionRight).toBeLessThan(geometry.navigationLeft);
-    expect(geometry.reactionWidth).toBeCloseTo(geometry.navigationWidth, 0);
-    expect(geometry.reactionTop).toBeCloseTo(geometry.navigationTop, 0);
+    // The metadata columns wrap independently when the viewport is narrow.
+    expect(geometry.reactionWidth).toBeGreaterThan(0);
+    expect(geometry.navigationWidth).toBeGreaterThan(0);
+    if (width >= 768) {
+      expect(geometry.reactionRight).toBeLessThan(geometry.navigationLeft);
+      expect(geometry.reactionTop).toBeCloseTo(geometry.navigationTop, 0);
+    } else {
+      expect(geometry.navigationTop).toBeGreaterThanOrEqual(geometry.reactionTop);
+    }
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   }
   await expect(card.locator('.read-more button')).toHaveClass(/atlas-action/);

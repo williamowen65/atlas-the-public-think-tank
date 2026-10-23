@@ -20,6 +20,7 @@ async function setup(page: Page, initiallySignedIn = false) {
     const request = route.request(); const path = new URL(request.url()).pathname;
     if (path.endsWith('/auth/session')) return signedIn ? route.fulfill({ json: { participantId: 'participant' } }) : route.fulfill({ status: 401, json: {} });
     if (path.endsWith('/auth/csrf')) return route.fulfill({ json: { token: 'csrf-fixture' } });
+    if (request.method() === 'GET' && path.endsWith('/reactions')) return route.fulfill({ json: [] });
     expect(request.headers()['x-csrf-token']).toBe('csrf-fixture');
     const body = request.postDataJSON() ?? {}; writes.push({ path, body });
     if (path.endsWith('/auth/login')) { signedIn = true; return route.fulfill({ status: 204 }); }

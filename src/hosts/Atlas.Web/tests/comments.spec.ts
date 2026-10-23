@@ -28,6 +28,7 @@ async function setup(page: Page) {
     if (url.pathname.endsWith('/auth/session')) return signedIn ? route.fulfill({ json: { participantId: mine } }) : route.fulfill({ status: 401, json: {} });
     if (url.pathname.endsWith('/auth/csrf')) return route.fulfill({ json: { token: 'fixture-csrf' } });
     if (url.pathname.includes('/participants/')) return route.fulfill({ json: { displayName: url.pathname.endsWith(mine) ? 'Sam' : 'Taylor' } });
+    if (request.method() === 'GET' && url.pathname.endsWith('/reactions')) return route.fulfill({ json: [] });
     expect(request.headers()['x-csrf-token']).toBe('fixture-csrf');
     const body = request.method() === 'DELETE' ? undefined : request.postDataJSON();
     writes.push({ path: url.pathname, method: request.method(), body });
@@ -43,7 +44,7 @@ async function login(page: Page) {
   await page.getByLabel('Email', { exact: true }).fill('sam@example.test');
   await page.getByLabel('Password', { exact: true }).fill('fixture-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Post comment', exact: true })).toBeVisible();
 }
 
 test('comments load a bounded root page and lazy, independently paged reply threads', async ({ page }) => {
@@ -98,7 +99,9 @@ test('sign-in enables posting, replies and author-only editing/removal with CSRF
   expect(writes.some(write => write.method === 'PUT' && write.path.endsWith(`/comments/${first}`))).toBe(true);
   expect(writes.some(write => write.path.endsWith(`/comments/${first}/replies`))).toBe(true);
   expect(writes.some(write => write.method === 'DELETE')).toBe(true);
-  await page.getByRole('button', { name: 'Sign out' }).click();
+  // This composition hides SessionControl after sign-in; simulate session expiry.
+  await page.route('**/atlas-session-api/auth/session', route => route.fulfill({ status: 401, json: {} }));
+  await page.evaluate(() => window.dispatchEvent(new Event('atlas-session-changed')));
   await expect(page.getByRole('button', { name: 'Post comment', exact: true })).toHaveCount(0);
 });
 

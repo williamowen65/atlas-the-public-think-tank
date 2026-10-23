@@ -8,6 +8,7 @@ async function mockFeed(page: Page, failSecond = false) {
   let fail = failSecond;
   await page.route('**/atlas-public-api/**', route => {
     const url = new URL(route.request().url());
+    if (url.pathname.includes('/communities/') || url.pathname.endsWith('/parents')) return route.fulfill({ json: [] });
     if (url.pathname.endsWith('/reactions')) return route.fulfill({ json: [] });
     const current = Number(url.searchParams.get('Page'));
     requested.push(current);
@@ -63,11 +64,12 @@ test('SPA composes the shared shell and live feed at narrow widths', async ({ pa
 test('header and footer each have a separate isolated Playground', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
   await page.goto('http://127.0.0.1:6006/iframe.html?id=layout-header--playground&viewMode=story');
-  await expect(page.getByRole('navigation', { name: 'Main navigation' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Discover', exact: true })).toHaveAttribute('aria-current', 'page');
+  await page.getByLabel('Open navigation menu').click();
+  await expect(page.getByRole('navigation', { name: 'Mobile navigation' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Mobile navigation' }).getByRole('link', { name: 'Discover', exact: true })).toHaveAttribute('href', '/');
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
   await page.goto('http://127.0.0.1:6006/iframe.html?id=layout-footer--playground&viewMode=story');
-  await expect(page.getByRole('navigation', { name: 'Footer navigation' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Explore' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
 });
 
@@ -97,6 +99,7 @@ test('empty feed stops pagination and exposes its empty state', async ({ page })
 test.beforeEach(async ({ page }) => {
   await page.route('**/atlas-session-api/**', route => {
     const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/reactions')) return route.fulfill({ json: [] });
     if (path.endsWith('/votes')) return route.fulfill({ json: { voteCount: 0, averageVote: null, currentParticipantVote: null } });
     if (path.endsWith('/auth/csrf')) return route.fulfill({ json: { token: 'fixture-token' } });
     return route.fulfill({ status: 401, json: {} });
