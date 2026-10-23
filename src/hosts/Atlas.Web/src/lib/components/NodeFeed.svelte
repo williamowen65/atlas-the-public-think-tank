@@ -6,9 +6,9 @@
   import type { Snippet } from 'svelte';
   import NodeCard, { type NodeCardPresentation } from './NodeCard.svelte';
   import type { LoadOlderAncestors } from './Breadcrumb.svelte';
-  let { renderVoting, renderReactions, items, loading = false, hasMore = false, error = '', presentation = 'ribbon-corner', onLoadMore, onNavigate, onOpenProfile, onReadMore, onComments, onChildType, loadOlderAncestors, emptyTypeName, onCreateFirst }: {
+  let { renderVoting, renderReactions, items, loading = false, hasMore = false, error = '', presentation = 'ribbon-corner', onLoadMore, onNavigate, onOpenProfile, onReadMore, onComments, onChildType, loadOlderAncestors, emptyTypeName, onCreateFirst, apiBase }: {
     renderVoting?: Snippet<[FeedItem]>; renderReactions?: Snippet<[FeedItem]>; items: FeedItem[]; loading?: boolean; hasMore?: boolean; error?: string;
-    presentation?: NodeCardPresentation; onLoadMore?: () => void; onNavigate?: (id: string) => void; onOpenProfile?: (id: string) => void; onReadMore?: (id: string) => void; loadOlderAncestors?: LoadOlderAncestors; onChildType?: (id: string, typeId: string) => void; onComments?: (id: string) => void; emptyTypeName?: string; onCreateFirst?: () => void;
+    presentation?: NodeCardPresentation; onLoadMore?: () => void; onNavigate?: (id: string) => void; onOpenProfile?: (id: string) => void; onReadMore?: (id: string) => void; loadOlderAncestors?: LoadOlderAncestors; apiBase?: string; onChildType?: (id: string, typeId: string) => void; onComments?: (id: string) => void; emptyTypeName?: string; onCreateFirst?: () => void;
   } = $props();
   let tail: HTMLDivElement;
   const singularType = $derived((emptyTypeName ?? '').trim());
@@ -28,7 +28,7 @@
     {#each items as item (item.node.id)}
       {#snippet voting()}{#if renderVoting}{@render renderVoting(item)}{/if}{/snippet}
       {#snippet reactions()}{#if renderReactions}{@render renderReactions(item)}{/if}{/snippet}
-      <li><NodeCard reactionControls={renderReactions ? reactions : undefined} voting={renderVoting ? voting : undefined} node={item.node} {presentation} average={item.average} totalVotes={item.totalVotes} {onNavigate} {onOpenProfile} {onReadMore} {onComments} {onChildType} {loadOlderAncestors} hasMoreAncestors={item.hasMoreAncestors ?? false} />
+      <li><NodeCard reactionControls={renderReactions ? reactions : undefined} voting={renderVoting ? voting : undefined} node={item.node} {presentation} {apiBase} average={item.average} totalVotes={item.totalVotes} {onNavigate} {onOpenProfile} {onReadMore} {onComments} {onChildType} {loadOlderAncestors} hasMoreAncestors={item.hasMoreAncestors ?? false} />
         {#if item.reactionError}<p class="note">Reaction totals are unavailable for this node.</p>{/if}
       </li>
     {/each}
