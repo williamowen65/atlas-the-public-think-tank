@@ -28,6 +28,7 @@ export interface NodeCardProps {
   reactionControls?: Snippet;
   hasMoreAncestors?: boolean;
   loadOlderAncestors?: LoadOlderAncestors;
+  apiBase?: string;
   value?: number | null;
   average?: number | null;
   totalVotes?: number;
