@@ -102,8 +102,6 @@
               <select class="route-picker" aria-label="Choose parent path" value={chosenRoute ?? routes[0].id} onchange={event => { const route = routes.find(option => option.id === event.currentTarget.value); if (!route) return; chosenRoute = route.id; older = []; more = false; onRouteChange?.(route); }}>
                 {#each routes as route (route.id)}<option value={route.id}>{route.label}</option>{/each}
               </select>
-                {/if}
-              </div>
             {/if}
           </li>
         {/each}
