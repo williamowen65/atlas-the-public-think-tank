@@ -2,7 +2,7 @@
   /** Oldest ancestor first; omit id when the source supplies display text only. */
   export interface BreadcrumbItem { id?: string; title: string }
   /** Alternative parent routes for a node; each route is oldest ancestor first. */
-  export interface BreadcrumbRoute { id: string; label: string; items: BreadcrumbItem[] }
+  export interface BreadcrumbRoute { id: string; label: string; items: BreadcrumbItem[]; divergenceIndex?: number }
   export interface BreadcrumbPage { items: BreadcrumbItem[]; hasMore: boolean }
   export type LoadOlderAncestors = (oldestId?: string) => Promise<BreadcrumbPage>;
 </script>
@@ -15,13 +15,15 @@
   } = $props();
   let older = $state<BreadcrumbItem[]>([]);
   let chosenRoute = $state<string | null>(null);
+  let openRouteMenu = $state(false);
   let more = $state(false);
   let loading = $state(false);
   let error = $state('');
   let generation = 0;
   const selectedRoute = $derived(routes.find(route => route.id === chosenRoute));
+  const divergenceIndex = $derived(routes.length > 1 ? (routes[0].divergenceIndex ?? Math.max(0, items.length - 1)) : -1);
   const allItems = $derived(selectedRoute ? selectedRoute.items : [...older, ...items]);
-  $effect(() => { items; hasMore; loadOlder; routes; generation++; older = []; more = hasMore; loading = false; error = ''; chosenRoute = null; });
+  $effect(() => { items; hasMore; loadOlder; routes; generation++; older = []; more = hasMore; loading = false; error = ''; chosenRoute = null; openRouteMenu = false; });
 
   async function requestOlder() {
     if (!more || loading || !loadOlder) return;
@@ -98,10 +100,19 @@
             {:else}
               <span>{item.title}</span>
             {/if}
-            {#if index === allItems.length - 1 && routes.length > 1}
-              <select class="route-picker" aria-label="Choose parent path" value={chosenRoute ?? routes[0].id} onchange={event => { const route = routes.find(option => option.id === event.currentTarget.value); if (!route) return; chosenRoute = route.id; older = []; more = false; onRouteChange?.(route); }}>
-                {#each routes as route (route.id)}<option value={route.id}>{route.label}</option>{/each}
-              </select>
+            {#if index === divergenceIndex && routes.length > 1}
+              <div class="route-choice">
+                <button type="button" class="route-toggle" aria-label="Choose another parent path" aria-expanded={openRouteMenu} onclick={() => openRouteMenu = !openRouteMenu}>
+                  <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14"><path d="m3 6 5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                {#if openRouteMenu}
+                  <div class="route-menu" role="group" aria-label="Parent paths">
+                    {#each routes as route (route.id)}
+                      <button type="button" class:chosen={(chosenRoute ?? routes[0].id) === route.id} onclick={() => { chosenRoute = route.id; openRouteMenu = false; older = []; more = false; onRouteChange?.(route); }}>{route.label}</button>
+                    {/each}
+                  </div>
+                {/if}
+              </div>
             {/if}
           </li>
         {/each}
@@ -165,8 +176,13 @@
     }
   }
 
-  .route-picker { max-width: 2.3rem; border: 0; border-left: 1px solid #ffffff55; background: var(--crumb-color); color: white; font: inherit; padding: .4rem .2rem; cursor: pointer; vertical-align: middle; }
-  .route-picker option { color: var(--atlas-text); background: var(--atlas-surface); }
+  li { display: flex; align-items: center; }
+  .route-choice { display: flex; align-items: center; position: relative; }
+  .route-toggle { display: flex; align-items: center; justify-content: center; padding: .5rem .6rem; border-left: 1px solid #ffffff55; }
+  .route-menu { position: absolute; z-index: 100; left: 0; top: 100%; width: max-content; max-width: min(25rem, 80vw); padding: .3rem; background: var(--atlas-surface); color: var(--atlas-text); border: 1px solid var(--atlas-border); border-radius: .35rem; box-shadow: 0 5px 18px #0003; }
+  .route-menu button { display: block; width: 100%; padding: .55rem .7rem; color: inherit; text-align: left; white-space: normal; }
+  .route-menu button:hover, .route-menu button.chosen { background: var(--atlas-bg); }
+  .viewport:has(.route-menu) { overflow: visible; }
   .load-older button {
     min-width: 13rem;
   }
