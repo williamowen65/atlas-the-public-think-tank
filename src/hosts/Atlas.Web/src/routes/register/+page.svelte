@@ -3,4 +3,4 @@
 </script>
 <svelte:head><title>Create an account · Atlas</title></svelte:head>
 <h1>Create an account</h1>
-<SessionControl expanded startRegister focusOnMount />
+<SessionControl expanded startRegister />
