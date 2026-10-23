@@ -98,7 +98,7 @@
   </div>
 </header>
 <style lang="scss">
-  .atlas-header { position:sticky;top:0;z-index:30;background:var(--atlas-surface);transition:transform .18s ease;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;column-gap:clamp(1rem,2vw,2rem);padding:1rem 0;border-bottom:0; }
+  .atlas-header { position:sticky;top:0;z-index:30;background:transparent;transition:transform .18s ease;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;column-gap:clamp(1rem,2vw,2rem);padding:1rem 0;border-bottom:0; }
   .atlas-header.hidden{transform:translateY(calc(-100% - 1rem));pointer-events:none;}
   .search-slot{min-width:0;align-self:center;}
   /* Flatten the search wrappers so the search row stays in the same grid cell
@@ -115,7 +115,7 @@
   .search {display:flex;align-items:center;width:100%;min-width:0;border:1px solid var(--atlas-border);border-radius:.5rem;box-sizing:border-box;input{min-width:0;width:100%;flex:1;border:0;background:transparent;color:var(--atlas-text);padding:.55rem;}button{flex-shrink:0;border:0;background:transparent;color:var(--atlas-text);cursor:pointer;font-size:1.4rem;padding:0 .65rem;}.close-search{display:none;}}
   .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
   .right-group{display:flex;align-items:center;justify-content:flex-end;gap:1rem;min-width:0;align-self:center;}
-  .primary,.account-menu,.mobile-menu nav{margin:0;}\n  .primary,.auth{display:flex;align-items:center;gap:1rem;white-space:nowrap;font-size:.9rem;line-height:1.4;}.primary a,.auth a{display:inline-flex;align-items:center;justify-content:center;min-height:2.5rem;box-sizing:border-box;}
+  .primary,.account-menu,.mobile-menu nav{margin:0;}\n   .primary,.auth{display:flex;align-items:center;gap:1rem;white-space:nowrap;font-family:inherit;font-size:.9rem;font-weight:inherit;line-height:1.4;} .primary a,.auth a{display:inline-flex;align-items:center;justify-content:center;min-height:2.5rem;box-sizing:border-box;font:inherit;}
   a{color:var(--atlas-text);text-decoration:none;}a:hover{text-decoration:underline;}a[aria-current]{font-weight:700;text-underline-offset:.3em;}
   .signup{border:1px solid var(--atlas-border);border-radius:.5rem;padding:.45rem .7rem;}
   .account{position:relative;}.avatar{width:2.25rem;height:2.25rem;border:1px solid var(--atlas-border);border-radius:50%;background:var(--atlas-surface);color:var(--atlas-text);cursor:pointer;font-weight:700;}
