@@ -1,7 +1,6 @@
 <script lang="ts">
   import LiveVotingDial from './LiveVotingDial.svelte';
   import LiveReactions from './LiveReactions.svelte';
-  import NodeCommunities from './NodeCommunities.svelte';
   import NodePage from './NodePage.svelte';
   import LiveNodeFeed from './LiveNodeFeed.svelte';
   import CommentsPanel from './CommentsPanel.svelte';
@@ -72,7 +71,6 @@
     <NodePage {onOpenProfile} revealChildren={!!initialTypeId && active === initialTypeId} {hasMoreAncestors} loadOlderAncestors={id => id ? readOlderAncestors(id, AbortSignal.timeout(10000), apiBase) : Promise.resolve({ items: [], hasMore: false })} {node} {blocks} {types} {active} draftTab={createType !== null && editingDraft ? { id: editingDraft.newType ? 'draft-new-type' : editingDraft.typeId ?? createType, name: editingDraft.newType ? (editingDraft.newType.name || 'New node type') + ' (draft)' : (types.find(type => type.id === editingDraft.typeId)?.name ?? 'Child') + ' (draft)' } : undefined} {average} {totalVotes} onNavigate={openNode} onTabChange={id => void changeTab(id)} onAddChild={id => { if (createType !== null) return; createType = id ?? types[0]?.id ?? ''; active = createType; }}>
       {#snippet voting()}{#if node}<LiveVotingDial nodeId={node.id} initialAverage={average} initialTotalVotes={totalVotes} archived={node.status === 'Archived'} />{/if}{/snippet}
       {#snippet reactions()}<LiveReactions nodeId={node.id} archived={node.status === 'Archived'} />{/snippet}
-      <NodeCommunities nodeId={node.id} authorId={node.authorId} archived={node.status === 'Archived'} />
       {#if createType !== null}<div class="child-form"><button onclick={() => void closeChildForm()}>Close child form</button>{#key createType}<LiveNodeForm parentId={node.id} parentTitle={node.title} initialTypeId={createType} onCreated={openNode} onDraftChange={selectDraftType} onRegisterClose={close => saveChildDraft = close} breadcrumb={node.breadcrumb} focusOnMount {apiBase} />{/key}</div>{/if}
       {#key active}{#if active === 'comments'}<CommentsPanel nodeId={node.id} {apiBase} onAdded={() => { if (node) node = { ...node, commentCount: node.commentCount + 1 }; }} />{:else if active === 'draft-new-type' || (createType !== null && active === editingDraft?.typeId && !node.childTypes?.some(type => type.typeId === active))}<p>The child node draft is open above.</p>{:else}<LiveNodeFeed {onOpenProfile} parentId={node.id} typeId={active} {apiBase} onOpenNode={openNode} emptyTypeName={types.find(type => type.id === active)?.name ?? node.childTypes?.find(type => type.typeId === active)?.label.replace(/^\s*\d+\s+/, '').replace(/\s*\(\d+\)\s*$/, '').replace(/ies$/i, 'y').replace(/s$/i, '')} onCreateFirst={() => { if (createType === null) { createType = active; } }} />{/if}{/key}
     </NodePage>
