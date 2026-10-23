@@ -6,7 +6,7 @@ const entry = (number: number) => ({ nodeId: `b1000000-0000-4000-8000-${String(n
 async function mockFeed(page: Page, failSecond = false) {
   const requested: number[] = [];
   let fail = failSecond;
-  await page.route('**/atlas-preview-api/**', route => {
+  await page.route('**/atlas-public-api/**', route => {
     const url = new URL(route.request().url());
     if (url.pathname.endsWith('/reactions')) return route.fulfill({ json: [] });
     const current = Number(url.searchParams.get('Page'));
@@ -85,7 +85,7 @@ test('manual pagination works without IntersectionObserver', async ({ page }) =>
 
 test('empty feed stops pagination and exposes its empty state', async ({ page }) => {
   let requests = 0;
-  await page.route('**/atlas-preview-api/**', route => { requests++; return route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 3, hasNextPage: false } }); });
+  await page.route('**/atlas-public-api/**', route => { requests++; return route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 3, hasNextPage: false } }); });
   await page.goto(feedStory);
   await expect(page.getByRole('status')).toHaveText('No nodes found.');
   await expect(page.locator('article')).toHaveCount(0);
@@ -95,7 +95,7 @@ test('empty feed stops pagination and exposes its empty state', async ({ page })
 
 
 test.beforeEach(async ({ page }) => {
-  await page.route('**/atlas-comments-api/**', route => {
+  await page.route('**/atlas-session-api/**', route => {
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith('/votes')) return route.fulfill({ json: { voteCount: 0, averageVote: null, currentParticipantVote: null } });
     if (path.endsWith('/auth/csrf')) return route.fulfill({ json: { token: 'fixture-token' } });

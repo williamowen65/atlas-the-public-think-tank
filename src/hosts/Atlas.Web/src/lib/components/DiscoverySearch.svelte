@@ -67,7 +67,7 @@
     const q = discoveryQuery.value;
     if (q !== applied) { applied = q; input = q; pending = q; }
   });
-  $effect(() => { const controller = new AbortController(); void readTypes('/atlas-preview-api', controller.signal).then(t => types = t).catch(() => {}); return () => controller.abort(); });
+  $effect(() => { const controller = new AbortController(); void readTypes('/atlas-public-api', controller.signal).then(t => types = t).catch(() => {}); return () => controller.abort(); });
 
 </script>
 <svelte:window onpointerdown={dismissOutside} onkeydown={dismissEscape} />

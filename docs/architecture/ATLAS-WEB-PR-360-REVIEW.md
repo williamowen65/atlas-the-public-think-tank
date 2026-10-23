@@ -68,8 +68,8 @@ The `Live*` components integrate data fetching and user actions. Their presentat
 flowchart LR
   App["SvelteKit vite.config.ts"] --> Dev["dev/localApi.ts"]
   SB[".storybook/main.ts"] --> Dev
-  Dev --> Public["/atlas-preview-api: anonymous GET allowlist"]
-  Dev --> Session["/atlas-comments-api: restricted session/write bridge"]
+  Dev --> Public["/atlas-public-api: anonymous GET allowlist"]
+  Dev --> Session["/atlas-session-api: restricted session/write bridge"]
   Public --> Api["ASP.NET Core /api"]
   Session --> Api
   App --> Shared["src/lib/api/*"]

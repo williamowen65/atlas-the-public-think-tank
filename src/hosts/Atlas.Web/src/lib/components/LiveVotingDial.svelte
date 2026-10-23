@@ -4,7 +4,7 @@
   import SessionControl from './SessionControl.svelte';
   import { commentRequest, CommentRequestError } from '../api/comments';
   interface VoteSummary { voteCount: number; averageVote: number | null; currentParticipantVote: number | null }
-  let { nodeId, initialAverage = null, initialTotalVotes = 0, archived = false, sessionBase = '/atlas-comments-api' }: { nodeId: string; initialAverage?: number | null; initialTotalVotes?: number; archived?: boolean; sessionBase?: string } = $props();
+  let { nodeId, initialAverage = null, initialTotalVotes = 0, archived = false, sessionBase = '/atlas-session-api' }: { nodeId: string; initialAverage?: number | null; initialTotalVotes?: number; archived?: boolean; sessionBase?: string } = $props();
   let confirmed = $state<number | null>(null); let value = $state<number | null>(null);
   let average = $state<number | null>(null); let totalVotes = $state(0);
   let loading = $state(true); let busy = $state(false); let notice = $state(''); let error = $state(''); let refreshFailed = $state(false); let login = $state(false);

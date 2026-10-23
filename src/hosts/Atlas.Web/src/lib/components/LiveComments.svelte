@@ -3,7 +3,7 @@
   import LiveComments from './LiveComments.svelte';
   import { readJson, type Comment, type CommentPage } from '../api/nodePage';
   import { commentRequest } from '../api/comments';
-  let { nodeId, parentId, apiBase = '/atlas-preview-api', sessionBase = '/atlas-comments-api', participantId = null, showComposer = true, depth = 0, onAdded }: { nodeId: string; parentId?: string; apiBase?: string; sessionBase?: string; participantId?: string | null; showComposer?: boolean; depth?: number; onAdded?: () => void } = $props();
+  let { nodeId, parentId, apiBase = '/atlas-public-api', sessionBase = '/atlas-session-api', participantId = null, showComposer = true, depth = 0, onAdded }: { nodeId: string; parentId?: string; apiBase?: string; sessionBase?: string; participantId?: string | null; showComposer?: boolean; depth?: number; onAdded?: () => void } = $props();
   let items = $state<Comment[]>([]); let next = $state<CommentPage['next']>(null); let started = $state(false); let loading = $state(false); let error = $state(''); let open = $state<string[]>([]);
   let names = $state<Record<string, string>>({}); let text = $state(''); let saving = $state(false); let actionError = $state(''); let notice = $state('');
   let editing = $state<string | null>(null); let editText = $state(''); let removing = $state<string | null>(null); let replyTarget = $state<string | null>(null);

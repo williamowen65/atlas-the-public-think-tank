@@ -1,10 +1,10 @@
 import type { StorybookConfig } from '@storybook/sveltekit';
 import { mergeConfig } from 'vite';
-import { anonymousPreview, localApiProxy, commentsPreview, commentsApiProxy } from '../dev/localApi';
+import { publicApiGuard, publicApiProxy, sessionApiGuard, sessionApiProxy } from '../dev/localApi';
 
 const config: StorybookConfig = {
   viteFinal: async (config, { configType }) => configType === 'DEVELOPMENT'
-    ? mergeConfig(config, { plugins: [anonymousPreview, commentsPreview], server: { proxy: { '/atlas-preview-api': localApiProxy(), '/atlas-comments-api': commentsApiProxy() } } })
+    ? mergeConfig(config, { plugins: [publicApiGuard, sessionApiGuard], server: { proxy: { '/atlas-public-api': publicApiProxy(), '/atlas-session-api': sessionApiProxy() } } })
     : config,
   stories: ['../storybook/**/*.stories.ts'],
   framework: '@storybook/sveltekit',

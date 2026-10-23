@@ -52,7 +52,7 @@
     error = '';
     const timeout = setTimeout(() => controller.abort(), 10000);
     try {
-      const data = await readDiscovery('/atlas-preview-api', page, query, controller.signal, nodeId || undefined);
+      const data = await readDiscovery('/atlas-public-api', page, query, controller.signal, nodeId || undefined);
       if (request !== controller) return;
       result = data;
       if (nodeId && !data.items.some(item => item.nodeId === nodeId && item.card && !item.card.isHidden)) {

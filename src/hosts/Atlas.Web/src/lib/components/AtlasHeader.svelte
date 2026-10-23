@@ -33,7 +33,7 @@
     logoutError = '';
     menuOpen = false;
     try {
-      await commentRequest('/atlas-comments-api', 'auth/logout', 'POST');
+      await commentRequest('/atlas-session-api', 'auth/logout', 'POST');
       window.dispatchEvent(new Event('atlas-session-changed'));
       window.location.assign('/');
     } catch {

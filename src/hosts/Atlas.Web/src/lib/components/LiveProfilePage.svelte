@@ -3,7 +3,7 @@
   import LiveNodeFeed from './LiveNodeFeed.svelte';
   import { commentRequest } from '../api/comments';
   import type { Community } from '../api/communities';
-  let { participantId = '', apiBase = '/atlas-preview-api', onOpenNode, onOpenProfile }: { participantId?: string; apiBase?: string; onOpenNode?: (id: string) => void; onOpenProfile?: (id: string) => void } = $props();
+  let { participantId = '', apiBase = '/atlas-public-api', onOpenNode, onOpenProfile }: { participantId?: string; apiBase?: string; onOpenNode?: (id: string) => void; onOpenProfile?: (id: string) => void } = $props();
   type Profile = { id: string; displayName: string; bio: string; createdAt?: string; deleted?: boolean };
   let profile = $state<Profile | null>(null);
   let loading = $state(true);
@@ -34,7 +34,7 @@
   }
   async function checkSession() {
     try {
-      const session = await commentRequest<{ participantId: string | null }>('/atlas-comments-api', 'auth/session');
+      const session = await commentRequest<{ participantId: string | null }>('/atlas-session-api', 'auth/session');
       sessionId = session.participantId;
     } catch { sessionId = null; }
     finally { sessionReady = true; }
@@ -57,7 +57,7 @@
     if (!isOwner || saving || !profile) return;
     saving = true; notice = '';
     try {
-      await commentRequest('/atlas-comments-api', 'participants/me', 'PUT', { displayName, bio });
+      await commentRequest('/atlas-session-api', 'participants/me', 'PUT', { displayName, bio });
       profile = { ...profile, displayName, bio };
       editing = false; notice = 'Profile saved.';
       window.dispatchEvent(new Event('atlas-session-changed'));

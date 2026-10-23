@@ -5,14 +5,14 @@ async function setup(page: Page, anonymous = false) {
   let signedIn = !anonymous; let fail = false;
   let summary = { voteCount: 3, averageVote: 5, currentParticipantVote: null as number | null };
   const mutations: { method: string; value?: number }[] = [];
-  await page.route('**/atlas-preview-api/**', route => {
+  await page.route('**/atlas-public-api/**', route => {
     const url = new URL(route.request().url());
     if (url.pathname.endsWith('/node-types') || url.pathname.endsWith('/description') || url.pathname.endsWith('/reactions')) return route.fulfill({ json: [] });
     if (url.pathname.endsWith('/comments')) return route.fulfill({ json: { items: [], next: null } });
     if (url.pathname.endsWith(`/nodes/${node}`)) return route.fulfill({ json: { id: node, requestedTypeIds: [] } });
     return route.fulfill({ json: { items: [{ nodeId: node, voteCount: 3, averageVote: 5, card: { title: 'Voting question', shortDescription: 'Introduction', typeName: 'Question', authorName: 'Sam', status: 'Active', createdAt: '2026-10-22T12:00:00Z', breadcrumb: '', communities: '', commentCount: 0, isHidden: false } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
   });
-  await page.route('**/atlas-comments-api/**', route => {
+  await page.route('**/atlas-session-api/**', route => {
     const request = route.request(); const path = new URL(request.url()).pathname;
     if (path.endsWith('/votes')) return route.fulfill({ json: { ...summary, currentParticipantVote: signedIn ? summary.currentParticipantVote : null } });
     if (path.endsWith('/auth/session')) return signedIn ? route.fulfill({ json: { participantId: 'voter' } }) : route.fulfill({ status: 401, json: {} });

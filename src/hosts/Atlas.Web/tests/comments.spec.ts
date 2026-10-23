@@ -9,7 +9,7 @@ const story = 'http://127.0.0.1:6006/iframe.html?id=compositions-node-page--play
 async function setup(page: Page) {
   let signedIn = false;
   const reads: URL[] = []; const writes: { path: string; method: string; body: unknown }[] = [];
-  await page.route('**/atlas-preview-api/**', route => {
+  await page.route('**/atlas-public-api/**', route => {
     const url = new URL(route.request().url());
     if (url.pathname.endsWith('/comments')) {
       reads.push(url);
@@ -22,7 +22,7 @@ async function setup(page: Page) {
     if (url.pathname.endsWith(`/nodes/${node}`)) return route.fulfill({ json: { id: node, requestedTypeIds: [] } });
     return route.fulfill({ json: { items: [{ nodeId: node, averageVote: null, voteCount: 0, card: { title: 'Comment discussion', shortDescription: 'A place to discuss', typeName: 'Question', authorName: 'Sam', status: 'Active', createdAt: '2026-10-22T12:00:00Z', breadcrumb: '', subNodes: 'None', communities: '', commentCount: 3, isHidden: false } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
   });
-  await page.route('**/atlas-comments-api/**', async route => {
+  await page.route('**/atlas-session-api/**', async route => {
     if (new URL(route.request().url()).pathname.endsWith('/votes')) return route.fulfill({ json: { voteCount: 0, averageVote: null, currentParticipantVote: null } });
     const request = route.request(); const url = new URL(request.url());
     if (url.pathname.endsWith('/auth/session')) return signedIn ? route.fulfill({ json: { participantId: mine } }) : route.fulfill({ status: 401, json: {} });
@@ -104,21 +104,21 @@ test('sign-in enables posting, replies and author-only editing/removal with CSRF
 
 test('failed posting keeps the draft and failed pages retain already loaded comments', async ({ page }) => {
   await setup(page); await page.goto(story); await login(page);
-  await page.route(`**/atlas-comments-api/nodes/${node}/comments`, route => route.fulfill({ status: 403, json: {} }));
+  await page.route(`**/atlas-session-api/nodes/${node}/comments`, route => route.fulfill({ status: 403, json: {} }));
   await page.getByLabel('Add a comment', { exact: true }).fill('Keep this draft');
   await page.getByRole('button', { name: 'Post comment', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('not permitted');
   await expect(page.getByLabel('Add a comment', { exact: true })).toHaveValue('Keep this draft');
-  await page.route('**/atlas-preview-api/**/comments?**', route => route.fulfill({ status: 503, json: {} }));
+  await page.route('**/atlas-public-api/**/comments?**', route => route.fulfill({ status: 503, json: {} }));
   await page.getByRole('button', { name: 'Load more comments' }).click();
   await expect(page.getByText('An opening thought', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Retry comments' })).toBeVisible();
 });
 
-test('local comment bridge rejects foreign origins and unrelated writes', async ({ request }) => {
-  const foreign = await request.post(`http://127.0.0.1:6007/atlas-comments-api/nodes/${node}/comments`, { headers: { Origin: 'https://example.test' }, data: { body: 'Rejected' } });
+test('local session bridge rejects foreign origins and unrelated writes', async ({ request }) => {
+  const foreign = await request.post(`http://127.0.0.1:6007/atlas-session-api/nodes/${node}/comments`, { headers: { Origin: 'https://example.test' }, data: { body: 'Rejected' } });
   expect(foreign.status()).toBe(403);
-  const unrelated = await request.post('http://127.0.0.1:6007/atlas-comments-api/auth/register', { headers: { Origin: 'http://127.0.0.1:6007' }, data: {} });
+  const unrelated = await request.post('http://127.0.0.1:6007/atlas-session-api/auth/delete', { headers: { Origin: 'http://127.0.0.1:6007' }, data: {} });
   expect(unrelated.status()).toBe(405);
 });
 

@@ -188,7 +188,7 @@ test('wheel lens follows direction and recenters, while compact stays fixed', as
 });
 
 test('style Controls carry across Storybook layout and composition stories and reset globally', async ({ page }) => {
-  await page.route('**/atlas-preview-api/**', route => {
+  await page.route('**/atlas-public-api/**', route => {
     if (route.request().url().endsWith('/reactions')) return route.fulfill({ json: [] });
     return route.fulfill({ json: { items: [{ nodeId: 'b1000000-0000-4000-8000-000000000001', averageVote: null, voteCount: 0, card: { title: 'Style preview', shortDescription: 'Compare shared padding and typography.', typeName: 'Idea', authorName: 'Author', status: 'Active', createdAt: '2026-10-21T12:00:00Z', breadcrumb: '', subNodes: '', communities: '', commentCount: 0, isHidden: false } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
   });
@@ -220,7 +220,7 @@ test('style Controls carry across Storybook layout and composition stories and r
 
 
 test.beforeEach(async ({ page }) => {
-  await page.route('**/atlas-comments-api/**', route => {
+  await page.route('**/atlas-session-api/**', route => {
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith('/votes')) return route.fulfill({ json: { voteCount: 0, averageVote: null, currentParticipantVote: null } });
     if (path.endsWith('/auth/csrf')) return route.fulfill({ json: { token: 'fixture-token' } });

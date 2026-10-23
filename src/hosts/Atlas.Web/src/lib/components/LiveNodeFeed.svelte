@@ -6,7 +6,7 @@
   import { readDiscovery, discoveryCard, readOlderAncestors } from '../api/discovery';
   import type { DiscoveryFilters } from '../api/discovery';
   import type { NodeCardPresentation } from './NodeCard.svelte';
-  let { presentation = 'ribbon-corner', apiBase = '/atlas-preview-api', parentId, typeId, authorId, search = '', filters = {}, emptyTypeName, onCreateFirst, onOpenNode, onOpenProfile }: { presentation?: NodeCardPresentation; apiBase?: string; parentId?: string; typeId?: string; authorId?: string; search?: string; filters?: DiscoveryFilters; emptyTypeName?: string; onCreateFirst?: () => void; onOpenNode?: (id: string, typeId?: string) => void; onOpenProfile?: (id: string) => void } = $props();
+  let { presentation = 'ribbon-corner', apiBase = '/atlas-public-api', parentId, typeId, authorId, search = '', filters = {}, emptyTypeName, onCreateFirst, onOpenNode, onOpenProfile }: { presentation?: NodeCardPresentation; apiBase?: string; parentId?: string; typeId?: string; authorId?: string; search?: string; filters?: DiscoveryFilters; emptyTypeName?: string; onCreateFirst?: () => void; onOpenNode?: (id: string, typeId?: string) => void; onOpenProfile?: (id: string) => void } = $props();
   let items = $state<FeedItem[]>([]);
   let loading = $state(false);
   let error = $state('');

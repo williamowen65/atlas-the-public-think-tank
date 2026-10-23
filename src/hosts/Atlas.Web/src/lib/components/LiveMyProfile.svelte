@@ -3,7 +3,7 @@
   import SessionControl from './SessionControl.svelte';
   import { commentRequest } from '../api/comments';
   import { myCommunities, type Community } from '../api/communities';
-  let { apiBase = '/atlas-preview-api', sessionBase = '/atlas-comments-api', onOpenNode, onOpenProfile }: { apiBase?: string; sessionBase?: string; onOpenNode?: (id: string) => void; onOpenProfile?: (id: string) => void } = $props();
+  let { apiBase = '/atlas-public-api', sessionBase = '/atlas-session-api', onOpenNode, onOpenProfile }: { apiBase?: string; sessionBase?: string; onOpenNode?: (id: string) => void; onOpenProfile?: (id: string) => void } = $props();
   let participantId = $state<string | null>(null);
   let profile = $state<{ displayName: string; bio: string } | null>(null);
   let displayName = $state('');

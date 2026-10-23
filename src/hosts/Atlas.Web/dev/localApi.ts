@@ -1,22 +1,22 @@
 import type { Plugin, ProxyOptions } from 'vite';
 
 /** Development-only public reader; never forwards Atlas sessions or accepts writes. */
-export const anonymousPreview: Plugin = {
-  name: 'atlas-anonymous-preview',
+export const publicApiGuard: Plugin = {
+  name: 'atlas-public-api-guard',
   configureServer(server) {
     server.middlewares.use((request, response, next) => {
-      if (!request.url?.startsWith('/atlas-preview-api')) return next();
+      if (!request.url?.startsWith('/atlas-public-api')) return next();
       if (request.method !== 'GET') {
         response.statusCode = 405;
         response.setHeader('Allow', 'GET');
-        response.end('This preview only supports anonymous reads.');
+        response.end('The public API only supports anonymous reads.');
         return;
       }
-      if (!/^\/atlas-preview-api\/communities\/node\/[0-9a-f-]{36}(?:\?|$)/i.test(request.url) && !/^\/atlas-preview-api\/communities(?:\/([0-9a-f-]{36})(?:\/nodes)?|\/participant\/[0-9a-f-]{36})?(?:\?|$)/i.test(request.url) && !/^\/atlas-preview-api\/participants(?:\?(?:[^#]*)|\/([0-9a-f-]{36})(?:\?.*)?|$)/i.test(request.url) && !/^\/atlas-preview-api\/nodes(?:\?|$)/.test(request.url)
-        && !/^\/atlas-preview-api\/catalog\/node-types(?:\?|$)/.test(request.url)
-        && !/^\/atlas-preview-api\/nodes\/[0-9a-f-]{36}(?:\/(?:ancestors|parents|reactions|description|comments))?(?:\?|$)/i.test(request.url)) {
+      if (!/^\/atlas-public-api\/communities\/node\/[0-9a-f-]{36}(?:\?|$)/i.test(request.url) && !/^\/atlas-public-api\/communities(?:\/([0-9a-f-]{36})(?:\/nodes)?|\/participant\/[0-9a-f-]{36})?(?:\?|$)/i.test(request.url) && !/^\/atlas-public-api\/participants(?:\?(?:[^#]*)|\/([0-9a-f-]{36})(?:\?.*)?|$)/i.test(request.url) && !/^\/atlas-public-api\/nodes(?:\?|$)/.test(request.url)
+        && !/^\/atlas-public-api\/catalog\/node-types(?:\?|$)/.test(request.url)
+        && !/^\/atlas-public-api\/nodes\/[0-9a-f-]{36}(?:\/(?:ancestors|parents|reactions|description|comments))?(?:\?|$)/i.test(request.url)) {
         response.statusCode = 404;
-        response.end('Only public node discovery is available in this preview.');
+        response.end('Only allowlisted public reads are available through this API.');
         return;
       }
       next();
@@ -24,7 +24,7 @@ export const anonymousPreview: Plugin = {
   },
 };
 
-export function localApiProxy(): ProxyOptions {
+export function publicApiProxy(): ProxyOptions {
   const target = process.env.ATLAS_STORYBOOK_API_URL ?? 'https://localhost:7240';
   const url = new URL(target);
   if (!['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) || !['http:', 'https:'].includes(url.protocol)) {
@@ -38,7 +38,7 @@ export function localApiProxy(): ProxyOptions {
     changeOrigin: true,
     // Accept the local ASP.NET development certificate; this proxy is dev-only.
     secure: false,
-    rewrite: path => path.replace(/^\/atlas-preview-api/, '/api'),
+    rewrite: path => path.replace(/^\/atlas-public-api/, '/api'),
     configure(proxy) {
       proxy.on('proxyReq', request => {
         request.removeHeader('cookie');
@@ -49,37 +49,37 @@ export function localApiProxy(): ProxyOptions {
   };
 }
 
-/** Separate, narrowly scoped session bridge for local comment and node authoring. */
-export const commentsPreview: Plugin = {
-  name: 'atlas-comments-preview',
+/** Development-only session bridge for authentication and allowlisted reads and writes. */
+export const sessionApiGuard: Plugin = {
+  name: 'atlas-session-api-guard',
   configureServer(server) {
     server.middlewares.use((request, response, next) => {
-      if (!request.url?.startsWith('/atlas-comments-api')) return next();
+      if (!request.url?.startsWith('/atlas-session-api')) return next();
       const host = request.headers.host ?? '';
       const hostname = host.replace(/:\d+$/, '');
       if (!['localhost', '127.0.0.1', '[::1]'].includes(hostname)) {
-        response.statusCode = 403; response.end('Local comments require a loopback host.'); return;
+        response.statusCode = 403; response.end('The session API requires a loopback host.'); return;
       }
       const path = request.url.split('?')[0];
       const guid = '[0-9a-f-]{36}';
       const method = request.method ?? 'GET';
-      const readable = ['/atlas-comments-api/communities/mine', '/atlas-comments-api/communities/creation-allowance'].includes(path)
-        || new RegExp(`^/atlas-comments-api/nodes/${guid}/(?:votes|reactions)$`, 'i').test(path)
-        || /^\/atlas-comments-api\/auth\/(csrf|session)$/.test(path)
-        || new RegExp(`^/atlas-comments-api/participants/${guid}$`, 'i').test(path);
-      const profileEdit = method === 'PUT' && path === '/atlas-comments-api/participants/me';
-      const nodeVote = ['PUT', 'DELETE'].includes(method) && new RegExp(`^/atlas-comments-api/nodes/${guid}/vote$`, 'i').test(path);
-      const reactionVote = method === 'PUT' && new RegExp(`^/atlas-comments-api/nodes/${guid}/reactions/vote$`, 'i').test(path);
-      const undoReaction = method === 'DELETE' && new RegExp(`^/atlas-comments-api/reactions/${guid}/vote$`, 'i').test(path);
-      const communityWrite = (method === 'POST' && (path === '/atlas-comments-api/communities' || new RegExp(`^/atlas-comments-api/communities/${guid}/(?:archive|restore)$`, 'i').test(path)))
-        || (method === 'PUT' && new RegExp(`^/atlas-comments-api/communities/${guid}/(?:membership|name|description|nodes/${guid})$`, 'i').test(path))
-        || (method === 'DELETE' && new RegExp(`^/atlas-comments-api/communities/${guid}/(?:membership|nodes/${guid})$`, 'i').test(path));
-      const writable = communityWrite || profileEdit || nodeVote || reactionVote || undoReaction || method === 'POST' && (['/atlas-comments-api/nodes', '/atlas-comments-api/catalog/node-types', '/atlas-comments-api/auth/register'].includes(path) || /^\/atlas-comments-api\/auth\/(login|logout)$/.test(path)
-        || new RegExp(`^/atlas-comments-api/nodes/${guid}/comments$`, 'i').test(path)
-        || new RegExp(`^/atlas-comments-api/comments/${guid}/replies$`, 'i').test(path))
-        || ['PUT', 'DELETE'].includes(method) && new RegExp(`^/atlas-comments-api/comments/${guid}$`, 'i').test(path);
+      const readable = ['/atlas-session-api/communities/mine', '/atlas-session-api/communities/creation-allowance'].includes(path)
+        || new RegExp(`^/atlas-session-api/nodes/${guid}/(?:votes|reactions)$`, 'i').test(path)
+        || /^\/atlas-session-api\/auth\/(csrf|session)$/.test(path)
+        || new RegExp(`^/atlas-session-api/participants/${guid}$`, 'i').test(path);
+      const profileEdit = method === 'PUT' && path === '/atlas-session-api/participants/me';
+      const nodeVote = ['PUT', 'DELETE'].includes(method) && new RegExp(`^/atlas-session-api/nodes/${guid}/vote$`, 'i').test(path);
+      const reactionVote = method === 'PUT' && new RegExp(`^/atlas-session-api/nodes/${guid}/reactions/vote$`, 'i').test(path);
+      const undoReaction = method === 'DELETE' && new RegExp(`^/atlas-session-api/reactions/${guid}/vote$`, 'i').test(path);
+      const communityWrite = (method === 'POST' && (path === '/atlas-session-api/communities' || new RegExp(`^/atlas-session-api/communities/${guid}/(?:archive|restore)$`, 'i').test(path)))
+        || (method === 'PUT' && new RegExp(`^/atlas-session-api/communities/${guid}/(?:membership|name|description|nodes/${guid})$`, 'i').test(path))
+        || (method === 'DELETE' && new RegExp(`^/atlas-session-api/communities/${guid}/(?:membership|nodes/${guid})$`, 'i').test(path));
+      const writable = communityWrite || profileEdit || nodeVote || reactionVote || undoReaction || method === 'POST' && (['/atlas-session-api/nodes', '/atlas-session-api/catalog/node-types', '/atlas-session-api/auth/register'].includes(path) || /^\/atlas-session-api\/auth\/(login|logout)$/.test(path)
+        || new RegExp(`^/atlas-session-api/nodes/${guid}/comments$`, 'i').test(path)
+        || new RegExp(`^/atlas-session-api/comments/${guid}/replies$`, 'i').test(path))
+        || ['PUT', 'DELETE'].includes(method) && new RegExp(`^/atlas-session-api/comments/${guid}$`, 'i').test(path);
       if (!(method === 'GET' && readable) && !writable) {
-        response.statusCode = 405; response.end('Unsupported comment operation.'); return;
+        response.statusCode = 405; response.end('Unsupported session API operation.'); return;
       }
       // Reject cross-site writes before forwarding cookies. Backend CSRF remains mandatory.
       if (writable) {
@@ -94,11 +94,11 @@ export const commentsPreview: Plugin = {
   },
 };
 
-export function commentsApiProxy(): ProxyOptions {
-  const options = localApiProxy();
+export function sessionApiProxy(): ProxyOptions {
+  const options = publicApiProxy();
   return {
     ...options,
-    rewrite: path => path.replace(/^\/atlas-comments-api/, '/api'),
+    rewrite: path => path.replace(/^\/atlas-session-api/, '/api'),
     configure(proxy) {
       proxy.on('proxyReq', request => {
         request.removeHeader('authorization');

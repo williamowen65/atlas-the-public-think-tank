@@ -6,7 +6,7 @@
   let linked = $state<Community[]>([]);
   onMount(() => {
     const controller = new AbortController();
-    void commentRequest<Community[]>('/atlas-preview-api', 'communities/node/' + encodeURIComponent(nodeId), 'GET', undefined, controller.signal)
+    void commentRequest<Community[]>('/atlas-public-api', 'communities/node/' + encodeURIComponent(nodeId), 'GET', undefined, controller.signal)
       .then(items => { if (!controller.signal.aborted) linked = items; })
       .catch(() => {});
     return () => controller.abort();

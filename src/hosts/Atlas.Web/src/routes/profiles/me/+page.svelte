@@ -10,7 +10,7 @@
     let active = true;
     async function refresh() {
       try {
-        const session = await commentRequest<{ participantId: string | null }>('/atlas-comments-api', 'auth/session');
+        const session = await commentRequest<{ participantId: string | null }>('/atlas-session-api', 'auth/session');
         if (active) participantId = session.participantId;
       } catch { if (active) participantId = null; }
       finally { if (active) checking = false; }

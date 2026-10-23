@@ -12,7 +12,7 @@
     totalVotes: number;
     currentParticipantVote: number | null;
   }
-  let { nodeId, archived = false, apiBase = '/atlas-comments-api' }: {
+  let { nodeId, archived = false, apiBase = '/atlas-session-api' }: {
     nodeId: string; archived?: boolean; apiBase?: string
   } = $props();
   let choices = $state<Choice[]>([]);

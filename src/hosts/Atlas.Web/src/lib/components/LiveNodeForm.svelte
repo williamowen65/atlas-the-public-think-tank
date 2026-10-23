@@ -7,7 +7,7 @@
   import { readTypes, type NodeType } from '../api/nodePage';
   import { commentRequest, CommentRequestError } from '../api/comments';
   import { readDiscovery, discoveryCard } from '../api/discovery';
-  let { draftId, parentId, parentTitle, initialTypeId, breadcrumb = [], focusOnMount = false, apiBase = '/atlas-preview-api', sessionBase = '/atlas-comments-api', onCreated, onDraftChange, onRegisterClose }: { draftId?: string; parentId?: string; parentTitle?: string; initialTypeId?: string; breadcrumb?: BreadcrumbItem[]; focusOnMount?: boolean; apiBase?: string; sessionBase?: string; onCreated?: (id: string) => void; onDraftChange?: (draft: NodeDraft | null) => void; onRegisterClose?: (close: () => Promise<boolean>) => void } = $props();
+  let { draftId, parentId, parentTitle, initialTypeId, breadcrumb = [], focusOnMount = false, apiBase = '/atlas-public-api', sessionBase = '/atlas-session-api', onCreated, onDraftChange, onRegisterClose }: { draftId?: string; parentId?: string; parentTitle?: string; initialTypeId?: string; breadcrumb?: BreadcrumbItem[]; focusOnMount?: boolean; apiBase?: string; sessionBase?: string; onCreated?: (id: string) => void; onDraftChange?: (draft: NodeDraft | null) => void; onRegisterClose?: (close: () => Promise<boolean>) => void } = $props();
   let types = $state<NodeType[]>([]); let error = $state(''); let loading = $state(true);
   let participantId = $state<string | null>(null); let hasDraft = $state(false); let submitting = $state(false); let saveError = $state(''); let createdId = $state(''); let createdType = $state<{ key: string; id: string } | null>(null);
   let controller: AbortController;

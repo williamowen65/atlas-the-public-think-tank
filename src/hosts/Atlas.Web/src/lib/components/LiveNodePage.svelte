@@ -9,7 +9,7 @@
   import { readDiscovery, discoveryCard, readReactions, readOlderAncestors } from '../api/discovery';
   import { readJson, readTypes, type NodeType, type ContentBlock, type NodeDetail } from '../api/nodePage';
   import type { NodeCardData } from './NodeCard.svelte';
-  let { nodeId = '', initialTypeId = '', apiBase = '/atlas-preview-api', onOpenNode, onOpenProfile }: { nodeId?: string; initialTypeId?: string; apiBase?: string; onOpenNode?: (id: string, typeId?: string) => void; onOpenProfile?: (id: string) => void } = $props();
+  let { nodeId = '', initialTypeId = '', apiBase = '/atlas-public-api', onOpenNode, onOpenProfile }: { nodeId?: string; initialTypeId?: string; apiBase?: string; onOpenNode?: (id: string, typeId?: string) => void; onOpenProfile?: (id: string) => void } = $props();
   let node = $state<NodeCardData | null>(null); let blocks = $state<ContentBlock[]>([]); let types = $state<NodeType[]>([]);
   let active = $state('comments'); let loading = $state(false); let error = $state(''); let retry = $state(0); let createType = $state<string | null>(null);
   let hasMoreAncestors = $state(false);

@@ -17,7 +17,7 @@
     if (!id) return;
     loading = true;
     try {
-      const result = await commentRequest<{ displayName: string; bio: string }>('/atlas-preview-api', 'participants/' + encodeURIComponent(id));
+      const result = await commentRequest<{ displayName: string; bio: string }>('/atlas-public-api', 'participants/' + encodeURIComponent(id));
       if (generation !== requestGeneration) return;
       name = result.displayName; bio = result.bio ?? ''; initialName = name; initialBio = bio;
     } catch { if (generation === requestGeneration) error = 'Unable to load your account profile.'; }
@@ -27,7 +27,7 @@
     if (!owner || saving || loading) return;
     const id = owner; saving = true; error = ''; message = '';
     try {
-      const result = await commentRequest<{ displayName: string; bio: string }>('/atlas-comments-api', 'participants/me', 'PUT', { displayName: name.trim(), bio });
+      const result = await commentRequest<{ displayName: string; bio: string }>('/atlas-session-api', 'participants/me', 'PUT', { displayName: name.trim(), bio });
       if (owner !== id) return;
       name = result.displayName; bio = result.bio ?? ''; initialName = name; initialBio = bio;
       message = 'Profile settings saved.';

@@ -21,7 +21,7 @@
       const result = await communityDetail(id);
       community = result; name = result.name; description = result.description;
       try {
-        const session = await import('$lib/api/comments').then(m => m.commentRequest<{participantId:string|null}>('/atlas-comments-api', 'auth/session'));
+        const session = await import('$lib/api/comments').then(m => m.commentRequest<{participantId:string|null}>('/atlas-session-api', 'auth/session'));
         currentParticipant = session.participantId; signedIn = !!session.participantId;
         if (signedIn) {
           try {

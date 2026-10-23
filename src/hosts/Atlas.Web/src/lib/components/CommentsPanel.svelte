@@ -1,7 +1,7 @@
 <script lang="ts">
   import LiveComments from './LiveComments.svelte';
   import SessionControl from './SessionControl.svelte';
-  let { nodeId, apiBase = '/atlas-preview-api', sessionBase = '/atlas-comments-api', onAdded }: { nodeId: string; apiBase?: string; sessionBase?: string; onAdded?: () => void } = $props();
+  let { nodeId, apiBase = '/atlas-public-api', sessionBase = '/atlas-session-api', onAdded }: { nodeId: string; apiBase?: string; sessionBase?: string; onAdded?: () => void } = $props();
   let participantId = $state<string | null>(null);
 </script>
 <section class="discussion" aria-label="Comment discussion">

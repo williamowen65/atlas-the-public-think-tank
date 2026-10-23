@@ -9,12 +9,12 @@ export interface CreationAllowance {
   rolling: { remaining: number; nextSlotAt: string | null } | null;
 }
 export const publicCommunities = (path = '') =>
-  commentRequest<Community[]>('/atlas-preview-api', 'communities' + path);
+  commentRequest<Community[]>('/atlas-public-api', 'communities' + path);
 export const communityDetail = (id: string) =>
-  commentRequest<Community>('/atlas-preview-api', 'communities/' + encodeURIComponent(id));
+  commentRequest<Community>('/atlas-public-api', 'communities/' + encodeURIComponent(id));
 export const myCommunities = () =>
-  commentRequest<Community[]>('/atlas-comments-api', 'communities/mine');
+  commentRequest<Community[]>('/atlas-session-api', 'communities/mine');
 export const creationAllowance = () =>
-  commentRequest<CreationAllowance>('/atlas-comments-api', 'communities/creation-allowance');
+  commentRequest<CreationAllowance>('/atlas-session-api', 'communities/creation-allowance');
 export const communityAction = (path: string, method: 'POST' | 'PUT' | 'DELETE', body?: unknown) =>
-  commentRequest('/atlas-comments-api', 'communities' + path, method, body);
+  commentRequest('/atlas-session-api', 'communities' + path, method, body);

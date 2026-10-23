@@ -6,7 +6,7 @@ const custom = 'a1000000-0000-4000-8000-000000000002';
 async function setup(page: Page, initiallySignedIn = false) {
   let signedIn = initiallySignedIn; let failNode = false;
   const writes: { path: string; body: Record<string, unknown> }[] = [];
-  await page.route('**/atlas-preview-api/**', route => {
+  await page.route('**/atlas-public-api/**', route => {
     const url = new URL(route.request().url());
     if (url.pathname.endsWith('/catalog/node-types')) return route.fulfill({ json: [{ id: idea, name: 'Idea', pluralName: 'Ideas' }] });
     if (url.pathname.endsWith('/reactions') || url.pathname.endsWith('/description')) return route.fulfill({ json: [] });
@@ -15,7 +15,7 @@ async function setup(page: Page, initiallySignedIn = false) {
     const id = url.searchParams.get('NodeId') ?? parent;
     return route.fulfill({ json: { items: [{ nodeId: id, averageVote: null, voteCount: 0, card: { title: id === created ? 'Saved node' : 'Parent node', shortDescription: 'Introduction', typeName: 'Idea', authorName: 'Sam', status: 'Active', createdAt: '2026-10-22T12:00:00Z', breadcrumb: '', childTypes: [{ typeId: idea, count: 0, label: '0 Ideas' }], communities: '', commentCount: 0, isHidden: false } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
   });
-  await page.route('**/atlas-comments-api/**', route => {
+  await page.route('**/atlas-session-api/**', route => {
     if (new URL(route.request().url()).pathname.endsWith('/votes')) return route.fulfill({ json: { voteCount: 0, averageVote: null, currentParticipantVote: null } });
     const request = route.request(); const path = new URL(request.url()).pathname;
     if (path.endsWith('/auth/session')) return signedIn ? route.fulfill({ json: { participantId: 'participant' } }) : route.fulfill({ status: 401, json: {} });

@@ -11,14 +11,14 @@
   let error = $state('');
   const isAuthor = $derived(!archived && !!authorId && participantId === authorId);
   async function refresh() {
-    linked = await commentRequest<Community[]>('/atlas-preview-api', 'communities/node/' + encodeURIComponent(nodeId));
+    linked = await commentRequest<Community[]>('/atlas-public-api', 'communities/node/' + encodeURIComponent(nodeId));
   }
   onMount(() => {
     let active = true;
     void Promise.allSettled([
       refresh(),
       publicCommunities('?offset=0&size=50').then(c => { if (active) available = c; }),
-      commentRequest<{participantId:string|null}>('/atlas-comments-api','auth/session').then(s => { if (active) participantId = s.participantId; })
+      commentRequest<{participantId:string|null}>('/atlas-session-api','auth/session').then(s => { if (active) participantId = s.participantId; })
     ]).then(results => { if (active && results[0].status === 'rejected') error = 'Could not load community associations.'; });
     return () => { active = false; };
   });

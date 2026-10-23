@@ -9,14 +9,14 @@ const item = (id: string, title: string, hidden = false) => ({
 
 test('live nodes support selection, search, paging and refresh without submitting votes', async ({ page }) => {
   const requests: { page: string | null; search: string | null; method: string }[] = [];
-  await page.route('**/atlas-preview-api/**', async route => {
+  await page.route('**/atlas-public-api/**', async route => {
     const request = route.request();
     const url = new URL(request.url());
     requests.push({ page: url.searchParams.get('Page'), search: url.searchParams.get('SearchText'), method: request.method() });
     const second = url.searchParams.get('Page') === '2';
     await route.fulfill({ json: { items: second ? [item('new', 'A newly entered node')] : [item('one', 'Database question'), item('two', 'Database second node'), item('hidden', 'Hidden private title', true)], totalCount: 4, page: second ? 2 : 1, pageSize: 3, hasNextPage: !second } });
   });
-  await page.route('**/atlas-preview-api/nodes/*/reactions', route => route.fulfill({ json: [
+  await page.route('**/atlas-public-api/nodes/*/reactions', route => route.fulfill({ json: [
     { associationId: 'applied', text: 'Useful', emoji: '💡', totalVotes: 3 },
     { associationId: null, text: 'Unused', emoji: '', totalVotes: 0 },
   ] }));
@@ -49,10 +49,10 @@ test('live nodes support selection, search, paging and refresh without submittin
 
 test('live preview handles empty results and API failure with retry', async ({ page }) => {
   let fail = true;
-  await page.route('**/atlas-preview-api/**', route => fail
+  await page.route('**/atlas-public-api/**', route => fail
     ? route.fulfill({ status: 503, body: 'Unavailable' })
     : route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 3, hasNextPage: false } }));
-  await page.route('**/atlas-preview-api/nodes/*/reactions', route => route.fulfill({ json: [
+  await page.route('**/atlas-public-api/nodes/*/reactions', route => route.fulfill({ json: [
     { associationId: 'applied', text: 'Useful', emoji: '💡', totalVotes: 3 },
     { associationId: null, text: 'Unused', emoji: '', totalVotes: 0 },
   ] }));
@@ -65,13 +65,13 @@ test('live preview handles empty results and API failure with retry', async ({ p
 
 test('fixture stories never contact API and dev proxy rejects writes', async ({ page, request }) => {
   let contacted = false;
-  await page.route('**/atlas-preview-api/**', route => { contacted = true; return route.abort(); });
+  await page.route('**/atlas-public-api/**', route => { contacted = true; return route.abort(); });
   await page.goto('http://127.0.0.1:6006/iframe.html?id=components-votingdial--playground&viewMode=story');
   await page.getByRole('spinbutton').focus();
   await page.keyboard.press('End');
   await expect(page.getByRole('status')).toHaveText('Preview selection: 10 out of 10');
   expect(contacted).toBe(false);
-  const response = await request.post('http://127.0.0.1:6007/atlas-preview-api/nodes');
+  const response = await request.post('http://127.0.0.1:6007/atlas-public-api/nodes');
   expect(response.status()).toBe(405);
 });
 
@@ -100,7 +100,7 @@ test('API breadcrumb prepends older pages, retries failures and stops at root', 
   const ids = Array.from({ length: 5 }, (_, i) => `b1000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`);
   let failed = false;
   let calls = 0;
-  await page.route('**/atlas-preview-api/**', async route => {
+  await page.route('**/atlas-public-api/**', async route => {
     if (route.request().url().includes('/ancestors')) {
       calls++;
       if (!failed) { failed = true; return route.fulfill({ status: 503 }); }
@@ -112,7 +112,7 @@ test('API breadcrumb prepends older pages, retries failures and stops at root', 
       continuationNodeId: ids[1], hasAlternativeRoutes: false, cycleDetected: false,
     } } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
   });
-  await page.route('**/atlas-preview-api/nodes/*/reactions', route => route.fulfill({ json: [
+  await page.route('**/atlas-public-api/nodes/*/reactions', route => route.fulfill({ json: [
     { associationId: 'applied', text: 'Useful', emoji: '💡', totalVotes: 3 },
     { associationId: null, text: 'Unused', emoji: '', totalVotes: 0 },
   ] }));
@@ -125,9 +125,9 @@ test('API breadcrumb prepends older pages, retries failures and stops at root', 
   await expect(nav.getByRole('button', { name: 'Load older ancestors' })).toHaveCount(0);
   expect(calls).toBe(2);
   expect(await nav.locator('li').allTextContents()).toEqual(['Oldest ancestor', 'Older ancestor', 'Middle ancestor', 'Nearest ancestor']);
-  const blocked = await request.get('http://127.0.0.1:6007/atlas-preview-api/nodes/' + ids[0] + '/votes');
+  const blocked = await request.get('http://127.0.0.1:6007/atlas-public-api/nodes/' + ids[0] + '/votes');
   expect(blocked.status()).toBe(404);
-  const write = await request.post('http://127.0.0.1:6007/atlas-preview-api/nodes/' + ids[0] + '/ancestors');
+  const write = await request.post('http://127.0.0.1:6007/atlas-public-api/nodes/' + ids[0] + '/ancestors');
   expect(write.status()).toBe(405);
 });
 
@@ -136,7 +136,7 @@ test('live-only card navigates an off-page ancestor by ID and keeps both present
   const nodeId = 'b1000000-0000-4000-8000-000000000010';
   const ancestor = 'b1000000-0000-4000-8000-000000000001';
   const requested: URL[] = [];
-  await page.route('**/atlas-preview-api/**', async route => {
+  await page.route('**/atlas-public-api/**', async route => {
     const url = new URL(route.request().url());
     requested.push(url);
     const detail = url.searchParams.get('NodeId') === ancestor;
@@ -147,7 +147,7 @@ test('live-only card navigates an off-page ancestor by ID and keeps both present
     } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
   });
   await page.setViewportSize({ width: 320, height: 900 });
-  await page.route('**/atlas-preview-api/nodes/*/reactions', route => route.fulfill({ json: [
+  await page.route('**/atlas-public-api/nodes/*/reactions', route => route.fulfill({ json: [
     { associationId: 'applied', text: 'Useful', emoji: '💡', totalVotes: 3 },
     { associationId: null, text: 'Unused', emoji: '', totalVotes: 0 },
   ] }));
@@ -205,13 +205,13 @@ test('live-only card navigates an off-page ancestor by ID and keeps both present
 
 test('unavailable ancestor shows an error and can return to Discovery', async ({ page }) => {
   let fail = false;
-  await page.route('**/atlas-preview-api/**', route => {
+  await page.route('**/atlas-public-api/**', route => {
     const entry = item('child', 'Visible child');
     return route.fulfill({ json: { items: fail ? [] : [{ ...entry, card: { ...entry.card, breadcrumbSegment: {
       items: [{ nodeId: 'b1000000-0000-4000-8000-000000000001', label: 'Parent' }], continuationNodeId: null,
     } } }], totalCount: fail ? 0 : 1, page: 1, pageSize: 3, hasNextPage: false } });
   });
-  await page.route('**/atlas-preview-api/nodes/*/reactions', route => route.fulfill({ json: [
+  await page.route('**/atlas-public-api/nodes/*/reactions', route => route.fulfill({ json: [
     { associationId: 'applied', text: 'Useful', emoji: '💡', totalVotes: 3 },
     { associationId: null, text: 'Unused', emoji: '', totalVotes: 0 },
   ] }));
@@ -228,7 +228,7 @@ test('unavailable ancestor shows an error and can return to Discovery', async ({
 
 test('reaction pills are separate and absent reactions leave no container or gap', async ({ page }) => {
   let empty = false;
-  await page.route('**/atlas-preview-api/**', route => {
+  await page.route('**/atlas-public-api/**', route => {
     if (route.request().url().endsWith('/reactions')) return route.fulfill({ json: empty ? [] : [
       { associationId: 'one', text: 'Useful', emoji: '💡', totalVotes: 3 },
       { associationId: 'two', text: 'Worth exploring', emoji: '🔎', totalVotes: 2 },
@@ -270,7 +270,7 @@ test('reaction pills are separate and absent reactions leave no container or gap
 });
 
 test('standalone card versions preserve mobile layout and offer a raised desktop dial', async ({ page }) => {
-  await page.route('**/atlas-preview-api/**', route => {
+  await page.route('**/atlas-public-api/**', route => {
     if (route.request().url().endsWith('/reactions')) return route.fulfill({ json: [] });
     const entry = item('b1000000-0000-4000-8000-000000000001', 'Layout comparison');
     return route.fulfill({ json: { items: [{ ...entry, card: { ...entry.card, shortDescription: 'A concise introduction for comparing card arrangements.' } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
@@ -340,7 +340,7 @@ test('standalone card versions preserve mobile layout and offer a raised desktop
 
 test('split details version groups metadata above a centered bottom action', async ({ page }) => {
   let empty = false;
-  await page.route('**/atlas-preview-api/**', route => {
+  await page.route('**/atlas-public-api/**', route => {
     if (route.request().url().endsWith('/reactions')) return route.fulfill({ json: empty ? [] : [
       { associationId: 'one', text: 'Useful', emoji: '💡', totalVotes: 3 },
       { associationId: 'two', text: 'Worth exploring together', emoji: '🔎', totalVotes: 2 },
@@ -385,7 +385,7 @@ test('split details version groups metadata above a centered bottom action', asy
 
 test('corner action floats at the description end above the navigation counts', async ({ page }) => {
   let description = 'A concise introduction with enough space to sit beside the action.';
-  await page.route('**/atlas-preview-api/**', route => {
+  await page.route('**/atlas-public-api/**', route => {
     if (route.request().url().endsWith('/reactions')) return route.fulfill({ json: [] });
     const entry = item('corner-node', 'Corner layout');
     return route.fulfill({ json: { items: [{ ...entry, card: { ...entry.card, shortDescription: description } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
@@ -431,7 +431,7 @@ test('corner action floats at the description end above the navigation counts', 
 
 
 test.beforeEach(async ({ page }) => {
-  await page.route('**/atlas-comments-api/**', route => {
+  await page.route('**/atlas-session-api/**', route => {
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith('/votes')) return route.fulfill({ json: { voteCount: 12, averageVote: 7.5, currentParticipantVote: null } });
     if (path.endsWith('/auth/csrf')) return route.fulfill({ json: { token: 'fixture-token' } });

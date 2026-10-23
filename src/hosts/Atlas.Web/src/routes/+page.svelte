@@ -22,7 +22,7 @@
     }
     return { text: text.join(' '), filters };
   });
-  $effect(() => { const c = new AbortController(); void readTypes('/atlas-preview-api', c.signal).then(t => types = t).catch(() => {}); return () => c.abort(); });
+  $effect(() => { const c = new AbortController(); void readTypes('/atlas-public-api', c.signal).then(t => types = t).catch(() => {}); return () => c.abort(); });
 </script>
 <svelte:head><title>Discover · Atlas</title><meta name="description" content="Explore connected questions, evidence, and ideas in Atlas." /></svelte:head>
 <div class="feed-intro"><h1>Discover</h1><p>Follow a question. Find a new perspective. Build on an idea.</p></div>

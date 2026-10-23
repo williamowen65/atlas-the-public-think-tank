@@ -8,11 +8,11 @@
     let active = true;
     async function refresh() {
       try {
-        const session = await commentRequest<{ participantId: string | null }>('/atlas-comments-api', 'auth/session');
+        const session = await commentRequest<{ participantId: string | null }>('/atlas-session-api', 'auth/session');
         if (!active) return;
         authenticated = !!session.participantId;
         if (session.participantId) {
-          try { const profile = await commentRequest<{ displayName: string }>('/atlas-preview-api', 'participants/' + encodeURIComponent(session.participantId)); if (active) displayName = profile.displayName; } catch { /* Initials can fall back to generic name. */ }
+          try { const profile = await commentRequest<{ displayName: string }>('/atlas-public-api', 'participants/' + encodeURIComponent(session.participantId)); if (active) displayName = profile.displayName; } catch { /* Initials can fall back to generic name. */ }
         }
       } catch { if (active) authenticated = false; }
     }

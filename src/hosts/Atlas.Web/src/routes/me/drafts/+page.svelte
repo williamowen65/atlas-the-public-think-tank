@@ -12,7 +12,7 @@
   let resolvedPaths = $state<Record<string, BreadcrumbItem[]>>({});
   let moreAncestors = $state<Record<string, boolean>>({});
   function loadOlder(draft: SavedDraft, oldestId?: string) {
-    return readOlderAncestors(oldestId ?? draft.data.parentId!, AbortSignal.timeout(10000), '/atlas-preview-api');
+    return readOlderAncestors(oldestId ?? draft.data.parentId!, AbortSignal.timeout(10000), '/atlas-public-api');
   }
   $effect(() => {
     const entries = drafts.filter(draft => draft.data.parentId && !draft.parentTitle);
@@ -20,7 +20,7 @@
       const parentId = entry.data.parentId!;
       if (resolvedPaths[entry.id]) continue;
       resolvedPaths[entry.id] = entry.breadcrumb ?? [];
-      void readDiscovery('/atlas-preview-api', 1, '', AbortSignal.timeout(10000), parentId).then(page => {
+      void readDiscovery('/atlas-public-api', 1, '', AbortSignal.timeout(10000), parentId).then(page => {
         const parent = page.items.map(discoveryCard).find(item => item?.id === parentId);
         if (parent) {
           resolvedPaths[entry.id] = [...parent.breadcrumb, { id: parentId, title: parent.title }];
@@ -33,7 +33,7 @@
     if (!draft.data.parentId) return [];
     return resolvedPaths[draft.id] ?? [...(draft.breadcrumb ?? []), { id: draft.data.parentId, title: draft.parentTitle ?? 'Parent node' }];
   }
-  $effect(() => { if (owner) { void readTypes('/atlas-preview-api', AbortSignal.timeout(10000)).then(result => types = result).catch(() => { types = []; }); } else types = []; });
+  $effect(() => { if (owner) { void readTypes('/atlas-public-api', AbortSignal.timeout(10000)).then(result => types = result).catch(() => { types = []; }); } else types = []; });
   function typeName(draft: SavedDraft): string {
     if (draft.data.newType) return draft.data.newType.name || 'New node type';
     return types.find(type => type.id === draft.data.typeId)?.name ?? (draft.data.typeId ? 'Node type unavailable' : 'No node type selected');

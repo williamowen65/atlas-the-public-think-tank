@@ -8,7 +8,7 @@
 </script>
 
 <script lang="ts">
-  let { items, onNavigate, hasMore = false, loadOlder, routes = [], onRouteChange, originId, apiBase = '/atlas-preview-api' }: {
+  let { items, onNavigate, hasMore = false, loadOlder, routes = [], onRouteChange, originId, apiBase = '/atlas-public-api' }: {
     items: BreadcrumbItem[]; onNavigate?: (id: string) => void;
     hasMore?: boolean; loadOlder?: LoadOlderAncestors;
     routes?: BreadcrumbRoute[]; onRouteChange?: (route: BreadcrumbRoute) => void;
