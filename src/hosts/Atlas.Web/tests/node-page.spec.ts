@@ -161,7 +161,10 @@ for (const destination of ['storybook', 'spa']) {
       const tabs = page.getByRole('tablist', { name: 'Node discussions and child types' });
       await expect.poll(async () => Math.abs(((await tabs.boundingBox())?.y ?? Infinity) - 20)).toBeLessThanOrEqual(2);
       await expect.poll(() => urls.some(url => url.searchParams.get('ParentNodeId') === root && url.searchParams.get('NodeTypeId') === contribution.typeId)).toBe(true);
-      if (contribution.typeId === evidence) await expect(page.getByText('No nodes found.', { exact: true })).toBeVisible();
+      if (contribution.typeId === evidence) {
+        await expect(page.getByRole('heading', { name: 'Be the first to create an evidence', exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Create an evidence', exact: true })).toBeEnabled();
+      }
       else await expect(page.getByRole('heading', { name: 'Question: A child idea' })).toBeVisible();
       await expect.poll(async () => Math.abs(((await tabs.boundingBox())?.y ?? Infinity) - 20)).toBeLessThanOrEqual(2);
     });
