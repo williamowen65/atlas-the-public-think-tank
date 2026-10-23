@@ -1,6 +1,7 @@
 <script lang="ts">
   import { centerInCard } from '../../actions/centerInCard';
   import ActionButton from '../ActionButton.svelte';
+  import CommunityLinks from '../CommunityLinks.svelte';
   import VotingDial from '../VotingDial.svelte';
 
   import Breadcrumb from '../Breadcrumb.svelte';
@@ -38,7 +39,7 @@
   <div class="card-details">
     {#if node.communities.length}
       <div class="communities" role="group" aria-label="Communities">
-        <strong>{node.communities.length === 1 ? 'Community' : 'Communities'}:</strong> {node.communities.join(', ')}
+        <strong>{node.communities.length === 1 ? 'Community' : 'Communities'}:</strong> <CommunityLinks nodeId={node.id} names={node.communities} />
       </div>
     {/if}
     <div class="navigation-details">
@@ -155,6 +156,7 @@
 
 
   .byline {
+    a { color: inherit; text-decoration: none; &:hover, &:focus-visible { text-decoration: underline; } }
     margin: 0;
     font-size: .85rem;
     color: var(--atlas-muted);
@@ -196,7 +198,8 @@
     font: inherit;
     font-size: .9rem;
     cursor: pointer;
-    text-decoration: underline;
+    text-decoration: none;
+    &:not(:disabled):hover { text-decoration: underline; }
   }
 
 
