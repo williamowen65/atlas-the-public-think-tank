@@ -59,7 +59,8 @@ public sealed class NavigationController(
                 x => new
                 {
                     id = x.Id.Value,
-                    title = moderation.Visibility(x.Id.Value).IsHidden ? moderation.Visibility(x.Id.Value).Notice : x.Title.Value
+                    title = moderation.Visibility(x.Id.Value).IsHidden ? moderation.Visibility(x.Id.Value).Notice : x.Title.Value,
+                    parentIds = x.ParentNodeIds.Select(parent => parent.Value)
                 }
             ),
             segment.HasMore,
