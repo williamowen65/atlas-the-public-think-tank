@@ -59,8 +59,10 @@
     <ContentBlocks {blocks} />
   </div>
   {#if reactions}{@render reactions()}{:else if node.reactions.length}<div class="reactions" role="group" aria-label="Community reactions">{#each node.reactions as reaction}<span>{reaction.label} <strong>{reaction.count}</strong></span>{/each}</div>{/if}
-  <div class="add"><button onclick={() => onAddChild(active === 'comments' ? undefined : active)} disabled={node.status === 'Archived'}>Add {active === 'comments' ? 'a child node' : types.find(type => type.id === active)?.name ?? 'a child node'}</button></div>
-  <div class="tabs" use:reveal role="tablist" aria-label="Node discussions and child types">{#each tabs as tab, index}<button role="tab" id={`${instance}-${tab.id}`} aria-selected={active === tab.id} aria-controls={`${instance}-panel`} tabindex={active === tab.id ? 0 : -1} onclick={() => onTabChange(tab.id)} onkeydown={event => key(event, index)}>{tab.name}</button>{/each}</div>
+  <div class="discussion-toolbar">
+    <div class="add"><button onclick={() => onAddChild(active === 'comments' ? undefined : active)} disabled={node.status === 'Archived'}>Add {active === 'comments' ? 'a child node' : types.find(type => type.id === active)?.name ?? 'a child node'}</button></div>
+    <div class="tabs" use:reveal role="tablist" aria-label="Node discussions and child types">{#each tabs as tab, index}<button role="tab" id={`${instance}-${tab.id}`} aria-selected={active === tab.id} aria-controls={`${instance}-panel`} tabindex={active === tab.id ? 0 : -1} onclick={() => onTabChange(tab.id)} onkeydown={event => key(event, index)}>{tab.name}</button>{/each}</div>
+  </div>
   <div role="tabpanel" id={`${instance}-panel`} aria-labelledby={`${instance}-${active}`} tabindex="0">{@render children()}</div>
 </article>
 <style lang="scss">
@@ -83,8 +85,10 @@
   .description { margin: 0 0 var(--atlas-paragraph-gap,.65rem); white-space: pre-line; }
   .reactions { display: flex; flex-wrap: wrap; gap: .5rem; padding: .5rem var(--card-padding) 0; font-size: .85rem; color: var(--atlas-muted); }
   .reactions span { border: 1px solid var(--atlas-border); border-radius: 999px; padding: .2rem .6rem; }
-  .add { display: flex; justify-content: flex-end; padding: .5rem var(--card-padding); }
-  .tabs { scroll-margin-top: 20px; display: flex; flex-wrap: wrap; gap: .4rem; border-bottom: 1px solid var(--atlas-border); padding: 0 var(--card-padding) .75rem; }
+  .discussion-toolbar { display: flow-root; border-bottom: 1px solid var(--atlas-border); padding: .5rem var(--card-padding) .75rem; }
+  .add { float: right; margin: 0 0 .75rem 1.25rem; }
+  .tabs { scroll-margin-top: 20px; display: block; }
+  .tabs button { margin: 0 .4rem .4rem 0; vertical-align: top; }
   button { font: inherit; padding: .5rem .75rem; cursor: pointer; max-width: 100%; overflow-wrap: anywhere; }
   [aria-selected=true] { font-weight: bold; background: var(--atlas-accent); color: var(--atlas-on-accent); }
   [role=tabpanel] { padding: 1rem var(--card-padding) var(--card-padding); min-width: 0; }
