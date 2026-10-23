@@ -1,6 +1,7 @@
 <script lang="ts">
   import { centerInCard } from '../../actions/centerInCard';
   import ActionButton from '../ActionButton.svelte';
+  import CommunityLinks from '../CommunityLinks.svelte';
   import VotingDial from '../VotingDial.svelte';
 
   import type { NodeCardProps } from './types';
@@ -12,7 +13,7 @@
   <header>
       <div class="eyebrow">
         <span class="type">{node.typeName}</span>
-        {#each node.communities as community}<span>{community}</span>{/each}
+        {#if node.communities.length}<span><CommunityLinks nodeId={node.id} names={node.communities} /></span>{/if}
         {#if node.status === 'Archived'}<span>Archived</span>{/if}
       </div>
       <h2 id={`${instance}-title`}>{node.title}</h2>
@@ -119,6 +120,7 @@
   }
 
   .byline {
+    a { color: inherit; text-decoration: none; &:hover, &:focus-visible { text-decoration: underline; } }
     margin: 0;
     font-size: .85rem;
     color: var(--atlas-muted);
@@ -160,7 +162,8 @@
     font: inherit;
     font-size: .9rem;
     cursor: pointer;
-    text-decoration: underline;
+    text-decoration: none;
+    &:not(:disabled):hover { text-decoration: underline; }
   }
 
   .breadcrumb {
