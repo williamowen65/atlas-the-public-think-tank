@@ -1,8 +1,9 @@
 <script lang="ts">
   import LiveVotingDial from './LiveVotingDial.svelte';
+  import LiveReactions from './LiveReactions.svelte';
   import { onMount } from 'svelte';
   import NodeFeed, { type FeedItem } from './NodeFeed.svelte';
-  import { readDiscovery, discoveryCard, readReactions, readOlderAncestors } from '../api/discovery';
+  import { readDiscovery, discoveryCard, readOlderAncestors } from '../api/discovery';
   import type { DiscoveryFilters } from '../api/discovery';
   import type { NodeCardPresentation } from './NodeCard.svelte';
   let { presentation = 'ribbon-corner', apiBase = '/atlas-preview-api', parentId, typeId, authorId, search = '', filters = {}, onOpenNode, onOpenProfile }: { presentation?: NodeCardPresentation; apiBase?: string; parentId?: string; typeId?: string; authorId?: string; search?: string; filters?: DiscoveryFilters; onOpenNode?: (id: string, typeId?: string) => void; onOpenProfile?: (id: string) => void } = $props();
@@ -33,11 +34,7 @@
       items = [...items, ...additions];
       hasMore = page.hasNextPage;
       nextPage = page.page + 1;
-      await Promise.all(additions.map(item =>
-        readReactions(item.node.id, current.signal, apiBase).then(reactions => {
-          if (!disposed) items = items.map(existing => existing.node.id === item.node.id ? { ...existing, node: { ...existing.node, reactions } } : existing);
-        }).catch(() => { if (!disposed) items = items.map(existing => existing.node.id === item.node.id ? { ...existing, reactionError: true } : existing); })
-      ));
+
     } catch {
       if (!disposed) error = 'Could not load more nodes. Please retry.';
     } finally {
@@ -49,4 +46,4 @@
   // reads and writes loading/items, which can repeatedly restart requests.
   onMount(() => { void load(); return () => { disposed = true; controller?.abort(); }; });
 </script>
-<NodeFeed {onOpenProfile} onComments={id => onOpenNode ? onOpenNode(id, 'comments') : window.location.assign(`/nodes?id=${encodeURIComponent(id)}&type=comments#contributions`)} onChildType={(id, childType) => onOpenNode ? onOpenNode(id, childType) : window.location.assign(`/nodes?id=${encodeURIComponent(id)}&type=${encodeURIComponent(childType)}#contributions`)} onReadMore={onOpenNode ?? (id => window.location.assign(`/nodes?id=${encodeURIComponent(id)}`))} onNavigate={onOpenNode} {items} {loading} {hasMore} {error} {presentation} onLoadMore={() => void load()} loadOlderAncestors={id => id ? readOlderAncestors(id, AbortSignal.timeout(10000), apiBase) : Promise.resolve({ items: [], hasMore: false })}>{#snippet renderVoting(item)}<LiveVotingDial nodeId={item.node.id} initialAverage={item.average} initialTotalVotes={item.totalVotes} archived={item.node.status === 'Archived'} />{/snippet}</NodeFeed>
+<NodeFeed {onOpenProfile} onComments={id => onOpenNode ? onOpenNode(id, 'comments') : window.location.assign(`/nodes?id=${encodeURIComponent(id)}&type=comments#contributions`)} onChildType={(id, childType) => onOpenNode ? onOpenNode(id, childType) : window.location.assign(`/nodes?id=${encodeURIComponent(id)}&type=${encodeURIComponent(childType)}#contributions`)} onReadMore={onOpenNode ?? (id => window.location.assign(`/nodes?id=${encodeURIComponent(id)}`))} onNavigate={onOpenNode} {items} {loading} {hasMore} {error} {presentation} onLoadMore={() => void load()} loadOlderAncestors={id => id ? readOlderAncestors(id, AbortSignal.timeout(10000), apiBase) : Promise.resolve({ items: [], hasMore: false })}>{#snippet renderVoting(item)}<LiveVotingDial nodeId={item.node.id} initialAverage={item.average} initialTotalVotes={item.totalVotes} archived={item.node.status === 'Archived'} />{/snippet}{#snippet renderReactions(item)}<LiveReactions nodeId={item.node.id} archived={item.node.status === 'Archived'} {apiBase} />{/snippet}</NodeFeed>
