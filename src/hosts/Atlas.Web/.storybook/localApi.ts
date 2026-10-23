@@ -14,7 +14,7 @@ export const anonymousPreview: Plugin = {
       }
       if (!/^\/atlas-preview-api\/communities\/node\/[0-9a-f-]{36}(?:\?|$)/i.test(request.url) && !/^\/atlas-preview-api\/communities(?:\/([0-9a-f-]{36})(?:\/nodes)?|\/participant\/[0-9a-f-]{36})?(?:\?|$)/i.test(request.url) && !/^\/atlas-preview-api\/participants(?:\?(?:[^#]*)|\/([0-9a-f-]{36})(?:\?.*)?|$)/i.test(request.url) && !/^\/atlas-preview-api\/nodes(?:\?|$)/.test(request.url)
         && !/^\/atlas-preview-api\/catalog\/node-types(?:\?|$)/.test(request.url)
-        && !/^\/atlas-preview-api\/nodes\/[0-9a-f-]{36}(?:\/(?:ancestors|reactions|description|comments))?(?:\?|$)/i.test(request.url)) {
+        && !/^\/atlas-preview-api\/nodes\/[0-9a-f-]{36}(?:\/(?:ancestors|parents|reactions|description|comments))?(?:\?|$)/i.test(request.url)) {
         response.statusCode = 404;
         response.end('Only public node discovery is available in this preview.');
         return;
