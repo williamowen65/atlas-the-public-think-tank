@@ -1,22 +1,28 @@
 <script lang="ts" module>
   /** Oldest ancestor first; omit id when the source supplies display text only. */
   export interface BreadcrumbItem { id?: string; title: string }
+  /** Alternative parent routes for a node; each route is oldest ancestor first. */
+  export interface BreadcrumbRoute { id: string; label: string; items: BreadcrumbItem[] }
   export interface BreadcrumbPage { items: BreadcrumbItem[]; hasMore: boolean }
   export type LoadOlderAncestors = (oldestId?: string) => Promise<BreadcrumbPage>;
 </script>
 
 <script lang="ts">
-  let { items, onNavigate, hasMore = false, loadOlder }: {
+  let { items, onNavigate, hasMore = false, loadOlder, routes = [], onRouteChange }: {
     items: BreadcrumbItem[]; onNavigate?: (id: string) => void;
     hasMore?: boolean; loadOlder?: LoadOlderAncestors;
+    routes?: BreadcrumbRoute[]; onRouteChange?: (route: BreadcrumbRoute) => void;
   } = $props();
   let older = $state<BreadcrumbItem[]>([]);
+  let chosenRoute = $state<string | null>(null);
+  let routeMenuOpen = $state(false);
   let more = $state(false);
   let loading = $state(false);
   let error = $state('');
   let generation = 0;
-  const allItems = $derived([...older, ...items]);
-  $effect(() => { items; hasMore; loadOlder; generation++; older = []; more = hasMore; loading = false; error = ''; });
+  const selectedRoute = $derived(routes.find(route => route.id === chosenRoute));
+  const allItems = $derived(selectedRoute ? selectedRoute.items : [...older, ...items]);
+  $effect(() => { items; hasMore; loadOlder; routes; generation++; older = []; more = hasMore; loading = false; error = ''; chosenRoute = null; routeMenuOpen = false; });
 
   async function requestOlder() {
     if (!more || loading || !loadOlder) return;
@@ -83,7 +89,7 @@
         }
       }}>
       <ol>
-        {#if more && loadOlder}
+        {#if more && loadOlder && !selectedRoute}
           <li class="load-older"><button type="button" disabled={loading} onclick={requestOlder}>{loading ? 'Loading…' : 'Load older ancestors'}</button></li>
         {/if}
         {#each allItems as item, index (item.id ?? index)}
@@ -92,6 +98,18 @@
               <button type="button" onclick={() => onNavigate?.(item.id!)}>{item.title}</button>
             {:else}
               <span>{item.title}</span>
+            {/if}
+            {#if index === allItems.length - 1 && routes.length > 1}
+              <div class="route-switcher">
+                <button type="button" class="route-toggle" aria-label="Choose another parent path" aria-expanded={routeMenuOpen} onclick={() => routeMenuOpen = !routeMenuOpen}>⌄</button>
+                {#if routeMenuOpen}
+                  <div class="route-menu" role="group" aria-label="Alternative parent paths">
+                    {#each routes as route (route.id)}
+                      <button type="button" aria-current={(chosenRoute ?? routes[0].id) === route.id ? 'true' : undefined} onclick={() => { chosenRoute = route.id; routeMenuOpen = false; older = []; more = false; onRouteChange?.(route); }}>{route.label}</button>
+                    {/each}
+                  </div>
+                {/if}
+              </div>
             {/if}
           </li>
         {/each}
@@ -155,6 +173,11 @@
     }
   }
 
+  .route-switcher { display: inline-flex; position: relative; vertical-align: middle; }
+  .route-toggle { padding: .55rem .55rem; border-left: 1px solid #ffffff55; }
+  .route-menu { position: absolute; z-index: 100; top: 100%; right: 0; min-width: 17rem; max-width: min(24rem, 85vw); background: var(--atlas-surface); border: 1px solid var(--atlas-border); border-radius: .3rem; box-shadow: 0 6px 22px #0003; color: var(--atlas-text); }
+  .route-menu button { width: 100%; white-space: normal; text-align: left; padding: .65rem .8rem; color: inherit; }
+  .route-menu button:hover, .route-menu button[aria-current='true'] { background: var(--atlas-bg); text-decoration: none; }
   .load-older button {
     min-width: 13rem;
   }
