@@ -101,7 +101,7 @@
   </div>
 </header>
 <style lang="scss">
-  .atlas-header { position:sticky;top:0;z-index:30;background:transparent;transition:transform .18s ease;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;column-gap:clamp(1rem,2vw,2rem);padding:1rem 0;border-bottom:0; }
+  .atlas-header { position:sticky;top:0;z-index:30;background:var(--atlas-bg);transition:transform .18s ease;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;column-gap:clamp(1rem,2vw,2rem);padding:1rem 0;border-bottom:0; }
   .atlas-header.hidden{transform:translateY(calc(-100% - 1rem));pointer-events:none;}
   .search-slot{min-width:0;align-self:center;}
   /* Flatten the search wrappers so the search row stays in the same grid cell
