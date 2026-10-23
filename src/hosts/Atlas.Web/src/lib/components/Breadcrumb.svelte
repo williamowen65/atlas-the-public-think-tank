@@ -16,6 +16,22 @@
   let older = $state<BreadcrumbItem[]>([]);
   let chosenRoute = $state<string | null>(null);
   let openRouteMenu = $state(false);
+  let menuPosition = $state({ top: 0, left: 0 });
+  let preserveScroll = false;
+  function toggleRouteMenu(event: MouseEvent) {
+    if (openRouteMenu) { openRouteMenu = false; return; }
+    const rect = event.currentTarget instanceof HTMLElement ? event.currentTarget.getBoundingClientRect() : null;
+    if (rect) menuPosition = { top: rect.bottom + 4, left: Math.max(8, Math.min(rect.left, window.innerWidth - 340)) };
+    openRouteMenu = true;
+  }
+  function selectRoute(route: BreadcrumbRoute) {
+    preserveScroll = true;
+    chosenRoute = route.id;
+    openRouteMenu = false;
+    older = [];
+    more = false;
+    onRouteChange?.(route);
+  }
   let more = $state(false);
   let loading = $state(false);
   let error = $state('');
@@ -23,7 +39,7 @@
   const selectedRoute = $derived(routes.find(route => route.id === chosenRoute));
   const divergenceIndex = $derived(routes.length > 1 ? (routes[0].divergenceIndex ?? Math.max(0, items.length - 1)) : -1);
   const allItems = $derived(selectedRoute ? selectedRoute.items : [...older, ...items]);
-  $effect(() => { items; hasMore; loadOlder; routes; generation++; older = []; more = hasMore; loading = false; error = ''; chosenRoute = null; openRouteMenu = false; });
+  $effect(() => { items; hasMore; loadOlder; routes; generation++; older = []; more = hasMore; loading = false; error = ''; });
 
   async function requestOlder() {
     if (!more || loading || !loadOlder) return;
@@ -69,7 +85,8 @@
           pinned = false;
           viewport.scrollLeft += viewport.scrollWidth - width;
           width = viewport.scrollWidth;
-        } else { pinned = true; scrollToEnd(); }
+        } else if (preserveScroll) { preserveScroll = false; pinned = false; width = viewport.scrollWidth; }
+        else { pinned = true; scrollToEnd(); }
         previous = next;
       },
       destroy() { observer.disconnect(); viewport.removeEventListener('scroll', onScroll); },
@@ -77,6 +94,8 @@
   }
 
 </script>
+
+<svelte:window onclick={event => { if (openRouteMenu && event.target instanceof Element && !event.target.closest('.route-choice') && !event.target.closest('.route-menu')) openRouteMenu = false; }} onkeydown={event => { if (event.key === 'Escape') openRouteMenu = false; }} />
 
 {#if allItems.length || more}
   <nav aria-label="Node breadcrumb">
@@ -102,22 +121,23 @@
             {/if}
             {#if index === divergenceIndex && routes.length > 1}
               <div class="route-choice">
-                <button type="button" class="route-toggle" aria-label="Choose another parent path" aria-expanded={openRouteMenu} onclick={() => openRouteMenu = !openRouteMenu}>
+                <button type="button" class="route-toggle" aria-label="Choose another parent path" aria-expanded={openRouteMenu} onclick={toggleRouteMenu}>
                   <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14"><path d="m3 6 5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </button>
-                {#if openRouteMenu}
-                  <div class="route-menu" role="group" aria-label="Parent paths">
-                    {#each routes as route (route.id)}
-                      <button type="button" class:chosen={(chosenRoute ?? routes[0].id) === route.id} onclick={() => { chosenRoute = route.id; openRouteMenu = false; older = []; more = false; onRouteChange?.(route); }}>{route.label}</button>
-                    {/each}
-                  </div>
-                {/if}
+
               </div>
             {/if}
           </li>
         {/each}
       </ol>
     </div>
+    {#if openRouteMenu}
+      <div class="route-menu" role="group" aria-label="Other parent paths" style:top={menuPosition.top + 'px'} style:left={menuPosition.left + 'px'}>
+        {#each routes.filter(route => route.id !== (chosenRoute ?? routes[0].id)) as route (route.id)}
+          <button type="button" onclick={() => selectRoute(route)}>{route.label}</button>
+        {/each}
+      </div>
+    {/if}
     {#if error}<p role="alert">{error} <button type="button" onclick={requestOlder}>Retry</button></p>{/if}
   </nav>
 {/if}
@@ -179,10 +199,9 @@
   li { display: flex; align-items: center; }
   .route-choice { display: flex; align-items: center; position: relative; }
   .route-toggle { display: flex; align-items: center; justify-content: center; padding: .5rem .6rem; border-left: 1px solid #ffffff55; }
-  .route-menu { position: absolute; z-index: 100; left: 0; top: 100%; width: max-content; max-width: min(25rem, 80vw); padding: .3rem; background: var(--atlas-surface); color: var(--atlas-text); border: 1px solid var(--atlas-border); border-radius: .35rem; box-shadow: 0 5px 18px #0003; }
+  .route-menu { position: fixed; z-index: 1000; width: max-content; max-width: min(20rem, 80vw); padding: .3rem; background: var(--atlas-surface); color: var(--atlas-text); border: 1px solid var(--atlas-border); border-radius: .35rem; box-shadow: 0 5px 18px #0003; }
   .route-menu button { display: block; width: 100%; padding: .55rem .7rem; color: inherit; text-align: left; white-space: normal; }
   .route-menu button:hover, .route-menu button.chosen { background: var(--atlas-bg); }
-  .viewport:has(.route-menu) { overflow: visible; }
   .load-older button {
     min-width: 13rem;
   }
