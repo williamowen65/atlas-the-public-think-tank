@@ -46,7 +46,7 @@ export function discoveryCard(item: DiscoveryItem): NodeCardData | null {
   return {
     id: item.nodeId, title: card.title, typeName: card.typeName, authorName: card.authorName, authorId: card.authorId ?? undefined,
     status: card.status === 'Archived' ? 'Archived' : 'Active', createdAt: card.createdAt,
-    description: card.shortDescription ?? '', communities: card.communities ? [card.communities] : [],
+    description: card.shortDescription ?? '', communities: card.communities && card.communities.trim().toLowerCase() !== 'none' ? card.communities.split(',').map(name => name.trim()).filter(Boolean) : [],
     breadcrumb: card.breadcrumbSegment ? [...card.breadcrumbSegment.items].reverse().map(item => ({ id: item.nodeId, title: item.label })) : card.breadcrumb ? [{ title: card.breadcrumb }] : [], related: [], requestedTypes: [], reactions: [],
     childTypes: card.childTypes ?? [],
     reactionSummary: card.reactions, subNodeSummary: card.subNodes, commentCount: card.commentCount,
