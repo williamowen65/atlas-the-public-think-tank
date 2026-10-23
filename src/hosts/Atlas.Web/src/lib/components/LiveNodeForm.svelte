@@ -42,7 +42,7 @@
     }
     catch { savedNotice = 'Draft could not be saved in this browser.'; return false; }
   }
-  onRegisterClose?.(savePrivateDraft);
+  onMount(() => { onRegisterClose?.(savePrivateDraft); });
   const signal = () => AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]);
   async function load() { loading = true; error = ''; controller?.abort(); controller = new AbortController(); try { types = await readTypes(apiBase, signal()); } catch { if (!controller.signal.aborted) error = 'Could not load node types.'; } finally { loading = false; } }
   onMount(() => { void load(); return () => controller?.abort(); });

@@ -2,6 +2,7 @@
   export interface NodeDraft { title: string; shortDescription: string; markdown: string; typeId: string | null; requestedTypeIds: string[]; parentId?: string; newType?: { name: string; description: string; autoPluralize?: boolean } }
 </script>
 <script lang="ts">
+  import { untrack } from 'svelte';
   import Breadcrumb, { type BreadcrumbItem } from './Breadcrumb.svelte';
   import MarkdownContent from './MarkdownContent.svelte';
   import type { NodeType } from '../api/nodePage';
@@ -9,8 +10,10 @@
     types: NodeType[]; initialDraft?: NodeDraft; parentId?: string; parentTitle?: string; initialTypeId?: string; breadcrumb?: BreadcrumbItem[]; focusOnMount?: boolean;
     onPreview?: (draft: NodeDraft) => void; onSubmit?: (draft: NodeDraft) => void; submitting?: boolean;
   } = $props();
-  let title = $state(initialDraft?.title ?? ''); let shortDescription = $state(initialDraft?.shortDescription ?? ''); let markdown = $state(initialDraft?.markdown ?? '');
-  let typeId = $state(initialDraft?.newType ? 'new' : initialDraft?.typeId ?? ''); let requestedTypeIds = $state<string[]>(initialDraft?.requestedTypeIds ?? []);
+  // Seed editable fields once; later prop updates must not overwrite user edits.
+  const startingDraft = untrack(() => initialDraft);
+  let title = $state(startingDraft?.title ?? ''); let shortDescription = $state(startingDraft?.shortDescription ?? ''); let markdown = $state(startingDraft?.markdown ?? '');
+  let typeId = $state(startingDraft?.newType ? 'new' : startingDraft?.typeId ?? ''); let requestedTypeIds = $state<string[]>(startingDraft?.requestedTypeIds ?? []);
   let requestedType = $state('');
   const path = $derived(parentId ? [...breadcrumb, { id: parentId, title: parentTitle ?? parentId }] : breadcrumb);
   function reveal(control: HTMLSelectElement) {
@@ -20,7 +23,7 @@
       control.closest('form')?.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
     });
   }
-  let typeName = $state(initialDraft?.newType?.name ?? ''); let typeDescription = $state(initialDraft?.newType?.description ?? ''); let autoPluralize = $state(initialDraft?.newType?.autoPluralize ?? true);
+  let typeName = $state(startingDraft?.newType?.name ?? ''); let typeDescription = $state(startingDraft?.newType?.description ?? ''); let autoPluralize = $state(startingDraft?.newType?.autoPluralize ?? true);
   const instance = $props.id();
   $effect(() => { if (!typeId && types.length) typeId = initialTypeId || types[0].id; });
   function draft(): NodeDraft { return { title: title.trim(), shortDescription: shortDescription.trim(), markdown, typeId: typeId === 'new' ? null : typeId, requestedTypeIds, parentId, ...(typeId === 'new' ? { newType: { name: typeName.trim(), description: typeDescription.trim(), autoPluralize } } : {}) }; }

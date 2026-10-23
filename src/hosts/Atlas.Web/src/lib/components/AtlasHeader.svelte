@@ -41,7 +41,7 @@
       loggingOut = false;
     }
   }
-  let accountElement: HTMLDivElement;
+  let accountElement = $state<HTMLDivElement>();
   let mobileElement: HTMLDetailsElement;
   function closeOnOutside(event: PointerEvent) {
     if (menuOpen && event.target instanceof Node && !accountElement?.contains(event.target)) menuOpen = false;
@@ -70,15 +70,15 @@
       <div class="account" bind:this={accountElement}>
         <button type="button" class="avatar" aria-label="Open account menu" aria-expanded={menuOpen} onclick={() => menuOpen = !menuOpen}>{initial}</button>
         {#if menuOpen}
-          <nav class="account-menu" aria-label="Account navigation" onclick={closeOnNavigation}>
-            <a href="/profiles/me" onclick={event => { if (onNavigate) { event.preventDefault(); onNavigate("profile"); } }}>My profile</a>
-            <a href="/me/drafts">My drafts</a>
-            <a href="/me/settings">Settings</a>
+          <nav class="account-menu" aria-label="Account navigation">
+            <a href="/profiles/me" onclick={event => { closeOnNavigation(); if (onNavigate) { event.preventDefault(); onNavigate("profile"); } }}>My profile</a>
+            <a href="/me/drafts" onclick={closeOnNavigation}>My drafts</a>
+            <a href="/me/settings" onclick={closeOnNavigation}>Settings</a>
             <hr />
-            <a href="/about">About Atlas</a>
-            <a href="/feedback">Give feedback</a>
+            <a href="/about" onclick={closeOnNavigation}>About Atlas</a>
+            <a href="/feedback" onclick={closeOnNavigation}>Give feedback</a>
             <hr />
-            <button type="button" class="logout-action" disabled={loggingOut} onclick={() => void logOut()}>{loggingOut ? 'Logging out…' : 'Log out'}</button>
+            <button type="button" class="logout-action" disabled={loggingOut} onclick={() => { closeOnNavigation(); void logOut(); }}>{loggingOut ? 'Logging out…' : 'Log out'}</button>
           </nav>
         {/if}
       </div>
@@ -87,15 +87,15 @@
     {/if}
     <details class="mobile-menu" bind:this={mobileElement}>
       <summary aria-label="Open navigation menu">☰</summary>
-      <nav aria-label="Mobile navigation" onclick={closeOnNavigation}>
-        <a href="/">Discover</a><a href="/communities">Communities</a><a href="/new">Create</a>
+      <nav aria-label="Mobile navigation">
+        <a href="/" onclick={closeOnNavigation}>Discover</a><a href="/communities" onclick={closeOnNavigation}>Communities</a><a href="/new" onclick={closeOnNavigation}>Create</a>
         {#if authenticated}
-          <hr /><a href="/profiles/me">My profile</a><a href="/me/drafts">My drafts</a><a href="/me/settings">Settings</a>
-          <button type="button" class="logout-action" onclick={() => void logOut()}>Log out</button>
+          <hr /><a href="/profiles/me" onclick={closeOnNavigation}>My profile</a><a href="/me/drafts" onclick={closeOnNavigation}>My drafts</a><a href="/me/settings" onclick={closeOnNavigation}>Settings</a>
+          <button type="button" class="logout-action" onclick={() => { closeOnNavigation(); void logOut(); }}>Log out</button>
         {:else}
-          <a href="/login">Log in</a><a href="/register">Sign up</a>
+          <a href="/login" onclick={closeOnNavigation}>Log in</a><a href="/register" onclick={closeOnNavigation}>Sign up</a>
         {/if}
-        <hr /><a href="/about">About Atlas</a><a href="/feedback">Give feedback</a>
+        <hr /><a href="/about" onclick={closeOnNavigation}>About Atlas</a><a href="/feedback" onclick={closeOnNavigation}>Give feedback</a>
       </nav>
     </details>
   </div>
@@ -115,10 +115,9 @@
   .atlas-header.filters-open .brand{grid-column:1;grid-row:1;}
   .atlas-header::after{content:'';position:absolute;bottom:0;left:50%;width:100vw;transform:translateX(-50%);border-bottom:1px solid var(--atlas-border);pointer-events:none;}
   .brand {display:flex;flex-direction:column;justify-content:center;color:var(--atlas-text);text-decoration:none;white-space:nowrap;strong{font-size:1.8rem;}span{font-size:.85rem;color:var(--atlas-muted);}}
-  .search {display:flex;align-items:center;width:100%;min-width:0;border:1px solid var(--atlas-border);border-radius:.5rem;box-sizing:border-box;input{min-width:0;width:100%;flex:1;border:0;background:transparent;color:var(--atlas-text);padding:.55rem;}button{flex-shrink:0;border:0;background:transparent;color:var(--atlas-text);cursor:pointer;font-size:1.4rem;padding:0 .65rem;}.close-search{display:none;}}
-  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
   .right-group{display:flex;align-items:center;justify-content:flex-end;gap:1rem;min-width:0;align-self:center;}
-  .primary,.account-menu,.mobile-menu nav{margin:0;}\n   .primary,.auth{display:flex;align-items:center;gap:1rem;white-space:nowrap;font-family:inherit;font-size:.9rem;font-weight:inherit;line-height:1.4;} .primary a,.auth a{display:inline-flex;align-items:center;justify-content:center;min-height:2.5rem;box-sizing:border-box;font:inherit;}
+  .primary,.account-menu,.mobile-menu nav{margin:0;}
+  .primary,.auth{display:flex;align-items:center;gap:1rem;white-space:nowrap;font-family:inherit;font-size:.9rem;font-weight:inherit;line-height:1.4;} .primary a,.auth a{display:inline-flex;align-items:center;justify-content:center;min-height:2.5rem;box-sizing:border-box;font:inherit;}
   a{color:var(--atlas-text);text-decoration:none;}a:hover{text-decoration:underline;}a[aria-current]{font-weight:700;text-underline-offset:.3em;}
   .signup{border:1px solid var(--atlas-border);border-radius:.5rem;padding:.45rem .7rem;}
   .account{position:relative;}.avatar{width:2.25rem;height:2.25rem;border:1px solid var(--atlas-border);border-radius:50%;background:var(--atlas-surface);color:var(--atlas-text);cursor:pointer;font-weight:700;}

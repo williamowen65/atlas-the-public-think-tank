@@ -20,8 +20,8 @@
   let menuPosition = $state({ top: 0, left: 0 });
   let preserveScroll = false;
   let pendingAnchor: { id?: string; offset: number } | null = null;
-  let breadcrumbViewport: HTMLElement | undefined;
-  let breadcrumbList: HTMLOListElement | undefined;
+  let breadcrumbViewport = $state<HTMLElement>();
+  let breadcrumbList = $state<HTMLOListElement>();
   let liveChoices = $state<Record<string, { id: string; title: string }[]>>({});
   let livePath = $state<BreadcrumbItem[] | null>(null);
   let liveMenuChild = $state<string | null>(null);
@@ -285,7 +285,7 @@
   .route-toggle { display: flex; align-items: center; justify-content: center; padding: .5rem .6rem; border-left: 1px solid #ffffff55; }
   .route-menu { position: fixed; z-index: 1000; width: max-content; max-width: min(20rem, 80vw); padding: .3rem; background: var(--atlas-surface); color: var(--atlas-text); border: 1px solid var(--atlas-border); border-radius: .35rem; box-shadow: 0 5px 18px #0003; }
   .route-menu button { display: block; width: 100%; padding: .55rem .7rem; color: inherit; text-align: left; white-space: normal; }
-  .route-menu button:hover, .route-menu button.chosen { background: var(--atlas-bg); }
+  .route-menu button:hover { background: var(--atlas-bg); }
   .load-older button {
     min-width: 13rem;
   }

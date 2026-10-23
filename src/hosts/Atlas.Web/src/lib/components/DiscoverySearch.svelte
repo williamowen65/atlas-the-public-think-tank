@@ -98,11 +98,11 @@
 
 <style>
 
-  .feed-intro{max-width:48rem;margin:2rem auto;}h1{margin-bottom:.5rem;}p{color:var(--atlas-muted);}
+  p{color:var(--atlas-muted);}
   .filter-bar{position:sticky;top:0;z-index:12;max-width:48rem;margin:0 auto 1.25rem;padding:.75rem;background:var(--atlas-surface);border:1px solid var(--atlas-border);border-radius:var(--atlas-radius);box-sizing:border-box;}
   .search-line{display:flex;gap:.4rem;flex-wrap:wrap;}.search-line input{flex:1 1 15rem;min-width:0;}
   input,select,button{font:inherit;color:var(--atlas-text);background:var(--atlas-surface);border:1px solid var(--atlas-border);border-radius:.4rem;padding:.5rem;}
-  button{cursor:pointer;}.chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.65rem;}.chips button{font-size:.8rem;padding:.3rem .55rem;}.clear{margin-left:auto;}
+  button{cursor:pointer;}
   .toolbox{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:.75rem;margin-top:.85rem;padding-top:.85rem;border-top:1px solid var(--atlas-border);max-height:55vh;overflow-y:auto;}
   .toolbox label{display:flex;flex-direction:column;gap:.3rem;font-size:.85rem;}.toolbox input,.toolbox select{width:100%;box-sizing:border-box;}
   .toolbox .check{flex-direction:row;align-items:center;}.toolbox .check input{width:auto;}

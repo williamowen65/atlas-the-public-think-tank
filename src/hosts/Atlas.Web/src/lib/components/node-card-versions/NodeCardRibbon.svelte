@@ -122,11 +122,6 @@
         line-height: 1.7;
       }
     }
-    .communities {
-      margin: 0;
-      padding: 0;
-      border: 0;
-    }
     .navigation-details {
       min-width: min(300px, 100%);
       max-width: 100%;

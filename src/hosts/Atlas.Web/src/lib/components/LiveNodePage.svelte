@@ -32,9 +32,9 @@
     switching = true;
     try { if (await closeChildForm()) active = id; } finally { switching = false; }
   }
-  function selectDraftType(draft: NodeDraft) {
+  function selectDraftType(draft: NodeDraft | null) {
     editingDraft = draft;
-    if (createType === null) return;
+    if (createType === null || !draft) return;
     const selected = draft.newType ? 'draft-new-type' : draft.typeId;
     if (selected) active = selected;
   }
@@ -68,9 +68,9 @@
 </script>
 {#if loading}<p role="status">Loading node…</p>{:else if error}<p role="alert">{error}</p><button onclick={() => retry++}>Retry node</button>{:else if node}
   {#key node.id}
-    <NodePage {apiBase} {onOpenProfile} revealChildren={!!initialTypeId && active === initialTypeId} {hasMoreAncestors} loadOlderAncestors={id => id ? readOlderAncestors(id, AbortSignal.timeout(10000), apiBase) : Promise.resolve({ items: [], hasMore: false })} {node} {blocks} {types} {active} draftTab={createType !== null && editingDraft ? { id: editingDraft.newType ? 'draft-new-type' : editingDraft.typeId ?? createType, name: editingDraft.newType ? (editingDraft.newType.name || 'New node type') + ' (draft)' : (types.find(type => type.id === editingDraft.typeId)?.name ?? 'Child') + ' (draft)' } : undefined} {average} {totalVotes} onNavigate={openNode} onTabChange={id => void changeTab(id)} onAddChild={id => { if (createType !== null) return; createType = id ?? types[0]?.id ?? ''; active = createType; }}>
+    <NodePage {apiBase} {onOpenProfile} revealChildren={!!initialTypeId && active === initialTypeId} {hasMoreAncestors} loadOlderAncestors={id => id ? readOlderAncestors(id, AbortSignal.timeout(10000), apiBase) : Promise.resolve({ items: [], hasMore: false })} {node} {blocks} {types} {active} draftTab={createType !== null && editingDraft ? { id: editingDraft.newType ? 'draft-new-type' : editingDraft.typeId ?? createType, name: editingDraft.newType ? (editingDraft.newType.name || 'New node type') + ' (draft)' : (types.find(type => type.id === editingDraft?.typeId)?.name ?? 'Child') + ' (draft)' } : undefined} {average} {totalVotes} onNavigate={openNode} onTabChange={id => void changeTab(id)} onAddChild={id => { if (createType !== null) return; createType = id ?? types[0]?.id ?? ''; active = createType; }}>
       {#snippet voting()}{#if node}<LiveVotingDial nodeId={node.id} initialAverage={average} initialTotalVotes={totalVotes} archived={node.status === 'Archived'} />{/if}{/snippet}
-      {#snippet reactions()}<LiveReactions nodeId={node.id} archived={node.status === 'Archived'} />{/snippet}
+      {#snippet reactions()}{#if node}<LiveReactions nodeId={node.id} archived={node.status === 'Archived'} />{/if}{/snippet}
       {#if createType !== null}<div class="child-form"><button onclick={() => void closeChildForm()}>Close child form</button>{#key createType}<LiveNodeForm parentId={node.id} parentTitle={node.title} initialTypeId={createType} onCreated={openNode} onDraftChange={selectDraftType} onRegisterClose={close => saveChildDraft = close} breadcrumb={node.breadcrumb} focusOnMount {apiBase} />{/key}</div>{/if}
       {#key active}{#if active === 'comments'}<CommentsPanel nodeId={node.id} {apiBase} onAdded={() => { if (node) node = { ...node, commentCount: node.commentCount + 1 }; }} />{:else if active === 'draft-new-type' || (createType !== null && active === editingDraft?.typeId && !node.childTypes?.some(type => type.typeId === active))}<p>The child node draft is open above.</p>{:else}<LiveNodeFeed {onOpenProfile} parentId={node.id} typeId={active} {apiBase} onOpenNode={openNode} emptyTypeName={types.find(type => type.id === active)?.name ?? node.childTypes?.find(type => type.typeId === active)?.label.replace(/^\s*\d+\s+/, '').replace(/\s*\(\d+\)\s*$/, '').replace(/ies$/i, 'y').replace(/s$/i, '')} onCreateFirst={() => { if (createType === null) { createType = active; } }} />{/if}{/key}
     </NodePage>

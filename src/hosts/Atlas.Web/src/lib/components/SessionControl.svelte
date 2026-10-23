@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { commentRequest, CommentRequestError } from '../api/comments';
   let { sessionBase = '/atlas-session-api', prompt = 'Sign in to Atlas', expanded = false, startRegister = false, focusOnMount = false, hideWhenSignedIn = false, onSession }: { sessionBase?: string; prompt?: string; expanded?: boolean; startRegister?: boolean; focusOnMount?: boolean; hideWhenSignedIn?: boolean; onSession?: (id: string | null) => void } = $props();
   let participantId = $state<string | null>(null);
   let checking = $state(true); let busy = $state(false); let error = $state('');
-  let email = $state(''); let password = $state(''); let displayName = $state(''); let registering = $state(startRegister); let registered = $state(false);
+  let email = $state(''); let password = $state(''); let displayName = $state(''); let registering = $state(untrack(() => startRegister)); let registered = $state(false);
   let generation = 0;
   const instance = $props.id();
   const controller = new AbortController();

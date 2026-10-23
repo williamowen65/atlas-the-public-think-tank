@@ -6,7 +6,7 @@ const meta = {
   component: AtlasHeader,
   args: { active: 'discover', authenticated: false, displayName: 'Atlas User' },
   argTypes: {
-    active: { control: 'select', options: ['discover', 'about', 'components', 'create'] },
+    active: { control: 'select', options: [null, 'discover', 'communities', 'create', 'login', 'register'] },
     authenticated: { control: 'boolean' },
     displayName: { control: 'text' }
   }
