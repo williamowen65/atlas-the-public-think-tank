@@ -15,14 +15,13 @@
   } = $props();
   let older = $state<BreadcrumbItem[]>([]);
   let chosenRoute = $state<string | null>(null);
-  let routeMenuOpen = $state(false);
   let more = $state(false);
   let loading = $state(false);
   let error = $state('');
   let generation = 0;
   const selectedRoute = $derived(routes.find(route => route.id === chosenRoute));
   const allItems = $derived(selectedRoute ? selectedRoute.items : [...older, ...items]);
-  $effect(() => { items; hasMore; loadOlder; routes; generation++; older = []; more = hasMore; loading = false; error = ''; chosenRoute = null; routeMenuOpen = false; });
+  $effect(() => { items; hasMore; loadOlder; routes; generation++; older = []; more = hasMore; loading = false; error = ''; chosenRoute = null; });
 
   async function requestOlder() {
     if (!more || loading || !loadOlder) return;
@@ -100,14 +99,9 @@
               <span>{item.title}</span>
             {/if}
             {#if index === allItems.length - 1 && routes.length > 1}
-              <div class="route-switcher">
-                <button type="button" class="route-toggle" aria-label="Choose another parent path" aria-expanded={routeMenuOpen} onclick={() => routeMenuOpen = !routeMenuOpen}>⌄</button>
-                {#if routeMenuOpen}
-                  <div class="route-menu" role="group" aria-label="Alternative parent paths">
-                    {#each routes as route (route.id)}
-                      <button type="button" aria-current={(chosenRoute ?? routes[0].id) === route.id ? 'true' : undefined} onclick={() => { chosenRoute = route.id; routeMenuOpen = false; older = []; more = false; onRouteChange?.(route); }}>{route.label}</button>
-                    {/each}
-                  </div>
+              <select class="route-picker" aria-label="Choose parent path" value={chosenRoute ?? routes[0].id} onchange={event => { const route = routes.find(option => option.id === event.currentTarget.value); if (!route) return; chosenRoute = route.id; older = []; more = false; onRouteChange?.(route); }}>
+                {#each routes as route (route.id)}<option value={route.id}>{route.label}</option>{/each}
+              </select>
                 {/if}
               </div>
             {/if}
@@ -173,11 +167,8 @@
     }
   }
 
-  .route-switcher { display: inline-flex; position: relative; vertical-align: middle; }
-  .route-toggle { padding: .55rem .55rem; border-left: 1px solid #ffffff55; }
-  .route-menu { position: absolute; z-index: 100; top: 100%; right: 0; min-width: 17rem; max-width: min(24rem, 85vw); background: var(--atlas-surface); border: 1px solid var(--atlas-border); border-radius: .3rem; box-shadow: 0 6px 22px #0003; color: var(--atlas-text); }
-  .route-menu button { width: 100%; white-space: normal; text-align: left; padding: .65rem .8rem; color: inherit; }
-  .route-menu button:hover, .route-menu button[aria-current='true'] { background: var(--atlas-bg); text-decoration: none; }
+  .route-picker { max-width: 2.3rem; border: 0; border-left: 1px solid #ffffff55; background: var(--crumb-color); color: white; font: inherit; padding: .4rem .2rem; cursor: pointer; vertical-align: middle; }
+  .route-picker option { color: var(--atlas-text); background: var(--atlas-surface); }
   .load-older button {
     min-width: 13rem;
   }
