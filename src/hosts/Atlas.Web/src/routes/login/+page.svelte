@@ -10,4 +10,4 @@
 </script>
 <svelte:head><title>Sign in · Atlas</title></svelte:head>
 <h1>Sign in</h1>
-<SessionControl expanded focusOnMount onSession={signedIn} />
+<SessionControl expanded onSession={signedIn} />
