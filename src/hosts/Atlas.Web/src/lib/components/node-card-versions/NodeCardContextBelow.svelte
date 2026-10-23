@@ -5,7 +5,7 @@
   import VotingDial from '../VotingDial.svelte';
 
   import type { NodeCardProps } from './types';
-  let { reactionControls, onOpenProfile, voting, node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onReadMore, onChildType, onComments }: NodeCardProps = $props();
+  let { reactionControls, onOpenProfile, voting, node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onReadMore, onChildType, onComments, apiBase }: NodeCardProps = $props();
   const instance = $props.id();
 </script>
 
