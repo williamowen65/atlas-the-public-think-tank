@@ -2,6 +2,7 @@
   import LiveProfilePage from './LiveProfilePage.svelte';
   import SessionControl from './SessionControl.svelte';
   import { commentRequest } from '../api/comments';
+  import { myCommunities, type Community } from '../api/communities';
   let { apiBase = '/atlas-preview-api', sessionBase = '/atlas-comments-api', onOpenNode, onOpenProfile }: { apiBase?: string; sessionBase?: string; onOpenNode?: (id: string) => void; onOpenProfile?: (id: string) => void } = $props();
   let participantId = $state<string | null>(null);
   let profile = $state<{ displayName: string; bio: string } | null>(null);
@@ -10,6 +11,7 @@
   let editing = $state(false);
   let saving = $state(false);
   let notice = $state('');
+  let communities = $state<Community[]>([]);
   async function load(id: string) {
     try {
       const result = await commentRequest<{ displayName: string; bio: string }>(apiBase, 'participants/' + encodeURIComponent(id));
@@ -18,7 +20,8 @@
   }
   function sessionChanged(id: string | null) {
     participantId = id; profile = null; editing = false; notice = '';
-    if (id) void load(id);
+    communities = [];
+    if (id) { void load(id); void myCommunities().then(result => communities = result).catch(() => {}); }
   }
   async function save() {
     if (!participantId || saving) return;
@@ -48,6 +51,11 @@
       {/if}
     {/if}
     {#if notice}<p role="status">{notice}</p>{/if}
+    <section class="profile-communities"><h2>My communities</h2>
+      <h3>Owned</h3><ul>{#each communities.filter(c => c.ownerParticipantId === participantId) as community}<li><a href={'/communities/' + community.id}>{community.name}</a></li>{:else}<li>No communities owned yet.</li>{/each}</ul>
+      <h3>Joined</h3><ul>{#each communities.filter(c => c.isMember && c.ownerParticipantId !== participantId) as community}<li><a href={'/communities/' + community.id}>{community.name}</a></li>{:else}<li>No other communities joined yet.</li>{/each}</ul>
+      <p><a href="/communities">Explore communities</a></p>
+    </section>
     <LiveProfilePage {participantId} {apiBase} {onOpenNode} {onOpenProfile} />
   {:else}
     <p>Sign in to view or edit your profile.</p>
