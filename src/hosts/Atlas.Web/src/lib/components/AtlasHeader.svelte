@@ -42,17 +42,20 @@
     }
   }
   let accountElement: HTMLDivElement;
+  let mobileElement: HTMLDetailsElement;
   function closeOnOutside(event: PointerEvent) {
     if (menuOpen && event.target instanceof Node && !accountElement?.contains(event.target)) menuOpen = false;
+    if (mobileElement?.open && event.target instanceof Node && !mobileElement.contains(event.target)) mobileElement.open = false;
   }
   function closeOnEscape(event: KeyboardEvent) {
-    if (event.key === 'Escape') menuOpen = false;
+    if (event.key === 'Escape') { menuOpen = false; if (mobileElement?.open) { mobileElement.open = false; mobileElement.querySelector('summary')?.focus(); } }
   }
-  function closeOnNavigation() { menuOpen = false; }
+  function closeOnNavigation() { menuOpen = false; if (mobileElement) mobileElement.open = false; }
+  function closeOnResize() { if (window.innerWidth > 560 && mobileElement?.open) mobileElement.open = false; }
   const initial = $derived(displayName.trim().charAt(0).toUpperCase() || 'U');
 </script>
 
-<svelte:window onpointerdown={closeOnOutside} onkeydown={closeOnEscape} onpopstate={closeOnNavigation} />
+<svelte:window onpointerdown={closeOnOutside} onkeydown={closeOnEscape} onpopstate={closeOnNavigation} onresize={closeOnResize} />
 <header class="atlas-header" class:hidden={!headerVisible} class:filters-open={filtersOpen} id="page-top">
   <a class="brand" href="/" aria-label="Atlas home"><strong>Atlas</strong><span>The Public Think Tank</span></a>
   <div class="search-slot"><DiscoverySearch onExpandedChange={open => { filtersOpen = open; if (open) headerVisible = true; }} /></div>
@@ -82,17 +85,17 @@
     {:else}
       <div class="auth"><a href="/login" aria-current={active === 'login' ? 'page' : undefined} onclick={event => { if (onNavigate) { event.preventDefault(); onNavigate("login"); } }}>Log in</a><a class="signup" href="/register" aria-current={active === 'register' ? 'page' : undefined} onclick={event => { if (onNavigate) { event.preventDefault(); onNavigate("register"); } }}>Sign up</a></div>
     {/if}
-    <details class="mobile-menu">
+    <details class="mobile-menu" bind:this={mobileElement}>
       <summary aria-label="Open navigation menu">☰</summary>
-      <nav aria-label="Mobile navigation">
+      <nav aria-label="Mobile navigation" onclick={closeOnNavigation}>
         <a href="/">Discover</a><a href="/communities">Communities</a><a href="/new">Create</a>
         {#if authenticated}
-          <a href="/profiles/me">My profile</a><a href="/me/drafts">My drafts</a><a href="/me/settings">Settings</a>
+          <hr /><a href="/profiles/me">My profile</a><a href="/me/drafts">My drafts</a><a href="/me/settings">Settings</a>
           <button type="button" class="logout-action" onclick={() => void logOut()}>Log out</button>
         {:else}
           <a href="/login">Log in</a><a href="/register">Sign up</a>
         {/if}
-        <a href="/about">About Atlas</a><a href="/feedback">Give feedback</a>
+        <hr /><a href="/about">About Atlas</a><a href="/feedback">Give feedback</a>
       </nav>
     </details>
   </div>
@@ -119,7 +122,7 @@
   a{color:var(--atlas-text);text-decoration:none;}a:hover{text-decoration:underline;}a[aria-current]{font-weight:700;text-underline-offset:.3em;}
   .signup{border:1px solid var(--atlas-border);border-radius:.5rem;padding:.45rem .7rem;}
   .account{position:relative;}.avatar{width:2.25rem;height:2.25rem;border:1px solid var(--atlas-border);border-radius:50%;background:var(--atlas-surface);color:var(--atlas-text);cursor:pointer;font-weight:700;}
-  .account-menu{position:absolute;z-index:20;right:0;top:calc(100% + .5rem);min-width:12rem;display:flex;flex-direction:column;gap:.15rem;background:var(--atlas-surface);border:1px solid var(--atlas-border);border-radius:.5rem;padding:.5rem;box-shadow:0 8px 24px #0002;a{padding:.5rem;border-radius:.25rem;}hr{width:100%;border:0;border-top:1px solid var(--atlas-border);}}
+  .account-menu,.mobile-menu nav{position:absolute;z-index:20;right:0;top:calc(100% + .5rem);min-width:12rem;display:flex;flex-direction:column;gap:.15rem;background:var(--atlas-surface);border:1px solid var(--atlas-border);border-radius:.5rem;padding:.5rem;box-shadow:0 8px 24px #0002;a{padding:.5rem;border-radius:.25rem;}hr{width:100%;border:0;border-top:1px solid var(--atlas-border);}}
   .logout-action{font:inherit;color:var(--atlas-text);background:transparent;border:0;text-align:left;cursor:pointer;padding:.5rem;border-radius:.25rem;}.logout-action:hover{text-decoration:underline;}.logout-action:disabled{opacity:.6;cursor:default;}
   .logout-error{grid-column:1/-1;color:var(--atlas-text);margin:.25rem 0;}
   .mobile-menu{display:none;}
@@ -129,7 +132,7 @@
     .brand{display:none;}
     .atlas-header.filters-open .brand{display:none;}
     .primary,.auth,.account{display:none;}
-    .mobile-menu{display:block;position:relative;summary{cursor:pointer;list-style:none;font-size:1.3rem;}nav{position:absolute;z-index:20;right:0;top:100%;min-width:11rem;display:flex;flex-direction:column;background:var(--atlas-surface);border:1px solid var(--atlas-border);border-radius:.5rem;padding:.75rem;gap:.75rem;}}
+    .mobile-menu{display:block;position:relative;summary{cursor:pointer;list-style:none;font-size:1.3rem;}nav{right:0;top:calc(100% + .5rem);min-width:12rem;}}
     .atlas-header :global(.search-line){grid-column:1/3;grid-row:1;}
     .atlas-header :global(.toolbox){grid-column:1/-1;grid-row:2;}
 
