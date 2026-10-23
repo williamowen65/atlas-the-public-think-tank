@@ -8,7 +8,6 @@ internal static partial class DemoData
     private static void SeedPublicThinkTank(AtlasDataContext database)
     {
         var start = new DateTimeOffset(2026, 10, 1, 12, 0, 0, TimeSpan.Zero);
-        Guid Node(int number) => Guid.Parse($"b1000000-0000-4000-8000-{number:D12}");
         var authors = new[] { DemoParticipants.User01Id, DemoParticipants.User02Id, DemoParticipants.User03Id, DemoParticipants.User04Id, DemoParticipants.User05Id };
         database.NodeRows.Add(new NodeRow { Id = Guid.Parse("b1000000-0000-4000-8000-000000000201"), Title = "Can we save the Southern Resident orcas?", ShortDescription = "What mix of salmon recovery, quieter waters, and pollution prevention offers the strongest chance of recovery?", DescriptionId = Guid.Parse("b2000000-0000-4000-8000-000000000201"), TypeId = Guid.Parse("a2e82ee2-12ba-49fc-9160-c2b864d4f42f"), AuthorId = authors[0], RequestedSubNodeTypeIds = [Guid.Parse("a2e82ee2-12ba-49fc-9160-c2b864d4f42f"), Guid.Parse("0328981f-7b76-4bcb-ad04-99b4ed74fd23"), Guid.Parse("53057519-9a26-4b02-a884-56dcf82159ed")], ParentNodeIds = [], Status = "Active", CreatedAt = start.AddHours(0), UpdatedAt = start.AddHours(0) });
         database.DocumentRows.Add(new DocumentRow { Id = Guid.Parse("b2000000-0000-4000-8000-000000000201"), BlockIds = [Guid.Parse("b3000000-0000-4000-8000-000000000201")], CreatedAt = start.AddHours(0), UpdatedAt = start.AddHours(0) });
