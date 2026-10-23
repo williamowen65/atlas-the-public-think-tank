@@ -6,9 +6,9 @@
   import type { Snippet } from 'svelte';
   import NodeCard, { type NodeCardPresentation } from './NodeCard.svelte';
   import type { LoadOlderAncestors } from './Breadcrumb.svelte';
-  let { renderVoting, renderReactions, items, loading = false, hasMore = false, error = '', presentation = 'ribbon-corner', onLoadMore, onNavigate, onOpenProfile, onReadMore, onComments, onChildType, loadOlderAncestors }: {
+  let { renderVoting, renderReactions, items, loading = false, hasMore = false, error = '', presentation = 'ribbon-corner', onLoadMore, onNavigate, onOpenProfile, onReadMore, onComments, onChildType, loadOlderAncestors, emptyTypeName, onCreateFirst }: {
     renderVoting?: Snippet<[FeedItem]>; renderReactions?: Snippet<[FeedItem]>; items: FeedItem[]; loading?: boolean; hasMore?: boolean; error?: string;
-    presentation?: NodeCardPresentation; onLoadMore?: () => void; onNavigate?: (id: string) => void; onOpenProfile?: (id: string) => void; onReadMore?: (id: string) => void; loadOlderAncestors?: LoadOlderAncestors; onChildType?: (id: string, typeId: string) => void; onComments?: (id: string) => void;
+    presentation?: NodeCardPresentation; onLoadMore?: () => void; onNavigate?: (id: string) => void; onOpenProfile?: (id: string) => void; onReadMore?: (id: string) => void; loadOlderAncestors?: LoadOlderAncestors; onChildType?: (id: string, typeId: string) => void; onComments?: (id: string) => void; emptyTypeName?: string; onCreateFirst?: () => void;
   } = $props();
   let tail: HTMLDivElement;
   $effect(() => {
@@ -33,7 +33,9 @@
   </ul>
   <div class="feed-tail" bind:this={tail}>
     {#if error}<p role="alert">{error}</p>{/if}
-    <p role="status">{loading ? 'Loading nodes…' : !items.length ? (error ? 'No nodes loaded.' : 'No nodes found.') : `${items.length} nodes shown${hasMore ? '.' : ' · You’re all caught up.'}`}</p>
+    {#if !loading && !error && !items.length && !hasMore && emptyTypeName && onCreateFirst}
+      <div class="empty-invitation"><h3>Be the first to create a {emptyTypeName}</h3><p>There aren't any {emptyTypeName.toLowerCase()} contributions here yet. Start the conversation by adding one.</p><button type="button" onclick={onCreateFirst}>Create {emptyTypeName}</button></div>
+    {:else}<p role="status">{loading ? 'Loading nodes…' : !items.length ? (error ? 'No nodes loaded.' : 'No nodes found.') : `${items.length} nodes shown${hasMore ? '.' : ' · You’re all caught up.'}`}</p>{/if}
     {#if hasMore || error}<button type="button" disabled={loading || !onLoadMore} onclick={onLoadMore}>{error ? 'Retry loading nodes' : 'Load more nodes'}</button>{/if}
   </div>
 </section>
@@ -43,4 +45,7 @@
   .feed-tail {text-align:center;padding:1.5rem .5rem;color:var(--atlas-muted);}
   button {font:inherit;padding:.6rem 1rem;border:1px solid var(--atlas-border);border-radius:var(--atlas-radius);background:var(--atlas-surface);color:var(--atlas-accent);cursor:pointer;}
   .note {font-size:.85rem;color:var(--atlas-muted);}
+  .empty-invitation{padding:2rem 1rem;border:1px dashed var(--atlas-border);border-radius:var(--atlas-radius);background:var(--atlas-surface);}
+  .empty-invitation h3{margin:0 0 .5rem;color:var(--atlas-text);font-size:1.2rem;}
+  .empty-invitation p{margin:.5rem 0 1rem;}
 </style>
