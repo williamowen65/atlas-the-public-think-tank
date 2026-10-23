@@ -12,7 +12,7 @@ export const anonymousPreview: Plugin = {
         response.end('This preview only supports anonymous reads.');
         return;
       }
-      if (!/^\/atlas-preview-api\/communities(?:\/([0-9a-f-]{36})(?:\/nodes)?|\/participant\/[0-9a-f-]{36})?(?:\?|$)/i.test(request.url) && !/^\/atlas-preview-api\/participants(?:\?(?:[^#]*)|\/([0-9a-f-]{36})(?:\?.*)?|$)/i.test(request.url) && !/^\/atlas-preview-api\/nodes(?:\?|$)/.test(request.url)
+      if (!/^\/atlas-preview-api\/communities\/node\/[0-9a-f-]{36}(?:\?|$)/i.test(request.url) && !/^\/atlas-preview-api\/communities(?:\/([0-9a-f-]{36})(?:\/nodes)?|\/participant\/[0-9a-f-]{36})?(?:\?|$)/i.test(request.url) && !/^\/atlas-preview-api\/participants(?:\?(?:[^#]*)|\/([0-9a-f-]{36})(?:\?.*)?|$)/i.test(request.url) && !/^\/atlas-preview-api\/nodes(?:\?|$)/.test(request.url)
         && !/^\/atlas-preview-api\/catalog\/node-types(?:\?|$)/.test(request.url)
         && !/^\/atlas-preview-api\/nodes\/[0-9a-f-]{36}(?:\/(?:ancestors|reactions|description|comments))?(?:\?|$)/i.test(request.url)) {
         response.statusCode = 404;
