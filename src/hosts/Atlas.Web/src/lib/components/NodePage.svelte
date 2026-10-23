@@ -3,6 +3,7 @@
   import type { NodeCardData } from './NodeCard.svelte';
   import type { NodeType, ContentBlock } from '../api/nodePage';
   import ContentBlocks from './ContentBlocks.svelte';
+  import CommunityLinks from './CommunityLinks.svelte';
   import type { LoadOlderAncestors } from './Breadcrumb.svelte';
   import Breadcrumb from './Breadcrumb.svelte';
   import VotingDial from './VotingDial.svelte';
@@ -51,7 +52,7 @@
 </script>
 <article class="node-page atlas-panel" class:reveal-children={revealChildren}>
   {#if node.breadcrumb.length}<div class="ribbon-context"><Breadcrumb items={node.breadcrumb} {onNavigate} hasMore={hasMoreAncestors} loadOlder={loadOlderAncestors} /></div>{/if}
-  <header><h1>{node.typeName}: {node.title}</h1><p class="byline">By {#if node.authorId}<a href={`/profiles?id=${encodeURIComponent(node.authorId)}`} onclick={event => { if (onOpenProfile && node.authorId) { event.preventDefault(); onOpenProfile(node.authorId); } }}>{node.authorName}</a>{:else}{node.authorName}{/if} · <time datetime={node.createdAt}>{new Date(node.createdAt).toLocaleDateString()}</time>{#if node.communities.length} · Community: {node.communities.join(', ')}{/if}</p>{#if node.status === 'Archived'}<p>Archived</p>{/if}</header>
+  <header><h1>{node.typeName}: {node.title}</h1><p class="byline">By {#if node.authorId}<a href={`/profiles?id=${encodeURIComponent(node.authorId)}`} onclick={event => { if (onOpenProfile && node.authorId) { event.preventDefault(); onOpenProfile(node.authorId); } }}>{node.authorName}</a>{:else}{node.authorName}{/if} <span class="byline-separator" aria-hidden="true">·</span> <time datetime={node.createdAt}>{new Date(node.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</time>{#if node.communities.length} <span class="byline-separator" aria-hidden="true">·</span> Community: <CommunityLinks nodeId={node.id} names={node.communities} />{/if}</p>{#if node.status === 'Archived'}<p>Archived</p>{/if}</header>
   <div class="post-body">
     <aside class="dial" aria-label="Importance rating">{#if voting}{@render voting()}{:else}<VotingDial label="Node importance" {average} {totalVotes} disabled />{/if}</aside>
     <p class="description">{node.description}</p>
@@ -75,7 +76,8 @@
   header { padding: var(--card-padding) var(--card-padding) .5rem; }
   .ribbon-context + header { padding-top: 0; }
   h1 { font-size: clamp(1.4rem,4vw,2rem); margin: 0 0 .5rem; }
-  .byline { font-size: .85rem; color: var(--atlas-muted); margin: 0; }
+  .byline { font-size: .85rem; color: var(--atlas-muted); margin: 0; a { color: inherit; text-decoration: none; &:hover, &:focus-visible { text-decoration: underline; } } }
+  .byline-separator { margin-inline: .35em; }
   .post-body { display: flow-root; padding: .5rem var(--card-padding) 0; line-height: var(--atlas-line-height,1.65); }
   .dial { float: left; margin: 0 var(--dial-text-gap) .6rem -.4rem; }
   .description { margin: 0 0 var(--atlas-paragraph-gap,.65rem); white-space: pre-line; }
