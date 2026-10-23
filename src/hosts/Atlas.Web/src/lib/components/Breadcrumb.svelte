@@ -18,6 +18,9 @@
   let openRouteMenu = $state(false);
   let menuPosition = $state({ top: 0, left: 0 });
   let preserveScroll = false;
+  let pendingAnchor: { id?: string; offset: number } | null = null;
+  let breadcrumbViewport: HTMLElement | undefined;
+  let breadcrumbList: HTMLOListElement | undefined;
   function toggleRouteMenu(event: MouseEvent) {
     if (openRouteMenu) { openRouteMenu = false; return; }
     const rect = event.currentTarget instanceof HTMLElement ? event.currentTarget.getBoundingClientRect() : null;
@@ -26,6 +29,9 @@
   }
   function selectRoute(route: BreadcrumbRoute) {
     preserveScroll = true;
+    const selectedIndex = divergenceIndex;
+    const anchor = breadcrumbList?.children.item(selectedIndex) as HTMLElement | null;
+    pendingAnchor = anchor && breadcrumbViewport ? { id: allItems[selectedIndex]?.id, offset: anchor.getBoundingClientRect().left - breadcrumbViewport.getBoundingClientRect().left } : null;
     chosenRoute = route.id;
     openRouteMenu = false;
     older = [];
@@ -85,7 +91,17 @@
           pinned = false;
           viewport.scrollLeft += viewport.scrollWidth - width;
           width = viewport.scrollWidth;
-        } else if (preserveScroll) { preserveScroll = false; pinned = false; width = viewport.scrollWidth; }
+        } else if (preserveScroll) {
+          preserveScroll = false;
+          pinned = false;
+          if (pendingAnchor) {
+            const anchorIndex = next.findIndex(item => item.id === pendingAnchor?.id);
+            const anchor = breadcrumbList?.children.item(anchorIndex) as HTMLElement | null;
+            if (anchor) viewport.scrollLeft += anchor.getBoundingClientRect().left - viewport.getBoundingClientRect().left - pendingAnchor.offset;
+            pendingAnchor = null;
+          }
+          width = viewport.scrollWidth;
+        }
         else { pinned = true; scrollToEnd(); }
         previous = next;
       },
@@ -100,7 +116,7 @@
 {#if allItems.length || more}
   <nav aria-label="Node breadcrumb">
     <!-- svelte-ignore a11y_no_noninteractive_tabindex (Native scrolling needs keyboard focus for display-only ancestor labels.) -->
-    <div class="viewport" role="group" aria-label="Scrollable ancestor path" tabindex="0" use:revealNewest={allItems}
+    <div bind:this={breadcrumbViewport} class="viewport" role="group" aria-label="Scrollable ancestor path" tabindex="0" use:revealNewest={allItems}
       onfocusin={event => {
         const target = event.target;
         // Prepend anchoring settles first, then reveal a newly focused ancestor.
@@ -108,7 +124,7 @@
           requestAnimationFrame(() => { if (target.isConnected) target.scrollIntoView({ block: 'nearest', inline: 'nearest' }); });
         }
       }}>
-      <ol>
+      <ol bind:this={breadcrumbList}>
         {#if more && loadOlder && !selectedRoute}
           <li class="load-older"><button type="button" disabled={loading} onclick={requestOlder}>{loading ? 'Loading…' : 'Load older ancestors'}</button></li>
         {/if}
