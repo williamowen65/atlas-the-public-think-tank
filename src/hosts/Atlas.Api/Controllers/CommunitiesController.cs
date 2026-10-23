@@ -33,7 +33,7 @@ public sealed class CommunitiesController(
             throw new ArgumentException();
 
         // Return stable public projections for the requested slice.
-        return communities.GetAll().OrderBy(x => x.Id.Value).Skip(offset).Take(size).Select(View);
+        return communities.GetAll().OrderBy(x => x.Id.Value).Skip(offset).Take(size).Select(c => View(c));
     }
 
     /// <summary>Load one community or report that it does not exist.</summary>
