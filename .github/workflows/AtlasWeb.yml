@@ -9,7 +9,8 @@ permissions:
 
 jobs:
   component-tests:
-    runs-on: ubuntu-latest
+    # Keep the OS package cache tied to a known Ubuntu release.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
       run:
@@ -36,7 +37,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/atlas-apt-archives
-          key: ${{ runner.os }}-${{ runner.arch }}-${{ env.ImageOS }}-${{ env.ImageVersion }}-playwright-${{ steps.playwright-version.outputs.version }}-apt-v1
+          key: ${{ runner.os }}-${{ runner.arch }}-ubuntu-24.04-playwright-${{ steps.playwright-version.outputs.version }}-apt-v1
       - name: Install Chromium system dependencies
         run: |
           mkdir -p "$RUNNER_TEMP/atlas-apt-archives/partial"
