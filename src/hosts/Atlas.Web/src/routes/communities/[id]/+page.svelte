@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/state';
   import LiveNodeFeed from '$lib/components/LiveNodeFeed.svelte';
+  import SessionControl from '$lib/components/SessionControl.svelte';
   import { communityDetail, communityAction, myCommunities, type Community } from '$lib/api/communities';
   let community = $state<Community | null>(null);
   let mine = $state<Community[]>([]);
@@ -23,8 +24,10 @@
         const session = await import('$lib/api/comments').then(m => m.commentRequest<{participantId:string|null}>('/atlas-comments-api', 'auth/session'));
         currentParticipant = session.participantId; signedIn = !!session.participantId;
         if (signedIn) {
-          mine = await myCommunities();
-          community = { ...result, isMember: mine.some(c => c.id === id && c.isMember) };
+          try {
+            mine = await myCommunities();
+            community = { ...result, isMember: mine.some(c => c.id === id && c.isMember) };
+          } catch { /* Membership lookup failure does not invalidate authentication. */ }
         }
       } catch { signedIn = false; currentParticipant = null; }
       error = '';
@@ -56,7 +59,7 @@
         {#if owned}
           <button onclick={() => editing = !editing}>{editing ? 'Cancel editing' : 'Edit community'}</button>
         {:else}<button disabled={busy} onclick={() => void action('/membership',community?.isMember ? 'DELETE' : 'PUT')}>{community.isMember ? 'Leave community' : 'Join community'}</button>{/if}
-      {:else if !signedIn}<p><a href="/login">Sign in</a> to join this community.</p>{/if}
+      {:else if !signedIn && community.status === 'Active'}<SessionControl prompt="Sign in to join this community" onSession={participant => { if (participant) void refresh(); }} />{/if}
       {#if editing && owned}
         <form onsubmit={event => { event.preventDefault(); void save(); }}>
           <label>Name<input required maxlength="100" bind:value={name}/></label>
