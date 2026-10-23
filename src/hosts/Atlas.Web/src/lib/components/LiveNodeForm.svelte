@@ -79,7 +79,7 @@
   {:else}
     <SessionControl {sessionBase} hideWhenSignedIn prompt={parentId ? 'Sign in to add a child node' : 'Sign in to create a node'} expanded {focusOnMount} onSession={sessionChanged} />
     {#if loading}<p role="status">Loading node types…</p>{:else if error}<p role="alert">{error}</p><button onclick={() => void load()}>Retry node types</button>{:else if hasDraft}
-      <fieldset class="draft-fields" disabled={submitting || !participantId}><NodeForm {types} parentId={savedDraft?.parentId ?? parentId} parentTitle={savedParentTitle ?? parentTitle} {initialTypeId} breadcrumb={savedBreadcrumb ?? breadcrumb} initialDraft={savedDraft} focusOnMount {submitting} onPreview={draft => { currentDraft = draft; onDraftChange?.(draft); }} onSubmit={save} /></fieldset>
+      <fieldset class="draft-fields" disabled={submitting || !participantId}><NodeForm {types} parentId={savedDraft?.parentId ?? parentId} parentTitle={savedParentTitle ?? parentTitle} {initialTypeId} breadcrumb={savedBreadcrumb ?? breadcrumb} initialDraft={savedDraft} focusOnMount={focusOnMount} {submitting} onPreview={draft => { currentDraft = draft; onDraftChange?.(draft); }} onSubmit={save} /></fieldset>
       {#if participantId}<button type="button" onclick={savePrivateDraft} disabled={submitting}>Save private draft</button> <a href="/me/drafts">My drafts</a>{/if}
       {#if savedNotice}<p role="status">{savedNotice}</p>{/if}
     {/if}
