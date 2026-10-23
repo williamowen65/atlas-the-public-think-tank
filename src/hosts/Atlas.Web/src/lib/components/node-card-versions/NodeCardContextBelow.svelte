@@ -4,7 +4,7 @@
   import VotingDial from '../VotingDial.svelte';
 
   import type { NodeCardProps } from './types';
-  let { onOpenProfile, voting, node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onReadMore, onChildType, onComments }: NodeCardProps = $props();
+  let { reactionControls, onOpenProfile, voting, node, value = null, average = null, totalVotes = 0, onVote, onNavigate, onReadMore, onChildType, onComments }: NodeCardProps = $props();
   const instance = $props.id();
 </script>
 
@@ -40,10 +40,12 @@
 </article>
 
 {#snippet reactions()}
+  {#if reactionControls}{@render reactionControls()}{:else}
   {#if node.reactions.length}
     <div class="reactions" role="group" aria-label="Community reactions">
       {#each node.reactions as reaction}<span class="reaction-pill">{reaction.label} <strong>{reaction.count}</strong></span>{/each}
     </div>
+  {/if}
   {/if}
 {/snippet}
 
