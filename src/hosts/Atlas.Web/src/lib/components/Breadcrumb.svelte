@@ -8,10 +8,11 @@
 </script>
 
 <script lang="ts">
-  let { items, onNavigate, hasMore = false, loadOlder, routes = [], onRouteChange }: {
+  let { items, onNavigate, hasMore = false, loadOlder, routes = [], onRouteChange, originId, apiBase = '/atlas-preview-api' }: {
     items: BreadcrumbItem[]; onNavigate?: (id: string) => void;
     hasMore?: boolean; loadOlder?: LoadOlderAncestors;
     routes?: BreadcrumbRoute[]; onRouteChange?: (route: BreadcrumbRoute) => void;
+    originId?: string; apiBase?: string;
   } = $props();
   let older = $state<BreadcrumbItem[]>([]);
   let chosenRoute = $state<string | null>(null);
@@ -21,6 +22,10 @@
   let pendingAnchor: { id?: string; offset: number } | null = null;
   let breadcrumbViewport: HTMLElement | undefined;
   let breadcrumbList: HTMLOListElement | undefined;
+  let liveChoices = $state<Record<string, { id: string; title: string }[]>>({});
+  let livePath = $state<BreadcrumbItem[] | null>(null);
+  let liveMenuChild = $state<string | null>(null);
+  let liveBusy = $state(false);
   function toggleRouteMenu(event: MouseEvent) {
     if (openRouteMenu) { openRouteMenu = false; return; }
     const trigger = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
@@ -36,6 +41,38 @@
       };
     }
     openRouteMenu = true;
+  }
+  async function selectLiveParent(parentId: string) {
+    if (!liveMenuChild || liveBusy) return;
+    const child = liveMenuChild;
+    const currentIndex = allItems.findIndex((item, index) => liveChildAt(index) === child);
+    if (currentIndex < 0) return;
+    const suffix = allItems.slice(currentIndex + 1);
+    liveBusy = true;
+    try {
+      const response = await fetch(`${apiBase}/nodes/${encodeURIComponent(child)}/ancestors?firstParent=${encodeURIComponent(parentId)}`, { credentials: 'omit' });
+      if (!response.ok) throw new Error('Could not load the selected parent route.');
+      const page = await response.json() as { items: { id: string; title: string }[]; hasMore: boolean };
+      if (!Array.isArray(page.items)) throw new Error('Invalid ancestor response.');
+      const newAncestors = [...page.items].reverse();
+      const previous = allItems;
+      const anchor = breadcrumbList?.children.item(currentIndex) as HTMLElement | null;
+      pendingAnchor = anchor && breadcrumbViewport ? { id: parentId, offset: anchor.getBoundingClientRect().left - breadcrumbViewport.getBoundingClientRect().left } : null;
+      preserveScroll = true;
+      livePath = [...newAncestors, ...suffix];
+      more = page.hasMore;
+      openRouteMenu = false;
+      liveMenuChild = null;
+      // Refresh branch hints for the newly chosen path.
+      for (const item of newAncestors) {
+        if (liveChoices[item.id] || !item.id) continue;
+        void fetch(`${apiBase}/nodes/${encodeURIComponent(item.id)}/parents`, { credentials: 'omit' })
+          .then(res => res.ok ? res.json() : [])
+          .then(parents => { if (Array.isArray(parents)) liveChoices = { ...liveChoices, [item.id!]: parents }; })
+          .catch(() => {});
+      }
+    } catch (cause) { error = cause instanceof Error ? cause.message : 'Could not change parent path.'; }
+    finally { liveBusy = false; }
   }
   function selectRoute(route: BreadcrumbRoute) {
     preserveScroll = true;
@@ -54,8 +91,23 @@
   let generation = 0;
   const selectedRoute = $derived(routes.find(route => route.id === chosenRoute));
   const divergenceIndex = $derived(routes.length > 1 ? (routes[0].divergenceIndex ?? Math.max(0, items.length - 1)) : -1);
-  const allItems = $derived(selectedRoute ? selectedRoute.items : [...older, ...items]);
-  $effect(() => { items; hasMore; loadOlder; routes; generation++; older = []; more = hasMore; loading = false; error = ''; });
+  const allItems = $derived(selectedRoute ? selectedRoute.items : (livePath ?? [...older, ...items]));
+  const liveChildAt = (index: number) => index + 1 < allItems.length ? allItems[index + 1].id : originId;
+  $effect(() => { items; hasMore; loadOlder; routes; originId; generation++; older = []; livePath = null; liveChoices = {}; more = hasMore; loading = false; error = ''; });
+  $effect(() => {
+    if (!originId || routes.length) return;
+    const controller = new AbortController();
+    const ids = [...items.map(item => item.id), originId].filter((id): id is string => !!id);
+    void Promise.all(ids.map(async id => {
+      try {
+        const response = await fetch(`${apiBase}/nodes/${encodeURIComponent(id)}/parents`, { signal: controller.signal, credentials: 'omit' });
+        if (!response.ok) return;
+        const parents = await response.json() as { id: string; title: string }[];
+        if (!controller.signal.aborted && Array.isArray(parents)) liveChoices = { ...liveChoices, [id]: parents };
+      } catch { /* An unavailable ancestor simply has no switcher. */ }
+    }));
+    return () => controller.abort();
+  });
 
   async function requestOlder() {
     if (!more || loading || !loadOlder) return;
@@ -145,9 +197,9 @@
             {:else}
               <span>{item.title}</span>
             {/if}
-            {#if index === divergenceIndex && routes.length > 1}
+            {#if (index === divergenceIndex && routes.length > 1) || (originId && !routes.length && (liveChoices[liveChildAt(index) ?? '']?.length ?? 0) > 1)}
               <div class="route-choice">
-                <button type="button" class="route-toggle" aria-label="Choose another parent path" aria-expanded={openRouteMenu} onclick={toggleRouteMenu}>
+                <button type="button" class="route-toggle" aria-label="Choose another parent path" aria-expanded={openRouteMenu} onclick={event => { liveMenuChild = routes.length ? null : liveChildAt(index) ?? null; toggleRouteMenu(event); }}>
                   <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14"><path d="m3 6 5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </button>
 
@@ -159,9 +211,15 @@
     </div>
     {#if openRouteMenu}
       <div class="route-menu" role="group" aria-label="Other parent paths" style:top={menuPosition.top + 'px'} style:left={menuPosition.left + 'px'}>
-        {#each routes.filter(route => route.id !== (chosenRoute ?? routes[0].id)) as route (route.id)}
-          <button type="button" onclick={() => selectRoute(route)}>{route.label}</button>
-        {/each}
+        {#if liveMenuChild}
+          {#each (liveChoices[liveMenuChild] ?? []).filter(parent => parent.id !== allItems.find((item, index) => liveChildAt(index) === liveMenuChild)?.id) as parent (parent.id)}
+            <button type="button" disabled={liveBusy} onclick={() => void selectLiveParent(parent.id)}>{parent.title}</button>
+          {/each}
+        {:else}
+          {#each routes.filter(route => route.id !== (chosenRoute ?? routes[0].id)) as route (route.id)}
+            <button type="button" onclick={() => selectRoute(route)}>{route.label}</button>
+          {/each}
+        {/if}
       </div>
     {/if}
     {#if error}<p role="alert">{error} <button type="button" onclick={requestOlder}>Retry</button></p>{/if}
