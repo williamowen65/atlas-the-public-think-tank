@@ -1,4 +1,5 @@
 <!--
+  @component
   NodeCardContextBelow: Common card contract using the context-below presentation.
   Accepts the shared NodeCardProps contract; parent callbacks handle navigation and optional snippets provide live controls.
 -->

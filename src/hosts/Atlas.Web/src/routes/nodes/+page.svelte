@@ -1,3 +1,7 @@
+<!--
+  @component
+  Node-detail route adapting URL node/tab IDs and app navigation callbacks to LiveNodePage.
+-->
 <script lang="ts">
   import { page } from '$app/state';
   import { goto } from '$app/navigation';

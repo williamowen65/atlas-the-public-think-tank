@@ -1,3 +1,7 @@
+<!--
+  @component
+  Live feed workbench wrapper adapting node/profile navigation to Storybook stories.
+-->
 <script lang="ts">
   import LiveNodeFeed from '../../src/lib/components/LiveNodeFeed.svelte';
   import type { NodeCardPresentation } from '../../src/lib/components/NodeCard.svelte';

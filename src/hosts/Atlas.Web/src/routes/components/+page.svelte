@@ -1,3 +1,8 @@
+<!--
+  @component
+  Small application integration example demonstrating ActionButton callbacks and status
+  feedback.
+-->
 <script lang="ts">
   import ActionButton from '$lib/components/ActionButton.svelte';
 

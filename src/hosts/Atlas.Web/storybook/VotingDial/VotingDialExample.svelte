@@ -1,3 +1,8 @@
+<!--
+  @component
+  Presentational voting-dial example with simulated local outcomes and status feedback; no API
+  vote is saved.
+-->
 <script lang="ts">
   import { createVoteFeedback, type VoteOutcome } from '../shared/voteFeedback';
   import VotingDial from '../../src/lib/components/VotingDial.svelte';

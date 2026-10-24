@@ -1,4 +1,5 @@
 <!--
+  @component
   AtlasFooter: Shared grouped navigation links and site footer.
   The parent can override internal-link navigation, allowing the same footer to work in Storybook.
 -->

@@ -1,4 +1,5 @@
 <!--
+  @component
   LiveNodeFeed: Loads discovery pages and composes NodeFeed with live voting/reaction controls.
   Owns loading and page accumulation; NodeFeed owns rendering and requests more pages through a callback.
 -->

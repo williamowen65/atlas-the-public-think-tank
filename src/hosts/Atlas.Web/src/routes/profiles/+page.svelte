@@ -1,3 +1,8 @@
+<!--
+  @component
+  Public profile route selecting an explicit participant or the current session, with a sign-in
+  fallback.
+-->
 <script lang="ts">
   import { page } from '$app/state';
   import { goto } from '$app/navigation';

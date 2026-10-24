@@ -1,3 +1,7 @@
+<!--
+  @component
+  Live full-node workbench with an initial discussion-tab option and Storybook navigation.
+-->
 <script lang="ts">
   import LiveNodePage from '../../src/lib/components/LiveNodePage.svelte';
   import { openStory, openNodeStory, openProfileStory } from '../shared/navigation';

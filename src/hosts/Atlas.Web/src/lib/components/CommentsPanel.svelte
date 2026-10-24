@@ -1,4 +1,5 @@
 <!--
+  @component
   CommentsPanel: Composes session controls and the live threaded discussion for a node.
   Owns session identity for its discussion and forwards successful additions to the parent.
 -->

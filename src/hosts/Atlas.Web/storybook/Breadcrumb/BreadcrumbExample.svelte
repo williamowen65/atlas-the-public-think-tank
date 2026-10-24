@@ -1,3 +1,8 @@
+<!--
+  @component
+  Paginated breadcrumb example with configurable ancestry depth and simulated navigation
+  feedback.
+-->
 <script lang="ts">
   import Breadcrumb from '../../src/lib/components/Breadcrumb.svelte';
   let {

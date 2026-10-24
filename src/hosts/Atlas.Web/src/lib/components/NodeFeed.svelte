@@ -1,4 +1,5 @@
 <!--
+  @component
   NodeFeed: Presentational card list with automatic/manual pagination and empty/error states.
   The parent owns data; optional snippets replace voting/reactions for each item.
 -->

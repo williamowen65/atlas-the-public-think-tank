@@ -1,3 +1,8 @@
+<!--
+  @component
+  Community detail route with membership, owner editing and a community-filtered contribution
+  feed.
+-->
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/state';

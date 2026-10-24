@@ -1,3 +1,7 @@
+<!--
+  @component
+  Live root/child creation-form example that opens created nodes in Storybook.
+-->
 <script lang="ts">
   import LiveNodeForm from '../../src/lib/components/LiveNodeForm.svelte';
   import { openNodeStory } from '../shared/navigation';

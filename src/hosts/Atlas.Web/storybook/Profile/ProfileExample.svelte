@@ -1,3 +1,7 @@
+<!--
+  @component
+  Live public participant-profile example with Storybook navigation callbacks.
+-->
 <script lang="ts">
   import LiveProfilePage from '../../src/lib/components/LiveProfilePage.svelte';
   import { openNodeStory, openProfileStory } from '../shared/navigation';

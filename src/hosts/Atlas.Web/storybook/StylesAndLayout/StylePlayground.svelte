@@ -1,3 +1,8 @@
+<!--
+  @component
+  Typography and spacing workbench for exploring shared Storybook design settings and resetting
+  code defaults.
+-->
 <script lang="ts">
   import type { DesignSettings } from './designSettings';
   import ActionButton from '../../src/lib/components/ActionButton.svelte';

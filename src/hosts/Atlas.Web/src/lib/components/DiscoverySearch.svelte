@@ -1,4 +1,5 @@
 <!--
+  @component
   DiscoverySearch: Shared discovery search and filter toolbox; communicates through discoveryQuery state.
   Parses search tokens and publishes the accepted query to shared discovery state.
 -->

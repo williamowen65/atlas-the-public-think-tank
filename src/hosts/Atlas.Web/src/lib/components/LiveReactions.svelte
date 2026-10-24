@@ -1,4 +1,5 @@
 <!--
+  @component
   LiveReactions: Loads reaction choices/scores and handles session-aware reaction voting and undo.
   Uses API-returned scores and participant votes instead of optimistically calculating totals.
 -->

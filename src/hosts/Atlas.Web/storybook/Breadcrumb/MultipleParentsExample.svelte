@@ -1,3 +1,7 @@
+<!--
+  @component
+  Alternative-parent breadcrumb scenarios demonstrating shared and separate ancestry routes.
+-->
 <script lang="ts">
   import Breadcrumb, { type BreadcrumbRoute } from '../../src/lib/components/Breadcrumb.svelte';
   const routes: BreadcrumbRoute[] = [

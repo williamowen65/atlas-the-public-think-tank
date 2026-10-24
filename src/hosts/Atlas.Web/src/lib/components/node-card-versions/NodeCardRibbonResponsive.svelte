@@ -1,4 +1,5 @@
 <!--
+  @component
   NodeCardRibbonResponsive: Common card contract using the responsive ribbon presentation.
   Accepts the shared NodeCardProps contract; parent callbacks handle navigation and optional snippets provide live controls.
 -->

@@ -1,3 +1,7 @@
+<!--
+  @component
+  Shared header example with story-controlled navigation and account presentation.
+-->
 <script lang="ts">
   import type { ComponentProps } from 'svelte';
   import AtlasHeader from '../../src/lib/components/AtlasHeader.svelte';

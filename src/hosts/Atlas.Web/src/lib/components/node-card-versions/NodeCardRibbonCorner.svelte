@@ -1,4 +1,5 @@
 <!--
+  @component
   NodeCardRibbonCorner: Common card contract using the ribbon-corner presentation.
   Accepts the shared NodeCardProps contract; parent callbacks handle navigation and optional snippets provide live controls.
 -->

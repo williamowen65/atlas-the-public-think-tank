@@ -1,4 +1,5 @@
 <!--
+  @component
   NodePage: Presentational full-node composition with discussion tabs and caller-supplied snippets.
   The parent owns fetching and tab state; snippets supply voting, reactions and the active tab content.
 -->

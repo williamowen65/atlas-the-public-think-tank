@@ -1,3 +1,8 @@
+<!--
+  @component
+  Live API card workbench with discovery search, paging and node selection; supplies live voting
+  and reaction totals.
+-->
 <script lang="ts">
   import { openNodeStory } from '../shared/navigation';
   import LiveVotingDial from '../../src/lib/components/LiveVotingDial.svelte';

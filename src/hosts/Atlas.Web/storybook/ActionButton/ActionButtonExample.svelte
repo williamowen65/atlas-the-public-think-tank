@@ -1,3 +1,7 @@
+<!--
+  @component
+  Interactive ActionButton example reporting activation through a local status message.
+-->
 <script lang="ts">
   import ActionButton from '../../src/lib/components/ActionButton.svelte';
 

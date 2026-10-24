@@ -1,3 +1,7 @@
+<!--
+  @component
+  Current-participant profile route with session checking and a sign-in fallback.
+-->
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';

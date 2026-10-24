@@ -1,4 +1,5 @@
 <!--
+  @component
   MarkdownContent: Shared Markdown rendering for published blocks and editor previews.
   The renderer disables raw HTML/images and validates link protocols before producing HTML.
 -->

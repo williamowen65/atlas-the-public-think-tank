@@ -1,4 +1,5 @@
 <!--
+  @component
   LiveNodeForm: Session-aware creation, browser-private draft handling, custom types and backend submission.
   Public reads load types; session-aware writes save types/nodes, while private drafts stay in this browser.
 -->

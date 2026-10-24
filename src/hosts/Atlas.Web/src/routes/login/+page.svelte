@@ -1,3 +1,7 @@
+<!--
+  @component
+  Sign-in route using SessionControl; handles navigation after successful authentication.
+-->
 <script lang="ts">
   import { goto } from '$app/navigation';
   import SessionControl from '$lib/components/SessionControl.svelte';

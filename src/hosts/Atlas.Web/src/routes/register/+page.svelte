@@ -1,3 +1,7 @@
+<!--
+  @component
+  Account registration route using SessionControl in initial registration mode.
+-->
 <script lang="ts">
   import SessionControl from '$lib/components/SessionControl.svelte';
 </script>

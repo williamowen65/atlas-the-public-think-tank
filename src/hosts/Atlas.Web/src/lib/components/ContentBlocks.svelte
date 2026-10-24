@@ -1,4 +1,5 @@
 <!--
+  @component
   ContentBlocks: Renders an ordered list of supported content blocks.
   Handles images/links with URL validation and delegates Markdown to MarkdownContent.
 -->

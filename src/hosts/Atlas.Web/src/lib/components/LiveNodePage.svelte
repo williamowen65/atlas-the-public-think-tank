@@ -1,4 +1,5 @@
 <!--
+  @component
   LiveNodePage: Fetches a node, its content and types, then composes voting, tabs, child forms and discussion.
   Owns data and tab state; NodePage receives presentation props and renderable content snippets.
 -->

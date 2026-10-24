@@ -1,3 +1,8 @@
+<!--
+  @component
+  Shared application shell with header, route content and footer. Reads session/profile state
+  for account navigation.
+-->
 <script lang="ts">
   import { onMount, type ComponentProps, type Snippet } from 'svelte';
   // SvelteKit's reactive route information, including the current URL; not Redux state.

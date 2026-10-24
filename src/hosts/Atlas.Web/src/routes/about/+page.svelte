@@ -1,3 +1,7 @@
+<!--
+  @component
+  Static introduction to the Atlas frontend foundation.
+-->
 <!-- Layout: Page metadata followed by a short introduction to the shared frontend foundation. -->
 <svelte:head>
   <title>About the Atlas frontend foundation</title>

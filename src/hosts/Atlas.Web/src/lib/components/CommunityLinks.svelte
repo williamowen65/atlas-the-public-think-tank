@@ -1,4 +1,5 @@
 <!--
+  @component
   CommunityLinks: Reads node-community associations and displays links, with names as fallback.
   Uses supplied names until public community records are available.
 -->

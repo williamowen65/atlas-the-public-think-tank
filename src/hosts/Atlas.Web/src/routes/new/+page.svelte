@@ -1,3 +1,8 @@
+<!--
+  @component
+  Node creation route; resumes an optional local draft and opens the node after successful
+  creation.
+-->
 <script lang="ts">
   import { page } from '$app/state';
   import { goto } from '$app/navigation';

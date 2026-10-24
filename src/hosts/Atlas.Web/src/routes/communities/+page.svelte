@@ -1,3 +1,8 @@
+<!--
+  @component
+  Community directory with local search, creation allowance feedback and the community creation
+  form.
+-->
 <script lang="ts">
   import { onMount } from 'svelte';
   import {

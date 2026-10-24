@@ -1,4 +1,5 @@
 <!--
+  @component
   LiveProfilePage: Loads a public participant profile and their contribution feed.
   Public data is readable anonymously; edit controls depend on the current session and profile ownership.
 -->

@@ -1,3 +1,8 @@
+<!--
+  @component
+  Discovery route: derives search text and API filters from shared query state and supplies
+  navigation to the live feed.
+-->
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { discoveryQuery } from '$lib/state/discoveryQuery.svelte';

@@ -1,3 +1,7 @@
+<!--
+  @component
+  Shared footer example with workbench-aware navigation.
+-->
 <script lang="ts">
   import AtlasFooter from '../../src/lib/components/AtlasFooter.svelte';
   import { openStory } from '../shared/navigation';

@@ -1,4 +1,5 @@
 <!--
+  @component
   VotingDial: Controlled, presentational importance dial with wheel, drag, touch and keyboard interactions.
   Receives value/average/totalVotes from its parent and emits selections through onChange.
   It can be interactive, but never calls the API or calculates community totals.

@@ -1,3 +1,8 @@
+<!--
+  @component
+  Participant-scoped browser-local draft list with resume and delete actions; drafts are not
+  synchronized to the API.
+-->
 <script lang="ts">
   import { goto } from '$app/navigation';
   import SessionControl from '$lib/components/SessionControl.svelte';

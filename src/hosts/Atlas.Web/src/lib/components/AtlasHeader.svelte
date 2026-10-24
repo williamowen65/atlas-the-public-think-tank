@@ -1,4 +1,5 @@
 <!--
+  @component
   AtlasHeader: Shared navigation, search, account menu and logout behavior.
   The parent supplies authentication and display-name props; this component performs the logout request.
 -->

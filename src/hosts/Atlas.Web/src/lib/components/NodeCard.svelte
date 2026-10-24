@@ -1,4 +1,5 @@
 <!--
+  @component
   NodeCard: Selects a card presentation and forwards the common card contract.
   Only selects a visual variant; shared props and optional voting/reaction snippets pass through unchanged.
 -->

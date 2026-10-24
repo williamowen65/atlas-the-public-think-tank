@@ -1,4 +1,5 @@
 <!--
+  @component
   LiveComments: Fetches and edits one level of a threaded discussion, recursively rendering replies.
   Each recursive instance owns its own cursor, retry state and composer; the API authorizes mutations.
 -->

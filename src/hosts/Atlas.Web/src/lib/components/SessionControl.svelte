@@ -1,4 +1,5 @@
 <!--
+  @component
   SessionControl: Reusable session check, login, registration and optional sign-out UI.
   Reports participant identity through onSession; hideWhenSignedIn controls the signed-in helper display.
 -->

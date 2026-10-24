@@ -1,4 +1,5 @@
 <!--
+  @component
   NodeCommunities: Displays node-community associations and lets the node author change them.
   Shows association changes only to the node author; the backend remains authoritative for permission checks.
 -->

@@ -1,4 +1,5 @@
 <!--
+  @component
   LiveVotingDial: Connects VotingDial to API summaries, explicit confirmation, undo and sign-in prompts.
   Wraps the same VotingDial UI; it is not a separate dial implementation.
   Loads the participant rating and server totals, confirms selections, saves/undoes votes,

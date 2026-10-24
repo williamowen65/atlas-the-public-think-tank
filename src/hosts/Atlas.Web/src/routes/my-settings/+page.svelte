@@ -1,3 +1,8 @@
+<!--
+  @component
+  Session-aware public profile settings with save/discard actions and account-security
+  availability notes.
+-->
 <script lang="ts">
   import SessionControl from '$lib/components/SessionControl.svelte';
   import { apiRequest } from '$lib/api/apiRequest';

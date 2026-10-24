@@ -1,4 +1,5 @@
 <!--
+  @component
   LiveMyProfile: Session-aware current-participant profile, editing and community display.
   Keeps profile-edit form state separate from the fetched public profile.
 -->

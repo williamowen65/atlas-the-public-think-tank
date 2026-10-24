@@ -1,4 +1,5 @@
 <!--
+  @component
   Breadcrumb: Scrollable ancestry ribbon with older-page loading and alternate-parent paths.
   Keeps scroll position while prepending ancestors or switching paths; async lookups do not own app routing.
 -->

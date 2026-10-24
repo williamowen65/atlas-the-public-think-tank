@@ -1,3 +1,8 @@
+<!--
+  @component
+  Legacy profile route that redirects to the current participant’s profile, with a fallback
+  link.
+-->
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';

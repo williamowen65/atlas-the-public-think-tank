@@ -1,4 +1,5 @@
 <!--
+  @component
   NodeForm: Editable creation form and Markdown preview; parent owns persistence.
   Seeds editable fields once and emits drafts through callbacks; it does not persist data itself.
 -->
