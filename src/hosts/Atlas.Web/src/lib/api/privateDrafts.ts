@@ -1,5 +1,5 @@
-import type { NodeDraft } from '../components/NodeForm.svelte';
-import type { BreadcrumbItem } from '../components/Breadcrumb.svelte';
+import type { NodeDraft } from '../components/nodeDraft.types';
+import type { BreadcrumbItem } from '../components/breadcrumb.types';
 
 /** Device-local draft partitioned by participant, retaining optional parent context. */
 export interface SavedDraft {

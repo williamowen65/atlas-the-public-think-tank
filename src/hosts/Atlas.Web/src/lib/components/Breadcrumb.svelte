@@ -3,26 +3,16 @@
   Keeps scroll position while prepending ancestors or switching paths; async lookups do not own app routing.
 -->
 <script lang="ts" module>
-  /** Oldest ancestor first; omit id when the source supplies display text only. */
-  export interface BreadcrumbItem {
-    id?: string;
-    title: string;
-  }
-  /** Alternative parent routes for a node; each route is oldest ancestor first. */
-  export interface BreadcrumbRoute {
-    id: string;
-    label: string;
-    items: BreadcrumbItem[];
-    divergenceIndex?: number;
-  }
-  export interface BreadcrumbPage {
-    items: BreadcrumbItem[];
-    hasMore: boolean;
-  }
-  export type LoadOlderAncestors = (oldestId?: string) => Promise<BreadcrumbPage>;
+  export type {
+    BreadcrumbItem,
+    BreadcrumbRoute,
+    BreadcrumbPage,
+    LoadOlderAncestors,
+  } from './breadcrumb.types';
 </script>
 
 <script lang="ts">
+  import type { BreadcrumbItem, BreadcrumbRoute, LoadOlderAncestors } from './breadcrumb.types';
   let {
     items,
     onNavigate,

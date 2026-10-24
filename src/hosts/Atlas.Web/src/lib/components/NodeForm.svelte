@@ -3,18 +3,11 @@
   Seeds editable fields once and emits drafts through callbacks; it does not persist data itself.
 -->
 <script lang="ts" module>
-  export interface NodeDraft {
-    title: string;
-    shortDescription: string;
-    markdown: string;
-    typeId: string | null;
-    requestedTypeIds: string[];
-    parentId?: string;
-    newType?: { name: string; description: string; autoPluralize?: boolean };
-  }
+  export type { NodeDraft } from './nodeDraft.types';
 </script>
 
 <script lang="ts">
+  import type { NodeDraft } from './nodeDraft.types';
   import { untrack } from 'svelte';
   import Breadcrumb, { type BreadcrumbItem } from './Breadcrumb.svelte';
   import MarkdownContent from './MarkdownContent.svelte';

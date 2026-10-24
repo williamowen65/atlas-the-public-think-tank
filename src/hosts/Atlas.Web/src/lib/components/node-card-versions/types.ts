@@ -1,5 +1,5 @@
 import type { Snippet } from 'svelte';
-import type { BreadcrumbItem, LoadOlderAncestors } from '../Breadcrumb.svelte';
+import type { BreadcrumbItem, LoadOlderAncestors } from '../breadcrumb.types';
 /** Presentation data: adapt API projections to this model at the application boundary. */
 export interface NodeCardData {
   id: string;

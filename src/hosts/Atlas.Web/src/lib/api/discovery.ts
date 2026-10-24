@@ -1,5 +1,5 @@
-import type { BreadcrumbPage } from '../components/Breadcrumb.svelte';
-import type { NodeCardData } from '../components/NodeCard.svelte';
+import type { BreadcrumbPage } from '../components/breadcrumb.types';
+import type { NodeCardData } from '../components/node-card-versions/types';
 
 /** Optional discovery constraints translated into API query parameters. */
 export interface DiscoveryFilters {
