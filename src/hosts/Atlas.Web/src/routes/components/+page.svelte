@@ -2,6 +2,9 @@
   import ActionButton from '$lib/components/ActionButton.svelte';
 
   // The app owns its composition; Storybook-only fixtures stay outside src.
+  /**
+   * Status text showing the integration example’s most recent button result.
+   */
   let message = $state('No action yet');
 </script>
 

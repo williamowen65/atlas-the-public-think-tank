@@ -86,7 +86,13 @@
     onCreateFirst?: () => void;
   } = $props();
   let tail: HTMLDivElement;
+  /**
+   * Trimmed contribution type label used by the empty-feed invitation.
+   */
   const singularType = $derived((emptyTypeName ?? '').trim());
+  /**
+   * English indefinite article selected from the invitation type’s initial letter.
+   */
   const article = $derived(/^[aeiou]/i.test(singularType) ? 'an' : 'a');
   // Observe the tail only when another page can be requested; the manual button remains the fallback.
   $effect(() => {

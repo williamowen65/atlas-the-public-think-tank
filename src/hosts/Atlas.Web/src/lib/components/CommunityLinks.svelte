@@ -15,6 +15,9 @@
     /** Fallback community display names while linked community records are being fetched. */
     names: string[];
   } = $props();
+  /**
+   * Public community associations loaded for this node.
+   */
   let linked = $state<Community[]>([]);
   // Fetch linkable records once mounted; abort on removal and keep fallback names on failure.
   onMount(() => {
@@ -32,6 +35,9 @@
       .catch(() => {});
     return () => controller.abort();
   });
+  /**
+   * Linked community records when available, otherwise supplied display-only names.
+   */
   const labels = $derived(
     linked.length
       ? linked.map((c) => ({ id: c.id, name: c.name }))

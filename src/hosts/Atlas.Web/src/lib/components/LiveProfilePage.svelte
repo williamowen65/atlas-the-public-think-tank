@@ -35,21 +35,65 @@
     createdAt?: string;
     deleted?: boolean;
   };
+  /**
+   * Fetched public participant profile, including deletion state and contribution
+   * identity.
+   */
   let profile = $state<Profile | null>(null);
+  /**
+   * Whether data is being loaded; drives loading feedback for this view.
+   */
   let loading = $state(true);
+  /**
+   * User-facing load or request failure; empty text hides the error message.
+   */
   let error = $state('');
+  /**
+   * Signed-in participant ID used to determine whether this profile belongs to the
+   * visitor.
+   */
   let sessionId = $state<string | null>(null);
+  /**
+   * Whether the session lookup has completed, including a signed-out result.
+   */
   let sessionReady = $state(false);
+  /**
+   * Whether the profile or community edit form is open.
+   */
   let editing = $state(false);
+  /**
+   * Whether a save is underway; locks the relevant form against duplicate submission.
+   */
   let saving = $state(false);
+  /**
+   * Non-error feedback shown after an action completes.
+   */
   let notice = $state('');
+  /**
+   * Editable public display name, separate from the fetched profile until saved.
+   */
   let displayName = $state('');
+  /**
+   * Editable public biography, separate from the fetched profile until saved.
+   */
   let bio = $state('');
+  /**
+   * Loaded community records displayed in this view.
+   */
   let communities = $state<Community[]>([]);
+  /**
+   * Whether the current session participant matches the displayed profile ID.
+   */
   const isOwner = $derived(!!participantId && sessionId === participantId);
+  /**
+   * Loaded communities owned by the displayed participant.
+   */
   const ownedCommunities = $derived(
     communities.filter((c) => c.ownerParticipantId === profile?.id),
   );
+  /**
+   * Loaded communities joined by the displayed participant but owned by someone else.
+   */
   const joinedCommunities = $derived(
     communities.filter((c) => c.isMember && c.ownerParticipantId !== profile?.id),
   );

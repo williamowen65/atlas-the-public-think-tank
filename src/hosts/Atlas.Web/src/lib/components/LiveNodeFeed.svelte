@@ -57,9 +57,21 @@
     /** Callback: Receives the author/participant ID to open in a profile page. */
     onOpenProfile?: (id: string) => void;
   } = $props();
+  /**
+   * Accumulated discovery cards from loaded pages; duplicate node IDs are excluded.
+   */
   let items = $state<FeedItem[]>([]);
+  /**
+   * Whether data is being loaded; drives loading feedback for this view.
+   */
   let loading = $state(false);
+  /**
+   * User-facing load or request failure; empty text hides the error message.
+   */
   let error = $state('');
+  /**
+   * Whether discovery reports another page to load.
+   */
   let hasMore = $state(true);
   let nextPage = 1;
   let controller: AbortController | undefined;

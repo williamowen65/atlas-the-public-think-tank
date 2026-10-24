@@ -48,17 +48,52 @@
     /** Callback: Receives the author/participant ID to open in a profile page. */
     onOpenProfile?: (id: string) => void;
   } = $props();
+  /**
+   * Loaded public node-card model, or null before usable node data is available.
+   */
   let node = $state<NodeCardData | null>(null);
+  /**
+   * Ordered full-content blocks loaded for this node.
+   */
   let blocks = $state<ContentBlock[]>([]);
+  /**
+   * Available non-archived node types used by labels, filters or creation choices.
+   */
   let types = $state<NodeType[]>([]);
+  /**
+   * Selected discussion-tab ID: comments, a contribution type ID or a temporary draft tab.
+   */
   let active = $state('comments');
+  /**
+   * Whether data is being loaded; drives loading feedback for this view.
+   */
   let loading = $state(false);
+  /**
+   * User-facing load or request failure; empty text hides the error message.
+   */
   let error = $state('');
+  /**
+   * Counter changed by Retry to rerun the reactive node-loading effect.
+   */
   let retry = $state(0);
+  /**
+   * Type ID of the open child form; null means closed, while empty text permits initial
+   * selection.
+   */
   let createType = $state<string | null>(null);
+  /**
+   * Whether the node’s breadcrumb can load older ancestors.
+   */
   let hasMoreAncestors = $state(false);
+  /**
+   * Latest child draft reported by the open form; determines its temporary tab label and
+   * save behavior.
+   */
   let editingDraft = $state<NodeDraft | null>(null);
   let saveChildDraft: (() => Promise<boolean>) | null = null;
+  /**
+   * Whether tab switching is awaiting draft handling; prevents overlapping transitions.
+   */
   let switching = $state(false);
   const draftChanged = (draft: NodeDraft) =>
     !!(
@@ -106,7 +141,13 @@
     const selected = draft.newType ? 'draft-new-type' : draft.typeId;
     if (selected) active = selected;
   }
+  /**
+   * Backend-calculated average importance rating; null means no average is available.
+   */
   let average = $state<number | null>(null);
+  /**
+   * Backend-reported importance vote count; the frontend does not calculate it.
+   */
   let totalVotes = $state(0);
   const openNode = (id: string, typeId?: string) =>
     onOpenNode

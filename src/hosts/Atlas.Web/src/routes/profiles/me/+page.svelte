@@ -4,7 +4,14 @@
   import { apiRequest } from '$lib/api/apiRequest';
   import LiveProfilePage from '$lib/components/LiveProfilePage.svelte';
   import SessionControl from '$lib/components/SessionControl.svelte';
+  /**
+   * Current participant ID reported by the session API, or null when no usable identity is
+   * known.
+   */
   let participantId = $state<string | null>(null);
+  /**
+   * Whether the initial session check is pending; controls the sign-in loading state.
+   */
   let checking = $state(true);
   onMount(() => {
     let active = true;

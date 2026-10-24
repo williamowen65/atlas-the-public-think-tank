@@ -61,21 +61,68 @@
      */
     onRegisterClose?: (close: () => Promise<boolean>) => void;
   } = $props();
+  /**
+   * Available non-archived node types used by labels, filters or creation choices.
+   */
   let types = $state<NodeType[]>([]);
+  /**
+   * User-facing load or request failure; empty text hides the error message.
+   */
   let error = $state('');
+  /**
+   * Whether data is being loaded; drives loading feedback for this view.
+   */
   let loading = $state(true);
+  /**
+   * Current participant ID reported by the session API, or null when no usable identity is
+   * known.
+   */
   let participantId = $state<string | null>(null);
+  /**
+   * Whether a draft editor is available for the current participant/context.
+   */
   let hasDraft = $state(false);
+  /**
+   * Whether custom-type/node creation is underway; locks draft controls.
+   */
   let submitting = $state(false);
+  /**
+   * Creation failure displayed while retaining the draft for retry.
+   */
   let saveError = $state('');
+  /**
+   * Successfully created node ID; nonempty text switches to the success/open-node view.
+   */
   let createdId = $state('');
+  /**
+   * Saved custom-type ID plus its input key, reused on unchanged retries after node
+   * creation fails.
+   */
   let createdType = $state<{ key: string; id: string } | null>(null);
   let controller: AbortController;
+  /**
+   * Latest values reported by NodeForm, used for local saving and parent notifications.
+   */
   let currentDraft = $state<NodeDraft | null>(null);
+  /**
+   * Restored browser-local values passed to NodeForm as its initial draft.
+   */
   let savedDraft = $state<NodeDraft | undefined>(undefined);
+  /**
+   * Feedback after saving a private draft on this device.
+   */
   let savedNotice = $state('');
+  /**
+   * Local draft record ID reused for saves belonging to the current participant.
+   */
   let ownerDraftId = $state('');
+  /**
+   * Restored/resolved parent ancestry for a resumed child draft.
+   */
   let savedBreadcrumb = $state<BreadcrumbItem[] | undefined>(undefined);
+  /**
+   * Restored/resolved parent title for a resumed child draft.
+   */
   let savedParentTitle = $state<string | undefined>(undefined);
   async function resolveParentPath(id: string) {
     try {

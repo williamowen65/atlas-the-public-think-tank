@@ -29,6 +29,10 @@
   }: NodeCardProps = $props();
   const instance = $props.id();
   // Prefer structured contribution types; use the text summary only for older projections.
+  /**
+   * Display-only connection summaries from legacy text and related-node titles, separate
+   * from structured child-type buttons.
+   */
   const connectionLabels = $derived([
     ...(!node.childTypes?.length && node.subNodeSummary && node.subNodeSummary !== 'None'
       ? node.subNodeSummary.split(' · ')

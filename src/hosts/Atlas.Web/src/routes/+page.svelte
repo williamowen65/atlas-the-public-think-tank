@@ -5,11 +5,20 @@
   import { readTypes, type NodeType } from '$lib/api/nodePage';
   import type { DiscoveryFilters } from '$lib/api/discovery';
   // This root-route page becomes the children rendered by +layout.svelte.
+  /**
+   * Loaded type catalog used to resolve type names/IDs in query tokens.
+   */
   let types = $state<NodeType[]>([]);
   // The header and page share the search query; derive API filters from it.
+  /**
+   * Applied search query shared with the header’s DiscoverySearch control.
+   */
   const query = $derived(discoveryQuery.value);
   // Recompute when the query or loaded type catalog changes. This only derives data;
   // LiveNodeFeed owns discovery requests. The result separates free text from API filters.
+  /**
+   * Free text and structured discovery filters derived from the query and loaded catalog.
+   */
   const parsed = $derived.by(() => {
     const filters: DiscoveryFilters = {};
     const text: string[] = [];

@@ -9,20 +9,56 @@
     myCommunities,
     type Community,
   } from '$lib/api/communities';
+  /**
+   * Loaded details for the URL-selected community, or null until available.
+   */
   let community = $state<Community | null>(null);
+  /**
+   * Current participant’s community records, used to establish ownership.
+   */
   let mine = $state<Community[]>([]);
+  /**
+   * Whether data is being loaded; drives loading feedback for this view.
+   */
   let loading = $state(true);
+  /**
+   * User-facing load or request failure; empty text hides the error message.
+   */
   let error = $state('');
+  /**
+   * Whether a mutation is underway; prevents overlapping actions.
+   */
   let busy = $state(false);
+  /**
+   * Whether the session lookup found a signed-in participant.
+   */
   let signedIn = $state(false);
+  /**
+   * Whether the profile or community edit form is open.
+   */
   let editing = $state(false);
+  /**
+   * Working community name while editing.
+   */
   let name = $state('');
+  /**
+   * Working community description while editing.
+   */
   let description = $state('');
+  /**
+   * Community ID derived from the route parameter.
+   */
   const id = $derived(page.params.id);
+  /**
+   * Whether the current participant owns the displayed community.
+   */
   const owned = $derived(
     community !== null &&
       mine.some((c) => c.id === community?.id && c.ownerParticipantId === currentParticipant),
   );
+  /**
+   * Current session’s participant ID for ownership comparison.
+   */
   let currentParticipant = $state<string | null>(null);
   async function refresh() {
     try {

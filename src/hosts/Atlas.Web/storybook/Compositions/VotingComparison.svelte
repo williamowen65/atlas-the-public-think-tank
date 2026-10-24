@@ -1,7 +1,13 @@
 <script lang="ts">
   import VotingDial from '../../src/lib/components/VotingDial.svelte';
 
+  /**
+   * Local selection for the first demonstration dial; never submitted to the API.
+   */
   let first = $state<number | null>(null);
+  /**
+   * Independent local selection for the compact demonstration dial.
+   */
   let second = $state<number | null>(0);
 </script>
 

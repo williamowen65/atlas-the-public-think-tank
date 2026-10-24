@@ -22,16 +22,44 @@
     if (!id) return { items: [], hasMore: false };
     return readOlderAncestors(id, AbortSignal.timeout(10000));
   }
+  /**
+   * Latest discovery page or exact-node lookup response.
+   */
   let result = $state<DiscoveryPage | null>(null);
+  /**
+   * Whether data is being loaded; drives loading feedback for this view.
+   */
   let loading = $state(false);
+  /**
+   * User-facing load or request failure; empty text hides the error message.
+   */
   let error = $state('');
+  /**
+   * Editable search input, separate from the last submitted query.
+   */
   let search = $state('');
   let appliedSearch = '';
+  /**
+   * Node ID chosen in the current page’s preview picker.
+   */
   let selectedId = $state('');
+  /**
+   * Exact node ID being previewed; empty text means paginated discovery.
+   */
   let detailId = $state('');
+  /**
+   * Structured reaction totals for the selected node, or null while unavailable.
+   */
   let reactions = $state<{ label: string; count: number }[] | null>(null);
+  /**
+   * Reaction-only load failure shown without hiding the card.
+   */
   let reactionError = $state('');
   let request: AbortController | null = null;
+  /**
+   * Displayable discovery results adapted to card models with voting and ancestor
+   * metadata.
+   */
   const items = $derived(
     (result?.items ?? []).flatMap((item) => {
       const node = discoveryCard(item);
@@ -47,6 +75,9 @@
         : [];
     }),
   );
+  /**
+   * Chosen card on this page, falling back to the first displayable item.
+   */
   const selected = $derived(items.find((item) => item.node.id === selectedId) ?? items[0]);
 
   $effect(() => {

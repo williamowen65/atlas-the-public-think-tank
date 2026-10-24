@@ -19,7 +19,13 @@
   } = $props();
 
   // Local reactive state: changes update the props passed to AtlasHeader below.
+  /**
+   * Session-derived flag passed to the header; does not itself authorize API access.
+   */
   let authenticated = $state(false);
+  /**
+   * Public profile name displayed by the header, with Atlas User as the fallback.
+   */
   let displayName = $state('Atlas User');
   // Once mounted in the browser, read the session and listen for sign-in/out changes.
   onMount(() => {
@@ -59,6 +65,9 @@
   });
 
   // Recompute the highlighted navigation item when SvelteKit changes the URL.
+  /**
+   * Navigation destination derived from the current route for header highlighting.
+   */
   const activePage = $derived.by((): ComponentProps<typeof AtlasHeader>['active'] => {
     const path = page.url.pathname;
     if (path === '/') return 'discover';

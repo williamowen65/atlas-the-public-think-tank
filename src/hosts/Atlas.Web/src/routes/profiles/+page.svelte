@@ -5,9 +5,21 @@
   import { apiRequest } from '$lib/api/apiRequest';
   import LiveProfilePage from '$lib/components/LiveProfilePage.svelte';
   import SessionControl from '$lib/components/SessionControl.svelte';
+  /**
+   * Current session participant ID used when no explicit profile ID is requested.
+   */
   let mine = $state<string | null>(null);
+  /**
+   * Whether the initial session check is pending; controls the sign-in loading state.
+   */
   let checking = $state(true);
+  /**
+   * Profile ID from the URL query, or null when viewing the current participant.
+   */
   const requestedId = $derived(page.url.searchParams.get('id'));
+  /**
+   * Explicit requested profile ID, falling back to the session participant or empty text.
+   */
   const participantId = $derived(requestedId ?? mine ?? '');
   onMount(() => {
     let active = true;

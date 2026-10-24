@@ -6,6 +6,9 @@
     /** Number of generated ancestor labels in the Storybook breadcrumb demonstration. */
     depth?: number;
   } = $props();
+  /**
+   * Status label showing the most recently activated ancestor.
+   */
   let selected = $state('No ancestor selected');
   const titles = [
     'What future is worth building?',
@@ -17,7 +20,13 @@
     'Restore salmon habitat',
     'Local restoration projects',
   ];
+  /**
+   * Fixture ancestry limited by the story’s depth control.
+   */
   const route = $derived(titles.slice(0, depth).map((title, i) => ({ id: String(i), title })));
+  /**
+   * Newest three fixture ancestors initially supplied to the breadcrumb.
+   */
   const items = $derived(route.slice(-3));
   async function loadOlder(oldestId?: string) {
     await new Promise((resolve) => setTimeout(resolve, 250));

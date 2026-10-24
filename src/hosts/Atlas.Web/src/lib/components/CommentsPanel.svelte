@@ -29,6 +29,10 @@
      */
     onAdded?: () => void;
   } = $props();
+  /**
+   * Current participant ID reported by the session API, or null when no usable identity is
+   * known.
+   */
   let participantId = $state<string | null>(null);
 </script>
 

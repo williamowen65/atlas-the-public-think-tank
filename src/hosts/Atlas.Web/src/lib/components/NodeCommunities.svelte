@@ -21,12 +21,35 @@
     /** Marks the node as archived and disables applicable voting/editing controls. */
     archived?: boolean;
   } = $props();
+  /**
+   * Community records currently associated with this node.
+   */
   let linked = $state<Community[]>([]);
+  /**
+   * Current participant’s available communities used by the association picker.
+   */
   let available = $state<Community[]>([]);
+  /**
+   * Current participant ID reported by the session API, or null when no usable identity is
+   * known.
+   */
   let participantId = $state<string | null>(null);
+  /**
+   * Community ID selected for the next association request.
+   */
   let selected = $state('');
+  /**
+   * Whether a mutation is underway; prevents overlapping actions.
+   */
   let busy = $state(false);
+  /**
+   * User-facing load or request failure; empty text hides the error message.
+   */
   let error = $state('');
+  /**
+   * Whether the current participant authored this active node; controls association UI,
+   * not backend authorization.
+   */
   const isAuthor = $derived(!archived && !!authorId && participantId === authorId);
   async function refresh() {
     linked = await apiRequest<Community[]>(

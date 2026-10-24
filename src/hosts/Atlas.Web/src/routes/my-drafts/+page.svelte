@@ -5,11 +5,30 @@
   import { readTypes, type NodeType } from '$lib/api/nodePage';
   import Breadcrumb, { type BreadcrumbItem } from '$lib/components/Breadcrumb.svelte';
   import { readDiscovery, discoveryCard, readOlderAncestors } from '$lib/api/discovery';
+  /**
+   * Signed-in participant ID used to scope account-specific data; null shows the sign-in
+   * prompt.
+   */
   let owner = $state<string | null>(null);
+  /**
+   * Draft records loaded from this participant’s browser-local storage.
+   */
   let drafts = $state<SavedDraft[]>([]);
+  /**
+   * Draft ID awaiting deletion confirmation; empty text means no confirmation is open.
+   */
   let confirmId = $state('');
+  /**
+   * Available non-archived node types used by labels, filters or creation choices.
+   */
   let types = $state<NodeType[]>([]);
+  /**
+   * Resolved parent ancestry cached by draft ID.
+   */
   let resolvedPaths = $state<Record<string, BreadcrumbItem[]>>({});
+  /**
+   * Whether each draft’s breadcrumb has older ancestors, keyed by draft ID.
+   */
   let moreAncestors = $state<Record<string, boolean>>({});
   function loadOlder(draft: SavedDraft, oldestId?: string) {
     return readOlderAncestors(
@@ -80,6 +99,9 @@
       message = 'Could not delete this draft.';
     }
   }
+  /**
+   * Draft load/save/delete feedback shown above the list.
+   */
   let message = $state('');
 </script>
 

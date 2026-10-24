@@ -39,20 +39,66 @@
      */
     sessionBase?: string;
   } = $props();
+  /**
+   * Last server-confirmed participant rating; null means no confirmed vote.
+   */
   let confirmed = $state<number | null>(null);
+  /**
+   * Rating displayed by the dial, including a proposed selection awaiting confirmation.
+   */
   let value = $state<number | null>(null);
+  /**
+   * Backend-calculated average importance rating; null means no average is available.
+   */
   let average = $state<number | null>(null);
+  /**
+   * Backend-reported importance vote count; the frontend does not calculate it.
+   */
   let totalVotes = $state(0);
+  /**
+   * Whether data is being loaded; drives loading feedback for this view.
+   */
   let loading = $state(true);
+  /**
+   * Whether a mutation is underway; prevents overlapping actions.
+   */
   let busy = $state(false);
+  /**
+   * Non-error feedback shown after an action completes.
+   */
   let notice = $state('');
+  /**
+   * User-facing load or request failure; empty text hides the error message.
+   */
   let error = $state('');
+  /**
+   * Whether a write succeeded but refreshing authoritative totals failed; exposes Retry
+   * totals.
+   */
   let refreshFailed = $state(false);
+  /**
+   * Whether the sign-in dialog’s content is mounted.
+   */
   let login = $state(false);
+  /**
+   * Mounted inline dial wrapper used for interaction/focus handling.
+   */
   let container = $state<HTMLDivElement>();
+  /**
+   * Mounted native sign-in dialog controlled by showModal/close.
+   */
   let dialog = $state<HTMLDialogElement>();
+  /**
+   * Mounted native confirmation dialog for casting or undoing a vote.
+   */
   let confirmDialog = $state<HTMLDialogElement>();
+  /**
+   * Proposed rating awaiting explicit approval; null means no rating is pending.
+   */
   let pending = $state<number | null>(null);
+  /**
+   * Whether the confirmation dialog represents an undo rather than a new rating.
+   */
   let pendingUndo = $state(false);
   let timer: ReturnType<typeof setTimeout> | undefined;
   const controller = new AbortController();

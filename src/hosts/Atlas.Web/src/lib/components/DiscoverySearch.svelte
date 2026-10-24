@@ -20,7 +20,13 @@
      */
     onExpandedChange?: (expanded: boolean) => void;
   } = $props();
+  /**
+   * Available non-archived node types used by labels, filters or creation choices.
+   */
   let types = $state<NodeType[]>([]);
+  /**
+   * Whether the visual filter toolbox is open.
+   */
   let expanded = $state(false);
   let searchRegion: HTMLElement;
   function dismissOutside(event: PointerEvent) {
@@ -31,9 +37,21 @@
     if (event.key === 'Escape') expanded = false;
   }
   $effect(() => onExpandedChange?.(expanded));
+  /**
+   * Editable query in the search input; may differ from the last accepted query.
+   */
   let input = $state('');
+  /**
+   * Last accepted query reflected by the shared discovery state.
+   */
   let applied = $state('');
+  /**
+   * Query being edited by the visual toolbox; Apply commits it to shared state.
+   */
   let pending = $state('');
+  /**
+   * Parsed pending query, including filter values and validation errors for the toolbox.
+   */
   const editing = $derived(parse(pending));
   onMount(() => {
     restoreDiscoveryQuery();

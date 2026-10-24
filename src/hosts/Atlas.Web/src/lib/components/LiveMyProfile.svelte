@@ -31,13 +31,38 @@
     /** Callback: Receives the author/participant ID to open in a profile page. */
     onOpenProfile?: (id: string) => void;
   } = $props();
+  /**
+   * Current participant ID reported by the session API, or null when no usable identity is
+   * known.
+   */
   let participantId = $state<string | null>(null);
+  /**
+   * Fetched public profile used to seed editable fields; null until available.
+   */
   let profile = $state<{ displayName: string; bio: string } | null>(null);
+  /**
+   * Editable public display name, separate from the fetched profile until saved.
+   */
   let displayName = $state('');
+  /**
+   * Editable public biography, separate from the fetched profile until saved.
+   */
   let bio = $state('');
+  /**
+   * Whether the profile or community edit form is open.
+   */
   let editing = $state(false);
+  /**
+   * Whether a save is underway; locks the relevant form against duplicate submission.
+   */
   let saving = $state(false);
+  /**
+   * Non-error feedback shown after an action completes.
+   */
   let notice = $state('');
+  /**
+   * Loaded community records displayed in this view.
+   */
   let communities = $state<Community[]>([]);
   async function load(id: string) {
     try {

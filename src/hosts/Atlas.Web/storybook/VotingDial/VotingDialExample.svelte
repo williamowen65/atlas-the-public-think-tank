@@ -29,8 +29,14 @@
      */
     voteOutcome?: VoteOutcome;
   } = $props();
+  /**
+   * Local preview rating; simulated outcomes may restore it and no API vote is saved.
+   */
   let value = $state<number | null>(null);
 
+  /**
+   * Non-error feedback shown after an action completes.
+   */
   let notice = $state('');
   const feedback = createVoteFeedback();
   function choose(next: number) {

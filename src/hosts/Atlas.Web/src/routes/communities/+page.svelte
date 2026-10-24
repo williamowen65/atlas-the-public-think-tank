@@ -7,14 +7,41 @@
     type Community,
     type CreationAllowance,
   } from '$lib/api/communities';
+  /**
+   * Loaded community records displayed in this view.
+   */
   let communities = $state<Community[]>([]);
+  /**
+   * Current participant’s community creation quotas, or null when unavailable.
+   */
   let allowance = $state<CreationAllowance | null>(null);
+  /**
+   * Whether data is being loaded; drives loading feedback for this view.
+   */
   let loading = $state(true);
+  /**
+   * User-facing load or request failure; empty text hides the error message.
+   */
   let error = $state('');
+  /**
+   * Working name for the community creation form.
+   */
   let name = $state('');
+  /**
+   * Working description for the community creation form.
+   */
   let description = $state('');
+  /**
+   * Local text filter for the loaded community list.
+   */
   let search = $state('');
+  /**
+   * Whether community creation is underway; locks the submit button.
+   */
   let creating = $state(false);
+  /**
+   * Loaded communities matching the local search text.
+   */
   const visible = $derived(
     communities.filter((c) => c.name.toLowerCase().includes(search.trim().toLowerCase())),
   );

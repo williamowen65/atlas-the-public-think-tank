@@ -31,14 +31,36 @@
      */
     apiBase?: string;
   } = $props();
+  /**
+   * API reaction choices with scores, counts and the current participant’s vote.
+   */
   let choices = $state<Choice[]>([]);
+  /**
+   * Whether data is being loaded; drives loading feedback for this view.
+   */
   let loading = $state(true);
+  /**
+   * Reaction-choice ID currently being changed, or null when no mutation is running.
+   */
   let busy = $state<string | null>(null);
+  /**
+   * Whether the full reaction picker is visible.
+   */
   let expanded = $state(false);
+  /**
+   * Whether an unauthorized vote has opened the session prompt.
+   */
   let signIn = $state(false);
+  /**
+   * User-facing load or request failure; empty text hides the error message.
+   */
   let error = $state('');
   let controller: AbortController;
   let requestGeneration = 0;
+  /**
+   * Choices with votes or a current participant selection; these appear in the compact
+   * row.
+   */
   const visibleReactions = $derived(
     choices.filter((c) => c.totalVotes > 0 || c.currentParticipantVote !== null),
   );

@@ -27,8 +27,17 @@
      */
     onNavigate?: (destination: 'discover' | 'create' | 'login' | 'register' | 'profile') => void;
   } = $props();
+  /**
+   * Reserved local search flag; currently not read or updated by the header.
+   */
   let searching = $state(false);
+  /**
+   * Whether DiscoverySearch has its filter toolbox open; keeps the header visible.
+   */
   let filtersOpen = $state(false);
+  /**
+   * Whether scroll behavior currently shows the header.
+   */
   let headerVisible = $state(true);
   let lastScroll = 0;
   // Keep the header visible near the top or while filters are open; hide it during downward scrolling.
@@ -44,8 +53,17 @@
     return () => window.removeEventListener('scroll', onScroll);
   });
 
+  /**
+   * Whether the desktop account navigation is open.
+   */
   let menuOpen = $state(false);
+  /**
+   * Whether logout is underway; disables repeat logout actions.
+   */
   let loggingOut = $state(false);
+  /**
+   * Logout failure shown in the header; empty text hides it.
+   */
   let logoutError = $state('');
   // Send logout through the session API, then notify other session-aware components.
   async function logOut() {
@@ -62,6 +80,9 @@
       loggingOut = false;
     }
   }
+  /**
+   * Mounted account-menu container used to detect clicks outside it.
+   */
   let accountElement = $state<HTMLDivElement>();
   let mobileElement: HTMLDetailsElement;
   // Dismiss menus without intercepting normal navigation or control activation.
@@ -91,6 +112,9 @@
   function closeOnResize() {
     if (window.innerWidth > 560 && mobileElement?.open) mobileElement.open = false;
   }
+  /**
+   * Uppercase first character of the display name for the avatar, with U as fallback.
+   */
   const initial = $derived(displayName.trim().charAt(0).toUpperCase() || 'U');
 </script>
 

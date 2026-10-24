@@ -57,12 +57,33 @@
   } = $props();
   // Seed editable fields once; later prop updates must not overwrite user edits.
   const startingDraft = untrack(() => initialDraft);
+  /**
+   * Working node title seeded from the initial draft.
+   */
   let title = $state(startingDraft?.title ?? '');
+  /**
+   * Working plain-text introduction shown on cards.
+   */
   let shortDescription = $state(startingDraft?.shortDescription ?? '');
+  /**
+   * Working Markdown source used by the content preview and submission snapshot.
+   */
   let markdown = $state(startingDraft?.markdown ?? '');
+  /**
+   * Selected catalog type ID, or new for custom-type creation.
+   */
   let typeId = $state(startingDraft?.newType ? 'new' : (startingDraft?.typeId ?? ''));
+  /**
+   * Selected catalog IDs requested as contributions to this node.
+   */
   let requestedTypeIds = $state<string[]>(startingDraft?.requestedTypeIds ?? []);
+  /**
+   * Current contribution-type picker value, reset after adding a choice.
+   */
   let requestedType = $state('');
+  /**
+   * Parent ancestry plus the immediate parent, used by the child-draft breadcrumb.
+   */
   const path = $derived(
     parentId ? [...breadcrumb, { id: parentId, title: parentTitle ?? parentId }] : breadcrumb,
   );
@@ -78,8 +99,17 @@
         });
       });
   }
+  /**
+   * Working name for a new custom node type.
+   */
   let typeName = $state(startingDraft?.newType?.name ?? '');
+  /**
+   * Working description for a new custom node type.
+   */
   let typeDescription = $state(startingDraft?.newType?.description ?? '');
+  /**
+   * Whether the new custom type should use automatic pluralization.
+   */
   let autoPluralize = $state(startingDraft?.newType?.autoPluralize ?? true);
   const instance = $props.id();
   $effect(() => {

@@ -45,17 +45,47 @@
     /** Base URL for this component’s API reads. This prop alone does not configure a proxy. */
     apiBase?: string;
   } = $props();
+  /**
+   * Older ancestor items prepended by the current path’s pager.
+   */
   let older = $state<BreadcrumbItem[]>([]);
+  /**
+   * ID of the explicitly selected supplied route, or null for the default path.
+   */
   let chosenRoute = $state<string | null>(null);
+  /**
+   * Whether the alternative-parent menu is visible.
+   */
   let openRouteMenu = $state(false);
+  /**
+   * Viewport coordinates placing the floating menu beside its trigger.
+   */
   let menuPosition = $state({ top: 0, left: 0 });
   let preserveScroll = false;
   let pendingAnchor: { id?: string; offset: number } | null = null;
+  /**
+   * Mounted scrolling container used for measurement and scroll positioning.
+   */
   let breadcrumbViewport = $state<HTMLElement>();
+  /**
+   * Mounted ordered list used to measure ancestor positions.
+   */
   let breadcrumbList = $state<HTMLOListElement>();
+  /**
+   * Cached alternative parent records keyed by child node ID.
+   */
   let liveChoices = $state<Record<string, { id: string; title: string }[]>>({});
+  /**
+   * API-resolved alternative ancestry path, or null to use supplied/paged items.
+   */
   let livePath = $state<BreadcrumbItem[] | null>(null);
+  /**
+   * Child node whose alternative parents populate the menu, or null for supplied routes.
+   */
   let liveMenuChild = $state<string | null>(null);
+  /**
+   * Whether an alternative-parent lookup is underway; locks menu choices.
+   */
   let liveBusy = $state(false);
   function toggleRouteMenu(event: MouseEvent) {
     if (openRouteMenu) {
@@ -149,14 +179,33 @@
     more = false;
     onRouteChange?.(route);
   }
+  /**
+   * Whether the current ancestry path has older items remaining.
+   */
   let more = $state(false);
+  /**
+   * Whether an older-ancestor page is loading.
+   */
   let loading = $state(false);
+  /**
+   * User-facing load or request failure; empty text hides the error message.
+   */
   let error = $state('');
   let generation = 0;
+  /**
+   * Supplied alternative route matching chosenRoute, if any.
+   */
   const selectedRoute = $derived(routes.find((route) => route.id === chosenRoute));
+  /**
+   * Ribbon position showing the supplied routes’ branch chooser; -1 means none.
+   */
   const divergenceIndex = $derived(
     routes.length > 1 ? (routes[0].divergenceIndex ?? Math.max(0, items.length - 1)) : -1,
   );
+  /**
+   * Displayed path: selected supplied route, live alternative, or older items followed by
+   * supplied items.
+   */
   const allItems = $derived(
     selectedRoute ? selectedRoute.items : (livePath ?? [...older, ...items]),
   );

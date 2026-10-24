@@ -9,6 +9,9 @@
   }
 
   let { label = 'Try action', disabled = false }: Props = $props();
+  /**
+   * Local status text demonstrating the button activation callback.
+   */
   let message = $state('No action yet');
 </script>
 

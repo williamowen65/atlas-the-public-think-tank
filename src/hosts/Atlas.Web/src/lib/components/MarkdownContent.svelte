@@ -11,6 +11,10 @@
     /** Markdown block source; short descriptions remain plain text elsewhere. */
     text: string;
   } = $props();
+  /**
+   * HTML derived only from the shared Markdown renderer; never raw user text for the HTML
+   * insertion.
+   */
   const html = $derived(renderMarkdown(text));
 </script>
 

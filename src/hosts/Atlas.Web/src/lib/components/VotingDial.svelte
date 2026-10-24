@@ -42,11 +42,24 @@
     onChange,
   }: Props = $props();
 
+  /**
+   * Whether to show the voted treatment, using hasVoted when supplied or the selected
+   * value otherwise.
+   */
   const marked = $derived(hasVoted ?? value !== null);
   const ratings = Array.from({ length: 11 }, (_, index) => 10 - index);
   let reel: HTMLDivElement;
+  /**
+   * Whether pointer dragging is active on the rating reel.
+   */
   let dragging = $state(false);
+  /**
+   * Vertical pixel offset applied to the noncompact selection lens during interaction.
+   */
   let lensPull = $state(0);
+  /**
+   * Whether the lens is in its pulled interaction state.
+   */
   let pulling = $state(false);
   let touchPointer: { id: number; y: number } | null = null;
   let drag: { id: number; y: number; top: number; moved: boolean } | null = null;

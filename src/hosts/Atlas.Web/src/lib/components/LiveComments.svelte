@@ -46,21 +46,71 @@
      */
     onAdded?: () => void;
   } = $props();
+  /**
+   * Loaded comments for this thread level only; replies belong to recursive instances.
+   */
   let items = $state<Comment[]>([]);
+  /**
+   * API keyset cursor for the next sibling page, or null when no continuation is
+   * available.
+   */
   let next = $state<CommentPage['next']>(null);
+  /**
+   * Whether a comment page has loaded successfully; distinguishes initial state from an empty
+   * thread.
+   */
   let started = $state(false);
+  /**
+   * Whether this level’s next comment page is loading.
+   */
   let loading = $state(false);
+  /**
+   * Comment-list load failure; separate from posting/editing/removal failures.
+   */
   let error = $state('');
+  /**
+   * Comment IDs whose reply threads are currently expanded.
+   */
   let open = $state<string[]>([]);
+  /**
+   * Cached public author display names keyed by participant ID.
+   */
   let names = $state<Record<string, string>>({});
+  /**
+   * New comment/reply composer text; retained when posting fails.
+   */
   let text = $state('');
+  /**
+   * Whether posting, editing or removing a comment is underway.
+   */
   let saving = $state(false);
+  /**
+   * Mutation failure displayed without replacing the loaded comment list.
+   */
   let actionError = $state('');
+  /**
+   * Successful comment-action feedback announced to the visitor.
+   */
   let notice = $state('');
+  /**
+   * ID of the comment whose edit form is open, or null when none is being edited.
+   */
   let editing = $state<string | null>(null);
+  /**
+   * Working text for the open edit form; independent of the saved comment body.
+   */
   let editText = $state('');
+  /**
+   * ID of the comment awaiting removal confirmation, or null.
+   */
   let removing = $state<string | null>(null);
+  /**
+   * Comment ID whose expanded reply thread should show its composer.
+   */
   let replyTarget = $state<string | null>(null);
+  /**
+   * Mounted new-comment textarea used for programmatic focus.
+   */
   let composer = $state<HTMLTextAreaElement>();
   const instance = $props.id();
   const controller = new AbortController();

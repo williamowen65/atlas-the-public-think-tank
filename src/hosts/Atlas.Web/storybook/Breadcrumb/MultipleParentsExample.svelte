@@ -69,9 +69,21 @@
       ],
     },
   ];
+  /**
+   * Selected fixture scenario: shared ancestry or separate roots.
+   */
   let scenario = $state<'shared' | 'different'>('shared');
+  /**
+   * Fixture parent routes matching the current scenario.
+   */
   let availableRoutes = $derived(scenario === 'shared' ? routes : separateRoots);
+  /**
+   * Currently selected fixture ancestry route.
+   */
   let active = $state(routes[0]);
+  /**
+   * Status text showing the simulated navigation destination.
+   */
   let visited = $state('Select a breadcrumb to navigate.');
 </script>
 

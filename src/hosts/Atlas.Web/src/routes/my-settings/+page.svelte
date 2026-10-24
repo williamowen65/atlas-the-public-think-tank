@@ -1,14 +1,42 @@
 <script lang="ts">
   import SessionControl from '$lib/components/SessionControl.svelte';
   import { apiRequest } from '$lib/api/apiRequest';
+  /**
+   * Signed-in participant ID used to scope account-specific data; null shows the sign-in
+   * prompt.
+   */
   let owner = $state<string | null>(null);
+  /**
+   * Editable public display name.
+   */
   let name = $state('');
+  /**
+   * Editable public biography, separate from the fetched profile until saved.
+   */
   let bio = $state('');
+  /**
+   * Last loaded/saved display name used by Discard changes.
+   */
   let initialName = $state('');
+  /**
+   * Last loaded/saved biography used by Discard changes.
+   */
   let initialBio = $state('');
+  /**
+   * Whether data is being loaded; drives loading feedback for this view.
+   */
   let loading = $state(false);
+  /**
+   * Whether a save is underway; locks the relevant form against duplicate submission.
+   */
   let saving = $state(false);
+  /**
+   * Successful settings-save feedback.
+   */
   let message = $state('');
+  /**
+   * User-facing load or request failure; empty text hides the error message.
+   */
   let error = $state('');
   let requestGeneration = 0;
   async function sessionChanged(id: string | null) {
