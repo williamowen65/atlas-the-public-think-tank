@@ -4,6 +4,10 @@ PTT-143, PTT-144 and PTT-145 deliver the foundation from [PTTD-31](https://thepu
 
 ## Learning guides
 
+- [Component catalog](docs/COMPONENT-CATALOG.md): every component’s props, types, defaults, callbacks and snippets, plus SessionControl examples.
+- [Svelte reading guide](docs/SVELTE-READING-GUIDE.md): root composition, reactive state and lifecycle hooks.
+
+
 - [SvelteKit orientation](docs/SVELTEKIT.md): route folders, plus files, dynamic pages, layouts, rendering, SSR and our static deployment choice.
 - [Storybook workbench](docs/STORYBOOK-WORKBENCH.md): styles/layout, components/compositions, global themes and density, legacy dial inspection and voting prototype limits.
 
@@ -61,7 +65,7 @@ $env:ATLAS_STORYBOOK_API_URL = "https://localhost:7240"
 npm run storybook:api
 ```
 
-The variable changes the proxy destination; configure the API's listening port to match separately. Only loopback HTTP(S) origins are accepted. Storybook's development server proxies anonymous GET requests from `/atlas-preview-api/nodes` to `/api/nodes`; it rejects writes and strips authentication cookies/headers and response cookies. It accepts the local API's development certificate without changing browser/production TLS settings. No CORS changes or login secrets are needed. This proxy is absent from static Storybook builds: use the development command for live data. A static node-card preview also requests the API, so it needs a host that routes the preview endpoint. CI intercepts those requests using Playwright. When API loading fails, the preview gives setup guidance and Retry instead of silently substituting fake content.
+The variable changes the proxy destination; configure the API's listening port to match separately. Only loopback HTTP(S) origins are accepted. Storybook's development server proxies anonymous GET requests from `/atlas-public-api/nodes` to `/api/nodes`; it rejects writes and strips authentication cookies/headers and response cookies. It accepts the local API's development certificate without changing browser/production TLS settings. No CORS changes or login secrets are needed. This proxy is absent from static Storybook builds: use the development command for live data. A static node-card preview also requests the API, so it needs a host that routes the preview endpoint. CI intercepts those requests using Playwright. When API loading fails, the preview gives setup guidance and Retry instead of silently substituting fake content.
 
 The reusable read adapter lives in `src/lib/api/discovery.ts`; the Storybook-only loader owns selection, request cancellation, timeout and loading/error states. Browser CI uses intercepted contract-shaped responses and verifies that requests stay read-only; it does not connect to your SQL Server. A real database smoke check must be done with your local API running. Authenticated previews and durable voting remain a later, explicit mode tied to a selected node.
 
@@ -282,3 +286,77 @@ Select `ribbon-split` in the Atlas node story's presentation Control (available 
 ### Corner action card experiment
 
 `ribbon-corner` is the initial Atlas node Storybook selection. It preserves the split version's community byline and wrapping reaction/count groups, but floats the shared Read more ActionButton at the bottom-right of the description. A resize action gives short descriptions enough height to reach the dial's bottom, keeps text top-aligned, and limits the float's text exclusion to the action's actual footprint with CSS shape-outside. The last text line can share space with the action; the paragraph contains the float so comments and node counts stay below it. The action has no full-width bottom row. `ribbon-split` and all earlier versions remain selectable.
+
+## PTT-146: shell and scrolling feed prototypes
+
+Three separate stories each expose one Playground: **Layout/Header**, **Layout/Footer**, and **Compositions/Feed**. Header/Footer are shared presentational components with wrapping navigation. The isolated feed story uses live anonymous Atlas API data, without a surrounding app shell or Storybook node fixtures.
+
+`NodeFeed.svelte` accepts display items, loading/error/end state and callbacks. It contains no fetch/session/database logic. An IntersectionObserver requests another page within 240px of the bottom; the always-available Load more button supports keyboard use and browsers without observer-triggered loading. Errors suspend automatic loading until Retry. The caller-owned guard prevents overlapping requests; successful pages append in order and deduplicate IDs. Existing cards remain mounted. There is no virtualization or durable feed cursor yet; the current page-number API can change order while people vote.
+
+`LiveNodeFeed.svelte` owns bounded requests, page position, cancellation, safe Discovery adaptation and optional reaction reads. Hidden cards are filtered before rendering, empty pages can continue to the next page, failed pages retry the same number, and pagination stops at `hasNextPage = false`. Reactions do not prevent cards from appearing; failures are noted per card. Votes and comment writes are not connected in the feed prototype. Read more and ancestor links open node pages; older breadcrumb segments can load using the existing public reader.
+
+The SPA root composes those same components. `/components` preserves the original action-button integration example. Run `npm run dev` alongside Atlas.Api to browse the feed in the SPA, or `npm run storybook:api` for the isolated stories. Both development servers use the existing anonymous loopback proxy and GET allowlist. Static hosting still needs a separately configured API/reverse proxy; Vite's development proxy is not a production service.
+
+Browser CI intercepts API HTTP responses (no backend/database required) to verify scroll append, deduplication, moderation filtering, failure/retry, end-of-feed, narrow containment and shared SPA composition. These checks do not prove live backend ranking stability, authenticated actions, production API hosting, or large-feed performance. The header/footer are layout prototypes, without new account/session behavior.
+
+## Shared style experiments in Storybook
+
+Header and Footer appear under `Layout/` (the slash in their story title defines the navigation group). `Styles and Layout/Typography` is a playground and spacing reference. Its Controls include font family, base font size, line height, heading scale, paragraph/heading gaps, shared spacing, normal/narrow card padding, dial/text gap, corner radius, and eight color tokens.
+
+Changing these Controls publishes a Storybook global and applies shared CSS variables across components and compositions as you switch stories in the same Storybook session. Font size scales rem-based measurements. Card inset and ribbon/title spacing share the same padding token; narrow card padding remains separately adjustable. Components with intentionally fixed local dimensions (such as dial row geometry) retain those dimensions.
+
+Empty color Controls inherit the Theme toolbar palette. Explicit colors override Theme until cleared or reset; explicit spacing overrides Density. **Reset styles to code defaults** restores every style Control, including clearing color overrides. Storybook's globals and per-story Controls are exploration state, not edits to source SCSS or the separate SPA. Promote an approved palette/spacing/font into shared SCSS to make it an app default. The specimen records established card/spacing conventions and notes color pairs to check in the Accessibility panel.
+
+## Node pages and creation drafts
+
+**Components/Node form** loads the live, nonarchived node-type catalog. The shared `NodeForm` accepts root/parent context, an optional selected type and preview/submit callbacks. It collects a title (450), authored short description (280), Markdown content (32000), a type and requested response types. Any catalog type may be selected, even when the parent did not request it. A new-type option records a name/description and per-type automatic pluralization preference, then saves the type before submitting the node. The form is an editable card: node type comes before the title, the importance dial is disabled, and Markdown renders automatically as you type. The footer contains a Requested contributions selector with removable selections. Child creation appears inside the node page above its child feed, retains the known ancestor/parent breadcrumb, and scrolls to and focuses the type selector after loading. Community selection is not connected yet. The live wrapper checks the existing session before showing the form, prompts for sign-in when needed, and submits to the real node-creation endpoint with CSRF protection. Success opens the created node; failures retain the form.
+
+**Compositions/Node page** defaults to the first public Discovery result; its nodeId Control selects a specific node. Read more from the node/card and feed stories navigates to the matching Storybook URL, preserving global URL parameters. The SPA equivalents are `/nodes?id=<id>` and `/new`; the shared header links to root creation. Storybook remains a component workbench, not the deployment target.
+
+`NodePage` is presentational. `LiveNodePage` loads the visible card, metadata, content blocks, reaction totals and type catalog with cancellation. Content renders as escaped text with a limited Markdown subset (paragraphs, headings, lists and fenced code), images and safe HTTP(S) links/video links. Raw HTML is not executed. Poll/chart blocks currently have text placeholders rather than interactive renderers. Hidden/unavailable nodes show a retryable notice, without fetching or rendering original hidden content.
+
+The page has keyboard-accessible Comments/type tabs. Comments use the existing keyset-paged API, including lazy reply expansion and retry. Every active catalog type has a child tab, with requested types first; Add child opens a parented form preselected to that tab. Child feeds reuse the scrolling feed and Discovery's new optional `ParentNodeId` filter combined with `NodeTypeId`. Filtering happens before counting/ranking/paging, cache keys include the parent, and moderated parents cannot expose a child feed through that context. No schema changes or migrations are needed.
+
+The development proxy adds only anonymous GET access to node detail, description, comments and the node-type catalog. It continues to strip credentials and reject writes. Tests intercept those HTTP resources for repeatable CI; live SQL coverage verifies parent/type filtering, independent page caches and moderation behavior. Authentication, creation persistence, custom-type persistence, richer Markdown and production routing remain subsequent integration work.
+
+Node page layout follows the standard ribbon card: the breadcrumb spans the card interior, with padding applied to the other sections. A left-floating importance dial shares one text flow with the short introduction and content blocks, so text returns to full width below the dial. Reactions sit after the content and immediately above the bottom actions.
+
+Requested contribution options and selections use the catalog API’s `pluralName`, computed by the backend shared formatter with each type’s `AutoPluralize` setting. Single-node type selection retains the singular name; the browser does not invent pluralization rules.
+
+Contribution summaries on feed and Atlas-node cards are buttons with their existing text styling plus pointer/hover feedback. Discovery supplies stable type IDs and count-aware labels for the union of requested types (including zero counts) and actual child types. Clicking opens the node page with that type selected, focuses its tab and scrolls to its feed after loading, in both Storybook and the SPA.
+
+Child-feed navigation positions the type-tab strip 20px below the viewport top. The destination reserves enough height for empty/short feeds and corrects initial layout shifts from feed loading, images and fonts. Alignment stops on user interaction.
+
+### Comment discussion and manual testing
+
+The node page’s Comments tab renders live root comments in chronological pages of **10 siblings**. “Load more comments” sends both keyset cursor fields; each expanded thread has its own cursor and “Load more replies.” Replies are fetched only on expansion, never recursively preloaded. Empty/loading/error states, retry without dropping loaded comments, removed-body placeholders, author names, timestamps, and limited visual indentation are included. Feed/Atlas-node comment buttons open this tab directly.
+
+Run `npm run storybook:api`, open a live node’s Comments tab, and use **Sign in to comment** with an existing confirmed Atlas account. Post a comment, Reply, Edit, or Remove your own comment (with an inline confirmation). Replying to removed placeholders is supported by the backend. Sign out is available in the discussion. Post more than 10 root comments or direct replies to exercise real pagination. No new seed data or migration is needed. Passwords are cleared after sign-in; comment drafts survive request failures and clear on sign-out. Backend permission checks remain authoritative.
+
+`/atlas-public-api` provides anonymous, read-only access even when the browser has a signed-in session. `/atlas-session-api` is session-aware, including signing in before a session exists. This development-only bridge forwards only Atlas session/CSRF cookies to the configured loopback API and allows only sign-in/out, session/token reads, single public profiles, comment mutations, node creation and custom node-type creation. Same-origin writes and the backend CSRF cookie/header pair are required. Cookie Secure/HttpOnly/SameSite flags are preserved. Use localhost/loopback browser URLs; a static deployment must provide equivalent same-origin API routing over HTTPS. The bridge does not expose registration, account deletion, arbitrary node edits or arbitrary API paths.
+
+`tests/comments.spec.ts` supplies fixture pages and simulated sign-in for lazy loading, independent root/reply cursors, end-of-feed, author controls, post/reply/edit/removal, CSRF headers, retained drafts on failure, narrow layout, and local bridge denials. These browser fixtures do not prove real Identity cookie behavior or database persistence; manually test those against the running API. Backend HTTP/SQL tests continue to cover the real authorization and antiforgery boundary. Full suites run in CI.
+
+The node-page tab strip uses the same backend count-aware contribution labels as the cards. It shows Comments plus the union of requested types (even at zero) and types with existing direct children; unused catalog types remain available in the creation form rather than becoming tabs. Comment counts follow the backend total, including replies and retained removed placeholders, and increment after successful posting.
+
+
+### Creating nodes with the shared session
+
+Restart `npm run storybook:api` after pulling the session/proxy changes. **Components/Sign in** exposes the reusable `SessionControl` used by comments and node forms. Its session cookies are shared across Storybook stories, and session changes update sibling controls on the current page. A standalone login page is not required for this workflow.
+
+Open **Components/Node form** for a root, or **Add <type>** on a node page for a child. Signed-out users see an expanded sign-in prompt before the node fields. After sign-in, the selected type, parent ID and breadcrumb are retained. Create node sends the title, short description, Markdown, selected type, requested types and optional parent to the API. Success opens the created node in the same Storybook/SPA environment. Pending submits disable form controls; errors retain the draft. An expired session can be renewed without discarding that draft.
+
+Custom type creation and node creation are separate backend operations. If the type saves but the node fails, the form explains the partial result and reuses that type ID on an unchanged retry. The per-type AutoPluralize setting is submitted rather than guessed. The type remains saved if the draft is abandoned. Community selection is still future work.
+
+`tests/node-creation.spec.ts` covers signed-out gating, sign-in, root creation in Storybook/SPA, child-parent preservation, CSRF headers, custom-type pluralization preferences, and draft-preserving partial retries. Existing isolated draft checks use a fixture session and make no writes until submission. Full tests run in CI; real session cookies, authorization, quotas and persisted node data should also be checked manually against the running API.
+
+
+### Live node importance voting
+
+The main node-page dial, live feed cards (including child feeds), and Atlas-node composition use `LiveVotingDial`; presentation components accept a voting snippet and remain independent of fetch/session logic. Creation forms keep their noninteractive dial.
+
+The existing `GET /api/nodes/{id}/votes` supplies voteCount, averageVote and currentParticipantVote from Voting’s existing summary use case. The browser does not calculate averages or increment vote totals. A settled gesture sends one CSRF-protected PUT with the selected integer (including zero), then refreshes the summary. Changing an existing vote follows the same path. Confirmed votes use the accent-colored lens. A small Undo vote control appears only for an existing rating, supports keyboard activation, calls DELETE, and refreshes the summary. Successful undo returns focus to the dial.
+
+An anonymous attempt returns to neutral and opens a dismissible native sign-in dialog using SessionControl. Escape and Close dismiss it. After signing in, select the rating again; an uncast gesture is never silently submitted. Other failures restore the last confirmed selection and retain server totals. If the write succeeds but the summary refresh fails, the UI reports that distinction and offers Retry totals. Archived nodes remain disabled. Session changes re-read the current participant’s status. No cross-browser real-time updates are included.
+
+The existing local session bridge now additionally permits only node vote-summary GETs and node-vote PUT/DELETEs, with its same origin checks, Atlas cookie filtering and backend antiforgery protection. The anonymous reader remains unchanged. Restart the combined API/Storybook command after pulling proxy changes. Browser fixtures in `tests/voting.spec.ts` cover confirmed state, server totals, zero ratings, reload, changing/undoing votes, sign-in prompts, failure rollback and keyboard controls. Test execution is deferred to CI/manual verification.

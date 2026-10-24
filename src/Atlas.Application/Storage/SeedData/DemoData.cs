@@ -20,5 +20,7 @@ internal static partial class DemoData
         SeedComment(database);
         SeedModerationCase(database);
         SeedBreadcrumbDemo(database);
+        SeedPublicThinkTank(database);
+        SeedPublicThinkTankCommunities(database);
     }
 }

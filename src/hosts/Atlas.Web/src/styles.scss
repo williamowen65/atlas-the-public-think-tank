@@ -1,7 +1,9 @@
 /* Shared tokens: the app and Storybook import this same stylesheet. */
 
 :root {
-  font-family: system-ui, sans-serif;
+  font-family: var(--atlas-font-family, system-ui, sans-serif);
+  font-size: var(--atlas-font-size, 16px);
+  line-height: var(--atlas-line-height, normal);
   --atlas-bg: #f5f7fa;
   --atlas-surface: #ffffff;
   --atlas-text: #172b38;
@@ -11,7 +13,7 @@
   --atlas-border: #687887;
   --atlas-focus: #9b4a00;
   --atlas-space: 1rem;
-  --atlas-radius: .5rem;
+  --atlas-radius: 0.5rem;
   color: var(--atlas-text);
   background: var(--atlas-bg);
 }
@@ -28,11 +30,15 @@
 }
 
 :root[data-density='compact'] {
-  --atlas-space: .5rem;
+  --atlas-space: 0.5rem;
 }
 
 * {
   box-sizing: border-box;
+}
+
+html {
+  overflow-x: clip;
 }
 
 body {
@@ -66,7 +72,7 @@ nav {
 }
 
 .fixture-note {
-  font-size: .85rem;
+  font-size: 0.85rem;
   color: var(--atlas-muted);
 }
 

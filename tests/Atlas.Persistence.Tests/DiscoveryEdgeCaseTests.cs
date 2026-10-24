@@ -60,9 +60,12 @@ public sealed class DiscoveryEdgeCaseTests
         var parent = root with { NodeId = Guid.NewGuid(), Title = "Parent" };
         var child = root with { NodeId = Guid.NewGuid(), Title = "Child one" };
         var other = root with { NodeId = Guid.NewGuid(), Title = "Child two" };
+        var requestedTypeId = Guid.NewGuid();
         DiscoverySqlFixture.Seed(fixture, root, parent, child, other);
         using (var db = fixture.Open())
         {
+            db.NodeTypeRows.Add(new NodeTypeRow { Id = requestedTypeId, Name = "Evidence", Description = "", AutoPluralize = false, IsSystemDefined = true, CreatedAt = now, UpdatedAt = now });
+            db.Set<NodeRequestedTypeRow>().Add(new NodeRequestedTypeRow { NodeId = parent.NodeId, TypeId = requestedTypeId, Position = 0 });
             db.Set<NodeParentRow>().AddRange(
                 new NodeParentRow { NodeId = parent.NodeId, ParentNodeId = root.NodeId, Position = 0 },
                 new NodeParentRow { NodeId = child.NodeId, ParentNodeId = parent.NodeId, Position = 0 },
@@ -71,7 +74,15 @@ public sealed class DiscoveryEdgeCaseTests
         }
         using var cache = new DiscoveryCache();
         var query = new SqlDiscoveryReadQuery(fixture.Open, cache);
-        Assert.AreEqual("2 Ideas", query.DiscoverPage(new(SearchText: "Parent")).Items.Single().Card!.SubNodes);
+        var parentCard = query.DiscoverPage(new(SearchText: "Parent")).Items.Single().Card!;
+        Assert.AreEqual("0 Evidence · 2 Ideas", parentCard.SubNodes);
+        var actualChildren = parentCard.ChildTypes.Single(type => type.TypeId == root.NodeTypeId);
+        var requestedChildren = parentCard.ChildTypes.Single(type => type.TypeId == requestedTypeId);
+        Assert.AreEqual("0 Evidence", requestedChildren.Label);
+        Assert.AreEqual(0, requestedChildren.Count);
+        Assert.AreEqual(root.NodeTypeId, actualChildren.TypeId);
+        Assert.AreEqual("2 Ideas", actualChildren.Label);
+        Assert.AreEqual(2, actualChildren.Count);
         Assert.AreEqual("Idea · Parent → Idea · Root", query.DiscoverPage(new(SearchText: "Child one")).Items.Single().Card!.Breadcrumb);
         using (var db = fixture.Open())
         {

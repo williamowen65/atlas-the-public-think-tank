@@ -62,10 +62,12 @@ public sealed class ApiErrors(IProblemDetailsService problems) : IExceptionHandl
             _ => 500
         };
         context.Response.StatusCode = status;
+        var nodeQuota = error as Atlas.Graph.Nodes.NodeCreationQuotaExceededException;
+        var allowance = nodeQuota?.Allowance;
         return await problems.TryWriteAsync(new ProblemDetailsContext
         {
             HttpContext = context,
-            ProblemDetails = new ProblemDetails { Status = status, Extensions = { ["code"] = quota ? "quota_exceeded" : "request_failed" }, Title = status switch
+            ProblemDetails = new ProblemDetails { Status = status, Extensions = { ["code"] = quota ? "quota_exceeded" : "request_failed", ["quotaType"] = nodeQuota is null ? null : "node_creation", ["limit"] = allowance?.Limit, ["windowSeconds"] = allowance?.Window.TotalSeconds, ["remaining"] = allowance?.Remaining, ["nextSlotAt"] = allowance?.NextSlotAt?.ToString("O") }, Title = status switch
             {
                 400 => "Invalid request.", 403 => "This operation is not permitted.", 404 => "Resource not found.",
                 413 => "Request body too large.",

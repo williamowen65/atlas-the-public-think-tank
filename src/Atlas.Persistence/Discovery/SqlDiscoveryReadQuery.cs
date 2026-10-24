@@ -237,6 +237,7 @@ public sealed class SqlDiscoveryReadQuery(
             .Select(node => new
             {
                 NodeId = node.Id,
+                node.AuthorId,
                 TypeName = db.NodeTypeRows.Where(type => type.Id == node.TypeId)
                     .Select(type => type.Name).FirstOrDefault() ?? "Unknown",
                 AuthorName = db.ParticipantRows.Where(author => author.Id == node.AuthorId)
@@ -275,9 +276,22 @@ public sealed class SqlDiscoveryReadQuery(
                 metadata[row.NodeId].CommentCount,
                 row.IsHidden)
             {
+                AuthorId = row.IsHidden ? null : metadata[row.NodeId].AuthorId,
                 ShortDescription = row.IsHidden ? row.Description : metadata[row.NodeId].ShortDescription,
+                ChildTypes = row.IsHidden ? Array.Empty<DiscoveryChildType>() : ReadChildTypes(row.SubNodes),
                 BreadcrumbSegment = breadcrumbs[row.NodeId]
             });
+    }
+
+    private static IReadOnlyList<DiscoveryChildType> ReadChildTypes(string json)
+    {
+        if (json is "None" or "[]") return Array.Empty<DiscoveryChildType>();
+        using var children = JsonDocument.Parse(json);
+        return Array.AsReadOnly(children.RootElement.EnumerateArray().Select(child =>
+            new DiscoveryChildType(
+                child.GetProperty("TypeId").GetGuid(),
+                DiscoveryDisplayText.FormatTypeCount(child.GetProperty("Name").GetString()!, child.GetProperty("Count").GetInt32(), child.GetProperty("AutoPluralize").GetBoolean()),
+                child.GetProperty("Count").GetInt32())).ToArray());
     }
 
     /// <summary>Converts SQL child-count JSON to labels using the shared pluralization policy.</summary>

@@ -6,8 +6,21 @@
 </script>
 
 <div class="comparison">
-  <VotingDial label="First node importance" value={first} average={7.4} totalVotes={21} onChange={(next) => first = next} />
-  <VotingDial label="Second node importance" value={second} average={6.2} totalVotes={8} compact onChange={(next) => second = next} />
+  <VotingDial
+    label="First node importance"
+    value={first}
+    average={7.4}
+    totalVotes={21}
+    onChange={(next) => (first = next)}
+  />
+  <VotingDial
+    label="Second node importance"
+    value={second}
+    average={6.2}
+    totalVotes={8}
+    compact
+    onChange={(next) => (second = next)}
+  />
 </div>
 <p class="fixture-note">Independent local selections; no votes are submitted.</p>
 

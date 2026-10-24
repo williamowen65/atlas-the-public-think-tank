@@ -7,6 +7,7 @@ namespace Atlas.Application.Storage;
 public sealed class SqlCommunityRepository(Func<AtlasDataContext>? contextFactory = null, CommunityCreationQuotaPolicy? quotaPolicy = null) : SqlRepository(contextFactory), ICommunityRepository, ICommunityCreationQuota
 {
 
+    public const int MaximumOwnedCommunities = 5;
     private readonly CommunityCreationQuotaPolicy _quotaPolicy = quotaPolicy ?? CommunityCreationQuotaPolicy.Default;
 
     /// <summary>Serialize creation checks and writes for this participant, including across host processes.</summary>
@@ -42,7 +43,13 @@ public sealed class SqlCommunityRepository(Func<AtlasDataContext>? contextFactor
         ExecuteCreation(community.OwnerParticipantId, () =>
         {
             var isNew = FindRow<CommunityRow>(community.Id.Value) is null;
-            if (isNew) EnsureCreationAllowed(community.OwnerParticipantId);
+            if (isNew)
+            {
+                // Archived communities still count: archiving must not bypass the lifetime ownership cap.
+                if (ReadRows<CommunityRow>().Count(row => row.OwnerParticipantId == community.OwnerParticipantId) >= MaximumOwnedCommunities)
+                    throw new InvalidOperationException($"A participant may own at most {MaximumOwnedCommunities} communities, including archived communities.");
+                EnsureCreationAllowed(community.OwnerParticipantId);
+            }
 
             // A new community needs an active owner. Existing communities still require the owner to exist.
             ReferenceValidation.Require(

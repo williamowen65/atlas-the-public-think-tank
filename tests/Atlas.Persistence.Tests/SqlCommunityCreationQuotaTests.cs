@@ -91,6 +91,31 @@ public sealed class SqlCommunityCreationQuotaTests
         Assert.AreEqual(1, check.CommunityCreationQuotaRows.Count());
     }
 
+    [TestMethod]
+    public void TotalOwnershipCapIncludesArchivedCommunities()
+    {
+        using var database = SqlTestDatabase.Create(useCurrentModel: true);
+        var owner = database.AddParticipant();
+        var other = database.AddParticipant();
+        var repo = new SqlCommunityRepository(database.Open);
+        var service = Service(repo, database);
+        var start = DateTimeOffset.Parse("2026-10-01T12:00:00Z");
+        for (var i = 0; i < SqlCommunityRepository.MaximumOwnedCommunities; i++)
+        {
+            using var clock = AtlasTime.Use(new Clock(start.AddDays(i)));
+            var created = service.Create($"Owned {i}", "Description", owner, start.AddDays(i));
+            if (i == 0) service.Archive(created, owner, start.AddDays(i));
+        }
+        using (var clock = AtlasTime.Use(new Clock(start.AddDays(6))))
+        {
+            Assert.ThrowsExactly<InvalidOperationException>(() =>
+                service.Create("Sixth", "Description", owner, start.AddDays(6)));
+            service.Create("Another participant", "Description", other, start.AddDays(6));
+        }
+        using var check = database.Open();
+        Assert.AreEqual(SqlCommunityRepository.MaximumOwnedCommunities, check.CommunityRows.Count(row => row.OwnerParticipantId == owner));
+    }
+
     private static CommunityService Service(SqlCommunityRepository repo, SqlTestDatabase database) =>
         new(repo, new SqlCommunityMembershipRepository(database.Open), new SqlCommunityNodeRepository(database.Open));
     private sealed class Clock(DateTimeOffset now) : TimeProvider

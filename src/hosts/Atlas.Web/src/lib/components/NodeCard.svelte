@@ -1,3 +1,7 @@
+<!--
+  NodeCard: Selects a card presentation and forwards the common card contract.
+  Only selects a visual variant; shared props and optional voting/reaction snippets pass through unchanged.
+-->
 <script lang="ts" module>
   export type { NodeCardData, NodeCardPresentation } from './node-card-versions/types';
 </script>
@@ -9,7 +13,14 @@
   import NodeCardRibbonSplit from './node-card-versions/NodeCardRibbonSplit.svelte';
   import NodeCardRibbonResponsive from './node-card-versions/NodeCardRibbonResponsive.svelte';
   import type { NodeCardProps, NodeCardPresentation } from './node-card-versions/types';
-  let { presentation = 'ribbon', ...props }: NodeCardProps & { presentation?: NodeCardPresentation } = $props();
+  // A supplied presentation overrides the default; the remaining props are forwarded to the selected variant.
+  let {
+    presentation = 'ribbon',
+    ...props
+  }: NodeCardProps & {
+    /** Selects a NodeCardPresentation layout; it does not change the underlying node data. */
+    presentation?: NodeCardPresentation;
+  } = $props();
 </script>
 
 {#if presentation === 'context-below'}

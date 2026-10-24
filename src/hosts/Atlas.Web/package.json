@@ -15,7 +15,9 @@
     "test:ci": "npm run build && npm run build-storybook && npm test",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "prepare": "svelte-kit sync",
-    "storybook:api": "concurrently --kill-others --names API,Storybook \"dotnet run --project ../Atlas.Api --launch-profile https\" \"npm run storybook\""
+    "storybook:api": "concurrently --kill-others --names API,Storybook \"dotnet run --project ../Atlas.Api --launch-profile https\" \"npm run storybook\"",
+    "format": "prettier --write \"src/**/*.svelte\" \"storybook/**/*.svelte\" \"src/routes/+layout.ts\" \"src/styles.scss\"",
+    "format:check": "prettier --check \"src/**/*.svelte\" \"storybook/**/*.svelte\" \"src/routes/+layout.ts\" \"src/styles.scss\""
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
@@ -28,6 +30,8 @@
     "@sveltejs/vite-plugin-svelte": "^6.0.0",
     "@types/node": "^24.19.2",
     "concurrently": "^10.0.6",
+    "prettier": "^3.9.10",
+    "prettier-plugin-svelte": "^4.1.1",
     "sass": "^1.105.2",
     "storybook": "10.6.3",
     "svelte": "^5.0.0",

@@ -81,6 +81,7 @@ public sealed class DiscoveryCache : IDisposable
         var request = new
         {
             query.NodeId,
+            query.ParentNodeId,
             query.SearchText,
             query.CommunityId,
             query.NodeTypeId,
