@@ -28,3 +28,5 @@ The root layout's mount callback reads the existing authentication session; it d
 Run `npm run format` to format Svelte source/stories and the root route options, or `npm run format:check` to check formatting. Imports belong together at the start of each script. Comments explain intent and lifecycle boundaries rather than restating each line. Plain styles remain CSS; existing SCSS stays SCSS where it uses nesting or other Sass features.
 
 References: [Svelte lifecycle](https://svelte.dev/docs/svelte/lifecycle-hooks), [Svelte effects](https://svelte.dev/docs/svelte/$effect), [SvelteKit routing](https://svelte.dev/docs/kit/routing).
+
+For complete prop contracts and usage examples, see the [component catalog](COMPONENT-CATALOG.md).

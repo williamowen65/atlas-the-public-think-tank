@@ -4,6 +4,10 @@ PTT-143, PTT-144 and PTT-145 deliver the foundation from [PTTD-31](https://thepu
 
 ## Learning guides
 
+- [Component catalog](docs/COMPONENT-CATALOG.md): every component’s props, types, defaults, callbacks and snippets, plus SessionControl examples.
+- [Svelte reading guide](docs/SVELTE-READING-GUIDE.md): root composition, reactive state and lifecycle hooks.
+
+
 - [SvelteKit orientation](docs/SVELTEKIT.md): route folders, plus files, dynamic pages, layouts, rendering, SSR and our static deployment choice.
 - [Storybook workbench](docs/STORYBOOK-WORKBENCH.md): styles/layout, components/compositions, global themes and density, legacy dial inspection and voting prototype limits.
 
