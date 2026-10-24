@@ -502,12 +502,6 @@
       grid-template-columns: minmax(0, 1fr) auto auto;
       gap: 0.6rem;
     }
-    .brand {
-      display: none;
-    }
-    .atlas-header.filters-open .brand {
-      display: none;
-    }
     .primary,
     .auth,
     .account {
@@ -526,10 +520,6 @@
         top: calc(100% + 0.5rem);
         min-width: 12rem;
       }
-    }
-    .search-toggle {
-      grid-column: 1;
-      justify-self: start;
     }
     .right-group {
       grid-column: 3;

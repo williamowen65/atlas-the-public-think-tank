@@ -22,10 +22,15 @@ for (const authenticated of [false, true]) {
       await page.goto('http://127.0.0.1:4173/about');
       const header = page.locator('.atlas-header');
       if (authenticated) await expect(header.locator('.account .avatar')).toHaveCount(1);
+      const brand = header.getByRole('link', { name: 'Atlas home', exact: true });
+      await expect(brand).toBeVisible();
       const search = header.getByRole('textbox', { name: 'Search nodes and filters' });
       await expect(search).toHaveCount(0);
       const toggle = header.getByRole('button', { name: 'Toggle search', exact: true });
       await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      const brandBox = (await brand.boundingBox())!;
+      const toggleBox = (await toggle.boundingBox())!;
+      expect(brandBox.x + brandBox.width).toBeLessThanOrEqual(toggleBox.x + 1);
       await toggle.click();
       await expect(search).toBeVisible();
       await expect(search).toBeFocused();
