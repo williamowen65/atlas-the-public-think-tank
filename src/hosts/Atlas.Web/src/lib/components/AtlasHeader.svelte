@@ -148,8 +148,8 @@
                 }
               }}>My profile</a
             >
-            <a href="/me/drafts" onclick={closeOnNavigation}>My drafts</a>
-            <a href="/me/settings" onclick={closeOnNavigation}>Settings</a>
+            <a href="/my-drafts" onclick={closeOnNavigation}>My drafts</a>
+            <a href="/my-settings" onclick={closeOnNavigation}>Settings</a>
             <hr />
             <a href="/about" onclick={closeOnNavigation}>About Atlas</a>
             <a href="/feedback" onclick={closeOnNavigation}>Give feedback</a>
@@ -200,9 +200,9 @@
         {#if authenticated}
           <hr />
           <a href="/profiles/me" onclick={closeOnNavigation}>My profile</a><a
-            href="/me/drafts"
+            href="/my-drafts"
             onclick={closeOnNavigation}>My drafts</a
-          ><a href="/me/settings" onclick={closeOnNavigation}>Settings</a>
+          ><a href="/my-settings" onclick={closeOnNavigation}>Settings</a>
           <button
             type="button"
             class="logout-action"

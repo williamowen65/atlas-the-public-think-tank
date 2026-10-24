@@ -233,7 +233,7 @@
       </fieldset>
       {#if participantId}<button type="button" onclick={savePrivateDraft} disabled={submitting}
           >Save private draft</button
-        > <a href="/me/drafts">My drafts</a>{/if}
+        > <a href="/my-drafts">My drafts</a>{/if}
       {#if savedNotice}<p role="status">{savedNotice}</p>{/if}
     {/if}
     {#if saveError}<p role="alert">{saveError} Your draft has been kept.</p>{/if}

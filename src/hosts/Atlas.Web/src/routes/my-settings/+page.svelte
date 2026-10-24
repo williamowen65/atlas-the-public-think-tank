@@ -105,7 +105,7 @@
       Password and email changes aren't available in this preview yet. Account registration and
       email confirmation continue to use the existing API workflow.
     </p>
-    <p><a href="/me">View my profile</a> · <a href="/me/drafts">My private drafts</a></p>
+    <p><a href="/me">View my profile</a> · <a href="/my-drafts">My private drafts</a></p>
   {:else}
     <p>Sign in to manage your account settings.</p>
   {/if}
