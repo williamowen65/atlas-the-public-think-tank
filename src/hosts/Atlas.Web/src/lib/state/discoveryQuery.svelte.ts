@@ -1,5 +1,5 @@
 /**
- * Shared reactive search state used by the header editor, badges and compact global results.
+ * Shared reactive search state used by the header editor and compact global results.
  * `value` holds the applied query; the shared parser derives result text and API filters.
  * `initialized` records whether browser restoration has already been attempted.
  * Updating this state does not fetch data or update the URL; SearchResults owns fetching.

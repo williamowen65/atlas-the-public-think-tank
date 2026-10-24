@@ -7,7 +7,6 @@ PTT-143, PTT-144 and PTT-145 deliver the foundation from [PTTD-31](https://thepu
 - [Component catalog](docs/COMPONENT-CATALOG.md): every component’s props, types, defaults, callbacks and snippets, plus SessionControl examples.
 - [Svelte reading guide](docs/SVELTE-READING-GUIDE.md): root composition, reactive state and lifecycle hooks.
 
-
 - [SvelteKit orientation](docs/SVELTEKIT.md): route folders, plus files, dynamic pages, layouts, rendering, SSR and our static deployment choice.
 - [Storybook workbench](docs/STORYBOOK-WORKBENCH.md): styles/layout, components/compositions, global themes and density, legacy dial inspection and voting prototype limits.
 
@@ -85,17 +84,17 @@ See the [Vite preprocessor guide](https://vite.dev/guide/features.html#css-pre-p
 
 ## Where the markup lives
 
-| File | Responsibility |
-| --- | --- |
-| `src/lib/components/ActionButton.svelte` | Actual reusable button HTML and callback contract |
-| `storybook/ActionButton/ActionButtonExample.svelte` | Small demo composition with reactive status text |
-| `storybook/ActionButton/ActionButton.stories.ts` | Single Playground story with editable Controls |
-| `src/routes/+page.svelte` | Home page imports the production button directly and owns its page state |
-| `src/routes/+layout.svelte` | Shared navigation, styles and page outlet |
-| `src/routes/about/+page.svelte` | Second route proving SvelteKit navigation |
-| `src/app.html` | SvelteKit's HTML document shell |
-| `.storybook/main.ts` | Storybook's SvelteKit adapter, story paths and addons |
-| `.storybook/preview.ts` | Shared Storybook styles and preview settings |
+| File                                                | Responsibility                                                           |
+| --------------------------------------------------- | ------------------------------------------------------------------------ |
+| `src/lib/components/ActionButton.svelte`            | Actual reusable button HTML and callback contract                        |
+| `storybook/ActionButton/ActionButtonExample.svelte` | Small demo composition with reactive status text                         |
+| `storybook/ActionButton/ActionButton.stories.ts`    | Single Playground story with editable Controls                           |
+| `src/routes/+page.svelte`                           | Home page imports the production button directly and owns its page state |
+| `src/routes/+layout.svelte`                         | Shared navigation, styles and page outlet                                |
+| `src/routes/about/+page.svelte`                     | Second route proving SvelteKit navigation                                |
+| `src/app.html`                                      | SvelteKit's HTML document shell                                          |
+| `.storybook/main.ts`                                | Storybook's SvelteKit adapter, story paths and addons                    |
+| `.storybook/preview.ts`                             | Shared Storybook styles and preview settings                             |
 
 There is no handwritten DOM assembly or application `src/main.ts`. SvelteKit handles bootstrapping. The remaining `.storybook/main.ts` is configuration, not the page entry point. Solution Explorer mirrors the source folders; install the Svelte editor extension for `.svelte` language support where your IDE supports it. `npm run check` remains the authoritative component/type check.
 
@@ -107,15 +106,15 @@ Storybook uses the metadata title `Components/ActionButton` for the sidebar grou
 
 `package.json` is npm's project manifest. It records the package identity, module format, runtime requirements, dependencies and named commands. JSON does not support comments, so explanations live here rather than being inserted into the manifest.
 
-| Setting | Why it is here |
-| --- | --- |
-| `name: "@atlas/web"` | Identifies this frontend workspace. `@atlas` is the package-name scope; it does not register an npm organization or publish anything. |
-| `version: "0.0.0"` | Placeholder version for this application workspace. It is not the version of SvelteKit, the API or a deployed release. |
-| `private: true` | Prevents accidental publication of this workspace through npm. It does **not** make the repository private, restrict website access or prevent deployment of built files. |
-| `type: "module"` | Makes Node treat this package's `.js` files as ES modules, so files such as `svelte.config.js` can use `import` and `export`. TypeScript files are handled by their tooling. This setting does not select a UI framework or a rendering mode. |
-| `engines.node: ">=22.12.0"` | Declares the minimum supported Node version. Our documented/CI baseline is Node 24 LTS. The field does not install Node; npm may warn rather than refuse an unsupported version, depending on its configuration. |
-| `scripts` | Names repeatable commands. npm makes local dependency executables available to them, so `vite` and `svelte-check` do not need global installations. |
-| `devDependencies` | Tools and libraries needed to develop, check, build and test this static frontend. Some, such as Svelte, contribute code to the built browser assets; “dev” does not mean none of their code can reach the browser. The deployed static output does not run npm or need a production `node_modules` directory. |
+| Setting                     | Why it is here                                                                                                                                                                                                                                                                                                 |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name: "@atlas/web"`        | Identifies this frontend workspace. `@atlas` is the package-name scope; it does not register an npm organization or publish anything.                                                                                                                                                                          |
+| `version: "0.0.0"`          | Placeholder version for this application workspace. It is not the version of SvelteKit, the API or a deployed release.                                                                                                                                                                                         |
+| `private: true`             | Prevents accidental publication of this workspace through npm. It does **not** make the repository private, restrict website access or prevent deployment of built files.                                                                                                                                      |
+| `type: "module"`            | Makes Node treat this package's `.js` files as ES modules, so files such as `svelte.config.js` can use `import` and `export`. TypeScript files are handled by their tooling. This setting does not select a UI framework or a rendering mode.                                                                  |
+| `engines.node: ">=22.12.0"` | Declares the minimum supported Node version. Our documented/CI baseline is Node 24 LTS. The field does not install Node; npm may warn rather than refuse an unsupported version, depending on its configuration.                                                                                               |
+| `scripts`                   | Names repeatable commands. npm makes local dependency executables available to them, so `vite` and `svelte-check` do not need global installations.                                                                                                                                                            |
+| `devDependencies`           | Tools and libraries needed to develop, check, build and test this static frontend. Some, such as Svelte, contribute code to the built browser assets; “dev” does not mean none of their code can reach the browser. The deployed static output does not run npm or need a production `node_modules` directory. |
 
 The lockfile records exact resolved versions. In the manifest, an exact version pins that request; `^` generally permits compatible minor/patch updates for versions at least 1.0, while `~` generally permits patch updates. Use normal dependency-update review and commit the resulting lockfile.
 
@@ -123,15 +122,15 @@ The lockfile records exact resolved versions. In the manifest, an exact version 
 
 Run these commands from `src/hosts/Atlas.Web`. From the repository root, the equivalent is `npm --prefix src/hosts/Atlas.Web run <script>`. The `test` script also has the shorthand `npm test`.
 
-| Script / command | When to run it | What happens / when it finishes |
-| --- | --- | --- |
-| `npm run dev` | While developing pages, layouts, routing or checking components inside the actual app. | Starts the SvelteKit development server, normally on port 5173, with updates as you edit. It keeps running until Ctrl+C. It is not a production build or a test run. |
-| `npm run storybook` | While developing or reviewing isolated component states and controls. | Starts Storybook on port 6006, keeps running and updates stories as you edit. Open the URL manually because `--no-open` disables automatic browser launch. Telemetry is disabled. |
-| `npm run check` | After component/TypeScript changes, before committing, or when investigating editor diagnostics. | Generates SvelteKit types, then checks Svelte and TypeScript using `tsconfig.json`. Finishes with diagnostics and a success/failure exit code. It does not build output or run browser tests. |
-| `npm run build` | To verify the application can be packaged, or before browser tests after application changes. | Runs `check` first; only if it passes does Vite build the static app into `dist/`. Finishes rather than keeping a server running. |
-| `npm run build-storybook` | To verify stories can be packaged, or before browser tests after component/story changes. | Builds static Storybook into `storybook-static/`, with telemetry disabled. Finishes without starting a server or deploying anything. |
-| `npm test` | To run browser checks when both built outputs already reflect the source being tested. | Playwright starts the temporary app, built Storybook and development Storybook servers, runs Chromium assertions, writes reports/traces as configured and stops the servers. It does **not** rebuild those outputs. |
-| `npm run test:ci` | Before submitting a frontend change, for a complete local validation pass, and in GitHub Actions. | Sequentially builds/checks the app, builds Storybook and runs the browser tests. `&&` stops the sequence at the first failing command. It finishes with an exit code suitable for CI. |
+| Script / command                        | When to run it                                                                                                                                      | What happens / when it finishes                                                                                                                                                                                              |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`                           | While developing pages, layouts, routing or checking components inside the actual app.                                                              | Starts the SvelteKit development server, normally on port 5173, with updates as you edit. It keeps running until Ctrl+C. It is not a production build or a test run.                                                         |
+| `npm run storybook`                     | While developing or reviewing isolated component states and controls.                                                                               | Starts Storybook on port 6006, keeps running and updates stories as you edit. Open the URL manually because `--no-open` disables automatic browser launch. Telemetry is disabled.                                            |
+| `npm run check`                         | After component/TypeScript changes, before committing, or when investigating editor diagnostics.                                                    | Generates SvelteKit types, then checks Svelte and TypeScript using `tsconfig.json`. Finishes with diagnostics and a success/failure exit code. It does not build output or run browser tests.                                |
+| `npm run build`                         | To verify the application can be packaged, or before browser tests after application changes.                                                       | Runs `check` first; only if it passes does Vite build the static app into `dist/`. Finishes rather than keeping a server running.                                                                                            |
+| `npm run build-storybook`               | To verify stories can be packaged, or before browser tests after component/story changes.                                                           | Builds static Storybook into `storybook-static/`, with telemetry disabled. Finishes without starting a server or deploying anything.                                                                                         |
+| `npm test`                              | To run browser checks when both built outputs already reflect the source being tested.                                                              | Playwright starts the temporary app, built Storybook and development Storybook servers, runs Chromium assertions, writes reports/traces as configured and stops the servers. It does **not** rebuild those outputs.          |
+| `npm run test:ci`                       | Before submitting a frontend change, for a complete local validation pass, and in GitHub Actions.                                                   | Sequentially builds/checks the app, builds Storybook and runs the browser tests. `&&` stops the sequence at the first failing command. It finishes with an exit code suitable for CI.                                        |
 | `prepare` lifecycle / `npm run prepare` | Normally runs automatically during a standard local `npm install` or `npm ci`. Run it manually only when you want to regenerate SvelteKit metadata. | Runs `svelte-kit sync` to generate framework configuration/types in `.svelte-kit/`. It does not perform the full type check, build or browser tests. `npm run check` also syncs, so manual execution is usually unnecessary. |
 
 `--host 127.0.0.1` binds development servers to the local machine rather than exposing them to other devices. Playwright also uses local addresses. Both interactive Storybook and its test server use port 6006, so stop the interactive Storybook server before running browser tests; Playwright deliberately refuses to reuse an existing server.
@@ -150,20 +149,20 @@ These scripts do not start Atlas.Api, connect to SQL, configure Redux, or deploy
 
 These files configure different tools and stages. They are text source files: `.ts` means TypeScript, `.js` means JavaScript, and `.json` is structured configuration. Playwright's saved `trace.zip` is a generated archive, not a configuration file.
 
-| File | Read by / when | What it controls |
-| --- | --- | --- |
-| [package.json](package.json) | npm, during installation and script execution | Dependencies, supported Node version and commands such as `dev`, `check`, `build`, `storybook` and `test:ci`. Its `prepare` script generates SvelteKit configuration after installation. |
-| [package-lock.json](package-lock.json) | npm install / npm ci | Exact resolved dependency versions. Commit updates with dependency changes; regenerate through npm rather than editing manually. CI uses `npm ci` to reproduce this install. |
-| [svelte.config.js](svelte.config.js) | SvelteKit and Svelte tooling | Svelte preprocessing and the static adapter. Writes application assets to `dist/` and generates the `index.html` SPA fallback. |
-| [vite.config.ts](vite.config.ts) | Application development, build and preview | Loads the SvelteKit Vite plugin. Vite runs the development server and builds the frontend assets. This config belongs to the application. |
-| [tsconfig.json](tsconfig.json) | TypeScript, svelte-check and editor tooling | Strict type checking, included source/config/test files and module resolution. Extends SvelteKit's generated configuration so aliases and framework types agree. |
-| [src/vite-env.d.ts](src/vite-env.d.ts) | TypeScript and editor tooling | Loads Vite's asset declarations, including CSS imports. It provides types, not runtime behavior. |
-| [.storybook/main.ts](.storybook/main.ts) | Storybook development and build | Finds story files, selects the SvelteKit renderer, enables addons and disables Storybook telemetry. Despite its name, it does not start the application. |
-| [.storybook/preview.ts](.storybook/preview.ts) | Storybook's story-rendering environment | Imports shared styles and configures preview parameters, including accessibility behavior. This affects the stories being displayed. |
-| [storybook-preview.config.ts](storybook-preview.config.ts) | Plain Vite preview, launched by Playwright | Serves the already-built `storybook-static/` directory during tests. It intentionally omits the SvelteKit plugin. It does not configure story appearance or build Storybook. |
-| [playwright.config.ts](playwright.config.ts) | `npm test` | Test directory, Chromium, timeouts, CI retries, HTML reports and retained failure traces. Starts and stops temporary servers: application on port 4173, built Storybook on port 6006 and development Storybook on port 6007 for its renderer regression check. |
-| [src/routes/+layout.ts](src/routes/+layout.ts) | SvelteKit routing/rendering | Sets `ssr = false` for this client-rendered SPA. This is a route option file, distinct from the layout component's markup. |
-| [src/app.html](src/app.html) | SvelteKit document generation | Outer HTML shell, language and viewport. SvelteKit fills its head/body placeholders; page and component HTML belongs in `.svelte` files. |
+| File                                                       | Read by / when                                | What it controls                                                                                                                                                                                                                                               |
+| ---------------------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [package.json](package.json)                               | npm, during installation and script execution | Dependencies, supported Node version and commands such as `dev`, `check`, `build`, `storybook` and `test:ci`. Its `prepare` script generates SvelteKit configuration after installation.                                                                       |
+| [package-lock.json](package-lock.json)                     | npm install / npm ci                          | Exact resolved dependency versions. Commit updates with dependency changes; regenerate through npm rather than editing manually. CI uses `npm ci` to reproduce this install.                                                                                   |
+| [svelte.config.js](svelte.config.js)                       | SvelteKit and Svelte tooling                  | Svelte preprocessing and the static adapter. Writes application assets to `dist/` and generates the `index.html` SPA fallback.                                                                                                                                 |
+| [vite.config.ts](vite.config.ts)                           | Application development, build and preview    | Loads the SvelteKit Vite plugin. Vite runs the development server and builds the frontend assets. This config belongs to the application.                                                                                                                      |
+| [tsconfig.json](tsconfig.json)                             | TypeScript, svelte-check and editor tooling   | Strict type checking, included source/config/test files and module resolution. Extends SvelteKit's generated configuration so aliases and framework types agree.                                                                                               |
+| [src/vite-env.d.ts](src/vite-env.d.ts)                     | TypeScript and editor tooling                 | Loads Vite's asset declarations, including CSS imports. It provides types, not runtime behavior.                                                                                                                                                               |
+| [.storybook/main.ts](.storybook/main.ts)                   | Storybook development and build               | Finds story files, selects the SvelteKit renderer, enables addons and disables Storybook telemetry. Despite its name, it does not start the application.                                                                                                       |
+| [.storybook/preview.ts](.storybook/preview.ts)             | Storybook's story-rendering environment       | Imports shared styles and configures preview parameters, including accessibility behavior. This affects the stories being displayed.                                                                                                                           |
+| [storybook-preview.config.ts](storybook-preview.config.ts) | Plain Vite preview, launched by Playwright    | Serves the already-built `storybook-static/` directory during tests. It intentionally omits the SvelteKit plugin. It does not configure story appearance or build Storybook.                                                                                   |
+| [playwright.config.ts](playwright.config.ts)               | `npm test`                                    | Test directory, Chromium, timeouts, CI retries, HTML reports and retained failure traces. Starts and stops temporary servers: application on port 4173, built Storybook on port 6006 and development Storybook on port 6007 for its renderer regression check. |
+| [src/routes/+layout.ts](src/routes/+layout.ts)             | SvelteKit routing/rendering                   | Sets `ssr = false` for this client-rendered SPA. This is a route option file, distinct from the layout component's markup.                                                                                                                                     |
+| [src/app.html](src/app.html)                               | SvelteKit document generation                 | Outer HTML shell, language and viewport. SvelteKit fills its head/body placeholders; page and component HTML belongs in `.svelte` files.                                                                                                                       |
 
 Repository-level files also affect this workspace:
 
@@ -339,7 +338,6 @@ Run `npm run storybook:api`, open a live node’s Comments tab, and use **Sign i
 
 The node-page tab strip uses the same backend count-aware contribution labels as the cards. It shows Comments plus the union of requested types (even at zero) and types with existing direct children; unused catalog types remain available in the creation form rather than becoming tabs. Comment counts follow the backend total, including replies and retained removed placeholders, and increment after successful posting.
 
-
 ### Creating nodes with the shared session
 
 Restart `npm run storybook:api` after pulling the session/proxy changes. **Components/Sign in** exposes the reusable `SessionControl` used by comments and node forms. Its session cookies are shared across Storybook stories, and session changes update sibling controls on the current page. A standalone login page is not required for this workflow.
@@ -349,7 +347,6 @@ Open **Components/Node form** for a root, or **Add <type>** on a node page for a
 Custom type creation and node creation are separate backend operations. If the type saves but the node fails, the form explains the partial result and reuses that type ID on an unchanged retry. The per-type AutoPluralize setting is submitted rather than guessed. The type remains saved if the draft is abandoned. Community selection is still future work.
 
 `tests/node-creation.spec.ts` covers signed-out gating, sign-in, root creation in Storybook/SPA, child-parent preservation, CSRF headers, custom-type pluralization preferences, and draft-preserving partial retries. Existing isolated draft checks use a fixture session and make no writes until submission. Full tests run in CI; real session cookies, authorization, quotas and persisted node data should also be checked manually against the running API.
-
 
 ### Live node importance voting
 
@@ -371,11 +368,9 @@ Demo seed blocks include emphasis, headings, lists, quotes, inline/fenced code a
 
 `tests/markdown.spec.ts` checks formatting, heading levels, raw HTML escaping, blocked image output and unsafe URL protocols as part of the normal Playwright CI suite.
 
-
 ### Run the application and API together
 
 From `src/hosts/Atlas.Web`, run `npm run dev:api` to start the Vite development server and Atlas.Api together. This uses the same HTTPS API launch profile as `npm run storybook:api`. Press Ctrl+C to stop both; if either process exits, the other is stopped too. Use `npm run dev` when the API is already running separately.
-
 
 ### Application components and Storybook adapters
 
@@ -383,27 +378,20 @@ Shared components describe application behavior. Header/footer links use applica
 
 The unused `routes`/`onRouteChange` Breadcrumb props and header/footer navigation-override props have been removed. NodeForm requires its application's submit handler; its obsolete preview-only submission branch is removed. The current-participant workbench composition lives under `storybook/MyProfile`, because the application already composes its profile routes separately. UI inputs such as labels, layout variants and session/data callbacks remain normal application contracts, even when a story is the only place currently overriding a default.
 
-
 ### Loading layout and cache boundaries
 
 The application shell has a viewport-height baseline and stable scrollbar space. Initial feed, node and community reads show static content-shaped placeholders instead of a one-line message; placeholders disappear on success or failure and never impose height on loaded content or discussion tabs. Existing feed cards stay visible while another page loads. Community results appear before the independent account-quota lookup finishes. No artificial delay, shimmer animation or global client data cache is added.
 
 Navigation still makes API requests. Discovery uses the backend’s bounded, process-local DiscoveryCache (30-second default lifetime, with committed database revision checks before reuse). This is separate from browser/global state; shared discovery state stores search text, not cached results. Community helpers also request their API endpoints; do not assume every endpoint shares Discovery’s cache. Freshness and invalidation must be designed per resource rather than caching all responses indiscriminately.
 
-
 ### Responsive header search
 
 A magnifying-glass disclosure button toggles search at all viewport widths. The query input and Search/Filters icon segments open on a full-width row below navigation, with focus placed in the input. Escape closes the filter toolbox first, then the outer search region and restores focus to its toggle. Closing/reopening preserves the applied query through shared discovery state. Desktop links and the existing mobile menu retain their normal navigation behavior.
 
-
-The header search toggle also shows small text/funnel badges for the accepted discovery query. These badges are positioned relative to the button and consume no extra header width. They summarize applied query tokens, not unsaved input/toolbox edits or backend results; inert `archived:false` and empty ranges do not activate the funnel. The button retains its accessible name and describes active search categories through `aria-describedby` and a tooltip.
-
-
-The search input’s inline X clears the entire accepted query (text and structured filters), pending edits, saved query storage and header badges together. It returns focus to the input and does not submit a separate request or add another pill segment.
-
+The search input’s inline X clears the entire accepted query (text and structured filters), pending edits, saved query storage together. It returns focus to the input and does not submit a separate request or add another pill segment.
 
 ### Global compact search results
 
 Applying header search or visual filters opens a compact, scrollable results dropdown on any route. Rows contain normal node links, short introductions and comment/contribution counts; they do not mount voting, reaction controls or breadcrumbs. Selecting a result opens its node and closes the disclosure; modified link clicks keep normal browser behavior. The shared parser validates both toolbox edits and accepted result requests. Changing the accepted query cancels outdated requests; clearing it removes results. Loading/error/empty states and retry are explicit; existing rows stay visible if loading another page fails. The current backend page size is three; Load more appends additional compact rows.
 
-Discover remains a separate browsing feed and is no longer filtered by the header query. Saved/URL search text still restores the header query and badges; opening search reveals its results. No feed-ranking, rotation or backend search/cache rules changed.
+Discover remains a separate browsing feed and is no longer filtered by the header query. Saved/URL search text still restores the header query; opening search reveals its results. No feed-ranking, rotation or backend search/cache rules changed.
