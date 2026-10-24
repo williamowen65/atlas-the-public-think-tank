@@ -393,4 +393,4 @@ Navigation still makes API requests. Discovery uses the backend’s bounded, pro
 
 ### Responsive header search
 
-The header groups its query input, Search icon button and Filters icon toggle into one pill. Both icon buttons retain accessible names, keyboard support and tooltips; Filters exposes its expanded state. At intermediate widths (561–1000px) the pill moves to a full-width second row while desktop navigation remains above it. At 560px and below the existing mobile menu remains beside search.
+A magnifying-glass disclosure button toggles search at all viewport widths. The query input and Search/Filters icon segments open on a full-width row below navigation, with focus placed in the input. Escape closes the filter toolbox first, then the outer search region and restores focus to its toggle. Closing/reopening preserves the applied query through shared discovery state. Desktop links and the existing mobile menu retain their normal navigation behavior.

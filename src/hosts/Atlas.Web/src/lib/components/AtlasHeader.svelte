@@ -13,7 +13,8 @@
 -->
 <script lang="ts">
   import DiscoverySearch from './DiscoverySearch.svelte';
-  import { onMount } from 'svelte';
+  import { restoreDiscoveryQuery } from '../state/discoveryQuery.svelte';
+  import { onMount, tick } from 'svelte';
   import { apiRequest } from '../api/apiRequest';
   let {
     active = null,
@@ -30,6 +31,26 @@
     /** Name used to derive the account-avatar initial. */
     displayName?: string;
   } = $props();
+  /** Whether the header’s search disclosure is mounted below navigation. */
+  let searchOpen = $state(false);
+  /** Mounted disclosure button, used to restore focus when Escape closes search. */
+  let searchToggle = $state<HTMLButtonElement>();
+  /** Mounted search region; its input receives focus after the disclosure opens. */
+  let searchPanel = $state<HTMLDivElement>();
+  /** Unique DOM ID connecting the disclosure button to its search region. */
+  const searchPanelId = $props.id();
+
+  /** Toggle the search region; wait for Svelte to mount it before focusing the input. */
+  async function toggleSearch() {
+    searchOpen = !searchOpen;
+    if (!searchOpen) {
+      filtersOpen = false;
+      return;
+    }
+    headerVisible = true;
+    await tick();
+    searchPanel?.querySelector('input')?.focus({ preventScroll: true });
+  }
   /**
    * Whether DiscoverySearch has its filter toolbox open; keeps the header visible.
    */
@@ -41,10 +62,12 @@
   let lastScroll = 0;
   // Keep the header visible near the top or while filters are open; hide it during downward scrolling.
   onMount(() => {
+    // Restore URL/device search even while the optional search input is unmounted.
+    restoreDiscoveryQuery();
     lastScroll = window.scrollY;
     const onScroll = () => {
       const next = window.scrollY;
-      if (filtersOpen || next < 40 || next < lastScroll - 3) headerVisible = true;
+      if (searchOpen || filtersOpen || next < 40 || next < lastScroll - 3) headerVisible = true;
       else if (next > lastScroll + 3 && next > 100) headerVisible = false;
       lastScroll = next;
     };
@@ -97,6 +120,11 @@
   }
   function closeOnEscape(event: KeyboardEvent) {
     if (event.key === 'Escape') {
+      // The first Escape closes an open filter toolbox; a subsequent one closes search.
+      if (searchOpen && !filtersOpen) {
+        searchOpen = false;
+        searchToggle?.focus();
+      }
       menuOpen = false;
       if (mobileElement?.open) {
         mobileElement.open = false;
@@ -118,8 +146,8 @@
 </script>
 
 <!--
-  Layout: Brand and search share the header with navigation and account controls; a separate
-  disclosure supplies mobile navigation.
+  Layout: Brand, search toggle and navigation share the top row. The optional search region
+  opens below; a separate disclosure supplies mobile navigation.
 -->
 
 <svelte:window
@@ -137,15 +165,40 @@
   <a class="brand" href="/" aria-label="Atlas home"
     ><strong>Atlas</strong><span>The Public Think Tank</span></a
   >
-  <!-- Keeps expandable search controls in their own header layout slot. -->
-  <div class="search-slot">
-    <DiscoverySearch
-      onExpandedChange={(open) => {
-        filtersOpen = open;
-        if (open) headerVisible = true;
-      }}
-    />
-  </div>
+  <!-- Search is a disclosure control; its input occupies the full row below navigation. -->
+  <button
+    class="search-toggle"
+    bind:this={searchToggle}
+    type="button"
+    aria-label="Toggle search"
+    title="Search"
+    aria-expanded={searchOpen}
+    aria-controls={searchPanelId}
+    onclick={() => void toggleSearch()}
+  >
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      width="20"
+      height="20"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+    >
+      <circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4.5 4.5" />
+    </svg>
+  </button>
+  {#if searchOpen}
+    <div class="search-panel" id={searchPanelId} bind:this={searchPanel}>
+      <DiscoverySearch
+        onExpandedChange={(open) => {
+          filtersOpen = open;
+          if (open) headerVisible = true;
+        }}
+      />
+    </div>
+  {/if}
   {#if logoutError}<p class="logout-error" role="alert">{logoutError}</p>{/if}
   <!-- Groups navigation/account controls so responsive styles can position them together. -->
   <div class="right-group">
@@ -254,31 +307,31 @@
     transform: translateY(calc(-100% - 1rem));
     pointer-events: none;
   }
-  .search-slot {
-    min-width: 0;
-    align-self: center;
-  }
-  /* Flatten the search wrappers so the search row stays in the same grid cell
-     while the expanded controls span the full second header row. */
-  .search-slot {
-    display: contents;
-  }
-  .atlas-header :global(.filter-bar) {
-    display: contents;
-  }
-  .atlas-header :global(.search-line) {
+  .search-toggle {
     grid-column: 2;
     grid-row: 1;
-    min-width: 0;
-    flex-wrap: nowrap;
+    justify-self: end;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    border: 1px solid var(--atlas-border);
+    border-radius: 999px;
+    color: var(--atlas-text);
+    background: var(--atlas-surface);
+    cursor: pointer;
   }
-  .atlas-header :global(.toolbox) {
+  .search-toggle:hover,
+  .search-toggle[aria-expanded='true'] {
+    color: var(--atlas-on-accent);
+    background: var(--atlas-accent);
+  }
+  .search-panel {
     grid-column: 1/-1;
     grid-row: 2;
-    padding: 0.9rem 0;
-  }
-  .atlas-header :global(.validation) {
-    grid-column: 1/-1;
+    min-width: 0;
   }
   .atlas-header.filters-open .right-group {
     grid-column: 3;
@@ -439,20 +492,6 @@
       gap: 0.65rem;
     }
   }
-  /* Before desktop navigation can squeeze the search, give the pill its own row.
-     Keep ordinary desktop links visible until the existing mobile breakpoint. */
-  @media (min-width: 561px) and (max-width: 1000px) {
-    .atlas-header :global(.search-line) {
-      grid-column: 1/-1;
-      grid-row: 2;
-    }
-    .atlas-header :global(.toolbox) {
-      grid-row: 3;
-    }
-    .atlas-header {
-      row-gap: 0.65rem;
-    }
-  }
   @media (min-width: 561px) and (max-width: 720px) {
     .brand span {
       display: none;
@@ -488,15 +527,10 @@
         min-width: 12rem;
       }
     }
-    .atlas-header :global(.search-line) {
-      grid-column: 1/3;
-      grid-row: 1;
+    .search-toggle {
+      grid-column: 1;
+      justify-self: start;
     }
-    .atlas-header :global(.toolbox) {
-      grid-column: 1/-1;
-      grid-row: 2;
-    }
-
     .right-group {
       grid-column: 3;
       grid-row: 1;
