@@ -28,6 +28,7 @@
     "@sveltejs/adapter-static": "^3.0.0",
     "@sveltejs/kit": "^2.0.0",
     "@sveltejs/vite-plugin-svelte": "^6.0.0",
+    "@types/markdown-it": "^14.2.0",
     "@types/node": "^24.19.2",
     "concurrently": "^10.0.6",
     "prettier": "^3.9.10",
@@ -38,5 +39,8 @@
     "svelte-check": "^4.0.0",
     "typescript": "~5.9.3",
     "vite": "^7.3.1"
+  },
+  "dependencies": {
+    "markdown-it": "^15.0.3"
   }
 }

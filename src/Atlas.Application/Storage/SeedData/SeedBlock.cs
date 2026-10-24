@@ -12,7 +12,7 @@ internal static partial class DemoData
             {
                 Id = Guid.Parse("b3000000-0000-4000-8000-000000000001"),
                 Kind = "markdown",
-                Markdown = "Useful ideas can come from anyone, and a small change in one place may inspire progress somewhere else. People of every age and background notice different needs and possibilities. Even an idea too big for one person to carry out can grow when others can see it, develop it, and connect it with ideas from other areas of life.",
+                Markdown = "# Ideas worth exploring\n\n**Useful ideas can come from anyone.** A small change may inspire progress elsewhere.\n\n## Build on an idea\n\n1. Describe the need.\n2. Add *evidence* and links.\n3. Invite contributions.\n\n> Ideas grow when people develop them together.\n\nUse `specific examples`. Learn about [collective intelligence](https://en.wikipedia.org/wiki/Collective_intelligence).",
                 CreatedAt = DateTimeOffset.Parse(
                     "2026-09-28T15:20:00+00:00",
                     System.Globalization.CultureInfo.InvariantCulture

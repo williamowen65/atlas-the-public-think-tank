@@ -44,37 +44,37 @@ The snippet prop does not have to contain LiveVotingDial; a different parent can
 
 ## Application component index
 
-| Component                                             | Purpose                                                                                        |
-| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| [ActionButton](#actionbutton)                         | Reusable action button with accessibility attributes and an activation callback.               |
-| [AtlasFooter](#atlasfooter)                           | Shared grouped navigation links and site footer.                                               |
-| [AtlasHeader](#atlasheader)                           | Shared navigation, search, account menu and logout behavior.                                   |
-| [Breadcrumb](#breadcrumb)                             | Scrollable ancestry ribbon with older-page loading and alternate-parent paths.                 |
-| [CommentsPanel](#commentspanel)                       | Composes session controls and the live threaded discussion for a node.                         |
-| [CommunityLinks](#communitylinks)                     | Reads node-community associations and displays links, with names as fallback.                  |
-| [ContentBlocks](#contentblocks)                       | Renders an ordered list of supported content blocks.                                           |
-| [DiscoverySearch](#discoverysearch)                   | Shared discovery search and filter toolbox; communicates through discoveryQuery state.         |
-| [LiveComments](#livecomments)                         | Fetches and edits one level of a threaded discussion, recursively rendering replies.           |
-| [LiveMyProfile](#livemyprofile)                       | Session-aware current-participant profile, editing and community display.                      |
-| [LiveNodeFeed](#livenodefeed)                         | Loads discovery pages and composes NodeFeed with live voting/reaction controls.                |
-| [LiveNodeForm](#livenodeform)                         | Session-aware creation, browser-private draft handling, custom types and backend submission.   |
-| [LiveNodePage](#livenodepage)                         | Fetches a node, its content and types, then composes voting, tabs, child forms and discussion. |
-| [LiveProfilePage](#liveprofilepage)                   | Loads a public participant profile and their contribution feed.                                |
-| [LiveReactions](#livereactions)                       | Loads reaction choices/scores and handles session-aware reaction voting and undo.              |
-| [LiveVotingDial](#livevotingdial)                     | Connects VotingDial to API summaries, explicit confirmation, undo and sign-in prompts.         |
-| [MarkdownContent](#markdowncontent)                   | Renders a small escaped Markdown subset: paragraphs, headings, lists and fenced code.          |
-| [NodeCard](#nodecard)                                 | Selects a card presentation and forwards the common card contract.                             |
-| [NodeCommunities](#nodecommunities)                   | Displays node-community associations and lets the node author change them.                     |
-| [NodeFeed](#nodefeed)                                 | Presentational card list with automatic/manual pagination and empty/error states.              |
-| [NodeForm](#nodeform)                                 | Editable creation form and Markdown preview; parent owns persistence.                          |
-| [NodePage](#nodepage)                                 | Presentational full-node composition with discussion tabs and caller-supplied snippets.        |
-| [SessionControl](#sessioncontrol)                     | Reusable session check, login, registration and optional sign-out UI.                          |
-| [VotingDial](#votingdial)                             | Controlled, presentational importance dial with wheel, drag, touch and keyboard interactions.  |
-| [NodeCardContextBelow](#nodecardcontextbelow)         | Common card contract using the context-below presentation.                                     |
-| [NodeCardRibbon](#nodecardribbon)                     | Common card contract using the ribbon presentation.                                            |
-| [NodeCardRibbonCorner](#nodecardribboncorner)         | Common card contract using the ribbon-corner presentation.                                     |
-| [NodeCardRibbonResponsive](#nodecardribbonresponsive) | Common card contract using the responsive ribbon presentation.                                 |
-| [NodeCardRibbonSplit](#nodecardribbonsplit)           | Common card contract using the split ribbon presentation.                                      |
+| Component                                             | Purpose                                                                                                                                            |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [ActionButton](#actionbutton)                         | Reusable action button with accessibility attributes and an activation callback.                                                                   |
+| [AtlasFooter](#atlasfooter)                           | Shared grouped navigation links and site footer.                                                                                                   |
+| [AtlasHeader](#atlasheader)                           | Shared navigation, search, account menu and logout behavior.                                                                                       |
+| [Breadcrumb](#breadcrumb)                             | Scrollable ancestry ribbon with older-page loading and alternate-parent paths.                                                                     |
+| [CommentsPanel](#commentspanel)                       | Composes session controls and the live threaded discussion for a node.                                                                             |
+| [CommunityLinks](#communitylinks)                     | Reads node-community associations and displays links, with names as fallback.                                                                      |
+| [ContentBlocks](#contentblocks)                       | Renders an ordered list of supported content blocks.                                                                                               |
+| [DiscoverySearch](#discoverysearch)                   | Shared discovery search and filter toolbox; communicates through discoveryQuery state.                                                             |
+| [LiveComments](#livecomments)                         | Fetches and edits one level of a threaded discussion, recursively rendering replies.                                                               |
+| [LiveMyProfile](#livemyprofile)                       | Session-aware current-participant profile, editing and community display.                                                                          |
+| [LiveNodeFeed](#livenodefeed)                         | Loads discovery pages and composes NodeFeed with live voting/reaction controls.                                                                    |
+| [LiveNodeForm](#livenodeform)                         | Session-aware creation, browser-private draft handling, custom types and backend submission.                                                       |
+| [LiveNodePage](#livenodepage)                         | Fetches a node, its content and types, then composes voting, tabs, child forms and discussion.                                                     |
+| [LiveProfilePage](#liveprofilepage)                   | Loads a public participant profile and their contribution feed.                                                                                    |
+| [LiveReactions](#livereactions)                       | Loads reaction choices/scores and handles session-aware reaction voting and undo.                                                                  |
+| [LiveVotingDial](#livevotingdial)                     | Connects VotingDial to API summaries, explicit confirmation, undo and sign-in prompts.                                                             |
+| [MarkdownContent](#markdowncontent)                   | Renders Markdown through the shared markdown-it policy: formatting, lists, quotes, code and safe links; raw HTML and Markdown images are disabled. |
+| [NodeCard](#nodecard)                                 | Selects a card presentation and forwards the common card contract.                                                                                 |
+| [NodeCommunities](#nodecommunities)                   | Displays node-community associations and lets the node author change them.                                                                         |
+| [NodeFeed](#nodefeed)                                 | Presentational card list with automatic/manual pagination and empty/error states.                                                                  |
+| [NodeForm](#nodeform)                                 | Editable creation form and Markdown preview; parent owns persistence.                                                                              |
+| [NodePage](#nodepage)                                 | Presentational full-node composition with discussion tabs and caller-supplied snippets.                                                            |
+| [SessionControl](#sessioncontrol)                     | Reusable session check, login, registration and optional sign-out UI.                                                                              |
+| [VotingDial](#votingdial)                             | Controlled, presentational importance dial with wheel, drag, touch and keyboard interactions.                                                      |
+| [NodeCardContextBelow](#nodecardcontextbelow)         | Common card contract using the context-below presentation.                                                                                         |
+| [NodeCardRibbon](#nodecardribbon)                     | Common card contract using the ribbon presentation.                                                                                                |
+| [NodeCardRibbonCorner](#nodecardribboncorner)         | Common card contract using the ribbon-corner presentation.                                                                                         |
+| [NodeCardRibbonResponsive](#nodecardribbonresponsive) | Common card contract using the responsive ribbon presentation.                                                                                     |
+| [NodeCardRibbonSplit](#nodecardribbonsplit)           | Common card contract using the split ribbon presentation.                                                                                          |
 
 ## SessionControl examples
 
@@ -304,11 +304,11 @@ Connects VotingDial to API summaries, explicit confirmation, undo and sign-in pr
 
 ### MarkdownContent
 
-Renders a small escaped Markdown subset: paragraphs, headings, lists and fenced code. [Source](../src/lib/components/MarkdownContent.svelte).
+Renders Markdown through the shared markdown-it policy: formatting, lists, quotes, code and safe links; raw HTML and Markdown images are disabled. [Source](../src/lib/components/MarkdownContent.svelte).
 
-| Prop   | Type     | Required | Default when omitted | Purpose                                                                 |
-| ------ | -------- | -------- | -------------------- | ----------------------------------------------------------------------- |
-| `text` | `string` | Yes      | —                    | Markdown source to render through the component’s safe Markdown subset. |
+| Prop   | Type     | Required | Default when omitted | Purpose                                                                                    |
+| ------ | -------- | -------- | -------------------- | ------------------------------------------------------------------------------------------ |
+| `text` | `string` | Yes      | —                    | Markdown block source rendered by the shared policy; short descriptions remain plain text. |
 
 ### NodeCard
 

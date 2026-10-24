@@ -360,3 +360,13 @@ The existing `GET /api/nodes/{id}/votes` supplies voteCount, averageVote and cur
 An anonymous attempt returns to neutral and opens a dismissible native sign-in dialog using SessionControl. Escape and Close dismiss it. After signing in, select the rating again; an uncast gesture is never silently submitted. Other failures restore the last confirmed selection and retain server totals. If the write succeeds but the summary refresh fails, the UI reports that distinction and offers Retry totals. Archived nodes remain disabled. Session changes re-read the current participant’s status. No cross-browser real-time updates are included.
 
 The existing local session bridge now additionally permits only node vote-summary GETs and node-vote PUT/DELETEs, with its same origin checks, Atlas cookie filtering and backend antiforgery protection. The anonymous reader remains unchanged. Restart the combined API/Storybook command after pulling proxy changes. Browser fixtures in `tests/voting.spec.ts` cover confirmed state, server totals, zero ratings, reload, changing/undoing votes, sign-in prompts, failure rollback and keyboard controls. Test execution is deferred to CI/manual verification.
+
+### Markdown blocks and previews
+
+`MarkdownContent` uses `src/lib/markdown/renderMarkdown.ts` for both published content blocks and node-form previews. The shared markdown-it policy supports paragraphs, emphasis, lists, blockquotes, fenced code and links. Markdown headings start at h2 (capped at h6), leaving the page heading to its containing component. Short descriptions remain plain text in cards and node introductions.
+
+Raw HTML is escaped, Markdown images are disabled, and links retain markdown-it validation plus an HTTP/HTTPS/mailto protocol allowlist (relative links and fragments are supported). There is no raw-HTML or plugin escape hatch. Review this boundary before adding plugins, custom renderers or image support; the component inserts only this renderer’s output through Svelte’s `{@html}`. Dedicated image blocks continue to work independently.
+
+Demo seed blocks include emphasis, headings, lists, quotes, inline/fenced code and source links. These changes apply when demo data is seeded; they do not update existing database content. No database reset is required to use the renderer: existing plain text still renders, and new Markdown can be tried in the node-form preview.
+
+`tests/markdown.spec.ts` checks formatting, heading levels, raw HTML escaping, blocked image output and unsafe URL protocols as part of the normal Playwright CI suite.
