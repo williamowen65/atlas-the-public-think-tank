@@ -1,3 +1,7 @@
+<!--
+  SessionControl: Reusable session check, login, registration and optional sign-out UI.
+  Reports participant identity through onSession; hideWhenSignedIn controls the signed-in helper display.
+-->
 <script lang="ts">
   import { onMount, untrack } from 'svelte';
   import { commentRequest, CommentRequestError } from '../api/comments';
@@ -30,6 +34,7 @@
   let generation = 0;
   const instance = $props.id();
   const controller = new AbortController();
+  // Read the current session; generation checks prevent older responses from replacing a newer check.
   async function refresh() {
     error = '';
     const current = ++generation;
@@ -56,6 +61,7 @@
       if (current === generation) checking = false;
     }
   }
+  // Check once when mounted, then listen for Atlas sign-in/out events until the component is removed.
   onMount(() => {
     void refresh();
     const changed = () => void refresh();
@@ -73,6 +79,7 @@
     });
     return { destroy: () => cancelAnimationFrame(frame) };
   }
+  // Login first, verify the resulting session, then notify the parent and other session-aware components.
   async function signIn() {
     if (busy) return;
     busy = true;
@@ -105,6 +112,7 @@
       busy = false;
     }
   }
+  // Registration creates an account but does not bypass the email-confirmation/sign-in workflow.
   async function register() {
     if (busy) return;
     busy = true;
@@ -129,6 +137,7 @@
       busy = false;
     }
   }
+  // Clear local identity only after the server accepts logout; failures remain retryable.
   async function signOut() {
     if (busy) return;
     busy = true;

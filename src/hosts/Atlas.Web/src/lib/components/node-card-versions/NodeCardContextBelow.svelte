@@ -1,3 +1,7 @@
+<!--
+  NodeCardContextBelow: Common card contract using the context-below presentation.
+  Accepts the shared NodeCardProps contract; parent callbacks handle navigation and optional snippets provide live controls.
+-->
 <script lang="ts">
   import { centerInCard } from '../../actions/centerInCard';
   import ActionButton from '../ActionButton.svelte';

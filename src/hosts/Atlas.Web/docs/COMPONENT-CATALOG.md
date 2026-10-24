@@ -38,7 +38,7 @@ These contracts describe the current source, including limitations. Keep this ca
 | [LiveProfilePage](#liveprofilepage)                   | Loads a public participant profile and their contribution feed.                                |
 | [LiveReactions](#livereactions)                       | Loads reaction choices/scores and handles session-aware reaction voting and undo.              |
 | [LiveVotingDial](#livevotingdial)                     | Connects VotingDial to API summaries, explicit confirmation, undo and sign-in prompts.         |
-| [MarkdownContent](#markdowncontent)                   | Renders escaped Markdown with safe links and images.                                           |
+| [MarkdownContent](#markdowncontent)                   | Renders a small escaped Markdown subset: paragraphs, headings, lists and fenced code.                                           |
 | [NodeCard](#nodecard)                                 | Selects a card presentation and forwards the common card contract.                             |
 | [NodeCommunities](#nodecommunities)                   | Displays node-community associations and lets the node author change them.                     |
 | [NodeFeed](#nodefeed)                                 | Presentational card list with automatic/manual pagination and empty/error states.              |
@@ -280,7 +280,7 @@ Connects VotingDial to API summaries, explicit confirmation, undo and sign-in pr
 
 ### MarkdownContent
 
-Renders escaped Markdown with safe links and images. [Source](../src/lib/components/MarkdownContent.svelte).
+Renders a small escaped Markdown subset: paragraphs, headings, lists and fenced code. [Source](../src/lib/components/MarkdownContent.svelte).
 
 | Prop   | Type     | Required | Default when omitted | Purpose                                                                 |
 | ------ | -------- | -------- | -------------------- | ----------------------------------------------------------------------- |

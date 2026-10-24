@@ -1,9 +1,14 @@
+<!--
+  CommunityLinks: Reads node-community associations and displays links, with names as fallback.
+  Uses supplied names until public community records are available.
+-->
 <script lang="ts">
   import { onMount } from 'svelte';
   import { commentRequest } from '../api/comments';
   import type { Community } from '../api/communities';
   let { nodeId, names }: { nodeId: string; names: string[] } = $props();
   let linked = $state<Community[]>([]);
+  // Fetch linkable records once mounted; abort on removal and keep fallback names on failure.
   onMount(() => {
     const controller = new AbortController();
     void commentRequest<Community[]>(

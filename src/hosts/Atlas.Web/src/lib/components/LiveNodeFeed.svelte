@@ -1,3 +1,7 @@
+<!--
+  LiveNodeFeed: Loads discovery pages and composes NodeFeed with live voting/reaction controls.
+  Owns loading and page accumulation; NodeFeed owns rendering and requests more pages through a callback.
+-->
 <script lang="ts">
   import LiveVotingDial from './LiveVotingDial.svelte';
   import LiveReactions from './LiveReactions.svelte';
@@ -38,6 +42,7 @@
   let nextPage = 1;
   let controller: AbortController | undefined;
   let disposed = false;
+  // Fetch the next page, discard hidden/unavailable projections, and append each node ID only once.
   async function load() {
     if (loading || disposed || !hasMore) return;
     loading = true;

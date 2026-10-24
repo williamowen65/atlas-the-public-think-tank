@@ -1,3 +1,7 @@
+<!--
+  NodePage: Presentational full-node composition with discussion tabs and caller-supplied snippets.
+  The parent owns fetching and tab state; snippets supply voting, reactions and the active tab content.
+-->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import type { NodeCardData } from './NodeCard.svelte';
@@ -47,6 +51,7 @@
     children: Snippet;
   } = $props();
   const instance = $props.id();
+  // Combine comments, backend contribution summaries and any temporary child-draft tab.
   const tabs = $derived([
     {
       id: 'comments',
@@ -57,6 +62,7 @@
       ? [draftTab]
       : []),
   ]);
+  // Initially align/focus contribution tabs while allowing late layout changes; stop correction on user input.
   function reveal(tabs: HTMLDivElement) {
     if (!revealChildren) return;
     const card = tabs.closest<HTMLElement>('.node-page')!;
@@ -102,6 +108,7 @@
     void document.fonts.ready.then(schedule);
     return { destroy: stop };
   }
+  // Arrow/Home/End navigation requests a controlled tab change and moves keyboard focus.
   function key(event: KeyboardEvent, index: number) {
     let next = index;
     if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;

@@ -1,3 +1,7 @@
+<!--
+  MarkdownContent: Renders a small escaped Markdown subset: paragraphs, headings, lists and fenced code.
+  Svelte escapes source text; this component does not inject arbitrary HTML or implement full Markdown.
+-->
 <script lang="ts">
   let { text }: { text: string } = $props();
   // Escape all source text through Svelte. Support a small, safe Markdown subset.

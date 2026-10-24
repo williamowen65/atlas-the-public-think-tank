@@ -1,3 +1,7 @@
+<!--
+  ActionButton: Reusable action button with accessibility attributes and an activation callback.
+  The parent supplies the label and callback; this component performs no API requests.
+-->
 <script lang="ts">
   interface Props {
     label: string;

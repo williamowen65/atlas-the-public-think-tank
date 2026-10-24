@@ -1,3 +1,7 @@
+<!--
+  NodeFeed: Presentational card list with automatic/manual pagination and empty/error states.
+  The parent owns data; optional snippets replace voting/reactions for each item.
+-->
 <script lang="ts" module>
   import type { NodeCardData } from './NodeCard.svelte';
   export interface FeedItem {
@@ -53,6 +57,7 @@
   let tail: HTMLDivElement;
   const singularType = $derived((emptyTypeName ?? '').trim());
   const article = $derived(/^[aeiou]/i.test(singularType) ? 'an' : 'a');
+  // Observe the tail only when another page can be requested; the manual button remains the fallback.
   $effect(() => {
     items.length;
     if (

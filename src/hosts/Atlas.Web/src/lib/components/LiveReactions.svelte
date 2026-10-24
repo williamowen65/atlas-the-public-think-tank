@@ -1,3 +1,7 @@
+<!--
+  LiveReactions: Loads reaction choices/scores and handles session-aware reaction voting and undo.
+  Uses API-returned scores and participant votes instead of optimistically calculating totals.
+-->
 <script lang="ts">
   import { onMount } from 'svelte';
   import { commentRequest, CommentRequestError } from '../api/comments';
@@ -32,6 +36,7 @@
   const active = $derived(
     choices.filter((c) => c.totalVotes > 0 || c.currentParticipantVote !== null),
   );
+  // Only the latest request may publish scores, preventing slower earlier reads from replacing new data.
   async function refresh() {
     const generation = ++requestGeneration;
     const result = await commentRequest<Choice[]>(
@@ -47,6 +52,7 @@
       error = '';
     }
   }
+  // Load choices in the browser and refresh them after a session change; release listeners on removal.
   onMount(() => {
     controller = new AbortController();
     void refresh()
@@ -65,6 +71,7 @@
       window.removeEventListener('atlas-session-changed', changed);
     };
   });
+  // Selecting an existing +1 undoes it; otherwise request +1, then reload server totals.
   async function toggle(choice: Choice) {
     if (archived || busy) return;
     busy = choice.id;
@@ -100,6 +107,7 @@
 
 <section class="node-reactions" aria-label="Community reactions">
   <div class="reaction-list">
+    <!-- class:chosen adds the chosen CSS class only while this participant has a +1 vote. -->
     {#each active as choice (choice.id)}
       <button
         type="button"

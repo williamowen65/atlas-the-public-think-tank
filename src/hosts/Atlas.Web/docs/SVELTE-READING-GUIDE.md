@@ -30,3 +30,9 @@ Run `npm run format` to format Svelte source/stories and the root route options,
 References: [Svelte lifecycle](https://svelte.dev/docs/svelte/lifecycle-hooks), [Svelte effects](https://svelte.dev/docs/svelte/$effect), [SvelteKit routing](https://svelte.dev/docs/kit/routing).
 
 For complete prop contracts and usage examples, see the [component catalog](COMPONENT-CATALOG.md).
+
+## Conditional classes and element actions
+
+`class:chosen={condition}` is Svelte's conditional class directive. When condition is truthy, the element gets the `chosen` CSS class; otherwise that class is removed. It does not replace the element's other classes. In LiveReactions, `class:chosen={choice.currentParticipantVote === 1}` highlights the participant's selected reaction. The chosen style is separate from `aria-pressed`, which communicates selection to assistive technology. Shorthand `class:chosen` uses a variable also named chosen.
+
+`use:centerInCard` attaches an action function to the actual DOM element. Svelte passes that element to the function after mounting. An action can return `update` and `destroy` functions for parameter changes and cleanup. Atlas's centerInCard action measures the card and action span, sets a horizontal CSS offset and releases its ResizeObserver on removal.

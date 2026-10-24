@@ -1,3 +1,7 @@
+<!--
+  LiveProfilePage: Loads a public participant profile and their contribution feed.
+  Public data is readable anonymously; edit controls depend on the current session and profile ownership.
+-->
 <script lang="ts">
   import { onMount } from 'svelte';
   import LiveNodeFeed from './LiveNodeFeed.svelte';
@@ -39,6 +43,7 @@
   const joinedCommunities = $derived(
     communities.filter((c) => c.isMember && c.ownerParticipantId !== profile?.id),
   );
+  // Load the public profile first; unavailable community data should not hide that profile.
   async function loadProfile(id: string, signal: AbortSignal) {
     loading = true;
     error = '';
@@ -74,6 +79,7 @@
       if (!signal.aborted) loading = false;
     }
   }
+  // Session identity controls owner-edit affordances; it is independent of the public profile being viewed.
   async function checkSession() {
     try {
       const session = await commentRequest<{ participantId: string | null }>(
@@ -93,6 +99,7 @@
     window.addEventListener('atlas-session-changed', changed);
     return () => window.removeEventListener('atlas-session-changed', changed);
   });
+  // Changing the participant cancels the previous lookup and clears stale editing state.
   $effect(() => {
     const id = participantId;
     editing = false;

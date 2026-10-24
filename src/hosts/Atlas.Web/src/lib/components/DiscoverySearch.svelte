@@ -1,3 +1,7 @@
+<!--
+  DiscoverySearch: Shared discovery search and filter toolbox; communicates through discoveryQuery state.
+  Parses search tokens and publishes the accepted query to shared discovery state.
+-->
 <script lang="ts">
   import { onMount } from 'svelte';
   import {
@@ -27,6 +31,7 @@
     restoreDiscoveryQuery();
   });
   const uuid = /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
+  // Separate ordinary search words from supported field tokens and collect validation messages.
   function parse(value: string) {
     const filters: DiscoveryFilters = {};
     const words: string[] = [];
@@ -88,6 +93,7 @@
     }
     return { text: words.join(' ').trim(), filters, errors };
   }
+  // Publish only a valid query; the root page derives the actual discovery request filters.
   function apply(value: string) {
     const result = parse(value);
     if (result.errors.length) {
@@ -99,6 +105,7 @@
     input = applied;
     pending = applied;
   }
+  // Replace one field token without dropping unrelated terms in the draft query.
   function token(key: string, value: string) {
     const parts = (pending.match(/"[^"]*"|\S+/g) ?? []).filter(
       (p) => !p.toLowerCase().startsWith(key + ':'),

@@ -1,3 +1,7 @@
+<!--
+  AtlasHeader: Shared navigation, search, account menu and logout behavior.
+  The parent supplies authentication and display-name props; this component performs the logout request.
+-->
 <script lang="ts">
   import DiscoverySearch from './DiscoverySearch.svelte';
   import { onMount } from 'svelte';
@@ -17,6 +21,7 @@
   let filtersOpen = $state(false);
   let headerVisible = $state(true);
   let lastScroll = 0;
+  // Keep the header visible near the top or while filters are open; hide it during downward scrolling.
   onMount(() => {
     lastScroll = window.scrollY;
     const onScroll = () => {
@@ -32,6 +37,7 @@
   let menuOpen = $state(false);
   let loggingOut = $state(false);
   let logoutError = $state('');
+  // Send logout through the session API, then notify other session-aware components.
   async function logOut() {
     if (loggingOut) return;
     loggingOut = true;
@@ -48,6 +54,7 @@
   }
   let accountElement = $state<HTMLDivElement>();
   let mobileElement: HTMLDetailsElement;
+  // Dismiss menus without intercepting normal navigation or control activation.
   function closeOnOutside(event: PointerEvent) {
     if (menuOpen && event.target instanceof Node && !accountElement?.contains(event.target))
       menuOpen = false;

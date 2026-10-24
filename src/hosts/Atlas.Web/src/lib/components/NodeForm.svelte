@@ -1,3 +1,7 @@
+<!--
+  NodeForm: Editable creation form and Markdown preview; parent owns persistence.
+  Seeds editable fields once and emits drafts through callbacks; it does not persist data itself.
+-->
 <script lang="ts" module>
   export interface NodeDraft {
     title: string;
@@ -49,6 +53,7 @@
   const path = $derived(
     parentId ? [...breadcrumb, { id: parentId, title: parentTitle ?? parentId }] : breadcrumb,
   );
+  // Focus only after insertion so the select and its containing form can be measured.
   function reveal(control: HTMLSelectElement) {
     if (focusOnMount)
       requestAnimationFrame(() => {
@@ -67,6 +72,7 @@
   $effect(() => {
     if (!typeId && types.length) typeId = initialTypeId || types[0].id;
   });
+  // Build a normalized snapshot for preview/submission without mutating the caller’s initial draft.
   function draft(): NodeDraft {
     return {
       title: title.trim(),

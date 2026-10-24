@@ -1,3 +1,7 @@
+<!--
+  Breadcrumb: Scrollable ancestry ribbon with older-page loading and alternate-parent paths.
+  Keeps scroll position while prepending ancestors or switching paths; async lookups do not own app routing.
+-->
 <script lang="ts" module>
   /** Oldest ancestor first; omit id when the source supplies display text only. */
   export interface BreadcrumbItem {
@@ -69,6 +73,7 @@
     }
     openRouteMenu = true;
   }
+  // Remember the visible anchor before fetching a different parent path, so the ribbon does not jump.
   async function selectLiveParent(parentId: string) {
     if (!liveMenuChild || liveBusy) return;
     const child = liveMenuChild;
@@ -122,6 +127,7 @@
       liveBusy = false;
     }
   }
+  // Switch a caller-supplied route while retaining the user’s horizontal position.
   function selectRoute(route: BreadcrumbRoute) {
     preserveScroll = true;
     const selectedIndex = divergenceIndex;
@@ -153,6 +159,7 @@
   );
   const liveChildAt = (index: number) =>
     index + 1 < allItems.length ? allItems[index + 1].id : originId;
+  // A new source path resets paging and any previously selected alternate ancestry.
   $effect(() => {
     items;
     hasMore;
@@ -190,6 +197,7 @@
     return () => controller.abort();
   });
 
+  // Prepend only unseen ancestors; generation checks discard results from an outdated path.
   async function requestOlder() {
     if (!more || loading || !loadOlder) return;
     const current = generation;

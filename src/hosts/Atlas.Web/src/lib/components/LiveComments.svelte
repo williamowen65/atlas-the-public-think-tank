@@ -1,3 +1,7 @@
+<!--
+  LiveComments: Fetches and edits one level of a threaded discussion, recursively rendering replies.
+  Each recursive instance owns its own cursor, retry state and composer; the API authorizes mutations.
+-->
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import LiveComments from './LiveComments.svelte';
@@ -41,6 +45,7 @@
   const instance = $props.id();
   const controller = new AbortController();
   const signal = () => AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]);
+  // Clear identity-sensitive drafts and edit state when the signed-in participant changes.
   $effect(() => {
     participantId;
     text = '';
@@ -49,6 +54,7 @@
     replyTarget = null;
     actionError = '';
   });
+  // Each list has an independent keyset cursor; failures retain loaded items so retry can continue.
   async function load() {
     if (loading || (started && !next && !error)) return;
     loading = true;
@@ -99,6 +105,7 @@
       loading = false;
     }
   }
+  // Append only the comment returned by the API; preserve text if the write fails.
   async function post() {
     if (saving || !text.trim() || !participantId) return;
     saving = true;
@@ -156,6 +163,7 @@
       saving = false;
     }
   }
+  // Replace the removed body locally while preserving its entry and any expanded reply thread.
   async function remove(id: string) {
     if (saving) return;
     saving = true;
@@ -183,6 +191,7 @@
       saving = false;
     }
   }
+  // Wait for conditional reply markup to render before moving keyboard focus.
   async function focusComposer() {
     await tick();
     composer?.focus();

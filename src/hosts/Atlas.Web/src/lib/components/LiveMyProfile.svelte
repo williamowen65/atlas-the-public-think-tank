@@ -1,3 +1,7 @@
+<!--
+  LiveMyProfile: Session-aware current-participant profile, editing and community display.
+  Keeps profile-edit form state separate from the fetched public profile.
+-->
 <script lang="ts">
   import LiveProfilePage from './LiveProfilePage.svelte';
   import SessionControl from './SessionControl.svelte';
@@ -35,6 +39,7 @@
       notice = 'Your public profile could not be loaded.';
     }
   }
+  // Reset the previous participant’s display/edit state before loading the new session’s data.
   function sessionChanged(id: string | null) {
     participantId = id;
     profile = null;
@@ -48,6 +53,7 @@
         .catch(() => {});
     }
   }
+  // Persist profile edits first, then reload the public representation from the API.
   async function save() {
     if (!participantId || saving) return;
     saving = true;

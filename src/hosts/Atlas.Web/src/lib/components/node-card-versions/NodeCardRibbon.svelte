@@ -1,3 +1,7 @@
+<!--
+  NodeCardRibbon: Common card contract using the ribbon presentation.
+  Accepts the shared NodeCardProps contract; parent callbacks handle navigation and optional snippets provide live controls.
+-->
 <script lang="ts">
   import { centerInCard } from '../../actions/centerInCard';
   import ActionButton from '../ActionButton.svelte';
@@ -24,6 +28,7 @@
     apiBase,
   }: NodeCardProps = $props();
   const instance = $props.id();
+  // Prefer structured contribution types; use the text summary only for older projections.
   const connectionLabels = $derived([
     ...(!node.childTypes?.length && node.subNodeSummary && node.subNodeSummary !== 'None'
       ? node.subNodeSummary.split(' · ')

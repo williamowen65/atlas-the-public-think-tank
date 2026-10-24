@@ -1,3 +1,7 @@
+<!--
+  LiveNodePage: Fetches a node, its content and types, then composes voting, tabs, child forms and discussion.
+  Owns data and tab state; NodePage receives presentation props and renderable content snippets.
+-->
 <script lang="ts">
   import LiveVotingDial from './LiveVotingDial.svelte';
   import LiveReactions from './LiveReactions.svelte';
@@ -54,6 +58,7 @@
       draft.newType?.description ||
       draft.requestedTypeIds.length
     );
+  // Before switching tabs, save a titled draft or ask before discarding untitled changes.
   async function closeChildForm(): Promise<boolean> {
     if (createType === null) return true;
     if (editingDraft && draftChanged(editingDraft)) {
@@ -83,6 +88,7 @@
       switching = false;
     }
   }
+  // Track the editable child draft so its selected type can appear as a temporary discussion tab.
   function selectDraftType(draft: NodeDraft | null) {
     editingDraft = draft;
     if (createType === null || !draft) return;
@@ -97,6 +103,7 @@
       : window.location.assign(
           `/nodes?id=${encodeURIComponent(id)}${typeId ? `&type=${encodeURIComponent(typeId)}#contributions` : ''}`,
         );
+  // Reload when the node, initial tab or retry signal changes; abort stale requests on navigation.
   $effect(() => {
     const id = nodeId;
     const selectedType = initialTypeId;

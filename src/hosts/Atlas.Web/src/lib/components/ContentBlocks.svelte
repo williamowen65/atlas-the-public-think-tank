@@ -1,3 +1,7 @@
+<!--
+  ContentBlocks: Renders an ordered list of supported content blocks.
+  Handles images/links with URL validation and delegates Markdown to MarkdownContent.
+-->
 <script lang="ts">
   import MarkdownContent from './MarkdownContent.svelte';
   import { publicUrl, type ContentBlock } from '../api/nodePage';
@@ -5,6 +9,7 @@
 </script>
 
 <section aria-label="Node content" class="content-blocks">
+  <!-- Match supported block kinds; unsupported interactive kinds retain a plain fallback. -->
   {#each blocks as block (block.id)}
     {#if block.kind.toLowerCase().includes('markdown')}<MarkdownContent
         text={block.content.markdown ?? ''}

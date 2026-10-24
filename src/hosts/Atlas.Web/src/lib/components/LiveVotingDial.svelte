@@ -1,3 +1,7 @@
+<!--
+  LiveVotingDial: Connects VotingDial to API summaries, explicit confirmation, undo and sign-in prompts.
+  Keeps proposed selections separate from confirmed ratings and refreshes authoritative totals after writes.
+-->
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import VotingDial from './VotingDial.svelte';
@@ -39,6 +43,7 @@
   let timer: ReturnType<typeof setTimeout> | undefined;
   const controller = new AbortController();
   const signal = () => AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]);
+  // Validate and adopt the API summary together: current rating, count and average are one confirmed snapshot.
   async function refresh() {
     const summary = await commentRequest<VoteSummary>(
       sessionBase,
@@ -104,6 +109,7 @@
   $effect(() => {
     if (login && dialog && !dialog.open) dialog.showModal();
   });
+  // Cancel confirmation without saving and restore the last confirmed selection.
   function cancelPending() {
     clearTimeout(timer);
     pending = null;
@@ -136,6 +142,7 @@
       if (pendingUndo && confirmDialog && !confirmDialog.open) confirmDialog.showModal();
     });
   }
+  // Capture the proposed rating (or undo), close confirmation, then perform the API write.
   function approve() {
     if (!pendingUndo && pending === null) return;
     const next = pendingUndo ? null : pending;
@@ -144,6 +151,7 @@
     confirmDialog?.close();
     void save(next);
   }
+  // A failed write restores the confirmed state; a failed totals refresh after a successful write is reported separately.
   async function save(next: number | null) {
     clearTimeout(timer);
     if (busy || archived) return;

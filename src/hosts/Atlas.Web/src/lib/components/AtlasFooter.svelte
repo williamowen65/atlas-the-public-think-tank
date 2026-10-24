@@ -1,9 +1,14 @@
+<!--
+  AtlasFooter: Shared grouped navigation links and site footer.
+  The parent can override internal-link navigation, allowing the same footer to work in Storybook.
+-->
 <script lang="ts">
   let {
     tagline = 'A place to connect questions, evidence, and ideas.',
     onNavigate,
   }: { tagline?: string; onNavigate?: (href: string) => void } = $props();
   const year = new Date().getFullYear();
+  // Keep link groups as display data; internal links may use the parent navigation callback.
   const groups = [
     {
       title: 'Explore',

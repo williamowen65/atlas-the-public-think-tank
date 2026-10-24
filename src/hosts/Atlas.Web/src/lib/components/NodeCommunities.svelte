@@ -1,3 +1,7 @@
+<!--
+  NodeCommunities: Displays node-community associations and lets the node author change them.
+  Shows association changes only to the node author; the backend remains authoritative for permission checks.
+-->
 <script lang="ts">
   import { onMount } from 'svelte';
   import { commentRequest } from '../api/comments';
@@ -20,6 +24,7 @@
       'communities/node/' + encodeURIComponent(nodeId),
     );
   }
+  // Load associations, available communities and session identity independently; only association load failures are reported as load errors.
   onMount(() => {
     let active = true;
     void Promise.allSettled([
@@ -40,6 +45,7 @@
       active = false;
     };
   });
+  // Guard the local UI, send the association change, then reload the authoritative linked-community list.
   async function update(id: string, add: boolean) {
     if (!isAuthor || busy) return;
     busy = true;

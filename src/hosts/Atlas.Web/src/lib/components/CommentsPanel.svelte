@@ -1,3 +1,7 @@
+<!--
+  CommentsPanel: Composes session controls and the live threaded discussion for a node.
+  Owns session identity for its discussion and forwards successful additions to the parent.
+-->
 <script lang="ts">
   import LiveComments from './LiveComments.svelte';
   import SessionControl from './SessionControl.svelte';

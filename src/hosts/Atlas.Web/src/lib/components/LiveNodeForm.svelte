@@ -1,3 +1,7 @@
+<!--
+  LiveNodeForm: Session-aware creation, browser-private draft handling, custom types and backend submission.
+  Public reads load types; session-aware writes save types/nodes, while private drafts stay in this browser.
+-->
 <script lang="ts">
   import { onMount } from 'svelte';
   import { putDraft, deleteDraft, listDrafts } from '../api/privateDrafts';
@@ -58,6 +62,7 @@
     }
     return null;
   }
+  // Restore private data only from the current participant’s browser draft collection.
   function sessionChanged(id: string | null) {
     participantId = id;
     hasDraft = !!id;
@@ -82,6 +87,7 @@
       }
     }
   }
+  // Save a titled draft locally; return success so a parent can decide whether it is safe to close.
   async function savePrivateDraft(): Promise<boolean> {
     if (!participantId || !currentDraft) return false;
     if (!currentDraft.title.trim()) {
@@ -112,6 +118,7 @@
       return false;
     }
   }
+  // Expose the private-save function to the parent after mounting; registering it does not save or close yet.
   onMount(() => {
     onRegisterClose?.(savePrivateDraft);
   });
@@ -137,6 +144,7 @@
     if (onCreated) onCreated(createdId);
     else window.location.assign(`/nodes?id=${encodeURIComponent(createdId)}`);
   };
+  // Custom-type creation and node creation are separate writes. Reuse a saved type on an unchanged retry.
   async function save(draft: NodeDraft) {
     if (!participantId || submitting || createdId) return;
     submitting = true;

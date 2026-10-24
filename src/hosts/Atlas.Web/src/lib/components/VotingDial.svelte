@@ -1,3 +1,7 @@
+<!--
+  VotingDial: Controlled, presentational importance dial with wheel, drag, touch and keyboard interactions.
+  Normalizes pointer, touch, wheel and keyboard gestures into controlled 0–10 selections; it does not save votes.
+-->
 <script lang="ts">
   interface Props {
     label?: string;
@@ -75,6 +79,7 @@
     lastDisabled = locked;
   });
 
+  // Clamp all gesture inputs to whole ratings and emit changes to the parent rather than saving here.
   function select(next: number) {
     if (disabled) return;
     next = Math.max(0, Math.min(10, Math.round(next)));
@@ -94,6 +99,7 @@
     select(next);
   }
 
+  // Map keyboard navigation to the same selection path used by pointer and wheel input.
   function handleKey(event: KeyboardEvent) {
     if (disabled) return;
     if (['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft', 'Home', 'End'].includes(event.key)) {
@@ -128,6 +134,7 @@
 
   // Native touch scrolling supplies momentum and CSS snap. Mouse/pen dragging adds
   // the same direct manipulation on desktop without replacing touch physics.
+  // Track touch separately from mouse dragging so touch scrolling can keep its native behavior.
   function pointerDown(event: PointerEvent) {
     if (disabled) return;
     clearTimeout(wheelRelease);
@@ -196,6 +203,7 @@
     pulling = false;
   }
 
+  // Accumulate wheel movement into rating steps while the lens provides temporary visual feedback.
   function handleWheel(event: WheelEvent) {
     if (disabled || event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
     event.preventDefault();
