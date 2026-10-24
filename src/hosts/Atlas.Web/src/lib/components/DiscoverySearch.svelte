@@ -139,6 +139,11 @@
   });
 </script>
 
+<!--
+  Layout: The search row stays visible; an expandable toolbox edits filter tokens before Apply
+  publishes them to shared discovery state.
+-->
+
 <svelte:window onpointerdown={dismissOutside} onkeydown={dismissEscape} />
 <section bind:this={searchRegion} class="filter-bar" aria-label="Filter discovery">
   <form
@@ -163,6 +168,10 @@
       {parse(input).errors.join(' · ')}
     </p>{/if}
   {#if expanded}
+    <!--
+      These controls edit pending tokens; Apply commits them, while the active feed keeps its
+      previous query.
+    -->
     <div class="toolbox">
       <label
         >Node type<select

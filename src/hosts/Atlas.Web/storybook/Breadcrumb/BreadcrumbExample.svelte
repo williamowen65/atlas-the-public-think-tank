@@ -26,6 +26,8 @@
   }
 </script>
 
+<!-- Layout: The breadcrumb sits above a status message reporting the selected ancestor. -->
+
 <div class="example">
   <Breadcrumb
     {items}

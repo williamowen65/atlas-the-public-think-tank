@@ -33,6 +33,11 @@
   });
 </script>
 
+<!--
+  Layout: An explicit or current participant renders the shared profile page; otherwise show a
+  session check or sign-in prompt.
+-->
+
 <svelte:head><title>Profiles · Atlas</title></svelte:head>
 {#if requestedId || participantId}
   <LiveProfilePage

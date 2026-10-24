@@ -141,6 +141,11 @@
   }
 </script>
 
+<!--
+  Layout: Profile identity and biography lead into community links, optional owner editing and
+  the participant’s contribution feed.
+-->
+
 <section class="profile-page" aria-label="Public participant profile">
   {#if !participantId}<p>Select a participant to view their public profile.</p>{/if}
   {#if loading && !profile}<p role="status">Loading profile…</p>{/if}

@@ -9,4 +9,9 @@
   } = $props();
 </script>
 
+<!--
+  Layout: The live participant profile is rendered directly with Storybook node/profile
+  navigation.
+-->
+
 <LiveProfilePage {participantId} onOpenNode={openNodeStory} onOpenProfile={openProfileStory} />

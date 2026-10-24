@@ -12,6 +12,11 @@
   let message = $state('No action yet');
 </script>
 
+<!--
+  Layout: The action button and a status message demonstrate activation without adding
+  application behavior.
+-->
+
 <!-- Demonstration wrapper: the status message observes the button callback. -->
 <section aria-label="Action button example">
   <ActionButton {label} {disabled} onActivate={() => (message = 'Action completed')} />

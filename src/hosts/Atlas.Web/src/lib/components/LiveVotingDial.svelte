@@ -218,6 +218,11 @@
   }
 </script>
 
+<!--
+  Layout: The dial, undo and request feedback stay inline. Separate native dialogs handle vote
+  confirmation and sign-in.
+-->
+
 <div bind:this={container} class="live-voting" aria-busy={busy}>
   <!-- Live interaction lock: archived nodes, pending status reads and in-flight writes. -->
   <VotingDial
@@ -243,6 +248,10 @@
       >Retry totals</button
     >{/if}
 </div>
+<!--
+  Confirmation is a separate native dialog so its modal behavior is independent of the inline
+  dial.
+-->
 <dialog
   bind:this={confirmDialog}
   class="vote-login"
@@ -279,6 +288,10 @@
     >
   </div>
 </dialog>
+<!--
+  Sign-in is separate from confirmation; signing in asks the visitor to select their rating
+  again.
+-->
 <dialog
   bind:this={dialog}
   class="vote-login"

@@ -72,6 +72,11 @@
   }
 </script>
 
+<!--
+  Layout: Session controls gate public-profile editing. Security availability and links follow,
+  while success/error messages stay outside the signed-in branch.
+-->
+
 <svelte:head><title>Account settings · Atlas</title></svelte:head>
 <section class="settings">
   <h1>Account settings</h1>

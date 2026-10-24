@@ -37,6 +37,11 @@
   ]);
 </script>
 
+<!--
+  Layout: An ancestor ribbon leads into the heading and dial/body; Read more occupies the
+  description’s corner, with reactions and discussion links below.
+-->
+
 <article class="node-card" data-presentation="ribbon-corner" aria-labelledby={`${instance}-title`}>
   {#if node.breadcrumb.length}
     <div class="ribbon-context">
@@ -91,6 +96,10 @@
           onChange={onVote}
         />{/if}
     </aside>
+    <!--
+      Keeps the description and invitation together beside the dial; the description action
+      reserves its corner clearance.
+    -->
     <div class="content-stack">
       <p class="description" use:bottomCornerAction id={`${instance}-description`}>
         <span class="read-more"

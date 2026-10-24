@@ -13,6 +13,11 @@
   const parts = $derived(text.split(/(```[\s\S]*?```)/g).filter(Boolean));
 </script>
 
+<!--
+  Layout: A shared typography wrapper renders text sections as headings, paragraphs, lists or
+  fenced code; these are elements, not injected raw HTML.
+-->
+
 <div class="markdown">
   {#each parts as part}
     {#if part.startsWith('```')}<pre><code

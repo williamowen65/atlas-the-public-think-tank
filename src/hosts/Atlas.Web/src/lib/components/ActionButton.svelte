@@ -23,6 +23,11 @@
   let { label, disabled = false, expanded, controls, onActivate }: Props = $props();
 </script>
 
+<!--
+  Layout: One native button: the supplied label is its visible text; the parent handles
+  activation.
+-->
+
 <button
   type="button"
   class="atlas-action"

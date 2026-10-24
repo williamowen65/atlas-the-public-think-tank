@@ -94,6 +94,11 @@
   const initial = $derived(displayName.trim().charAt(0).toUpperCase() || 'U');
 </script>
 
+<!--
+  Layout: Brand and search share the header with navigation and account controls; a separate
+  disclosure supplies mobile navigation.
+-->
+
 <svelte:window
   onpointerdown={closeOnOutside}
   onkeydown={closeOnEscape}
@@ -109,6 +114,7 @@
   <a class="brand" href="/" aria-label="Atlas home"
     ><strong>Atlas</strong><span>The Public Think Tank</span></a
   >
+  <!-- Keeps expandable search controls in their own header layout slot. -->
   <div class="search-slot">
     <DiscoverySearch
       onExpandedChange={(open) => {
@@ -118,6 +124,7 @@
     />
   </div>
   {#if logoutError}<p class="logout-error" role="alert">{logoutError}</p>{/if}
+  <!-- Groups navigation/account controls so responsive styles can position them together. -->
   <div class="right-group">
     <nav class="primary" aria-label="Main navigation">
       <a
@@ -207,6 +214,10 @@
         >
       </div>
     {/if}
+    <!--
+      Native disclosure provides the narrow-screen navigation independently of the desktop
+      account menu.
+    -->
     <details class="mobile-menu" bind:this={mobileElement}>
       <summary aria-label="Open navigation menu">☰</summary>
       <nav aria-label="Mobile navigation">

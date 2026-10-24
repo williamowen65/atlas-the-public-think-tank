@@ -9,6 +9,11 @@
   }
 </script>
 
+<!--
+  Layout: Page heading followed by the expanded shared sign-in control; successful
+  authentication is handled by the route callback.
+-->
+
 <svelte:head><title>Sign in · Atlas</title></svelte:head>
 <h1>Sign in</h1>
 <SessionControl expanded onSession={signedIn} />

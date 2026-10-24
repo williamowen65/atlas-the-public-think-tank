@@ -70,6 +70,11 @@
   });
 </script>
 
+<!--
+  Layout: Skip link and shared header surround the route’s main content; the shared footer
+  closes the application shell.
+-->
+
 <a class="skip-link" href="#main-content">Skip to content</a>
 <div class="app-shell">
   <AtlasHeader {authenticated} {displayName} active={activePage} />

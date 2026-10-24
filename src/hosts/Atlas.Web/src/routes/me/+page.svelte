@@ -6,4 +6,9 @@
   });
 </script>
 
+<!--
+  Layout: A profile link remains visible while this legacy route redirects to the current
+  profile page.
+-->
+
 <p>Opening <a href="/profiles/me">your profile</a>…</p>

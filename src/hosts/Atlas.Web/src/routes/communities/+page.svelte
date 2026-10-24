@@ -53,6 +53,11 @@
   }
 </script>
 
+<!--
+  Layout: Community browsing and creation share the page; creation allowance information sits
+  with the form rather than the public list.
+-->
+
 <svelte:head><title>Communities · Atlas</title></svelte:head>
 <div class="communities">
   <h1>Communities</h1>

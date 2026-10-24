@@ -18,6 +18,11 @@
   } = $props();
 </script>
 
+<!--
+  Layout: Reset and scope notes precede a typography specimen; a separate reference section
+  explains spacing tokens.
+-->
+
 <ActionButton label="Reset styles to code defaults" onActivate={() => onReset?.()} />
 <p class="fixture-note">
   These Controls apply across Storybook components and compositions as you switch stories. They do

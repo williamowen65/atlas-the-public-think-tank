@@ -75,6 +75,11 @@
   }
 </script>
 
+<!--
+  Layout: Existing community links come first; author-only association controls follow, with
+  request errors kept in the same region.
+-->
+
 <section class="node-communities" aria-label="Node communities">
   <h3>Communities</h3>
   {#if linked.length}<ul>

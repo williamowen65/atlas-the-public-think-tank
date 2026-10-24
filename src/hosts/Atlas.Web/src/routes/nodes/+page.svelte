@@ -4,6 +4,11 @@
   import LiveNodePage from '$lib/components/LiveNodePage.svelte';
 </script>
 
+<!--
+  Layout: The route supplies URL-selected node/tab IDs and navigation callbacks; LiveNodePage
+  owns the visible node-page composition.
+-->
+
 <svelte:head><title>Node · Atlas</title></svelte:head>
 <LiveNodePage
   onOpenProfile={(id) => void goto('/profiles?id=' + encodeURIComponent(id))}

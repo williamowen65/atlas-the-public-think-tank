@@ -5,6 +5,11 @@
   let second = $state<number | null>(0);
 </script>
 
+<!--
+  Layout: Two independent dials share a comparison row; the note below makes their local-only
+  behavior explicit.
+-->
+
 <div class="comparison">
   <VotingDial
     label="First node importance"

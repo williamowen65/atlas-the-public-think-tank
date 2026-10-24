@@ -272,6 +272,15 @@
   }
 </script>
 
+<!--
+  Layout: Checking, signed-in and signed-out states share one region. The signed-out branch uses
+  a native disclosure around login/registration; errors sit outside it.
+-->
+
+<!--
+  Native details/summary handles disclosure toggling; the focus action only positions the form
+  when mounted.
+-->
 <div class="session-control">
   {#if checking}<p role="status">Checking sign-in…</p>
   {:else if participantId && hideWhenSignedIn}<!-- Authentication helper is hidden once signed in; use the header account menu to sign out. -->

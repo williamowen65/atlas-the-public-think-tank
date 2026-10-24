@@ -70,6 +70,11 @@
   });
 </script>
 
+<!--
+  Layout: Page metadata and an introduction precede the live discovery feed. Search changes
+  remount the feed so pagination restarts.
+-->
+
 <svelte:head>
   <title>Discover · Atlas</title>
   <meta name="description" content="Explore connected questions, evidence, and ideas in Atlas." />

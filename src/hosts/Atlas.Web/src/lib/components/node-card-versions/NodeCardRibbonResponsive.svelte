@@ -37,6 +37,11 @@
   ]);
 </script>
 
+<!--
+  Layout: An ancestor ribbon leads into the heading and dial/body; responsive styles adapt the
+  same markup, with reactions and discussion links below.
+-->
+
 <article
   class="node-card"
   data-presentation="ribbon-responsive"

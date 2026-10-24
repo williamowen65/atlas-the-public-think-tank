@@ -23,6 +23,11 @@
   } = $props();
 </script>
 
+<!--
+  Layout: Exactly one presentation variant is rendered; this component adds no layout wrapper
+  and forwards the common card props.
+-->
+
 {#if presentation === 'context-below'}
   <NodeCardContextBelow {...props} />
 {:else if presentation === 'ribbon-corner'}

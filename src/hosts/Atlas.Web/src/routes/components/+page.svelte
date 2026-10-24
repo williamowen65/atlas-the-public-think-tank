@@ -5,6 +5,11 @@
   let message = $state('No action yet');
 </script>
 
+<!--
+  Layout: An integration example pairs an action button with a status message that shows its
+  callback result.
+-->
+
 <svelte:head>
   <title>Atlas component integration</title>
 </svelte:head>

@@ -83,6 +83,11 @@
   let message = $state('');
 </script>
 
+<!--
+  Layout: Storage explanation and session controls precede this participant’s local draft list,
+  with resume and delete-confirmation actions per draft.
+-->
+
 <svelte:head><title>My drafts · Atlas</title></svelte:head>
 <section class="drafts">
   <h1>My drafts</h1>

@@ -15,4 +15,9 @@
   } = $props();
 </script>
 
+<!--
+  Layout: The live node form is rendered directly for a root or child context; successful
+  creation opens the node story.
+-->
+
 <LiveNodeForm {parentId} {parentTitle} {initialTypeId} onCreated={openNodeStory} />

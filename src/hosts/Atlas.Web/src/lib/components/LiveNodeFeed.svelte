@@ -119,6 +119,11 @@
   });
 </script>
 
+<!--
+  Layout: NodeFeed supplies the list layout; per-item voting and reaction snippets inject live
+  controls into each card.
+-->
+
 <NodeFeed
   {apiBase}
   {onOpenProfile}

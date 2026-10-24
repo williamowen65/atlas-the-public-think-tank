@@ -55,6 +55,8 @@
   ];
 </script>
 
+<!-- Layout: Grouped navigation sits above the site identity, tagline and copyright row. -->
+
 <footer class="atlas-footer">
   <div class="footer-links">
     {#each groups as group}

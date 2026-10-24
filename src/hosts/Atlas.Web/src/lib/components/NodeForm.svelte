@@ -104,6 +104,11 @@
   });
 </script>
 
+<!--
+  Layout: Optional parent context leads into type/title, introduction and Markdown editing;
+  preview and contribution requests precede the submit actions.
+-->
+
 <form
   class="node-form atlas-panel"
   aria-label={parentId ? 'Create child node' : 'Create root node'}
@@ -151,6 +156,7 @@
         >
       </fieldset>{/if}
   </header>
+  <!-- Groups the short introduction separately from the full Markdown editor and preview. -->
   <div class="intro">
     <div class="summary">
       <label for={`${instance}-short`}>Short description</label><textarea
@@ -175,6 +181,10 @@
       rows="6"></textarea>
     <section aria-label="Content preview"><MarkdownContent text={markdown} /></section>
   </div>
+  <!--
+    Contribution requests describe desired child types; they are separate from this node’s own
+    type.
+  -->
   <footer>
     <div class="contributions">
       <label for={`${instance}-requested`}>Requested contributions</label><select

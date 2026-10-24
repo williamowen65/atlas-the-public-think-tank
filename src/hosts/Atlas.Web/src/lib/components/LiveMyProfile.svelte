@@ -84,6 +84,11 @@
   }
 </script>
 
+<!--
+  Layout: Session controls precede profile editing and community lists; the shared public-
+  profile composition follows below.
+-->
+
 <section class="my-profile">
   <h1>My profile</h1>
   <SessionControl expanded onSession={sessionChanged} {sessionBase} />

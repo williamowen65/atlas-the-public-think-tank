@@ -4,6 +4,11 @@
   import LiveNodeForm from '$lib/components/LiveNodeForm.svelte';
 </script>
 
+<!--
+  Layout: Page heading followed by the live creation form; a URL draft ID can resume local edits
+  and successful creation navigates to the node.
+-->
+
 <svelte:head><title>Create a node · Atlas</title></svelte:head>
 <h1>Create a node</h1>
 <LiveNodeForm

@@ -230,6 +230,11 @@
   }
 </script>
 
+<!--
+  Layout: Creation success replaces the editor. Otherwise session controls, catalog-loading
+  status and a draft editor share this region.
+-->
+
 <section
   class="live-node-form"
   aria-label={parentId ? 'Child node creation' : 'Root node creation'}
@@ -247,6 +252,10 @@
     />
     {#if loading}<p role="status">Loading node types…</p>{:else if error}<p role="alert">{error}</p>
       <button onclick={() => void load()}>Retry node types</button>{:else if hasDraft}
+      <!--
+        One disabled fieldset locks all nested draft controls while saving or without a usable
+        participant.
+      -->
       <fieldset class="draft-fields" disabled={submitting || !participantId}>
         <NodeForm
           {types}

@@ -39,6 +39,11 @@
   );
 </script>
 
+<!--
+  Layout: An inline comma-separated list: known community IDs become links, while fallback names
+  remain plain text. No block wrapper is added.
+-->
+
 {#each labels as community, i (community.id || i)}
   {#if i > 0},
   {/if}

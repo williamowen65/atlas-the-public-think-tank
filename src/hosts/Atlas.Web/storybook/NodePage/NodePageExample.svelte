@@ -15,6 +15,11 @@
   } = $props();
 </script>
 
+<!--
+  Layout: A workbench back button precedes the live node page; callbacks keep nested navigation
+  within stories.
+-->
+
 <button onclick={() => openStory('compositions-feed--playground')}>Back to feed</button>
 <LiveNodePage
   {nodeId}

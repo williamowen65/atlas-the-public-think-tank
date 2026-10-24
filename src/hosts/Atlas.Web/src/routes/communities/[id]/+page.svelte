@@ -80,6 +80,11 @@
   }
 </script>
 
+<!--
+  Layout: Back navigation and community identity precede membership/owner controls and the
+  community-scoped contribution feed.
+-->
+
 <svelte:head><title>{community?.name ?? 'Community'} · Atlas</title></svelte:head>
 <div class="community-page">
   <p><a href="/communities">← All communities</a></p>

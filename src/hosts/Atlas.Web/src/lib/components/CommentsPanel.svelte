@@ -32,6 +32,11 @@
   let participantId = $state<string | null>(null);
 </script>
 
+<!--
+  Layout: Discussion heading, session prompt, then the live comment thread. Session identity
+  connects the prompt to posting controls.
+-->
+
 <section class="discussion" aria-label="Comment discussion">
   <header>
     <h2>Comments</h2>

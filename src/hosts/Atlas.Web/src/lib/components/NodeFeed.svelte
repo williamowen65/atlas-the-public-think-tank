@@ -111,9 +111,18 @@
   });
 </script>
 
+<!--
+  Layout: A semantic list contains node cards; a separate tail region handles paging, retry,
+  loading and the invitation to create the first contribution.
+-->
+
 <section class="node-feed" aria-label="Node feed" aria-busy={loading}>
   <ul aria-label="Nodes">
     {#each items as item (item.node.id)}
+      <!--
+        Per-item closures adapt the parent’s renderers into the zero-argument snippets accepted
+        by NodeCard.
+      -->
       {#snippet voting()}{#if renderVoting}{@render renderVoting(item)}{/if}{/snippet}
       {#snippet reactions()}{#if renderReactions}{@render renderReactions(item)}{/if}{/snippet}
       <li>
@@ -139,6 +148,10 @@
       </li>
     {/each}
   </ul>
+  <!--
+    This wrapper is also the intersection-observer target for automatic loading; the button
+    remains the manual/retry path.
+  -->
   <div class="feed-tail" bind:this={tail}>
     {#if error}<p role="alert">{error}</p>{/if}
     {#if !loading && !error && !items.length && !hasMore && emptyTypeName && onCreateFirst}

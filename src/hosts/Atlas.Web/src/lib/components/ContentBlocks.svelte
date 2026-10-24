@@ -13,6 +13,11 @@
   } = $props();
 </script>
 
+<!--
+  Layout: An ordered content region chooses a renderer for each block: Markdown, captioned
+  image, link or plain fallback.
+-->
+
 <section aria-label="Node content" class="content-blocks">
   <!-- Match supported block kinds; unsupported interactive kinds retain a plain fallback. -->
   {#each blocks as block (block.id)}

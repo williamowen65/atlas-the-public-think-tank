@@ -111,6 +111,11 @@
   }
 </script>
 
+<!--
+  Layout: Current reactions form a compact row; an optional picker exposes all choices, with
+  request feedback and a separate sign-in prompt below.
+-->
+
 <section class="node-reactions" aria-label="Community reactions">
   <div class="reaction-list">
     <!-- class:chosen adds the chosen CSS class only while this participant has a +1 vote. -->

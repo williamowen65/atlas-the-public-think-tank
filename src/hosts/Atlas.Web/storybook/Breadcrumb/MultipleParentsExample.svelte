@@ -75,6 +75,11 @@
   let visited = $state('Select a breadcrumb to navigate.');
 </script>
 
+<!--
+  Layout: Scenario switches precede the breadcrumb; route status and explanatory text follow the
+  chosen ancestry path.
+-->
+
 <div class="example">
   <div class="scenario">
     <button

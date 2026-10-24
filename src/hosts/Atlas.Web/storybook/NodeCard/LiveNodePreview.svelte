@@ -127,6 +127,11 @@
   });
 </script>
 
+<!--
+  Layout: Live API explanation and search/paging controls precede one selected node card, with
+  loading/error/empty alternatives.
+-->
+
 <section class="live-preview" aria-label="Local API node preview" aria-busy={loading}>
   <p class="preview-note">
     Live Atlas API · sign in when prompted to cast a rating. Averages and totals come from Atlas.

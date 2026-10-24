@@ -36,6 +36,11 @@
   ]);
 </script>
 
+<!--
+  Layout: An ancestor ribbon leads into the heading and dial/body; Read more has a separate
+  action region after the card details.
+-->
+
 <article class="node-card" data-presentation="ribbon-split" aria-labelledby={`${instance}-title`}>
   {#if node.breadcrumb.length}
     <div class="ribbon-context">

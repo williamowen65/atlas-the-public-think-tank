@@ -223,6 +223,11 @@
   }
 </script>
 
+<!--
+  Layout: Breadcrumb and heading/byline lead into node content, reactions and discussion. The
+  dial floats beside content; the selected panel sits below the tab toolbar.
+-->
+
 <article class="node-page atlas-panel" class:scroll-to-discussion-tabs={scrollToDiscussionTabs}>
   {#if node.breadcrumb.length}<div class="ribbon-context">
       <Breadcrumb
@@ -261,6 +266,10 @@
     </p>
     {#if node.status === 'Archived'}<p>Archived</p>{/if}
   </header>
+  <!--
+    Contains the floated voting dial so the introduction and content can flow beside it without
+    affecting later sections.
+  -->
   <div class="post-body">
     <aside class="dial" aria-label="Importance rating">
       <!-- A supplied voting snippet owns its behavior (LiveNodePage supplies LiveVotingDial).
@@ -285,6 +294,7 @@
           >{reaction.label} <strong>{reaction.count}</strong></span
         >{/each}
     </div>{/if}
+  <!-- Keeps the Add action with the discussion tab strip, above the selected panel. -->
   <div class="discussion-toolbar">
     <div class="add">
       <button
@@ -312,6 +322,10 @@
         >{/each}
     </div>
   </div>
+  <!--
+    One shared panel renders the parent-supplied comments, child feed or draft content; ARIA
+    links it to the selected tab.
+  -->
   <div
     role="tabpanel"
     id={`${instance}-panel`}

@@ -21,4 +21,9 @@
   }
 </script>
 
+<!--
+  Layout: The shared footer is rendered directly; its navigation callback adapts internal links
+  for the workbench.
+-->
+
 <AtlasFooter {tagline} onNavigate={navigate} />

@@ -3,4 +3,9 @@
   import { openNodeStory, openProfileStory } from '../shared/navigation';
 </script>
 
+<!--
+  Layout: The current-participant profile composition is rendered directly with Storybook
+  navigation callbacks.
+-->
+
 <LiveMyProfile onOpenNode={openNodeStory} onOpenProfile={openProfileStory} />

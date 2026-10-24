@@ -226,6 +226,11 @@
   });
 </script>
 
+<!--
+  Layout: Each thread level has its own optional composer, comment list and paging status;
+  expanded replies recursively render another thread level.
+-->
+
 <div
   class="comments"
   class:nested={!!parentId}
@@ -261,6 +266,10 @@
   {#if actionError}<p role="alert">{actionError}</p>{/if}{#if notice}<p role="status">
       {notice}
     </p>{/if}
+  <!--
+    Each item owns edit/removal controls; expanded replies below it form another independently
+    paged level.
+  -->
   <ol>
     {#each items as comment (comment.id)}<li>
         <article
@@ -348,6 +357,10 @@
                 >Remove comment</button
               ><button disabled={saving} onclick={() => (removing = null)}>Keep comment</button>
             </div>{/if}
+          <!--
+            Mount replies only while expanded; each recursive component owns its cursor and
+            composer.
+          -->
           {#if open.includes(comment.id)}<LiveComments
               {nodeId}
               parentId={comment.id}

@@ -169,6 +169,11 @@
   });
 </script>
 
+<!--
+  Layout: Loading/error states precede NodePage. Named snippets fill voting/reactions; remaining
+  child markup supplies the selected discussion panel.
+-->
+
 {#if loading}<p role="status">Loading node…</p>{:else if error}<p role="alert">{error}</p>
   <button onclick={() => retry++}>Retry node</button>{:else if node}
   {#key node.id}
@@ -216,6 +221,7 @@
             nodeId={node.id}
             archived={node.status === 'Archived'}
           />{/if}{/snippet}
+      <!-- This child form is regular child markup for NodePage’s panel, not a named snippet. -->
       {#if createType !== null}<div class="child-form">
           <button onclick={() => void closeChildForm()}>Close child form</button
           >{#key createType}<LiveNodeForm
@@ -230,6 +236,10 @@
               {apiBase}
             />{/key}
         </div>{/if}
+      <!--
+        Changing tabs recreates the selected discussion subtree so its local paging/form state
+        does not leak across tabs.
+      -->
       {#key active}{#if active === 'comments'}<CommentsPanel
             nodeId={node.id}
             {apiBase}

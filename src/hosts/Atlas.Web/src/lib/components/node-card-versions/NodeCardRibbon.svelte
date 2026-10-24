@@ -37,6 +37,11 @@
   ]);
 </script>
 
+<!--
+  Layout: An ancestor ribbon leads into the heading and dial/body; reactions and discussion
+  links share the details area below.
+-->
+
 <article class="node-card" data-presentation="ribbon" aria-labelledby={`${instance}-title`}>
   {#if node.breadcrumb.length}
     <div class="ribbon-context">

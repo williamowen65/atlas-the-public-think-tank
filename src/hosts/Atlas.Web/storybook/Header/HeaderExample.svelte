@@ -32,4 +32,8 @@
   }
 </script>
 
+<!--
+  Layout: The shared header is rendered directly with story-controlled account/navigation state.
+-->
+
 <AtlasHeader {active} {authenticated} {displayName} onNavigate={navigate} />

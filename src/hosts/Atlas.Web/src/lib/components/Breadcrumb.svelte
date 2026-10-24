@@ -283,6 +283,11 @@
   }
 </script>
 
+<!--
+  Layout: A horizontally scrollable ancestor ribbon sits inside navigation; alternative parent
+  choices open in a separate floating menu.
+-->
+
 <svelte:window
   onclick={(event) => {
     if (
@@ -318,6 +323,7 @@
         }
       }}
     >
+      <!-- The viewport clips/scrolls this list; its items supply the ribbon segments. -->
       <ol bind:this={breadcrumbList}>
         {#if more && loadOlder && !selectedRoute}
           <li class="load-older">
@@ -362,6 +368,7 @@
         {/each}
       </ol>
     </div>
+    <!-- Keep the floating menu outside the scroll viewport so its choices are not clipped. -->
     {#if openRouteMenu}
       <div
         class="route-menu"

@@ -27,6 +27,11 @@
   const instance = $props.id();
 </script>
 
+<!--
+  Layout: Heading and byline lead into dial/description; ancestry and connections appear below
+  the body, followed by reactions and comments.
+-->
+
 <article class="node-card" data-presentation="context-below" aria-labelledby={`${instance}-title`}>
   <header>
     <div class="eyebrow">
@@ -60,6 +65,10 @@
     </p>
   </header>
 
+  <!--
+    Contains the dial and text flow; the Read more action measures its placement relative to the
+    card.
+  -->
   <div class="body">
     <aside class="dial" aria-label="Importance rating">
       {#if voting}{@render voting()}{:else}<VotingDial

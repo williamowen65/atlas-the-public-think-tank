@@ -253,6 +253,11 @@
   }
 </script>
 
+<!--
+  Layout: Community average above the selector, vote count below. A decorative lens overlays the
+  scrollable rating reel; the reel is the accessible input.
+-->
+
 <section class:compact class:voted={marked} class="voting-dial" aria-label={label}>
   <strong
     class="average"
@@ -260,6 +265,10 @@
     >{average === null ? '—' : average.toFixed(1)}</strong
   >
   <div class="selector" class:unrated={!marked} class:disabled>
+    <!--
+      The lens is visual only; the reel below owns focus, input events and the accessible rating
+      value.
+    -->
     <div
       class="selection-window"
       class:pulling
@@ -297,6 +306,10 @@
       {/each}
     </div>
   </div>
+  <!--
+    Expose one accessible vote-count label; hide the decorative people icon and duplicate
+    visible count from assistive technology.
+  -->
   <span class="vote-count" role="img" aria-label={`${totalVotes} votes`}>
     <svg viewBox="0 0 56 44" aria-hidden="true">
       <circle cx="28" cy="7" r="6" /><circle cx="10" cy="12" r="5" /><circle

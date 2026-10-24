@@ -10,4 +10,9 @@
   } = $props();
 </script>
 
+<!--
+  Layout: The live feed is rendered directly; navigation callbacks keep node/profile links
+  inside Storybook.
+-->
+
 <LiveNodeFeed {presentation} onOpenNode={openNodeStory} onOpenProfile={openProfileStory} />
