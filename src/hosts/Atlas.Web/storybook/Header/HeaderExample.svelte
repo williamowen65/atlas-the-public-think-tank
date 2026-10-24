@@ -15,6 +15,7 @@
   import type { ComponentProps } from 'svelte';
   import AtlasHeader from '../../src/lib/components/AtlasHeader.svelte';
   import { openStory } from '../shared/navigation';
+  import { storyLinks } from '../shared/linkNavigation';
   let {
     active = 'discover',
     authenticated = false,
@@ -33,15 +34,19 @@
     /** Name used to derive the account-avatar initial. */
     displayName?: string;
   } = $props();
-  function navigate(destination: 'discover' | 'create' | 'login' | 'register' | 'profile') {
-    const stories = {
-      discover: 'compositions-feed--playground',
-      create: 'components-node-form--playground',
-      login: 'components-sign-in--playground',
-      register: 'components-sign-in--register',
-      profile: 'compositions-my-profile--playground',
+  /** Adapt app URLs only in this workbench wrapper; AtlasHeader has no story navigation props. */
+  function navigate(url: URL): boolean {
+    const stories: Record<string, string> = {
+      '/': 'compositions-feed--playground',
+      '/new': 'components-node-form--playground',
+      '/login': 'components-sign-in--playground',
+      '/register': 'components-sign-in--register',
+      '/profiles/me': 'compositions-my-profile--playground',
     };
-    openStory(stories[destination]);
+    const story = stories[url.pathname];
+    if (!story) return false;
+    openStory(story);
+    return true;
   }
 </script>
 
@@ -49,4 +54,6 @@
   Layout: The shared header is rendered directly with story-controlled account/navigation state.
 -->
 
-<AtlasHeader {active} {authenticated} {displayName} onNavigate={navigate} />
+<div use:storyLinks={navigate}>
+  <AtlasHeader {active} {authenticated} {displayName} />
+</div>

@@ -17,6 +17,7 @@ const config: StorybookConfig = {
         },
       })
     : config,
+  staticDirs: ['./public'],
   stories: ['../storybook/**/*.stories.ts'],
   framework: '@storybook/sveltekit',
   addons: ['@storybook/addon-docs', '@storybook/addon-a11y'],

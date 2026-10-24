@@ -1,6 +1,6 @@
 <!--
   @component
-  LiveMyProfile: Session-aware current-participant profile, editing and community display.
+  Storybook current-participant composition: profile editing and community display.
   Keeps profile-edit form state separate from the fetched public profile.
 
   **Props**
@@ -14,10 +14,10 @@
     to open in a profile page.
 -->
 <script lang="ts">
-  import LiveProfilePage from './LiveProfilePage.svelte';
-  import SessionControl from './SessionControl.svelte';
-  import { apiRequest } from '../api/apiRequest';
-  import { myCommunities, type Community } from '../api/communities';
+  import LiveProfilePage from '../../src/lib/components/LiveProfilePage.svelte';
+  import SessionControl from '../../src/lib/components/SessionControl.svelte';
+  import { apiRequest } from '../../src/lib/api/apiRequest';
+  import { myCommunities, type Community } from '../../src/lib/api/communities';
   let {
     apiBase = '/atlas-public-api',
     sessionBase = '/atlas-session-api',

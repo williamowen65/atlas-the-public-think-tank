@@ -116,7 +116,7 @@ export interface NodeCardProps {
   onVote?: (value: number) => void;
   /**
    * Callback receiving a node ID from ancestor or related-node navigation. The parent decides how
-   * to open it in the app or Storybook.
+   * to open it in the application.
    */
   onNavigate?: (id: string) => void;
   /** Callback: Receives the author/participant ID to open in a profile page. */

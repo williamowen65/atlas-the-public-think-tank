@@ -6,12 +6,15 @@
   No explicit component props; this example supplies its own composition.
 -->
 <script lang="ts">
-  import Breadcrumb, { type BreadcrumbRoute } from '../../src/lib/components/Breadcrumb.svelte';
-  const routes: BreadcrumbRoute[] = [
+  import { onMount } from 'svelte';
+  import { setupWorker } from 'msw/browser';
+  import Breadcrumb from '../../src/lib/components/Breadcrumb.svelte';
+  import { parentPathHandlers, type ExampleRoute } from './parentPathHandlers';
+
+  const routes: ExampleRoute[] = [
     {
       id: 'future',
       label: 'Question: A future worth building',
-      divergenceIndex: 1,
       items: [
         { id: 'atlas', title: 'Question: What future should we build?' },
         { id: 'future', title: 'Question: A future worth building' },
@@ -25,7 +28,6 @@
     {
       id: 'services',
       label: 'Goal: Make essential services accessible to everyone',
-      divergenceIndex: 1,
       items: [
         { id: 'atlas', title: 'Question: What future should we build?' },
         { id: 'services', title: 'Goal: Make essential services accessible to everyone' },
@@ -37,11 +39,10 @@
       ],
     },
   ];
-  const separateRoots: BreadcrumbRoute[] = [
+  const separateRoots: ExampleRoute[] = [
     {
       id: 'wildlife',
       label: 'Goal: Protect wildlife habitats',
-      divergenceIndex: 2,
       items: [
         { id: 'nature', title: 'Question: How can nature thrive alongside people?' },
         { id: 'ecosystems', title: 'Issue: Fragmented ecosystems' },
@@ -53,7 +54,6 @@
     {
       id: 'transport',
       label: 'Goal: Make streets safer for everyone',
-      divergenceIndex: 2,
       items: [
         { id: 'cities', title: 'Question: What makes a great city?' },
         { id: 'mobility', title: 'Issue: Dangerous road crossings' },
@@ -65,7 +65,6 @@
     {
       id: 'resilience',
       label: 'Goal: Strengthen climate resilience',
-      divergenceIndex: 2,
       items: [
         { id: 'climate', title: 'Question: How should we adapt to a changing climate?' },
         { id: 'floods', title: 'Issue: More frequent flooding' },
@@ -83,11 +82,45 @@
   /**
    * Fixture parent routes matching the current scenario.
    */
-  let availableRoutes = $derived(scenario === 'shared' ? routes : separateRoots);
+  const availableRoutes = $derived(scenario === 'shared' ? routes : separateRoots);
   /**
-   * Currently selected fixture ancestry route.
+   * Label of the fixture path most recently selected through the mocked ancestor endpoint.
    */
-  let active = $state(routes[0]);
+  let selectedLabel = $state(routes[0].label);
+  /** Mount the real component only after the story’s HTTP mocks are ready. */
+  let ready = $state(false);
+  /** Worker startup failures should be visible rather than leaving an empty example. */
+  let error = $state('');
+
+  onMount(() => {
+    let alive = true;
+    const worker = setupWorker(
+      ...parentPathHandlers(
+        () => availableRoutes,
+        (label) => {
+          selectedLabel = label;
+        },
+      ),
+    );
+    void worker
+      .start({
+        serviceWorker: { url: './mockServiceWorker.js' },
+        onUnhandledFrame: 'bypass',
+        quiet: true,
+      })
+      .then(() => {
+        if (alive) ready = true;
+        else worker.stop();
+      })
+      .catch((cause) => {
+        if (alive)
+          error = cause instanceof Error ? cause.message : 'Could not start example requests.';
+      });
+    return () => {
+      alive = false;
+      worker.stop();
+    };
+  });
   /**
    * Status text showing the simulated navigation destination.
    */
@@ -106,7 +139,7 @@
       class:active={scenario === 'shared'}
       onclick={() => {
         scenario = 'shared';
-        active = routes[0];
+        selectedLabel = routes[0].label;
       }}>Shared root</button
     >
     <button
@@ -114,25 +147,37 @@
       class:active={scenario === 'different'}
       onclick={() => {
         scenario = 'different';
-        active = separateRoots[0];
+        selectedLabel = separateRoots[0].label;
       }}>Different roots (3 paths)</button
     >
   </div>
   <p class="context">
     Viewing: <strong>How could free internet access be funded and maintained?</strong>
   </p>
-  {#key scenario}<Breadcrumb
-      items={active.items}
-      routes={availableRoutes}
-      onRouteChange={(route) => (active = route)}
-      onNavigate={(id) =>
-        (visited = 'Navigate to: ' + (active.items.find((item) => item.id === id)?.title ?? id))}
-    />{/key}
-  <p role="status">Current parent route: {active.label}</p>
+  {#if ready}
+    {#key scenario}
+      <Breadcrumb
+        items={availableRoutes[0].items}
+        originId="example-origin"
+        apiBase="/storybook-breadcrumb-api"
+        onNavigate={(id) => {
+          const item = availableRoutes
+            .flatMap((route) => route.items)
+            .find((item) => item.id === id);
+          visited = 'Navigate to: ' + (item?.title ?? id);
+        }}
+      />
+    {/key}
+  {:else if error}
+    <p role="alert">{error}</p>
+  {:else}
+    <p role="status">Preparing parent-path example…</p>
+  {/if}
+  <p role="status">Current parent route: {selectedLabel}</p>
   <p>{visited}</p>
   <p class="hint">
-    The second breadcrumb segment has two possible parents. Click its inline chevron to change that
-    segment while keeping the later segments intact.
+    Click an inline chevron to choose another parent. Storybook mocks the same HTTP endpoints used
+    by the application; path switching runs inside the real Breadcrumb component.
   </p>
 </div>
 

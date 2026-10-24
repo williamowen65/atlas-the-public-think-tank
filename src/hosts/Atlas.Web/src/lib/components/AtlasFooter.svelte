@@ -1,29 +1,21 @@
 <!--
   @component
   AtlasFooter: Shared grouped navigation links and site footer.
-  The parent can override internal-link navigation, allowing the same footer to work in Storybook.
+  Links use normal application URLs; presentation text can be customized by the parent.
 
   **Props**
   - `tagline` (`string`; optional; default `'A place to connect questions, evidence, and ideas.'`):
     Supporting text in the footer.
-  - `onNavigate` (`(href: string) => void`; optional): Callback: Receives an internal href instead
-    of allowing normal link navigation. External links keep their normal behavior.
 -->
 <script lang="ts">
   let {
     tagline = 'A place to connect questions, evidence, and ideas.',
-    onNavigate,
   }: {
     /** Supporting text in the footer. */
     tagline?: string;
-    /**
-     * Callback: Receives an internal href instead of allowing normal link navigation. External links
-     * keep their normal behavior.
-     */
-    onNavigate?: (href: string) => void;
   } = $props();
   const year = new Date().getFullYear();
-  // Keep link groups as display data; internal links may use the parent navigation callback.
+  // Keep link groups as display data; links use normal application navigation.
   const groups = [
     {
       title: 'Explore',
@@ -69,15 +61,7 @@
     {#each groups as group}
       <nav aria-label={group.title}>
         <strong>{group.title}</strong>
-        {#each group.links as link}<a
-            href={link.href}
-            onclick={(event) => {
-              if (onNavigate && link.href.startsWith('/')) {
-                event.preventDefault();
-                onNavigate(link.href);
-              }
-            }}>{link.text}</a
-          >{/each}
+        {#each group.links as link}<a href={link.href}>{link.text}</a>{/each}
       </nav>
     {/each}
   </div>

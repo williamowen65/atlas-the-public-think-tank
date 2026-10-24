@@ -26,7 +26,7 @@
   - `onVote` (`(value: number) => void`; optional): Callback: Reports a selected rating to the
     parent. The presentation component does not save it to the API.
   - `onNavigate` (`(id: string) => void`; optional): Callback receiving a node ID from ancestor or
-    related-node navigation. The parent decides how to open it in the app or Storybook.
+    related-node navigation. The parent decides how to open it in the application.
   - `onOpenProfile` (`(id: string) => void`; optional): Callback: Receives the author/participant ID
     to open in a profile page.
   - `onReadMore` (`(id: string) => void`; optional): Callback: Receives the node ID when Read more

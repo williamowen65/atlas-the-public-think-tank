@@ -6,7 +6,7 @@
   No explicit component props; this example supplies its own composition.
 -->
 <script lang="ts">
-  import LiveMyProfile from '../../src/lib/components/LiveMyProfile.svelte';
+  import LiveMyProfile from './LiveMyProfile.svelte';
   import { openNodeStory, openProfileStory } from '../shared/navigation';
 </script>
 

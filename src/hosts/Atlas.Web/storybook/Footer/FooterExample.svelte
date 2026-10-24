@@ -9,13 +9,14 @@
 <script lang="ts">
   import AtlasFooter from '../../src/lib/components/AtlasFooter.svelte';
   import { openStory } from '../shared/navigation';
+  import { storyLinks } from '../shared/linkNavigation';
   let {
     tagline = 'A place to connect questions, evidence, and ideas.',
   }: {
     /** Supporting text in the footer. */
     tagline?: string;
   } = $props();
-  function navigate(href: string) {
+  function navigate(url: URL): boolean {
     const destinations: Record<string, string> = {
       '/': 'compositions-feed--playground',
       '/new': 'components-node-form--playground',
@@ -23,9 +24,10 @@
       '/about#how-it-works': 'layout-header--playground',
       '/about#mission': 'layout-header--playground',
     };
-    const story = destinations[href];
-    if (story) openStory(story);
-    else window.location.assign(href);
+    const story = destinations[url.pathname + url.hash];
+    if (!story) return false;
+    openStory(story);
+    return true;
   }
 </script>
 
@@ -34,4 +36,6 @@
   for the workbench.
 -->
 
-<AtlasFooter {tagline} onNavigate={navigate} />
+<div use:storyLinks={navigate}>
+  <AtlasFooter {tagline} />
+</div>

@@ -18,8 +18,7 @@
     when the relevant form is rendered in the browser.
   - `onPreview` (`(draft: NodeDraft) => void`; optional): Callback: Receives the current editable
     NodeDraft as its fields change; does not save to the API.
-  - `onSubmit` (`(draft: NodeDraft) => void`; optional): Callback: Receives a NodeDraft when the
-    form submits. Without it, the form is preview-only.
+  - `onSubmit` (`(draft: NodeDraft) => void`; required): Receives the draft when the form submits; the parent owns persistence.
   - `submitting` (`boolean`; optional; default `false`): Shows the creation-in-progress label and
     disables the submit button.
 -->
@@ -70,9 +69,9 @@
      */
     onPreview?: (draft: NodeDraft) => void;
     /**
-     * Callback: Receives a NodeDraft when the form submits. Without it, the form is preview-only.
+     * Receives the draft when the form submits; the parent owns persistence.
      */
-    onSubmit?: (draft: NodeDraft) => void;
+    onSubmit: (draft: NodeDraft) => void;
     /** Shows the creation-in-progress label and disables the submit button. */
     submitting?: boolean;
   } = $props();
@@ -165,7 +164,7 @@
   aria-label={parentId ? 'Create child node' : 'Create root node'}
   onsubmit={(event) => {
     event.preventDefault();
-    onSubmit?.(draft());
+    onSubmit(draft());
   }}
 >
   {#if path.length}<div class="ribbon-context"><Breadcrumb items={path} /></div>{/if}
@@ -265,11 +264,8 @@
     </div>
   </footer>
   <div class="actions">
-    <button type="submit" disabled={!onSubmit || submitting}
-      >{submitting ? 'Creating…' : 'Create node'}</button
-    >
+    <button type="submit" disabled={submitting}>{submitting ? 'Creating…' : 'Create node'}</button>
   </div>
-  {#if !onSubmit}<p class="note">Preview only. Saving is unavailable in this view.</p>{/if}
 </form>
 
 <style lang="scss">
@@ -300,8 +296,7 @@
   .intro,
   .content-editor,
   footer,
-  .actions,
-  .node-form > p {
+  .actions {
     padding-inline: var(--atlas-card-padding, 1.25rem);
   }
   header {
@@ -421,9 +416,6 @@
     color: var(--atlas-muted);
     font-size: 0.85rem;
   }
-  .node-form > p {
-    padding-bottom: 1rem;
-  }
   :focus-visible {
     outline: 2px solid var(--atlas-focus);
     outline-offset: 2px;
@@ -433,8 +425,7 @@
     .intro,
     .content-editor,
     footer,
-    .actions,
-    .node-form > p {
+    .actions {
       padding-inline: var(--atlas-card-padding-narrow, 0.75rem);
     }
   }

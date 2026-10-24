@@ -27,7 +27,7 @@
   - `onAddChild` (`(id?: string) => void`; required): Callback: Requests a child form for the
     supplied type ID, or lets the parent choose when omitted.
   - `onNavigate` (`(id: string) => void`; optional): Callback receiving an ancestor node ID from
-    Breadcrumb. The parent decides how to navigate in the app or Storybook.
+    Breadcrumb. The parent decides how to navigate in the application.
   - `onOpenProfile` (`(id: string) => void`; optional): Callback: Receives the author/participant ID
     to open in a profile page.
   - `hasMoreAncestors` (`boolean`; optional; default `false`): Whether additional older ancestors
@@ -117,7 +117,7 @@
     onAddChild: (id?: string) => void;
     /**
      * Callback receiving an ancestor node ID from Breadcrumb. The parent decides how to navigate
-     * in the app or Storybook.
+     * in the application.
      */
     onNavigate?: (id: string) => void;
     /** Callback: Receives the author/participant ID to open in a profile page. */

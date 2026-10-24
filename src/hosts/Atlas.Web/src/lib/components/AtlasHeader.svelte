@@ -10,9 +10,6 @@
     login/register links; does not authenticate by itself.
   - `displayName` (`string`; optional; default `'Atlas User'`): Name used to derive the
     account-avatar initial.
-  - `onNavigate` (`(destination: 'discover' | 'create' | 'login' | 'register' | 'profile') => void`;
-    optional): Callback: Handles discover/create/login/register/profile destinations for workbench
-    navigation. Community and ordinary links retain their href behavior.
 -->
 <script lang="ts">
   import DiscoverySearch from './DiscoverySearch.svelte';
@@ -22,7 +19,6 @@
     active = null,
     authenticated = false,
     displayName = 'Atlas User',
-    onNavigate,
   }: {
     /** Highlighted navigation item; null leaves all items unselected. */
     active?: 'discover' | 'communities' | 'create' | 'login' | 'register' | null;
@@ -33,16 +29,7 @@
     authenticated?: boolean;
     /** Name used to derive the account-avatar initial. */
     displayName?: string;
-    /**
-     * Callback: Handles discover/create/login/register/profile destinations for workbench
-     * navigation. Community and ordinary links retain their href behavior.
-     */
-    onNavigate?: (destination: 'discover' | 'create' | 'login' | 'register' | 'profile') => void;
   } = $props();
-  /**
-   * Reserved local search flag; currently not read or updated by the header.
-   */
-  let searching = $state(false);
   /**
    * Whether DiscoverySearch has its filter toolbox open; keeps the header visible.
    */
@@ -163,29 +150,11 @@
   <!-- Groups navigation/account controls so responsive styles can position them together. -->
   <div class="right-group">
     <nav class="primary" aria-label="Main navigation">
-      <a
-        href="/"
-        onclick={(event) => {
-          if (onNavigate) {
-            event.preventDefault();
-            onNavigate('discover');
-          }
-        }}
-        aria-current={active === 'discover' ? 'page' : undefined}>Discover</a
-      >
+      <a href="/" aria-current={active === 'discover' ? 'page' : undefined}>Discover</a>
       <a href="/communities" aria-current={active === 'communities' ? 'page' : undefined}
         >Communities</a
       >
-      <a
-        href="/new"
-        onclick={(event) => {
-          if (onNavigate) {
-            event.preventDefault();
-            onNavigate('create');
-          }
-        }}
-        aria-current={active === 'create' ? 'page' : undefined}>Create</a
-      >
+      <a href="/new" aria-current={active === 'create' ? 'page' : undefined}>Create</a>
     </nav>
     {#if authenticated}
       <div class="account" bind:this={accountElement}>
@@ -198,16 +167,7 @@
         >
         {#if menuOpen}
           <nav class="account-menu" aria-label="Account navigation">
-            <a
-              href="/profiles/me"
-              onclick={(event) => {
-                closeOnNavigation();
-                if (onNavigate) {
-                  event.preventDefault();
-                  onNavigate('profile');
-                }
-              }}>My profile</a
-            >
+            <a href="/profiles/me" onclick={closeOnNavigation}>My profile</a>
             <a href="/my-drafts" onclick={closeOnNavigation}>My drafts</a>
             <a href="/my-settings" onclick={closeOnNavigation}>Settings</a>
             <hr />
@@ -228,25 +188,10 @@
       </div>
     {:else}
       <div class="auth">
-        <a
-          href="/login"
-          aria-current={active === 'login' ? 'page' : undefined}
-          onclick={(event) => {
-            if (onNavigate) {
-              event.preventDefault();
-              onNavigate('login');
-            }
-          }}>Log in</a
-        ><a
+        <a href="/login" aria-current={active === 'login' ? 'page' : undefined}>Log in</a><a
           class="signup"
           href="/register"
-          aria-current={active === 'register' ? 'page' : undefined}
-          onclick={(event) => {
-            if (onNavigate) {
-              event.preventDefault();
-              onNavigate('register');
-            }
-          }}>Sign up</a
+          aria-current={active === 'register' ? 'page' : undefined}>Sign up</a
         >
       </div>
     {/if}

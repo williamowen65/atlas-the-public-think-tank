@@ -12,33 +12,22 @@
     load.
   - `loadOlder` (`LoadOlderAncestors`; optional): Async ancestor loader; receives the oldest
     displayed ID and returns a BreadcrumbPage.
-  - `routes` (`BreadcrumbRoute[]`; optional; default `[]`): Alternative ancestry paths for the route
-    switcher.
-  - `onRouteChange` (`(route: BreadcrumbRoute) => void`; optional): Callback: Called with the
-    selected BreadcrumbRoute after switching a supplied path.
   - `originId` (`string`; optional): Current node ID used to look up alternative parents for the
     final breadcrumb segment.
   - `apiBase` (`string`; optional; default `'/atlas-public-api'`): Base URL for this component’s API
     reads. This prop alone does not configure a proxy.
 -->
 <script lang="ts" module>
-  export type {
-    BreadcrumbItem,
-    BreadcrumbRoute,
-    BreadcrumbPage,
-    LoadOlderAncestors,
-  } from './breadcrumb.types';
+  export type { BreadcrumbItem, BreadcrumbPage, LoadOlderAncestors } from './breadcrumb.types';
 </script>
 
 <script lang="ts">
-  import type { BreadcrumbItem, BreadcrumbRoute, LoadOlderAncestors } from './breadcrumb.types';
+  import type { BreadcrumbItem, LoadOlderAncestors } from './breadcrumb.types';
   let {
     items,
     onNavigate,
     hasMore = false,
     loadOlder,
-    routes = [],
-    onRouteChange,
     originId,
     apiBase = '/atlas-public-api',
   }: {
@@ -55,10 +44,6 @@
     hasMore?: boolean;
     /** Async ancestor loader; receives the oldest displayed ID and returns a BreadcrumbPage. */
     loadOlder?: LoadOlderAncestors;
-    /** Alternative ancestry paths for the route switcher. */
-    routes?: BreadcrumbRoute[];
-    /** Callback: Called with the selected BreadcrumbRoute after switching a supplied path. */
-    onRouteChange?: (route: BreadcrumbRoute) => void;
     /** Current node ID used to look up alternative parents for the final breadcrumb segment. */
     originId?: string;
     /** Base URL for this component’s API reads. This prop alone does not configure a proxy. */
@@ -68,10 +53,6 @@
    * Older ancestor items prepended by the current path’s pager.
    */
   let older = $state<BreadcrumbItem[]>([]);
-  /**
-   * ID of the explicitly selected supplied route, or null for the default path.
-   */
-  let chosenRoute = $state<string | null>(null);
   /**
    * Whether the alternative-parent menu is visible.
    */
@@ -99,7 +80,7 @@
    */
   let livePath = $state<BreadcrumbItem[] | null>(null);
   /**
-   * Child node whose alternative parents populate the menu, or null for supplied routes.
+   * Child node whose API-loaded alternative parents populate the menu, or null when none is selected.
    */
   let liveMenuChild = $state<string | null>(null);
   /**
@@ -179,25 +160,6 @@
       liveBusy = false;
     }
   }
-  // Switch a caller-supplied route while retaining the user’s horizontal position.
-  function selectRoute(route: BreadcrumbRoute) {
-    preserveScroll = true;
-    const selectedIndex = divergenceIndex;
-    const anchor = breadcrumbList?.children.item(selectedIndex) as HTMLElement | null;
-    pendingAnchor =
-      anchor && breadcrumbViewport
-        ? {
-            id: allItems[selectedIndex]?.id,
-            offset:
-              anchor.getBoundingClientRect().left - breadcrumbViewport.getBoundingClientRect().left,
-          }
-        : null;
-    chosenRoute = route.id;
-    openRouteMenu = false;
-    older = [];
-    more = false;
-    onRouteChange?.(route);
-  }
   /**
    * Whether the current ancestry path has older items remaining.
    */
@@ -211,31 +173,15 @@
    */
   let error = $state('');
   let generation = 0;
-  /**
-   * Supplied alternative route matching chosenRoute, if any.
-   */
-  const selectedRoute = $derived(routes.find((route) => route.id === chosenRoute));
-  /**
-   * Ribbon position showing the supplied routes’ branch chooser; -1 means none.
-   */
-  const divergenceIndex = $derived(
-    routes.length > 1 ? (routes[0].divergenceIndex ?? Math.max(0, items.length - 1)) : -1,
-  );
-  /**
-   * Displayed path: selected supplied route, live alternative, or older items followed by
-   * supplied items.
-   */
-  const allItems = $derived(
-    selectedRoute ? selectedRoute.items : (livePath ?? [...older, ...items]),
-  );
+  /** Displayed path: an API-selected alternative, or older items followed by supplied items. */
+  const allItems = $derived(livePath ?? [...older, ...items]);
   const liveChildAt = (index: number) =>
     index + 1 < allItems.length ? allItems[index + 1].id : originId;
-  // A new source path resets paging and any previously selected alternate ancestry.
+  // A new source path resets paging and API-selected alternate ancestry.
   $effect(() => {
     items;
     hasMore;
     loadOlder;
-    routes;
     originId;
     generation++;
     older = [];
@@ -246,7 +192,7 @@
     error = '';
   });
   $effect(() => {
-    if (!originId || routes.length) return;
+    if (!originId) return;
     const controller = new AbortController();
     const ids = [...items.map((item) => item.id), originId].filter((id): id is string => !!id);
     void Promise.all(
@@ -393,7 +339,7 @@
     >
       <!-- The viewport clips/scrolls this list; its items supply the ribbon segments. -->
       <ol bind:this={breadcrumbList}>
-        {#if more && loadOlder && !selectedRoute}
+        {#if more && loadOlder}
           <li class="load-older">
             <button type="button" disabled={loading} onclick={requestOlder}
               >{loading ? 'Loading…' : 'Load older ancestors'}</button
@@ -407,7 +353,7 @@
             {:else}
               <span>{item.title}</span>
             {/if}
-            {#if (index === divergenceIndex && routes.length > 1) || (originId && !routes.length && (liveChoices[liveChildAt(index) ?? '']?.length ?? 0) > 1)}
+            {#if originId && (liveChoices[liveChildAt(index) ?? '']?.length ?? 0) > 1}
               <div class="route-choice">
                 <button
                   type="button"
@@ -415,7 +361,7 @@
                   aria-label="Choose another parent path"
                   aria-expanded={openRouteMenu}
                   onclick={(event) => {
-                    liveMenuChild = routes.length ? null : (liveChildAt(index) ?? null);
+                    liveMenuChild = liveChildAt(index) ?? null;
                     toggleRouteMenu(event);
                   }}
                 >
@@ -452,10 +398,6 @@
               disabled={liveBusy}
               onclick={() => void selectLiveParent(parent.id)}>{parent.title}</button
             >
-          {/each}
-        {:else}
-          {#each routes.filter((route) => route.id !== (chosenRoute ?? routes[0].id)) as route (route.id)}
-            <button type="button" onclick={() => selectRoute(route)}>{route.label}</button>
           {/each}
         {/if}
       </div>

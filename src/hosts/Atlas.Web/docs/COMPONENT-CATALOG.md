@@ -55,7 +55,6 @@ The snippet prop does not have to contain LiveVotingDial; a different parent can
 | [ContentBlocks](#contentblocks)                       | Renders an ordered list of supported content blocks.                                                                                               |
 | [DiscoverySearch](#discoverysearch)                   | Shared discovery search and filter toolbox; communicates through discoveryQuery state.                                                             |
 | [LiveComments](#livecomments)                         | Fetches and edits one level of a threaded discussion, recursively rendering replies.                                                               |
-| [LiveMyProfile](#livemyprofile)                       | Session-aware current-participant profile, editing and community display.                                                                          |
 | [LiveNodeFeed](#livenodefeed)                         | Loads discovery pages and composes NodeFeed with live voting/reaction controls.                                                                    |
 | [LiveNodeForm](#livenodeform)                         | Session-aware creation, browser-private draft handling, custom types and backend submission.                                                       |
 | [LiveNodePage](#livenodepage)                         | Fetches a node, its content and types, then composes voting, tabs, child forms and discussion.                                                     |
@@ -122,36 +121,32 @@ Reusable action button with accessibility attributes and an activation callback.
 
 Shared grouped navigation links and site footer. [Source](../src/lib/components/AtlasFooter.svelte).
 
-| Prop         | Type                     | Required | Default when omitted                                   | Purpose                                                                                                          |
-| ------------ | ------------------------ | -------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `tagline`    | `string`                 | No       | `'A place to connect questions, evidence, and ideas.'` | Supporting text in the footer.                                                                                   |
-| `onNavigate` | `(href: string) => void` | No       | `undefined`                                            | Receives an internal href instead of allowing normal link navigation. External links keep their normal behavior. |
+| Prop      | Type     | Required | Default when omitted                                   | Purpose                        |
+| --------- | -------- | -------- | ------------------------------------------------------ | ------------------------------ |
+| `tagline` | `string` | No       | `'A place to connect questions, evidence, and ideas.'` | Supporting text in the footer. |
 
 ### AtlasHeader
 
 Shared navigation, search, account menu and logout behavior. [Source](../src/lib/components/AtlasHeader.svelte).
 
-| Prop            | Type                                                                                  | Required | Default when omitted | Purpose                                                                                                                                        |
-| --------------- | ------------------------------------------------------------------------------------- | -------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `active`        | `'discover' \| 'communities' \| 'create' \| 'login' \| 'register' \| null`            | No       | `null`               | Highlighted navigation item; null leaves all items unselected.                                                                                 |
-| `authenticated` | `boolean`                                                                             | No       | `false`              | Selects the signed-in header menu versus login/register links; does not authenticate by itself.                                                |
-| `displayName`   | `string`                                                                              | No       | `'Atlas User'`       | Name used to derive the account-avatar initial.                                                                                                |
-| `onNavigate`    | `(destination: 'discover' \| 'create' \| 'login' \| 'register' \| 'profile') => void` | No       | `undefined`          | Handles discover/create/login/register/profile destinations for workbench navigation. Community and ordinary links retain their href behavior. |
+| Prop            | Type                                                                       | Required | Default when omitted | Purpose                                                                                         |
+| --------------- | -------------------------------------------------------------------------- | -------- | -------------------- | ----------------------------------------------------------------------------------------------- |
+| `active`        | `'discover' \| 'communities' \| 'create' \| 'login' \| 'register' \| null` | No       | `null`               | Highlighted navigation item; null leaves all items unselected.                                  |
+| `authenticated` | `boolean`                                                                  | No       | `false`              | Selects the signed-in header menu versus login/register links; does not authenticate by itself. |
+| `displayName`   | `string`                                                                   | No       | `'Atlas User'`       | Name used to derive the account-avatar initial.                                                 |
 
 ### Breadcrumb
 
 Scrollable ancestry ribbon with older-page loading and alternate-parent paths. [Source](../src/lib/components/Breadcrumb.svelte).
 
-| Prop            | Type                               | Required | Default when omitted  | Purpose                                                                                      |
-| --------------- | ---------------------------------- | -------- | --------------------- | -------------------------------------------------------------------------------------------- |
-| `items`         | `BreadcrumbItem[]`                 | Yes      | —                     | Ancestor labels in oldest-to-newest order; IDs enable navigation when a handler is supplied. |
-| `onNavigate`    | `(id: string) => void`             | No       | `undefined`           | Receives the selected node ID when an ancestor is activated. The parent owns navigation.     |
-| `hasMore`       | `boolean`                          | No       | `false`               | Whether older ancestors remain available to load.                                            |
-| `loadOlder`     | `LoadOlderAncestors`               | No       | `undefined`           | Async ancestor loader; receives the oldest displayed ID and returns a BreadcrumbPage.        |
-| `routes`        | `BreadcrumbRoute[]`                | No       | `[]`                  | Alternative ancestry paths for the route switcher.                                           |
-| `onRouteChange` | `(route: BreadcrumbRoute) => void` | No       | `undefined`           | Called with the selected BreadcrumbRoute after switching a supplied path.                    |
-| `originId`      | `string`                           | No       | `undefined`           | Current node ID used to look up alternative parents for the final breadcrumb segment.        |
-| `apiBase`       | `string`                           | No       | `'/atlas-public-api'` | Base URL for this component’s API reads. This prop alone does not configure a proxy.         |
+| Prop         | Type                   | Required | Default when omitted  | Purpose                                                                                      |
+| ------------ | ---------------------- | -------- | --------------------- | -------------------------------------------------------------------------------------------- |
+| `items`      | `BreadcrumbItem[]`     | Yes      | —                     | Ancestor labels in oldest-to-newest order; IDs enable navigation when a handler is supplied. |
+| `onNavigate` | `(id: string) => void` | No       | `undefined`           | Receives the selected node ID when an ancestor is activated. The parent owns navigation.     |
+| `hasMore`    | `boolean`              | No       | `false`               | Whether older ancestors remain available to load.                                            |
+| `loadOlder`  | `LoadOlderAncestors`   | No       | `undefined`           | Async ancestor loader; receives the oldest displayed ID and returns a BreadcrumbPage.        |
+| `originId`   | `string`               | No       | `undefined`           | Current node ID used to look up alternative parents for the final breadcrumb segment.        |
+| `apiBase`    | `string`               | No       | `'/atlas-public-api'` | Base URL for this component’s API reads. This prop alone does not configure a proxy.         |
 
 ### CommentsPanel
 
@@ -203,19 +198,6 @@ Fetches and edits one level of a threaded discussion, recursively rendering repl
 | `showComposer`  | `boolean`        | No       | `true`                 | Allows the comment/reply editor to appear when a participant is signed in.                                                            |
 | `depth`         | `number`         | No       | `0`                    | Reply nesting depth used to limit increasing indentation.                                                                             |
 | `onAdded`       | `() => void`     | No       | `undefined`            | Called after a comment or reply is successfully added; lets the parent refresh its displayed comment count.                           |
-
-### LiveMyProfile
-
-Session-aware current-participant profile, editing and community display. [Source](../src/lib/components/LiveMyProfile.svelte).
-
-| Prop            | Type                   | Required | Default when omitted   | Purpose                                                                                                       |
-| --------------- | ---------------------- | -------- | ---------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `apiBase`       | `string`               | No       | `'/atlas-public-api'`  | Base URL for this component’s API reads. This prop alone does not configure a proxy.                          |
-| `sessionBase`   | `string`               | No       | `'/atlas-session-api'` | Session-aware API base for authentication and permitted operations, including CSRF-protected writes.          |
-| `onOpenNode`    | `(id: string) => void` | No       | `undefined`            | Receives a node ID to open. Where the signature includes typeId, it selects the destination contribution tab. |
-| `onOpenProfile` | `(id: string) => void` | No       | `undefined`            | Receives the author/participant ID to open in a profile page.                                                 |
-
-The profile read/write bases are configurable, but the community helper currently uses its own default endpoints. This is not a universal endpoint override for every nested helper.
 
 ### LiveNodeFeed
 
@@ -383,7 +365,7 @@ Editable creation form and Markdown preview; parent owns persistence. [Source](.
 | `breadcrumb`    | `BreadcrumbItem[]`           | No       | `[]`                 | Parent ancestry used above a creation form, before the immediate parent is appended.                                     |
 | `focusOnMount`  | `boolean`                    | No       | `false`              | Requests initial focus/scroll placement when the relevant form is rendered in the browser.                               |
 | `onPreview`     | `(draft: NodeDraft) => void` | No       | `undefined`          | Receives the current editable NodeDraft as its fields change; does not save to the API.                                  |
-| `onSubmit`      | `(draft: NodeDraft) => void` | No       | `undefined`          | Receives a NodeDraft when the form submits. Without it, the form is preview-only.                                        |
+| `onSubmit`      | `(draft: NodeDraft) => void` | Yes      | —                    | Receives the draft when the form submits; the parent owns persistence.                                                   |
 | `submitting`    | `boolean`                    | No       | `false`              | Shows the creation-in-progress label and disables the submit button.                                                     |
 
 ### NodePage
@@ -564,7 +546,6 @@ These are presentation contracts, not interchangeable backend DTOs. Field names 
 | `NodeType`             | `id`, `name`; optional pluralName, autoPluralize, description and isArchived. Used for type selection and labels.                                                                                                                                                                                                                                                                                                                                                                        | [nodePage.ts](../src/lib/api/nodePage.ts)                                                              |
 | `ContentBlock`         | `id`, `kind`, `content`. Content can include markdown, url, altText, caption, title, description, pollId or chartId. The renderer determines supported behavior; supplying IDs does not implement interactive polls/charts.                                                                                                                                                                                                                                                              | [nodePage.ts](../src/lib/api/nodePage.ts), [ContentBlocks](../src/lib/components/ContentBlocks.svelte) |
 | `BreadcrumbItem`       | Optional `id` plus `title`. Oldest ancestor first; an item without an ID is display-only.                                                                                                                                                                                                                                                                                                                                                                                                | [Breadcrumb](../src/lib/components/Breadcrumb.svelte)                                                  |
-| `BreadcrumbRoute`      | `id`, `label`, `items` (oldest first), optional divergenceIndex identifying the switching segment.                                                                                                                                                                                                                                                                                                                                                                                       | [Breadcrumb](../src/lib/components/Breadcrumb.svelte)                                                  |
 | `BreadcrumbPage`       | `items` plus `hasMore`. A loader returns this shape for an older ancestor page.                                                                                                                                                                                                                                                                                                                                                                                                          | [Breadcrumb](../src/lib/components/Breadcrumb.svelte)                                                  |
 | `LoadOlderAncestors`   | `(oldestId?: string) => Promise<BreadcrumbPage>`. The caller owns lookup/cancellation.                                                                                                                                                                                                                                                                                                                                                                                                   | [Breadcrumb](../src/lib/components/Breadcrumb.svelte)                                                  |
 | `FeedItem`             | `node: NodeCardData`, `average: number or null`, `totalVotes: number`; optional reactionError and hasMoreAncestors.                                                                                                                                                                                                                                                                                                                                                                      | [NodeFeed](../src/lib/components/NodeFeed.svelte)                                                      |
@@ -628,6 +609,19 @@ No explicit props are declared. This wrapper supplies its own composition.
 | `active`        | `ComponentProps<typeof AtlasHeader>['active']` | No       | `'discover'`         | Selected discussion-tab ID for NodePage; header components instead use a navigation destination. |
 | `authenticated` | `boolean`                                      | No       | `false`              | Selects the signed-in header menu versus login/register links; does not authenticate by itself.  |
 | `displayName`   | `string`                                       | No       | `'Atlas User'`       | Name used to derive the account-avatar initial.                                                  |
+
+### LiveMyProfile
+
+Session-aware current-participant profile, editing and community display. [Source](../storybook/MyProfile/LiveMyProfile.svelte).
+
+| Prop            | Type                   | Required | Default when omitted   | Purpose                                                                                                       |
+| --------------- | ---------------------- | -------- | ---------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `apiBase`       | `string`               | No       | `'/atlas-public-api'`  | Base URL for this component’s API reads. This prop alone does not configure a proxy.                          |
+| `sessionBase`   | `string`               | No       | `'/atlas-session-api'` | Session-aware API base for authentication and permitted operations, including CSRF-protected writes.          |
+| `onOpenNode`    | `(id: string) => void` | No       | `undefined`            | Receives a node ID to open. Where the signature includes typeId, it selects the destination contribution tab. |
+| `onOpenProfile` | `(id: string) => void` | No       | `undefined`            | Receives the author/participant ID to open in a profile page.                                                 |
+
+The profile read/write bases are configurable, but the community helper currently uses its own default endpoints. This is not a universal endpoint override for every nested helper.
 
 ### MyProfileExample
 

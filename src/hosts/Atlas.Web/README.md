@@ -375,3 +375,10 @@ Demo seed blocks include emphasis, headings, lists, quotes, inline/fenced code a
 ### Run the application and API together
 
 From `src/hosts/Atlas.Web`, run `npm run dev:api` to start the Vite development server and Atlas.Api together. This uses the same HTTPS API launch profile as `npm run storybook:api`. Press Ctrl+C to stop both; if either process exits, the other is stopped too. Use `npm run dev` when the API is already running separately.
+
+
+### Application components and Storybook adapters
+
+Shared components describe application behavior. Header/footer links use application URLs; Storybook wrappers adapt those links with `storybook/shared/linkNavigation.ts`. Breadcrumb has one alternative-parent implementation, driven by its parent/ancestor HTTP endpoints and `originId`. Its isolated multiple-parent story uses MSW in `storybook/Breadcrumb/parentPathHandlers.ts` to simulate those endpoints, rather than extra application props or a second route-selection implementation. The worker is served only with Storybook, starts only for that example, mocks a dedicated `/storybook-breadcrumb-api` prefix and stops when the example unmounts.
+
+The unused `routes`/`onRouteChange` Breadcrumb props and header/footer navigation-override props have been removed. NodeForm requires its application's submit handler; its obsolete preview-only submission branch is removed. The current-participant workbench composition lives under `storybook/MyProfile`, because the application already composes its profile routes separately. UI inputs such as labels, layout variants and session/data callbacks remain normal application contracts, even when a story is the only place currently overriding a default.

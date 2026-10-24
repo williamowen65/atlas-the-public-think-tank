@@ -8,21 +8,6 @@ export interface BreadcrumbItem {
   /** Visible ancestor title. */
   title: string;
 }
-/** Alternative parent routes for a node; each route is oldest ancestor first. */
-export interface BreadcrumbRoute {
-  /** Stable identifier used to select this alternative route. */
-  id: string;
-
-  /** Human-readable label for this alternative ancestry route. */
-  label: string;
-
-  /** Ancestor items ordered from oldest to newest. */
-  items: BreadcrumbItem[];
-
-  /** Optional index identifying where this route diverges from the displayed ancestry. */
-  divergenceIndex?: number;
-}
-
 /** One page of older ancestors, ordered for display, plus continuation availability. */
 export interface BreadcrumbPage {
   /** Ancestor items ordered from oldest to newest. */
