@@ -17,7 +17,10 @@
   let {
     presentation = 'ribbon',
     ...props
-  }: NodeCardProps & { presentation?: NodeCardPresentation } = $props();
+  }: NodeCardProps & {
+    /** Selects a NodeCardPresentation layout; it does not change the underlying node data. */
+    presentation?: NodeCardPresentation;
+  } = $props();
 </script>
 
 {#if presentation === 'context-below'}

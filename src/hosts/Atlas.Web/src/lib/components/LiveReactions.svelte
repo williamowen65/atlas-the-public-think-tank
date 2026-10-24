@@ -21,8 +21,14 @@
     archived = false,
     apiBase = '/atlas-session-api',
   }: {
+    /** ID of the node this component reads, displays, or modifies. */
     nodeId: string;
+    /** Marks the node as archived and disables applicable voting/editing controls. */
     archived?: boolean;
+    /**
+     * Session-aware endpoint base for both reaction reads and writes, despite the generic apiBase
+     * prop name.
+     */
     apiBase?: string;
   } = $props();
   let choices = $state<Choice[]>([]);

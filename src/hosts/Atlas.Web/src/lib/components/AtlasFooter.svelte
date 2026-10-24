@@ -6,7 +6,15 @@
   let {
     tagline = 'A place to connect questions, evidence, and ideas.',
     onNavigate,
-  }: { tagline?: string; onNavigate?: (href: string) => void } = $props();
+  }: {
+    /** Supporting text in the footer. */
+    tagline?: string;
+    /**
+     * Callback: Receives an internal href instead of allowing normal link navigation. External links
+     * keep their normal behavior.
+     */
+    onNavigate?: (href: string) => void;
+  } = $props();
   const year = new Date().getFullYear();
   // Keep link groups as display data; internal links may use the parent navigation callback.
   const groups = [

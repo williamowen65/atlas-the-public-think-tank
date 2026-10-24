@@ -10,7 +10,25 @@
     apiBase = '/atlas-public-api',
     sessionBase = '/atlas-session-api',
     onAdded,
-  }: { nodeId: string; apiBase?: string; sessionBase?: string; onAdded?: () => void } = $props();
+  }: {
+    /** ID of the node this component reads, displays, or modifies. */
+    nodeId: string;
+    /**
+     * Public comment-read base forwarded to LiveComments. Authentication and mutations use
+     * sessionBase.
+     */
+    apiBase?: string;
+    /**
+     * Session-aware API base forwarded to SessionControl and LiveComments for identity checks and
+     * comment mutations.
+     */
+    sessionBase?: string;
+    /**
+     * Callback: Called after a comment or reply is successfully added; lets the parent refresh its
+     * displayed comment count.
+     */
+    onAdded?: () => void;
+  } = $props();
   let participantId = $state<string | null>(null);
 </script>
 

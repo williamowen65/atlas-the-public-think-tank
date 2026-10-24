@@ -24,16 +24,41 @@
     onDraftChange,
     onRegisterClose,
   }: {
+    /** ID of an existing browser-private draft to restore for the signed-in participant. */
     draftId?: string;
+    /** Parent node ID for child-node creation; omit for root creation. */
     parentId?: string;
+    /** Display title for the parent breadcrumb; parentId is the actual association. */
     parentTitle?: string;
+    /** Initial node type selection when creating a draft. */
     initialTypeId?: string;
+    /** Parent ancestry used above a creation form, before the immediate parent is appended. */
     breadcrumb?: BreadcrumbItem[];
+    /**
+     * Requests initial focus/scroll placement when the relevant form is rendered in the browser.
+     */
     focusOnMount?: boolean;
+    /**
+     * Public API base for reading the type catalog and resolving a parent node’s title/ancestry.
+     * Creation writes use sessionBase instead.
+     */
     apiBase?: string;
+    /**
+     * Session-aware API base for account controls and CSRF-protected custom-type/node creation.
+     * Private draft saving uses browser storage rather than this endpoint.
+     */
     sessionBase?: string;
+    /** Callback: Receives the ID returned by the backend after successful node creation. */
     onCreated?: (id: string) => void;
+    /**
+     * Receives the current draft or null according to the callback contract; lets the parent track
+     * child-form state.
+     */
     onDraftChange?: (draft: NodeDraft | null) => void;
+    /**
+     * Callback: Registers an async draft-save function with the parent. Calling that function
+     * returns whether saving succeeded; it does not itself close the form.
+     */
     onRegisterClose?: (close: () => Promise<boolean>) => void;
   } = $props();
   let types = $state<NodeType[]>([]);

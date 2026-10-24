@@ -6,7 +6,15 @@
   import { onMount } from 'svelte';
   import { commentRequest } from '../api/comments';
   import type { Community } from '../api/communities';
-  let { nodeId, names }: { nodeId: string; names: string[] } = $props();
+  let {
+    nodeId,
+    names,
+  }: {
+    /** ID of the node this component reads, displays, or modifies. */
+    nodeId: string;
+    /** Fallback community display names while linked community records are being fetched. */
+    names: string[];
+  } = $props();
   let linked = $state<Community[]>([]);
   // Fetch linkable records once mounted; abort on removal and keep fallback names on failure.
   onMount(() => {

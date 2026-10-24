@@ -12,9 +12,19 @@
     displayName = 'Atlas User',
     onNavigate,
   }: {
+    /** Highlighted navigation item; null leaves all items unselected. */
     active?: 'discover' | 'communities' | 'create' | 'login' | 'register' | null;
+    /**
+     * Selects the signed-in header menu versus login/register links; does not authenticate by
+     * itself.
+     */
     authenticated?: boolean;
+    /** Name used to derive the account-avatar initial. */
     displayName?: string;
+    /**
+     * Callback: Handles discover/create/login/register/profile destinations for workbench
+     * navigation. Community and ordinary links retain their href behavior.
+     */
     onNavigate?: (destination: 'discover' | 'create' | 'login' | 'register' | 'profile') => void;
   } = $props();
   let searching = $state(false);

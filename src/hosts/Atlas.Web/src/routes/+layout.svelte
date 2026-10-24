@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, type ComponentProps } from 'svelte';
+  import { onMount, type ComponentProps, type Snippet } from 'svelte';
   // SvelteKit's reactive route information, including the current URL; not Redux state.
   import { page } from '$app/state';
   import { commentRequest } from '$lib/api/comments';
@@ -8,7 +8,15 @@
   import '../styles.scss';
 
   // The router supplies the current page (and any nested layouts) as this snippet.
-  let { children } = $props();
+  let {
+    children,
+  }: {
+    /**
+     * Current route/nested-layout content supplied by SvelteKit; rendered between the shared
+     * header and footer.
+     */
+    children: Snippet;
+  } = $props();
 
   // Local reactive state: changes update the props passed to AtlasHeader below.
   let authenticated = $state(false);

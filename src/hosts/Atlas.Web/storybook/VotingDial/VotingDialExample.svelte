@@ -11,12 +11,22 @@
     label = 'Node importance',
     voteOutcome = 'accepted',
   }: {
+    /** Initial simulated dial value in the Storybook example; null starts unrated. */
     initialValue?: number | null;
+    /** Community average supplied by the parent; null means no average is available. */
     average?: number | null;
+    /** Community vote count supplied by the parent. */
     totalVotes?: number;
+    /** Selects the compact dial layout. */
     compact?: boolean;
+    /** Prevents interaction with this control. */
     disabled?: boolean;
+    /** Accessible name for the simulated rating spinbutton. */
     label?: string;
+    /**
+     * Simulated acceptance outcome for the standalone dial story: accepted, anonymous, or failed.
+     * No backend vote is saved.
+     */
     voteOutcome?: VoteOutcome;
   } = $props();
   let value = $state<number | null>(null);

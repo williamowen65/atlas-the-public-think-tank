@@ -1,8 +1,12 @@
 <script lang="ts">
   import AtlasFooter from '../../src/lib/components/AtlasFooter.svelte';
   import { openStory } from '../shared/navigation';
-  let { tagline = 'A place to connect questions, evidence, and ideas.' }: { tagline?: string } =
-    $props();
+  let {
+    tagline = 'A place to connect questions, evidence, and ideas.',
+  }: {
+    /** Supporting text in the footer. */
+    tagline?: string;
+  } = $props();
   function navigate(href: string) {
     const destinations: Record<string, string> = {
       '/': 'compositions-feed--playground',

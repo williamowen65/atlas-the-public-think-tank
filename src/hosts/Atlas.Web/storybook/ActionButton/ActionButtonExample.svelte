@@ -2,7 +2,9 @@
   import ActionButton from '../../src/lib/components/ActionButton.svelte';
 
   interface Props {
+    /** Visible label and accessible name for the demonstration action button. */
     label?: string;
+    /** Prevents interaction with this control. */
     disabled?: boolean;
   }
 

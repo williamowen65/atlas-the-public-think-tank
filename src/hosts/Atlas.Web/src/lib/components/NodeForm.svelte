@@ -31,15 +31,35 @@
     onSubmit,
     submitting = false,
   }: {
+    /** Available node types and their singular/plural display labels. */
     types: NodeType[];
+    /**
+     * Seed values for editable fields. Captured once when the form is created; later prop changes
+     * do not overwrite user edits.
+     */
     initialDraft?: NodeDraft;
+    /** Parent node ID for child-node creation; omit for root creation. */
     parentId?: string;
+    /** Display title for the parent breadcrumb; parentId is the actual association. */
     parentTitle?: string;
+    /** Initial node type selection when creating a draft. */
     initialTypeId?: string;
+    /** Parent ancestry used above a creation form, before the immediate parent is appended. */
     breadcrumb?: BreadcrumbItem[];
+    /**
+     * Requests initial focus/scroll placement when the relevant form is rendered in the browser.
+     */
     focusOnMount?: boolean;
+    /**
+     * Callback: Receives the current editable NodeDraft as its fields change; does not save to the
+     * API.
+     */
     onPreview?: (draft: NodeDraft) => void;
+    /**
+     * Callback: Receives a NodeDraft when the form submits. Without it, the form is preview-only.
+     */
     onSubmit?: (draft: NodeDraft) => void;
+    /** Shows the creation-in-progress label and disables the submit button. */
     submitting?: boolean;
   } = $props();
   // Seed editable fields once; later prop updates must not overwrite user edits.

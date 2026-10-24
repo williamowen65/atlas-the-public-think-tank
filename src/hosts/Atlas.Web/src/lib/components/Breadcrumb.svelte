@@ -33,13 +33,26 @@
     originId,
     apiBase = '/atlas-public-api',
   }: {
+    /**
+     * Ancestor labels in oldest-to-newest order; IDs enable navigation when a handler is supplied.
+     */
     items: BreadcrumbItem[];
+    /**
+     * Callback: Receives the selected node ID when an ancestor is activated. The parent owns
+     * navigation.
+     */
     onNavigate?: (id: string) => void;
+    /** Whether older ancestors remain available to load. */
     hasMore?: boolean;
+    /** Async ancestor loader; receives the oldest displayed ID and returns a BreadcrumbPage. */
     loadOlder?: LoadOlderAncestors;
+    /** Alternative ancestry paths for the route switcher. */
     routes?: BreadcrumbRoute[];
+    /** Callback: Called with the selected BreadcrumbRoute after switching a supplied path. */
     onRouteChange?: (route: BreadcrumbRoute) => void;
+    /** Current node ID used to look up alternative parents for the final breadcrumb segment. */
     originId?: string;
+    /** Base URL for this component’s API reads. This prop alone does not configure a proxy. */
     apiBase?: string;
   } = $props();
   let older = $state<BreadcrumbItem[]>([]);

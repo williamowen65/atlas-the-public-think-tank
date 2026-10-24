@@ -23,16 +23,38 @@
     onOpenNode,
     onOpenProfile,
   }: {
+    /** Selects a NodeCardPresentation layout; it does not change the underlying node data. */
     presentation?: NodeCardPresentation;
+    /**
+     * Public API base for discovery pages and descendant breadcrumb reads. Live voting/reaction
+     * wrappers use their own session-aware defaults.
+     */
     apiBase?: string;
+    /**
+     * Restrict discovery to children of this parent node. When omitted, filters.parentId can still
+     * supply the scope; otherwise the parent filter is unset.
+     */
     parentId?: string;
+    /** Node type ID used to restrict the feed. */
     typeId?: string;
+    /** Participant ID used to restrict the feed to that author. */
     authorId?: string;
+    /** Free-text discovery search, separate from structured filters. */
     search?: string;
+    /** Additional DiscoveryFilters for the feed request; see the data-shape reference. */
     filters?: DiscoveryFilters;
+    /** Singular contribution type name used in the empty-feed invitation. */
     emptyTypeName?: string;
+    /**
+     * Callback: Called by the empty-feed invitation to open creation for that contribution type.
+     */
     onCreateFirst?: () => void;
+    /**
+     * Callback requesting navigation to a node ID. Optional typeId selects a contribution tab, or
+     * comments for the comment tab. Without a handler, this component uses the app’s node URL.
+     */
     onOpenNode?: (id: string, typeId?: string) => void;
+    /** Callback: Receives the author/participant ID to open in a profile page. */
     onOpenProfile?: (id: string) => void;
   } = $props();
   let items = $state<FeedItem[]>([]);

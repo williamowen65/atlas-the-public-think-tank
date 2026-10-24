@@ -11,7 +11,15 @@
   } from '$lib/state/discoveryQuery.svelte';
   import { readTypes, type NodeType } from '$lib/api/nodePage';
   import type { DiscoveryFilters } from '$lib/api/discovery';
-  let { onExpandedChange }: { onExpandedChange?: (expanded: boolean) => void } = $props();
+  let {
+    onExpandedChange,
+  }: {
+    /**
+     * Callback: Reports whether the search filter toolbox is expanded, so the header can adjust
+     * its layout.
+     */
+    onExpandedChange?: (expanded: boolean) => void;
+  } = $props();
   let types = $state<NodeType[]>([]);
   let expanded = $state(false);
   let searchRegion: HTMLElement;

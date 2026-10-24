@@ -5,7 +5,14 @@
     parentId,
     parentTitle,
     initialTypeId,
-  }: { parentId?: string; parentTitle?: string; initialTypeId?: string } = $props();
+  }: {
+    /** Parent node ID for child-node creation; omit for root creation. */
+    parentId?: string;
+    /** Display title for the parent breadcrumb; parentId is the actual association. */
+    parentTitle?: string;
+    /** Initial node type selection when creating a draft. */
+    initialTypeId?: string;
+  } = $props();
 </script>
 
 <LiveNodeForm {parentId} {parentTitle} {initialTypeId} onCreated={openNodeStory} />

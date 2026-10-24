@@ -9,7 +9,13 @@
     paragraphGap = 16,
     headingGap = 12,
     onReset,
-  }: Partial<DesignSettings> & { onReset?: () => void } = $props();
+  }: Partial<DesignSettings> & {
+    /**
+     * Callback: Called when Reset styles to code defaults is activated; the parent provides the
+     * reset implementation.
+     */
+    onReset?: () => void;
+  } = $props();
 </script>
 
 <ActionButton label="Reset styles to code defaults" onActivate={() => onReset?.()} />

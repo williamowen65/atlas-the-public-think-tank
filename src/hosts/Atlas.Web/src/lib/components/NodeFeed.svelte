@@ -36,22 +36,53 @@
     onCreateFirst,
     apiBase,
   }: {
+    /** Svelte snippet receiving a FeedItem, used to supply voting controls for each card. */
     renderVoting?: Snippet<[FeedItem]>;
+    /** Svelte snippet receiving a FeedItem, used to supply reaction controls for each card. */
     renderReactions?: Snippet<[FeedItem]>;
+    /** Loaded FeedItem records to display; the parent owns fetching and accumulation. */
     items: FeedItem[];
+    /** Whether a page request is in progress; shows loading feedback and restricts paging. */
     loading?: boolean;
+    /** Whether more feed pages remain. Enables automatic loading and the Load more button. */
     hasMore?: boolean;
+    /** Error text for feed paging; a nonempty value exposes retry feedback. */
     error?: string;
+    /** Selects a NodeCardPresentation layout; it does not change the underlying node data. */
     presentation?: NodeCardPresentation;
+    /**
+     * Callback: Requests the next page or retries the failed page; parent owns fetching and page
+     * state.
+     */
     onLoadMore?: () => void;
+    /**
+     * Callback receiving a node ID from a card’s ancestor or related-node links. The parent
+     * chooses the destination/navigation mechanism.
+     */
     onNavigate?: (id: string) => void;
+    /** Callback: Receives the author/participant ID to open in a profile page. */
     onOpenProfile?: (id: string) => void;
+    /** Callback: Receives the node ID when Read more is activated; absence disables that action. */
     onReadMore?: (id: string) => void;
+    /**
+     * Async ancestor loader forwarded to Breadcrumb; follow the LoadOlderAncestors type definition
+     * for its fields.
+     */
     loadOlderAncestors?: LoadOlderAncestors;
+    /** Forwarded to card breadcrumb readers; NodeFeed itself does not fetch discovery pages. */
     apiBase?: string;
+    /**
+     * Callback: Receives node ID and contribution type ID when a contribution-summary button is
+     * activated.
+     */
     onChildType?: (id: string, typeId: string) => void;
+    /** Callback: Receives the node ID when its comment-count button is activated. */
     onComments?: (id: string) => void;
+    /** Singular contribution type name used in the empty-feed invitation. */
     emptyTypeName?: string;
+    /**
+     * Callback: Called by the empty-feed invitation to open creation for that contribution type.
+     */
     onCreateFirst?: () => void;
   } = $props();
   let tail: HTMLDivElement;

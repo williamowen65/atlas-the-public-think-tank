@@ -12,7 +12,12 @@
     type DiscoveryPage,
   } from '../../src/lib/api/discovery';
 
-  let { presentation = 'ribbon' }: { presentation?: NodeCardPresentation } = $props();
+  let {
+    presentation = 'ribbon',
+  }: {
+    /** Selects a NodeCardPresentation layout; it does not change the underlying node data. */
+    presentation?: NodeCardPresentation;
+  } = $props();
   async function loadOlderAncestors(id?: string) {
     if (!id) return { items: [], hasMore: false };
     return readOlderAncestors(id, AbortSignal.timeout(10000));

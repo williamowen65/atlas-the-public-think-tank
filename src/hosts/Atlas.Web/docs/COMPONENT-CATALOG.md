@@ -221,19 +221,19 @@ The profile read/write bases are configurable, but the community helper currentl
 
 Loads discovery pages and composes NodeFeed with live voting/reaction controls. [Source](../src/lib/components/LiveNodeFeed.svelte).
 
-| Prop            | Type                                    | Required | Default when omitted  | Purpose                                                                                                       |
-| --------------- | --------------------------------------- | -------- | --------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `presentation`  | `NodeCardPresentation`                  | No       | `'ribbon-corner'`     | Selects a NodeCardPresentation layout; it does not change the underlying node data.                           |
-| `apiBase`       | `string`                                | No       | `'/atlas-public-api'` | Base URL for this component’s API reads. This prop alone does not configure a proxy.                          |
-| `parentId`      | `string`                                | No       | `undefined`           | Parent node ID for child-node creation; omit for root creation.                                               |
-| `typeId`        | `string`                                | No       | `undefined`           | Node type ID used to restrict the feed.                                                                       |
-| `authorId`      | `string`                                | No       | `undefined`           | Participant ID used to restrict the feed to that author.                                                      |
-| `search`        | `string`                                | No       | `''`                  | Free-text discovery search, separate from structured filters.                                                 |
-| `filters`       | `DiscoveryFilters`                      | No       | `{}`                  | Additional DiscoveryFilters for the feed request; see the data-shape reference.                               |
-| `emptyTypeName` | `string`                                | No       | `undefined`           | Singular contribution type name used in the empty-feed invitation.                                            |
-| `onCreateFirst` | `() => void`                            | No       | `undefined`           | Called by the empty-feed invitation to open creation for that contribution type.                              |
-| `onOpenNode`    | `(id: string, typeId?: string) => void` | No       | `undefined`           | Receives a node ID to open. Where the signature includes typeId, it selects the destination contribution tab. |
-| `onOpenProfile` | `(id: string) => void`                  | No       | `undefined`           | Receives the author/participant ID to open in a profile page.                                                 |
+| Prop            | Type                                    | Required | Default when omitted  | Purpose                                                                                                                                              |
+| --------------- | --------------------------------------- | -------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `presentation`  | `NodeCardPresentation`                  | No       | `'ribbon-corner'`     | Selects a NodeCardPresentation layout; it does not change the underlying node data.                                                                  |
+| `apiBase`       | `string`                                | No       | `'/atlas-public-api'` | Base URL for this component’s API reads. This prop alone does not configure a proxy.                                                                 |
+| `parentId`      | `string`                                | No       | `undefined`           | Restrict discovery to children of this parent node. When omitted, filters.parentId can still supply the scope; otherwise the parent filter is unset. |
+| `typeId`        | `string`                                | No       | `undefined`           | Node type ID used to restrict the feed.                                                                                                              |
+| `authorId`      | `string`                                | No       | `undefined`           | Participant ID used to restrict the feed to that author.                                                                                             |
+| `search`        | `string`                                | No       | `''`                  | Free-text discovery search, separate from structured filters.                                                                                        |
+| `filters`       | `DiscoveryFilters`                      | No       | `{}`                  | Additional DiscoveryFilters for the feed request; see the data-shape reference.                                                                      |
+| `emptyTypeName` | `string`                                | No       | `undefined`           | Singular contribution type name used in the empty-feed invitation.                                                                                   |
+| `onCreateFirst` | `() => void`                            | No       | `undefined`           | Called by the empty-feed invitation to open creation for that contribution type.                                                                     |
+| `onOpenNode`    | `(id: string, typeId?: string) => void` | No       | `undefined`           | Receives a node ID to open. Where the signature includes typeId, it selects the destination contribution tab.                                        |
+| `onOpenProfile` | `(id: string) => void`                  | No       | `undefined`           | Receives the author/participant ID to open in a profile page.                                                                                        |
 
 Explicit parentId/typeId/authorId override the corresponding fields in filters. The feed loads on mount; callers key/remount it when filters change. The root page demonstrates that pattern. Without onOpenNode, it navigates to the app’s node URL.
 
@@ -657,10 +657,10 @@ No explicit props are declared. This wrapper supplies its own composition.
 
 [Source](../storybook/NodePage/NodePageExample.svelte).
 
-| Prop            | Type     | Required | Default when omitted | Purpose                                                     |
-| --------------- | -------- | -------- | -------------------- | ----------------------------------------------------------- |
-| `nodeId`        | `string` | No       | `''`                 | ID of the node this component reads, displays, or modifies. |
-| `initialTypeId` | `string` | No       | `''`                 | Initial node type selection when creating a draft.          |
+| Prop            | Type     | Required | Default when omitted | Purpose                                                                                                                        |
+| --------------- | -------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `nodeId`        | `string` | No       | `''`                 | ID of the node this component reads, displays, or modifies.                                                                    |
+| `initialTypeId` | `string` | No       | `''`                 | Discussion tab to select when the node story opens: a contribution type ID or comments. This is not a new-node type selection. |
 
 ### ProfileExample
 

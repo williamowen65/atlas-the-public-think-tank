@@ -31,10 +31,21 @@
     onOpenNode,
     onOpenProfile,
   }: {
+    /** ID of the node this component reads, displays, or modifies. */
     nodeId?: string;
+    /** Initial discussion tab ID (a contribution type ID or comments), not a node-creation type. */
     initialTypeId?: string;
+    /**
+     * Public API base for discovery, node details, content blocks, type catalog and ancestor
+     * lookups. Voting and comments receive their session-aware behavior from nested components.
+     */
     apiBase?: string;
+    /**
+     * Callback: Receives a node ID to open. Where the signature includes typeId, it selects the
+     * destination contribution tab.
+     */
     onOpenNode?: (id: string, typeId?: string) => void;
+    /** Callback: Receives the author/participant ID to open in a profile page. */
     onOpenProfile?: (id: string) => void;
   } = $props();
   let node = $state<NodeCardData | null>(null);

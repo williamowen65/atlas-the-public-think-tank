@@ -31,23 +31,75 @@
     totalVotes = 0,
     children,
   }: {
+    /**
+     * Renderable snippet for the voting region, replacing the always-disabled plain VotingDial
+     * fallback. LiveNodePage supplies LiveVotingDial here to add API/session behavior.
+     */
     voting?: Snippet;
+    /**
+     * Renderable snippet for custom/live reaction controls. If omitted, NodePage displays the
+     * static reaction summary from node.reactions.
+     */
     reactions?: Snippet;
+    /**
+     * Requests initial focus and scrolling of the selected discussion tab to 20px below the
+     * viewport top. Adds minimum panel height for short feeds, which may leave blank space; does
+     * not hide content.
+     */
     scrollToDiscussionTabs?: boolean;
+    /**
+     * Display model for the node header, breadcrumb, status, community and contribution summaries.
+     * NodeCardData describes its fields; fetching belongs to the parent.
+     */
     node: NodeCardData;
+    /**
+     * Ordered content blocks passed to ContentBlocks. The parent supplies these separately from
+     * the node’s short description.
+     */
     blocks: ContentBlock[];
+    /** Available node types and their singular/plural display labels. */
     types: NodeType[];
+    /**
+     * Controlled discussion-tab ID: comments, a contribution type ID, or a temporary draft-tab ID.
+     * The parent changes this value after onTabChange requests.
+     */
     active: string;
+    /** Temporary contribution-tab ID and label for an in-progress child draft. */
     draftTab?: { id: string; name: string };
+    /** Callback: Receives the requested discussion-tab ID; the parent controls active. */
     onTabChange: (id: string) => void;
+    /**
+     * Callback: Requests a child form for the supplied type ID, or lets the parent choose when
+     * omitted.
+     */
     onAddChild: (id?: string) => void;
+    /**
+     * Callback receiving an ancestor node ID from Breadcrumb. The parent decides how to navigate
+     * in the app or Storybook.
+     */
     onNavigate?: (id: string) => void;
+    /** Callback: Receives the author/participant ID to open in a profile page. */
     onOpenProfile?: (id: string) => void;
+    /** Whether additional older ancestors can be loaded for the node’s breadcrumb. */
     hasMoreAncestors?: boolean;
+    /**
+     * Async callback forwarded to Breadcrumb. Receives the oldest displayed node ID (possibly
+     * undefined) and returns a page of older ancestor items plus hasMore.
+     */
     loadOlderAncestors?: LoadOlderAncestors;
+    /**
+     * Forwarded to Breadcrumb for alternate-parent lookups; the parent supplies node/content data.
+     */
     apiBase?: string;
+    /** Community average supplied by the parent; null means no average is available. */
     average?: number | null;
+    /** Community vote count supplied by the parent. */
     totalVotes?: number;
+    /**
+     * Renderable content supplied between the NodePage tags: comments, a child-node feed and/or a
+     * creation form for the active tab. Rendered in the tab panel; unrelated to whether child
+     * nodes exist.
+     */
     children: Snippet;
   } = $props();
   const instance = $props.id();

@@ -7,13 +7,27 @@
 -->
 <script lang="ts">
   interface Props {
+    /**
+     * Accessible name for the rating spinbutton, such as Node importance. It does not label a save
+     * button.
+     */
     label?: string;
+    /** Current controlled rating, 0–10. null means unrated; zero is a real rating. */
     value?: number | null;
+    /** Community average supplied by the parent; null means no average is available. */
     average?: number | null;
+    /** Community vote count supplied by the parent. */
     totalVotes?: number;
+    /** Controls voted styling; when omitted, defaults to whether value is non-null. */
     hasVoted?: boolean;
+    /** Selects the compact dial layout. */
     compact?: boolean;
+    /** Prevents interaction with this control. */
     disabled?: boolean;
+    /**
+     * Callback: Receives the selected 0–10 rating. This control is presentational; the caller
+     * handles acceptance or persistence.
+     */
     onChange?: (value: number) => void;
   }
 

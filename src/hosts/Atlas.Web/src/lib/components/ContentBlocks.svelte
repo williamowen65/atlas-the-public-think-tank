@@ -5,7 +5,12 @@
 <script lang="ts">
   import MarkdownContent from './MarkdownContent.svelte';
   import { publicUrl, type ContentBlock } from '../api/nodePage';
-  let { blocks }: { blocks: ContentBlock[] } = $props();
+  let {
+    blocks,
+  }: {
+    /** Ordered content blocks to render; follow the ContentBlock type definition for its fields. */
+    blocks: ContentBlock[];
+  } = $props();
 </script>
 
 <section aria-label="Node content" class="content-blocks">

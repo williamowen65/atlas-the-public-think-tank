@@ -10,7 +10,17 @@
     nodeId,
     authorId,
     archived = false,
-  }: { nodeId: string; authorId?: string; archived?: boolean } = $props();
+  }: {
+    /** ID of the node this component reads, displays, or modifies. */
+    nodeId: string;
+    /**
+     * Node author ID used with the current session to show association-editing controls; backend
+     * authorization remains authoritative.
+     */
+    authorId?: string;
+    /** Marks the node as archived and disables applicable voting/editing controls. */
+    archived?: boolean;
+  } = $props();
   let linked = $state<Community[]>([]);
   let available = $state<Community[]>([]);
   let participantId = $state<string | null>(null);

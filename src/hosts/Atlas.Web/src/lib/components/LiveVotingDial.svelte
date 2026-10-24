@@ -22,10 +22,21 @@
     archived = false,
     sessionBase = '/atlas-session-api',
   }: {
+    /** ID of the node this component reads, displays, or modifies. */
     nodeId: string;
+    /**
+     * Initial average shown while the live voting summary is loading; the API summary is
+     * authoritative.
+     */
     initialAverage?: number | null;
+    /** Initial count shown while the live voting summary is loading; refreshed from the API. */
     initialTotalVotes?: number;
+    /** Marks the node as archived and disables applicable voting/editing controls. */
     archived?: boolean;
+    /**
+     * Base URL for vote-summary reads, CSRF-protected vote/undo writes, and the embedded sign-in
+     * control. The API returns the authoritative count and average.
+     */
     sessionBase?: string;
   } = $props();
   let confirmed = $state<number | null>(null);

@@ -13,9 +13,22 @@
     onOpenNode,
     onOpenProfile,
   }: {
+    /**
+     * Public profile-read base, also forwarded to LiveProfilePage. Community helpers currently
+     * retain their own endpoint defaults.
+     */
     apiBase?: string;
+    /**
+     * Session-aware API base used by SessionControl and the current participant’s profile-update
+     * request.
+     */
     sessionBase?: string;
+    /**
+     * Callback: Receives a node ID to open. Where the signature includes typeId, it selects the
+     * destination contribution tab.
+     */
     onOpenNode?: (id: string) => void;
+    /** Callback: Receives the author/participant ID to open in a profile page. */
     onOpenProfile?: (id: string) => void;
   } = $props();
   let participantId = $state<string | null>(null);

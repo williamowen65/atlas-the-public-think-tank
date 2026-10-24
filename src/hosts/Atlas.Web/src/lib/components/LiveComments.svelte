@@ -17,13 +17,33 @@
     depth = 0,
     onAdded,
   }: {
+    /** ID of the node this component reads, displays, or modifies. */
     nodeId: string;
+    /** Comment ID whose direct replies this list loads; omit to load root comments for the node. */
     parentId?: string;
+    /**
+     * Public API base for root/reply comment pages, including each list’s cursor parameters.
+     * Profile lookups and mutations use sessionBase.
+     */
     apiBase?: string;
+    /**
+     * API base for author-profile lookups and CSRF-protected comment/reply/edit/remove writes.
+     * Public comment pages use apiBase.
+     */
     sessionBase?: string;
+    /**
+     * Current signed-in participant ID, supplied by the parent. Enables composing and author
+     * controls; the backend still authorizes writes.
+     */
     participantId?: string | null;
+    /** Allows the comment/reply editor to appear when a participant is signed in. */
     showComposer?: boolean;
+    /** Reply nesting depth used to limit increasing indentation. */
     depth?: number;
+    /**
+     * Callback: Called after a comment or reply is successfully added; lets the parent refresh its
+     * displayed comment count.
+     */
     onAdded?: () => void;
   } = $props();
   let items = $state<Comment[]>([]);

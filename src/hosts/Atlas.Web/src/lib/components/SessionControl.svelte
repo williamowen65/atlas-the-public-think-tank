@@ -14,12 +14,30 @@
     hideWhenSignedIn = false,
     onSession,
   }: {
+    /**
+     * Base URL for session/CSRF reads and login, registration and logout writes. Defaults to
+     * /atlas-session-api; this prop chooses request URLs, not proxy configuration.
+     */
     sessionBase?: string;
+    /** Text of the signed-out sign-in disclosure summary. */
     prompt?: string;
+    /** Opens the signed-out disclosure so the login/register form is visible. */
     expanded?: boolean;
+    /**
+     * Initial registration versus login mode. Captured once; the visitor can switch modes
+     * afterward.
+     */
     startRegister?: boolean;
+    /**
+     * Requests initial focus/scroll placement when the relevant form is rendered in the browser.
+     */
     focusOnMount?: boolean;
+    /** Hides this entire session helper once signed in, including its Sign out button. */
     hideWhenSignedIn?: boolean;
+    /**
+     * Callback: Reports the participant ID after session checks or sign-in; null indicates no
+     * usable session, including failed checks. May run more than once.
+     */
     onSession?: (id: string | null) => void;
   } = $props();
   let participantId = $state<string | null>(null);

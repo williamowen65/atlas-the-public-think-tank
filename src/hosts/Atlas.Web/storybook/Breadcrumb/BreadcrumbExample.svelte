@@ -1,6 +1,11 @@
 <script lang="ts">
   import Breadcrumb from '../../src/lib/components/Breadcrumb.svelte';
-  let { depth = 8 }: { depth?: number } = $props();
+  let {
+    depth = 8,
+  }: {
+    /** Number of generated ancestor labels in the Storybook breadcrumb demonstration. */
+    depth?: number;
+  } = $props();
   let selected = $state('No ancestor selected');
   const titles = [
     'What future is worth building?',

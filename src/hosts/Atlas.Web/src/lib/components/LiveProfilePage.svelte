@@ -13,9 +13,19 @@
     onOpenNode,
     onOpenProfile,
   }: {
+    /** Participant whose public profile and authored contributions are displayed. */
     participantId?: string;
+    /**
+     * Public API base for participant/profile-community reads and the authored-node feed; owner
+     * edits use the session API.
+     */
     apiBase?: string;
+    /**
+     * Callback: Receives a node ID to open. Where the signature includes typeId, it selects the
+     * destination contribution tab.
+     */
     onOpenNode?: (id: string) => void;
+    /** Callback: Receives the author/participant ID to open in a profile page. */
     onOpenProfile?: (id: string) => void;
   } = $props();
   type Profile = {

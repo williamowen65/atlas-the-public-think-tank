@@ -3,7 +3,12 @@
   Svelte escapes source text; this component does not inject arbitrary HTML or implement full Markdown.
 -->
 <script lang="ts">
-  let { text }: { text: string } = $props();
+  let {
+    text,
+  }: {
+    /** Markdown source to render through the component’s safe Markdown subset. */
+    text: string;
+  } = $props();
   // Escape all source text through Svelte. Support a small, safe Markdown subset.
   const parts = $derived(text.split(/(```[\s\S]*?```)/g).filter(Boolean));
 </script>
