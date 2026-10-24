@@ -1,6 +1,6 @@
-// Fallback for TypeScript tooling without Svelte support. It describes only the
-// default component export; named exports (types or values) need Svelte-aware tooling.
-// Svelte itself supports both. Shared types can be imported from .ts files instead.
+// This fallback declares the default component export. Named exports could be
+// listed here too, but we avoid maintaining that extra list: use Svelte-aware
+// tooling, or import shared types directly from .ts files.
 declare module '*.svelte' {
   import type { Component } from 'svelte';
 
