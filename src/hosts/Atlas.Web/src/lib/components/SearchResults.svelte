@@ -50,6 +50,24 @@
   /** Sequence changed by Retry to repeat an initial failed search. */
   let retry = $state(0);
   let controller: AbortController;
+  /** Scroll container used as the observer root, rather than the whole browser viewport. */
+  let resultsElement = $state<HTMLElement>();
+
+  /**
+   * Svelte action: observe the trailing marker inside this dropdown and request the next page
+   * shortly before it reaches view. Conditional mounting pauses observation while loading or
+   * after an error; destroying the marker disconnects its browser observer.
+   */
+  function observeNextPage(marker: HTMLElement) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) void loadMore();
+      },
+      { root: resultsElement, rootMargin: '0px 0px 80px 0px' },
+    );
+    observer.observe(marker);
+    return { destroy: () => observer.disconnect() };
+  }
 
   // An accepted query change resets results and cancels the previous request. The
   // async continuation is not a reactive dependency and cannot publish after abort.
@@ -124,7 +142,12 @@
 </script>
 
 <!-- Layout: A bounded, scrollable result dropdown overlays the current page; links use normal app navigation. -->
-<section class="search-results" aria-label="Search results" aria-busy={loading}>
+<section
+  class="search-results"
+  aria-label="Search results"
+  aria-busy={loading}
+  bind:this={resultsElement}
+>
   <h2>Search results</h2>
   {#if items.length}<p class="summary">{items.length} shown · {total} matches</p>{/if}
   <ul>
@@ -181,9 +204,12 @@
         else retry++;
       }}>Retry search</button
     >
-  {:else if hasMore}<button type="button" disabled={loading} onclick={() => void loadMore()}
-      >Load more results</button
-    >{/if}
+  {/if}
+  <!-- Remount after each successful page so a short list fills the dropdown automatically.
+       Errors leave an explicit Retry control instead of repeatedly retrying in the background. -->
+  {#if hasMore && !loading && !error}
+    <div class="next-page-marker" aria-hidden="true" use:observeNextPage></div>
+  {/if}
 </section>
 
 <style>
@@ -218,6 +244,7 @@
     border-top: 1px solid var(--atlas-border);
   }
   .importance {
+    align-self: center;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -264,6 +291,9 @@
   .summary {
     color: var(--atlas-muted);
     font-size: 0.8rem;
+  }
+  .next-page-marker {
+    height: 1px;
   }
   button {
     font: inherit;

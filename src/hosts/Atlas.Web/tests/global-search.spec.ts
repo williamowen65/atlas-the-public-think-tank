@@ -87,7 +87,7 @@ test('search from a node shows compact filtered results, pages them and opens a 
     true,
   );
   await expect(
-    results.getByLabel('Importance: 7.5 out of 10, 12 votes', { exact: true }),
+    results.getByLabel('Importance: 7.5 out of 10, 12 votes', { exact: true }).first(),
   ).toBeVisible();
   // An outside click dismisses the whole search without clearing the accepted query.
   await page.getByRole('heading', { name: 'Question: Original node', exact: true }).click();
@@ -109,7 +109,10 @@ test('search from a node shows compact filtered results, pages them and opens a 
         url.searchParams.get('MaximumVoteCount') === '5',
     ),
   ).toBe(true);
-  await results.getByRole('button', { name: 'Load more results' }).click();
+  await expect(results.getByRole('button', { name: 'Load more results' })).toHaveCount(0);
+  await results.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
   await expect(
     results.getByRole('link', { name: 'Question: More salmon evidence', exact: true }),
   ).toBeVisible();
