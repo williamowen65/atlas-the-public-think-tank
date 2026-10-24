@@ -17,6 +17,8 @@ const config: StorybookConfig = {
         },
       })
     : config,
+  // Serve the generated MSW worker for the isolated breadcrumb example only.
+  // This Storybook-only folder is separate from the application's static assets.
   staticDirs: ['./public'],
   stories: ['../storybook/**/*.stories.ts'],
   framework: '@storybook/sveltekit',

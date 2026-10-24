@@ -7,6 +7,9 @@
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
+  // MSW (Mock Service Worker) simulates HTTP responses in the browser for this story.
+  // msw/browser starts interception; msw/http in parentPathHandlers defines responses.
+  // Both imports come from the one msw package: run npm install after pulling new dependencies.
   import { setupWorker } from 'msw/browser';
   import Breadcrumb from '../../src/lib/components/Breadcrumb.svelte';
   import { parentPathHandlers, type ExampleRoute } from './parentPathHandlers';
@@ -92,7 +95,11 @@
   /** Worker startup failures should be visible rather than leaving an empty example. */
   let error = $state('');
 
+  // Keep the real Breadcrumb API-driven: mock its network boundary in Storybook,
+  // rather than adding fixture-only props or a second path-switching implementation.
+  // This isolated example needs no running Atlas.Api; other live stories still do.
   onMount(() => {
+    // Startup is asynchronous; do not mount the example if it was removed meanwhile.
     let alive = true;
     const worker = setupWorker(
       ...parentPathHandlers(
@@ -104,11 +111,16 @@
     );
     void worker
       .start({
+        // Generated MSW worker served by Storybook's staticDirs (.storybook/public).
+        // It is separate from the Atlas application and is not shipped in the SPA build.
         serviceWorker: { url: './mockServiceWorker.js' },
+        // Only our dedicated mock prefix has handlers. Let unrelated traffic continue normally.
         onUnhandledFrame: 'bypass',
+        // Suppress routine mock request logs, not startup failures shown below.
         quiet: true,
       })
       .then(() => {
+        // Wait for interception before Breadcrumb makes its initial parent requests.
         if (alive) ready = true;
         else worker.stop();
       })
@@ -118,6 +130,8 @@
       });
     return () => {
       alive = false;
+      // Deactivate this story’s mocking when its component is removed.
+      // stop does not uninstall the browser’s registered worker script.
       worker.stop();
     };
   });
