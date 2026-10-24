@@ -394,3 +394,6 @@ Navigation still makes API requests. Discovery uses the backend’s bounded, pro
 ### Responsive header search
 
 A magnifying-glass disclosure button toggles search at all viewport widths. The query input and Search/Filters icon segments open on a full-width row below navigation, with focus placed in the input. Escape closes the filter toolbox first, then the outer search region and restores focus to its toggle. Closing/reopening preserves the applied query through shared discovery state. Desktop links and the existing mobile menu retain their normal navigation behavior.
+
+
+The header search toggle also shows small text/funnel badges for the accepted discovery query. These badges are positioned relative to the button and consume no extra header width. They summarize applied query tokens, not unsaved input/toolbox edits or backend results; inert `archived:false` and empty ranges do not activate the funnel. The button retains its accessible name and describes active search categories through `aria-describedby` and a tooltip.

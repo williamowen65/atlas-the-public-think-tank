@@ -13,7 +13,8 @@
 -->
 <script lang="ts">
   import DiscoverySearch from './DiscoverySearch.svelte';
-  import { restoreDiscoveryQuery } from '../state/discoveryQuery.svelte';
+  import { discoveryQuery, restoreDiscoveryQuery } from '../state/discoveryQuery.svelte';
+  import { searchIndicators } from '../state/searchIndicators';
   import { onMount, tick } from 'svelte';
   import { apiRequest } from '../api/apiRequest';
   let {
@@ -31,6 +32,17 @@
     /** Name used to derive the account-avatar initial. */
     displayName?: string;
   } = $props();
+  /** Tiny badges reflect the shared accepted query even when the input is closed. */
+  const indicators = $derived(searchIndicators(discoveryQuery.value));
+  /** Accessible explanation of the badges; do not rely on their color or icons alone. */
+  const searchSummary = $derived(
+    [
+      indicators.hasText ? 'Text search applied' : '',
+      indicators.hasFilters ? 'Filters applied' : '',
+    ]
+      .filter(Boolean)
+      .join('. '),
+  );
   /** Whether the header’s search disclosure is mounted below navigation. */
   let searchOpen = $state(false);
   /** Mounted disclosure button, used to restore focus when Escape closes search. */
@@ -171,7 +183,8 @@
     bind:this={searchToggle}
     type="button"
     aria-label="Toggle search"
-    title="Search"
+    title={searchSummary ? `Search: ${searchSummary}` : 'Search'}
+    aria-describedby={searchSummary ? `${searchPanelId}-summary` : undefined}
     aria-expanded={searchOpen}
     aria-controls={searchPanelId}
     onclick={() => void toggleSearch()}
@@ -188,7 +201,42 @@
     >
       <circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4.5 4.5" />
     </svg>
+    <!-- Absolutely positioned badges add no header width and never become separate click targets. -->
+    {#if indicators.hasText || indicators.hasFilters}
+      <span class="search-indicators" aria-hidden="true">
+        {#if indicators.hasText}
+          <span class="search-indicator text-indicator">
+            <svg
+              viewBox="0 0 20 20"
+              width="12"
+              height="12"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"><path d="M4 5h12M10 5v11M7 16h6" /></svg
+            >
+          </span>
+        {/if}
+        {#if indicators.hasFilters}
+          <span class="search-indicator filter-indicator">
+            <svg
+              viewBox="0 0 24 24"
+              width="12"
+              height="12"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"><path d="M4 5h16l-6 7v6l-4 2v-8Z" /></svg
+            >
+          </span>
+        {/if}
+      </span>
+    {/if}
   </button>
+  {#if searchSummary}<span class="search-summary" id={`${searchPanelId}-summary`}
+      >{searchSummary}</span
+    >{/if}
   {#if searchOpen}
     <div class="search-panel" id={searchPanelId} bind:this={searchPanel}>
       <DiscoverySearch
@@ -308,6 +356,7 @@
     pointer-events: none;
   }
   .search-toggle {
+    position: relative;
     grid-column: 2;
     grid-row: 1;
     justify-self: end;
@@ -327,6 +376,35 @@
   .search-toggle[aria-expanded='true'] {
     color: var(--atlas-on-accent);
     background: var(--atlas-accent);
+  }
+  /* Anchored to the magnifying-glass button, outside normal header layout flow. */
+  .search-indicators {
+    position: absolute;
+    inset-block-start: -0.4rem;
+    inset-inline-end: -0.4rem;
+    display: flex;
+    gap: 0.1rem;
+    pointer-events: none;
+  }
+  .search-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 999px;
+    border: 1px solid var(--atlas-surface);
+    color: var(--atlas-on-accent);
+    background: var(--atlas-accent);
+  }
+  .search-summary {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   .search-panel {
     grid-column: 1/-1;
