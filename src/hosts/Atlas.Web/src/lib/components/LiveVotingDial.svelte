@@ -1,6 +1,9 @@
 <!--
   LiveVotingDial: Connects VotingDial to API summaries, explicit confirmation, undo and sign-in prompts.
-  Keeps proposed selections separate from confirmed ratings and refreshes authoritative totals after writes.
+  Wraps the same VotingDial UI; it is not a separate dial implementation.
+  Loads the participant rating and server totals, confirms selections, saves/undoes votes,
+  and prompts for sign-in after an unauthorized write. It never computes community averages.
+  Disables the underlying dial while archived, loading status or saving a vote.
 -->
 <script lang="ts">
   import { onMount, tick } from 'svelte';
@@ -205,6 +208,7 @@
 </script>
 
 <div bind:this={container} class="live-voting" aria-busy={busy}>
+  <!-- Live interaction lock: archived nodes, pending status reads and in-flight writes. -->
   <VotingDial
     label="Node importance"
     {value}

@@ -162,6 +162,9 @@
   </header>
   <div class="post-body">
     <aside class="dial" aria-label="Importance rating">
+      <!-- A supplied voting snippet owns its behavior (LiveNodePage supplies LiveVotingDial).
+           Without one, show totals with an always-disabled VotingDial: there is no save handler.
+           The bare disabled attribute below means disabled={true}, regardless of archive status. -->
       {#if voting}{@render voting()}{:else}<VotingDial
           label="Node importance"
           {average}

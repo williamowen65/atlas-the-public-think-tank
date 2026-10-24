@@ -13,10 +13,34 @@ These contracts describe the current source, including limitations. Keep this ca
 ## Choosing a component
 
 - **Session UI:** SessionControl; see the examples below for disclosure, embedded and registration use.
-- **A display-only voting control:** VotingDial. **A real vote workflow:** LiveVotingDial.
+- **Caller-controlled voting UI:** VotingDial. **A real vote workflow:** LiveVotingDial.
 - **A caller-supplied card/list/page:** NodeCard, NodeFeed, NodePage. **Backend-connected compositions:** LiveNodeFeed and LiveNodePage.
 - **An editable form with parent-owned submission:** NodeForm. **Session-aware backend creation and private drafts:** LiveNodeForm.
 - **A discussion:** CommentsPanel composes SessionControl and LiveComments; LiveComments owns recursive lists and mutations.
+
+## VotingDial versus LiveVotingDial
+
+These are two layers of the same control, not competing visual designs.
+
+| Responsibility                                                  | VotingDial                     | LiveVotingDial                                                                     |
+| --------------------------------------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------- |
+| Render the dial and accept wheel/drag/touch/keyboard selections | Yes                            | Uses VotingDial internally                                                         |
+| Own the rating value and totals                                 | Receives props from its parent | Loads and tracks the confirmed API summary                                         |
+| Report a proposed 0–10 selection                                | Calls onChange                 | Receives onChange from its inner VotingDial                                        |
+| Confirm, save and undo a rating                                 | Parent must implement this     | Handles confirmation and session-aware API writes                                  |
+| Calculate community averages/counts                             | Never                          | Never; refreshes authoritative backend values                                      |
+| Sign-in handling                                                | None                           | A 401 write response opens the sign-in prompt; user chooses again after signing in |
+| Disable interaction                                             | When its disabled prop is true | Passes disabled when archived, busy saving/refreshing, or loading initial status   |
+
+A plain VotingDial is not necessarily display-only: it can emit interactive selections for a parent or isolated Storybook simulation. It becomes display-only when explicitly disabled. A LiveVotingDial still renders VotingDial; the wrapper supplies the API/session workflow around it.
+
+### Why NodePage has a fallback
+
+NodePage is a presentation component that can render without a live integration. If its optional voting snippet exists, it renders that snippet. LiveNodePage supplies a snippet containing LiveVotingDial, including the node ID and archive state. That replaces the fallback entirely; both controls are not shown together.
+
+Without a snippet, NodePage renders a plain VotingDial with average and totalVotes plus the bare disabled attribute (equivalent to disabled={true}). It can show totals safely without offering a vote that has no persistence handler. This fallback is always disabled, even for an active node. This statement is specific to NodePage: other card presentations can supply onVote to their plain dial.
+
+The snippet prop does not have to contain LiveVotingDial; a different parent can supply another renderer. The API behavior comes from what the parent puts inside the snippet, not from the name voting itself.
 
 ## Application component index
 
@@ -38,7 +62,7 @@ These contracts describe the current source, including limitations. Keep this ca
 | [LiveProfilePage](#liveprofilepage)                   | Loads a public participant profile and their contribution feed.                                |
 | [LiveReactions](#livereactions)                       | Loads reaction choices/scores and handles session-aware reaction voting and undo.              |
 | [LiveVotingDial](#livevotingdial)                     | Connects VotingDial to API summaries, explicit confirmation, undo and sign-in prompts.         |
-| [MarkdownContent](#markdowncontent)                   | Renders a small escaped Markdown subset: paragraphs, headings, lists and fenced code.                                           |
+| [MarkdownContent](#markdowncontent)                   | Renders a small escaped Markdown subset: paragraphs, headings, lists and fenced code.          |
 | [NodeCard](#nodecard)                                 | Selects a card presentation and forwards the common card contract.                             |
 | [NodeCommunities](#nodecommunities)                   | Displays node-community associations and lets the node author change them.                     |
 | [NodeFeed](#nodefeed)                                 | Presentational card list with automatic/manual pagination and empty/error states.              |

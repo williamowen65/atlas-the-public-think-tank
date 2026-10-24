@@ -1,6 +1,9 @@
 <!--
   VotingDial: Controlled, presentational importance dial with wheel, drag, touch and keyboard interactions.
-  Normalizes pointer, touch, wheel and keyboard gestures into controlled 0–10 selections; it does not save votes.
+  Receives value/average/totalVotes from its parent and emits selections through onChange.
+  It can be interactive, but never calls the API or calculates community totals.
+  Use LiveVotingDial for persistence, confirmation, undo and session handling.
+  disabled is a caller-supplied interaction lock, not an authentication check.
 -->
 <script lang="ts">
   interface Props {
