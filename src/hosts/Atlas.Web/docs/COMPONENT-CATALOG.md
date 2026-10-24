@@ -185,6 +185,8 @@ Shared discovery search and filter toolbox; communicates through discoveryQuery 
 | ------------------ | ----------------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------- |
 | `onExpandedChange` | `(expanded: boolean) => void` | No       | `undefined`          | Reports whether the search filter toolbox is expanded, so the header can adjust its layout. |
 
+| `onResultSelected` | `() => void` | No | `undefined` | Close the parent search disclosure after normal result selection. |
+
 ### LiveComments
 
 Fetches and edits one level of a threaded discussion, recursively rendering replies. [Source](../src/lib/components/LiveComments.svelte).
@@ -404,6 +406,16 @@ Presentational full-node composition with discussion tabs and caller-supplied sn
 | `children`               | `Snippet`                      | Yes      | —                    | Svelte snippet containing the current tab’s content, such as comments, child forms and feeds.                                                                                              |
 
 Without a voting snippet, its built-in dial is disabled. Without a reactions snippet, node.reactions supplies the static summary. The parent owns tab state and supplies tab content through children.
+
+### SearchResults
+
+Compact anonymous discovery results for the global header search. [Source](../src/lib/components/SearchResults.svelte).
+
+| Prop       | Type               | Required | Default when omitted | Purpose                                                  |
+| ---------- | ------------------ | -------- | -------------------- | -------------------------------------------------------- |
+| `search`   | `string`           | Yes      | —                    | Accepted free-text query.                                |
+| `filters`  | `DiscoveryFilters` | Yes      | —                    | Validated structured constraints.                        |
+| `onSelect` | `() => void`       | No       | `undefined`          | Close the parent disclosure on normal result navigation. |
 
 ### SessionControl
 

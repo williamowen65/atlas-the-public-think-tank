@@ -240,6 +240,10 @@
   {#if searchOpen}
     <div class="search-panel" id={searchPanelId} bind:this={searchPanel}>
       <DiscoverySearch
+        onResultSelected={() => {
+          searchOpen = false;
+          filtersOpen = false;
+        }}
         onExpandedChange={(open) => {
           filtersOpen = open;
           if (open) headerVisible = true;

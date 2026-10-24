@@ -4,6 +4,7 @@
   Parses search tokens and publishes the accepted query to shared discovery state.
 
   **Props**
+  - `onResultSelected` (`() => void`; optional): Notify the parent after selecting a search result.
   - `onExpandedChange` (`(expanded: boolean) => void`; optional): Callback: Reports whether the
     search filter toolbox is expanded, so the header can adjust its layout.
 -->
@@ -15,20 +16,28 @@
     restoreDiscoveryQuery,
   } from '$lib/state/discoveryQuery.svelte';
   import { readTypes, type NodeType } from '$lib/api/nodePage';
-  import type { DiscoveryFilters } from '$lib/api/discovery';
+  import { parseDiscoveryQuery } from '../state/parseDiscoveryQuery';
+  import SearchResults from './SearchResults.svelte';
   let {
     onExpandedChange,
+    onResultSelected,
   }: {
     /**
      * Callback: Reports whether the search filter toolbox is expanded, so the header can adjust
      * its layout.
      */
     onExpandedChange?: (expanded: boolean) => void;
+    /** Notify the parent to close search after normal result navigation. */
+    onResultSelected?: () => void;
   } = $props();
   /**
    * Available non-archived node types used by labels, filters or creation choices.
    */
   let types = $state<NodeType[]>([]);
+  /** Wait for the type catalog before interpreting restored type-name filters. */
+  let typesReady = $state(false);
+  /** Accepted query used by results; pending input/toolbox edits do not change it. */
+  const accepted = $derived(parse(discoveryQuery.value));
   /**
    * Whether the visual filter toolbox is open.
    */
@@ -61,70 +70,11 @@
   onMount(() => {
     restoreDiscoveryQuery();
   });
-  const uuid = /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
-  // Separate ordinary search words from supported field tokens and collect validation messages.
+  /** Use one parser for pending edits and accepted global search requests. */
   function parse(value: string) {
-    const filters: DiscoveryFilters = {};
-    const words: string[] = [];
-    const errors: string[] = [];
-    for (const part of value.match(/"[^"]*"|\S+/g) ?? []) {
-      const match = /^(type|author|community|votes|average|from|through|archived):(.+)$/i.exec(
-        part,
-      );
-      if (!match) {
-        words.push(part);
-        continue;
-      }
-      const [, rawKey, rawValue] = match;
-      const key = rawKey.toLowerCase();
-      const v = rawValue.replace(/^"|"$/g, '');
-      if (key === 'type') {
-        const found = types.find(
-          (t) => t.id.toLowerCase() === v.toLowerCase() || t.name.toLowerCase() === v.toLowerCase(),
-        );
-        if (found) filters.typeId = found.id;
-        else errors.push('Unknown node type: ' + v);
-      } else if (key === 'author' || key === 'community') {
-        if (uuid.test(v)) {
-          if (key === 'author') filters.authorId = v;
-          else filters.communityId = v;
-        } else errors.push(key + ' requires an ID');
-      } else if (key === 'votes' || key === 'average') {
-        const m = /^(\d+(?:\.\d+)?)?\.\.(\d+(?:\.\d+)?)?$/.exec(v);
-        if (!m || (!m[1] && !m[2])) {
-          errors.push('Use ' + key + ':minimum..maximum');
-          continue;
-        }
-        const low = m[1] ? Number(m[1]) : undefined,
-          high = m[2] ? Number(m[2]) : undefined;
-        if (
-          (low !== undefined && high !== undefined && low > high) ||
-          (key === 'votes' && [low, high].some((n) => n !== undefined && !Number.isInteger(n))) ||
-          (key === 'average' && [low, high].some((n) => n !== undefined && n > 10))
-        ) {
-          errors.push('Invalid ' + key + ' range');
-          continue;
-        }
-        if (key === 'votes') {
-          filters.minVotes = low;
-          filters.maxVotes = high;
-        } else {
-          filters.minAverage = low;
-          filters.maxAverage = high;
-        }
-      } else if (key === 'from' || key === 'through') {
-        if (/^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v))) {
-          if (key === 'from') filters.from = v;
-          else filters.through = v;
-        } else errors.push('Invalid date: ' + v);
-      } else if (key === 'archived') {
-        if (v === 'true') filters.archived = true;
-        else if (v !== 'false') errors.push('Use archived:true or archived:false');
-      }
-    }
-    return { text: words.join(' ').trim(), filters, errors };
+    return parseDiscoveryQuery(value, types);
   }
-  // Publish only a valid query; the root page derives the actual discovery request filters.
+  // Publish only valid queries; global header results consume the accepted search independently of the browsing feed.
   function apply(value: string) {
     const result = parse(value);
     if (result.errors.length) {
@@ -164,7 +114,10 @@
     const controller = new AbortController();
     void readTypes('/atlas-public-api', controller.signal)
       .then((t) => (types = t))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        if (!controller.signal.aborted) typesReady = true;
+      });
     return () => controller.abort();
   });
 </script>
@@ -381,9 +334,24 @@
       </p>
     </div>
   {/if}
+  <!-- Results belong to the global search, not to the page currently behind the header. -->
+  {#if !expanded && discoveryQuery.value.trim()}
+    <div class="results-slot">
+      {#if !typesReady}<p role="status">Preparing search…</p>
+      {:else if accepted.errors.length}<p role="alert">{accepted.errors.join(' · ')}</p>
+      {:else}<SearchResults
+          search={accepted.text}
+          filters={accepted.filters}
+          onSelect={onResultSelected}
+        />{/if}
+    </div>
+  {/if}
 </section>
 
 <style>
+  .results-slot {
+    position: relative;
+  }
   p {
     color: var(--atlas-muted);
   }

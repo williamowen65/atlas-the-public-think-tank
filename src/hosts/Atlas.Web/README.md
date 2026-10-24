@@ -400,3 +400,10 @@ The header search toggle also shows small text/funnel badges for the accepted di
 
 
 The search input’s inline X clears the entire accepted query (text and structured filters), pending edits, saved query storage and header badges together. It returns focus to the input and does not submit a separate request or add another pill segment.
+
+
+### Global compact search results
+
+Applying header search or visual filters opens a compact, scrollable results dropdown on any route. Rows contain normal node links, short introductions and comment/contribution counts; they do not mount voting, reaction controls or breadcrumbs. Selecting a result opens its node and closes the disclosure; modified link clicks keep normal browser behavior. The shared parser validates both toolbox edits and accepted result requests. Changing the accepted query cancels outdated requests; clearing it removes results. Loading/error/empty states and retry are explicit; existing rows stay visible if loading another page fails. The current backend page size is three; Load more appends additional compact rows.
+
+Discover remains a separate browsing feed and is no longer filtered by the header query. Saved/URL search text still restores the header query and badges; opening search reveals its results. No feed-ranking, rotation or backend search/cache rules changed.

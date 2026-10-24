@@ -14,7 +14,7 @@
 <script lang="ts">
   import type { ComponentProps } from 'svelte';
   import AtlasHeader from '../../src/lib/components/AtlasHeader.svelte';
-  import { openStory } from '../shared/navigation';
+  import { openStory, openNodeStory } from '../shared/navigation';
   import { storyLinks } from '../shared/linkNavigation';
   let {
     active = 'discover',
@@ -36,6 +36,10 @@
   } = $props();
   /** Adapt app URLs only in this workbench wrapper; AtlasHeader has no story navigation props. */
   function navigate(url: URL): boolean {
+    if (url.pathname === '/nodes' && url.searchParams.get('id')) {
+      openNodeStory(url.searchParams.get('id')!);
+      return true;
+    }
     const stories: Record<string, string> = {
       '/': 'compositions-feed--playground',
       '/new': 'components-node-form--playground',

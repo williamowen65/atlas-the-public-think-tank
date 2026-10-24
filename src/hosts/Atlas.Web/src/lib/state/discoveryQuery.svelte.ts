@@ -1,8 +1,8 @@
 /**
- * Shared reactive search state used by DiscoverySearch and the root discovery page.
- * `value` holds the applied query; the page derives free text and API filters from it.
+ * Shared reactive search state used by the header editor, badges and compact global results.
+ * `value` holds the applied query; the shared parser derives result text and API filters.
  * `initialized` records whether browser restoration has already been attempted.
- * Updating this state does not fetch data or update the URL; LiveNodeFeed owns fetching.
+ * Updating this state does not fetch data or update the URL; SearchResults owns fetching.
  * The .svelte.ts extension allows Svelte runes such as $state outside a component.
  */
 export const discoveryQuery = $state({ value: '', initialized: false });
@@ -26,7 +26,7 @@ export function setDiscoveryQuery(value: string) {
   }
 }
 /**
- * Initialize the shared query once in the browser; DiscoverySearch calls this on mount.
+ * Initialize the shared query once in the browser; AtlasHeader calls this on mount, even while the editor is closed.
  * Precedence is URL `q`, then URL `search`, then the saved localStorage value.
  * An explicitly empty URL parameter clears the query rather than restoring saved text.
  * Uses setDiscoveryQuery so restored text is trimmed, published and saved consistently.
