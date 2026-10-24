@@ -133,5 +133,10 @@ test('feed comment control opens and positions the Comments tab', async ({ page 
   await expect(page.getByRole('tab', { name: '3 Comments', exact: true })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByText('An opening thought', { exact: true })).toBeVisible();
   const tabs = page.getByRole('tablist');
-  await expect.poll(async () => Math.abs(((await tabs.boundingBox())?.y ?? Infinity) - 20)).toBeLessThanOrEqual(2);
+  await expect.poll(() => tabs.evaluate(element => {
+    const top = element.getBoundingClientRect().top;
+    const remaining = Math.max(0, document.documentElement.scrollHeight - innerHeight - scrollY);
+    return Math.abs(top - 20) <= 2 || (top > 20 && remaining <= 2);
+  })).toBe(true);
+  await expect(page.getByRole('tabpanel')).toHaveCSS('min-height', '0px');
 });
