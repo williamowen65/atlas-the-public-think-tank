@@ -16,7 +16,7 @@
 
 <!-- Layout: One typography wrapper contains HTML produced only by the shared Markdown policy. -->
 <div class="markdown">
-  <!-- This HTML must come from renderMarkdown, never directly from user input. -->
+  <!-- {@html} inserts HTML without sanitizing it. Only use renderMarkdown output here, never raw user input. -->
   {@html html}
 </div>
 

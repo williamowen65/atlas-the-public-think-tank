@@ -5,18 +5,34 @@ import MarkdownIt from 'markdown-it';
  * stay disabled; enabling plugins or HTML later requires reviewing this trust boundary.
  * No plugin may inject untrusted HTML into the output consumed by {@html}.
  */
-const markdown = new MarkdownIt({ html: false, linkify: false, typographer: false }).disable(
-  'image',
-);
+const markdown = new MarkdownIt({
+  // Escape user-written HTML as text instead of allowing actual HTML elements.
+  html: false,
+  // Do not automatically turn bare URLs into links; explicit [label](URL) links still work.
+  linkify: false,
+  // Preserve punctuation rather than applying smart quotes and other typography substitutions.
+  typographer: false,
+})
+  // Keep images in dedicated content blocks; Markdown must not produce image elements.
+  .disable('image');
+
+// Save the library’s original validator before replacing it below. bind(markdown)
+// preserves its `this` context when called separately; it does not run validation yet.
 const defaultValidateLink = markdown.validateLink.bind(markdown);
 
-// Keep markdown-it’s checks, then restrict protocols explicitly. Relative links and
-// fragments resolve against a dummy HTTPS origin solely for protocol validation.
+// Install a callback that markdown-it calls when checking link destinations.
+// Require BOTH the library’s built-in checks and our explicit protocol allowlist.
 markdown.validateLink = (url: string) => {
+  // Preserve markdown-it’s existing rejection of dangerous link destinations.
   if (!defaultValidateLink(url)) return false;
   try {
+    // This dummy HTTPS address is ONLY a parsing base for relative links/fragments.
+    // It is not a deployment address, makes no network request, and never replaces
+    // the rendered href. For example, /nodes?id=123 stays relative and will work on
+    // thepublicthinktank.com. Only the temporary URL’s protocol is inspected here.
     return ['https:', 'http:', 'mailto:'].includes(new URL(url, 'https://atlas.invalid/').protocol);
   } catch {
+    // A destination that cannot be parsed is not accepted as a clickable link.
     return false;
   }
 };
