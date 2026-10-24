@@ -4,7 +4,7 @@
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { commentRequest, CommentRequestError } from '../api/comments';
+  import { apiRequest, ApiRequestError } from '../api/apiRequest';
   import SessionControl from './SessionControl.svelte';
 
   interface Choice {
@@ -45,7 +45,7 @@
   // Only the latest request may publish scores, preventing slower earlier reads from replacing new data.
   async function refresh() {
     const generation = ++requestGeneration;
-    const result = await commentRequest<Choice[]>(
+    const result = await apiRequest<Choice[]>(
       apiBase,
       `nodes/${encodeURIComponent(nodeId)}/reactions`,
       'GET',
@@ -84,7 +84,7 @@
     error = '';
     try {
       if (choice.currentParticipantVote === 1 && choice.associationId) {
-        await commentRequest(
+        await apiRequest(
           apiBase,
           `reactions/${encodeURIComponent(choice.associationId)}/vote`,
           'DELETE',
@@ -92,7 +92,7 @@
           controller.signal,
         );
       } else {
-        await commentRequest(
+        await apiRequest(
           apiBase,
           `nodes/${encodeURIComponent(nodeId)}/reactions/vote`,
           'PUT',
@@ -102,7 +102,7 @@
       }
       await refresh();
     } catch (cause) {
-      if (cause instanceof CommentRequestError && cause.status === 401) signIn = true;
+      if (cause instanceof ApiRequestError && cause.status === 401) signIn = true;
       else error = cause instanceof Error ? cause.message : 'Reaction could not be saved.';
       // Do not optimistically change totals on a failed request.
     } finally {

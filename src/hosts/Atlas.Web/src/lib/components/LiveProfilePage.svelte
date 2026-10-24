@@ -5,7 +5,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import LiveNodeFeed from './LiveNodeFeed.svelte';
-  import { commentRequest } from '../api/comments';
+  import { apiRequest } from '../api/apiRequest';
   import type { Community } from '../api/communities';
   let {
     participantId = '',
@@ -60,7 +60,7 @@
     profile = null;
     communities = [];
     try {
-      const result = await commentRequest<Profile>(
+      const result = await apiRequest<Profile>(
         apiBase,
         'participants/' + encodeURIComponent(id),
         'GET',
@@ -72,7 +72,7 @@
       displayName = result.displayName;
       bio = result.bio ?? '';
       try {
-        const associated = await commentRequest<Community[]>(
+        const associated = await apiRequest<Community[]>(
           apiBase,
           'communities/participant/' + encodeURIComponent(id),
           'GET',
@@ -92,7 +92,7 @@
   // Session identity controls owner-edit affordances; it is independent of the public profile being viewed.
   async function checkSession() {
     try {
-      const session = await commentRequest<{ participantId: string | null }>(
+      const session = await apiRequest<{ participantId: string | null }>(
         '/atlas-session-api',
         'auth/session',
       );
@@ -128,7 +128,7 @@
     saving = true;
     notice = '';
     try {
-      await commentRequest('/atlas-session-api', 'participants/me', 'PUT', { displayName, bio });
+      await apiRequest('/atlas-session-api', 'participants/me', 'PUT', { displayName, bio });
       profile = { ...profile, displayName, bio };
       editing = false;
       notice = 'Profile saved.';

@@ -36,7 +36,7 @@ function rateLimitMessage(problem: ApiProblem, retryAfter: string | null): strin
  * Request failure retaining its HTTP status so components can handle sign-in and permission
  * failures.
  */
-export class CommentRequestError extends Error {
+export class ApiRequestError extends Error {
   constructor(
     message: string,
     public status: number,
@@ -53,7 +53,7 @@ export class CommentRequestError extends Error {
  * @param signal Optional cancellation signal passed to both token and main requests.
  * @returns Parsed JSON, or undefined for HTTP 204. T does not validate JSON at runtime.
  */
-export async function commentRequest<T>(
+export async function apiRequest<T>(
   base: string,
   path: string,
   method = 'GET',
@@ -63,7 +63,7 @@ export async function commentRequest<T>(
   const headers: Record<string, string> = {};
   // Obtain a fresh token using the same routing prefix and session as the mutation.
   if (method !== 'GET') {
-    const csrf = await commentRequest<{
+    const csrf = await apiRequest<{
       /** Antiforgery token obtained before a state-changing request. */
       token: string;
     }>(base, 'auth/csrf', 'GET', undefined, signal);
@@ -87,7 +87,7 @@ export async function commentRequest<T>(
         /* Non-JSON throttling response. */
       }
     }
-    throw new CommentRequestError(
+    throw new ApiRequestError(
       response.status === 401
         ? 'Please sign in to continue.'
         : response.status === 403

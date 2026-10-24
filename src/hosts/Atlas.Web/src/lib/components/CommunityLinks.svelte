@@ -4,7 +4,7 @@
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { commentRequest } from '../api/comments';
+  import { apiRequest } from '../api/apiRequest';
   import type { Community } from '../api/communities';
   let {
     nodeId,
@@ -19,7 +19,7 @@
   // Fetch linkable records once mounted; abort on removal and keep fallback names on failure.
   onMount(() => {
     const controller = new AbortController();
-    void commentRequest<Community[]>(
+    void apiRequest<Community[]>(
       '/atlas-public-api',
       'communities/node/' + encodeURIComponent(nodeId),
       'GET',

@@ -2,7 +2,7 @@
   import { onMount, type ComponentProps, type Snippet } from 'svelte';
   // SvelteKit's reactive route information, including the current URL; not Redux state.
   import { page } from '$app/state';
-  import { commentRequest } from '$lib/api/comments';
+  import { apiRequest } from '$lib/api/apiRequest';
   import AtlasHeader from '$lib/components/AtlasHeader.svelte';
   import AtlasFooter from '$lib/components/AtlasFooter.svelte';
   import '../styles.scss';
@@ -27,7 +27,7 @@
     let active = true;
     async function refresh() {
       try {
-        const session = await commentRequest<{ participantId: string | null }>(
+        const session = await apiRequest<{ participantId: string | null }>(
           '/atlas-session-api',
           'auth/session',
         );
@@ -35,7 +35,7 @@
         authenticated = !!session.participantId;
         if (session.participantId) {
           try {
-            const profile = await commentRequest<{ displayName: string }>(
+            const profile = await apiRequest<{ displayName: string }>(
               '/atlas-public-api',
               'participants/' + encodeURIComponent(session.participantId),
             );

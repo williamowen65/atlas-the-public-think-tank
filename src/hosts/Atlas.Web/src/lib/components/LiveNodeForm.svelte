@@ -9,7 +9,7 @@
   import SessionControl from './SessionControl.svelte';
   import type { BreadcrumbItem } from './Breadcrumb.svelte';
   import { readTypes, type NodeType } from '../api/nodePage';
-  import { commentRequest, CommentRequestError } from '../api/comments';
+  import { apiRequest, ApiRequestError } from '../api/apiRequest';
   import { readDiscovery, discoveryCard } from '../api/discovery';
   let {
     draftId,
@@ -180,7 +180,7 @@
         const key = JSON.stringify(draft.newType);
         if (createdType?.key === key) typeId = createdType.id;
         else {
-          const type = await commentRequest<NodeType>(
+          const type = await apiRequest<NodeType>(
             sessionBase,
             'catalog/node-types',
             'POST',
@@ -193,7 +193,7 @@
         }
       }
       if (!typeId) throw new Error('Select a node type.');
-      const result = await commentRequest<{ id: string }>(
+      const result = await apiRequest<{ id: string }>(
         sessionBase,
         'nodes',
         'POST',
@@ -218,7 +218,7 @@
           cause instanceof Error
             ? cause.message
             : 'Could not create node. Your draft has been kept.';
-        if (cause instanceof CommentRequestError && cause.status === 401) {
+        if (cause instanceof ApiRequestError && cause.status === 401) {
           participantId = null;
           window.dispatchEvent(new Event('atlas-session-changed'));
         }

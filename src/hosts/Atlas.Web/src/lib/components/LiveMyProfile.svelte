@@ -5,7 +5,7 @@
 <script lang="ts">
   import LiveProfilePage from './LiveProfilePage.svelte';
   import SessionControl from './SessionControl.svelte';
-  import { commentRequest } from '../api/comments';
+  import { apiRequest } from '../api/apiRequest';
   import { myCommunities, type Community } from '../api/communities';
   let {
     apiBase = '/atlas-public-api',
@@ -41,7 +41,7 @@
   let communities = $state<Community[]>([]);
   async function load(id: string) {
     try {
-      const result = await commentRequest<{ displayName: string; bio: string }>(
+      const result = await apiRequest<{ displayName: string; bio: string }>(
         apiBase,
         'participants/' + encodeURIComponent(id),
       );
@@ -72,7 +72,7 @@
     saving = true;
     notice = '';
     try {
-      await commentRequest(sessionBase, 'participants/me', 'PUT', { displayName, bio });
+      await apiRequest(sessionBase, 'participants/me', 'PUT', { displayName, bio });
       editing = false;
       notice = 'Profile saved.';
       await load(participantId);

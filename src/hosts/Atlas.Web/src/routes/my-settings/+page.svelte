@@ -1,6 +1,6 @@
 <script lang="ts">
   import SessionControl from '$lib/components/SessionControl.svelte';
-  import { commentRequest } from '$lib/api/comments';
+  import { apiRequest } from '$lib/api/apiRequest';
   let owner = $state<string | null>(null);
   let name = $state('');
   let bio = $state('');
@@ -23,7 +23,7 @@
     if (!id) return;
     loading = true;
     try {
-      const result = await commentRequest<{ displayName: string; bio: string }>(
+      const result = await apiRequest<{ displayName: string; bio: string }>(
         '/atlas-public-api',
         'participants/' + encodeURIComponent(id),
       );
@@ -45,7 +45,7 @@
     error = '';
     message = '';
     try {
-      const result = await commentRequest<{ displayName: string; bio: string }>(
+      const result = await apiRequest<{ displayName: string; bio: string }>(
         '/atlas-session-api',
         'participants/me',
         'PUT',

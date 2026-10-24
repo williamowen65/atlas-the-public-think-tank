@@ -4,7 +4,7 @@
 -->
 <script lang="ts">
   import { onMount, untrack } from 'svelte';
-  import { commentRequest, CommentRequestError } from '../api/comments';
+  import { apiRequest, ApiRequestError } from '../api/apiRequest';
   let {
     sessionBase = '/atlas-session-api',
     prompt = 'Sign in to Atlas',
@@ -109,7 +109,7 @@
     // Capture this check’s number. A later refresh changes generation, making this one stale.
     const current = ++generation;
     try {
-      const session = await commentRequest<{ participantId: string | null }>(
+      const session = await apiRequest<{ participantId: string | null }>(
         sessionBase,
         'auth/session',
         'GET',
@@ -130,7 +130,7 @@
         participantId = null;
         onSession?.(null);
         // Connection failures, timeouts and other HTTP errors need a visible retry message.
-        if (!(cause instanceof CommentRequestError) || cause.status !== 401)
+        if (!(cause instanceof ApiRequestError) || cause.status !== 401)
           error = 'Sign-in is unavailable. Start the local API and retry.';
       }
     } finally {
@@ -180,14 +180,14 @@
     busy = true;
     error = '';
     try {
-      await commentRequest(
+      await apiRequest(
         sessionBase,
         'auth/login',
         'POST',
         { email, password },
         AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]),
       );
-      const session = await commentRequest<{ participantId: string | null }>(
+      const session = await apiRequest<{ participantId: string | null }>(
         sessionBase,
         'auth/session',
         'GET',
@@ -220,7 +220,7 @@
     busy = true;
     error = '';
     try {
-      await commentRequest(
+      await apiRequest(
         sessionBase,
         'auth/register',
         'POST',
@@ -233,7 +233,7 @@
     } catch (cause) {
       // Mail delivery being unavailable needs different guidance from rejected form data.
       error =
-        cause instanceof CommentRequestError && cause.status === 503
+        cause instanceof ApiRequestError && cause.status === 503
           ? 'Registration requires local email delivery to be configured.'
           : 'Registration was not completed. Check your information and try again.';
     } finally {
@@ -252,7 +252,7 @@
     busy = true;
     error = '';
     try {
-      await commentRequest(
+      await apiRequest(
         sessionBase,
         'auth/logout',
         'POST',

@@ -31,8 +31,8 @@
       name = result.name;
       description = result.description;
       try {
-        const session = await import('$lib/api/comments').then((m) =>
-          m.commentRequest<{ participantId: string | null }>('/atlas-session-api', 'auth/session'),
+        const session = await import('$lib/api/apiRequest').then((m) =>
+          m.apiRequest<{ participantId: string | null }>('/atlas-session-api', 'auth/session'),
         );
         currentParticipant = session.participantId;
         signedIn = !!session.participantId;

@@ -5,7 +5,7 @@
 <script lang="ts">
   import DiscoverySearch from './DiscoverySearch.svelte';
   import { onMount } from 'svelte';
-  import { commentRequest } from '../api/comments';
+  import { apiRequest } from '../api/apiRequest';
   let {
     active = null,
     authenticated = false,
@@ -54,7 +54,7 @@
     logoutError = '';
     menuOpen = false;
     try {
-      await commentRequest('/atlas-session-api', 'auth/logout', 'POST');
+      await apiRequest('/atlas-session-api', 'auth/logout', 'POST');
       window.dispatchEvent(new Event('atlas-session-changed'));
       window.location.assign('/');
     } catch {

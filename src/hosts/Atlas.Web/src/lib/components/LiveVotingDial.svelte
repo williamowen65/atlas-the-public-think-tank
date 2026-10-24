@@ -9,7 +9,7 @@
   import { onMount, tick } from 'svelte';
   import VotingDial from './VotingDial.svelte';
   import SessionControl from './SessionControl.svelte';
-  import { commentRequest, CommentRequestError } from '../api/comments';
+  import { apiRequest, ApiRequestError } from '../api/apiRequest';
   interface VoteSummary {
     voteCount: number;
     averageVote: number | null;
@@ -59,7 +59,7 @@
   const signal = () => AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]);
   // Validate and adopt the API summary together: current rating, count and average are one confirmed snapshot.
   async function refresh() {
-    const summary = await commentRequest<VoteSummary>(
+    const summary = await apiRequest<VoteSummary>(
       sessionBase,
       `nodes/${encodeURIComponent(nodeId)}/votes`,
       'GET',
@@ -174,7 +174,7 @@
     notice = '';
     const previous = confirmed;
     try {
-      await commentRequest(
+      await apiRequest(
         sessionBase,
         `nodes/${encodeURIComponent(nodeId)}/vote`,
         next === null ? 'DELETE' : 'PUT',
@@ -197,7 +197,7 @@
       if (!controller.signal.aborted) {
         value = previous;
         confirmed = previous;
-        if (cause instanceof CommentRequestError && cause.status === 401) {
+        if (cause instanceof ApiRequestError && cause.status === 401) {
           confirmed = null;
           value = null;
           login = true;

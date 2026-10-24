@@ -4,7 +4,7 @@
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { commentRequest } from '../api/comments';
+  import { apiRequest } from '../api/apiRequest';
   import { publicCommunities, communityAction, type Community } from '../api/communities';
   let {
     nodeId,
@@ -29,7 +29,7 @@
   let error = $state('');
   const isAuthor = $derived(!archived && !!authorId && participantId === authorId);
   async function refresh() {
-    linked = await commentRequest<Community[]>(
+    linked = await apiRequest<Community[]>(
       '/atlas-public-api',
       'communities/node/' + encodeURIComponent(nodeId),
     );
@@ -42,7 +42,7 @@
       publicCommunities('?offset=0&size=50').then((c) => {
         if (active) available = c;
       }),
-      commentRequest<{ participantId: string | null }>('/atlas-session-api', 'auth/session').then(
+      apiRequest<{ participantId: string | null }>('/atlas-session-api', 'auth/session').then(
         (s) => {
           if (active) participantId = s.participantId;
         },

@@ -1,4 +1,4 @@
-import { commentRequest } from './comments';
+import { apiRequest } from './apiRequest';
 
 /** Community details, counts and membership for the requesting session. */
 export interface Community {
@@ -40,19 +40,19 @@ export interface CreationAllowance {
 }
 /** Read public communities; optional path is a caller-built suffix such as a query string. */
 export const publicCommunities = (path = '') =>
-  commentRequest<Community[]>('/atlas-public-api', 'communities' + path);
+  apiRequest<Community[]>('/atlas-public-api', 'communities' + path);
 /** Read one public community by ID. */
 export const communityDetail = (id: string) =>
-  commentRequest<Community>('/atlas-public-api', 'communities/' + encodeURIComponent(id));
+  apiRequest<Community>('/atlas-public-api', 'communities/' + encodeURIComponent(id));
 /** Read communities associated with the signed-in participant. */
 export const myCommunities = () =>
-  commentRequest<Community[]>('/atlas-session-api', 'communities/mine');
+  apiRequest<Community[]>('/atlas-session-api', 'communities/mine');
 /** Read the signed-in participant’s community creation quota. */
 export const creationAllowance = () =>
-  commentRequest<CreationAllowance>('/atlas-session-api', 'communities/creation-allowance');
+  apiRequest<CreationAllowance>('/atlas-session-api', 'communities/creation-allowance');
 /**
  * Send a community mutation through session/CSRF transport; path is appended after
  * communities.
  */
 export const communityAction = (path: string, method: 'POST' | 'PUT' | 'DELETE', body?: unknown) =>
-  commentRequest('/atlas-session-api', 'communities' + path, method, body);
+  apiRequest('/atlas-session-api', 'communities' + path, method, body);

@@ -2,7 +2,7 @@
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { commentRequest } from '$lib/api/comments';
+  import { apiRequest } from '$lib/api/apiRequest';
   import LiveProfilePage from '$lib/components/LiveProfilePage.svelte';
   import SessionControl from '$lib/components/SessionControl.svelte';
   let mine = $state<string | null>(null);
@@ -13,7 +13,7 @@
     let active = true;
     async function refresh() {
       try {
-        const session = await commentRequest<{ participantId: string | null }>(
+        const session = await apiRequest<{ participantId: string | null }>(
           '/atlas-session-api',
           'auth/session',
         );

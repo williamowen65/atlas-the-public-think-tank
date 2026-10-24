@@ -6,7 +6,7 @@
   import { onMount, tick } from 'svelte';
   import LiveComments from './LiveComments.svelte';
   import { readJson, type Comment, type CommentPage } from '../api/nodePage';
-  import { commentRequest } from '../api/comments';
+  import { apiRequest } from '../api/apiRequest';
   let {
     nodeId,
     parentId,
@@ -105,7 +105,7 @@
             .filter((id) => !names[id])
             .map(async (id) => {
               try {
-                const profile = await commentRequest<{ displayName: string }>(
+                const profile = await apiRequest<{ displayName: string }>(
                   sessionBase,
                   `participants/${encodeURIComponent(id)}`,
                   'GET',
@@ -132,7 +132,7 @@
     actionError = '';
     notice = '';
     try {
-      const comment = await commentRequest<Comment>(
+      const comment = await apiRequest<Comment>(
         sessionBase,
         parentId
           ? `comments/${encodeURIComponent(parentId)}/replies`
@@ -160,7 +160,7 @@
     actionError = '';
     notice = '';
     try {
-      await commentRequest(
+      await apiRequest(
         sessionBase,
         `comments/${encodeURIComponent(id)}`,
         'PUT',
@@ -190,7 +190,7 @@
     actionError = '';
     notice = '';
     try {
-      await commentRequest(
+      await apiRequest(
         sessionBase,
         `comments/${encodeURIComponent(id)}`,
         'DELETE',
