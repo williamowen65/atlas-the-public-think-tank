@@ -10,8 +10,7 @@
   - `reactions` (`Snippet`; optional): Renderable snippet for custom/live reaction controls. If
     omitted, NodePage displays the static reaction summary from node.reactions.
   - `scrollToDiscussionTabs` (`boolean`; optional; default `false`): Requests initial focus and
-    scrolling of the selected discussion tab to 20px below the viewport top. Adds minimum panel
-    height for short feeds, which may leave blank space; does not hide content.
+    scrolling toward 20px below the viewport top, limited by the page’s natural scroll range. No extra panel height is added.
   - `node` (`NodeCardData`; required): Display model for the node header, breadcrumb, status,
     community and contribution summaries. NodeCardData describes its fields; fetching belongs to the
     parent.
@@ -85,8 +84,7 @@
     reactions?: Snippet;
     /**
      * Requests initial focus and scrolling of the selected discussion tab to 20px below the
-     * viewport top. Adds minimum panel height for short feeds, which may leave blank space; does
-     * not hide content.
+     * viewport top where the natural page height allows; never adds space just to reach the target.
      */
     scrollToDiscussionTabs?: boolean;
     /**
@@ -171,7 +169,7 @@
   /**
    * Svelte action attached to the tab strip with use:alignDiscussionTabs.
    * Supports direct navigation from a contribution/comment link: focus the selected
-   * tab and place the strip 20px below the viewport top, even for short/empty feeds.
+   * tab and move the strip toward 20px below the viewport top, within natural scroll limits.
    * Correct initial image/feed/font layout shifts for up to ten seconds, but stop
    * as soon as the visitor interacts so automatic scrolling does not fight them.
    * @param tabs Mounted tab-strip element; this shadows the outer tab-data array.
@@ -197,12 +195,8 @@
         tabs.querySelector<HTMLElement>('[aria-selected="true"]')?.focus({ preventScroll: true });
         focused = true;
       }
-      // The panel’s CSS uses this height to leave enough room to scroll short feeds.
-      card.style.setProperty(
-        '--discussion-tabs-height',
-        `${tabs.getBoundingClientRect().height}px`,
-      );
-      // A short/empty child feed still needs enough document height to reach this offset.
+      // The browser clamps scrolling at the natural page bottom. Short/empty feeds
+      // may leave the tabs below the target; do not add blank space to force alignment.
       const delta = tabs.getBoundingClientRect().top - 20;
       if (Math.abs(delta) > 1) window.scrollBy({ top: delta, behavior: 'instant' });
     };
@@ -270,7 +264,7 @@
   dial floats beside content; the selected panel sits below the tab toolbar.
 -->
 
-<article class="node-page atlas-panel" class:scroll-to-discussion-tabs={scrollToDiscussionTabs}>
+<article class="node-page atlas-panel">
   {#if node.breadcrumb.length}<div class="ribbon-context">
       <Breadcrumb
         items={node.breadcrumb}
@@ -476,12 +470,6 @@
   [role='tabpanel'] {
     padding: 1rem var(--card-padding) var(--card-padding);
     min-width: 0;
-  }
-  /* Extra panel height allows the tab strip to reach its scroll target even with
-     an empty/short feed. It does not hide content and can leave blank space below. */
-  .scroll-to-discussion-tabs [role='tabpanel'] {
-    box-sizing: border-box;
-    min-height: calc(100dvh - var(--discussion-tabs-height, 60px) - 20px);
   }
   @media (max-width: 380px) {
     .node-page {

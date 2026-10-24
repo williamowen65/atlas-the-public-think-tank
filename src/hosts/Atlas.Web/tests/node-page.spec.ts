@@ -159,14 +159,24 @@ for (const destination of ['storybook', 'spa']) {
       await expect(tab).toHaveAttribute('aria-selected', 'true');
       await expect(tab).toBeFocused();
       const tabs = page.getByRole('tablist', { name: 'Node discussions and child types' });
-      await expect.poll(async () => Math.abs(((await tabs.boundingBox())?.y ?? Infinity) - 20)).toBeLessThanOrEqual(2);
+      await expect.poll(() => tabs.evaluate(element => {
+        const top = element.getBoundingClientRect().top;
+        const remaining = Math.max(0, document.documentElement.scrollHeight - innerHeight - scrollY);
+        return Math.abs(top - 20) <= 2 || (top > 20 && remaining <= 2);
+      })).toBe(true);
       await expect.poll(() => urls.some(url => url.searchParams.get('ParentNodeId') === root && url.searchParams.get('NodeTypeId') === contribution.typeId)).toBe(true);
       if (contribution.typeId === evidence) {
+        // Empty feeds keep natural height rather than reserving a viewport of blank space.
+        await expect(page.getByRole('tabpanel')).toHaveCSS('min-height', '0px');
         await expect(page.getByRole('heading', { name: 'Be the first to create an evidence', exact: true })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Create an evidence', exact: true })).toBeEnabled();
       }
       else await expect(page.getByRole('heading', { name: 'Question: A child idea' })).toBeVisible();
-      await expect.poll(async () => Math.abs(((await tabs.boundingBox())?.y ?? Infinity) - 20)).toBeLessThanOrEqual(2);
+      await expect.poll(() => tabs.evaluate(element => {
+        const top = element.getBoundingClientRect().top;
+        const remaining = Math.max(0, document.documentElement.scrollHeight - innerHeight - scrollY);
+        return Math.abs(top - 20) <= 2 || (top > 20 && remaining <= 2);
+      })).toBe(true);
     });
   }
 }

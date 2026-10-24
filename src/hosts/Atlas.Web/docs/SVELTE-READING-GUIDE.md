@@ -43,4 +43,4 @@ NodePage renders its optional voting snippet when supplied. LiveNodePage provide
 
 ## Scrolling to discussion tabs
 
-NodePage's `scrollToDiscussionTabs` prop defaults to false. When requested, the initial alignment action focuses the selected discussion tab and places the tab strip 20px below the viewport top. LiveNodePage enables it when opening a requested tab. The matching `scroll-to-discussion-tabs` class gives the tab panel enough minimum height to reach that position, including an empty or short feed. That can leave extra blank space below the content. It does not control whether content is visible; the separate `children` snippet still renders normally.
+NodePage's `scrollToDiscussionTabs` prop defaults to false. When requested, the initial alignment action focuses the selected discussion tab and scrolls toward a 20px top offset. LiveNodePage enables it when opening a requested tab. The browser clamps scrolling to the page’s natural range: short/empty feeds may not reach that offset, and no extra panel height is added to force it. This does not control content visibility; the `children` snippet renders normally.
