@@ -102,25 +102,51 @@
      */
     children: Snippet;
   } = $props();
+  /**
+   * Stable unique ID for this component instance, used to link tab/panel DOM IDs
+   * through aria-controls and aria-labelledby. Unlike an each-block key, it does
+   * not control component reuse; it prevents collisions between NodePage instances.
+   */
   const instance = $props.id();
-  // Combine comments, backend contribution summaries and any temporary child-draft tab.
+  /**
+   * Rebuild discussion choices when counts or draft state change: comments first,
+   * backend contribution categories next, and a temporary draft tab if not already
+   * represented. The parent owns active and supplies the selected panel’s content.
+   */
   const tabs = $derived([
     {
       id: 'comments',
       name: `${node.commentCount} ${node.commentCount === 1 ? 'Comment' : 'Comments'}`,
     },
-    ...(node.childTypes ?? []).map((type) => ({ id: type.typeId, name: type.label })),
+    ...(node.childTypes ?? []).map((type) => ({
+      id: type.typeId,
+      name: type.label,
+    })),
     ...(draftTab && !(node.childTypes ?? []).some((type) => type.typeId === draftTab.id)
       ? [draftTab]
       : []),
   ]);
-  // Initially align/focus contribution tabs while allowing late layout changes; stop correction on user input.
+  /**
+   * Svelte action attached to the tab strip with use:alignDiscussionTabs.
+   * Supports direct navigation from a contribution/comment link: focus the selected
+   * tab and place the strip 20px below the viewport top, even for short/empty feeds.
+   * Correct initial image/feed/font layout shifts for up to ten seconds, but stop
+   * as soon as the visitor interacts so automatic scrolling does not fight them.
+   * @param tabs Mounted tab-strip element; this shadows the outer tab-data array.
+   * @returns Action cleanup that releases observers, events and scheduled work.
+   */
   function alignDiscussionTabs(tabs: HTMLDivElement) {
     if (!scrollToDiscussionTabs) return;
     const card = tabs.closest<HTMLElement>('.node-page')!;
+    // Browser animation/resize APIs are globals: no import is needed.
+    // frame stores the latest requestAnimationFrame handle, not elapsed time or a clock.
+    // Zero is its initial placeholder before this action schedules any work.
     let frame = 0;
+    /** Whether alignment has been stopped by interaction, timeout or destruction. */
     let stopped = false;
+    /** Focus only once; later layout corrections should only adjust scroll position. */
     let focused = false;
+    /** Measure the current layout, focus once, and correct the tab strip’s vertical offset. */
     const align = () => {
       if (stopped || !tabs.isConnected) return;
       // ResizeObserver may replace the first scheduled frame. Keep focus in the
@@ -129,6 +155,7 @@
         tabs.querySelector<HTMLElement>('[aria-selected="true"]')?.focus({ preventScroll: true });
         focused = true;
       }
+      // The panel’s CSS uses this height to leave enough room to scroll short feeds.
       card.style.setProperty(
         '--discussion-tabs-height',
         `${tabs.getBoundingClientRect().height}px`,
@@ -137,12 +164,20 @@
       const delta = tabs.getBoundingClientRect().top - 20;
       if (Math.abs(delta) > 1) window.scrollBy({ top: delta, behavior: 'instant' });
     };
+    /** Combine repeated layout notifications into one callback before a browser repaint. */
     const schedule = () => {
+      // Cancel the previous queued callback; requestAnimationFrame returns its replacement ID.
+      // It schedules align for a future frame rather than running a repeating timer.
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(align);
     };
+    // ResizeObserver reports element-size changes, not just window resize events.
+    // The card and tab strip may change size as content arrives or labels wrap.
     const observer = new ResizeObserver(schedule);
+    // const prevents reassigning events. `as const` additionally makes its TypeScript
+    // type a readonly tuple of these exact event names instead of a mutable string[].
     const events = ['wheel', 'touchstart', 'pointerdown', 'keydown'] as const;
+    /** Stop automatic correction and release its resources; safe to call more than once. */
     const stop = () => {
       stopped = true;
       cancelAnimationFrame(frame);
@@ -153,14 +188,27 @@
     // Re-align during initial feed/image/font layout, but never fight user interaction.
     observer.observe(card);
     observer.observe(tabs);
+    // Capture input early; passive listeners observe intent without preventing the action.
     for (const event of events)
       window.addEventListener(event, stop, { capture: true, passive: true });
+    // Bound initial correction even if the visitor does not interact.
     const timeout = setTimeout(stop, 10000);
     schedule();
+    // Font loading can change wrapping after the first measurement. Queue another
+    // measurement when fonts settle. void discards the Promise; it does not await it.
+    // If already stopped, align’s guard prevents further focus or scrolling.
     void document.fonts.ready.then(schedule);
+    // Svelte calls an action’s destroy hook when its element is removed, such as
+    // when navigating away. The same stop function also handles input and timeout.
     return { destroy: stop };
   }
-  // Arrow/Home/End navigation requests a controlled tab change and moves keyboard focus.
+  /**
+   * Provide keyboard access to the tab list: Left/Right wrap between tabs, while
+   * Home/End select the first/last tab. Only the selected tab enters the normal
+   * Tab-key order. Ask the parent to change active, then focus the matching button.
+   * @param event Keyboard event from a tab button; unrelated keys keep normal behavior.
+   * @param index Position of that button in the derived tabs array.
+   */
   function key(event: KeyboardEvent, index: number) {
     let next = index;
     if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
@@ -168,6 +216,7 @@
     else if (event.key === 'Home') next = 0;
     else if (event.key === 'End') next = tabs.length - 1;
     else return;
+    // These keys now navigate tabs, so prevent their usual page-scrolling behavior.
     event.preventDefault();
     onTabChange(tabs[next].id);
     document.getElementById(`${instance}-${tabs[next].id}`)?.focus();
