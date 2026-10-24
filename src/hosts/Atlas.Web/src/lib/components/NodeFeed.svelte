@@ -51,6 +51,7 @@
 </script>
 
 <script lang="ts">
+  import LoadingPlaceholder from './LoadingPlaceholder.svelte';
   import type { Snippet } from 'svelte';
   import NodeCard, { type NodeCardPresentation } from './NodeCard.svelte';
   import type { LoadOlderAncestors } from './Breadcrumb.svelte';
@@ -152,6 +153,8 @@
     observer.observe(tail);
     return () => observer.disconnect();
   });
+  /** Reserve initial list space, including the first frame before the parent starts fetching. */
+  const initialLoading = $derived(!items.length && !error && (loading || hasMore));
 </script>
 
 <!--
@@ -159,7 +162,8 @@
   loading and the invitation to create the first contribution.
 -->
 
-<section class="node-feed" aria-label="Node feed" aria-busy={loading}>
+<section class="node-feed" aria-label="Node feed" aria-busy={loading || initialLoading}>
+  {#if initialLoading}<LoadingPlaceholder />{/if}
   <ul aria-label="Nodes">
     {#each items as item (item.node.id)}
       <!--
@@ -208,7 +212,7 @@
           >Create {article} {singularType.toLowerCase()}</button
         >
       </div>
-    {:else}<p role="status">
+    {:else if !initialLoading}<p role="status">
         {loading
           ? 'Loading nodes…'
           : !items.length

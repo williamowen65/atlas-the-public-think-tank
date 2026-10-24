@@ -38,6 +38,8 @@
 }
 
 html {
+  // Keep the content width stable when navigation adds/removes the vertical scrollbar.
+  scrollbar-gutter: stable;
   overflow-x: clip;
 }
 

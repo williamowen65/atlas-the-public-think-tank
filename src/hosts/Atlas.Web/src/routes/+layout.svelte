@@ -113,6 +113,8 @@
   }
   main {
     flex: 1;
+    /* A baseline for brief routes/loading states; long routes retain their natural height. */
+    min-block-size: min(18rem, 40svh);
     min-width: 0;
   }
   .skip-link {

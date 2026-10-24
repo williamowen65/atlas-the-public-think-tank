@@ -17,6 +17,7 @@
     to open in a profile page.
 -->
 <script lang="ts">
+  import LoadingPlaceholder from './LoadingPlaceholder.svelte';
   import LiveVotingDial from './LiveVotingDial.svelte';
   import LiveReactions from './LiveReactions.svelte';
   import NodePage from './NodePage.svelte';
@@ -229,7 +230,11 @@
   child markup supplies the selected discussion panel.
 -->
 
-{#if loading}<p role="status">Loading node…</p>{:else if error}<p role="alert">{error}</p>
+{#if loading}<LoadingPlaceholder kind="node" label="Loading node…" />{:else if error}<p
+    role="alert"
+  >
+    {error}
+  </p>
   <button onclick={() => retry++}>Retry node</button>{:else if node}
   {#key node.id}
     <NodePage

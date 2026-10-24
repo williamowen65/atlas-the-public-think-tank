@@ -61,6 +61,7 @@ The snippet prop does not have to contain LiveVotingDial; a different parent can
 | [LiveProfilePage](#liveprofilepage)                   | Loads a public participant profile and their contribution feed.                                                                                    |
 | [LiveReactions](#livereactions)                       | Loads reaction choices/scores and handles session-aware reaction voting and undo.                                                                  |
 | [LiveVotingDial](#livevotingdial)                     | Connects VotingDial to API summaries, explicit confirmation, undo and sign-in prompts.                                                             |
+| [LoadingPlaceholder](#loadingplaceholder)             | Temporary content-shaped space for initial API loading; removed on success or failure.                                                             |
 | [MarkdownContent](#markdowncontent)                   | Renders Markdown through the shared markdown-it policy: formatting, lists, quotes, code and safe links; raw HTML and Markdown images are disabled. |
 | [NodeCard](#nodecard)                                 | Selects a card presentation and forwards the common card contract.                                                                                 |
 | [NodeCommunities](#nodecommunities)                   | Displays node-community associations and lets the node author change them.                                                                         |
@@ -283,6 +284,15 @@ Connects VotingDial to API summaries, explicit confirmation, undo and sign-in pr
 | `initialTotalVotes` | `number`         | No       | `0`                    | Initial count shown while the live voting summary is loading; refreshed from the API.                |
 | `archived`          | `boolean`        | No       | `false`                | Marks the node as archived and disables applicable voting/editing controls.                          |
 | `sessionBase`       | `string`         | No       | `'/atlas-session-api'` | Session-aware API base for authentication and permitted operations, including CSRF-protected writes. |
+
+### LoadingPlaceholder
+
+Temporary static loading shapes for initial API reads; removed on success or failure. [Source](../src/lib/components/LoadingPlaceholder.svelte).
+
+| Prop    | Type                                | Required | Default when omitted | Purpose                                                                         |
+| ------- | ----------------------------------- | -------- | -------------------- | ------------------------------------------------------------------------------- |
+| `kind`  | `'feed' \| 'node' \| 'communities'` | No       | `'feed'`             | Approximate the incoming content layout without reserving height after loading. |
+| `label` | `string`                            | No       | `'Loading nodes…'`   | Visible/accessible loading status; shapes are decorative.                       |
 
 ### MarkdownContent
 

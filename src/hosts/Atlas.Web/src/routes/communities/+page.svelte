@@ -7,6 +7,7 @@
   No explicit component props. SvelteKit selects this route; URL parameters are read by the route itself.
 -->
 <script lang="ts">
+  import LoadingPlaceholder from '$lib/components/LoadingPlaceholder.svelte';
   import { onMount } from 'svelte';
   import {
     publicCommunities,
@@ -56,6 +57,8 @@
   async function refresh() {
     try {
       communities = await publicCommunities('?offset=0&size=50');
+      // Show public results immediately; account quota lookup need not hold the directory open.
+      loading = false;
       try {
         allowance = await creationAllowance();
       } catch {
@@ -104,18 +107,20 @@
     bind:value={search}
     placeholder="Search by community name"
   />
-  {#if loading}<p role="status">Loading communities…</p>{:else if error}<p role="alert">
+  {#if error}<p role="alert">
       {error} <button onclick={() => void refresh()}>Retry</button>
     </p>{/if}
-  <div class="directory">
-    {#each visible as community (community.id)}
-      <article>
-        <h2><a href={'/communities/' + community.id}>{community.name}</a></h2>
-        <p>{community.description}</p>
-        <small>{community.memberCount} members · {community.nodeCount} nodes</small>
-      </article>
-    {:else}<p>{loading ? 'Loading communities…' : 'No communities match your search.'}</p>{/each}
-  </div>
+  {#if loading}<LoadingPlaceholder kind="communities" label="Loading communities…" />{:else}
+    <div class="directory">
+      {#each visible as community (community.id)}
+        <article>
+          <h2><a href={'/communities/' + community.id}>{community.name}</a></h2>
+          <p>{community.description}</p>
+          <small>{community.memberCount} members · {community.nodeCount} nodes</small>
+        </article>
+      {:else}<p>No communities match your search.</p>{/each}
+    </div>
+  {/if}
   <section class="create">
     <h2>Create a community</h2>
     {#if allowance}
