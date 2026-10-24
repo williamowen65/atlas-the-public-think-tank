@@ -2,27 +2,82 @@ import type { Snippet } from 'svelte';
 import type { BreadcrumbItem, LoadOlderAncestors } from '../breadcrumb.types';
 /** Presentation data: adapt API projections to this model at the application boundary. */
 export interface NodeCardData {
+  /** Stable node ID used for navigation and API lookups. */
   id: string;
+
+  /** Visible node title. */
   title: string;
+
+  /** Display name of the node’s type. */
   typeName: string;
+
+  /** Display name of the node’s author. */
   authorName: string;
+
+  /** Participant ID for author-profile navigation; omitted when unavailable. */
   authorId?: string;
+
+  /** Creation timestamp formatted by the presentation component. */
   createdAt: string;
+
+  /** Short introduction displayed by the card, rather than the full content blocks. */
   description: string;
+
+  /** Community display names associated with the node; these are not community IDs. */
   communities: string[];
+
+  /** Ancestor items in oldest-to-newest order for the breadcrumb. */
   breadcrumb: BreadcrumbItem[];
-  related: { id: string; title: string; typeName: string }[];
+
+  /** Related nodes with IDs and display labels for navigation. */
+  related: {
+    /** Stable node ID used for navigation and API lookups. */
+    id: string;
+    /** Visible node title. */
+    title: string;
+    /** Display name of the node’s type. */
+    typeName: string;
+  }[];
+
+  /** Display labels for contribution types requested by the author. */
   requestedTypes: string[];
-  childTypes?: { typeId: string; label: string; count: number }[];
-  reactions: { label: string; count: number }[];
+
+  /** Structured contribution type IDs, labels and counts used for child-feed buttons. */
+  childTypes?: {
+    /** Catalog type ID passed to the contribution-navigation callback. */
+    typeId: string;
+    /** Visible contribution or reaction label. */
+    label: string;
+    /** Backend-supplied child-node or reaction-vote count for this entry. */
+    count: number;
+  }[];
+
+  /** Structured reaction labels and counts displayed when custom reaction controls are absent. */
+  reactions: {
+    /** Visible contribution or reaction label. */
+    label: string;
+    /** Backend-supplied child-node or reaction-vote count for this entry. */
+    count: number;
+  }[];
+
+  /** Optional formatted reaction summary used as a text fallback. */
   reactionSummary?: string;
+
+  /** Optional formatted contribution summary used when structured child-type data is unavailable. */
   subNodeSummary?: string;
+
+  /** Number of comments shown by the card’s discussion action. */
   commentCount: number;
+
+  /** Lifecycle state used to display archived status and disable archived-node voting. */
   status: 'Active' | 'Archived';
 }
 
+/** Supported node-card layouts; selects presentation without changing node data. */
 export type NodeCardPresentation =
   'context-below' | 'ribbon' | 'ribbon-responsive' | 'ribbon-split' | 'ribbon-corner';
+
+/** Shared input contract forwarded to each node-card presentation. */
 export interface NodeCardProps {
   /** Presentation data for one node; follow the NodeCardData type definition for its fields. */
   node: NodeCardData;
