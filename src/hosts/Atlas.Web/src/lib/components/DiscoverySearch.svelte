@@ -136,6 +136,13 @@
     input = applied;
     pending = applied;
   }
+  /** Mounted search input; receives focus again after clearing text and all filters. */
+  let queryInput = $state<HTMLInputElement>();
+  /** Clear accepted query and pending edits together; an empty query also removes saved storage. */
+  function clearSearch() {
+    apply('');
+    queryInput?.focus({ preventScroll: true });
+  }
   // Replace one field token without dropping unrelated terms in the draft query.
   function token(key: string, value: string) {
     const parts = (pending.match(/"[^"]*"|\S+/g) ?? []).filter(
@@ -177,11 +184,35 @@
     }}
   >
     <label class="sr-only" for="discovery-query">Search nodes and filters</label>
-    <input
-      id="discovery-query"
-      bind:value={input}
-      placeholder="Search nodes or try type:Idea votes:5..100"
-    />
+    <!-- The clear button overlays the input area, rather than adding another pill segment. -->
+    <div class="query-field">
+      <input
+        id="discovery-query"
+        bind:this={queryInput}
+        bind:value={input}
+        placeholder="Search nodes or try type:Idea votes:5..100"
+      />
+      {#if input || pending || applied}
+        <button
+          class="clear-search"
+          type="button"
+          aria-label="Clear search and filters"
+          title="Clear search and filters"
+          onclick={clearSearch}
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18" /></svg
+          >
+        </button>
+      {/if}
+    </div>
     <!-- Icon segments share the input’s pill; accessible names keep their purpose explicit. -->
     <button class="search-action" type="submit" aria-label="Search" title="Search">
       <svg
@@ -324,7 +355,7 @@
         <button
           type="button"
           onclick={() => {
-            apply('');
+            clearSearch();
             expanded = false;
           }}>Clear filters</button
         ><button
@@ -378,14 +409,36 @@
     border-radius: 999px;
     background: var(--atlas-surface);
   }
-  .search-line input {
+  .query-field {
+    position: relative;
+    display: flex;
     flex: 1 1 0;
-    width: 0;
+    min-width: 0;
+  }
+  .search-line input {
+    width: 100%;
     min-width: 0;
     border: 0;
     border-radius: 999px 0 0 999px;
-    padding-inline: 0.9rem 0.4rem;
+    /* Reserve the overlaid clear target even when empty, so typed text never shifts. */
+    padding-inline: 0.9rem 2.75rem;
     background: transparent;
+  }
+  .query-field .clear-search {
+    position: absolute;
+    inset-inline-end: 0;
+    inset-block: 0;
+    width: 2.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  .clear-search:hover {
+    color: var(--atlas-accent);
   }
   .search-line .search-action {
     display: inline-flex;

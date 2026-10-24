@@ -397,3 +397,6 @@ A magnifying-glass disclosure button toggles search at all viewport widths. The 
 
 
 The header search toggle also shows small text/funnel badges for the accepted discovery query. These badges are positioned relative to the button and consume no extra header width. They summarize applied query tokens, not unsaved input/toolbox edits or backend results; inert `archived:false` and empty ranges do not activate the funnel. The button retains its accessible name and describes active search categories through `aria-describedby` and a tooltip.
+
+
+The search input’s inline X clears the entire accepted query (text and structured filters), pending edits, saved query storage and header badges together. It returns focus to the input and does not submit a separate request or add another pill segment.
