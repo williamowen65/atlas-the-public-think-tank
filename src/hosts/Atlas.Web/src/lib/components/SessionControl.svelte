@@ -86,7 +86,7 @@
    * Sequence number for refresh calls, not a login/logout count. Each refresh increments it
    * so older checks cannot overwrite a newer check’s result.
    */
-  let generation = 0;
+  let refreshSequence = 0;
   /**
    * Stable component-instance ID used to connect each input with its label without
    * collisions between multiple session controls.
@@ -106,8 +106,8 @@
    */
   async function refresh() {
     error = '';
-    // Capture this check’s number. A later refresh changes generation, making this one stale.
-    const current = ++generation;
+    // Capture this check’s number. A later refresh changes refreshSequence, making this one stale.
+    const current = ++refreshSequence;
     try {
       const session = await apiRequest<{ participantId: string | null }>(
         sessionBase,
@@ -119,14 +119,14 @@
         AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]),
       );
       // Publish only while the component is active and no newer refresh has started.
-      if (!controller.signal.aborted && current === generation) {
+      if (!controller.signal.aborted && current === refreshSequence) {
         participantId = session.participantId;
         onSession?.(participantId);
       }
     } catch (cause) {
       // Ignore results from a removed component or an outdated check. For the newest
       // failed check, report no usable identity; 401 is the normal signed-out response.
-      if (!controller.signal.aborted && current === generation) {
+      if (!controller.signal.aborted && current === refreshSequence) {
         participantId = null;
         onSession?.(null);
         // Connection failures, timeouts and other HTTP errors need a visible retry message.
@@ -135,7 +135,7 @@
       }
     } finally {
       // An older request must not dismiss the initial loading message for a newer check.
-      if (current === generation) checking = false;
+      if (current === refreshSequence) checking = false;
     }
   }
   // Run in the browser when this component mounts. The returned function runs when
@@ -154,14 +154,14 @@
     };
   });
   /**
-   * Svelte action attached with use:reveal when the details element enters the DOM.
+   * Svelte action attached with use:focusAndScrollOnMount when the details element enters the DOM.
    * If requested, scroll it into view and focus its first input on the next animation frame.
    * This does not open/close the disclosure or run on every arrow click: details/summary
    * supplies native toggling, and expanded supplies the open attribute.
    * @param element The mounted details element containing the session form.
    * @returns An action cleanup that cancels the scheduled frame, when one was requested.
    */
-  function reveal(element: HTMLElement) {
+  function focusAndScrollOnMount(element: HTMLElement) {
     if (!focusOnMount) return;
     const frame = requestAnimationFrame(() => {
       element.scrollIntoView({ block: 'start' });
@@ -278,7 +278,7 @@
   {:else if participantId}<div class="session">
       <span>Signed in</span><button onclick={() => void signOut()} disabled={busy}>Sign out</button>
     </div>
-  {:else}<details class="sign-in" open={expanded} use:reveal>
+  {:else}<details class="sign-in" open={expanded} use:focusAndScrollOnMount>
       <summary>{prompt}</summary>{#if registered}<p role="status">
           Account created. Confirm your email through the development email workflow, then sign in.
         </p>{/if}

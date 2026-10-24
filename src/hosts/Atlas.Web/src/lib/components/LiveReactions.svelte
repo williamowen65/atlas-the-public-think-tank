@@ -39,7 +39,7 @@
   let error = $state('');
   let controller: AbortController;
   let requestGeneration = 0;
-  const active = $derived(
+  const visibleReactions = $derived(
     choices.filter((c) => c.totalVotes > 0 || c.currentParticipantVote !== null),
   );
   // Only the latest request may publish scores, preventing slower earlier reads from replacing new data.
@@ -114,7 +114,7 @@
 <section class="node-reactions" aria-label="Community reactions">
   <div class="reaction-list">
     <!-- class:chosen adds the chosen CSS class only while this participant has a +1 vote. -->
-    {#each active as choice (choice.id)}
+    {#each visibleReactions as choice (choice.id)}
       <button
         type="button"
         class:chosen={choice.currentParticipantVote === 1}

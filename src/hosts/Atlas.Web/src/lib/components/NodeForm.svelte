@@ -67,7 +67,7 @@
     parentId ? [...breadcrumb, { id: parentId, title: parentTitle ?? parentId }] : breadcrumb,
   );
   // Focus only after insertion so the select and its containing form can be measured.
-  function reveal(control: HTMLSelectElement) {
+  function focusAndScrollOnMount(control: HTMLSelectElement) {
     if (focusOnMount)
       requestAnimationFrame(() => {
         if (!control.isConnected) return;
@@ -118,7 +118,7 @@
     <div class="title-row">
       <div class="type-field">
         <label for={`${instance}-type`}>Node type</label><select
-          use:reveal
+          use:focusAndScrollOnMount
           id={`${instance}-type`}
           bind:value={typeId}
           required
