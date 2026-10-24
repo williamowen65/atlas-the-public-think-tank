@@ -21,8 +21,7 @@ for (const authenticated of [false, true]) {
       await page.setViewportSize({ width, height: 850 });
       await page.goto('http://127.0.0.1:4173/about');
       const header = page.locator('.atlas-header');
-      if (authenticated)
-        await expect(header.getByRole('button', { name: 'Open account menu' })).toBeVisible();
+      if (authenticated) await expect(header.locator('.account .avatar')).toHaveCount(1);
       const search = header.getByRole('textbox', { name: 'Search nodes and filters' });
       await expect(search).toBeVisible();
       expect((await search.boundingBox())!.width).toBeGreaterThan(30);
@@ -48,7 +47,7 @@ for (const authenticated of [false, true]) {
       await filters.focus();
       await page.keyboard.press('Enter');
       await expect(filters).toHaveAttribute('aria-expanded', 'true');
-      await expect(header.getByLabel('Node type', { exact: true })).toBeVisible();
+      await expect(header.getByRole('combobox', { name: /^Node type/ })).toBeVisible();
       await page.keyboard.press('Escape');
       await expect(filters).toHaveAttribute('aria-expanded', 'false');
       if (width > 560)
