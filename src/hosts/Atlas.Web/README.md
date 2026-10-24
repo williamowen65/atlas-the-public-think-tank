@@ -370,3 +370,8 @@ Raw HTML is escaped, Markdown images are disabled, and links retain markdown-it 
 Demo seed blocks include emphasis, headings, lists, quotes, inline/fenced code and source links. These changes apply when demo data is seeded; they do not update existing database content. No database reset is required to use the renderer: existing plain text still renders, and new Markdown can be tried in the node-form preview.
 
 `tests/markdown.spec.ts` checks formatting, heading levels, raw HTML escaping, blocked image output and unsafe URL protocols as part of the normal Playwright CI suite.
+
+
+### Run the application and API together
+
+From `src/hosts/Atlas.Web`, run `npm run dev:api` to start the Vite development server and Atlas.Api together. This uses the same HTTPS API launch profile as `npm run storybook:api`. Press Ctrl+C to stop both; if either process exits, the other is stopped too. Use `npm run dev` when the API is already running separately.
