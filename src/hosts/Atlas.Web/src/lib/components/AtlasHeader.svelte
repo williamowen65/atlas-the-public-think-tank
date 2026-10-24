@@ -314,6 +314,8 @@
     }
   }
   .right-group {
+    grid-column: 3;
+    grid-row: 1;
     display: flex;
     align-items: center;
     justify-content: flex-end;
@@ -435,6 +437,25 @@
     .primary,
     .auth {
       gap: 0.65rem;
+    }
+  }
+  /* Before desktop navigation can squeeze the search, give the pill its own row.
+     Keep ordinary desktop links visible until the existing mobile breakpoint. */
+  @media (min-width: 561px) and (max-width: 1000px) {
+    .atlas-header :global(.search-line) {
+      grid-column: 1/-1;
+      grid-row: 2;
+    }
+    .atlas-header :global(.toolbox) {
+      grid-row: 3;
+    }
+    .atlas-header {
+      row-gap: 0.65rem;
+    }
+  }
+  @media (min-width: 561px) and (max-width: 720px) {
+    .brand span {
+      display: none;
     }
   }
   @media (max-width: 560px) {

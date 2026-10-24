@@ -182,10 +182,44 @@
       bind:value={input}
       placeholder="Search nodes or try type:Idea votes:5..100"
     />
-    <button type="submit">Search</button>
-    <button type="button" aria-expanded={expanded} onclick={() => (expanded = !expanded)}
-      >Filters {expanded ? '▴' : '▾'}</button
+    <!-- Icon segments share the input’s pill; accessible names keep their purpose explicit. -->
+    <button class="search-action" type="submit" aria-label="Search" title="Search">
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        width="20"
+        height="20"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+      >
+        <circle cx="10.5" cy="10.5" r="6.5" />
+        <path d="m16 16 4.5 4.5" />
+      </svg>
+    </button>
+    <button
+      class="search-action filter-toggle"
+      type="button"
+      aria-label="Filters"
+      title="Filters"
+      aria-expanded={expanded}
+      onclick={() => (expanded = !expanded)}
     >
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        width="20"
+        height="20"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M4 5h16l-6 7v6l-4 2v-8Z" />
+      </svg>
+    </button>
   </form>
   {#if parse(input).errors.length}<p class="validation" role="alert">
       {parse(input).errors.join(' · ')}
@@ -334,14 +368,48 @@
     border-radius: var(--atlas-radius);
     box-sizing: border-box;
   }
+  /* One shrinkable input and two fixed icon segments, with a shared pill outline. */
   .search-line {
     display: flex;
-    gap: 0.4rem;
-    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0;
+    min-width: 0;
+    border: 1px solid var(--atlas-border);
+    border-radius: 999px;
+    background: var(--atlas-surface);
   }
   .search-line input {
-    flex: 1 1 15rem;
+    flex: 1 1 0;
+    width: 0;
     min-width: 0;
+    border: 0;
+    border-radius: 999px 0 0 999px;
+    padding-inline: 0.9rem 0.4rem;
+    background: transparent;
+  }
+  .search-line .search-action {
+    display: inline-flex;
+    flex: 0 0 2.75rem;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.75rem;
+    padding: 0;
+    border: 0;
+    border-inline-start: 1px solid var(--atlas-border);
+    border-radius: 0;
+    background: transparent;
+  }
+  .search-line .filter-toggle {
+    border-radius: 0 999px 999px 0;
+  }
+  .search-action:hover,
+  .filter-toggle[aria-expanded='true'] {
+    color: var(--atlas-on-accent);
+    background: var(--atlas-accent);
+  }
+  .search-line:focus-within {
+    outline: 2px solid var(--atlas-focus);
+    outline-offset: 2px;
   }
   input,
   select,

@@ -389,3 +389,8 @@ The unused `routes`/`onRouteChange` Breadcrumb props and header/footer navigatio
 The application shell has a viewport-height baseline and stable scrollbar space. Initial feed, node and community reads show static content-shaped placeholders instead of a one-line message; placeholders disappear on success or failure and never impose height on loaded content or discussion tabs. Existing feed cards stay visible while another page loads. Community results appear before the independent account-quota lookup finishes. No artificial delay, shimmer animation or global client data cache is added.
 
 Navigation still makes API requests. Discovery uses the backend’s bounded, process-local DiscoveryCache (30-second default lifetime, with committed database revision checks before reuse). This is separate from browser/global state; shared discovery state stores search text, not cached results. Community helpers also request their API endpoints; do not assume every endpoint shares Discovery’s cache. Freshness and invalidation must be designed per resource rather than caching all responses indiscriminately.
+
+
+### Responsive header search
+
+The header groups its query input, Search icon button and Filters icon toggle into one pill. Both icon buttons retain accessible names, keyboard support and tooltips; Filters exposes its expanded state. At intermediate widths (561–1000px) the pill moves to a full-width second row while desktop navigation remains above it. At 560px and below the existing mobile menu remains beside search.
