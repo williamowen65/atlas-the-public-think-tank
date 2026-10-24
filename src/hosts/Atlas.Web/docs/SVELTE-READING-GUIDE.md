@@ -40,3 +40,7 @@ For complete prop contracts and usage examples, see the [component catalog](COMP
 ## Supplied snippets and disabled fallbacks
 
 NodePage renders its optional voting snippet when supplied. LiveNodePage provides a named voting snippet containing LiveVotingDial, which wraps VotingDial with API confirmation, persistence, undo and session handling. If the snippet is omitted, NodePage renders an always-disabled plain VotingDial displaying only the supplied totals. A bare disabled attribute means disabled={true}; LiveVotingDial instead computes that prop from archive/loading/busy state. See [the voting component comparison](COMPONENT-CATALOG.md#votingdial-versus-livevotingdial).
+
+## Scrolling to discussion tabs
+
+NodePage's `scrollToDiscussionTabs` prop defaults to false. When requested, the initial alignment action focuses the selected discussion tab and places the tab strip 20px below the viewport top. LiveNodePage enables it when opening a requested tab. The matching `scroll-to-discussion-tabs` class gives the tab panel enough minimum height to reach that position, including an empty or short feed. That can leave extra blank space below the content. It does not control whether content is visible; the separate `children` snippet still renders normally.

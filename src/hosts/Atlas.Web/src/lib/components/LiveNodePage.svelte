@@ -164,7 +164,7 @@
     <NodePage
       {apiBase}
       {onOpenProfile}
-      revealChildren={!!initialTypeId && active === initialTypeId}
+      scrollToDiscussionTabs={!!initialTypeId && active === initialTypeId}
       {hasMoreAncestors}
       loadOlderAncestors={(id) =>
         id

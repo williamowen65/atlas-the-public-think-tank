@@ -15,7 +15,7 @@
     onOpenProfile,
     voting,
     reactions,
-    revealChildren = false,
+    scrollToDiscussionTabs = false,
     node,
     blocks,
     types,
@@ -33,7 +33,7 @@
   }: {
     voting?: Snippet;
     reactions?: Snippet;
-    revealChildren?: boolean;
+    scrollToDiscussionTabs?: boolean;
     node: NodeCardData;
     blocks: ContentBlock[];
     types: NodeType[];
@@ -63,8 +63,8 @@
       : []),
   ]);
   // Initially align/focus contribution tabs while allowing late layout changes; stop correction on user input.
-  function reveal(tabs: HTMLDivElement) {
-    if (!revealChildren) return;
+  function alignDiscussionTabs(tabs: HTMLDivElement) {
+    if (!scrollToDiscussionTabs) return;
     const card = tabs.closest<HTMLElement>('.node-page')!;
     let frame = 0;
     let stopped = false;
@@ -122,7 +122,7 @@
   }
 </script>
 
-<article class="node-page atlas-panel" class:reveal-children={revealChildren}>
+<article class="node-page atlas-panel" class:scroll-to-discussion-tabs={scrollToDiscussionTabs}>
   {#if node.breadcrumb.length}<div class="ribbon-context">
       <Breadcrumb
         items={node.breadcrumb}
@@ -194,7 +194,12 @@
           : (types.find((type) => type.id === active)?.name ?? 'a child node')}</button
       >
     </div>
-    <div class="tabs" use:reveal role="tablist" aria-label="Node discussions and child types">
+    <div
+      class="tabs"
+      use:alignDiscussionTabs
+      role="tablist"
+      aria-label="Node discussions and child types"
+    >
       {#each tabs as tab, index}<button
           role="tab"
           id={`${instance}-${tab.id}`}
@@ -315,7 +320,9 @@
     padding: 1rem var(--card-padding) var(--card-padding);
     min-width: 0;
   }
-  .reveal-children [role='tabpanel'] {
+  /* Extra panel height allows the tab strip to reach its scroll target even with
+     an empty/short feed. It does not hide content and can leave blank space below. */
+  .scroll-to-discussion-tabs [role='tabpanel'] {
     box-sizing: border-box;
     min-height: calc(100dvh - var(--discussion-tabs-height, 60px) - 20px);
   }
