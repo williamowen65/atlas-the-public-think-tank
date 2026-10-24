@@ -4,8 +4,8 @@ const found = 'b1000000-0000-4000-8000-000000000002';
 const other = 'b1000000-0000-4000-8000-000000000003';
 const entry = (id: string, title: string) => ({
   nodeId: id,
-  voteCount: 0,
-  averageVote: null,
+  voteCount: 12,
+  averageVote: 7.5,
   card: {
     title,
     typeName: 'Question',
@@ -65,6 +65,7 @@ async function mock(page: Page) {
 test('search from a node shows compact filtered results, pages them and opens a result', async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 320, height: 740 });
   const requests = await mock(page);
   await page.goto(`http://127.0.0.1:4173/nodes?id=${first}`);
   await expect(
@@ -75,11 +76,28 @@ test('search from a node shows compact filtered results, pages them and opens a 
   await input.fill('salmon votes:1..5');
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   const results = page.getByRole('region', { name: 'Search results', exact: true });
-  await expect(results.getByRole('link', { name: 'Salmon research', exact: true })).toBeVisible();
+  await expect(
+    results.getByRole('link', { name: 'Question: Salmon research', exact: true }),
+  ).toBeVisible();
   await expect(results.getByRole('spinbutton')).toHaveCount(0);
   await expect(results.getByRole('navigation')).toHaveCount(0);
   await expect(results).toContainText('4 comments');
   await expect(results).toContainText('2 Ideas');
+  expect(await results.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
+    true,
+  );
+  await expect(
+    results.getByLabel('Importance: 7.5 out of 10, 12 votes', { exact: true }),
+  ).toBeVisible();
+  // An outside click dismisses the whole search without clearing the accepted query.
+  await page.getByRole('heading', { name: 'Question: Original node', exact: true }).click();
+  await expect(results).toHaveCount(0);
+  await page.getByRole('button', { name: 'Toggle search', exact: true }).click();
+  await expect(input).toHaveValue('salmon votes:1..5');
+  await expect(
+    results.getByRole('link', { name: 'Question: Salmon research', exact: true }),
+  ).toBeVisible();
+
   await expect(
     page.getByRole('heading', { name: 'Question: Original node', exact: true }),
   ).toBeVisible();
@@ -93,9 +111,9 @@ test('search from a node shows compact filtered results, pages them and opens a 
   ).toBe(true);
   await results.getByRole('button', { name: 'Load more results' }).click();
   await expect(
-    results.getByRole('link', { name: 'More salmon evidence', exact: true }),
+    results.getByRole('link', { name: 'Question: More salmon evidence', exact: true }),
   ).toBeVisible();
-  await results.getByRole('link', { name: 'Salmon research', exact: true }).click();
+  await results.getByRole('link', { name: 'Question: Salmon research', exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`id=${found}`));
   await expect(results).toHaveCount(0);
   await expect(
@@ -122,7 +140,7 @@ test('header searches leave the browsing feed intact and clear removes the dropd
   await expect(
     page
       .getByRole('region', { name: 'Search results', exact: true })
-      .getByRole('link', { name: 'Salmon research', exact: true }),
+      .getByRole('link', { name: 'Question: Salmon research', exact: true }),
   ).toBeVisible();
   await expect(
     feed.getByRole('heading', { name: 'Question: Original node', exact: true }),

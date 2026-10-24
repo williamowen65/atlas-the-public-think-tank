@@ -1,7 +1,7 @@
 <!--
   @component
   Compact global discovery results: linked titles, short introductions and discussion counts.
-  Fetches anonymous discovery pages and cancels outdated searches; no voting or breadcrumb UI.
+  Fetches anonymous discovery pages and cancels outdated searches; read-only importance totals without a voting dial or breadcrumb.
 
   **Props**
   - `search` (`string`; required): Accepted free-text search, separate from structured filters.
@@ -23,8 +23,20 @@
     /** Notify the containing search disclosure when a result is opened normally. */
     onSelect?: () => void;
   } = $props();
+  /** Search-only projection retaining authoritative discovery aggregates without extra requests. */
+  type SearchResult = NodeCardData & {
+    /** Backend-calculated average; null represents an unrated node. */
+    average: number | null;
+    /** Number of ratings included in the backend aggregate. */
+    totalVotes: number;
+  };
+  /** Adapt visible discovery cards while keeping their existing voting aggregates. */
+  function resultCard(item: Parameters<typeof discoveryCard>[0]): SearchResult | null {
+    const card = discoveryCard(item);
+    return card ? { ...card, average: item.averageVote, totalVotes: item.voteCount } : null;
+  }
   /** Compact display models accumulated from successful result pages. */
-  let items = $state<NodeCardData[]>([]);
+  let items = $state<SearchResult[]>([]);
   /** Whether the current page request is pending. */
   let loading = $state(true);
   /** Visible request error; existing results remain available on paging failure. */
@@ -63,7 +75,7 @@
     )
       .then((page) => {
         if (current.signal.aborted) return;
-        items = page.items.map(discoveryCard).filter((item): item is NodeCardData => item !== null);
+        items = page.items.map(resultCard).filter((item): item is SearchResult => item !== null);
         total = page.totalCount;
         hasMore = page.hasNextPage;
         nextPage = 2;
@@ -94,9 +106,9 @@
       );
       if (current.signal.aborted) return;
       const added = page.items
-        .map(discoveryCard)
+        .map(resultCard)
         .filter(
-          (item): item is NodeCardData =>
+          (item): item is SearchResult =>
             !!item && !items.some((existing) => existing.id === item.id),
         );
       items = [...items, ...added];
@@ -118,18 +130,44 @@
   <ul>
     {#each items as node (node.id)}
       <li>
-        <a
-          class="result-title"
-          href={`/nodes?id=${encodeURIComponent(node.id)}`}
-          onclick={(event) => {
-            if (!event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) onSelect?.();
-          }}>{node.title}</a
+        <!-- Read-only totals use discovery data; they never mount voting controls or fetch per result. -->
+        <div
+          class="importance"
+          aria-label={`Importance: ${node.average === null ? 'not rated' : node.average.toFixed(1) + ' out of 10'}, ${node.totalVotes} votes`}
         >
-        <p class="intro">{node.description}</p>
-        <p class="metadata">
-          {node.typeName} · {node.commentCount} comments{#if node.childTypes?.length}
-            · {node.childTypes.map((type) => type.label).join(' · ')}{/if}
-        </p>
+          <strong>{node.average === null ? '—' : node.average.toFixed(1)}</strong>
+          <span class="voters"
+            ><svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              ><circle cx="9" cy="7" r="3" /><path
+                d="M3 20v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6M18 13a5 5 0 0 1 3 4v3"
+              /></svg
+            >{node.totalVotes}</span
+          >
+        </div>
+        <div class="result-content">
+          <a
+            class="result-title"
+            href={`/nodes?id=${encodeURIComponent(node.id)}`}
+            onclick={(event) => {
+              if (!event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey)
+                onSelect?.();
+            }}><span class="node-type">{node.typeName}:</span> {node.title}</a
+          >
+          <p class="intro">{node.description}</p>
+          <p class="metadata">
+            <span>{node.commentCount} comments</span>
+            {#each node.childTypes ?? [] as type}
+              <span>{type.label}</span>
+            {/each}
+          </p>
+        </div>
       </li>
     {/each}
   </ul>
@@ -173,8 +211,41 @@
     margin: 0;
   }
   li {
+    display: grid;
+    grid-template-columns: 2.6rem minmax(0, 1fr);
+    gap: 0.7rem;
     padding: 0.7rem 0;
     border-top: 1px solid var(--atlas-border);
+  }
+  .importance {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    color: var(--atlas-muted);
+    font-size: 0.8rem;
+  }
+  .importance strong {
+    font-size: 1rem;
+    color: var(--atlas-text);
+  }
+  .voters {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+  }
+  .result-content {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .metadata {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.6rem;
+  }
+  .metadata span + span::before {
+    content: '·';
+    margin-inline-end: 0.6rem;
   }
   .result-title {
     font-weight: 700;

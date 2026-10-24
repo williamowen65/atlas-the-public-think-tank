@@ -109,6 +109,16 @@
   let mobileElement: HTMLDetailsElement;
   // Dismiss menus without intercepting normal navigation or control activation.
   function closeOnOutside(event: PointerEvent) {
+    // Closing the disclosure preserves the shared query for the next time it opens.
+    if (
+      searchOpen &&
+      event.target instanceof Node &&
+      !searchPanel?.contains(event.target) &&
+      !searchToggle?.contains(event.target)
+    ) {
+      searchOpen = false;
+      filtersOpen = false;
+    }
     if (menuOpen && event.target instanceof Node && !accountElement?.contains(event.target))
       menuOpen = false;
     if (
