@@ -2,6 +2,15 @@
   @component
   CommentsPanel: Composes session controls and the live threaded discussion for a node.
   Owns session identity for its discussion and forwards successful additions to the parent.
+
+  **Props**
+  - `nodeId` (`string`; required): ID of the node this component reads, displays, or modifies.
+  - `apiBase` (`string`; optional; default `'/atlas-public-api'`): Public comment-read base
+    forwarded to LiveComments. Authentication and mutations use sessionBase.
+  - `sessionBase` (`string`; optional; default `'/atlas-session-api'`): Session-aware API base
+    forwarded to SessionControl and LiveComments for identity checks and comment mutations.
+  - `onAdded` (`() => void`; optional): Callback: Called after a comment or reply is successfully
+    added; lets the parent refresh its displayed comment count.
 -->
 <script lang="ts">
   import LiveComments from './LiveComments.svelte';

@@ -1,6 +1,10 @@
 <!--
   @component
   Live feed workbench wrapper adapting node/profile navigation to Storybook stories.
+
+  **Props**
+  - `presentation` (`NodeCardPresentation`; optional; default `'ribbon-corner'`): Selects a
+    NodeCardPresentation layout; it does not change the underlying node data.
 -->
 <script lang="ts">
   import LiveNodeFeed from '../../src/lib/components/LiveNodeFeed.svelte';

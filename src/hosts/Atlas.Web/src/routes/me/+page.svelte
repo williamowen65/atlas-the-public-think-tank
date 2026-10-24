@@ -2,6 +2,9 @@
   @component
   Legacy profile route that redirects to the current participant’s profile, with a fallback
   link.
+
+  **Props**
+  No explicit component props. SvelteKit selects this route; URL parameters are read by the route itself.
 -->
 <script lang="ts">
   import { goto } from '$app/navigation';

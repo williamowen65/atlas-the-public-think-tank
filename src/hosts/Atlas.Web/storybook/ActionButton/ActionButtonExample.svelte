@@ -1,6 +1,11 @@
 <!--
   @component
   Interactive ActionButton example reporting activation through a local status message.
+
+  **Props**
+  - `label` (`string`; optional; default `'Try action'`): Visible label and accessible name for the
+    demonstration action button.
+  - `disabled` (`boolean`; optional; default `false`): Prevents interaction with this control.
 -->
 <script lang="ts">
   import ActionButton from '../../src/lib/components/ActionButton.svelte';

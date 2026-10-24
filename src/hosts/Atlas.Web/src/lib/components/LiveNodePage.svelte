@@ -2,6 +2,19 @@
   @component
   LiveNodePage: Fetches a node, its content and types, then composes voting, tabs, child forms and discussion.
   Owns data and tab state; NodePage receives presentation props and renderable content snippets.
+
+  **Props**
+  - `nodeId` (`string`; optional; default `''`): ID of the node this component reads, displays, or
+    modifies.
+  - `initialTypeId` (`string`; optional; default `''`): Initial discussion tab ID (a contribution
+    type ID or comments), not a node-creation type.
+  - `apiBase` (`string`; optional; default `'/atlas-public-api'`): Public API base for discovery,
+    node details, content blocks, type catalog and ancestor lookups. Voting and comments receive
+    their session-aware behavior from nested components.
+  - `onOpenNode` (`(id: string, typeId?: string) => void`; optional): Callback: Receives a node ID
+    to open. Where the signature includes typeId, it selects the destination contribution tab.
+  - `onOpenProfile` (`(id: string) => void`; optional): Callback: Receives the author/participant ID
+    to open in a profile page.
 -->
 <script lang="ts">
   import LiveVotingDial from './LiveVotingDial.svelte';

@@ -2,6 +2,9 @@
   @component
   Community detail route with membership, owner editing and a community-filtered contribution
   feed.
+
+  **Props**
+  No explicit component props. SvelteKit selects this route; URL parameters are read by the route itself.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';

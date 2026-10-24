@@ -5,6 +5,21 @@
   It can be interactive, but never calls the API or calculates community totals.
   Use LiveVotingDial for persistence, confirmation, undo and session handling.
   disabled is a caller-supplied interaction lock, not an authentication check.
+
+  **Props**
+  - `label` (`string`; optional; default `'Node importance'`): Accessible name for the rating
+    spinbutton, such as Node importance. It does not label a save button.
+  - `value` (`number | null`; optional; default `null`): Current controlled rating, 0–10. null means
+    unrated; zero is a real rating.
+  - `average` (`number | null`; optional; default `null`): Community average supplied by the parent;
+    null means no average is available.
+  - `totalVotes` (`number`; optional; default `0`): Community vote count supplied by the parent.
+  - `hasVoted` (`boolean`; optional): Controls voted styling; when omitted, defaults to whether
+    value is non-null.
+  - `compact` (`boolean`; optional; default `false`): Selects the compact dial layout.
+  - `disabled` (`boolean`; optional; default `false`): Prevents interaction with this control.
+  - `onChange` (`(value: number) => void`; optional): Callback: Receives the selected 0–10 rating.
+    This control is presentational; the caller handles acceptance or persistence.
 -->
 <script lang="ts">
   interface Props {

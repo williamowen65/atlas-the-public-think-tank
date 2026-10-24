@@ -1,6 +1,10 @@
 <!--
   @component
   Live public participant-profile example with Storybook navigation callbacks.
+
+  **Props**
+  - `participantId` (`string`; optional; default `''`): Participant whose public profile and
+    authored contributions are displayed.
 -->
 <script lang="ts">
   import LiveProfilePage from '../../src/lib/components/LiveProfilePage.svelte';

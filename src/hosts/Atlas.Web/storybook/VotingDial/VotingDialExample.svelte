@@ -2,6 +2,19 @@
   @component
   Presentational voting-dial example with simulated local outcomes and status feedback; no API
   vote is saved.
+
+  **Props**
+  - `initialValue` (`number | null`; optional; default `null`): Initial simulated dial value in the
+    Storybook example; null starts unrated.
+  - `average` (`number | null`; optional; default `7.4`): Community average supplied by the parent;
+    null means no average is available.
+  - `totalVotes` (`number`; optional; default `21`): Community vote count supplied by the parent.
+  - `compact` (`boolean`; optional; default `false`): Selects the compact dial layout.
+  - `disabled` (`boolean`; optional; default `false`): Prevents interaction with this control.
+  - `label` (`string`; optional; default `'Node importance'`): Accessible name for the simulated
+    rating spinbutton.
+  - `voteOutcome` (`VoteOutcome`; optional; default `'accepted'`): Simulated acceptance outcome for
+    the standalone dial story: accepted, anonymous, or failed. No backend vote is saved.
 -->
 <script lang="ts">
   import { createVoteFeedback, type VoteOutcome } from '../shared/voteFeedback';

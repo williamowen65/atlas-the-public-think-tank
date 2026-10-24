@@ -1,6 +1,15 @@
 <!--
   @component
   Shared header example with story-controlled navigation and account presentation.
+
+  **Props**
+  - `active` (`ComponentProps<typeof AtlasHeader>['active']`; optional; default `'discover'`):
+    Navigation item highlighted in the isolated header; accepts the same destinations as
+    AtlasHeader.active.
+  - `authenticated` (`boolean`; optional; default `false`): Selects the signed-in header menu versus
+    login/register links; does not authenticate by itself.
+  - `displayName` (`string`; optional; default `'Atlas User'`): Name used to derive the
+    account-avatar initial.
 -->
 <script lang="ts">
   import type { ComponentProps } from 'svelte';

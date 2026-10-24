@@ -2,6 +2,13 @@
   @component
   NodeCommunities: Displays node-community associations and lets the node author change them.
   Shows association changes only to the node author; the backend remains authoritative for permission checks.
+
+  **Props**
+  - `nodeId` (`string`; required): ID of the node this component reads, displays, or modifies.
+  - `authorId` (`string`; optional): Node author ID used with the current session to show
+    association-editing controls; backend authorization remains authoritative.
+  - `archived` (`boolean`; optional; default `false`): Marks the node as archived and disables
+    applicable voting/editing controls.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';

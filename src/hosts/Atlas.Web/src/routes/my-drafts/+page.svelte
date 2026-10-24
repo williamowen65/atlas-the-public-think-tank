@@ -2,6 +2,9 @@
   @component
   Participant-scoped browser-local draft list with resume and delete actions; drafts are not
   synchronized to the API.
+
+  **Props**
+  No explicit component props. SvelteKit selects this route; URL parameters are read by the route itself.
 -->
 <script lang="ts">
   import { goto } from '$app/navigation';

@@ -2,6 +2,10 @@
   @component
   Paginated breadcrumb example with configurable ancestry depth and simulated navigation
   feedback.
+
+  **Props**
+  - `depth` (`number`; optional; default `8`): Number of generated ancestor labels in the Storybook
+    breadcrumb demonstration.
 -->
 <script lang="ts">
   import Breadcrumb from '../../src/lib/components/Breadcrumb.svelte';

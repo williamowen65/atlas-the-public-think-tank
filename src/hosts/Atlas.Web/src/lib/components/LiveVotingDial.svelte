@@ -5,6 +5,18 @@
   Loads the participant rating and server totals, confirms selections, saves/undoes votes,
   and prompts for sign-in after an unauthorized write. It never computes community averages.
   Disables the underlying dial while archived, loading status or saving a vote.
+
+  **Props**
+  - `nodeId` (`string`; required): ID of the node this component reads, displays, or modifies.
+  - `initialAverage` (`number | null`; optional; default `null`): Initial average shown while the
+    live voting summary is loading; the API summary is authoritative.
+  - `initialTotalVotes` (`number`; optional; default `0`): Initial count shown while the live voting
+    summary is loading; refreshed from the API.
+  - `archived` (`boolean`; optional; default `false`): Marks the node as archived and disables
+    applicable voting/editing controls.
+  - `sessionBase` (`string`; optional; default `'/atlas-session-api'`): Base URL for vote-summary
+    reads, CSRF-protected vote/undo writes, and the embedded sign-in control. The API returns the
+    authoritative count and average.
 -->
 <script lang="ts">
   import { onMount, tick } from 'svelte';

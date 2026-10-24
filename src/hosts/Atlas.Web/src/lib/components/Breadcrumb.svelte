@@ -2,6 +2,24 @@
   @component
   Breadcrumb: Scrollable ancestry ribbon with older-page loading and alternate-parent paths.
   Keeps scroll position while prepending ancestors or switching paths; async lookups do not own app routing.
+
+  **Props**
+  - `items` (`BreadcrumbItem[]`; required): Ancestor labels in oldest-to-newest order; IDs enable
+    navigation when a handler is supplied.
+  - `onNavigate` (`(id: string) => void`; optional): Callback: Receives the selected node ID when an
+    ancestor is activated. The parent owns navigation.
+  - `hasMore` (`boolean`; optional; default `false`): Whether older ancestors remain available to
+    load.
+  - `loadOlder` (`LoadOlderAncestors`; optional): Async ancestor loader; receives the oldest
+    displayed ID and returns a BreadcrumbPage.
+  - `routes` (`BreadcrumbRoute[]`; optional; default `[]`): Alternative ancestry paths for the route
+    switcher.
+  - `onRouteChange` (`(route: BreadcrumbRoute) => void`; optional): Callback: Called with the
+    selected BreadcrumbRoute after switching a supplied path.
+  - `originId` (`string`; optional): Current node ID used to look up alternative parents for the
+    final breadcrumb segment.
+  - `apiBase` (`string`; optional; default `'/atlas-public-api'`): Base URL for this component’s API
+    reads. This prop alone does not configure a proxy.
 -->
 <script lang="ts" module>
   export type {

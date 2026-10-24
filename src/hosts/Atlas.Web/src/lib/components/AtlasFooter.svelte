@@ -2,6 +2,12 @@
   @component
   AtlasFooter: Shared grouped navigation links and site footer.
   The parent can override internal-link navigation, allowing the same footer to work in Storybook.
+
+  **Props**
+  - `tagline` (`string`; optional; default `'A place to connect questions, evidence, and ideas.'`):
+    Supporting text in the footer.
+  - `onNavigate` (`(href: string) => void`; optional): Callback: Receives an internal href instead
+    of allowing normal link navigation. External links keep their normal behavior.
 -->
 <script lang="ts">
   let {

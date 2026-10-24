@@ -2,6 +2,17 @@
   @component
   AtlasHeader: Shared navigation, search, account menu and logout behavior.
   The parent supplies authentication and display-name props; this component performs the logout request.
+
+  **Props**
+  - `active` (`'discover' | 'communities' | 'create' | 'login' | 'register' | null`; optional;
+    default `null`): Highlighted navigation item; null leaves all items unselected.
+  - `authenticated` (`boolean`; optional; default `false`): Selects the signed-in header menu versus
+    login/register links; does not authenticate by itself.
+  - `displayName` (`string`; optional; default `'Atlas User'`): Name used to derive the
+    account-avatar initial.
+  - `onNavigate` (`(destination: 'discover' | 'create' | 'login' | 'register' | 'profile') => void`;
+    optional): Callback: Handles discover/create/login/register/profile destinations for workbench
+    navigation. Community and ordinary links retain their href behavior.
 -->
 <script lang="ts">
   import DiscoverySearch from './DiscoverySearch.svelte';

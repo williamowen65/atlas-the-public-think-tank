@@ -2,6 +2,9 @@
   @component
   Discovery route: derives search text and API filters from shared query state and supplies
   navigation to the live feed.
+
+  **Props**
+  No explicit component props. SvelteKit selects this route; URL parameters are read by the route itself.
 -->
 <script lang="ts">
   import { goto } from '$app/navigation';

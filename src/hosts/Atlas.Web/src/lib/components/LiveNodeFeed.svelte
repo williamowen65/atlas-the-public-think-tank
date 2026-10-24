@@ -2,6 +2,30 @@
   @component
   LiveNodeFeed: Loads discovery pages and composes NodeFeed with live voting/reaction controls.
   Owns loading and page accumulation; NodeFeed owns rendering and requests more pages through a callback.
+
+  **Props**
+  - `presentation` (`NodeCardPresentation`; optional; default `'ribbon-corner'`): Selects a
+    NodeCardPresentation layout; it does not change the underlying node data.
+  - `apiBase` (`string`; optional; default `'/atlas-public-api'`): Public API base for discovery
+    pages and descendant breadcrumb reads. Live voting/reaction wrappers use their own session-aware
+    defaults.
+  - `parentId` (`string`; optional): Restrict discovery to children of this parent node. When
+    omitted, filters.parentId can still supply the scope; otherwise the parent filter is unset.
+  - `typeId` (`string`; optional): Node type ID used to restrict the feed.
+  - `authorId` (`string`; optional): Participant ID used to restrict the feed to that author.
+  - `search` (`string`; optional; default `''`): Free-text discovery search, separate from
+    structured filters.
+  - `filters` (`DiscoveryFilters`; optional; default `{}`): Additional DiscoveryFilters for the feed
+    request; see the data-shape reference.
+  - `emptyTypeName` (`string`; optional): Singular contribution type name used in the empty-feed
+    invitation.
+  - `onCreateFirst` (`() => void`; optional): Callback: Called by the empty-feed invitation to open
+    creation for that contribution type.
+  - `onOpenNode` (`(id: string, typeId?: string) => void`; optional): Callback requesting navigation
+    to a node ID. Optional typeId selects a contribution tab, or comments for the comment tab.
+    Without a handler, this component uses the app’s node URL.
+  - `onOpenProfile` (`(id: string) => void`; optional): Callback: Receives the author/participant ID
+    to open in a profile page.
 -->
 <script lang="ts">
   import LiveVotingDial from './LiveVotingDial.svelte';

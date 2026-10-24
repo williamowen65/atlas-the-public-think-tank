@@ -1,6 +1,9 @@
 <!--
   @component
   Current-participant profile route with session checking and a sign-in fallback.
+
+  **Props**
+  No explicit component props. SvelteKit selects this route; URL parameters are read by the route itself.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';

@@ -2,6 +2,26 @@
   @component
   NodeForm: Editable creation form and Markdown preview; parent owns persistence.
   Seeds editable fields once and emits drafts through callbacks; it does not persist data itself.
+
+  **Props**
+  - `types` (`NodeType[]`; required): Available node types and their singular/plural display labels.
+  - `initialDraft` (`NodeDraft`; optional): Seed values for editable fields. Captured once when the
+    form is created; later prop changes do not overwrite user edits.
+  - `parentId` (`string`; optional): Parent node ID for child-node creation; omit for root creation.
+  - `parentTitle` (`string`; optional): Display title for the parent breadcrumb; parentId is the
+    actual association.
+  - `initialTypeId` (`string`; optional; default `''`): Initial node type selection when creating a
+    draft.
+  - `breadcrumb` (`BreadcrumbItem[]`; optional; default `[]`): Parent ancestry used above a creation
+    form, before the immediate parent is appended.
+  - `focusOnMount` (`boolean`; optional; default `false`): Requests initial focus/scroll placement
+    when the relevant form is rendered in the browser.
+  - `onPreview` (`(draft: NodeDraft) => void`; optional): Callback: Receives the current editable
+    NodeDraft as its fields change; does not save to the API.
+  - `onSubmit` (`(draft: NodeDraft) => void`; optional): Callback: Receives a NodeDraft when the
+    form submits. Without it, the form is preview-only.
+  - `submitting` (`boolean`; optional; default `false`): Shows the creation-in-progress label and
+    disables the submit button.
 -->
 <script lang="ts" module>
   export type { NodeDraft } from './nodeDraft.types';

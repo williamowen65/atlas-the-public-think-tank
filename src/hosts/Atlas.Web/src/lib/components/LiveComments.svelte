@@ -2,6 +2,25 @@
   @component
   LiveComments: Fetches and edits one level of a threaded discussion, recursively rendering replies.
   Each recursive instance owns its own cursor, retry state and composer; the API authorizes mutations.
+
+  **Props**
+  - `nodeId` (`string`; required): ID of the node this component reads, displays, or modifies.
+  - `parentId` (`string`; optional): Comment ID whose direct replies this list loads; omit to load
+    root comments for the node.
+  - `apiBase` (`string`; optional; default `'/atlas-public-api'`): Public API base for root/reply
+    comment pages, including each list’s cursor parameters. Profile lookups and mutations use
+    sessionBase.
+  - `sessionBase` (`string`; optional; default `'/atlas-session-api'`): API base for author-profile
+    lookups and CSRF-protected comment/reply/edit/remove writes. Public comment pages use apiBase.
+  - `participantId` (`string | null`; optional; default `null`): Current signed-in participant ID,
+    supplied by the parent. Enables composing and author controls; the backend still authorizes
+    writes.
+  - `showComposer` (`boolean`; optional; default `true`): Allows the comment/reply editor to appear
+    when a participant is signed in.
+  - `depth` (`number`; optional; default `0`): Reply nesting depth used to limit increasing
+    indentation.
+  - `onAdded` (`() => void`; optional): Callback: Called after a comment or reply is successfully
+    added; lets the parent refresh its displayed comment count.
 -->
 <script lang="ts">
   import { onMount, tick } from 'svelte';

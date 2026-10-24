@@ -2,6 +2,42 @@
   @component
   NodeFeed: Presentational card list with automatic/manual pagination and empty/error states.
   The parent owns data; optional snippets replace voting/reactions for each item.
+
+  **Props**
+  - `renderVoting` (`Snippet<[FeedItem]>`; optional): Svelte snippet receiving a FeedItem, used to
+    supply voting controls for each card.
+  - `renderReactions` (`Snippet<[FeedItem]>`; optional): Svelte snippet receiving a FeedItem, used
+    to supply reaction controls for each card.
+  - `items` (`FeedItem[]`; required): Loaded FeedItem records to display; the parent owns fetching
+    and accumulation.
+  - `loading` (`boolean`; optional; default `false`): Whether a page request is in progress; shows
+    loading feedback and restricts paging.
+  - `hasMore` (`boolean`; optional; default `false`): Whether more feed pages remain. Enables
+    automatic loading and the Load more button.
+  - `error` (`string`; optional; default `''`): Error text for feed paging; a nonempty value exposes
+    retry feedback.
+  - `presentation` (`NodeCardPresentation`; optional; default `'ribbon-corner'`): Selects a
+    NodeCardPresentation layout; it does not change the underlying node data.
+  - `onLoadMore` (`() => void`; optional): Callback: Requests the next page or retries the failed
+    page; parent owns fetching and page state.
+  - `onNavigate` (`(id: string) => void`; optional): Callback receiving a node ID from a card’s
+    ancestor or related-node links. The parent chooses the destination/navigation mechanism.
+  - `onOpenProfile` (`(id: string) => void`; optional): Callback: Receives the author/participant ID
+    to open in a profile page.
+  - `onReadMore` (`(id: string) => void`; optional): Callback: Receives the node ID when Read more
+    is activated; absence disables that action.
+  - `loadOlderAncestors` (`LoadOlderAncestors`; optional): Async ancestor loader forwarded to
+    Breadcrumb; follow the LoadOlderAncestors type definition for its fields.
+  - `apiBase` (`string`; optional): Forwarded to card breadcrumb readers; NodeFeed itself does not
+    fetch discovery pages.
+  - `onChildType` (`(id: string, typeId: string) => void`; optional): Callback: Receives node ID and
+    contribution type ID when a contribution-summary button is activated.
+  - `onComments` (`(id: string) => void`; optional): Callback: Receives the node ID when its
+    comment-count button is activated.
+  - `emptyTypeName` (`string`; optional): Singular contribution type name used in the empty-feed
+    invitation.
+  - `onCreateFirst` (`() => void`; optional): Callback: Called by the empty-feed invitation to open
+    creation for that contribution type.
 -->
 <script lang="ts" module>
   import type { NodeCardData } from './NodeCard.svelte';

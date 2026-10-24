@@ -2,6 +2,9 @@
   @component
   Community directory with local search, creation allowance feedback and the community creation
   form.
+
+  **Props**
+  No explicit component props. SvelteKit selects this route; URL parameters are read by the route itself.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';

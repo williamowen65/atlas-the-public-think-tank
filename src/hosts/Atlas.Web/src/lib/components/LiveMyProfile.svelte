@@ -2,6 +2,16 @@
   @component
   LiveMyProfile: Session-aware current-participant profile, editing and community display.
   Keeps profile-edit form state separate from the fetched public profile.
+
+  **Props**
+  - `apiBase` (`string`; optional; default `'/atlas-public-api'`): Public profile-read base, also
+    forwarded to LiveProfilePage. Community helpers currently retain their own endpoint defaults.
+  - `sessionBase` (`string`; optional; default `'/atlas-session-api'`): Session-aware API base used
+    by SessionControl and the current participant’s profile-update request.
+  - `onOpenNode` (`(id: string) => void`; optional): Callback: Receives a node ID to open. Where the
+    signature includes typeId, it selects the destination contribution tab.
+  - `onOpenProfile` (`(id: string) => void`; optional): Callback: Receives the author/participant ID
+    to open in a profile page.
 -->
 <script lang="ts">
   import LiveProfilePage from './LiveProfilePage.svelte';

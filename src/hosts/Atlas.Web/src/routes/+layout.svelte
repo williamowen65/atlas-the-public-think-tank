@@ -2,6 +2,10 @@
   @component
   Shared application shell with header, route content and footer. Reads session/profile state
   for account navigation.
+
+  **Props**
+  - `children` (`Snippet`; required): Current route/nested-layout content rendered between the
+    shared header and footer.
 -->
 <script lang="ts">
   import { onMount, type ComponentProps, type Snippet } from 'svelte';

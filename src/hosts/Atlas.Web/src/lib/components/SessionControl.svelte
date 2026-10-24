@@ -2,6 +2,24 @@
   @component
   SessionControl: Reusable session check, login, registration and optional sign-out UI.
   Reports participant identity through onSession; hideWhenSignedIn controls the signed-in helper display.
+
+  **Props**
+  - `sessionBase` (`string`; optional; default `'/atlas-session-api'`): Base URL for session/CSRF
+    reads and login, registration and logout writes. Defaults to /atlas-session-api; this prop
+    chooses request URLs, not proxy configuration.
+  - `prompt` (`string`; optional; default `'Sign in to Atlas'`): Text of the signed-out sign-in
+    disclosure summary.
+  - `expanded` (`boolean`; optional; default `false`): Opens the signed-out disclosure so the
+    login/register form is visible.
+  - `startRegister` (`boolean`; optional; default `false`): Initial registration versus login mode.
+    Captured once; the visitor can switch modes afterward.
+  - `focusOnMount` (`boolean`; optional; default `false`): Requests initial focus/scroll placement
+    when the relevant form is rendered in the browser.
+  - `hideWhenSignedIn` (`boolean`; optional; default `false`): Hides this entire session helper once
+    signed in, including its Sign out button.
+  - `onSession` (`(id: string | null) => void`; optional): Callback: Reports the participant ID
+    after session checks or sign-in; null indicates no usable session, including failed checks. May
+    run more than once.
 -->
 <script lang="ts">
   import { onMount, untrack } from 'svelte';

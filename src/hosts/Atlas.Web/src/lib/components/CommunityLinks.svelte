@@ -2,6 +2,11 @@
   @component
   CommunityLinks: Reads node-community associations and displays links, with names as fallback.
   Uses supplied names until public community records are available.
+
+  **Props**
+  - `nodeId` (`string`; required): ID of the node this component reads, displays, or modifies.
+  - `names` (`string[]`; required): Fallback community display names while linked community records
+    are being fetched.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';

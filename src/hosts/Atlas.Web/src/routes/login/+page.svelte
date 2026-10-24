@@ -1,6 +1,9 @@
 <!--
   @component
   Sign-in route using SessionControl; handles navigation after successful authentication.
+
+  **Props**
+  No explicit component props. SvelteKit selects this route; URL parameters are read by the route itself.
 -->
 <script lang="ts">
   import { goto } from '$app/navigation';

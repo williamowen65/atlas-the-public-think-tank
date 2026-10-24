@@ -2,6 +2,16 @@
   @component
   LiveProfilePage: Loads a public participant profile and their contribution feed.
   Public data is readable anonymously; edit controls depend on the current session and profile ownership.
+
+  **Props**
+  - `participantId` (`string`; optional; default `''`): Participant whose public profile and
+    authored contributions are displayed.
+  - `apiBase` (`string`; optional; default `'/atlas-public-api'`): Public API base for
+    participant/profile-community reads and the authored-node feed; owner edits use the session API.
+  - `onOpenNode` (`(id: string) => void`; optional): Callback: Receives a node ID to open. Where the
+    signature includes typeId, it selects the destination contribution tab.
+  - `onOpenProfile` (`(id: string) => void`; optional): Callback: Receives the author/participant ID
+    to open in a profile page.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';

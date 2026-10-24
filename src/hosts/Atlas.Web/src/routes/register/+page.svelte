@@ -1,6 +1,9 @@
 <!--
   @component
   Account registration route using SessionControl in initial registration mode.
+
+  **Props**
+  No explicit component props. SvelteKit selects this route; URL parameters are read by the route itself.
 -->
 <script lang="ts">
   import SessionControl from '$lib/components/SessionControl.svelte';

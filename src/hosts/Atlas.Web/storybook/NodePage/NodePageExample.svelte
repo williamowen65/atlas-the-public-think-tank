@@ -1,6 +1,12 @@
 <!--
   @component
   Live full-node workbench with an initial discussion-tab option and Storybook navigation.
+
+  **Props**
+  - `nodeId` (`string`; optional; default `''`): ID of the node this component reads, displays, or
+    modifies.
+  - `initialTypeId` (`string`; optional; default `''`): Discussion tab to select when the node story
+    opens: a contribution type ID or comments. This is not a new-node type selection.
 -->
 <script lang="ts">
   import LiveNodePage from '../../src/lib/components/LiveNodePage.svelte';

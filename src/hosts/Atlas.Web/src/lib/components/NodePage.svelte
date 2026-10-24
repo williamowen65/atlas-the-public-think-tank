@@ -2,6 +2,47 @@
   @component
   NodePage: Presentational full-node composition with discussion tabs and caller-supplied snippets.
   The parent owns fetching and tab state; snippets supply voting, reactions and the active tab content.
+
+  **Props**
+  - `voting` (`Snippet`; optional): Renderable snippet for the voting region, replacing the
+    always-disabled plain VotingDial fallback. LiveNodePage supplies LiveVotingDial here to add
+    API/session behavior.
+  - `reactions` (`Snippet`; optional): Renderable snippet for custom/live reaction controls. If
+    omitted, NodePage displays the static reaction summary from node.reactions.
+  - `scrollToDiscussionTabs` (`boolean`; optional; default `false`): Requests initial focus and
+    scrolling of the selected discussion tab to 20px below the viewport top. Adds minimum panel
+    height for short feeds, which may leave blank space; does not hide content.
+  - `node` (`NodeCardData`; required): Display model for the node header, breadcrumb, status,
+    community and contribution summaries. NodeCardData describes its fields; fetching belongs to the
+    parent.
+  - `blocks` (`ContentBlock[]`; required): Ordered content blocks passed to ContentBlocks. The
+    parent supplies these separately from the node’s short description.
+  - `types` (`NodeType[]`; required): Available node types and their singular/plural display labels.
+  - `active` (`string`; required): Controlled discussion-tab ID: comments, a contribution type ID,
+    or a temporary draft-tab ID. The parent changes this value after onTabChange requests.
+  - `draftTab` (`{ id: string; name: string }`; optional): Temporary contribution-tab ID and label
+    for an in-progress child draft.
+  - `onTabChange` (`(id: string) => void`; required): Callback: Receives the requested
+    discussion-tab ID; the parent controls active.
+  - `onAddChild` (`(id?: string) => void`; required): Callback: Requests a child form for the
+    supplied type ID, or lets the parent choose when omitted.
+  - `onNavigate` (`(id: string) => void`; optional): Callback receiving an ancestor node ID from
+    Breadcrumb. The parent decides how to navigate in the app or Storybook.
+  - `onOpenProfile` (`(id: string) => void`; optional): Callback: Receives the author/participant ID
+    to open in a profile page.
+  - `hasMoreAncestors` (`boolean`; optional; default `false`): Whether additional older ancestors
+    can be loaded for the node’s breadcrumb.
+  - `loadOlderAncestors` (`LoadOlderAncestors`; optional): Async callback forwarded to Breadcrumb.
+    Receives the oldest displayed node ID (possibly undefined) and returns a page of older ancestor
+    items plus hasMore.
+  - `apiBase` (`string`; optional): Forwarded to Breadcrumb for alternate-parent lookups; the parent
+    supplies node/content data.
+  - `average` (`number | null`; optional; default `null`): Community average supplied by the parent;
+    null means no average is available.
+  - `totalVotes` (`number`; optional; default `0`): Community vote count supplied by the parent.
+  - `children` (`Snippet`; required): Renderable content supplied between the NodePage tags:
+    comments, a child-node feed and/or a creation form for the active tab. Rendered in the tab
+    panel; unrelated to whether child nodes exist.
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';

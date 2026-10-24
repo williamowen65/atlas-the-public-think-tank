@@ -2,6 +2,39 @@
   @component
   NodeCardContextBelow: Common card contract using the context-below presentation.
   Accepts the shared NodeCardProps contract; parent callbacks handle navigation and optional snippets provide live controls.
+
+  **Props**
+  - `node` (`NodeCardData`; required): Presentation data for one node; follow the NodeCardData type
+    definition for its fields.
+  - `voting` (`Snippet`; optional): Renderable snippet that replaces the card’s built-in VotingDial.
+    Supply LiveVotingDial here for API-backed voting; otherwise the built-in dial reports selections
+    through onVote.
+  - `reactionControls` (`Snippet`; optional): Renderable snippet replacing the static reaction
+    summary with custom/live controls, such as LiveReactions.
+  - `hasMoreAncestors` (`boolean`; optional): Whether additional older ancestors can be loaded for
+    the node’s breadcrumb.
+  - `loadOlderAncestors` (`LoadOlderAncestors`; optional): Async callback receiving the oldest
+    visible ancestor ID and returning BreadcrumbPage: older items and hasMore. Used by ribbon
+    variants; context-below has no ancestor pager.
+  - `apiBase` (`string`; optional): Public read base forwarded to breadcrumb lookups by ribbon
+    variants. Context-below accepts but does not use it; this is not the vote-save endpoint.
+  - `value` (`number | null`; optional; default `null`): Current controlled rating, 0–10. null means
+    unrated; zero is a real rating.
+  - `average` (`number | null`; optional; default `null`): Community average supplied by the parent;
+    null means no average is available.
+  - `totalVotes` (`number`; optional; default `0`): Community vote count supplied by the parent.
+  - `onVote` (`(value: number) => void`; optional): Callback: Reports a selected rating to the
+    parent. The presentation component does not save it to the API.
+  - `onNavigate` (`(id: string) => void`; optional): Callback receiving a node ID from ancestor or
+    related-node navigation. The parent decides how to open it in the app or Storybook.
+  - `onOpenProfile` (`(id: string) => void`; optional): Callback: Receives the author/participant ID
+    to open in a profile page.
+  - `onReadMore` (`(id: string) => void`; optional): Callback: Receives the node ID when Read more
+    is activated; absence disables that action.
+  - `onChildType` (`(id: string, typeId: string) => void`; optional): Callback: Receives node ID and
+    contribution type ID when a contribution-summary button is activated.
+  - `onComments` (`(id: string) => void`; optional): Callback: Receives the node ID when its
+    comment-count button is activated.
 -->
 <script lang="ts">
   import { centerInCard } from '../../actions/centerInCard';

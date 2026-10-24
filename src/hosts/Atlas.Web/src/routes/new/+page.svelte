@@ -2,6 +2,9 @@
   @component
   Node creation route; resumes an optional local draft and opens the node after successful
   creation.
+
+  **Props**
+  No explicit component props. SvelteKit selects this route; URL parameters are read by the route itself.
 -->
 <script lang="ts">
   import { page } from '$app/state';

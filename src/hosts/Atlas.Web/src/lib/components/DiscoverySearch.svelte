@@ -2,6 +2,10 @@
   @component
   DiscoverySearch: Shared discovery search and filter toolbox; communicates through discoveryQuery state.
   Parses search tokens and publishes the accepted query to shared discovery state.
+
+  **Props**
+  - `onExpandedChange` (`(expanded: boolean) => void`; optional): Callback: Reports whether the
+    search filter toolbox is expanded, so the header can adjust its layout.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';

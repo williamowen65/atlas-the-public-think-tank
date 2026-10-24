@@ -1,6 +1,9 @@
 <!--
   @component
   Current-participant live profile example with Storybook navigation.
+
+  **Props**
+  No explicit component props; this example supplies its own composition.
 -->
 <script lang="ts">
   import LiveMyProfile from '../../src/lib/components/LiveMyProfile.svelte';

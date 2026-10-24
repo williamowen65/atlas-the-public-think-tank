@@ -2,6 +2,10 @@
   @component
   ContentBlocks: Renders an ordered list of supported content blocks.
   Handles images/links with URL validation and delegates Markdown to MarkdownContent.
+
+  **Props**
+  - `blocks` (`ContentBlock[]`; required): Ordered content blocks to render; follow the ContentBlock
+    type definition for its fields.
 -->
 <script lang="ts">
   import MarkdownContent from './MarkdownContent.svelte';

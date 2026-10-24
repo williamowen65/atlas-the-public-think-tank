@@ -2,6 +2,9 @@
   @component
   Small application integration example demonstrating ActionButton callbacks and status
   feedback.
+
+  **Props**
+  No explicit component props. SvelteKit selects this route; URL parameters are read by the route itself.
 -->
 <script lang="ts">
   import ActionButton from '$lib/components/ActionButton.svelte';

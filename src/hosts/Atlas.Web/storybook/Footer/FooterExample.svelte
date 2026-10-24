@@ -1,6 +1,10 @@
 <!--
   @component
   Shared footer example with workbench-aware navigation.
+
+  **Props**
+  - `tagline` (`string`; optional; default `'A place to connect questions, evidence, and ideas.'`):
+    Supporting text in the footer.
 -->
 <script lang="ts">
   import AtlasFooter from '../../src/lib/components/AtlasFooter.svelte';

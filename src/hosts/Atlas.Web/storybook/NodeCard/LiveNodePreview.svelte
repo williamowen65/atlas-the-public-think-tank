@@ -2,6 +2,10 @@
   @component
   Live API card workbench with discovery search, paging and node selection; supplies live voting
   and reaction totals.
+
+  **Props**
+  - `presentation` (`NodeCardPresentation`; optional; default `'ribbon'`): Selects a
+    NodeCardPresentation layout; it does not change the underlying node data.
 -->
 <script lang="ts">
   import { openNodeStory } from '../shared/navigation';

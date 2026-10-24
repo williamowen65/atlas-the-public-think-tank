@@ -2,6 +2,17 @@
   @component
   ActionButton: Reusable action button with accessibility attributes and an activation callback.
   The parent supplies the label and callback; this component performs no API requests.
+
+  **Props**
+  - `label` (`string`; required): Visible button text and its accessible name. The parent supplies
+    the action-specific wording.
+  - `disabled` (`boolean`; optional; default `false`): Prevents interaction with this control.
+  - `expanded` (`boolean`; optional): Sets aria-expanded to describe whether the controlled region
+    is open.
+  - `controls` (`string`; optional): HTML ID of the region controlled by the button; supplies
+    aria-controls.
+  - `onActivate` (`() => void`; optional): Callback: Called when the enabled button is activated by
+    pointer or keyboard.
 -->
 <script lang="ts">
   interface Props {

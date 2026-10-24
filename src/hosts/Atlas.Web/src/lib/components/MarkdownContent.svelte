@@ -2,6 +2,10 @@
   @component
   MarkdownContent: Shared Markdown rendering for published blocks and editor previews.
   The renderer disables raw HTML/images and validates link protocols before producing HTML.
+
+  **Props**
+  - `text` (`string`; required): Markdown block source; short descriptions remain plain text
+    elsewhere.
 -->
 <script lang="ts">
   import { renderMarkdown } from '../markdown/renderMarkdown';

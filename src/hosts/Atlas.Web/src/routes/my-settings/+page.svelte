@@ -2,6 +2,9 @@
   @component
   Session-aware public profile settings with save/discard actions and account-security
   availability notes.
+
+  **Props**
+  No explicit component props. SvelteKit selects this route; URL parameters are read by the route itself.
 -->
 <script lang="ts">
   import SessionControl from '$lib/components/SessionControl.svelte';

@@ -1,6 +1,12 @@
 <!--
   @component
   Live root/child creation-form example that opens created nodes in Storybook.
+
+  **Props**
+  - `parentId` (`string`; optional): Parent node ID for child-node creation; omit for root creation.
+  - `parentTitle` (`string`; optional): Display title for the parent breadcrumb; parentId is the
+    actual association.
+  - `initialTypeId` (`string`; optional): Initial node type selection when creating a draft.
 -->
 <script lang="ts">
   import LiveNodeForm from '../../src/lib/components/LiveNodeForm.svelte';

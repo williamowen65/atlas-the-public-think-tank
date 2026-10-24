@@ -2,6 +2,9 @@
   @component
   Two independent presentational voting dials for comparing full and compact layouts; no API
   votes are submitted.
+
+  **Props**
+  No explicit component props; this example supplies its own composition.
 -->
 <script lang="ts">
   import VotingDial from '../../src/lib/components/VotingDial.svelte';

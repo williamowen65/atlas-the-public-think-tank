@@ -2,6 +2,13 @@
   @component
   LiveReactions: Loads reaction choices/scores and handles session-aware reaction voting and undo.
   Uses API-returned scores and participant votes instead of optimistically calculating totals.
+
+  **Props**
+  - `nodeId` (`string`; required): ID of the node this component reads, displays, or modifies.
+  - `archived` (`boolean`; optional; default `false`): Marks the node as archived and disables
+    applicable voting/editing controls.
+  - `apiBase` (`string`; optional; default `'/atlas-session-api'`): Session-aware endpoint base for
+    both reaction reads and writes, despite the generic apiBase prop name.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';

@@ -2,6 +2,9 @@
   @component
   Public profile route selecting an explicit participant or the current session, with a sign-in
   fallback.
+
+  **Props**
+  No explicit component props. SvelteKit selects this route; URL parameters are read by the route itself.
 -->
 <script lang="ts">
   import { page } from '$app/state';

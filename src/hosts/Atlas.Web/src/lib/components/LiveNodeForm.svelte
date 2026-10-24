@@ -2,6 +2,31 @@
   @component
   LiveNodeForm: Session-aware creation, browser-private draft handling, custom types and backend submission.
   Public reads load types; session-aware writes save types/nodes, while private drafts stay in this browser.
+
+  **Props**
+  - `draftId` (`string`; optional): ID of an existing browser-private draft to restore for the
+    signed-in participant.
+  - `parentId` (`string`; optional): Parent node ID for child-node creation; omit for root creation.
+  - `parentTitle` (`string`; optional): Display title for the parent breadcrumb; parentId is the
+    actual association.
+  - `initialTypeId` (`string`; optional): Initial node type selection when creating a draft.
+  - `breadcrumb` (`BreadcrumbItem[]`; optional; default `[]`): Parent ancestry used above a creation
+    form, before the immediate parent is appended.
+  - `focusOnMount` (`boolean`; optional; default `false`): Requests initial focus/scroll placement
+    when the relevant form is rendered in the browser.
+  - `apiBase` (`string`; optional; default `'/atlas-public-api'`): Public API base for reading the
+    type catalog and resolving a parent node’s title/ancestry. Creation writes use sessionBase
+    instead.
+  - `sessionBase` (`string`; optional; default `'/atlas-session-api'`): Session-aware API base for
+    account controls and CSRF-protected custom-type/node creation. Private draft saving uses browser
+    storage rather than this endpoint.
+  - `onCreated` (`(id: string) => void`; optional): Callback: Receives the ID returned by the
+    backend after successful node creation.
+  - `onDraftChange` (`(draft: NodeDraft | null) => void`; optional): Receives the current draft or
+    null according to the callback contract; lets the parent track child-form state.
+  - `onRegisterClose` (`(close: () => Promise<boolean>) => void`; optional): Callback: Registers an
+    async draft-save function with the parent. Calling that function returns whether saving
+    succeeded; it does not itself close the form.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';

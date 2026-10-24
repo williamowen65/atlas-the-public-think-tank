@@ -2,6 +2,30 @@
   @component
   Typography and spacing workbench for exploring shared Storybook design settings and resetting
   code defaults.
+
+  **Props**
+  - `fontFamily` (`string`; optional): CSS font-family stack for workbench experiments.
+  - `fontSize` (`number`; optional; default `16`): Base font size in pixels.
+  - `lineHeight` (`number`; optional; default `1.6`): Unitless text line-height multiplier.
+  - `headingScale` (`number`; optional; default `1.5`): Heading size multiplier for the typography
+    specimen and shared tokens.
+  - `paragraphGap` (`number`; optional; default `16`): Paragraph spacing in pixels.
+  - `headingGap` (`number`; optional; default `12`): Heading spacing in pixels.
+  - `space` (`number`; optional): Shared spacing override in pixels; zero follows Storybook Density.
+  - `cardPadding` (`number`; optional): Standard card padding in pixels.
+  - `cardPaddingNarrow` (`number`; optional): Narrow-screen card padding in pixels.
+  - `dialTextGap` (`number`; optional): Gap between the voting dial and adjacent text, in pixels.
+  - `radius` (`number`; optional): Shared corner radius in pixels.
+  - `background` (`string`; optional): Page background CSS color; empty uses the selected theme.
+  - `surface` (`string`; optional): Panel surface CSS color; empty uses the selected theme.
+  - `text` (`string`; optional): Primary text CSS color; empty uses the selected theme.
+  - `muted` (`string`; optional): Secondary text CSS color; empty uses the selected theme.
+  - `accent` (`string`; optional): Accent CSS color; empty uses the selected theme.
+  - `onAccent` (`string`; optional): Text color over accent surfaces; empty uses the selected theme.
+  - `border` (`string`; optional): Border CSS color; empty uses the selected theme.
+  - `focus` (`string`; optional): Keyboard-focus CSS color; empty uses the selected theme.
+  - `onReset` (`() => void`; optional): Callback: Called when Reset styles to code defaults is
+    activated; the parent provides the reset implementation.
 -->
 <script lang="ts">
   import type { DesignSettings } from './designSettings';
