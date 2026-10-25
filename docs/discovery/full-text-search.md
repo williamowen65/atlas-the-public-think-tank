@@ -150,7 +150,24 @@ dotnet run --project src/hosts/Atlas.Console -- --seed-demo
 dotnet test tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj --filter FullyQualifiedName~Discovery
 ```
 
-Demo seeding requires an empty database. After seeding, open Atlas and try a text search once indexing has caught up.
+Demo seeding requires an empty database.
+
+**Seeding can finish before the seeded content is searchable.**
+
+- Saving rows and updating the full-text indexes are separate operations.
+- A fresh database followed by bulk seeding can leave indexing work queued in the background.
+- During that interval, text search may show no results or only some of the expected results. A successfully saved node can still open directly by ID.
+- Allow indexing to catch up, then submit the search again. The application does not automatically refresh an already displayed empty result.
+- Do not delete/reseed the database again solely because the first text search is empty.
+- There is no fixed indexing delay. If results remain missing, check index population/pending changes and SQL Server diagnostics rather than assuming indexing is still progressing.
+
+### Why SQL search tests wait too
+
+- Discovery SQL fixtures explicitly wait for the full-text indexes to finish their tracked work before asserting search results.
+- The wait polls indexing status and pending changes, with a 45-second timeout that fails the test if indexing does not finish.
+- Search fixtures generally seed small, isolated sets of records rather than the full demo dataset. Smaller batches can finish sooner, but the wait still matters; tests must not assume immediate visibility.
+- The 45-second timeout is a test deadline, not a promised maximum delay for the application.
+- Setup and normal application requests do not perform that test-only wait.
 
 For SQL tests:
 
