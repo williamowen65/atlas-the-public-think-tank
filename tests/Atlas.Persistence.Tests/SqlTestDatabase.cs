@@ -9,18 +9,18 @@ namespace Atlas.Persistence.Tests;
 internal sealed class SqlTestDatabase : IDisposable
 {
     private readonly DbContextOptions<AtlasDataContext> _options;
-    private SqlTestDatabase(string connection, bool useCurrentModel)
+    private SqlTestDatabase(string connection, bool useCurrentModel, bool installFullText)
     {
         _options = new DbContextOptionsBuilder<AtlasDataContext>().UseSqlServer(connection).Options;
         using var database = Open();
         if (useCurrentModel)
         {
             database.Database.EnsureCreated();
-            SqlFullTextSupport.CreateIndexes(database);
+            if (installFullText) SqlFullTextSupport.CreateIndexes(database);
         }
-        else database.Database.Migrate();
+        else AtlasDatabaseSetup.Apply(database);
     }
-    public static SqlTestDatabase Create(bool useCurrentModel = false)
+    public static SqlTestDatabase Create(bool useCurrentModel = false, bool installFullText = true)
     {
         // Local projects share one secrets file; CI environment values take precedence.
         var configuration = new ConfigurationBuilder()
@@ -34,7 +34,7 @@ internal sealed class SqlTestDatabase : IDisposable
         {
             InitialCatalog = $"AtlasRepositoryTests_{Guid.NewGuid():N}"
         }.ConnectionString;
-        return new SqlTestDatabase(connection, useCurrentModel);
+        return new SqlTestDatabase(connection, useCurrentModel, installFullText);
     }
     public AtlasDataContext Open() => new(_options);
     public AtlasDataContext OpenForDiscovery()

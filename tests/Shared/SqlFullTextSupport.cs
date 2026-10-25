@@ -10,7 +10,7 @@ namespace Atlas.Testing;
 internal static class SqlFullTextSupport
 {
     internal static void CreateIndexes(AtlasDataContext db) =>
-        db.Database.ExecuteSqlRaw(DiscoveryFullTextSchema.CreateSql);
+        AtlasDatabaseSetup.InstallSupplementalSchema(db);
 
     internal static void WaitForIndexing(string connectionString)
     {
@@ -28,7 +28,7 @@ internal static class SqlFullTextSupport
         using var schema = connection.CreateCommand();
         schema.CommandText = "SELECT COUNT(*) FROM sys.fulltext_indexes WHERE object_id IN (OBJECT_ID(N'dbo.NodeRows'), OBJECT_ID(N'dbo.BlockRows'))";
         if (Convert.ToInt32(schema.ExecuteScalar()) != 2)
-            throw new InvalidOperationException("Generate and complete the Atlas full-text migration (including its CreateSql call) before running discovery tests.");
+            throw new InvalidOperationException("Run the explicit database setup command after applying the EF schema before running discovery tests.");
         var timer = Stopwatch.StartNew();
         do
         {

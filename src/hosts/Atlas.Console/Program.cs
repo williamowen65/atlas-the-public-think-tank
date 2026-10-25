@@ -1,3 +1,5 @@
+using Atlas.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Atlas.ConsoleApp.Diagnostics;
 using Atlas.Identity;
 using Atlas.Application.Observability;
@@ -36,6 +38,24 @@ var configuration = new ConfigurationBuilder()
 var connectionString = configuration["ATLAS_SQL_CONNECTION_STRING"];
 if (string.IsNullOrWhiteSpace(connectionString))
     throw new InvalidOperationException("Set ATLAS_SQL_CONNECTION_STRING to a SQL Server connection string.");
+
+// Explicit maintenance command: finish before Identity, telemetry or interactive startup.
+if (args.Contains("--setup-database", StringComparer.OrdinalIgnoreCase))
+{
+    try
+    {
+        using var database = new AtlasDataContext(
+            new DbContextOptionsBuilder<AtlasDataContext>().UseSqlServer(connectionString).Options);
+        AtlasDatabaseSetup.Apply(database);
+        System.Console.WriteLine("Database setup complete: EF migrations applied and full-text indexes available. Index population continues in the background.");
+    }
+    catch (Exception error)
+    {
+        System.Console.Error.WriteLine("Database setup failed. Check SQL connectivity, permissions and Full-Text Search support. " + error.Message);
+        Environment.ExitCode = 1;
+    }
+    return;
+}
 
 SqlStorage.Configure(connectionString);
 using var identityServices = new ServiceCollection().AddAtlasIdentity(connectionString)
