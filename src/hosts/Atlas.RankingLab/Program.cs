@@ -33,6 +33,13 @@ app.MapPost("/run", (SearchRequest request) =>
         var search = new SqlPublicSearch(() => new AtlasDataContext(options));
         var explained = search.Explain(request.Query, request.Scope);
         using var db = new AtlasDataContext(options);
+        var stoplist = db.Database.SqlQueryRaw<StoplistInfo>(
+            "SELECT stoplist_id AS Id FROM sys.fulltext_indexes WHERE object_id = OBJECT_ID(N'dbo.SearchDocuments')").SingleOrDefault();
+        string[] stopWords = [];
+        if (stoplist?.Id == 0)
+            stopWords = db.Database.SqlQueryRaw<string>("SELECT stopword AS Value FROM sys.fulltext_system_stopwords WHERE language_id = 1033").ToArray();
+        else if (stoplist?.Id is { } id)
+            stopWords = db.Database.SqlQuery<string>($"SELECT stopword AS Value FROM sys.fulltext_stopwords WHERE stoplist_id = {id} AND language_id = 1033").ToArray();
         var ids = explained.Evidence.Select(e => e.Id).ToArray();
         var documents = db.Database.SqlQueryRaw<SearchDocument>("SELECT ResultId, SearchText FROM dbo.SearchDocuments")
             .Where(d => ids.Contains(d.ResultId)).ToDictionary(d => d.ResultId, d => d.SearchText);
@@ -59,6 +66,8 @@ app.MapPost("/run", (SearchRequest request) =>
         }
         return Results.Ok(new { policy = request.Query.VotingWeight.HasValue ? SqlPublicSearch.WeightedRankingPolicyVersion : SqlPublicSearch.RankingPolicyVersion, explained.Page,
             collectedAt = DateTimeOffset.UtcNow,
+            stoplist = stoplist is null ? "Unknown" : stoplist.Id is null ? "Off" : stoplist.Id == 0 ? "System (English)" : "Custom (English)",
+            stopWords,
             rows = explained.Evidence.Select((e, i) => new {
                 position = (explained.Page.Page - 1) * explained.Page.PageSize + i + 1,
                 item = explained.Page.Items[i], evidence = e, searchText = documents.GetValueOrDefault(e.Id, ""),
@@ -81,3 +90,5 @@ public sealed class SearchDocument
 }
 
 public sealed record TextSource(string Field, string Text, Guid? BlockId = null);
+
+public sealed class StoplistInfo { public int? Id { get; set; } }

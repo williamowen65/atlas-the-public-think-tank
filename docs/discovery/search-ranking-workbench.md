@@ -27,3 +27,10 @@ The application's search Filters and Settings → Search preferences expose a co
 Preferences are stored in localStorage per participant (or anonymous visitor) on this browser origin, not synchronized to a server or across devices. Storage failure keeps the in-session value and shows feedback. Settings uses the same control and state as Filters.
 
 `VotingWeight` is an optional integer API query parameter validated from 0 to 100. When supplied, SQL orders the entire matching set by the additive logarithmic-text/voting formula before counting/paging. It changes order, not eligibility. At 0% only text contributes, at 100% only voting contributes; existing deterministic kind/date/ID tie-breaks remain. No-text node browsing keeps its established ordering. The lab sends the selected weight too; its main table is authoritative for that backend run, while slider previews remain limited to loaded candidates until Search is pressed again. No schema migration is required.
+
+
+## Stopwords and literal evidence
+
+Atlas's full-text index setup uses `STOPLIST = SYSTEM`. The diagnostics host now reads the active SearchDocuments index's stoplist association and its English stopwords (system, custom, or off). The response/export includes `stoplist` and `stopWords`. The UI lists query words excluded by that list and excludes them from literal highlighting, passages and hit counts. Overall word counts still include all words. Missing metadata is labeled unverified rather than assumed to use a browser-maintained list.
+
+This corrects display evidence; it does not change ranking or strip words from the actual SQL query. SQL remains responsible for linguistic matching, stopword processing and scoring. Literal highlights still are not SQL parser tokens or per-term contributions. Full-text search matches any meaningful query term rather than requiring an exact pasted sentence, so broad results can remain even with stopwords excluded. Existing local indexes are inspected rather than silently modified.

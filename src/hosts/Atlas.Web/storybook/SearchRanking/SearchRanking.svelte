@@ -1,8 +1,10 @@
 <script lang="ts">
   import type { Evidence } from './types';
-  import { words, matches, parts, passage, experiment } from './evidence';
+  import { words, matches, parts, passage, experiment, searchableTerms } from './evidence';
   type Report = {
     policy: string;
+    stoplist?: string;
+    stopWords?: string[];
     page: { totalCount: number; page: number; hasNextPage: boolean };
     rows: {
       sources?: { field: string; text: string; blockId?: string | null }[];
@@ -32,6 +34,18 @@
     query: { searchText: string; page: number; votingWeight: number };
     scope: string;
   } | null>(null);
+  const highlightQuery = $derived(
+    searchableTerms(submitted?.query.searchText ?? '', report?.stopWords ?? []),
+  );
+  const ignoredTerms = $derived([
+    ...new Set(
+      words(submitted?.query.searchText ?? '').filter((word) =>
+        (report?.stopWords ?? []).some(
+          (stop) => stop.toLocaleLowerCase('en-US') === word.toLocaleLowerCase('en-US'),
+        ),
+      ),
+    ),
+  ]);
   let sentinel = $state<HTMLDivElement>();
   $effect(() => {
     if (
@@ -127,11 +141,26 @@
     {#if submitted?.query.searchText !== query || submitted?.scope !== scope}<p role="status">
         Inputs changed. Search again to update these results.
       </p>{/if}
+    <p>Database stoplist: <strong>{report.stoplist ?? 'Unavailable'}</strong>.</p>
+    {#if report.stoplist === 'Off'}<p role="alert">
+        Stopwords are disabled on this database's search index. Common words can participate in
+        matching. Check the local full-text index configuration.
+      </p>
+    {:else if !report.stoplist || report.stoplist === 'Unknown'}<p>
+        Stoplist information is unavailable. Highlights show literal matches without verified
+        stopword filtering.
+      </p>{/if}
+    <p>
+      Ignored query words: {ignoredTerms.length ? ignoredTerms.join(', ') : 'None identified'}.
+      Highlights and literal hit counts exclude words from the active English stoplist. Total word
+      counts still include all words.
+    </p>
     <div class="table-wrap">
       <table>
         <thead
           ><tr
-            ><th>Rank</th><th>Result</th><th>Text relevance</th><th>Indexed words / literal hits</th
+            ><th>Rank</th><th>Result</th><th>Text relevance</th><th
+              >Indexed words / non-stopword hits</th
             ><th>Vote count</th><th>Average / net</th><th>Support</th><th>Score / raw relevance</th
             ><th>Final score</th></tr
           ></thead
@@ -143,25 +172,24 @@
                   >{row.evidence.kind}</small
                 >
                 <p>
-                  {#each parts(passage(row.searchText, submitted?.query.searchText ?? ''), submitted?.query.searchText ?? '') as part}{#if part.match}<mark
+                  {#each parts(passage(row.searchText, highlightQuery), highlightQuery) as part}{#if part.match}<mark
                         >{part.text}</mark
                       >{:else}{part.text}{/if}{/each}
                 </p></th
               >
               <td>{row.evidence.textRank}</td><td
-                >{words(row.searchText).length} / {matches(
-                  row.searchText,
-                  submitted?.query.searchText ?? '',
-                )}</td
+                >{words(row.searchText).length} / {matches(row.searchText, highlightQuery)}</td
               ><td>{row.evidence.kind === 'node' ? row.item.voteCount : '—'}</td>
               <td
                 >{row.evidence.kind === 'node'
                   ? (row.item.averageVote?.toFixed(2) ?? 'Unrated')
                   : row.item.comment?.score}</td
               >
-              <td>{number(row.evidence.support)}</td><td>{report.policy === 'weighted-v1' ? 'Additive' : '×' + number(row.evidence.multiplier)}</td><td
-                >{number(row.evidence.finalScore)}</td
-              >
+              <td>{number(row.evidence.support)}</td><td
+                >{report.policy === 'weighted-v1'
+                  ? 'Additive'
+                  : '×' + number(row.evidence.multiplier)}</td
+              ><td>{number(row.evidence.finalScore)}</td>
             </tr>{/each}</tbody
         >
       </table>
@@ -246,7 +274,7 @@
           >{row.position}. {row.item.card?.title ?? row.item.comment?.nodeTitle} · {row.evidence
             .kind} · {words(row.searchText).length} indexed words · {matches(
             row.searchText,
-            submitted?.query.searchText ?? '',
+            highlightQuery,
           )} literal hits</summary
         >
         <h4>Source fields and matching passages</h4>
@@ -255,24 +283,24 @@
             <h5>
               {source.field} · {words(source.text).length} words · {matches(
                 source.text,
-                submitted?.query.searchText ?? '',
+                highlightQuery,
               )} literal hits
             </h5>
             <p>
-              {#each parts(passage(source.text, submitted?.query.searchText ?? ''), submitted?.query.searchText ?? '') as part}{#if part.match}<mark
+              {#each parts(passage(source.text, highlightQuery), highlightQuery) as part}{#if part.match}<mark
                     >{part.text}</mark
                   >{:else}{part.text}{/if}{/each}
             </p>
             <details>
               <summary>Full field text</summary>
-              <pre>{#each parts(source.text, submitted?.query.searchText ?? '') as part}{#if part.match}<mark
+              <pre>{#each parts(source.text, highlightQuery) as part}{#if part.match}<mark
                       >{part.text}</mark
                     >{:else}{part.text}{/if}{/each}</pre>
             </details>
           </section>
         {:else}<p>Field evidence unavailable. Restart the ranking backend after pulling.</p>{/each}
         <h4>Exact search projection text</h4>
-        <pre>{#each parts(row.searchText, submitted?.query.searchText ?? '') as part}{#if part.match}<mark
+        <pre>{#each parts(row.searchText, highlightQuery) as part}{#if part.match}<mark
                 >{part.text}</mark
               >{:else}{part.text}{/if}{/each}</pre>
         <p>Ranking date: {row.evidence.tieDate} · Result ID: {row.evidence.id}</p>

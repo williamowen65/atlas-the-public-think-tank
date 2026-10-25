@@ -1,5 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { experiment, matches, words, parts, passage } from '../storybook/SearchRanking/evidence';
+import {
+  experiment,
+  matches,
+  words,
+  parts,
+  passage,
+  searchableTerms,
+} from '../storybook/SearchRanking/evidence';
 
 test('literal evidence counts whole words, casing and Unicode without inventing stemming', () => {
   expect(words('Café, testing! test-tested.')).toHaveLength(4);
@@ -24,4 +31,12 @@ test('experimental balance permits rated nodes to compete with short unvoted com
   expect(experiment({ ...comment, support: -1 }).score).toBeLessThan(experiment(comment).score);
   expect(experiment({ ...comment, support: 1 }).score).toBeGreaterThan(experiment(comment).score);
   expect(experiment({ kind: 'node', textRank: 0, support: 0 }).score).toBe(0);
+});
+
+test('active SQL stopwords are excluded without guessing or dropping meaningful substrings', () => {
+  const query = searchableTerms('OTTERS and the islands', ['and', 'the']);
+  expect(query).toBe('OTTERS islands');
+  expect(matches('And the otters visit islands', query)).toBe(2);
+  expect(searchableTerms('and the', ['and', 'the'])).toBe('');
+  expect(searchableTerms('candy and islands', [])).toBe('candy and islands');
 });

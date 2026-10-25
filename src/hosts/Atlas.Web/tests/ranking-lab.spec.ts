@@ -4,6 +4,8 @@ const story =
 function report() {
   return {
     policy: 'support-v2',
+    stoplist: 'System (English)',
+    stopWords: ['and', 'the'],
     page: { totalCount: 4, page: 1, hasNextPage: false },
     rows: [
       {
@@ -117,4 +119,23 @@ test('field evidence and experimental scores are inspectable without another sea
   expect(exported.experiment.rows[0].voteContribution).toBe(0);
   expect(exported.report.rows[0].sources[0].field).toBe('Title');
   expect(calls).toBe(1);
+});
+
+test('diagnostics distinguish ignored SQL stopwords from meaningful literal matches', async ({
+  page,
+}) => {
+  await page.route('**/atlas-ranking-lab/run', (route) => {
+    const response = report();
+    response.rows[0].searchText = 'And local the';
+    response.rows[0].sources = [{ field: 'Title', text: 'And local the' }];
+    return route.fulfill({ json: response });
+  });
+  await page.goto(story);
+  await page.getByLabel('Search terms').fill('and local the');
+  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(page.getByText(/Ignored query words: and, the/)).toBeVisible();
+  await expect(page.locator('mark').first()).toHaveText('local');
+  expect(
+    (await page.locator('mark').allTextContents()).every((text) => text.toLowerCase() === 'local'),
+  ).toBe(true);
 });

@@ -39,3 +39,11 @@ export function experiment(input: RankingInput, votingPercent = 40) {
     score: (1 - weight) * text + weight * vote,
   };
 }
+
+/** Use the active database stoplist rather than a guessed browser list. */
+export function searchableTerms(query: string, stopWords: string[]): string {
+  const ignored = new Set(stopWords.map((word) => word.toLocaleLowerCase('en-US')));
+  return words(query)
+    .filter((word) => !ignored.has(word.toLocaleLowerCase('en-US')))
+    .join(' ');
+}

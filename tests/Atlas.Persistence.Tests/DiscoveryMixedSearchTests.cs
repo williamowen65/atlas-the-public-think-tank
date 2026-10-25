@@ -67,6 +67,21 @@ public sealed class DiscoveryMixedSearchTests
     }
 
     [TestMethod]
+    public void CommonStopwordsDoNotBroadenSearchToOtherwiseUnrelatedNodes()
+    {
+        using var fixture = SqlTestDatabase.Create(useCurrentModel: true);
+        var at = DateTimeOffset.UtcNow;
+        var target = new DiscoveryCandidate(Guid.NewGuid(), "Otter sanctuary", "", Guid.NewGuid(), Guid.NewGuid(), false, at, at, 0, null, [], []);
+        var unrelated = target with { NodeId = Guid.NewGuid(), Title = "Pebbles and stones" };
+        DiscoverySqlFixture.Seed(fixture, target, unrelated);
+        using var ready = fixture.OpenForDiscovery();
+        Assert.AreEqual(0, ready.Database.SqlQuery<int>($"SELECT COALESCE(stoplist_id, -1) AS Value FROM sys.fulltext_indexes WHERE object_id = OBJECT_ID(N'dbo.SearchDocuments')").Single());
+        var results = new SqlPublicSearch(fixture.Open).Search(new(SearchText: "otter and", VotingWeight: 40), "nodes");
+        Assert.AreEqual(1, results.TotalCount);
+        Assert.AreEqual(target.NodeId, results.Items.Single().NodeId);
+    }
+
+    [TestMethod]
     public void MixedHitsPageAsOneSequenceAndRespectVisibilityFiltersAndCommentAuthors()
     {
         using var fixture = SqlTestDatabase.Create(useCurrentModel: true);
