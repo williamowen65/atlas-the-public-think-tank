@@ -17,6 +17,6 @@ public sealed record CommentPathItem(Guid Id, string TargetKind, Guid TargetId, 
 
 
 /// <summary>Opt-in evidence for developer tooling; the public search endpoint still returns PublicSearchPage.</summary>
-public sealed record ExplainedSearchPage(PublicSearchPage Page, IReadOnlyList<SearchRankEvidence> Evidence);
+public sealed record ExplainedSearchPage(PublicSearchPage Page, IReadOnlyList<SearchRankEvidence> Evidence, int? BestTextRank = null, double? MinimumTextRank = null);
 public sealed record SearchRankEvidence(Guid Id, Guid NodeId, string Kind, int TextRank, double Support,
-    double Multiplier, double FinalScore, DateTimeOffset TieDate);
+    double Multiplier, double FinalScore, DateTimeOffset TieDate, bool PhraseMatch = false, double TextSignal = 0);
