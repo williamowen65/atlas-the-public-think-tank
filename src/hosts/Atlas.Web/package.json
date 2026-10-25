@@ -18,7 +18,8 @@
     "storybook:api": "concurrently --kill-others --names API,Storybook \"dotnet run --project ../Atlas.Api --launch-profile https\" \"npm run storybook\"",
     "format": "prettier --write \"src/**/*.svelte\" \"storybook/**/*.svelte\" \"src/routes/+layout.ts\" \"src/styles.scss\"",
     "format:check": "prettier --check \"src/**/*.svelte\" \"storybook/**/*.svelte\" \"src/routes/+layout.ts\" \"src/styles.scss\"",
-    "dev:api": "concurrently --kill-others --names API,Web \"dotnet run --project ../Atlas.Api --launch-profile https\" \"npm run dev\""
+    "dev:api": "concurrently --kill-others --names API,Web \"dotnet run --project ../Atlas.Api --launch-profile https\" \"npm run dev\"",
+    "storybook:ranking": "concurrently --kill-others --names RankingLab,Storybook \"dotnet run --project ../Atlas.RankingLab\" \"npm run storybook\""
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

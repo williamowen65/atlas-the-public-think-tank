@@ -410,3 +410,7 @@ Free text uses SQL Server natural-language full-text matching; structured filter
 ### Mixed node and comment search
 
 Global header search now calls `/api/search` and pages one relevance-ordered sequence of node and comment results. Comment hits show the comment author/date and a plain-text excerpt. `in:comments` and `in:nodes` select a scope independently of node type. Comment links open the node with a highlighted, focused comment and its ancestor thread expanded, including comments outside the first sibling page. `/api/nodes` and browsing feeds remain node-only. Rerun `dotnet run --project src/hosts/Atlas.Console -- --setup-database` after pulling to install the comment full-text index; no new migration or database reset is needed. See the full-text guide for visibility, filter and pagination semantics.
+
+### Search ranking workbench
+
+Run `npm run storybook:ranking`, then open **Compositions / Search ranking / Workbench**. It uses real SQL ranking in generated disposable databases, with shared fixture scenarios, reset/edit controls, vote/change/undo phases and diagnostic tables. Configure `ATLAS_SQL_TEST_CONNECTION_STRING` in shared secrets or the environment; the SQL account needs disposable database and full-text setup permissions. Atlas.Api does not need to run. See [the workbench guide](../../../docs/discovery/search-ranking-workbench.md).

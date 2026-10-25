@@ -27,6 +27,29 @@ permissions:
   contents: read
 
 jobs:
+  build-ranking-lab:
+    name: Validate isolated Ranking Lab
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet build src/hosts/Atlas.RankingLab/Atlas.RankingLab.csproj --configuration Release
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: src/hosts/Atlas.Web/package-lock.json
+      - run: npm ci
+        working-directory: src/hosts/Atlas.Web
+      - run: npm run check && npm run build-storybook
+        working-directory: src/hosts/Atlas.Web
+      - run: npx playwright install --with-deps chromium
+        working-directory: src/hosts/Atlas.Web
+      - run: npx playwright test --config playwright.ranking.config.ts
+        working-directory: src/hosts/Atlas.Web
+
   test-rewrite:
     name: Test ${{ matrix.name }}
     runs-on: ubuntu-latest

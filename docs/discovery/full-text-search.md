@@ -357,3 +357,6 @@ References: [Microsoft snapshot isolation](https://learn.microsoft.com/en-us/sql
 For equally relevant text, a node rated 10 by one participant has support 5 and an 8.33% boost; a comment at +1 has a 2.27% boost, so the node comes first. Stronger text relevance or sufficiently supported comments can still outrank nodes; result kind does not impose a separate first group. Node-only browsing keeps its existing ordering.
 
 Regression tests hold an actual SQL writer transaction open after a vote or content edit, require global search and feed reads to complete before releasing the writer, and verify they return the prior committed state. Ranking coverage verifies the one-vote 10/10 node versus +1 comment example without waiting for reindexing.
+
+
+For editable controlled scenarios, real SQL diagnostic tables and shared regression fixtures, see the [Search ranking workbench](search-ranking-workbench.md).

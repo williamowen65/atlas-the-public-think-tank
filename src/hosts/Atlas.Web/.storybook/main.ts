@@ -1,5 +1,7 @@
 import type { StorybookConfig } from '@storybook/sveltekit';
 import { mergeConfig } from 'vite';
+import { fileURLToPath } from 'node:url';
+import { rankingLabGuard, rankingLabProxy } from '../dev/rankingLab';
 import { publicApiGuard, publicApiProxy, sessionApiGuard, sessionApiProxy } from '../dev/localApi';
 
 const config: StorybookConfig = {
@@ -8,10 +10,13 @@ const config: StorybookConfig = {
   viteFinal: async (config, { configType }) => configType === 'DEVELOPMENT'
     ? mergeConfig(config, {
         // Each guard passes unrelated paths along with next().
-        plugins: [publicApiGuard, sessionApiGuard],
+        plugins: [publicApiGuard, sessionApiGuard, rankingLabGuard],
         server: {
+          // The versioned fixture JSON is shared with backend tests outside Atlas.Web.
+          fs: { allow: [fileURLToPath(new URL('../../../../', import.meta.url))] },
           proxy: {
             '/atlas-public-api': publicApiProxy(),
+            '/atlas-ranking-lab': rankingLabProxy(),
             '/atlas-session-api': sessionApiProxy(),
           },
         },

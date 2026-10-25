@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+    <UserSecretsId>02103f3e-daff-4644-b045-6eb5f00889eb</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Atlas.Persistence/Atlas.Persistence.csproj" />
+    <Compile Include="../../../tests/Shared/SearchRankingFixture.cs" Link="SearchRankingFixture.cs" />
+    <Compile Include="../../../tests/Shared/SqlFullTextSupport.cs" Link="SqlFullTextSupport.cs" />
+  </ItemGroup>
+</Project>

@@ -546,12 +546,18 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{DA01D4DA
 		src\hosts\Atlas.Web\tests\live-preview.spec.ts = src\hosts\Atlas.Web\tests\live-preview.spec.ts
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Atlas.RankingLab", "src\hosts\Atlas.RankingLab\Atlas.RankingLab.csproj", "{5BE08058-2B4D-4DF7-9101-F2483EEE6245}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5BE08058-2B4D-4DF7-9101-F2483EEE6245}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5BE08058-2B4D-4DF7-9101-F2483EEE6245}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5BE08058-2B4D-4DF7-9101-F2483EEE6245}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5BE08058-2B4D-4DF7-9101-F2483EEE6245}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E7534582-730D-47F3-93D7-B0ECB0812307}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E7534582-730D-47F3-93D7-B0ECB0812307}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E7534582-730D-47F3-93D7-B0ECB0812307}.Release|Any CPU.ActiveCfg = Release|Any CPU

@@ -1,0 +1,61 @@
+[
+  {
+    "id": "rated-node", "name": "Identical text: rated node versus comments", "description": "One 10/10 node rating should beat an unvoted or +1 comment when searchable text is identical.", "query": "silver otter meadow",
+    "entries": [
+      { "key": "rated", "kind": "node", "title": "Silver otter meadow", "votes": [10], "at": "2026-01-01T12:00:00Z" },
+      { "key": "supported", "kind": "comment", "sameTextAs": "rated", "votes": [1], "at": "2026-01-01T12:00:00Z" },
+      { "key": "neutral", "kind": "comment", "sameTextAs": "rated", "votes": [], "at": "2026-01-01T12:00:00Z" }
+    ],
+    "phases": [{ "name": "Baseline", "votes": {}, "expectedOrder": ["rated", "supported", "neutral"] }]
+  },
+  {
+    "id": "averages", "name": "Identical text: higher node average", "description": "With equal vote counts and text, the higher average ranks first.", "query": "salmon restoration",
+    "entries": [
+      { "key": "higher", "kind": "node", "title": "Salmon restoration", "votes": [9, 9, 9], "at": "2026-01-01T12:00:00Z" },
+      { "key": "lower", "kind": "node", "title": "Salmon restoration", "votes": [4, 4, 4], "at": "2026-01-01T12:00:00Z" }
+    ], "phases": [{ "name": "Baseline", "votes": {}, "expectedOrder": ["higher", "lower"] }]
+  },
+  {
+    "id": "confidence", "name": "Identical text: more node ratings", "description": "Equal averages with more votes receive a larger, diminishing confidence adjustment.", "query": "salmon restoration",
+    "entries": [
+      { "key": "many", "kind": "node", "title": "Salmon restoration", "votes": [8, 8, 8, 8, 8], "at": "2026-01-01T12:00:00Z" },
+      { "key": "one", "kind": "node", "title": "Salmon restoration", "votes": [8], "at": "2026-01-01T12:00:00Z" }
+    ], "phases": [{ "name": "Baseline", "votes": {}, "expectedOrder": ["many", "one"] }]
+  },
+  {
+    "id": "vote-and-undo", "name": "Comment vote, change and undo", "description": "Only votes change between phases. Undo must restore the original scores and order without reindexing.", "query": "silver otter meadow",
+    "entries": [
+      { "key": "node", "kind": "node", "title": "Silver otter meadow", "votes": [], "at": "2026-01-01T12:00:00Z" },
+      { "key": "comment", "kind": "comment", "sameTextAs": "node", "votes": [], "at": "2026-01-01T12:00:00Z" }
+    ], "phases": [
+      { "name": "Baseline", "votes": {}, "expectedOrder": ["node", "comment"] },
+      { "name": "Upvote", "votes": { "comment": [1] }, "expectedOrder": ["comment", "node"] },
+      { "name": "Change to downvote", "votes": { "comment": [-1] }, "expectedOrder": ["node", "comment"] },
+      { "name": "Undo", "votes": { "comment": [] }, "expectedOrder": ["node", "comment"], "sameScoresAs": "Baseline" }
+    ]
+  },
+  {
+    "id": "relevance", "name": "Strong text match versus many votes", "description": "Matching all query terms should beat a one-term match even when that weaker match has many high ratings.", "query": "silver otter meadow",
+    "entries": [
+      { "key": "strong", "kind": "comment", "body": "Silver otter meadow", "votes": [], "at": "2026-01-01T12:00:00Z" },
+      { "key": "weak", "kind": "node", "title": "Silver", "shortDescription": "Housing transport energy education water schools planning research", "votes": [10,10,10,10,10,10,10,10,10,10], "at": "2026-01-01T12:00:00Z" }
+    ], "phases": [{ "name": "Baseline", "votes": {}, "expectedOrder": ["strong", "weak"] }]
+  },
+  {
+    "id": "test-testing", "name": "Explore test versus testing", "description": "Reproduce short comments versus longer rated nodes. No desired cross-kind order is assumed: inspect the real linguistic ranks.", "query": "testing",
+    "entries": [
+      { "key": "comment", "kind": "comment", "body": "I would support testing this locally before advocating for a large-scale rollout.", "votes": [], "at": "2026-01-01T12:00:00Z" },
+      { "key": "housing", "kind": "node", "title": "Offer housing-first support with flexible services", "shortDescription": "Test stable housing paired with voluntary support for health, employment, and daily needs.", "votes": [8,8,8,9,9], "at": "2026-01-01T12:00:00Z" },
+      { "key": "whales", "kind": "node", "title": "Pilot seasonal quiet corridors for whales", "shortDescription": "Test predictable low-noise areas during key feeding periods with clear exemptions for safety.", "votes": [8,8,8,8], "at": "2026-01-01T12:00:00Z" }
+    ], "phases": [{ "name": "Baseline", "votes": {}, "expectedOrder": [] }]
+  },
+  {
+    "id": "pagination-ties", "name": "Tie-breaks across pages", "description": "With identical text and no votes, nodes precede comments; newer nodes precede older ones. All four results survive pagination.", "query": "silver otter meadow",
+    "entries": [
+      { "key": "old", "kind": "node", "title": "Silver otter meadow", "votes": [], "at": "2026-01-01T12:00:00Z" },
+      { "key": "middle", "kind": "node", "title": "Silver otter meadow", "votes": [], "at": "2026-01-02T12:00:00Z" },
+      { "key": "new", "kind": "node", "title": "Silver otter meadow", "votes": [], "at": "2026-01-03T12:00:00Z" },
+      { "key": "comment", "kind": "comment", "sameTextAs": "old", "votes": [], "at": "2026-01-04T12:00:00Z" }
+    ], "phases": [{ "name": "Baseline", "votes": {}, "expectedOrder": ["new", "middle", "old", "comment"] }]
+  }
+]

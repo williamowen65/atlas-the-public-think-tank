@@ -10,7 +10,14 @@ namespace Atlas.Persistence.Discovery;
 /// <summary>Filters and pages heterogeneous search hits in SQL, materializing only the selected page.</summary>
 public sealed class SqlPublicSearch(Func<AtlasDataContext> open) : IPublicSearch
 {
+    public const string RankingPolicyVersion = "support-v2";
     public PublicSearchPage Search(DiscoveryQuery query, string scope = "all")
+        => Read(query, scope).Page;
+
+    /// <summary>Same query and pagination as Search, with SQL-calculated ranking evidence for development tools.</summary>
+    public ExplainedSearchPage Explain(DiscoveryQuery query, string scope = "all") => Read(query, scope);
+
+    private ExplainedSearchPage Read(DiscoveryQuery query, string scope)
     {
         DiscoveryQueryValidation.Validate(query);
         scope = scope?.Trim().ToLowerInvariant() ?? "all";
@@ -23,7 +30,7 @@ public sealed class SqlPublicSearch(Func<AtlasDataContext> open) : IPublicSearch
             if (query.SearchText is null && scope != "comments")
             {
                 var nodes = new SqlDiscoveryReadQuery(open).DiscoverPage(query);
-                return new(nodes.Items.Select(n => new PublicSearchItem(n.NodeId, n.VoteCount, n.AverageVote, n.Card, null)).ToArray(), nodes.TotalCount, nodes.Page, nodes.PageSize);
+                return new(new(nodes.Items.Select(n => new PublicSearchItem(n.NodeId, n.VoteCount, n.AverageVote, n.Card, null)).ToArray(), nodes.TotalCount, nodes.Page, nodes.PageSize), []);
             }
             if (query.SearchText is not null) DiscoveryFullTextSchema.EnsureAvailable(db, includeComments: true);
             using var transaction = db.Database.BeginTransaction(IsolationLevel.Snapshot);
@@ -46,7 +53,9 @@ public sealed class SqlPublicSearch(Func<AtlasDataContext> open) : IPublicSearch
                 : new PublicSearchItem(h.NodeId, 0, null, null, new(h.Id, details[h.Id].Title, details[h.Id].AuthorParticipantId,
                     details[h.Id].DisplayName, details[h.Id].CreatedAt, Excerpt(details[h.Id].Body, query.SearchText ?? ""), h.CommentScore))).ToArray();
             transaction.Commit();
-            return new(items, total, query.Page, IDiscoveryService.PageSize);
+            return new(new(items, total, query.Page, IDiscoveryService.PageSize), selected.Select(h =>
+                new SearchRankEvidence(h.Id, h.NodeId, h.Kind == 0 ? "node" : "comment", h.Score, h.Support,
+                    h.FinalScore / (h.Score == 0 ? 1.0 : h.Score), h.FinalScore, h.At)).ToArray());
         }
         catch (SqlException error) { throw new SearchUnavailableException(error); }
     }
@@ -79,8 +88,14 @@ public sealed class SqlPublicSearch(Func<AtlasDataContext> open) : IPublicSearch
         // by count/(count+1), so one rating does not carry the weight of broad agreement.
         // With no text query, a neutral base ranks comment-only browsing by net support.
         return nodeHits.Concat(commentHits)
-            .OrderByDescending(h => (h.Score == 0 ? 1.0 : h.Score) *
-                (1.0 + 0.25 * h.Support / (10.0 + Math.Abs(h.Support))))
+            .Select(h => new Hit
+            {
+                Id = h.Id, NodeId = h.NodeId, Kind = h.Kind, Score = h.Score,
+                Support = h.Support, CommentScore = h.CommentScore, At = h.At,
+                FinalScore = (h.Score == 0 ? 1.0 : h.Score) *
+                    (1.0 + 0.25 * h.Support / (10.0 + Math.Abs(h.Support)))
+            })
+            .OrderByDescending(h => h.FinalScore)
             .ThenBy(h => h.Kind).ThenByDescending(h => h.At).ThenBy(h => h.Id);
     }
 
@@ -121,5 +136,5 @@ public sealed class SqlPublicSearch(Func<AtlasDataContext> open) : IPublicSearch
         return (start > 0 ? "…" : "") + body.Substring(start, count) + (start + count < body.Length ? "…" : "");
     }
     public sealed class Match { public Guid ResultId { get; set; } public Guid NodeId { get; set; } public int Kind { get; set; } public int Score { get; set; } }
-    private sealed class Hit { public double Support { get; set; } public int CommentScore { get; set; } public Guid Id { get; set; } public Guid NodeId { get; set; } public int Kind { get; set; } public int Score { get; set; } public DateTimeOffset At { get; set; } }
+    private sealed class Hit { public double FinalScore { get; set; } public double Support { get; set; } public int CommentScore { get; set; } public Guid Id { get; set; } public Guid NodeId { get; set; } public int Kind { get; set; } public int Score { get; set; } public DateTimeOffset At { get; set; } }
 }
