@@ -107,7 +107,7 @@
     <fieldset disabled={busy}>
       <div class="toolbar">
         <label
-          >Scenario<select bind:value={selected} onchange={reset}
+          >Scenario<select aria-label="Scenario" bind:value={selected} onchange={reset}
             >{#each fixtures as fixture}<option value={fixture.id}>{fixture.name}</option
               >{/each}</select
           ></label
@@ -201,7 +201,7 @@
           Inputs changed. These are results from the last run; run again to update them.
         </p>{/if}
       <label
-        >Result phase<select bind:value={phase}
+        >Result phase<select aria-label="Result phase" bind:value={phase}
           >{#each report.phases as item, i}<option value={i}>{item.name}</option>{/each}</select
         ></label
       >
