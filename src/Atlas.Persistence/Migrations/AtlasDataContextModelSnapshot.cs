@@ -54,6 +54,12 @@ namespace Atlas.Persistence.Migrations
                     b.Property<Guid?>("ReferenceId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("SearchText")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("nvarchar(max)")
+                        .HasComputedColumnSql("CONVERT(nvarchar(max), CASE [Kind]\r\n    WHEN N'markdown' THEN COALESCE([Markdown], N'')\r\n    WHEN N'image' THEN CONCAT([AltText], N' ', [Caption])\r\n    WHEN N'video' THEN CONCAT([Caption], N' ', [Url] COLLATE Latin1_General_100_CI_AI_SC)\r\n    WHEN N'link-preview' THEN CONCAT([Title], N' ', [Description], N' ', [Url] COLLATE Latin1_General_100_CI_AI_SC)\r\n    WHEN N'chart-reference' THEN COALESCE([Title], N'')\r\n    ELSE N'' END)", true)
+                        .UseCollation("Latin1_General_100_CI_AI_SC");
+
                     b.Property<string>("Title")
                         .HasColumnType("nvarchar(max)")
                         .UseCollation("Latin1_General_100_CI_AI_SC");
@@ -637,7 +643,8 @@ namespace Atlas.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Name").IsUnique();
+                    b.HasIndex("Name")
+                        .IsUnique();
 
                     b.ToTable("NodeTypeRows", (string)null);
                 });
