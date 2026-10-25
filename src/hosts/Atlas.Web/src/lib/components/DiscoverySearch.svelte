@@ -95,7 +95,7 @@
   }
   // Replace one field token without dropping unrelated terms in the draft query.
   function token(key: string, value: string) {
-    const parts = (pending.match(/"[^"]*"|\S+/g) ?? []).filter(
+    const parts = (pending.match(/(?:[^\s"]+|"[^"]*")+/g) ?? []).filter(
       (p) => !p.toLowerCase().startsWith(key + ':'),
     );
     if (value) parts.push(key + ':' + (value.includes(' ') ? '"' + value + '"' : value));
@@ -217,7 +217,8 @@
       <label
         >Node type<select
           value={editing.filters.typeId ?? ''}
-          onchange={(e) => token('type', e.currentTarget.value)}
+          onchange={(e) =>
+            token('type', types.find((type) => type.id === e.currentTarget.value)?.name ?? '')}
           ><option value="">All types</option>{#each types as type}<option value={type.id}
               >{type.name}</option
             >{/each}</select

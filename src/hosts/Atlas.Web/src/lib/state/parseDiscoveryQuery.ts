@@ -12,7 +12,7 @@ export function parseDiscoveryQuery(value: string, types: NodeType[]) {
   const filters: DiscoveryFilters = {};
   const words: string[] = [];
   const errors: string[] = [];
-  for (const part of value.match(/"[^"]*"|\S+/g) ?? []) {
+  for (const part of value.match(/(?:[^\s"]+|"[^"]*")+/g) ?? []) {
     const match = /^(type|author|community|votes|average|from|through|archived):(.+)$/i.exec(part);
     if (!match) {
       words.push(part);

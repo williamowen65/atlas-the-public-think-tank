@@ -790,8 +790,11 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
         {
             entity.ToTable("NodeTypeRows");
             entity.HasKey(row => row.Id);
+            // Type names are query identifiers: case variants must not identify different types.
             entity.Property(row => row.Name)
-                .HasMaxLength(450);
+                .HasMaxLength(450)
+                .UseCollation("Latin1_General_100_CI_AS_SC");
+            entity.HasIndex(row => row.Name).IsUnique();
         });
         model.Entity<DocumentRow>(entity =>
         {

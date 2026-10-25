@@ -626,7 +626,8 @@ namespace Atlas.Persistence.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(450)")
+                        .UseCollation("Latin1_General_100_CI_AS_SC");
 
                     b.Property<string>("OwnerId")
                         .HasColumnType("nvarchar(max)");
@@ -635,6 +636,8 @@ namespace Atlas.Persistence.Migrations
                         .HasColumnType("datetimeoffset");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Name").IsUnique();
 
                     b.ToTable("NodeTypeRows", (string)null);
                 });

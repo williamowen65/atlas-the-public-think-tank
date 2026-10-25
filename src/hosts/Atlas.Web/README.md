@@ -395,3 +395,10 @@ The search input’s inline X clears the entire accepted query (text and structu
 Applying header search or visual filters opens a compact, scrollable results dropdown on any route. Rows contain normal node links, short introductions and comment/contribution counts; they do not mount voting, reaction controls or breadcrumbs. Selecting a result opens its node and closes the disclosure; modified link clicks keep normal browser behavior. The shared parser validates both toolbox edits and accepted result requests. Changing the accepted query cancels outdated requests; clearing it removes results. Loading/error/empty states and retry are explicit; existing rows stay visible if loading another page fails. The current backend page size is three; an IntersectionObserver rooted in the dropdown appends the next page as its bottom approaches view, filling short lists automatically. Loading pauses on errors until Retry. Importance averages and voter counts are read-only and vertically centered beside each row. Clicking outside closes the disclosure while preserving the query.
 
 Discover remains a separate browsing feed and is no longer filtered by the header query. Saved/URL search text still restores the header query; opening search reveals its results. No feed-ranking, rotation or backend search/cache rules changed.
+
+Type filters use readable catalog names, for example `type:issue` or `type:"Research Question"`.
+Names match case-insensitively; the frontend resolves the name to the API's stable type ID.
+Existing saved queries containing type IDs still work. The database migration
+`UniqueNodeTypeNames` enforces case-insensitive uniqueness across all node types, including
+archived types. Existing duplicate names must be resolved before applying that migration;
+it stops without merging or deleting any nodes.

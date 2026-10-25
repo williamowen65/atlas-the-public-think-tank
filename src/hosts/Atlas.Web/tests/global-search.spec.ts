@@ -90,7 +90,8 @@ test('search from a node shows compact filtered results, pages them and opens a 
     results.getByLabel('Importance: 7.5 out of 10, 12 votes', { exact: true }).first(),
   ).toBeVisible();
   // An outside click dismisses the whole search without clearing the accepted query.
-  await page.getByRole('heading', { name: 'Question: Original node', exact: true }).click();
+  // Click the page gutter below the overlay; the node heading is covered on narrow screens.
+  await page.mouse.click(5, 730);
   await expect(results).toHaveCount(0);
   await page.getByRole('button', { name: 'Toggle search', exact: true }).click();
   await expect(input).toHaveValue('salmon votes:1..5');
