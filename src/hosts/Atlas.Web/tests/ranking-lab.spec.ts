@@ -4,7 +4,7 @@ const story =
 function report() {
   return {
     policy: 'support-v2',
-    page: { totalCount: 4, page: 1, hasNextPage: true },
+    page: { totalCount: 4, page: 1, hasNextPage: false },
     rows: [
       {
         position: 1,
@@ -28,7 +28,13 @@ test('searches local data, displays diagnostics and pages the same query', async
   const submitted: unknown[] = [];
   await page.route('**/atlas-ranking-lab/run', (route) => {
     submitted.push(route.request().postDataJSON());
-    return route.fulfill({ json: report() });
+    const result = report();
+    const payload = route.request().postDataJSON();
+    result.page.page = payload.query.page;
+    result.page.hasNextPage = payload.query.page === 1;
+    result.rows[0].evidence.id = `node-${payload.query.page}`;
+    result.rows[0].item.card.title = `Local node ${payload.query.page}`;
+    return route.fulfill({ json: result });
   });
   await page.goto(story);
   await expect(page.getByLabel('Scenario', { exact: true })).toHaveCount(0);
@@ -37,8 +43,10 @@ test('searches local data, displays diagnostics and pages the same query', async
   await expect(page.getByRole('table')).toContainText('108.3333');
   await expect(page.getByRole('table')).toContainText('Local node');
   expect(submitted[0]).toEqual({ query: { searchText: 'testing', page: 1 }, scope: 'all' });
-  await page.getByRole('button', { name: 'Next page' }).click();
+  await page.getByRole('heading', { name: 'Indexed text and tie-breaks' }).scrollIntoViewIfNeeded();
   await expect.poll(() => submitted.length).toBe(2);
+  await expect(page.getByRole('table')).toContainText('Local node 1');
+  await expect(page.getByRole('table')).toContainText('Local node 2');
   expect(submitted[1]).toEqual({ query: { searchText: 'testing', page: 2 }, scope: 'all' });
 });
 test('failed searches retain inputs and permit retry and export', async ({ page }) => {

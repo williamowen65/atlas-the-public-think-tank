@@ -23,12 +23,32 @@
   let submitted = $state<{ query: { searchText: string; page: number }; scope: string } | null>(
     null,
   );
+  let sentinel = $state<HTMLDivElement>();
+  $effect(() => {
+    if (
+      !sentinel ||
+      busy ||
+      error ||
+      !report?.page.hasNextPage ||
+      submitted?.query.searchText !== query ||
+      submitted?.scope !== scope
+    )
+      return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) void run(report!.page.page + 1);
+    });
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  });
   async function run(page = 1) {
     if (busy) return;
     busy = true;
     error = '';
-    report = null;
-    const payload = { query: { searchText: query, page }, scope };
+    if (page === 1) report = null;
+    const payload = {
+      query: { searchText: page === 1 ? query : submitted!.query.searchText, page },
+      scope: page === 1 ? scope : submitted!.scope,
+    };
     try {
       const response = await fetch('/atlas-ranking-lab/run', {
         method: 'POST',
@@ -38,7 +58,12 @@
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.message ?? 'Local ranking search is unavailable.');
-      report = body;
+      const next = body as Report;
+      if (page > 1 && report) {
+        const seen = new Set(report.rows.map((row) => row.evidence.id));
+        next.rows = [...report.rows, ...next.rows.filter((row) => !seen.has(row.evidence.id))];
+      }
+      report = next;
       submitted = payload;
     } catch (cause) {
       error = cause instanceof Error ? cause.message : 'Search failed.';
@@ -82,7 +107,9 @@
   {#if error}<p role="alert">{error}</p>{/if}
   {#if report}
     <h2>Ranking diagnostics</h2>
-    <p>{report.page.totalCount} results · Page {report.page.page} · Policy {report.policy}</p>
+    <p>
+      {report.page.totalCount} results · Pages loaded: {report.page.page} · Policy {report.policy}
+    </p>
     {#if submitted?.query.searchText !== query || submitted?.scope !== scope}<p role="status">
         Inputs changed. Search again to update these results.
       </p>{/if}
@@ -118,13 +145,12 @@
       </table>
     </div>
     {#if report.page.totalCount === 0}<p>No matching results.</p>{/if}
-    <button disabled={busy || report.page.page <= 1} onclick={() => void run(report!.page.page - 1)}
-      >Previous page</button
-    >
-    <button
-      disabled={busy || !report.page.hasNextPage}
-      onclick={() => void run(report!.page.page + 1)}>Next page</button
-    >
+    <div bind:this={sentinel} aria-hidden="true" style="height: 1px"></div>
+    {#if error && report.page.hasNextPage}
+      <button disabled={busy} onclick={() => void run(report!.page.page + 1)}
+        >Retry loading results</button
+      >
+    {/if}
     <h3>Indexed text and tie-breaks</h3>
     <p>
       Equal final scores sort by node before comment, then newer ranking date, then SQL GUID order.
