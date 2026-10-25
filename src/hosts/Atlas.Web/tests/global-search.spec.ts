@@ -275,6 +275,7 @@ test('mixed pages retain comment identity and open an off-page nested thread', a
   const selected = page.locator(`[data-comment-id="${target}"]`);
   await expect(selected).toHaveClass(/search-target/);
   await expect(selected).toBeFocused();
+  await expect(selected).toBeInViewport();
   await expect(selected).toContainText('The matching salmon passage.');
   await expect(page.locator(`[data-comment-id="${parent}"]`)).toContainText('Ancestor reply');
 });

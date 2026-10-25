@@ -246,7 +246,7 @@
     <NodePage
       {apiBase}
       {onOpenProfile}
-      scrollToDiscussionTabs={!!initialTypeId && active === initialTypeId}
+      scrollToDiscussionTabs={!!initialTypeId && !focusCommentId && active === initialTypeId}
       {hasMoreAncestors}
       loadOlderAncestors={(id) =>
         id

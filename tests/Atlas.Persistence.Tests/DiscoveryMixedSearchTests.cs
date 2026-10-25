@@ -27,7 +27,7 @@ public sealed class DiscoveryMixedSearchTests
     {
         using var fixture = SqlTestDatabase.Create(useCurrentModel: true);
         var at = DateTimeOffset.UtcNow;
-        var node = new DiscoveryCandidate(Guid.NewGuid(), "Salmon protection", "Healthy rivers", Guid.NewGuid(), Guid.NewGuid(), false, at, at, 1, 7, [], []);
+        var node = new DiscoveryCandidate(Guid.NewGuid(), "Salmon protection", "Salmon rivers", Guid.NewGuid(), Guid.NewGuid(), false, at, at, 1, 7, [], []);
         var other = node with { NodeId = Guid.NewGuid(), Title = "Other discussion", SearchableContent = "Water", AuthorParticipantId = Guid.NewGuid() };
         var hidden = node with { NodeId = Guid.NewGuid(), IsModerationExcluded = true };
         var archived = node with { NodeId = Guid.NewGuid(), IsArchived = true };
@@ -63,6 +63,7 @@ public sealed class DiscoveryMixedSearchTests
         Assert.AreEqual(7, search.Search(new(SearchText: "salmon", AuthorParticipantId: other.AuthorParticipantId), "comments").TotalCount);
         Assert.AreEqual(0, search.Search(new(SearchText: "salmon", AuthorParticipantId: node.AuthorParticipantId), "comments").TotalCount);
         Assert.AreEqual(1, search.Search(new(SearchText: "salmon"), "nodes").TotalCount);
+        Assert.AreEqual(7, search.Search(new(), "comments").TotalCount);
         Assert.AreEqual(10, search.Search(new(SearchText: "salmon", IncludeArchived: true)).TotalCount); // archived node and its comment
         Assert.AreEqual(0, search.Search(new(SearchText: "salmon", NodeId: other.NodeId)).TotalCount);
         Assert.Throws<ArgumentException>(() => search.Search(new(SearchText: "salmon"), "invalid"));

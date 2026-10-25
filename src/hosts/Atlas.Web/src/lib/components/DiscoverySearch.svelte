@@ -143,7 +143,7 @@
         id="discovery-query"
         bind:this={queryInput}
         bind:value={input}
-        placeholder="Search nodes or try type:Idea votes:5..100"
+        placeholder="Search nodes and comments, or try type:Idea"
       />
       {#if input || pending || applied}
         <button
