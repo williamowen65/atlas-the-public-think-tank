@@ -82,6 +82,45 @@ public sealed class DiscoveryMixedSearchTests
     }
 
     [TestMethod]
+    public void OrderedPassagesAndStrictnessApplyBeforeVotingAndPagination()
+    {
+        using var fixture = SqlTestDatabase.Create(useCurrentModel: true);
+        var at = DateTimeOffset.UtcNow;
+        const string phrase = "Measure housing retention and wellbeing and ask participants which services actually helped";
+        var exact = new DiscoveryCandidate(Guid.NewGuid(), "Passage", phrase, Guid.NewGuid(), Guid.NewGuid(), false, at, at, 0, null, [], []);
+        var reversed = exact with { NodeId = Guid.NewGuid(), SearchableContent = string.Join(" ", phrase.Split(' ').Reverse()), VoteCount = 5, AverageVote = 10 };
+        var weak = reversed with { NodeId = Guid.NewGuid(), Title = "Measure", SearchableContent = "An unrelated discussion" };
+        DiscoverySqlFixture.Seed(fixture, exact, reversed, weak);
+        using var ready = fixture.OpenForDiscovery();
+        var search = new SqlPublicSearch(fixture.Open);
+        const string query = "Measure housing retention and wellbeing, and ask participants which services actually helped.";
+        var broad = search.Explain(new(SearchText: query, VotingWeight: 0, MatchStrictness: 0), "nodes");
+        Assert.AreEqual(3, broad.Page.TotalCount);
+        Assert.AreEqual(exact.NodeId, broad.Page.Items[0].NodeId);
+        var direct = broad.Evidence.Single(e => e.Id == exact.NodeId);
+        var scrambled = broad.Evidence.Single(e => e.Id == reversed.NodeId);
+        Assert.IsTrue(direct.PhraseMatch);
+        Assert.IsFalse(scrambled.PhraseMatch);
+        Assert.IsTrue(direct.TextSignal > scrambled.TextSignal);
+        var strict = search.Explain(new(SearchText: query, VotingWeight: 100, MatchStrictness: 100), "nodes");
+        Assert.IsTrue(strict.Page.TotalCount < broad.Page.TotalCount, "Voting must not rescue the weak match.");
+        Assert.IsTrue(strict.Evidence.All(e => e.TextRank == broad.BestTextRank));
+        Assert.AreEqual(broad.BestTextRank!.Value, strict.MinimumTextRank!.Value, 0.00001);
+        Assert.AreEqual(0, search.Search(new(SearchText: query, VotingWeight: 100, MatchStrictness: 100, Page: 99), "nodes").Items.Count);
+    }
+
+    [TestMethod]
+    public void PassageInputIsLiteralBoundedAndDoesNotEnableSingleWordBonuses()
+    {
+        Assert.IsNull(SqlPublicSearch.OrderedPhrase("otter"));
+        Assert.IsNull(SqlPublicSearch.OrderedPhrase(new string('a', 3998) + " b"));
+        Assert.AreEqual(" Measure housing retention ", SqlPublicSearch.OrderedPhrase("  Measure housing,\nretention! "));
+        Assert.AreEqual(" x OR y ", SqlPublicSearch.OrderedPhrase("x\" OR \"y"));
+        Assert.Throws<ArgumentOutOfRangeException>(() => DiscoveryQueryValidation.Validate(new(MatchStrictness: -1)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => DiscoveryQueryValidation.Validate(new(MatchStrictness: 101)));
+    }
+
+    [TestMethod]
     public void MixedHitsPageAsOneSequenceAndRespectVisibilityFiltersAndCommentAuthors()
     {
         using var fixture = SqlTestDatabase.Create(useCurrentModel: true);

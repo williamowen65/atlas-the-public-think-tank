@@ -1,8 +1,18 @@
 <script lang="ts">
   import type { Evidence } from './types';
-  import { words, matches, parts, passage, experiment, searchableTerms } from './evidence';
+  import {
+    words,
+    matches,
+    parts,
+    passage,
+    experiment,
+    searchableTerms,
+    coverage,
+  } from './evidence';
   type Report = {
     policy: string;
+    bestTextRank?: number;
+    minimumTextRank?: number;
     stoplist?: string;
     stopWords?: string[];
     page: { totalCount: number; page: number; hasNextPage: boolean };
@@ -20,6 +30,7 @@
     }[];
   };
   let votingPercent = $state(40);
+  let matchStrictness = $state(15);
   let query = $state('');
   let scope = $state('all');
   let busy = $state(false);
@@ -31,7 +42,7 @@
       .sort((a, b) => b.score - a.score || a.row.position - b.row.position),
   );
   let submitted = $state<{
-    query: { searchText: string; page: number; votingWeight: number };
+    query: { searchText: string; page: number; votingWeight: number; matchStrictness: number };
     scope: string;
   } | null>(null);
   const highlightQuery = $derived(
@@ -53,6 +64,7 @@
       busy ||
       error ||
       !report?.page.hasNextPage ||
+      submitted?.query.matchStrictness !== matchStrictness ||
       submitted?.query.searchText !== query ||
       submitted?.scope !== scope
     )
@@ -73,6 +85,7 @@
         searchText: page === 1 ? query : submitted!.query.searchText,
         page,
         votingWeight: page === 1 ? votingPercent : submitted!.query.votingWeight,
+        matchStrictness: page === 1 ? matchStrictness : submitted!.query.matchStrictness,
       },
       scope: page === 1 ? scope : submitted!.scope,
     };
@@ -128,12 +141,30 @@
         ></select
       ></label
     >
+    <label
+      >Match strictness (%)<input
+        type="number"
+        min="0"
+        max="100"
+        step="1"
+        required
+        bind:value={matchStrictness}
+      /></label
+    >
     <button disabled={busy}>Search</button>
   </form>
   {#if busy}<p role="status">Searching local Atlas data…</p>{/if}
   {#if error}<p role="alert">{error}</p>{/if}
   {#if report}
     <h2>Ranking diagnostics</h2>
+    <p>
+      Strongest eligible SQL text relevance: {report.bestTextRank ?? 'Unavailable'}. Minimum
+      accepted: {report.minimumTextRank ?? 'Unavailable'} ({submitted?.query.matchStrictness}%
+      strictness). This cutoff is independent of votes and applies before pagination.
+    </p>
+    {#if submitted?.query.matchStrictness !== matchStrictness}<p role="status">
+        Strictness changed. Search again to apply the new cutoff.
+      </p>{/if}
     <p>
       {report.page.totalCount} results · Pages loaded: {report.page.page} · Policy {report.policy} · Backend
       voting weight: {submitted?.query.votingWeight}%
@@ -159,10 +190,11 @@
       <table>
         <thead
           ><tr
-            ><th>Rank</th><th>Result</th><th>Text relevance</th><th
-              >Indexed words / non-stopword hits</th
-            ><th>Vote count</th><th>Average / net</th><th>Support</th><th>Score / raw relevance</th
-            ><th>Final score</th></tr
+            ><th>Rank</th><th>Result</th><th>Text relevance</th><th>Ordered passage</th><th
+              >Literal query coverage</th
+            ><th>Text signal</th><th>Indexed words / non-stopword hits</th><th>Vote count</th><th
+              >Average / net</th
+            ><th>Support</th><th>Score / raw relevance</th><th>Final score</th></tr
           ></thead
         >
         <tbody
@@ -177,8 +209,13 @@
                       >{:else}{part.text}{/if}{/each}
                 </p></th
               >
-              <td>{row.evidence.textRank}</td><td
-                >{words(row.searchText).length} / {matches(row.searchText, highlightQuery)}</td
+              <td>{row.evidence.textRank}</td><td>{row.evidence.phraseMatch ? 'Yes' : 'No'}</td><td
+                >{coverage(row.searchText, highlightQuery)}</td
+              ><td
+                >{row.evidence.textSignal === undefined
+                  ? 'Unavailable'
+                  : number(row.evidence.textSignal)}</td
+              ><td>{words(row.searchText).length} / {matches(row.searchText, highlightQuery)}</td
               ><td>{row.evidence.kind === 'node' ? row.item.voteCount : '—'}</td>
               <td
                 >{row.evidence.kind === 'node'
@@ -186,7 +223,7 @@
                   : row.item.comment?.score}</td
               >
               <td>{number(row.evidence.support)}</td><td
-                >{report.policy === 'weighted-v1'
+                >{report.policy.startsWith('weighted-')
                   ? 'Additive'
                   : '×' + number(row.evidence.multiplier)}</td
               ><td>{number(row.evidence.finalScore)}</td>
@@ -219,21 +256,25 @@
         /></label
       >
       <p>
-        {100 - votingPercent}% text + {votingPercent}% voting. Text = ln(1 + SQL relevance) /
-        ln(1001). Node voting = support / 10; comment voting = net / (5 + |net|).
+        {100 - votingPercent}% text + {votingPercent}% voting. For multiword searches, text signal =
+        65% logarithmic relevance + 35% ordered-passage evidence. Single-word searches use
+        logarithmic relevance alone. Node voting = support / 10; comment voting = net / (5 + |net|).
       </p>
       <button type="button" onclick={() => (votingPercent = 40)}>Reset experiment</button>
       <p>
-        Logarithmic compression narrows relevance gaps. Node voting retains the average ×
-        count/(count+1) confidence adjustment. Comment voting approaches +1 or −1 as net votes grow.
-        These scales are a hypothesis to evaluate, not equivalent measures of quality. At 0% voting,
-        text ordering is preserved. Ties retain the current loaded order.
+        An ordered passage adds a strong text signal. Passage detection is case- and
+        accent-insensitive, normalizes common punctuation and whitespace, and keeps stopwords inside
+        the passage. It does not enable stopwords as standalone full-text matches. Logarithmic
+        compression narrows relevance gaps. Node voting retains the average × count/(count+1)
+        confidence adjustment. Comment voting approaches +1 or −1 as net votes grow. These scales
+        are a hypothesis to evaluate, not equivalent measures of quality. At 0% voting, text
+        ordering is preserved. Ties retain the current loaded order.
       </p>
       <div class="table-wrap">
         <table aria-label="Experimental ranking">
           <thead
             ><tr
-              ><th>Preview rank</th><th>Current rank</th><th>Result</th><th>Compressed text</th><th
+              ><th>Preview rank</th><th>Current rank</th><th>Result</th><th>Text signal</th><th
                 >Voting signal</th
               ><th>Text contribution</th><th>Voting contribution</th><th>Experimental score</th></tr
             ></thead

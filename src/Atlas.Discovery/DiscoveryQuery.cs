@@ -18,5 +18,6 @@ public sealed record DiscoveryQuery(
     int Page = 1,
     Guid? NodeId = null,
     Guid? ParentNodeId = null,
-    int? VotingWeight = null
+    int? VotingWeight = null,
+    int MatchStrictness = 0
 );

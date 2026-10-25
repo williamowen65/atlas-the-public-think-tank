@@ -35,6 +35,18 @@ public sealed class SqlPublicSearch(Func<AtlasDataContext> open) : IPublicSearch
             if (query.SearchText is not null) DiscoveryFullTextSchema.EnsureAvailable(db, includeComments: true);
             using var transaction = db.Database.BeginTransaction(IsolationLevel.Snapshot);
             var hits = BuildHits(db, query, scope);
+            int? bestTextRank = null;
+            double? minimumTextRank = null;
+            if (query.SearchText is not null)
+            {
+                // The reference comes from all visible, structurally eligible hits in this snapshot.
+                bestTextRank = hits.Select(h => (int?)h.Score).Max() ?? 0;
+                minimumTextRank = bestTextRank.Value * query.MatchStrictness / 100.0;
+                if (query.MatchStrictness > 0)
+                    hits = hits.Where(h => h.Score >= minimumTextRank.Value)
+                        .OrderByDescending(h => h.FinalScore).ThenBy(h => h.Kind)
+                        .ThenByDescending(h => h.At).ThenBy(h => h.Id);
+            }
             var total = hits.Count();
             var offset = ((long)query.Page - 1) * IDiscoveryService.PageSize;
             var selected = offset >= total ? [] : hits.Skip((int)offset).Take(IDiscoveryService.PageSize).ToArray();
@@ -55,26 +67,39 @@ public sealed class SqlPublicSearch(Func<AtlasDataContext> open) : IPublicSearch
             transaction.Commit();
             return new(new(items, total, query.Page, IDiscoveryService.PageSize), selected.Select(h =>
                 new SearchRankEvidence(h.Id, h.NodeId, h.Kind == 0 ? "node" : "comment", h.Score, h.Support,
-                    h.FinalScore / (h.Score == 0 ? 1.0 : h.Score), h.FinalScore, h.At)).ToArray());
+                    h.FinalScore / (h.Score == 0 ? 1.0 : h.Score), h.FinalScore, h.At, h.PhraseMatch == 1, h.TextSignal)).ToArray(), bestTextRank, minimumTextRank);
         }
         catch (SqlException error) { throw new SearchUnavailableException(error); }
     }
 
-    public const string WeightedRankingPolicyVersion = "weighted-v1";
+    public const string WeightedRankingPolicyVersion = "weighted-phrase-v2";
+
+    // Phrase input is data, never SQL/full-text query syntax. Keep stopwords for passage recognition.
+    public static string? OrderedPhrase(string? search)
+    {
+        var words = Regex.Matches(search ?? "", @"[\p{L}\p{N}]+").Select(m => m.Value).ToArray();
+        var phrase = string.Join(" ", words);
+        return words.Length >= 2 && phrase.Length <= 3998 ? " " + phrase + " " : null;
+    }
 
     private static IQueryable<Hit> BuildHits(AtlasDataContext db, DiscoveryQuery query, string scope)
     {
+        var phrase = OrderedPhrase(query.SearchText);
+        const string punctuation = ".,!?;:\"'()-_[]{}*/\\|+=<>@&%$^~`#“”‘’–—…\r\n\t";
         IQueryable<Match> matches = query.SearchText is null
-            ? db.CommentRows.Select(c => new Match { ResultId = c.Id, NodeId = c.TargetId, Kind = 1, Score = 0 })
+            ? db.CommentRows.Select(c => new Match { ResultId = c.Id, NodeId = c.TargetId, Kind = 1, Score = 0, PhraseMatch = 0 })
             : db.Database.SqlQueryRaw<Match>(SqlDiscoveryReadQuery.ReadResource("PublicSearchMatches.sql"),
-                new SqlParameter("@search", SqlDbType.NVarChar, 4000) { Value = query.SearchText });
+                new SqlParameter("@search", SqlDbType.NVarChar, 4000) { Value = query.SearchText },
+                new SqlParameter("@phrase", SqlDbType.NVarChar, 4000) { Value = (object?)phrase ?? DBNull.Value },
+                new SqlParameter("@punctuation", SqlDbType.NVarChar, 100) { Value = punctuation },
+                new SqlParameter("@spaces", SqlDbType.NVarChar, 100) { Value = new string(' ', punctuation.Length) });
         // The shared index contains exactly one document per node or comment.
         var matched = matches;
         var nodeScope = DiscoveryEfQuery.Build(db, query with { SearchText = null }, null, false);
         var nodeHits = from match in matched
                        join node in nodeScope on match.NodeId equals node.NodeId
                        where match.Kind == 0 && scope != "comments"
-                       select new Hit { Id = match.ResultId, NodeId = node.NodeId, Kind = 0, Score = match.Score, CommentScore = 0, Support = (node.AverageVote ?? 0) * node.VoteCount / (node.VoteCount + 1.0), At = node.UpdatedAt };
+                       select new Hit { Id = match.ResultId, NodeId = node.NodeId, Kind = 0, Score = match.Score, PhraseMatch = match.PhraseMatch, CommentScore = 0, Support = (node.AverageVote ?? 0) * node.VoteCount / (node.VoteCount + 1.0), At = node.UpdatedAt };
         // Structural/voting filters concern the containing node; author/date concern the comment.
         var commentNodes = DiscoveryEfQuery.Build(db, query with { SearchText = null, AuthorParticipantId = null, CreatedFrom = null, CreatedThrough = null }, null, false);
         var comments = db.CommentRows.AsNoTracking().Where(c => c.TargetKind == "Node" && c.Status == "Active" && c.RemovedAt == null);
@@ -85,18 +110,25 @@ public sealed class SqlPublicSearch(Func<AtlasDataContext> open) : IPublicSearch
                           join comment in comments on match.ResultId equals comment.Id
                           join node in commentNodes on comment.TargetId equals node.NodeId
                           where match.Kind == 1 && scope != "nodes"
-                          select new Hit { Id = comment.Id, NodeId = node.NodeId, Kind = 1, Score = match.Score, CommentScore = db.VoteRows.Where(v => v.TargetType == "Comment" && v.TargetId == comment.Id).Sum(v => (int?)v.Value) ?? 0, Support = db.VoteRows.Where(v => v.TargetType == "Comment" && v.TargetId == comment.Id).Sum(v => (int?)v.Value) ?? 0, At = comment.CreatedAt };
+                          select new Hit { Id = comment.Id, NodeId = node.NodeId, Kind = 1, Score = match.Score, PhraseMatch = match.PhraseMatch, CommentScore = db.VoteRows.Where(v => v.TargetType == "Comment" && v.TargetId == comment.Id).Sum(v => (int?)v.Value) ?? 0, Support = db.VoteRows.Where(v => v.TargetType == "Comment" && v.TargetId == comment.Id).Sum(v => (int?)v.Value) ?? 0, At = comment.CreatedAt };
         // Both kinds receive a bounded support adjustment. A node's importance is weighted
         // by count/(count+1), so one rating does not carry the weight of broad agreement.
         // With no text query, a neutral base ranks comment-only browsing by net support.
         var weight = (query.VotingWeight ?? 0) / 100.0;
-        return nodeHits.Concat(commentHits)
-            .Select(h => new Hit
+        var textHits = nodeHits.Concat(commentHits).Select(h => new Hit
+        {
+            Id = h.Id, NodeId = h.NodeId, Kind = h.Kind, Score = h.Score, PhraseMatch = h.PhraseMatch,
+            Support = h.Support, CommentScore = h.CommentScore, At = h.At,
+            TextSignal = phrase != null
+                ? 0.65 * Math.Log(1.0 + h.Score) / Math.Log(1001.0) + 0.35 * h.PhraseMatch
+                : Math.Log(1.0 + h.Score) / Math.Log(1001.0)
+        });
+        return textHits.Select(h => new Hit
             {
-                Id = h.Id, NodeId = h.NodeId, Kind = h.Kind, Score = h.Score,
+                Id = h.Id, NodeId = h.NodeId, Kind = h.Kind, Score = h.Score, PhraseMatch = h.PhraseMatch, TextSignal = h.TextSignal,
                 Support = h.Support, CommentScore = h.CommentScore, At = h.At,
                 FinalScore = query.VotingWeight != null
-                    ? (1.0 - weight) * Math.Log(1.0 + h.Score) / Math.Log(1001.0)
+                    ? (1.0 - weight) * h.TextSignal
                       + weight * (h.Kind == 0 ? h.Support / 10.0 : h.Support / (5.0 + Math.Abs(h.Support)))
                     : (h.Score == 0 ? 1.0 : h.Score) *
                     (1.0 + 0.25 * h.Support / (10.0 + Math.Abs(h.Support)))
@@ -141,6 +173,6 @@ public sealed class SqlPublicSearch(Func<AtlasDataContext> open) : IPublicSearch
         var count = Math.Min(240, body.Length - start);
         return (start > 0 ? "…" : "") + body.Substring(start, count) + (start + count < body.Length ? "…" : "");
     }
-    public sealed class Match { public Guid ResultId { get; set; } public Guid NodeId { get; set; } public int Kind { get; set; } public int Score { get; set; } }
-    private sealed class Hit { public double FinalScore { get; set; } public double Support { get; set; } public int CommentScore { get; set; } public Guid Id { get; set; } public Guid NodeId { get; set; } public int Kind { get; set; } public int Score { get; set; } public DateTimeOffset At { get; set; } }
+    public sealed class Match { public Guid ResultId { get; set; } public Guid NodeId { get; set; } public int Kind { get; set; } public int Score { get; set; } public int PhraseMatch { get; set; } }
+    private sealed class Hit { public int PhraseMatch { get; set; } public double TextSignal { get; set; } public double FinalScore { get; set; } public double Support { get; set; } public int CommentScore { get; set; } public Guid Id { get; set; } public Guid NodeId { get; set; } public int Kind { get; set; } public int Score { get; set; } public DateTimeOffset At { get; set; } }
 }

@@ -6,6 +6,7 @@ import {
   parts,
   passage,
   searchableTerms,
+  coverage,
 } from '../storybook/SearchRanking/evidence';
 
 test('literal evidence counts whole words, casing and Unicode without inventing stemming', () => {
@@ -39,4 +40,15 @@ test('active SQL stopwords are excluded without guessing or dropping meaningful 
   expect(matches('And the otters visit islands', query)).toBe(2);
   expect(searchableTerms('and the', ['and', 'the'])).toBe('');
   expect(searchableTerms('candy and islands', [])).toBe('candy and islands');
+});
+
+test('preview uses authoritative phrase-aware SQL text signal when supplied', () => {
+  const direct = experiment({ kind: 'node', textRank: 191, support: 7, textSignal: 0.85 }, 40);
+  expect(direct.textContribution).toBeCloseTo(0.51);
+  expect(direct.score).toBeCloseTo(0.79);
+});
+
+test('literal query coverage counts distinct terms rather than repeated hits', () => {
+  expect(coverage('housing housing housing', 'housing retention services')).toBe('1 / 3');
+  expect(coverage('retention services housing', 'housing retention services')).toBe('3 / 3');
 });

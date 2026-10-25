@@ -8,6 +8,7 @@
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
+  import MatchStrictnessControl from '$lib/components/MatchStrictnessControl.svelte';
   import VotingWeightControl from '$lib/components/VotingWeightControl.svelte';
   import { watchSearchPreferences } from '$lib/state/searchPreferences.svelte';
   onMount(watchSearchPreferences);
@@ -122,6 +123,7 @@
   <h1>Account settings</h1>
   <h2>Search preferences</h2>
   <VotingWeightControl />
+  <MatchStrictnessControl />
   <SessionControl expanded onSession={sessionChanged} />
   {#if owner}
     <h2>Public profile</h2>

@@ -22,11 +22,11 @@ export function passage(text: string, query: string): string {
   const end = Math.min(text.length, start + 240);
   return `${start ? '…' : ''}${text.slice(start, end)}${end < text.length ? '…' : ''}`;
 }
-export type RankingInput = { kind: string; textRank: number; support: number };
+export type RankingInput = { kind: string; textRank: number; support: number; textSignal?: number };
 /** Browser preview of weighted-v1. Actual global ordering and pagination run independently in SQL. */
 export function experiment(input: RankingInput, votingPercent = 40) {
   const weight = Math.max(0, Math.min(100, votingPercent)) / 100;
-  const text = Math.log1p(Math.max(0, input.textRank)) / Math.log(1001);
+  const text = input.textSignal ?? Math.log1p(Math.max(0, input.textRank)) / Math.log(1001);
   const vote =
     input.kind === 'node'
       ? Math.max(0, Math.min(1, input.support / 10))
@@ -46,4 +46,11 @@ export function searchableTerms(query: string, stopWords: string[]): string {
   return words(query)
     .filter((word) => !ignored.has(word.toLocaleLowerCase('en-US')))
     .join(' ');
+}
+
+/** Distinct literal query-word coverage, not SQL linguistic match coverage. */
+export function coverage(text: string, query: string): string {
+  const terms = new Set(words(query).map((word) => word.toLocaleLowerCase('en-US')));
+  const present = new Set(words(text).map((word) => word.toLocaleLowerCase('en-US')));
+  return `${[...terms].filter((term) => present.has(term)).length} / ${terms.size}`;
 }

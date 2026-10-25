@@ -10,6 +10,7 @@
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
+  import MatchStrictnessControl from './MatchStrictnessControl.svelte';
   import VotingWeightControl from './VotingWeightControl.svelte';
   import { searchPreferences, watchSearchPreferences } from '../state/searchPreferences.svelte';
   import {
@@ -218,6 +219,7 @@
     -->
     <div class="toolbox">
       <VotingWeightControl />
+      <MatchStrictnessControl />
       <label
         >Search in<select
           value={editing.filters.scope ?? 'all'}
@@ -358,7 +360,11 @@
       {:else if accepted.errors.length}<p role="alert">{accepted.errors.join(' · ')}</p>
       {:else}<SearchResults
           search={accepted.text}
-          filters={{ ...accepted.filters, votingWeight: searchPreferences.votingWeight }}
+          filters={{
+            ...accepted.filters,
+            votingWeight: searchPreferences.votingWeight,
+            matchStrictness: searchPreferences.matchStrictness,
+          }}
           onSelect={onResultSelected}
         />{/if}
     </div>
