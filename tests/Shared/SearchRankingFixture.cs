@@ -172,7 +172,7 @@ public static class SearchRankingFixture
             }
             results.Add(new(phase.Name, rows.ToArray(), checks.ToArray()));
         }
-        return new(SqlPublicSearch.RankingPolicyVersion, "Isolated fixture corpus; full-text ranks can differ from a larger Atlas database.", results.ToArray());
+        return new(SqlPublicSearch.RankingPolicyVersion, "Fixture entries plus a fixed Discussion container node; full-text ranks can differ from a larger Atlas database.", results.ToArray());
     }
     private static Guid Voter(int i) => new($"30000000-0000-0000-0000-{i + 1:000000000000}");
     private static Dictionary<Guid, Document> ReadDocuments(AtlasDataContext db) => db.Database.SqlQueryRaw<Document>("SELECT ResultId, SearchText FROM dbo.SearchDocuments").ToDictionary(d => d.ResultId);

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import fixtures from '../../../../tests/Fixtures/SearchRanking/scenarios.json';
+import fixtures from '../../../../tests/Fixtures/SearchRanking/scenarios.json' with { type: 'json' };
 const story = 'http://127.0.0.1:6007/iframe.html?id=compositions-search-ranking--workbench&viewMode=story';
 
 // Transport stubs verify the UI only; actual scores/orders are asserted against SQL by the shared fixture tests.

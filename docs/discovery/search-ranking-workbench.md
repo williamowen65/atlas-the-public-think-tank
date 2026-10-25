@@ -43,7 +43,7 @@ Every run creates a generated `AtlasRankingLab_<GUID>` database, uses EF's curre
 
 Normal errors trigger cleanup. Abrupt process termination or lost database connectivity can leave a disposable database; its generated name is logged if cleanup fails. Only databases with the tool's generated prefix are candidates for manual cleanup. The main Atlas demo corpus is never reset or reseeded by this tool.
 
-Fixed timestamps, stable result IDs, the complete corpus, query and individual votes are reproducible. SQL Server full-text rank depends on corpus statistics and English linguistic resources; absolute raw scores can vary with SQL Server versions/index state and differ from a larger demo database. Assertions target meaningful ordering relationships, not hard-coded SQL rank numbers. Initial indexing has a deadline; an indexing failure is reported rather than returning a misleading PASS.
+The corpus includes the submitted entries plus one fixed “Discussion container” node that hosts comments. Avoid that control text as a custom query; a matching container is reported as an error. Fixed timestamps, stable result IDs, the corpus, query and individual votes are reproducible. SQL Server full-text rank depends on corpus statistics and English linguistic resources; absolute raw scores can vary with SQL Server versions/index state and differ from a larger demo database. Assertions target meaningful ordering relationships, not hard-coded SQL rank numbers. Initial indexing has a deadline; an indexing failure is reported rather than returning a misleading PASS.
 
 ## Tests
 
