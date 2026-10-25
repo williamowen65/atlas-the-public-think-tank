@@ -97,6 +97,8 @@ public sealed class SqlDiscoveryReadQuery(
             // ?. skips this call entirely when caching was omitted.
             using var db = open();
             cache?.BindDatabase(db.Database.GetConnectionString()!);
+            if (query.SearchText is not null)
+                DiscoveryFullTextSchema.EnsureAvailable(db);
 
             using var transaction = db.Database.BeginTransaction(IsolationLevel.Serializable);
             // 4. Read the committed freshness counters, even when cache is absent.

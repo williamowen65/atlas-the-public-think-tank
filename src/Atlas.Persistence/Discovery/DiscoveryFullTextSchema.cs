@@ -1,3 +1,6 @@
+using Microsoft.EntityFrameworkCore;
+using Atlas.Discovery;
+
 namespace Atlas.Persistence.Discovery;
 
 /// <summary>SQL shared by the developer-generated migration and fresh-model SQL test databases.</summary>
@@ -16,6 +19,22 @@ public static class DiscoveryFullTextSchema
             WHEN N'chart-reference' THEN COALESCE([Title], N'')
             ELSE N'' END)
         """.ReplaceLineEndings("\r\n");
+
+    /// <summary>Do not let an empty-table query hide missing or disabled search infrastructure.</summary>
+    internal static void EnsureAvailable(AtlasDataContext db)
+    {
+        var available = db.Database.SqlQuery<int>($"""
+            SELECT CASE WHEN COALESCE(FULLTEXTSERVICEPROPERTY('IsFullTextInstalled'), 0) = 1
+                AND EXISTS (SELECT 1 FROM sys.fulltext_languages WHERE lcid = 1033)
+                AND (SELECT COUNT(*) FROM sys.fulltext_indexes
+                    WHERE object_id IN (OBJECT_ID(N'dbo.NodeRows'), OBJECT_ID(N'dbo.BlockRows'))
+                      AND is_enabled = 1) = 2
+                THEN 1 ELSE 0 END AS [Value]
+            """).Single();
+        if (available != 1)
+            throw new SearchUnavailableException(new InvalidOperationException(
+                "Full-text support, English resources, or enabled NodeRows/BlockRows full-text indexes are missing."));
+    }
 
     /// <summary>Run after adding BlockRows.SearchText, outside the migration transaction.</summary>
     public static string CreateSql => SqlDiscoveryReadQuery.ReadResource("DiscoveryFullTextCreate.sql");

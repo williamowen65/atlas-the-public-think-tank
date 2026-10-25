@@ -63,7 +63,7 @@ public sealed class DiscoveryPerformanceTests
         var changed = query.DiscoverPage(new(SearchText: "Node"));
         watch.Stop(); var filterMs = watch.Elapsed.TotalMilliseconds;
         plans.AddRange(collector.Commands.Where(command => command.Text.Contains("Discovery count") || command.Text.Contains("Discovery ranked page")));
-        Assert.HasCount(3, collector.Commands); // details reused across filter keys
+        Assert.HasCount(4, collector.Commands); // availability check, revision, count, page; details reused
         Assert.HasCount(3, changed.Items);
         collector.Commands.Clear();
         var next = query.DiscoverPage(new(Page: 2));
