@@ -31,6 +31,7 @@ public sealed class DiscoveryReadQueryTests
         Assert.Throws<ArgumentException>(() => service.DiscoverAuthored(new DiscoveryQuery(MinimumAverageVote: 8, MaximumAverageVote: 2), []));
         Assert.Throws<ArgumentNullException>(() => service.DiscoverAuthoredPage(new DiscoveryQuery(), null!));
         Assert.Throws<ArgumentException>(() => service.DiscoverPage(new DiscoveryQuery(NodeId: Guid.Empty)));
+        Assert.Throws<ArgumentException>(() => service.DiscoverPage(new DiscoveryQuery(SearchText: new string('x', 4001))));
         Assert.IsNull(port.LastQuery);
     }
 

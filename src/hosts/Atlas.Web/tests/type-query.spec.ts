@@ -23,6 +23,14 @@ test('type queries resolve names case-insensitively, including quoted multiword 
   expect(parseDiscoveryQuery('type:issue-id', types).filters.typeId).toBe('issue-id');
 });
 
+test('natural-language text stays separate from structured filter tokens', () => {
+  expect(parseDiscoveryQuery('protect salmon habitat type:issue votes:2.. average:5..10', types)).toEqual({
+    text: 'protect salmon habitat',
+    filters: { typeId: 'issue-id', minVotes: 2, maxVotes: undefined, minAverage: 5, maxAverage: 10 },
+    errors: [],
+  });
+});
+
 test('type toolbox emits a readable name and sends the corresponding API ID', async ({ page }) => {
   await page.route('**/atlas-session-api/**', (route) => route.fulfill({ status: 401, json: {} }));
   const lookups: URL[] = [];

@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Atlas.Application.Storage;
+using Atlas.Testing;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Identity;
 using Atlas.Persistence;
@@ -42,6 +43,7 @@ public sealed class SqlWorkflowTests
         await using var database = new AtlasDataContext(options);
         // EnsureCreated builds this disposable database from the EF model; it does not apply production migrations.
         await database.Database.EnsureCreatedAsync();
+        SqlFullTextSupport.CreateIndexes(database);
         try
         {
             // This client retains its cookie jar across all phases of the same scenario.
@@ -89,6 +91,7 @@ public sealed class SqlWorkflowTests
         await using var database = new AtlasDataContext(options);
         // EnsureCreated builds this disposable database from the EF model; it does not apply production migrations.
         await database.Database.EnsureCreatedAsync();
+        SqlFullTextSupport.CreateIndexes(database);
         try
         {
             using var client = factory.CreateClient(new WebApplicationFactoryClientOptions

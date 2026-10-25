@@ -42,7 +42,7 @@ public sealed class DiscoveryPerformanceTests
                 SELECT NEWID(), @voter, Id, N'Node', Number % 11, '2026-10-01', '2026-10-01' FROM @nodes;
                 """);
         var collector = new QueryCollector();
-        using var configuration = fixture.Open();
+        using var configuration = fixture.OpenForDiscovery();
         var connection = configuration.Database.GetConnectionString()!;
         AtlasDataContext Open() => new(new DbContextOptionsBuilder<AtlasDataContext>().UseSqlServer(connection).AddInterceptors(collector).Options);
         using var cache = new DiscoveryCache();

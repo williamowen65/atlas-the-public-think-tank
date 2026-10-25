@@ -13,4 +13,5 @@
   <ItemGroup>
     <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
   </ItemGroup>
+  <ItemGroup><Compile Include="../Shared/SqlFullTextSupport.cs" Link="SqlFullTextSupport.cs" /></ItemGroup>
 </Project>

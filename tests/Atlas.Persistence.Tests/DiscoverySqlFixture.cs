@@ -12,7 +12,7 @@ internal static class DiscoverySqlFixture
         var voterCount = Math.Max(1, candidates.Select(c => c.VoteCount).DefaultIfEmpty().Max());
         var voters = Enumerable.Range(0, voterCount).Select(_ => Guid.NewGuid()).ToArray();
         foreach (var id in authorIds.Concat(voters).Distinct()) db.ParticipantRows.Add(new ParticipantRow { Id = id, DisplayName = "Author", Bio = "", IsActive = true, CreatedAt = now, UpdatedAt = now });
-        foreach (var id in candidates.Select(c => c.NodeTypeId).Distinct()) db.NodeTypeRows.Add(new NodeTypeRow { Id = id, Name = "Idea", Description = "", IsSystemDefined = true, CreatedAt = now, UpdatedAt = now });
+        foreach (var (id, index) in candidates.Select(c => c.NodeTypeId).Distinct().Select((id, index) => (id, index))) db.NodeTypeRows.Add(new NodeTypeRow { Id = id, Name = index == 0 ? "Idea" : "Idea " + id, Description = "", IsSystemDefined = true, CreatedAt = now, UpdatedAt = now });
         foreach (var id in candidates.SelectMany(c => c.CommunityIds).Distinct()) db.CommunityRows.Add(new CommunityRow { Id = id, Name = id.ToString(), Description = "", OwnerParticipantId = authorIds[0], Status = "Active", CreatedAt = now, UpdatedAt = now });
         foreach (var id in candidates.SelectMany(c => c.ReactionDefinitionIds).Distinct()) db.ReactionDefinitionRows.Add(new ReactionDefinitionRow { Id = id, Text = id.ToString(), NormalizedText = id.ToString(), Description = "", Emoji = "🐋", CreatedByParticipantId = authorIds[0], CreatedAt = now, UpdatedAt = now });
         foreach (var candidate in candidates)

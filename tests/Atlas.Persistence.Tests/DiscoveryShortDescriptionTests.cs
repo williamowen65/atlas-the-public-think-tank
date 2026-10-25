@@ -22,7 +22,7 @@ public sealed class DiscoveryShortDescriptionTests
         repository.SaveMetadata(node);
         Assert.AreEqual(node.ShortDescription, repository.GetById(node.Id)!.ShortDescription);
         using var cache = new DiscoveryCache();
-        var query = new SqlDiscoveryReadQuery(fixture.Open, cache);
+        var query = new SqlDiscoveryReadQuery(fixture.OpenForDiscovery, cache);
         var card = query.DiscoverPage(new(SearchText: "Distinct concise")).Items.Single().Card!;
         Assert.AreEqual("Distinct concise introduction", card.ShortDescription);
         Assert.AreEqual("Long document content", card.Description);

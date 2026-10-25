@@ -355,6 +355,10 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
         });
         model.Entity<BlockRow>(entity =>
         {
+            // Persist only public searchable fields; SQL Server indexes this computed text.
+            entity.Property<string>("SearchText")
+                .HasComputedColumnSql(Discovery.DiscoveryFullTextSchema.BlockTextExpression, stored: true)
+                .UseCollation(DiscoveryTextCollation.Name);
             entity.Property<Guid>("Id")
                 .HasColumnType("uniqueidentifier")
                 .IsRequired();

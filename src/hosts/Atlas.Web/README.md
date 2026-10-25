@@ -402,3 +402,7 @@ Existing saved queries containing type IDs still work. The database migration
 `UniqueNodeTypeNames` enforces case-insensitive uniqueness across all node types, including
 archived types. Existing duplicate names must be resolved before applying that migration;
 it stops without merging or deleting any nodes.
+
+### SQL Server full-text search
+
+Free text uses SQL Server natural-language full-text matching; structured filter tokens remain separate. Words may match in different orders and related forms, with any-term semantics. This does not add typo correction. The local instance needs Full-Text Search and a developer-generated migration; CI builds a full-text-capable SQL image. See [setup, migration and test instructions](../../../docs/discovery/full-text-search.md). Text-search pages bypass the result-page cache while card details and browsing pages retain revision-based caching.

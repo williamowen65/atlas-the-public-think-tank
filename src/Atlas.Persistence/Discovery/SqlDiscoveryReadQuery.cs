@@ -105,7 +105,10 @@ public sealed class SqlDiscoveryReadQuery(
             // - no cache was injected, or
             // - TryPage cannot find this key (first use, new revision, expiry/eviction).
             // Unpaged requests can still reuse detail cards if a cache exists.
-            var pageMiss = !paged || cache is null || !cache.TryPage(key, out page!);
+            // Full-text population is asynchronous and does not bump DiscoveryRevisions.
+            // Never cache text-search pages: an early empty result must not mask later indexing.
+            var cachePage = paged && query.SearchText is null;
+            var pageMiss = !cachePage || cache is null || !cache.TryPage(key, out page!);
 
             if (pageMiss)
             {
@@ -190,7 +193,7 @@ public sealed class SqlDiscoveryReadQuery(
 
             // Publish only successfully completed committed reads. Detail entries are immutable
             // and independent of filters/ordered page IDs and contain no participant-specific votes.
-            if (pageMiss && paged)
+            if (pageMiss && cachePage)
             {
                 cache?.PutPage(key, page);
             }

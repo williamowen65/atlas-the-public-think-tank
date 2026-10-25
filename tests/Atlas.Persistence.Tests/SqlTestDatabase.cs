@@ -1,4 +1,5 @@
 using Atlas.Persistence;
+using Atlas.Testing;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -12,7 +13,11 @@ internal sealed class SqlTestDatabase : IDisposable
     {
         _options = new DbContextOptionsBuilder<AtlasDataContext>().UseSqlServer(connection).Options;
         using var database = Open();
-        if (useCurrentModel) database.Database.EnsureCreated();
+        if (useCurrentModel)
+        {
+            database.Database.EnsureCreated();
+            SqlFullTextSupport.CreateIndexes(database);
+        }
         else database.Database.Migrate();
     }
     public static SqlTestDatabase Create(bool useCurrentModel = false)
@@ -32,6 +37,13 @@ internal sealed class SqlTestDatabase : IDisposable
         return new SqlTestDatabase(connection, useCurrentModel);
     }
     public AtlasDataContext Open() => new(_options);
+    public AtlasDataContext OpenForDiscovery()
+    {
+        using var configuration = Open();
+        // Tests wait outside the application transaction; production search remains eventual.
+        SqlFullTextSupport.WaitForIndexing(configuration.Database.GetConnectionString()!);
+        return Open();
+    }
     public Guid AddParticipant(Guid? id = null)
     {
         var key = id ?? Guid.NewGuid();

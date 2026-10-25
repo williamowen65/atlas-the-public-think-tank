@@ -25,7 +25,7 @@ public sealed class DiscoveryChildFeedTests
             db.SaveChanges();
         }
         using var cache = new DiscoveryCache();
-        var query = new SqlDiscoveryReadQuery(fixture.Open, cache);
+        var query = new SqlDiscoveryReadQuery(fixture.OpenForDiscovery, cache);
         var first = query.DiscoverPage(new(ParentNodeId: parent.NodeId, NodeTypeId: type));
         var second = query.DiscoverPage(new(ParentNodeId: parent.NodeId, NodeTypeId: type, Page: 2));
         Assert.AreEqual(6, first.TotalCount);
