@@ -2,7 +2,6 @@ using System.Net;
 using Atlas.Persistence;
 using Atlas.Discovery;
 using Atlas.Persistence.Discovery;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 // Standalone local developer tool. Not registered in Atlas.Api or its production routing.
@@ -37,10 +36,33 @@ app.MapPost("/run", (SearchRequest request) =>
         var ids = explained.Evidence.Select(e => e.Id).ToArray();
         var documents = db.Database.SqlQueryRaw<SearchDocument>("SELECT ResultId, SearchText FROM dbo.SearchDocuments")
             .Where(d => ids.Contains(d.ResultId)).ToDictionary(d => d.ResultId, d => d.SearchText);
+        var nodeIds = explained.Evidence.Where(e => e.Kind == "node").Select(e => e.NodeId).ToArray();
+        var nodes = db.NodeRows.AsNoTracking().Where(n => nodeIds.Contains(n.Id))
+            .Select(n => new { n.Id, n.Title, n.ShortDescription, n.DescriptionId }).ToDictionary(n => n.Id);
+        var documentIds = nodes.Values.Where(n => n.DescriptionId.HasValue).Select(n => n.DescriptionId!.Value).ToArray();
+        var blocks = (from link in db.Set<DocumentBlockRow>().AsNoTracking()
+                      join block in db.BlockRows.AsNoTracking() on link.BlockId equals block.Id
+                      where documentIds.Contains(link.DocumentId)
+                      orderby link.Position
+                      select new { link.DocumentId, link.Position, block.Id, block.Kind,
+                          Text = EF.Property<string>(block, "SearchText") }).ToArray();
+        var commentIds = explained.Evidence.Where(e => e.Kind == "comment").Select(e => e.Id).ToArray();
+        var comments = db.CommentRows.AsNoTracking().Where(c => commentIds.Contains(c.Id))
+            .ToDictionary(c => c.Id, c => c.Body);
+        TextSource[] Sources(SearchRankEvidence evidence)
+        {
+            if (evidence.Kind == "comment") return [new("Comment body", comments.GetValueOrDefault(evidence.Id, ""))];
+            if (!nodes.TryGetValue(evidence.NodeId, out var node)) return [];
+            return new[] { new TextSource("Title", node.Title), new TextSource("Short description", node.ShortDescription) }
+                .Concat(blocks.Where(b => b.DocumentId == node.DescriptionId)
+                    .Select(b => new TextSource($"Block {b.Position + 1} ({b.Kind})", b.Text ?? "", b.Id))).ToArray();
+        }
         return Results.Ok(new { policy = SqlPublicSearch.RankingPolicyVersion, explained.Page,
+            collectedAt = DateTimeOffset.UtcNow,
             rows = explained.Evidence.Select((e, i) => new {
                 position = (explained.Page.Page - 1) * explained.Page.PageSize + i + 1,
-                item = explained.Page.Items[i], evidence = e, searchText = documents.GetValueOrDefault(e.Id, "")
+                item = explained.Page.Items[i], evidence = e, searchText = documents.GetValueOrDefault(e.Id, ""),
+                sources = Sources(e)
             }) });
     }
     catch (ArgumentException error) { return Results.BadRequest(new { message = error.Message }); }
@@ -57,3 +79,5 @@ public sealed class SearchDocument
     public Guid ResultId { get; set; }
     public string SearchText { get; set; } = "";
 }
+
+public sealed record TextSource(string Field, string Text, Guid? BlockId = null);
