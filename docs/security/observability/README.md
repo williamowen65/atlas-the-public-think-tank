@@ -4,7 +4,7 @@ For execution flow and design structure, see the [process and UML diagram guide]
 
 For a visual review route, open the [Observability and Audit blackboard](../../blackboards/workflows/Observability/ObservabilityAndAudit.excalidraw) or its [linked walkthrough](../../blackboards/workflows/Observability/ObservabilityAndAudit.md). Both appear in Solution Explorer under **docs → blackboards → workflows → Observability**.
 
-Status: **Local implementation and developer-generated migration added; validation in progress.** [PTT-126](https://thepublicthinktank.atlassian.net/browse/PTT-126). Source baseline: main after PR #345, reviewed 2026-10-13.
+Status: **Local Console/API implementation; production export remains separate.** Historical PTT-126 review baseline follows. [PTT-126](https://thepublicthinktank.atlassian.net/browse/PTT-126). Source baseline: main after PR #345, reviewed 2026-10-13.
 
 For the earlier implementation and what changed, see the [developer note comparing legacy user history with current audit capture](LEGACY-COMPARISON.md).
 
@@ -24,7 +24,7 @@ For delivery terminology and worked examples, see [Audit delivery: leases, claim
 
 - **Alerts** are rules evaluated by monitoring infrastructure, not a separate kind of application log. For example, sustained delivery failures could notify an operator. Thresholds and recipients remain deployment decisions.
 
-Start with [Run and inspect local observability](LOCAL-DEVELOPMENT.md) for migration commands, local files, actual implemented coverage and recovery behavior. This PR now includes typed local diagnostics, metric/trace output, SQL audit/outbox mappings and a local delivery worker. Cloud adapters and API integration remain future work. The sections below retain the reviewed requirements; the running guide distinguishes implementation from remaining production policy.
+Start with [Run and inspect local observability](LOCAL-DEVELOPMENT.md) for migration commands, local files, actual implemented coverage and recovery behavior. The implementation includes typed local diagnostics, metric/trace output, SQL audit/outbox mappings and local delivery workers. API request telemetry is implemented; see [API logging](../../api/LOGGING.md). Cloud export and production monitoring remain separate work. The sections below retain the reviewed requirements; the running guide distinguishes implementation from remaining production policy.
 
 ## Baseline before this implementation
 
@@ -38,11 +38,15 @@ Start with [Run and inspect local observability](LOCAL-DEVELOPMENT.md) for migra
 
 The table above describes the pre-change baseline. New telemetry evidence is linked in [the running guide](LOCAL-DEVELOPMENT.md#verification-and-current-limits).
 
-## Proposed direction: stable events, configurable destinations
+## Design direction and historical proposal
+
+The pre-change table and proposal below preserve design rationale. For implemented file streams, audit outbox behavior, API middleware and remaining production limits, use [the current running guide](LOCAL-DEVELOPMENT.md#verification-and-current-limits) and [application wiring](../../architecture/diagrams/WIRING.md).
+
+### Stable events, configurable destinations
 
 - Application workflows describe meaningful events using stable names and allowlisted fields. Domains remain independent of cloud SDKs.
 
-- Hosts create operation context and select output destinations. Console does this in startup wiring; the future API does it in startup and request middleware.
+- Hosts create operation context and select output destinations. Console does this in startup wiring; the implemented API does it in ApiServices and request middleware.
 
 - Use the typed `ITelemetryObserver` contract for allowlisted Atlas diagnostic/security events. The local implementation deliberately does not forward arbitrary framework `ILogger` messages. A later reviewed logging-provider bridge must preserve the same privacy boundary.
 

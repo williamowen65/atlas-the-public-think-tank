@@ -1,18 +1,18 @@
 # Discovery read walkthrough (PTT-132)
 
-Open [the editable blackboard](DiscoveryReadFlow.excalidraw). Its numbered regions follow the code below. This board complements the older Discovery domain board; it focuses on storage reads, paging and cache freshness.
+Open [the editable blackboard](DiscoveryReadFlow.excalidraw). Its numbered regions follow the code below. The editable board is historical PTT-132 review material; its original lock/search annotations predate the API and full-text changes. This walkthrough and the [current wiring](../../../architecture/diagrams/WIRING.md) are the current guide. This board complements the older Discovery domain board; it focuses on storage reads, paging and cache freshness.
 
 ## Before a request: Console startup wiring
 
 - [Console Program.cs](../../../../src/hosts/Atlas.Console/Program.cs) creates one `DiscoveryCache` and passes it to `SqlDiscoveryReadQuery` together with the `SqlStorage.Open` context factory.
 - Console wraps that adapter in `DiscoveryService`. The service delegates reads; it does not construct the cache.
 - Console owns cache disposal and reuses the instance across requests. Omitting the optional cache disables reuse, not database access.
-- A future REST API must supply its own host-lifetime cache and per-read context factory. See [host wiring and cache lifetime](../../../architecture/discovery-read-query.md#host-wiring-and-cache-lifetime).
+- The implemented API supplies a singleton cache, fresh-context factory and request-scoped service in ApiServices. See [host wiring and cache lifetime](../../../architecture/discovery-read-query.md#host-wiring-and-cache-lifetime).
 
 ## 1. One request
 
 1. `DiscoveryService` validates the filters. `SqlDiscoveryReadQuery.Read` trims search text and normalizes set inputs.
-2. `Read` opens its own context and serializable transaction. It reads the singleton `DiscoveryRevisionRow` before attempting any cache lookup. That lock remains until the read commits.
+2. `Read` opens its own context and snapshot transaction. It reads the singleton `DiscoveryRevisionRow` before attempting any cache lookup. The revision and page/card reads share the same committed snapshot; this read no longer holds a serializable range lock against writers.
 3. `DiscoveryCache.PageKey` hashes the filters, selected page, page size, authored scope and hidden visibility policy. The ordering-policy prefix and committed page revision also participate. It is a lookup key, not a paging cursor or authorization token.
 4. A page miss calls `DiscoveryEfQuery.Build`. This constructs an `IQueryable`; it does not enumerate candidates. EF translates optional predicates, vote count/average, moderation visibility and scoring into SQL. `Count` gets the total; ordering, `Skip` and `Take` select the page in SQL.
 5. Each selected ID is checked in the separate detail cache. Missing cards use two fixed batches: an EF metadata projection and the SQL summary projection. Ordinary labels, dates, status and comment counts are in EF. Breadcrumb ancestry is read in up to three bounded EF hops; ordered display text remains in SQL.
@@ -62,7 +62,7 @@ Open [the editable blackboard](DiscoveryReadFlow.excalidraw). Its numbered regio
 
 ## Why some SQL remains
 
-- `DiscoverySearchContent.sql` is a composable SELECT used only during text search. Its ordered cross-block `STRING_AGG ... WITHIN GROUP` preserves phrases spanning adjacent fields/blocks. A simple EF `Any` over individual blocks would change behavior. The current query does not have a suitable ordered aggregate LINQ translation.
+- `DiscoverySearchContent.sql` supplies node-only full-text candidates from supported title/short-description and block fields. Global mixed search instead uses `PublicSearchMatches.sql` over the shared SearchDocuments projection; see [search setup and behavior](../../../discovery/full-text-search.md). SQL Server full-text indexing/querying and ordered projection maintenance are SQL-specific, while ordinary filters/aggregates/paging remain EF expressions.
 - `DiscoveryCards.sql` now handles ordered text summaries only. The former recursive traversal was replaced by bounded EF ancestor hops. Its child-type JSON could move to another EF batch; it remains here to avoid a further round trip, not because child counts inherently require raw SQL.
 - Revision updates remain parameterized SQL inside the write transaction so increments are atomic and do not depend on reading a tracked revision first.
 
@@ -79,4 +79,4 @@ A cold root-only page uses six reads: revision, count, ranked IDs, EF metadata, 
 - Read at most three ancestors toward the root, nearest first. Cards show the first segment and an ellipsis for continuation.
 - Follow the first stored parent by default, with an alternative-route notice instead of expanding every branch.
 - Explore parents offers branch choices and ancestor segments in sets of three; N continues above the last ancestor.
-- See [bounded breadcrumb pagination](../../../architecture/discovery-read-query.md#bounded-breadcrumb-pagination) and `DiscoveryBreadcrumbReader` for the structured continuation contract.
+- See [bounded breadcrumb pagination](../../../architecture/discovery-read-query.md#breadcrumb-pages-toward-the-root) and `DiscoveryBreadcrumbReader` for the structured continuation contract.

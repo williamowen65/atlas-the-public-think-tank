@@ -9,7 +9,7 @@ Atlas is currently a modular application hosted by Atlas.Console and the JSON At
 
 ## Documents
 
-- [Visual architecture guide](diagrams/README.md) connects composition UML, workflow sequences and decision trees to implementation and tests.
+- [Visual architecture guide](diagrams/README.md) connects application wiring flowcharts, workflow sequences and decision trees to implementation and tests.
 - [Context map](CONTEXT-MAP.md) describes the boundaries and their relationships.
 - [Data ownership](DATA-OWNERSHIP.md) identifies the authoritative owner of records and identifiers.
 - [Voting boundary](VOTING.md) defines Voting ownership, policies, integration needs, and open decisions.
@@ -26,9 +26,9 @@ Atlas is currently a modular application hosted by Atlas.Console and the JSON At
 
 ## Current versus future topology
 
-Today, Atlas.Console composes Application workflows, domain services, Application storage adapters and the reusable event publisher. Application owns cross-domain orchestration and concrete SQL/observability adapters. The infrastructure/ folder is reserved for infrastructure as code. This makes boundary interactions observable without requiring distributed infrastructure.
+Today, Atlas.Console and Atlas.Api compose Application workflows, domain services, Application storage adapters and the reusable event publisher. Application owns cross-domain orchestration and concrete SQL/observability adapters. The infrastructure/ folder is reserved for infrastructure as code. This makes boundary interactions observable without requiring distributed infrastructure.
 
-A future web application may first retain the same modular-monolith shape. If a boundary later becomes an independent service, its public application API and integration contracts form the migration seam.
+The implemented SvelteKit browser app calls the JSON API; Storybook reuses its UI components. This retains the modular-monolith backend shape. If a boundary later becomes an independent service, its public application API and integration contracts form the migration seam.
 
 - [Moderation boundary and first workflow](MODERATION.md)
 

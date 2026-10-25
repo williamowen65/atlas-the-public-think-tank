@@ -11,11 +11,10 @@ This directory records what Atlas must do, how its boundaries fit together, why 
 | [Testing](testing/TEST-STRATEGY.md) | Test levels, responsibilities, and verification standards |
 | [Glossary](glossary/GLOSSARY.md) | Shared Atlas domain language |
 | [Blackboards](blackboards/README.md) | Exploratory architecture visuals linked to authoritative documentation |
-| [Legacy SQL](sql/) | Reference material from the earlier application |
 
-[PTT-94 Identity setup](PTT-94-Identity.md) covers scaffolding the migration and updating your local SQL database.
+[PTT-94 Identity setup](PTT-94-Identity.md) records the Identity integration. For current database/full-text setup, use the [API startup guide](api/README.md) and [full-text setup](discovery/full-text-search.md).
 
-Start with the [visual architecture guide](architecture/diagrams/README.md) for linked UML, process trees and transaction/event diagrams with paths into the implementation.
+Start with the [visual architecture guide](architecture/diagrams/README.md) for application wiring, process trees and transaction/event diagrams with paths into the implementation.
 
 ## How the documents connect
 
@@ -61,3 +60,7 @@ Documentation should remain usable from a phone:
 ## HTTP host
 
 See [Atlas JSON API](api/README.md) for workflow parity, cookie/CSRF security, and version-controlled HTTP examples.
+
+## Documentation maintenance
+
+[The architecture refresh record](architecture/DOCUMENTATION-REFRESH.md) identifies reviewed current guides and historical review material. Update the owning guide when behavior changes; remove or redirect duplicate current instructions, and preserve ADRs and dated review evidence as history.

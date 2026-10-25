@@ -2,10 +2,10 @@
 
 ## Start here
 
-- **Current implementation:** EF handles filtering, vote aggregates, scoring, ordering, totals, paging and ordinary card metadata. SQL helpers handle recursive paths and ordered text summaries.
+- **Current implementation:** EF handles filtering, vote aggregates, scoring, ordering, totals, paging and ordinary card metadata. Bounded ancestor traversal uses EF; SQL helpers handle full-text candidates and ordered text summaries.
 - **Current expected reads:** cold/new root-only page **6**, repeated cached page **1**, changed filter with reused cards **3**, beyond-last page **2**.
 - **Historical timings below:** measured before the EF refactor. They are not measurements of the current EF queries.
-- **Current verification:** [refactor CI run 38331824386](https://github.com/williamowen65/atlas-the-public-think-tank/actions/runs/38331824386) passed all 29 Discovery SQL tests and the SQL Persistence, Identity and Console jobs. Use that run's artifact for the refactored query plans and measurements.
+- **Historical refactor verification:** [refactor CI run 38331824386](https://github.com/williamowen65/atlas-the-public-think-tank/actions/runs/38331824386) passed all 29 Discovery SQL tests and the SQL Persistence, Identity and Console jobs. Use that run's artifact for the refactored query plans and measurements.
 - **Code walkthrough:** [DiscoveryReadFlow.md](../blackboards/workflows/Discovery/DiscoveryReadFlow.md).
 - **Editable blackboard:** [DiscoveryReadFlow.excalidraw](../blackboards/workflows/Discovery/DiscoveryReadFlow.excalidraw).
 
