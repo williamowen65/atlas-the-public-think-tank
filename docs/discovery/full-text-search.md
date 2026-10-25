@@ -147,3 +147,20 @@ expectations have been updated from substring to token matching.
 - [Microsoft: CREATE FULLTEXT INDEX](https://learn.microsoft.com/en-us/sql/t-sql/statements/create-fulltext-index-transact-sql)
 - [Microsoft: Install Full-Text Search on Linux](https://learn.microsoft.com/en-us/sql/linux/install-upgrade/setup-full-text-search)
 - [Microsoft: EF Core SQL Server full-text support and older-version migration SQL](https://learn.microsoft.com/en-us/ef/core/providers/sql-server/full-text-search)
+
+## Unavailable or disabled full-text search
+
+SQL errors during a text-search request (including a stopped full-text service or a disabled
+or missing full-text index) become SearchUnavailableException. The original SQL exception
+is retained for backend diagnostics. The API returns HTTP 503 with code `search_unavailable`
+and a safe message; SQL details are not sent to visitors. The search dropdown shows
+"Text search is temporarily unavailable. Please try again later." and offers Retry, rather
+than showing "No results found." Pagination failures retain already loaded results.
+Filters without free text do not invoke the full-text engine.
+
+On Windows, check the **SQL Full-text Filter Daemon Launcher** service for the same SQL
+Server instance Atlas connects to. Also verify the full-text indexes are enabled in that
+database; installing the feature and starting the service are separate from creating and
+enabling the database indexes. The application reports errors when search is attempted;
+it does not continuously monitor the service or claim that every 503 means the service is
+stopped (connection/database failures can also make search unavailable).

@@ -57,6 +57,20 @@ public sealed class SqlDiscoveryReadQuery(
     /// <summary>Resolves ranked results and public cards against one committed database view.</summary>
     private DiscoveryPage Read(DiscoveryQuery query, IReadOnlyCollection<Guid>? authoredIds, bool paged, bool includeHidden = false)
     {
+        try
+        {
+            return ReadCore(query, authoredIds, paged, includeHidden);
+        }
+        catch (SqlException error) when (!string.IsNullOrWhiteSpace(query?.SearchText))
+        {
+            // This includes stopped full-text services, disabled/missing indexes and connection
+            // failures. Preserve the SQL cause for backend logging, never expose it to visitors.
+            throw new SearchUnavailableException(error);
+        }
+    }
+
+    private DiscoveryPage ReadCore(DiscoveryQuery query, IReadOnlyCollection<Guid>? authoredIds, bool paged, bool includeHidden)
+    {
         // 1. Validate and normalize the request before touching the database/cache.
         ArgumentNullException.ThrowIfNull(query);
         DiscoveryQueryValidation.Validate(query);

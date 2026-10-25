@@ -157,6 +157,14 @@ export interface DiscoveryPage {
   hasNextPage: boolean;
 }
 
+/** Known safe service failure; components can show it without exposing backend diagnostics. */
+export class SearchUnavailableError extends Error {
+  constructor() {
+    super('Text search is temporarily unavailable. Please try again later.');
+    this.name = 'SearchUnavailableError';
+  }
+}
+
 /** Anonymous read only. The caller supplies an API base and owns request cancellation. */
 export async function readDiscovery(
   base: string,
@@ -192,7 +200,13 @@ export async function readDiscovery(
     credentials: 'omit',
     signal,
   });
-  if (!response.ok) throw new Error(`Atlas API returned HTTP ${response.status}.`);
+  if (!response.ok) {
+    if (response.status === 503) {
+      const problem = await response.json().catch(() => null);
+      if (problem?.code === 'search_unavailable') throw new SearchUnavailableError();
+    }
+    throw new Error(`Atlas API returned HTTP ${response.status}.`);
+  }
   // Check the minimum page envelope; this is not exhaustive validation of each card.
   const result = (await response.json()) as DiscoveryPage;
   if (

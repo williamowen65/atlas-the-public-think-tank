@@ -9,6 +9,20 @@ namespace Atlas.Persistence.Tests;
 public sealed class DiscoveryFullTextTests
 {
     [TestMethod]
+    public void DisabledFullTextIndexRaisesAnExplicitSearchFailure()
+    {
+        using var fixture = SqlTestDatabase.Create(useCurrentModel: true);
+        using var db = fixture.Open();
+        db.Database.ExecuteSqlRaw("ALTER FULLTEXT INDEX ON dbo.NodeRows DISABLE");
+        var query = new SqlDiscoveryReadQuery(fixture.Open);
+        var error = Assert.Throws<SearchUnavailableException>(() => query.DiscoverPage(new(SearchText: "salmon")));
+        Assert.IsInstanceOfType<Microsoft.Data.SqlClient.SqlException>(error.InnerException);
+        StringAssert.Contains(error.Message, "Text search is temporarily unavailable");
+        // Filtering without free text does not depend on the disabled full-text index.
+        Assert.AreEqual(0, query.DiscoverPage(new()).TotalCount);
+    }
+
+    [TestMethod]
     public void NaturalLanguageMatchesReorderedWordsInflectionsAndCombinedFilters()
     {
         using var fixture = SqlTestDatabase.Create(useCurrentModel: true);
