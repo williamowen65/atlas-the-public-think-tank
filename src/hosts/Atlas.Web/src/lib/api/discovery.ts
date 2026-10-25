@@ -9,6 +9,9 @@ export interface DiscoveryFilters {
    */
   parentId?: string;
 
+  /** Global search scope; browsing feeds remain node-only. */
+  scope?: 'all' | 'nodes' | 'comments';
+
   /** Node-type ID used for filtering or identifying a contribution category. */
   typeId?: string;
 
@@ -126,6 +129,8 @@ interface DiscoveryCard {
 
 /** One discovery result with aggregate voting data and an optional card. */
 interface DiscoveryItem {
+  /** Present only for a comment hit in global search. */
+  comment?: { id: string; nodeTitle: string; authorId: string; authorName: string; createdAt: string; excerpt: string } | null;
   /** Stable node ID used for navigation and detail requests. */
   nodeId: string;
 
@@ -173,6 +178,7 @@ export async function readDiscovery(
   signal: AbortSignal,
   nodeId?: string,
   filters?: DiscoveryFilters,
+  mixedSearch = false,
 ): Promise<DiscoveryPage> {
   // Map the UI filter names to the backend contract. Omitted bounds are not sent.
   const query = new URLSearchParams({ Page: String(page) });
@@ -194,8 +200,9 @@ export async function readDiscovery(
   if (filters?.from) query.set('CreatedFrom', filters.from);
   if (filters?.through) query.set('CreatedThrough', filters.through);
   if (filters?.archived) query.set('IncludeArchived', 'true');
+  if (mixedSearch && filters?.scope) query.set('scope', filters.scope);
   if (search.trim()) query.set('SearchText', search.trim());
-  const response = await fetch(`${base}/nodes?${query}`, {
+  const response = await fetch(`${base}/${mixedSearch ? 'search' : 'nodes'}?${query}`, {
     method: 'GET',
     credentials: 'omit',
     signal,

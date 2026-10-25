@@ -15,14 +15,18 @@
 <script lang="ts">
   import LiveComments from './LiveComments.svelte';
   import SessionControl from './SessionControl.svelte';
+  import { readJson, type Comment } from '../api/nodePage';
   let {
     nodeId,
+    focusCommentId = '',
     apiBase = '/atlas-public-api',
     sessionBase = '/atlas-session-api',
     onAdded,
   }: {
     /** ID of the node this component reads, displays, or modifies. */
     nodeId: string;
+    /** Comment selected in search; loads its bounded ancestor path. */
+    focusCommentId?: string;
     /**
      * Public comment-read base forwarded to LiveComments. Authentication and mutations use
      * sessionBase.
@@ -44,6 +48,48 @@
    * known.
    */
   let participantId = $state<string | null>(null);
+  let focusPath = $state<Comment[]>([]);
+  let focusLoading = $state(false);
+  let focusError = $state('');
+  let focusRetry = $state(0);
+  $effect(() => {
+    const id = focusCommentId,
+      node = nodeId;
+    focusRetry;
+    focusPath = [];
+    focusError = '';
+    if (!id) {
+      focusLoading = false;
+      return;
+    }
+    focusLoading = true;
+    const controller = new AbortController();
+    void readJson<{ items: Comment[] }>(
+      apiBase,
+      `nodes/${encodeURIComponent(node)}/comments/${encodeURIComponent(id)}/path`,
+      AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]),
+    )
+      .then((path) => {
+        if (controller.signal.aborted) return;
+        if (
+          !Array.isArray(path.items) ||
+          !path.items.length ||
+          path.items.length > 128 ||
+          path.items.at(-1)?.id !== id
+        )
+          throw new Error('Invalid comment path');
+        focusPath = path.items;
+      })
+      .catch(() => {
+        if (!controller.signal.aborted)
+          focusError =
+            'This comment could not be opened. It may have been removed or become unavailable.';
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) focusLoading = false;
+      });
+    return () => controller.abort();
+  });
 </script>
 
 <!--
@@ -62,7 +108,23 @@
     prompt="Sign in to comment"
     onSession={(id) => (participantId = id)}
   />
-  <LiveComments {nodeId} {apiBase} {sessionBase} {participantId} {onAdded} />
+  {#if focusLoading}<p role="status">Opening comment thread…</p>
+  {:else if focusError}<p role="alert">{focusError}</p>
+    <button type="button" onclick={() => focusRetry++}>Retry comment</button><button
+      type="button"
+      onclick={() => {
+        focusError = '';
+        focusPath = [];
+      }}>Show discussion</button
+    >
+  {:else}{#key nodeId + ':' + focusCommentId}<LiveComments
+        {nodeId}
+        {apiBase}
+        {sessionBase}
+        {participantId}
+        {onAdded}
+        {focusPath}
+      />{/key}{/if}
 </section>
 
 <style>

@@ -29,6 +29,7 @@
   import { apiRequest } from '../api/apiRequest';
   let {
     nodeId,
+    focusPath = [],
     parentId,
     apiBase = '/atlas-public-api',
     sessionBase = '/atlas-session-api',
@@ -39,6 +40,8 @@
   }: {
     /** ID of the node this component reads, displays, or modifies. */
     nodeId: string;
+    /** Remaining ancestor path; pins the relevant sibling beyond the loaded page. */
+    focusPath?: Comment[];
     /** Comment ID whose direct replies this list loads; omit to load root comments for the node. */
     parentId?: string;
     /**
@@ -171,7 +174,7 @@
         next = page.next;
         started = true;
         void Promise.all(
-          [...new Set(page.items.map((comment) => comment.authorId))]
+          [...new Set(items.map((comment) => comment.authorId))]
             .filter((id) => !names[id])
             .map(async (id) => {
               try {
@@ -286,7 +289,21 @@
     await tick();
     composer?.focus();
   }
+  function revealComment(element: HTMLElement, id: string) {
+    if (focusPath.length === 1 && focusPath[0]?.id === id) {
+      void tick().then(() => {
+        if (!controller.signal.aborted) {
+          element.scrollIntoView({ block: 'center', behavior: 'instant' });
+          element.focus({ preventScroll: true });
+        }
+      });
+    }
+  }
   onMount(() => {
+    if (focusPath[0]) {
+      items = [focusPath[0]];
+      if (focusPath.length > 1) open = [focusPath[0].id];
+    }
     void load();
     if (parentId && showComposer) void focusComposer();
     return () => controller.abort();
@@ -344,6 +361,9 @@
     {#each items as comment (comment.id)}<li>
         <article
           class="comment"
+          class:search-target={focusPath.length === 1 && focusPath[0]?.id === comment.id}
+          tabindex="-1"
+          use:revealComment={comment.id}
           data-comment-id={comment.id}
           aria-label={`Comment by ${names[comment.authorId] ?? 'Participant'}`}
         >
@@ -434,6 +454,7 @@
           {#if open.includes(comment.id)}<LiveComments
               {nodeId}
               parentId={comment.id}
+              focusPath={focusPath[0]?.id === comment.id ? focusPath.slice(1) : []}
               {apiBase}
               {sessionBase}
               {participantId}

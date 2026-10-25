@@ -26,7 +26,7 @@ public sealed class DiscoveryDatabaseSetupTests
         using (var db = fixture.Open())
         {
             AtlasDatabaseSetup.InstallSupplementalSchema(db);
-            Assert.AreEqual(2, db.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM sys.fulltext_indexes").Single());
+            Assert.AreEqual(3, db.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM sys.fulltext_indexes").Single());
             Assert.AreEqual(node.Title, db.NodeRows.Single().Title);
         }
         Assert.AreEqual(node.NodeId, search.DiscoverPage(new(SearchText: "rivers")).Items.Single().NodeId);
@@ -39,7 +39,7 @@ public sealed class DiscoveryDatabaseSetupTests
         using var db = fixture.Open();
         AtlasDatabaseSetup.Apply(db);
         AtlasDatabaseSetup.Apply(db);
-        Assert.AreEqual(2, db.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM sys.fulltext_indexes").Single());
+        Assert.AreEqual(3, db.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM sys.fulltext_indexes").Single());
     }
 
     [TestMethod]

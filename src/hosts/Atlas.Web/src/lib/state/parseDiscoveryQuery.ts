@@ -13,7 +13,7 @@ export function parseDiscoveryQuery(value: string, types: NodeType[]) {
   const words: string[] = [];
   const errors: string[] = [];
   for (const part of value.match(/(?:[^\s"]+|"[^"]*")+/g) ?? []) {
-    const match = /^(type|author|community|votes|average|from|through|archived):(.+)$/i.exec(part);
+    const match = /^(type|author|community|votes|average|from|through|archived|in):(.+)$/i.exec(part);
     if (!match) {
       words.push(part);
       continue;
@@ -21,7 +21,11 @@ export function parseDiscoveryQuery(value: string, types: NodeType[]) {
     const [, rawKey, rawValue] = match;
     const key = rawKey.toLowerCase();
     const v = rawValue.replace(/^"|"$/g, '');
-    if (key === 'type') {
+    if (key === 'in') {
+      const scope = v.toLowerCase();
+      if (scope === 'all' || scope === 'nodes' || scope === 'comments') filters.scope = scope;
+      else errors.push('Use in:all, in:nodes or in:comments');
+    } else if (key === 'type') {
       const found = types.find(
         (t) => t.id.toLowerCase() === v.toLowerCase() || t.name.toLowerCase() === v.toLowerCase(),
       );

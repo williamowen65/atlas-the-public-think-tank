@@ -42,6 +42,7 @@
   let {
     nodeId = '',
     initialTypeId = '',
+    focusCommentId = '',
     apiBase = '/atlas-public-api',
     onOpenNode,
     onOpenProfile,
@@ -50,6 +51,8 @@
     nodeId?: string;
     /** Initial discussion tab ID (a contribution type ID or comments), not a node-creation type. */
     initialTypeId?: string;
+    /** Deep-linked comment whose ancestor thread should be revealed. */
+    focusCommentId?: string;
     /**
      * Public API base for discovery, node details, content blocks, type catalog and ancestor
      * lookups. Voting and comments receive their session-aware behavior from nested components.
@@ -79,6 +82,9 @@
    * Selected discussion-tab ID: comments, a contribution type ID or a temporary draft tab.
    */
   let active = $state('comments');
+  $effect(() => {
+    if (focusCommentId) active = 'comments';
+  });
   /**
    * Whether data is being loaded; drives loading feedback for this view.
    */
@@ -302,6 +308,7 @@
       -->
       {#key active}{#if active === 'comments'}<CommentsPanel
             nodeId={node.id}
+            {focusCommentId}
             {apiBase}
             onAdded={() => {
               if (node) node = { ...node, commentCount: node.commentCount + 1 };

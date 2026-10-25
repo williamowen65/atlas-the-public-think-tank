@@ -43,7 +43,8 @@ Current limits:
 - No edit-distance typo correction.
 - No guaranteed synonyms without a configured thesaurus.
 - Quoted free text does not request an exact phrase.
-- Result ordering still uses importance/votes and the existing title substring bonus; it does not use full-text relevance ranking.
+- Global search orders the combined node/comment hits by SQL Server full-text relevance, then result kind, date and ID for deterministic ties. Node importance is shown as metadata, not used to order the mixed search. The browsing feed keeps its existing importance-based ordering.
+- SQL Server computes ranks per indexed table; merging those ranks is a practical ordering heuristic, not a calibrated probability that two different kinds of result are equally relevant.
 
 ## What gets searched
 
@@ -55,6 +56,7 @@ Current limits:
 | Video block | Caption and URL |
 | Link preview | Title, description and URL |
 | Chart reference | Title |
+| Comment | Visible comment body |
 
 - Poll/reference IDs are excluded.
 - `DocumentBlocks` links restrict matches to the node's current document. Removing a link removes that block's match immediately.
@@ -134,7 +136,7 @@ The command:
 
 1. Applies EF migrations, creating the database when necessary.
 2. Runs the full-text setup SQL outside a transaction.
-3. Checks that full-text support, English resources and both enabled indexes are available.
+3. Checks that full-text support, English resources and all three enabled indexes are available.
 4. Prints success and exits, without opening the interactive console or seeding demo data.
 
 - Normal API startup does not run this installer.
@@ -253,3 +255,36 @@ The application reports failure when a search is attempted; it does not continuo
 - [Microsoft: CREATE FULLTEXT INDEX](https://learn.microsoft.com/en-us/sql/t-sql/statements/create-fulltext-index-transact-sql)
 - [Microsoft: Install Full-Text Search on Linux](https://learn.microsoft.com/en-us/sql/linux/install-upgrade/setup-full-text-search)
 - [Microsoft: EF Core SQL Server full-text support and older-version migration SQL](https://learn.microsoft.com/en-us/ef/core/providers/sql-server/full-text-search)
+
+## Comment search and combined pagination
+
+After pulling this update, rerun the explicit setup command to install the comment table's full-text index:
+
+```powershell
+dotnet run --project src/hosts/Atlas.Console -- --setup-database
+```
+
+No EF model change or new migration is required. Existing comment text is populated in the background, so allow indexing to catch up.
+
+- The header uses `/api/search`; `/api/nodes` remains a node-only discovery endpoint.
+- `in:all` (default) mixes nodes and comments. Use `in:nodes` or `in:comments`, or the Search in control.
+- Text-free searches keep the established node-only behavior unless `in:comments` is explicitly selected.
+- Type, community, parent, archive, reaction and node-importance filters concern the containing node.
+- Author and creation-date filters concern the node author/date for node results, or the comment author/date for comments.
+- Removed comments and comments on hidden/unavailable nodes are excluded. Archived nodes and their comments follow the existing archive filter.
+- Comment entries show **Comment on [node title]**, the **comment author**, the comment creation date and an excerpt centered on the first literal search term when available. Linguistic-only matches fall back to the opening excerpt; excerpts are escaped plain text.
+
+### One result sequence
+
+Node and comment candidates are combined, ranked and counted **before** SQL pagination. The existing three-result page size applies to that combined sequence. No independent comment page is appended to a node page. Node/block matches are deduplicated by node ID; each comment remains its own result.
+
+Search results are not cached. Index population and concurrent edits can change ordering between requests; the client deduplicates appended entries, and rerunning the search starts from current data. Relevance does not guarantee a fixed ratio of nodes to comments per page.
+
+### Opening a comment
+
+A comment result links to `/nodes?id=NODE&type=comments&comment=COMMENT`.
+
+- The backend checks current node visibility and resolves at most 128 ancestors, without loading the entire discussion.
+- Removed ancestors remain blank placeholders; a removed target itself is unavailable.
+- The UI opens Comments, pins the relevant sibling at each level even if it is outside that level's first page, expands the ancestor chain, then highlights and focuses the selected comment.
+- Normal sibling pagination and replying remain available. A stale or unavailable link shows an error with Retry comment and Show discussion controls.

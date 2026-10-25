@@ -31,12 +31,41 @@
   /** Search-only projection retaining authoritative discovery aggregates without extra requests. */
   type SearchResult = NodeCardData & {
     /** Backend-calculated average; null represents an unrated node. */
+    comment?: {
+      nodeId: string;
+      id: string;
+      nodeTitle: string;
+      authorId: string;
+      authorName: string;
+      createdAt: string;
+      excerpt: string;
+    } | null;
     average: number | null;
     /** Number of ratings included in the backend aggregate. */
     totalVotes: number;
   };
   /** Adapt visible discovery cards while keeping their existing voting aggregates. */
   function resultCard(item: Parameters<typeof discoveryCard>[0]): SearchResult | null {
+    if (item.comment)
+      return {
+        id: 'comment:' + item.comment.id,
+        title: item.comment.nodeTitle,
+        description: item.comment.excerpt,
+        typeName: 'Comment',
+        authorName: item.comment.authorName,
+        createdAt: item.comment.createdAt,
+        status: 'Active',
+        breadcrumb: [],
+        communities: [],
+        related: [],
+        requestedTypes: [],
+        reactions: [],
+        childTypes: [],
+        commentCount: 0,
+        comment: { ...item.comment, nodeId: item.nodeId },
+        average: null,
+        totalVotes: 0,
+      };
     const card = discoveryCard(item);
     return card ? { ...card, average: item.averageVote, totalVotes: item.voteCount } : null;
   }
@@ -95,6 +124,7 @@
       AbortSignal.any([current.signal, AbortSignal.timeout(10000)]),
       undefined,
       constraints,
+      true,
     )
       .then((page) => {
         if (current.signal.aborted) return;
@@ -130,6 +160,7 @@
         AbortSignal.any([current.signal, AbortSignal.timeout(10000)]),
         undefined,
         filters,
+        true,
       );
       if (current.signal.aborted) return;
       const added = page.items
@@ -166,44 +197,64 @@
   <ul>
     {#each items as node (node.id)}
       <li>
-        <!-- Read-only totals use discovery data; they never mount voting controls or fetch per result. -->
-        <div
-          class="importance"
-          aria-label={`Importance: ${node.average === null ? 'not rated' : node.average.toFixed(1) + ' out of 10'}, ${node.totalVotes} votes`}
-        >
-          <strong>{node.average === null ? '—' : node.average.toFixed(1)}</strong>
-          <span class="voters"
-            ><svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.6"
-              ><circle cx="9" cy="7" r="3" /><path
-                d="M3 20v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6M18 13a5 5 0 0 1 3 4v3"
-              /></svg
-            >{node.totalVotes}</span
+        {#if node.comment}
+          <div class="result-content comment-result">
+            <a
+              class="result-title"
+              href={`/nodes?id=${encodeURIComponent(node.comment.nodeId)}&type=comments&comment=${encodeURIComponent(node.comment.id)}`}
+              onclick={(event) => {
+                if (!event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey)
+                  onSelect?.();
+              }}>Comment on {node.title}</a
+            >
+            <p class="metadata">
+              {node.comment.authorName} ·
+              <time datetime={node.comment.createdAt}
+                >{new Date(node.comment.createdAt).toLocaleDateString()}</time
+              >
+            </p>
+            <p class="intro">{node.comment.excerpt}</p>
+          </div>
+        {:else}
+          <!-- Read-only totals use discovery data; they never mount voting controls or fetch per result. -->
+          <div
+            class="importance"
+            aria-label={`Importance: ${node.average === null ? 'not rated' : node.average.toFixed(1) + ' out of 10'}, ${node.totalVotes} votes`}
           >
-        </div>
-        <div class="result-content">
-          <a
-            class="result-title"
-            href={`/nodes?id=${encodeURIComponent(node.id)}`}
-            onclick={(event) => {
-              if (!event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey)
-                onSelect?.();
-            }}><span class="node-type">{node.typeName}:</span> {node.title}</a
-          >
-          <p class="intro">{node.description}</p>
-          <p class="metadata">
-            <span>{node.commentCount} comments</span>
-            {#each node.childTypes ?? [] as type}
-              <span>{type.label}</span>
-            {/each}
-          </p>
-        </div>
+            <strong>{node.average === null ? '—' : node.average.toFixed(1)}</strong>
+            <span class="voters"
+              ><svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                ><circle cx="9" cy="7" r="3" /><path
+                  d="M3 20v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6M18 13a5 5 0 0 1 3 4v3"
+                /></svg
+              >{node.totalVotes}</span
+            >
+          </div>
+          <div class="result-content">
+            <a
+              class="result-title"
+              href={`/nodes?id=${encodeURIComponent(node.id)}`}
+              onclick={(event) => {
+                if (!event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey)
+                  onSelect?.();
+              }}><span class="node-type">{node.typeName}:</span> {node.title}</a
+            >
+            <p class="intro">{node.description}</p>
+            <p class="metadata">
+              <span>{node.commentCount} comments</span>
+              {#each node.childTypes ?? [] as type}
+                <span>{type.label}</span>
+              {/each}
+            </p>
+          </div>
+        {/if}
       </li>
     {/each}
   </ul>

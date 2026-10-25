@@ -14,3 +14,7 @@ IF NOT EXISTS (SELECT 1 FROM sys.fulltext_indexes WHERE object_id = OBJECT_ID(N'
     EXEC(N'CREATE FULLTEXT INDEX ON dbo.BlockRows (SearchText LANGUAGE 1033)
         KEY INDEX PK_BlockRows ON AtlasDiscovery
         WITH CHANGE_TRACKING AUTO, STOPLIST = SYSTEM');
+IF NOT EXISTS (SELECT 1 FROM sys.fulltext_indexes WHERE object_id = OBJECT_ID(N'dbo.CommentRows'))
+    EXEC(N'CREATE FULLTEXT INDEX ON dbo.CommentRows (Body LANGUAGE 1033)
+        KEY INDEX PK_CommentRows ON AtlasDiscovery
+        WITH CHANGE_TRACKING AUTO, STOPLIST = SYSTEM');

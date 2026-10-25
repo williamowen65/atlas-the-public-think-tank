@@ -25,7 +25,7 @@ public static class AtlasDatabaseSetup
     {
         RequireNoTransaction(database);
         database.Database.ExecuteSqlRaw(DiscoveryFullTextSchema.CreateSql);
-        DiscoveryFullTextSchema.EnsureAvailable(database);
+        DiscoveryFullTextSchema.EnsureAvailable(database, includeComments: true);
     }
 
     private static void RequireNoTransaction(AtlasDataContext database)

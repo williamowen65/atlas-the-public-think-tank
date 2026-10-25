@@ -24,9 +24,17 @@ test('type queries resolve names case-insensitively, including quoted multiword 
 });
 
 test('natural-language text stays separate from structured filter tokens', () => {
-  expect(parseDiscoveryQuery('protect salmon habitat type:issue votes:2.. average:5..10', types)).toEqual({
+  expect(
+    parseDiscoveryQuery('protect salmon habitat type:issue votes:2.. average:5..10', types),
+  ).toEqual({
     text: 'protect salmon habitat',
-    filters: { typeId: 'issue-id', minVotes: 2, maxVotes: undefined, minAverage: 5, maxAverage: 10 },
+    filters: {
+      typeId: 'issue-id',
+      minVotes: 2,
+      maxVotes: undefined,
+      minAverage: 5,
+      maxAverage: 10,
+    },
     errors: [],
   });
 });
@@ -37,6 +45,15 @@ test('words before, between and after filters combine into one text search', () 
     filters: { typeId: 'issue-id', minVotes: 2, maxVotes: undefined },
     errors: [],
   });
+});
+
+test('search scope stays separate from node type and surrounding text', () => {
+  expect(parseDiscoveryQuery('salmon in:COMMENTS habitat type:issue', types)).toEqual({
+    text: 'salmon habitat',
+    filters: { scope: 'comments', typeId: 'issue-id' },
+    errors: [],
+  });
+  expect(parseDiscoveryQuery('in:unknown', types).errors).toHaveLength(1);
 });
 
 test('type toolbox emits a readable name and sends the corresponding API ID', async ({ page }) => {

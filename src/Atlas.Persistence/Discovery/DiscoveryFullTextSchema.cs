@@ -21,14 +21,15 @@ public static class DiscoveryFullTextSchema
         """.ReplaceLineEndings("\r\n");
 
     /// <summary>Do not let an empty-table query hide missing or disabled search infrastructure.</summary>
-    internal static void EnsureAvailable(AtlasDataContext db)
+    internal static void EnsureAvailable(AtlasDataContext db, bool includeComments = false)
     {
         var available = db.Database.SqlQuery<int>($"""
             SELECT CASE WHEN COALESCE(FULLTEXTSERVICEPROPERTY('IsFullTextInstalled'), 0) = 1
                 AND EXISTS (SELECT 1 FROM sys.fulltext_languages WHERE lcid = 1033)
                 AND (SELECT COUNT(*) FROM sys.fulltext_indexes
-                    WHERE object_id IN (OBJECT_ID(N'dbo.NodeRows'), OBJECT_ID(N'dbo.BlockRows'))
-                      AND is_enabled = 1) = 2
+                    WHERE (object_id IN (OBJECT_ID(N'dbo.NodeRows'), OBJECT_ID(N'dbo.BlockRows'))
+                        OR ({includeComments} = 1 AND object_id = OBJECT_ID(N'dbo.CommentRows')))
+                      AND is_enabled = 1) = { (includeComments ? 3 : 2) }
                 THEN 1 ELSE 0 END AS [Value]
             """).Single();
         if (available != 1)

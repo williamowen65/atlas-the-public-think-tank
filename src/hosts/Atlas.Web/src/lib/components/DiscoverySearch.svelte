@@ -215,6 +215,17 @@
     -->
     <div class="toolbox">
       <label
+        >Search in<select
+          value={editing.filters.scope ?? 'all'}
+          onchange={(e) =>
+            token('in', e.currentTarget.value === 'all' ? '' : e.currentTarget.value)}
+        >
+          <option value="all">Nodes and comments</option><option value="nodes">Nodes</option><option
+            value="comments">Comments</option
+          >
+        </select></label
+      >
+      <label
         >Node type<select
           value={editing.filters.typeId ?? ''}
           onchange={(e) =>
@@ -330,8 +341,9 @@
         Visual filters update the search syntax above. You can also type filters directly, such as <code
           >type:Idea</code
         >, <code>votes:5..100</code>, <code>average:7..10</code>, <code>from:2026-01-01</code>,
-        <code>author:ID</code>, or <code>community:ID</code>. Text searches node content only for
-        now.
+        <code>author:ID</code>, or <code>community:ID</code>. Use <code>in:comments</code> or
+        <code>in:nodes</code> to narrow search. Author and date filters apply to the result itself; type
+        and community filters apply to its node.
       </p>
     </div>
   {/if}

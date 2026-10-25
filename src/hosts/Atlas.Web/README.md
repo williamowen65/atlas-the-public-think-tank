@@ -406,3 +406,7 @@ it stops without merging or deleting any nodes.
 ### SQL Server full-text search
 
 Free text uses SQL Server natural-language full-text matching; structured filter tokens remain separate. Words may match in different orders and related forms, with any-term semantics. This does not add typo correction. The local instance needs Full-Text Search and a developer-generated migration; CI builds a full-text-capable SQL image. See [setup, migration and test instructions](../../../docs/discovery/full-text-search.md). Text-search pages bypass the result-page cache while card details and browsing pages retain revision-based caching.
+
+### Mixed node and comment search
+
+Global header search now calls `/api/search` and pages one relevance-ordered sequence of node and comment results. Comment hits show the comment author/date and a plain-text excerpt. `in:comments` and `in:nodes` select a scope independently of node type. Comment links open the node with a highlighted, focused comment and its ancestor thread expanded, including comments outside the first sibling page. `/api/nodes` and browsing feeds remain node-only. Rerun `dotnet run --project src/hosts/Atlas.Console -- --setup-database` after pulling to install the comment full-text index; no new migration or database reset is needed. See the full-text guide for visibility, filter and pagination semantics.

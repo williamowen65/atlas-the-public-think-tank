@@ -19,6 +19,7 @@
 <svelte:head><title>Node · Atlas</title></svelte:head>
 <LiveNodePage
   onOpenProfile={(id) => void goto('/profiles?id=' + encodeURIComponent(id))}
+  focusCommentId={page.url.searchParams.get('comment') ?? ''}
   initialTypeId={page.url.searchParams.get('type') ?? ''}
   nodeId={page.url.searchParams.get('id') ?? ''}
   onOpenNode={(id, typeId) =>

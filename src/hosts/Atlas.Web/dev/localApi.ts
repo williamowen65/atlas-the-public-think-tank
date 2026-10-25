@@ -20,10 +20,11 @@ export const publicApiGuard: Plugin = {
       if (!/^\/atlas-public-api\/communities\/node\/[0-9a-f-]{36}(?:\?|$)/i.test(request.url)
         && !/^\/atlas-public-api\/communities(?:\/([0-9a-f-]{36})(?:\/nodes)?|\/participant\/[0-9a-f-]{36})?(?:\?|$)/i.test(request.url)
         && !/^\/atlas-public-api\/participants(?:\?(?:[^#]*)|\/([0-9a-f-]{36})(?:\?.*)?|$)/i.test(request.url)
-        && !/^\/atlas-public-api\/nodes(?:\?|$)/.test(request.url)
+        && !/^\/atlas-public-api\/(?:nodes|search)(?:\?|$)/.test(request.url)
        
         && !/^\/atlas-public-api\/catalog\/node-types(?:\?|$)/.test(request.url)
        
+        && !/^\/atlas-public-api\/nodes\/[0-9a-f-]{36}\/comments\/[0-9a-f-]{36}\/path(?:\?|$)/i.test(request.url)
         && !/^\/atlas-public-api\/nodes\/[0-9a-f-]{36}(?:\/(?:ancestors|parents|reactions|description|comments))?(?:\?|$)/i.test(request.url)) {
         response.statusCode = 404;
         response.end('Only allowlisted public reads are available through this API.');

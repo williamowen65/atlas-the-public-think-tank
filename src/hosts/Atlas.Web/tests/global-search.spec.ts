@@ -37,7 +37,7 @@ async function mock(page: Page) {
       return route.fulfill({
         json: { id: url.pathname.split('/').at(-1), requestedTypeIds: [], status: 'Active' },
       });
-    if (url.pathname.endsWith('/nodes')) {
+    if (url.pathname.endsWith('/nodes') || url.pathname.endsWith('/search')) {
       const search = url.searchParams.get('SearchText');
       const pageNumber = Number(url.searchParams.get('Page'));
       const id = url.searchParams.get('NodeId') ?? first;
@@ -158,7 +158,7 @@ test('header searches leave the browsing feed intact and clear removes the dropd
 test('unavailable full-text search shows a clear error and allows retry', async ({ page }) => {
   await mock(page);
   let unavailable = true;
-  await page.route('**/atlas-public-api/nodes?**', (route) => {
+  await page.route('**/atlas-public-api/search?**', (route) => {
     const url = new URL(route.request().url());
     if (unavailable && url.searchParams.has('SearchText'))
       return route.fulfill({
@@ -186,4 +186,95 @@ test('unavailable full-text search shows a clear error and allows retry', async 
   await expect(
     page.getByRole('region', { name: 'Search results', exact: true }).getByRole('link').first(),
   ).toBeVisible();
+});
+
+test('mixed pages retain comment identity and open an off-page nested thread', async ({ page }) => {
+  await mock(page);
+  const root = 'c1000000-0000-4000-8000-000000000001';
+  const parent = 'c1000000-0000-4000-8000-000000000002';
+  const target = 'c1000000-0000-4000-8000-000000000003';
+  const author = 'd1000000-0000-4000-8000-000000000001';
+  const at = '2026-10-21T12:00:00Z';
+  const comment = {
+    nodeId: first,
+    card: null,
+    averageVote: null,
+    voteCount: 0,
+    comment: {
+      id: target,
+      nodeTitle: 'Original node',
+      authorId: author,
+      authorName: 'Comment writer',
+      createdAt: at,
+      excerpt: 'The matching salmon passage.',
+    },
+  };
+  await page.route('**/atlas-public-api/**', (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname.endsWith('/search')) {
+      const secondPage = url.searchParams.get('Page') === '2';
+      return route.fulfill({
+        json: {
+          items: secondPage
+            ? [entry(other, 'Later node')]
+            : [entry(found, 'Salmon research'), comment],
+          totalCount: 3,
+          page: secondPage ? 2 : 1,
+          pageSize: 2,
+          hasNextPage: !secondPage,
+        },
+      });
+    }
+    if (url.pathname.endsWith(`/comments/${target}/path`))
+      return route.fulfill({
+        json: {
+          items: [
+            {
+              id: root,
+              authorId: author,
+              status: 'Removed',
+              body: null,
+              createdAt: at,
+              parentId: null,
+            },
+            {
+              id: parent,
+              authorId: author,
+              status: 'Active',
+              body: 'Ancestor reply',
+              createdAt: at,
+              parentId: root,
+            },
+            {
+              id: target,
+              authorId: author,
+              status: 'Active',
+              body: 'The matching salmon passage.',
+              createdAt: at,
+              parentId: parent,
+            },
+          ],
+        },
+      });
+    return route.fallback();
+  });
+  await page.goto('http://127.0.0.1:4173');
+  await page.getByRole('button', { name: 'Toggle search', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Search nodes and filters' }).fill('salmon');
+  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  const results = page.getByRole('region', { name: 'Search results', exact: true });
+  await expect(results.getByText('Comment writer', { exact: false })).toBeVisible();
+  await expect(results.getByText('The matching salmon passage.')).toBeVisible();
+  await results.evaluate((el) => {
+    el.scrollTop = el.scrollHeight;
+  });
+  await expect(results.getByRole('link', { name: 'Question: Later node' })).toBeVisible();
+  await expect(results.getByRole('link', { name: 'Comment on Original node' })).toHaveCount(1);
+  await results.getByRole('link', { name: 'Comment on Original node' }).click();
+  await expect(page).toHaveURL(new RegExp(`comment=${target}`));
+  const selected = page.locator(`[data-comment-id="${target}"]`);
+  await expect(selected).toHaveClass(/search-target/);
+  await expect(selected).toBeFocused();
+  await expect(selected).toContainText('The matching salmon passage.');
+  await expect(page.locator(`[data-comment-id="${parent}"]`)).toContainText('Ancestor reply');
 });

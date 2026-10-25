@@ -90,6 +90,7 @@ public static class ApiServices
         services.AddScoped<ModerationWorkflowService>();
 
         // 5. Share the read cache across requests, but keep queries and actors request-scoped.
+        services.AddScoped<IPublicSearch>(_ => new SqlPublicSearch(open));
         services.AddSingleton<DiscoveryCache>();
         services.AddScoped<IDiscoveryService>(s => new DiscoveryService(new SqlDiscoveryReadQuery(open, s.GetRequiredService<DiscoveryCache>())));
         services.AddScoped<RequestActor>();
