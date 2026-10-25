@@ -307,6 +307,9 @@
     padding: 0.7rem 0;
     border-top: 1px solid var(--atlas-border);
   }
+  .comment-result {
+    grid-column: 1 / -1;
+  }
   .importance {
     align-self: center;
     display: flex;

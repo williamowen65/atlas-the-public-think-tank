@@ -265,6 +265,7 @@ test('mixed pages retain comment identity and open an off-page nested thread', a
   const results = page.getByRole('region', { name: 'Search results', exact: true });
   await expect(results.getByText('Comment writer', { exact: false })).toBeVisible();
   await expect(results.getByText('The matching salmon passage.')).toBeVisible();
+  await expect.poll(async () => (await results.locator('.comment-result').boundingBox())?.width ?? 0).toBeGreaterThan(200);
   await results.evaluate((el) => {
     el.scrollTop = el.scrollHeight;
   });
