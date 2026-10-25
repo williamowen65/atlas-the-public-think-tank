@@ -29,6 +29,7 @@ async function mock(page: Page) {
   await page.route('**/atlas-public-api/**', (route) => {
     const url = new URL(route.request().url());
     requests.push(url);
+    if (url.pathname.endsWith('/reactions')) return route.fulfill({ json: [] });
     if (url.pathname.endsWith('/catalog/node-types')) return route.fulfill({ json: [] });
     if (url.pathname.endsWith('/comments'))
       return route.fulfill({ json: { items: [], next: null } });
@@ -174,13 +175,14 @@ test('unavailable full-text search shows a clear error and allows retry', async 
   await page.getByRole('button', { name: 'Toggle search', exact: true }).click();
   await page.getByRole('textbox', { name: 'Search nodes and filters' }).fill('salmon');
   await page.getByRole('button', { name: 'Search', exact: true }).click();
-  await expect(page.getByRole('alert')).toHaveText(
+  const results = page.getByRole('region', { name: 'Search results', exact: true });
+  await expect(results.getByRole('alert')).toHaveText(
     'Text search is temporarily unavailable. Please try again later.',
   );
-  await expect(page.getByText('No results found.', { exact: true })).toHaveCount(0);
+  await expect(results.getByText('No results found.', { exact: true })).toHaveCount(0);
   unavailable = false;
-  await page.getByRole('button', { name: 'Retry', exact: true }).click();
-  await expect(page.getByRole('alert')).toHaveCount(0);
+  await results.getByRole('button', { name: 'Retry search', exact: true }).click();
+  await expect(results.getByRole('alert')).toHaveCount(0);
   await expect(
     page.getByRole('region', { name: 'Search results', exact: true }).getByRole('link').first(),
   ).toBeVisible();

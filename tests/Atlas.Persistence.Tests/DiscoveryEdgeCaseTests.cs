@@ -76,7 +76,9 @@ public sealed class DiscoveryEdgeCaseTests
         }
         using var cache = new DiscoveryCache();
         var query = new SqlDiscoveryReadQuery(fixture.OpenForDiscovery, cache);
-        var parentCard = query.DiscoverPage(new(SearchText: "Parent")).Items.Single().Card!;
+        // This test checks card/breadcrumb projections, so identify nodes exactly.
+        // Natural-language search intentionally also matches other nodes sharing a word.
+        var parentCard = query.DiscoverPage(new(NodeId: parent.NodeId)).Items.Single().Card!;
         Assert.AreEqual("0 Evidence · 2 Ideas", parentCard.SubNodes);
         var actualChildren = parentCard.ChildTypes.Single(type => type.TypeId == root.NodeTypeId);
         var requestedChildren = parentCard.ChildTypes.Single(type => type.TypeId == requestedTypeId);
@@ -85,13 +87,13 @@ public sealed class DiscoveryEdgeCaseTests
         Assert.AreEqual(root.NodeTypeId, actualChildren.TypeId);
         Assert.AreEqual("2 Ideas", actualChildren.Label);
         Assert.AreEqual(2, actualChildren.Count);
-        Assert.AreEqual("Idea · Parent → Idea · Root", query.DiscoverPage(new(SearchText: "Child one")).Items.Single().Card!.Breadcrumb);
+        Assert.AreEqual("Idea · Parent → Idea · Root", query.DiscoverPage(new(NodeId: child.NodeId)).Items.Single().Card!.Breadcrumb);
         using (var db = fixture.Open())
         {
             db.ModerationCaseRows.Add(new ModerationCaseRow { Id = Guid.NewGuid(), NodeId = root.NodeId, ReporterId = root.AuthorParticipantId, Reason = "Spam", ReportedTitle = root.Title, Status = 2, PublicReason = 1, CreatedAt = now });
             db.SaveChanges();
         }
-        var breadcrumb = query.DiscoverPage(new(SearchText: "Child one")).Items.Single().Card!.Breadcrumb;
+        var breadcrumb = query.DiscoverPage(new(NodeId: child.NodeId)).Items.Single().Card!.Breadcrumb;
         StringAssert.Contains(breadcrumb, "Hidden by moderator: Spam");
         Assert.IsFalse(breadcrumb.Contains("Root", StringComparison.Ordinal));
     }
