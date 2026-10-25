@@ -43,7 +43,7 @@ Current limits:
 - No edit-distance typo correction.
 - No guaranteed synonyms without a configured thesaurus.
 - Quoted free text does not request an exact phrase.
-- Global search orders the combined node/comment hits by SQL Server full-text relevance adjusted by bounded comment support (see comment-support-v1 below), then result kind, date and ID for deterministic ties. Node importance is shown as metadata, not used to order the mixed search. The browsing feed keeps its existing importance-based ordering.
+- Global search orders the combined node/comment hits by SQL Server full-text relevance adjusted by bounded comment support (see comment-support-v1 below), then result kind, date and ID for deterministic ties. Node importance and comment support both supply bounded ranking adjustments (support-v2 below). The browsing feed keeps its existing importance-based ordering.
 - Global search uses **one full-text index on `SearchDocuments.SearchText`** for both nodes and comments. Scores therefore come from the same corpus instead of comparing unrelated per-table ranks.
 - One node document combines its title, short description and all currently linked block text. One comment document contains its body. A match across multiple node fields contributes to that single document.
 - Results may cluster by type when their text earns similar scores. There is no alternating quota or automatic preference for comments; identical documents earn identical scores, with nodes first only when scores tie.
@@ -327,6 +327,33 @@ Comments support one current +1 or -1 vote per participant, including on the par
 - Discussion controls follow View replies and Reply. Selecting the current direction undoes it; selecting the other changes it. Totals always come from the server. Failed/uncertain writes require refreshing totals before another attempt. Signed-out visitors see a dismissible sign-in prompt; removed placeholders have no voting controls.
 - Search displays the net score in the same left column as node importance. Votes are read directly from current SQL rows, so changes affect search without waiting for full-text indexing.
 
-Ranking policy (comment-support-v1): let `r` be the shared full-text relevance and `s` the comment net score. Final relevance is `r * (1 + 0.25 * s / (10 + abs(s)))`. Nodes use `s = 0`. A comment score of +10 boosts its relevance by 12.5%; -10 reduces it by 12.5%. The adjustment stays below 25% in either direction, preserving relevance as the primary signal. Identical text retains identical raw full-text ranks; vote support can change the final order. Zero-vote ties keep the existing kind/date/ID order. Comment-only browsing without text uses a base relevance of 1 and therefore sorts by net support, then the same deterministic ties. Node-only browsing/importance filters retain their existing behavior.
+Original ranking policy (comment-support-v1, superseded by support-v2 below): let `r` be the shared full-text relevance and `s` the comment net score. Final relevance is `r * (1 + 0.25 * s / (10 + abs(s)))`. Nodes use `s = 0`. A comment score of +10 boosts its relevance by 12.5%; -10 reduces it by 12.5%. The adjustment stays below 25% in either direction, preserving relevance as the primary signal. Identical text retains identical raw full-text ranks; vote support can change the final order. Zero-vote ties keep the existing kind/date/ID order. Comment-only browsing without text uses a base relevance of 1 and therefore sorts by net support, then the same deterministic ties. Node-only browsing/importance filters retain their existing behavior.
 
 SQL tests cover a positive comment above an equally relevant node, a negative comment below it, authoritative score projection, and reverting to neutral ordering after undo. Additional tests cover vote persistence/change/undo and removed/archived target rejection. Run the Voting tests, DiscoveryMixedSearchTests, SqlThinHostWorkflowTests, API SqlWorkflowTests, and frontend comments/global-search browser suites.
+
+
+## Concurrent search and voting; support-v2
+
+Search, feed discovery and comment-path reads use EF transactions with `IsolationLevel.Snapshot` instead of serializable read locks. Each request reads committed relational data as of its snapshot; ordinary votes, edits and moderation writes can proceed alongside it. A request already in progress may finish with the previous committed state. Later requests see newer committed data/revisions. Full-text population is still asynchronous, so text edits can take time to become searchable; requests do not wait for population. Schema changes and explicit database setup can still require coordination.
+
+Votes never update `SearchDocuments` and never require full-text reindexing. They update vote rows and discovery freshness counters. The former serializable reads could contend with those writes; seeing a loading indicator alone does not establish that indexing caused a wait. The previous vote commit's backend CI passed, but no trace of the developer's database blocking session was captured.
+
+**Existing databases:** stop the API, run the explicit setup command, then restart:
+
+```powershell
+dotnet run --project src/hosts/Atlas.Console -- --setup-database
+```
+
+Setup now enables `ALLOW_SNAPSHOT_ISOLATION ON` for the current database, using its quoted database name, outside a transaction. The setup account needs permission to alter the database option. The operation does not force-disconnect users or change the default isolation of unrelated queries. It is idempotent and verifies readiness. Normal search/API startup never changes database options. No EF table/model change or migration is involved, and no new SQL files were added. Existing databases must run setup before using this version's snapshot reads. This setting introduces SQL Server row-version storage overhead; keep read transactions bounded to a request.
+
+References: [Microsoft snapshot isolation](https://learn.microsoft.com/en-us/sql/connect/ado-net/sql/snapshot-isolation-sql-server) and [transaction isolation levels](https://learn.microsoft.com/en-us/sql/t-sql/statements/set-transaction-isolation-level-transact-sql).
+
+**support-v2:** the same bounded multiplier applies to both result kinds:
+
+- Comment support `s` is upvotes minus downvotes.
+- Node support `s` is `averageImportance * voteCount / (voteCount + 1)`. Unrated nodes have zero support. More votes progressively give the average its full weight.
+- Final rank is `textRelevance * (1 + 0.25 * s / (10 + abs(s)))`. Comment-only browsing without text uses a base relevance of 1. Ties retain kind/date/ID ordering.
+
+For equally relevant text, a node rated 10 by one participant has support 5 and an 8.33% boost; a comment at +1 has a 2.27% boost, so the node comes first. Stronger text relevance or sufficiently supported comments can still outrank nodes; result kind does not impose a separate first group. Node-only browsing keeps its existing ordering.
+
+Regression tests hold an actual SQL writer transaction open after a vote or content edit, require global search and feed reads to complete before releasing the writer, and verify they return the prior committed state. Ranking coverage verifies the one-vote 10/10 node versus +1 comment example without waiting for reindexing.

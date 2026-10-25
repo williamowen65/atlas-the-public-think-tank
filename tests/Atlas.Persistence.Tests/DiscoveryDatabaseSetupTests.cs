@@ -30,6 +30,7 @@ public sealed class DiscoveryDatabaseSetupTests
             AtlasDatabaseSetup.InstallSupplementalSchema(db);
             Assert.AreEqual(4, db.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM sys.fulltext_indexes").Single());
             Assert.AreEqual(node.Title, db.NodeRows.Single().Title);
+            Assert.AreEqual(1, db.Database.SqlQuery<int>($"SELECT CONVERT(int, snapshot_isolation_state) AS [Value] FROM sys.databases WHERE database_id = DB_ID()").Single());
         }
         Assert.AreEqual(node.NodeId, search.DiscoverPage(new(SearchText: "rivers")).Items.Single().NodeId);
     }

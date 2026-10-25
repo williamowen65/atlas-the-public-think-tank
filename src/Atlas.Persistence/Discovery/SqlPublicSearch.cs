@@ -26,7 +26,7 @@ public sealed class SqlPublicSearch(Func<AtlasDataContext> open) : IPublicSearch
                 return new(nodes.Items.Select(n => new PublicSearchItem(n.NodeId, n.VoteCount, n.AverageVote, n.Card, null)).ToArray(), nodes.TotalCount, nodes.Page, nodes.PageSize);
             }
             if (query.SearchText is not null) DiscoveryFullTextSchema.EnsureAvailable(db, includeComments: true);
-            using var transaction = db.Database.BeginTransaction(IsolationLevel.Serializable);
+            using var transaction = db.Database.BeginTransaction(IsolationLevel.Snapshot);
             var hits = BuildHits(db, query, scope);
             var total = hits.Count();
             var offset = ((long)query.Page - 1) * IDiscoveryService.PageSize;
@@ -63,7 +63,7 @@ public sealed class SqlPublicSearch(Func<AtlasDataContext> open) : IPublicSearch
         var nodeHits = from match in matched
                        join node in nodeScope on match.NodeId equals node.NodeId
                        where match.Kind == 0 && scope != "comments"
-                       select new Hit { Id = match.ResultId, NodeId = node.NodeId, Kind = 0, Score = match.Score, CommentScore = 0, At = node.UpdatedAt };
+                       select new Hit { Id = match.ResultId, NodeId = node.NodeId, Kind = 0, Score = match.Score, CommentScore = 0, Support = (node.AverageVote ?? 0) * node.VoteCount / (node.VoteCount + 1.0), At = node.UpdatedAt };
         // Structural/voting filters concern the containing node; author/date concern the comment.
         var commentNodes = DiscoveryEfQuery.Build(db, query with { SearchText = null, AuthorParticipantId = null, CreatedFrom = null, CreatedThrough = null }, null, false);
         var comments = db.CommentRows.AsNoTracking().Where(c => c.TargetKind == "Node" && c.Status == "Active" && c.RemovedAt == null);
@@ -74,12 +74,13 @@ public sealed class SqlPublicSearch(Func<AtlasDataContext> open) : IPublicSearch
                           join comment in comments on match.ResultId equals comment.Id
                           join node in commentNodes on comment.TargetId equals node.NodeId
                           where match.Kind == 1 && scope != "nodes"
-                          select new Hit { Id = comment.Id, NodeId = node.NodeId, Kind = 1, Score = match.Score, CommentScore = db.VoteRows.Where(v => v.TargetType == "Comment" && v.TargetId == comment.Id).Sum(v => (int?)v.Value) ?? 0, At = comment.CreatedAt };
-        // Comment support adjusts text relevance by less than 25% in either direction.
+                          select new Hit { Id = comment.Id, NodeId = node.NodeId, Kind = 1, Score = match.Score, CommentScore = db.VoteRows.Where(v => v.TargetType == "Comment" && v.TargetId == comment.Id).Sum(v => (int?)v.Value) ?? 0, Support = db.VoteRows.Where(v => v.TargetType == "Comment" && v.TargetId == comment.Id).Sum(v => (int?)v.Value) ?? 0, At = comment.CreatedAt };
+        // Both kinds receive a bounded support adjustment. A node's importance is weighted
+        // by count/(count+1), so one rating does not carry the weight of broad agreement.
         // With no text query, a neutral base ranks comment-only browsing by net support.
         return nodeHits.Concat(commentHits)
             .OrderByDescending(h => (h.Score == 0 ? 1.0 : h.Score) *
-                (1.0 + 0.25 * h.CommentScore / (10.0 + Math.Abs(h.CommentScore))))
+                (1.0 + 0.25 * h.Support / (10.0 + Math.Abs(h.Support))))
             .ThenBy(h => h.Kind).ThenByDescending(h => h.At).ThenBy(h => h.Id);
     }
 
@@ -88,7 +89,7 @@ public sealed class SqlPublicSearch(Func<AtlasDataContext> open) : IPublicSearch
     {
         if (nodeId == Guid.Empty || commentId == Guid.Empty) throw new ArgumentException("Node and comment IDs are required.");
         using var db = open();
-        using var transaction = db.Database.BeginTransaction(IsolationLevel.Serializable);
+        using var transaction = db.Database.BeginTransaction(IsolationLevel.Snapshot);
         if (!db.NodeRows.Any(n => n.Id == nodeId) || db.ModerationCaseRows.Any(r => r.NodeId == nodeId && r.Status == 2 && r.VisibilityRestoredAt == null)) throw new KeyNotFoundException();
         var path = new List<CommentPathItem>();
         var seen = new HashSet<Guid>();
@@ -120,5 +121,5 @@ public sealed class SqlPublicSearch(Func<AtlasDataContext> open) : IPublicSearch
         return (start > 0 ? "…" : "") + body.Substring(start, count) + (start + count < body.Length ? "…" : "");
     }
     public sealed class Match { public Guid ResultId { get; set; } public Guid NodeId { get; set; } public int Kind { get; set; } public int Score { get; set; } }
-    private sealed class Hit { public int CommentScore { get; set; } public Guid Id { get; set; } public Guid NodeId { get; set; } public int Kind { get; set; } public int Score { get; set; } public DateTimeOffset At { get; set; } }
+    private sealed class Hit { public double Support { get; set; } public int CommentScore { get; set; } public Guid Id { get; set; } public Guid NodeId { get; set; } public int Kind { get; set; } public int Score { get; set; } public DateTimeOffset At { get; set; } }
 }

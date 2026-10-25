@@ -24,6 +24,17 @@ public static class AtlasDatabaseSetup
     public static void InstallSupplementalSchema(AtlasDataContext database)
     {
         RequireNoTransaction(database);
+        // Search reads opt into row versions. This database option is outside EF's table model.
+        // Enable only during explicit setup, never on a search request or normal API startup.
+        database.Database.ExecuteSqlRaw("""
+            IF EXISTS (SELECT 1 FROM sys.databases WHERE database_id = DB_ID() AND snapshot_isolation_state = 0)
+            BEGIN
+                DECLARE @sql nvarchar(max) = N'ALTER DATABASE ' + QUOTENAME(DB_NAME()) + N' SET ALLOW_SNAPSHOT_ISOLATION ON';
+                EXEC sys.sp_executesql @sql;
+            END;
+            IF NOT EXISTS (SELECT 1 FROM sys.databases WHERE database_id = DB_ID() AND snapshot_isolation_state = 1)
+                THROW 51000, 'Snapshot isolation is not ready. Finish open transactions and rerun database setup.', 1;
+            """);
         // CREATE OR ALTER procedures/triggers must be the first statement in their batch.
         foreach (var script in new[] { "SearchDocumentsSchema.sql", "SearchDocumentsRefreshNodes.sql",
             "SearchDocumentsRefreshComments.sql", "SearchDocumentsTrackNodes.sql", "SearchDocumentsTrackComments.sql",

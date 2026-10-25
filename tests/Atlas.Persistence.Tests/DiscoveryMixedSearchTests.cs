@@ -131,10 +131,53 @@ public sealed class DiscoveryMixedSearchTests
         Assert.AreEqual(down, page.Items[2].Comment!.Id);
         Assert.AreEqual(1, page.Items[0].Comment!.Score);
         Assert.AreEqual(-1, page.Items[2].Comment!.Score);
+        // Both kinds use votes: one 10/10 node rating outranks a +1 equally relevant comment.
+        using (var db = fixture.Open())
+        {
+            db.VoteRows.Add(new VoteRow { Id = Guid.NewGuid(), ParticipantId = node.AuthorParticipantId, TargetType = "Node", TargetId = node.NodeId, Value = 10, CreatedAt = at, UpdatedAt = at });
+            db.SaveChanges();
+        }
+        var rated = search.Search(new(SearchText: "Silver Otter Meadow"));
+        Assert.IsNull(rated.Items[0].Comment);
+        Assert.AreEqual(10.0, rated.Items[0].AverageVote);
+        Assert.AreEqual(1, rated.Items[0].VoteCount);
+        Assert.AreEqual(up, rated.Items[1].Comment!.Id);
         var comments = search.Search(new(), "comments");
         Assert.AreEqual(up, comments.Items[0].Comment!.Id);
         using (var db = fixture.Open()) { db.VoteRows.RemoveRange(db.VoteRows.Where(v => v.TargetType == "Comment")); db.SaveChanges(); }
         Assert.IsNull(search.Search(new(SearchText: "Silver Otter Meadow")).Items[0].Comment);
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task SearchReadsCommittedStateWhileVoteOrContentWriteRemainsOpen(bool editContent)
+    {
+        using var fixture = SqlTestDatabase.Create(useCurrentModel: true);
+        var at = DateTimeOffset.UtcNow;
+        var node = new DiscoveryCandidate(Guid.NewGuid(), "Silver Otter Meadow", "", Guid.NewGuid(), Guid.NewGuid(), false, at, at, 1, 7, [], []);
+        DiscoverySqlFixture.Seed(fixture, node);
+        using var ready = fixture.OpenForDiscovery();
+        var search = new SqlPublicSearch(fixture.Open);
+        var discovery = new SqlDiscoveryReadQuery(fixture.Open);
+        Assert.AreEqual(1, search.Search(new(SearchText: "otter")).TotalCount);
+        Assert.AreEqual(1, discovery.DiscoverPage(new()).TotalCount);
+        using var writer = fixture.Open();
+        using var transaction = writer.Database.BeginTransaction(System.Data.IsolationLevel.Serializable);
+        if (editContent) writer.NodeRows.Single(n => n.Id == node.NodeId).Title = "Uncommitted replacement";
+        else writer.VoteRows.Single(v => v.TargetType == "Node" && v.TargetId == node.NodeId).Value = 10;
+        writer.SaveChanges(); // Holds data/projection/revision locks until rollback below.
+        var searchTask = Task.Run(() => search.Search(new(SearchText: "otter")));
+        var feedTask = Task.Run(() => discovery.DiscoverPage(new()));
+        var all = Task.WhenAll(searchTask, feedTask);
+        var completedBeforeRollback = await Task.WhenAny(all, Task.Delay(TimeSpan.FromSeconds(5))) == all;
+        transaction.Rollback(); // Always release the writer, including if the reader regresses.
+        await all.WaitAsync(TimeSpan.FromSeconds(15));
+        Assert.IsTrue(completedBeforeRollback, "Search/feed waited for an open writer transaction.");
+        Assert.AreEqual("Silver Otter Meadow", searchTask.Result.Items.Single().Card!.Title);
+        Assert.AreEqual(7.0, searchTask.Result.Items.Single().AverageVote);
+        Assert.AreEqual("Silver Otter Meadow", feedTask.Result.Items.Single().Card!.Title);
+        Assert.AreEqual(7.0, feedTask.Result.Items.Single().AverageVote);
     }
 
     [TestMethod]

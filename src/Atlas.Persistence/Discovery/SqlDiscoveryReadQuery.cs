@@ -100,13 +100,14 @@ public sealed class SqlDiscoveryReadQuery(
             if (query.SearchText is not null)
                 DiscoveryFullTextSchema.EnsureAvailable(db);
 
-            using var transaction = db.Database.BeginTransaction(IsolationLevel.Serializable);
+            using var transaction = db.Database.BeginTransaction(IsolationLevel.Snapshot);
             // 4. Read the committed freshness counters, even when cache is absent.
             // The singleton row has Id = 1. PageVersion and DetailVersion are generation
             // numbers, not page numbers, node limits or timestamps. Relevant writes bump
             // them atomically; new versions make older cache keys unusable.
-            // This read holds a shared lock until count/page/cards are complete. Writers update
-            // these generations in their own transaction; hidden pages cannot outlive that commit.
+            // The revision and all page/card rows come from the same committed snapshot.
+            // Writers can advance generations without waiting for search's read transaction.
+            // Later requests see the new revision and cannot reuse an older cached page.
             var revision = db.Set<DiscoveryRevisionRow>().AsNoTracking().Single(row => row.Id == 1);
 
             // 5. Look for a ranked page matching the request and current page revision.
