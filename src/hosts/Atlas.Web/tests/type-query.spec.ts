@@ -31,6 +31,14 @@ test('natural-language text stays separate from structured filter tokens', () =>
   });
 });
 
+test('words before, between and after filters combine into one text search', () => {
+  expect(parseDiscoveryQuery('salmon type:issue habitat votes:2.. protection', types)).toEqual({
+    text: 'salmon habitat protection',
+    filters: { typeId: 'issue-id', minVotes: 2, maxVotes: undefined },
+    errors: [],
+  });
+});
+
 test('type toolbox emits a readable name and sends the corresponding API ID', async ({ page }) => {
   await page.route('**/atlas-session-api/**', (route) => route.fulfill({ status: 401, json: {} }));
   const lookups: URL[] = [];
