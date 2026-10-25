@@ -28,9 +28,10 @@
       .map((row) => ({ row, ...experiment(row.evidence, votingPercent) }))
       .sort((a, b) => b.score - a.score || a.row.position - b.row.position),
   );
-  let submitted = $state<{ query: { searchText: string; page: number }; scope: string } | null>(
-    null,
-  );
+  let submitted = $state<{
+    query: { searchText: string; page: number; votingWeight: number };
+    scope: string;
+  } | null>(null);
   let sentinel = $state<HTMLDivElement>();
   $effect(() => {
     if (
@@ -54,7 +55,11 @@
     error = '';
     if (page === 1) report = null;
     const payload = {
-      query: { searchText: page === 1 ? query : submitted!.query.searchText, page },
+      query: {
+        searchText: page === 1 ? query : submitted!.query.searchText,
+        page,
+        votingWeight: page === 1 ? votingPercent : submitted!.query.votingWeight,
+      },
       scope: page === 1 ? scope : submitted!.scope,
     };
     try {
@@ -116,7 +121,8 @@
   {#if report}
     <h2>Ranking diagnostics</h2>
     <p>
-      {report.page.totalCount} results · Pages loaded: {report.page.page} · Policy {report.policy}
+      {report.page.totalCount} results · Pages loaded: {report.page.page} · Policy {report.policy} · Backend
+      voting weight: {submitted?.query.votingWeight}%
     </p>
     {#if submitted?.query.searchText !== query || submitted?.scope !== scope}<p role="status">
         Inputs changed. Search again to update these results.
@@ -126,9 +132,8 @@
         <thead
           ><tr
             ><th>Rank</th><th>Result</th><th>Text relevance</th><th>Indexed words / literal hits</th
-            ><th>Vote count</th><th>Average / net</th><th>Support</th><th>Multiplier</th><th
-              >Final score</th
-            ></tr
+            ><th>Vote count</th><th>Average / net</th><th>Support</th><th>Score / raw relevance</th
+            ><th>Final score</th></tr
           ></thead
         >
         <tbody
@@ -154,7 +159,7 @@
                   ? (row.item.averageVote?.toFixed(2) ?? 'Unrated')
                   : row.item.comment?.score}</td
               >
-              <td>{number(row.evidence.support)}</td><td>×{number(row.evidence.multiplier)}</td><td
+              <td>{number(row.evidence.support)}</td><td>{report.policy === 'weighted-v1' ? 'Additive' : '×' + number(row.evidence.multiplier)}</td><td
                 >{number(row.evidence.finalScore)}</td
               >
             </tr>{/each}</tbody
@@ -171,9 +176,10 @@
     <section aria-label="Experimental ranking comparison">
       <h3>Experimental order among loaded results</h3>
       <p>
-        Preview only: public search still uses {report.policy}. Comparing {report.rows.length} of {report
-          .page.totalCount} results. Unloaded candidates are not included; this is not a global experimental
-        rank.
+        The app uses this weighted formula when a voting weight is supplied. This table previews the
+        current slider over loaded results; the main table shows the last backend run ({report.policy}).
+        Comparing {report.rows.length} of {report.page.totalCount} results. Unloaded candidates are not
+        included; this is not a global experimental rank.
       </p>
       <label
         >Voting weight (%)<input
@@ -222,8 +228,8 @@
     <h3>Indexed text and tie-breaks</h3>
     <p>
       Support: node average × vote count / (vote count + 1); comment net upvotes minus downvotes.
-      Current multiplier = 1 + 0.25 × support / (10 + |support|). Current final score = SQL
-      relevance × multiplier.
+      Legacy multiplier = 1 + 0.25 × support / (10 + |support|). Legacy final score = SQL relevance
+      × multiplier. Weighted searches use the additive formula shown above.
     </p>
     <p>
       Equal final scores sort by node before comment, then newer ranking date, then SQL GUID order.

@@ -10,6 +10,8 @@
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
+  import VotingWeightControl from './VotingWeightControl.svelte';
+  import { searchPreferences, watchSearchPreferences } from '../state/searchPreferences.svelte';
   import {
     discoveryQuery,
     setDiscoveryQuery,
@@ -69,6 +71,7 @@
   const editing = $derived(parse(pending));
   onMount(() => {
     restoreDiscoveryQuery();
+    return watchSearchPreferences();
   });
   /** Use one parser for pending edits and accepted global search requests. */
   function parse(value: string) {
@@ -214,6 +217,7 @@
       previous query.
     -->
     <div class="toolbox">
+      <VotingWeightControl />
       <label
         >Search in<select
           value={editing.filters.scope ?? 'all'}
@@ -354,7 +358,7 @@
       {:else if accepted.errors.length}<p role="alert">{accepted.errors.join(' · ')}</p>
       {:else}<SearchResults
           search={accepted.text}
-          filters={accepted.filters}
+          filters={{ ...accepted.filters, votingWeight: searchPreferences.votingWeight }}
           onSelect={onResultSelected}
         />{/if}
     </div>

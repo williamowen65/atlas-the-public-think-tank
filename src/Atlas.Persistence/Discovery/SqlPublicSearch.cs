@@ -60,6 +60,8 @@ public sealed class SqlPublicSearch(Func<AtlasDataContext> open) : IPublicSearch
         catch (SqlException error) { throw new SearchUnavailableException(error); }
     }
 
+    public const string WeightedRankingPolicyVersion = "weighted-v1";
+
     private static IQueryable<Hit> BuildHits(AtlasDataContext db, DiscoveryQuery query, string scope)
     {
         IQueryable<Match> matches = query.SearchText is null
@@ -87,12 +89,16 @@ public sealed class SqlPublicSearch(Func<AtlasDataContext> open) : IPublicSearch
         // Both kinds receive a bounded support adjustment. A node's importance is weighted
         // by count/(count+1), so one rating does not carry the weight of broad agreement.
         // With no text query, a neutral base ranks comment-only browsing by net support.
+        var weight = (query.VotingWeight ?? 0) / 100.0;
         return nodeHits.Concat(commentHits)
             .Select(h => new Hit
             {
                 Id = h.Id, NodeId = h.NodeId, Kind = h.Kind, Score = h.Score,
                 Support = h.Support, CommentScore = h.CommentScore, At = h.At,
-                FinalScore = (h.Score == 0 ? 1.0 : h.Score) *
+                FinalScore = query.VotingWeight != null
+                    ? (1.0 - weight) * Math.Log(1.0 + h.Score) / Math.Log(1001.0)
+                      + weight * (h.Kind == 0 ? h.Support / 10.0 : h.Support / (5.0 + Math.Abs(h.Support)))
+                    : (h.Score == 0 ? 1.0 : h.Score) *
                     (1.0 + 0.25 * h.Support / (10.0 + Math.Abs(h.Support)))
             })
             .OrderByDescending(h => h.FinalScore)

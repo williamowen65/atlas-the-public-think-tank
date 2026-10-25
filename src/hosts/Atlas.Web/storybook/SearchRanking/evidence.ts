@@ -23,7 +23,7 @@ export function passage(text: string, query: string): string {
   return `${start ? '…' : ''}${text.slice(start, end)}${end < text.length ? '…' : ''}`;
 }
 export type RankingInput = { kind: string; textRank: number; support: number };
-/** Lab-only hypothesis, never used by the public API or to fetch candidates. */
+/** Browser preview of weighted-v1. Actual global ordering and pagination run independently in SQL. */
 export function experiment(input: RankingInput, votingPercent = 40) {
   const weight = Math.max(0, Math.min(100, votingPercent)) / 100;
   const text = Math.log1p(Math.max(0, input.textRank)) / Math.log(1001);

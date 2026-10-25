@@ -7,6 +7,10 @@
   No explicit component props. SvelteKit selects this route; URL parameters are read by the route itself.
 -->
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import VotingWeightControl from '$lib/components/VotingWeightControl.svelte';
+  import { watchSearchPreferences } from '$lib/state/searchPreferences.svelte';
+  onMount(watchSearchPreferences);
   import SessionControl from '$lib/components/SessionControl.svelte';
   import { apiRequest } from '$lib/api/apiRequest';
   /**
@@ -116,6 +120,8 @@
 <svelte:head><title>Account settings · Atlas</title></svelte:head>
 <section class="settings">
   <h1>Account settings</h1>
+  <h2>Search preferences</h2>
+  <VotingWeightControl />
   <SessionControl expanded onSession={sessionChanged} />
   {#if owner}
     <h2>Public profile</h2>

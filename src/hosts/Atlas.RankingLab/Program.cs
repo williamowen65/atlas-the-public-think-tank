@@ -57,7 +57,7 @@ app.MapPost("/run", (SearchRequest request) =>
                 .Concat(blocks.Where(b => b.DocumentId == node.DescriptionId)
                     .Select(b => new TextSource($"Block {b.Position + 1} ({b.Kind})", b.Text ?? "", b.Id))).ToArray();
         }
-        return Results.Ok(new { policy = SqlPublicSearch.RankingPolicyVersion, explained.Page,
+        return Results.Ok(new { policy = request.Query.VotingWeight.HasValue ? SqlPublicSearch.WeightedRankingPolicyVersion : SqlPublicSearch.RankingPolicyVersion, explained.Page,
             collectedAt = DateTimeOffset.UtcNow,
             rows = explained.Evidence.Select((e, i) => new {
                 position = (explained.Page.Page - 1) * explained.Page.PageSize + i + 1,

@@ -43,12 +43,18 @@ test('searches local data, displays diagnostics and pages the same query', async
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(page.getByRole('table').first()).toContainText('108.3333');
   await expect(page.getByRole('table').first()).toContainText('Local node');
-  expect(submitted[0]).toEqual({ query: { searchText: 'testing', page: 1 }, scope: 'all' });
+  expect(submitted[0]).toEqual({
+    query: { searchText: 'testing', page: 1, votingWeight: 40 },
+    scope: 'all',
+  });
   await page.getByRole('heading', { name: 'Indexed text and tie-breaks' }).scrollIntoViewIfNeeded();
   await expect.poll(() => submitted.length).toBe(2);
   await expect(page.getByRole('table').first()).toContainText('Local node 1');
   await expect(page.getByRole('table').first()).toContainText('Local node 2');
-  expect(submitted[1]).toEqual({ query: { searchText: 'testing', page: 2 }, scope: 'all' });
+  expect(submitted[1]).toEqual({
+    query: { searchText: 'testing', page: 2, votingWeight: 40 },
+    scope: 'all',
+  });
 });
 test('failed searches retain inputs and permit retry and export', async ({ page }) => {
   let calls = 0;

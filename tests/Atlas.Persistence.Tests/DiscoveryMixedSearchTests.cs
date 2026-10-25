@@ -27,6 +27,46 @@ public sealed class DiscoveryMixedSearchTests
     }
 
     [TestMethod]
+    public void WeightedRankingTranslatesAndOrdersBeforePaging()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => DiscoveryQueryValidation.Validate(new(VotingWeight: -1)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => DiscoveryQueryValidation.Validate(new(VotingWeight: 101)));
+        using var db = new AtlasDataContext(new DbContextOptionsBuilder<AtlasDataContext>()
+            .UseSqlServer("Server=localhost;Database=TranslationOnly;User Id=sa;Password=unused;").Options);
+        var build = typeof(SqlPublicSearch).GetMethod("BuildHits", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
+        foreach (var weight in new[] { 0, 40, 100 })
+        {
+            var query = (IQueryable)build.Invoke(null, [db, new DiscoveryQuery(SearchText: "testing", VotingWeight: weight), "all"])!;
+            var sql = query.ToQueryString();
+            StringAssert.Contains(sql, "LOG(");
+            StringAssert.Contains(sql, "ORDER BY");
+        }
+    }
+
+    [TestMethod]
+    public void VotingWeightOrdersTheWholeCandidateSetBeforeSelectingPages()
+    {
+        using var fixture = SqlTestDatabase.Create(useCurrentModel: true);
+        var at = DateTimeOffset.UtcNow;
+        var nodes = Enumerable.Range(0, 6).Select(i => new DiscoveryCandidate(Guid.NewGuid(),
+            "Silver Otter Meadow", "", Guid.NewGuid(), Guid.NewGuid(), false, at.AddMinutes(-i),
+            at.AddMinutes(-i), i == 0 ? 0 : 1, i == 0 ? null : i * 2.0, [], [])).ToArray();
+        DiscoverySqlFixture.Seed(fixture, nodes);
+        using var ready = fixture.OpenForDiscovery();
+        var search = new SqlPublicSearch(fixture.Open);
+        Assert.AreEqual(nodes[0].NodeId, search.Search(new(SearchText: "otter", VotingWeight: 0), "nodes").Items[0].NodeId);
+        foreach (var weight in new[] { 40, 100 })
+        {
+            var first = search.Explain(new(SearchText: "otter", VotingWeight: weight), "nodes");
+            var second = search.Explain(new(SearchText: "otter", VotingWeight: weight, Page: 2), "nodes");
+            CollectionAssert.AreEqual(nodes.Reverse().Select(n => n.NodeId).ToArray(),
+                first.Page.Items.Concat(second.Page.Items).Select(i => i.NodeId).ToArray());
+            Assert.AreEqual(6, first.Page.TotalCount);
+            Assert.IsTrue(first.Evidence[0].FinalScore > second.Evidence.Last().FinalScore);
+        }
+    }
+
+    [TestMethod]
     public void MixedHitsPageAsOneSequenceAndRespectVisibilityFiltersAndCommentAuthors()
     {
         using var fixture = SqlTestDatabase.Create(useCurrentModel: true);
