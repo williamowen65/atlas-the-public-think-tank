@@ -5,7 +5,9 @@ public static class DiscoveryFullTextSchema
 {
     // Keep poll/chart IDs and non-public fields out of the index. Persisting this expression
     // lets SQL Server maintain searchable block text with the original block in one write.
-    public const string BlockTextExpression = """
+    // EF records this SQL verbatim in its snapshot. Normalize line endings so a migration
+    // generated on Windows compares equal to the runtime model on Linux CI.
+    public static readonly string BlockTextExpression = """
         CONVERT(nvarchar(max), CASE [Kind]
             WHEN N'markdown' THEN COALESCE([Markdown], N'')
             WHEN N'image' THEN CONCAT([AltText], N' ', [Caption])
@@ -13,7 +15,7 @@ public static class DiscoveryFullTextSchema
             WHEN N'link-preview' THEN CONCAT([Title], N' ', [Description], N' ', [Url] COLLATE Latin1_General_100_CI_AI_SC)
             WHEN N'chart-reference' THEN COALESCE([Title], N'')
             ELSE N'' END)
-        """;
+        """.ReplaceLineEndings("\r\n");
 
     /// <summary>Run after adding BlockRows.SearchText, outside the migration transaction.</summary>
     public static string CreateSql => SqlDiscoveryReadQuery.ReadResource("DiscoveryFullTextCreate.sql");
