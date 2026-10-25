@@ -37,6 +37,7 @@
     comment-count button is activated.
 -->
 <script lang="ts">
+  import NodeEditControl from '../NodeEditControl.svelte';
   import { centerInCard } from '../../actions/centerInCard';
   import ActionButton from '../ActionButton.svelte';
   import CommunityLinks from '../CommunityLinks.svelte';
@@ -68,6 +69,14 @@
 
 <article class="node-card" data-presentation="context-below" aria-labelledby={`${instance}-title`}>
   <header>
+    <NodeEditControl
+      nodeId={node.id}
+      authorId={node.authorId}
+      {apiBase}
+      onSaved={(update) => {
+        node = { ...node, title: update.title, description: update.shortDescription };
+      }}
+    />
     <div class="eyebrow">
       <span class="type">{node.typeName}</span>
       {#if node.status === 'Archived'}<span>Archived</span>{/if}

@@ -44,6 +44,7 @@
     panel; unrelated to whether child nodes exist.
 -->
 <script lang="ts">
+  import NodeEditControl from './NodeEditControl.svelte';
   import type { Snippet } from 'svelte';
   import type { NodeCardData } from './NodeCard.svelte';
   import type { NodeType, ContentBlock } from '../api/nodePage';
@@ -276,6 +277,15 @@
       />
     </div>{/if}
   <header>
+    <NodeEditControl
+      nodeId={node.id}
+      authorId={node.authorId}
+      {apiBase}
+      onSaved={(update) => {
+        node = { ...node, title: update.title, description: update.shortDescription };
+        blocks = update.blocks;
+      }}
+    />
     <h1>{node.typeName}: {node.title}</h1>
     <p class="byline">
       By {#if node.authorId}<a

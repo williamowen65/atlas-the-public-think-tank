@@ -37,6 +37,7 @@
     comment-count button is activated.
 -->
 <script lang="ts">
+  import NodeEditControl from '../NodeEditControl.svelte';
   import ActionButton from '../ActionButton.svelte';
   import CommunityLinks from '../CommunityLinks.svelte';
   import VotingDial from '../VotingDial.svelte';
@@ -93,6 +94,14 @@
     </div>
   {/if}
   <header>
+    <NodeEditControl
+      nodeId={node.id}
+      authorId={node.authorId}
+      {apiBase}
+      onSaved={(update) => {
+        node = { ...node, title: update.title, description: update.shortDescription };
+      }}
+    />
     <h2 id={`${instance}-title`}><span class="title-type">{node.typeName}:</span> {node.title}</h2>
     {#if node.status === 'Archived'}<p class="byline">Archived</p>{/if}
     <p class="byline">
