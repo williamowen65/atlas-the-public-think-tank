@@ -1,85 +1,50 @@
 <script lang="ts">
-  import definitions from '../../../../../tests/Fixtures/SearchRanking/scenarios.json';
-  import type { Scenario, Report, Entry } from './types';
-  const fixtures = definitions as Scenario[];
-  let selected = $state(fixtures[0].id);
-  let scenario = $state<Scenario>(structuredClone(fixtures[0]));
-  let votes = $state<Record<string, string>>({});
-  let blocks = $state<Record<string, string>>({});
+  import type { Evidence } from './types';
+  type Report = {
+    policy: string;
+    page: { totalCount: number; page: number; hasNextPage: boolean };
+    rows: {
+      position: number;
+      searchText: string;
+      evidence: Evidence;
+      item: {
+        voteCount: number;
+        averageVote: number | null;
+        card?: { title: string };
+        comment?: { nodeTitle: string; excerpt: string; score: number };
+      };
+    }[];
+  };
+  let query = $state('');
+  let scope = $state('all');
   let busy = $state(false);
   let error = $state('');
   let report = $state<Report | null>(null);
-  let phase = $state(0);
-  let submitted = $state('');
-  let lastPayload = $state<Scenario | null>(null);
-  let modified = $derived(
-    JSON.stringify(scenario) !== JSON.stringify(fixtures.find((f) => f.id === selected)) ||
-      scenario.entries.some(
-        (entry) =>
-          votes[entry.key] !== entry.votes.join(', ') ||
-          blocks[entry.key] !== (entry.blocks ?? []).join('\n'),
-      ),
+  let submitted = $state<{ query: { searchText: string; page: number }; scope: string } | null>(
+    null,
   );
-  let changedSinceRun = $derived(submitted !== JSON.stringify({ scenario, votes, blocks }));
-  let result = $derived(report?.phases[phase]);
-
-  function reset() {
-    scenario = structuredClone(fixtures.find((f) => f.id === selected)!);
-    votes = Object.fromEntries(scenario.entries.map((e) => [e.key, e.votes.join(', ')]));
-    blocks = Object.fromEntries(scenario.entries.map((e) => [e.key, (e.blocks ?? []).join('\n')]));
-    report = null;
-    error = '';
-    phase = 0;
-    submitted = '';
-  }
-  reset();
-  function parseVotes(entry: Entry) {
-    const text = votes[entry.key].trim();
-    if (!text) return [];
-    const values = text.split(',').map((value) => value.trim());
-    if (values.some((value) => !/^-?\d+$/.test(value)))
-      throw new Error(`${entry.key}: use comma-separated whole-number votes.`);
-    return values.map(Number);
-  }
-  async function run() {
+  async function run(page = 1) {
     if (busy) return;
-    error = '';
-    let payload: Scenario;
-    try {
-      payload = {
-        ...scenario,
-        entries: scenario.entries.map((entry) => ({
-          ...entry,
-          votes: parseVotes(entry),
-          blocks: blocks[entry.key] ? blocks[entry.key].split('\n') : [],
-          sameTextAs: entry.sameTextAs || null,
-        })),
-      };
-    } catch (cause) {
-      error = cause instanceof Error ? cause.message : 'Invalid votes.';
-      return;
-    }
     busy = true;
+    error = '';
     report = null;
-    const fingerprint = JSON.stringify({ scenario, votes, blocks });
+    const payload = { query: { searchText: query, page }, scope };
     try {
       const response = await fetch('/atlas-ranking-lab/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(180000),
+        signal: AbortSignal.timeout(60000),
       });
       const body = await response.json();
-      if (!response.ok) throw new Error(body.message ?? 'Ranking Lab is unavailable.');
-      report = body as Report;
-      lastPayload = payload;
-      submitted = fingerprint;
-      phase = 0;
+      if (!response.ok) throw new Error(body.message ?? 'Local ranking search is unavailable.');
+      report = body;
+      submitted = payload;
     } catch (cause) {
-      error = cause instanceof Error ? cause.message : 'Could not run scenario.';
+      error = cause instanceof Error ? cause.message : 'Search failed.';
       if (error.includes('JSON') || error.includes('fetch'))
         error =
-          'Ranking Lab is unavailable. Start npm run storybook:ranking with SQL test credentials configured.';
+          'Ranking Lab is unavailable. Run npm run storybook:ranking using the same ATLAS_SQL_CONNECTION_STRING as your API.';
     } finally {
       busy = false;
     }
@@ -88,339 +53,156 @@
 </script>
 
 <main>
-  <header>
-    <p class="eyebrow">Atlas · Search ranking workbench</p>
-    <h1>See why one result outranks another</h1>
-    <p>
-      Run the real SQL search against a small, disposable corpus. These scenario definitions also
-      power backend assertions.
-    </p>
-    <p class="setup">
-      Start with <code>npm run storybook:ranking</code>. Configure
-      <code>ATLAS_SQL_TEST_CONNECTION_STRING</code> in shared user secrets or the environment. The SQL
-      account needs permission to create and delete disposable databases and install full-text indexes.
-    </p>
-  </header>
-
-  <section aria-labelledby="scenario-heading">
-    <h2 id="scenario-heading">Scenario inputs</h2>
-    <fieldset disabled={busy}>
-      <div class="toolbar">
-        <label
-          >Scenario<select aria-label="Scenario" bind:value={selected} onchange={reset}
-            >{#each fixtures as fixture}<option value={fixture.id}>{fixture.name}</option
-              >{/each}</select
-          ></label
+  <h1>See why one result outranks another</h1>
+  <p>
+    Inspect actual search results from your local Atlas database. This tool reads your data without
+    changing it.
+  </p>
+  <p>
+    Start with <code>npm run storybook:ranking</code>, using the same
+    <code>ATLAS_SQL_CONNECTION_STRING</code> as your API.
+  </p>
+  <form
+    onsubmit={(event) => {
+      event.preventDefault();
+      void run();
+    }}
+  >
+    <label>Search terms<input bind:value={query} maxlength="4000" /></label>
+    <label
+      >Scope<select bind:value={scope}
+        ><option value="all">All</option><option value="nodes">Nodes</option><option
+          value="comments">Comments</option
+        ></select
+      ></label
+    >
+    <button disabled={busy}>Search</button>
+  </form>
+  {#if busy}<p role="status">Searching local Atlas data…</p>{/if}
+  {#if error}<p role="alert">{error}</p>{/if}
+  {#if report}
+    <h2>Ranking diagnostics</h2>
+    <p>{report.page.totalCount} results · Page {report.page.page} · Policy {report.policy}</p>
+    {#if submitted?.query.searchText !== query || submitted?.scope !== scope}<p role="status">
+        Inputs changed. Search again to update these results.
+      </p>{/if}
+    <div class="table-wrap">
+      <table>
+        <thead
+          ><tr
+            ><th>Rank</th><th>Result</th><th>Text relevance</th><th>Vote count</th><th
+              >Average / net</th
+            ><th>Support</th><th>Multiplier</th><th>Final score</th></tr
+          ></thead
         >
-        <button type="button" onclick={reset}>Reset scenario</button>
-        <button type="button" class="primary" onclick={() => void run()}>Run scenario</button>
-      </div>
-      <p>{scenario.description}</p>
-      <label>Search terms<input bind:value={scenario.query} maxlength="200" /></label>
-      <p class="muted">
-        {modified
-          ? 'Modified inputs: saved expectations remain visible as comparisons.'
-          : 'Saved fixture: expectations below are enforced by SQL integration tests.'}
-      </p>
-      <div class="entries">
-        {#each scenario.entries as entry (entry.key)}
-          <details>
-            <summary
-              >{entry.key} <span class="kind">{entry.kind}</span> · {entry.votes.length} saved votes</summary
-            >
-            <div class="editor">
-              {#if entry.kind === 'node'}
-                <label
-                  >Title for {entry.key}<input bind:value={entry.title} maxlength="200" /></label
-                >
-                <label
-                  >Short description for {entry.key}<textarea
-                    bind:value={entry.shortDescription}
-                    maxlength="280"></textarea></label
-                >
-                <label
-                  >Markdown blocks for {entry.key} (one per line)<textarea
-                    bind:value={blocks[entry.key]}></textarea></label
-                >
-              {:else}
-                <label
-                  >Match complete node text for {entry.key}<select bind:value={entry.sameTextAs}
-                    ><option value="">Use comment body below</option
-                    >{#each scenario.entries.filter((e) => e.kind === 'node') as node}<option
-                        value={node.key}>{node.key}</option
-                      >{/each}</select
-                  ></label
-                >
-                <label
-                  >Body for {entry.key}<textarea
-                    bind:value={entry.body}
-                    disabled={!!entry.sameTextAs}
-                    maxlength="10000"></textarea></label
-                >
-              {/if}
-              <label
-                >Votes for {entry.key} ({entry.kind === 'node' ? '0–10' : '-1 or +1'},
-                comma-separated)<input bind:value={votes[entry.key]} /></label
+        <tbody
+          >{#each report.rows as row}<tr>
+              <td>{row.position}</td><th
+                >{row.item.card?.title ?? row.item.comment?.nodeTitle}<small
+                  >{row.evidence.kind}</small
+                >{#if row.item.comment}<p>{row.item.comment.excerpt}</p>{/if}</th
               >
-              <label
-                >Ranking date for {entry.key} (ISO timestamp)<input bind:value={entry.at} /></label
+              <td>{row.evidence.textRank}</td><td
+                >{row.evidence.kind === 'node' ? row.item.voteCount : '—'}</td
               >
-            </div>
-          </details>
-        {/each}
-      </div>
-    </fieldset>
+              <td
+                >{row.evidence.kind === 'node'
+                  ? (row.item.averageVote?.toFixed(2) ?? 'Unrated')
+                  : row.item.comment?.score}</td
+              >
+              <td>{number(row.evidence.support)}</td><td>×{number(row.evidence.multiplier)}</td><td
+                >{number(row.evidence.finalScore)}</td
+              >
+            </tr>{/each}</tbody
+        >
+      </table>
+    </div>
+    {#if report.page.totalCount === 0}<p>No matching results.</p>{/if}
+    <button disabled={busy || report.page.page <= 1} onclick={() => void run(report!.page.page - 1)}
+      >Previous page</button
+    >
+    <button
+      disabled={busy || !report.page.hasNextPage}
+      onclick={() => void run(report!.page.page + 1)}>Next page</button
+    >
+    <h3>Indexed text and tie-breaks</h3>
+    <p>
+      Equal final scores sort by node before comment, then newer ranking date, then SQL GUID order.
+    </p>
+    {#each report.rows as row}<details>
+        <summary>{row.position}. {row.evidence.kind} · {row.evidence.id}</summary>
+        <pre>{row.searchText}</pre>
+        <p>Ranking date: {row.evidence.tieDate}</p>
+      </details>{/each}
     <details>
-      <summary>Saved phases and expectations</summary>{#each scenario.phases as item}<p>
-          <strong>{item.name}:</strong>
-          {item.expectedOrder.length
-            ? item.expectedOrder.join(' → ')
-            : 'Exploration: no cross-kind ordering assumption.'}
-        </p>
-        {#if Object.keys(item.votes).length}<p>
-            Vote overrides: <code>{JSON.stringify(item.votes)}</code>. Overrides carry forward until
-            replaced.
-          </p>{/if}{#if item.sameScoresAs}<p>
-            Scores and order must match {item.sameScoresAs}.
-          </p>{/if}{/each}
+      <summary>Exportable diagnostics</summary><textarea
+        aria-label="Search inputs and ranking results"
+        readonly
+        value={JSON.stringify({ inputs: submitted, report }, null, 2)}></textarea>
     </details>
-  </section>
-  {#if busy}<p role="status">
-      Creating an isolated corpus, waiting for its initial text index, and running every phase…
-    </p>{/if}
-  {#if error}<p role="alert" class="error">{error}</p>{/if}
-
-  {#if report && result}
-    <section aria-labelledby="results-heading">
-      <h2 id="results-heading">Ranking diagnostics</h2>
-      <p>
-        {report.corpus} Policy: <strong>{report.policy}</strong>. Votes change between phases
-        without reindexing.
-      </p>
-      {#if changedSinceRun}<p role="status">
-          Inputs changed. These are results from the last run; run again to update them.
-        </p>{/if}
-      <label
-        >Result phase<select aria-label="Result phase" bind:value={phase}
-          >{#each report.phases as item, i}<option value={i}>{item.name}</option>{/each}</select
-        ></label
-      >
-      <ul class="checks">
-        {#each result.checks as check}<li class:failed={!check.passed}>
-            <strong>{check.passed ? 'PASS' : 'FAIL'}</strong> — {check.description}
-          </li>{/each}
-      </ul>
-      <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard users need focus here to scroll the wide diagnostic table.) -->
-      <div class="table-wrap" role="region" aria-label="Ranking diagnostic table" tabindex="0">
-        <table>
-          <caption>Actual SQL order · {result.name}</caption>
-          <thead
-            ><tr
-              ><th scope="col">Rank / page</th><th scope="col">Result</th><th scope="col"
-                >Text relevance</th
-              ><th scope="col">Votes</th><th scope="col">Average / net</th><th scope="col"
-                >Support</th
-              ><th scope="col">Multiplier</th><th scope="col">Final score</th></tr
-            ></thead
-          >
-          <tbody
-            >{#each result.rows as row}<tr>
-                <td>{row.position} / {row.page}</td><th scope="row"
-                  >{row.key}<small>{row.evidence.kind}</small></th
-                ><td>{row.evidence.textRank}</td><td
-                  >{row.votes.length ? row.votes.join(', ') : 'No votes'}</td
-                ><td
-                  >{row.evidence.kind === 'node'
-                    ? row.average === null
-                      ? 'Unrated'
-                      : row.average.toFixed(2)
-                    : row.netScore}</td
-                ><td>{number(row.evidence.support)}</td><td>×{number(row.evidence.multiplier)}</td
-                ><td><strong>{number(row.evidence.finalScore)}</strong></td>
-              </tr>{/each}</tbody
-          >
-        </table>
-      </div>
-      <h3>Actual searchable text and tie-breaks</h3>
-      {#each result.rows as row}<details>
-          <summary>{row.position}. {row.key} · {row.evidence.kind}</summary>
-          <pre>{row.searchText}</pre>
-          <p>
-            After equal final scores: node before comment, then newer ranking date, then SQL GUID
-            order.
-          </p>
-          <p>
-            Date: <time datetime={row.evidence.tieDate}>{row.evidence.tieDate}</time><br />ID:
-            <code>{row.evidence.id}</code>
-          </p>
-        </details>{/each}
-      <details>
-        <summary>Exportable diagnostics</summary>
-        <p>Copy these inputs and results into a bug report to reproduce the scenario.</p>
-        <textarea
-          class="export"
-          aria-label="Scenario inputs and ranking results"
-          readonly
-          value={JSON.stringify({ inputs: lastPayload, report }, null, 2)}></textarea>
-      </details>
-    </section>
   {/if}
-  <footer>
-    Raw full-text relevance depends on the entire corpus. A shared index makes the ranks comparable;
-    it does not guarantee equal relevance when only one word matches.
-  </footer>
+  <p>
+    Full-text relevance depends on the entire local corpus. Changes in the app appear on the next
+    search once text indexing catches up; votes do not require reindexing.
+  </p>
 </main>
 
-<style lang="scss">
+<style>
   main {
     max-width: 1200px;
-    margin: 0 auto;
-    padding: clamp(1rem, 3vw, 2.5rem);
+    margin: auto;
+    padding: 2rem;
     color: var(--atlas-text);
   }
-  h1 {
-    font-size: clamp(1.6rem, 3vw, 2.3rem);
-    margin: 0.35rem 0 0.8rem;
-  }
-  h2 {
-    font-size: 1.25rem;
-  }
-  p {
-    line-height: 1.6;
-  }
-  .eyebrow,
-  .muted,
-  footer,
-  small {
-    color: var(--atlas-muted);
-  }
-  section {
-    background: var(--atlas-surface);
-    border: 1px solid var(--atlas-border);
-    border-radius: var(--atlas-radius);
-    padding: 1.25rem;
-    margin: 1.4rem 0;
-  }
-  .setup {
-    font-size: 0.9rem;
-  }
-  fieldset {
-    border: 0;
-    padding: 0;
-    margin: 0;
-    min-width: 0;
-  }
-  .toolbar {
+  form {
     display: flex;
+    gap: 1rem;
     align-items: end;
-    gap: 0.75rem;
     flex-wrap: wrap;
-  }
-  .toolbar label {
-    flex: 1;
-    min-width: min(100%, 18rem);
   }
   label {
     display: grid;
-    gap: 0.35rem;
-    margin: 0.65rem 0;
-    font-size: 0.9rem;
+    gap: 0.5rem;
   }
   input,
   select,
-  textarea,
-  button {
-    font: inherit;
-    border: 1px solid var(--atlas-border);
-    border-radius: var(--atlas-radius);
-    background: var(--atlas-surface);
-    color: var(--atlas-text);
-    padding: 0.55rem 0.7rem;
-  }
-  input,
-  select,
-  textarea {
-    box-sizing: border-box;
-    max-width: 100%;
-    min-width: 0;
-    width: 100%;
-  }
-  textarea {
-    min-height: 5rem;
-    resize: vertical;
-  }
   button,
-  summary {
-    cursor: pointer;
-  }
-  button:disabled {
-    opacity: 0.6;
-  }
-  .primary {
-    background: var(--atlas-accent);
-    color: var(--atlas-surface);
-  }
-  details {
-    border-top: 1px solid var(--atlas-border);
-    padding: 0.8rem 0;
-  }
-  summary {
-    font-weight: 600;
-  }
-  .editor {
-    padding: 0.5rem 0.2rem;
-  }
-  .kind {
-    font-size: 0.8rem;
-    color: var(--atlas-muted);
+  textarea {
+    font: inherit;
+    padding: 0.6rem;
   }
   .table-wrap {
     overflow-x: auto;
-    margin: 1rem 0;
   }
   table {
     border-collapse: collapse;
     width: 100%;
-    font-size: 0.9rem;
-  }
-  caption {
-    text-align: left;
-    font-weight: 600;
-    margin-bottom: 0.75rem;
+    margin: 1rem 0;
   }
   th,
   td {
     text-align: left;
+    vertical-align: top;
     padding: 0.7rem;
     border-bottom: 1px solid var(--atlas-border);
-    vertical-align: top;
   }
   small {
     display: block;
     font-weight: normal;
   }
-  .checks {
-    padding-left: 1.2rem;
-  }
-  .checks li {
-    padding: 0.3rem 0;
-  }
-  .error,
-  .failed {
-    color: #b3261e;
-  }
   pre {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
-    background: var(--atlas-bg);
-    padding: 1rem;
   }
-  .export {
-    min-height: 16rem;
-    font-family: monospace;
+  textarea {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 18rem;
   }
-  footer {
-    font-size: 0.85rem;
-    line-height: 1.6;
+  details {
+    padding: 0.8rem 0;
+  }
+  [role='alert'] {
+    color: #b3261e;
   }
 </style>

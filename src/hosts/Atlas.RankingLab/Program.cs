@@ -1,6 +1,7 @@
 using System.Net;
 using Atlas.Persistence;
-using Atlas.Testing;
+using Atlas.Discovery;
+using Atlas.Persistence.Discovery;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,7 +11,6 @@ builder.Configuration.AddUserSecrets<Program>(optional: true).AddEnvironmentVari
 builder.WebHost.UseUrls("http://127.0.0.1:7251");
 builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = 64 * 1024);
 var app = builder.Build();
-var gate = new SemaphoreSlim(1, 1);
 app.Use(async (context, next) =>
 {
     if (context.Connection.RemoteIpAddress is not { } ip || !IPAddress.IsLoopback(ip) ||
@@ -23,42 +23,37 @@ app.Use(async (context, next) =>
     await next();
 });
 app.MapGet("/health", () => Results.Ok(new { ready = true }));
-app.MapPost("/run", async (RankingScenario scenario) =>
+// Read the same local application database as Atlas.Api. No setup, seeding or writes.
+app.MapPost("/run", (SearchRequest request) =>
 {
-    try { SearchRankingFixture.Validate(scenario); }
-    catch (ArgumentException) { return Results.BadRequest(new { message = "Invalid scenario. Check text lengths, keys, dates and vote values." }); }
-    var template = builder.Configuration["ATLAS_SQL_TEST_CONNECTION_STRING"];
-    if (string.IsNullOrWhiteSpace(template)) return Results.Json(new { message = "Set ATLAS_SQL_TEST_CONNECTION_STRING in shared user secrets or the environment. Ranking Lab creates disposable databases; it does not use your Atlas application database." }, statusCode: 503);
-    if (!await gate.WaitAsync(0)) return Results.Conflict(new { message = "Another scenario is running. Wait for it to finish." });
+    var connection = builder.Configuration["ATLAS_SQL_CONNECTION_STRING"];
+    if (string.IsNullOrWhiteSpace(connection)) return Results.Json(new { message = "Set ATLAS_SQL_CONNECTION_STRING to the same local database used by Atlas.Api, in shared user secrets or the environment." }, statusCode: 503);
     try
     {
-        // Never accept a database name from the browser. All creation/deletion uses this generated name.
-        return await Task.Run<IResult>(() =>
-        {
-            var databaseName = $"AtlasRankingLab_{Guid.NewGuid():N}";
-            var connection = new SqlConnectionStringBuilder(template) { InitialCatalog = databaseName }.ConnectionString;
-            var options = new DbContextOptionsBuilder<AtlasDataContext>().UseSqlServer(connection, sql => sql.CommandTimeout(60)).Options;
-            using var db = new AtlasDataContext(options);
-            try
-            {
-                db.Database.EnsureCreated();
-                AtlasDatabaseSetup.InstallSupplementalSchema(db);
-                return Results.Ok(SearchRankingFixture.Run(() => new AtlasDataContext(options), scenario));
-            }
-            finally
-            {
-                // Cleanup also runs after SQL errors. A cleanup failure reports the generated name for manual cleanup.
-                try { db.Database.EnsureDeleted(); }
-                catch { app.Logger.LogError("Could not remove disposable Ranking Lab database {Database}. Remove it manually.", databaseName); throw; }
-            }
-        });
+        var options = new DbContextOptionsBuilder<AtlasDataContext>().UseSqlServer(connection).Options;
+        var search = new SqlPublicSearch(() => new AtlasDataContext(options));
+        var explained = search.Explain(request.Query, request.Scope);
+        using var db = new AtlasDataContext(options);
+        var ids = explained.Evidence.Select(e => e.Id).ToArray();
+        var documents = db.Database.SqlQueryRaw<SearchDocument>("SELECT ResultId, SearchText FROM dbo.SearchDocuments")
+            .Where(d => ids.Contains(d.ResultId)).ToDictionary(d => d.ResultId, d => d.SearchText);
+        return Results.Ok(new { policy = SqlPublicSearch.RankingPolicyVersion, explained.Page,
+            rows = explained.Evidence.Select((e, i) => new {
+                position = (explained.Page.Page - 1) * explained.Page.PageSize + i + 1,
+                item = explained.Page.Items[i], evidence = e, searchText = documents.GetValueOrDefault(e.Id, "")
+            }) });
     }
+    catch (ArgumentException error) { return Results.BadRequest(new { message = error.Message }); }
     catch (Exception error)
     {
-        // Keep connection strings and submitted content out of browser errors.
-        app.Logger.LogWarning("Ranking Lab failed ({ErrorType}). Check SQL Server, full-text English support and disposable-database permissions.", error.GetType().Name);
-        return Results.Json(new { message = "Could not run the SQL scenario. Check the Ranking Lab terminal, SQL Server full-text support and database creation/deletion permissions." }, statusCode: 503);
+        app.Logger.LogWarning("Local ranking search failed ({ErrorType}).", error.GetType().Name);
+        return Results.Json(new { message = "Could not search the local Atlas database. Check the connection, database setup and full-text search availability." }, statusCode: 503);
     }
-    finally { gate.Release(); }
 });
 app.Run();
+public sealed record SearchRequest(DiscoveryQuery Query, string Scope = "all");
+public sealed class SearchDocument
+{
+    public Guid ResultId { get; set; }
+    public string SearchText { get; set; } = "";
+}

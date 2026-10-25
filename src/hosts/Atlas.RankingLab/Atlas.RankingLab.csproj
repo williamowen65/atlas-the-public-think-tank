@@ -5,7 +5,5 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../Atlas.Persistence/Atlas.Persistence.csproj" />
-    <Compile Include="../../../tests/Shared/SearchRankingFixture.cs" Link="SearchRankingFixture.cs" />
-    <Compile Include="../../../tests/Shared/SqlFullTextSupport.cs" Link="SqlFullTextSupport.cs" />
   </ItemGroup>
 </Project>
