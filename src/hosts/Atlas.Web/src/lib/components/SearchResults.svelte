@@ -9,7 +9,12 @@
   - `onSelect` (`() => void`; optional): Close the containing disclosure after opening a result.
 -->
 <script lang="ts">
-  import { readDiscovery, discoveryCard, type DiscoveryFilters } from '../api/discovery';
+  import {
+    SearchUnavailableError,
+    readDiscovery,
+    discoveryCard,
+    type DiscoveryFilters,
+  } from '../api/discovery';
   import type { NodeCardData } from './node-card-versions/types';
   let {
     search,
@@ -98,8 +103,12 @@
         hasMore = page.hasNextPage;
         nextPage = 2;
       })
-      .catch(() => {
-        if (!current.signal.aborted) error = 'Search results could not be loaded.';
+      .catch((failure: unknown) => {
+        if (!current.signal.aborted)
+          error =
+            failure instanceof SearchUnavailableError
+              ? failure.message
+              : 'Search results could not be loaded.';
       })
       .finally(() => {
         if (!current.signal.aborted) loading = false;
@@ -133,8 +142,12 @@
       total = page.totalCount;
       hasMore = page.hasNextPage;
       nextPage++;
-    } catch {
-      if (!current.signal.aborted) error = 'More results could not be loaded.';
+    } catch (failure: unknown) {
+      if (!current.signal.aborted)
+        error =
+          failure instanceof SearchUnavailableError
+            ? failure.message
+            : 'More results could not be loaded.';
     } finally {
       if (!current.signal.aborted) loading = false;
     }

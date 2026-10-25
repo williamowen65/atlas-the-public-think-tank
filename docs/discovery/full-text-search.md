@@ -1,44 +1,90 @@
 # SQL Server full-text discovery search
 
-## Behavior
+## How text and filters work together
 
-Atlas sends only free text to SQL Server `FREETEXT`. The web parser continues to remove
-`type:issue`, vote/average ranges, author/community IDs and dates, sending them as separate
-API parameters. For example, `salmon habitat type:issue votes:2..` sends `salmon habitat`
-as SearchText and intersects the results with the Issue type and minimum vote count.
-Direct API clients must likewise send plain SearchText and separate filter parameters.
+You can put search words **before, between, or after filters**.
 
-Full-text search matches words in any order and English inflections (for example habitat/habitats).
-It is broad **any-term** matching: a result can match one meaningful word, rather than every
-word in the query. It does not implement edit-distance typo correction, guarantee synonyms
-without a configured thesaurus, or interpret quoted input as an exact-phrase operator.
-Punctuation is word-broken; literal substring/wildcard search is no longer the text contract.
-The existing importance/vote ordering and exact-title substring bonus remain in place;
-this change does not replace feed ordering with full-text relevance ranking.
+```text
+salmon type:issue habitat votes:2.. protection
+```
 
-Indexes cover NodeRows.Title/ShortDescription and a persisted computed BlockRows.SearchText:
-Markdown text, image alt/caption, video caption/URL, link preview title/description/URL,
-and chart titles. Poll/reference IDs remain excluded. DocumentBlocks links restrict block
-matches to the node's current document; removing a block link immediately removes that
-match. Moderation, archive policy, author/community/type filters, count and paging remain
-server-side constraints. User input is a bounded nvarchar parameter, never SQL syntax.
+Atlas separates that input into:
 
-English LCID 1033, accent-insensitive catalog matching, the system stoplist and automatic
-change tracking are explicit. Full-text indexing is asynchronous: newly saved/edited text
-may take a short time to appear, and count/page reads can see indexing progress between
-statements. Text result pages bypass the application page cache so an early empty result
-cannot remain cached after the index catches up. Card-detail caching and non-text browsing
-page caching retain their database revision checks. Live SQL moderation checks still apply
-before results are returned, even while the text index catches up.
+| Part | Value sent to the API |
+| --- | --- |
+| Text search | `salmon habitat protection` |
+| Node type | The ID for `Issue` |
+| Minimum votes | `2` |
+
+- The parser reads the whole input, from left to right.
+- Recognized filters are pulled out and sent as separate API parameters.
+- Remaining words are joined with spaces, preserving their order.
+- SQL Server searches that combined text and applies the filters together.
+- Direct API clients must also send plain `SearchText` and separate filter parameters.
+
+**Which tokens count as filters?**
+
+- Supported keys: `type`, `votes`, `average`, `author`, `community`, `from`, `through`, `archived`.
+- Filter names are case insensitive; node-type names are case insensitive too.
+- Use quotes for a type name containing spaces: `type:"Research Question"`.
+- A recognized filter with an invalid value produces a validation error and blocks submission.
+- An unrecognized token such as `topic:salmon` remains text. A bare token such as `type:` also remains text under the current parser.
+- If the same filter is repeated, the last valid value wins; repeated filters do not create multiple conditions.
+
+## What full-text matching means
+
+- **Word order is flexible:** words do not have to appear as one exact phrase.
+- **English word forms match:** for example, `habitat` can match `habitats`.
+- **Any-term matching:** a result can match one meaningful search word; every word is not required.
+- **Punctuation is word-broken:** this replaces literal substring/wildcard matching.
+
+Current limits:
+
+- No edit-distance typo correction.
+- No guaranteed synonyms without a configured thesaurus.
+- Quoted free text does not request an exact phrase.
+- Result ordering still uses importance/votes and the existing title substring bonus; it does not use full-text relevance ranking.
+
+## What gets searched
+
+| Location | Indexed text |
+| --- | --- |
+| Node | Title and short description |
+| Markdown block | Markdown text |
+| Image block | Alt text and caption |
+| Video block | Caption and URL |
+| Link preview | Title, description and URL |
+| Chart reference | Title |
+
+- Poll/reference IDs are excluded.
+- `DocumentBlocks` links restrict matches to the node's current document. Removing a link removes that block's match immediately.
+- Moderation, archive policy, other filters, counting and paging remain server-side constraints.
+- Text is sent as an SQL parameter, never executable SQL syntax.
+- Search text is limited to **4,000 characters** after trimming surrounding whitespace.
+
+### Index settings and timing
+
+- English language: LCID `1033`.
+- Accent-insensitive catalog matching.
+- SQL Server's system stoplist.
+- Automatic change tracking.
+
+**Indexing happens in the background.** New or edited text may take a short time to appear.
+Count and page reads can also see indexing progress between statements.
+
+- Text-search pages bypass the result-page cache so early empty results do not stay cached.
+- Card details and browsing pages keep their database revision checks.
+- Live moderation checks still apply before results are returned.
 
 ## Local SQL Server prerequisite
 
-Use SQL Server Developer/another edition that supports Full-Text Search. For a Windows
-installation, run SQL Server Setup, choose **Add features to an existing instance**, and
-install **Full-Text and Semantic Extractions for Search** for the actual instance Atlas uses.
-Follow Setup's restart requirements. LocalDB does not provide this feature; use a full SQL
-Server instance or the test container below. No semantic language statistics database is
-needed for FREETEXT.
+1. Use SQL Server Developer or another edition supporting Full-Text Search. LocalDB does not provide this feature.
+2. On Windows, open SQL Server Setup and choose **Add features to an existing instance**.
+3. Select the instance Atlas actually uses.
+4. Install **Full-Text and Semantic Extractions for Search**.
+5. Follow Setup's restart requirements.
+
+You do not need a semantic language statistics database for `FREETEXT`. A container alternative is shown below.
 
 Check the instance in SSMS:
 
@@ -47,14 +93,22 @@ SELECT FULLTEXTSERVICEPROPERTY('IsFullTextInstalled') AS IsFullTextInstalled;
 SELECT name, lcid FROM sys.fulltext_languages WHERE lcid = 1033;
 ```
 
-The first result must be 1, and the second must contain English. Use the same feature in
-any separate test or deployment environment. CI handles installation automatically.
+Expected results:
+
+- `IsFullTextInstalled` is **1**.
+- The language query returns **English**.
+
+Separate test and deployment instances need the same feature. CI installs it automatically.
 
 ## Generate and complete the migration
 
-Run from the solution root on the PR branch. Configure the existing shared
-`ATLAS_SQL_CONNECTION_STRING` first. Do not run the application with this change against
-a database that has not received the migration.
+Before starting:
+
+- Open a terminal at the **solution root**, on the PR branch.
+- Configure the existing shared `ATLAS_SQL_CONNECTION_STRING`.
+- Apply this migration before running the updated application against that database.
+
+### 1. Generate the migration
 
 ```powershell
 dotnet tool restore
@@ -62,9 +116,12 @@ dotnet restore src/Atlas.Persistence/Atlas.Persistence.csproj
 dotnet ef migrations add AddDiscoveryFullTextSearch --project src/Atlas.Persistence
 ```
 
-EF generates the persisted computed SearchText column and updates its model snapshot.
-EF Core 10 does **not** scaffold full-text catalog/index DDL from that mapping. Complete
-the generated migration before applying it:
+### 2. Add the full-text SQL
+
+EF generates the persisted computed `SearchText` column and updates the model snapshot.
+**EF Core 10 does not generate the full-text catalog/index SQL automatically.**
+
+Complete the generated migration before applying it:
 
 1. At the **end of Up**, after the generated AddColumn, add a `migrationBuilder.Sql`
    call containing the literal contents of
@@ -83,15 +140,17 @@ migrationBuilder.Sql("""
     """, suppressTransaction: true);
 ```
 
-Review all generated changes, especially any earlier pending model changes. Keep the
-computed-column expression generated by EF. The setup scripts fail clearly if the feature
-is missing, create the AtlasDiscovery catalog and two indexes, and enable automatic
-population of existing and future data. No manual re-seeding or data reset is required.
-Because DDL is nontransactional, a failure can leave a partial setup; the create script
-checks existing objects to support recovery. Review the failed migration/database state
-before retrying; do not blindly remove history entries or recreate a database.
+Review checklist:
 
-Then run:
+- Review all generated changes, including any earlier pending model changes.
+- Keep the computed-column expression generated by EF.
+- The scripts create the `AtlasDiscovery` catalog and two indexes, then automatically index existing and future data.
+- Missing full-text support produces an explicit setup error.
+- No re-seeding or data reset is required.
+
+**If migration setup fails:** nontransactional SQL can leave partial changes. The create script checks existing objects to support recovery. Inspect the failed migration and database state before retrying; do not blindly remove history entries or recreate a database.
+
+### 3. Verify, apply and test
 
 ```powershell
 dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence
@@ -101,24 +160,35 @@ dotnet test tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj --filte
 dotnet test tests/Atlas.Api.Tests/Atlas.Api.Tests.csproj --filter FullyQualifiedName~SqlWorkflowTests
 ```
 
-SQL tests use `ATLAS_SQL_TEST_CONNECTION_STRING` (shared user secrets or environment) and
-create disposable databases. It must point to a full-text-capable instance; the account
-must be able to create/drop test databases and their full-text indexes. Do not use a
-production connection for tests.
+Test connection requirements:
 
-**Commit and push the generated migration, designer and snapshot changes. Migration-based
-tests and the CI pending-model check cannot pass until these files are included.** A passing
-pending-model check alone cannot detect omitted raw full-text DDL; the SQL tests verify
-that both full-text indexes exist and actually execute full-text queries.
+- Set `ATLAS_SQL_TEST_CONNECTION_STRING` in shared user secrets or the environment.
+- Point it to a full-text-capable test instance, not production.
+- The test account needs permission to create/drop disposable databases and their full-text indexes.
+
+### 4. Commit the generated files
+
+Commit and push:
+
+- The migration.
+- Its designer file.
+- The updated model snapshot.
+
+**Migration-based tests and the CI pending-model check require these files.** The model check alone cannot detect missing raw full-text SQL; SQL tests also check that both indexes exist and execute real full-text queries.
 
 ## CI and reproducible test instance
 
-All SQL jobs in `.github/workflows/AtlasRewriteTests.yml` build the image in
-`tests/infrastructure/sqlserver/Dockerfile`. It extends Microsoft's SQL Server 2022 image,
-installs the matching-version `mssql-server-fts` package and returns to the `mssql` user.
-BuildKit caches the image layers. SQL readiness requires successful sqlcmd execution,
-IsFullTextInstalled = 1 and English resources; missing support fails the job before tests.
-Container logs are retained in failure output, and the container is removed after the job.
+### CI setup
+
+All SQL jobs in `.github/workflows/AtlasRewriteTests.yml` use `tests/infrastructure/sqlserver/Dockerfile`.
+
+- The image extends Microsoft's SQL Server 2022 image and installs matching engine/full-text packages.
+- SQL Server runs as the `mssql` user; BuildKit caches the image layers.
+- Before tests start, CI requires a working SQL connection, `IsFullTextInstalled = 1`, and English resources.
+- Missing support fails the job before tests run.
+- Failure output includes container logs; the container is removed afterward.
+
+### Optional local test container
 
 For a local disposable container with the same feature set (choose your own password):
 
@@ -127,19 +197,42 @@ docker build -t atlas-sql-fts tests/infrastructure/sqlserver
 docker run -d --name atlas-sql-fts -p 1433:1433 -e ACCEPT_EULA=Y -e MSSQL_PID=Developer -e 'MSSQL_SA_PASSWORD=Your_Strong_Test_Password1!' atlas-sql-fts
 ```
 
-Point the test connection at this instance. If 1433 is already used, map a different host
-port and put that port in the connection string. The image intentionally tracks the
-repository's existing 2022-latest policy; package installation fails rather than silently
-mixing engine and full-text versions.
+- Point the test connection at this instance.
+- If port `1433` is already used, map another host port and use it in the connection string.
+- The image follows the repository's existing `2022-latest` policy and installs matching engine/full-text versions.
 
-Fresh-model tests use EnsureCreated, then explicitly install the same full-text SQL that
-the migration requires. Migration-based tests use Migrate, without adding missing indexes
-behind the migration's back. Discovery fixtures poll population status/pending changes
-with a 45-second deadline before querying; application requests do not wait. This avoids
-assuming an insert is immediately searchable and fails if indexing is stuck. Tests cover
-reordered words, inflections, any-term matching, block edits, readable-type filter parsing,
-moderation/archives, combined filters and uncached text result pages. Existing punctuation
-expectations have been updated from substring to token matching.
+### How SQL tests handle indexing
+
+- **Fresh-model tests:** use `EnsureCreated`, then install the same full-text SQL required by the migration.
+- **Migration tests:** use `Migrate`; they do not silently add missing indexes.
+- **Discovery fixtures:** wait for indexing with a 45-second deadline, failing if it is stuck.
+- **Application requests:** do not wait for indexing.
+
+Coverage includes reordered words, inflections, any-term matching, block edits, type parsing, moderation/archives, combined filters and uncached text pages. Punctuation expectations use token matching rather than substring matching.
+
+## Unavailable or disabled full-text search
+
+When a text-search dependency fails:
+
+1. The backend creates `SearchUnavailableException` and logs the original SQL error.
+2. The API returns **HTTP 503**, with code `search_unavailable`.
+3. The dropdown shows the following message and offers **Retry**:
+
+> Text search is temporarily unavailable. Please try again later.
+
+- SQL diagnostics are not sent to visitors.
+- A failure does not appear as "No results found."
+- Paging failures keep already loaded results.
+- Filters without free text do not invoke the full-text engine.
+
+If search is unavailable locally, check:
+
+- **Feature installed:** Full-Text Search is installed for the correct SQL Server instance.
+- **Service running:** that instance's **SQL Full-text Filter Daemon Launcher** service is running.
+- **Indexes ready:** the migration created the indexes and they are enabled in Atlas's database.
+- **Database reachable:** a connection/database failure can also cause this error.
+
+The application reports failure when a search is attempted; it does not continuously monitor the service.
 
 ## Sources
 

@@ -1,3 +1,4 @@
+using Atlas.Discovery;
 using Atlas.Contracts.Identity;
 using Atlas.Contracts.Observability;
 using Atlas.Identity;
@@ -34,11 +35,13 @@ public sealed class OperationContextMiddleware(RequestDelegate next)
 }
 
 /// <summary>Translate known rejection categories without returning SQL, stack traces or submitted content.</summary>
-public sealed class ApiErrors(IProblemDetailsService problems) : IExceptionHandler
+public sealed class ApiErrors(IProblemDetailsService problems, ILogger<ApiErrors> logger) : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(HttpContext context, Exception error, CancellationToken cancellationToken)
     {
         if (error is OperationCanceledException && context.RequestAborted.IsCancellationRequested) return false;
+        if (error is SearchUnavailableException)
+            logger.LogError(error, "Atlas text search is unavailable. Check SQL Server connectivity, full-text services and indexes.");
         // Only these known quota exceptions may contribute their user-facing message.
         var retry = error switch
         {
@@ -54,6 +57,7 @@ public sealed class ApiErrors(IProblemDetailsService problems) : IExceptionHandl
         var status = error switch
         {
             BadHttpRequestException { StatusCode: StatusCodes.Status413PayloadTooLarge } => 413,
+            SearchUnavailableException => 503,
             UnauthorizedAccessException => 403,
             KeyNotFoundException => 404,
             ArgumentException => 400,
@@ -67,10 +71,11 @@ public sealed class ApiErrors(IProblemDetailsService problems) : IExceptionHandl
         return await problems.TryWriteAsync(new ProblemDetailsContext
         {
             HttpContext = context,
-            ProblemDetails = new ProblemDetails { Status = status, Extensions = { ["code"] = quota ? "quota_exceeded" : "request_failed", ["quotaType"] = nodeQuota is null ? null : "node_creation", ["limit"] = allowance?.Limit, ["windowSeconds"] = allowance?.Window.TotalSeconds, ["remaining"] = allowance?.Remaining, ["nextSlotAt"] = allowance?.NextSlotAt?.ToString("O") }, Title = status switch
+            ProblemDetails = new ProblemDetails { Status = status, Extensions = { ["code"] = error is SearchUnavailableException ? "search_unavailable" : quota ? "quota_exceeded" : "request_failed", ["quotaType"] = nodeQuota is null ? null : "node_creation", ["limit"] = allowance?.Limit, ["windowSeconds"] = allowance?.Window.TotalSeconds, ["remaining"] = allowance?.Remaining, ["nextSlotAt"] = allowance?.NextSlotAt?.ToString("O") }, Title = status switch
             {
                 400 => "Invalid request.", 403 => "This operation is not permitted.", 404 => "Resource not found.",
                 413 => "Request body too large.",
+                503 => "Text search is temporarily unavailable. Please try again later.",
                 429 => error.Message,
                 409 => "The operation conflicts with the current state.", _ => "An unexpected error occurred."
             }}

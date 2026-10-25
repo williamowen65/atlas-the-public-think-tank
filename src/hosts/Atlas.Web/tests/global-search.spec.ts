@@ -153,3 +153,35 @@ test('header searches leave the browsing feed intact and clear removes the dropd
   await page.getByRole('button', { name: 'Clear search and filters', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Search results', exact: true })).toHaveCount(0);
 });
+
+test('unavailable full-text search shows a clear error and allows retry', async ({ page }) => {
+  await mock(page);
+  let unavailable = true;
+  await page.route('**/atlas-public-api/nodes?**', (route) => {
+    const url = new URL(route.request().url());
+    if (unavailable && url.searchParams.has('SearchText'))
+      return route.fulfill({
+        status: 503,
+        json: {
+          status: 503,
+          code: 'search_unavailable',
+          title: 'Private backend diagnostic must not be shown',
+        },
+      });
+    return route.fallback();
+  });
+  await page.goto('http://127.0.0.1:4173');
+  await page.getByRole('button', { name: 'Toggle search', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Search nodes and filters' }).fill('salmon');
+  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(page.getByRole('alert')).toHaveText(
+    'Text search is temporarily unavailable. Please try again later.',
+  );
+  await expect(page.getByText('No results found.', { exact: true })).toHaveCount(0);
+  unavailable = false;
+  await page.getByRole('button', { name: 'Retry', exact: true }).click();
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(
+    page.getByRole('region', { name: 'Search results', exact: true }).getByRole('link').first(),
+  ).toBeVisible();
+});
