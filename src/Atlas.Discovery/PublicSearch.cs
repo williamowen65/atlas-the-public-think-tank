@@ -12,5 +12,5 @@ public sealed record PublicSearchPage(IReadOnlyList<PublicSearchItem> Items, int
     public bool HasNextPage => (long)Page * PageSize < TotalCount;
 }
 public sealed record PublicSearchItem(Guid NodeId, int VoteCount, double? AverageVote, DiscoveryCard? Card, CommentSearchHit? Comment);
-public sealed record CommentSearchHit(Guid Id, string NodeTitle, Guid AuthorId, string AuthorName, DateTimeOffset CreatedAt, string Excerpt);
+public sealed record CommentSearchHit(Guid Id, string NodeTitle, Guid AuthorId, string AuthorName, DateTimeOffset CreatedAt, string Excerpt, int Score = 0);
 public sealed record CommentPathItem(Guid Id, string TargetKind, Guid TargetId, Guid? ParentCommentId, Guid AuthorId, string Body, DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt, bool IsRemoved);

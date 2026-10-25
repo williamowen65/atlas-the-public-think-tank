@@ -58,6 +58,10 @@ public abstract class SqlRepository(Func<AtlasDataContext>? contextFactory = nul
             "Participant" => db.ParticipantRows.Any(row => row.Id == id && (!requireActive || row.IsActive)),
             "Node" => db.NodeRows.Any(row => row.Id == id && (!requireActive || row.Status == "Active")) &&
                 (!requireActive || !db.ModerationCaseRows.Any(row => row.NodeId == id && row.Status == (int)Atlas.Moderation.ModerationStatus.Actioned && row.VisibilityRestoredAt == null)),
+            "Comment" => db.CommentRows.Any(row => row.Id == id && (!requireActive ||
+                row.Status == "Active" && row.RemovedAt == null && row.TargetKind == "Node" &&
+                db.NodeRows.Any(node => node.Id == row.TargetId && node.Status == "Active") &&
+                !db.ModerationCaseRows.Any(report => report.NodeId == row.TargetId && report.Status == (int)Atlas.Moderation.ModerationStatus.Actioned && report.VisibilityRestoredAt == null))),
             "Document" => db.DocumentRows.Any(row => row.Id == id),
             "Block" => db.BlockRows.Any(row => row.Id == id),
             "NodeType" => db.NodeTypeRows.Any(row => row.Id == id && (!requireActive || !row.IsArchived)),

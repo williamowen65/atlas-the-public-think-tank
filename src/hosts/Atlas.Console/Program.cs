@@ -149,7 +149,8 @@ var votingEligibility =
     new RepositoryVotingEligibility(
         nodeRepository,
         participantRepository,
-        nodeTagRepository
+        nodeTagRepository,
+        commentRepository
     );
 
 var voteMutationPolicy =

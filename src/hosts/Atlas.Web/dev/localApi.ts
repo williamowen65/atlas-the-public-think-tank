@@ -84,11 +84,13 @@ export const sessionApiGuard: Plugin = {
       const method = request.method ?? 'GET';
       const readable = ['/atlas-session-api/communities/mine', '/atlas-session-api/communities/creation-allowance'].includes(path)
         || new RegExp(`^/atlas-session-api/nodes/${guid}/(?:votes|reactions)$`, 'i').test(path)
+        || new RegExp(`^/atlas-session-api/comments/${guid}/votes$`, 'i').test(path)
         || /^\/atlas-session-api\/auth\/(csrf|session)$/.test(path)
         || new RegExp(`^/atlas-session-api/participants/${guid}$`, 'i').test(path);
 
       // Permitted writes, grouped by feature. Login/register can be anonymous.
       const profileEdit = method === 'PUT' && path === '/atlas-session-api/participants/me';
+      const commentVote = ['PUT', 'DELETE'].includes(method) && new RegExp(`^/atlas-session-api/comments/${guid}/vote$`, 'i').test(path);
       const nodeVote = ['PUT', 'DELETE'].includes(method) && new RegExp(`^/atlas-session-api/nodes/${guid}/vote$`, 'i').test(path);
       const reactionVote = method === 'PUT' && new RegExp(`^/atlas-session-api/nodes/${guid}/reactions/vote$`, 'i').test(path);
       const undoReaction = method === 'DELETE' && new RegExp(`^/atlas-session-api/reactions/${guid}/vote$`, 'i').test(path);
@@ -97,7 +99,7 @@ export const sessionApiGuard: Plugin = {
         || (method === 'DELETE' && new RegExp(`^/atlas-session-api/communities/${guid}/(?:membership|nodes/${guid})$`, 'i').test(path));
 
       // Combine feature writes with creation, authentication and comment operations.
-      const writable = communityWrite || profileEdit || nodeVote || reactionVote || undoReaction
+      const writable = communityWrite || profileEdit || commentVote || nodeVote || reactionVote || undoReaction
         || method === 'POST' && (['/atlas-session-api/nodes', '/atlas-session-api/catalog/node-types', '/atlas-session-api/auth/register'].includes(path) || /^\/atlas-session-api\/auth\/(login|logout)$/.test(path)
         || new RegExp(`^/atlas-session-api/nodes/${guid}/comments$`, 'i').test(path)
         || new RegExp(`^/atlas-session-api/comments/${guid}/replies$`, 'i').test(path))

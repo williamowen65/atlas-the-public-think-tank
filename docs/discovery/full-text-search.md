@@ -43,7 +43,7 @@ Current limits:
 - No edit-distance typo correction.
 - No guaranteed synonyms without a configured thesaurus.
 - Quoted free text does not request an exact phrase.
-- Global search orders the combined node/comment hits by SQL Server full-text relevance, then result kind, date and ID for deterministic ties. Node importance is shown as metadata, not used to order the mixed search. The browsing feed keeps its existing importance-based ordering.
+- Global search orders the combined node/comment hits by SQL Server full-text relevance adjusted by bounded comment support (see comment-support-v1 below), then result kind, date and ID for deterministic ties. Node importance is shown as metadata, not used to order the mixed search. The browsing feed keeps its existing importance-based ordering.
 - Global search uses **one full-text index on `SearchDocuments.SearchText`** for both nodes and comments. Scores therefore come from the same corpus instead of comparing unrelated per-table ranks.
 - One node document combines its title, short description and all currently linked block text. One comment document contains its body. A match across multiple node fields contributes to that single document.
 - Results may cluster by type when their text earns similar scores. There is no alternating quota or automatic preference for comments; identical documents earn identical scores, with nodes first only when scores tie.
@@ -316,3 +316,17 @@ dotnet run --project src/hosts/Atlas.Console -- --setup-database
 - Combined counting and pagination must retain every distinct node/comment result.
 - Tests cover projection backfill, repeated setup, and subsequent node, block, link, comment and raw SQL edits.
 - SQL fixtures wait for all four indexes before asserting search results. No browser/UI change is required for the new ordering.
+
+
+## Comment support votes
+
+Comments support one current +1 or -1 vote per participant, including on the participant's own comment. Repeating PUT changes the existing vote; DELETE removes it. Comment votes use `VoteRows` with `TargetType = "Comment"`, the existing unique participant/target index, participant lock, eligibility checks and shared action quota. No EF model change, migration, index rebuild or database setup is required for this addition.
+
+- `GET /api/comments/{id}/votes` returns `score` (upvotes minus downvotes), `totalVotes`, and `currentParticipantVote` (null, +1 or -1). Anonymous reads omit personal state. Removed comments and hidden/missing targets return 404.
+- `PUT /api/comments/{id}/vote` accepts `{ "value": 1 }` or `{ "value": -1 }`; `DELETE` on the same path undoes the current vote. Both require a verified member and antiforgery protection. Removed comments and archived/hidden/unavailable nodes cannot receive cast/change/undo actions.
+- Discussion controls follow View replies and Reply. Selecting the current direction undoes it; selecting the other changes it. Totals always come from the server. Failed/uncertain writes require refreshing totals before another attempt. Signed-out visitors see a dismissible sign-in prompt; removed placeholders have no voting controls.
+- Search displays the net score in the same left column as node importance. Votes are read directly from current SQL rows, so changes affect search without waiting for full-text indexing.
+
+Ranking policy (comment-support-v1): let `r` be the shared full-text relevance and `s` the comment net score. Final relevance is `r * (1 + 0.25 * s / (10 + abs(s)))`. Nodes use `s = 0`. A comment score of +10 boosts its relevance by 12.5%; -10 reduces it by 12.5%. The adjustment stays below 25% in either direction, preserving relevance as the primary signal. Identical text retains identical raw full-text ranks; vote support can change the final order. Zero-vote ties keep the existing kind/date/ID order. Comment-only browsing without text uses a base relevance of 1 and therefore sorts by net support, then the same deterministic ties. Node-only browsing/importance filters retain their existing behavior.
+
+SQL tests cover a positive comment above an equally relevant node, a negative comment below it, authoritative score projection, and reverting to neutral ordering after undo. Additional tests cover vote persistence/change/undo and removed/archived target rejection. Run the Voting tests, DiscoveryMixedSearchTests, SqlThinHostWorkflowTests, API SqlWorkflowTests, and frontend comments/global-search browser suites.

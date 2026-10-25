@@ -140,3 +140,45 @@ test('feed comment control opens and positions the Comments tab', async ({ page 
   })).toBe(true);
   await expect(page.getByRole('tabpanel')).toHaveCSS('min-height', '0px');
 });
+
+
+test('comment votes change, undo, retain server totals and recover from failed writes', async ({ page }) => {
+  await setup(page);
+  let current: number | null = null;
+  let fail = false;
+  const writes: string[] = [];
+  await page.route(`**/atlas-session-api/comments/${first}/vo*`, async route => {
+    const req = route.request();
+    if (req.method() === 'GET') return route.fulfill({ json: { score: 20 + (current ?? 0), totalVotes: 30, currentParticipantVote: current } });
+    expect(req.headers()['x-csrf-token']).toBe('fixture-csrf');
+    writes.push(req.method());
+    if (fail) return route.fulfill({ status: 503, json: {} });
+    current = req.method() === 'DELETE' ? null : req.postDataJSON().value;
+    return route.fulfill({ status: 204 });
+  });
+  await page.goto(story);
+  const voting = page.locator(`article[data-comment-id="${first}"]`).getByRole('group', { name: 'Comment voting', exact: true });
+  await expect(voting.getByLabel('Comment score', { exact: true })).toHaveText('20');
+  await voting.getByRole('button', { name: 'Upvote comment' }).click();
+  await expect(voting.getByText('to vote on comments.', { exact: false })).toBeVisible();
+  expect(writes).toHaveLength(0);
+  await login(page);
+  const up = voting.getByRole('button', { name: 'Upvote comment' });
+  const down = voting.getByRole('button', { name: 'Downvote comment' });
+  await up.click();
+  await expect(up).toHaveAttribute('aria-pressed', 'true');
+  await expect(voting.getByLabel('Comment score', { exact: true })).toHaveText('21');
+  await down.click();
+  await expect(down).toHaveAttribute('aria-pressed', 'true');
+  await expect(voting.getByLabel('Comment score', { exact: true })).toHaveText('19');
+  await down.click();
+  await expect(down).toHaveAttribute('aria-pressed', 'false');
+  await expect(voting.getByLabel('Comment score', { exact: true })).toHaveText('20');
+  expect(writes).toEqual(['PUT', 'PUT', 'DELETE']);
+  fail = true;
+  await up.click();
+  await expect(voting.getByRole('alert')).toContainText('Could not confirm vote');
+  await voting.getByRole('button', { name: 'Refresh votes' }).click();
+  await expect(voting.getByLabel('Comment score', { exact: true })).toHaveText('20');
+  await expect(up).toHaveAttribute('aria-pressed', 'false');
+});

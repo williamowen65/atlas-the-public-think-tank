@@ -27,6 +27,8 @@ public sealed class HttpAbuseTests
     [DataRow("POST", "/api/communities")]
     [DataRow("PUT", "/api/participants/me")]
     [DataRow("PUT", "/api/nodes/11111111-1111-4111-8111-111111111111/vote")]
+    [DataRow("PUT", "/api/comments/11111111-1111-4111-8111-111111111111/vote")]
+    [DataRow("DELETE", "/api/comments/11111111-1111-4111-8111-111111111111/vote")]
     [DataRow("POST", "/api/nodes/11111111-1111-4111-8111-111111111111/comments")]
     [DataRow("GET", "/api/moderation/queue")]
     [DataRow("POST", "/api/auth/delete-account")]

@@ -207,6 +207,7 @@ test('mixed pages retain comment identity and open an off-page nested thread', a
       authorName: 'Comment writer',
       createdAt: at,
       excerpt: 'The matching salmon passage.',
+      score: -3,
     },
   };
   await page.route('**/atlas-public-api/**', (route) => {
@@ -266,6 +267,9 @@ test('mixed pages retain comment identity and open an off-page nested thread', a
   await expect(results.getByText('Comment writer', { exact: false })).toBeVisible();
   await expect(results.getByText('The matching salmon passage.')).toBeVisible();
   await expect.poll(async () => (await results.locator('.comment-result').boundingBox())?.width ?? 0).toBeGreaterThan(200);
+  await expect(results.getByLabel('Comment score: -3', { exact: true })).toBeVisible();
+  const columns = await results.locator('.result-content').evaluateAll(elements => elements.map(element => element.getBoundingClientRect().left));
+  expect(Math.abs(columns[0] - columns[1])).toBeLessThanOrEqual(1);
   await results.evaluate((el) => {
     el.scrollTop = el.scrollHeight;
   });

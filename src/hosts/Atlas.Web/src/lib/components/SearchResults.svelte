@@ -39,6 +39,7 @@
       authorName: string;
       createdAt: string;
       excerpt: string;
+      score: number;
     } | null;
     average: number | null;
     /** Number of ratings included in the backend aggregate. */
@@ -198,6 +199,9 @@
     {#each items as node (node.id)}
       <li>
         {#if node.comment}
+          <div class="importance" aria-label={`Comment score: ${node.comment.score ?? 0}`}>
+            <strong>{node.comment.score ?? 0}</strong><span>score</span>
+          </div>
           <div class="result-content comment-result">
             <a
               class="result-title"
@@ -306,9 +310,6 @@
     gap: 0.7rem;
     padding: 0.7rem 0;
     border-top: 1px solid var(--atlas-border);
-  }
-  .comment-result {
-    grid-column: 1 / -1;
   }
   .importance {
     align-self: center;

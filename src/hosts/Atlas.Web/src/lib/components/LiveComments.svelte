@@ -25,6 +25,7 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import LiveComments from './LiveComments.svelte';
+  import CommentVoting from './CommentVoting.svelte';
   import { readJson, type Comment, type CommentPage } from '../api/nodePage';
   import { apiRequest } from '../api/apiRequest';
   let {
@@ -426,6 +427,11 @@
                   if (!open.includes(comment.id)) open = [...open, comment.id];
                 }}>Reply</button
               >{/if}
+            {#if comment.body !== null}<CommentVoting
+                commentId={comment.id}
+                {participantId}
+                {sessionBase}
+              />{/if}
             {#if participantId === comment.authorId && comment.body !== null}<button
                 class="text-button"
                 disabled={saving}

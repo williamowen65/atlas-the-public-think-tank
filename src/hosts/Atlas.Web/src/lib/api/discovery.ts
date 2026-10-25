@@ -130,7 +130,7 @@ interface DiscoveryCard {
 /** One discovery result with aggregate voting data and an optional card. */
 interface DiscoveryItem {
   /** Present only for a comment hit in global search. */
-  comment?: { id: string; nodeTitle: string; authorId: string; authorName: string; createdAt: string; excerpt: string } | null;
+  comment?: { id: string; nodeTitle: string; authorId: string; authorName: string; createdAt: string; excerpt: string; score: number } | null;
   /** Stable node ID used for navigation and detail requests. */
   nodeId: string;
 

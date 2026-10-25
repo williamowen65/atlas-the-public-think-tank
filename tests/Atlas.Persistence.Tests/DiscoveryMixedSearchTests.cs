@@ -19,6 +19,8 @@ public sealed class DiscoveryMixedSearchTests
         Assert.IsFalse(sql.Contains("FREETEXTTABLE(dbo.CommentRows", StringComparison.Ordinal));
         Assert.IsFalse(sql.Contains("FREETEXTTABLE(dbo.NodeRows", StringComparison.Ordinal));
         StringAssert.Contains(sql, "UNION ALL");
+        StringAssert.Contains(sql, "ABS(");
+        StringAssert.Contains(sql, "VoteRows");
         StringAssert.Contains(sql, "CommentRows");
         var withoutText = (IQueryable)build.Invoke(null, [db, new DiscoveryQuery(), "comments"])!;
         Assert.IsFalse(withoutText.ToQueryString().Contains("FREETEXTTABLE", StringComparison.Ordinal));
@@ -101,6 +103,38 @@ public sealed class DiscoveryMixedSearchTests
         Assert.AreEqual(node.NodeId, first.Items[0].NodeId);
         Assert.IsNull(first.Items[0].Comment, "The deterministic node tie-break must apply only after relevance.");
         Assert.AreEqual(5, first.Items.Concat(second.Items).Select(i => i.Comment?.Id ?? i.NodeId).Distinct().Count());
+    }
+
+    [TestMethod]
+    public void CommentVotesAdjustSharedRelevanceAndTotalsWithoutChangingTheSearchIndex()
+    {
+        using var fixture = SqlTestDatabase.Create(useCurrentModel: true);
+        var at = DateTimeOffset.UtcNow;
+        var node = new DiscoveryCandidate(Guid.NewGuid(), "Silver Otter Meadow", "", Guid.NewGuid(), Guid.NewGuid(), false, at, at, 0, null, [], []);
+        DiscoverySqlFixture.Seed(fixture, node);
+        var up = Guid.NewGuid(); var down = Guid.NewGuid();
+        using (var db = fixture.Open())
+        {
+            var text = db.Database.SqlQuery<string>($"SELECT SearchText AS [Value] FROM dbo.SearchDocuments WHERE ResultId = {node.NodeId} AND Kind = 0").Single();
+            db.CommentRows.Add(Comment(up, node.NodeId, node.AuthorParticipantId, at, text));
+            db.CommentRows.Add(Comment(down, node.NodeId, node.AuthorParticipantId, at, text));
+            db.VoteRows.Add(new VoteRow { Id = Guid.NewGuid(), ParticipantId = node.AuthorParticipantId, TargetType = "Comment", TargetId = up, Value = 1, CreatedAt = at, UpdatedAt = at });
+            db.VoteRows.Add(new VoteRow { Id = Guid.NewGuid(), ParticipantId = node.AuthorParticipantId, TargetType = "Comment", TargetId = down, Value = -1, CreatedAt = at, UpdatedAt = at });
+            db.SaveChanges();
+        }
+        using var ready = fixture.OpenForDiscovery();
+        var search = new SqlPublicSearch(fixture.Open);
+        var page = search.Search(new(SearchText: "Silver Otter Meadow"));
+        Assert.AreEqual(3, page.TotalCount);
+        Assert.AreEqual(up, page.Items[0].Comment!.Id);
+        Assert.IsNull(page.Items[1].Comment);
+        Assert.AreEqual(down, page.Items[2].Comment!.Id);
+        Assert.AreEqual(1, page.Items[0].Comment!.Score);
+        Assert.AreEqual(-1, page.Items[2].Comment!.Score);
+        var comments = search.Search(new(), "comments");
+        Assert.AreEqual(up, comments.Items[0].Comment!.Id);
+        using (var db = fixture.Open()) { db.VoteRows.RemoveRange(db.VoteRows.Where(v => v.TargetType == "Comment")); db.SaveChanges(); }
+        Assert.IsNull(search.Search(new(SearchText: "Silver Otter Meadow")).Items[0].Comment);
     }
 
     [TestMethod]
