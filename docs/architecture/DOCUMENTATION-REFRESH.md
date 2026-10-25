@@ -14,7 +14,7 @@ This pass is based on `main` after PR #360. Search phrase/strictness changes in 
 
 | Area | Correction |
 |---|---|
-| Wiring and visual guide | Replaced the console-only composition class view with flowcharts. Added the implemented API and browser/Storybook presentation. Kept the detailed event class view and transaction sequences where their methods/relationships are useful. |
+| Wiring and visual guide | Replaced the console-only composition class view with flowcharts. Added the implemented API and browser/Storybook presentation. Expanded Atlas.Application into workflows, eventing and storage, grouped the individual domain projects, and distinguished implementation ownership from host startup registration. Kept the detailed event class view and transaction sequences where their methods/relationships are useful. |
 | Architecture/workflow indexes | Removed API/web-as-future-topology claims; linked the current ownership guide. |
 | Discovery reads and walkthrough | Corrected serializable-read-lock descriptions to snapshots; documented actual API cache registration, full-text matching and the separate mixed-search path. Retained serializable **write** coordination where still correct. |
 | Workbench guide | Replaced incremental prototype instructions that described live sessions, creation, comments and durable votes as future work. Linked owning guides instead of duplicating their behavior. |

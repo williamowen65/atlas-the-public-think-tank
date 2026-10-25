@@ -19,7 +19,7 @@ flowchart TD
         ARoot["Program and ApiServices: startup composition"] --> HTTP["Middleware, controllers and JSON mapping"]
     end
     UI -->|HTTP requests| HTTP
-    Commands --> Backend["Application workflows and domain services"]
+    Commands --> Backend["Atlas.Application: workflows and adapters"]
     HTTP --> Backend
 ```
 
@@ -27,23 +27,71 @@ The arrows show composition or request flow, as labeled; they are not a complete
 
 Storybook owns stories, preview configuration and navigation adapters. Production components, styles and API clients live under `Atlas.Web/src`; they are reused by routes and stories. Isolated examples and browser tests can simulate responses, while live compositions use the real API. Passing an isolated story does not establish live backend correctness.
 
-## Startup chooses implementations and lifetimes
+## Atlas.Application connects domains, events and storage
 
 ```mermaid
 flowchart TD
-    Roots["Console Program or API ApiServices"] --> Workflows["Application workflows"]
-    Roots --> Adapters["Application.Storage SQL adapters"]
-    Roots --> Identity["Atlas.Identity infrastructure"]
-    Workflows --> Domains["Domain services and rules"]
-    Workflows --> Ports["Domain-owned repository ports"]
-    Domains --> Ports
-    Adapters -. implements .-> Ports
-    Adapters --> EF["Atlas.Persistence: EF model and context"]
-    Identity --> EF
-    EF --> Database["SQL Server"]
+    Console["Atlas.Console: terminal presentation"] --> Workflows
+    Web["Atlas.Web: SvelteKit and Storybook"] -->|HTTP| API["Atlas.Api: HTTP and JSON"]
+    API --> Workflows
+
+    subgraph Application["Atlas.Application"]
+        Workflows["Node, description, comment, reaction and moderation workflows"]
+        EventBus["Eventing: InMemoryEventPublisher"]
+        Observer["Content: ObserveNodeLifecycleInContent"]
+        Storage["Storage: SQL repositories and operation boundaries"]
+        Workflows -->|publish after saving| EventBus
+        EventBus -->|node lifecycle events| Observer
+        Workflows -->|repository ports| Storage
+        Observer -->|document repository port| Storage
+    end
+
+    subgraph Domains["Domain projects: rules, services and repository ports"]
+        subgraph Authoring["Authoring and participation"]
+            Graph["Atlas.Graph"]
+            Content["Atlas.Content"]
+            Comments["Atlas.Comments"]
+            Participants["Atlas.Participants"]
+        end
+        subgraph Decisions["Communities and decisions"]
+            Communities["Atlas.Communities"]
+            Voting["Atlas.Voting"]
+            Moderation["Atlas.Moderation"]
+        end
+        subgraph ReadDelivery["Discovery and delivery"]
+            Discovery["Atlas.Discovery"]
+            Notifications["Atlas.Notifications"]
+        end
+    end
+    Workflows -->|use rules and services| Authoring
+    Workflows -->|coordinate use cases| Decisions
+    Workflows -->|use services| ReadDelivery
+    EventBus -->|NotificationRequestedV1| Notifications
+    Storage -. implements repository ports .-> Domains
+
+    Storage --> Persistence["Atlas.Persistence: EF model, contexts and discovery SQL"]
+    Discovery -->|read query port implemented by| Persistence
+    Identity["Atlas.Identity: accounts and sessions"] --> Persistence
+    Persistence --> SQL["SQL Server"]
 ```
 
-The grouped boxes are roles, not classes. Ports include `INodeRepository`, `IDocumentRepository` and `IVoteRepository`. `Atlas.Application` contains cross-domain workflows **and concrete SQL/observability adapters**; it therefore references Persistence and Identity. It is host-independent, not a persistence-independent assembly. Domain rules consume ports rather than EF types. Some single-domain operations can be called directly by a host without a pass-through application wrapper.
+The `Atlas.Application` boundary represents the actual project. The domain groups organize the individual projects for readability; they are not additional assemblies. Arrows show selected runtime collaborations, not every project reference or a requirement that every request visit every domain. Hosts can also call single-domain services directly. The workflow-to-storage arrows pass through domain-owned interfaces such as `INodeRepository`, `IDocumentRepository` and `IVoteRepository`; domain rules do not depend on concrete SQL adapters. Discovery's read-query implementation lives in Persistence rather than Application.Storage.
+
+Application owns the workflow implementations, in-memory event publisher, Content observer and concrete SQL repository adapters. Persistence owns EF mappings, contexts and discovery SQL. Identity owns account/session integration and uses Persistence. Shared event and boundary types live in `Atlas.Contracts` (omitted from the flow to keep it readable).
+
+## Startup chooses implementations and lifetimes
+
+The hosts are still the **composition roots**. Owning the implementation and wiring it at startup are different responsibilities:
+
+| Owner | Startup or runtime responsibility |
+|---|---|
+| Console Program | Reads configuration, calls `SqlStorage.Configure`, constructs repositories/workflows, and registers event subscribers. Console's storage setup applies migrations. |
+| API ApiServices | Configures `UseSqlServer`, registers a fresh-context factory, repositories/workflows, service lifetimes and event subscribers. API startup does not migrate the database. |
+| Application workflows | Coordinate use cases through domain services and repository ports; publish relevant events after saving. They do not select the connection string or configure SQL Server. |
+| Application.Storage | Opens contexts through the configured factory and coordinates repository operations/transactions. |
+| Application.Eventing | Implements synchronous in-process dispatch; the hosts register Content and Notification handlers. It is not a durable message broker. |
+
+Thus, a thin host does wire infrastructure at startup today. It delegates reusable use cases and persistence behavior to the owning projects. Moving that registration into a shared Application extension would be a code refactor; this diagram describes the existing implementation.
 
 | Responsibility | Current source |
 |---|---|
