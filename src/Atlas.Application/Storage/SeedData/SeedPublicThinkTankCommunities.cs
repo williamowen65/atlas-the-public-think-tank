@@ -1,0 +1,51 @@
+using Atlas.Persistence;
+
+namespace Atlas.Application.Storage;
+
+internal static partial class DemoData
+{
+    private static void SeedPublicThinkTankCommunities(AtlasDataContext database)
+    {
+        var time = new DateTimeOffset(2026, 10, 4, 12, 0, 0, TimeSpan.Zero);
+        var authors = new[] { DemoParticipants.User01Id, DemoParticipants.User02Id, DemoParticipants.User03Id, DemoParticipants.User04Id, DemoParticipants.User05Id };
+        database.CommunityRows.Add(new CommunityRow { Id = Guid.Parse("c5000000-0000-4000-8000-000000000006"), Name = "Learning and Technology", Description = "How technology can support learning, understanding, and human agency.", OwnerParticipantId = authors[4], Status = "Active", CreatedAt = time, UpdatedAt = time });
+        database.CommunityMembershipRows.Add(new CommunityMembershipRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000006"), ParticipantId = authors[4], JoinedAt = time });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000001"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000201"), AssociatedByParticipantId = authors[0], AssociatedAt = time.AddMinutes(1) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000001"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000202"), AssociatedByParticipantId = authors[1], AssociatedAt = time.AddMinutes(2) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000001"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000203"), AssociatedByParticipantId = authors[2], AssociatedAt = time.AddMinutes(3) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000001"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000204"), AssociatedByParticipantId = authors[3], AssociatedAt = time.AddMinutes(4) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000001"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000205"), AssociatedByParticipantId = authors[4], AssociatedAt = time.AddMinutes(5) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000001"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000206"), AssociatedByParticipantId = authors[0], AssociatedAt = time.AddMinutes(6) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000002"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000245"), AssociatedByParticipantId = authors[4], AssociatedAt = time.AddMinutes(45) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000002"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000246"), AssociatedByParticipantId = authors[0], AssociatedAt = time.AddMinutes(46) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000003"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000214"), AssociatedByParticipantId = authors[3], AssociatedAt = time.AddMinutes(14) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000003"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000215"), AssociatedByParticipantId = authors[4], AssociatedAt = time.AddMinutes(15) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000003"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000216"), AssociatedByParticipantId = authors[0], AssociatedAt = time.AddMinutes(16) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000003"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000217"), AssociatedByParticipantId = authors[1], AssociatedAt = time.AddMinutes(17) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000003"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000218"), AssociatedByParticipantId = authors[2], AssociatedAt = time.AddMinutes(18) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000004"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000207"), AssociatedByParticipantId = authors[1], AssociatedAt = time.AddMinutes(7) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000004"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000208"), AssociatedByParticipantId = authors[2], AssociatedAt = time.AddMinutes(8) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000004"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000209"), AssociatedByParticipantId = authors[3], AssociatedAt = time.AddMinutes(9) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000004"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000210"), AssociatedByParticipantId = authors[4], AssociatedAt = time.AddMinutes(10) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000004"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000211"), AssociatedByParticipantId = authors[0], AssociatedAt = time.AddMinutes(11) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000004"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000212"), AssociatedByParticipantId = authors[1], AssociatedAt = time.AddMinutes(12) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000004"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000213"), AssociatedByParticipantId = authors[2], AssociatedAt = time.AddMinutes(13) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000004"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000235"), AssociatedByParticipantId = authors[4], AssociatedAt = time.AddMinutes(35) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000004"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000236"), AssociatedByParticipantId = authors[0], AssociatedAt = time.AddMinutes(36) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000006"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000219"), AssociatedByParticipantId = authors[3], AssociatedAt = time.AddMinutes(19) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000006"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000220"), AssociatedByParticipantId = authors[4], AssociatedAt = time.AddMinutes(20) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000006"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000221"), AssociatedByParticipantId = authors[0], AssociatedAt = time.AddMinutes(21) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000006"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000222"), AssociatedByParticipantId = authors[1], AssociatedAt = time.AddMinutes(22) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000006"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000242"), AssociatedByParticipantId = authors[1], AssociatedAt = time.AddMinutes(42) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000006"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000243"), AssociatedByParticipantId = authors[2], AssociatedAt = time.AddMinutes(43) });
+        database.CommunityNodeRows.Add(new CommunityNodeRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000006"), NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000244"), AssociatedByParticipantId = authors[3], AssociatedAt = time.AddMinutes(44) });
+        database.CommunityMembershipRows.Add(new CommunityMembershipRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000001"), ParticipantId = authors[2], JoinedAt = time.AddDays(3) });
+        database.CommunityMembershipRows.Add(new CommunityMembershipRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000002"), ParticipantId = authors[4], JoinedAt = time.AddDays(5) });
+        database.CommunityMembershipRows.Add(new CommunityMembershipRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000003"), ParticipantId = authors[0], JoinedAt = time.AddDays(1) });
+        database.CommunityMembershipRows.Add(new CommunityMembershipRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000003"), ParticipantId = authors[3], JoinedAt = time.AddDays(4) });
+        database.CommunityMembershipRows.Add(new CommunityMembershipRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000004"), ParticipantId = authors[2], JoinedAt = time.AddDays(3) });
+        database.CommunityMembershipRows.Add(new CommunityMembershipRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000005"), ParticipantId = authors[1], JoinedAt = time.AddDays(2) });
+        database.CommunityMembershipRows.Add(new CommunityMembershipRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000006"), ParticipantId = authors[0], JoinedAt = time.AddDays(1) });
+        database.CommunityMembershipRows.Add(new CommunityMembershipRow { CommunityId = Guid.Parse("c5000000-0000-4000-8000-000000000006"), ParticipantId = authors[3], JoinedAt = time.AddDays(4) });
+    }
+}

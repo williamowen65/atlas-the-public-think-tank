@@ -1,0 +1,453 @@
+<!--
+  @component
+  LiveVotingDial: Connects VotingDial to API summaries, explicit confirmation, undo and sign-in prompts.
+  Wraps the same VotingDial UI; it is not a separate dial implementation.
+  Loads the participant rating and server totals, confirms selections, saves/undoes votes,
+  and prompts for sign-in after an unauthorized write. It never computes community averages.
+  Disables the underlying dial while archived, loading status or saving a vote.
+
+  **Props**
+  - `nodeId` (`string`; required): ID of the node this component reads, displays, or modifies.
+  - `initialAverage` (`number | null`; optional; default `null`): Initial average shown while the
+    live voting summary is loading; the API summary is authoritative.
+  - `initialTotalVotes` (`number`; optional; default `0`): Initial count shown while the live voting
+    summary is loading; refreshed from the API.
+  - `archived` (`boolean`; optional; default `false`): Marks the node as archived and disables
+    applicable voting/editing controls.
+  - `sessionBase` (`string`; optional; default `'/atlas-session-api'`): Base URL for vote-summary
+    reads, CSRF-protected vote/undo writes, and the embedded sign-in control. The API returns the
+    authoritative count and average.
+-->
+<script lang="ts">
+  import { onMount, tick } from 'svelte';
+  import VotingDial from './VotingDial.svelte';
+  import SessionControl from './SessionControl.svelte';
+  import { apiRequest, ApiRequestError } from '../api/apiRequest';
+  interface VoteSummary {
+    voteCount: number;
+    averageVote: number | null;
+    currentParticipantVote: number | null;
+  }
+  let {
+    nodeId,
+    initialAverage = null,
+    initialTotalVotes = 0,
+    archived = false,
+    sessionBase = '/atlas-session-api',
+  }: {
+    /** ID of the node this component reads, displays, or modifies. */
+    nodeId: string;
+    /**
+     * Initial average shown while the live voting summary is loading; the API summary is
+     * authoritative.
+     */
+    initialAverage?: number | null;
+    /** Initial count shown while the live voting summary is loading; refreshed from the API. */
+    initialTotalVotes?: number;
+    /** Marks the node as archived and disables applicable voting/editing controls. */
+    archived?: boolean;
+    /**
+     * Base URL for vote-summary reads, CSRF-protected vote/undo writes, and the embedded sign-in
+     * control. The API returns the authoritative count and average.
+     */
+    sessionBase?: string;
+  } = $props();
+  /**
+   * Last server-confirmed participant rating; null means no confirmed vote.
+   */
+  let confirmed = $state<number | null>(null);
+  /**
+   * Rating displayed by the dial, including a proposed selection awaiting confirmation.
+   */
+  let value = $state<number | null>(null);
+  /**
+   * Backend-calculated average importance rating; null means no average is available.
+   */
+  let average = $state<number | null>(null);
+  /**
+   * Backend-reported importance vote count; the frontend does not calculate it.
+   */
+  let totalVotes = $state(0);
+  /**
+   * Whether data is being loaded; drives loading feedback for this view.
+   */
+  let loading = $state(true);
+  /**
+   * Whether a mutation is underway; prevents overlapping actions.
+   */
+  let busy = $state(false);
+  /**
+   * Non-error feedback shown after an action completes.
+   */
+  let notice = $state('');
+  /**
+   * User-facing load or request failure; empty text hides the error message.
+   */
+  let error = $state('');
+  /**
+   * Whether a write succeeded but refreshing authoritative totals failed; exposes Retry
+   * totals.
+   */
+  let refreshFailed = $state(false);
+  /**
+   * Whether the sign-in dialog’s content is mounted.
+   */
+  let login = $state(false);
+  /**
+   * Mounted inline dial wrapper used for interaction/focus handling.
+   */
+  let container = $state<HTMLDivElement>();
+  /**
+   * Mounted native sign-in dialog controlled by showModal/close.
+   */
+  let dialog = $state<HTMLDialogElement>();
+  /**
+   * Mounted native confirmation dialog for casting or undoing a vote.
+   */
+  let confirmDialog = $state<HTMLDialogElement>();
+  /**
+   * Proposed rating awaiting explicit approval; null means no rating is pending.
+   */
+  let pending = $state<number | null>(null);
+  /**
+   * Whether the confirmation dialog represents an undo rather than a new rating.
+   */
+  let pendingUndo = $state(false);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const controller = new AbortController();
+  const signal = () => AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]);
+  // Validate and adopt the API summary together: current rating, count and average are one confirmed snapshot.
+  async function refresh() {
+    const summary = await apiRequest<VoteSummary>(
+      sessionBase,
+      `nodes/${encodeURIComponent(nodeId)}/votes`,
+      'GET',
+      undefined,
+      signal(),
+    );
+    if (
+      !Number.isInteger(summary.voteCount) ||
+      summary.voteCount < 0 ||
+      (summary.currentParticipantVote !== null &&
+        (!Number.isInteger(summary.currentParticipantVote) ||
+          summary.currentParticipantVote < 0 ||
+          summary.currentParticipantVote > 10))
+    )
+      throw new Error('Invalid vote summary');
+    if (controller.signal.aborted) return;
+    average = summary.averageVote;
+    totalVotes = summary.voteCount;
+    confirmed = summary.currentParticipantVote;
+    value = confirmed;
+    refreshFailed = false;
+  }
+  async function retry() {
+    if (busy) return;
+    busy = true;
+    error = '';
+    try {
+      await refresh();
+    } catch {
+      if (!controller.signal.aborted) {
+        error = 'Could not refresh voting totals.';
+        refreshFailed = true;
+      }
+    } finally {
+      busy = false;
+    }
+  }
+  onMount(() => {
+    average = initialAverage;
+    totalVotes = initialTotalVotes;
+    void refresh()
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          error = 'Could not load your voting status.';
+          refreshFailed = true;
+        }
+      })
+      .finally(() => (loading = false));
+    const sessionChanged = () => {
+      clearTimeout(timer);
+      cancelPending();
+      void retry();
+    };
+    window.addEventListener('atlas-session-changed', sessionChanged);
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+      window.removeEventListener('atlas-session-changed', sessionChanged);
+    };
+  });
+  $effect(() => {
+    if (login && dialog && !dialog.open) dialog.showModal();
+  });
+  // Cancel confirmation without saving and restore the last confirmed selection.
+  function cancelPending() {
+    clearTimeout(timer);
+    pending = null;
+    pendingUndo = false;
+    value = confirmed;
+    confirmDialog?.close();
+  }
+  function choose(next: number) {
+    if (busy || archived || loading || pending !== null) return;
+    clearTimeout(timer);
+    value = next;
+    notice = '';
+    error = '';
+    if (next === confirmed) return;
+    // Wait for wheel/drag momentum to settle, then request explicit confirmation.
+    timer = setTimeout(() => {
+      if (controller.signal.aborted || busy) return;
+      pending = next;
+      void tick().then(() => {
+        if (pending === next && confirmDialog && !confirmDialog.open) confirmDialog.showModal();
+      });
+    }, 450);
+  }
+  function requestUndo() {
+    if (busy || loading || archived || confirmed === null) return;
+    clearTimeout(timer);
+    pending = null;
+    pendingUndo = true;
+    void tick().then(() => {
+      if (pendingUndo && confirmDialog && !confirmDialog.open) confirmDialog.showModal();
+    });
+  }
+  // Capture the proposed rating (or undo), close confirmation, then perform the API write.
+  function approve() {
+    if (!pendingUndo && pending === null) return;
+    const next = pendingUndo ? null : pending;
+    pending = null;
+    pendingUndo = false;
+    confirmDialog?.close();
+    void save(next);
+  }
+  // A failed write restores the confirmed state; a failed totals refresh after a successful write is reported separately.
+  async function save(next: number | null) {
+    clearTimeout(timer);
+    if (busy || archived) return;
+    busy = true;
+    error = '';
+    notice = '';
+    const previous = confirmed;
+    try {
+      await apiRequest(
+        sessionBase,
+        `nodes/${encodeURIComponent(nodeId)}/vote`,
+        next === null ? 'DELETE' : 'PUT',
+        next === null ? undefined : { value: next },
+        signal(),
+      );
+      if (controller.signal.aborted) return;
+      confirmed = next;
+      value = next;
+      notice = next === null ? 'Vote removed.' : `Rated ${next}/10.`;
+      try {
+        await refresh();
+      } catch {
+        if (!controller.signal.aborted) {
+          error = 'Your vote was saved, but totals could not refresh.';
+          refreshFailed = true;
+        }
+      }
+    } catch (cause) {
+      if (!controller.signal.aborted) {
+        value = previous;
+        confirmed = previous;
+        if (cause instanceof ApiRequestError && cause.status === 401) {
+          confirmed = null;
+          value = null;
+          login = true;
+        } else
+          error = cause instanceof Error ? cause.message : 'Vote could not be saved. Please retry.';
+      }
+    } finally {
+      busy = false;
+    }
+    if (next === null && confirmed === null && !controller.signal.aborted) {
+      await tick();
+      container?.querySelector<HTMLElement>('[role=spinbutton]')?.focus();
+    }
+  }
+  function close() {
+    login = false;
+    dialog?.close();
+  }
+</script>
+
+<!--
+  Layout: The dial, undo and request feedback stay inline. Separate native dialogs handle vote
+  confirmation and sign-in.
+-->
+
+<div bind:this={container} class="live-voting" aria-busy={busy}>
+  <!-- Live interaction lock: archived nodes, pending status reads and in-flight writes. -->
+  <VotingDial
+    label="Node importance"
+    {value}
+    {average}
+    {totalVotes}
+    hasVoted={confirmed !== null}
+    disabled={archived || busy || loading}
+    onChange={choose}
+  />
+  {#if confirmed !== null && !archived}<button
+      class="undo"
+      type="button"
+      disabled={busy || loading}
+      onclick={requestUndo}
+      aria-label="Undo your node importance vote">Undo vote</button
+    >{/if}
+  {#if busy}<small role="status">Saving…</small>{/if}
+  {#if notice}<small role="status">{notice}</small>{/if}
+  {#if error}<small role="alert">{error}</small>{/if}
+  {#if refreshFailed}<button class="undo" onclick={() => void retry()} disabled={busy}
+      >Retry totals</button
+    >{/if}
+</div>
+<!--
+  Confirmation is a separate native dialog so its modal behavior is independent of the inline
+  dial.
+-->
+<dialog
+  bind:this={confirmDialog}
+  class="vote-login"
+  aria-labelledby="vote-confirm-title"
+  oncancel={cancelPending}
+  onclose={() => {
+    if (pending !== null || pendingUndo) cancelPending();
+  }}
+>
+  {#if pendingUndo}
+    <h2 id="vote-confirm-title">Undo your importance rating?</h2>
+    <p>
+      Your current rating of <strong>{confirmed} out of 10</strong> will be removed from the community
+      average and vote count.
+    </p>
+  {:else}
+    <h2 id="vote-confirm-title">Confirm your importance rating</h2>
+    <p>
+      Does this contribution deserve attention? Rate how important it is to explore or consider,
+      from <strong>0 (not important)</strong> to <strong>10 (very important)</strong>.
+    </p>
+    <p>
+      Your proposed rating is <strong>{pending ?? '—'} out of 10</strong>. Your rating contributes
+      to the community average.
+    </p>
+  {/if}
+  <div class="vote-actions">
+    <button type="button" onclick={cancelPending}>Cancel</button><button
+      type="button"
+      class="confirm"
+      onclick={approve}
+      disabled={!pendingUndo && pending === null}
+      >{pendingUndo ? 'Confirm undo' : 'Confirm rating'}</button
+    >
+  </div>
+</dialog>
+<!--
+  Sign-in is separate from confirmation; signing in asks the visitor to select their rating
+  again.
+-->
+<dialog
+  bind:this={dialog}
+  class="vote-login"
+  aria-label="Sign in to vote"
+  oncancel={() => (login = false)}
+  onclose={() => (login = false)}
+>
+  {#if login}<h2>Sign in to vote</h2>
+    <p>Your rating wasn’t saved. Sign in, then choose your rating again.</p>
+    <SessionControl
+      {sessionBase}
+      expanded
+      prompt="Sign in to Atlas"
+      onSession={(id) => {
+        if (id) {
+          close();
+          void retry();
+        }
+      }}
+    />
+    <button class="dismiss" onclick={close}>Close</button>
+  {/if}
+</dialog>
+
+<style lang="scss">
+  .live-voting {
+    width: min-content;
+    min-width: 4.3rem;
+    text-align: center;
+  }
+  small {
+    display: block;
+    font-size: 0.75rem;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+    margin: 0.3rem 0;
+  }
+  .undo {
+    display: block;
+    margin: 0.25rem auto 0;
+    padding: 0.15rem 0.25rem;
+    border: 0;
+    background: transparent;
+    color: var(--atlas-muted);
+    font: inherit;
+    font-size: 0.75rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .undo:hover {
+    text-decoration: underline;
+    color: var(--atlas-accent);
+  }
+  .undo:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+  .vote-login {
+    box-sizing: border-box;
+    width: min(28rem, calc(100vw - 2rem));
+    max-height: calc(100dvh - 2rem);
+    overflow: auto;
+    padding: 1.25rem;
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
+    color: var(--atlas-text);
+    background: var(--atlas-surface);
+    text-align: left;
+  }
+  .vote-login::backdrop {
+    background: #0007;
+  }
+  .vote-login h2 {
+    margin-top: 0;
+  }
+  .vote-actions {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+  .vote-actions button {
+    font: inherit;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+  }
+  .vote-actions .confirm {
+    background: var(--atlas-accent);
+    color: var(--atlas-on-accent);
+    border: 0;
+    border-radius: 0.35rem;
+  }
+  .dismiss {
+    font: inherit;
+    margin-top: 1rem;
+    padding: 0.4rem 0.75rem;
+    cursor: pointer;
+  }
+</style>

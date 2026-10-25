@@ -1,6 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 using Atlas.Communities.Communities;
 using Atlas.Communities.Nodes;
+using Atlas.Communities.Memberships;
+using Atlas.Graph.Nodes;
+using Atlas.Application.Storage;
 using Atlas.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,6 +18,8 @@ namespace Atlas.Api.Controllers;
 public sealed class CommunitiesController(
     ICommunityRepository communities,
     ICommunityNodeRepository associations,
+    ICommunityMembershipRepository memberships,
+    INodeRepository nodes,
     CommunityService workflow,
     RequestActor actor
 ) : ControllerBase
@@ -28,12 +33,38 @@ public sealed class CommunitiesController(
             throw new ArgumentException();
 
         // Return stable public projections for the requested slice.
-        return communities.GetAll().OrderBy(x => x.Id.Value).Skip(offset).Take(size).Select(View);
+        return communities.GetAll().OrderBy(x => x.Id.Value).Skip(offset).Take(size).Select(c => View(c));
     }
 
     /// <summary>Load one community or report that it does not exist.</summary>
     [HttpGet("{id:guid}")]
     public object Get(Guid id) => View(Load(id));
+
+    /// <summary>Read communities associated with a node without altering its graph parents.</summary>
+    [HttpGet("node/{nodeId:guid}")]
+    public object ForNode(Guid nodeId) => associations.GetByNode(nodeId)
+        .Select(a => communities.GetById(a.CommunityId))
+        .Where(c => c is not null)
+        .Select(c => View(c!));
+
+    /// <summary>Community membership and ownership summaries for participant profiles.</summary>
+    [HttpGet("participant/{participantId:guid}")]
+    public object ParticipantCommunities(Guid participantId) => communities.GetAll()
+        .Where(c => c.OwnerParticipantId == participantId || memberships.Get(c.Id, participantId)?.IsActive == true)
+        .Select(c => View(c, participantId));
+
+    /// <summary>Authenticated participant's current community memberships.</summary>
+    [Authorize(Policy = AtlasPolicies.Member), HttpGet("mine")]
+    public object Mine() => ParticipantCommunities(actor.ParticipantId);
+
+    /// <summary>Expose the ownership cap and rolling creation allowance to the client.</summary>
+    [Authorize(Policy = AtlasPolicies.Member), HttpGet("creation-allowance")]
+    public object CreationAllowance() => new
+    {
+        maximumOwned = SqlCommunityRepository.MaximumOwnedCommunities,
+        owned = communities.GetAll().Count(c => c.OwnerParticipantId == actor.ParticipantId),
+        rolling = (communities as ICommunityCreationQuota)?.GetCreationAllowance(actor.ParticipantId)
+    };
 
     /// <summary>Verify the community exists, then page its associated node identifiers.</summary>
     [HttpGet("{id:guid}/nodes")]
@@ -142,6 +173,10 @@ public sealed class CommunitiesController(
     [Authorize(Policy = AtlasPolicies.Member), HttpPut("{id:guid}/nodes/{node:guid}")]
     public IActionResult Associate(Guid id, Guid node)
     {
+        // The node author alone controls association with communities, even when
+        // they are not a member of the destination community.
+        var authoredNode = nodes.GetById(new NodeId(node)) ?? throw new KeyNotFoundException();
+        if (authoredNode.AuthorId.Value != actor.ParticipantId) throw new UnauthorizedAccessException();
         workflow.AssociateNode(
             Load(id),
             node,
@@ -155,12 +190,11 @@ public sealed class CommunitiesController(
     [Authorize(Policy = AtlasPolicies.Member), HttpDelete("{id:guid}/nodes/{node:guid}")]
     public IActionResult Disassociate(Guid id, Guid node)
     {
-        // Resolve the community before checking the actor’s ownership.
+        // Node authors manage their own associations; community ownership alone
+        // does not authorize changing someone else's node.
         var community = Load(id);
-        // The reusable service currently lacks this permission check; the API must
-        // not expose its unrestricted repository removal capability to any member.
-        if (community.OwnerParticipantId != actor.ParticipantId)
-            throw new UnauthorizedAccessException();
+        var authoredNode = nodes.GetById(new NodeId(node)) ?? throw new KeyNotFoundException();
+        if (authoredNode.AuthorId.Value != actor.ParticipantId) throw new UnauthorizedAccessException();
 
         // Remove only the association; the node itself remains.
         workflow.DisassociateNode(community, node, actor.ParticipantId);
@@ -169,7 +203,7 @@ public sealed class CommunitiesController(
 
     private Community Load(Guid id) => communities.GetById(new CommunityId(id)) ?? throw new KeyNotFoundException();
 
-    private static object View(Community c) => new
+    private object View(Community c, Guid? participantId = null) => new
     {
         id = c.Id.Value,
         c.Name,
@@ -177,7 +211,10 @@ public sealed class CommunitiesController(
         c.OwnerParticipantId,
         status = c.Status.ToString(),
         c.CreatedAt,
-        c.UpdatedAt
+        c.UpdatedAt,
+        memberCount = memberships.GetByCommunity(c.Id).Count(m => m.IsActive),
+        nodeCount = associations.GetByCommunity(c.Id).Count,
+        isMember = (participantId ?? actor.Id) is { } participant && memberships.Get(c.Id, participant)?.IsActive == true
     };
 }
 

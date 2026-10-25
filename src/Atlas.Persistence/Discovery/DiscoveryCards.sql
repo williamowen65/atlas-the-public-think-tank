@@ -66,7 +66,7 @@ OUTER APPLY (
 -- Include requested child types even when their count is zero.
 -- Return JSON so C# can apply the shared count-aware pluralization rules.
 OUTER APPLY (
-    SELECT (SELECT COALESCE(t.Name, N'Unknown') AS Name, k.Count, COALESCE(t.AutoPluralize, CAST(1 AS bit)) AS AutoPluralize
+    SELECT (SELECT k.TypeId AS TypeId, COALESCE(t.Name, N'Unknown') AS Name, k.Count, COALESCE(t.AutoPluralize, CAST(1 AS bit)) AS AutoPluralize
     FROM (SELECT types.TypeId, COUNT(child.Id) AS Count FROM (
             SELECT requested.TypeId FROM NodeRequestedTypes requested WHERE requested.NodeId = n.Id
             UNION SELECT c.TypeId FROM NodeParents p

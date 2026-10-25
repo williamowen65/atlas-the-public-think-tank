@@ -16,5 +16,7 @@ public sealed record DiscoveryQuery(
     DateOnly? CreatedThrough = null,
     bool IncludeArchived = false,
     int Page = 1,
-    Guid? NodeId = null
+    Guid? NodeId = null,
+    Guid? ParentNodeId = null,
+    int? VotingWeight = null
 );

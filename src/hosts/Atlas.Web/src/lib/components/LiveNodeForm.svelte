@@ -1,0 +1,382 @@
+<!--
+  @component
+  LiveNodeForm: Session-aware creation, browser-private draft handling, custom types and backend submission.
+  Public reads load types; session-aware writes save types/nodes, while private drafts stay in this browser.
+
+  **Props**
+  - `draftId` (`string`; optional): ID of an existing browser-private draft to restore for the
+    signed-in participant.
+  - `parentId` (`string`; optional): Parent node ID for child-node creation; omit for root creation.
+  - `parentTitle` (`string`; optional): Display title for the parent breadcrumb; parentId is the
+    actual association.
+  - `initialTypeId` (`string`; optional): Initial node type selection when creating a draft.
+  - `breadcrumb` (`BreadcrumbItem[]`; optional; default `[]`): Parent ancestry used above a creation
+    form, before the immediate parent is appended.
+  - `focusOnMount` (`boolean`; optional; default `false`): Requests initial focus/scroll placement
+    when the relevant form is rendered in the browser.
+  - `apiBase` (`string`; optional; default `'/atlas-public-api'`): Public API base for reading the
+    type catalog and resolving a parent node’s title/ancestry. Creation writes use sessionBase
+    instead.
+  - `sessionBase` (`string`; optional; default `'/atlas-session-api'`): Session-aware API base for
+    account controls and CSRF-protected custom-type/node creation. Private draft saving uses browser
+    storage rather than this endpoint.
+  - `onCreated` (`(id: string) => void`; optional): Callback: Receives the ID returned by the
+    backend after successful node creation.
+  - `onDraftChange` (`(draft: NodeDraft | null) => void`; optional): Receives the current draft or
+    null according to the callback contract; lets the parent track child-form state.
+  - `onRegisterClose` (`(close: () => Promise<boolean>) => void`; optional): Callback: Registers an
+    async draft-save function with the parent. Calling that function returns whether saving
+    succeeded; it does not itself close the form.
+-->
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { putDraft, deleteDraft, listDrafts } from '../api/privateDrafts';
+  import NodeForm, { type NodeDraft } from './NodeForm.svelte';
+  import SessionControl from './SessionControl.svelte';
+  import type { BreadcrumbItem } from './Breadcrumb.svelte';
+  import { readTypes, type NodeType } from '../api/nodePage';
+  import { apiRequest, ApiRequestError } from '../api/apiRequest';
+  import { readDiscovery, discoveryCard } from '../api/discovery';
+  let {
+    draftId,
+    parentId,
+    parentTitle,
+    initialTypeId,
+    breadcrumb = [],
+    focusOnMount = false,
+    apiBase = '/atlas-public-api',
+    sessionBase = '/atlas-session-api',
+    onCreated,
+    onDraftChange,
+    onRegisterClose,
+  }: {
+    /** ID of an existing browser-private draft to restore for the signed-in participant. */
+    draftId?: string;
+    /** Parent node ID for child-node creation; omit for root creation. */
+    parentId?: string;
+    /** Display title for the parent breadcrumb; parentId is the actual association. */
+    parentTitle?: string;
+    /** Initial node type selection when creating a draft. */
+    initialTypeId?: string;
+    /** Parent ancestry used above a creation form, before the immediate parent is appended. */
+    breadcrumb?: BreadcrumbItem[];
+    /**
+     * Requests initial focus/scroll placement when the relevant form is rendered in the browser.
+     */
+    focusOnMount?: boolean;
+    /**
+     * Public API base for reading the type catalog and resolving a parent node’s title/ancestry.
+     * Creation writes use sessionBase instead.
+     */
+    apiBase?: string;
+    /**
+     * Session-aware API base for account controls and CSRF-protected custom-type/node creation.
+     * Private draft saving uses browser storage rather than this endpoint.
+     */
+    sessionBase?: string;
+    /** Callback: Receives the ID returned by the backend after successful node creation. */
+    onCreated?: (id: string) => void;
+    /**
+     * Receives the current draft or null according to the callback contract; lets the parent track
+     * child-form state.
+     */
+    onDraftChange?: (draft: NodeDraft | null) => void;
+    /**
+     * Callback: Registers an async draft-save function with the parent. Calling that function
+     * returns whether saving succeeded; it does not itself close the form.
+     */
+    onRegisterClose?: (close: () => Promise<boolean>) => void;
+  } = $props();
+  /**
+   * Available non-archived node types used by labels, filters or creation choices.
+   */
+  let types = $state<NodeType[]>([]);
+  /**
+   * User-facing load or request failure; empty text hides the error message.
+   */
+  let error = $state('');
+  /**
+   * Whether data is being loaded; drives loading feedback for this view.
+   */
+  let loading = $state(true);
+  /**
+   * Current participant ID reported by the session API, or null when no usable identity is
+   * known.
+   */
+  let participantId = $state<string | null>(null);
+  /**
+   * Whether a draft editor is available for the current participant/context.
+   */
+  let hasDraft = $state(false);
+  /**
+   * Whether custom-type/node creation is underway; locks draft controls.
+   */
+  let submitting = $state(false);
+  /**
+   * Creation failure displayed while retaining the draft for retry.
+   */
+  let saveError = $state('');
+  /**
+   * Successfully created node ID; nonempty text switches to the success/open-node view.
+   */
+  let createdId = $state('');
+  /**
+   * Saved custom-type ID plus its input key, reused on unchanged retries after node
+   * creation fails.
+   */
+  let createdType = $state<{ key: string; id: string } | null>(null);
+  let controller: AbortController;
+  /**
+   * Latest values reported by NodeForm, used for local saving and parent notifications.
+   */
+  let currentDraft = $state<NodeDraft | null>(null);
+  /**
+   * Restored browser-local values passed to NodeForm as its initial draft.
+   */
+  let savedDraft = $state<NodeDraft | undefined>(undefined);
+  /**
+   * Feedback after saving a private draft on this device.
+   */
+  let savedNotice = $state('');
+  /**
+   * Local draft record ID reused for saves belonging to the current participant.
+   */
+  let ownerDraftId = $state('');
+  /**
+   * Restored/resolved parent ancestry for a resumed child draft.
+   */
+  let savedBreadcrumb = $state<BreadcrumbItem[] | undefined>(undefined);
+  /**
+   * Restored/resolved parent title for a resumed child draft.
+   */
+  let savedParentTitle = $state<string | undefined>(undefined);
+  async function resolveParentPath(id: string) {
+    try {
+      const page = await readDiscovery(apiBase, 1, '', AbortSignal.timeout(10000), id);
+      const parent = page.items.map(discoveryCard).find((item) => item?.id === id);
+      if (parent) return { breadcrumb: parent.breadcrumb, parentTitle: parent.title };
+    } catch {
+      /* Keep the draft usable if the ancestor is unavailable. */
+    }
+    return null;
+  }
+  // Restore private data only from the current participant’s browser draft collection.
+  function sessionChanged(id: string | null) {
+    participantId = id;
+    hasDraft = !!id;
+    savedDraft = undefined;
+    savedBreadcrumb = undefined;
+    savedParentTitle = undefined;
+    ownerDraftId = '';
+    if (id && draftId) {
+      const found = listDrafts(id).find((item) => item.id === draftId);
+      if (found) {
+        savedDraft = found.data;
+        ownerDraftId = found.id;
+        savedBreadcrumb = found.breadcrumb;
+        savedParentTitle = found.parentTitle;
+        if (found.data.parentId && !found.parentTitle)
+          void resolveParentPath(found.data.parentId).then((result) => {
+            if (result && participantId === id) {
+              savedBreadcrumb = result.breadcrumb;
+              savedParentTitle = result.parentTitle;
+            }
+          });
+      }
+    }
+  }
+  // Save a titled draft locally; return success so a parent can decide whether it is safe to close.
+  async function savePrivateDraft(): Promise<boolean> {
+    if (!participantId || !currentDraft) return false;
+    if (!currentDraft.title.trim()) {
+      savedNotice = 'Enter a title before saving your draft.';
+      return false;
+    }
+    try {
+      const id = ownerDraftId || crypto.randomUUID();
+      let ancestry = {
+        breadcrumb: savedBreadcrumb ?? breadcrumb,
+        parentTitle: savedParentTitle ?? parentTitle,
+      };
+      if (currentDraft.parentId && !ancestry.parentTitle)
+        ancestry = (await resolveParentPath(currentDraft.parentId)) ?? ancestry;
+      putDraft(participantId, {
+        id,
+        ownerId: participantId,
+        updatedAt: new Date().toISOString(),
+        data: currentDraft,
+        breadcrumb: ancestry.breadcrumb,
+        parentTitle: ancestry.parentTitle,
+      });
+      ownerDraftId = id;
+      savedNotice = 'Saved privately in this browser. Open My drafts to find it.';
+      return true;
+    } catch {
+      savedNotice = 'Draft could not be saved in this browser.';
+      return false;
+    }
+  }
+  // Expose the private-save function to the parent after mounting; registering it does not save or close yet.
+  onMount(() => {
+    onRegisterClose?.(savePrivateDraft);
+  });
+  const signal = () => AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]);
+  async function load() {
+    loading = true;
+    error = '';
+    controller?.abort();
+    controller = new AbortController();
+    try {
+      types = await readTypes(apiBase, signal());
+    } catch {
+      if (!controller.signal.aborted) error = 'Could not load node types.';
+    } finally {
+      loading = false;
+    }
+  }
+  onMount(() => {
+    void load();
+    return () => controller?.abort();
+  });
+  const openCreated = () => {
+    if (onCreated) onCreated(createdId);
+    else window.location.assign(`/nodes?id=${encodeURIComponent(createdId)}`);
+  };
+  // Custom-type creation and node creation are separate writes. Reuse a saved type on an unchanged retry.
+  async function save(draft: NodeDraft) {
+    if (!participantId || submitting || createdId) return;
+    submitting = true;
+    saveError = '';
+    try {
+      let typeId = draft.typeId;
+      if (draft.newType) {
+        const key = JSON.stringify(draft.newType);
+        if (createdType?.key === key) typeId = createdType.id;
+        else {
+          const type = await apiRequest<NodeType>(
+            sessionBase,
+            'catalog/node-types',
+            'POST',
+            { ...draft.newType, autoPluralize: draft.newType.autoPluralize ?? true },
+            signal(),
+          );
+          if (!type.id) throw new Error('The type response did not contain an ID.');
+          createdType = { key, id: type.id };
+          typeId = type.id;
+        }
+      }
+      if (!typeId) throw new Error('Select a node type.');
+      const result = await apiRequest<{ id: string }>(
+        sessionBase,
+        'nodes',
+        'POST',
+        {
+          title: draft.title,
+          shortDescription: draft.shortDescription,
+          markdown: draft.markdown,
+          typeId,
+          parentId: draft.parentId ?? null,
+          requestedTypeIds: draft.requestedTypeIds,
+        },
+        signal(),
+      );
+      if (!result.id) throw new Error('The node response did not contain an ID.');
+      if (!controller.signal.aborted) {
+        createdId = result.id;
+        if (participantId && ownerDraftId) deleteDraft(participantId, ownerDraftId);
+      }
+    } catch (cause) {
+      if (!controller.signal.aborted) {
+        saveError =
+          cause instanceof Error
+            ? cause.message
+            : 'Could not create node. Your draft has been kept.';
+        if (cause instanceof ApiRequestError && cause.status === 401) {
+          participantId = null;
+          window.dispatchEvent(new Event('atlas-session-changed'));
+        }
+      }
+    } finally {
+      submitting = false;
+    }
+    if (createdId) openCreated();
+  }
+</script>
+
+<!--
+  Layout: Creation success replaces the editor. Otherwise session controls, catalog-loading
+  status and a draft editor share this region.
+-->
+
+<section
+  class="live-node-form"
+  aria-label={parentId ? 'Child node creation' : 'Root node creation'}
+>
+  {#if createdId}<p role="status">Node created.</p>
+    <button onclick={openCreated}>Open created node</button>
+  {:else}
+    <SessionControl
+      {sessionBase}
+      hideWhenSignedIn
+      prompt={parentId ? 'Sign in to add a child node' : 'Sign in to create a node'}
+      expanded
+      {focusOnMount}
+      onSession={sessionChanged}
+    />
+    {#if loading}<p role="status">Loading node types…</p>{:else if error}<p role="alert">{error}</p>
+      <button onclick={() => void load()}>Retry node types</button>{:else if hasDraft}
+      <!--
+        One disabled fieldset locks all nested draft controls while saving or without a usable
+        participant.
+      -->
+      <fieldset class="draft-fields" disabled={submitting || !participantId}>
+        <NodeForm
+          {types}
+          parentId={savedDraft?.parentId ?? parentId}
+          parentTitle={savedParentTitle ?? parentTitle}
+          {initialTypeId}
+          breadcrumb={savedBreadcrumb ?? breadcrumb}
+          initialDraft={savedDraft}
+          {focusOnMount}
+          {submitting}
+          onPreview={(draft) => {
+            currentDraft = draft;
+            onDraftChange?.(draft);
+          }}
+          onSubmit={save}
+        />
+      </fieldset>
+      {#if participantId}<button type="button" onclick={savePrivateDraft} disabled={submitting}
+          >Save private draft</button
+        > <a href="/my-drafts">My drafts</a>{/if}
+      {#if savedNotice}<p role="status">{savedNotice}</p>{/if}
+    {/if}
+    {#if saveError}<p role="alert">{saveError} Your draft has been kept.</p>{/if}
+    {#if createdType}<p class="note">
+        Your custom type has been created. If node creation fails, retrying this unchanged type uses
+        the same saved type.
+      </p>{/if}
+  {/if}
+</section>
+
+<style>
+  .live-node-form {
+    max-width: 48rem;
+    margin-inline: auto;
+    min-width: 0;
+  }
+  .draft-fields {
+    margin: 1rem 0 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+  button {
+    font: inherit;
+    cursor: pointer;
+  }
+  .note {
+    color: var(--atlas-muted);
+    font-size: 0.85rem;
+  }
+</style>

@@ -59,13 +59,32 @@ public sealed class NavigationController(
                 x => new
                 {
                     id = x.Id.Value,
-                    title = moderation.Visibility(x.Id.Value).IsHidden ? moderation.Visibility(x.Id.Value).Notice : x.Title.Value
+                    title = moderation.Visibility(x.Id.Value).IsHidden ? moderation.Visibility(x.Id.Value).Notice : x.Title.Value,
+                    parentIds = x.ParentNodeIds.Select(parent => parent.Value)
                 }
             ),
             segment.HasMore,
             segment.HasAlternativeRoutes,
             segment.CycleDetected
         };
+    }
+
+    /// <summary>List immediate parent choices only; clients fetch a selected ancestry route on demand.</summary>
+    [HttpGet("parents")]
+    public object Parents(Guid node)
+    {
+        var current = Read(node);
+        return current.ParentNodeIds.Select(id =>
+        {
+            var parent = nodes.GetById(id);
+            if (parent is null) return new { id = id.Value, title = "Unavailable parent" };
+            var visibility = moderation.Visibility(id.Value);
+            return new
+            {
+                id = id.Value,
+                title = visibility.IsHidden ? visibility.Notice : parent.Title.Value
+            };
+        }).ToArray();
     }
 
     /// <summary>Check node visibility before returning totals and the current participant’s rating.</summary>

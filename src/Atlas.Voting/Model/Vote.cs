@@ -129,6 +129,7 @@ namespace Atlas.Voting
             {
                 NodeVoteTarget => new NodeImportanceRating(voteValue),
                 NodeReactionVoteTarget => new NodeReactionVote(voteValue),
+                CommentVoteTarget => new CommentVote(voteValue),
 
                 _ => throw new ArgumentException(
                     "Unsupported vote target type.",

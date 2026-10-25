@@ -47,6 +47,43 @@ public sealed class SqlThinHostWorkflowTests
     }
 
     [TestMethod]
+    public void CommentVotesPersistChangeUndoAndRejectRemovedAndArchivedTargets()
+    {
+        using var database = SqlTestDatabase.Create();
+        var actor = database.AddParticipant();
+        var nodes = new SqlNodeRepository(database.Open);
+        var type = new NodeTypeCreationService(new SqlNodeTypeRepository(database.Open)).Create("Idea", "Ideas", actor.ToString(), DateTimeOffset.UtcNow);
+        var node = new NodeCreationService(nodes, new SqlDocumentRepository(database.Open)).Create("Node", "Text", type.Id, actor, []);
+        var comments = new SqlCommentRepository(database.Open);
+        var comment = new Comment(CommentTarget.Node(node.Id.Value), null, actor, "Discuss", DateTimeOffset.UtcNow);
+        comments.Save(comment);
+        var votes = new SqlVoteRepository(database.Open);
+        var eligibility = new RepositoryVotingEligibility(nodes, new SqlParticipantRepository(database.Open), new SqlNodeReactionRepository(database.Open), comments);
+        var policy = new VoteMutationPolicy(eligibility);
+        var cast = new CastVote(votes, policy);
+        var undo = new UndoVote(votes, policy);
+        var target = new Atlas.Voting.Target.CommentVoteTarget(comment.Id.Value);
+        var voter = new Atlas.Voting.Votes.ParticipantId(actor);
+        cast.Execute(target, voter, 1);
+        cast.Execute(target, voter, -1);
+        var summary = new GetCommentVoteSummary(votes).Execute(target, voter);
+        Assert.AreEqual(-1, summary.Score);
+        Assert.AreEqual(1, summary.TotalVotes);
+        Assert.AreEqual(-1, summary.CurrentParticipantVote);
+        Assert.IsTrue(undo.Execute(target, voter));
+        Assert.IsFalse(undo.Execute(target, voter));
+        Assert.AreEqual(0, new GetCommentVoteSummary(votes).Execute(target).Score);
+        comment.RemoveByAuthor(actor, comment.UpdatedAt.AddSeconds(1)); comments.Save(comment);
+        Assert.Throws<InvalidOperationException>(() => cast.Execute(target, voter, 1));
+        var active = new Comment(CommentTarget.Node(node.Id.Value), null, actor, "Still here", DateTimeOffset.UtcNow);
+        comments.Save(active);
+        using (var db = database.Open()) { db.NodeRows.Single(n => n.Id == node.Id.Value).Status = "Archived"; db.SaveChanges(); }
+        Assert.Throws<InvalidOperationException>(() => cast.Execute(new Atlas.Voting.Target.CommentVoteTarget(active.Id.Value), voter, 1));
+        using var check = database.Open();
+        Assert.AreEqual(0, check.VoteRows.Count());
+    }
+
+    [TestMethod]
     public void CommentRecipientsAndModerationNotificationsAreReusableApplicationBehavior()
     {
         using var database = SqlTestDatabase.Create();

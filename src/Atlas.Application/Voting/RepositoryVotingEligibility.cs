@@ -1,3 +1,4 @@
+using Atlas.Comments.Comments;
 using Atlas.Graph.Nodes;
 using Atlas.Graph.Reactions;
 using Atlas.Participants.Participants;
@@ -24,6 +25,7 @@ namespace Atlas.Application.Voting
     public sealed class RepositoryVotingEligibility :
         IVotingEligibility
     {
+        private readonly ICommentRepository? _comments;
         private readonly INodeRepository _nodes;
         private readonly IParticipantRepository _participants;
         private readonly INodeReactionRepository _nodeTags;
@@ -31,9 +33,11 @@ namespace Atlas.Application.Voting
         public RepositoryVotingEligibility(
             INodeRepository nodes,
             IParticipantRepository participants,
-            INodeReactionRepository nodeTags
+            INodeReactionRepository nodeTags,
+            ICommentRepository? comments = null
         )
         {
+            _comments = comments;
             _nodes = nodes;
             _participants = participants;
             _nodeTags = nodeTags;
@@ -61,6 +65,12 @@ namespace Atlas.Application.Voting
         public bool IsAvailable(
             VoteTarget target)
         {
+            if (target is CommentVoteTarget)
+            {
+                var comment = _comments?.GetById(new CommentId(target.Id));
+                return comment is { IsRemoved: false, Target.Kind: "Node" } &&
+                    IsAvailable(new NodeVoteTarget(comment.Target.Id));
+            }
             if (target is NodeVoteTarget)
             {
                 var node = _nodes.GetById(new NodeId(target.Id));

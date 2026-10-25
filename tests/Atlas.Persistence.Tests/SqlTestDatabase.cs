@@ -1,4 +1,5 @@
 using Atlas.Persistence;
+using Atlas.Testing;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -8,14 +9,18 @@ namespace Atlas.Persistence.Tests;
 internal sealed class SqlTestDatabase : IDisposable
 {
     private readonly DbContextOptions<AtlasDataContext> _options;
-    private SqlTestDatabase(string connection, bool useCurrentModel)
+    private SqlTestDatabase(string connection, bool useCurrentModel, bool installFullText)
     {
         _options = new DbContextOptionsBuilder<AtlasDataContext>().UseSqlServer(connection).Options;
         using var database = Open();
-        if (useCurrentModel) database.Database.EnsureCreated();
-        else database.Database.Migrate();
+        if (useCurrentModel)
+        {
+            database.Database.EnsureCreated();
+            if (installFullText) SqlFullTextSupport.CreateIndexes(database);
+        }
+        else AtlasDatabaseSetup.Apply(database);
     }
-    public static SqlTestDatabase Create(bool useCurrentModel = false)
+    public static SqlTestDatabase Create(bool useCurrentModel = false, bool installFullText = true)
     {
         // Local projects share one secrets file; CI environment values take precedence.
         var configuration = new ConfigurationBuilder()
@@ -29,9 +34,16 @@ internal sealed class SqlTestDatabase : IDisposable
         {
             InitialCatalog = $"AtlasRepositoryTests_{Guid.NewGuid():N}"
         }.ConnectionString;
-        return new SqlTestDatabase(connection, useCurrentModel);
+        return new SqlTestDatabase(connection, useCurrentModel, installFullText);
     }
     public AtlasDataContext Open() => new(_options);
+    public AtlasDataContext OpenForDiscovery()
+    {
+        using var configuration = Open();
+        // Tests wait outside the application transaction; production search remains eventual.
+        SqlFullTextSupport.WaitForIndexing(configuration.Database.GetConnectionString()!);
+        return Open();
+    }
     public Guid AddParticipant(Guid? id = null)
     {
         var key = id ?? Guid.NewGuid();

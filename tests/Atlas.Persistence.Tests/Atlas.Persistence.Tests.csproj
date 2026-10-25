@@ -13,4 +13,9 @@
   <ItemGroup>
     <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
   </ItemGroup>
+  <ItemGroup><Compile Include="../Shared/SqlFullTextSupport.cs" Link="SqlFullTextSupport.cs" /></ItemGroup>
+  <ItemGroup>
+    <Compile Include="../Shared/SearchRankingFixture.cs" Link="SearchRankingFixture.cs" />
+    <Content Include="../Fixtures/SearchRanking/scenarios.json" Link="SearchRanking/scenarios.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

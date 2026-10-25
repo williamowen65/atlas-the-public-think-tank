@@ -57,6 +57,20 @@ public sealed class SqlDiscoveryReadQuery(
     /// <summary>Resolves ranked results and public cards against one committed database view.</summary>
     private DiscoveryPage Read(DiscoveryQuery query, IReadOnlyCollection<Guid>? authoredIds, bool paged, bool includeHidden = false)
     {
+        try
+        {
+            return ReadCore(query, authoredIds, paged, includeHidden);
+        }
+        catch (SqlException error) when (!string.IsNullOrWhiteSpace(query?.SearchText))
+        {
+            // This includes stopped full-text services, disabled/missing indexes and connection
+            // failures. Preserve the SQL cause for backend logging, never expose it to visitors.
+            throw new SearchUnavailableException(error);
+        }
+    }
+
+    private DiscoveryPage ReadCore(DiscoveryQuery query, IReadOnlyCollection<Guid>? authoredIds, bool paged, bool includeHidden)
+    {
         // 1. Validate and normalize the request before touching the database/cache.
         ArgumentNullException.ThrowIfNull(query);
         DiscoveryQueryValidation.Validate(query);
@@ -83,14 +97,17 @@ public sealed class SqlDiscoveryReadQuery(
             // ?. skips this call entirely when caching was omitted.
             using var db = open();
             cache?.BindDatabase(db.Database.GetConnectionString()!);
+            if (query.SearchText is not null)
+                DiscoveryFullTextSchema.EnsureAvailable(db);
 
-            using var transaction = db.Database.BeginTransaction(IsolationLevel.Serializable);
+            using var transaction = db.Database.BeginTransaction(IsolationLevel.Snapshot);
             // 4. Read the committed freshness counters, even when cache is absent.
             // The singleton row has Id = 1. PageVersion and DetailVersion are generation
             // numbers, not page numbers, node limits or timestamps. Relevant writes bump
             // them atomically; new versions make older cache keys unusable.
-            // This read holds a shared lock until count/page/cards are complete. Writers update
-            // these generations in their own transaction; hidden pages cannot outlive that commit.
+            // The revision and all page/card rows come from the same committed snapshot.
+            // Writers can advance generations without waiting for search's read transaction.
+            // Later requests see the new revision and cannot reuse an older cached page.
             var revision = db.Set<DiscoveryRevisionRow>().AsNoTracking().Single(row => row.Id == 1);
 
             // 5. Look for a ranked page matching the request and current page revision.
@@ -105,7 +122,10 @@ public sealed class SqlDiscoveryReadQuery(
             // - no cache was injected, or
             // - TryPage cannot find this key (first use, new revision, expiry/eviction).
             // Unpaged requests can still reuse detail cards if a cache exists.
-            var pageMiss = !paged || cache is null || !cache.TryPage(key, out page!);
+            // Full-text population is asynchronous and does not bump DiscoveryRevisions.
+            // Never cache text-search pages: an early empty result must not mask later indexing.
+            var cachePage = paged && query.SearchText is null;
+            var pageMiss = !cachePage || cache is null || !cache.TryPage(key, out page!);
 
             if (pageMiss)
             {
@@ -190,7 +210,7 @@ public sealed class SqlDiscoveryReadQuery(
 
             // Publish only successfully completed committed reads. Detail entries are immutable
             // and independent of filters/ordered page IDs and contain no participant-specific votes.
-            if (pageMiss && paged)
+            if (pageMiss && cachePage)
             {
                 cache?.PutPage(key, page);
             }
@@ -237,6 +257,7 @@ public sealed class SqlDiscoveryReadQuery(
             .Select(node => new
             {
                 NodeId = node.Id,
+                node.AuthorId,
                 TypeName = db.NodeTypeRows.Where(type => type.Id == node.TypeId)
                     .Select(type => type.Name).FirstOrDefault() ?? "Unknown",
                 AuthorName = db.ParticipantRows.Where(author => author.Id == node.AuthorId)
@@ -275,9 +296,22 @@ public sealed class SqlDiscoveryReadQuery(
                 metadata[row.NodeId].CommentCount,
                 row.IsHidden)
             {
+                AuthorId = row.IsHidden ? null : metadata[row.NodeId].AuthorId,
                 ShortDescription = row.IsHidden ? row.Description : metadata[row.NodeId].ShortDescription,
+                ChildTypes = row.IsHidden ? Array.Empty<DiscoveryChildType>() : ReadChildTypes(row.SubNodes),
                 BreadcrumbSegment = breadcrumbs[row.NodeId]
             });
+    }
+
+    private static IReadOnlyList<DiscoveryChildType> ReadChildTypes(string json)
+    {
+        if (json is "None" or "[]") return Array.Empty<DiscoveryChildType>();
+        using var children = JsonDocument.Parse(json);
+        return Array.AsReadOnly(children.RootElement.EnumerateArray().Select(child =>
+            new DiscoveryChildType(
+                child.GetProperty("TypeId").GetGuid(),
+                DiscoveryDisplayText.FormatTypeCount(child.GetProperty("Name").GetString()!, child.GetProperty("Count").GetInt32(), child.GetProperty("AutoPluralize").GetBoolean()),
+                child.GetProperty("Count").GetInt32())).ToArray());
     }
 
     /// <summary>Converts SQL child-count JSON to labels using the shared pluralization policy.</summary>

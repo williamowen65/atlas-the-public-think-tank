@@ -81,7 +81,7 @@ test('global theme and density apply across story types', async ({ page }) => {
 test('typography reset restores code defaults', async ({ page }) => {
   await page.goto(story('styles-and-layout-typography--playground&args=fontSize:24;paragraphGap:40'));
   await expect(page.locator('.specimen')).toHaveCSS('font-size', '24px');
-  await page.getByRole('button', { name: 'Reset typography to code defaults' }).click();
+  await page.getByRole('button', { name: 'Reset styles to code defaults' }).click();
   await expect(page.locator('.specimen')).toHaveCSS('font-size', '16px');
   await expect(page.locator('.specimen p').first()).toHaveCSS('margin-bottom', '16px');
 });
@@ -91,7 +91,7 @@ test('typography development server renders and resets after argument updates', 
   await page.goto('http://127.0.0.1:6007/iframe.html?id=styles-and-layout-typography--playground&viewMode=story&args=fontSize:24');
   await expect(page.getByRole('heading', { name: 'Atlas typography' })).toBeVisible();
   await expect(page.locator('.specimen')).toHaveCSS('font-size', '24px');
-  await page.getByRole('button', { name: 'Reset typography to code defaults' }).click();
+  await page.getByRole('button', { name: 'Reset styles to code defaults' }).click();
   await expect(page.locator('.specimen')).toHaveCSS('font-size', '16px');
   await expect(page.getByText('Storybook preview hooks can only be called', { exact: false })).toHaveCount(0);
 });
@@ -185,4 +185,45 @@ test('wheel lens follows direction and recenters, while compact stays fixed', as
     await expect(dial).toHaveAttribute('aria-valuenow', '5');
     await expect(lens).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
   }
+});
+
+test('style Controls carry across Storybook layout and composition stories and reset globally', async ({ page }) => {
+  await page.route('**/atlas-public-api/**', route => {
+    if (route.request().url().endsWith('/reactions')) return route.fulfill({ json: [] });
+    return route.fulfill({ json: { items: [{ nodeId: 'b1000000-0000-4000-8000-000000000001', averageVote: null, voteCount: 0, card: { title: 'Style preview', shortDescription: 'Compare shared padding and typography.', typeName: 'Idea', authorName: 'Author', status: 'Active', createdAt: '2026-10-21T12:00:00Z', breadcrumb: '', subNodes: '', communities: '', commentCount: 0, isHidden: false } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
+  });
+  await page.goto('http://127.0.0.1:6006/?path=/story/styles-and-layout-typography--playground&args=fontSize:20;cardPadding:28');
+  const canvas = page.frameLocator('#storybook-preview-iframe');
+  await expect(canvas.locator('html')).toHaveCSS('font-size', '20px');
+  async function select(id: string, group: string) {
+    const item = page.locator(`[data-item-id="${id}"]`);
+    if (!await item.isVisible()) {
+      const component = page.locator(`[data-item-id="${id.split('--')[0]}"]`);
+      if (!await component.isVisible()) await page.locator(`[data-item-id="${group}"]`).click();
+      if (!await item.isVisible() && await component.isVisible()) await component.click();
+    }
+    await item.click();
+  }
+  await select('layout-header--playground', 'layout');
+  await expect(canvas.getByRole('banner')).toBeVisible();
+  await expect(canvas.locator('html')).toHaveCSS('font-size', '20px');
+  await select('compositions-feed--playground', 'compositions');
+  await expect(canvas.locator('article')).toBeVisible();
+  await expect(canvas.locator('article')).toHaveCSS('--card-padding', '28px');
+  await select('styles-and-layout-typography--playground', 'styles-and-layout');
+  await canvas.getByRole('button', { name: 'Reset styles to code defaults' }).click();
+  await expect(canvas.locator('html')).toHaveCSS('font-size', '16px');
+  await select('layout-footer--playground', 'layout');
+  await expect(canvas.getByRole('contentinfo')).toBeVisible();
+  await expect(canvas.locator('html')).toHaveCSS('font-size', '16px');
+});
+
+
+test.beforeEach(async ({ page }) => {
+  await page.route('**/atlas-session-api/**', route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/votes')) return route.fulfill({ json: { voteCount: 0, averageVote: null, currentParticipantVote: null } });
+    if (path.endsWith('/auth/csrf')) return route.fulfill({ json: { token: 'fixture-token' } });
+    return route.fulfill({ status: 401, json: {} });
+  });
 });

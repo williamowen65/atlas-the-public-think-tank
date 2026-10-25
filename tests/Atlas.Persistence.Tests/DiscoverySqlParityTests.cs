@@ -617,7 +617,7 @@ public sealed class DiscoverySqlParityTests
         var database = SqlTestDatabase.Create(useCurrentModel: true);
         _databases.Add(database);
         DiscoverySqlFixture.Seed(database, candidates);
-        return new DiscoveryService(new SqlDiscoveryReadQuery(database.Open));
+        return new DiscoveryService(new SqlDiscoveryReadQuery(database.OpenForDiscovery));
     }
 
     private static DiscoveryCandidate Candidate(

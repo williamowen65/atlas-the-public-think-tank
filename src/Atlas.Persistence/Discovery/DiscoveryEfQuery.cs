@@ -1,4 +1,6 @@
+using System.Data;
 using Atlas.Discovery;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace Atlas.Persistence.Discovery;
@@ -14,6 +16,9 @@ internal static class DiscoveryEfQuery
         bool includeHidden)
     {
         var nodes = db.NodeRows.AsNoTracking();
+        if (request.ParentNodeId is { } parentId)
+            nodes = nodes.Where(node => node.Parents.Any(link => link.ParentNodeId == parentId)
+                && !db.ModerationCaseRows.Any(report => report.NodeId == parentId && report.Status == 2 && report.VisibilityRestoredAt == null));
         if (request.NodeId is { } nodeId)
             nodes = nodes.Where(node => node.Id == nodeId);
         if (authoredIds is not null)
@@ -98,13 +103,13 @@ internal static class DiscoveryEfQuery
         var search = request.SearchText;
         if (search is not null)
         {
-            // Only ordered cross-block concatenation needs SQL. This IQueryable remains
-            // composed into the server query; no searchable candidates are loaded in memory.
-            var content = db.Database.SqlQueryRaw<SearchContent>(
-                SqlDiscoveryReadQuery.ReadResource("DiscoverySearchContent.sql"));
+            // FREETEXT accepts a parameterized natural-language string, never CONTAINS syntax.
+            // The composable query uses full-text indexes, and filters still intersect in SQL.
+            var matches = db.Database.SqlQueryRaw<SearchMatch>(
+                SqlDiscoveryReadQuery.ReadResource("DiscoverySearchContent.sql"),
+                new SqlParameter("@search", SqlDbType.NVarChar, 4000) { Value = search });
             candidates = candidates.Where(node => !node.Hidden &&
-                (node.Title.Contains(search) || node.ShortDescription.Contains(search) || content.Any(blocks =>
-                    blocks.NodeId == node.NodeId && blocks.Text.Contains(search))));
+                matches.Any(match => match.NodeId == node.NodeId));
         }
 
         return candidates.Select(node => new Candidate
@@ -134,10 +139,9 @@ internal static class DiscoveryEfQuery
         public double RankingScore { get; set; }
     }
 
-    /// <summary>Columns exposed by the small composable ordered-content SQL query.</summary>
-    public sealed class SearchContent
+    /// <summary>Node IDs exposed by the composable full-text query.</summary>
+    public sealed class SearchMatch
     {
         public Guid NodeId { get; set; }
-        public string Text { get; set; } = "";
     }
 }

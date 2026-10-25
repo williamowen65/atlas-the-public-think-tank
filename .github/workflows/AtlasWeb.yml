@@ -9,7 +9,8 @@ permissions:
 
 jobs:
   component-tests:
-    runs-on: ubuntu-latest
+    # Keep the OS package cache tied to a known Ubuntu release.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
       run:
@@ -22,8 +23,51 @@ jobs:
           cache: npm
           cache-dependency-path: src/hosts/Atlas.Web/package-lock.json
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:ci
+      - name: Read Playwright version
+        id: playwright-version
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Restore Chromium cache
+        id: chromium-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ steps.playwright-version.outputs.version }}-chromium-shell-v1
+      - name: Restore Linux package downloads
+        id: linux-packages
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/atlas-apt-archives
+          key: ${{ runner.os }}-${{ runner.arch }}-ubuntu-24.04-playwright-${{ steps.playwright-version.outputs.version }}-apt-v1
+      - name: Install Chromium system dependencies
+        run: |
+          mkdir -p "$RUNNER_TEMP/atlas-apt-archives/partial"
+          # Cache package downloads, never restore installed OS files or dpkg state.
+          echo "Dir::Cache::archives \"$RUNNER_TEMP/atlas-apt-archives\";" | sudo tee /etc/apt/apt.conf.d/99atlas-ci-cache
+          echo 'APT::Keep-Downloaded-Packages "true";' | sudo tee -a /etc/apt/apt.conf.d/99atlas-ci-cache
+          npx playwright install-deps chromium
+          sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/atlas-apt-archives"
+      - name: Save Linux package downloads
+        if: steps.linux-packages.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/atlas-apt-archives
+          key: ${{ steps.linux-packages.outputs.cache-primary-key }}
+      - name: Download Chromium on cache miss
+        if: steps.chromium-cache.outputs.cache-hit != 'true'
+        run: npx playwright install chromium --only-shell
+      # Save before tests so a failing test run still primes the next push's cache.
+      - name: Save Chromium cache
+        if: steps.chromium-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ steps.chromium-cache.outputs.cache-primary-key }}
+      - name: Build Atlas Web and check types
+        run: npm run build
+      - name: Build Storybook
+        run: npm run build-storybook
+      - name: Run Playwright tests
+        run: npm test
       - name: Retain browser failure evidence
         if: failure()
         uses: actions/upload-artifact@v4

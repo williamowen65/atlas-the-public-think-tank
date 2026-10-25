@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Atlas.Application.Storage;
+using Atlas.Testing;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Identity;
 using Atlas.Persistence;
@@ -42,6 +43,7 @@ public sealed class SqlWorkflowTests
         await using var database = new AtlasDataContext(options);
         // EnsureCreated builds this disposable database from the EF model; it does not apply production migrations.
         await database.Database.EnsureCreatedAsync();
+        SqlFullTextSupport.CreateIndexes(database);
         try
         {
             // This client retains its cookie jar across all phases of the same scenario.
@@ -89,6 +91,7 @@ public sealed class SqlWorkflowTests
         await using var database = new AtlasDataContext(options);
         // EnsureCreated builds this disposable database from the EF model; it does not apply production migrations.
         await database.Database.EnsureCreatedAsync();
+        SqlFullTextSupport.CreateIndexes(database);
         try
         {
             using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
@@ -290,6 +293,21 @@ public sealed class SqlWorkflowTests
         }));
         var page = await client.GetFromJsonAsync<JsonElement>($"/api/nodes/{node}/comments?size=1");
         Assert.AreEqual(1, page.GetProperty("items").GetArrayLength());
+        var commentId = page.GetProperty("items")[0].GetProperty("id").GetGuid();
+        Assert.AreEqual(HttpStatusCode.BadRequest, (await client.PutAsJsonAsync($"/api/comments/{commentId}/vote", new { value = 0 })).StatusCode);
+        foreach (var value in new[] { 1, 1, -1 })
+        {
+            await Success(await client.PutAsJsonAsync($"/api/comments/{commentId}/vote", new { value }));
+            var totals = await client.GetFromJsonAsync<JsonElement>($"/api/comments/{commentId}/votes");
+            Assert.AreEqual(value, totals.GetProperty("score").GetInt32());
+            Assert.AreEqual(1, totals.GetProperty("totalVotes").GetInt32());
+            Assert.AreEqual(value, totals.GetProperty("currentParticipantVote").GetInt32());
+        }
+        await Success(await client.DeleteAsync($"/api/comments/{commentId}/vote"));
+        var cleared = await client.GetFromJsonAsync<JsonElement>($"/api/comments/{commentId}/votes");
+        Assert.AreEqual(0, cleared.GetProperty("score").GetInt32());
+        Assert.AreEqual(JsonValueKind.Null, cleared.GetProperty("currentParticipantVote").ValueKind);
+
         await Success(await client.PostAsJsonAsync("/api/communities", new
         {
             name = "API community",
@@ -343,6 +361,24 @@ public sealed class SqlWorkflowTests
                 autoPluralize = true
             }
         ));
+        await Success(await client.PostAsJsonAsync(
+            "/api/catalog/node-types",
+            new
+            {
+                name = "HTTP evidence",
+                description = "Uncountable contribution type",
+                autoPluralize = false
+            }
+        ));
+        using (var catalog = JsonDocument.Parse(await client.GetStringAsync("/api/catalog/node-types")))
+        {
+            var customType = catalog.RootElement.EnumerateArray()
+                .Single(type => type.GetProperty("name").GetString() == "HTTP custom type");
+            Assert.AreEqual("HTTP custom types", customType.GetProperty("pluralName").GetString());
+            var evidenceType = catalog.RootElement.EnumerateArray()
+                .Single(type => type.GetProperty("name").GetString() == "HTTP evidence");
+            Assert.AreEqual("HTTP evidence", evidenceType.GetProperty("pluralName").GetString());
+        }
         await Success(await client.PostAsJsonAsync(
             $"/api/moderation/nodes/{node}/reports",
             new

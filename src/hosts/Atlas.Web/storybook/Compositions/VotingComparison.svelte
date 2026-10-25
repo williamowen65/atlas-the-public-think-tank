@@ -1,13 +1,45 @@
+<!--
+  @component
+  Two independent presentational voting dials for comparing full and compact layouts; no API
+  votes are submitted.
+
+  **Props**
+  No explicit component props; this example supplies its own composition.
+-->
 <script lang="ts">
   import VotingDial from '../../src/lib/components/VotingDial.svelte';
 
+  /**
+   * Local selection for the first demonstration dial; never submitted to the API.
+   */
   let first = $state<number | null>(null);
+  /**
+   * Independent local selection for the compact demonstration dial.
+   */
   let second = $state<number | null>(0);
 </script>
 
+<!--
+  Layout: Two independent dials share a comparison row; the note below makes their local-only
+  behavior explicit.
+-->
+
 <div class="comparison">
-  <VotingDial label="First node importance" value={first} average={7.4} totalVotes={21} onChange={(next) => first = next} />
-  <VotingDial label="Second node importance" value={second} average={6.2} totalVotes={8} compact onChange={(next) => second = next} />
+  <VotingDial
+    label="First node importance"
+    value={first}
+    average={7.4}
+    totalVotes={21}
+    onChange={(next) => (first = next)}
+  />
+  <VotingDial
+    label="Second node importance"
+    value={second}
+    average={6.2}
+    totalVotes={8}
+    compact
+    onChange={(next) => (second = next)}
+  />
 </div>
 <p class="fixture-note">Independent local selections; no votes are submitted.</p>
 

@@ -90,7 +90,7 @@ public sealed class SqlVoteRepository(Func<AtlasDataContext>? contextFactory = n
     // Translate the target subtype into the stored discriminator; reject unsupported target types.
     private static string TargetKind(VoteTarget target) => target switch
     {
-        NodeVoteTarget => "Node", NodeReactionVoteTarget => "NodeReaction",
+        NodeVoteTarget => "Node", NodeReactionVoteTarget => "NodeReaction", CommentVoteTarget => "Comment",
         _ => throw new InvalidOperationException("Unsupported vote target type.")
     };
 
@@ -125,6 +125,7 @@ public sealed class SqlVoteRepository(Func<AtlasDataContext>? contextFactory = n
                 {
                     NodeVoteTarget => "Node",
                     NodeReactionVoteTarget => "NodeReaction",
+                    CommentVoteTarget => "Comment",
 
                     _ => throw new InvalidOperationException(
                         "Unsupported vote target type.")
@@ -141,6 +142,7 @@ public sealed class SqlVoteRepository(Func<AtlasDataContext>? contextFactory = n
             // Decode the stored target type first; unknown kinds are invalid persisted data.
             VoteTarget target = storedVote.TargetType switch
             {
+                "Comment" => new CommentVoteTarget(storedVote.TargetId),
                 "Node" => new NodeVoteTarget(
                     storedVote.TargetId),
                 "NodeReaction" => new NodeReactionVoteTarget(

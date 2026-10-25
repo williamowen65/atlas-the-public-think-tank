@@ -344,17 +344,16 @@ public sealed class SqlIdentityTests
     }
 
     [TestMethod]
-    public async Task Identity_migration_preserves_existing_profile_and_sql_restricts_missing_profile_and_duplicate_email()
+    public async Task Baseline_preserves_existing_profile_on_repeat_and_sql_restricts_missing_profile_and_duplicate_email()
     {
         using var fixture = Database.Create(migrate: false);
         var id = Guid.NewGuid();
         using (var scope = fixture.Services.CreateScope())
         {
             var context = scope.ServiceProvider.GetRequiredService<AtlasDataContext>();
-            await context.GetService<Microsoft.EntityFrameworkCore.Migrations.IMigrator>()
-                .MigrateAsync("20260929202249_AddReferentialIntegrity");
-            // Seed the historical schema directly: today's SaveChanges hooks require
-            // tables introduced after this migration (including DiscoveryRevisions).
+            await context.Database.MigrateAsync();
+            // The squashed baseline includes Identity and profile constraints from creation.
+            // Reapplying migrations must preserve a profile without inventing an Identity user.
             var now = DateTimeOffset.UtcNow;
             await context.Database.ExecuteSqlInterpolatedAsync($"""
                 INSERT INTO ParticipantRows (Id, DisplayName, Bio, IsActive, CreatedAt, UpdatedAt)

@@ -1,3 +1,4 @@
+using Atlas.Discovery;
 using Atlas.Graph.Nodes.NodeTypes;
 using Atlas.Graph.Reactions;
 using Atlas.Identity;
@@ -141,7 +142,8 @@ public sealed class CatalogController(
         t.OwnerId,
         t.IsSystemDefined,
         t.IsArchived,
-        t.AutoPluralize
+        t.AutoPluralize,
+        pluralName = DiscoveryDisplayText.PluralizeTypeName(t.Name, t.AutoPluralize)
     };
 }
 

@@ -46,6 +46,21 @@ public sealed class VotesController(
         return NoContent();
     }
 
+    /// <summary>Cast/change a comment vote using shared eligibility, quotas and participant locking.</summary>
+    [HttpPut("comments/{id:guid}/vote")]
+    public IActionResult Comment(Guid id, VoteInput input)
+    {
+        cast.Execute(new CommentVoteTarget(id), new Voter(actor.ParticipantId), input.Value);
+        return NoContent();
+    }
+
+    [HttpDelete("comments/{id:guid}/vote")]
+    public IActionResult UndoComment(Guid id)
+    {
+        undo.Execute(new CommentVoteTarget(id), new Voter(actor.ParticipantId));
+        return NoContent();
+    }
+
     /// <summary>Coordinate applying a reaction and casting/changing its vote atomically.</summary>
     [HttpPut("nodes/{node:guid}/reactions/vote")]
     public IActionResult Reaction(Guid node, ReactionVoteInput input)

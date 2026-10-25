@@ -16,7 +16,9 @@ public sealed class CommentsController(
     CommentWorkflowService workflow,
     Atlas.Graph.Nodes.INodeRepository nodes,
     Atlas.Moderation.ModerationService moderation,
-    RequestActor actor
+    RequestActor actor,
+    ICommentRepository comments,
+    Atlas.Voting.Data.IVoteRepository votes
 ) : ControllerBase
 {
     /// <summary>Read roots or direct replies using a bounded keyset page and request cancellation.</summary>
@@ -102,6 +104,19 @@ public sealed class CommentsController(
             DateTimeOffset.UtcNow
         );
         return NoContent();
+    }
+
+    /// <summary>Public totals with the verified session's vote, after checking target visibility.</summary>
+    [HttpGet("comments/{id:guid}/votes")]
+    public object Votes(Guid id)
+    {
+        var comment = comments.GetById(new CommentId(id)) ?? throw new KeyNotFoundException();
+        if (comment.IsRemoved || comment.Target.Kind != "Node" ||
+            nodes.GetById(new Atlas.Graph.Nodes.NodeId(comment.Target.Id)) is null ||
+            moderation.Visibility(comment.Target.Id).IsHidden) throw new KeyNotFoundException();
+        return new Atlas.Voting.GetCommentVoteSummary(votes).Execute(
+            new Atlas.Voting.Target.CommentVoteTarget(id),
+            actor.Id is { } voter ? new Atlas.Voting.Votes.ParticipantId(voter) : null);
     }
 
     private static object View(Comment comment) => new

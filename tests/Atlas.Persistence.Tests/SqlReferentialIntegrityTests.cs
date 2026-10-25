@@ -1,8 +1,6 @@
 using Atlas.Persistence;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace Atlas.Persistence.Tests;
 
@@ -79,14 +77,12 @@ public sealed class SqlReferentialIntegrityTests
     }
 
     [TestMethod]
-    public void Generated_migration_upgrades_existing_rows_without_recreating_database()
+    public void Baseline_preserves_existing_rows_on_repeat_and_enforces_references()
     {
         using var database = SqlTestDatabase.Create();
         using var context = database.Open();
-        var migrator = context.GetService<IMigrator>();
-        migrator.Migrate("20260929180000_InitialRelationalStorage");
-        // Seed the historical schema without today's SaveChanges hooks, which
-        // require the DiscoveryRevisions table introduced by a later migration.
+        // Historical upgrade targets were retired by the explicit baseline reset.
+        // Check repeat application and the baseline's referential constraints instead.
         var participantId = Guid.NewGuid();
         var nodeId = Guid.NewGuid();
         var now = DateTimeOffset.UtcNow;
@@ -96,7 +92,7 @@ public sealed class SqlReferentialIntegrityTests
             INSERT INTO NodeRows (Id, Title, Status, CreatedAt, UpdatedAt)
             VALUES ({nodeId}, N'Test node', N'Active', {now}, {now});
             """);
-        migrator.Migrate();
+        context.Database.Migrate();
         Assert.IsTrue(context.ParticipantRows.Any(row => row.Id == participantId));
         context.NodeRows.Single(row => row.Id == nodeId).AuthorId = Guid.NewGuid();
         AssertForeignKeyViolation(() => context.SaveChanges());

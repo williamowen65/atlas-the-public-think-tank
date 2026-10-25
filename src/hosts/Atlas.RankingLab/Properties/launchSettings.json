@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Atlas.RankingLab": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:33614;http://localhost:33615"
+    }
+  }
+}
