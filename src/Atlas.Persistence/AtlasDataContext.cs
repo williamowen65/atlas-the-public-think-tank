@@ -771,9 +771,10 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
         // ToTable fixes table names, and HasKey identifies each record uniquely.
         // Ignore excludes convenience ID lists; the HasMany collections persist their real child rows.
         // Cascade removes owned link/history rows on physical owner deletion, not on archival.
+        // Supplemental search triggers require EF's trigger-compatible write path.
         model.Entity<NodeRow>(entity =>
         {
-            entity.ToTable("NodeRows");
+            entity.ToTable("NodeRows", table => table.UseSqlOutputClause(false));
             entity.HasKey(row => row.Id);
             entity.Property(row => row.Title)
                 .HasMaxLength(450);
@@ -812,7 +813,7 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
         });
         model.Entity<BlockRow>(entity =>
         {
-            entity.ToTable("BlockRows");
+            entity.ToTable("BlockRows", table => table.UseSqlOutputClause(false));
             entity.HasKey(row => row.Id);
             entity.Property(row => row.Kind)
                 .HasMaxLength(450);
@@ -882,7 +883,7 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
         });
         model.Entity<CommentRow>(entity =>
         {
-            entity.ToTable("CommentRows");
+            entity.ToTable("CommentRows", table => table.UseSqlOutputClause(false));
             entity.HasKey(row => row.Id);
             entity.Property(row => row.TargetKind)
                 .HasMaxLength(450);
@@ -934,7 +935,7 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
         });
         model.Entity<DocumentBlockRow>(entity =>
         {
-            entity.ToTable("DocumentBlocks");
+            entity.ToTable("DocumentBlocks", table => table.UseSqlOutputClause(false));
             entity.HasKey(row => new { row.DocumentId, row.Position });
         });
         model.Entity<ReactionAuditRow>(entity =>

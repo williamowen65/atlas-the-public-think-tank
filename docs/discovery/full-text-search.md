@@ -44,7 +44,9 @@ Current limits:
 - No guaranteed synonyms without a configured thesaurus.
 - Quoted free text does not request an exact phrase.
 - Global search orders the combined node/comment hits by SQL Server full-text relevance, then result kind, date and ID for deterministic ties. Node importance is shown as metadata, not used to order the mixed search. The browsing feed keeps its existing importance-based ordering.
-- SQL Server computes ranks per indexed table; merging those ranks is a practical ordering heuristic, not a calibrated probability that two different kinds of result are equally relevant.
+- Global search uses **one full-text index on `SearchDocuments.SearchText`** for both nodes and comments. Scores therefore come from the same corpus instead of comparing unrelated per-table ranks.
+- One node document combines its title, short description and all currently linked block text. One comment document contains its body. A match across multiple node fields contributes to that single document.
+- Results may cluster by type when their text earns similar scores. There is no alternating quota or automatic preference for comments; identical documents earn identical scores, with nodes first only when scores tie.
 
 ## What gets searched
 
@@ -59,7 +61,7 @@ Current limits:
 | Comment | Visible comment body |
 
 - Poll/reference IDs are excluded.
-- `DocumentBlocks` links restrict matches to the node's current document. Removing a link removes that block's match immediately.
+- `DocumentBlocks` links restrict matches to the node's current document. Removing a link updates the node's search document in the same transaction; full-text matching catches up asynchronously.
 - Moderation, archive policy, other filters, counting and paging remain server-side constraints.
 - Text is sent as an SQL parameter, never executable SQL syntax.
 - Search text is limited to **4,000 characters** after trimming surrounding whitespace.
@@ -102,9 +104,9 @@ Expected results:
 
 Separate test and deployment instances need the same feature. CI installs it automatically.
 
-## Regenerate the local baseline and run explicit setup
+## Database setup and optional future migration squash
 
-The previous migrations and snapshot have been removed at your request. Generate and commit a new baseline before running the application or migration-based CI tests.
+The developer-generated baseline is already committed. **For normal updates, skip to step 2** and rerun explicit setup; do not delete your database or regenerate migrations. Step 1 documents the optional disposable-database squash workflow.
 
 **This reset is for your disposable local database.** Do not use these reset steps on a production/shared database with data to preserve.
 
@@ -135,8 +137,8 @@ dotnet run --project src/hosts/Atlas.Console -- --setup-database
 The command:
 
 1. Applies EF migrations, creating the database when necessary.
-2. Runs the full-text setup SQL outside a transaction.
-3. Checks that full-text support, English resources and all three enabled indexes are available.
+2. Installs and backfills the search projection, then creates full-text indexes outside a transaction.
+3. Checks that full-text support, English resources and all four enabled indexes are available.
 4. Prints success and exits, without opening the interactive console or seeding demo data.
 
 - Normal API startup does not run this installer.
@@ -276,7 +278,7 @@ No EF model change or new migration is required. Existing comment text is popula
 
 ### One result sequence
 
-Node and comment candidates are combined, ranked and counted **before** SQL pagination. The existing three-result page size applies to that combined sequence. No independent comment page is appended to a node page. Node/block matches are deduplicated by node ID; each comment remains its own result.
+Node and comment candidates are combined, ranked and counted **before** SQL pagination. The existing three-result page size applies to that combined sequence. No independent comment page is appended to a node page. Each node has one combined search document; each comment remains its own result.
 
 Search results are not cached. Index population and concurrent edits can change ordering between requests; the client deduplicates appended entries, and rerunning the search starts from current data. Relevance does not guarantee a fixed ratio of nodes to comments per page.
 
@@ -288,3 +290,29 @@ A comment result links to `/nodes?id=NODE&type=comments&comment=COMMENT`.
 - Removed ancestors remain blank placeholders; a removed target itself is unavailable.
 - The UI opens Comments, pins the relevant sibling at each level even if it is outside that level's first page, expands the ancestor chain, then highlights and focuses the selected comment.
 - Normal sibling pagination and replying remain available. A stale or unavailable link shows an error with Retry comment and Show discussion controls.
+
+## Shared relevance ranking: updating an existing database
+
+After pulling the shared-ranking update, rerun:
+
+```sh
+dotnet run --project src/hosts/Atlas.Console -- --setup-database
+```
+
+- No database deletion or reseeding is needed.
+- Setup creates the rebuildable `SearchDocuments` projection, refresh procedures and tracking triggers, backfills existing nodes/comments, and creates its full-text index.
+- These supplemental objects live outside EF migrations, so squashing migrations does not remove their installation logic. No new EF migration is required for this projection.
+- Existing node/block indexes remain for discovery feed queries; the comment index is retained for compatibility. Global search uses the shared index exclusively.
+- Setup requires permission to create tables, types, procedures, triggers and full-text indexes. Run it before starting the updated API or seed/import jobs, with application writes stopped during deployment.
+- On repeat runs, setup repairs projection text and removes stale documents without replacing unchanged document keys.
+- Database triggers update the projection in the same transaction as node, block, document-link and comment writes, including raw SQL imports. Removed/deleted comments lose their documents.
+- EF uses its trigger-compatible SQL write path for those four source tables. The projection is derived infrastructure, not an additional domain entity.
+- Full-text indexing still happens **in the background**. A first backfill or bulk seed may take longer than normal edits; allow the indexer to finish before comparing results.
+- Missing or disabled shared search infrastructure produces the existing search-unavailable response, rather than silently falling back to incompatible ranks.
+
+### Ranking regression checks
+
+- Identical node and comment documents must receive identical scores from the shared full-text query.
+- Combined counting and pagination must retain every distinct node/comment result.
+- Tests cover projection backfill, repeated setup, and subsequent node, block, link, comment and raw SQL edits.
+- SQL fixtures wait for all four indexes before asserting search results. No browser/UI change is required for the new ordering.

@@ -1,3 +1,5 @@
+IF EXISTS (SELECT 1 FROM sys.fulltext_indexes WHERE object_id = OBJECT_ID(N'dbo.SearchDocuments'))
+    DROP FULLTEXT INDEX ON dbo.SearchDocuments;
 IF EXISTS (SELECT 1 FROM sys.fulltext_indexes WHERE object_id = OBJECT_ID(N'dbo.CommentRows'))
     DROP FULLTEXT INDEX ON dbo.CommentRows;
 IF EXISTS (SELECT 1 FROM sys.fulltext_indexes WHERE object_id = OBJECT_ID(N'dbo.BlockRows'))

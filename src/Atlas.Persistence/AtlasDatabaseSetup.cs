@@ -24,6 +24,11 @@ public static class AtlasDatabaseSetup
     public static void InstallSupplementalSchema(AtlasDataContext database)
     {
         RequireNoTransaction(database);
+        // CREATE OR ALTER procedures/triggers must be the first statement in their batch.
+        foreach (var script in new[] { "SearchDocumentsSchema.sql", "SearchDocumentsRefreshNodes.sql",
+            "SearchDocumentsRefreshComments.sql", "SearchDocumentsTrackNodes.sql", "SearchDocumentsTrackComments.sql",
+            "SearchDocumentsTrackBlocks.sql", "SearchDocumentsTrackLinks.sql", "SearchDocumentsBackfill.sql" })
+            database.Database.ExecuteSqlRaw(SqlDiscoveryReadQuery.ReadResource(script));
         database.Database.ExecuteSqlRaw(DiscoveryFullTextSchema.CreateSql);
         DiscoveryFullTextSchema.EnsureAvailable(database, includeComments: true);
     }

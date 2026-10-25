@@ -28,13 +28,13 @@ public static class DiscoveryFullTextSchema
                 AND EXISTS (SELECT 1 FROM sys.fulltext_languages WHERE lcid = 1033)
                 AND (SELECT COUNT(*) FROM sys.fulltext_indexes
                     WHERE (object_id IN (OBJECT_ID(N'dbo.NodeRows'), OBJECT_ID(N'dbo.BlockRows'))
-                        OR ({includeComments} = 1 AND object_id = OBJECT_ID(N'dbo.CommentRows')))
-                      AND is_enabled = 1) = { (includeComments ? 3 : 2) }
+                        OR ({includeComments} = 1 AND object_id IN (OBJECT_ID(N'dbo.CommentRows'), OBJECT_ID(N'dbo.SearchDocuments'))))
+                      AND is_enabled = 1) = { (includeComments ? 4 : 2) }
                 THEN 1 ELSE 0 END AS [Value]
             """).Single();
         if (available != 1)
             throw new SearchUnavailableException(new InvalidOperationException(
-                "Full-text support, English resources, or enabled NodeRows/BlockRows full-text indexes are missing."));
+                "Full-text support, English resources, or enabled search full-text indexes are missing. Rerun --setup-database."));
     }
 
     /// <summary>Run after adding BlockRows.SearchText, outside the migration transaction.</summary>

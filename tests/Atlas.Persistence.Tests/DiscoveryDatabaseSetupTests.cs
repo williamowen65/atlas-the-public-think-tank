@@ -16,17 +16,19 @@ public sealed class DiscoveryDatabaseSetupTests
         using (var db = fixture.Open())
         {
             Assert.AreEqual(0, db.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM sys.fulltext_indexes").Single());
-            AtlasDatabaseSetup.InstallSupplementalSchema(db);
         }
         var now = DateTimeOffset.UtcNow;
         var node = new DiscoveryCandidate(Guid.NewGuid(), "Protecting salmon", "Healthy rivers", Guid.NewGuid(), Guid.NewGuid(), false, now, now, 0, null, [], []);
         DiscoverySqlFixture.Seed(fixture, node);
+        using (var db = fixture.Open()) AtlasDatabaseSetup.InstallSupplementalSchema(db);
+        var mixed = new SqlPublicSearch(fixture.OpenForDiscovery);
+        Assert.AreEqual(node.NodeId, mixed.Search(new(SearchText: "salmon")).Items.Single().NodeId);
         var search = new SqlDiscoveryReadQuery(fixture.OpenForDiscovery);
         Assert.AreEqual(node.NodeId, search.DiscoverPage(new(SearchText: "salmon")).Items.Single().NodeId);
         using (var db = fixture.Open())
         {
             AtlasDatabaseSetup.InstallSupplementalSchema(db);
-            Assert.AreEqual(3, db.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM sys.fulltext_indexes").Single());
+            Assert.AreEqual(4, db.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM sys.fulltext_indexes").Single());
             Assert.AreEqual(node.Title, db.NodeRows.Single().Title);
         }
         Assert.AreEqual(node.NodeId, search.DiscoverPage(new(SearchText: "rivers")).Items.Single().NodeId);
@@ -39,7 +41,7 @@ public sealed class DiscoveryDatabaseSetupTests
         using var db = fixture.Open();
         AtlasDatabaseSetup.Apply(db);
         AtlasDatabaseSetup.Apply(db);
-        Assert.AreEqual(3, db.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM sys.fulltext_indexes").Single());
+        Assert.AreEqual(4, db.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM sys.fulltext_indexes").Single());
     }
 
     [TestMethod]

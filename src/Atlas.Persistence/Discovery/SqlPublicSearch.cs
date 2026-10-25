@@ -58,8 +58,8 @@ public sealed class SqlPublicSearch(Func<AtlasDataContext> open) : IPublicSearch
             ? db.CommentRows.Select(c => new Match { ResultId = c.Id, NodeId = c.TargetId, Kind = 1, Score = 0 })
             : db.Database.SqlQueryRaw<Match>(SqlDiscoveryReadQuery.ReadResource("PublicSearchMatches.sql"),
                 new SqlParameter("@search", SqlDbType.NVarChar, 4000) { Value = query.SearchText });
-        var matched = matches.GroupBy(m => new { m.ResultId, m.NodeId, m.Kind })
-            .Select(g => new Match { ResultId = g.Key.ResultId, NodeId = g.Key.NodeId, Kind = g.Key.Kind, Score = g.Max(m => m.Score) });
+        // The shared index contains exactly one document per node or comment.
+        var matched = matches;
         var nodeScope = DiscoveryEfQuery.Build(db, query with { SearchText = null }, null, false);
         var nodeHits = from match in matched
                        join node in nodeScope on match.NodeId equals node.NodeId
