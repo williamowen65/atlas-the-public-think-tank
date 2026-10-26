@@ -1,20 +1,7 @@
 name: Atlas backend coverage
 
+# Full instrumented SQL coverage is expensive; run explicitly when review needs it.
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'src/**'
-      - 'tests/**'
-      - '.config/dotnet-tools.json'
-      - '.github/workflows/AtlasCoverage.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'src/**'
-      - 'tests/**'
-      - '.config/dotnet-tools.json'
-      - '.github/workflows/AtlasCoverage.yml'
   workflow_dispatch:
 
 permissions:
