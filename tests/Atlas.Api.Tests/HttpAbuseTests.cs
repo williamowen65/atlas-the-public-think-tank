@@ -174,7 +174,16 @@ public sealed class HttpAbuseTests
         var certificateRequest = new CertificateRequest("CN=localhost", key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
         // Self-signed means this test signs its own certificate instead of asking a trusted issuer.
         // The short validity window covers the test; the slightly earlier start tolerates clock skew.
-        using var certificate = certificateRequest.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddMinutes(10));
+        var alternativeNames = new SubjectAlternativeNameBuilder();
+        alternativeNames.AddDnsName("localhost");
+        alternativeNames.AddIpAddress(IPAddress.Loopback);
+        certificateRequest.CertificateExtensions.Add(alternativeNames.Build());
+        using var generatedCertificate = certificateRequest.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddMinutes(10));
+        // Windows Schannel cannot use the ephemeral key returned by CreateSelfSigned.
+        // Reimport a PFX with DefaultKeySet so the platform can obtain TLS credentials.
+        // Do not use EphemeralKeySet or PersistKeySet; dispose the imported certificate after the host.
+        var pfx = generatedCertificate.Export(X509ContentType.Pfx);
+        using var certificate = ImportServerCertificate(pfx);
         using var root = new ApiFactory();
         // Enable server-side TLS diagnostics only for this test's real Kestrel host.
         // A client EOF alone does not explain why the server rejected the handshake.
@@ -232,6 +241,19 @@ public sealed class HttpAbuseTests
         // A limit must reject excess data without rejecting a body exactly at the allowed boundary.
         using var allowed = await client.PostAsync("/__tests/abuse/body", new ByteArrayContent(new byte[65_536]));
         Assert.AreEqual(HttpStatusCode.NoContent, allowed.StatusCode);
+    }
+
+    private static X509Certificate2 ImportServerCertificate(byte[] pfx)
+    {
+        try
+        {
+            return X509CertificateLoader.LoadPkcs12(pfx, password: null,
+                keyStorageFlags: X509KeyStorageFlags.DefaultKeySet);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(pfx);
+        }
     }
 
     /// <summary>
