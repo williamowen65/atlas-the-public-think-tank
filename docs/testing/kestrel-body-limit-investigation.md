@@ -2,54 +2,60 @@
 
 Tracking: [PTT-152](https://thepublicthinktank.atlassian.net/browse/PTT-152).
 [Evidence notebook](https://thepublicthinktank.atlassian.net/wiki/spaces/PTT/pages/8355841).
+[PR #370](https://github.com/williamowen65/atlas-the-public-think-tank/pull/370).
 
-## Scope
+## Observed failure
 
-Diagnose only `HttpAbuseTests.Kestrel_rejects_known_length_and_chunked_oversized_bodies_and_accepts_the_boundary` in `tests/Atlas.Api.Tests/HttpAbuseTests.cs`. This draft starts with an investigation record, not a claimed fix.
+The original HTTPS version of
+`HttpAbuseTests.Kestrel_rejects_known_length_and_chunked_oversized_bodies_and_accepts_the_boundary`
+failed on Windows at the initial CSRF GET with an SSL unexpected-EOF exception.
+The user confirmed a loopback HTTPS address, HasPrivateKey=true, and that the
+client certificate-validation callback was never reached. The exact server-side
+TLS cause remains unconfirmed.
 
-Branch starts at main commit `3cb1016deed7332de780d866e7769e00a04f3c54`. Original Windows/CI comparison used `d8c7817d443836c0b2e44a78350d2a4794369932`; do not present different commits as a controlled comparison.
+Original baseline: `d8c7817d443836c0b2e44a78350d2a4794369932`.
+Linux [Test API job](https://github.com/williamowen65/atlas-the-public-think-tank/actions/runs/40219393410/job/121697294630)
+records this method passing (252 ms). Windows used SDK 10.0.402 and installed
+.NET 10 runtime 10.0.13; inspected CI used SDK 10.0.403 and runtime 10.0.14.
+This investigation branch originally started at main
+`3cb1016deed7332de780d866e7769e00a04f3c54`.
 
-## Reported failure and known evidence
+## Agreed scope change
 
-Windows reports HttpRequestException: “The SSL connection could not be established,” with inner IOException: “Received an unexpected EOF or 0 bytes from the transport stream.” The reported source line is the initial GET of /api/auth/csrf.
+At the user's request, this test now uses real loopback Kestrel over HTTP to
+isolate body-size enforcement from certificate/TLS setup. This is a test-design
+change, not a demonstrated fix for Windows TLS.
 
-This test is discovered and starts; the reported problem is an HTTPS transport failure before body-size assertions, not evidence that the test is omitted.
+Only this derived factory changes:
+- HTTPS redirection uses the middleware's -1 no-port sentinel.
+- The antiforgery cookie uses a test-only name without the __Host- prefix and
+  permits HTTP. Real cookie/token validation stays enabled.
+- The client does not follow redirects, so accidental redirects fail visibly.
 
-At the original baseline, Linux [Test API job 121697294630](https://github.com/williamowen65/atlas-the-public-think-tank/actions/runs/40219393410/job/121697294630) explicitly records this method passing (252 ms).
-
-Captured Windows environment: Windows 10.0.26300 win-x64, SDK 10.0.402, host and installed ASP.NET/Core runtime 10.0.13. Inspected Linux job: Ubuntu 26.04.1, SDK 10.0.403, runtime installation 10.0.14. Actual runtime selected during each reproduction must be recorded.
-
-## Source review
-
-The method creates an RSA key and self-signed certificate, starts a real loopback Kestrel HTTPS listener, and obtains its assigned address. A test-only client accepts only that certificate's fingerprint. It first obtains a CSRF token, then checks:
-
+A small tokenless POST must return 400 with the CSRF error. With the paired
+cookie and request token, all original size checks remain:
 - 65,537-byte known-length body returns 413 with a safe error body.
 - 65,537-byte unknown-length/chunked body returns 413 with a safe error body.
 - Exactly 65,536 bytes returns 204.
 
-Client certificate acceptance cannot establish that the server successfully used its private key. Certificate/private-key handling by the server on Windows is a hypothesis to investigate, not a confirmed cause. Other possibilities include TLS configuration, connection lifecycle, and runtime differences. The generated certificate means trusting the user's development certificate is not an established remedy.
+Production settings and shared factories remain unchanged. Existing redirect,
+HSTS, secure-cookie and CSRF tests remain in place; their in-memory hosting does
+not prove a real TLS handshake. This test no longer provides that handshake
+coverage either. HTTPS framing and HTTP headers do not consume the body limit;
+the body itself is measured in bytes, not character count.
 
-## First reproduction
+## Verification
 
-From repository root on this branch, record `git rev-parse HEAD`, `git status --short` and `dotnet --info`, then run:
+From repository root on `PTT-152-test-consistency`, record SHA, working-tree
+changes and dotnet --info, then run:
 
 ```powershell
 dotnet test tests/Atlas.Api.Tests/Atlas.Api.Tests.csproj --configuration Release --filter "FullyQualifiedName~Kestrel_rejects_known_length_and_chunked_oversized_bodies_and_accepts_the_boundary" --logger "console;verbosity=detailed"
 ```
 
-Record exact command, SHA, selected runtime, test count, complete exception chain and failing phase. Repeat on Linux at the same SHA. If isolated execution passes, compare with the full API suite before changing dependencies.
+Then run the full API project and compare Windows/Linux results at the same
+commit. Record passes, failures and SQL-dependent skips separately.
 
-## Diagnostic work and completion criteria
-
-1. Identify the failing phase: server startup, initial TLS/CSRF GET, known-length rejection, chunked rejection, or boundary acceptance.
-2. Capture bounded test-only Kestrel/HTTPS diagnostics around the failure. Preserve the original exception; do not log private keys or secrets.
-3. Test one evidence-backed hypothesis at a time, recording before/after commit, environment and result.
-4. If a fix is identified, preserve HTTPS, certificate fingerprint validation and all three body-limit assertions.
-5. Verify the focused test and full API suite on Windows and Linux; distinguish SQL-dependent skips from executed tests.
-6. Document the confirmed cause, fix, successful comparisons and unresolved limits before marking the draft ready.
-
-Do not replace HTTPS with HTTP, accept all certificates, skip Windows, or add retries solely to obtain a pass.
-
-## Status
-
-Initial source review complete. No new reproduction or root-cause confirmation yet. No executable test or production behavior changed in this initial commit.
+Status: implementation/source reviewed. This editing environment has no dotnet
+executable; compilation, CI and Windows execution remain pending. Do not mark
+the discrepancy resolved until the updated test executes successfully in both.
