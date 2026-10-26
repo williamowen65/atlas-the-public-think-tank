@@ -18,4 +18,5 @@
     <Compile Include="../Shared/SearchRankingFixture.cs" Link="SearchRankingFixture.cs" />
     <Content Include="../Fixtures/SearchRanking/scenarios.json" Link="SearchRanking/scenarios.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+  <Import Project="../BackendCoverage.props" />
 </Project>
