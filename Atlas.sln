@@ -150,6 +150,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "requirements", "requirements", "{9C01D8BE-79A9-4FAF-9A21-C452508327A4}"
 	ProjectSection(SolutionItems) = preProject
 		docs\requirements\README.md = docs\requirements\README.md
+		docs\requirements\TEST-COVERAGE.md = docs\requirements\TEST-COVERAGE.md
 		docs\requirements\REQUIREMENTS.md = docs\requirements\REQUIREMENTS.md
 		docs\requirements\TRACEABILITY.md = docs\requirements\TRACEABILITY.md
 	EndProjectSection
