@@ -1,0 +1,48 @@
+name: Atlas Graph coverage pilot
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/Atlas.Graph/**'
+      - 'src/Atlas.Contracts/**'
+      - 'tests/Atlas.Graph.Tests/**'
+      - 'tests/graph-coverage.runsettings'
+      - 'tests/Invoke-GraphCoverage.ps1'
+      - '.config/dotnet-tools.json'
+      - '.github/workflows/AtlasCoverage.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/Atlas.Graph/**'
+      - 'src/Atlas.Contracts/**'
+      - 'tests/Atlas.Graph.Tests/**'
+      - 'tests/graph-coverage.runsettings'
+      - 'tests/Invoke-GraphCoverage.ps1'
+      - '.config/dotnet-tools.json'
+      - '.github/workflows/AtlasCoverage.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  graph-coverage:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Run Graph tests and generate coverage
+        shell: pwsh
+        run: ./tests/Invoke-GraphCoverage.ps1
+      - name: Retain test results, coverage and run metadata
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-graph-test-reports
+          path: artifacts/test-reports/
+          if-no-files-found: error
+          retention-days: 14
