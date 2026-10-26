@@ -1,9 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
@@ -156,54 +156,49 @@ public sealed class HttpAbuseTests
     }
 
     /// <summary>
-    /// Given a real local Kestrel HTTPS server, send bodies one byte above its 64 KiB ceiling.
+    /// Given a real local Kestrel HTTP server, send bodies one byte above its 64 KiB ceiling.
     /// Expect 413 for both known-length and chunked requests, but 204 for exactly 65,536 bytes.
     /// This tests the web server's byte limit independently of JSON parsing, domain validation or SQL.
     /// </summary>
     [TestMethod]
     public async Task Kestrel_rejects_known_length_and_chunked_oversized_bodies_and_accepts_the_boundary()
     {
-        // Build temporary server TLS credentials entirely inside the test; no user supplies them.
-        // RSA (Rivest-Shamir-Adleman) is an asymmetric algorithm. This creates a fresh 2048-bit
-        // public/private key pair, not an "encrypted key". Here the private key signs the certificate.
-        using var key = RSA.Create(2048);
-        // CertificateRequest is a .NET object describing the certificate to create, not an incoming
-        // HTTP request or a user's certificate upload. CN is the subject's common-name label.
-        // SHA256 selects the signing digest; Pkcs1 selects RSA signature padding.
-        var certificateRequest = new CertificateRequest("CN=localhost", key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-        // Self-signed means this test signs its own certificate instead of asking a trusted issuer.
-        // The short validity window covers the test; the slightly earlier start tolerates clock skew.
-        using var certificate = certificateRequest.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddMinutes(10));
         using var root = new ApiFactory();
-        using var factory = Probes(root);
-        // Kestrel is the web-server software hosting the API, not the host computer.
-        // TestServer normally runs the middleware in memory and cannot enforce Kestrel-specific limits.
-        // UseKestrel switches this factory to a real listener: loopback stays on this machine,
-        // port 0 asks the OS for a free port, and UseHttps gives the listener our temporary certificate.
-        factory.UseKestrel(options => options.Listen(IPAddress.Loopback, 0, endpoint => endpoint.UseHttps(certificate)));
-        // Resolve Services to start the real socket server; TestServer cannot test Kestrel's body ceiling.
-        var addresses = factory.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!;
-        // HttpClientHandler owns transport concerns such as TLS certificate checks and cookie storage.
-        // A newly self-signed test certificate is not normally trusted by the OS.
-        using var handler = new HttpClientHandler
+        using var factory = Probes(root).WithWebHostBuilder(builder => builder.ConfigureServices(services =>
         {
-            // During the TLS handshake .NET calls this function with request, certificate, chain and errors.
-            // "_" parameters are intentionally unused; "supplied" is the certificate presented by Kestrel.
-            // Return true only when its certificate fingerprint equals the certificate we just created.
-            // This is a narrowly scoped test trust rule, not normal public CA/hostname/expiry validation.
-            // Do not copy it into a production HTTP client or replace it with an always-true callback.
-            ServerCertificateCustomValidationCallback = (_, supplied, _, _) =>
+            // Isolate byte-limit enforcement from TLS in this factory only.
+            // -1 is the redirection middleware's no-HTTPS-port sentinel.
+            services.PostConfigure<HttpsRedirectionOptions>(options => options.HttpsPort = -1);
+            services.PostConfigure<AntiforgeryOptions>(options =>
             {
-                // Set a breakpoint here to check whether TLS reaches client certificate validation.
-                var matches = supplied?.GetCertHashString() == certificate.GetCertHashString();
-                return matches;
-            }
-        };
-        // Use the actual address chosen by Kestrel. This client makes real HTTPS requests over loopback.
-        // Its handler retains the Secure antiforgery cookie from the next response.
+                // HTTP cannot carry the production Secure, __Host-prefixed cookie.
+                // Keep the real cookie/token validation with a test-only cookie name.
+                options.Cookie.Name = "Atlas.Tests.BodyLimit.Csrf";
+                options.Cookie.SecurePolicy = CookieSecurePolicy.None;
+            });
+        }));
+        // Real loopback Kestrel is required to enforce its byte ceiling; port 0 selects a free port.
+        // TLS framing and HTTP headers do not count toward the request-body byte limit.
+        factory.UseKestrel(options => options.Listen(IPAddress.Loopback, 0));
+        var addresses = factory.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!;
+        using var handler = new HttpClientHandler { AllowAutoRedirect = false };
+        // Retain the antiforgery cookie; fail visibly if the test host unexpectedly redirects.
         using var client = new HttpClient(handler) { BaseAddress = new Uri(addresses.Addresses.Single()), Timeout = TimeSpan.FromSeconds(30) };
         // Supply valid CSRF first so a missing-token rejection does not mask the body-limit check.
         var csrf = await client.GetFromJsonAsync<JsonElement>("/api/auth/csrf");
+        client.DefaultRequestHeaders.Add("X-CSRF-TOKEN", csrf.GetProperty("token").GetString());
+        // Prove this HTTP factory still rejects a POST without the paired request token.
+        using (var missingToken = new HttpRequestMessage(HttpMethod.Post, "/__tests/abuse/body")
+        {
+            Content = new ByteArrayContent([])
+        })
+        {
+            // Put the valid token on individual requests below, not on this negative control.
+            client.DefaultRequestHeaders.Remove("X-CSRF-TOKEN");
+            using var denied = await client.SendAsync(missingToken);
+            Assert.AreEqual(HttpStatusCode.BadRequest, denied.StatusCode);
+            StringAssert.Contains(await denied.Content.ReadAsStringAsync(), "A valid CSRF token is required.");
+        }
         client.DefaultRequestHeaders.Add("X-CSRF-TOKEN", csrf.GetProperty("token").GetString());
         // ByteArrayContent advertises Content-Length. UnknownLengthBody withholds the length so
         // HTTP/1.1 streams chunks; the server must count bytes as it reads, not only inspect a header.
