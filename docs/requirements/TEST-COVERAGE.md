@@ -4,11 +4,22 @@ This guide separates **test pass rate**, **code coverage**, and **SRS verificati
 
 ## Automated test results
 
-Run the backend suite from the repository root:
+Run the rewrite's .NET test projects from the repository root. **Do not run `dotnet test Atlas.sln`** for this purpose: the solution also contains legacy projects, including the legacy website, whose build prerequisites can fail independently of Atlas tests. The CI workflow tests each rewrite project separately.
+
+PowerShell:
 
 ```powershell
-dotnet test Atlas.sln --configuration Release
+$projects = Get-ChildItem tests -Directory -Filter 'Atlas.*.Tests' |
+    ForEach-Object { Join-Path $_.FullName ($_.Name + '.csproj') } |
+    Where-Object { Test-Path $_ }
+
+foreach ($project in $projects) {
+    dotnet test $project --configuration Release
+    if ($LASTEXITCODE -ne 0) { throw "Test project failed: $project" }
+}
 ```
+
+This discovers the rewrite test projects under `tests/` and stops if any project fails. Capture each project's pass/fail/skip counts and sum them for the report. SQL-dependent tests may skip without a configured database.
 
 Some SQL integration tests require `ATLAS_SQL_TEST_CONNECTION_STRING` and SQL Server Full-Text Search; without a configured test database, skipped tests must **not** be counted as passes. CI also runs SQL-backed test jobs against its own SQL Server container. See [GitHub Actions](../../.github/workflows/AtlasRewriteTests.yml).
 
@@ -30,7 +41,10 @@ The .NET SDK test command does not automatically provide a percentage. Use the c
 Once installed, run:
 
 ```powershell
-dotnet test Atlas.sln --collect:"XPlat Code Coverage" --results-directory TestResults
+foreach ($project in $projects) {
+    dotnet test $project --collect:"XPlat Code Coverage" --results-directory TestResults
+    if ($LASTEXITCODE -ne 0) { throw "Coverage test run failed: $project" }
+}
 ```
 
 The collector writes Cobertura XML files under `TestResults`. Generate an HTML summary with ReportGenerator (installed as a .NET tool):
