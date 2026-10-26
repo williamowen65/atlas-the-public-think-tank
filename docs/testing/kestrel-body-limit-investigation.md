@@ -20,9 +20,9 @@ records this method passing (252 ms). Windows used SDK 10.0.402 and installed
 This investigation branch originally started at main
 `3cb1016deed7332de780d866e7769e00a04f3c54`.
 
-## Agreed scope change
+## Historical HTTP experiment (superseded)
 
-At the user's request, this test now uses real loopback Kestrel over HTTP to
+At the user's request, the intermediate test used real loopback Kestrel over HTTP to
 isolate body-size enforcement from certificate/TLS setup. This is a test-design
 change, not a demonstrated fix for Windows TLS.
 
@@ -56,6 +56,34 @@ dotnet test tests/Atlas.Api.Tests/Atlas.Api.Tests.csproj --configuration Release
 Then run the full API project and compare Windows/Linux results at the same
 commit. Record passes, failures and SQL-dependent skips separately.
 
-Status: implementation/source reviewed. This editing environment has no dotnet
+Status of the HTTP experiment: implementation/source reviewed. This editing environment has no dotnet
 executable; compilation, CI and Windows execution remain pending. Do not mark
 the discrepancy resolved until the updated test executes successfully in both.
+
+## Resume HTTPS diagnosis
+
+The user chose to return to HTTPS and collect the server's error before deciding
+on a certificate fix. The test now restores the original generated certificate,
+fingerprint validation, real HTTPS listener, secure CSRF setup and original
+three body-size assertions. HTTP-only cookie/redirection overrides are removed.
+
+Only this test's derived host enables Debug logging for
+Microsoft.AspNetCore.Server.Kestrel (including its Https category) and console
+output with timestamps. No production logging settings change. This is a
+diagnostic change, not a confirmed certificate fix.
+
+After pulling the branch, run the focused command above. In Visual Studio,
+open the failed test's Output/Standard Output in Test Explorer. For a command
+line run, the detailed console logger above should surface captured output.
+Copy the Kestrel handshake failure entry and its full inner exception, together
+with the client exception and SHA. Look for HTTPS connection/handshake errors;
+the exact wording depends on the runtime. No server-side cause has yet been
+captured, so do not infer one from a missing callback alone.
+
+The error may have been filtered out at the previous Information log level;
+there is no guarantee it was previously saved elsewhere. If this run still
+omits the server exception, the next step is an explicitly captured test logger
+or .NET networking trace. Avoid posting any private-key material.
+
+No test execution was possible in the editing environment (dotnet unavailable).
+Windows and CI validation of this diagnostic revision remain pending.
