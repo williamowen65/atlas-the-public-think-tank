@@ -19,4 +19,5 @@
     <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
   </ItemGroup>
 
+  <Import Project="../BackendCoverage.props" />
 </Project>
