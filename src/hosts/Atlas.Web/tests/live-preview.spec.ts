@@ -423,6 +423,11 @@ test('corner action floats at the description end above the navigation counts', 
     await page.getByRole('button', { name: 'Refresh', exact: true }).click();
     for (const width of [1024, 640, 320]) {
       await page.setViewportSize({ width, height: 1000 });
+      // Opt in locally to inspect each layout case without pausing ordinary test/CI runs.
+      if (process.env.ATLAS_DEBUG_CORNER_LAYOUT === '1') {
+        console.log('Corner action layout case:', { width, description });
+        await page.pause();
+      }
       await expect.poll(() => card.evaluate(el => {
         const paragraph = el.querySelector('.description')!.getBoundingClientRect();
         const action = el.querySelector('.read-more button')!.getBoundingClientRect();
