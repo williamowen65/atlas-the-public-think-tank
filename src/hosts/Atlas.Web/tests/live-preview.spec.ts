@@ -462,7 +462,14 @@ test('corner action anchors below wrapping text above the navigation counts', as
         expect(geometry.lastTextLeft).toBeLessThan(geometry.dial.right);
       }
       expect(geometry.textTop - geometry.paragraph.top).toBeLessThan(5);
-      if (width >= 768) expect(geometry.paragraph.top - geometry.bylineBottom).toBeLessThan(10);
+      // The float layout stacks the header and body at every width.
+      // Their two padding edges replace the old desktop grid's tighter spacing.
+      const expectedHeaderGap = await card.evaluate(el => {
+        const header = getComputedStyle(el.querySelector('header')!);
+        const body = getComputedStyle(el.querySelector('.body')!);
+        return parseFloat(header.paddingBottom) + parseFloat(body.paddingTop);
+      });
+      expect(geometry.paragraph.top - geometry.bylineBottom).toBeCloseTo(expectedHeaderGap, 0);
       expect(geometry.action.right).toBeCloseTo(geometry.paragraph.right, 0);
       expect(geometry.action.left).toBeGreaterThan(geometry.paragraph.left);
       expect(geometry.navigation.top).toBeGreaterThanOrEqual(geometry.action.bottom);
