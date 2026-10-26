@@ -427,6 +427,8 @@ test('corner action floats at the description end above the navigation counts', 
       // Ordinary runs and CI still exercise every description/viewport combination.
       if (process.env.ATLAS_DEBUG_CORNER_LAYOUT === '1' && width === 320 && text !== 'A concise introduction with enough space to sit beside the action.') {
         console.log('Corner action layout case:', { width, description });
+        // Bring the measured corner into view before opening Inspector at the narrow viewport.
+        await card.locator('.read-more button').scrollIntoViewIfNeeded();
         await page.pause();
       }
       await expect.poll(() => card.evaluate(el => {
