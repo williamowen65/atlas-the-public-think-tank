@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Atlas.Api.Tests;
 
@@ -173,9 +174,30 @@ public sealed class HttpAbuseTests
         var certificateRequest = new CertificateRequest("CN=localhost", key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
         // Self-signed means this test signs its own certificate instead of asking a trusted issuer.
         // The short validity window covers the test; the slightly earlier start tolerates clock skew.
-        using var certificate = certificateRequest.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddMinutes(10));
+        var alternativeNames = new SubjectAlternativeNameBuilder();
+        alternativeNames.AddDnsName("localhost");
+        alternativeNames.AddIpAddress(IPAddress.Loopback);
+        certificateRequest.CertificateExtensions.Add(alternativeNames.Build());
+        using var generatedCertificate = certificateRequest.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddMinutes(10));
+        // Windows Schannel cannot use the ephemeral key returned by CreateSelfSigned.
+        // Reimport a PFX with DefaultKeySet so the platform can obtain TLS credentials.
+        // Do not use EphemeralKeySet or PersistKeySet; dispose the imported certificate after the host.
+        var pfx = generatedCertificate.Export(X509ContentType.Pfx);
+        using var certificate = ImportServerCertificate(pfx);
         using var root = new ApiFactory();
-        using var factory = Probes(root);
+        // Enable server-side TLS diagnostics only for this test's real Kestrel host.
+        // A client EOF alone does not explain why the server rejected the handshake.
+        using var factory = Probes(root).WithWebHostBuilder(builder => builder.ConfigureLogging(logging =>
+        {
+            logging.AddFilter("Microsoft.AspNetCore.Server.Kestrel", LogLevel.Debug);
+            logging.AddFilter("Microsoft.AspNetCore.Server.Kestrel.Https", LogLevel.Debug);
+            logging.AddSimpleConsole(options =>
+            {
+                options.SingleLine = true;
+                options.IncludeScopes = true;
+                options.TimestampFormat = "HH:mm:ss.fff ";
+            });
+        }));
         // Kestrel is the web-server software hosting the API, not the host computer.
         // TestServer normally runs the middleware in memory and cannot enforce Kestrel-specific limits.
         // UseKestrel switches this factory to a real listener: loopback stays on this machine,
@@ -192,7 +214,12 @@ public sealed class HttpAbuseTests
             // Return true only when its certificate fingerprint equals the certificate we just created.
             // This is a narrowly scoped test trust rule, not normal public CA/hostname/expiry validation.
             // Do not copy it into a production HTTP client or replace it with an always-true callback.
-            ServerCertificateCustomValidationCallback = (_, supplied, _, _) => supplied?.GetCertHashString() == certificate.GetCertHashString()
+            ServerCertificateCustomValidationCallback = (_, supplied, _, _) =>
+            {
+                // Set a breakpoint here to check whether TLS reaches client certificate validation.
+                var matches = supplied?.GetCertHashString() == certificate.GetCertHashString();
+                return matches;
+            }
         };
         // Use the actual address chosen by Kestrel. This client makes real HTTPS requests over loopback.
         // Its handler retains the Secure antiforgery cookie from the next response.
@@ -214,6 +241,19 @@ public sealed class HttpAbuseTests
         // A limit must reject excess data without rejecting a body exactly at the allowed boundary.
         using var allowed = await client.PostAsync("/__tests/abuse/body", new ByteArrayContent(new byte[65_536]));
         Assert.AreEqual(HttpStatusCode.NoContent, allowed.StatusCode);
+    }
+
+    private static X509Certificate2 ImportServerCertificate(byte[] pfx)
+    {
+        try
+        {
+            return X509CertificateLoader.LoadPkcs12(pfx, password: null,
+                keyStorageFlags: X509KeyStorageFlags.DefaultKeySet);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(pfx);
+        }
     }
 
     /// <summary>
