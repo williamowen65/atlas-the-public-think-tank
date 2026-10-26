@@ -4,6 +4,7 @@ This folder is the starting point for requirements management and traceability i
 
 - [REQUIREMENTS.md](REQUIREMENTS.md) defines what Atlas is expected to do and the acceptance criteria for each requirement.
 - [TRACEABILITY.md](TRACEABILITY.md) is the Requirements Traceability Matrix (RTM): a broad view from each requirement to implementation, verification, and known gaps.
+- [TEST-COVERAGE.md](TEST-COVERAGE.md) explains how to measure test pass rate, .NET code coverage and SRS verification coverage without conflating them.
 
 ## Requirement identifiers
 
