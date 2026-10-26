@@ -422,11 +422,13 @@ test('corner action floats at the description end above the navigation counts', 
     description = text;
     await page.getByRole('button', { name: 'Refresh', exact: true }).click();
     for (const width of [1024, 640, 320]) {
-      await page.setViewportSize({ width, height: 1000 });
+      // Keep the headed debug window within the desktop; normal regression dimensions stay fixed.
+      const height = process.env.ATLAS_DEBUG_CORNER_LAYOUT === '1' ? 600 : 1000;
+      await page.setViewportSize({ width, height });
       // Opt in locally: pause only on the reproduced long-description, 320px failure.
       // Ordinary runs and CI still exercise every description/viewport combination.
       if (process.env.ATLAS_DEBUG_CORNER_LAYOUT === '1' && width === 320 && text !== 'A concise introduction with enough space to sit beside the action.') {
-        console.log('Corner action layout case:', { width, description });
+        console.log('Corner action layout case:', { width, height, description });
         // Bring the measured corner into view before opening Inspector at the narrow viewport.
         await card.locator('.read-more button').scrollIntoViewIfNeeded();
         await page.pause();
