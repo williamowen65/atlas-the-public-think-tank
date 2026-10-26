@@ -406,7 +406,7 @@ test('split details version groups metadata above a centered bottom action', asy
   await expect(card.locator('.read-more button')).toBeVisible();
 });
 
-test('corner action floats at the description end above the navigation counts', async ({ page }) => {
+test('corner action anchors below wrapping text above the navigation counts', async ({ page }) => {
   let description = 'A concise introduction with enough space to sit beside the action.';
   await page.route('**/atlas-public-api/**', route => {
     const path = new URL(route.request().url()).pathname;
@@ -434,15 +434,32 @@ test('corner action floats at the description end above the navigation counts', 
         const text = [...paragraphElement.childNodes].find(node => node.nodeType === Node.TEXT_NODE && node.textContent!.trim())!;
         const range = document.createRange();
         range.selectNodeContents(text);
-        const textTop = range.getClientRects()[0].top;
+        const textRects = [...range.getClientRects()];
+        const textTop = textRects[0].top;
+        const textBottom = Math.max(...textRects.map(rect => rect.bottom));
+        const dial = el.querySelector('.dial')!.getBoundingClientRect();
         const action = el.querySelector('.read-more button')!.getBoundingClientRect();
         const navigation = el.querySelector('.navigation-details')!.getBoundingClientRect();
-        return { paragraph: paragraph.toJSON(), action: action.toJSON(), navigation: navigation.toJSON(), textTop, bylineBottom: el.querySelector('header .byline:last-child')!.getBoundingClientRect().bottom,
-          float: getComputedStyle(el.querySelector('.read-more')!).cssFloat };
+        return { paragraph: paragraph.toJSON(), action: action.toJSON(), navigation: navigation.toJSON(), textTop, textBottom, dial: dial.toJSON(), lastTextLeft: textRects.at(-1)!.left, bylineBottom: el.querySelector('header .byline:last-child')!.getBoundingClientRect().bottom,
+          position: getComputedStyle(el.querySelector('.read-more')!).position,
+          dialFloat: getComputedStyle(el.querySelector('.dial')!).cssFloat };
       });
-      expect(geometry.float).toBe('right');
+      expect(geometry.position).toBe('absolute');
+      expect(geometry.dialFloat).toBe('left');
+      expect(geometry.textBottom).toBeLessThanOrEqual(geometry.action.top);
+      if (text.length > 100 && width === 320) {
+        expect(geometry.textBottom).toBeGreaterThan(geometry.dial.bottom);
+        expect(geometry.lastTextLeft).toBeLessThan(geometry.dial.right);
+      }
       expect(geometry.textTop - geometry.paragraph.top).toBeLessThan(5);
-      if (width >= 768) expect(geometry.paragraph.top - geometry.bylineBottom).toBeLessThan(10);
+      // The float layout stacks the header and body at every width.
+      // Their two padding edges replace the old desktop grid's tighter spacing.
+      const expectedHeaderGap = await card.evaluate(el => {
+        const header = getComputedStyle(el.querySelector('header')!);
+        const body = getComputedStyle(el.querySelector('.body')!);
+        return parseFloat(header.paddingBottom) + parseFloat(body.paddingTop);
+      });
+      expect(geometry.paragraph.top - geometry.bylineBottom).toBeCloseTo(expectedHeaderGap, 0);
       expect(geometry.action.right).toBeCloseTo(geometry.paragraph.right, 0);
       expect(geometry.action.left).toBeGreaterThan(geometry.paragraph.left);
       expect(geometry.navigation.top).toBeGreaterThanOrEqual(geometry.action.bottom);
