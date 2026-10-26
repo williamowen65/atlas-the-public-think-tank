@@ -68,7 +68,7 @@ public static class CommentCommands
 
     private static void WritePage(CommentPage page, CommentId? parent, IParticipantRepository participants, Guid? actor)
     {
-        Console.Clear();
+        ClearScreenIfAvailable();
         Console.WriteLine(actor is null ? "COMMENTS (read only)" : "COMMENTS");
         Console.WriteLine(parent is null ? "Top-level comments" : $"Direct replies to {parent}");
         Console.WriteLine("Oldest first; select a comment to open its replies.");
@@ -84,13 +84,28 @@ public static class CommentCommands
         }
     }
 
+    // Clearing is cosmetic. IDE test hosts and redirected output may have no console buffer.
+    private static void ClearScreenIfAvailable()
+    {
+        if (Console.IsOutputRedirected) return;
+        try
+        {
+            Console.Clear();
+        }
+        catch (IOException)
+        {
+            // Windows can expose an invalid console handle even when output is not marked redirected.
+            // Continue rendering; failures from actual page reads/writes are not swallowed here.
+        }
+    }
+
     // Return a navigation choice rather than recursively opening another browser.
     private static bool Select(Comment comment, CommentWorkflowService? service,
         IParticipantRepository participants, IAuthenticatedActor? actor)
     {
         while (true)
         {
-            Console.Clear();
+            ClearScreenIfAvailable();
             Console.WriteLine("COMMENT");
             var author = participants.GetById(new ParticipantId(comment.AuthorParticipantId))?.DisplayName ?? "Unknown participant";
             Console.WriteLine($"Author: {author}");
