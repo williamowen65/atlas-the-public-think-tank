@@ -29,7 +29,8 @@ permissions:
 jobs:
   build-ranking-lab:
     name: Validate isolated Ranking Lab
-    runs-on: ubuntu-latest
+    # Match AtlasWeb.yml: Playwright 1.58.2 cannot install Chromium on Ubuntu 26.04.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v6
