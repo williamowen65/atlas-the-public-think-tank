@@ -38,7 +38,6 @@
 -->
 <script lang="ts">
   import NodeEditControl from '../NodeEditControl.svelte';
-  import { bottomCornerAction } from '../../actions/bottomCornerAction';
   import ActionButton from '../ActionButton.svelte';
   import CommunityLinks from '../CommunityLinks.svelte';
   import VotingDial from '../VotingDial.svelte';
@@ -145,10 +144,10 @@
     </aside>
     <!--
       Keeps the description and invitation together beside the dial; the description action
-      reserves its corner clearance.
+      reserves bottom space for its absolutely positioned action.
     -->
     <div class="content-stack">
-      <p class="description" use:bottomCornerAction id={`${instance}-description`}>
+      <p class="description" id={`${instance}-description`}>
         <span class="read-more"
           ><ActionButton
             label="Read more"
@@ -337,15 +336,23 @@
   }
 
   .description {
-    display: flow-root;
+    position: relative;
+    // Reserve a full-width action area; text can still flow below the left-floated dial.
+    padding-bottom: 4.5rem;
+    &::after {
+      content: '';
+      display: block;
+      clear: both;
+    }
     margin: 0 0 var(--atlas-paragraph-gap, 0.65rem);
     white-space: pre-line;
   }
 
   .read-more {
-    float: right;
-    margin: var(--corner-top, 0px) 0 0 0.75rem;
-    shape-outside: inset(var(--corner-top, 0px) 0 0 0);
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    max-width: 100%;
     white-space: normal;
   }
 
@@ -393,44 +400,4 @@
     }
   }
 
-  // Keep the mobile float layout; share the header row with the dial on wider screens.
-  @media (min-width: 48rem) {
-    .node-card {
-      display: grid;
-      grid-template-columns: max-content minmax(0, 1fr);
-      column-gap: var(--dial-text-gap);
-      grid-template-rows: auto max-content 1fr auto;
-    }
-    .ribbon-context {
-      grid-column: 1 / -1;
-      grid-row: 1;
-    }
-    .node-card header {
-      grid-column: 2;
-      grid-row: 2;
-      min-width: 0;
-      padding-inline: 0 var(--card-padding);
-    }
-    .body {
-      display: contents;
-    }
-    .dial {
-      grid-column: 1;
-      grid-row: 2 / 4;
-      float: none;
-      margin: 0.5rem 0 0 0.75rem;
-    }
-    .content-stack {
-      grid-column: 2;
-      grid-row: 3;
-      align-self: stretch;
-      min-width: 0;
-      margin-right: var(--card-padding);
-    }
-    .card-details {
-      grid-column: 1 / -1;
-      grid-row: 4;
-      min-width: 0;
-    }
-  }
 </style>
