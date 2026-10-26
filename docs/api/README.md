@@ -59,9 +59,7 @@ local email confirmation, cookie lifetime and remaining production work.
 | Current protections and unfinished deployment/browser work | [Security responsibilities](SECURITY.md) |
 | The automated requests and assertions | [API tests](../../tests/Atlas.Api.Tests) |
 
-The future SPA can be hosted alongside the API or separately. A same-origin proxy
-can send `/api` here and `/` to the frontend. This PR chooses neither a frontend
-framework nor static-file hosting; cross-origin cookies/CORS need a separate review.
+The implemented [SvelteKit frontend](../../src/hosts/Atlas.Web/README.md) owns browser presentation and calls this JSON API. Storybook reuses its components and live API clients. Shared local Vite proxies provide development routing; a deployed frontend needs equivalent reviewed hosting/routing and cookie/CSRF behavior. The API itself does not serve frontend views/assets. See [application wiring](../architecture/diagrams/WIRING.md).
 
 ## Run the tests
 

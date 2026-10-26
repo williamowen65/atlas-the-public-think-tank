@@ -1,21 +1,20 @@
 # Run and inspect local observability
 
-This is the implemented local-development slice of PTT-126. API middleware, cloud adapters, production permissions and dashboards remain deployment follow-ups. No cloud account is needed.
+This is the implemented local-development slice of PTT-126. Console and API both have local telemetry integration. Cloud adapters, production permissions and dashboards remain deployment follow-ups; see [API logging](../../api/LOGGING.md) for HTTP coverage. No cloud account is needed.
 
-## First: apply the developer-generated migration
+## First: set up the current database
 
-The developer-generated `20261014195401_AddSecurityAuditOutbox` migration, designer and snapshot are now included. Do not scaffold the same migration again. Run from the solution root against your intended local development database:
+The audit tables are part of the current developer-generated `InitialAtlasBaseline`. The retired `AddSecurityAuditOutbox` feature migration is not a migration to scaffold or apply separately. From the solution root, review committed migration history and use the explicit setup command for the intended local development database:
 
 ```powershell
 dotnet tool restore
-# Review the committed migration before applying it.
 dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence
-dotnet ef database update --project src/Atlas.Persistence
+dotnet run --project src/hosts/Atlas.Console -- --setup-database
 dotnet test tests/Atlas.Console.Tests/Atlas.Console.Tests.csproj --filter FullyQualifiedName~ObservabilityTests
 dotnet test tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj --filter FullyQualifiedName~SqlAuditTests
 ```
 
-SQL tests use `ATLAS_SQL_TEST_CONNECTION_STRING` in the shared user secrets or environment. The developer generated and committed the migration/designer/snapshot. Model consistency and migration-dependent CI now validate those committed files. Do not reset the database merely to add these tables; the migration should preserve existing content.
+Setup applies committed EF migrations and supplemental search/snapshot configuration; ordinary API startup does neither. Do not drop an existing database to follow an obsolete migration recipe. See [current setup and repair instructions](../../discovery/full-text-search.md) when migration history or full-text infrastructure differs. SQL tests use `ATLAS_SQL_TEST_CONNECTION_STRING` in shared secrets or the environment; a skip is not SQL verification.
 
 ## Launch
 
@@ -145,10 +144,10 @@ These are abbreviated examples for reading, not universal cloud JSON schemas. .N
 
 - [ObservabilityTests](../../../tests/Atlas.Console.Tests/ObservabilityTests.cs): field allowlist, bounded values, exception-secret exclusion, duplicate failure ownership, concurrent actor/correlation scopes, diagnostic sink failure and actual file output/rotation.
 
-- [SqlAuditTests](../../../tests/Atlas.Persistence.Tests/SqlAuditTests.cs): commit/rollback, failed audit insertion, retry identity, local-versus-cloud acknowledgements and append-only enforcement. These isolated fresh-model tests do not prove a migration upgrade; CI runs them in a separate SQL job while migration generation remains yours.
+- [SqlAuditTests](../../../tests/Atlas.Persistence.Tests/SqlAuditTests.cs): commit/rollback, failed audit insertion, retry identity, local-versus-cloud acknowledgements and append-only enforcement. These isolated fresh-model tests do not prove a migration upgrade; CI runs them in a separate SQL job while committed baseline/migration-path checks remain separate.
 
 - The public observer port accepts only typed events. Arbitrary framework `ILogger` messages are not exported to these files; this avoids bypassing the allowlist through EF/Identity message formatting. Reviewed framework diagnostics may be added later with their own privacy policy.
 
 - The new infrastructure is reusable; it is not a new business bounded context. [Telemetry contracts](../../../src/Atlas.Contracts/Observability/Telemetry.cs), [local infrastructure](../../../src/Atlas.Observability/LocalTelemetry.cs) and [host wiring](../../../src/Atlas.Application/Observability/LocalDevelopmentTelemetry.cs) have distinct ownership.
 
-- No API middleware, IP/user-agent collection, generic privileged provisioning API, live cloud adapter, SIEM or production dashboard is implemented in this slice.
+- HTTP request/operation telemetry is implemented in [ApiBoundary](../../../src/hosts/Atlas.Api/ApiBoundary.cs), with an API audit worker in [ApiTelemetry](../../../src/hosts/Atlas.Api/ApiTelemetry.cs). Do not infer IP/user-agent collection or a production monitoring/export policy from that integration. Live cloud adapters, SIEM and production dashboards remain separate deployment work.
