@@ -4,4 +4,6 @@
     <ProjectReference Include="..\..\src\Atlas.Notifications\Atlas.Notifications.csproj" />
     <ProjectReference Include="..\..\src\hosts\Atlas.Console\Atlas.Console.csproj" /></ItemGroup>
   <ItemGroup><Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" /></ItemGroup>
+  <!-- Shared VSTest coverage collector settings for backend report runs. -->
+  <Import Project="../BackendCoverage.props" />
 </Project>
