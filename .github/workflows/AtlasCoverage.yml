@@ -1,24 +1,18 @@
-name: Atlas Graph coverage pilot
+name: Atlas backend coverage
 
 on:
   pull_request:
     branches: [main]
     paths:
-      - 'src/Atlas.Graph/**'
-      - 'src/Atlas.Contracts/**'
-      - 'tests/Atlas.Graph.Tests/**'
-      - 'tests/graph-coverage.runsettings'
-      - 'tests/Invoke-GraphCoverage.ps1'
+      - 'src/**'
+      - 'tests/**'
       - '.config/dotnet-tools.json'
       - '.github/workflows/AtlasCoverage.yml'
   push:
     branches: [main]
     paths:
-      - 'src/Atlas.Graph/**'
-      - 'src/Atlas.Contracts/**'
-      - 'tests/Atlas.Graph.Tests/**'
-      - 'tests/graph-coverage.runsettings'
-      - 'tests/Invoke-GraphCoverage.ps1'
+      - 'src/**'
+      - 'tests/**'
       - '.config/dotnet-tools.json'
       - '.github/workflows/AtlasCoverage.yml'
   workflow_dispatch:
@@ -27,22 +21,53 @@ permissions:
   contents: read
 
 jobs:
-  graph-coverage:
+  backend-coverage:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 45
+    env:
+      ATLAS_SQL_TEST_CONNECTION_STRING: Server=localhost,1433;User ID=sa;Password=Atlas_CI_Only_29!Password;TrustServerCertificate=True;Encrypt=True
+      ATLAS_SQL_CONNECTION_STRING: Server=localhost,1433;User ID=sa;Password=Atlas_CI_Only_29!Password;TrustServerCertificate=True;Encrypt=True
     steps:
       - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build SQL Server with matching Full-Text Search package
+        uses: docker/build-push-action@v6
+        with:
+          context: tests/infrastructure/sqlserver
+          load: true
+          tags: atlas-sql-fts:ci
+          cache-from: type=gha,scope=atlas-sql-fts
+          cache-to: type=gha,mode=max,scope=atlas-sql-fts
+      - name: Start SQL Server and require full-text English support
+        run: |
+          docker run -d --name atlas-sql -p 1433:1433 \
+            -e ACCEPT_EULA=Y -e MSSQL_PID=Developer \
+            -e MSSQL_SA_PASSWORD='Atlas_CI_Only_29!Password' atlas-sql-fts:ci
+          ready=false
+          for attempt in {1..60}; do
+            if docker exec atlas-sql /opt/mssql-tools18/bin/sqlcmd \
+              -S localhost -U sa -P 'Atlas_CI_Only_29!Password' -C -b \
+              -Q "IF COALESCE(FULLTEXTSERVICEPROPERTY('IsFullTextInstalled'), 0) <> 1 THROW 51000, 'Full-text is not installed', 1; IF NOT EXISTS (SELECT 1 FROM sys.fulltext_languages WHERE lcid = 1033) THROW 51000, 'English full-text resources are missing', 1;"; then
+              ready=true
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" != true ]; then docker logs atlas-sql; exit 1; fi
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-      - name: Run Graph tests and generate coverage
+      - name: Run backend tests and generate coverage
         shell: pwsh
-        run: ./tests/Invoke-GraphCoverage.ps1
+        run: ./tests/Invoke-BackendCoverage.ps1
       - name: Retain test results, coverage and run metadata
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: atlas-graph-test-reports
+          name: atlas-backend-test-reports
           path: artifacts/test-reports/
           if-no-files-found: error
           retention-days: 14
+      - name: Stop test SQL Server
+        if: always()
+        run: docker rm -f atlas-sql || true
