@@ -7,6 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="MSTest" Version="4.5.1" />
+    <PackageReference Include="coverlet.collector" Version="6.0.4" PrivateAssets="all" />
     <ProjectReference Include="..\..\src\Atlas.Application\Atlas.Application.csproj" />
     <ProjectReference Include="..\..\src\Atlas.Persistence\Atlas.Persistence.csproj" />
   </ItemGroup>

@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><UserSecretsId>02103f3e-daff-4644-b045-6eb5f00889eb</UserSecretsId></PropertyGroup>
-  <ItemGroup><PackageReference Include="MSTest" Version="4.5.1" /><PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.13" />
+  <ItemGroup><PackageReference Include="MSTest" Version="4.5.1" />
+    <PackageReference Include="coverlet.collector" Version="6.0.4" PrivateAssets="all" /><PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.13" />
     <ProjectReference Include="../../src/hosts/Atlas.Api/Atlas.Api.csproj" /></ItemGroup>
   <ItemGroup><Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" /></ItemGroup>
   <ItemGroup><Compile Include="../Shared/SqlFullTextSupport.cs" Link="SqlFullTextSupport.cs" /></ItemGroup>
