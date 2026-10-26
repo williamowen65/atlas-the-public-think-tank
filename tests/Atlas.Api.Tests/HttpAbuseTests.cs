@@ -192,7 +192,12 @@ public sealed class HttpAbuseTests
             // Return true only when its certificate fingerprint equals the certificate we just created.
             // This is a narrowly scoped test trust rule, not normal public CA/hostname/expiry validation.
             // Do not copy it into a production HTTP client or replace it with an always-true callback.
-            ServerCertificateCustomValidationCallback = (_, supplied, _, _) => supplied?.GetCertHashString() == certificate.GetCertHashString()
+            ServerCertificateCustomValidationCallback = (_, supplied, _, _) =>
+            {
+                // Set a breakpoint here to check whether TLS reaches client certificate validation.
+                var matches = supplied?.GetCertHashString() == certificate.GetCertHashString();
+                return matches;
+            }
         };
         // Use the actual address chosen by Kestrel. This client makes real HTTPS requests over loopback.
         // Its handler retains the Secure antiforgery cookie from the next response.
