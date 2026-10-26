@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
   <ItemGroup><PackageReference Include="MSTest" Version="4.5.1" />
+    <PackageReference Include="coverlet.collector" Version="6.0.4" PrivateAssets="all" />
     <ProjectReference Include="..\..\src\Atlas.Notifications\Atlas.Notifications.csproj" />
     <ProjectReference Include="..\..\src\hosts\Atlas.Console\Atlas.Console.csproj" /></ItemGroup>
   <ItemGroup><Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" /></ItemGroup>
