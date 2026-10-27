@@ -91,3 +91,20 @@ The exact catalog status distribution is 39 Verified, 14 Implemented, 15 Partial
 ### Text suitable for the current report
 
 > A preliminary inventory identified 81 documented SRS requirements. The existing traceability matrix represents 75 (92.6%), and 56 (69.1%) have verification links resolving to existing test files or directories. The requirements catalog currently labels 39 (48.1%) as Verified. These figures describe documented traceability and recorded status, rather than independently audited requirement satisfaction. Six missing Content mappings, seven stale Discovery test links, and catalog/matrix status inconsistencies remain to be reconciled. Current API tests provide evidence beyond some outdated matrix descriptions. Acceptance-criterion completeness and execution evidence are still under review; source-code coverage is reported separately.
+
+## Updated snapshot after focused mapping repairs
+
+This section supersedes the initial structural counts above for the PTT-153 branch. The original main-baseline inventory is retained for comparison. No catalog status has been upgraded.
+
+| Measure | Original main baseline | After mapping repairs |
+|---|---:|---:|
+| Unique catalog requirements | 81 | 81 |
+| Requirements with an RTM row | 75 (92.6%) | 81 (100%) |
+| Requirements linking to existing test files/directories in the verification cell | 56 (69.1%) | 68 (84.0%) |
+| Catalog records labeled Verified | 39 (48.1%) | 39 (48.1%) |
+
+Changes: restored six Content rows, linked five to inspected relevant tests, replaced seven missing DiscoveryServiceTests references with specific real-SQL DiscoverySqlParityTests methods, and added current API rejection evidence to SEC-001. All 81 IDs have exactly one RTM row. Links added by this repair were checked against the baseline repository tree. No test execution was performed for these documentation edits.
+
+The six restored rows retain the catalog statuses and explicitly flag limits of the evidence. CON-008 still needs a direct assertion that unused concrete payload columns remain NULL; a successful mixed-block round trip does not prove that condition. Other Content criteria, such as Console prompts, duplicate references, required video URL validation, and stable seeded IDs, are not all established by the inspected tests. The Discovery mappings identify real SQL-backed assertions rather than assuming the two current domain-level port tests replace the removed suite.
+
+> After focused traceability maintenance, all 81 documented SRS requirements have matrix entries, and 68 (84.0%) link to existing test files or directories. The catalog records 39 (48.1%) as Verified; these historical status labels have not yet undergone a complete acceptance-criteria audit. The improvements restore missing Content mappings and identify current SQL-backed Discovery and API evidence. Structural traceability is complete for the written catalog, while assertion completeness, status reconciliation, and newer product-scope gaps remain under review.
