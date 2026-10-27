@@ -15,6 +15,7 @@ public sealed class DiscoveryPerformanceTests
     public TestContext TestContext { get; set; } = null!;
 
     [TestMethod]
+    [TestCategory("FullTextSearch")]
     [DataRow(100)]
     [DataRow(1000)]
     [DataRow(10000)]
