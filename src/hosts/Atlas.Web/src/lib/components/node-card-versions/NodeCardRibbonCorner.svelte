@@ -37,6 +37,7 @@
     comment-count button is activated.
 -->
 <script lang="ts">
+  import { bottomCornerAction } from '../../actions/bottomCornerAction';
   import NodeEditControl from '../NodeEditControl.svelte';
   import ActionButton from '../ActionButton.svelte';
   import CommunityLinks from '../CommunityLinks.svelte';
@@ -142,14 +143,15 @@
           onChange={onVote}
         />{/if}
     </aside>
-    <p class="description" id={`${instance}-description`}>{node.description}</p>
-    <div class="read-more">
-      <ActionButton
-        label="Read more"
-        disabled={!onReadMore}
-        onActivate={() => onReadMore?.(node.id)}
-      />
-    </div>
+    <p class="description" id={`${instance}-description`} use:bottomCornerAction>
+      <span class="read-more"
+        ><ActionButton
+          label="Read more"
+          disabled={!onReadMore}
+          onActivate={() => onReadMore?.(node.id)}
+        /></span
+      >{node.description}
+    </p>
     {#if node.requestedTypes.length}
       <p class="invitation">
         Help develop this node with: <strong>{node.requestedTypes.join(', ')}</strong>.
@@ -334,10 +336,10 @@
   }
 
   .read-more {
-    // Clear the dial and sit at the body's bottom-left without a reserved action row.
-    float: left;
-    clear: left;
-    margin: 0 0.75rem 0 0;
+    // Exclude only the button's bottom-corner footprint from the text flow.
+    float: right;
+    margin: var(--corner-top, 0px) 0 0 0.75rem;
+    shape-outside: inset(var(--corner-top, 0px) 0 0 0);
     white-space: normal;
   }
 

@@ -406,7 +406,7 @@ test('split details version groups metadata above a centered bottom action', asy
   await expect(card.locator('.read-more button')).toBeVisible();
 });
 
-test('corner action anchors below wrapping text above the navigation counts', async ({ page }) => {
+test('corner action shares dial height and wraps text without blocking pointer input', async ({ page }) => {
   let description = 'A concise introduction with enough space to sit beside the action.';
   await page.route('**/atlas-public-api/**', route => {
     const path = new URL(route.request().url()).pathname;
@@ -423,6 +423,10 @@ test('corner action anchors below wrapping text above the navigation counts', as
     await page.getByRole('button', { name: 'Refresh', exact: true }).click();
     for (const width of [1024, 640, 320]) {
       await page.setViewportSize({ width, height: 1000 });
+      await expect.poll(() => card.evaluate(el => Math.abs(
+        el.querySelector('.description')!.getBoundingClientRect().bottom -
+        el.querySelector('.read-more button')!.getBoundingClientRect().bottom,
+      ))).toBeLessThan(1);
       const geometry = await card.evaluate(el => {
         const paragraph = el.querySelector('.description')!;
         const text = [...paragraph.childNodes].find(node => node.nodeType === Node.TEXT_NODE && node.textContent!.trim())!;
@@ -436,14 +440,20 @@ test('corner action anchors below wrapping text above the navigation counts', as
           textBottom: Math.max(...rects.map(rect => rect.bottom)),
           lastTextLeft: rects.at(-1)!.left,
           navigationTop: el.querySelector('.navigation-details')!.getBoundingClientRect().top,
-          bodyLeft: el.querySelector('.body')!.getBoundingClientRect().left + parseFloat(getComputedStyle(el.querySelector('.body')!).paddingLeft),
+          bodyRight: el.querySelector('.body')!.getBoundingClientRect().right - parseFloat(getComputedStyle(el.querySelector('.body')!).paddingRight),
+          paragraphBottom: paragraph.getBoundingClientRect().bottom,
+          textOverlapsAction: rects.some(rect => rect.left < action.right && rect.right > action.left && rect.top < action.bottom && rect.bottom > action.top),
           textOverlapsDial: rects.some(rect => rect.left < dial.right && rect.right > dial.left && rect.top < dial.bottom && rect.bottom > dial.top),
         };
       });
       expect(geometry.textOverlapsDial).toBe(false);
-      expect(geometry.action.top).toBeGreaterThanOrEqual(geometry.textBottom);
-      expect(geometry.action.top).toBeGreaterThanOrEqual(geometry.dial.bottom);
-      expect(geometry.action.left).toBeCloseTo(geometry.bodyLeft, 0);
+      expect(geometry.textOverlapsAction).toBe(false);
+      expect(geometry.action.right).toBeCloseTo(geometry.bodyRight, 0);
+      expect(geometry.action.bottom).toBeCloseTo(geometry.paragraphBottom, 0);
+      if (text.length < 100) {
+        // A short introduction must reuse the dial's height, not add a button row.
+        expect(geometry.action.bottom).toBeLessThanOrEqual(geometry.dial.bottom + 1);
+      }
       expect(geometry.navigationTop).toBeGreaterThanOrEqual(geometry.action.bottom);
       if (text.length > 100 && width === 320) {
         expect(geometry.textBottom).toBeGreaterThan(geometry.dial.bottom);
