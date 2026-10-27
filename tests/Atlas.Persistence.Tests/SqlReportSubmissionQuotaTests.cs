@@ -11,7 +11,7 @@ public sealed class SqlReportSubmissionQuotaTests
     [TestMethod]
     public void FourthReportIsRejectedWithoutQueueOrAuditGrowthAndModeratorCanStillDecide()
     {
-        using var database = SqlTestDatabase.Create(useCurrentModel: true);
+        using var database = SqlTestDatabase.Create(useCurrentModel: true, installFullText: false);
         var at = DateTimeOffset.Parse("2026-10-19T12:00:00Z");
         using var clock = AtlasTime.Use(new Clock(at));
         var reporter = database.AddParticipant();
@@ -60,7 +60,7 @@ public sealed class SqlReportSubmissionQuotaTests
     [TestMethod]
     public void InvalidAndRolledBackReportsConsumeNothingAndDirectSavesCannotBypassQuota()
     {
-        using var database = SqlTestDatabase.Create(useCurrentModel: true);
+        using var database = SqlTestDatabase.Create(useCurrentModel: true, installFullText: false);
         var reporter = database.AddParticipant();
         var node = database.AddNode();
         var repo = new SqlModerationCaseRepository(database.Open);
@@ -89,7 +89,7 @@ public sealed class SqlReportSubmissionQuotaTests
     [TestMethod]
     public async Task CompetingReportsCannotBothConsumeTheThirdSlot()
     {
-        using var database = SqlTestDatabase.Create(useCurrentModel: true);
+        using var database = SqlTestDatabase.Create(useCurrentModel: true, installFullText: false);
         var reporter = database.AddParticipant();
         var node = database.AddNode();
         var repo = new SqlModerationCaseRepository(database.Open);
