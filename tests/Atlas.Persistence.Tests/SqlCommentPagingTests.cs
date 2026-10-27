@@ -9,7 +9,7 @@ public sealed class SqlCommentPagingTests
     [TestMethod]
     public async Task RootAndReplyPagesStayScopedPreservePlaceholdersAndDoNotLoadDescendants()
     {
-        using var database = SqlTestDatabase.Create(useCurrentModel: true);
+        using var database = SqlTestDatabase.Create(useCurrentModel: true, installFullText: false);
         var target = CommentTarget.Node(database.AddNode());
         var other = CommentTarget.Node(database.AddNode());
         var author = database.AddParticipant();
@@ -40,7 +40,7 @@ public sealed class SqlCommentPagingTests
     [TestMethod]
     public async Task TimestampTiesAndInsertedRowsDoNotRepeatEarlierPages()
     {
-        using var database = SqlTestDatabase.Create(useCurrentModel: true);
+        using var database = SqlTestDatabase.Create(useCurrentModel: true, installFullText: false);
         var target = CommentTarget.Node(database.AddNode());
         var author = database.AddParticipant();
         var at = DateTimeOffset.UtcNow.AddMinutes(-1);
