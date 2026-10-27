@@ -423,47 +423,37 @@ test('corner action anchors below wrapping text above the navigation counts', as
     await page.getByRole('button', { name: 'Refresh', exact: true }).click();
     for (const width of [1024, 640, 320]) {
       await page.setViewportSize({ width, height: 1000 });
-      await expect.poll(() => card.evaluate(el => {
-        const paragraph = el.querySelector('.description')!.getBoundingClientRect();
-        const action = el.querySelector('.read-more button')!.getBoundingClientRect();
-        return Math.abs(paragraph.bottom - action.bottom);
-      })).toBeLessThan(1);
       const geometry = await card.evaluate(el => {
-        const paragraphElement = el.querySelector('.description')!;
-        const paragraph = paragraphElement.getBoundingClientRect();
-        const text = [...paragraphElement.childNodes].find(node => node.nodeType === Node.TEXT_NODE && node.textContent!.trim())!;
+        const paragraph = el.querySelector('.description')!;
+        const text = [...paragraph.childNodes].find(node => node.nodeType === Node.TEXT_NODE && node.textContent!.trim())!;
         const range = document.createRange();
         range.selectNodeContents(text);
-        const textRects = [...range.getClientRects()];
-        const textTop = textRects[0].top;
-        const textBottom = Math.max(...textRects.map(rect => rect.bottom));
+        const rects = [...range.getClientRects()];
         const dial = el.querySelector('.dial')!.getBoundingClientRect();
         const action = el.querySelector('.read-more button')!.getBoundingClientRect();
-        const navigation = el.querySelector('.navigation-details')!.getBoundingClientRect();
-        return { paragraph: paragraph.toJSON(), action: action.toJSON(), navigation: navigation.toJSON(), textTop, textBottom, dial: dial.toJSON(), lastTextLeft: textRects.at(-1)!.left, bylineBottom: el.querySelector('header .byline:last-child')!.getBoundingClientRect().bottom,
-          position: getComputedStyle(el.querySelector('.read-more')!).position,
-          dialFloat: getComputedStyle(el.querySelector('.dial')!).cssFloat };
+        return {
+          dial: dial.toJSON(), action: action.toJSON(),
+          textBottom: Math.max(...rects.map(rect => rect.bottom)),
+          lastTextLeft: rects.at(-1)!.left,
+          navigationTop: el.querySelector('.navigation-details')!.getBoundingClientRect().top,
+          bodyLeft: el.querySelector('.body')!.getBoundingClientRect().left + parseFloat(getComputedStyle(el.querySelector('.body')!).paddingLeft),
+          textOverlapsDial: rects.some(rect => rect.left < dial.right && rect.right > dial.left && rect.top < dial.bottom && rect.bottom > dial.top),
+        };
       });
-      expect(geometry.position).toBe('absolute');
-      expect(geometry.dialFloat).toBe('left');
-      expect(geometry.textBottom).toBeLessThanOrEqual(geometry.action.top);
+      expect(geometry.textOverlapsDial).toBe(false);
+      expect(geometry.action.top).toBeGreaterThanOrEqual(geometry.textBottom);
+      expect(geometry.action.top).toBeGreaterThanOrEqual(geometry.dial.bottom);
+      expect(geometry.action.left).toBeCloseTo(geometry.bodyLeft, 0);
+      expect(geometry.navigationTop).toBeGreaterThanOrEqual(geometry.action.bottom);
       if (text.length > 100 && width === 320) {
         expect(geometry.textBottom).toBeGreaterThan(geometry.dial.bottom);
         expect(geometry.lastTextLeft).toBeLessThan(geometry.dial.right);
       }
-      expect(geometry.textTop - geometry.paragraph.top).toBeLessThan(5);
-      // The float layout stacks the header and body at every width.
-      // Their two padding edges replace the old desktop grid's tighter spacing.
-      const expectedHeaderGap = await card.evaluate(el => {
-        const header = getComputedStyle(el.querySelector('header')!);
-        const body = getComputedStyle(el.querySelector('.body')!);
-        return parseFloat(header.paddingBottom) + parseFloat(body.paddingTop);
-      });
-      expect(geometry.paragraph.top - geometry.bylineBottom).toBeCloseTo(expectedHeaderGap, 0);
-      expect(geometry.action.right).toBeCloseTo(geometry.paragraph.right, 0);
-      expect(geometry.action.left).toBeGreaterThan(geometry.paragraph.left);
-      expect(geometry.navigation.top).toBeGreaterThanOrEqual(geometry.action.bottom);
-      expect(geometry.action.bottom).toBeLessThanOrEqual(geometry.paragraph.bottom + 1);
+      // A normal pointer click must reach the reel; no force or DOM event dispatch.
+      const dial = card.getByRole('spinbutton');
+      await dial.click({ position: { x: 15, y: 15 } });
+      await expect(page.getByRole('dialog', { name: 'Confirm your importance rating', exact: true })).toBeVisible();
+      await page.keyboard.press('Escape');
       await expect(card.locator('.description')).toContainText(text);
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     }

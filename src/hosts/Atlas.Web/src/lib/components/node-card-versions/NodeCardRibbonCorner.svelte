@@ -142,26 +142,19 @@
           onChange={onVote}
         />{/if}
     </aside>
-    <!--
-      Keeps the description and invitation together beside the dial; the description action
-      reserves bottom space for its absolutely positioned action.
-    -->
-    <div class="content-stack">
-      <p class="description" id={`${instance}-description`}>
-        <span class="read-more"
-          ><ActionButton
-            label="Read more"
-            disabled={!onReadMore}
-            onActivate={() => onReadMore?.(node.id)}
-          /></span
-        >{node.description}
-      </p>
-      {#if node.requestedTypes.length}
-        <p class="invitation">
-          Help develop this node with: <strong>{node.requestedTypes.join(', ')}</strong>.
-        </p>
-      {/if}
+    <p class="description" id={`${instance}-description`}>{node.description}</p>
+    <div class="read-more">
+      <ActionButton
+        label="Read more"
+        disabled={!onReadMore}
+        onActivate={() => onReadMore?.(node.id)}
+      />
     </div>
+    {#if node.requestedTypes.length}
+      <p class="invitation">
+        Help develop this node with: <strong>{node.requestedTypes.join(', ')}</strong>.
+      </p>
+    {/if}
   </div>
   <div class="card-details">
     {@render reactions()}
@@ -336,27 +329,20 @@
   }
 
   .description {
-    position: relative;
-    // Reserve a full-width action area; text can still flow below the left-floated dial.
-    padding-bottom: 4.5rem;
-    &::after {
-      content: '';
-      display: block;
-      clear: both;
-    }
     margin: 0 0 var(--atlas-paragraph-gap, 0.65rem);
     white-space: pre-line;
   }
 
   .read-more {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    max-width: 100%;
+    // Clear the dial and sit at the body's bottom-left without a reserved action row.
+    float: left;
+    clear: left;
+    margin: 0 0.75rem 0 0;
     white-space: normal;
   }
 
   .invitation {
+    clear: both;
     font-size: 0.9rem;
     color: var(--atlas-muted);
   }
@@ -399,5 +385,4 @@
       padding-inline: var(--card-padding);
     }
   }
-
 </style>
