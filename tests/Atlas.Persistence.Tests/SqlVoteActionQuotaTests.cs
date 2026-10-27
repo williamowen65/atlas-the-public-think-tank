@@ -14,7 +14,7 @@ public sealed class SqlVoteActionQuotaTests
     [TestMethod]
     public void CastChangeUndoPersistConsumptionAcrossRepositoryInstancesAndExpire()
     {
-        using var database = SqlTestDatabase.Create(useCurrentModel: true);
+        using var database = SqlTestDatabase.Create(useCurrentModel: true, installFullText: false);
         var at = DateTimeOffset.UtcNow;
         using var clock = AtlasTime.Use(new Clock(at));
         var actor = new ParticipantId(database.AddParticipant());
@@ -47,7 +47,7 @@ public sealed class SqlVoteActionQuotaTests
     [TestMethod]
     public void InvalidValuesAndOuterRollbackConsumeNothingAndBackdatingCannotBypass()
     {
-        using var database = SqlTestDatabase.Create(useCurrentModel: true);
+        using var database = SqlTestDatabase.Create(useCurrentModel: true, installFullText: false);
         var actor = new ParticipantId(database.AddParticipant());
         var target = new NodeVoteTarget(database.AddNode());
         var repo = new SqlVoteRepository(database.Open, new VoteActionQuotaPolicy(1, TimeSpan.FromMinutes(10)));
@@ -74,7 +74,7 @@ public sealed class SqlVoteActionQuotaTests
     [TestMethod]
     public async Task CompetingRequestsCannotBothConsumeTheLastSlot()
     {
-        using var database = SqlTestDatabase.Create(useCurrentModel: true);
+        using var database = SqlTestDatabase.Create(useCurrentModel: true, installFullText: false);
         var actor = new ParticipantId(database.AddParticipant());
         var first = new NodeVoteTarget(database.AddNode());
         var second = new NodeVoteTarget(database.AddNode());
