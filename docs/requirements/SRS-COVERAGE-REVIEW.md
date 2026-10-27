@@ -42,3 +42,52 @@ Before publishing totals, enumerate unique catalog IDs, reconcile missing or dup
 - [ ] Publish requirement totals, evidence classifications, gaps, and a report-ready narrative.
 
 The user reports both previously timing-out SQL tests now pass in the full local backend run without coverage. The earlier timeout remains unexplained. This observation is context, not a new execution artifact or proof of requirement completeness. No tests were executed for this documentation-only opening commit.
+
+## Preliminary reporting snapshot — 2026-10-27
+
+This is a documentation inventory at baseline `09df7b6235f9da83042423149ae54dd8ad9ce3c0`, not a completed acceptance-criteria audit. Denominator: all 81 unique requirement headings in REQUIREMENTS.md, including one Deferred record (NFR-002). No IDs were excluded or duplicated. The matrix has 75 unique catalog IDs and no extra IDs.
+
+| Measure | Count | Percentage of 81 | Interpretation |
+|---|---:|---:|---|
+| Catalog requirements | 81 | 100% | Current written scope, not every app capability |
+| Requirements represented by an RTM table row | 75 | 92.6% | Structural traceability only |
+| Requirements whose RTM verification cell links to an existing test file or test directory | 56 | 69.1% | Link presence, not assertion completeness or a passing run |
+| Catalog records labeled exactly Verified | 39 | 48.1% | Historical recorded status; not revalidated in this review |
+| Missing RTM rows | 6 | 7.4% | CON-003 through CON-008 |
+
+The exact catalog status distribution is 39 Verified, 14 Implemented, 15 Partial, 3 Approved, 1 Deferred, and 9 records with qualified implementation/prototype descriptions. The nine qualified labels are retained as a separate group rather than equated with complete implementation. Five substantive catalog/matrix status mismatches are REA-008 (Approved/Verified), REA-011 (Implemented/Verified), VOT-004 (Partial/Implemented), VOT-007 (Approved/Implemented), and VOT-011 (Partial/Verified). Other qualified labels differ in wording. The catalog supplies the status counts above; no attempt was made to choose the more optimistic status.
+
+| Area prefix | Catalog requirements | Catalog Verified | RTM rows |
+|---|---:|---:|---:|
+| GRA | 5 | 5 | 5 |
+| TYP | 5 | 3 | 5 |
+| REL | 4 | 3 | 4 |
+| CON | 8 | 5 | 2 |
+| PAR | 2 | 1 | 2 |
+| SEC | 3 | 0 | 3 |
+| AUT | 2 | 2 | 2 |
+| EVT | 2 | 1 | 2 |
+| PER | 2 | 0 | 2 |
+| REA | 11 | 4 | 11 |
+| VOT | 11 | 3 | 11 |
+| NFR | 2 | 0 | 2 |
+| COM | 8 | 5 | 8 |
+| DIS | 7 | 7 | 7 |
+| MOD | 4 | 0 | 4 |
+| NOT | 3 | 0 | 3 |
+| IDN | 2 | 0 | 2 |
+
+### Concrete traceability gaps
+
+- CON-003 through CON-008 have catalog entries but no matrix table rows. Five of those six are labeled Verified in the catalog, making their missing traceability particularly important.
+- DIS-001 through DIS-007 each link to nonexistent `tests/Atlas.Discovery.Tests/DiscoveryServiceTests.cs`. Existing DiscoveryReadQueryTests and the Persistence discovery suites are candidates for assertion review; they are not assumed to be interchangeable replacements.
+- 18 catalog requirements have no Markdown link in their RTM verification cell, including the six missing rows. Another seven have only the broken Discovery link. Together these account for the 25 requirements outside the existing-test-link count. A directory link counts for link presence but still requires individual test mapping.
+- The catalog covers 17 area prefixes, but has no dedicated threaded-comment requirement area. COM is Communities. Comment-related behavior appears in some other requirements; completeness of threaded-comment and newer web/API product scope needs separate review.
+
+### Confirmed current API evidence (source inspection)
+
+[BoundaryTests.cs](../../tests/Atlas.Api.Tests/BoundaryTests.cs) contains `Anonymous_mutation_is_401_without_redirect_or_database_access`, asserting POST /api/nodes returns 401 with no redirect using the real API middleware in an in-memory test host. This supports the unauthenticated-action criterion of SEC-001. `All_write_actions_have_authorization_except_explicit_account_entry_points` inspects write action authorization metadata and the explicit anonymous account exceptions. These are specific API evidence beyond the matrix's future-API wording. They do not establish all SEC-001 acceptance criteria: authenticated actor binding and forged actor data need the SQL workflow tests and implementation reviewed. SEC-001 therefore is not upgraded here. These tests were inspected, not executed during this review.
+
+### Text suitable for the current report
+
+> A preliminary inventory identified 81 documented SRS requirements. The existing traceability matrix represents 75 (92.6%), and 56 (69.1%) have verification links resolving to existing test files or directories. The requirements catalog currently labels 39 (48.1%) as Verified. These figures describe documented traceability and recorded status, rather than independently audited requirement satisfaction. Six missing Content mappings, seven stale Discovery test links, and catalog/matrix status inconsistencies remain to be reconciled. Current API tests provide evidence beyond some outdated matrix descriptions. Acceptance-criterion completeness and execution evidence are still under review; source-code coverage is reported separately.
