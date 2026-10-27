@@ -129,6 +129,7 @@ public sealed class DiscoveryMixedSearchTests
     }
 
     [TestMethod]
+    [TestCategory("FullTextSearch")]
     public void IdenticalNodeAndCommentDocumentsHaveEqualRanksAndSharePagination()
     {
         using var fixture = SqlTestDatabase.Create(useCurrentModel: true);

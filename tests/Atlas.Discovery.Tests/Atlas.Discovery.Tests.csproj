@@ -11,4 +11,6 @@
   <ItemGroup>
     <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
   </ItemGroup>
+  <!-- Shared VSTest coverage collector settings for backend report runs. -->
+  <Import Project="../BackendCoverage.props" />
 </Project>

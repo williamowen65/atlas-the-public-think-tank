@@ -4,4 +4,5 @@
     <ProjectReference Include="../../src/hosts/Atlas.Api/Atlas.Api.csproj" /></ItemGroup>
   <ItemGroup><Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" /></ItemGroup>
   <ItemGroup><Compile Include="../Shared/SqlFullTextSupport.cs" Link="SqlFullTextSupport.cs" /></ItemGroup>
+  <Import Project="../BackendCoverage.props" />
 </Project>
