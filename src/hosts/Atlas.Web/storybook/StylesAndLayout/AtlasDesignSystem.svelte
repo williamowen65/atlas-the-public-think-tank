@@ -55,9 +55,14 @@
   onMount(() => {
     function refresh() {
       const css = getComputedStyle(document.documentElement);
-      currentTokens = Object.fromEntries(
-        [...colors, ...layout].map(({ token }) => [token, css.getPropertyValue(token).trim()]),
-      );
+      currentTokens = {
+        ...Object.fromEntries(
+          [...colors, ...layout].map(({ token }) => [token, css.getPropertyValue(token).trim()]),
+        ),
+        'font-family': css.fontFamily,
+        'font-size': css.fontSize,
+        'line-height': css.lineHeight,
+      };
     }
     refresh();
     const observer = new MutationObserver(refresh);
@@ -117,6 +122,11 @@
       <p>Samples inherit the font family, base size, and line height from the application styles.</p>
     </div>
     <div class="type-example">
+      <dl class="type-metrics">
+        <div><dt>Font family</dt><dd>{currentTokens['font-family'] || '—'}</dd></div>
+        <div><dt>Base size</dt><dd>{currentTokens['font-size'] || '—'}</dd></div>
+        <div><dt>Line height</dt><dd>{currentTokens['line-height'] || '—'}</dd></div>
+      </dl>
       <p class="overline">Node type · Context · Date</p>
       <h3>Question: Understanding a complex issue</h3>
       <h4>A supporting heading</h4>
@@ -346,6 +356,26 @@
   }
   .type-example {
     max-width: 70ch;
+  }
+  .type-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+    gap: 0.65rem;
+    margin: 0 0 1.3rem;
+    padding-bottom: 0.9rem;
+    border-bottom: 1px solid var(--atlas-border);
+  }
+  .type-metrics div {
+    min-width: 0;
+  }
+  .type-metrics dt {
+    color: var(--atlas-muted);
+    font-size: 0.8rem;
+  }
+  .type-metrics dd {
+    margin: 0.2rem 0 0;
+    overflow-wrap: anywhere;
+    font-size: 0.9rem;
   }
   .type-example h3 {
     font-size: 1.5rem;
