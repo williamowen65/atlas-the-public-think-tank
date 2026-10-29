@@ -1,6 +1,6 @@
 # Atlas design system in Storybook
 
-The **Styles and Layout / Atlas Design System / Overview** story is a **read-only visual inventory** of existing Atlas styles. It is deliberately not a replacement theme editor. It shows color roles and live CSS values, typography, spacing, shared panels, and examples composed from actual application components.
+The **Styles and Layout / Atlas Design System / Overview** story is a **read-only visual inventory** of existing Atlas styles. It is deliberately not a replacement theme editor. It shows color roles and live CSS values, spacing, shared panels, and examples composed from actual application components. **The typography table reports values computed from the actual rendered node card**, not a separate heading mockup. It separates global root text defaults from locally styled card title, byline, description and details. Other components may use different local rules.
 
 ## Source of truth
 
