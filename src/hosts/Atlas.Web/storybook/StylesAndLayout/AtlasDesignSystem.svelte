@@ -32,11 +32,11 @@
   // Each row is measured from the *actual NodeCard instance below*, never an imitation
   // of the component's type hierarchy. Keep selectors aligned with the production markup.
   const typographyTargets = [
-    { label: 'Node title', selector: '.node-card header h2' },
-    { label: 'Author / date', selector: '.node-card .byline' },
+    { label: 'Node title', selector: '.node-card > header > h2' },
+    { label: 'Author / date', selector: '.node-card > header > .byline' },
     { label: 'Short description', selector: '.node-card .description' },
     { label: 'Contribution invitation', selector: '.node-card .invitation' },
-    { label: 'Card details', selector: '.node-card .card-details' },
+    { label: 'Card details', selector: '.node-card > .card-details' },
   ] as const;
 
   type TextMetrics = {
