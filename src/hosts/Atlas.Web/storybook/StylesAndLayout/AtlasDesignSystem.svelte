@@ -166,7 +166,7 @@
 
   <section aria-labelledby="typography-title">
     <div class="section-heading">
-      <h2 id="typography-title">Typography actually used in Atlas</h2>
+      <h2 id="typography-title">Node-card typography as rendered</h2>
       <p>
         The shared defaults describe the page's baseline, but node-card text has its own
         component styles. The table measures the
