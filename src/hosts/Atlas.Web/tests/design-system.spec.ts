@@ -21,7 +21,7 @@ test('design system overview uses real Atlas components without a second control
 test('typography inventory reads the computed styles of the real node card', async ({ page }) => {
   await page.goto(overview());
 
-  await expect(page.getByRole('heading', { name: 'Typography actually used in Atlas' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Node-card typography as rendered' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Question: Understanding a complex issue' })).toHaveCount(0);
 
   const styles = [
@@ -39,7 +39,7 @@ test('typography inventory reads the computed styles of the real node card', asy
         const computed = getComputedStyle(element);
         return [computed.fontSize, computed.fontWeight, computed.lineHeight, computed.marginBottom];
       });
-      const row = page.locator('.type-table tbody tr').filter({ has: page.getByRole('rowheader', { name: new RegExp(name.replace('/', '\\/')) }) });
+      const row = page.locator('.type-table tbody tr').filter({ hasText: name });
       await expect(row.locator('td')).toHaveText(measured);
     }
   }
