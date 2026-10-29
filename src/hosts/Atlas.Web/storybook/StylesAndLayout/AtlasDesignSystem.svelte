@@ -29,6 +29,23 @@
     { label: 'Corner radius', token: '--atlas-radius', fallback: '.5rem', note: 'Shared global token' },
   ] as const;
 
+  // Each row is measured from the *actual NodeCard instance below*, never an imitation
+  // of the component's type hierarchy. Keep selectors aligned with the production markup.
+  const typographyTargets = [
+    { label: 'Node title', selector: '.node-card header h2' },
+    { label: 'Author / date', selector: '.node-card .byline' },
+    { label: 'Short description', selector: '.node-card .description' },
+    { label: 'Contribution invitation', selector: '.node-card .invitation' },
+    { label: 'Card details', selector: '.node-card .card-details' },
+  ] as const;
+
+  type TextMetrics = {
+    fontSize: string;
+    fontWeight: string;
+    lineHeight: string;
+    marginBottom: string;
+  };
+
   const exampleNode: NodeCardData = {
     id: 'b1000000-0000-4000-8000-000000000040',
     typeName: 'Question',
@@ -49,6 +66,8 @@
 
   // The values are read from CSS at runtime, not duplicated in this component.
   let currentTokens = $state<Record<string, string>>({});
+  let actualTypography = $state<Record<string, TextMetrics>>({});
+  let cardExample: HTMLDivElement;
   let rating = $state<number | null>(5);
   let feedback = $state('These example interactions do not save anything.');
 
@@ -63,6 +82,29 @@
         'font-size': css.fontSize,
         'line-height': css.lineHeight,
       };
+
+      // The node card's local SCSS intentionally differs from the root text defaults.
+      // Read the browser's computed values after all inherited and component styles apply.
+      if (cardExample) {
+        actualTypography = Object.fromEntries(
+          typographyTargets.flatMap(({ label, selector }) => {
+            const element = cardExample.querySelector<HTMLElement>(selector);
+            if (!element) return [];
+            const style = getComputedStyle(element);
+            return [
+              [
+                label,
+                {
+                  fontSize: style.fontSize,
+                  fontWeight: style.fontWeight,
+                  lineHeight: style.lineHeight,
+                  marginBottom: style.marginBottom,
+                },
+              ],
+            ];
+          }),
+        );
+      }
     }
     refresh();
     const observer = new MutationObserver(refresh);
@@ -70,7 +112,13 @@
       attributes: true,
       attributeFilter: ['style', 'data-theme', 'data-density'],
     });
-    return () => observer.disconnect();
+    // Responsive font sizing on the card can change when its available width changes.
+    const resizeObserver = new ResizeObserver(refresh);
+    if (cardExample) resizeObserver.observe(cardExample);
+    return () => {
+      observer.disconnect();
+      resizeObserver.disconnect();
+    };
   });
 </script>
 
@@ -118,23 +166,53 @@
 
   <section aria-labelledby="typography-title">
     <div class="section-heading">
-      <h2 id="typography-title">Typography and information hierarchy</h2>
-      <p>Samples inherit the font family, base size, and line height from the application styles.</p>
-    </div>
-    <div class="type-example">
-      <dl class="type-metrics">
-        <div><dt>Font family</dt><dd>{currentTokens['font-family'] || '—'}</dd></div>
-        <div><dt>Base size</dt><dd>{currentTokens['font-size'] || '—'}</dd></div>
-        <div><dt>Line height</dt><dd>{currentTokens['line-height'] || '—'}</dd></div>
-      </dl>
-      <p class="overline">Node type · Context · Date</p>
-      <h3>Question: Understanding a complex issue</h3>
-      <h4>A supporting heading</h4>
+      <h2 id="typography-title">Typography actually used in Atlas</h2>
       <p>
-        Readability depends on more than a font choice. Headings, body copy, metadata, and
-        <a href="#layout-title">links</a> should create a recognizable structure in every view.
+        The shared defaults describe the page's baseline, but node-card text has its own
+        component styles. The table measures the
+        <a href="#card-title">real node card below</a> instead of showing a second,
+        independently styled typography example.
       </p>
-      <p class="fixture-note">Supporting text · Clear but visually secondary.</p>
+    </div>
+    <div class="typography-reference">
+      <dl class="type-metrics" aria-label="Application baseline typography">
+        <div><dt>Root font family</dt><dd>{currentTokens['font-family'] || '—'}</dd></div>
+        <div><dt>Root font size</dt><dd>{currentTokens['font-size'] || '—'}</dd></div>
+        <div><dt>Root line height</dt><dd>{currentTokens['line-height'] || '—'}</dd></div>
+      </dl>
+      <div class="type-table-scroll">
+        <table class="type-table">
+          <caption>Computed typography from the node card in this story</caption>
+          <thead>
+            <tr>
+              <th scope="col">Actual element</th>
+              <th scope="col">Font size</th>
+              <th scope="col">Weight</th>
+              <th scope="col">Line height</th>
+              <th scope="col">Bottom margin</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each typographyTargets as target (target.label)}
+              <tr>
+                <th scope="row">
+                  {target.label}
+                  <code>{target.selector}</code>
+                </th>
+                <td>{actualTypography[target.label]?.fontSize || '—'}</td>
+                <td>{actualTypography[target.label]?.fontWeight || '—'}</td>
+                <td>{actualTypography[target.label]?.lineHeight || '—'}</td>
+                <td>{actualTypography[target.label]?.marginBottom || '—'}</td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+      <p class="fixture-note">
+        These values are computed by the browser for the card at the current preview width.
+        They can change with viewport size or Storybook globals. Card-specific CSS lives in
+        <code>NodeCardRibbonCorner.svelte</code>; shared defaults live in <code>styles.scss</code>.
+      </p>
     </div>
   </section>
 
@@ -217,7 +295,7 @@
         presentation. Resize the preview to review responsive behavior.
       </p>
     </div>
-    <div class="card-example">
+    <div class="card-example" bind:this={cardExample}>
       <NodeCard
         node={exampleNode}
         presentation="ribbon-corner"
@@ -346,16 +424,13 @@
     align-content: center;
     font-weight: 600;
   }
-  .type-example,
+  .typography-reference,
   .sample-panel {
     background: var(--atlas-surface);
     border: 1px solid var(--atlas-border);
     border-radius: var(--atlas-radius);
     padding: var(--atlas-space);
     min-width: 0;
-  }
-  .type-example {
-    max-width: 70ch;
   }
   .type-metrics {
     display: grid;
@@ -377,10 +452,37 @@
     overflow-wrap: anywhere;
     font-size: 0.9rem;
   }
-  .type-example h3 {
-    font-size: 1.5rem;
-    line-height: 1.2;
-    margin-bottom: 0.8rem;
+  .type-table-scroll {
+    overflow-x: auto;
+    margin-bottom: 0.9rem;
+  }
+  .type-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.88rem;
+  }
+  .type-table caption {
+    text-align: left;
+    padding-bottom: 0.45rem;
+    color: var(--atlas-muted);
+  }
+  .type-table th,
+  .type-table td {
+    padding: 0.6rem 0.8rem 0.6rem 0;
+    border-bottom: 1px solid var(--atlas-border);
+    vertical-align: top;
+  }
+  .type-table td {
+    white-space: nowrap;
+  }
+  .type-table th code {
+    display: block;
+    margin-top: 0.3rem;
+    font-size: 0.75rem;
+    font-weight: normal;
+    color: var(--atlas-muted);
+    overflow-wrap: anywhere;
   }
   .two-columns {
     display: grid;
