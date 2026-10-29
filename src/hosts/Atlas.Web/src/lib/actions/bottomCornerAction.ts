@@ -20,17 +20,23 @@ export function bottomCornerAction(description: HTMLElement) {
   // Browser-issued animation-frame handle, not elapsed time. Zero means none is queued.
   let frame = 0;
   let previousWidth = 0;
+  let previousText = '';
   const align = () => {
     frame = 0;
     const width = description.getBoundingClientRect().width;
     // Release the old float height when wrapping changes, so the card can shrink too.
-    if (width !== previousWidth) {
+    const text = description.textContent ?? '';
+    if (width !== previousWidth || text !== previousText) {
+      description.style.minHeight = '0px';
+      previousText = text;
       action.style.setProperty('--corner-top', '0px');
       previousWidth = width;
     }
     const top = description.getBoundingClientRect().top;
     const buttonHeight = action.getBoundingClientRect().height;
-    description.style.minHeight = `${Math.max(buttonHeight, dial.getBoundingClientRect().bottom - top)}px`;
+    description.style.minHeight = `${Math.max(buttonHeight, dial.getBoundingClientRect().bottom - top, description.getBoundingClientRect().height)}px`;
+    // Retain the height required by wrapped text before moving the float. Otherwise
+    // a line beside the button can alternate between two heights on every resize.
     const available = description.getBoundingClientRect().height;
     action.style.setProperty('--corner-top', `${Math.max(0, available - buttonHeight)}px`);
   };
@@ -44,11 +50,14 @@ export function bottomCornerAction(description: HTMLElement) {
   observer.observe(action);
   observer.observe(dial);
   observer.observe(card.querySelector('header')!);
+  const mutations = new MutationObserver(schedule);
+  mutations.observe(description, { childList: true, characterData: true, subtree: true });
   schedule();
   // Action cleanup runs when Svelte removes the attached element, including route changes.
   return {
     destroy() {
       observer.disconnect();
+      mutations.disconnect();
       cancelAnimationFrame(frame);
     },
   };

@@ -121,3 +121,22 @@ test('cancelling a proposed rating leaves the confirmed vote and server totals u
   await expect(page.locator('.vote-count')).toHaveAccessibleName('3 votes');
   expect(fixture.mutations).toEqual([]);
 });
+
+for (const width of [1024, 640, 320]) {
+  test(`feed dial receives pointer input and saves the confirmed vote at ${width}px`, async ({ page }) => {
+    const fixture = await setup(page);
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('http://127.0.0.1:4173');
+    const dial = page.locator('article').first().getByRole('spinbutton', { name: 'Node importance', exact: true });
+    await expect(dial).toHaveAttribute('aria-disabled', 'false');
+    // Click above the selected row using real pointer input: an overlay makes this time out.
+    await dial.click({ position: { x: 15, y: 15 } });
+    await expect(page.getByRole('dialog', { name: 'Confirm your importance rating', exact: true })).toBeVisible();
+    expect(fixture.mutations).toEqual([]);
+    await page.getByRole('button', { name: 'Confirm rating', exact: true }).click();
+    await expect.poll(() => fixture.mutations.length).toBe(1);
+    expect(fixture.mutations[0].method).toBe('PUT');
+    await expect(dial).toHaveAttribute('aria-valuenow', String(fixture.mutations[0].value));
+    await expect(page.locator('article').first().locator('.vote-count')).toHaveAccessibleName('4 votes');
+  });
+}
