@@ -131,8 +131,8 @@ test('dial supports wheel and dragging in both layouts', async ({ page }) => {
   }
 });
 
-/** A real browser touch gesture scrolls and selects in standard and compact views. */
-test('native touch scroll snaps and updates the controlled selection', async ({ browser }) => {
+/** A captured touch drag previews and snaps in standard and compact views. */
+test('touch drag snaps and updates the controlled selection', async ({ browser }) => {
   const context = await browser.newContext({ hasTouch: true, viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const session = await context.newCDPSession(page);
