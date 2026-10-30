@@ -105,3 +105,47 @@ test.beforeEach(async ({ page }) => {
     return route.fulfill({ status: 401, json: {} });
   });
 });
+
+/** Parent/type filters must survive all five pages; each response adds exactly three cards. */
+test('node contribution tab pages fifteen children in scoped groups of three', async ({ page }) => {
+  // Manual loading makes page boundaries deterministic instead of viewport-dependent.
+  await page.addInitScript(() => { Object.defineProperty(window, 'IntersectionObserver', { value: undefined }); });
+  const parent = 'b1000000-0000-4000-8000-000000000201';
+  const solution = '60d8ba45-8b78-4593-838b-ffd15af69746';
+  const pages: number[] = [];
+  await page.route('**/atlas-public-api/**', route => {
+    const url = new URL(route.request().url());
+    if (url.pathname.endsWith('/catalog/node-types')) return route.fulfill({ json: [{ id: solution, name: 'Solution', pluralName: 'Solutions' }] });
+    if (url.pathname.endsWith('/description') || url.pathname.endsWith('/reactions') || url.pathname.includes('/communities/')) return route.fulfill({ json: [] });
+    if (url.pathname.endsWith('/comments')) return route.fulfill({ json: { items: [], next: null } });
+    if (url.pathname.endsWith('/nodes/' + parent)) return route.fulfill({ json: { id: parent, requestedTypeIds: [solution] } });
+    if (url.searchParams.has('ParentNodeId')) {
+      expect(url.searchParams.get('ParentNodeId')).toBe(parent);
+      expect(url.searchParams.get('NodeTypeId')).toBe(solution);
+      const current = Number(url.searchParams.get('Page'));
+      pages.push(current);
+      const items = Array.from({ length: 3 }, (_, i) => {
+        const item = entry(400 + (current - 1) * 3 + i + 1);
+        return { ...item, card: { ...item.card, typeName: 'Solution' } };
+      });
+      return route.fulfill({ json: { items, totalCount: 15, page: current, pageSize: 3, hasNextPage: current < 5 } });
+    }
+    const item = entry(201);
+    return route.fulfill({ json: { items: [{ ...item, nodeId: parent, card: { ...item.card, title: 'Orca recovery', childTypes: [{ typeId: solution, count: 15, label: '15 Solutions' }] } }], totalCount: 1, page: 1, pageSize: 3, hasNextPage: false } });
+  });
+  await page.goto('http://127.0.0.1:6006/iframe.html?id=compositions-node-page--playground&viewMode=story&args=nodeId:' + parent);
+  await page.getByRole('tab', { name: '15 Solutions', exact: true }).click();
+  const panel = page.getByRole('tabpanel');
+  await expect(panel.locator('article')).toHaveCount(3);
+  for (let current = 2; current <= 5; current++) {
+    await panel.getByRole('button', { name: 'Load more nodes', exact: true }).click();
+    await expect(panel.locator('article')).toHaveCount(current * 3);
+  }
+  await expect(panel.getByRole('status')).toContainText('caught up');
+  await expect(panel.getByRole('button', { name: 'Load more nodes', exact: true })).toHaveCount(0);
+  expect(pages).toEqual([1, 2, 3, 4, 5]);
+  await page.getByRole('tab', { name: '0 Comments', exact: true }).click();
+  await page.getByRole('tab', { name: '15 Solutions', exact: true }).click();
+  await expect(panel.locator('article')).toHaveCount(3);
+  expect(pages).toEqual([1, 2, 3, 4, 5, 1]);
+});
