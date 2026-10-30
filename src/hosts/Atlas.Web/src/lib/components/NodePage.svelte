@@ -266,6 +266,16 @@
 -->
 
 <article class="node-page atlas-panel">
+    <NodeEditControl
+      corner
+      nodeId={node.id}
+      authorId={node.authorId}
+      {apiBase}
+      onSaved={(update) => {
+        node = { ...node, title: update.title, description: update.shortDescription };
+        blocks = update.blocks;
+      }}
+    />
   {#if node.breadcrumb.length}<div class="ribbon-context">
       <Breadcrumb
         items={node.breadcrumb}
@@ -277,15 +287,6 @@
       />
     </div>{/if}
   <header>
-    <NodeEditControl
-      nodeId={node.id}
-      authorId={node.authorId}
-      {apiBase}
-      onSaved={(update) => {
-        node = { ...node, title: update.title, description: update.shortDescription };
-        blocks = update.blocks;
-      }}
-    />
     <h1>{node.typeName}: {node.title}</h1>
     <p class="byline">
       By {#if node.authorId}<a
@@ -383,7 +384,18 @@
 </article>
 
 <style lang="scss">
+
+  // Only owner-visible corner controls reserve space; breadcrumbs keep their scroll behavior.
+  .node-page:has(> :global(.edit-node.corner)) > .ribbon-context {
+    padding-right: 3.25rem;
+    min-height: 2.75rem;
+  }
+  .node-page:has(> :global(.edit-node.corner)) > header {
+    padding-right: 3.25rem;
+  }
+
   .node-page {
+    position: relative;
     --card-padding: var(--atlas-card-padding, 1.25rem);
     --dial-text-gap: var(--atlas-dial-text-gap, 1rem);
     --atlas-breadcrumb-bottom-space: 0px;
