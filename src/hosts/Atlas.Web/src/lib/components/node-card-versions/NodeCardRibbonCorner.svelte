@@ -258,7 +258,7 @@
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
-      align-items: start;
+      align-items: center;
       gap: 0.35rem 1rem;
       padding: 0 var(--card-padding) 1rem;
       font-size: 0.9rem;
@@ -287,7 +287,8 @@
       display: flex;
       flex-wrap: wrap;
       justify-content: flex-end;
-      align-items: baseline;
+      align-items: center;
+      align-self: center;
       column-gap: 0.35em;
       font-size: 0.9rem;
       text-align: right;
@@ -333,7 +334,7 @@
   }
 
   .body {
-    padding: 0.5rem var(--card-padding) 1rem;
+    padding: 0.5rem var(--card-padding) 0;
     display: flow-root;
   }
 
