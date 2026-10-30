@@ -27,5 +27,7 @@
 -->
 
 <svelte:head><title>Sign in · Atlas</title></svelte:head>
-<section class="auth-page">\n<h1>Sign in</h1>
-<SessionControl expanded onSession={signedIn} />\n</section>
+<section class="auth-page">
+<h1>Sign in</h1>
+<SessionControl expanded onSession={signedIn} />
+</section>
