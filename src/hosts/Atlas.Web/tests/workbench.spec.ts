@@ -161,11 +161,15 @@ test('native touch scroll snaps and updates the controlled selection', async ({ 
 test('unrated color changes when zero is selected', async ({ page }) => {
   await page.goto(story('components-votingdial--playground&args=initialValue:!null'));
   const window = page.locator('.selection-window');
-  const before = await window.evaluate(el => getComputedStyle(el).backgroundColor);
+  // The lens uses CSS gradients: backgroundColor stays transparent in both states.
+  // Compare the rendered gradient instead of asserting a solid background color.
+  const before = await window.evaluate(el => getComputedStyle(el).backgroundImage);
+  expect(before).toContain('linear-gradient');
   await page.getByRole('spinbutton').focus();
   await page.keyboard.press('Home');
   await expect(page.locator('.selector')).not.toHaveClass(/unrated/);
-  expect(await window.evaluate(el => getComputedStyle(el).backgroundColor)).not.toBe(before);
+  await expect.poll(() => window.evaluate(el => getComputedStyle(el).backgroundImage)).not.toBe(before);
+  expect(await window.evaluate(el => getComputedStyle(el).backgroundImage)).toContain('linear-gradient');
   await expect(page.getByRole('spinbutton')).toHaveAttribute('aria-valuenow', '0');
 });
 
