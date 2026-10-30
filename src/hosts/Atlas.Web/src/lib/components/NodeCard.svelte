@@ -66,6 +66,8 @@
 
 {#if presentation === 'context-below'}
   <NodeCardContextBelow {...props} />
+{:else if presentation === 'mobile-experiment'}
+  <NodeCardRibbonCorner {...props} mobileLayout />
 {:else if presentation === 'ribbon-corner'}
   <NodeCardRibbonCorner {...props} />
 {:else if presentation === 'ribbon-split'}
