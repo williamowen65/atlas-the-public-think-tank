@@ -75,7 +75,7 @@ export interface NodeCardData {
 
 /** Supported node-card layouts; selects presentation without changing node data. */
 export type NodeCardPresentation =
-  'context-below' | 'ribbon' | 'ribbon-responsive' | 'ribbon-split' | 'ribbon-corner';
+  'mobile-experiment' | 'context-below' | 'ribbon' | 'ribbon-responsive' | 'ribbon-split' | 'ribbon-corner';
 
 /** Shared input contract forwarded to each node-card presentation. */
 export interface NodeCardProps {
