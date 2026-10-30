@@ -17,5 +17,5 @@
 <svelte:head><title>Create an account · Atlas</title></svelte:head>
 <section class="auth-page">
 <h1>Create an account</h1>
-<SessionControl expanded startRegister />
+<SessionControl collapsible={false} startRegister />
 </section>
