@@ -82,7 +82,7 @@ test('search from a node shows compact filtered results, pages them and opens a 
   ).toBeVisible();
   await expect(results.getByRole('spinbutton')).toHaveCount(0);
   await expect(results.getByRole('navigation')).toHaveCount(0);
-  await expect(results).toContainText('4 comments');
+  await expect(results).toContainText('4 Comments');
   await expect(results).toContainText('2 Ideas');
   expect(await results.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
     true,
