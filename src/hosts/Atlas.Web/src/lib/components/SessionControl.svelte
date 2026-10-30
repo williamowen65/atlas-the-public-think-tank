@@ -22,6 +22,7 @@
     run more than once.
 -->
 <script lang="ts">
+  import ActionButton from './ActionButton.svelte';
   import { onMount, untrack } from 'svelte';
   import { apiRequest, ApiRequestError } from '../api/apiRequest';
   let {
@@ -341,9 +342,11 @@
           required
           maxlength="1024"
         />
-        <button disabled={busy}
-          >{busy ? 'Please wait…' : registering ? 'Create account' : 'Sign in'}</button
-        >
+        <ActionButton
+          type="submit"
+          label={busy ? 'Please wait…' : registering ? 'Create account' : 'Sign in'}
+          disabled={busy}
+        />
       </form>
       <button
         type="button"
@@ -369,6 +372,8 @@
     gap: 1rem;
   }
   .sign-in {
+    --atlas-action-width: 100%;
+    max-width: 24rem;
     margin-bottom: 1rem;
   }
   summary {
@@ -400,6 +405,11 @@
     border-radius: var(--atlas-radius);
     background: var(--atlas-surface);
     color: var(--atlas-text);
+  }
+  .switch-mode {
+    display: block;
+    width: 100%;
+    margin-top: 0.75rem;
   }
   button:disabled {
     cursor: default;
