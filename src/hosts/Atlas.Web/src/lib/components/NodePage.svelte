@@ -468,6 +468,31 @@
   .tabs button {
     margin: 0 0.4rem 0.4rem 0;
     vertical-align: top;
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
+    padding: 0.45rem 0.8rem;
+    background: var(--atlas-surface);
+    color: var(--atlas-muted);
+    line-height: 1.4;
+    font-weight: 600;
+
+    &:hover {
+      border-color: var(--atlas-accent);
+      background: color-mix(in srgb, var(--atlas-accent) 8%, var(--atlas-surface));
+      color: var(--atlas-text);
+    }
+
+    &:focus-visible {
+      outline: 3px solid var(--atlas-focus);
+      outline-offset: 3px;
+    }
+
+    &[aria-selected='true'] {
+      border-color: var(--atlas-accent);
+      background: color-mix(in srgb, var(--atlas-accent) 14%, var(--atlas-surface));
+      color: var(--atlas-text);
+      box-shadow: inset 0 -3px 0 var(--atlas-accent);
+    }
   }
   button {
     font: inherit;
@@ -475,11 +500,6 @@
     cursor: pointer;
     max-width: 100%;
     overflow-wrap: anywhere;
-  }
-  [aria-selected='true'] {
-    font-weight: bold;
-    background: var(--atlas-accent);
-    color: var(--atlas-on-accent);
   }
   [role='tabpanel'] {
     padding: 1rem var(--card-padding) var(--card-padding);
