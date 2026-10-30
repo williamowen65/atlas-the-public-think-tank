@@ -18,7 +18,7 @@
     value is non-null.
   - `compact` (`boolean`; optional; default `false`): Selects the compact dial layout.
   - `disabled` (`boolean`; optional; default `false`): Prevents interaction with this control.
-  - `onCommit` (`(value: number) => void`; optional): Requests confirmation on pointer release or Enter.
+  - `onCommit` (`(value: number) => void`; optional): Requests confirmation after pointer/wheel settling or Enter.
   - `onChange` (`(value: number) => void`; optional): Callback: Receives the selected 0–10 rating.
     This control is presentational; the caller handles acceptance or persistence.
 -->
@@ -47,7 +47,7 @@
      * handles acceptance or persistence.
      */
     onChange?: (value: number) => void;
-    /** Request review only after pointer release or Enter; never save during adjustment. */
+    /** Request review after pointer/wheel settling or Enter; never save during adjustment. */
     onCommit?: (value: number) => void;
     /** Restore caller-owned preview state if a pointer gesture is cancelled. */
     onCancel?: () => void;
@@ -91,12 +91,82 @@
   let lastLayout: boolean | undefined;
   let lastDisabled: boolean | undefined;
   let gestureStart: number | null = null;
+  let velocity = 0;
+  let lastPointerY = 0;
+  let lastPointerTime = 0;
+  let coasting = $state(false);
+  let motionFrame = 0;
+  let reviewFrame = 0;
+  let reviewVersion = 0;
+  let lastMotion = 0;
+  let touchGesture = false;
   let wheelRemainder = 0;
   let wheelTime = 0;
   let wheelPullDistance = 0;
   let wheelRelease: ReturnType<typeof setTimeout> | undefined;
 
-  $effect(() => () => clearTimeout(wheelRelease));
+  $effect(() => () => {
+    clearTimeout(wheelRelease);
+    stopMotion();
+  });
+
+  /** Cancel queued review and animation when the visitor starts a new adjustment. */
+  function stopMotion() {
+    reviewVersion++;
+    cancelAnimationFrame(reviewFrame);
+    cancelAnimationFrame(motionFrame);
+    coasting = false;
+  }
+
+  /**
+   * Review only after motion has finished and a further 450ms quiet interval.
+   * New input invalidates this request; this never writes a vote to the API.
+   */
+  function reviewWhenSettled() {
+    const version = ++reviewVersion;
+    cancelAnimationFrame(reviewFrame);
+    lastMotion = performance.now();
+    const check = (now: number) => {
+      if (version !== reviewVersion || disabled) return;
+      if (syncTarget !== null && Math.abs(reel.scrollTop - syncTarget) < 1) syncTarget = null;
+      if (drag || coasting || wheelRelease !== undefined || syncTarget !== null)
+        lastMotion = now;
+      if (now - lastMotion >= 450) {
+        onCommit?.(Math.max(0, Math.min(10, 10 - Math.round(reel.scrollTop / rowHeight()))));
+        return;
+      }
+      reviewFrame = requestAnimationFrame(check);
+    };
+    reviewFrame = requestAnimationFrame(check);
+  }
+
+  /**
+   * Ease a released touch swipe toward its projected whole-number destination.
+   * @param speed Recent reel velocity in pixels per millisecond; pauses remove momentum.
+   */
+  function coast(speed: number) {
+    const start = reel.scrollTop;
+    const maximum = 10 * rowHeight();
+    const projected = Math.max(0, Math.min(maximum, start + speed * 180));
+    const target = Math.round(projected / rowHeight()) * rowHeight();
+    const duration = Math.min(850, 350 + Math.abs(target - start) * 1.2);
+    const began = performance.now();
+    syncTarget = null;
+    coasting = true;
+    const step = (now: number) => {
+      const progress = Math.min(1, (now - began) / duration);
+      reel.scrollTop = start + (target - start) * (1 - Math.pow(1 - progress, 3));
+      select(10 - Math.round(reel.scrollTop / rowHeight()));
+      if (progress < 1) motionFrame = requestAnimationFrame(step);
+      else {
+        coasting = false;
+        reel.scrollTop = target;
+        select(10 - Math.round(target / rowHeight()));
+        reviewWhenSettled();
+      }
+    };
+    motionFrame = requestAnimationFrame(step);
+  }
 
   // Read the rendered row size so zoom and font-size changes keep the same threshold.
   function rowHeight() {
@@ -110,6 +180,7 @@
     const locked = disabled;
     if (!reel) return;
     if (locked) {
+      stopMotion();
       clearTimeout(wheelRelease);
       wheelRelease = undefined;
       wheelPullDistance = 0;
@@ -153,6 +224,9 @@
   // Map keyboard navigation to the same selection path used by pointer and wheel input.
   function handleKey(event: KeyboardEvent) {
     if (disabled) return;
+    stopMotion();
+    clearTimeout(wheelRelease);
+    wheelRelease = undefined;
     if (event.key === 'Enter') {
       event.preventDefault();
       if (!event.repeat && value !== null) onCommit?.(value);
@@ -178,6 +252,7 @@
 
   function handleScroll() {
     if (disabled) return;
+    lastMotion = performance.now();
     if (syncTarget !== null) {
       if (Math.abs(reel.scrollTop - syncTarget) < 1) syncTarget = null;
       return;
@@ -187,11 +262,12 @@
 
   /**
    * Begin a captured pointer gesture for mouse, pen or touch.
-   * Direct touch manipulation avoids native pointercancel/inertia selecting after release.
+   * Captured touch permits controlled momentum after release without premature review.
    * @param event Pointer press on the reel; only the primary button starts adjustment.
    */
   function pointerDown(event: PointerEvent) {
     if (disabled) return;
+    stopMotion();
     clearTimeout(wheelRelease);
     wheelRelease = undefined;
     wheelPullDistance = 0;
@@ -199,6 +275,10 @@
     if (event.button !== 0) return;
     pulling = true;
     gestureStart = value;
+    touchGesture = event.pointerType === 'touch';
+    velocity = 0;
+    lastPointerY = event.clientY;
+    lastPointerTime = event.timeStamp;
     reel.focus({ preventScroll: true });
     drag = { id: event.pointerId, y: event.clientY, top: reel.scrollTop, moved: false };
     dragging = true;
@@ -208,6 +288,10 @@
   function pointerMove(event: PointerEvent) {
     if (disabled) return;
     if (!drag || drag.id !== event.pointerId) return;
+    const elapsed = event.timeStamp - lastPointerTime;
+    if (elapsed > 0) velocity = Math.max(-3, Math.min(3, (lastPointerY - event.clientY) / elapsed));
+    lastPointerY = event.clientY;
+    lastPointerTime = event.timeStamp;
     pullLens(event.clientY - drag.y);
     const distance = drag.y - event.clientY;
     if (Math.abs(distance) > 3) drag.moved = true;
@@ -237,8 +321,12 @@
       return;
     }
     const next = Math.max(0, Math.min(10, 10 - Math.round((reel.scrollTop + offset) / rowHeight())));
-    moveTo(next);
-    onCommit?.(next);
+    if (touchGesture && previous.moved && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      coast(event.timeStamp - lastPointerTime < 100 ? velocity : 0);
+    } else {
+      moveTo(next);
+      reviewWhenSettled();
+    }
   }
 
   function scrollEnd() {
@@ -250,6 +338,7 @@
   // Accumulate wheel movement into rating steps while the lens provides temporary visual feedback.
   function handleWheel(event: WheelEvent) {
     if (disabled || event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+    stopMotion();
     event.preventDefault();
     // Normalize line/page wheels and accumulate small trackpad deltas.
     const distance =
@@ -277,6 +366,7 @@
       wheelRemainder -= steps * rowHeight();
       moveTo((value ?? 5) - steps);
     }
+    reviewWhenSettled();
   }
 </script>
 
@@ -306,6 +396,7 @@
       bind:this={reel}
       class="reel"
       class:dragging
+      class:coasting
       role="spinbutton"
       tabindex={disabled ? -1 : 0}
       aria-label={label}
@@ -315,7 +406,7 @@
       aria-valuetext={value === null
         ? 'Unrated. Scroll, drag or use arrow keys to choose a rating.'
         : `${value} out of 10`}
-      title="Drag and release to review a rating. Use arrows or the wheel to adjust, then press Enter."
+      title="Swipe or scroll, then pause to review a rating. With keyboard arrows, press Enter when ready."
       aria-disabled={disabled}
       onkeydown={handleKey}
       onscroll={handleScroll}
@@ -443,6 +534,10 @@
 
     &::-webkit-scrollbar {
       display: none;
+    }
+
+    &.coasting {
+      scroll-snap-type: none;
     }
 
     &.dragging {
