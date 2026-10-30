@@ -8,6 +8,10 @@ import { readFileSync } from 'node:fs';
  * env defaults to Node's shell environment. Tests pass a separate object so they can
  * check validation without changing the real environment or reading certificate files.
  * This is development configuration, never browser code or a production auth policy.
+ * @param env Shell variables containing the optional LAN origin and certificate/key paths.
+ * @returns The validated LAN URL, or undefined when LAN mode is disabled.
+ * @throws {TypeError} When the configured origin cannot be parsed as a URL.
+ * @throws {Error} When the origin is unsupported or either certificate path is missing.
  */
 export function lanOrigin(env: NodeJS.ProcessEnv = process.env): URL | undefined {
   if (!env.ATLAS_LAN_ORIGIN) return undefined;
@@ -36,6 +40,8 @@ export function lanOrigin(env: NodeJS.ProcessEnv = process.env): URL | undefined
  * the server certificate/private key from this PC and terminates HTTPS itself.
  * The phone receives the public certificate during TLS, never the private key.
  * File-read failures stop startup instead of silently falling back to HTTP.
+ * @returns Vite server overrides for LAN HTTPS, or an empty object for desktop defaults.
+ * @throws {Error} When LAN configuration is invalid or certificate/key files cannot be read.
  */
 export function lanServer() {
   const origin = lanOrigin();
