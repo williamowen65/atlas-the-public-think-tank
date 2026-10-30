@@ -12,16 +12,20 @@
     account-avatar initial.
 -->
 <script lang="ts">
+  import { myCommunities, type Community } from '../api/communities';
   import DiscoverySearch from './DiscoverySearch.svelte';
   import { restoreDiscoveryQuery } from '../state/discoveryQuery.svelte';
   import { onMount, tick } from 'svelte';
   import { apiRequest } from '../api/apiRequest';
   let {
+    mobileExperiment = false,
     active = null,
     authenticated = false,
     displayName = 'Atlas User',
   }: {
     /** Highlighted navigation item; null leaves all items unselected. */
+    /** Enable mobile search, community drawer and bottom navigation exploration. */
+    mobileExperiment?: boolean;
     active?: 'discover' | 'communities' | 'create' | 'login' | 'register' | null;
     /**
      * Selects the signed-in header menu versus login/register links; does not authenticate by
@@ -67,7 +71,7 @@
     lastScroll = window.scrollY;
     const onScroll = () => {
       const next = window.scrollY;
-      if (searchOpen || filtersOpen || next < 40 || next < lastScroll - 3) headerVisible = true;
+      if (searchOpen || filtersOpen || mobileElement?.open || document.activeElement?.closest('.bottom-navigation, .atlas-header') || next < 40 || next < lastScroll - 3) headerVisible = true;
       else if (next > lastScroll + 3 && next > 100) headerVisible = false;
       lastScroll = next;
     };
@@ -79,6 +83,18 @@
    * Whether the desktop account navigation is open.
    */
   let menuOpen = $state(false);
+  /** Membership list is loaded on disclosure, rather than once per feed card. */
+  let joined = $state<Community[]>([]);
+  let communityError = $state('');
+  /** Refresh the switcher whenever its drawer opens; no membership data is invented. */
+  async function loadJoined() {
+    if (!mobileElement?.open || !mobileExperiment) return;
+    joined = [];
+    communityError = '';
+    if (!authenticated) return;
+    try { joined = (await myCommunities()).filter(c => c.isMember); }
+    catch { communityError = 'Your communities could not be loaded.'; }
+  }
   /**
    * Whether logout is underway; disables repeat logout actions.
    */
@@ -168,6 +184,8 @@
 />
 <header
   class="atlas-header"
+  class:mobile-experiment={mobileExperiment}
+  class:search-open={searchOpen}
   class:hidden={!headerVisible}
   class:filters-open={filtersOpen}
   id="page-top"
@@ -198,6 +216,7 @@
     >
       <circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4.5 4.5" />
     </svg>
+    {#if mobileExperiment}<span class="search-placeholder">Search Atlas</span>{/if}
   </button>
   {#if searchOpen}
     <div class="search-panel" id={searchPanelId} bind:this={searchPanel}>
@@ -266,9 +285,10 @@
       Native disclosure provides the narrow-screen navigation independently of the desktop
       account menu.
     -->
-    <details class="mobile-menu" bind:this={mobileElement}>
+    <details class="mobile-menu" bind:this={mobileElement} ontoggle={() => void loadJoined()}>
       <summary aria-label="Open navigation menu">☰</summary>
       <nav aria-label="Mobile navigation">
+        {#if mobileExperiment}<h2>Explore Atlas</h2>{/if}
         <a href="/" onclick={closeOnNavigation}>Discover</a><a
           href="/communities"
           onclick={closeOnNavigation}>Communities</a
@@ -293,6 +313,11 @@
             onclick={closeOnNavigation}>Sign up</a
           >
         {/if}
+        {#if mobileExperiment && authenticated}
+          <hr /><h2>Your communities</h2>
+          {#each joined as community}<a href={'/communities/' + encodeURIComponent(community.id)} onclick={closeOnNavigation}>{community.name}</a>{/each}
+          {#if communityError}<p role="status">{communityError}</p>{:else if !joined.length}<p>Find communities to join.</p>{/if}
+        {/if}
         <hr />
         <a href="/about" onclick={closeOnNavigation}>About Atlas</a><a
           href="/feedback"
@@ -302,8 +327,46 @@
     </details>
   </div>
 </header>
+{#if mobileExperiment}
+  <nav class="bottom-navigation" class:hidden={!headerVisible} aria-label="Bottom navigation">
+    <a href="/" aria-current={active === 'discover' ? 'page' : undefined}><span aria-hidden="true">⌂</span>Discover</a>
+    <a href="/new" aria-current={active === 'create' ? 'page' : undefined}><span aria-hidden="true">＋</span>Create</a>
+    <a href={authenticated ? '/profiles/me' : '/login'}><span aria-hidden="true">♙</span>You</a>
+  </nav>
+{/if}
 
 <style lang="scss">
+  .search-placeholder, .bottom-navigation { display: none; }
+  @media (max-width: 560px) {
+    .mobile-experiment {
+      padding-block: 0.5rem;
+      grid-template-columns: minmax(0, 1fr) auto;
+      .brand { grid-row: 1; grid-column: 1; }
+      .brand strong { font-size: 1.35rem; }
+      .brand span { font-size: 0.7rem; }
+      .right-group { grid-column: 2; }
+      .search-toggle { grid-row: 2; grid-column: 1 / -1; width: 100%; justify-content: flex-start; gap: 0.6rem; padding-inline: 1rem; color: var(--atlas-muted); }
+      .search-placeholder { display: inline; }
+      &.search-open .search-toggle { display: none; }
+      .search-panel { grid-row: 2; grid-column: 1 / -1; }
+      .mobile-menu nav { position: fixed; inset: 0 auto 0 calc(-1 * var(--atlas-space)); width: min(85vw, 22rem); max-height: 100dvh; overflow-y: auto; border-radius: 0; padding: 1rem; box-shadow: 0 0 0 100vmax #0008; }
+      .mobile-menu h2 { font-size: 0.9rem; margin: 0.5rem; }
+      .mobile-menu p { font-size: 0.8rem; margin: 0.5rem; }
+    }
+    .bottom-navigation {
+      position: fixed; inset: auto 0 0; z-index: 35;
+      display: flex; flex-wrap: nowrap; justify-content: space-around; margin: 0;
+      padding: 0.35rem 0 max(0.35rem, env(safe-area-inset-bottom));
+      border-top: 1px solid var(--atlas-border); background: var(--atlas-surface);
+      transition: transform 180ms ease;
+      a { display: flex; flex: 1; align-items: center; flex-direction: column; min-height: 2.75rem; font-size: 0.75rem; }
+      span { font-size: 1.4rem; line-height: 1.3; }
+      &.hidden { transform: translateY(110%); visibility: hidden; }
+      &:focus-within { transform: none; visibility: visible; }
+    }
+  }
+  @media (prefers-reduced-motion: reduce) { .bottom-navigation, .atlas-header { transition: none; } }
+
   .atlas-header {
     position: sticky;
     top: 0;
