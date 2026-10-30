@@ -416,12 +416,19 @@
       h2 { font-size: 1.2rem; }
       .title-type, .by-prefix, .community-prefix { display: none; }
       .byline { font-size: 0.75rem; line-height: 1.5; }
-      .body { display: flex; flex-direction: column; }
-      .description { order: 0; display: flex; flex-direction: column; }
-      .description .read-more { order: 1; }
-      .dial { order: 1; float: none; margin: 0 0 0.65rem; width: 100%; }
-      .invitation { order: 2; }
-      .read-more { float: none; display: block; margin: 0.5rem 0; }
+      .body { position: relative; display: flow-root; padding-bottom: 4rem; }
+      .description { display: block; }
+      .dial { display: contents; }
+      .read-more {
+        position: absolute;
+        inset-inline-end: var(--card-padding);
+        bottom: 0.65rem;
+        float: none;
+        margin: 0;
+        min-height: 2.75rem;
+        display: flex;
+        align-items: center;
+      }
       .navigation-details { justify-content: flex-start; text-align: left; margin-left: 0; min-width: 0; flex-basis: 100%; }
     }
   }
