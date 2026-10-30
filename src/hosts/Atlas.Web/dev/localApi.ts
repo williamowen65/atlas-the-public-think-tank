@@ -1,4 +1,5 @@
 import type { Plugin, ProxyOptions } from 'vite';
+import { lanOrigin } from './lanHttps';
 
 // Shared by the app's Vite server and Storybook's Vite server during development.
 // Guards decide whether requests may continue; ProxyOptions configure forwarding.
@@ -67,15 +68,30 @@ export function publicApiProxy(): ProxyOptions {
 export const sessionApiGuard: Plugin = {
   name: 'atlas-session-api-guard',
   configureServer(server) {
+    // Capture startup configuration. Vite owns TLS termination; middleware socket
+    // wrappers need not expose TLSSocket.encrypted consistently.
+    const lan = lanOrigin();
+    const httpsEnabled = !!server.config.server.https;
     server.middlewares.use((request, response, next) => {
       // Ignore unrelated paths; an unmatched path is not a failed rule check.
       if (!request.url?.startsWith('/atlas-session-api')) return next();
       // 1. Restrict this session-aware development bridge to loopback hosts.
-      const host = request.headers.host ?? '';
+      // HTTP/2 uses :authority in place of the HTTP/1.1 Host header.
+      // Reuse the resolved authority below for exact-host and same-origin checks.
+      const authority = request.headers.host ?? request.headers[':authority'];
+      const host = typeof authority === 'string' ? authority : '';
       const hostname = host.replace(/:\d+$/, '');
-      if (!['localhost', '127.0.0.1', '[::1]'].includes(hostname)) {
+      const lanRequest = !!lan && host === lan.host && httpsEnabled;
+      if (!['localhost', '127.0.0.1', '[::1]'].includes(hostname) && !lanRequest) {
         response.statusCode = 403;
-        response.end('The session API requires a loopback host.');
+        response.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        response.end([
+          'The session API requires a loopback host or the configured LAN HTTPS origin.',
+          `Received Host: ${host || '(missing)'}`,
+          `Configured LAN Host: ${lan?.host ?? '(LAN mode disabled)'}`,
+          `Vite HTTPS enabled: ${httpsEnabled}`,
+          `Request authority: ${request.headers[':authority'] ?? '(not supplied)'}`,
+        ].join('\n'));
         return;
       }
       // 2. Match only the explicitly supported paths and HTTP methods below.
