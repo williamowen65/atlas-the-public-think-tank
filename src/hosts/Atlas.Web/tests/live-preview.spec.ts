@@ -33,6 +33,8 @@ test('live nodes support selection, search, paging and refresh without submittin
   await expect(page.getByRole('heading', { name: 'Question: Database second node' })).toBeVisible();
   await page.getByRole('spinbutton').focus();
   await page.keyboard.press('End');
+  // Keyboard selection is a preview until Enter explicitly requests review.
+  await page.keyboard.press('Enter');
   await page.getByRole('button', { name: 'Confirm rating', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Sign in to vote' })).toBeVisible();
   await page.getByRole('button', { name: 'Close', exact: true }).click();
@@ -345,6 +347,8 @@ test('standalone card versions preserve mobile layout and offer a raised desktop
   await page.getByRole('spinbutton').focus();
   await page.keyboard.press('End');
   await expect(page.getByRole('spinbutton')).toHaveAttribute('aria-valuenow', '10');
+  // Keyboard selection is a preview until Enter explicitly requests review.
+  await page.keyboard.press('Enter');
   await page.getByRole('button', { name: 'Confirm rating', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Sign in to vote' })).toBeVisible();
   await page.getByRole('button', { name: 'Close', exact: true }).click();
