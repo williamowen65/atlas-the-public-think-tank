@@ -36,7 +36,7 @@
   import type { DiscoveryFilters } from '../api/discovery';
   import type { NodeCardPresentation } from './NodeCard.svelte';
   let {
-    presentation = 'ribbon-corner',
+    presentation = 'mobile-experiment',
     apiBase = '/atlas-public-api',
     parentId,
     typeId,
@@ -189,6 +189,7 @@
       ? readOlderAncestors(id, AbortSignal.timeout(10000), apiBase)
       : Promise.resolve({ items: [], hasMore: false })}
   >{#snippet renderVoting(item)}<LiveVotingDial
+      mobileCompact={presentation === 'mobile-experiment'}
       nodeId={item.node.id}
       initialAverage={item.average}
       initialTotalVotes={item.totalVotes}
