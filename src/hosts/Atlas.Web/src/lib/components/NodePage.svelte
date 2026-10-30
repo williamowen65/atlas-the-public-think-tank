@@ -331,7 +331,7 @@
     <p class="description">{node.description}</p>
     <ContentBlocks {blocks} />
   </div>
-  {#if reactions}{@render reactions()}{:else if node.reactions.length}<div
+  {#if reactions}<div class="reaction-controls">{@render reactions()}</div>{:else if node.reactions.length}<div
       class="reactions"
       role="group"
       aria-label="Community reactions"
@@ -434,6 +434,10 @@
   .description {
     margin: 0 0 var(--atlas-paragraph-gap, 0.65rem);
     white-space: pre-line;
+  }
+  .reaction-controls {
+    // The page owns its content gutter; feed cards already provide their own inset.
+    padding-inline: var(--card-padding);
   }
   .reactions {
     display: flex;
