@@ -251,7 +251,7 @@
               }}><span class="node-type">{node.typeName}:</span> {node.title}</a
             >
             <p class="intro">{node.description}</p>
-            <p class="metadata">
+            <p class="metadata contribution-counts">
               <span>{node.commentCount} comments</span>
               {#each node.childTypes ?? [] as type}
                 <span>{type.label}</span>
@@ -338,9 +338,20 @@
     flex-wrap: wrap;
     gap: 0.25rem 0.6rem;
   }
-  .metadata span + span::before {
+  /* Keep each count together. Separators live in the column gaps, outside
+     their items, so clipping hides the dot at the start of every wrapped row. */
+  .contribution-counts {
+    column-gap: 1.25rem;
+    overflow: hidden;
+  }
+  .contribution-counts span {
+    position: relative;
+    white-space: nowrap;
+  }
+  .contribution-counts span + span::before {
     content: '·';
-    margin-inline-end: 0.6rem;
+    position: absolute;
+    inset-inline-start: -0.75rem;
   }
   .result-title {
     font-weight: 700;
