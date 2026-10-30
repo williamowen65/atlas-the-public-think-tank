@@ -106,7 +106,8 @@
   nav {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+    text-align: center;
     justify-self: center;
     width: max-content;
     max-width: 100%;
@@ -140,10 +141,23 @@
     .footer-links {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+    nav {
+      // Fill each mobile column so stacked sections share the same center line.
+      justify-self: stretch;
+      width: 100%;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
   }
   @media (max-width: 360px) {
     .footer-links {
-      grid-template-columns: 1fr;
+      // Keep both columns on small phones while leaving room for link text to wrap.
+      gap: 1.5rem 1rem;
+      padding-inline: 0.5rem;
+    }
+    nav {
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
   }
 </style>

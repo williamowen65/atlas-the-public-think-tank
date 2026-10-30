@@ -113,7 +113,6 @@
    * Whether the confirmation dialog represents an undo rather than a new rating.
    */
   let pendingUndo = $state(false);
-  let timer: ReturnType<typeof setTimeout> | undefined;
   const controller = new AbortController();
   const signal = () => AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]);
   // Validate and adopt the API summary together: current rating, count and average are one confirmed snapshot.
@@ -168,14 +167,12 @@
       })
       .finally(() => (loading = false));
     const sessionChanged = () => {
-      clearTimeout(timer);
       cancelPending();
       void retry();
     };
     window.addEventListener('atlas-session-changed', sessionChanged);
     return () => {
       controller.abort();
-      clearTimeout(timer);
       window.removeEventListener('atlas-session-changed', sessionChanged);
     };
   });
@@ -184,7 +181,6 @@
   });
   // Cancel confirmation without saving and restore the last confirmed selection.
   function cancelPending() {
-    clearTimeout(timer);
     pending = null;
     pendingUndo = false;
     value = confirmed;
@@ -192,23 +188,26 @@
   }
   function choose(next: number) {
     if (busy || archived || loading || pending !== null) return;
-    clearTimeout(timer);
     value = next;
     notice = '';
     error = '';
-    if (next === confirmed) return;
-    // Wait for wheel/drag momentum to settle, then request explicit confirmation.
-    timer = setTimeout(() => {
-      if (controller.signal.aborted || busy) return;
-      pending = next;
-      void tick().then(() => {
-        if (pending === next && confirmDialog && !confirmDialog.open) confirmDialog.showModal();
-      });
-    }, 450);
+  }
+  /**
+   * Request explicit review after the dial reports a completed gesture or Enter.
+   * Preview updates alone never open a modal or send an API write.
+   * @param next Final proposed whole-number rating, including zero.
+   */
+  function requestRating(next: number) {
+    if (busy || archived || loading || pending !== null || next === confirmed) return;
+    value = next;
+    pending = next;
+    void tick().then(() => {
+      if (!controller.signal.aborted && pending === next && confirmDialog && !confirmDialog.open)
+        confirmDialog.showModal();
+    });
   }
   function requestUndo() {
     if (busy || loading || archived || confirmed === null) return;
-    clearTimeout(timer);
     pending = null;
     pendingUndo = true;
     void tick().then(() => {
@@ -226,7 +225,6 @@
   }
   // A failed write restores the confirmed state; a failed totals refresh after a successful write is reported separately.
   async function save(next: number | null) {
-    clearTimeout(timer);
     if (busy || archived) return;
     busy = true;
     error = '';
@@ -292,6 +290,8 @@
     hasVoted={confirmed !== null}
     disabled={archived || busy || loading}
     onChange={choose}
+    onCommit={requestRating}
+    onCancel={cancelPending}
   />
   {#if confirmed !== null && !archived}<button
       class="undo"

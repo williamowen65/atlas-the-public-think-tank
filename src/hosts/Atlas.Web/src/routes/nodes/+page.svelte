@@ -17,13 +17,21 @@
 -->
 
 <svelte:head><title>Node · Atlas</title></svelte:head>
-<LiveNodePage
-  onOpenProfile={(id) => void goto('/profiles?id=' + encodeURIComponent(id))}
-  focusCommentId={page.url.searchParams.get('comment') ?? ''}
-  initialTypeId={page.url.searchParams.get('type') ?? ''}
-  nodeId={page.url.searchParams.get('id') ?? ''}
-  onOpenNode={(id, typeId) =>
-    void goto(
-      `/nodes?id=${encodeURIComponent(id)}${typeId ? `&type=${encodeURIComponent(typeId)}#contributions` : ''}`,
-    )}
-/>
+<div class="node-route">
+  <LiveNodePage
+    onOpenProfile={(id) => void goto('/profiles?id=' + encodeURIComponent(id))}
+    focusCommentId={page.url.searchParams.get('comment') ?? ''}
+    initialTypeId={page.url.searchParams.get('type') ?? ''}
+    nodeId={page.url.searchParams.get('id') ?? ''}
+    onOpenNode={(id, typeId) =>
+      void goto(
+        `/nodes?id=${encodeURIComponent(id)}${typeId ? `&type=${encodeURIComponent(typeId)}#contributions` : ''}`,
+      )}
+  />
+</div>
+
+<style lang="scss">
+  .node-route {
+    padding-block-start: var(--atlas-space);
+  }
+</style>
