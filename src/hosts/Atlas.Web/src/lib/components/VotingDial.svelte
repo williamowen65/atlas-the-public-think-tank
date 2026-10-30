@@ -387,6 +387,19 @@
     box-shadow: inset 0 0 12px color-mix(in srgb, var(--atlas-accent) 30%, transparent);
   }
 
+  // Repaint the frame above the lens and reel so the lens reads as inset.
+  // Inherit the actual border to preserve voted/unrated colors and rounded corners.
+  // The overlay is decorative: pointer gestures still reach the reel beneath it.
+  .selector::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    z-index: 2;
+    border: inherit;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
   .unrated {
     border-color: var(--atlas-border);
     background: linear-gradient(180deg, color-mix(in srgb, #a58552 28%, var(--atlas-surface)), var(--atlas-surface) 40%, var(--atlas-surface) 60%, color-mix(in srgb, #a58552 28%, var(--atlas-surface)));
