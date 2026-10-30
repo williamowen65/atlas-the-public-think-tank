@@ -9,6 +9,7 @@
     chooses request URLs, not proxy configuration.
   - `prompt` (`string`; optional; default `'Sign in to Atlas'`): Text of the signed-out sign-in
     disclosure summary.
+  - `collapsible` (`boolean`; optional; default `true`): Use a disclosure for embedded prompts; false keeps dedicated-page forms visible.
   - `expanded` (`boolean`; optional; default `false`): Opens the signed-out disclosure so the
     login/register form is visible.
   - `startRegister` (`boolean`; optional; default `false`): Initial registration versus login mode.
@@ -29,6 +30,7 @@
     sessionBase = '/atlas-session-api',
     prompt = 'Sign in to Atlas',
     expanded = false,
+    collapsible = true,
     startRegister = false,
     focusOnMount = false,
     hideWhenSignedIn = false,
@@ -43,6 +45,8 @@
     prompt?: string;
     /** Opens the signed-out disclosure so the login/register form is visible. */
     expanded?: boolean;
+    /** Dedicated auth pages show the form without a disclosure. */
+    collapsible?: boolean;
     /**
      * Initial registration versus login mode. Captured once; the visitor can switch modes
      * afterward.
@@ -294,11 +298,11 @@
 
 <!--
   Layout: Checking, signed-in and signed-out states share one region. The signed-out branch uses
-  a native disclosure around login/registration; errors sit outside it.
+  a native disclosure for embedded prompts or an always-visible form on dedicated pages.
 -->
 
 <!--
-  Native details/summary handles disclosure toggling; the focus action only positions the form
+  When collapsible, native details/summary handles toggling; the focus action positions the form
   when mounted.
 -->
 <div class="session-control">
@@ -307,8 +311,22 @@
   {:else if participantId}<div class="session">
       <span>Signed in</span><button onclick={() => void signOut()} disabled={busy}>Sign out</button>
     </div>
-  {:else}<details class="sign-in" open={expanded} use:focusAndScrollOnMount>
-      <summary>{prompt}</summary>{#if registered}<p role="status">
+  {:else if collapsible}
+    <details class="sign-in" open={expanded} use:focusAndScrollOnMount>
+      <summary>{prompt}</summary>
+      {@render signInForm()}
+    </details>
+  {:else}
+    <div class="sign-in" use:focusAndScrollOnMount>
+      {@render signInForm()}
+    </div>
+  {/if}
+  {#if error}<p role="alert">{error}</p>
+    <button onclick={() => void refresh()} disabled={busy}>Retry sign-in connection</button>{/if}
+</div>
+
+{#snippet signInForm()}
+{#if registered}<p role="status">
           Account created. Confirm your email through the development email workflow, then sign in.
         </p>{/if}
       <form
@@ -359,10 +377,8 @@
           ? 'Already have an account? Sign in'
           : 'New to Atlas? Create an account'}</button
       >
-    </details>{/if}
-  {#if error}<p role="alert">{error}</p>
-    <button onclick={() => void refresh()} disabled={busy}>Retry sign-in connection</button>{/if}
-</div>
+
+{/snippet}
 
 <style lang="scss">
   .session {
