@@ -10,14 +10,18 @@ test('HTTP/2 authority supports LAN reads and same-origin writes without allowin
     process.env.ATLAS_LAN_ORIGIN = 'https://192.168.50.55:5173';
     process.env.ATLAS_LAN_CERT = 'fixture-cert';
     process.env.ATLAS_LAN_KEY = 'fixture-key';
-    // This variable is declared here, not imported. The mock use() below captures
-    // the real request handler registered by the production plugin.
-    // TypeScript's ! says it will be assigned before run() calls it.
+    /**
+     * The production request handler, captured when the mock server registers it.
+     * Declared here rather than imported; ! tells TypeScript it is assigned before use.
+     */
     let middleware!: (request: IncomingMessage, response: ServerResponse, next: () => void) => void;
-    // configureServer is Vite's plugin hook, implemented in dev/localApi.ts.
-    // Vite normally invokes it with its server. Here we call it ourselves with
-    // only the server properties the guard uses. The type assertion narrows Vite's
-    // broader hook type; it does not create a function or change runtime behavior.
+    /**
+     * Reference to Vite's configureServer hook implemented by the production plugin.
+     * The test invokes it with a minimal mock server. The assertion only narrows
+     * the hook's TypeScript type; it does not create or replace its implementation.
+     * @param server Mock Vite server exposing configuration and middleware registration.
+     * @returns Nothing; registration supplies the handler captured above.
+     */
     const configure = sessionApiGuard.configureServer as (server: unknown) => void;
     // No server or TLS listener is started. https:{} models an enabled HTTPS server.
     // use(handler) records the handler instead of installing it in a live server.
@@ -25,8 +29,14 @@ test('HTTP/2 authority supports LAN reads and same-origin writes without allowin
       config: { server: { https: {} } },
       middlewares: { use: (handler: typeof middleware) => { middleware = handler; } },
     });
-    // Simulate one request. next() means the guard permits forwarding; end() means
-    // rejection. This verifies the guard, not TLS, proxy forwarding or backend auth.
+    /**
+     * Simulate one request through the captured production guard.
+     * next() records permission to forward; response.end() models rejection.
+     * This checks middleware policy, not real TLS, proxy forwarding or backend auth.
+     * @param headers HTTP/1.1 Host or HTTP/2 authority and optional browser-origin headers.
+     * @param method HTTP method; defaults to GET for session reads.
+     * @returns Whether the handler continued and the resulting HTTP status.
+     */
     const run = (headers: Record<string, string>, method = 'GET') => {
       let continued = false;
       const response = { statusCode: 200, setHeader() {}, end() {} };
