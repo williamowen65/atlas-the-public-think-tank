@@ -68,14 +68,17 @@ export function publicApiProxy(): ProxyOptions {
 export const sessionApiGuard: Plugin = {
   name: 'atlas-session-api-guard',
   configureServer(server) {
+    // Capture startup configuration. Vite owns TLS termination; middleware socket
+    // wrappers need not expose TLSSocket.encrypted consistently.
+    const lan = lanOrigin();
+    const httpsEnabled = !!server.config.server.https;
     server.middlewares.use((request, response, next) => {
       // Ignore unrelated paths; an unmatched path is not a failed rule check.
       if (!request.url?.startsWith('/atlas-session-api')) return next();
       // 1. Restrict this session-aware development bridge to loopback hosts.
       const host = request.headers.host ?? '';
       const hostname = host.replace(/:\d+$/, '');
-      const lan = lanOrigin();
-      const lanRequest = !!lan && host === lan.host && !!(request.socket as import('node:tls').TLSSocket).encrypted;
+      const lanRequest = !!lan && host === lan.host && httpsEnabled;
       if (!['localhost', '127.0.0.1', '[::1]'].includes(hostname) && !lanRequest) {
         response.statusCode = 403;
         response.end('The session API requires a loopback host or the configured LAN HTTPS origin.');
