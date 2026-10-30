@@ -20,9 +20,23 @@
 -->
 <script lang="ts">
   import { onMount, tick } from 'svelte';
+  import { formatVoteCount } from '../format/formatVoteCount';
   import VotingDial from './VotingDial.svelte';
   import SessionControl from './SessionControl.svelte';
   import { apiRequest, ApiRequestError } from '../api/apiRequest';
+  /** Whether the mobile summary has been expanded by the visitor. */
+  let expanded = $state(false);
+  /** Match the feed breakpoint without changing desktop dial behavior. */
+  let narrow = $state(false);
+  const collapsedMode = $derived(mobileCompact && narrow);
+  onMount(() => {
+    const media = matchMedia('(max-width: 560px)');
+    /** Keep the responsive mode current when rotating or resizing the viewport. */
+    const resize = () => { narrow = media.matches; };
+    resize();
+    media.addEventListener('change', resize);
+    return () => media.removeEventListener('change', resize);
+  });
   interface VoteSummary {
     voteCount: number;
     averageVote: number | null;
@@ -33,6 +47,7 @@
     initialAverage = null,
     initialTotalVotes = 0,
     archived = false,
+    mobileCompact = false,
     sessionBase = '/atlas-session-api',
   }: {
     /** ID of the node this component reads, displays, or modifies. */
@@ -46,6 +61,8 @@
     initialTotalVotes?: number;
     /** Marks the node as archived and disables applicable voting/editing controls. */
     archived?: boolean;
+    /** Collapse the mobile feed dial behind a rating summary; full node pages keep the dial. */
+    mobileCompact?: boolean;
     /**
      * Base URL for vote-summary reads, CSRF-protected vote/undo writes, and the embedded sign-in
      * control. The API returns the authoritative count and average.
@@ -280,7 +297,21 @@
   confirmation and sign-in.
 -->
 
-<div bind:this={container} class="live-voting" aria-busy={busy}>
+<div bind:this={container} class="live-voting" class:collapsed-mode={collapsedMode} aria-busy={busy}>
+  {#if collapsedMode}
+    <button class="rating-summary" type="button" aria-expanded={expanded}
+      disabled={archived || busy || loading}
+      onclick={() => { expanded = !expanded; if (!expanded) cancelPending(); }}
+      aria-label={`Rate node importance. Average ${average === null ? 'not rated' : average.toFixed(1)}. ${totalVotes} votes.`}>
+      <strong class="summary-average">{average === null ? '—' : average.toFixed(1)}</strong>
+      <span class="summary-voters" title={totalVotes.toLocaleString('en-US')}>
+        <svg viewBox="0 0 56 44" aria-hidden="true"><circle cx="28" cy="7" r="6"/><circle cx="10" cy="12" r="5"/><circle cx="46" cy="12" r="5"/><path d="M1 41V26a9 9 0 0 1 18 0v15ZM37 41V26a9 9 0 0 1 18 0v15ZM12 44V30a16 16 0 0 1 32 0v14Z"/></svg>
+        {formatVoteCount(totalVotes)}
+      </span>
+      <span>{expanded ? 'Close rating' : confirmed === null ? 'Rate' : 'Your vote: ' + confirmed}</span>
+    </button>
+  {/if}
+  {#if !collapsedMode || expanded}
   <!-- Live interaction lock: archived nodes, pending status reads and in-flight writes. -->
   <VotingDial
     label="Node importance"
@@ -300,6 +331,7 @@
       onclick={requestUndo}
       aria-label="Undo your node importance vote">Undo vote</button
     >{/if}
+  {/if}
   {#if busy}<small role="status">Saving…</small>{/if}
   {#if notice}<small role="status">{notice}</small>{/if}
   {#if error}<small role="alert">{error}</small>{/if}
@@ -376,6 +408,30 @@
 </dialog>
 
 <style lang="scss">
+  .rating-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-height: 2.75rem;
+    padding: 0.25rem 0.65rem 0.25rem 0.25rem;
+    border: 1px solid var(--atlas-border);
+    border-radius: 0.65rem;
+    background: var(--atlas-surface);
+    color: var(--atlas-accent);
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .summary-average {
+    padding: 0.3rem 0.5rem;
+    border-radius: 0.4rem;
+    background: color-mix(in srgb, var(--atlas-accent) 12%, var(--atlas-surface));
+    font-variant-numeric: tabular-nums;
+  }
+  .summary-voters { display: inline-flex; align-items: center; gap: 0.25rem; }
+  .summary-voters svg { width: 1.4rem; height: 1.2rem; fill: currentColor; }
+  .live-voting.collapsed-mode { width: 100%; text-align: left; }
+  .collapsed-mode :global(.voting-dial) { margin: 0.5rem auto; }
   .live-voting {
     width: min-content;
     min-width: 4.3rem;
