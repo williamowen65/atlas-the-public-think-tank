@@ -394,8 +394,12 @@
     color: var(--atlas-text);
   }
   button {
-    padding: 0.5rem 0.75rem;
+    padding: 0.65rem 1rem;
     cursor: pointer;
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
+    background: var(--atlas-surface);
+    color: var(--atlas-text);
   }
   button:disabled {
     cursor: default;
