@@ -336,6 +336,7 @@
   }
 
   .read-more {
+    --atlas-action-padding: 0.4rem 0.7rem;
     // Exclude only the button's bottom-corner footprint from the text flow.
     float: right;
     margin: var(--corner-top, 0px) 0 0 0.75rem;
