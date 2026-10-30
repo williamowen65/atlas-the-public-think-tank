@@ -82,6 +82,15 @@
 -->
 
 <article class="node-card" data-presentation="ribbon-corner" aria-labelledby={`${instance}-title`}>
+    <NodeEditControl
+      corner
+      nodeId={node.id}
+      authorId={node.authorId}
+      {apiBase}
+      onSaved={(update) => {
+        node = { ...node, title: update.title, description: update.shortDescription };
+      }}
+    />
   {#if node.breadcrumb.length}
     <div class="ribbon-context">
       <Breadcrumb
@@ -95,14 +104,6 @@
     </div>
   {/if}
   <header>
-    <NodeEditControl
-      nodeId={node.id}
-      authorId={node.authorId}
-      {apiBase}
-      onSaved={(update) => {
-        node = { ...node, title: update.title, description: update.shortDescription };
-      }}
-    />
     <h2 id={`${instance}-title`}><span class="title-type">{node.typeName}:</span> {node.title}</h2>
     {#if node.status === 'Archived'}<p class="byline">Archived</p>{/if}
     <p class="byline">
@@ -200,7 +201,18 @@
 {/snippet}
 
 <style lang="scss">
+
+  // Only owner-visible corner controls reserve space; breadcrumbs keep their scroll behavior.
+  .node-card:has(> :global(.edit-node.corner)) > .ribbon-context {
+    padding-right: 3.25rem;
+    min-height: 2.75rem;
+  }
+  .node-card:has(> :global(.edit-node.corner)) > header {
+    padding-right: 3.25rem;
+  }
+
   .node-card {
+    position: relative;
     --card-padding: var(--atlas-card-padding, 1.25rem);
     --dial-text-gap: var(--atlas-dial-text-gap, 1rem);
     --atlas-breadcrumb-bottom-space: 0px;
