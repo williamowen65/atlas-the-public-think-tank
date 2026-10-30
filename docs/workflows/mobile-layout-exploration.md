@@ -8,7 +8,7 @@ At phone widths (560px and below), the application feed uses the mobile experime
 
 The mobile experiment uses half-rem outer gutters, a smaller node-type label above the title, a shorter byline without the By/Community prefixes, and full-width introduction text. Community links remain in the byline, away from the ancestor ribbon. Long community names still wrap.
 
-The rating summary shows the authoritative average, the existing people icon, compact vote count and a labeled Rate action. Tapping expands the same LiveVotingDial inline. Arrows adjust a preview, Enter requests review, and touch/wheel gestures retain settling and explicit confirmation. Closing the disclosure cancels an unconfirmed preview. The summary never calculates averages or casts votes. Zero remains a valid rating. Full details retain the full dial for comparison.
+The rating summary shows the authoritative average, the existing people icon, compact vote count and a labeled Vote (or Voted) action beside Read more. Tapping expands the same LiveVotingDial in its original left-hand position beside the introduction, with text wrapping beside and below it. Tapping again closes it. Arrows adjust a preview, Enter requests review, and touch/wheel gestures retain settling and explicit confirmation. Closing the disclosure cancels an unconfirmed preview. The summary never calculates averages or casts votes. Zero remains a valid rating. Full details retain the full dial for comparison.
 
 Reactions and contribution counts remain separate rows. This pass does not collapse requested contribution types or introduce unexplained aggregate counts.
 
@@ -32,4 +32,4 @@ Browser coverage is in tests/mobile-layout.spec.ts: opening/closing rating witho
 
 Review on a phone: content width, title hierarchy, long community names, Join visibility, expanded dial height, thumb reach, drawer dismissal, search placement, keyboard focus and bottom browser controls. Try both light and dark themes, zoom and reduced motion.
 
-The compact rating currently expands inline. A bottom sheet is an alternative if inline expansion feels disruptive. The wide search disclosure is an initial comparison; a permanently editable header input could be a later alternative.
+The compact rating currently expands beside the short description. A bottom sheet is an alternative if inline expansion feels disruptive. The wide search disclosure is an initial comparison; a permanently editable header input could be a later alternative.
