@@ -373,6 +373,9 @@
     color: var(--atlas-text);
     text-decoration: none;
     white-space: nowrap;
+    align-items: center;
+    justify-self: start;
+    text-align: center;
     strong {
       font-size: 1.8rem;
     }

@@ -11,7 +11,10 @@
     authorId,
     apiBase = '/atlas-public-api',
     onSaved,
+    corner = false,
   }: {
+    /** Icon-only control positioned in the parent card's upper-right corner. */
+    corner?: boolean;
     nodeId: string;
     authorId?: string;
     apiBase?: string;
@@ -210,10 +213,11 @@
 {#if permitted}
   <button
     class="edit-node"
+    class:corner
     type="button"
     aria-label="Edit your node"
     title="Edit your node"
-    onclick={() => void open()}><span aria-hidden="true">✎</span> Edit</button
+    onclick={() => void open()}><span aria-hidden="true">✎</span>{#if !corner} Edit{/if}</button
   >
 {/if}
 {#if opened}
@@ -300,6 +304,32 @@
     border: 1px solid var(--atlas-border);
     border-radius: var(--atlas-radius);
     font-size: 0.85rem;
+  }
+  .edit-node.corner {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-left: 1px solid var(--atlas-border);
+    border-bottom: 1px solid var(--atlas-border);
+    border-radius: 0 var(--atlas-radius) 0 var(--atlas-radius);
+    font-size: 1.3rem;
+
+    &:hover {
+      background: color-mix(in srgb, var(--atlas-accent) 10%, var(--atlas-surface));
+    }
+
+    &:focus-visible {
+      outline: 3px solid var(--atlas-focus);
+      outline-offset: -4px;
+    }
   }
   dialog {
     box-sizing: border-box;

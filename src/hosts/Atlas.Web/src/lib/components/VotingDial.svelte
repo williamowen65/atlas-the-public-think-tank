@@ -22,6 +22,7 @@
     This control is presentational; the caller handles acceptance or persistence.
 -->
 <script lang="ts">
+  import { formatVoteCount } from '../format/formatVoteCount';
   interface Props {
     /**
      * Accessible name for the rating spinbutton, such as Node importance. It does not label a save
@@ -339,7 +340,7 @@
     Expose one accessible vote-count label; hide the decorative people icon and duplicate
     visible count from assistive technology.
   -->
-  <span class="vote-count" role="img" aria-label={`${totalVotes} votes`}>
+  <span class="vote-count" role="img" aria-label={`${totalVotes} ${totalVotes === 1 ? 'vote' : 'votes'}`} title={totalVotes.toLocaleString('en-US')}>
     <svg viewBox="0 0 56 44" aria-hidden="true">
       <circle cx="28" cy="7" r="6" /><circle cx="10" cy="12" r="5" /><circle
         cx="46"
@@ -350,7 +351,7 @@
       <path d="M1 41V26a9 9 0 0 1 18 0v15ZM37 41V26a9 9 0 0 1 18 0v15Z" />
       <path d="M12 44V30a16 16 0 0 1 32 0v14Z" />
     </svg>
-    <span class="count" aria-hidden="true">{totalVotes.toLocaleString()}</span>
+    <span class="count" aria-hidden="true">{formatVoteCount(totalVotes)}</span>
   </span>
 </section>
 
@@ -382,29 +383,33 @@
     width: 3.5rem;
     border: 2px solid var(--atlas-accent);
     border-radius: 0.5rem;
-    background: var(--atlas-bg);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--atlas-accent) 35%, var(--atlas-surface)), var(--atlas-surface) 38%, var(--atlas-surface) 62%, color-mix(in srgb, var(--atlas-accent) 35%, var(--atlas-surface)));
+    box-shadow: inset 0 0 12px color-mix(in srgb, var(--atlas-accent) 30%, transparent);
   }
 
   .unrated {
     border-color: var(--atlas-border);
+    background: linear-gradient(180deg, color-mix(in srgb, #a58552 28%, var(--atlas-surface)), var(--atlas-surface) 40%, var(--atlas-surface) 60%, color-mix(in srgb, #a58552 28%, var(--atlas-surface)));
+    box-shadow: inset 0 0 12px #a5855240;
 
     .selection-window {
-      background: var(--atlas-border);
+      background: linear-gradient(135deg, #77634c, #514537 50%, #77634c);
+      box-shadow: inset 0 1px 2px #ffffff50, 0 1px 3px #0005;
     }
 
     .selected {
-      color: var(--atlas-surface);
+      color: #fff;
     }
   }
 
   .selection-window {
     position: absolute;
-    inset: var(--row-height) 0 auto;
+    inset: var(--row-height) -2px auto;
     height: var(--row-height);
-    background: var(--atlas-accent);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--atlas-accent) 75%, var(--atlas-surface)), var(--atlas-accent) 48%, color-mix(in srgb, var(--atlas-accent) 80%, var(--atlas-text)));
     pointer-events: none;
     border-radius: 0.2rem;
-    box-shadow: inset 0 0 0 2px var(--atlas-accent);
+    box-shadow: inset 0 1px 2px #ffffff60, 0 1px 3px #0005;
     transition: transform 180ms ease-out;
   }
 

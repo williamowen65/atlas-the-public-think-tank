@@ -82,3 +82,9 @@ nav {
   outline: 3px solid var(--atlas-focus);
   outline-offset: 3px;
 }
+
+/* Dedicated authentication routes share a single form-width page column. */
+.auth-page {
+  max-width: 24rem;
+  margin: 2rem auto;
+}

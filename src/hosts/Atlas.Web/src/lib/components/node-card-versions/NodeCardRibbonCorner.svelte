@@ -82,6 +82,15 @@
 -->
 
 <article class="node-card" data-presentation="ribbon-corner" aria-labelledby={`${instance}-title`}>
+    <NodeEditControl
+      corner
+      nodeId={node.id}
+      authorId={node.authorId}
+      {apiBase}
+      onSaved={(update) => {
+        node = { ...node, title: update.title, description: update.shortDescription };
+      }}
+    />
   {#if node.breadcrumb.length}
     <div class="ribbon-context">
       <Breadcrumb
@@ -95,14 +104,6 @@
     </div>
   {/if}
   <header>
-    <NodeEditControl
-      nodeId={node.id}
-      authorId={node.authorId}
-      {apiBase}
-      onSaved={(update) => {
-        node = { ...node, title: update.title, description: update.shortDescription };
-      }}
-    />
     <h2 id={`${instance}-title`}><span class="title-type">{node.typeName}:</span> {node.title}</h2>
     {#if node.status === 'Archived'}<p class="byline">Archived</p>{/if}
     <p class="byline">
@@ -200,7 +201,18 @@
 {/snippet}
 
 <style lang="scss">
+
+  // Only owner-visible corner controls reserve space; breadcrumbs keep their scroll behavior.
+  .node-card:has(> :global(.edit-node.corner)) > .ribbon-context {
+    padding-right: 3.25rem;
+    min-height: 2.75rem;
+  }
+  .node-card:has(> :global(.edit-node.corner)) > header {
+    padding-right: 3.25rem;
+  }
+
   .node-card {
+    position: relative;
     --card-padding: var(--atlas-card-padding, 1.25rem);
     --dial-text-gap: var(--atlas-dial-text-gap, 1rem);
     --atlas-breadcrumb-bottom-space: 0px;
@@ -246,7 +258,7 @@
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
-      align-items: start;
+      align-items: center;
       gap: 0.35rem 1rem;
       padding: 0 var(--card-padding) 1rem;
       font-size: 0.9rem;
@@ -275,7 +287,8 @@
       display: flex;
       flex-wrap: wrap;
       justify-content: flex-end;
-      align-items: baseline;
+      align-items: center;
+      align-self: center;
       column-gap: 0.35em;
       font-size: 0.9rem;
       text-align: right;
@@ -321,7 +334,7 @@
   }
 
   .body {
-    padding: 0.5rem var(--card-padding) 1rem;
+    padding: 0.5rem var(--card-padding) 0;
     display: flow-root;
   }
 
@@ -336,6 +349,7 @@
   }
 
   .read-more {
+    --atlas-action-padding: 0.4rem 0.7rem;
     // Exclude only the button's bottom-corner footprint from the text flow.
     float: right;
     margin: var(--corner-top, 0px) 0 0 0.75rem;

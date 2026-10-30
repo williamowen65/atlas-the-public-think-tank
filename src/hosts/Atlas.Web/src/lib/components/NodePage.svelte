@@ -266,6 +266,16 @@
 -->
 
 <article class="node-page atlas-panel">
+    <NodeEditControl
+      corner
+      nodeId={node.id}
+      authorId={node.authorId}
+      {apiBase}
+      onSaved={(update) => {
+        node = { ...node, title: update.title, description: update.shortDescription };
+        blocks = update.blocks;
+      }}
+    />
   {#if node.breadcrumb.length}<div class="ribbon-context">
       <Breadcrumb
         items={node.breadcrumb}
@@ -277,15 +287,6 @@
       />
     </div>{/if}
   <header>
-    <NodeEditControl
-      nodeId={node.id}
-      authorId={node.authorId}
-      {apiBase}
-      onSaved={(update) => {
-        node = { ...node, title: update.title, description: update.shortDescription };
-        blocks = update.blocks;
-      }}
-    />
     <h1>{node.typeName}: {node.title}</h1>
     <p class="byline">
       By {#if node.authorId}<a
@@ -331,7 +332,7 @@
     <p class="description">{node.description}</p>
     <ContentBlocks {blocks} />
   </div>
-  {#if reactions}{@render reactions()}{:else if node.reactions.length}<div
+  {#if reactions}<div class="reaction-controls">{@render reactions()}</div>{:else if node.reactions.length}<div
       class="reactions"
       role="group"
       aria-label="Community reactions"
@@ -383,7 +384,18 @@
 </article>
 
 <style lang="scss">
+
+  // Only owner-visible corner controls reserve space; breadcrumbs keep their scroll behavior.
+  .node-page:has(> :global(.edit-node.corner)) > .ribbon-context {
+    padding-right: 3.25rem;
+    min-height: 2.75rem;
+  }
+  .node-page:has(> :global(.edit-node.corner)) > header {
+    padding-right: 3.25rem;
+  }
+
   .node-page {
+    position: relative;
     --card-padding: var(--atlas-card-padding, 1.25rem);
     --dial-text-gap: var(--atlas-dial-text-gap, 1rem);
     --atlas-breadcrumb-bottom-space: 0px;
@@ -435,6 +447,10 @@
     margin: 0 0 var(--atlas-paragraph-gap, 0.65rem);
     white-space: pre-line;
   }
+  .reaction-controls {
+    // The page owns its content gutter; feed cards already provide their own inset.
+    padding-inline: var(--card-padding);
+  }
   .reactions {
     display: flex;
     flex-wrap: wrap;
@@ -457,6 +473,31 @@
     float: right;
     margin: 0 0 0.75rem 1.25rem;
   }
+  .add button {
+    border: 1px solid var(--atlas-accent);
+    border-radius: var(--atlas-radius);
+    padding: 0.45rem 0.8rem;
+    background: var(--atlas-accent);
+    color: var(--atlas-on-accent);
+    line-height: 1.4;
+    font-weight: 600;
+
+    &:not(:disabled):hover {
+      background: color-mix(in srgb, var(--atlas-accent) 85%, var(--atlas-text));
+    }
+
+    &:focus-visible {
+      outline: 3px solid var(--atlas-focus);
+      outline-offset: 3px;
+    }
+
+    &:disabled {
+      border-color: var(--atlas-border);
+      background: var(--atlas-bg);
+      color: var(--atlas-muted);
+      cursor: default;
+    }
+  }
   .tabs {
     scroll-margin-top: 20px;
     display: block;
@@ -464,6 +505,31 @@
   .tabs button {
     margin: 0 0.4rem 0.4rem 0;
     vertical-align: top;
+    border: 1px solid var(--atlas-border);
+    border-radius: var(--atlas-radius);
+    padding: 0.45rem 0.8rem;
+    background: var(--atlas-surface);
+    color: var(--atlas-muted);
+    line-height: 1.4;
+    font-weight: 600;
+
+    &:hover {
+      border-color: var(--atlas-accent);
+      background: color-mix(in srgb, var(--atlas-accent) 8%, var(--atlas-surface));
+      color: var(--atlas-text);
+    }
+
+    &:focus-visible {
+      outline: 3px solid var(--atlas-focus);
+      outline-offset: 3px;
+    }
+
+    &[aria-selected='true'] {
+      border-color: var(--atlas-accent);
+      background: color-mix(in srgb, var(--atlas-accent) 14%, var(--atlas-surface));
+      color: var(--atlas-text);
+      box-shadow: inset 0 -3px 0 var(--atlas-accent);
+    }
   }
   button {
     font: inherit;
@@ -471,11 +537,6 @@
     cursor: pointer;
     max-width: 100%;
     overflow-wrap: anywhere;
-  }
-  [aria-selected='true'] {
-    font-weight: bold;
-    background: var(--atlas-accent);
-    color: var(--atlas-on-accent);
   }
   [role='tabpanel'] {
     padding: 1rem var(--card-padding) var(--card-padding);
