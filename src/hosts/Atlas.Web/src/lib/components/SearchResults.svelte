@@ -252,7 +252,7 @@
             >
             <p class="intro">{node.description}</p>
             <p class="metadata contribution-counts">
-              <span>{node.commentCount} comments</span>
+              <span>{node.commentCount} Comments</span>
               {#each node.childTypes ?? [] as type}
                 <span>{type.label}</span>
               {/each}
@@ -341,7 +341,7 @@
   /* Keep each count together. Separators live in the column gaps, outside
      their items, so clipping hides the dot at the start of every wrapped row. */
   .contribution-counts {
-    column-gap: 1.25rem;
+    column-gap: 0.75rem;
     overflow: hidden;
   }
   .contribution-counts span {
@@ -351,7 +351,7 @@
   .contribution-counts span + span::before {
     content: '·';
     position: absolute;
-    inset-inline-start: -0.75rem;
+    inset-inline-start: -0.45rem;
   }
   .result-title {
     font-weight: 700;
