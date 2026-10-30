@@ -106,7 +106,8 @@
   nav {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+    text-align: center;
     justify-self: center;
     width: max-content;
     max-width: 100%;
@@ -142,7 +143,7 @@
       grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
     }
     nav {
-      // Align stacked groups to the column edge, independent of their longest link.
+      // Fill each mobile column so stacked sections share the same center line.
       justify-self: stretch;
       width: 100%;
       min-width: 0;
