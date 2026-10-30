@@ -16,3 +16,8 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {};
+
+/** Preview compact community totals without creating users or database votes. */
+export const ThousandsOfVotes: Story = {
+  args: { totalVotes: 4000 },
+};
