@@ -47,7 +47,10 @@ for (const environment of ['storybook', 'spa']) {
     const { writes } = await setup(page);
     await page.goto(environment === 'storybook' ? 'http://127.0.0.1:6006/iframe.html?id=components-node-form--playground&viewMode=story' : 'http://127.0.0.1:4173/new');
     await expect(page.getByRole('form', { name: 'Create root node' })).toHaveCount(0);
-    await login(page); await fill(page);
+    if (environment === 'spa') await expect(page).toHaveURL(/\/login\?returnTo=/);
+    await login(page);
+    if (environment === 'spa') await expect(page).toHaveURL('http://127.0.0.1:4173/new');
+    await fill(page);
     await page.getByLabel('Requested contributions', { exact: true }).selectOption(idea);
     await page.getByRole('button', { name: 'Create node', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Idea: Saved node' })).toBeVisible();
