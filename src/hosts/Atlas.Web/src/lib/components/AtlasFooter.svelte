@@ -139,8 +139,7 @@
   }
   @media (max-width: 700px) {
     .footer-links {
-      // A wider first column balances its longer links and shifts the second column right.
-      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     nav {
       // Fill each mobile column so stacked sections share the same center line.
