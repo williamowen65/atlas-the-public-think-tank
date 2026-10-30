@@ -1,4 +1,5 @@
 import type { Plugin, ProxyOptions } from 'vite';
+import { lanOrigin } from './lanHttps';
 
 // Shared by the app's Vite server and Storybook's Vite server during development.
 // Guards decide whether requests may continue; ProxyOptions configure forwarding.
@@ -73,9 +74,11 @@ export const sessionApiGuard: Plugin = {
       // 1. Restrict this session-aware development bridge to loopback hosts.
       const host = request.headers.host ?? '';
       const hostname = host.replace(/:\d+$/, '');
-      if (!['localhost', '127.0.0.1', '[::1]'].includes(hostname)) {
+      const lan = lanOrigin();
+      const lanRequest = !!lan && host === lan.host && !!(request.socket as import('node:tls').TLSSocket).encrypted;
+      if (!['localhost', '127.0.0.1', '[::1]'].includes(hostname) && !lanRequest) {
         response.statusCode = 403;
-        response.end('The session API requires a loopback host.');
+        response.end('The session API requires a loopback host or the configured LAN HTTPS origin.');
         return;
       }
       // 2. Match only the explicitly supported paths and HTTP methods below.
