@@ -184,6 +184,9 @@ test('touch vote waits for finger release and still requires confirmation', asyn
     await expect(confirmation).not.toBeVisible();
     expect(fixture.mutations).toEqual([]);
     await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    // Releasing is not an immediate interruption: snap/momentum and a quiet pause come first.
+    await page.waitForTimeout(200);
+    await expect(confirmation).not.toBeVisible();
     await expect(confirmation).toBeVisible();
     expect(fixture.mutations).toEqual([]);
     await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
@@ -192,4 +195,23 @@ test('touch vote waits for finger release and still requires confirmation', asyn
   } finally {
     await context.close();
   }
+});
+
+/** Further wheel input restarts the quiet period, leaving time to change the proposed rating. */
+test('wheel confirmation waits after the last adjustment', async ({ page }) => {
+  const fixture = await setup(page);
+  await page.goto(story);
+  const dial = page.getByRole('spinbutton', { name: 'Node importance', exact: true });
+  await expect(dial).toHaveAttribute('aria-disabled', 'false');
+  await dial.hover();
+  await page.mouse.wheel(0, 44);
+  const confirmation = page.getByRole('dialog', { name: 'Confirm your importance rating', exact: true });
+  await page.waitForTimeout(250);
+  await expect(confirmation).not.toBeVisible();
+  await page.mouse.wheel(0, 44);
+  await page.waitForTimeout(250);
+  await expect(confirmation).not.toBeVisible();
+  expect(fixture.mutations).toEqual([]);
+  await expect(confirmation).toBeVisible();
+  expect(fixture.mutations).toEqual([]);
 });
