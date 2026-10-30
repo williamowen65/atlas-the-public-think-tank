@@ -45,7 +45,8 @@ html {
 
 body {
   margin: 0;
-  padding: var(--atlas-space);
+  // The header owns top spacing; retain the shared side and bottom gutters.
+  padding: 0 var(--atlas-space) var(--atlas-space);
   color: var(--atlas-text);
   background: var(--atlas-bg);
 }
