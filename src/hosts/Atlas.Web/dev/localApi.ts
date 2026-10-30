@@ -76,7 +76,10 @@ export const sessionApiGuard: Plugin = {
       // Ignore unrelated paths; an unmatched path is not a failed rule check.
       if (!request.url?.startsWith('/atlas-session-api')) return next();
       // 1. Restrict this session-aware development bridge to loopback hosts.
-      const host = request.headers.host ?? '';
+      // HTTP/2 uses :authority in place of the HTTP/1.1 Host header.
+      // Reuse the resolved authority below for exact-host and same-origin checks.
+      const authority = request.headers.host ?? request.headers[':authority'];
+      const host = typeof authority === 'string' ? authority : '';
       const hostname = host.replace(/:\d+$/, '');
       const lanRequest = !!lan && host === lan.host && httpsEnabled;
       if (!['localhost', '127.0.0.1', '[::1]'].includes(hostname) && !lanRequest) {
