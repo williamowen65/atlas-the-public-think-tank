@@ -81,7 +81,14 @@ export const sessionApiGuard: Plugin = {
       const lanRequest = !!lan && host === lan.host && httpsEnabled;
       if (!['localhost', '127.0.0.1', '[::1]'].includes(hostname) && !lanRequest) {
         response.statusCode = 403;
-        response.end('The session API requires a loopback host or the configured LAN HTTPS origin.');
+        response.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        response.end([
+          'The session API requires a loopback host or the configured LAN HTTPS origin.',
+          `Received Host: ${host || '(missing)'}`,
+          `Configured LAN Host: ${lan?.host ?? '(LAN mode disabled)'}`,
+          `Vite HTTPS enabled: ${httpsEnabled}`,
+          `Request authority: ${request.headers[':authority'] ?? '(not supplied)'}`,
+        ].join('\n'));
         return;
       }
       // 2. Match only the explicitly supported paths and HTTP methods below.
