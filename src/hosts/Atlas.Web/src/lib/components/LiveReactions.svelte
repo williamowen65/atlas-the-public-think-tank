@@ -222,7 +222,7 @@
 
 <style>
   .node-reactions {
-    padding: 0.5rem var(--atlas-card-padding, 1.25rem) 0;
+    padding: 0.5rem 0 0;
   }
   .reaction-list,
   .reaction-picker {
