@@ -18,3 +18,7 @@ TypeScript checks how our code uses these types during development. A type annot
 | `privateDrafts.ts` | An exception: saves drafts in this browser’s `localStorage`, partitioned by participant. It does not call the backend or sync drafts between devices. |
 
 Components generally use these helpers rather than repeat endpoint and response-handling logic. Where a helper accepts an API base, that base selects the routing prefix (for example, `/atlas-public-api` or `/atlas-session-api`); the helper appends the endpoint path. The base itself does not grant permission—the backend enforces access.
+
+## Session and CSRF workflow
+
+See the [frontend session tour](../../../docs/SESSION-AND-CSRF.md) for cookies, token reuse, login/logout, failure recovery and development proxy routing.
