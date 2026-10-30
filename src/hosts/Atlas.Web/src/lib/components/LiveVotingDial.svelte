@@ -28,7 +28,6 @@
   let expanded = $state(false);
   /** Match the feed breakpoint without changing desktop dial behavior. */
   let narrow = $state(false);
-  const collapsedMode = $derived(mobileCompact && narrow);
   onMount(() => {
     const media = matchMedia('(max-width: 560px)');
     /** Keep the responsive mode current when rotating or resizing the viewport. */
@@ -69,6 +68,7 @@
      */
     sessionBase?: string;
   } = $props();
+  const collapsedMode = $derived(mobileCompact && narrow);
   /**
    * Last server-confirmed participant rating; null means no confirmed vote.
    */
