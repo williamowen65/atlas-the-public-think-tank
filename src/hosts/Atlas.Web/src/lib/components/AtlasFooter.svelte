@@ -143,7 +143,13 @@
   }
   @media (max-width: 360px) {
     .footer-links {
-      grid-template-columns: 1fr;
+      // Keep both columns on small phones while leaving room for link text to wrap.
+      gap: 1.5rem 1rem;
+      padding-inline: 0.5rem;
+    }
+    nav {
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
   }
 </style>
