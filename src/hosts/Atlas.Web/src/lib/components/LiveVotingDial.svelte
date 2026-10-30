@@ -7,6 +7,7 @@
   Disables the underlying dial while archived, loading status or saving a vote.
 
   **Props**
+  - `mobileCompact` (`boolean`; optional; default `false`): At phone widths, show a rating summary that expands the existing dial inline.
   - `nodeId` (`string`; required): ID of the node this component reads, displays, or modifies.
   - `initialAverage` (`number | null`; optional; default `null`): Initial average shown while the
     live voting summary is loading; the API summary is authoritative.
