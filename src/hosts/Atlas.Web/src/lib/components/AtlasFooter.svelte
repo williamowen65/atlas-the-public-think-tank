@@ -140,6 +140,13 @@
     .footer-links {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+    nav {
+      // Align stacked groups to the column edge, independent of their longest link.
+      justify-self: stretch;
+      width: 100%;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
   }
   @media (max-width: 360px) {
     .footer-links {
