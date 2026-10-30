@@ -18,6 +18,7 @@
     value is non-null.
   - `compact` (`boolean`; optional; default `false`): Selects the compact dial layout.
   - `disabled` (`boolean`; optional; default `false`): Prevents interaction with this control.
+  - `onCommit` (`(value: number) => void`; optional): Requests confirmation on pointer release or Enter.
   - `onChange` (`(value: number) => void`; optional): Callback: Receives the selected 0–10 rating.
     This control is presentational; the caller handles acceptance or persistence.
 -->
@@ -46,6 +47,10 @@
      * handles acceptance or persistence.
      */
     onChange?: (value: number) => void;
+    /** Request review only after pointer release or Enter; never save during adjustment. */
+    onCommit?: (value: number) => void;
+    /** Restore caller-owned preview state if a pointer gesture is cancelled. */
+    onCancel?: () => void;
   }
 
   let {
@@ -57,6 +62,8 @@
     compact = false,
     disabled = false,
     onChange,
+    onCommit,
+    onCancel,
   }: Props = $props();
 
   /**
@@ -78,13 +85,12 @@
    * Whether the lens is in its pulled interaction state.
    */
   let pulling = $state(false);
-  let touchPointer: { id: number; y: number } | null = null;
   let drag: { id: number; y: number; top: number; moved: boolean } | null = null;
   let lastEmitted: number | null = null;
   let syncTarget: number | null = null;
   let lastLayout: boolean | undefined;
   let lastDisabled: boolean | undefined;
-  let touchScrollOrigin: number | null = null;
+  let gestureStart: number | null = null;
   let wheelRemainder = 0;
   let wheelTime = 0;
   let wheelPullDistance = 0;
@@ -109,8 +115,6 @@
       wheelPullDistance = 0;
       lensPull = 0;
       pulling = false;
-      touchPointer = null;
-      touchScrollOrigin = null;
     }
     if (locked && drag) {
       if (reel.hasPointerCapture(drag.id)) reel.releasePointerCapture(drag.id);
@@ -149,6 +153,11 @@
   // Map keyboard navigation to the same selection path used by pointer and wheel input.
   function handleKey(event: KeyboardEvent) {
     if (disabled) return;
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (!event.repeat && value !== null) onCommit?.(value);
+      return;
+    }
     if (['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft', 'Home', 'End'].includes(event.key)) {
       event.preventDefault();
       if (event.key === 'Home') moveTo(0);
@@ -173,15 +182,14 @@
       if (Math.abs(reel.scrollTop - syncTarget) < 1) syncTarget = null;
       return;
     }
-    if (touchScrollOrigin !== null) {
-      pullLens(touchScrollOrigin - reel.scrollTop);
-    }
     select(10 - Math.round(reel.scrollTop / rowHeight()));
   }
 
-  // Native touch scrolling supplies momentum and CSS snap. Mouse/pen dragging adds
-  // the same direct manipulation on desktop without replacing touch physics.
-  // Track touch separately from mouse dragging so touch scrolling can keep its native behavior.
+  /**
+   * Begin a captured pointer gesture for mouse, pen or touch.
+   * Direct touch manipulation avoids native pointercancel/inertia selecting after release.
+   * @param event Pointer press on the reel; only the primary button starts adjustment.
+   */
   function pointerDown(event: PointerEvent) {
     if (disabled) return;
     clearTimeout(wheelRelease);
@@ -190,11 +198,7 @@
     syncTarget = null;
     if (event.button !== 0) return;
     pulling = true;
-    if (event.pointerType === 'touch') {
-      touchPointer = { id: event.pointerId, y: event.clientY };
-      touchScrollOrigin = reel.scrollTop;
-    }
-    if (event.pointerType === 'touch') return;
+    gestureStart = value;
     reel.focus({ preventScroll: true });
     drag = { id: event.pointerId, y: event.clientY, top: reel.scrollTop, moved: false };
     dragging = true;
@@ -203,10 +207,6 @@
 
   function pointerMove(event: PointerEvent) {
     if (disabled) return;
-    if (touchPointer?.id === event.pointerId) {
-      pullLens(event.clientY - touchPointer.y);
-      return;
-    }
     if (!drag || drag.id !== event.pointerId) return;
     pullLens(event.clientY - drag.y);
     const distance = drag.y - event.clientY;
@@ -215,17 +215,6 @@
   }
 
   function pointerEnd(event: PointerEvent) {
-    if (touchScrollOrigin !== null && !drag && event.type === 'lostpointercapture') return;
-    if (touchPointer?.id === event.pointerId) {
-      touchPointer = null;
-      // Native panning cancels the pointer stream; keep the lens until scrollend.
-      if (
-        event.type === 'pointercancel' ||
-        Math.abs(reel.scrollTop - (touchScrollOrigin ?? reel.scrollTop)) > 1
-      )
-        return;
-      touchScrollOrigin = null;
-    }
     if (!drag || drag.id === event.pointerId) {
       lensPull = 0;
       pulling = false;
@@ -240,12 +229,20 @@
       previous.moved || event.type !== 'pointerup'
         ? 0
         : event.clientY - reel.getBoundingClientRect().top - reel.clientHeight / 2;
-    moveTo(10 - Math.round((reel.scrollTop + offset) / rowHeight()));
+    if (event.type !== 'pointerup') {
+      // Cancellation/lost capture never requests confirmation.
+      lastEmitted = gestureStart;
+      if (onCancel) onCancel();
+      else onChange?.(gestureStart ?? 5);
+      return;
+    }
+    const next = Math.max(0, Math.min(10, 10 - Math.round((reel.scrollTop + offset) / rowHeight())));
+    moveTo(next);
+    onCommit?.(next);
   }
 
   function scrollEnd() {
     if (drag || wheelRelease !== undefined) return;
-    touchScrollOrigin = null;
     lensPull = 0;
     pulling = false;
   }
@@ -318,6 +315,7 @@
       aria-valuetext={value === null
         ? 'Unrated. Scroll, drag or use arrow keys to choose a rating.'
         : `${value} out of 10`}
+      title="Drag and release to review a rating. Use arrows or the wheel to adjust, then press Enter."
       aria-disabled={disabled}
       onkeydown={handleKey}
       onscroll={handleScroll}
@@ -438,7 +436,7 @@
     scrollbar-width: none;
     scroll-snap-type: y mandatory;
     overscroll-behavior-y: contain;
-    touch-action: pan-y;
+    touch-action: none;
     cursor: grab;
     user-select: none;
     border-radius: 0.35rem;
