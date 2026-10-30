@@ -138,7 +138,8 @@
   }
   @media (max-width: 700px) {
     .footer-links {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      // A wider first column balances its longer links and shifts the second column right.
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
     }
     nav {
       // Align stacked groups to the column edge, independent of their longest link.
