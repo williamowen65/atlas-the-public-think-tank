@@ -38,9 +38,21 @@ test('mobile feed summary opens the existing dial without casting a vote', async
   await expect(card.getByRole('spinbutton')).toHaveCount(0);
   await expect(summary).toContainText('7.5');
   await expect(summary).toContainText('12');
+  await expect(summary).toContainText('Vote');
+  const readMore = card.getByRole('button', { name: 'Read more', exact: true });
+  const row = await summary.boundingBox();
+  const read = await readMore.boundingBox();
+  expect(Math.abs((row!.y + row!.height / 2) - (read!.y + read!.height / 2))).toBeLessThan(2);
+  expect(row!.x + row!.width).toBeLessThanOrEqual(read!.x);
   await summary.click();
   const dial = card.getByRole('spinbutton');
   await expect(dial).toBeVisible();
+  // The expanded dial belongs beside the introduction, rather than a row beneath it.
+  await expect(card.locator('.dial-content')).toHaveCSS('float', 'left');
+  const selector = await card.locator('.selector').boundingBox();
+  const introduction = await card.locator('.description').boundingBox();
+  expect(selector!.y).toBeLessThan(introduction!.y + introduction!.height);
+
   await dial.focus();
   await page.keyboard.press('End');
   await expect(page.getByRole('dialog', { name: 'Confirm your importance rating', exact: true })).not.toBeVisible();
