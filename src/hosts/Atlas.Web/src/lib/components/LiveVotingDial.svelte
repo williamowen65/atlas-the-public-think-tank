@@ -7,7 +7,7 @@
   Disables the underlying dial while archived, loading status or saving a vote.
 
   **Props**
-  - `mobileCompact` (`boolean`; optional; default `false`): At phone widths, show a rating summary that expands the existing dial inline.
+  - `mobileCompact` (`boolean`; optional; default `false`): At phone widths, show Vote/Voted beside Read more and expand the dial into the description.
   - `nodeId` (`string`; required): ID of the node this component reads, displays, or modifies.
   - `initialAverage` (`number | null`; optional; default `null`): Initial average shown while the
     live voting summary is loading; the API summary is authoritative.
@@ -303,16 +303,17 @@
     <button class="rating-summary" type="button" aria-expanded={expanded}
       disabled={archived || busy || loading}
       onclick={() => { expanded = !expanded; if (!expanded) cancelPending(); }}
-      aria-label={`Rate node importance. Average ${average === null ? 'not rated' : average.toFixed(1)}. ${totalVotes} votes.`}>
+      aria-label={`${confirmed === null ? 'Vote' : 'Voted. Change your vote'}. Rate node importance. Average ${average === null ? 'not rated' : average.toFixed(1)}. ${totalVotes} votes.`}>
       <strong class="summary-average">{average === null ? '—' : average.toFixed(1)}</strong>
       <span class="summary-voters" title={totalVotes.toLocaleString('en-US')}>
         <svg viewBox="0 0 56 44" aria-hidden="true"><circle cx="28" cy="7" r="6"/><circle cx="10" cy="12" r="5"/><circle cx="46" cy="12" r="5"/><path d="M1 41V26a9 9 0 0 1 18 0v15ZM37 41V26a9 9 0 0 1 18 0v15ZM12 44V30a16 16 0 0 1 32 0v14Z"/></svg>
         {formatVoteCount(totalVotes)}
       </span>
-      <span>{expanded ? 'Close rating' : confirmed === null ? 'Rate' : 'Your vote: ' + confirmed}</span>
+      <span>{confirmed === null ? 'Vote' : 'Voted'}</span>
     </button>
   {/if}
   {#if !collapsedMode || expanded}
+  <div class="dial-content">
   <!-- Live interaction lock: archived nodes, pending status reads and in-flight writes. -->
   <VotingDial
     label="Node importance"
@@ -332,6 +333,7 @@
       onclick={requestUndo}
       aria-label="Undo your node importance vote">Undo vote</button
     >{/if}
+  </div>
   {/if}
   {#if busy}<small role="status">Saving…</small>{/if}
   {#if notice}<small role="status">{notice}</small>{/if}
@@ -412,15 +414,15 @@
   .rating-summary {
     display: flex;
     align-items: center;
-    gap: 0.55rem;
+    gap: 0.35rem;
     min-height: 2.75rem;
-    padding: 0.25rem 0.65rem 0.25rem 0.25rem;
+    padding: 0.25rem 0.5rem 0.25rem 0.25rem;
     border: 1px solid var(--atlas-border);
     border-radius: 0.65rem;
     background: var(--atlas-surface);
     color: var(--atlas-accent);
     font: inherit;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     cursor: pointer;
   }
   .summary-average {
@@ -431,8 +433,24 @@
   }
   .summary-voters { display: inline-flex; align-items: center; gap: 0.25rem; }
   .summary-voters svg { width: 1.4rem; height: 1.2rem; fill: currentColor; }
-  .live-voting.collapsed-mode { width: 100%; text-align: left; }
-  .collapsed-mode :global(.voting-dial) { margin: 0.5rem auto; }
+  .dial-content { display: contents; }
+  // The card body owns the action row. The expanded dial rejoins normal text flow
+  // as a left float, so introductions can wrap beside and then below it.
+  .live-voting.collapsed-mode { display: contents; }
+  .collapsed-mode .rating-summary {
+    position: absolute;
+    inset-inline-start: var(--card-padding);
+    bottom: 0.65rem;
+  }
+  .collapsed-mode .dial-content {
+    display: block;
+    float: left;
+    width: min-content;
+    margin: 0 var(--dial-text-gap) 0.6rem -0.4rem;
+    text-align: center;
+  }
+  .collapsed-mode small { clear: both; }
+
   .live-voting {
     width: min-content;
     min-width: 4.3rem;
