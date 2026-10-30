@@ -461,6 +461,31 @@
     float: right;
     margin: 0 0 0.75rem 1.25rem;
   }
+  .add button {
+    border: 1px solid var(--atlas-accent);
+    border-radius: var(--atlas-radius);
+    padding: 0.45rem 0.8rem;
+    background: var(--atlas-accent);
+    color: var(--atlas-on-accent);
+    line-height: 1.4;
+    font-weight: 600;
+
+    &:not(:disabled):hover {
+      background: color-mix(in srgb, var(--atlas-accent) 85%, var(--atlas-text));
+    }
+
+    &:focus-visible {
+      outline: 3px solid var(--atlas-focus);
+      outline-offset: 3px;
+    }
+
+    &:disabled {
+      border-color: var(--atlas-border);
+      background: var(--atlas-bg);
+      color: var(--atlas-muted);
+      cursor: default;
+    }
+  }
   .tabs {
     scroll-margin-top: 20px;
     display: block;
