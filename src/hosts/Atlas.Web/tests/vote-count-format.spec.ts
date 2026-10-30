@@ -5,7 +5,7 @@ import { formatVoteCount } from '../src/lib/format/formatVoteCount';
 for (const [count, expected] of [
   [0, '0'], [1, '1'], [999, '999'], [1000, '1K'], [1099, '1K'],
   [1100, '1.1K'], [3000, '3K'], [4000, '4K'], [999999, '999.9K'],
-  [1000000, '1M'], [1250000, '1.2M'], [1000000000, '1B'],
+  [1000000, '1M'], [1250000, '1.2M'], [1000000000, '1B'], [4500000000, '4.5B'],
 ] as const) {
   test(`formats ${count} as ${expected}`, () => {
     expect(formatVoteCount(count)).toBe(expected);
