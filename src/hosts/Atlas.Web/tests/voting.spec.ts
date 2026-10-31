@@ -179,6 +179,7 @@ test('touch vote waits for finger release and still requires confirmation', asyn
     const page = await context.newPage();
     const fixture = await setup(page);
     await page.goto(story);
+    await page.getByRole('button', { name: /Rate node importance/ }).click();
     const dial = page.getByRole('spinbutton', { name: 'Node importance', exact: true });
     await expect(dial).toHaveAttribute('aria-disabled', 'false');
     const box = (await dial.boundingBox())!;
