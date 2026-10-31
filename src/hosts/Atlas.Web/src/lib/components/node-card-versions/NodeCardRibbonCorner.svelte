@@ -37,6 +37,7 @@
     comment-count button is activated.
 -->
 <script lang="ts">
+  import { relativeDate } from '../../format/relativeDate';
   import { bottomCornerAction } from '../../actions/bottomCornerAction';
   import NodeEditControl from '../NodeEditControl.svelte';
   import ActionButton from '../ActionButton.svelte';
@@ -122,8 +123,8 @@
               }
             }}>{node.authorName}</a
           >{:else}{node.authorName}{/if}</span
-      ><span class="byline-separator" aria-hidden="true">·</span><time datetime={node.createdAt}
-        >{new Date(node.createdAt).toLocaleDateString('en-US', {
+      ><span class="byline-separator" aria-hidden="true">·</span><time datetime={node.createdAt} title={new Date(node.createdAt).toLocaleString()}
+        >{mobileLayout ? relativeDate(node.createdAt) : new Date(node.createdAt).toLocaleDateString('en-US', {
           month: 'short',
           day: 'numeric',
           year: 'numeric',
