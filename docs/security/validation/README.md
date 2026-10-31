@@ -7,6 +7,7 @@ Validation answers whether a proposed value or operation is valid. Authorization
 - [Implementation overview](IMPLEMENTATION.md): the implemented workflows, test evidence and practical limits.
 - [Domain review](DOMAIN-REVIEW.md): expectations, enforcement locations, automated evidence and remaining gaps across the MVP domains.
 - [Persistence and SQL](PERSISTENCE.md): EF parameterization, database constraints and their limits.
+- [Resource limits review](RESOURCE-LIMITS.md): existing bounds, unbounded collections/workloads and proposed PTT-122 limits.
 - [Authorization review](../authorization/README.md): caller identity and permissions.
 
 ## Review method
