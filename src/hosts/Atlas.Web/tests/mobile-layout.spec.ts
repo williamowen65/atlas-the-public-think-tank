@@ -164,7 +164,7 @@ test('mobile header stays on one row and long community drawer scrolls above bot
   const searchBox = await search.boundingBox();
   expect(Math.abs(menuBox!.y + menuBox!.height / 2 - searchBox!.y - searchBox!.height / 2)).toBeLessThan(2);
   await search.click();
-  await expect(page.getByRole('textbox', { name: 'Search nodes and filters' })).toHaveAttribute('placeholder', 'Search Atlas: The Public Think Tank');
+  await expect(page.getByRole('textbox', { name: 'Search nodes and filters' })).toHaveAttribute('placeholder', 'Atlas: The Public Think Tank');
   await page.keyboard.press('Escape');
   const bottom = page.getByRole('navigation', { name: 'Bottom navigation', exact: true });
   await bottom.getByRole('link', { name: 'Discover' }).hover();
