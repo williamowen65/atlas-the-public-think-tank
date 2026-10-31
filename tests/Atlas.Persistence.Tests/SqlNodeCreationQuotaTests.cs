@@ -7,8 +7,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Atlas.Persistence.Tests;
 
+// Each method owns an exclusive database lease; AtlasTime.Use is AsyncLocal.
+// No process-wide Console redirection remains in this class.
 [TestClass]
-[DoNotParallelize] // One regression test temporarily redirects process-wide Console IO.
 public sealed class SqlNodeCreationQuotaTests
 {
     private static readonly DateTimeOffset Now = new(

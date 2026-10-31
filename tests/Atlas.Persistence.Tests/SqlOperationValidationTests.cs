@@ -34,7 +34,7 @@ public sealed class SqlOperationValidationTests
     public void FailedNodeSaveRollsBackBlocksAndDocument()
     {
         // Create an isolated SQL database and valid author/type references.
-        using var database = SqlTestDatabase.Create();
+        using var database = SqlTestDatabase.Create(reuse: false);
         var author = database.AddParticipant();
         var type = NodeTypeDefinition.CreateSystemDefined(
             "Idea",
@@ -76,7 +76,7 @@ public sealed class SqlOperationValidationTests
     public void FailedOwnerMembershipRollsBackCommunity()
     {
         // Use a real community repository so the first write reaches SQL.
-        using var database = SqlTestDatabase.Create();
+        using var database = SqlTestDatabase.Create(reuse: false);
         var communities = new SqlCommunityRepository(database.Open);
         // Replace only owner-membership saving with a failure after community creation.
         var service = new CommunityService(
@@ -104,7 +104,7 @@ public sealed class SqlOperationValidationTests
     public void FailedSecondModerationSaveRollsBackWholeGroup()
     {
         // Create two pending reports for the same node and an authorized moderator.
-        using var database = SqlTestDatabase.Create();
+        using var database = SqlTestDatabase.Create(reuse: false);
         var moderator = database.AddParticipant(); var reporter = database.AddParticipant(); var node = database.AddNode();
         var cases = new SqlModerationCaseRepository(database.Open);
         var original = new ModerationService(
@@ -152,7 +152,7 @@ public sealed class SqlOperationValidationTests
     public void FailedSupersessionSaveRollsBackReplacement()
     {
         // Create a valid node and two available reaction definitions.
-        using var database = SqlTestDatabase.Create();
+        using var database = SqlTestDatabase.Create(reuse: false);
         var actor = database.AddParticipant();
         var type = NodeTypeDefinition.CreateSystemDefined(
             "Idea",
@@ -232,7 +232,7 @@ public sealed class SqlOperationValidationTests
     public async Task CompetingCommunityNamesHaveOneCompleteWinner()
     {
         // Give both competing creates the same valid owner and requested community name.
-        using var database = SqlTestDatabase.Create();
+        using var database = SqlTestDatabase.Create(reuse: false);
         var owner = database.AddParticipant();
         // A closed test gate delays competitors until all tasks are launched; it is not a SQL lock.
         using var start = new ManualResetEventSlim();
@@ -281,7 +281,7 @@ public sealed class SqlOperationValidationTests
     public async Task CompetingModeratorsCannotSplitGroupDecisions()
     {
         // Persist three pending reports that must be decided as one group.
-        using var database = SqlTestDatabase.Create();
+        using var database = SqlTestDatabase.Create(reuse: false);
         var actor = database.AddParticipant(); var reporter = database.AddParticipant(); var node = database.AddNode();
         var cases = new SqlModerationCaseRepository(database.Open);
         var service = new ModerationService(
@@ -347,7 +347,7 @@ public sealed class SqlOperationValidationTests
     public void MissingWrongKindInactiveAndHiddenReferencesAreRejected()
     {
         // Start with an existing participant and node so each rejection isolates one reference rule.
-        using var database = SqlTestDatabase.Create();
+        using var database = SqlTestDatabase.Create(reuse: false);
         var actor = database.AddParticipant(); var node = database.AddNode();
         var votes = new SqlVoteRepository(database.Open);
         // A nonexistent Node ID must be rejected before a vote can be persisted.
@@ -407,7 +407,7 @@ public sealed class SqlOperationValidationTests
     public void SqlUniqueConflictHasApplicationErrorAndRollsBack()
     {
         // Persist the first vote for one participant/target pair.
-        using var database = SqlTestDatabase.Create();
+        using var database = SqlTestDatabase.Create(reuse: false);
         var actor = database.AddParticipant(); var node = database.AddNode();
         var repository = new SqlVoteRepository(database.Open);
         repository.Save(new Vote(
@@ -432,7 +432,7 @@ public sealed class SqlOperationValidationTests
     public async Task CompetingOppositeParentLinksCannotCreateCycle()
     {
         // Create two unrelated nodes under a fixed clock so later relationship timestamps are valid.
-        using var database = SqlTestDatabase.Create();
+        using var database = SqlTestDatabase.Create(reuse: false);
         using var clock = AtlasTime.Use(new FixedClock());
         var actor = database.AddParticipant();
         var type = NodeTypeDefinition.CreateSystemDefined(
@@ -508,7 +508,7 @@ public sealed class SqlOperationValidationTests
     public void NodeReferenceChecksRejectMissingDocumentTypeAndInactiveAuthor()
     {
         // Seed valid references and fix time so reference failures are not timestamp failures.
-        using var database = SqlTestDatabase.Create();
+        using var database = SqlTestDatabase.Create(reuse: false);
         using var clock = AtlasTime.Use(new FixedClock());
         var actor = database.AddParticipant();
         var type = NodeTypeDefinition.CreateSystemDefined(
@@ -565,7 +565,7 @@ public sealed class SqlOperationValidationTests
     public void CommunityAndCommentReferencePoliciesRejectInvalidProposals()
     {
         // Prepare active participants, two distinct targets and the community coordination service.
-        using var database = SqlTestDatabase.Create();
+        using var database = SqlTestDatabase.Create(reuse: false);
         var actor = database.AddParticipant(); var firstNode = database.AddNode(); var otherNode = database.AddNode();
         var communities = new SqlCommunityRepository(database.Open);
         var associations = new SqlCommunityNodeRepository(database.Open);
@@ -671,7 +671,7 @@ public sealed class SqlOperationValidationTests
     public void FailedGroupedReviewAndRestorationPreservePersistedHistory()
     {
         // Create two reports and successfully hide their shared node.
-        using var database = SqlTestDatabase.Create();
+        using var database = SqlTestDatabase.Create(reuse: false);
         var actor = database.AddParticipant(); var reporter = database.AddParticipant(); var node = database.AddNode();
         var cases = new SqlModerationCaseRepository(database.Open);
         var service = new ModerationService(
@@ -741,7 +741,7 @@ public sealed class SqlOperationValidationTests
     public async Task CompetingNewVotesReturnOneConflictAndLeaveOneRecord()
     {
         // Use the same active participant and target for two different proposed ratings.
-        using var database = SqlTestDatabase.Create();
+        using var database = SqlTestDatabase.Create(reuse: false);
         var actor = database.AddParticipant(); var node = database.AddNode();
         // A closed test gate delays competitors until all tasks are launched; it is not a SQL lock.
         using var start = new ManualResetEventSlim();
@@ -778,7 +778,7 @@ public sealed class SqlOperationValidationTests
     public async Task CompetingDirectNodeSavesCannotCreateTransitiveCycle()
     {
         // Create three independent nodes under a fixed clock.
-        using var database = SqlTestDatabase.Create();
+        using var database = SqlTestDatabase.Create(reuse: false);
         using var clock = AtlasTime.Use(new FixedClock());
         var actor = database.AddParticipant();
         var type = NodeTypeDefinition.CreateSystemDefined(
@@ -873,7 +873,7 @@ public sealed class SqlOperationValidationTests
     public async Task MetadataContentAndVoteWritesCompleteWhileGraphLockIsHeld()
     {
         // Seed a voting target and a complete editable node before taking the test lock.
-        using var database = SqlTestDatabase.Create();
+        using var database = SqlTestDatabase.Create(reuse: false);
         var actor = database.AddParticipant();
         var node = database.AddNode();
         using var clock = AtlasTime.Use(new FixedClock());
@@ -966,7 +966,7 @@ public sealed class SqlOperationValidationTests
     public void NestedNodeBoundaryAcquiresGraphLockAndOuterRollbackReleasesIt()
     {
         // Use a Content-rooted operation to test acquiring topology coordination later inside the same transaction.
-        using var database = SqlTestDatabase.Create();
+        using var database = SqlTestDatabase.Create(reuse: false);
         AtlasDataContext? outer = null;
         AtlasDataContext Open()
         {
@@ -1026,7 +1026,7 @@ public sealed class SqlOperationValidationTests
     public void MetadataSavePreservesParentsAddedSinceNodeWasLoaded()
     {
         // Create an initially parentless child and a possible parent using valid references and fixed time.
-        using var database = SqlTestDatabase.Create();
+        using var database = SqlTestDatabase.Create(reuse: false);
         using var clock = AtlasTime.Use(new FixedClock());
         var actor = database.AddParticipant();
         var type = NodeTypeDefinition.CreateSystemDefined(
@@ -1088,7 +1088,7 @@ public sealed class SqlOperationValidationTests
     public void SqlDocumentInsertFailureDuringNodeCreationRollsBackEarlierBlockSave()
     {
         // Seed valid author/type references and fixed time so document persistence is the only intended failure.
-        using var database = SqlTestDatabase.Create();
+        using var database = SqlTestDatabase.Create(reuse: false);
         using var clock = AtlasTime.Use(new FixedClock());
         var author = database.AddParticipant();
         var type = NodeTypeDefinition.CreateSystemDefined(

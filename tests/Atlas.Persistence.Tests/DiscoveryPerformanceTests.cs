@@ -37,7 +37,7 @@ public sealed class DiscoveryPerformanceTests
         }
         try
         {
-            Phase("Create isolated database, schema and full-text indexes");
+            Phase("Lease isolated database (initialize schema/indexes on first use)");
             fixture = SqlTestDatabase.Create(useCurrentModel: true);
             Phase("Seed participants, nodes, documents, blocks and votes");
             using (var seed = fixture.Open())
@@ -140,7 +140,7 @@ public sealed class DiscoveryPerformanceTests
             if (fixture is not null)
             {
                 phase = null;
-                Phase("Delete isolated test database");
+                Phase("Reset and return isolated test database");
                 try
                 {
                     fixture.Dispose();
