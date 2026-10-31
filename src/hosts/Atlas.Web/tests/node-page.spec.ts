@@ -105,6 +105,13 @@ test('node page keeps a full-width ribbon and wraps post content around the dial
   await expect(card.getByRole('heading', { name: 'Question: A live question' })).toBeVisible();
   for (const width of [800, 320]) {
     await page.setViewportSize({ width, height: 900 });
+    if (width <= 560) {
+      // Mobile keeps full content below the compact introduction/disclosure.
+      await expect(card.getByRole('button', { name: /Rate node importance/ })).toBeVisible();
+      await expect(card.getByRole('spinbutton')).toHaveCount(0);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+      continue;
+    }
     const layout = await card.evaluate(el => {
       const bounds = el.getBoundingClientRect();
       const ribbon = el.querySelector('nav')!.getBoundingClientRect();
