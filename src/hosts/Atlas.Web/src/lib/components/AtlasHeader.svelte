@@ -123,6 +123,25 @@
    */
   let accountElement = $state<HTMLDivElement>();
   let mobileElement: HTMLDetailsElement;
+  /** Keep native details open until its exit transition finishes. */
+  let drawerClosing = $state(false);
+  let drawerTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Close the drawer after its slide-out, optionally restoring menu-button focus. */
+  function closeDrawer(restoreFocus = false) {
+    if (!mobileElement?.open || drawerClosing) return;
+    const finish = () => {
+      mobileElement.open = false;
+      drawerClosing = false;
+      if (restoreFocus) mobileElement.querySelector('summary')?.focus();
+    };
+    if (!mobileExperiment || matchMedia('(prefers-reduced-motion: reduce)').matches) finish();
+    else {
+      drawerClosing = true;
+      drawerTimer = setTimeout(finish, 200);
+    }
+  }
+  /** Cancel deferred close when the header unmounts. */
+  onMount(() => () => clearTimeout(drawerTimer));
   // Dismiss menus without intercepting normal navigation or control activation.
   function closeOnOutside(event: PointerEvent) {
     // Closing the disclosure preserves the shared query for the next time it opens.
@@ -160,10 +179,10 @@
   }
   function closeOnNavigation() {
     menuOpen = false;
-    if (mobileElement) mobileElement.open = false;
+    if (mobileElement) closeDrawer();
   }
   function closeOnResize() {
-    if (window.innerWidth > 560 && mobileElement?.open) mobileElement.open = false;
+    if (window.innerWidth > 560 && mobileElement?.open) closeDrawer();
   }
   /**
    * Uppercase first character of the display name for the avatar, with U as fallback.
@@ -286,11 +305,16 @@
       Native disclosure provides the narrow-screen navigation independently of the desktop
       account menu.
     -->
-    <details class="mobile-menu" bind:this={mobileElement} ontoggle={() => void loadJoined()}>
-      <summary aria-label="Open navigation menu">☰</summary>
+    <details class="mobile-menu" class:closing={drawerClosing} bind:this={mobileElement} ontoggle={() => void loadJoined()}>
+      <summary aria-label="Open navigation menu" onclick={(event) => {
+        if (!mobileExperiment) return;
+        event.preventDefault();
+        if (mobileElement.open) closeDrawer(true);
+        else { drawerClosing = false; mobileElement.open = true; headerVisible = true; }
+      }}>☰</summary>
       <nav aria-label="Mobile navigation">
         {#if mobileExperiment}
-          <button class="close-drawer" type="button" onclick={() => { mobileElement.open = false; mobileElement.querySelector('summary')?.focus(); }}>Close menu</button>
+          <button class="close-drawer" type="button" onclick={() => closeDrawer(true)}>Close menu</button>
           <h2>Explore Atlas</h2>
         {/if}
         <a href="/" onclick={closeOnNavigation}>Discover</a><a
@@ -659,5 +683,32 @@
     .bottom-navigation a[aria-current] {
       text-decoration: none;
     }
+  }
+  @media (max-width: 560px) {
+    .atlas-header.mobile-experiment {
+      .mobile-menu nav {
+        transform: translateX(0);
+        transition: transform 200ms ease-out;
+      }
+      .mobile-menu.closing nav { transform: translateX(-110%); }
+      .close-drawer {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--atlas-border);
+        border-radius: 999px;
+        background: var(--atlas-surface);
+        color: var(--atlas-text);
+        font-size: 0.85rem;
+        padding: 0.35rem 0.75rem;
+      }
+      .close-drawer:hover { background: color-mix(in srgb, var(--atlas-accent) 10%, var(--atlas-surface)); }
+    }
+    @starting-style {
+      .atlas-header.mobile-experiment .mobile-menu[open] nav { transform: translateX(-110%); }
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .atlas-header.mobile-experiment .mobile-menu nav { transition: none; }
   }
 </style>
