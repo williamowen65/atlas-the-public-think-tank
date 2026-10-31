@@ -405,3 +405,6 @@ http-client.env.json.user
 /src/hosts/Atlas.Web/test-results/
 
 /src/hosts/Atlas.Web/.svelte-kit/
+
+# Machine-local LAN HTTPS settings (certificates stay outside the repository).
+/src/hosts/Atlas.Web/.env.lan.local
