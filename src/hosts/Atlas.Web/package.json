@@ -20,7 +20,8 @@
     "format:check": "prettier --check \"src/**/*.svelte\" \"storybook/**/*.svelte\" \"src/routes/+layout.ts\" \"src/styles.scss\"",
     "dev:api": "concurrently --kill-others --names API,Web \"dotnet run --project ../Atlas.Api --launch-profile https\" \"npm run dev\"",
     "storybook:ranking": "concurrently --kill-others --names RankingLab,Storybook \"dotnet run --project ../Atlas.RankingLab\" \"npm run storybook\"",
-    "dev:lan:api": "concurrently --kill-others --names API,Web \"dotnet run --project ../Atlas.Api --launch-profile https\" \"npm run dev -- --host 0.0.0.0\""
+    "dev:lan:api": "node dev/startLan.mjs",
+    "test:lan-config": "node --test dev/lanEnvironment.test.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
