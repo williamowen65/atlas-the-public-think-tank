@@ -207,10 +207,6 @@
   {#if error}<p role="alert">{error}</p>{/if}
   {#if profile}
     <header class="profile-header">
-      <div class="avatar" aria-hidden="true">{profile.displayName.charAt(0).toUpperCase()}</div>
-      <div class="profile-details">
-        <div class="profile-title">
-          <h1>{profile.displayName}</h1>
           {#if isOwner && !profile.deleted}<button
               type="button"
               class="edit-profile"
@@ -221,6 +217,11 @@
                 notice = '';
               }}>✎</button
             >{/if}
+
+      <div class="avatar" aria-hidden="true">{profile.displayName.charAt(0).toUpperCase()}</div>
+      <div class="profile-details">
+        <div class="profile-title">
+          <h1>{profile.displayName}</h1>
         </div>
         {#if profile.createdAt}<p class="muted">
             Member since {new Date(profile.createdAt).toLocaleDateString()}
@@ -287,13 +288,24 @@
     cursor: pointer;
   }
   .profile-title {
+    padding-inline-end: 2.75rem;
     display: flex;
     align-items: center;
     gap: 0.7rem;
   }
   .edit-profile {
     border: 1px solid var(--atlas-border);
-    border-radius: 0.4rem;
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    border-top: 0;
+    border-right: 0;
+    border-radius: 0 var(--atlas-radius) 0 var(--atlas-radius);
     background: transparent;
     color: var(--atlas-text);
   }
@@ -331,6 +343,7 @@
     text-decoration: underline;
   }
   .profile-header {
+    position: relative;
     display: flex;
     align-items: flex-start;
     gap: 1.25rem;
