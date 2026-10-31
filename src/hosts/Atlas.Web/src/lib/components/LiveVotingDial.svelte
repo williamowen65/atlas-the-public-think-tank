@@ -27,6 +27,22 @@
   import { apiRequest, ApiRequestError } from '../api/apiRequest';
   /** Whether the mobile summary has been expanded by the visitor. */
   let expanded = $state(false);
+  /** The disclosure remains focusable after moving into the card's type row. */
+  let summaryButton = $state<HTMLButtonElement>();
+  /**
+   * Put only the compact summary into the containing node's heading row.
+   * The live dial stays in the description flow, sharing this component's state.
+   * Both locations remain within the same Svelte event-delegation root.
+   * @param button Mounted mobile disclosure button.
+   * @returns Cleanup removing the relocated element when its component is destroyed.
+   */
+  function placeSummary(button: HTMLButtonElement) {
+    const row = button.closest('article')?.querySelector('.node-type-row');
+    if (!row) return;
+    button.classList.add('header-summary');
+    row.append(button);
+    return { destroy: () => button.remove() };
+  }
   /** Match the feed breakpoint without changing desktop dial behavior. */
   let narrow = $state(false);
   onMount(() => {
@@ -293,7 +309,7 @@
     // Focus only after busy=false has re-enabled the summary button.
     if (saved && collapsedMode && !controller.signal.aborted) {
       await tick();
-      container?.querySelector<HTMLButtonElement>('.rating-summary')?.focus({ preventScroll: true });
+      summaryButton?.focus({ preventScroll: true });
     }
     if (!collapsedMode && next === null && confirmed === null && !controller.signal.aborted) {
       await tick();
@@ -313,7 +329,7 @@
 
 <div bind:this={container} class="live-voting" class:collapsed-mode={collapsedMode} aria-busy={busy}>
   {#if collapsedMode}
-    <button class="rating-summary" type="button" aria-expanded={expanded}
+    <button class="rating-summary" bind:this={summaryButton} use:placeSummary type="button" aria-expanded={expanded}
       disabled={archived || busy || loading}
       onclick={() => { expanded = !expanded; if (!expanded) cancelPending(); }}
       aria-label={`${confirmed === null ? 'Vote' : `Voted ${confirmed} out of 10. Change your vote`}. Rate node importance. Average ${average === null ? 'not rated' : average.toFixed(1)}. ${totalVotes} votes.`}>
@@ -574,5 +590,9 @@
     margin-top: 1rem;
     padding: 0.4rem 0.75rem;
     cursor: pointer;
+  }
+  .rating-summary.header-summary {
+    position: static;
+    flex: 0 0 auto;
   }
 </style>
