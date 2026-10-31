@@ -14,6 +14,26 @@ Only Vite is newly exposed: the API target remains loopback. HTTPS encrypts traf
 
 This is a configuration/guard review, not a complete security audit or an assurance that the dev server has no vulnerabilities.
 
+## Save settings once, then use the normal LAN command
+
+After generating your certificate below, run these once from src/hosts/Atlas.Web:
+
+```powershell
+Copy-Item .env.lan.example .env.lan.local
+notepad .env.lan.local
+```
+
+Set ATLAS_LAN_ORIGIN to your PC's Wi-Fi address, for example:
+```dotenv
+ATLAS_LAN_ORIGIN=https://192.168.50.55:5173
+```
+
+The LAN launcher defaults certificate paths to %LOCALAPPDATA%/Atlas/dev-certs/atlas.pem and atlas-key.pem. Set ATLAS_LAN_CERT and ATLAS_LAN_KEY in the same file if your files are elsewhere; use forward slashes in Windows paths. The local file is ignored by Git; keep certificates and private keys outside the repository.
+
+From any new terminal, run just `npm run dev:lan:api`. It loads this file before starting API and Vite. Explicit shell environment values take precedence, so remove stale shell overrides if edits to the file appear ineffective. Ordinary dev/build commands do not load this LAN-specific file.
+
+Missing origin or certificate files now stop the LAN launcher with guidance instead of falling back to HTTP. Existing Vite validation still requires a private HTTPS origin. This does not generate certificates or install phone trust. If your Wi-Fi IP changes, update the saved origin and regenerate the server certificate to include the new IP; the phone can continue trusting the same mkcert CA.
+
 ## Windows setup (PowerShell)
 
 Install [mkcert](https://github.com/FiloSottile/mkcert#installation). For Chocolatey, open PowerShell **as Administrator** and run `choco install mkcert -y`. A non-elevated install can report lock-file access errors or access denied under C:\\ProgramData\\chocolatey. Retry elevated before deleting any lock file; another installation may hold it.
@@ -43,10 +63,10 @@ npm run dev:lan:api
 ```
 
 If the API is already running, use `npm run dev -- --host 0.0.0.0` in the configured shell instead.
-Environment variables are read from the shell, not automatically from .env.local.
+The LAN launcher reads .env.lan.local; .env.local is not used for these server settings.
 The configured port is strict so the printed origin remains correct.
 
-The environment variables last only for this PowerShell session. A new terminal needs them set again. Both `Test-Path $env:ATLAS_LAN_CERT` and `Test-Path $env:ATLAS_LAN_KEY` should return True. Vite's startup output must show HTTPS.
+Shell environment variables last only for this PowerShell session. Save settings in .env.lan.local as described above to reuse them in new terminals. Both `Test-Path $env:ATLAS_LAN_CERT` and `Test-Path $env:ATLAS_LAN_KEY` should return True. Vite's startup output must show HTTPS.
 
 `dev:lan:api` launches the API and Vite together; Vite's configuration reads these variables. The command alone does not generate certificates or configure phone trust.
 
