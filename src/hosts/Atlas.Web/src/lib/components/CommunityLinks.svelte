@@ -95,12 +95,13 @@
 
 <!--
   Layout: An inline comma-separated list: known community IDs become links, while fallback names
-  remain plain text. No block wrapper is added.
+  remain plain text. Each community keeps its membership action in the same inline group.
 -->
 
 {#each labels as community, i (community.id || i)}
   {#if i > 0},
   {/if}
+  <span class="community-membership" class:joinable={allowJoin}>
   {#if community.id}<a href={'/communities/' + encodeURIComponent(community.id)}>{community.name}</a
     >{:else}{community.name}{/if}
   {#if allowJoin && community.id && linked.find(c => c.id === community.id)?.status === 'Active'}
@@ -108,11 +109,34 @@
     {:else}<button type="button" class="join-community" disabled={!!busy || !membershipReady}
       aria-label={'Join ' + community.name} onclick={() => void join(community.id)}>{busy === community.id ? 'Joining…' : 'Join'}</button>{/if}
   {/if}
+  </span>
 {/each}
 {#if error}<span role="alert">{error}</span>{/if}
 
 <style>
-  .join-community { font: inherit; color: var(--atlas-accent); background: var(--atlas-surface); border: 1px solid var(--atlas-border); border-radius: 999px; padding: 0.25rem 0.65rem; margin-inline-start: 0.4rem; min-height: 2.75rem; cursor: pointer; }
+  /* A community and its membership action move to the next line together.
+     Long names can wrap inside the group without stranding Join on its own. */
+  .community-membership.joinable {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    max-width: 100%;
+    vertical-align: middle;
+  }
+  .joinable a { min-width: 0; overflow-wrap: anywhere; }
+  .join-community {
+    flex: 0 0 auto;
+    min-width: 4.5rem;
+    min-height: 2.25rem;
+    padding: 0.3rem 0.9rem;
+    border: 1px solid var(--atlas-border);
+    border-radius: 999px;
+    font: inherit;
+    line-height: 1.2;
+    color: var(--atlas-accent);
+    background: var(--atlas-surface);
+    cursor: pointer;
+  }
   .joined { color: var(--atlas-muted); font-size: 0.75rem; margin-inline-start: 0.4rem; }
 
   a {
