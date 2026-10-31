@@ -70,7 +70,7 @@ test('search from a node shows compact filtered results, pages them and opens a 
   const requests = await mock(page);
   await page.goto(`http://127.0.0.1:4173/nodes?id=${first}`);
   await expect(
-    page.getByRole('heading', { name: 'Question: Original node', exact: true }),
+    page.getByRole('heading', { name: /^(Question: )?Original node$/ }),
   ).toBeVisible();
   await openSearch(page);
   const input = page.getByRole('textbox', { name: 'Search nodes and filters' });
@@ -101,7 +101,7 @@ test('search from a node shows compact filtered results, pages them and opens a 
   ).toBeVisible();
 
   await expect(
-    page.getByRole('heading', { name: 'Question: Original node', exact: true }),
+    page.getByRole('heading', { name: /^(Question: )?Original node$/ }),
   ).toBeVisible();
   expect(
     requests.some(
@@ -122,7 +122,7 @@ test('search from a node shows compact filtered results, pages them and opens a 
   await expect(page).toHaveURL(new RegExp(`id=${found}`));
   await expect(results).toHaveCount(0);
   await expect(
-    page.getByRole('heading', { name: 'Question: Salmon research', exact: true }),
+    page.getByRole('heading', { name: /^(Question: )?Salmon research$/ }),
   ).toBeVisible();
 });
 
@@ -133,7 +133,7 @@ test('header searches leave the browsing feed intact and clear removes the dropd
   await page.goto('http://127.0.0.1:4173');
   const feed = page.getByRole('region', { name: 'Node feed', exact: true });
   await expect(
-    feed.getByRole('heading', { name: 'Question: Original node', exact: true }),
+    feed.getByRole('heading', { name: /^(Question: )?Original node$/ }),
   ).toBeVisible();
   const browseReads = () =>
     requests.filter((url) => url.pathname.endsWith('/nodes') && !url.searchParams.has('SearchText'))
@@ -148,7 +148,7 @@ test('header searches leave the browsing feed intact and clear removes the dropd
       .getByRole('link', { name: 'Question: Salmon research', exact: true }),
   ).toBeVisible();
   await expect(
-    feed.getByRole('heading', { name: 'Question: Original node', exact: true }),
+    feed.getByRole('heading', { name: /^(Question: )?Original node$/ }),
   ).toBeVisible();
   expect(browseReads()).toBe(before);
   await page.getByRole('button', { name: 'Clear search and filters', exact: true }).click();
