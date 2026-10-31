@@ -62,6 +62,16 @@ test('mobile feed summary opens the existing dial without casting a vote', async
   await summary.click();
   await expect(dial).toHaveCount(0);
   expect(writes).toEqual([]);
+  // Returning to desktop restores the original bottom-right float after the
+  // mobile dial has been mounted and removed.
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(card.locator('.read-more')).toHaveCSS('float', 'right');
+  await expect(card.locator('.read-more')).toHaveCSS('position', 'static');
+  await expect(dial).toBeVisible();
+  await expect.poll(() => card.evaluate(element => Math.abs(
+    element.querySelector('.description')!.getBoundingClientRect().bottom -
+    element.querySelector('.read-more button')!.getBoundingClientRect().bottom,
+  ))).toBeLessThan(2);
 });
 
 test('bottom navigation hides while reading down and returns when scrolling up', async ({ page }) => {
