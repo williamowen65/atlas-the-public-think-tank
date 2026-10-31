@@ -8,18 +8,19 @@ public sealed class SqlTestDatabasePoolTests
     [TestMethod]
     public void SequentialLeasesStartEmptyAndKeepFullTextAndConstraints()
     {
-        // Commit searchable content, then return the lease through the real reset path.
+        // Pool reset checks committed rows and SQL metadata. It does not need the
+        // asynchronous indexer to finish: dedicated search tests cover indexed results.
         using (var first = SqlTestDatabase.Create(useCurrentModel: true))
         {
             var now = DateTimeOffset.UtcNow;
             DiscoverySqlFixture.Seed(first, new DiscoveryCandidate(
                 Guid.NewGuid(), "Pool sentinel", "Only the first lease", Guid.NewGuid(),
                 Guid.NewGuid(), false, now, now, 0, null, [], []));
-            using (var indexed = first.OpenForDiscovery())
-                Assert.AreEqual(1, indexed.NodeRows.Count());
+            using (var seeded = first.Open())
+                Assert.AreEqual(1, seeded.NodeRows.Count());
             // Check this exact database after reset, independent of parallel pool scheduling.
             first.ResetData();
-            using var reset = first.OpenForDiscovery();
+            using var reset = first.Open();
             Assert.AreEqual(0, reset.NodeRows.Count());
             Assert.AreEqual(0, reset.ParticipantRows.Count());
             Assert.AreEqual(0, reset.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM dbo.SearchDocuments").Single());
@@ -29,7 +30,7 @@ public sealed class SqlTestDatabasePoolTests
 
         // Scheduling may choose another clean database; either lease must be isolated.
         using var second = SqlTestDatabase.Create(useCurrentModel: true);
-        using var db = second.OpenForDiscovery();
+        using var db = second.Open();
         Assert.AreEqual(0, db.NodeRows.Count());
         Assert.AreEqual(0, db.ParticipantRows.Count());
         Assert.AreEqual(0, db.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM dbo.SearchDocuments").Single());
