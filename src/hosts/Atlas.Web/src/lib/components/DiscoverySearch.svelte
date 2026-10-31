@@ -21,9 +21,12 @@
   import { parseDiscoveryQuery } from '../state/parseDiscoveryQuery';
   import SearchResults from './SearchResults.svelte';
   let {
+    placeholder = 'Search nodes and comments, or try type:Idea',
     onExpandedChange,
     onResultSelected,
   }: {
+    /** Placeholder supplied by the containing header; search behavior stays shared. */
+    placeholder?: string;
     /**
      * Callback: Reports whether the search filter toolbox is expanded, so the header can adjust
      * its layout.
@@ -146,7 +149,7 @@
         id="discovery-query"
         bind:this={queryInput}
         bind:value={input}
-        placeholder="Search nodes and comments, or try type:Idea"
+        {placeholder}
       />
       {#if input || pending || applied}
         <button
