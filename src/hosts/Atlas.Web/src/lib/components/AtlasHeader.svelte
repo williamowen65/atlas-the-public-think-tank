@@ -178,6 +178,9 @@
     ) {
       searchOpen = false;
       filtersOpen = false;
+      // A mounted mobile input must lose focus on outside dismissal so the next
+      // focus opens results again, including when using the keyboard.
+      searchPanel?.querySelector('input')?.blur();
     }
     if (menuOpen && event.target instanceof Node && !accountElement?.contains(event.target))
       menuOpen = false;
