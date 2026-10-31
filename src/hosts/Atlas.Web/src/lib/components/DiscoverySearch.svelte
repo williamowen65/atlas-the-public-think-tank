@@ -534,4 +534,11 @@
     border-top: 1px solid var(--atlas-border);
     border-radius: 0;
   }
+  /* Emphasize the invitation without enlarging the visitor's query text. */
+  .search-line input::placeholder {
+    font-size: 0.95rem;
+    font-weight: 700;
+    opacity: 1;
+    color: var(--atlas-muted);
+  }
 </style>
