@@ -248,6 +248,7 @@
     error = '';
     notice = '';
     const previous = confirmed;
+    let saved = false;
     try {
       await apiRequest(
         sessionBase,
@@ -259,12 +260,12 @@
       if (controller.signal.aborted) return;
       confirmed = next;
       value = next;
+      saved = true;
       // Collapse only after the API accepts the write; failed writes keep the
       // editor available. The summary uses confirmed state, including zero.
       if (collapsedMode) {
         expanded = false;
-        await tick();
-        container?.querySelector<HTMLButtonElement>('.rating-summary')?.focus({ preventScroll: true });
+
       }
       notice = next === null ? 'Vote removed.' : `Rated ${next}/10.`;
       try {
@@ -288,6 +289,11 @@
       }
     } finally {
       busy = false;
+    }
+    // Focus only after busy=false has re-enabled the summary button.
+    if (saved && collapsedMode && !controller.signal.aborted) {
+      await tick();
+      container?.querySelector<HTMLButtonElement>('.rating-summary')?.focus({ preventScroll: true });
     }
     if (!collapsedMode && next === null && confirmed === null && !controller.signal.aborted) {
       await tick();
