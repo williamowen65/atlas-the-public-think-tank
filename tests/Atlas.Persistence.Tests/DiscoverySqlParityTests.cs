@@ -1,4 +1,5 @@
 using Atlas.Discovery;
+using Microsoft.EntityFrameworkCore;
 using Atlas.Persistence.Discovery;
 
 namespace Atlas.Persistence.Tests;
@@ -6,6 +7,8 @@ namespace Atlas.Persistence.Tests;
 [TestClass]
 public sealed class DiscoverySqlParityTests
 {
+    public TestContext TestContext { get; set; } = null!;
+
     private static readonly Guid CommunityA = Guid.NewGuid();
     private static readonly Guid ReactionA = Guid.NewGuid();
     private static readonly Guid ReactionB = Guid.NewGuid();
@@ -590,14 +593,40 @@ public sealed class DiscoverySqlParityTests
     [TestMethod]
     public void Discovery_matches_accents_and_case_and_applies_title_boost()
     {
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        void Phase(string name) => TestContext.WriteLine(
+            $"[{DateTimeOffset.UtcNow:O}] accent/title-boost test; elapsed={watch.Elapsed.TotalSeconds:F2}s; {name}");
+
         var title = Candidate("Café", average: 5, votes: 2);
         var content = Candidate("Other", average: 5, votes: 2, content: "CAFÉ evidence");
-        var service = ServiceWithSearch(content, title);
+        Phase("START lease database");
+        var database = SqlTestDatabase.Create(useCurrentModel: true);
+        _databases.Add(database); // Cleanup still runs if seeding, indexing or an assertion fails.
+        Phase("DONE lease; START seed");
+        DiscoverySqlFixture.Seed(database, content, title);
+        Phase("DONE seed; START full-text readiness");
+        database.WaitForDiscoveryIndexing();
+        Phase("DONE full-text readiness; START accent/case/title-boost query");
+        var service = new DiscoveryService(new SqlDiscoveryReadQuery(database.Open));
         var results = service.Discover(new DiscoveryQuery(SearchText: "cafe"));
         CollectionAssert.AreEqual(new[] { title.NodeId, content.NodeId }, results.Select(item => item.NodeId).ToArray());
         Assert.AreEqual(0.1d, results[0].RankingScore - results[1].RankingScore, 0.000001d);
-        var hidden = title with { IsModerationExcluded = true };
-        Assert.IsEmpty(ServiceWithSearch(hidden).DiscoverAuthored(new DiscoveryQuery(SearchText: "CAFE"), [hidden.NodeId]));
+
+        // Hide the already indexed title match in this database. Visibility is a
+        // relational filter; unchanged searchable text needs no second indexing wait.
+        Phase("DONE ranking assertions; START hide indexed title match");
+        using (var db = database.Open())
+        {
+            db.ModerationCaseRows.Add(new ModerationCaseRow {
+                Id = Guid.NewGuid(), NodeId = title.NodeId, ReporterId = title.AuthorParticipantId,
+                ReportedTitle = title.Title, Reason = "Spam", Status = 2, PublicReason = 1,
+                CreatedAt = DateTimeOffset.UtcNow
+            });
+            db.SaveChanges();
+        }
+        Phase("DONE hide; START hidden authored-search query");
+        Assert.IsEmpty(service.DiscoverAuthored(new DiscoveryQuery(SearchText: "CAFE"), [title.NodeId]));
+        Phase("DONE all accent/title-boost assertions");
     }
 
     private sealed class RejectReadQuery : IDiscoveryReadQuery
@@ -610,7 +639,16 @@ public sealed class DiscoverySqlParityTests
 
     private readonly List<SqlTestDatabase> _databases = [];
     [TestCleanup]
-    public void Cleanup() { foreach (var database in _databases) database.Dispose(); }
+    public void Cleanup()
+    {
+        foreach (var database in _databases)
+        {
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            TestContext.WriteLine("START parity database reset/return");
+            database.Dispose();
+            TestContext.WriteLine($"DONE parity database reset/return; elapsed={watch.Elapsed.TotalSeconds:F2}s");
+        }
+    }
 
     private DiscoveryService Service(params DiscoveryCandidate[] candidates) => CreateService(false, candidates);
 
