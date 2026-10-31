@@ -89,3 +89,8 @@ nav {
   max-width: 24rem;
   margin: 2rem auto;
 }
+
+/* Phone gutters leave more width for contribution content. */
+@media (max-width: 560px) {
+  :root { --atlas-space: 0.5rem; }
+}

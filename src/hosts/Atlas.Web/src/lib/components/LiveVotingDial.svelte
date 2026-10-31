@@ -7,6 +7,7 @@
   Disables the underlying dial while archived, loading status or saving a vote.
 
   **Props**
+  - `mobileCompact` (`boolean`; optional; default `false`): At phone widths, show Vote/Voted beside Read more and expand the dial into the description.
   - `nodeId` (`string`; required): ID of the node this component reads, displays, or modifies.
   - `initialAverage` (`number | null`; optional; default `null`): Initial average shown while the
     live voting summary is loading; the API summary is authoritative.
@@ -20,9 +21,38 @@
 -->
 <script lang="ts">
   import { onMount, tick } from 'svelte';
+  import { formatVoteCount } from '../format/formatVoteCount';
   import VotingDial from './VotingDial.svelte';
   import SessionControl from './SessionControl.svelte';
   import { apiRequest, ApiRequestError } from '../api/apiRequest';
+  /** Whether the mobile summary has been expanded by the visitor. */
+  let expanded = $state(false);
+  /** The disclosure remains focusable after moving into the card's type row. */
+  let summaryButton = $state<HTMLButtonElement>();
+  /**
+   * Put only the compact summary into the containing node's heading row.
+   * The live dial stays in the description flow, sharing this component's state.
+   * Both locations remain within the same Svelte event-delegation root.
+   * @param button Mounted mobile disclosure button.
+   * @returns Cleanup removing the relocated element when its component is destroyed.
+   */
+  function placeSummary(button: HTMLButtonElement) {
+    const row = button.closest('article')?.querySelector('.node-type-row');
+    if (!row) return;
+    button.classList.add('header-summary');
+    row.append(button);
+    return { destroy: () => button.remove() };
+  }
+  /** Match the feed breakpoint without changing desktop dial behavior. */
+  let narrow = $state(false);
+  onMount(() => {
+    const media = matchMedia('(max-width: 560px)');
+    /** Keep the responsive mode current when rotating or resizing the viewport. */
+    const resize = () => { narrow = media.matches; };
+    resize();
+    media.addEventListener('change', resize);
+    return () => media.removeEventListener('change', resize);
+  });
   interface VoteSummary {
     voteCount: number;
     averageVote: number | null;
@@ -33,6 +63,7 @@
     initialAverage = null,
     initialTotalVotes = 0,
     archived = false,
+    mobileCompact = false,
     sessionBase = '/atlas-session-api',
   }: {
     /** ID of the node this component reads, displays, or modifies. */
@@ -46,12 +77,15 @@
     initialTotalVotes?: number;
     /** Marks the node as archived and disables applicable voting/editing controls. */
     archived?: boolean;
+    /** Collapse the mobile feed dial behind a rating summary; full node pages keep the dial. */
+    mobileCompact?: boolean;
     /**
      * Base URL for vote-summary reads, CSRF-protected vote/undo writes, and the embedded sign-in
      * control. The API returns the authoritative count and average.
      */
     sessionBase?: string;
   } = $props();
+  const collapsedMode = $derived(mobileCompact && narrow);
   /**
    * Last server-confirmed participant rating; null means no confirmed vote.
    */
@@ -230,6 +264,7 @@
     error = '';
     notice = '';
     const previous = confirmed;
+    let saved = false;
     try {
       await apiRequest(
         sessionBase,
@@ -241,6 +276,13 @@
       if (controller.signal.aborted) return;
       confirmed = next;
       value = next;
+      saved = true;
+      // Collapse only after the API accepts the write; failed writes keep the
+      // editor available. The summary uses confirmed state, including zero.
+      if (collapsedMode) {
+        expanded = false;
+
+      }
       notice = next === null ? 'Vote removed.' : `Rated ${next}/10.`;
       try {
         await refresh();
@@ -264,7 +306,12 @@
     } finally {
       busy = false;
     }
-    if (next === null && confirmed === null && !controller.signal.aborted) {
+    // Focus only after busy=false has re-enabled the summary button.
+    if (saved && collapsedMode && !controller.signal.aborted) {
+      await tick();
+      summaryButton?.focus({ preventScroll: true });
+    }
+    if (!collapsedMode && next === null && confirmed === null && !controller.signal.aborted) {
       await tick();
       container?.querySelector<HTMLElement>('[role=spinbutton]')?.focus();
     }
@@ -280,7 +327,22 @@
   confirmation and sign-in.
 -->
 
-<div bind:this={container} class="live-voting" aria-busy={busy}>
+<div bind:this={container} class="live-voting" class:collapsed-mode={collapsedMode} aria-busy={busy}>
+  {#if collapsedMode}
+    <button class="rating-summary" bind:this={summaryButton} use:placeSummary type="button" aria-expanded={expanded}
+      disabled={archived || busy || loading}
+      onclick={() => { expanded = !expanded; if (!expanded) cancelPending(); }}
+      aria-label={`${confirmed === null ? 'Vote' : `Voted ${confirmed} out of 10. Change your vote`}. Rate node importance. Average ${average === null ? 'not rated' : average.toFixed(1)}. ${totalVotes} votes.`}>
+      <strong class="summary-average">{average === null ? '—' : average.toFixed(1)}</strong>
+      <span class="summary-voters" role="img" aria-label={`${totalVotes} ${totalVotes === 1 ? 'vote' : 'votes'}`} title={totalVotes.toLocaleString('en-US')}>
+        <svg viewBox="0 0 56 44" aria-hidden="true"><circle cx="28" cy="7" r="6"/><circle cx="10" cy="12" r="5"/><circle cx="46" cy="12" r="5"/><path d="M1 41V26a9 9 0 0 1 18 0v15ZM37 41V26a9 9 0 0 1 18 0v15ZM12 44V30a16 16 0 0 1 32 0v14Z"/></svg>
+        <span class="summary-count" aria-hidden="true">{formatVoteCount(totalVotes)}</span>
+      </span>
+      <span>{confirmed === null ? 'Vote' : `Voted ${confirmed}/10`}</span>
+    </button>
+  {/if}
+  {#if !collapsedMode || expanded}
+  <div class="dial-content">
   <!-- Live interaction lock: archived nodes, pending status reads and in-flight writes. -->
   <VotingDial
     label="Node importance"
@@ -300,6 +362,8 @@
       onclick={requestUndo}
       aria-label="Undo your node importance vote">Undo vote</button
     >{/if}
+  </div>
+  {/if}
   {#if busy}<small role="status">Saving…</small>{/if}
   {#if notice}<small role="status">{notice}</small>{/if}
   {#if error}<small role="alert">{error}</small>{/if}
@@ -376,6 +440,83 @@
 </dialog>
 
 <style lang="scss">
+  .rating-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 2.75rem;
+    padding: 0.25rem 0.5rem 0.25rem 0.25rem;
+    border: 1px solid var(--atlas-border);
+    border-radius: 0.65rem;
+    background: var(--atlas-surface);
+    color: var(--atlas-accent);
+    font: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+  .summary-average {
+    padding: 0.3rem 0.5rem;
+    border-radius: 0.4rem;
+    background: color-mix(in srgb, var(--atlas-accent) 12%, var(--atlas-surface));
+    font-variant-numeric: tabular-nums;
+  }
+  // Match the full dial: the count sits inside the central person's body.
+  // Keep the icon wide enough for abbreviated totals such as 4.5B.
+  .summary-voters {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 2.4rem;
+    height: 1.9rem;
+    flex: 0 0 2.4rem;
+  }
+  .summary-voters svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    fill: var(--atlas-accent);
+  }
+  .summary-count {
+    position: relative;
+    margin-top: 0.7rem;
+    padding-inline: 0.1rem;
+    border-radius: 0.1rem;
+    background: var(--atlas-accent);
+    color: var(--atlas-on-accent);
+    font-size: 0.65rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.15;
+  }
+  .dial-content { display: contents; }
+  // The card body owns the action row. The expanded dial rejoins normal text flow
+  // as a left float, so introductions can wrap beside and then below it.
+  .live-voting.collapsed-mode { display: contents; }
+  .collapsed-mode .rating-summary {
+    position: absolute;
+    inset-inline-start: var(--card-padding);
+    bottom: 0.65rem;
+  }
+  .collapsed-mode .dial-content {
+    display: block;
+    float: left;
+    width: min-content;
+    margin: 0 var(--dial-text-gap) 0.6rem -0.4rem;
+    text-align: center;
+  }
+  // Status is announced without becoming a clearing block between the floated
+  // dial and description. The saved rating remains visible in the Vote button.
+  .collapsed-mode small[role='status'] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .collapsed-mode small[role='alert'] { clear: both; }
+
   .live-voting {
     width: min-content;
     min-width: 4.3rem;
@@ -449,5 +590,9 @@
     margin-top: 1rem;
     padding: 0.4rem 0.75rem;
     cursor: pointer;
+  }
+  .rating-summary:global(.header-summary) {
+    position: static;
+    flex: 0 0 auto;
   }
 </style>

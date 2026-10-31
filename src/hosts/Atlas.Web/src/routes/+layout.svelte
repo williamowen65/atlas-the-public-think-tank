@@ -95,7 +95,7 @@
 
 <a class="skip-link" href="#main-content">Skip to content</a>
 <div class="app-shell">
-  <AtlasHeader {authenticated} {displayName} active={activePage} />
+  <AtlasHeader mobileExperiment {authenticated} {displayName} active={activePage} />
   <!-- The current route renders between the shared header and footer. -->
   <main id="main-content">
     {@render children()}
@@ -127,5 +127,8 @@
   }
   .skip-link:focus {
     top: 1rem;
+  }
+  @media (max-width: 560px) {
+    .app-shell { padding-bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
   }
 </style>

@@ -16,13 +16,30 @@
 export function bottomCornerAction(description: HTMLElement) {
   const card = description.closest('article')!;
   const action = description.querySelector<HTMLElement>('.read-more')!;
-  const dial = card.querySelector<HTMLElement>('.voting-dial')!;
+  let observedDial: HTMLElement | null = null;
   // Browser-issued animation-frame handle, not elapsed time. Zero means none is queued.
   let frame = 0;
   let previousWidth = 0;
   let previousText = '';
   const align = () => {
     frame = 0;
+    // Mobile places both actions in a separate row. Do not retain desktop's
+    // measured minimum height while that layout is active.
+    if (getComputedStyle(action).position === 'absolute') {
+      description.style.minHeight = '0px';
+      action.style.removeProperty('--corner-top');
+      previousWidth = 0;
+      return;
+    }
+    // The compact mobile control mounts/unmounts its dial. Resolve the current
+    // element each time instead of measuring a detached dial after a resize.
+    const dial = card.querySelector<HTMLElement>('.voting-dial');
+    if (dial !== observedDial) {
+      if (observedDial) observer.unobserve(observedDial);
+      if (dial) observer.observe(dial);
+      observedDial = dial;
+      previousWidth = 0;
+    }
     const width = description.getBoundingClientRect().width;
     // Release the old float height when wrapping changes, so the card can shrink too.
     const text = description.textContent ?? '';
@@ -34,7 +51,7 @@ export function bottomCornerAction(description: HTMLElement) {
     }
     const top = description.getBoundingClientRect().top;
     const buttonHeight = action.getBoundingClientRect().height;
-    description.style.minHeight = `${Math.max(buttonHeight, dial.getBoundingClientRect().bottom - top, description.getBoundingClientRect().height)}px`;
+    description.style.minHeight = `${Math.max(buttonHeight, (dial?.getBoundingClientRect().bottom ?? top) - top, description.getBoundingClientRect().height)}px`;
     // Retain the height required by wrapped text before moving the float. Otherwise
     // a line beside the button can alternate between two heights on every resize.
     const available = description.getBoundingClientRect().height;
@@ -48,14 +65,18 @@ export function bottomCornerAction(description: HTMLElement) {
   const observer = new ResizeObserver(schedule);
   observer.observe(description);
   observer.observe(action);
-  observer.observe(dial);
+  // A dial may not exist until the visitor expands mobile voting.
+  observedDial = card.querySelector<HTMLElement>('.voting-dial');
+  if (observedDial) observer.observe(observedDial);
   observer.observe(card.querySelector('header')!);
   const mutations = new MutationObserver(schedule);
-  mutations.observe(description, { childList: true, characterData: true, subtree: true });
+  mutations.observe(card, { childList: true, characterData: true, subtree: true });
+  window.addEventListener('resize', schedule);
   schedule();
   // Action cleanup runs when Svelte removes the attached element, including route changes.
   return {
     destroy() {
+      window.removeEventListener('resize', schedule);
       observer.disconnect();
       mutations.disconnect();
       cancelAnimationFrame(frame);

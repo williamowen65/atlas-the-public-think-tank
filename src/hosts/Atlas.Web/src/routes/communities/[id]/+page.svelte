@@ -213,4 +213,9 @@
     background: var(--atlas-surface);
     border: 1px solid var(--atlas-border);
   }
+  @media (max-width: 560px) {
+    .community-page {
+      padding-inline: 0;
+    }
+  }
 </style>

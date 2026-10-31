@@ -21,9 +21,18 @@
   import { parseDiscoveryQuery } from '../state/parseDiscoveryQuery';
   import SearchResults from './SearchResults.svelte';
   let {
+    active = true,
+    onActivate,
+    placeholder = 'Search nodes and comments, or try type:Idea',
     onExpandedChange,
     onResultSelected,
   }: {
+    /** Whether global result overlays should be shown for the current header interaction. */
+    active?: boolean;
+    /** Notify the header when its real search field receives focus. */
+    onActivate?: () => void;
+    /** Placeholder supplied by the containing header; search behavior stays shared. */
+    placeholder?: string;
     /**
      * Callback: Reports whether the search filter toolbox is expanded, so the header can adjust
      * its layout.
@@ -131,7 +140,7 @@
 -->
 
 <svelte:window onpointerdown={dismissOutside} onkeydown={dismissEscape} />
-<section bind:this={searchRegion} class="filter-bar" aria-label="Filter discovery">
+<section bind:this={searchRegion} class="filter-bar" aria-label="Filter discovery" onfocusin={() => onActivate?.()}>
   <form
     class="search-line"
     onsubmit={(event) => {
@@ -141,12 +150,12 @@
   >
     <label class="sr-only" for="discovery-query">Search nodes and filters</label>
     <!-- The clear button overlays the input area, rather than adding another pill segment. -->
-    <div class="query-field">
+    <div class="query-field" class:has-query={!!input}>
       <input
         id="discovery-query"
         bind:this={queryInput}
         bind:value={input}
-        placeholder="Search nodes and comments, or try type:Idea"
+        {placeholder}
       />
       {#if input || pending || applied}
         <button
@@ -352,7 +361,7 @@
     </div>
   {/if}
   <!-- Results belong to the global search, not to the page currently behind the header. -->
-  {#if !expanded && discoveryQuery.value.trim()}
+  {#if active && !expanded && discoveryQuery.value.trim()}
     <div class="results-slot">
       {#if !typesReady}<p role="status">Preparing search…</p>
       {:else if accepted.errors.length}<p role="alert">{accepted.errors.join(' · ')}</p>
@@ -446,8 +455,8 @@
     background: var(--atlas-accent);
   }
   .search-line:focus-within {
-    outline: 2px solid var(--atlas-focus);
-    outline-offset: 2px;
+    border-color: var(--atlas-accent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--atlas-accent) 35%, transparent);
   }
   input,
   select,
@@ -530,5 +539,21 @@
     border: 0;
     border-top: 1px solid var(--atlas-border);
     border-radius: 0;
+  }
+  /* Emphasize the invitation without enlarging the visitor's query text. */
+  .search-line input::placeholder {
+    font-size: 0.95rem;
+    font-weight: 700;
+    opacity: 1;
+    color: var(--atlas-muted);
+  }
+  /* The pill supplies the focus treatment; avoid a second rectangular input ring. */
+  .search-line input:focus-visible { outline: none; }
+  .query-field { container-type: inline-size; }
+  .search-line input { padding-inline: 0.65rem; }
+  .query-field.has-query input { padding-inline-end: 2.75rem; }
+  .search-line input::placeholder {
+    font-size: clamp(0.65rem, 5cqi, 0.95rem);
+    font-weight: 700;
   }
 </style>

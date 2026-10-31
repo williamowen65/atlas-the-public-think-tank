@@ -37,6 +37,7 @@
     comment-count button is activated.
 -->
 <script lang="ts">
+  import { relativeDate } from '../../format/relativeDate';
   import { bottomCornerAction } from '../../actions/bottomCornerAction';
   import NodeEditControl from '../NodeEditControl.svelte';
   import ActionButton from '../ActionButton.svelte';
@@ -46,6 +47,7 @@
   import Breadcrumb from '../Breadcrumb.svelte';
   import type { NodeCardProps } from './types';
   let {
+    mobileLayout = false,
     reactionControls,
     onOpenProfile,
     voting,
@@ -61,7 +63,10 @@
     hasMoreAncestors = false,
     loadOlderAncestors,
     apiBase,
-  }: NodeCardProps = $props();
+  }: NodeCardProps & {
+    /** Experimental mobile feed layout; desktop and full node detail remain unchanged. */
+    mobileLayout?: boolean;
+  } = $props();
   const instance = $props.id();
   // Prefer structured contribution types; use the text summary only for older projections.
   /**
@@ -81,7 +86,7 @@
   description’s corner, with reactions and discussion links below.
 -->
 
-<article class="node-card" data-presentation="ribbon-corner" aria-labelledby={`${instance}-title`}>
+<article class="node-card" class:mobile-layout={mobileLayout} data-presentation="ribbon-corner" aria-labelledby={`${instance}-title`}>
     <NodeEditControl
       corner
       nodeId={node.id}
@@ -104,11 +109,12 @@
     </div>
   {/if}
   <header>
+    <div class="node-type-row"><p class="mobile-type">{node.typeName}</p></div>
     <h2 id={`${instance}-title`}><span class="title-type">{node.typeName}:</span> {node.title}</h2>
     {#if node.status === 'Archived'}<p class="byline">Archived</p>{/if}
     <p class="byline">
       <span
-        >By {#if node.authorId}<a
+        ><span class="by-prefix">By </span>{#if node.authorId}<a
             href={`/profiles?id=${encodeURIComponent(node.authorId)}`}
             onclick={(event) => {
               if (onOpenProfile && node.authorId) {
@@ -117,8 +123,8 @@
               }
             }}>{node.authorName}</a
           >{:else}{node.authorName}{/if}</span
-      ><span class="byline-separator" aria-hidden="true">·</span><time datetime={node.createdAt}
-        >{new Date(node.createdAt).toLocaleDateString('en-US', {
+      ><span class="byline-separator" aria-hidden="true">·</span><time datetime={node.createdAt} title={new Date(node.createdAt).toLocaleString()}
+        >{mobileLayout ? relativeDate(node.createdAt) : new Date(node.createdAt).toLocaleDateString('en-US', {
           month: 'short',
           day: 'numeric',
           year: 'numeric',
@@ -126,8 +132,9 @@
         })}</time
       >{#if node.communities.length}
         <span class="byline-separator" aria-hidden="true">·</span>
-        {node.communities.length === 1 ? 'Community' : 'Communities'}: <CommunityLinks
+        <span class="community-prefix">{node.communities.length === 1 ? 'Community' : 'Communities'}: </span><CommunityLinks
           nodeId={node.id}
+          allowJoin={mobileLayout}
           names={node.communities}
         />{/if}
     </p>
@@ -201,6 +208,8 @@
 {/snippet}
 
 <style lang="scss">
+  .mobile-type { display: none; }
+
 
   // Only owner-visible corner controls reserve space; breadcrumbs keep their scroll behavior.
   .node-card:has(> :global(.edit-node.corner)) > .ribbon-context {
@@ -400,5 +409,42 @@
     .body {
       padding-inline: var(--card-padding);
     }
+  }
+  @media (max-width: 560px) {
+    .mobile-layout {
+      --card-padding: 0.75rem;
+      .mobile-type { display: block; margin: 0 0 0.25rem; color: var(--atlas-accent); font-size: 0.75rem; font-weight: 700; }
+      h2 { font-size: 1.2rem; }
+      .title-type, .by-prefix, .community-prefix { display: none; }
+      .byline { font-size: 0.75rem; line-height: 1.5; }
+      .body { position: relative; display: flow-root; padding-bottom: 4rem; }
+      .description { display: block; }
+      .dial { display: contents; }
+      .read-more {
+        position: absolute;
+        inset-inline-end: var(--card-padding);
+        bottom: 0.65rem;
+        float: none;
+        margin: 0;
+        min-height: 2.75rem;
+        display: flex;
+        align-items: center;
+      }
+      .navigation-details { justify-content: flex-start; text-align: left; margin-left: 0; min-width: 0; flex-basis: 100%; }
+    }
+  }
+
+  .node-type-row { display: none; }
+  @media (max-width: 560px) {
+    .mobile-layout .node-type-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.4rem 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+    .node-type-row .mobile-type { margin: 0; }
+    
   }
 </style>
