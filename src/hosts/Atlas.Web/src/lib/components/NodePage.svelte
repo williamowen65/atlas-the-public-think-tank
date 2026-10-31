@@ -288,7 +288,7 @@
       />
     </div>{/if}
   <header>
-    <p class="mobile-type">{node.typeName}</p>
+    <div class="node-type-row"><p class="mobile-type">{node.typeName}</p></div>
     <h1><span class="title-type">{node.typeName}: </span>{node.title}</h1>
     <p class="byline">
       <span class="by-prefix">By </span>{#if node.authorId}<a
@@ -566,5 +566,18 @@
     .introduction { display: flow-root; position: relative; padding-bottom: 4rem; }
     .introduction .dial { display: contents; }
     .introduction :global(.rating-summary) { inset-inline-start: 0; }
+  }
+  .node-type-row { display: none; }
+  @media (max-width: 560px) {
+    .node-type-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.4rem 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+    .node-type-row .mobile-type { margin: 0; }
+    .introduction { padding-bottom: 0.65rem; }
   }
 </style>
