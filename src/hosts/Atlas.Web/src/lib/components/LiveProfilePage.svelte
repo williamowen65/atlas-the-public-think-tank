@@ -275,6 +275,7 @@
 
 <style lang="scss">
   .profile-page {
+    padding-block-start: var(--atlas-space);
     max-width: 70rem;
     margin-inline: auto;
     min-width: 0;
