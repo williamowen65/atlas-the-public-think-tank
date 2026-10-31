@@ -101,7 +101,7 @@
 {#each labels as community, i (community.id || i)}
   {#if i > 0},
   {/if}
-  <span class="community-membership" class:joinable={allowJoin}>
+  <span class="community-membership" class:joinable={allowJoin && !!community.id}>
   {#if community.id}<a href={'/communities/' + encodeURIComponent(community.id)}>{community.name}</a
     >{:else}{community.name}{/if}
   {#if allowJoin && community.id && linked.find(c => c.id === community.id)?.status === 'Active'}
@@ -119,25 +119,39 @@
   .community-membership.joinable {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0;
     max-width: 100%;
+    padding: 0.15rem 0.45rem;
+    border: 1px solid color-mix(in srgb, var(--atlas-border) 55%, transparent);
+    border-radius: 999px;
     vertical-align: middle;
   }
-  .joinable a { min-width: 0; overflow-wrap: anywhere; }
+  .joinable a {
+    min-width: 0;
+    padding-inline-end: 0.4rem;
+    overflow-wrap: anywhere;
+  }
   .join-community {
     flex: 0 0 auto;
-    min-width: 4.5rem;
-    min-height: 2.25rem;
-    padding: 0.3rem 0.9rem;
-    border: 1px solid var(--atlas-border);
-    border-radius: 999px;
+    min-width: 0;
+    min-height: 0;
+    padding: 0.1rem 0.35rem;
+    border: 0;
+    border-inline-start: 1px solid color-mix(in srgb, var(--atlas-border) 55%, transparent);
+    border-radius: 0;
     font: inherit;
     line-height: 1.2;
     color: var(--atlas-accent);
     background: var(--atlas-surface);
     cursor: pointer;
   }
-  .joined { color: var(--atlas-muted); font-size: 0.75rem; margin-inline-start: 0.4rem; }
+  .joined {
+    color: var(--atlas-muted);
+    font-size: 0.75rem;
+    padding-inline-start: 0.35rem;
+    border-inline-start: 1px solid color-mix(in srgb, var(--atlas-border) 55%, transparent);
+  }
+  .join-community:hover { text-decoration: underline; }
 
   a {
     color: inherit;
