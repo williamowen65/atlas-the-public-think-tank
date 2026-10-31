@@ -216,11 +216,12 @@
     >
       <circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4.5 4.5" />
     </svg>
-    {#if mobileExperiment}<span class="search-placeholder">Search Atlas</span>{/if}
+    {#if mobileExperiment}<span class="search-placeholder">Search Atlas, the public think tank</span>{/if}
   </button>
   {#if searchOpen}
     <div class="search-panel" id={searchPanelId} bind:this={searchPanel}>
       <DiscoverySearch
+        placeholder={mobileExperiment ? 'Search Atlas, the public think tank' : undefined}
         onResultSelected={() => {
           searchOpen = false;
           filtersOpen = false;
@@ -288,7 +289,10 @@
     <details class="mobile-menu" bind:this={mobileElement} ontoggle={() => void loadJoined()}>
       <summary aria-label="Open navigation menu">☰</summary>
       <nav aria-label="Mobile navigation">
-        {#if mobileExperiment}<h2>Explore Atlas</h2>{/if}
+        {#if mobileExperiment}
+          <button class="close-drawer" type="button" onclick={() => { mobileElement.open = false; mobileElement.querySelector('summary')?.focus(); }}>Close menu</button>
+          <h2>Explore Atlas</h2>
+        {/if}
         <a href="/" onclick={closeOnNavigation}>Discover</a><a
           href="/communities"
           onclick={closeOnNavigation}>Communities</a
@@ -605,6 +609,48 @@
     .right-group {
       grid-column: 3;
       grid-row: 1;
+    }
+  }
+  @media (max-width: 560px) {
+    // A single header row: menu on the left, search occupying the remaining width.
+    .atlas-header.mobile-experiment {
+      grid-template-columns: auto minmax(0, 1fr);
+      padding-block: 0.5rem;
+      .brand { display: none; }
+      .right-group { grid-column: 1; grid-row: 1; }
+      .search-toggle { grid-column: 2; grid-row: 1; min-width: 0; padding-inline: 0.65rem; }
+      .search-toggle svg { flex-shrink: 0; }
+      .search-placeholder { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8rem; }
+      .search-panel { grid-column: 2; grid-row: 1; }
+      .search-panel :global(.filter-bar) { padding: 0; border-top: 0; background: transparent; }
+      .mobile-menu nav {
+        height: 100dvh;
+        max-height: 100dvh;
+        padding-bottom: max(1rem, env(safe-area-inset-bottom));
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        touch-action: pan-y;
+      }
+      .mobile-menu nav > * { flex-shrink: 0; }
+      .close-drawer { align-self: flex-end; font: inherit; padding: 0.4rem 0.6rem; cursor: pointer; }
+    }
+    // The header establishes a stacking context. Raise that context, not merely
+    // the drawer inside it, so fixed bottom navigation cannot cover the menu.
+    .atlas-header.mobile-experiment:has(.mobile-menu[open]) {
+      z-index: 50;
+      transform: none;
+      pointer-events: auto;
+    }
+    .atlas-header.mobile-experiment:has(.mobile-menu[open]) + .bottom-navigation {
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .bottom-navigation a,
+    .bottom-navigation a:hover,
+    .bottom-navigation a:focus,
+    .bottom-navigation a:active,
+    .bottom-navigation a[aria-current] {
+      text-decoration: none;
     }
   }
 </style>
