@@ -624,14 +624,21 @@
       .search-panel { grid-column: 2; grid-row: 1; }
       .search-panel :global(.filter-bar) { padding: 0; border-top: 0; background: transparent; }
       .mobile-menu nav {
+        // Global nav uses flex-wrap; a fixed-height column must not wrap
+        // into horizontal columns when its community list grows.
+        flex-flow: column nowrap;
+        align-items: stretch;
+        min-width: 0;
+        min-height: 0;
         height: 100dvh;
         max-height: 100dvh;
+        overflow-x: hidden;
         padding-bottom: max(1rem, env(safe-area-inset-bottom));
         overflow-y: auto;
         overscroll-behavior: contain;
         touch-action: pan-y;
       }
-      .mobile-menu nav > * { flex-shrink: 0; }
+      .mobile-menu nav > * { flex-shrink: 0; min-width: 0; overflow-wrap: anywhere; }
       .close-drawer { align-self: flex-end; font: inherit; padding: 0.4rem 0.6rem; cursor: pointer; }
     }
     // The header establishes a stacking context. Raise that context, not merely
