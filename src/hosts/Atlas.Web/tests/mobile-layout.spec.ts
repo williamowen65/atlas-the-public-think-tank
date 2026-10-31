@@ -201,3 +201,23 @@ test('drawer animates after opening and outside dismissal', async ({ page }) => 
   await page.keyboard.press('Escape');
   await expect(drawer).toBeHidden();
 });
+
+test('node detail matches compact mobile feed metadata and voting disclosure', async ({ page }) => {
+  await page.route('**/atlas-public-api/nodes/' + id, route => route.fulfill({
+    json: { id, requestedTypeIds: [], status: 'Active', authorId: 'demo' },
+  }));
+  await page.goto('http://127.0.0.1:4173/nodes?id=' + id);
+  const node = page.locator('article.node-page');
+  await expect(node.getByRole('heading', { name: 'Restore salmon habitat', exact: true })).toBeVisible();
+  await expect(node.locator('.mobile-type')).toHaveText('Solution');
+  await expect(node.locator('.relative-date')).toBeVisible();
+  await expect(node.getByRole('button', { name: 'Join Orca recovery', exact: true })).toBeVisible();
+  const summary = node.getByRole('button', { name: /Rate node importance/ });
+  await expect(summary).toBeEnabled();
+  await expect(node.getByRole('spinbutton')).toHaveCount(0);
+  await summary.click();
+  await expect(node.getByRole('spinbutton')).toBeVisible();
+  await expect(node.locator('.dial-content')).toHaveCSS('float', 'left');
+  await summary.click();
+  await expect(node.getByRole('spinbutton')).toHaveCount(0);
+});
