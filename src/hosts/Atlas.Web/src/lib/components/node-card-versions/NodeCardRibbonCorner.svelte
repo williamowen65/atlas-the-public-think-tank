@@ -109,7 +109,7 @@
     </div>
   {/if}
   <header>
-    <p class="mobile-type">{node.typeName}</p>
+    <div class="node-type-row"><p class="mobile-type">{node.typeName}</p></div>
     <h2 id={`${instance}-title`}><span class="title-type">{node.typeName}:</span> {node.title}</h2>
     {#if node.status === 'Archived'}<p class="byline">Archived</p>{/if}
     <p class="byline">
@@ -434,4 +434,17 @@
     }
   }
 
+  .node-type-row { display: none; }
+  @media (max-width: 560px) {
+    .mobile-layout .node-type-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.4rem 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+    .node-type-row .mobile-type { margin: 0; }
+    
+  }
 </style>
