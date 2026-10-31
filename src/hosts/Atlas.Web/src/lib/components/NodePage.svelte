@@ -44,6 +44,7 @@
     panel; unrelated to whether child nodes exist.
 -->
 <script lang="ts">
+  import { relativeDate } from '../format/relativeDate';
   import NodeEditControl from './NodeEditControl.svelte';
   import type { Snippet } from 'svelte';
   import type { NodeCardData } from './NodeCard.svelte';
@@ -287,9 +288,10 @@
       />
     </div>{/if}
   <header>
-    <h1>{node.typeName}: {node.title}</h1>
+    <p class="mobile-type">{node.typeName}</p>
+    <h1><span class="title-type">{node.typeName}: </span>{node.title}</h1>
     <p class="byline">
-      By {#if node.authorId}<a
+      <span class="by-prefix">By </span>{#if node.authorId}<a
           href={`/profiles?id=${encodeURIComponent(node.authorId)}`}
           onclick={(event) => {
             if (onOpenProfile && node.authorId) {
@@ -298,16 +300,17 @@
             }
           }}>{node.authorName}</a
         >{:else}{node.authorName}{/if} <span class="byline-separator" aria-hidden="true">·</span>
-      <time datetime={node.createdAt}
-        >{new Date(node.createdAt).toLocaleDateString('en-US', {
+      <time datetime={node.createdAt} title={new Date(node.createdAt).toLocaleString()}
+        ><span class="relative-date">{relativeDate(node.createdAt)}</span><span class="full-date">{new Date(node.createdAt).toLocaleDateString('en-US', {
           month: 'short',
           day: 'numeric',
           year: 'numeric',
           timeZone: 'UTC',
         })}</time
       >{#if node.communities.length}
-        <span class="byline-separator" aria-hidden="true">·</span> Community: <CommunityLinks
+        <span class="byline-separator" aria-hidden="true">·</span> <span class="community-prefix">Community: </span> <CommunityLinks
           nodeId={node.id}
+          allowJoin
           names={node.communities}
         />{/if}
     </p>
@@ -318,6 +321,7 @@
     affecting later sections.
   -->
   <div class="post-body">
+    <div class="introduction">
     <aside class="dial" aria-label="Importance rating">
       <!-- A supplied voting snippet owns its behavior (LiveNodePage supplies LiveVotingDial).
            Without one, show totals with an always-disabled VotingDial: there is no save handler.
@@ -330,6 +334,7 @@
         />{/if}
     </aside>
     <p class="description">{node.description}</p>
+    </div>
     <ContentBlocks {blocks} />
   </div>
   {#if reactions}<div class="reaction-controls">{@render reactions()}</div>{:else if node.reactions.length}<div
@@ -384,6 +389,9 @@
 </article>
 
 <style lang="scss">
+  .mobile-type, .relative-date { display: none; }
+  .introduction { display: contents; }
+
 
   // Only owner-visible corner controls reserve space; breadcrumbs keep their scroll behavior.
   .node-page:has(> :global(.edit-node.corner)) > .ribbon-context {
@@ -547,5 +555,16 @@
       --card-padding: var(--atlas-card-padding-narrow, 0.75rem);
       --dial-text-gap: var(--atlas-dial-text-gap, 0.6rem);
     }
+  }
+  @media (max-width: 560px) {
+    .node-page { --card-padding: 0.75rem; }
+    .mobile-type { display: block; margin: 0 0 0.25rem; font-size: 0.75rem; font-weight: 700; color: var(--atlas-accent); }
+    .title-type, .by-prefix, .community-prefix, .full-date { display: none; }
+    .relative-date { display: inline; }
+    .byline { font-size: 0.75rem; line-height: 1.5; }
+    // Keep the disclosure next to the introduction; full content follows below.
+    .introduction { display: flow-root; position: relative; padding-bottom: 4rem; }
+    .introduction .dial { display: contents; }
+    .introduction :global(.rating-summary) { inset-inline-start: 0; }
   }
 </style>
