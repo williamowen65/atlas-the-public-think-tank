@@ -173,6 +173,8 @@ test('mobile header stays on one row and long community drawer scrolls above bot
   const drawer = page.getByRole('navigation', { name: 'Mobile navigation', exact: true });
   await expect(drawer.getByRole('link', { name: 'Community 39', exact: true })).toHaveCount(1);
   await expect(bottom).toBeHidden();
+  await expect(drawer).toHaveCSS('flex-wrap', 'nowrap');
+  expect(await drawer.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
   await drawer.evaluate(element => { element.scrollTop = element.scrollHeight; });
   expect(await drawer.evaluate(element => element.scrollTop)).toBeGreaterThan(0);
   await expect(drawer.getByRole('link', { name: 'Community 39', exact: true })).toBeInViewport();
