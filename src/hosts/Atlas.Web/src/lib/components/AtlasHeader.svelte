@@ -37,6 +37,15 @@
   } = $props();
   /** Whether the header’s search disclosure is mounted below navigation. */
   let searchOpen = $state(false);
+  /** Keep the real search input mounted on phones instead of a second lookalike. */
+  let phone = $state(false);
+  onMount(() => {
+    const media = matchMedia('(max-width: 560px)');
+    const update = () => { phone = media.matches; };
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  });
   /** Mounted disclosure button, used to restore focus when Escape closes search. */
   let searchToggle = $state<HTMLButtonElement>();
   /** Mounted search region; its input receives focus after the disclosure opens. */
@@ -125,10 +134,26 @@
   let mobileElement: HTMLDetailsElement;
   /** Keep native details open until its exit transition finishes. */
   let drawerClosing = $state(false);
+  let drawerEntering = $state(false);
+  let drawerFrame = 0;
+  /** Mount offscreen, then transition on the following paint for every opening. */
+  async function openDrawer() {
+    clearTimeout(drawerTimer);
+    drawerClosing = false;
+    drawerEntering = true;
+    mobileElement.open = true;
+    headerVisible = true;
+    await tick();
+    drawerFrame = requestAnimationFrame(() => {
+      drawerFrame = requestAnimationFrame(() => { drawerEntering = false; });
+    });
+  }
   let drawerTimer: ReturnType<typeof setTimeout> | undefined;
   /** Close the drawer after its slide-out, optionally restoring menu-button focus. */
   function closeDrawer(restoreFocus = false) {
     if (!mobileElement?.open || drawerClosing) return;
+    cancelAnimationFrame(drawerFrame);
+    drawerEntering = false;
     const finish = () => {
       mobileElement.open = false;
       drawerClosing = false;
@@ -141,7 +166,7 @@
     }
   }
   /** Cancel deferred close when the header unmounts. */
-  onMount(() => () => clearTimeout(drawerTimer));
+  onMount(() => () => { clearTimeout(drawerTimer); cancelAnimationFrame(drawerFrame); });
   // Dismiss menus without intercepting normal navigation or control activation.
   function closeOnOutside(event: PointerEvent) {
     // Closing the disclosure preserves the shared query for the next time it opens.
@@ -161,19 +186,19 @@
       event.target instanceof Node &&
       !mobileElement.contains(event.target)
     )
-      mobileElement.open = false;
+      closeDrawer();
   }
   function closeOnEscape(event: KeyboardEvent) {
     if (event.key === 'Escape') {
       // The first Escape closes an open filter toolbox; a subsequent one closes search.
       if (searchOpen && !filtersOpen) {
         searchOpen = false;
-        searchToggle?.focus();
+        if (mobileExperiment && phone) searchPanel?.querySelector('input')?.blur();
+        else searchToggle?.focus();
       }
       menuOpen = false;
       if (mobileElement?.open) {
-        mobileElement.open = false;
-        mobileElement.querySelector('summary')?.focus();
+        closeDrawer(true);
       }
     }
   }
@@ -237,9 +262,11 @@
     </svg>
     {#if mobileExperiment}<span class="search-placeholder">Atlas: The Public Think Tank</span>{/if}
   </button>
-  {#if searchOpen}
+  {#if searchOpen || (mobileExperiment && phone)}
     <div class="search-panel" id={searchPanelId} bind:this={searchPanel}>
       <DiscoverySearch
+        active={searchOpen}
+        onActivate={() => { searchOpen = true; headerVisible = true; }}
         placeholder={mobileExperiment ? 'Atlas: The Public Think Tank' : undefined}
         onResultSelected={() => {
           searchOpen = false;
@@ -305,12 +332,12 @@
       Native disclosure provides the narrow-screen navigation independently of the desktop
       account menu.
     -->
-    <details class="mobile-menu" class:closing={drawerClosing} bind:this={mobileElement} ontoggle={() => void loadJoined()}>
+    <details class="mobile-menu" class:closing={drawerClosing} class:entering={drawerEntering} bind:this={mobileElement} ontoggle={() => void loadJoined()}>
       <summary aria-label="Open navigation menu" onclick={(event) => {
         if (!mobileExperiment) return;
         event.preventDefault();
         if (mobileElement.open) closeDrawer(true);
-        else { drawerClosing = false; mobileElement.open = true; headerVisible = true; }
+        else void openDrawer();
       }}>☰</summary>
       <nav aria-label="Mobile navigation">
         {#if mobileExperiment}
@@ -720,5 +747,9 @@
         .search-panel { grid-column: 1 / -1; }
       }
     }
+  }
+  @media (max-width: 560px) {
+    .atlas-header.mobile-experiment .search-toggle { display: none; }
+    .atlas-header.mobile-experiment .mobile-menu.entering nav { transform: translateX(-110%); }
   }
 </style>
