@@ -157,7 +157,7 @@ test('mobile header stays on one row and long community drawer scrolls above bot
     return route.fallback();
   });
   await page.goto('http://127.0.0.1:4173/');
-  const search = page.getByRole('button', { name: 'Toggle search', exact: true });
+  const search = page.getByRole('textbox', { name: 'Search nodes and filters' });
   // Native summary role varies across accessibility implementations; use its label.
   const summary = page.getByLabel('Open navigation menu', { exact: true });
   const menuBox = await summary.boundingBox();
@@ -181,4 +181,23 @@ test('mobile header stays on one row and long community drawer scrolls above bot
   await page.keyboard.press('Escape');
   await expect(drawer).toBeHidden();
   await expect(summary).toBeFocused();
+});
+
+test('drawer animates after opening and outside dismissal', async ({ page }) => {
+  await page.goto('http://127.0.0.1:4173/');
+  const summary = page.getByLabel('Open navigation menu', { exact: true });
+  const details = page.locator('details.mobile-menu');
+  const drawer = page.getByRole('navigation', { name: 'Mobile navigation', exact: true });
+  await summary.click();
+  await expect(drawer).toBeVisible();
+  await expect(details).not.toHaveClass(/entering/);
+  // The exposed right-hand strip is outside the drawer, not its Close button.
+  await page.mouse.click(385, 500);
+  await expect(details).toHaveClass(/closing/);
+  await expect(drawer).toBeHidden();
+  await summary.click();
+  await expect(drawer).toBeVisible();
+  await expect(details).not.toHaveClass(/entering/);
+  await page.keyboard.press('Escape');
+  await expect(drawer).toBeHidden();
 });
