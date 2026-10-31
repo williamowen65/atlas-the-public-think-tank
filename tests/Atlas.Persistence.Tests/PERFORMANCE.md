@@ -22,8 +22,10 @@ Run from the repository root:
 dotnet test tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj --settings tests/persistence-parallel.runsettings --logger "console;verbosity=detailed"
 ```
 
-Workers=0 uses available logical processors, while class scope keeps each class's
-methods sequential. tests/parallel.runsettings still caps workers at two if selected;
+Workers=0 uses available logical processors, with method scope allowing workers to run individual methods from the same class.
+Each method owns its fixture list, contexts, cache and exclusive database leases.
+AtlasTime.Use uses AsyncLocal, so quota clocks do not change other tests' clocks.
+The obsolete class-wide DoNotParallelize on node creation quota tests is removed. tests/parallel.runsettings still caps workers at two if selected;
 the explicit persistence settings above select automatic worker count instead.
 Compare repeated runs on the same SQL Server. If automatic workers cause contention,
 set Workers in the persistence settings to 2 or 4 and compare elapsed time and waits.
