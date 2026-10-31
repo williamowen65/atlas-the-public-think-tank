@@ -39,11 +39,11 @@ test('mobile feed summary opens the existing dial without casting a vote', async
   await expect(summary).toContainText('7.5');
   await expect(summary).toContainText('12');
   await expect(summary).toContainText('Vote');
-  const readMore = card.getByRole('button', { name: 'Read more', exact: true });
+  await expect(card.locator('.node-type-row .rating-summary')).toBeVisible();
   const row = await summary.boundingBox();
-  const read = await readMore.boundingBox();
-  expect(Math.abs((row!.y + row!.height / 2) - (read!.y + read!.height / 2))).toBeLessThan(2);
-  expect(row!.x + row!.width).toBeLessThanOrEqual(read!.x);
+  const type = await card.locator('.mobile-type').boundingBox();
+  expect(Math.abs((row!.y + row!.height / 2) - (type!.y + type!.height / 2))).toBeLessThan(2);
+  expect(type!.x + type!.width).toBeLessThanOrEqual(row!.x);
   await summary.click();
   const dial = card.getByRole('spinbutton');
   await expect(dial).toBeVisible();
@@ -214,6 +214,7 @@ test('node detail matches compact mobile feed metadata and voting disclosure', a
   await expect(node.getByRole('button', { name: 'Join Orca recovery', exact: true })).toBeVisible();
   const summary = node.getByRole('button', { name: /Rate node importance/ });
   await expect(summary).toBeEnabled();
+  await expect(node.locator('.node-type-row .rating-summary')).toBeVisible();
   await expect(node.getByRole('spinbutton')).toHaveCount(0);
   await summary.click();
   await expect(node.getByRole('spinbutton')).toBeVisible();
