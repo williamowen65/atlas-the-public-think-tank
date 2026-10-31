@@ -289,7 +289,7 @@
     </div>{/if}
   <header>
     <div class="node-type-row"><p class="mobile-type">{node.typeName}</p></div>
-    <h1><span class="title-type">{node.typeName}: </span>{node.title}</h1>
+    <h1><span class="title-type">{`${node.typeName}: `}</span>{node.title}</h1>
     <p class="byline">
       <span class="by-prefix">By </span>{#if node.authorId}<a
           href={`/profiles?id=${encodeURIComponent(node.authorId)}`}
