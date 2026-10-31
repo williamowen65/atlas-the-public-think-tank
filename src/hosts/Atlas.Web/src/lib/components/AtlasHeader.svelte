@@ -711,4 +711,14 @@
   @media (prefers-reduced-motion: reduce) {
     .atlas-header.mobile-experiment .mobile-menu nav { transition: none; }
   }
+  @media (max-width: 560px) {
+    .atlas-header.mobile-experiment {
+      .search-placeholder { font-size: 0.95rem; font-weight: 700; }
+      &.search-open {
+        grid-template-columns: minmax(0, 1fr);
+        .right-group { display: none; }
+        .search-panel { grid-column: 1 / -1; }
+      }
+    }
+  }
 </style>
