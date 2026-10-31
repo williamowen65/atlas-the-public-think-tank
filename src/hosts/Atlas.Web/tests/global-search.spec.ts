@@ -72,7 +72,7 @@ test('search from a node shows compact filtered results, pages them and opens a 
   await expect(
     page.getByRole('heading', { name: 'Question: Original node', exact: true }),
   ).toBeVisible();
-  await page.getByRole('button', { name: 'Toggle search', exact: true }).click();
+  await openSearch(page);
   const input = page.getByRole('textbox', { name: 'Search nodes and filters' });
   await input.fill('salmon votes:1..5');
   await page.getByRole('button', { name: 'Search', exact: true }).click();
@@ -94,7 +94,7 @@ test('search from a node shows compact filtered results, pages them and opens a 
   // Click the page gutter below the overlay; the node heading is covered on narrow screens.
   await page.mouse.click(5, 730);
   await expect(results).toHaveCount(0);
-  await page.getByRole('button', { name: 'Toggle search', exact: true }).click();
+  await openSearch(page);
   await expect(input).toHaveValue('salmon votes:1..5');
   await expect(
     results.getByRole('link', { name: 'Question: Salmon research', exact: true }),
@@ -139,7 +139,7 @@ test('header searches leave the browsing feed intact and clear removes the dropd
     requests.filter((url) => url.pathname.endsWith('/nodes') && !url.searchParams.has('SearchText'))
       .length;
   const before = browseReads();
-  await page.getByRole('button', { name: 'Toggle search', exact: true }).click();
+  await openSearch(page);
   await page.getByRole('textbox', { name: 'Search nodes and filters' }).fill('salmon');
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(
@@ -172,7 +172,7 @@ test('unavailable full-text search shows a clear error and allows retry', async 
     return route.fallback();
   });
   await page.goto('http://127.0.0.1:4173');
-  await page.getByRole('button', { name: 'Toggle search', exact: true }).click();
+  await openSearch(page);
   await page.getByRole('textbox', { name: 'Search nodes and filters' }).fill('salmon');
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   const results = page.getByRole('region', { name: 'Search results', exact: true });
@@ -260,7 +260,7 @@ test('mixed pages retain comment identity and open an off-page nested thread', a
     return route.fallback();
   });
   await page.goto('http://127.0.0.1:4173');
-  await page.getByRole('button', { name: 'Toggle search', exact: true }).click();
+  await openSearch(page);
   await page.getByRole('textbox', { name: 'Search nodes and filters' }).fill('salmon');
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   const results = page.getByRole('region', { name: 'Search results', exact: true });
@@ -284,3 +284,10 @@ test('mixed pages retain comment identity and open an off-page nested thread', a
   await expect(selected).toContainText('The matching salmon passage.');
   await expect(page.locator(`[data-comment-id="${parent}"]`)).toContainText('Ancestor reply');
 });
+
+/** Mobile uses the real input; desktop retains its disclosure button. */
+async function openSearch(page: Page) {
+  const toggle = page.getByRole('button', { name: 'Toggle search', exact: true });
+  if (await toggle.isVisible()) await toggle.click();
+  else await page.getByRole('textbox', { name: 'Search nodes and filters' }).focus();
+}
