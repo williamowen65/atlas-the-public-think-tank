@@ -216,12 +216,12 @@
     >
       <circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4.5 4.5" />
     </svg>
-    {#if mobileExperiment}<span class="search-placeholder">Search Atlas, the public think tank</span>{/if}
+    {#if mobileExperiment}<span class="search-placeholder">Search Atlas: The Public Think Tank</span>{/if}
   </button>
   {#if searchOpen}
     <div class="search-panel" id={searchPanelId} bind:this={searchPanel}>
       <DiscoverySearch
-        placeholder={mobileExperiment ? 'Search Atlas, the public think tank' : undefined}
+        placeholder={mobileExperiment ? 'Search Atlas: The Public Think Tank' : undefined}
         onResultSelected={() => {
           searchOpen = false;
           filtersOpen = false;
