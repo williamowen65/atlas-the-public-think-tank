@@ -127,7 +127,10 @@ for (const width of [1024, 640, 320]) {
     const fixture = await setup(page);
     await page.setViewportSize({ width, height: 900 });
     await page.goto('http://127.0.0.1:4173');
-    const dial = page.locator('article').first().getByRole('spinbutton', { name: 'Node importance', exact: true });
+    const card = page.locator('article').first();
+    const summary = card.getByRole('button', { name: /Rate node importance/ });
+    if (width <= 560) await summary.click();
+    const dial = card.getByRole('spinbutton', { name: 'Node importance', exact: true });
     await expect(dial).toHaveAttribute('aria-disabled', 'false');
     // Click above the selected row using real pointer input: an overlay makes this time out.
     await dial.click({ position: { x: 15, y: 15 } });
@@ -136,8 +139,14 @@ for (const width of [1024, 640, 320]) {
     await page.getByRole('button', { name: 'Confirm rating', exact: true }).click();
     await expect.poll(() => fixture.mutations.length).toBe(1);
     expect(fixture.mutations[0].method).toBe('PUT');
+    if (width <= 560) {
+      await expect(dial).toHaveCount(0);
+      await expect(summary).toContainText(`Voted ${fixture.mutations[0].value}/10`);
+      await expect(card.locator('.summary-voters')).toHaveAccessibleName('4 votes');
+      await summary.click();
+    }
     await expect(dial).toHaveAttribute('aria-valuenow', String(fixture.mutations[0].value));
-    await expect(page.locator('article').first().locator('.vote-count')).toHaveAccessibleName('4 votes');
+    await expect(card.locator('.vote-count')).toHaveAccessibleName('4 votes');
   });
 }
 
