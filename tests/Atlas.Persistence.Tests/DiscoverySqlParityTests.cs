@@ -74,7 +74,7 @@ public sealed class DiscoverySqlParityTests
             "Another author",
             average: 10
         );
-        var service = Service(
+        var service = ServiceWithSearch(
             hidden,
             visible,
             other
@@ -145,7 +145,7 @@ public sealed class DiscoverySqlParityTests
             average: 10
         );
 
-        var results = Service(
+        var results = ServiceWithSearch(
             contentMatch,
             unrelated,
             titleMatch
@@ -370,7 +370,7 @@ public sealed class DiscoverySqlParityTests
             communities: [CommunityA]
         );
 
-        var results = Service(
+        var results = ServiceWithSearch(
             match,
             wrongReaction
         ).Discover(new DiscoveryQuery(
@@ -592,12 +592,12 @@ public sealed class DiscoverySqlParityTests
     {
         var title = Candidate("Café", average: 5, votes: 2);
         var content = Candidate("Other", average: 5, votes: 2, content: "CAFÉ evidence");
-        var service = Service(content, title);
+        var service = ServiceWithSearch(content, title);
         var results = service.Discover(new DiscoveryQuery(SearchText: "cafe"));
         CollectionAssert.AreEqual(new[] { title.NodeId, content.NodeId }, results.Select(item => item.NodeId).ToArray());
         Assert.AreEqual(0.1d, results[0].RankingScore - results[1].RankingScore, 0.000001d);
         var hidden = title with { IsModerationExcluded = true };
-        Assert.IsEmpty(Service(hidden).DiscoverAuthored(new DiscoveryQuery(SearchText: "CAFE"), [hidden.NodeId]));
+        Assert.IsEmpty(ServiceWithSearch(hidden).DiscoverAuthored(new DiscoveryQuery(SearchText: "CAFE"), [hidden.NodeId]));
     }
 
     private sealed class RejectReadQuery : IDiscoveryReadQuery
@@ -612,12 +612,19 @@ public sealed class DiscoverySqlParityTests
     [TestCleanup]
     public void Cleanup() { foreach (var database in _databases) database.Dispose(); }
 
-    private DiscoveryService Service(params DiscoveryCandidate[] candidates)
+    private DiscoveryService Service(params DiscoveryCandidate[] candidates) => CreateService(false, candidates);
+
+    private DiscoveryService ServiceWithSearch(params DiscoveryCandidate[] candidates) => CreateService(true, candidates);
+
+    private DiscoveryService CreateService(bool waitForIndexing, params DiscoveryCandidate[] candidates)
     {
         var database = SqlTestDatabase.Create(useCurrentModel: true);
         _databases.Add(database);
         DiscoverySqlFixture.Seed(database, candidates);
-        return new DiscoveryService(new SqlDiscoveryReadQuery(database.OpenForDiscovery));
+        // Candidates are immutable for this service: search needs one barrier after seed.
+        // Relational filtering/ranking does not depend on full-text population.
+        if (waitForIndexing) database.WaitForDiscoveryIndexing();
+        return new DiscoveryService(new SqlDiscoveryReadQuery(database.Open));
     }
 
     private static DiscoveryCandidate Candidate(

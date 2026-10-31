@@ -11,12 +11,14 @@ internal sealed class SqlTestDatabase : IDisposable
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<(string Template, bool Model, bool FullText), System.Collections.Concurrent.ConcurrentStack<string>> Pools = new();
     private readonly System.Collections.Concurrent.ConcurrentStack<string>? _pool;
     private bool _disposed;
+    private static long _created, _reused, _resetCount, _waitCount, _waitTicks, _resetTicks;
     private readonly DbContextOptions<AtlasDataContext> _options;
     private SqlTestDatabase(string connection, bool useCurrentModel, bool installFullText, System.Collections.Concurrent.ConcurrentStack<string>? pool = null, bool initialize = true)
     {
         _pool = pool;
         _options = new DbContextOptionsBuilder<AtlasDataContext>().UseSqlServer(connection).Options;
-        if (!initialize) return;
+        if (!initialize) { Interlocked.Increment(ref _reused); return; }
+        Interlocked.Increment(ref _created);
         using var database = Open();
         if (useCurrentModel)
         {
@@ -54,11 +56,25 @@ internal sealed class SqlTestDatabase : IDisposable
     public AtlasDataContext Open() => new(_options);
     public AtlasDataContext OpenForDiscovery()
     {
-        using var configuration = Open();
-        // Tests wait outside the application transaction; production search remains eventual.
-        SqlFullTextSupport.WaitForIndexing(configuration.Database.GetConnectionString()!);
+        WaitForDiscoveryIndexing();
         return Open();
     }
+    /// <summary>Explicit barrier after committed searchable writes, before text assertions.</summary>
+    public void WaitForDiscoveryIndexing()
+    {
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            using var configuration = Open();
+            SqlFullTextSupport.WaitForIndexing(configuration.Database.GetConnectionString()!);
+        }
+        finally
+        {
+            Interlocked.Increment(ref _waitCount);
+            Interlocked.Add(ref _waitTicks, watch.Elapsed.Ticks);
+        }
+    }
+
     public Guid AddParticipant(Guid? id = null)
     {
         var key = id ?? Guid.NewGuid();
@@ -138,6 +154,7 @@ internal sealed class SqlTestDatabase : IDisposable
     /// <summary>Reset an exclusively held lease; also exercised directly by isolation tests.</summary>
     internal void ResetData()
     {
+        var resetWatch = System.Diagnostics.Stopwatch.StartNew();
         using var database = Open();
             // Reset committed data, not a surrounding rollback transaction: full-text must
             // observe real commits. Transactional DDL restores triggers/constraints on failure.
@@ -159,10 +176,13 @@ internal sealed class SqlTestDatabase : IDisposable
                 UPDATE dbo.DiscoveryRevisions SET PageVersion = PageVersion + 1, DetailVersion = DetailVersion + 1 WHERE Id = 1;
                 """);
             transaction.Commit();
+        Interlocked.Increment(ref _resetCount);
+        Interlocked.Add(ref _resetTicks, resetWatch.Elapsed.Ticks);
     }
 
     internal static void DeletePooledDatabases()
     {
+        Console.WriteLine($"SQL fixture totals: created={_created}, reused={_reused}, resets={_resetCount}, full-text waits={_waitCount}, wait seconds={TimeSpan.FromTicks(_waitTicks).TotalSeconds:F2}, reset seconds={TimeSpan.FromTicks(_resetTicks).TotalSeconds:F2}. Durations sum across parallel workers; independently managed SQL fixtures are excluded.");
         var failures = new List<Exception>();
         foreach (var pool in Pools.Values)
             while (pool.TryPop(out var connection))

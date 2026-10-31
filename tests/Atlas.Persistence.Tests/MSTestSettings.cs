@@ -1,3 +1,4 @@
-// Independent classes may overlap; methods within each class remain sequential.
-// Process-wide Console fixtures opt out explicitly; SQL fixtures exclusively lease unique databases and reset data between leases.
-[assembly: Parallelize(Workers = 2, Scope = ExecutionScope.ClassLevel)]
+// Classes run concurrently; methods within a class remain sequential.
+// Workers=0 selects the machine's logical processor count. Override via runsettings
+// when SQL Server becomes the bottleneck. Exclusive database leases retain isolation.
+[assembly: Parallelize(Workers = 0, Scope = ExecutionScope.ClassLevel)]

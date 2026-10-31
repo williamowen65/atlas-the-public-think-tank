@@ -16,12 +16,13 @@ public sealed class DiscoveryCacheTests
         var a = Candidate(Guid.NewGuid(), 8); var b = Candidate(Guid.NewGuid(), 5);
         DiscoverySqlFixture.Seed(fixture, a, b);
         using var cache = new DiscoveryCache();
-        var query = new SqlDiscoveryReadQuery(fixture.OpenForDiscovery, cache);
+        var query = new SqlDiscoveryReadQuery(fixture.Open, cache);
         Assert.AreEqual(a.NodeId, query.DiscoverPage(new(NodeId: a.NodeId)).Items.Single().NodeId);
         Assert.AreEqual(b.NodeId, query.DiscoverPage(new(NodeId: b.NodeId)).Items.Single().NodeId);
         Assert.AreEqual(a.NodeId, query.DiscoverPage(new(NodeId: a.NodeId)).Items.Single().NodeId);
         Assert.AreEqual(1L, cache.PageHits);
         Assert.IsEmpty(query.DiscoverPage(new(NodeId: Guid.NewGuid())).Items);
+        fixture.WaitForDiscoveryIndexing();
         Assert.IsEmpty(query.DiscoverPage(new(NodeId: a.NodeId, SearchText: "missing search term")).Items);
         using (var db = fixture.Open())
         {
@@ -45,12 +46,14 @@ public sealed class DiscoveryCacheTests
         var a = Candidate(Guid.NewGuid(), 8); var b = Candidate(Guid.NewGuid(), 5);
         DiscoverySqlFixture.Seed(fixture, a, b);
         using var cache = new DiscoveryCache();
-        var query = new SqlDiscoveryReadQuery(fixture.OpenForDiscovery, cache);
+        var query = new SqlDiscoveryReadQuery(fixture.Open, cache);
         var page = query.DiscoverPage(new());
         Assert.AreEqual(2L, cache.DetailMisses);
+        fixture.WaitForDiscoveryIndexing();
         query.DiscoverPage(new(SearchText: "cafe"));
         Assert.AreEqual(1L, cache.PageMisses);
         Assert.AreEqual(2L, cache.DetailHits);
+        fixture.WaitForDiscoveryIndexing();
         query.DiscoverPage(new(SearchText: "  cafe  "));
         // Full-text population does not change the page revision, so neither search is cached.
         Assert.AreEqual(0L, cache.PageHits);
@@ -72,8 +75,8 @@ public sealed class DiscoveryCacheTests
         var candidate = Candidate(Guid.NewGuid(), 8);
         DiscoverySqlFixture.Seed(fixture, candidate);
         using var cache = new DiscoveryCache(); using var otherCache = new DiscoveryCache();
-        var query = new SqlDiscoveryReadQuery(fixture.OpenForDiscovery, cache);
-        var other = new SqlDiscoveryReadQuery(fixture.OpenForDiscovery, otherCache);
+        var query = new SqlDiscoveryReadQuery(fixture.Open, cache);
+        var other = new SqlDiscoveryReadQuery(fixture.Open, otherCache);
         query.DiscoverPage(new()); other.DiscoverPage(new());
         using (var db = fixture.Open())
         using (var transaction = db.Database.BeginTransaction())
@@ -93,6 +96,7 @@ public sealed class DiscoveryCacheTests
         Assert.IsEmpty(other.DiscoverPage(new()).Items);
         var authored = query.DiscoverAuthorPage(new(), candidate.AuthorParticipantId);
         StringAssert.Contains(authored.Items.Single().Card!.Title, "Hidden by moderator");
+        fixture.WaitForDiscoveryIndexing();
         Assert.IsEmpty(query.DiscoverAuthorPage(new(SearchText: "cafe"), candidate.AuthorParticipantId).Items);
         using (var db = fixture.Open())
         { db.ModerationCaseRows.Single().VisibilityRestoredAt = DateTimeOffset.UtcNow; db.SaveChanges(); }
@@ -106,7 +110,7 @@ public sealed class DiscoveryCacheTests
         var candidate = Candidate(Guid.NewGuid(), 8);
         DiscoverySqlFixture.Seed(fixture, candidate);
         using var cache = new DiscoveryCache();
-        var query = new SqlDiscoveryReadQuery(fixture.OpenForDiscovery, cache);
+        var query = new SqlDiscoveryReadQuery(fixture.Open, cache);
         await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => Task.Run(() => query.DiscoverPage(new()))));
         Assert.AreEqual(1L, cache.PageMisses);
         Assert.AreEqual(7L, cache.PageHits);
@@ -126,9 +130,11 @@ public sealed class DiscoveryCacheTests
         var candidate = Candidate(Guid.NewGuid(), 8);
         DiscoverySqlFixture.Seed(fixture, candidate);
         using var cache = new DiscoveryCache();
-        var query = new SqlDiscoveryReadQuery(fixture.OpenForDiscovery, cache);
+        var query = new SqlDiscoveryReadQuery(fixture.Open, cache);
+        fixture.WaitForDiscoveryIndexing();
         query.DiscoverPage(new(SearchText: "evidence"));
         using (var db = fixture.Open()) { db.BlockRows.Single().Markdown = "different content"; db.SaveChanges(); }
+        fixture.WaitForDiscoveryIndexing();
         Assert.IsEmpty(query.DiscoverPage(new(SearchText: "evidence")).Items);
         StringAssert.Contains(query.DiscoverPage(new()).Items.Single().Card!.Description, "different content");
         using (var db = fixture.Open()) { db.NodeRows.Single().Status = "Archived"; db.SaveChanges(); }
@@ -147,7 +153,7 @@ public sealed class DiscoveryCacheTests
         DiscoverySqlFixture.Seed(fixture, candidate);
         using (var db = fixture.Open()) { db.BlockRows.Single().Markdown = new string('x', 80_000); db.SaveChanges(); }
         using var cache = new DiscoveryCache();
-        var query = new SqlDiscoveryReadQuery(fixture.OpenForDiscovery, cache);
+        var query = new SqlDiscoveryReadQuery(fixture.Open, cache);
         Assert.AreEqual(80_000, query.DiscoverPage(new()).Items.Single().Card!.Description.Length);
         query.DiscoverPage(new());
         Assert.AreEqual(1L, cache.PageHits);
@@ -165,7 +171,7 @@ public sealed class DiscoveryCacheTests
         var candidate = Candidate(Guid.NewGuid(), 8) with { CommunityIds = [community], ReactionDefinitionIds = [reaction] };
         DiscoverySqlFixture.Seed(fixture, candidate);
         using var cache = new DiscoveryCache();
-        var query = new SqlDiscoveryReadQuery(fixture.OpenForDiscovery, cache);
+        var query = new SqlDiscoveryReadQuery(fixture.Open, cache);
         query.DiscoverPage(new(CommunityId: community, ReactionDefinitionIds: [reaction]));
         using (var db = fixture.Open())
         {
@@ -203,7 +209,7 @@ public sealed class DiscoveryCacheTests
         var candidate = Candidate(Guid.NewGuid(), 8);
         DiscoverySqlFixture.Seed(fixture, candidate);
         using var cache = new DiscoveryCache(expiration: TimeSpan.FromMilliseconds(10));
-        var query = new SqlDiscoveryReadQuery(fixture.OpenForDiscovery, cache);
+        var query = new SqlDiscoveryReadQuery(fixture.Open, cache);
         var first = query.DiscoverPage(new());
         await Task.Delay(100);
         var second = query.DiscoverPage(new());
