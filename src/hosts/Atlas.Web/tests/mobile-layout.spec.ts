@@ -146,3 +146,37 @@ for (const rating of [0, 6]) {
     expect(saved).toBe(rating);
   });
 }
+
+test('mobile header stays on one row and long community drawer scrolls above bottom navigation', async ({ page }) => {
+  await page.route('**/atlas-session-api/**', route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/auth/session')) return route.fulfill({ json: { participantId: 'demo' } });
+    if (path.endsWith('/communities/mine')) return route.fulfill({ json: Array.from({ length: 40 }, (_, i) => ({
+      id: 'community-' + i, name: 'Community ' + i, isMember: true,
+    })) });
+    return route.fallback();
+  });
+  await page.goto('http://127.0.0.1:4173/');
+  const search = page.getByRole('button', { name: 'Toggle search', exact: true });
+  // Native summary role varies across accessibility implementations; use its label.
+  const summary = page.getByLabel('Open navigation menu', { exact: true });
+  const menuBox = await summary.boundingBox();
+  const searchBox = await search.boundingBox();
+  expect(Math.abs(menuBox!.y + menuBox!.height / 2 - searchBox!.y - searchBox!.height / 2)).toBeLessThan(2);
+  await search.click();
+  await expect(page.getByRole('textbox', { name: 'Search nodes and filters' })).toHaveAttribute('placeholder', 'Search Atlas, the public think tank');
+  await page.keyboard.press('Escape');
+  const bottom = page.getByRole('navigation', { name: 'Bottom navigation', exact: true });
+  await bottom.getByRole('link', { name: 'Discover' }).hover();
+  await expect(bottom.getByRole('link', { name: 'Discover' })).toHaveCSS('text-decoration-line', 'none');
+  await summary.click();
+  const drawer = page.getByRole('navigation', { name: 'Mobile navigation', exact: true });
+  await expect(drawer.getByRole('link', { name: 'Community 39', exact: true })).toHaveCount(1);
+  await expect(bottom).toBeHidden();
+  await drawer.evaluate(element => { element.scrollTop = element.scrollHeight; });
+  expect(await drawer.evaluate(element => element.scrollTop)).toBeGreaterThan(0);
+  await expect(drawer.getByRole('link', { name: 'Community 39', exact: true })).toBeInViewport();
+  await page.keyboard.press('Escape');
+  await expect(drawer).toBeHidden();
+  await expect(summary).toBeFocused();
+});
