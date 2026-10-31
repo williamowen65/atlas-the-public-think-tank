@@ -110,3 +110,39 @@ test('joining from a card uses membership transport and updates other controls',
   await expect(card.getByText('Joined', { exact: true })).toBeVisible();
   expect(writes).toEqual(['PUT']);
 });
+
+for (const rating of [0, 6]) {
+  test(`saved mobile rating ${rating} collapses the dial and remains available for editing`, async ({ page }) => {
+    let saved: number | null = null;
+    await page.route('**/atlas-session-api/**', route => {
+      const path = new URL(route.request().url()).pathname;
+      if (path.endsWith('/auth/csrf')) return route.fulfill({ json: { token: 'fixture-token' } });
+      if (path.endsWith('/vote') && route.request().method() === 'PUT') {
+        saved = route.request().postDataJSON().value;
+        return route.fulfill({ status: 204 });
+      }
+      if (path.endsWith('/votes')) return route.fulfill({ json: {
+        voteCount: saved === null ? 12 : 13, averageVote: 7.5, currentParticipantVote: saved,
+      } });
+      return route.fallback();
+    });
+    await page.goto('http://127.0.0.1:4173/');
+    const card = page.locator('article.node-card').first();
+    const summary = card.getByRole('button', { name: /Rate node importance/ });
+    await summary.click();
+    const dial = card.getByRole('spinbutton');
+    await dial.focus();
+    await page.keyboard.press('Home');
+    for (let i = 0; i < rating; i++) await page.keyboard.press('ArrowUp');
+    await page.keyboard.press('Enter');
+    await page.getByRole('button', { name: 'Confirm rating', exact: true }).click();
+    await expect(summary).toContainText(`Voted ${rating}/10`);
+    await expect(summary).toHaveAttribute('aria-expanded', 'false');
+    await expect(dial).toHaveCount(0);
+    await expect(summary).toBeFocused();
+    // The retained button reopens the confirmed value rather than a neutral preview.
+    await summary.click();
+    await expect(dial).toHaveAttribute('aria-valuenow', String(rating));
+    expect(saved).toBe(rating);
+  });
+}
