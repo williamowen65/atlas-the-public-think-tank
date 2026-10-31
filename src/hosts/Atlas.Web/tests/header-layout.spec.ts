@@ -22,6 +22,30 @@ for (const authenticated of [false, true]) {
       await page.goto('http://127.0.0.1:4173/about');
       const header = page.locator('.atlas-header');
       if (authenticated) await expect(header.locator('.account .avatar')).toHaveCount(1);
+      if (width <= 560) {
+        // Phone headers keep one real input mounted and hide the menu while editing.
+        const search = header.getByRole('textbox', { name: 'Search nodes and filters' });
+        const menu = header.getByLabel('Open navigation menu', { exact: true });
+        await expect(search).toBeVisible();
+        await expect(menu).toBeVisible();
+        await expect(search).toHaveAttribute('placeholder', 'Atlas: The Public Think Tank');
+        await search.click();
+        await expect(menu).toBeHidden();
+        await search.fill('orcas');
+        await header.getByRole('button', { name: 'Search', exact: true }).click();
+        await expect.poll(() => page.evaluate(() => localStorage.getItem('atlas.discovery.query.v1'))).toBe('orcas');
+        const filters = header.getByRole('button', { name: 'Filters', exact: true });
+        await filters.click();
+        await expect(header.getByRole('combobox', { name: /^Node type/ })).toBeVisible();
+        await page.keyboard.press('Escape');
+        await expect(filters).toHaveAttribute('aria-expanded', 'false');
+        await page.keyboard.press('Escape');
+        await expect(search).toBeVisible();
+        await expect(menu).toBeVisible();
+        await expect(search).toHaveValue('orcas');
+        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+        continue;
+      }
       const brand = header.getByRole('link', { name: 'Atlas home', exact: true });
       await expect(brand).toBeVisible();
       const search = header.getByRole('textbox', { name: 'Search nodes and filters' });
