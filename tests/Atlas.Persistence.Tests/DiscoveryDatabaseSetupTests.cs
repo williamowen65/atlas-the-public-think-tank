@@ -12,7 +12,7 @@ public sealed class DiscoveryDatabaseSetupTests
     {
         // EnsureCreated represents the current EF schema without replaying historical SQL.
         // This deliberately bypasses the fixture's normal full-text installation.
-        using var fixture = SqlTestDatabase.Create(useCurrentModel: true, installFullText: false);
+        using var fixture = SqlTestDatabase.Create(useCurrentModel: true, installFullText: false, reuse: false);
         using (var db = fixture.Open())
         {
             Assert.AreEqual(0, db.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM sys.fulltext_indexes").Single());
@@ -38,7 +38,7 @@ public sealed class DiscoveryDatabaseSetupTests
     [TestMethod]
     public void ExplicitSetupCanRunRepeatedlyAfterTheCurrentMigrationChain()
     {
-        using var fixture = SqlTestDatabase.Create();
+        using var fixture = SqlTestDatabase.Create(reuse: false);
         using var db = fixture.Open();
         AtlasDatabaseSetup.Apply(db);
         AtlasDatabaseSetup.Apply(db);
@@ -48,7 +48,7 @@ public sealed class DiscoveryDatabaseSetupTests
     [TestMethod]
     public void SupplementalSetupRejectsAnOuterTransaction()
     {
-        using var fixture = SqlTestDatabase.Create(useCurrentModel: true);
+        using var fixture = SqlTestDatabase.Create(useCurrentModel: true, reuse: false);
         using var db = fixture.Open();
         using var transaction = db.Database.BeginTransaction();
         Assert.Throws<InvalidOperationException>(() => AtlasDatabaseSetup.InstallSupplementalSchema(db));

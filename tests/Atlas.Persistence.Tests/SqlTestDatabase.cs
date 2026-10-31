@@ -8,10 +8,15 @@ namespace Atlas.Persistence.Tests;
 
 internal sealed class SqlTestDatabase : IDisposable
 {
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<(string Template, bool Model, bool FullText), System.Collections.Concurrent.ConcurrentStack<string>> Pools = new();
+    private readonly System.Collections.Concurrent.ConcurrentStack<string>? _pool;
+    private bool _disposed;
     private readonly DbContextOptions<AtlasDataContext> _options;
-    private SqlTestDatabase(string connection, bool useCurrentModel, bool installFullText)
+    private SqlTestDatabase(string connection, bool useCurrentModel, bool installFullText, System.Collections.Concurrent.ConcurrentStack<string>? pool = null, bool initialize = true)
     {
+        _pool = pool;
         _options = new DbContextOptionsBuilder<AtlasDataContext>().UseSqlServer(connection).Options;
+        if (!initialize) return;
         using var database = Open();
         if (useCurrentModel)
         {
@@ -20,7 +25,7 @@ internal sealed class SqlTestDatabase : IDisposable
         }
         else AtlasDatabaseSetup.Apply(database);
     }
-    public static SqlTestDatabase Create(bool useCurrentModel = false, bool installFullText = true)
+    public static SqlTestDatabase Create(bool useCurrentModel = false, bool installFullText = true, bool reuse = true)
     {
         // Local projects share one secrets file; CI environment values take precedence.
         var configuration = new ConfigurationBuilder()
@@ -30,11 +35,21 @@ internal sealed class SqlTestDatabase : IDisposable
         var template = configuration["ATLAS_SQL_TEST_CONNECTION_STRING"];
         if (string.IsNullOrWhiteSpace(template))
             Assert.Inconclusive("Set ATLAS_SQL_TEST_CONNECTION_STRING in user secrets or environment variables to run SQL Server tests.");
+        // Lease exclusively: concurrent tests never see one another's rows.
+        var pool = reuse ? Pools.GetOrAdd((template!, useCurrentModel, installFullText), _ => new()) : null;
+        if (pool is not null && pool.TryPop(out var existing))
+            return new SqlTestDatabase(existing, useCurrentModel, installFullText, pool, initialize: false);
         var connection = new SqlConnectionStringBuilder(template)
         {
             InitialCatalog = $"AtlasRepositoryTests_{Guid.NewGuid():N}"
         }.ConnectionString;
-        return new SqlTestDatabase(connection, useCurrentModel, installFullText);
+        try { return new SqlTestDatabase(connection, useCurrentModel, installFullText, pool); }
+        catch
+        {
+            using var failed = new AtlasDataContext(new DbContextOptionsBuilder<AtlasDataContext>().UseSqlServer(connection).Options);
+            failed.Database.EnsureDeleted();
+            throw;
+        }
     }
     public AtlasDataContext Open() => new(_options);
     public AtlasDataContext OpenForDiscovery()
@@ -99,7 +114,64 @@ internal sealed class SqlTestDatabase : IDisposable
     }
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
         using var database = Open();
-        database.Database.EnsureDeleted();
+        if (_pool is null)
+        {
+            database.Database.EnsureDeleted();
+            return;
+        }
+        try
+        {
+            ResetData();
+            _pool.Push(database.Database.GetConnectionString()!);
+        }
+        catch
+        {
+            // A failed reset is never returned to the pool.
+            database.Database.EnsureDeleted();
+            throw;
+        }
+    }
+
+    /// <summary>Reset an exclusively held lease; also exercised directly by isolation tests.</summary>
+    internal void ResetData()
+    {
+        using var database = Open();
+            // Reset committed data, not a surrounding rollback transaction: full-text must
+            // observe real commits. Transactional DDL restores triggers/constraints on failure.
+            using var transaction = database.Database.BeginTransaction();
+            database.Database.ExecuteSqlRaw("""
+                DECLARE @disable nvarchar(max) = N'', @delete nvarchar(max) = N'', @enable nvarchar(max) = N'';
+                SELECT @disable += N'ALTER TABLE ' + QUOTENAME(SCHEMA_NAME(schema_id)) + N'.' + QUOTENAME(name)
+                        + N' NOCHECK CONSTRAINT ALL; DISABLE TRIGGER ALL ON '
+                        + QUOTENAME(SCHEMA_NAME(schema_id)) + N'.' + QUOTENAME(name) + N';',
+                    @delete += N'DELETE FROM ' + QUOTENAME(SCHEMA_NAME(schema_id)) + N'.' + QUOTENAME(name) + N';',
+                    @enable += N'ALTER TABLE ' + QUOTENAME(SCHEMA_NAME(schema_id)) + N'.' + QUOTENAME(name)
+                        + N' WITH CHECK CHECK CONSTRAINT ALL; ENABLE TRIGGER ALL ON '
+                        + QUOTENAME(SCHEMA_NAME(schema_id)) + N'.' + QUOTENAME(name) + N';'
+                FROM sys.tables WHERE is_ms_shipped = 0
+                    AND name NOT IN (N'__EFMigrationsHistory', N'DiscoveryRevisions');
+                EXEC sys.sp_executesql @disable;
+                EXEC sys.sp_executesql @delete;
+                EXEC sys.sp_executesql @enable;
+                UPDATE dbo.DiscoveryRevisions SET PageVersion = PageVersion + 1, DetailVersion = DetailVersion + 1 WHERE Id = 1;
+                """);
+            transaction.Commit();
+    }
+
+    internal static void DeletePooledDatabases()
+    {
+        var failures = new List<Exception>();
+        foreach (var pool in Pools.Values)
+            while (pool.TryPop(out var connection))
+                try
+                {
+                    using var db = new AtlasDataContext(new DbContextOptionsBuilder<AtlasDataContext>().UseSqlServer(connection).Options);
+                    db.Database.EnsureDeleted();
+                }
+                catch (Exception error) { failures.Add(error); }
+        if (failures.Count > 0) throw new AggregateException("Could not delete pooled test databases.", failures);
     }
 }
