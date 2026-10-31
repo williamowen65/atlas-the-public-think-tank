@@ -312,9 +312,9 @@
       onclick={() => { expanded = !expanded; if (!expanded) cancelPending(); }}
       aria-label={`${confirmed === null ? 'Vote' : `Voted ${confirmed} out of 10. Change your vote`}. Rate node importance. Average ${average === null ? 'not rated' : average.toFixed(1)}. ${totalVotes} votes.`}>
       <strong class="summary-average">{average === null ? '—' : average.toFixed(1)}</strong>
-      <span class="summary-voters" title={totalVotes.toLocaleString('en-US')}>
+      <span class="summary-voters" role="img" aria-label={`${totalVotes} ${totalVotes === 1 ? 'vote' : 'votes'}`} title={totalVotes.toLocaleString('en-US')}>
         <svg viewBox="0 0 56 44" aria-hidden="true"><circle cx="28" cy="7" r="6"/><circle cx="10" cy="12" r="5"/><circle cx="46" cy="12" r="5"/><path d="M1 41V26a9 9 0 0 1 18 0v15ZM37 41V26a9 9 0 0 1 18 0v15ZM12 44V30a16 16 0 0 1 32 0v14Z"/></svg>
-        {formatVoteCount(totalVotes)}
+        <span class="summary-count" aria-hidden="true">{formatVoteCount(totalVotes)}</span>
       </span>
       <span>{confirmed === null ? 'Vote' : `Voted ${confirmed}/10`}</span>
     </button>
@@ -438,8 +438,35 @@
     background: color-mix(in srgb, var(--atlas-accent) 12%, var(--atlas-surface));
     font-variant-numeric: tabular-nums;
   }
-  .summary-voters { display: inline-flex; align-items: center; gap: 0.25rem; }
-  .summary-voters svg { width: 1.4rem; height: 1.2rem; fill: currentColor; }
+  // Match the full dial: the count sits inside the central person's body.
+  // Keep the icon wide enough for abbreviated totals such as 4.5B.
+  .summary-voters {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 2.4rem;
+    height: 1.9rem;
+    flex: 0 0 2.4rem;
+  }
+  .summary-voters svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    fill: var(--atlas-accent);
+  }
+  .summary-count {
+    position: relative;
+    margin-top: 0.7rem;
+    padding-inline: 0.1rem;
+    border-radius: 0.1rem;
+    background: var(--atlas-accent);
+    color: var(--atlas-on-accent);
+    font-size: 0.65rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.15;
+  }
   .dial-content { display: contents; }
   // The card body owns the action row. The expanded dial rejoins normal text flow
   // as a left float, so introductions can wrap beside and then below it.
