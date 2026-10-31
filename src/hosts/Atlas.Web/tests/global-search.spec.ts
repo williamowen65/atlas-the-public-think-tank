@@ -91,8 +91,8 @@ test('search from a node shows compact filtered results, pages them and opens a 
     results.getByLabel('Importance: 7.5 out of 10, 12 votes', { exact: true }).first(),
   ).toBeVisible();
   // An outside click dismisses the whole search without clearing the accepted query.
-  // Click the page gutter below the overlay; the node heading is covered on narrow screens.
-  await page.mouse.click(5, 730);
+  // Use the side gutter, avoiding the fixed bottom navigation and covered node heading.
+  await page.mouse.click(1, 400);
   await expect(results).toHaveCount(0);
   await openSearch(page);
   await expect(input).toHaveValue('salmon votes:1..5');
@@ -288,6 +288,13 @@ test('mixed pages retain comment identity and open an off-page nested thread', a
 /** Mobile uses the real input; desktop retains its disclosure button. */
 async function openSearch(page: Page) {
   const toggle = page.getByRole('button', { name: 'Toggle search', exact: true });
-  if (await toggle.isVisible()) await toggle.click();
-  else await page.getByRole('textbox', { name: 'Search nodes and filters' }).focus();
+  // Choose from the known viewport, not a pre-hydration visibility snapshot.
+  if (page.viewportSize()!.width > 560) {
+    await expect(toggle).toBeVisible();
+    await toggle.click();
+  } else {
+    const input = page.getByRole('textbox', { name: 'Search nodes and filters' });
+    await expect(input).toBeVisible();
+    await input.click();
+  }
 }
