@@ -259,6 +259,13 @@
       if (controller.signal.aborted) return;
       confirmed = next;
       value = next;
+      // Collapse only after the API accepts the write; failed writes keep the
+      // editor available. The summary uses confirmed state, including zero.
+      if (collapsedMode) {
+        expanded = false;
+        await tick();
+        container?.querySelector<HTMLButtonElement>('.rating-summary')?.focus({ preventScroll: true });
+      }
       notice = next === null ? 'Vote removed.' : `Rated ${next}/10.`;
       try {
         await refresh();
@@ -282,7 +289,7 @@
     } finally {
       busy = false;
     }
-    if (next === null && confirmed === null && !controller.signal.aborted) {
+    if (!collapsedMode && next === null && confirmed === null && !controller.signal.aborted) {
       await tick();
       container?.querySelector<HTMLElement>('[role=spinbutton]')?.focus();
     }
@@ -303,13 +310,13 @@
     <button class="rating-summary" type="button" aria-expanded={expanded}
       disabled={archived || busy || loading}
       onclick={() => { expanded = !expanded; if (!expanded) cancelPending(); }}
-      aria-label={`${confirmed === null ? 'Vote' : 'Voted. Change your vote'}. Rate node importance. Average ${average === null ? 'not rated' : average.toFixed(1)}. ${totalVotes} votes.`}>
+      aria-label={`${confirmed === null ? 'Vote' : `Voted ${confirmed} out of 10. Change your vote`}. Rate node importance. Average ${average === null ? 'not rated' : average.toFixed(1)}. ${totalVotes} votes.`}>
       <strong class="summary-average">{average === null ? '—' : average.toFixed(1)}</strong>
       <span class="summary-voters" title={totalVotes.toLocaleString('en-US')}>
         <svg viewBox="0 0 56 44" aria-hidden="true"><circle cx="28" cy="7" r="6"/><circle cx="10" cy="12" r="5"/><circle cx="46" cy="12" r="5"/><path d="M1 41V26a9 9 0 0 1 18 0v15ZM37 41V26a9 9 0 0 1 18 0v15ZM12 44V30a16 16 0 0 1 32 0v14Z"/></svg>
         {formatVoteCount(totalVotes)}
       </span>
-      <span>{confirmed === null ? 'Vote' : 'Voted'}</span>
+      <span>{confirmed === null ? 'Vote' : `Voted ${confirmed}/10`}</span>
     </button>
   {/if}
   {#if !collapsedMode || expanded}
@@ -449,7 +456,17 @@
     margin: 0 var(--dial-text-gap) 0.6rem -0.4rem;
     text-align: center;
   }
-  .collapsed-mode small { clear: both; }
+  // Status is announced without becoming a clearing block between the floated
+  // dial and description. The saved rating remains visible in the Vote button.
+  .collapsed-mode small[role='status'] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .collapsed-mode small[role='alert'] { clear: both; }
 
   .live-voting {
     width: min-content;
