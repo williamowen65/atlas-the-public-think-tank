@@ -171,6 +171,42 @@ public sealed class ObservabilityTests
         finally { if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true); }
     }
 
+
+    [TestMethod]
+    public async Task Disposed_telemetry_rejects_late_output_after_directory_cleanup()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "AtlasDisposedTelemetry-" + Guid.NewGuid());
+        using var local = new LocalTelemetry(directory);
+        // Model a callback that was already dispatched but cannot execute until
+        // disposal and cleanup finish. All file-output entry points must stop.
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var lateOutput = Task.Run(async () =>
+        {
+            await release.Task;
+            local.Record(Telemetry.Create(EventKind.DiscoveryRead));
+            local.CacheLookup(detail: false, hit: true);
+            local.QueueState(0, 0);
+        });
+        try
+        {
+            local.Record(Telemetry.Create(EventKind.DiscoveryRead));
+            local.Dispose();
+            Directory.Delete(directory, recursive: true);
+            release.SetResult();
+            await lateOutput;
+            Assert.IsFalse(Directory.Exists(directory));
+            Assert.AreEqual(0L, local.OutputFailures,
+                "Disposed callbacks should be ignored, not attempt writes into the removed directory.");
+        }
+        finally
+        {
+            release.TrySetResult();
+            await lateOutput;
+            local.Dispose();
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
     private sealed class RecordingSink : ITelemetryObserver
     {
         public ConcurrentBag<TelemetryEvent> Events { get; } = [];
