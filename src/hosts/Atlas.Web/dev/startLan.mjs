@@ -1,4 +1,6 @@
-import { existsSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { dirname, resolve } from 'node:path';
+import { readFileSync, existsSync } from 'node:fs';
 import { loadEnvFile } from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
@@ -13,7 +15,11 @@ function start() {
   const localFile = fileURLToPath(new URL('../.env.lan.local', import.meta.url));
   if (existsSync(localFile)) loadEnvFile(localFile);
   const env = lanEnvironment();
-  const cli = fileURLToPath(new URL('../node_modules/concurrently/dist/bin/concurrently.js', import.meta.url));
+  // Use the package's declared executable instead of assuming an internal filename.
+  const require = createRequire(import.meta.url);
+  const manifestPath = require.resolve('concurrently/package.json');
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+  const cli = resolve(dirname(manifestPath), manifest.bin.concurrently);
   const child = spawn(process.execPath, [
     cli, '--kill-others', '--names', 'API,Web',
     'dotnet run --project ../Atlas.Api --launch-profile https',
