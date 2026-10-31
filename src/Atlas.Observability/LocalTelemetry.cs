@@ -22,6 +22,10 @@ public sealed class LocalTelemetry : ITelemetryObserver, ICacheTelemetryObserver
     private readonly JsonLineFile _metrics;
     private readonly JsonLineFile _traces;
     private readonly ActivityListener _listener;
+    // ActivityListener callbacks can overlap disposal on another thread.
+    // One gate protects the lifetime of all file output, not just individual writes.
+    private readonly object _outputGate = new();
+    private bool _disposed;
     private long _failures;
     private long _pendingAudit;
     private double _oldestAuditSeconds;
@@ -121,14 +125,33 @@ public sealed class LocalTelemetry : ITelemetryObserver, ICacheTelemetryObserver
         })));
     }
 
+    /// <summary>
+    /// Serialize local output with disposal. A callback already handed out by
+    /// ActivityListener may arrive after unsubscription; it must not write then.
+    /// </summary>
     private void TryOutput(Action action)
     {
-        try { action(); }
-        catch (Exception) { Interlocked.Increment(ref _failures); }
+        lock (_outputGate)
+        {
+            if (_disposed) return;
+            try { action(); }
+            catch (Exception) { Interlocked.Increment(ref _failures); }
+        }
     }
 
+    /// <summary>
+    /// Wait for the current synchronous file write and reject further output
+    /// before releasing instrumentation. Once this returns, callers may read
+    /// or remove the output directory without racing a late activity callback.
+    /// </summary>
     public void Dispose()
     {
+        lock (_outputGate)
+        {
+            if (_disposed) return;
+            _disposed = true;
+        }
+        // Do not hold the output gate while unsubscribing instrumentation.
         _listener.Dispose();
         _meter.Dispose();
     }
