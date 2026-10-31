@@ -591,7 +591,7 @@
     padding: 0.4rem 0.75rem;
     cursor: pointer;
   }
-  .rating-summary.header-summary {
+  .rating-summary:global(.header-summary) {
     position: static;
     flex: 0 0 auto;
   }
