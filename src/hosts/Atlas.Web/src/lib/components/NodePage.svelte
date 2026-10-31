@@ -306,7 +306,7 @@
           day: 'numeric',
           year: 'numeric',
           timeZone: 'UTC',
-        })}</time
+        })}</span></time
       >{#if node.communities.length}
         <span class="byline-separator" aria-hidden="true">·</span> <span class="community-prefix">Community: </span> <CommunityLinks
           nodeId={node.id}
