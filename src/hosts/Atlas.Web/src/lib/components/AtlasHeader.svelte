@@ -80,7 +80,7 @@
     lastScroll = window.scrollY;
     const onScroll = () => {
       const next = window.scrollY;
-      if (searchOpen || filtersOpen || mobileElement?.open || document.activeElement?.closest('.bottom-navigation, .atlas-header') || next < 40 || next < lastScroll - 3) headerVisible = true;
+      if (searchOpen || filtersOpen || menuOpen || mobileElement?.open || document.activeElement?.closest('.bottom-navigation, .atlas-header') || next < 40 || next < lastScroll - 3) headerVisible = true;
       else if (next > lastScroll + 3 && next > 100) headerVisible = false;
       lastScroll = next;
     };
@@ -142,6 +142,7 @@
   async function openDrawer() {
     clearTimeout(drawerTimer);
     drawerClosing = false;
+    menuOpen = false;
     drawerEntering = true;
     mobileElement.open = true;
     headerVisible = true;
@@ -392,7 +393,7 @@
   </div>
 </header>
 {#if mobileExperiment}
-  <nav class="bottom-navigation" class:hidden={!headerVisible} aria-label="Bottom navigation">
+  <nav class="bottom-navigation" class:hidden={!headerVisible && !menuOpen} aria-label="Bottom navigation">
     <a href="/" aria-current={active === 'discover' ? 'page' : undefined}><span aria-hidden="true">⌂</span>Discover</a>
     <a href="/new" aria-current={active === 'create' ? 'page' : undefined}><span aria-hidden="true">＋</span>Create</a>
     {#if authenticated}
