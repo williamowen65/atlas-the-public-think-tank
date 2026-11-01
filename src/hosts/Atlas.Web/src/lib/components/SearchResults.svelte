@@ -288,9 +288,9 @@
     z-index: 40;
     max-height: min(55svh, 32rem);
     overflow-y: auto;
-    // Reserve scrollbar space inside the rounded scrolling surface. The browser's
-    // native scrollbar may still paint square ends; the transparent gutter keeps
-    // those ends away from the outer rounded border without clipping content.
+    /* Reserve scrollbar space inside the rounded scrolling surface. The browser's
+       native scrollbar may still paint square ends; the transparent gutter keeps
+       those ends away from the outer rounded border without clipping content. */
     scrollbar-gutter: stable;
     overscroll-behavior: contain;
     padding: 1rem;
