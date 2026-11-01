@@ -870,6 +870,13 @@
       bottom: 0;
       height: calc(100dvh - var(--sidebar-top));
       max-height: calc(100dvh - var(--sidebar-top));
+      // The shared drawer already has 1rem padding; add the site's standard
+      // horizontal spacing only on desktop, without changing mobile alignment.
+      padding-inline: calc(1rem + var(--atlas-space));
     }
+  }
+  // Center the legal footer at either viewport size.
+  .atlas-header .explore-sidebar .sidebar-copyright {
+    text-align: center;
   }
 </style>
