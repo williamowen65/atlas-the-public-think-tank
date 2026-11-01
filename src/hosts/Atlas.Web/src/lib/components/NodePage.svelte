@@ -563,7 +563,9 @@
     // A separate flow-root here forced blocks below the entire dial.
     .introduction { display: contents; }
     // The desktop dial uses a negative left margin; keep the mobile dial on the content gutter.
-    .dial { margin-left: 0; }
+    // LiveVotingDial floats its expanded .dial-content with its own text gap.
+    // Avoid applying the same gap a second time on the outer aside.
+    .dial { margin-left: 0; margin-right: 0; }
     // The collapsed mobile summary lives in the header; its empty floated aside
     // must not reserve a margin or indent the introduction.
     .dial:has(:global(.collapsed-mode)):not(:has(:global(.dial-content))) { display: none; }
