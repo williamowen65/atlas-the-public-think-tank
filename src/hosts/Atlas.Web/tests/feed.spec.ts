@@ -65,8 +65,8 @@ test('header and footer each have a separate isolated Playground', async ({ page
   await page.setViewportSize({ width: 320, height: 640 });
   await page.goto('http://127.0.0.1:6006/iframe.html?id=layout-header--playground&viewMode=story');
   await page.getByLabel('Open navigation menu').click();
-  await expect(page.getByRole('navigation', { name: 'Mobile navigation' })).toBeVisible();
-  await expect(page.getByRole('navigation', { name: 'Mobile navigation' }).getByRole('link', { name: 'Discover', exact: true })).toHaveAttribute('href', '/');
+  await expect(page.getByRole('navigation', { name: 'Explore navigation' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Explore navigation' }).getByRole('link', { name: 'Discover', exact: true })).toHaveAttribute('href', '/');
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
   await page.goto('http://127.0.0.1:6006/iframe.html?id=layout-footer--playground&viewMode=story');
   await expect(page.getByRole('navigation', { name: 'Explore' })).toBeVisible();
