@@ -137,6 +137,7 @@
   let sidebarElement: HTMLDetailsElement;
   let headerElement: HTMLElement;
   let sidebarTop = $state(0);
+  let sidebarOpen = $state(false);
   function measureSidebarTop() {
     if (headerElement) sidebarTop = Math.max(0, headerElement.getBoundingClientRect().bottom);
   }
@@ -151,6 +152,7 @@
     menuOpen = false;
     drawerEntering = true;
     sidebarElement.open = true;
+    sidebarOpen = true;
     headerVisible = true;
     measureSidebarTop();
     await tick();
@@ -166,6 +168,7 @@
     drawerEntering = false;
     const finish = () => {
       sidebarElement.open = false;
+      sidebarOpen = false;
       drawerClosing = false;
       if (restoreFocus) sidebarElement.querySelector('summary')?.focus();
     };
@@ -382,7 +385,7 @@
 
   </div>
 </header>
-{#if sidebarElement?.open}
+{#if sidebarOpen}
   <button class="sidebar-backdrop" type="button" aria-label="Close Explore sidebar" style:top={`${sidebarTop}px`} onclick={() => closeDrawer()}></button>
 {/if}
 {#if mobileExperiment}
@@ -848,6 +851,7 @@
     background: #0008;
     cursor: default;
   }
+  @media (max-width: 560px) { .sidebar-backdrop { top: 0 !important; } }
   @media (min-width: 561px) {
     .atlas-header .explore-sidebar nav {
       top: var(--sidebar-top);
