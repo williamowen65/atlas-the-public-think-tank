@@ -135,6 +135,11 @@
   let mobileAccountToggle = $state<HTMLButtonElement>();
   /** Shared Explore sidebar on desktop and mobile. */
   let sidebarElement: HTMLDetailsElement;
+  let headerElement: HTMLElement;
+  let sidebarTop = $state(0);
+  function measureSidebarTop() {
+    if (headerElement) sidebarTop = Math.max(0, headerElement.getBoundingClientRect().bottom);
+  }
   /** Keep native details open until its exit transition finishes. */
   let drawerClosing = $state(false);
   let drawerEntering = $state(false);
@@ -147,6 +152,7 @@
     drawerEntering = true;
     sidebarElement.open = true;
     headerVisible = true;
+    measureSidebarTop();
     await tick();
     drawerFrame = requestAnimationFrame(() => {
       drawerFrame = requestAnimationFrame(() => { drawerEntering = false; });
@@ -191,7 +197,9 @@
     if (
       sidebarElement?.open &&
       event.target instanceof Node &&
-      !sidebarElement.contains(event.target)
+      !sidebarElement.contains(event.target) &&
+      !searchToggle?.contains(event.target) &&
+      !searchPanel?.contains(event.target)
     )
       closeDrawer();
   }
@@ -218,6 +226,7 @@
   }
   function closeOnResize() {
     menuOpen = false;
+    if (sidebarElement?.open) measureSidebarTop();
   }
   /**
    * Uppercase first character of the display name for the avatar, with U as fallback.
@@ -238,6 +247,8 @@
 />
 <header
   class="atlas-header"
+  bind:this={headerElement}
+  style:--sidebar-top={`${sidebarTop}px`}
   class:mobile-experiment={mobileExperiment}
   class:search-open={searchOpen}
   class:hidden={!headerVisible}
@@ -371,6 +382,9 @@
 
   </div>
 </header>
+{#if sidebarElement?.open}
+  <button class="sidebar-backdrop" type="button" aria-label="Close Explore sidebar" style:top={`${sidebarTop}px`} onclick={() => closeDrawer()}></button>
+{/if}
 {#if mobileExperiment}
   <nav class="bottom-navigation" class:hidden={!headerVisible && !menuOpen} aria-label="Bottom navigation">
     <a href="/" aria-current={active === 'discover' ? 'page' : undefined}><span aria-hidden="true">⌂</span>Discover</a>
@@ -641,7 +655,7 @@
       overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
       flex-flow: column nowrap; align-items: stretch;
       padding: 1rem 1rem max(1rem, env(safe-area-inset-bottom));
-      border-radius: 0; box-shadow: 0 0 0 100vmax #0008;
+      border-radius: 0; box-shadow: 0 8px 24px #0002;
       transform: translateX(0); transition: transform 200ms ease-out;
     }
     &.closing nav, &.entering nav { transform: translateX(-110%); }
@@ -819,9 +833,27 @@
     align-items: stretch;
     border-radius: 0;
     padding: 1rem 1rem max(1rem, env(safe-area-inset-bottom));
-    box-shadow: 0 0 0 100vmax #0008;
+    box-shadow: 0 8px 24px #0002;
   }
   .atlas-header .explore-sidebar.closing nav,
   .atlas-header .explore-sidebar.entering nav { transform: translateX(-110%); }
   .atlas-header .explore-sidebar .sidebar-copyright { margin-top: auto; }
+  // Keep the header visible and undimmed while the desktop drawer is open.
+  .sidebar-backdrop {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 40;
+    width: 100%;
+    border: 0;
+    background: #0008;
+    cursor: default;
+  }
+  @media (min-width: 561px) {
+    .atlas-header .explore-sidebar nav {
+      top: var(--sidebar-top);
+      bottom: 0;
+      height: calc(100dvh - var(--sidebar-top));
+      max-height: calc(100dvh - var(--sidebar-top));
+    }
+  }
 </style>
