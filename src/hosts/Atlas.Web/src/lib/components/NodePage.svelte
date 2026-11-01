@@ -555,7 +555,7 @@
   }
   @media (max-width: 560px) {
     .node-page { --card-padding: 0.75rem; }
-    .mobile-type { display: block; margin: 0 0 0.25rem; font-size: 0.75rem; font-weight: 700; color: var(--atlas-accent); }
+    .mobile-type { display: block; margin: 0 0 0.25rem; font-size: 2.1rem; line-height: 0; font-weight: 700; color: var(--atlas-accent); }
     .title-type, .by-prefix, .community-prefix, .full-date { display: none; }
     .relative-date { display: inline; }
     .byline { font-size: 0.75rem; line-height: 1.5; }
