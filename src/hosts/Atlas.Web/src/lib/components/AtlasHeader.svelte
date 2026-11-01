@@ -24,7 +24,7 @@
     displayName = 'Atlas User',
   }: {
     /** Highlighted navigation item; null leaves all items unselected. */
-    /** Enable mobile search, community drawer and bottom navigation exploration. */
+    /** Enable experimental mobile search and bottom navigation layout. */
     mobileExperiment?: boolean;
     active?: 'discover' | 'communities' | 'create' | 'login' | 'register' | null;
     /**
@@ -80,7 +80,7 @@
     lastScroll = window.scrollY;
     const onScroll = () => {
       const next = window.scrollY;
-      if (searchOpen || filtersOpen || menuOpen || mobileElement?.open || document.activeElement?.closest('.bottom-navigation, .atlas-header') || next < 40 || next < lastScroll - 3) headerVisible = true;
+      if (searchOpen || filtersOpen || menuOpen || sidebarElement?.open || document.activeElement?.closest('.bottom-navigation, .atlas-header') || next < 40 || next < lastScroll - 3) headerVisible = true;
       else if (next > lastScroll + 3 && next > 100) headerVisible = false;
       lastScroll = next;
     };
@@ -89,7 +89,7 @@
   });
 
   /**
-   * Whether the desktop account navigation is open.
+   * Whether the account navigation is open.
    */
   let menuOpen = $state(false);
   /** Membership list is loaded on disclosure, rather than once per feed card. */
@@ -97,7 +97,7 @@
   let communityError = $state('');
   /** Refresh the switcher whenever its drawer opens; no membership data is invented. */
   async function loadJoined() {
-    if (!mobileElement?.open || !mobileExperiment) return;
+    if (!sidebarElement?.open) return;
     joined = [];
     communityError = '';
     if (!authenticated) return;
@@ -133,7 +133,8 @@
   let accountElement = $state<HTMLDivElement>();
   let mobileAccountElement = $state<HTMLDivElement>();
   let mobileAccountToggle = $state<HTMLButtonElement>();
-  let mobileElement: HTMLDetailsElement;
+  /** Shared Explore sidebar on desktop and mobile. */
+  let sidebarElement: HTMLDetailsElement;
   /** Keep native details open until its exit transition finishes. */
   let drawerClosing = $state(false);
   let drawerEntering = $state(false);
@@ -144,7 +145,7 @@
     drawerClosing = false;
     menuOpen = false;
     drawerEntering = true;
-    mobileElement.open = true;
+    sidebarElement.open = true;
     headerVisible = true;
     await tick();
     drawerFrame = requestAnimationFrame(() => {
@@ -154,15 +155,15 @@
   let drawerTimer: ReturnType<typeof setTimeout> | undefined;
   /** Close the drawer after its slide-out, optionally restoring menu-button focus. */
   function closeDrawer(restoreFocus = false) {
-    if (!mobileElement?.open || drawerClosing) return;
+    if (!sidebarElement?.open || drawerClosing) return;
     cancelAnimationFrame(drawerFrame);
     drawerEntering = false;
     const finish = () => {
-      mobileElement.open = false;
+      sidebarElement.open = false;
       drawerClosing = false;
-      if (restoreFocus) mobileElement.querySelector('summary')?.focus();
+      if (restoreFocus) sidebarElement.querySelector('summary')?.focus();
     };
-    if (!mobileExperiment || matchMedia('(prefers-reduced-motion: reduce)').matches) finish();
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) finish();
     else {
       drawerClosing = true;
       drawerTimer = setTimeout(finish, 200);
@@ -188,9 +189,9 @@
     if (menuOpen && event.target instanceof Node && !accountElement?.contains(event.target) && !mobileAccountElement?.contains(event.target))
       menuOpen = false;
     if (
-      mobileElement?.open &&
+      sidebarElement?.open &&
       event.target instanceof Node &&
-      !mobileElement.contains(event.target)
+      !sidebarElement.contains(event.target)
     )
       closeDrawer();
   }
@@ -206,17 +207,16 @@
         menuOpen = false;
         mobileAccountToggle?.focus();
       }
-      if (mobileElement?.open) {
+      if (sidebarElement?.open) {
         closeDrawer(true);
       }
     }
   }
   function closeOnNavigation() {
     menuOpen = false;
-    if (mobileElement) closeDrawer();
+    if (sidebarElement) closeDrawer();
   }
   function closeOnResize() {
-    if (window.innerWidth > 560 && mobileElement?.open) closeDrawer();
     menuOpen = false;
   }
   /**
@@ -227,7 +227,7 @@
 
 <!--
   Layout: Brand, search toggle and navigation share the top row. The optional search region
-  opens below; a separate disclosure supplies mobile navigation.
+  opens below; the Explore sidebar is available on desktop and mobile.
 -->
 
 <svelte:window
@@ -339,41 +339,23 @@
       </div>
     {/if}
     <!--
-      Native disclosure provides the narrow-screen navigation independently of the desktop
+      Shared Explore sidebar provides navigation independently of the
       account menu.
     -->
-    <details class="mobile-menu" class:closing={drawerClosing} class:entering={drawerEntering} bind:this={mobileElement} ontoggle={() => void loadJoined()}>
+    <details class="explore-sidebar" class:closing={drawerClosing} class:entering={drawerEntering} bind:this={sidebarElement} ontoggle={() => void loadJoined()}>
       <summary aria-label="Open navigation menu" onclick={(event) => {
-        if (!mobileExperiment) return;
         event.preventDefault();
-        if (mobileElement.open) closeDrawer(true);
+        if (sidebarElement.open) closeDrawer(true);
         else void openDrawer();
       }}>☰</summary>
-      <nav aria-label="Mobile navigation">
-        {#if mobileExperiment}
-          <button class="close-drawer" type="button" onclick={() => closeDrawer(true)}>Close menu</button>
-          <h2>Explore Atlas</h2>
-        {/if}
+      <nav aria-label="Explore navigation">
+        <button class="close-drawer" type="button" onclick={() => closeDrawer(true)}>Close menu</button>
+        <h2>Explore Atlas</h2>
         <a href="/" onclick={closeOnNavigation}>Discover</a><a
           href="/communities"
           onclick={closeOnNavigation}>Communities</a
         ><a href="/new" onclick={closeOnNavigation}>Create</a>
-        {#if authenticated && !mobileExperiment}
-          <hr />
-          <a href="/profiles/me" onclick={closeOnNavigation}>My profile</a><a
-            href="/my-drafts"
-            onclick={closeOnNavigation}>My drafts</a
-          ><a href="/my-settings" onclick={closeOnNavigation}>Settings</a>
-          <button
-            type="button"
-            class="logout-action"
-            onclick={() => {
-              closeOnNavigation();
-              void logOut();
-            }}>Log out</button
-          >
-        {/if}
-        {#if mobileExperiment && authenticated}
+        {#if authenticated}
           <hr /><h2>Your communities</h2>
           {#each joined as community}<a href={'/communities/' + encodeURIComponent(community.id)} onclick={closeOnNavigation}>{community.name}</a>{/each}
           {#if communityError}<p role="status">{communityError}</p>{:else if !joined.length}<p>Find communities to join.</p>{/if}
@@ -383,6 +365,7 @@
           href="/feedback"
           onclick={closeOnNavigation}>Give feedback</a
         >
+        <p class="sidebar-copyright">Atlas © {new Date().getFullYear()}. All rights reserved.</p>
       </nav>
     </details>
   </div>
@@ -429,9 +412,6 @@
       .search-placeholder { display: inline; }
       &.search-open .search-toggle { display: none; }
       .search-panel { grid-row: 2; grid-column: 1 / -1; }
-      .mobile-menu nav { position: fixed; inset: 0 auto 0 calc(-1 * var(--atlas-space)); width: min(85vw, 22rem); max-height: 100dvh; overflow-y: auto; border-radius: 0; padding: 1rem; box-shadow: 0 0 0 100vmax #0008; }
-      .mobile-menu h2 { font-size: 0.9rem; margin: 0.5rem; }
-      .mobile-menu p { font-size: 0.8rem; margin: 0.5rem; }
     }
     .bottom-navigation {
       position: fixed; inset: auto 0 0; z-index: 35;
@@ -453,6 +433,12 @@
   }
   @media (prefers-reduced-motion: reduce) { .bottom-navigation, .atlas-header { transition: none; } }
 
+  // Keep the shared Explore toggle beside the Atlas identity on desktop.
+  @media (min-width: 561px) {
+    .atlas-header { padding-left: 2.75rem; }
+    .right-group { position: static; }
+    .explore-sidebar { position: absolute; left: 0; top: 50%; transform: translateY(-50%); }
+  }
   .atlas-header {
     position: sticky;
     top: 0;
@@ -545,7 +531,7 @@
   }
   .primary,
   .account-menu,
-  .mobile-menu nav {
+  .explore-sidebar nav {
     margin: 0;
   }
   .primary,
@@ -598,7 +584,7 @@
     font-weight: 700;
   }
   .account-menu,
-  .mobile-menu nav {
+  .explore-sidebar nav {
     position: absolute;
     z-index: 20;
     right: 0;
@@ -644,9 +630,35 @@
     color: var(--atlas-text);
     margin: 0.25rem 0;
   }
-  .mobile-menu {
-    display: none;
+  .explore-sidebar {
+    display: block;
+    position: relative;
+    summary { cursor: pointer; list-style: none; font-size: 1.3rem; }
+    nav {
+      position: fixed; z-index: 60; inset: 0 auto 0 0;
+      width: min(85vw, 22rem); min-width: 0;
+      height: 100dvh; max-height: 100dvh;
+      overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
+      flex-flow: column nowrap; align-items: stretch;
+      padding: 1rem 1rem max(1rem, env(safe-area-inset-bottom));
+      border-radius: 0; box-shadow: 0 0 0 100vmax #0008;
+      transform: translateX(0); transition: transform 200ms ease-out;
+    }
+    &.closing nav, &.entering nav { transform: translateX(-110%); }
+    nav > * { flex-shrink: 0; min-width: 0; overflow-wrap: anywhere; }
+    h2 { font-size: 0.9rem; margin: 0.5rem; }
+    p { font-size: 0.8rem; margin: 0.5rem; }
+    .sidebar-copyright { margin-top: auto; padding-top: 2rem; color: var(--atlas-muted); }
   }
+  .close-drawer {
+    align-self: flex-end; font: inherit; padding: 0.35rem 0.75rem;
+    cursor: pointer; border: 1px solid var(--atlas-border);
+    border-radius: 999px; background: var(--atlas-surface); color: var(--atlas-text);
+  }
+  .atlas-header:has(.explore-sidebar[open]) { z-index: 50; transform: none; pointer-events: auto; }
+  .atlas-header:has(.explore-sidebar[open]) + .bottom-navigation { visibility: hidden; pointer-events: none; }
+  @media (prefers-reduced-motion: reduce) { .explore-sidebar nav { transition: none; } }
+  @starting-style { .explore-sidebar[open] nav { transform: translateX(-110%); } }
   @media (max-width: 850px) {
     .brand span {
       font-size: 0.75rem;
@@ -674,7 +686,7 @@
     .account {
       display: none;
     }
-    .mobile-menu {
+    .explore-sidebar {
       display: block;
       position: relative;
       summary {
@@ -705,7 +717,7 @@
       .search-placeholder { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8rem; }
       .search-panel { grid-column: 2; grid-row: 1; }
       .search-panel :global(.filter-bar) { padding: 0; border-top: 0; background: transparent; }
-      .mobile-menu nav {
+      .explore-sidebar nav {
         // Global nav uses flex-wrap; a fixed-height column must not wrap
         // into horizontal columns when its community list grows.
         flex-flow: column nowrap;
@@ -720,17 +732,17 @@
         overscroll-behavior: contain;
         touch-action: pan-y;
       }
-      .mobile-menu nav > * { flex-shrink: 0; min-width: 0; overflow-wrap: anywhere; }
+      .explore-sidebar nav > * { flex-shrink: 0; min-width: 0; overflow-wrap: anywhere; }
       .close-drawer { align-self: flex-end; font: inherit; padding: 0.4rem 0.6rem; cursor: pointer; }
     }
     // The header establishes a stacking context. Raise that context, not merely
     // the drawer inside it, so fixed bottom navigation cannot cover the menu.
-    .atlas-header.mobile-experiment:has(.mobile-menu[open]) {
+    .atlas-header.mobile-experiment:has(.explore-sidebar[open]) {
       z-index: 50;
       transform: none;
       pointer-events: auto;
     }
-    .atlas-header.mobile-experiment:has(.mobile-menu[open]) + .bottom-navigation {
+    .atlas-header.mobile-experiment:has(.explore-sidebar[open]) + .bottom-navigation {
       visibility: hidden;
       pointer-events: none;
     }
@@ -744,11 +756,11 @@
   }
   @media (max-width: 560px) {
     .atlas-header.mobile-experiment {
-      .mobile-menu nav {
+      .explore-sidebar nav {
         transform: translateX(0);
         transition: transform 200ms ease-out;
       }
-      .mobile-menu.closing nav { transform: translateX(-110%); }
+      .explore-sidebar.closing nav { transform: translateX(-110%); }
       .close-drawer {
         display: inline-flex;
         align-items: center;
@@ -763,11 +775,11 @@
       .close-drawer:hover { background: color-mix(in srgb, var(--atlas-accent) 10%, var(--atlas-surface)); }
     }
     @starting-style {
-      .atlas-header.mobile-experiment .mobile-menu[open] nav { transform: translateX(-110%); }
+      .atlas-header.mobile-experiment .explore-sidebar[open] nav { transform: translateX(-110%); }
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .atlas-header.mobile-experiment .mobile-menu nav { transition: none; }
+    .atlas-header.mobile-experiment .explore-sidebar nav { transition: none; }
   }
   @media (max-width: 560px) {
     .atlas-header.mobile-experiment {
@@ -781,6 +793,6 @@
   }
   @media (max-width: 560px) {
     .atlas-header.mobile-experiment .search-toggle { display: none; }
-    .atlas-header.mobile-experiment .mobile-menu.entering nav { transform: translateX(-110%); }
+    .atlas-header.mobile-experiment .explore-sidebar.entering nav { transform: translateX(-110%); }
   }
 </style>
