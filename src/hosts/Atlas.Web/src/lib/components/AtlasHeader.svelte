@@ -795,4 +795,22 @@
     .atlas-header.mobile-experiment .search-toggle { display: none; }
     .atlas-header.mobile-experiment .explore-sidebar.entering nav { transform: translateX(-110%); }
   }
+  // Shared drawer wins over generic account dropdown and old phone-only styles.
+  .atlas-header .explore-sidebar nav {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(85vw, 22rem);
+    height: 100dvh;
+    max-height: 100dvh;
+    min-width: 0;
+    overflow-y: auto;
+    flex-flow: column nowrap;
+    align-items: stretch;
+    border-radius: 0;
+    padding: 1rem 1rem max(1rem, env(safe-area-inset-bottom));
+    box-shadow: 0 0 0 100vmax #0008;
+  }
+  .atlas-header .explore-sidebar.closing nav,
+  .atlas-header .explore-sidebar.entering nav { transform: translateX(-110%); }
+  .atlas-header .explore-sidebar .sidebar-copyright { margin-top: auto; }
 </style>
