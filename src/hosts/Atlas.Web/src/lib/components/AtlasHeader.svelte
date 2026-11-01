@@ -797,6 +797,15 @@
     .atlas-header.mobile-experiment .search-toggle { display: none; }
     .atlas-header.mobile-experiment .explore-sidebar.entering nav { transform: translateX(-110%); }
   }
+  // The sidebar is a direct header child, so its toggle stays left of the logo.
+  @media (min-width: 561px) {
+    .atlas-header > .explore-sidebar {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+  }
   // Shared drawer wins over generic account dropdown and old phone-only styles.
   .atlas-header .explore-sidebar nav {
     position: fixed;
