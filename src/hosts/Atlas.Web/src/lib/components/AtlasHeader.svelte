@@ -372,11 +372,6 @@
               void logOut();
             }}>Log out</button
           >
-        {:else}
-          <a href="/login" onclick={closeOnNavigation}>Log in</a><a
-            href="/register"
-            onclick={closeOnNavigation}>Sign up</a
-          >
         {/if}
         {#if mobileExperiment && authenticated}
           <hr /><h2>Your communities</h2>
