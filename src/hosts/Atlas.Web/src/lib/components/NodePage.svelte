@@ -446,7 +446,7 @@
   }
   .dial {
     float: left;
-    margin: 0 var(--dial-text-gap) 0.6rem -0.4rem;
+    margin: 0 var(--dial-text-gap) 0 -0.4rem;
   }
   .description {
     margin: 0 0 var(--atlas-paragraph-gap, 0.65rem);
