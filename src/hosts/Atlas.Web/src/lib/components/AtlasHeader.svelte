@@ -678,7 +678,7 @@
     border-radius: 999px; background: var(--atlas-surface); color: var(--atlas-text);
   }
   .atlas-header:has(.explore-sidebar[open]) { z-index: 50; transform: none; pointer-events: auto; }
-  .atlas-header:has(.explore-sidebar[open]) + .bottom-navigation { visibility: hidden; pointer-events: none; }
+  .atlas-header:has(.explore-sidebar[open]) ~ .bottom-navigation { visibility: hidden; pointer-events: none; }
   @media (prefers-reduced-motion: reduce) { .explore-sidebar nav { transition: none; } }
   @starting-style { .explore-sidebar[open] nav { transform: translateX(-110%); } }
   @media (max-width: 850px) {
@@ -766,7 +766,7 @@
       transform: none;
       pointer-events: auto;
     }
-    .atlas-header.mobile-experiment:has(.explore-sidebar[open]) + .bottom-navigation {
+    .atlas-header.mobile-experiment:has(.explore-sidebar[open]) ~ .bottom-navigation {
       visibility: hidden;
       pointer-events: none;
     }
