@@ -156,9 +156,15 @@
     headerVisible = true;
     measureSidebarTop();
     await tick();
-    drawerFrame = requestAnimationFrame(() => {
+    // Force the offscreen starting position to be painted before transitioning in.
+    // Two animation frames alone can be coalesced by the browser.
+    const panel = sidebarElement.querySelector('nav');
+    if (panel) {
+      panel.getBoundingClientRect();
       drawerFrame = requestAnimationFrame(() => { drawerEntering = false; });
-    });
+    } else {
+      drawerEntering = false;
+    }
   }
   let drawerTimer: ReturnType<typeof setTimeout> | undefined;
   /** Close the drawer after its slide-out, optionally restoring menu-button focus. */
