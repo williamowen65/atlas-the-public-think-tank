@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Atlas.Testing;
 
-/// <summary>Only disposable test databases wait for the asynchronous full-text indexer.</summary>
+/// <summary>Test-only readiness barriers and captured diagnostics for the asynchronous full-text indexer.</summary>
 internal static class SqlFullTextSupport
 {
     internal static void CreateIndexes(AtlasDataContext db) =>
@@ -27,18 +27,56 @@ internal static class SqlFullTextSupport
         // Missing raw-SQL migration steps must fail, rather than silently bypassing coverage.
         using var schema = connection.CreateCommand();
         schema.CommandText = "SELECT COUNT(*) FROM sys.fulltext_indexes WHERE object_id IN (OBJECT_ID(N'dbo.NodeRows'), OBJECT_ID(N'dbo.BlockRows'), OBJECT_ID(N'dbo.CommentRows'), OBJECT_ID(N'dbo.SearchDocuments'))";
-        if (Convert.ToInt32(schema.ExecuteScalar()) != 4)
-            throw new InvalidOperationException("Run the explicit database setup command after applying the EF schema before running discovery tests.");
         // Index population is asynchronous and competes with other disposable databases.
         // This is setup readiness, not a search-query performance budget.
         var readinessTimeout = TimeSpan.FromMinutes(3);
         var timer = Stopwatch.StartNew();
+        var history = new List<string>();
+        var nextSnapshot = TimeSpan.FromSeconds(15);
+        void Snapshot(string phase)
+        {
+            // Print to MSTest's captured standard output and retain the same timeline
+            // in the exception, so failed Test Explorer results include it as well.
+            // Never log connection strings or credentials.
+            var entry = $"[{DateTimeOffset.UtcNow:O}] full-text {phase}; " +
+                $"server={connection.DataSource}; database={connection.Database}; " +
+                $"elapsed={timer.Elapsed.TotalSeconds:F1}s; {ReadIndexStates(connection)}";
+            history.Add(entry);
+            Console.WriteLine(entry);
+        }
+        Snapshot("START");
+        if (Convert.ToInt32(schema.ExecuteScalar()) != 4)
+        {
+            Snapshot("SCHEMA ERROR");
+            throw new InvalidOperationException(
+                "Expected four full-text indexes. Run explicit database setup after applying the EF schema." +
+                Environment.NewLine + string.Join(Environment.NewLine, history));
+        }
         do
         {
-            if (Convert.ToInt32(command.ExecuteScalar()) == 0) return;
+            if (Convert.ToInt32(command.ExecuteScalar()) == 0)
+            {
+                Snapshot("READY");
+                return;
+            }
+            if (timer.Elapsed >= nextSnapshot)
+            {
+                Snapshot("WAITING");
+                nextSnapshot = timer.Elapsed + TimeSpan.FromSeconds(15);
+            }
             Thread.Sleep(100);
         } while (timer.Elapsed < readinessTimeout);
+        Snapshot("TIMEOUT");
+        throw new TimeoutException($"SQL Server full-text population was not ready after {timer.Elapsed.TotalSeconds:F1}s " +
+            $"(budget {readinessTimeout.TotalSeconds:F0}s). " +
+            string.Join(Environment.NewLine, history) +
+            ". Check SQL full-text population logs; query assertions have not been bypassed.");
+    }
+
+    private static string ReadIndexStates(SqlConnection connection)
+    {
         using var diagnostics = connection.CreateCommand();
+        diagnostics.CommandTimeout = 5;
         diagnostics.CommandText = """
             SELECT OBJECT_SCHEMA_NAME(object_id) + N'.' + OBJECT_NAME(object_id),
                 is_enabled, has_crawl_completed,
@@ -59,8 +97,6 @@ internal static class SqlFullTextSupport
         {
             states.Add($"Index diagnostics unavailable (SQL error {error.Number}).");
         }
-        throw new TimeoutException($"SQL Server full-text population was not ready after {timer.Elapsed.TotalSeconds:F1}s " +
-            $"(budget {readinessTimeout.TotalSeconds:F0}s). Database: {connection.Database}. " +
-            string.Join("; ", states) + ". Check SQL full-text population logs; query assertions have not been bypassed.");
+        return states.Count == 0 ? "No matching full-text indexes." : string.Join("; ", states);
     }
 }
