@@ -288,11 +288,16 @@
     z-index: 40;
     max-height: min(55svh, 32rem);
     overflow-y: auto;
+    // Reserve scrollbar space inside the rounded scrolling surface. The browser's
+    // native scrollbar may still paint square ends; the transparent gutter keeps
+    // those ends away from the outer rounded border without clipping content.
+    scrollbar-gutter: stable;
     overscroll-behavior: contain;
     padding: 1rem;
     border: 1px solid var(--atlas-border);
     border-radius: var(--atlas-radius);
     background: var(--atlas-surface);
+    background-clip: padding-box;
     box-shadow: 0 8px 24px #0002;
   }
   h2 {
