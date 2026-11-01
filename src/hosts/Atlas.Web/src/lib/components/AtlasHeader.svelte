@@ -131,6 +131,8 @@
    * Mounted account-menu container used to detect clicks outside it.
    */
   let accountElement = $state<HTMLDivElement>();
+  let mobileAccountElement = $state<HTMLDivElement>();
+  let mobileAccountToggle = $state<HTMLButtonElement>();
   let mobileElement: HTMLDetailsElement;
   /** Keep native details open until its exit transition finishes. */
   let drawerClosing = $state(false);
@@ -182,7 +184,7 @@
       // focus opens results again, including when using the keyboard.
       searchPanel?.querySelector('input')?.blur();
     }
-    if (menuOpen && event.target instanceof Node && !accountElement?.contains(event.target))
+    if (menuOpen && event.target instanceof Node && !accountElement?.contains(event.target) && !mobileAccountElement?.contains(event.target))
       menuOpen = false;
     if (
       mobileElement?.open &&
@@ -199,7 +201,10 @@
         if (mobileExperiment && phone) searchPanel?.querySelector('input')?.blur();
         else searchToggle?.focus();
       }
-      menuOpen = false;
+      if (menuOpen) {
+        menuOpen = false;
+        mobileAccountToggle?.focus();
+      }
       if (mobileElement?.open) {
         closeDrawer(true);
       }
@@ -211,6 +216,7 @@
   }
   function closeOnResize() {
     if (window.innerWidth > 560 && mobileElement?.open) closeDrawer();
+    menuOpen = false;
   }
   /**
    * Uppercase first character of the display name for the avatar, with U as fallback.
@@ -351,7 +357,7 @@
           href="/communities"
           onclick={closeOnNavigation}>Communities</a
         ><a href="/new" onclick={closeOnNavigation}>Create</a>
-        {#if authenticated}
+        {#if authenticated && !mobileExperiment}
           <hr />
           <a href="/profiles/me" onclick={closeOnNavigation}>My profile</a><a
             href="/my-drafts"
@@ -389,7 +395,27 @@
   <nav class="bottom-navigation" class:hidden={!headerVisible} aria-label="Bottom navigation">
     <a href="/" aria-current={active === 'discover' ? 'page' : undefined}><span aria-hidden="true">⌂</span>Discover</a>
     <a href="/new" aria-current={active === 'create' ? 'page' : undefined}><span aria-hidden="true">＋</span>Create</a>
-    <a href={authenticated ? '/profiles/me' : '/login'}><span aria-hidden="true">♙</span>You</a>
+    {#if authenticated}
+      <div class="bottom-account" bind:this={mobileAccountElement}>
+        <button class="bottom-account-toggle" bind:this={mobileAccountToggle} type="button" aria-label="Open account menu" aria-expanded={menuOpen} aria-controls="mobile-account-menu" onclick={() => { menuOpen = !menuOpen; if (menuOpen) { closeDrawer(); headerVisible = true; } }}>
+          <span class="bottom-avatar" aria-hidden="true">{initial}</span>You
+        </button>
+        {#if menuOpen}
+          <nav id="mobile-account-menu" class="mobile-account-menu" aria-label="Account navigation">
+            <a href="/profiles/me" onclick={closeOnNavigation}>My profile</a>
+            <a href="/my-drafts" onclick={closeOnNavigation}>My drafts</a>
+            <a href="/my-settings" onclick={closeOnNavigation}>Settings</a>
+            <hr />
+            <a href="/about" onclick={closeOnNavigation}>About Atlas</a>
+            <a href="/feedback" onclick={closeOnNavigation}>Give feedback</a>
+            <hr />
+            <button type="button" class="logout-action" disabled={loggingOut} onclick={() => { closeOnNavigation(); void logOut(); }}>{loggingOut ? 'Logging out…' : 'Log out'}</button>
+          </nav>
+        {/if}
+      </div>
+    {:else}
+      <a href="/login"><span aria-hidden="true">♙</span>You</a>
+    {/if}
   </nav>
 {/if}
 
@@ -417,8 +443,14 @@
       padding: 0.35rem 0 max(0.35rem, env(safe-area-inset-bottom));
       border-top: 1px solid var(--atlas-border); background: var(--atlas-surface);
       transition: transform 180ms ease;
-      a { display: flex; flex: 1; align-items: center; flex-direction: column; min-height: 2.75rem; font-size: 0.75rem; }
-      span { font-size: 1.4rem; line-height: 1.3; }
+      a, .bottom-account-toggle { display: flex; flex: 1; align-items: center; flex-direction: column; min-height: 2.75rem; font-size: 0.75rem; }
+      > a > span { font-size: 1.4rem; line-height: 1.3; }
+      .bottom-account { flex: 1; display: flex; justify-content: center; }
+      .bottom-account-toggle { width: 100%; border: 0; padding: 0; background: transparent; color: var(--atlas-text); font: inherit; cursor: pointer; }
+      .bottom-avatar { display: grid; place-items: center; width: 1.65rem; height: 1.65rem; border: 1px solid var(--atlas-border); border-radius: 50%; font-size: 0.9rem; font-weight: 700; line-height: 1; }
+      .mobile-account-menu { position: fixed; right: 0.5rem; bottom: calc(3.8rem + env(safe-area-inset-bottom)); z-index: 45; display: flex; flex-direction: column; gap: 0.15rem; width: min(17rem, calc(100vw - 1rem)); padding: 0.5rem; border: 1px solid var(--atlas-border); border-radius: 0.75rem; background: var(--atlas-surface); box-shadow: 0 8px 24px #0003; }
+      .mobile-account-menu a, .mobile-account-menu button { display: block; flex: none; min-height: 0; padding: 0.65rem; text-align: left; font-size: 0.9rem; }
+      .mobile-account-menu hr { width: 100%; border: 0; border-top: 1px solid var(--atlas-border); }
       &.hidden { transform: translateY(110%); visibility: hidden; }
       &:focus-within { transform: none; visibility: visible; }
     }
