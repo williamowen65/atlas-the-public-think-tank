@@ -244,6 +244,36 @@
   class:filters-open={filtersOpen}
   id="page-top"
 >
+    <!--
+      Shared Explore sidebar provides navigation independently of the
+      account menu.
+    -->
+    <details class="explore-sidebar" class:closing={drawerClosing} class:entering={drawerEntering} bind:this={sidebarElement} ontoggle={() => void loadJoined()}>
+      <summary aria-label="Open navigation menu" onclick={(event) => {
+        event.preventDefault();
+        if (sidebarElement.open) closeDrawer(true);
+        else void openDrawer();
+      }}>☰</summary>
+      <nav aria-label="Explore navigation">
+        <button class="close-drawer" type="button" onclick={() => closeDrawer(true)}>Close menu</button>
+        <h2>Explore Atlas</h2>
+        <a href="/" onclick={closeOnNavigation}>Discover</a><a
+          href="/communities"
+          onclick={closeOnNavigation}>Communities</a
+        ><a href="/new" onclick={closeOnNavigation}>Create</a>
+        {#if authenticated}
+          <hr /><h2>Your communities</h2>
+          {#each joined as community}<a href={'/communities/' + encodeURIComponent(community.id)} onclick={closeOnNavigation}>{community.name}</a>{/each}
+          {#if communityError}<p role="status">{communityError}</p>{:else if !joined.length}<p>Find communities to join.</p>{/if}
+        {/if}
+        <hr />
+        <a href="/about" onclick={closeOnNavigation}>About Atlas</a><a
+          href="/feedback"
+          onclick={closeOnNavigation}>Give feedback</a
+        >
+        <p class="sidebar-copyright">Atlas © {new Date().getFullYear()}. All rights reserved.</p>
+      </nav>
+    </details>
   <a class="brand" href="/" aria-label="Atlas home"
     ><strong>Atlas</strong><span>The Public Think Tank</span></a
   >
@@ -338,36 +368,7 @@
         >
       </div>
     {/if}
-    <!--
-      Shared Explore sidebar provides navigation independently of the
-      account menu.
-    -->
-    <details class="explore-sidebar" class:closing={drawerClosing} class:entering={drawerEntering} bind:this={sidebarElement} ontoggle={() => void loadJoined()}>
-      <summary aria-label="Open navigation menu" onclick={(event) => {
-        event.preventDefault();
-        if (sidebarElement.open) closeDrawer(true);
-        else void openDrawer();
-      }}>☰</summary>
-      <nav aria-label="Explore navigation">
-        <button class="close-drawer" type="button" onclick={() => closeDrawer(true)}>Close menu</button>
-        <h2>Explore Atlas</h2>
-        <a href="/" onclick={closeOnNavigation}>Discover</a><a
-          href="/communities"
-          onclick={closeOnNavigation}>Communities</a
-        ><a href="/new" onclick={closeOnNavigation}>Create</a>
-        {#if authenticated}
-          <hr /><h2>Your communities</h2>
-          {#each joined as community}<a href={'/communities/' + encodeURIComponent(community.id)} onclick={closeOnNavigation}>{community.name}</a>{/each}
-          {#if communityError}<p role="status">{communityError}</p>{:else if !joined.length}<p>Find communities to join.</p>{/if}
-        {/if}
-        <hr />
-        <a href="/about" onclick={closeOnNavigation}>About Atlas</a><a
-          href="/feedback"
-          onclick={closeOnNavigation}>Give feedback</a
-        >
-        <p class="sidebar-copyright">Atlas © {new Date().getFullYear()}. All rights reserved.</p>
-      </nav>
-    </details>
+
   </div>
 </header>
 {#if mobileExperiment}
@@ -436,7 +437,6 @@
   // Keep the shared Explore toggle beside the Atlas identity on desktop.
   @media (min-width: 561px) {
     .atlas-header { padding-left: 2.75rem; }
-    .right-group { position: static; }
     .explore-sidebar { position: absolute; left: 0; top: 50%; transform: translateY(-50%); }
   }
   .atlas-header {
@@ -704,6 +704,7 @@
       grid-column: 3;
       grid-row: 1;
     }
+    .explore-sidebar { grid-column: 1; grid-row: 1; }
   }
   @media (max-width: 560px) {
     // A single header row: menu on the left, search occupying the remaining width.
@@ -711,7 +712,8 @@
       grid-template-columns: auto minmax(0, 1fr);
       padding-block: 0.5rem;
       .brand { display: none; }
-      .right-group { grid-column: 1; grid-row: 1; }
+      .explore-sidebar { grid-column: 1; grid-row: 1; justify-self: start; }
+      .right-group { display: none; }
       .search-toggle { grid-column: 2; grid-row: 1; min-width: 0; padding-inline: 0.65rem; }
       .search-toggle svg { flex-shrink: 0; }
       .search-placeholder { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8rem; }
