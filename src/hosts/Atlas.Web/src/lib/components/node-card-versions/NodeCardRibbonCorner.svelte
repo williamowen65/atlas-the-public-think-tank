@@ -414,19 +414,11 @@
       h2 { font-size: 1.2rem; }
       .title-type, .by-prefix, .community-prefix { display: none; }
       .byline { font-size: 0.75rem; line-height: 1.5; }
-      .body { position: relative; display: flow-root; padding-bottom: 4rem; }
+      // Keep the description and Read more in one text flow, as on desktop.
+      // The button's existing right float lets text occupy the remaining width.
+      .body { display: flow-root; }
       .description { display: block; }
       .dial { display: contents; }
-      .read-more {
-        position: absolute;
-        inset-inline-end: var(--card-padding);
-        bottom: 0.65rem;
-        float: none;
-        margin: 0;
-        min-height: 2.75rem;
-        display: flex;
-        align-items: center;
-      }
       .navigation-details { justify-content: flex-start; text-align: left; margin-left: 0; min-width: 0; flex-basis: 100%; }
     }
   }
