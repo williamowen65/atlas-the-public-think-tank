@@ -817,7 +817,7 @@
   @media (min-width: 561px) {
     // Applied after the base header padding, reserving room for the hamburger.
     // The toggle is positioned independently; the brand must not share its space.
-    .atlas-header { padding-left: 4.5rem; }
+    .atlas-header { padding-left: 2.5rem; }
     .atlas-header > .explore-sidebar {
       position: absolute;
       left: 0;
