@@ -410,7 +410,7 @@
   @media (max-width: 560px) {
     .mobile-layout {
       --card-padding: 0.75rem;
-      .mobile-type { display: block; margin: 0 0 0.25rem; color: var(--atlas-accent); font-size: 0.75rem; font-weight: 700; }
+      .mobile-type { display: block; margin: 0 0 0.25rem; color: var(--atlas-accent); font-size: 2.1rem; line-height: 0; font-weight: 700; }
       h2 { font-size: 1.2rem; }
       .title-type, .by-prefix, .community-prefix { display: none; }
       .byline { font-size: 0.75rem; line-height: 1.5; }
