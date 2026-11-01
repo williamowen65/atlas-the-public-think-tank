@@ -253,23 +253,10 @@ public sealed class SqlAuditTests
 
     private static async Task WithDatabase(Func<Func<AtlasDataContext>, Task> test)
     {
-        var config = new ConfigurationBuilder().AddUserSecrets<SqlAuditTests>(optional: true).AddEnvironmentVariables().Build();
-        var server = config["ATLAS_SQL_TEST_CONNECTION_STRING"];
-        if (string.IsNullOrWhiteSpace(server)) Assert.Inconclusive("Set ATLAS_SQL_TEST_CONNECTION_STRING to run SQL audit tests.");
-        var connection = new SqlConnectionStringBuilder(server) { InitialCatalog = "AtlasAuditTests_" + Guid.NewGuid().ToString("N") }.ConnectionString;
-        var options = new DbContextOptionsBuilder<AtlasDataContext>().UseSqlServer(connection).Options;
-        AtlasDataContext Open() => new(options);
-        try
-        {
-            using var db = Open();
-            await db.Database.EnsureCreatedAsync();
-            await test(Open);
-        }
-        finally
-        {
-            using var db = Open();
-            await db.Database.EnsureDeletedAsync();
-        }
+        // Audit assertions use the same empty, exclusively leased migrated database
+        // as other repository tests; fresh-schema behavior has dedicated setup tests.
+        using var database = SqlTestDatabase.Create();
+        await test(database.Open);
     }
 
     private sealed class Destination(bool fail) : IAuditDestination

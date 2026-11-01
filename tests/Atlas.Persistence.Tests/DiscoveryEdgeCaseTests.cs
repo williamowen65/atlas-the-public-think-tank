@@ -16,7 +16,7 @@ public sealed class DiscoveryEdgeCaseTests
         var a = new DiscoveryCandidate(Guid.Parse("00000001-0000-0000-0000-ffffffffffff"), "Café", "", type, author, false, created, created, 1, 5, [], []);
         var b = a with { NodeId = Guid.Parse("00000002-0000-0000-0000-000000000000"), Title = "cafe" };
         DiscoverySqlFixture.Seed(fixture, b, a);
-        var query = new SqlDiscoveryReadQuery(fixture.OpenForDiscovery);
+        var query = new SqlDiscoveryReadQuery(fixture.Open);
         var page = query.DiscoverPage(new(CreatedFrom: new(2026, 10, 1), CreatedThrough: new(2026, 10, 1)));
         CollectionAssert.AreEqual(new[] { a.NodeId, b.NodeId }, page.Items.Select(item => item.NodeId).ToArray());
         Assert.AreEqual(5 + Math.Log10(2) / 100, page.Items[0].RankingScore, 0.0000001);
@@ -75,7 +75,7 @@ public sealed class DiscoveryEdgeCaseTests
             db.SaveChanges();
         }
         using var cache = new DiscoveryCache();
-        var query = new SqlDiscoveryReadQuery(fixture.OpenForDiscovery, cache);
+        var query = new SqlDiscoveryReadQuery(fixture.Open, cache);
         // This test checks card/breadcrumb projections, so identify nodes exactly.
         // Natural-language search intentionally also matches other nodes sharing a word.
         var parentCard = query.DiscoverPage(new(NodeId: parent.NodeId)).Items.Single().Card!;

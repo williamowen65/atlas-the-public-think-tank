@@ -1,34 +1,57 @@
-# Persistence test runtime
+# Shared persistence test database trial
 
-A source file is not a database boundary. Each SqlTestDatabase.Create call exclusively
-leases a database. A lease is returned after resetting committed data. Pools are
-separated by connection template, migration/current-model setup, and full-text flag.
-Multiple fixture instances held at the same time require different databases.
-Setup/schema-mutation tests opt out. SqlAuditTests and SqlPersistenceTests also
-manage databases independently.
+Ordinary SqlTestDatabase.Create calls share one migration-backed SQL database and
+its supplemental schema/full-text indexes for this testhost run. Current-model and
+no-full-text requests on reusable fixtures now use that common schema. Explicit
+reuse:false calls retain their original setup mode and disposable databases.
 
-Assembly cleanup prints fixture creation/reuse/reset counts and cumulative full-text
-wait/reset time. These timings overlap across workers and must not be interpreted
-as wall-clock totals. Counts exclude independently managed databases.
+The database is exclusively leased until Dispose resets committed application and
+search-projection rows and returns it. Whole-table Count/Single assertions remain
+valid because ordinary SQL fixtures do not overlap. Methods are still scheduled
+in parallel; shared fixtures queue at acquisition, while independent tests can
+overlap. Concurrency tests can still run multiple requests inside their own lease.
+This is NOT parallel independent datasets inside one database.
 
-Cache tests wait explicitly before text assertions, including after changing block
-text. Pure relational cache assertions do not wait for indexing. Parity tests opt
-into one post-seed barrier for immutable datasets used in text searches. Dedicated
-full-text mutation/readiness tests retain their existing waits and assertions.
+Parity helpers release the previous dataset before acquiring a replacement.
+Database-identity cache coverage explicitly requests another database. Sequential
+lease coverage asserts that the connection identity is reused. Shared schema is
+deleted at assembly cleanup. A failed reset discards it and allows a replacement;
+a broken database must never contaminate the next test.
 
-Run from the repository root:
+Exceptions:
+- DiscoveryDatabaseSetupTests prove fresh model/migration setup and reject outer
+  transactions. They deliberately retain fresh disposable databases.
+- The two unavailable-index cases in DiscoveryFullTextTests disable/drop an index
+  to exercise the real failure contract, using disposable databases. Healthy
+  full-text behavior tests now use the shared database.
+- One operation-validation regression installs a rejecting CHECK constraint;
+  that method alone uses an independent database.
+- Cache cross-database and simultaneous independent-fixture checks intentionally
+  need distinct database identities.
+Audit and demo-seed tests also use the shared database. Their assertions remain;
+dedicated setup tests retain responsibility for fresh-schema validation. Exceptions
+above mean the entire project is not literally one database.
+
+Readiness waits remain before actual text-search assertions. Relational ancestor,
+date-ordering and child-feed checks no longer wait for indexing. Newly committed
+searchable data must still be populated by SQL Server; database reuse does not
+guarantee that local full-text timeouts disappear.
+
+The project sets RunSettingsFilePath to ../persistence-parallel.runsettings, also
+listed in Atlas.sln. Test Explorer project defaults and explicit CLI runs point at
+the same file. A manually selected solution-wide settings file may override it;
+use this file when comparing runtimes. The general tests/parallel.runsettings is
+unchanged for other projects.
 
 ```powershell
 dotnet test tests/Atlas.Persistence.Tests/Atlas.Persistence.Tests.csproj --settings tests/persistence-parallel.runsettings --logger "console;verbosity=detailed"
 ```
 
-Workers=0 uses available logical processors, with method scope allowing workers to run individual methods from the same class.
-Each method owns its fixture list, contexts, cache and exclusive database leases.
-AtlasTime.Use uses AsyncLocal, so quota clocks do not change other tests' clocks.
-The obsolete class-wide DoNotParallelize on node creation quota tests is removed. tests/parallel.runsettings still caps workers at two if selected;
-the explicit persistence settings above select automatic worker count instead.
-Compare repeated runs on the same SQL Server. If automatic workers cause contention,
-set Workers in the persistence settings to 2 or 4 and compare elapsed time and waits.
-Preserve test count and failures when comparing results. No speedup is assumed until
-measured. Full-text indexing of newly committed text still takes time even when
-database/schema setup is reused.
+Fixture totals report creation/reuse/reset counts and cumulative readiness/reset
+time. Counts include independent SqlTestDatabase fixtures, audit and demo-seed leases. Timings overlap when independent fixtures run concurrently.
+Measure wall-clock runtime and unchanged test results separately. Physical database
+allocation reflects reuse/high-water marks rather than a fresh file per scenario.
+
+Validation: this change needs compilation and SQL execution in CI plus repeated
+local full-suite runs. No measured speedup or resolution of the local indexing
+failures is claimed.

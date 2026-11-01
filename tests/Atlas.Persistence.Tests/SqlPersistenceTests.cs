@@ -14,23 +14,13 @@ public sealed class SqlPersistenceTests
     [TestMethod]
     public async Task DemoSeed_creates_domain_rows_and_sql_enforces_vote_uniqueness()
     {
-        // Match the other SQL fixtures: shared local secrets, overridden by CI's environment.
-        var configuration = new ConfigurationBuilder()
-            .AddUserSecrets<SqlPersistenceTests>(optional: true)
-            .AddEnvironmentVariables()
-            .Build();
-        var serverConnection = configuration["ATLAS_SQL_TEST_CONNECTION_STRING"];
-        if (string.IsNullOrWhiteSpace(serverConnection))
-            Assert.Inconclusive("Set ATLAS_SQL_TEST_CONNECTION_STRING in user secrets or environment variables to run the SQL Server integration test.");
-
-        var connection = new SqlConnectionStringBuilder(serverConnection)
-        {
-            InitialCatalog = $"AtlasPersistenceTests_{Guid.NewGuid():N}"
-        }.ConnectionString;
+        using var fixture = SqlTestDatabase.Create();
+        using var configuration = fixture.Open();
+        var connection = configuration.Database.GetConnectionString()!;
         var options = new DbContextOptionsBuilder<AtlasDataContext>().UseSqlServer(connection).Options;
         try
         {
-            SqlStorage.Configure(connection); // EF creates an isolated database and applies the migration.
+            SqlStorage.Configure(connection); // Reconcile setup on the already initialized shared schema.
             using var identityServices = new ServiceCollection().AddAtlasIdentity(connection)
                 .BuildServiceProvider(new ServiceProviderOptions {
                     ValidateScopes = true
@@ -91,8 +81,7 @@ public sealed class SqlPersistenceTests
         }
         finally
         {
-            using var database = new AtlasDataContext(options);
-            database.Database.EnsureDeleted(); // Only the uniquely named database created above.
+            fixture.Dispose(); // Reset rows and release the shared lease, including seeded Identity rows.
         }
     }
 }

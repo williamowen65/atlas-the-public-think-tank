@@ -10,8 +10,10 @@ public sealed class SqlTestDatabasePoolTests
     {
         // Pool reset checks committed rows and SQL metadata. It does not need the
         // asynchronous indexer to finish: dedicated search tests cover indexed results.
+        string firstConnection;
         using (var first = SqlTestDatabase.Create(useCurrentModel: true))
         {
+            using (var identity = first.Open()) firstConnection = identity.Database.GetConnectionString()!;
             var now = DateTimeOffset.UtcNow;
             DiscoverySqlFixture.Seed(first, new DiscoveryCandidate(
                 Guid.NewGuid(), "Pool sentinel", "Only the first lease", Guid.NewGuid(),
@@ -28,9 +30,11 @@ public sealed class SqlTestDatabasePoolTests
             first.AddNode();
         }
 
-        // Scheduling may choose another clean database; either lease must be isolated.
+        // Other tests may lease it in between; the shared database identity stays stable.
         using var second = SqlTestDatabase.Create(useCurrentModel: true);
         using var db = second.Open();
+        Assert.AreEqual(firstConnection, db.Database.GetConnectionString(),
+            "Sequential ordinary leases must reuse the same initialized database.");
         Assert.AreEqual(0, db.NodeRows.Count());
         Assert.AreEqual(0, db.ParticipantRows.Count());
         Assert.AreEqual(0, db.Database.SqlQuery<int>($"SELECT COUNT(*) AS [Value] FROM dbo.SearchDocuments").Single());
@@ -45,9 +49,9 @@ public sealed class SqlTestDatabasePoolTests
     [TestMethod]
     public void SimultaneousLeasesUseDifferentDatabases()
     {
-        // Holding both leases models the class-level parallel runner.
-        using var first = SqlTestDatabase.Create(useCurrentModel: true);
-        using var second = SqlTestDatabase.Create(useCurrentModel: true);
+        // Explicitly independent fixtures can overlap the shared-database tests.
+        using var first = SqlTestDatabase.Create(useCurrentModel: true, reuse: false);
+        using var second = SqlTestDatabase.Create(useCurrentModel: true, reuse: false);
         using var left = first.Open();
         using var right = second.Open();
         Assert.AreNotEqual(left.Database.GetDbConnection().Database, right.Database.GetDbConnection().Database);

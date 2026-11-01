@@ -29,7 +29,7 @@ public sealed class DiscoveryFullTextTests
     [TestMethod]
     public void NaturalLanguageMatchesReorderedWordsInflectionsAndCombinedFilters()
     {
-        using var fixture = SqlTestDatabase.Create(useCurrentModel: true, reuse: false);
+        using var fixture = SqlTestDatabase.Create(useCurrentModel: true);
         var now = DateTimeOffset.UtcNow;
         var first = new DiscoveryCandidate(Guid.NewGuid(), "Orcas need protection", "Protecting salmon habitats", Guid.NewGuid(), Guid.NewGuid(), false, now, now, 0, null, [], []);
         var archived = first with { NodeId = Guid.NewGuid(), IsArchived = true };
@@ -53,7 +53,7 @@ public sealed class DiscoveryFullTextTests
     [TestMethod]
     public void UpdatedBlockTextIsIndexedAndEarlierEmptySearchPagesAreNotCached()
     {
-        using var fixture = SqlTestDatabase.Create(useCurrentModel: true, reuse: false);
+        using var fixture = SqlTestDatabase.Create(useCurrentModel: true);
         var now = DateTimeOffset.UtcNow;
         var candidate = new DiscoveryCandidate(Guid.NewGuid(), "Wildlife", "Forests", Guid.NewGuid(), Guid.NewGuid(), false, now, now, 0, null, [], []);
         DiscoverySqlFixture.Seed(fixture, candidate);

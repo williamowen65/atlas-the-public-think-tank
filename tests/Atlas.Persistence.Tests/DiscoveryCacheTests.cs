@@ -159,7 +159,8 @@ public sealed class DiscoveryCacheTests
         Assert.AreEqual(1L, cache.PageHits);
         Assert.AreEqual(2L, cache.DetailMisses);
         Assert.AreEqual(2L, cache.RejectedEntries);
-        using var other = SqlTestDatabase.Create(useCurrentModel: true);
+        // This assertion intentionally requires a different database identity.
+        using var other = SqlTestDatabase.Create(useCurrentModel: true, reuse: false);
         Assert.Throws<InvalidOperationException>(() => new SqlDiscoveryReadQuery(other.Open, cache).DiscoverPage(new()));
     }
 

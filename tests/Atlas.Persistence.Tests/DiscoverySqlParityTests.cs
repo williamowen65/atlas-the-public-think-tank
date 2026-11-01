@@ -656,7 +656,11 @@ public sealed class DiscoverySqlParityTests
 
     private DiscoveryService CreateService(bool waitForIndexing, params DiscoveryCandidate[] candidates)
     {
-        var database = SqlTestDatabase.Create(useCurrentModel: true);
+        // Service calls in these scenarios use the previous dataset completely
+        // before replacing it. Release it before acquiring the shared database again.
+        foreach (var previous in _databases) previous.Dispose();
+        _databases.Clear();
+        var database = SqlTestDatabase.Create();
         _databases.Add(database);
         DiscoverySqlFixture.Seed(database, candidates);
         // Candidates are immutable for this service: search needs one barrier after seed.
