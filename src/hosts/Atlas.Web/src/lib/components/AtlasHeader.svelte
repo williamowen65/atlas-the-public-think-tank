@@ -505,6 +505,12 @@
       background: var(--atlas-surface);
       box-shadow: 0 8px 24px #0002;
     }
+    // The results list has its own scrolling surface. Match its corners to the
+    // outer panel rather than clipping overflow (which would cut off overlays).
+    .atlas-header .search-panel :global(.results-slot),
+    .atlas-header .search-panel :global(.results-slot > *) {
+      border-radius: var(--atlas-radius);
+    }
   }
   // Keep the shared Explore toggle beside the Atlas identity on desktop.
   @media (min-width: 561px) {
