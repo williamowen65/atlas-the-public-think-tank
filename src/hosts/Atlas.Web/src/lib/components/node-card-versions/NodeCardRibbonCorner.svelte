@@ -216,9 +216,6 @@
     padding-right: 3.25rem;
     min-height: 2.75rem;
   }
-  .node-card:has(> :global(.edit-node.corner)) > header {
-    padding-right: 3.25rem;
-  }
 
   .node-card {
     position: relative;
