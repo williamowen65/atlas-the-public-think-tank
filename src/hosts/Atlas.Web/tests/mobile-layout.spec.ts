@@ -170,7 +170,7 @@ test('mobile header stays on one row and long community drawer scrolls above bot
   await bottom.getByRole('link', { name: 'Discover' }).hover();
   await expect(bottom.getByRole('link', { name: 'Discover' })).toHaveCSS('text-decoration-line', 'none');
   await summary.click();
-  const drawer = page.getByRole('navigation', { name: 'Mobile navigation', exact: true });
+  const drawer = page.getByRole('navigation', { name: 'Explore navigation', exact: true });
   await expect(drawer.getByRole('link', { name: 'Community 39', exact: true })).toHaveCount(1);
   await expect(bottom).toBeHidden();
   await expect(drawer).toHaveCSS('flex-wrap', 'nowrap');
@@ -186,12 +186,12 @@ test('mobile header stays on one row and long community drawer scrolls above bot
 test('drawer animates after opening and outside dismissal', async ({ page }) => {
   await page.goto('http://127.0.0.1:4173/');
   const summary = page.getByLabel('Open navigation menu', { exact: true });
-  const details = page.locator('details.mobile-menu');
-  const drawer = page.getByRole('navigation', { name: 'Mobile navigation', exact: true });
+  const details = page.locator('details.explore-sidebar');
+  const drawer = page.getByRole('navigation', { name: 'Explore navigation', exact: true });
   await summary.click();
   await expect(drawer).toBeVisible();
   await expect(details).not.toHaveClass(/entering/);
-  // The exposed right-hand strip is outside the drawer, not its Close button.
+  // Clicking the exposed backdrop dismisses the shared Explore drawer.
   await page.mouse.click(385, 500);
   await expect(details).toHaveClass(/closing/);
   await expect(drawer).toBeHidden();
