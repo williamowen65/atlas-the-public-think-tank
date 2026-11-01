@@ -461,6 +461,19 @@
   // Leave the mobile experiment untouched; its search remains permanently available.
   @media (min-width: 561px) {
     .atlas-header.search-open .search-toggle { display: none; }
+    // Animate the inline field from the search button's right edge into the
+    // available header space. Only transform/opacity change, so navigation stays put.
+    .atlas-header .search-panel {
+      transform-origin: right center;
+      animation: atlas-search-expand 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    }
+    @keyframes atlas-search-expand {
+      from { transform: scaleX(0.08); opacity: 0.35; }
+      to { transform: scaleX(1); opacity: 1; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .atlas-header .search-panel { animation: none; }
+    }
     .atlas-header .search-panel {
       grid-column: 2;
       grid-row: 1;
