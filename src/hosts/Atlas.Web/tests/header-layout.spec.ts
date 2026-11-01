@@ -23,14 +23,14 @@ for (const authenticated of [false, true]) {
       const header = page.locator('.atlas-header');
       if (authenticated) await expect(header.locator('.account .avatar')).toHaveCount(1);
       if (width <= 560) {
-        // Phone headers keep one real input mounted and hide the menu while editing.
+        // Phone headers keep the shared Explore toggle available while editing search.
         const search = header.getByRole('textbox', { name: 'Search nodes and filters' });
         const menu = header.getByLabel('Open navigation menu', { exact: true });
         await expect(search).toBeVisible();
         await expect(menu).toBeVisible();
         await expect(search).toHaveAttribute('placeholder', 'Atlas: The Public Think Tank');
         await search.click();
-        await expect(menu).toBeHidden();
+        await expect(menu).toBeVisible();
         await search.fill('orcas');
         await header.getByRole('button', { name: 'Search', exact: true }).click();
         await expect.poll(() => page.evaluate(() => localStorage.getItem('atlas.discovery.query.v1'))).toBe('orcas');
@@ -46,6 +46,8 @@ for (const authenticated of [false, true]) {
         expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
         continue;
       }
+      // The Explore sidebar toggle is now present at desktop widths too.
+      await expect(header.getByLabel('Open navigation menu', { exact: true })).toBeVisible();
       const brand = header.getByRole('link', { name: 'Atlas home', exact: true });
       await expect(brand).toBeVisible();
       const search = header.getByRole('textbox', { name: 'Search nodes and filters' });

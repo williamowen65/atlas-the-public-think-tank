@@ -24,7 +24,7 @@
     displayName = 'Atlas User',
   }: {
     /** Highlighted navigation item; null leaves all items unselected. */
-    /** Enable mobile search, community drawer and bottom navigation exploration. */
+    /** Enable experimental mobile search and bottom navigation layout. */
     mobileExperiment?: boolean;
     active?: 'discover' | 'communities' | 'create' | 'login' | 'register' | null;
     /**
@@ -80,7 +80,7 @@
     lastScroll = window.scrollY;
     const onScroll = () => {
       const next = window.scrollY;
-      if (searchOpen || filtersOpen || mobileElement?.open || document.activeElement?.closest('.bottom-navigation, .atlas-header') || next < 40 || next < lastScroll - 3) headerVisible = true;
+      if (searchOpen || filtersOpen || menuOpen || sidebarElement?.open || document.activeElement?.closest('.bottom-navigation, .atlas-header') || next < 40 || next < lastScroll - 3) headerVisible = true;
       else if (next > lastScroll + 3 && next > 100) headerVisible = false;
       lastScroll = next;
     };
@@ -89,7 +89,7 @@
   });
 
   /**
-   * Whether the desktop account navigation is open.
+   * Whether the account navigation is open.
    */
   let menuOpen = $state(false);
   /** Membership list is loaded on disclosure, rather than once per feed card. */
@@ -97,7 +97,7 @@
   let communityError = $state('');
   /** Refresh the switcher whenever its drawer opens; no membership data is invented. */
   async function loadJoined() {
-    if (!mobileElement?.open || !mobileExperiment) return;
+    if (!sidebarElement?.open) return;
     joined = [];
     communityError = '';
     if (!authenticated) return;
@@ -131,7 +131,16 @@
    * Mounted account-menu container used to detect clicks outside it.
    */
   let accountElement = $state<HTMLDivElement>();
-  let mobileElement: HTMLDetailsElement;
+  let mobileAccountElement = $state<HTMLDivElement>();
+  let mobileAccountToggle = $state<HTMLButtonElement>();
+  /** Shared Explore sidebar on desktop and mobile. */
+  let sidebarElement: HTMLDetailsElement;
+  let headerElement: HTMLElement;
+  let sidebarTop = $state(0);
+  let sidebarOpen = $state(false);
+  function measureSidebarTop() {
+    if (headerElement) sidebarTop = Math.max(0, headerElement.getBoundingClientRect().bottom);
+  }
   /** Keep native details open until its exit transition finishes. */
   let drawerClosing = $state(false);
   let drawerEntering = $state(false);
@@ -140,26 +149,36 @@
   async function openDrawer() {
     clearTimeout(drawerTimer);
     drawerClosing = false;
+    menuOpen = false;
     drawerEntering = true;
-    mobileElement.open = true;
+    sidebarElement.open = true;
+    sidebarOpen = true;
     headerVisible = true;
+    measureSidebarTop();
     await tick();
-    drawerFrame = requestAnimationFrame(() => {
+    // Force the offscreen starting position to be painted before transitioning in.
+    // Two animation frames alone can be coalesced by the browser.
+    const panel = sidebarElement.querySelector('nav');
+    if (panel) {
+      panel.getBoundingClientRect();
       drawerFrame = requestAnimationFrame(() => { drawerEntering = false; });
-    });
+    } else {
+      drawerEntering = false;
+    }
   }
   let drawerTimer: ReturnType<typeof setTimeout> | undefined;
   /** Close the drawer after its slide-out, optionally restoring menu-button focus. */
   function closeDrawer(restoreFocus = false) {
-    if (!mobileElement?.open || drawerClosing) return;
+    if (!sidebarElement?.open || drawerClosing) return;
     cancelAnimationFrame(drawerFrame);
     drawerEntering = false;
     const finish = () => {
-      mobileElement.open = false;
+      sidebarElement.open = false;
+      sidebarOpen = false;
       drawerClosing = false;
-      if (restoreFocus) mobileElement.querySelector('summary')?.focus();
+      if (restoreFocus) sidebarElement.querySelector('summary')?.focus();
     };
-    if (!mobileExperiment || matchMedia('(prefers-reduced-motion: reduce)').matches) finish();
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) finish();
     else {
       drawerClosing = true;
       drawerTimer = setTimeout(finish, 200);
@@ -182,12 +201,14 @@
       // focus opens results again, including when using the keyboard.
       searchPanel?.querySelector('input')?.blur();
     }
-    if (menuOpen && event.target instanceof Node && !accountElement?.contains(event.target))
+    if (menuOpen && event.target instanceof Node && !accountElement?.contains(event.target) && !mobileAccountElement?.contains(event.target))
       menuOpen = false;
     if (
-      mobileElement?.open &&
+      sidebarElement?.open &&
       event.target instanceof Node &&
-      !mobileElement.contains(event.target)
+      !sidebarElement.contains(event.target) &&
+      !searchToggle?.contains(event.target) &&
+      !searchPanel?.contains(event.target)
     )
       closeDrawer();
   }
@@ -199,18 +220,22 @@
         if (mobileExperiment && phone) searchPanel?.querySelector('input')?.blur();
         else searchToggle?.focus();
       }
-      menuOpen = false;
-      if (mobileElement?.open) {
+      if (menuOpen) {
+        menuOpen = false;
+        mobileAccountToggle?.focus();
+      }
+      if (sidebarElement?.open) {
         closeDrawer(true);
       }
     }
   }
   function closeOnNavigation() {
     menuOpen = false;
-    if (mobileElement) closeDrawer();
+    if (sidebarElement) closeDrawer();
   }
   function closeOnResize() {
-    if (window.innerWidth > 560 && mobileElement?.open) closeDrawer();
+    menuOpen = false;
+    if (sidebarElement?.open) measureSidebarTop();
   }
   /**
    * Uppercase first character of the display name for the avatar, with U as fallback.
@@ -220,7 +245,7 @@
 
 <!--
   Layout: Brand, search toggle and navigation share the top row. The optional search region
-  opens below; a separate disclosure supplies mobile navigation.
+  opens below; the Explore sidebar is available on desktop and mobile.
 -->
 
 <svelte:window
@@ -231,12 +256,44 @@
 />
 <header
   class="atlas-header"
+  bind:this={headerElement}
+  style:--sidebar-top={`${sidebarTop}px`}
   class:mobile-experiment={mobileExperiment}
   class:search-open={searchOpen}
   class:hidden={!headerVisible}
   class:filters-open={filtersOpen}
   id="page-top"
 >
+    <!--
+      Shared Explore sidebar provides navigation independently of the
+      account menu.
+    -->
+    <details class="explore-sidebar" class:closing={drawerClosing} class:entering={drawerEntering} bind:this={sidebarElement} ontoggle={() => void loadJoined()}>
+      <summary aria-label="Open navigation menu" onclick={(event) => {
+        event.preventDefault();
+        if (sidebarElement.open) closeDrawer(true);
+        else void openDrawer();
+      }}>☰</summary>
+      <nav aria-label="Explore navigation">
+        <button class="close-drawer" type="button" onclick={() => closeDrawer(true)}>Close menu</button>
+        <h2>Explore Atlas</h2>
+        <a href="/" onclick={closeOnNavigation}>Discover</a><a
+          href="/communities"
+          onclick={closeOnNavigation}>Communities</a
+        ><a href="/new" onclick={closeOnNavigation}>Create</a>
+        {#if authenticated}
+          <hr /><h2>Your communities</h2>
+          {#each joined as community}<a href={'/communities/' + encodeURIComponent(community.id)} onclick={closeOnNavigation}>{community.name}</a>{/each}
+          {#if communityError}<p role="status">{communityError}</p>{:else if !joined.length}<p>Find communities to join.</p>{/if}
+        {/if}
+        <hr />
+        <a href="/about" onclick={closeOnNavigation}>About Atlas</a><a
+          href="/feedback"
+          onclick={closeOnNavigation}>Give feedback</a
+        >
+        <p class="sidebar-copyright">Atlas © {new Date().getFullYear()}. All rights reserved.</p>
+      </nav>
+    </details>
   <a class="brand" href="/" aria-label="Atlas home"
     ><strong>Atlas</strong><span>The Public Think Tank</span></a
   >
@@ -331,65 +388,37 @@
         >
       </div>
     {/if}
-    <!--
-      Native disclosure provides the narrow-screen navigation independently of the desktop
-      account menu.
-    -->
-    <details class="mobile-menu" class:closing={drawerClosing} class:entering={drawerEntering} bind:this={mobileElement} ontoggle={() => void loadJoined()}>
-      <summary aria-label="Open navigation menu" onclick={(event) => {
-        if (!mobileExperiment) return;
-        event.preventDefault();
-        if (mobileElement.open) closeDrawer(true);
-        else void openDrawer();
-      }}>☰</summary>
-      <nav aria-label="Mobile navigation">
-        {#if mobileExperiment}
-          <button class="close-drawer" type="button" onclick={() => closeDrawer(true)}>Close menu</button>
-          <h2>Explore Atlas</h2>
-        {/if}
-        <a href="/" onclick={closeOnNavigation}>Discover</a><a
-          href="/communities"
-          onclick={closeOnNavigation}>Communities</a
-        ><a href="/new" onclick={closeOnNavigation}>Create</a>
-        {#if authenticated}
-          <hr />
-          <a href="/profiles/me" onclick={closeOnNavigation}>My profile</a><a
-            href="/my-drafts"
-            onclick={closeOnNavigation}>My drafts</a
-          ><a href="/my-settings" onclick={closeOnNavigation}>Settings</a>
-          <button
-            type="button"
-            class="logout-action"
-            onclick={() => {
-              closeOnNavigation();
-              void logOut();
-            }}>Log out</button
-          >
-        {:else}
-          <a href="/login" onclick={closeOnNavigation}>Log in</a><a
-            href="/register"
-            onclick={closeOnNavigation}>Sign up</a
-          >
-        {/if}
-        {#if mobileExperiment && authenticated}
-          <hr /><h2>Your communities</h2>
-          {#each joined as community}<a href={'/communities/' + encodeURIComponent(community.id)} onclick={closeOnNavigation}>{community.name}</a>{/each}
-          {#if communityError}<p role="status">{communityError}</p>{:else if !joined.length}<p>Find communities to join.</p>{/if}
-        {/if}
-        <hr />
-        <a href="/about" onclick={closeOnNavigation}>About Atlas</a><a
-          href="/feedback"
-          onclick={closeOnNavigation}>Give feedback</a
-        >
-      </nav>
-    </details>
+
   </div>
 </header>
+{#if sidebarOpen}
+  <button class="sidebar-backdrop" type="button" aria-label="Close Explore sidebar" style:top={`${sidebarTop}px`} onclick={() => closeDrawer()}></button>
+{/if}
 {#if mobileExperiment}
-  <nav class="bottom-navigation" class:hidden={!headerVisible} aria-label="Bottom navigation">
+  <nav class="bottom-navigation" class:hidden={!headerVisible && !menuOpen} aria-label="Bottom navigation">
     <a href="/" aria-current={active === 'discover' ? 'page' : undefined}><span aria-hidden="true">⌂</span>Discover</a>
     <a href="/new" aria-current={active === 'create' ? 'page' : undefined}><span aria-hidden="true">＋</span>Create</a>
-    <a href={authenticated ? '/profiles/me' : '/login'}><span aria-hidden="true">♙</span>You</a>
+    {#if authenticated}
+      <div class="bottom-account" bind:this={mobileAccountElement}>
+        <button class="bottom-account-toggle" bind:this={mobileAccountToggle} type="button" aria-label="Open account menu" aria-expanded={menuOpen} aria-controls="mobile-account-menu" onclick={() => { menuOpen = !menuOpen; if (menuOpen) { closeDrawer(); headerVisible = true; } }}>
+          <span class="bottom-avatar" aria-hidden="true">{initial}</span>You
+        </button>
+        {#if menuOpen}
+          <nav id="mobile-account-menu" class="mobile-account-menu" aria-label="Account navigation">
+            <a href="/profiles/me" onclick={closeOnNavigation}>My profile</a>
+            <a href="/my-drafts" onclick={closeOnNavigation}>My drafts</a>
+            <a href="/my-settings" onclick={closeOnNavigation}>Settings</a>
+            <hr />
+            <a href="/about" onclick={closeOnNavigation}>About Atlas</a>
+            <a href="/feedback" onclick={closeOnNavigation}>Give feedback</a>
+            <hr />
+            <button type="button" class="logout-action" disabled={loggingOut} onclick={() => { closeOnNavigation(); void logOut(); }}>{loggingOut ? 'Logging out…' : 'Log out'}</button>
+          </nav>
+        {/if}
+      </div>
+    {:else}
+      <a href="/login"><span aria-hidden="true">♙</span>You</a>
+    {/if}
   </nav>
 {/if}
 
@@ -407,9 +436,6 @@
       .search-placeholder { display: inline; }
       &.search-open .search-toggle { display: none; }
       .search-panel { grid-row: 2; grid-column: 1 / -1; }
-      .mobile-menu nav { position: fixed; inset: 0 auto 0 calc(-1 * var(--atlas-space)); width: min(85vw, 22rem); max-height: 100dvh; overflow-y: auto; border-radius: 0; padding: 1rem; box-shadow: 0 0 0 100vmax #0008; }
-      .mobile-menu h2 { font-size: 0.9rem; margin: 0.5rem; }
-      .mobile-menu p { font-size: 0.8rem; margin: 0.5rem; }
     }
     .bottom-navigation {
       position: fixed; inset: auto 0 0; z-index: 35;
@@ -417,14 +443,24 @@
       padding: 0.35rem 0 max(0.35rem, env(safe-area-inset-bottom));
       border-top: 1px solid var(--atlas-border); background: var(--atlas-surface);
       transition: transform 180ms ease;
-      a { display: flex; flex: 1; align-items: center; flex-direction: column; min-height: 2.75rem; font-size: 0.75rem; }
-      span { font-size: 1.4rem; line-height: 1.3; }
+      a, .bottom-account-toggle { display: flex; flex: 1; align-items: center; flex-direction: column; min-height: 2.75rem; font-size: 0.75rem; }
+      > a > span { font-size: 1.4rem; line-height: 1.3; }
+      .bottom-account { flex: 1; display: flex; justify-content: center; }
+      .bottom-account-toggle { width: 100%; border: 0; padding: 0; background: transparent; color: var(--atlas-text); font: inherit; cursor: pointer; }
+      .bottom-avatar { display: grid; place-items: center; width: 1.65rem; height: 1.65rem; border: 1px solid var(--atlas-border); border-radius: 50%; font-size: 0.9rem; font-weight: 700; line-height: 1; }
+      .mobile-account-menu { position: fixed; right: 0.5rem; bottom: calc(3.8rem + env(safe-area-inset-bottom)); z-index: 45; display: flex; flex-direction: column; gap: 0.15rem; width: min(17rem, calc(100vw - 1rem)); padding: 0.5rem; border: 1px solid var(--atlas-border); border-radius: 0.75rem; background: var(--atlas-surface); box-shadow: 0 8px 24px #0003; }
+      .mobile-account-menu a, .mobile-account-menu button { display: block; flex: none; min-height: 0; padding: 0.65rem; text-align: left; font-size: 0.9rem; }
+      .mobile-account-menu hr { width: 100%; border: 0; border-top: 1px solid var(--atlas-border); }
       &.hidden { transform: translateY(110%); visibility: hidden; }
       &:focus-within { transform: none; visibility: visible; }
     }
   }
   @media (prefers-reduced-motion: reduce) { .bottom-navigation, .atlas-header { transition: none; } }
 
+  // Keep the shared Explore toggle beside the Atlas identity on desktop.
+  @media (min-width: 561px) {
+    .explore-sidebar { position: absolute; left: 0; top: 0; height: 100%; display: flex; align-items: center; }
+  }
   .atlas-header {
     position: sticky;
     top: 0;
@@ -517,7 +553,7 @@
   }
   .primary,
   .account-menu,
-  .mobile-menu nav {
+  .explore-sidebar nav {
     margin: 0;
   }
   .primary,
@@ -570,7 +606,7 @@
     font-weight: 700;
   }
   .account-menu,
-  .mobile-menu nav {
+  .explore-sidebar nav {
     position: absolute;
     z-index: 20;
     right: 0;
@@ -616,9 +652,35 @@
     color: var(--atlas-text);
     margin: 0.25rem 0;
   }
-  .mobile-menu {
-    display: none;
+  .explore-sidebar {
+    display: block;
+    position: relative;
+    summary { cursor: pointer; list-style: none; font-size: 1.3rem; }
+    nav {
+      position: fixed; z-index: 60; inset: 0 auto 0 0;
+      width: min(85vw, 22rem); min-width: 0;
+      height: 100dvh; max-height: 100dvh;
+      overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
+      flex-flow: column nowrap; align-items: stretch;
+      padding: 1rem 1rem max(1rem, env(safe-area-inset-bottom));
+      border-radius: 0; box-shadow: 0 8px 24px #0002;
+      transform: translateX(0); transition: transform 200ms ease-out;
+    }
+    &.closing nav, &.entering nav { transform: translateX(-110%); }
+    nav > * { flex-shrink: 0; min-width: 0; overflow-wrap: anywhere; }
+    h2 { font-size: 0.9rem; margin: 0.5rem; }
+    p { font-size: 0.8rem; margin: 0.5rem; }
+    .sidebar-copyright { margin-top: auto; padding-top: 2rem; color: var(--atlas-muted); }
   }
+  .close-drawer {
+    align-self: flex-end; font: inherit; padding: 0.35rem 0.75rem;
+    cursor: pointer; border: 1px solid var(--atlas-border);
+    border-radius: 999px; background: var(--atlas-surface); color: var(--atlas-text);
+  }
+  .atlas-header:has(.explore-sidebar[open]) { z-index: 50; transform: none; pointer-events: auto; }
+  .atlas-header:has(.explore-sidebar[open]) ~ .bottom-navigation { visibility: hidden; pointer-events: none; }
+  @media (prefers-reduced-motion: reduce) { .explore-sidebar nav { transition: none; } }
+  @starting-style { .explore-sidebar[open] nav { transform: translateX(-110%); } }
   @media (max-width: 850px) {
     .brand span {
       font-size: 0.75rem;
@@ -646,7 +708,7 @@
     .account {
       display: none;
     }
-    .mobile-menu {
+    .explore-sidebar {
       display: block;
       position: relative;
       summary {
@@ -664,6 +726,7 @@
       grid-column: 3;
       grid-row: 1;
     }
+    .explore-sidebar { grid-column: 1; grid-row: 1; }
   }
   @media (max-width: 560px) {
     // A single header row: menu on the left, search occupying the remaining width.
@@ -671,13 +734,14 @@
       grid-template-columns: auto minmax(0, 1fr);
       padding-block: 0.5rem;
       .brand { display: none; }
-      .right-group { grid-column: 1; grid-row: 1; }
+      .explore-sidebar { grid-column: 1; grid-row: 1; justify-self: start; }
+      .right-group { display: none; }
       .search-toggle { grid-column: 2; grid-row: 1; min-width: 0; padding-inline: 0.65rem; }
       .search-toggle svg { flex-shrink: 0; }
       .search-placeholder { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8rem; }
       .search-panel { grid-column: 2; grid-row: 1; }
       .search-panel :global(.filter-bar) { padding: 0; border-top: 0; background: transparent; }
-      .mobile-menu nav {
+      .explore-sidebar nav {
         // Global nav uses flex-wrap; a fixed-height column must not wrap
         // into horizontal columns when its community list grows.
         flex-flow: column nowrap;
@@ -692,17 +756,17 @@
         overscroll-behavior: contain;
         touch-action: pan-y;
       }
-      .mobile-menu nav > * { flex-shrink: 0; min-width: 0; overflow-wrap: anywhere; }
+      .explore-sidebar nav > * { flex-shrink: 0; min-width: 0; overflow-wrap: anywhere; }
       .close-drawer { align-self: flex-end; font: inherit; padding: 0.4rem 0.6rem; cursor: pointer; }
     }
     // The header establishes a stacking context. Raise that context, not merely
     // the drawer inside it, so fixed bottom navigation cannot cover the menu.
-    .atlas-header.mobile-experiment:has(.mobile-menu[open]) {
+    .atlas-header.mobile-experiment:has(.explore-sidebar[open]) {
       z-index: 50;
       transform: none;
       pointer-events: auto;
     }
-    .atlas-header.mobile-experiment:has(.mobile-menu[open]) + .bottom-navigation {
+    .atlas-header.mobile-experiment:has(.explore-sidebar[open]) ~ .bottom-navigation {
       visibility: hidden;
       pointer-events: none;
     }
@@ -716,11 +780,11 @@
   }
   @media (max-width: 560px) {
     .atlas-header.mobile-experiment {
-      .mobile-menu nav {
+      .explore-sidebar nav {
         transform: translateX(0);
         transition: transform 200ms ease-out;
       }
-      .mobile-menu.closing nav { transform: translateX(-110%); }
+      .explore-sidebar.closing nav { transform: translateX(-110%); }
       .close-drawer {
         display: inline-flex;
         align-items: center;
@@ -735,11 +799,11 @@
       .close-drawer:hover { background: color-mix(in srgb, var(--atlas-accent) 10%, var(--atlas-surface)); }
     }
     @starting-style {
-      .atlas-header.mobile-experiment .mobile-menu[open] nav { transform: translateX(-110%); }
+      .atlas-header.mobile-experiment .explore-sidebar[open] nav { transform: translateX(-110%); }
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .atlas-header.mobile-experiment .mobile-menu nav { transition: none; }
+    .atlas-header.mobile-experiment .explore-sidebar nav { transition: none; }
   }
   @media (max-width: 560px) {
     .atlas-header.mobile-experiment {
@@ -753,6 +817,66 @@
   }
   @media (max-width: 560px) {
     .atlas-header.mobile-experiment .search-toggle { display: none; }
-    .atlas-header.mobile-experiment .mobile-menu.entering nav { transform: translateX(-110%); }
+    .atlas-header.mobile-experiment .explore-sidebar.entering nav { transform: translateX(-110%); }
+  }
+  // The sidebar is a direct header child, so its toggle stays left of the logo.
+  @media (min-width: 561px) {
+    // Applied after the base header padding, reserving room for the hamburger.
+    // The toggle is positioned independently; the brand must not share its space.
+    .atlas-header { padding-left: 2.5rem; }
+    .atlas-header > .explore-sidebar {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      // Avoid transforms here: they turn the fixed drawer into a header-relative element.
+      transform: none;
+    }
+  }
+  // Shared drawer wins over generic account dropdown and old phone-only styles.
+  .atlas-header .explore-sidebar nav {
+    position: fixed;
+    inset: 0 auto 0 calc(-1 * var(--atlas-space));
+    width: min(85vw, 22rem);
+    height: 100dvh;
+    max-height: 100dvh;
+    min-width: 0;
+    overflow-y: auto;
+    flex-flow: column nowrap;
+    align-items: stretch;
+    border-radius: 0;
+    padding: 1rem 1rem max(1rem, env(safe-area-inset-bottom));
+    box-shadow: 0 8px 24px #0002;
+  }
+  .atlas-header .explore-sidebar.closing nav,
+  .atlas-header .explore-sidebar.entering nav { transform: translateX(-110%); }
+  .atlas-header .explore-sidebar .sidebar-copyright { margin-top: auto; }
+  // Keep the header visible and undimmed while the desktop drawer is open.
+  .sidebar-backdrop {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 40;
+    width: 100%;
+    border: 0;
+    background: #0008;
+    cursor: default;
+  }
+  @media (max-width: 560px) { .sidebar-backdrop { top: 0 !important; } }
+  @media (min-width: 561px) {
+    .atlas-header .explore-sidebar nav {
+      top: var(--sidebar-top);
+      bottom: 0;
+      height: calc(100dvh - var(--sidebar-top));
+      max-height: calc(100dvh - var(--sidebar-top));
+      // The shared drawer already has 1rem padding; add the site's standard
+      // horizontal spacing only on desktop, without changing mobile alignment.
+      padding-inline: calc(1rem + var(--atlas-space));
+    }
+  }
+  // Center the legal footer at either viewport size.
+  .atlas-header .explore-sidebar .sidebar-copyright {
+    text-align: center;
   }
 </style>
