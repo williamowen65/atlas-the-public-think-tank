@@ -562,6 +562,8 @@
     // Keep the dial in the same float context as every content block on mobile.
     // A separate flow-root here forced blocks below the entire dial.
     .introduction { display: contents; }
+    // The desktop dial uses a negative left margin; keep the mobile dial on the content gutter.
+    .dial { margin-left: 0; }
     .introduction :global(.rating-summary) { inset-inline-start: 0; }
   }
   .node-type-row { display: none; }
