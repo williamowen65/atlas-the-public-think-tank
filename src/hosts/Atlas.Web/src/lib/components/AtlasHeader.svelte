@@ -453,7 +453,6 @@
 
   // Keep the shared Explore toggle beside the Atlas identity on desktop.
   @media (min-width: 561px) {
-    .atlas-header { padding-left: 2.75rem; }
     .explore-sidebar { position: absolute; left: 0; top: 0; height: 100%; display: flex; align-items: center; }
   }
   .atlas-header {
@@ -816,6 +815,9 @@
   }
   // The sidebar is a direct header child, so its toggle stays left of the logo.
   @media (min-width: 561px) {
+    // Applied after the base header padding, reserving room for the hamburger.
+    // The toggle is positioned independently; the brand must not share its space.
+    .atlas-header { padding-left: 4.5rem; }
     .atlas-header > .explore-sidebar {
       position: absolute;
       left: 0;
