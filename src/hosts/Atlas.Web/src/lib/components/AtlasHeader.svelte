@@ -454,7 +454,7 @@
   // Keep the shared Explore toggle beside the Atlas identity on desktop.
   @media (min-width: 561px) {
     .atlas-header { padding-left: 2.75rem; }
-    .explore-sidebar { position: absolute; left: 0; top: 50%; transform: translateY(-50%); }
+    .explore-sidebar { position: absolute; left: 0; top: 0; height: 100%; display: flex; align-items: center; }
   }
   .atlas-header {
     position: sticky;
@@ -819,14 +819,18 @@
     .atlas-header > .explore-sidebar {
       position: absolute;
       left: 0;
-      top: 50%;
-      transform: translateY(-50%);
+      top: 0;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      // Avoid transforms here: they turn the fixed drawer into a header-relative element.
+      transform: none;
     }
   }
   // Shared drawer wins over generic account dropdown and old phone-only styles.
   .atlas-header .explore-sidebar nav {
     position: fixed;
-    inset: 0 auto 0 0;
+    inset: 0 auto 0 calc(-1 * var(--atlas-space));
     width: min(85vw, 22rem);
     height: 100dvh;
     max-height: 100dvh;
