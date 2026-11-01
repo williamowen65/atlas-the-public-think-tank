@@ -398,9 +398,6 @@
     padding-right: 3.25rem;
     min-height: 2.75rem;
   }
-  .node-page:has(> :global(.edit-node.corner)) > header {
-    padding-right: 3.25rem;
-  }
 
   .node-page {
     position: relative;
@@ -562,9 +559,9 @@
     .title-type, .by-prefix, .community-prefix, .full-date { display: none; }
     .relative-date { display: inline; }
     .byline { font-size: 0.75rem; line-height: 1.5; }
-    // Keep the disclosure next to the introduction; full content follows below.
-    .introduction { display: flow-root; position: relative; padding-bottom: 4rem; }
-    .introduction .dial { display: contents; }
+    // Keep the dial in the same float context as every content block on mobile.
+    // A separate flow-root here forced blocks below the entire dial.
+    .introduction { display: contents; }
     .introduction :global(.rating-summary) { inset-inline-start: 0; }
   }
   .node-type-row { display: none; }
@@ -578,6 +575,5 @@
       margin-bottom: 0.5rem;
     }
     .node-type-row .mobile-type { margin: 0; }
-    .introduction { padding-bottom: 0.65rem; }
   }
 </style>
