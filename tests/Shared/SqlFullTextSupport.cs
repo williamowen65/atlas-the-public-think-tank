@@ -41,6 +41,9 @@ internal static class SqlFullTextSupport
             var entry = $"[{DateTimeOffset.UtcNow:O}] full-text {phase}; " +
                 $"server={connection.DataSource}; database={connection.Database}; " +
                 $"elapsed={timer.Elapsed.TotalSeconds:F1}s; {ReadIndexStates(connection)}";
+            if (phase is "START" or "TIMEOUT" or "SCHEMA ERROR")
+                entry += Environment.NewLine + ReadServerCapabilities(connection);
+            entry += Environment.NewLine + ReadPopulationStates(connection);
             history.Add(entry);
             Console.WriteLine(entry);
         }
@@ -99,4 +102,58 @@ internal static class SqlFullTextSupport
         }
         return states.Count == 0 ? "No matching full-text indexes." : string.Join("; ", states);
     }
+
+    private static string ReadServerCapabilities(SqlConnection connection) =>
+        ReadDiagnosticRows(connection, "SERVER CAPABILITIES", """
+            SELECT SERVERPROPERTY('ProductVersion') AS productVersion,
+                SERVERPROPERTY('ProductLevel') AS productLevel,
+                SERVERPROPERTY('Edition') AS edition,
+                FULLTEXTSERVICEPROPERTY('IsFullTextInstalled') AS fullTextInstalled,
+                CASE WHEN EXISTS (SELECT 1 FROM sys.fulltext_languages WHERE lcid = 1033)
+                     THEN 1 ELSE 0 END AS englishRegistered,
+                DB_ID() AS databaseId;
+            """);
+
+    private static string ReadPopulationStates(SqlConnection connection) =>
+        ReadDiagnosticRows(connection, "ACTIVE POPULATIONS", """
+            SELECT TOP (20) database_id, table_id,
+                OBJECT_SCHEMA_NAME(table_id, database_id) AS schemaName,
+                OBJECT_NAME(table_id, database_id) AS tableName,
+                population_type_description, status, status_description,
+                completion_type_description, range_count, completed_range_count,
+                outstanding_batch_count, queued_population_type_description, start_time
+            FROM sys.dm_fts_index_population
+            WHERE database_id = DB_ID()
+            ORDER BY table_id;
+            """);
+
+    /// <summary>Best-effort bounded diagnostic reads; missing DMV permissions must not mask readiness failure.</summary>
+    private static string ReadDiagnosticRows(SqlConnection connection, string label, string sql)
+    {
+        try
+        {
+            using var command = connection.CreateCommand();
+            command.CommandTimeout = 5;
+            command.CommandText = sql;
+            using var reader = command.ExecuteReader();
+            var rows = new List<string>();
+            while (reader.Read())
+            {
+                var fields = Enumerable.Range(0, reader.FieldCount).Select(index =>
+                    reader.GetName(index) + "=" + (reader.IsDBNull(index) ? "NULL" :
+                        Convert.ToString(reader.GetValue(index), System.Globalization.CultureInfo.InvariantCulture)));
+                rows.Add(string.Join(", ", fields));
+            }
+            return label + ": " + (rows.Count == 0 ? "No visible rows." : string.Join("; ", rows));
+        }
+        catch (SqlException error)
+        {
+            return $"{label}: unavailable (SQL error {error.Number}; check diagnostic permissions or SQL logs).";
+        }
+        catch (InvalidOperationException)
+        {
+            return $"{label}: unavailable (connection not ready for diagnostic query).";
+        }
+    }
+
 }
