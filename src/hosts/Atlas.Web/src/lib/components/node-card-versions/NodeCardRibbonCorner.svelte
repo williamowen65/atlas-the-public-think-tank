@@ -429,11 +429,29 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
+      min-width: 0;
+      container-type: inline-size;
       gap: 0.4rem 0.75rem;
       margin-bottom: 0.5rem;
     }
-    .node-type-row .mobile-type { margin: 0; }
+    // Scale with the available header width, not just the viewport. CSS cannot
+    // measure text and select an exact fitting font size, so truncate as a
+    // last resort rather than allowing the label to overlap the vote summary.
+    .node-type-row .mobile-type {
+      margin: 0;
+      min-width: 0;
+      flex: 0 1 auto;
+      max-width: 100%;
+      font-size: clamp(0.95rem, 8.1cqi, 2.1rem);
+      line-height: 1.15;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .node-type-row :global(.header-summary) {
+      flex-shrink: 0;
+    }
     
   }
 </style>
