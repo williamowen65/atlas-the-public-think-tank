@@ -564,6 +564,9 @@
     .introduction { display: contents; }
     // The desktop dial uses a negative left margin; keep the mobile dial on the content gutter.
     .dial { margin-left: 0; }
+    // The collapsed mobile summary lives in the header; its empty floated aside
+    // must not reserve a margin or indent the introduction.
+    .dial:has(:global(.collapsed-mode)):not(:has(:global(.dial-content))) { display: none; }
     .introduction :global(.rating-summary) { inset-inline-start: 0; }
   }
   .node-type-row { display: none; }
