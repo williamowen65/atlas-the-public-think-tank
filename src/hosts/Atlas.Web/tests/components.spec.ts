@@ -69,5 +69,5 @@ test('SvelteKit routes support client navigation, Back and direct entry', async 
   await page.goBack();
   await expect(page.getByRole('heading', { name: 'Atlas component integration' })).toBeVisible();
   await page.goto('http://127.0.0.1:4173/about');
-  await expect(page.getByRole('heading', { name: 'About this foundation' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'A Public Think Tank' })).toBeVisible();
 });
