@@ -475,6 +475,8 @@
       .atlas-header .search-panel { animation: none; }
     }
     .atlas-header .search-panel {
+      position: relative;
+      z-index: 1;
       grid-column: 2;
       grid-row: 1;
       width: 100%;
@@ -482,6 +484,8 @@
       align-self: center;
     }
     .atlas-header .search-panel :global(.filter-bar) {
+      position: relative;
+      z-index: 1;
       padding: 0;
       border: 0;
       background: transparent;
@@ -567,6 +571,7 @@
     transform: translateX(-50%);
     border-bottom: 1px solid var(--atlas-border);
     pointer-events: none;
+    z-index: 0;
   }
   .brand {
     display: flex;
