@@ -398,9 +398,6 @@
     padding-right: 3.25rem;
     min-height: 2.75rem;
   }
-  .node-page:has(> :global(.edit-node.corner)) > header {
-    padding-right: 3.25rem;
-  }
 
   .node-page {
     position: relative;
@@ -449,7 +446,7 @@
   }
   .dial {
     float: left;
-    margin: 0 var(--dial-text-gap) 0.6rem -0.4rem;
+    margin: 0 var(--dial-text-gap) 0 -0.4rem;
   }
   .description {
     margin: 0 0 var(--atlas-paragraph-gap, 0.65rem);
@@ -562,9 +559,16 @@
     .title-type, .by-prefix, .community-prefix, .full-date { display: none; }
     .relative-date { display: inline; }
     .byline { font-size: 0.75rem; line-height: 1.5; }
-    // Keep the disclosure next to the introduction; full content follows below.
-    .introduction { display: flow-root; position: relative; padding-bottom: 4rem; }
-    .introduction .dial { display: contents; }
+    // Keep the dial in the same float context as every content block on mobile.
+    // A separate flow-root here forced blocks below the entire dial.
+    .introduction { display: contents; }
+    // The desktop dial uses a negative left margin; keep the mobile dial on the content gutter.
+    // LiveVotingDial floats its expanded .dial-content with its own text gap.
+    // Avoid applying the same gap a second time on the outer aside.
+    .dial { margin-left: 0; margin-right: 0; }
+    // The collapsed mobile summary lives in the header; its empty floated aside
+    // must not reserve a margin or indent the introduction.
+    .dial:has(:global(.collapsed-mode)):not(:has(:global(.dial-content))) { display: none; }
     .introduction :global(.rating-summary) { inset-inline-start: 0; }
   }
   .node-type-row { display: none; }
@@ -578,6 +582,5 @@
       margin-bottom: 0.5rem;
     }
     .node-type-row .mobile-type { margin: 0; }
-    .introduction { padding-bottom: 0.65rem; }
   }
 </style>

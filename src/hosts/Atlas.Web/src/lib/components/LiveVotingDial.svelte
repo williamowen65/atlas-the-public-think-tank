@@ -502,7 +502,7 @@
     display: block;
     float: left;
     width: min-content;
-    margin: 0 var(--dial-text-gap) 0.6rem -0.4rem;
+    margin: 0 var(--dial-text-gap) 0 -0.4rem;
     text-align: center;
   }
   // Status is announced without becoming a clearing block between the floated
