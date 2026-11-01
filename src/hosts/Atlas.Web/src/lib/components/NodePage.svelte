@@ -591,7 +591,7 @@
       min-width: 0;
       flex: 0 1 auto;
       max-width: 100%;
-      font-size: clamp(0.95rem, 6cqi, 2.1rem);
+      font-size: clamp(0.95rem, 8.1cqi, 2.1rem);
       line-height: 1.15;
       white-space: nowrap;
       overflow: hidden;
