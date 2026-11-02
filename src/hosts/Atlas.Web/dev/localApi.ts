@@ -123,23 +123,9 @@ export const sessionApiGuard: Plugin = {
         || new RegExp(`^/atlas-session-api/comments/${guid}/replies$`, 'i').test(path))
         || ['PUT', 'DELETE'].includes(method) && new RegExp(`^/atlas-session-api/comments/${guid}$`, 'i').test(path);
 
-      // Temporary opt-in diagnostics for local authentication routing. Never log headers,
-      // cookies, tokens, credentials, query strings, or request bodies.
-      const debugAuth = process.env.ATLAS_DEBUG_SESSION_ROUTING === '1'
-        && path.startsWith('/atlas-session-api/auth/');
-      if (debugAuth) {
-        console.info('[atlas-session-route]', {
-          method,
-          path,
-          readable,
-          writable,
-          permitted: (method === 'GET' && readable) || writable,
-        });
-      }
       // A request in our scope must match either an allowed GET or a write.
       if (!(method === 'GET' && readable) && !writable) {
         response.statusCode = 405;
-        if (debugAuth) console.info('[atlas-session-route] rejected by allowlist: 405');
         response.end('Unsupported session API operation.');
         return;
       }
@@ -149,12 +135,10 @@ export const sessionApiGuard: Plugin = {
         if (!origin || ![`http://${host}`, `https://${host}`].includes(origin)
           || request.headers['sec-fetch-site'] === 'cross-site') {
           response.statusCode = 403;
-          if (debugAuth) console.info('[atlas-session-route] rejected by origin policy: 403');
         response.end('Same-origin requests are required.');
         return;
         }
       }
-      if (debugAuth) console.info('[atlas-session-route] allowed; forwarding to Vite proxy');
       // Allowed: next() continues the chain; Vite already has the proxy settings.
       next();
     });
@@ -169,14 +153,6 @@ export function sessionApiProxy(): ProxyOptions {
     rewrite: path => path.replace(/^\/atlas-session-api/, '/api'),
     configure(proxy) {
       proxy.on('proxyReq', request => {
-        // Opt-in request trace at the upstream boundary; never inspect payloads or headers.
-        if (process.env.ATLAS_DEBUG_SESSION_ROUTING === '1'
-          && request.path?.split('?')[0].startsWith('/api/auth/')) {
-          console.info('[atlas-session-proxy] upstream request', {
-            method: request.method,
-            path: request.path.split('?')[0],
-          });
-        }
         request.removeHeader('authorization');
         // Forward only Atlas session/CSRF cookies, including chunked sessions.
         const cookies = String(request.getHeader('cookie') ?? '').split(';').map(cookie => cookie.trim())
@@ -184,16 +160,6 @@ export function sessionApiProxy(): ProxyOptions {
         if (cookies.length) request.setHeader('cookie', cookies.join('; ')); else request.removeHeader('cookie');
       });
       proxy.on('proxyRes', (response, request) => {
-        // Vite rewrites the request URL to /api/auth/* before proxyRes fires.
-        // Match that upstream path, not the browser-facing /atlas-session-api path.
-        if (process.env.ATLAS_DEBUG_SESSION_ROUTING === '1'
-          && request.url?.split('?')[0].startsWith('/api/auth/')) {
-          console.info('[atlas-session-proxy] upstream response', {
-            method: request.method,
-            path: request.url.split('?')[0],
-            status: response.statusCode,
-          });
-        }
         // Preserve Secure/HttpOnly/SameSite and __Host semantics; never weaken API cookies.
         const cookies = response.headers['set-cookie']?.filter(cookie => /^__Host-Atlas\.(?:Csrf|Session(?:C\d+)?)=/.test(cookie));
         if (cookies?.length) response.headers['set-cookie'] = cookies; else delete response.headers['set-cookie'];
