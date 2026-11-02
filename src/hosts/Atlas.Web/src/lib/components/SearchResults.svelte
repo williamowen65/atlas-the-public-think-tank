@@ -300,6 +300,23 @@
     background-clip: padding-box;
     box-shadow: 0 8px 24px #0002;
   }
+  /* Chrome/Edge: keep the scrollbar track transparent so the rounded
+     dropdown surface remains visible at its top and bottom corners. */
+  .search-results::-webkit-scrollbar {
+    width: 0.65rem;
+  }
+  .search-results::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: var(--atlas-radius);
+  }
+  .search-results::-webkit-scrollbar-thumb {
+    background: var(--atlas-border);
+    border: 2px solid var(--atlas-surface);
+    border-radius: 999px;
+  }
+  .search-results::-webkit-scrollbar-corner {
+    background: transparent;
+  }
   h2 {
     font-size: 1rem;
     margin: 0 0 0.5rem;
