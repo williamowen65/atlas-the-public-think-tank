@@ -30,7 +30,9 @@ public sealed class NodesController(
     [HttpGet]
     public object Discover([FromQuery] DiscoveryQuery query)
     {
-        var page = discovery.DiscoverPage(query);
+        var page = query.IncludeHidden && actor.Id is { } id && moderation.CanModerate(id)
+            ? discovery.DiscoverAuthoredPage(query, nodes.GetAll().Select(node => node.Id.Value).ToArray())
+            : discovery.DiscoverPage(query with { IncludeHidden = false, HiddenOnly = false });
         return new
         {
             page.Items,
