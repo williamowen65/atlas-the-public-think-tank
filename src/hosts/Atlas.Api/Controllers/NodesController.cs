@@ -192,6 +192,9 @@ public sealed class NodesController(
         return new
         {
             id = node.Id.Value,
+            hidden = visibility.IsHidden,
+            moderationNotice = visibility.IsHidden ? visibility.Notice : null,
+            reviewRequested = visibility.IsHidden && visibility.ReviewRequested,
             title = node.Title.Value,
             node.ShortDescription,
             typeId = node.TypeId.Value,
