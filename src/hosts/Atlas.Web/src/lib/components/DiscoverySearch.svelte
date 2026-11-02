@@ -481,6 +481,22 @@
     max-height: 55vh;
     overflow-y: auto;
   }
+  /* Keep the filter toolbox scrollbar from painting square corners. */
+  .toolbox::-webkit-scrollbar {
+    width: 0.65rem;
+  }
+  .toolbox::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: var(--atlas-radius);
+  }
+  .toolbox::-webkit-scrollbar-thumb {
+    background: var(--atlas-border);
+    border: 2px solid var(--atlas-surface);
+    border-radius: 999px;
+  }
+  .toolbox::-webkit-scrollbar-corner {
+    background: transparent;
+  }
   .toolbox label {
     display: flex;
     flex-direction: column;
