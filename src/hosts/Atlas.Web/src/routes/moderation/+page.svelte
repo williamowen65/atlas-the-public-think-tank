@@ -13,6 +13,7 @@
   let history = $state<Case[]>([]);
   let loading = $state(true);
   let busy = $state(false);
+  let confirmation = $state<'dismiss' | 'hide' | 'restore' | null>(null);
   // Authorization is determined by the server, not by a client-side role claim.
   // This can later permit community moderators with scoped queue permissions.
   let access = $state<'checking' | 'allowed' | 'denied'>('checking');
@@ -67,9 +68,6 @@
   }
   async function decide(decision: 0 | 1) {
     if (!selected || !rationale.trim() || busy) return;
-    if (!window.confirm(decision === 0
-      ? 'Dismiss these reports? The node will remain public and the reports will be closed.'
-      : 'Hide this node? Public discovery and search will exclude it. Its author can still edit it and request review. All pending reports will be closed.')) return;
     busy = true;
     error = '';
     notice = '';
@@ -88,7 +86,6 @@
   }
   async function restore() {
     if (!selected || !rationale.trim() || busy) return;
-    if (!window.confirm('Restore this node? Its original content will become publicly visible again, including in discovery and search. Your rationale will be recorded.')) return;
     busy = true;
     error = '';
     notice = '';
@@ -104,6 +101,12 @@
     } finally {
       busy = false;
     }
+  }
+  async function confirmAction() {
+    const action = confirmation;
+    confirmation = null;
+    if (action === 'restore') await restore();
+    else if (action) await decide(action === 'hide' ? 1 : 0);
   }
   onMount(() => { void refresh(); });
   const current = $derived(queue.find((item) => item.nodeId === selected));
@@ -170,12 +173,12 @@
             {#each publicReasons as reason}<option value={reason}>{reason}</option>{/each}
           </select>
           <div class="actions">
-            <button disabled={busy || !rationale.trim()} onclick={() => void decide(0)}>Dismiss reports</button>
-            <button disabled={busy || !rationale.trim()} onclick={() => void decide(1)}>Hide node</button>
+            <button disabled={busy || !rationale.trim()} onclick={() => confirmation = 'dismiss' }>Dismiss reports</button>
+            <button disabled={busy || !rationale.trim()} onclick={() => confirmation = 'hide' }>Hide node</button>
           </div>
         {/if}
         {#if current.reviewRequested}
-          <button disabled={busy || !rationale.trim()} onclick={() => void restore()}>Restore after author review request</button>
+          <button disabled={busy || !rationale.trim()} onclick={() => confirmation = 'restore' }>Restore after author review request</button>
         {/if}
       </section>
     {/if}
@@ -183,7 +186,26 @@
     <p role="alert">{error}</p>
   {/if}
 </section>
+{#if confirmation}
+  <div class="confirmation-backdrop">
+    <section class="confirmation-dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-description">
+      <h2 id="confirm-title">{confirmation === 'hide' ? 'Hide this node?' : confirmation === 'dismiss' ? 'Dismiss these reports?' : 'Restore this node?'}</h2>
+      <p id="confirm-description">{confirmation === 'hide'
+        ? 'The node will be excluded from public discovery and search. Its author can edit it and request review. Pending reports will be closed.'
+        : confirmation === 'dismiss'
+          ? 'The node will remain public and its pending reports will be closed.'
+          : 'The original node will become publicly visible again, including in discovery and search.'}</p>
+      <div class="actions">
+        <button type="button" onclick={() => confirmation = null}>Cancel</button>
+        <button type="button" onclick={() => void confirmAction()}>{confirmation === 'hide' ? 'Hide node' : confirmation === 'dismiss' ? 'Dismiss reports' : 'Restore node'}</button>
+      </div>
+    </section>
+  </div>
+{/if}
 <style>
+  .confirmation-backdrop { position: fixed; inset: 0; z-index: 1000; background: rgb(0 0 0 / .55); display: grid; place-items: center; padding: 1rem; }
+  .confirmation-dialog { background: var(--atlas-surface, #fff); color: var(--atlas-text, #222); border-radius: .75rem; padding: 1.5rem; max-width: 32rem; width: 100%; box-shadow: 0 1rem 3rem rgb(0 0 0 / .25); }
+  .confirmation-dialog .actions { justify-content: flex-end; margin-top: 1.5rem; }
   .moderation { max-width: 55rem; margin: 2rem auto; padding: 0 1rem; }
   ul { padding-left: 1.5rem; }
   li { margin: .65rem 0; }
