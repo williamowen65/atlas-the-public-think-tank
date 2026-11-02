@@ -41,8 +41,8 @@ Tests use `CheckPasswordSignInAsync` to exercise password/eligibility/lockout be
 
 | Policy | Allowed stored roles |
 |---|---|
-| `Atlas.Member` | Member, GlobalGlobalModerator, Administrator |
-| `Atlas.Moderator` | GlobalModerator, Administrator |
+| `Atlas.Member` | Member, GlobalModerator, Administrator |
+| `Atlas.GlobalModerator` | GlobalModerator, Administrator |
 | `Atlas.Administrator` | Administrator |
 
 All policies require an authenticated principal and a persisted, confirmed, unlocked account with an active Participant. `AtlasAccounts.ResolveParticipantAsync` maps the framework user-ID claim to this verified ID. Missing, malformed, empty, unknown, anonymous, locked, unconfirmed, or inactive identities cannot resolve.
@@ -55,8 +55,8 @@ The policy handler reads current database role memberships instead of trusting r
 
 A future host registers `builder.Services.AddAtlasIdentity(connectionString)` and enables authentication/authorization middleware. Protected endpoints use `AtlasPolicies` and resolve the actor via `AtlasAccounts`; request bodies must not choose the actor ID. Registration uses the account coordinator rather than directly calling `UserManager.CreateAsync`, including if using framework API endpoints: an unadapted stock registration endpoint would bypass profile creation and violate the foreign key.
 
-The host owns actual endpoints/UI, confirmation and reset email delivery, rate limits, cookie/CSRF behavior, HTTPS, and persistent/shared Data Protection keys. The cookie is HttpOnly and Secure. Framework managers/token providers are infrastructure readiness, not evidence that a complete account-management HTTP API is deployed. Before exposing sign-in, configure trusted administrator provisioning through an authenticated/admin or controlled operator workflow. Public registration never assigns privileged roles; the first user is not automatically an administrator.
+The host owns actual endpoints/UI, confirmation and reset email delivery, rate limits, cookie/CSRF behavior, HTTPS, and persistent/shared Data Protection keys. The cookie is HttpOnly and Secure. Framework managers/token providers are infrastructure readiness, not evidence that a complete account-management HTTP API is deployed. GlobalModerator provisioning is available through the trusted Console `--grant-global-moderator` operator workflow (PTT-159); Administrator provisioning remains separate. Public registration never assigns privileged roles; the first user is not automatically an administrator.
 
 The Console now uses `ConsoleAccountCommands` for registration/sign-in and `ConsoleIdentitySession` for the authenticated actor. Participant switching and direct profile-only creation have been removed from its interactive menus. The session checks the Member policy and security stamp using fresh SQL state before every main menu; sign-out discards it. Profile browsing never changes the actor. Global moderation uses the Identity authorization port instead of configured GUIDs. The console explicitly refuses accounts with 2FA enabled rather than treating password verification as completed authentication.
 
-The local `--confirm-email` operator utility uses framework confirmation tokens until email delivery exists. It is explicitly trusted development tooling, not proof of email ownership. See [console setup](../PTT-94-Identity.md#use-registration-and-sign-in). No new migration is needed for this console follow-up.
+The local `--grant-global-moderator` utility grants the seeded role only to existing confirmed, active, unlocked accounts, with explicit terminal confirmation and idempotent assignment. It is not exposed through HTTP or public registration. The local `--confirm-email` operator utility uses framework confirmation tokens until email delivery exists. It is explicitly trusted development tooling, not proof of email ownership. See [console setup](../PTT-94-Identity.md#use-registration-and-sign-in). No new migration is needed for this console follow-up.
