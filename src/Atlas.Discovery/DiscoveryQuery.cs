@@ -19,5 +19,6 @@ public sealed record DiscoveryQuery(
     Guid? NodeId = null,
     Guid? ParentNodeId = null,
     int? VotingWeight = null,
-    bool HiddenOnly = false
+    bool HiddenOnly = false,
+    bool IncludeHidden = false
 );
