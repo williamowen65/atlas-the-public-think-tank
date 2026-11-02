@@ -53,6 +53,28 @@ public sealed class ModerationController(
         return NoContent();
     }
 
+    /// <summary>Reveal a hidden-node decision only to its author or a global moderator.</summary>
+    [HttpGet("nodes/{id:guid}/notice")]
+    public object Notice(Guid id)
+    {
+        var node = nodes.GetById(new NodeId(id)) ?? throw new KeyNotFoundException();
+        if (!moderation.CanViewHiddenOriginal(actor.ParticipantId, node.AuthorId.Value, id))
+            return NotFound();
+
+        var decisions = moderation.HiddenDecisionDetails(actor.ParticipantId, node.AuthorId.Value, id);
+        return new
+        {
+            nodeId = id,
+            reasons = decisions.Select(x => new
+            {
+                publicReason = x.PublicReason.ToString(),
+                rationale = x.DecisionReason,
+                decidedAt = x.DecidedAt,
+                reviewRequested = x.ReviewRequestedAt is not null
+            })
+        };
+    }
+
     /// <summary>Project the pending moderation queue for a global moderator.</summary>
     [Authorize(Policy = AtlasPolicies.GlobalModerator), HttpGet("queue")]
     public object Queue() => moderation.NodeQueue(actor.ParticipantId).Select(
