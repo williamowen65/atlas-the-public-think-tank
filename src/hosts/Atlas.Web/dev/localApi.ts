@@ -184,8 +184,10 @@ export function sessionApiProxy(): ProxyOptions {
         if (cookies.length) request.setHeader('cookie', cookies.join('; ')); else request.removeHeader('cookie');
       });
       proxy.on('proxyRes', (response, request) => {
+        // Vite rewrites the request URL to /api/auth/* before proxyRes fires.
+        // Match that upstream path, not the browser-facing /atlas-session-api path.
         if (process.env.ATLAS_DEBUG_SESSION_ROUTING === '1'
-          && request.url?.split('?')[0].startsWith('/atlas-session-api/auth/')) {
+          && request.url?.split('?')[0].startsWith('/api/auth/')) {
           console.info('[atlas-session-proxy] upstream response', {
             method: request.method,
             path: request.url.split('?')[0],
