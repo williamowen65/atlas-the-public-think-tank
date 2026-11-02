@@ -123,9 +123,23 @@ export const sessionApiGuard: Plugin = {
         || new RegExp(`^/atlas-session-api/comments/${guid}/replies$`, 'i').test(path))
         || ['PUT', 'DELETE'].includes(method) && new RegExp(`^/atlas-session-api/comments/${guid}$`, 'i').test(path);
 
+      // Temporary opt-in diagnostics for local authentication routing. Never log headers,
+      // cookies, tokens, credentials, query strings, or request bodies.
+      const debugAuth = process.env.ATLAS_DEBUG_SESSION_ROUTING === '1'
+        && path.startsWith('/atlas-session-api/auth/');
+      if (debugAuth) {
+        console.info('[atlas-session-route]', {
+          method,
+          path,
+          readable,
+          writable,
+          permitted: (method === 'GET' && readable) || writable,
+        });
+      }
       // A request in our scope must match either an allowed GET or a write.
       if (!(method === 'GET' && readable) && !writable) {
         response.statusCode = 405;
+        if (debugAuth) console.info('[atlas-session-route] rejected by allowlist: 405');
         response.end('Unsupported session API operation.');
         return;
       }
@@ -135,10 +149,12 @@ export const sessionApiGuard: Plugin = {
         if (!origin || ![`http://${host}`, `https://${host}`].includes(origin)
           || request.headers['sec-fetch-site'] === 'cross-site') {
           response.statusCode = 403;
+          if (debugAuth) console.info('[atlas-session-route] rejected by origin policy: 403');
         response.end('Same-origin requests are required.');
         return;
         }
       }
+      if (debugAuth) console.info('[atlas-session-route] allowed; forwarding to Vite proxy');
       // Allowed: next() continues the chain; Vite already has the proxy settings.
       next();
     });
