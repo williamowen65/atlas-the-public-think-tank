@@ -83,6 +83,8 @@
    * User-facing failure message; empty text hides the error and retry controls.
    */
   let error = $state('');
+  /** Only failed session checks should offer a session-connection retry. */
+  let sessionCheckFailed = $state(false);
   /**
    * Email entered in the login or registration form; retained when switching modes.
    */
@@ -130,6 +132,7 @@
    */
   async function refresh() {
     error = '';
+    sessionCheckFailed = false;
     // Capture this check’s number. A later refresh changes refreshSequence, making this one stale.
     const current = ++refreshSequence;
     try {
@@ -154,8 +157,10 @@
         participantId = null;
         onSession?.(null);
         // Connection failures, timeouts and other HTTP errors need a visible retry message.
-        if (!(cause instanceof ApiRequestError) || cause.status !== 401)
-          error = 'Sign-in is unavailable. Start the local API and retry.';
+        if (!(cause instanceof ApiRequestError) || cause.status !== 401) {
+          sessionCheckFailed = true;
+          error = 'Unable to check your session. Verify the local API is running, then retry.';
+        }
       }
     } finally {
       // An older request must not dismiss the initial loading message for a newer check.
@@ -203,6 +208,7 @@
     if (busy) return;
     busy = true;
     error = '';
+    sessionCheckFailed = false;
     try {
       await apiRequest(
         sessionBase,
@@ -255,11 +261,16 @@
       registered = true;
       registering = false;
     } catch (cause) {
-      // Mail delivery being unavailable needs different guidance from rejected form data.
-      error =
-        cause instanceof ApiRequestError && cause.status === 503
+      // Keep errors generic for account privacy; distinguish HTTP failures from connectivity.
+      if (cause instanceof ApiRequestError) {
+        error = cause.status === 503
           ? 'Registration requires local email delivery to be configured.'
-          : 'Registration was not completed. Check your information and try again.';
+          : cause.status === 400
+            ? 'Registration was rejected (HTTP 400). Check your information; if it persists, inspect the API response.'
+            : `Registration failed (HTTP ${cause.status}). Please try again.`;
+      } else {
+        error = 'Unable to reach the registration service. Check the connection and try again.';
+      }
     } finally {
       // Discard the secret on both success and failure; allow another submission.
       password = '';
@@ -322,7 +333,7 @@
     </div>
   {/if}
   {#if error}<p role="alert">{error}</p>
-    <button onclick={() => void refresh()} disabled={busy}>Retry sign-in connection</button>{/if}
+    {#if sessionCheckFailed}<button onclick={() => void refresh()} disabled={busy}>Retry session check</button>{/if}{/if}
 </div>
 
 {#snippet signInForm()}
