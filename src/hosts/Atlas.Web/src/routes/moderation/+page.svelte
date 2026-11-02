@@ -1,6 +1,7 @@
 <!-- Global moderators review reports; backend policies authorize every operation. -->
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
   import { apiRequest, ApiRequestError } from '$lib/api/apiRequest';
 
   type QueueItem = { nodeId: string; reportedTitle: string; count: number; reviewRequested: boolean };
@@ -12,7 +13,9 @@
   let history = $state<Case[]>([]);
   let loading = $state(true);
   let busy = $state(false);
-  let denied = $state(false);
+  // Authorization is determined by the server, not by a client-side role claim.
+  // This can later permit community moderators with scoped queue permissions.
+  let access = $state<'checking' | 'allowed' | 'denied'>('checking');
   let error = $state('');
   let notice = $state('');
   let rationale = $state('');
@@ -25,12 +28,29 @@
     loading = true;
     error = '';
     try {
+      // Distinguish an anonymous visitor from a signed-in user lacking moderation rights.
+      const session = await apiRequest<{ participantId: string | null }>(base, 'auth/session');
+      if (!session.participantId) {
+        access = 'checking';
+        await goto('/login');
+        return;
+      }
+      // The API remains the authority; never expose queue content on a denied response.
       queue = await apiRequest<QueueItem[]>(base, 'moderation/queue');
-      denied = false;
+      access = 'allowed';
     } catch (e) {
-      denied = e instanceof ApiRequestError && (e.status === 401 || e.status === 403);
-      if (!denied) error = e instanceof Error ? e.message : 'Unable to load reports.';
       queue = [];
+      selected = null;
+      history = [];
+      if (e instanceof ApiRequestError && e.status === 401) {
+        access = 'checking';
+        await goto('/login');
+      } else if (e instanceof ApiRequestError && e.status === 403) {
+        access = 'denied';
+      } else {
+        access = 'checking';
+        error = e instanceof Error ? e.message : 'Unable to verify moderation access.';
+      }
     } finally {
       loading = false;
     }
@@ -154,6 +174,7 @@
         {/if}
       </section>
     {/if}
+  {:else if error}<p role="alert">{error}</p>
   {/if}
 </section>
 <style>
