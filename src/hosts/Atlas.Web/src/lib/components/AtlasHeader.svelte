@@ -12,7 +12,6 @@
     account-avatar initial.
 -->
 <script lang="ts">
-  import { tick } from 'svelte';
   import { myCommunities, type Community } from '../api/communities';
   import DiscoverySearch from './DiscoverySearch.svelte';
   import { restoreDiscoveryQuery } from '../state/discoveryQuery.svelte';
