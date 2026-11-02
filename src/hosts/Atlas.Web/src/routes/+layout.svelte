@@ -32,6 +32,7 @@
    * Session-derived flag passed to the header; does not itself authorize API access.
    */
   let authenticated = $state(false);
+  let canModerate = $state(false);
   /**
    * Public profile name displayed by the header, with Atlas User as the fallback.
    */
@@ -48,6 +49,13 @@
         );
         if (!active) return;
         authenticated = !!session.participantId;
+        canModerate = false;
+        if (session.participantId) {
+          try {
+            await apiRequest('/atlas-session-api', 'moderation/queue');
+            if (active) canModerate = true;
+          } catch { /* Moderation link is only shown when the server grants access. */ }
+        }
         if (session.participantId) {
           try {
             const profile = await apiRequest<{ displayName: string }>(
@@ -60,7 +68,7 @@
           }
         }
       } catch {
-        if (active) authenticated = false;
+        if (active) { authenticated = false; canModerate = false; }
       }
     }
     // This reads the existing session; it does not require the visitor to sign in.
@@ -97,6 +105,7 @@
 <div class="app-shell">
   <AtlasHeader mobileExperiment {authenticated} {displayName} active={activePage} />
   <!-- The current route renders between the shared header and footer. -->
+  {#if canModerate}<nav aria-label="Moderator tools"><a href="/moderation">Review reported nodes</a></nav>{/if}
   <main id="main-content">
     {@render children()}
   </main>
