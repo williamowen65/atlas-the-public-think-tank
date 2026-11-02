@@ -152,6 +152,8 @@
         'auth/session',
       );
       sessionId = session.participantId;
+      if (session.participantId === participantId) void loadHiddenOwned();
+      else hiddenOwned = [];
     } catch {
       sessionId = null;
     } finally {
@@ -263,6 +265,15 @@
       </form>{/if}
     {#if notice}<p role="status">{notice}</p>{/if}
     {#if !profile.deleted}
+      {#if isOwner}
+        <section aria-label="My hidden nodes">
+          <h2>My hidden nodes</h2>
+          <p>These entries are private to your account. Open a node to revise it and request moderator review.</p>
+          {#if hiddenLoadError}<p role="status">{hiddenLoadError}</p>{/if}
+          {#if hiddenOwned.length === 0}<p>No hidden nodes found.</p>{/if}
+          <ul>{#each hiddenOwned as hidden (hidden.id)}<li><button type="button" onclick={() => onOpenNode?.(hidden.id)}>{hidden.notice} — Open node</button></li>{/each}</ul>
+        </section>
+      {/if}
       <h2>Published contributions</h2>
       {#key profile.id}<LiveNodeFeed
           authorId={profile.id}
