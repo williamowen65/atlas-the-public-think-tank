@@ -10,7 +10,7 @@ const cases = [
 async function mockModeration(page: Page, onDecision?: (url: string, body: unknown) => void) {
   await page.route('**/atlas-session-api/**', async (route) => {
     const url = route.request().url();
-    if (url.endsWith('/auth/session')) return route.fulfill({ json: { participantId: null } });
+    if (url.endsWith('/auth/session')) return route.fulfill({ json: { participantId: 'moderator-participant' } });
     if (url.endsWith('/auth/csrf')) return route.fulfill({ json: { token: 'test-csrf' } });
     if (url.endsWith('/moderation/queue')) return route.fulfill({ json: cases });
     if (url.endsWith('/history')) return route.fulfill({ json: [
@@ -75,9 +75,23 @@ test('decision targets only the selected node even when other cases are visible'
 test('access denial does not expose the moderation queue', async ({ page }) => {
   await page.route('**/atlas-session-api/**', async route => {
     if (route.request().url().endsWith('/moderation/queue')) return route.fulfill({ status: 403 });
-    return route.fulfill({ json: { participantId: null } });
+    return route.fulfill({ json: { participantId: 'regular-member' } });
   });
   await page.goto('http://127.0.0.1:4173/moderation');
   await expect(page.getByRole('alert')).toContainText('Global moderator access is required');
   await expect(page.getByRole('button', { name: /Orca recovery/ })).toHaveCount(0);
+});
+
+test('anonymous visitors are redirected to sign-in before loading the queue', async ({ page }) => {
+  let queueRequests = 0;
+  await page.route('**/atlas-session-api/**', async route => {
+    if (route.request().url().endsWith('/auth/session'))
+      return route.fulfill({ json: { participantId: null } });
+    if (route.request().url().endsWith('/moderation/queue')) queueRequests++;
+    return route.fulfill({ status: 403 });
+  });
+  await page.goto('http://127.0.0.1:4173/moderation');
+  await expect(page).toHaveURL(/\\/login(?:[?#]|$)/);
+  expect(queueRequests).toBe(0);
+  await expect(page.getByRole('heading', { name: 'Moderation', exact: true })).toHaveCount(0);
 });
