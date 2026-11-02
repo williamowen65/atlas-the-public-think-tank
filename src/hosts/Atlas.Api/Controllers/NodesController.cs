@@ -43,6 +43,13 @@ public sealed class NodesController(
         };
     }
 
+    /// <summary>Moderator discovery, ranked and paged by SQL with hidden content included on request.</summary>
+    [Authorize(Policy = AtlasPolicies.GlobalModerator), HttpGet("moderator")]
+    public object ModeratorDiscover([FromQuery] DiscoveryQuery query) =>
+        query.IncludeHidden
+            ? discovery.DiscoverModeratorPage(query with { HiddenOnly = false })
+            : discovery.DiscoverPage(query with { HiddenOnly = false });
+
     /// <summary>Read the current author’s Discovery page, including hidden placeholders.</summary>
     [Authorize(Policy = AtlasPolicies.Member), HttpGet("mine")]
     public object Mine([FromQuery] DiscoveryQuery query) => discovery.DiscoverAuthoredPage(
