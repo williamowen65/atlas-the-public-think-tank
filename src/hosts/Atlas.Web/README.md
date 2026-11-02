@@ -414,25 +414,3 @@ Global header search now calls `/api/search` and pages one relevance-ordered seq
 ### Search ranking workbench
 
 Run `npm run storybook:ranking`, then open **Compositions / Search ranking / Workbench**. It uses real SQL ranking in generated disposable databases, with shared fixture scenarios, reset/edit controls, vote/change/undo phases and diagnostic tables. Configure `ATLAS_SQL_TEST_CONNECTION_STRING` in shared secrets or the environment; the SQL account needs disposable database and full-text setup permissions. Atlas.Api does not need to run. See [the workbench guide](../../../docs/discovery/search-ranking-workbench.md).
-
-
-## Local session routing diagnostics
-
-For registration or sign-in failures, start the web development server with
-`ATLAS_DEBUG_SESSION_ROUTING=1` set in the same terminal. For example, in
-PowerShell, run `$env:ATLAS_DEBUG_SESSION_ROUTING = '1'` before the normal
-web startup command. Restart Vite after changing the setting.
-
-The opt-in `[atlas-session-route]` messages show the request method, path,
-allowlist decision, and whether Vite passed the request onward.
-`[atlas-session-proxy]` messages show whether the upstream API request was
-sent and the HTTP status returned by the upstream server. No credentials,
-cookies, CSRF tokens, query strings, or request bodies are logged.
-
-A missing upstream-request log suggests the request was handled before proxy
-forwarding. An upstream response with a failure status means the API (or its
-upstream middleware) returned that status. A GET to `auth/session` returning
-401 is expected for an anonymous visitor.
-
-Disable the diagnostics with `Remove-Item Env:ATLAS_DEBUG_SESSION_ROUTING`
-and restart the web server. This switch is for local debugging only.
