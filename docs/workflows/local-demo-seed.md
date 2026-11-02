@@ -24,9 +24,10 @@ From the repository root, with the .NET SDK and `dotnet-ef` installed:
 dotnet ef database drop --project src/Atlas.Persistence --force
 ```
 
-The design-time factory reads `ATLAS_SQL_CONNECTION_STRING` from the environment or shared user secrets. The console automatically runs EF migrations on startup, then seeds only an empty database:
+The design-time factory reads `ATLAS_SQL_CONNECTION_STRING` from the environment or shared user secrets. Run the explicit database setup command first. It applies EF migrations and creates the SQL Server full-text indexes needed for search. Then seed the empty database:
 
 ```powershell
+dotnet run --project src/hosts/Atlas.Console -- --setup-database
 dotnet run --project src/hosts/Atlas.Console -- --seed-demo
 ```
 
