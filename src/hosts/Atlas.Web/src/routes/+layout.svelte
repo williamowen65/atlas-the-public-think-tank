@@ -33,6 +33,7 @@
    */
   let authenticated = $state(false);
   let canModerate = $state(false);
+  let pendingModerationCount = $state(0);
   /**
    * Public profile name displayed by the header, with Atlas User as the fallback.
    */
@@ -50,10 +51,11 @@
         if (!active) return;
         authenticated = !!session.participantId;
         canModerate = false;
+        pendingModerationCount = 0;
         if (session.participantId) {
           try {
-            await apiRequest('/atlas-session-api', 'moderation/queue');
-            if (active) canModerate = true;
+            const queue = await apiRequest<Array<{ nodeId: string }>>('/atlas-session-api', 'moderation/queue');
+            if (active) { canModerate = true; pendingModerationCount = queue.length; }
           } catch { /* Moderation link is only shown when the server grants access. */ }
         }
         if (session.participantId) {
@@ -103,9 +105,8 @@
 
 <a class="skip-link" href="#main-content">Skip to content</a>
 <div class="app-shell">
-  <AtlasHeader mobileExperiment {authenticated} {displayName} active={activePage} />
+  <AtlasHeader mobileExperiment {authenticated} {displayName} {canModerate} {pendingModerationCount} active={activePage} />
   <!-- The current route renders between the shared header and footer. -->
-  {#if canModerate}<nav aria-label="Moderator tools"><a href="/moderation">Review reported nodes</a></nav>{/if}
   <main id="main-content">
     {@render children()}
   </main>
