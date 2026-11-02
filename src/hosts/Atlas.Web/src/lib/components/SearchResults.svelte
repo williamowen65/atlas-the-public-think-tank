@@ -288,12 +288,34 @@
     z-index: 40;
     max-height: min(55svh, 32rem);
     overflow-y: auto;
+    /* Reserve scrollbar space inside the rounded scrolling surface. The browser's
+       native scrollbar may still paint square ends; the transparent gutter keeps
+       those ends away from the outer rounded border without clipping content. */
+    scrollbar-gutter: stable;
     overscroll-behavior: contain;
     padding: 1rem;
     border: 1px solid var(--atlas-border);
     border-radius: var(--atlas-radius);
     background: var(--atlas-surface);
+    background-clip: padding-box;
     box-shadow: 0 8px 24px #0002;
+  }
+  /* Chrome/Edge: keep the scrollbar track transparent so the rounded
+     dropdown surface remains visible at its top and bottom corners. */
+  .search-results::-webkit-scrollbar {
+    width: 0.65rem;
+  }
+  .search-results::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: var(--atlas-radius);
+  }
+  .search-results::-webkit-scrollbar-thumb {
+    background: var(--atlas-border);
+    border: 2px solid var(--atlas-surface);
+    border-radius: 999px;
+  }
+  .search-results::-webkit-scrollbar-corner {
+    background: transparent;
   }
   h2 {
     font-size: 1rem;

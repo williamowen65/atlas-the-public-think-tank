@@ -35,7 +35,7 @@
     /** Name used to derive the account-avatar initial. */
     displayName?: string;
   } = $props();
-  /** Whether the header’s search disclosure is mounted below navigation. */
+  /** Whether the desktop header search is expanded inline. */
   let searchOpen = $state(false);
   /** Keep the real search input mounted on phones instead of a second lookalike. */
   let phone = $state(false);
@@ -48,7 +48,7 @@
   });
   /** Mounted disclosure button, used to restore focus when Escape closes search. */
   let searchToggle = $state<HTMLButtonElement>();
-  /** Mounted search region; its input receives focus after the disclosure opens. */
+  /** Mounted inline search region; its input receives focus after opening. */
   let searchPanel = $state<HTMLDivElement>();
   /** Unique DOM ID connecting the disclosure button to its search region. */
   const searchPanelId = $props.id();
@@ -218,7 +218,7 @@
       if (searchOpen && !filtersOpen) {
         searchOpen = false;
         if (mobileExperiment && phone) searchPanel?.querySelector('input')?.blur();
-        else searchToggle?.focus();
+        else void tick().then(() => searchToggle?.focus());
       }
       if (menuOpen) {
         menuOpen = false;
@@ -244,8 +244,8 @@
 </script>
 
 <!--
-  Layout: Brand, search toggle and navigation share the top row. The optional search region
-  opens below; the Explore sidebar is available on desktop and mobile.
+  Layout: Brand, search and navigation share the top row on desktop. Mobile retains
+  its existing search presentation; the Explore sidebar is available at all sizes.
 -->
 
 <svelte:window
@@ -297,7 +297,7 @@
   <a class="brand" href="/" aria-label="Atlas home"
     ><strong>Atlas</strong><span>The Public Think Tank</span></a
   >
-  <!-- Search is a disclosure control; its input occupies the full row below navigation. -->
+  <!-- The desktop search disclosure expands in the middle header column. -->
   <button
     class="search-toggle"
     bind:this={searchToggle}
@@ -457,6 +457,61 @@
   }
   @media (prefers-reduced-motion: reduce) { .bottom-navigation, .atlas-header { transition: none; } }
 
+  // Desktop search occupies the flexible middle column, never a second header row.
+  // Leave the mobile experiment untouched; its search remains permanently available.
+  @media (min-width: 561px) {
+    .atlas-header.search-open .search-toggle { display: none; }
+    // Animate the inline field from the search button's right edge into the
+    // available header space. Only transform/opacity change, so navigation stays put.
+    .atlas-header .search-panel {
+      transform-origin: right center;
+      animation: atlas-search-expand 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    }
+    @keyframes atlas-search-expand {
+      from { transform: scaleX(0.08); opacity: 0.35; }
+      to { transform: scaleX(1); opacity: 1; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .atlas-header .search-panel { animation: none; }
+    }
+    .atlas-header .search-panel {
+      position: relative;
+      z-index: 1;
+      grid-column: 2;
+      grid-row: 1;
+      width: 100%;
+      min-width: 0;
+      align-self: center;
+    }
+    .atlas-header .search-panel :global(.filter-bar) {
+      position: relative;
+      z-index: 1;
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+    // The filter toolbox may extend below the header, but the search input itself
+    // always stays in the first row without pushing navigation downward.
+    .atlas-header .search-panel :global(.toolbox) {
+      position: absolute;
+      top: calc(100% + 0.5rem);
+      left: 0;
+      right: 0;
+      z-index: 40;
+      padding: 1rem;
+      margin: 0;
+      border: 1px solid var(--atlas-border);
+      border-radius: var(--atlas-radius);
+      background: var(--atlas-surface);
+      box-shadow: 0 8px 24px #0002;
+    }
+    // The results list has its own scrolling surface. Match its corners to the
+    // outer panel rather than clipping overflow (which would cut off overlays).
+    .atlas-header .search-panel :global(.results-slot),
+    .atlas-header .search-panel :global(.results-slot > *) {
+      border-radius: var(--atlas-radius);
+    }
+  }
   // Keep the shared Explore toggle beside the Atlas identity on desktop.
   @media (min-width: 561px) {
     .explore-sidebar { position: absolute; left: 0; top: 0; height: 100%; display: flex; align-items: center; }
@@ -522,6 +577,7 @@
     transform: translateX(-50%);
     border-bottom: 1px solid var(--atlas-border);
     pointer-events: none;
+    z-index: 0;
   }
   .brand {
     display: flex;

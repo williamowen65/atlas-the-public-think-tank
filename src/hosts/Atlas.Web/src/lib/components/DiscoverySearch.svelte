@@ -146,6 +146,7 @@
     onsubmit={(event) => {
       event.preventDefault();
       apply(input);
+      if (!parse(input).errors.length) expanded = false;
     }}
   >
     <label class="sr-only" for="discovery-query">Search nodes and filters</label>
@@ -480,6 +481,22 @@
     border-top: 1px solid var(--atlas-border);
     max-height: 55vh;
     overflow-y: auto;
+  }
+  /* Keep the filter toolbox scrollbar from painting square corners. */
+  .toolbox::-webkit-scrollbar {
+    width: 0.65rem;
+  }
+  .toolbox::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: var(--atlas-radius);
+  }
+  .toolbox::-webkit-scrollbar-thumb {
+    background: var(--atlas-border);
+    border: 2px solid var(--atlas-surface);
+    border-radius: 999px;
+  }
+  .toolbox::-webkit-scrollbar-corner {
+    background: transparent;
   }
   .toolbox label {
     display: flex;
