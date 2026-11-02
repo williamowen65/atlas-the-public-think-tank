@@ -96,6 +96,7 @@ public sealed class DiscoveryCache : IDisposable
             query.CreatedThrough,
             query.IncludeArchived,
             query.HiddenOnly,
+            query.IncludeHidden,
             query.Page,
             PageSize = IDiscoveryService.PageSize,
             IncludeHidden = includeHidden,
