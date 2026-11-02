@@ -120,18 +120,10 @@ export const sessionApiGuard: Plugin = {
         || (method === 'PUT' && new RegExp(`^/atlas-session-api/communities/${guid}/(?:membership|name|description|nodes/${guid})$`, 'i').test(path))
         || (method === 'DELETE' && new RegExp(`^/atlas-session-api/communities/${guid}/(?:membership|nodes/${guid})$`, 'i').test(path));
 
-      // Combine feature writes with creation, authentication and comment operations.
-      const moderationWrite = method === 'POST' && new RegExp(`^/atlas-session-api/moderation/nodes/${guid}/(?:reports|review|decision|restore)      const profileEdit = method === 'PUT' && path === '/atlas-session-api/participants/me';
-      const commentVote = ['PUT', 'DELETE'].includes(method) && new RegExp(`^/atlas-session-api/comments/${guid}/vote$`, 'i').test(path);
-      const nodeVote = ['PUT', 'DELETE'].includes(method) && new RegExp(`^/atlas-session-api/nodes/${guid}/vote$`, 'i').test(path);
-      const reactionVote = method === 'PUT' && new RegExp(`^/atlas-session-api/nodes/${guid}/reactions/vote$`, 'i').test(path);
-      const undoReaction = method === 'DELETE' && new RegExp(`^/atlas-session-api/reactions/${guid}/vote$`, 'i').test(path);
-      const communityWrite = (method === 'POST' && (path === '/atlas-session-api/communities' || new RegExp(`^/atlas-session-api/communities/${guid}/(?:archive|restore)$`, 'i').test(path)))
-        || (method === 'PUT' && new RegExp(`^/atlas-session-api/communities/${guid}/(?:membership|name|description|nodes/${guid})$`, 'i').test(path))
-        || (method === 'DELETE' && new RegExp(`^/atlas-session-api/communities/${guid}/(?:membership|nodes/${guid})$`, 'i').test(path));
+      // Explicitly forward moderation writes; authorization and CSRF remain in the API.
+      const moderationWrite = method === 'POST'
+        && new RegExp(`^/atlas-session-api/moderation/nodes/${guid}/(?:reports|review|decision|restore)$`, 'i').test(path);
 
-      // Combine feature writes with creation, authentication and comment operations.
-, 'i').test(path);
       const writable = nodeEdit || blockAdd || blockEdit || moderationWrite || communityWrite || profileEdit || commentVote || nodeVote || reactionVote || undoReaction
         || method === 'POST' && (['/atlas-session-api/nodes', '/atlas-session-api/catalog/node-types', '/atlas-session-api/auth/register'].includes(path) || /^\/atlas-session-api\/auth\/(login|logout|resend-confirmation)$/.test(path)
         || new RegExp(`^/atlas-session-api/nodes/${guid}/comments$`, 'i').test(path)
