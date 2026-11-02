@@ -167,5 +167,9 @@ export async function apiRequest<T>(
       response.status,
     );
   }
-  return response.status === 204 ? (undefined as T) : response.json();
+  // Successful writes such as registration may return 202 Accepted with no body.
+  // Reading the text first avoids treating an empty successful response as a network failure.
+  if (response.status === 204 || response.status === 205) return undefined as T;
+  const responseText = await response.text();
+  return responseText ? (JSON.parse(responseText) as T) : (undefined as T);
 }
