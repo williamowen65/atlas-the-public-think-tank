@@ -19,6 +19,7 @@ public sealed class SqlDiscoveryReadQuery(
     DiscoveryCache? cache = null)
     : IDiscoveryReadQuery, IDiscoveryAuthorListing, IDiscoveryPersonalVotes
 {
+    public DiscoveryPage DiscoverModeratorPage(DiscoveryQuery query) => Read(query, null, true, true);
     /// <summary>Returns a public page, excluding nodes hidden by moderation.</summary>
     public DiscoveryPage DiscoverPage(DiscoveryQuery query) => Read(query, null, true);
     /// <summary>Returns a page restricted to supplied authored IDs, including hidden placeholders.</summary>
