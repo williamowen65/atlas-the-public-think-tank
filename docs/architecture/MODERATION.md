@@ -14,6 +14,14 @@ Moderation owns reports, case status, public reason categories, human decisions,
 5. The author can view the original title and description, edit them, and request review after an edit. An Atlas moderator can open the hidden Node from the review queue and view its current original title and description in a read-only view before deciding whether to restore it. The Node stays hidden until a moderator restores visibility from the review queue. Reports and decisions remain stored for history.
 6. A hidden Node cannot receive another report. The Console shows the report action as disabled, and Moderation rejects direct submissions until visibility is restored.
 
+## Web dashboard (PTT-158)
+
+The SvelteKit `/moderation` route is the global moderator dashboard. The shared layout shows its navigation only after the existing protected `GET /api/moderation/queue` policy check succeeds. Direct navigation is also guarded by the backend policy; hiding a link is not authorization.
+
+The dashboard groups reports by node, shows case history, and supports dismissing pending reports, hiding a node with a public reason and private rationale, and restoring a node after the author has edited it and requested review. The existing `apiRequest` transport supplies same-origin cookies and CSRF tokens for decisions. Loading, empty, forbidden, error and success states are displayed. Investigation links open the normal node page; they do not grant edit permission.
+
+This first dashboard slice covers **node reports**, not comment reports. The existing moderation API has no comment-report queue/decision endpoints yet. Community-specific moderator roles remain a separate future capability. Provisioning is documented in [Identity setup](../PTT-94-Identity.md#provision-a-global-moderator-ptt-159).
+
 ## Ownership and limits
 
 The hide action is Moderation-owned visibility, not a Graph archive or a change to the author's Node. The console host applies it to Discovery and its Node read views. Grouping by target ID lets future report types use the same queue pattern. Moderation cases are stored in SQL Server through `SqlModerationCaseRepository`. Grouped decisions, review requests and restoration save individual cases inside one shared operation transaction. Failure rolls back the whole group rather than leaving a partial decision. Competing decisions are covered by [SQL operation tests](../security/validation/IMPLEMENTATION.md#workflows-and-evidence). Moderation does not request the graph application lock; normal SQL locking and constraints still apply. The Console establishes the actor through Identity sign-in and disables arbitrary participant switching. Global role membership is supplied through the Moderation authorization port; moderation decisions remain domain-owned.
