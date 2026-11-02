@@ -71,13 +71,33 @@
   let hiddenOwned = $state<Array<{ id: string; notice: string }>>([]);
   let hiddenLoadError = $state('');
   async function loadHiddenOwned(ownerId: string) {
-    hiddenOwned = []; hiddenLoadError = '';
+    hiddenOwned = [];
+    hiddenLoadError = '';
     try {
-      const page = await apiRequest<{ items: Array<{ nodeId: string; card?: { isHidden?: boolean } | null }>; hasNextPage: boolean }>('/atlas-session-api', 'nodes/mine?Page=1&PageSize=100');
-      if (sessionId !== ownerId || participantId !== ownerId) return;
-      hiddenOwned = page.items.filter(item => item.card?.isHidden || !item.card).map(item => ({ id: item.nodeId, notice: 'Hidden by moderator' }));
-      if (page.hasNextPage) hiddenLoadError = 'Only the first page of your nodes is shown here.';
-    } catch { if (sessionId === ownerId) hiddenLoadError = 'Could not load your hidden nodes.'; }
+      // Discovery fixes the page size at three; PageSize=100 is not supported.
+      // Walk all authored pages so a hidden node cannot be missed after page one.
+      const found: Array<{ id: string; notice: string }> = [];
+      let pageNumber = 1;
+      let hasNextPage = true;
+      while (hasNextPage) {
+        const page = await apiRequest<{
+          items: Array<{ nodeId: string; card?: { isHidden?: boolean } | null }>;
+          hasNextPage: boolean;
+        }>('/atlas-session-api', `nodes/mine?Page=${pageNumber}`);
+        if (sessionId !== ownerId || participantId !== ownerId) return;
+        for (const item of page.items) {
+          if (item.card?.isHidden || !item.card) {
+            found.push({ id: item.nodeId, notice: 'Hidden by moderator' });
+          }
+        }
+        hasNextPage = page.hasNextPage;
+        pageNumber++;
+      }
+      hiddenOwned = found;
+    } catch {
+      if (sessionId === ownerId && participantId === ownerId)
+        hiddenLoadError = 'Could not load your hidden nodes.';
+    }
   }
 
   /**
