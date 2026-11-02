@@ -34,6 +34,18 @@ Restart the API and Storybook afterward. Demo sign-in accounts are `demo01@examp
 
 If `dotnet ef` cannot load the design-time factory, first verify the .NET EF tooling and your SQL connection configuration. Do not run the drop command against an unknown connection string.
 
+## Moderation workflow fixtures
+
+The disposable demo seed now includes three cases in `ModerationCaseRows`:
+
+- **Pending report:** `Homelessness` (demo user 02 authored) appears in the moderation queue.
+- **Hidden, no review requested:** `Make essential services accessible to everyone` (demo user 03 authored) is hidden, allowing author editing and a subsequent review request to be tested.
+- **Hidden, review requested:** `Learn from solutions that already work` (demo user 04 authored) is already awaiting moderator restoration review.
+
+These fixtures intentionally use existing node IDs and participant IDs; they are not real reports. A seeded review request represents the persisted state for UI testing, not evidence that a demo author made an edit in this seed. The moderator role is **not** assigned by this fixture; provision a trusted test account using the operator command documented in [Identity setup](../PTT-94-Identity.md).
+
+**Important:** The seed changes only a fresh disposable database. Do not drop an existing database unless you have backed up anything you want to retain. The author-facing web workflow and privacy checks must be tested separately; seeded rows alone do not implement that UI.
+
 ## Child-feed pagination walkthrough
 
 Open **Can we save the Southern Resident orcas?** (node b1000000-0000-4000-8000-000000000201), then select **15 Solutions**. Fifteen proposed interventions (IDs ending 401–415) are direct children of this parent, all of type Solution. They have descriptions and full Markdown content, but do not imply actual completed projects or measured results.
