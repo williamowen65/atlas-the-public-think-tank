@@ -48,6 +48,13 @@ public sealed class NodesController(
         nodes.GetByAuthor(new NodeAuthorId(actor.ParticipantId)).Select(node => node.Id.Value).ToArray()
     );
 
+    /// <summary>Page only the signed-in author's hidden nodes, never another user's.</summary>
+    [Authorize(Policy = AtlasPolicies.Member), HttpGet("mine/hidden")]
+    public object MineHidden([FromQuery] DiscoveryQuery query) => discovery.DiscoverAuthoredPage(
+        query with { HiddenOnly = true },
+        nodes.GetByAuthor(new NodeAuthorId(actor.ParticipantId)).Select(node => node.Id.Value).ToArray()
+    );
+
     /// <summary>List the node types available for a client to select.</summary>
     [HttpGet("types")]
     public object Types() => types.GetAll().Select(
