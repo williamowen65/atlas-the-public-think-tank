@@ -114,11 +114,12 @@
 
 <svelte:head><title>Moderation · Atlas</title></svelte:head>
 <section class="moderation">
-  <h1>Global moderation</h1>
-  <p>Review reported nodes across all communities, including nodes without a community. Moderators cannot edit authors’ content.</p>
-  {#if loading}<p role="status">Loading reports…</p>
-  {:else if denied}<p role="alert">Global moderator access is required. Sign in with a provisioned account.</p>
-  {:else}
+  {#if loading}<p role="status">Checking access…</p>
+  {:else if access === 'denied'}
+    <h1>Access denied</h1>
+    <p role="alert">You do not have permission to view moderation.</p>
+  {:else if access === 'allowed'}
+    <h1>Moderation</h1>
     {#if error}<p role="alert">{error}</p>{/if}
     {#if notice}<p role="status">{notice}</p>{/if}
     {#if queue.length === 0}<p>No pending reports or review requests.</p>{/if}
@@ -174,7 +175,8 @@
         {/if}
       </section>
     {/if}
-  {:else if error}<p role="alert">{error}</p>
+  {:else if error}
+    <p role="alert">{error}</p>
   {/if}
 </section>
 <style>
