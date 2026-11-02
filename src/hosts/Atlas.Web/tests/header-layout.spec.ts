@@ -60,7 +60,8 @@ for (const authenticated of [false, true]) {
       await toggle.click();
       await expect(search).toBeVisible();
       await expect(search).toBeFocused();
-      await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+      // Desktop search expands inline and hides its trigger while open.
+      await expect(toggle).toBeHidden();
       expect((await search.boundingBox())!.width).toBeGreaterThan(30);
       const pill = await header.locator('.search-line').boundingBox();
       const navigation = await header.locator('.right-group').boundingBox();
@@ -94,7 +95,8 @@ for (const authenticated of [false, true]) {
       await expect(toggle).toBeFocused();
       await toggle.click();
       await expect(search).toHaveValue('orcas');
-      await toggle.click();
+      // The trigger is hidden while expanded; Escape dismisses the search.
+      await page.keyboard.press('Escape');
       await expect(search).toHaveCount(0);
       if (width > 560)
         await expect(
