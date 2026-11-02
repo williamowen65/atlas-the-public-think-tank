@@ -5,6 +5,7 @@ public interface IDiscoveryService
 {
     const int PageSize = 3;
     DiscoveryPage DiscoverPage(DiscoveryQuery query);
+    DiscoveryPage DiscoverModeratorPage(DiscoveryQuery query) => throw new NotSupportedException("Moderator discovery is unavailable.");
     DiscoveryPage DiscoverAuthoredPage(
         DiscoveryQuery query,
         IReadOnlyCollection<Guid> authoredNodeIds
