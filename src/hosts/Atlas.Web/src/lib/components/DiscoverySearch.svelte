@@ -146,6 +146,7 @@
     onsubmit={(event) => {
       event.preventDefault();
       apply(input);
+      if (!parse(input).errors.length) expanded = false;
     }}
   >
     <label class="sr-only" for="discovery-query">Search nodes and filters</label>
