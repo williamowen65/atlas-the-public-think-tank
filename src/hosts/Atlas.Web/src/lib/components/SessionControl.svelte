@@ -257,9 +257,9 @@
         { email, password, displayName },
         AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]),
       );
-      // Show confirmation instructions rather than treating registration as a login.
+      // Replace the registration form with next-step instructions for this page visit.
+      // This state is intentionally not persisted; refreshing restores the form.
       registered = true;
-      registering = false;
     } catch (cause) {
       // Keep errors generic for account privacy; distinguish HTTP failures from connectivity.
       if (cause instanceof ApiRequestError) {
@@ -337,9 +337,12 @@
 </div>
 
 {#snippet signInForm()}
-{#if registered}<p role="status">
-          Account created. Confirm your email through the development email workflow, then sign in.
-        </p>{/if}
+{#if registered}
+  <div role="status" class="registration-complete">
+    <h2>Account created</h2>
+    <p>Confirm your email address before signing in. In local development, use the development email confirmation workflow.</p>
+  </div>
+{:else}
       <form
         aria-label={registering ? 'Create an Atlas account' : 'Sign in to Atlas'}
         onsubmit={(event) => {
@@ -388,7 +391,7 @@
           ? 'Already have an account? Sign in'
           : 'New to Atlas? Create an account'}</button
       >
-
+{/if}
 {/snippet}
 
 <style lang="scss">
