@@ -68,35 +68,46 @@
    * Whether the session lookup has completed, including a signed-out result.
    */
   let sessionReady = $state(false);
-  let hiddenOwned = $state<Array<{ id: string; notice: string }>>([]);
+  type HiddenNode = { id: string; title: string; typeName: string; notice: string; rationale: string; decidedAt: string };
+  let hiddenOwned = $state<HiddenNode[]>([]);
   let hiddenLoadError = $state('');
-  async function loadHiddenOwned(ownerId: string) {
-    hiddenOwned = [];
+  let hiddenLoading = $state(false);
+  let hiddenPage = $state(1);
+  let hiddenHasMore = $state(false);
+  async function loadHiddenOwned(ownerId: string, pageNumber = 1) {
+    if (hiddenLoading) return;
+    hiddenLoading = true;
     hiddenLoadError = '';
     try {
-      // Discovery fixes the page size at three; PageSize=100 is not supported.
-      // Walk all authored pages so a hidden node cannot be missed after page one.
-      const found: Array<{ id: string; notice: string }> = [];
-      let pageNumber = 1;
-      let hasNextPage = true;
-      while (hasNextPage) {
-        const page = await apiRequest<{
-          items: Array<{ nodeId: string; card?: { isHidden?: boolean } | null }>;
-          hasNextPage: boolean;
-        }>('/atlas-session-api', `nodes/mine?Page=${pageNumber}`);
-        if (sessionId !== ownerId || participantId !== ownerId) return;
-        for (const item of page.items) {
-          if (item.card?.isHidden || !item.card) {
-            found.push({ id: item.nodeId, notice: 'Hidden by moderator' });
-          }
-        }
-        hasNextPage = page.hasNextPage;
-        pageNumber++;
-      }
-      hiddenOwned = found;
+      // The server filters hidden nodes before applying Discovery's fixed-size pagination.
+      const page = await apiRequest<{
+        items: Array<{ nodeId: string; card?: { title?: string; typeName?: string; isHidden?: boolean } | null }>;
+        hasNextPage: boolean;
+      }>('/atlas-session-api', `nodes/mine/hidden?Page=${pageNumber}`);
+      if (sessionId !== ownerId || participantId !== ownerId) return;
+      const details = await Promise.all(page.items.map(async (item): Promise<HiddenNode> => {
+        const detail = await apiRequest<{
+          reasons: Array<{ publicReason: string; rationale: string | null; decidedAt: string }>;
+        }>('/atlas-session-api', `moderation/nodes/${encodeURIComponent(item.nodeId)}/notice`);
+        const decision = detail.reasons[0];
+        return {
+          id: item.nodeId,
+          title: item.card?.title ?? 'Hidden node',
+          typeName: item.card?.typeName ?? 'Node',
+          notice: decision?.publicReason ?? 'Hidden by moderator',
+          rationale: decision?.rationale ?? '',
+          decidedAt: decision?.decidedAt ?? '',
+        };
+      }));
+      if (sessionId !== ownerId || participantId !== ownerId) return;
+      hiddenOwned = pageNumber === 1 ? details : [...hiddenOwned, ...details];
+      hiddenPage = pageNumber;
+      hiddenHasMore = page.hasNextPage;
     } catch {
       if (sessionId === ownerId && participantId === ownerId)
         hiddenLoadError = 'Could not load your hidden nodes.';
+    } finally {
+      hiddenLoading = false;
     }
   }
 
@@ -184,7 +195,11 @@
         'auth/session',
       );
       sessionId = session.participantId;
-      if (session.participantId === participantId) void loadHiddenOwned(participantId);
+      if (session.participantId === participantId) {
+        hiddenOwned = [];
+        hiddenPage = 1;
+        void loadHiddenOwned(participantId);
+      }
       else hiddenOwned = [];
     } catch {
       sessionId = null;
@@ -302,8 +317,20 @@
           <h2>My hidden nodes</h2>
           <p>These entries are private to your account. Open a node to revise it and request moderator review.</p>
           {#if hiddenLoadError}<p role="status">{hiddenLoadError}</p>{/if}
-          {#if hiddenOwned.length === 0}<p>No hidden nodes found.</p>{/if}
-          <ul>{#each hiddenOwned as hidden (hidden.id)}<li><button type="button" onclick={() => onOpenNode?.(hidden.id)}>{hidden.notice} — Open node</button></li>{/each}</ul>
+          {#if hiddenOwned.length === 0 && !hiddenLoading}<p>No hidden nodes found.</p>{/if}
+          <div class="hidden-feed">
+            {#each hiddenOwned as hidden (hidden.id)}
+              <article class="hidden-card">
+                <p class="hidden-label">Hidden by moderator · {hidden.notice}</p>
+                <h3>{hidden.title}</h3>
+                <p class="muted">{hidden.typeName}{hidden.decidedAt ? ' · ' + new Date(hidden.decidedAt).toLocaleDateString() : ''}</p>
+                <p><strong>Moderator explanation:</strong> {hidden.rationale || 'No explanation was provided.'}</p>
+                <button type="button" onclick={() => onOpenNode?.(hidden.id)}>Open node to revise and request review</button>
+              </article>
+            {/each}
+          </div>
+          {#if hiddenHasMore}<button type="button" disabled={hiddenLoading} onclick={() => void loadHiddenOwned(participantId, hiddenPage + 1)}>Load more hidden nodes</button>{/if}
+          {#if hiddenLoading}<p role="status">Loading hidden nodes…</p>{/if}
         </section>
       {/if}
       <h2>Published contributions</h2>
@@ -318,6 +345,11 @@
 </section>
 
 <style lang="scss">
+  .hidden-feed { display: grid; gap: 1rem; margin-bottom: 1rem; }
+  .hidden-card { border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); background: var(--atlas-surface); padding: 1.25rem; }
+  .hidden-card h3 { margin: .5rem 0; }
+  .hidden-label { font-weight: 700; }
+  .hidden-card p { overflow-wrap: anywhere; }
   .profile-page {
     padding-block-start: var(--atlas-space);
     max-width: 70rem;
