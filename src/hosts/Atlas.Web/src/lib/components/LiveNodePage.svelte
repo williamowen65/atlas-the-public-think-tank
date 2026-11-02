@@ -18,6 +18,7 @@
 -->
 <script lang="ts">
   import LoadingPlaceholder from './LoadingPlaceholder.svelte';
+  import { apiRequest } from '../api/apiRequest';
   import LiveVotingDial from './LiveVotingDial.svelte';
   import LiveReactions from './LiveReactions.svelte';
   import NodePage from './NodePage.svelte';
@@ -71,6 +72,43 @@
    * Loaded public node-card model, or null before usable node data is available.
    */
   let node = $state<NodeCardData | null>(null);
+  type HiddenDetail = NodeDetail & { moderationNotice?: string | null; reviewRequested?: boolean; notice?: string };
+  let hiddenDetail = $state<HiddenDetail | null>(null);
+  let hiddenTitle = $state('');
+  let hiddenIntro = $state('');
+  let hiddenMarkdown = $state('');
+  let hiddenBlocks = $state<ContentBlock[]>([]);
+  let hiddenBusy = $state(false);
+  let hiddenMessage = $state('');
+  let hiddenEdited = $state(false);
+  let hiddenAuthor = $state(false);
+  async function saveHiddenRevision() {
+    if (!hiddenDetail || !hiddenAuthor || hiddenBusy) return;
+    hiddenBusy = true; hiddenMessage = '';
+    try {
+      const id = encodeURIComponent(hiddenDetail.id);
+      if (hiddenTitle.trim() !== hiddenDetail.title) await apiRequest('/atlas-session-api', `nodes/${id}/title`, 'PUT', { text: hiddenTitle.trim() });
+      if (hiddenIntro.trim() !== hiddenDetail.shortDescription) await apiRequest('/atlas-session-api', `nodes/${id}/short-description`, 'PUT', { text: hiddenIntro.trim() });
+      const original = hiddenBlocks.find(block => block.kind.toLowerCase() === 'markdowntext' || block.kind.toLowerCase() === 'markdown');
+      if (original && hiddenMarkdown !== (original.content.markdown ?? '')) await apiRequest('/atlas-session-api', `nodes/${id}/description/blocks/${encodeURIComponent(original.id)}`, 'PUT', { kind: 'markdown', text: hiddenMarkdown });
+      if (!original && hiddenMarkdown.trim()) await apiRequest('/atlas-session-api', `nodes/${id}/description/blocks`, 'POST', { kind: 'markdown', text: hiddenMarkdown });
+      hiddenEdited = true;
+      hiddenMessage = 'Changes saved. You can now request moderator review.';
+      retry++;
+    } catch (cause) { hiddenMessage = cause instanceof Error ? cause.message : 'Could not save revision.'; }
+    finally { hiddenBusy = false; }
+  }
+  async function requestHiddenReview() {
+    if (!hiddenDetail || !hiddenAuthor || hiddenBusy) return;
+    hiddenBusy = true; hiddenMessage = '';
+    try {
+      await apiRequest('/atlas-session-api', `moderation/nodes/${encodeURIComponent(hiddenDetail.id)}/review`, 'POST');
+      hiddenMessage = 'Review requested. The node stays hidden until a moderator restores it.';
+      hiddenEdited = false;
+      retry++;
+    } catch (cause) { hiddenMessage = cause instanceof Error ? cause.message : 'Could not request review.'; }
+    finally { hiddenBusy = false; }
+  }
   /**
    * Ordered full-content blocks loaded for this node.
    */
@@ -187,12 +225,31 @@
     loading = true;
     error = '';
     node = null;
+    hiddenDetail = null;
+    hiddenAuthor = false;
     createType = null;
     editingDraft = null;
     saveChildDraft = null;
     active = 'comments';
     void (async () => {
       try {
+        if (id) {
+          // The authenticated node-detail endpoint, not public discovery, determines access
+          // to hidden originals. A public placeholder never contains editable content.
+          const detail = await apiRequest<HiddenDetail>('/atlas-session-api', `nodes/${encodeURIComponent(id)}`, 'GET', undefined, signal);
+          if (detail.hidden) {
+            hiddenDetail = detail;
+            if (detail.authorId && detail.title) {
+              const session = await apiRequest<{ participantId: string | null }>('/atlas-session-api', 'auth/session', 'GET', undefined, signal);
+              hiddenAuthor = session.participantId === detail.authorId;
+              hiddenTitle = detail.title;
+              hiddenIntro = detail.shortDescription ?? '';
+              hiddenBlocks = await apiRequest<ContentBlock[]>('/atlas-session-api', `nodes/${encodeURIComponent(id)}/description`, 'GET', undefined, signal);
+              hiddenMarkdown = hiddenBlocks.filter(b => ['markdown', 'markdowntext'].includes(b.kind.toLowerCase())).map(b => b.content.markdown ?? '').join('\n\n');
+            }
+            return;
+          }
+        }
         const page = await readDiscovery(apiBase, 1, '', signal, id || undefined);
         const entry = page.items.find((item) => discoveryCard(item));
         const display = entry && discoveryCard(entry);
@@ -237,7 +294,30 @@
   child markup supplies the selected discussion panel.
 -->
 
-{#if loading}<LoadingPlaceholder kind="node" label="Loading node…" />{:else if error}<p
+{#if loading}<LoadingPlaceholder kind="node" label="Loading node…" />{:else if hiddenDetail}
+  <section class="hidden-node" aria-label="Hidden node moderation">
+    <h1>{hiddenDetail.title ?? 'Hidden by moderator'}</h1>
+    <p role="status"><strong>Hidden by moderator.</strong> {hiddenDetail.moderationNotice ?? hiddenDetail.notice ?? ''}</p>
+    {#if hiddenDetail.title}
+      <p>This node is not visible in public discovery or search. Only its author and authorized moderators can inspect the original content.</p>
+      {#if hiddenDetail.reviewRequested}<p role="status">A moderator review has already been requested.</p>{/if}
+      {#if hiddenAuthor}
+        <form onsubmit={(event) => { event.preventDefault(); void saveHiddenRevision(); }}>
+          <label for="hidden-title">Title</label><input id="hidden-title" bind:value={hiddenTitle} maxlength="500" required />
+          <label for="hidden-intro">Short description</label><textarea id="hidden-intro" bind:value={hiddenIntro} rows="3" required></textarea>
+          <label for="hidden-description">Description (Markdown)</label><textarea id="hidden-description" bind:value={hiddenMarkdown} rows="8"></textarea>
+          <button type="submit" disabled={hiddenBusy}>Save revision</button>
+        </form>
+        <button type="button" disabled={hiddenBusy || !!hiddenDetail.reviewRequested} onclick={() => void requestHiddenReview()}>Request moderator review</button>
+        <p>Save an actual revision after the moderation decision before requesting review. Editing does not automatically restore visibility.</p>
+      {:else}
+        <p><strong>Short description:</strong> {hiddenDetail.shortDescription}</p>
+        {#each hiddenBlocks as block (block.id)}{#if block.content.markdown}<p>{block.content.markdown}</p>{/if}{/each}
+      {/if}
+      {#if hiddenMessage}<p role="status">{hiddenMessage}</p>{/if}
+    {/if}
+  </section>
+{:else if error}<p
     role="alert"
   >
     {error}
@@ -343,6 +423,10 @@
 {/if}
 
 <style>
+  .hidden-node { max-width: 48rem; margin: 1rem auto; padding: 1rem; border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); }
+  .hidden-node form { display: grid; gap: .6rem; margin: 1rem 0; }
+  .hidden-node input, .hidden-node textarea { width: 100%; padding: .65rem; background: var(--atlas-surface); color: var(--atlas-text); border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); }
+  .hidden-node button { padding: .6rem 1rem; margin: .5rem .5rem .5rem 0; }
   .child-form {
     max-width: 48rem;
     margin: 1rem auto;
