@@ -77,7 +77,8 @@ for (const authenticated of [false, true]) {
         width,
       );
       await search.fill('orcas');
-      await header.getByRole('button', { name: 'Search', exact: true }).click();
+      // Enter submits the same form without depending on the animated inline pill's hit target.
+      await search.press('Enter');
       expect(await page.evaluate(() => localStorage.getItem('atlas.discovery.query.v1'))).toBe(
         'orcas',
       );
