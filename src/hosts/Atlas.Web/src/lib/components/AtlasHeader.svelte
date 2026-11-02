@@ -12,6 +12,7 @@
     account-avatar initial.
 -->
 <script lang="ts">
+  import { tick } from 'svelte';
   import { myCommunities, type Community } from '../api/communities';
   import DiscoverySearch from './DiscoverySearch.svelte';
   import { restoreDiscoveryQuery } from '../state/discoveryQuery.svelte';
@@ -218,7 +219,7 @@
       if (searchOpen && !filtersOpen) {
         searchOpen = false;
         if (mobileExperiment && phone) searchPanel?.querySelector('input')?.blur();
-        else searchToggle?.focus();
+        else void tick().then(() => searchToggle?.focus());
       }
       if (menuOpen) {
         menuOpen = false;
