@@ -22,6 +22,8 @@
     active = null,
     authenticated = false,
     displayName = 'Atlas User',
+    canModerate = false,
+    pendingModerationCount = 0,
   }: {
     /** Highlighted navigation item; null leaves all items unselected. */
     /** Enable experimental mobile search and bottom navigation layout. */
@@ -34,6 +36,10 @@
     authenticated?: boolean;
     /** Name used to derive the account-avatar initial. */
     displayName?: string;
+    /** Server-authorized moderator queue access; display only, not an authorization check. */
+    canModerate?: boolean;
+    /** Number of node groups needing moderator attention. */
+    pendingModerationCount?: number;
   } = $props();
   /** Whether the desktop header search is expanded inline. */
   let searchOpen = $state(false);
@@ -363,6 +369,7 @@
             <a href="/profiles/me" onclick={closeOnNavigation}>My profile</a>
             <a href="/my-drafts" onclick={closeOnNavigation}>My drafts</a>
             <a href="/my-settings" onclick={closeOnNavigation}>Settings</a>
+            {#if canModerate}<a href="/moderation" onclick={closeOnNavigation}>Moderation{#if pendingModerationCount > 0} ({pendingModerationCount}){/if}</a>{/if}
             <hr />
             <a href="/about" onclick={closeOnNavigation}>About Atlas</a>
             <a href="/feedback" onclick={closeOnNavigation}>Give feedback</a>
@@ -408,6 +415,7 @@
             <a href="/profiles/me" onclick={closeOnNavigation}>My profile</a>
             <a href="/my-drafts" onclick={closeOnNavigation}>My drafts</a>
             <a href="/my-settings" onclick={closeOnNavigation}>Settings</a>
+            {#if canModerate}<a href="/moderation" onclick={closeOnNavigation}>Moderation{#if pendingModerationCount > 0} ({pendingModerationCount}){/if}</a>{/if}
             <hr />
             <a href="/about" onclick={closeOnNavigation}>About Atlas</a>
             <a href="/feedback" onclick={closeOnNavigation}>Give feedback</a>
