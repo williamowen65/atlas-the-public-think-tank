@@ -52,11 +52,23 @@ dotnet run --project src/hosts/Atlas.Console -- --confirm-email
 
 Enter the account email, then type `CONFIRM`. This explicitly confirms the account through Identity's token provider; it is a development operator utility, not verification that someone owns an email address, and must not become a public endpoint. It neither assigns a privileged role nor claims an existing demo profile.
 
-Return to the first terminal and sign in with the email/password. Main-menu option 1 signs out; option 2 opens your profile; option 13 exits. Browsing someone else's profile never changes your signed-in actor. Global moderation access comes from stored Identity roles, replacing the configured moderator-ID list. Public registration only assigns Member; first-administrator/role provisioning remains controlled operator work.
+Return to the first terminal and sign in with the email/password. Main-menu option 1 signs out; option 2 opens your profile; option 13 exits. Browsing someone else's profile never changes your signed-in actor. Global moderation access comes from stored Identity roles, replacing the configured moderator-ID list. Public registration only assigns Member; global moderator provisioning is available through the trusted console operator command described below. Administrator provisioning is separate.
 
 Console sessions use fresh SQL scopes, check account/profile/Member-policy eligibility before each main menu, and invalidate the session when its security stamp changes. Long-running nested menus do not implement continuous session expiry; domain authorization still applies to their actions. Accounts requiring 2FA are rejected with a clear message because the console has no second-factor entry flow yet.
 
 Real confirmation/reset email delivery, account-management HTTP endpoints, browser security controls, and persistent/shared Data Protection keys remain HTTP-host work.
+
+## Provision a Global Moderator (PTT-159)
+
+From a trusted interactive terminal with the intended SQL connection configured, register the account normally and confirm its email first. Then run:
+
+```powershell
+dotnet run --project src/hosts/Atlas.Console -- --grant-global-moderator
+```
+
+Enter the **existing account email** and type `GRANT GLOBAL MODERATOR` exactly. The command refuses unknown, unconfirmed, locked, or inactive accounts; an already-granted role is a safe no-op. It uses Identity's persisted `GlobalModerator` role, changes the security stamp after granting, and requires the user to sign out and sign in again. Verify the signed-in Console menu exposes **Review Node reports**, or use the protected moderation queue in the API. Repeat the command for each additional moderator.
+
+This is an operator-only command, **not** a registration option or web endpoint. Treat database access and terminal access as privileged. It does not grant Administrator, bypass email confirmation, or allow members to promote themselves. Test the workflow against a development database before any production operation. No migration is required because the role is already seeded.
 
 ## Demo seed accounts
 
