@@ -67,6 +67,9 @@
   }
   async function decide(decision: 0 | 1) {
     if (!selected || !rationale.trim() || busy) return;
+    if (!window.confirm(decision === 0
+      ? 'Dismiss these reports? The node will remain public and the reports will be closed.'
+      : 'Hide this node? Public discovery and search will exclude it. Its author can still edit it and request review. All pending reports will be closed.')) return;
     busy = true;
     error = '';
     notice = '';
@@ -85,6 +88,7 @@
   }
   async function restore() {
     if (!selected || !rationale.trim() || busy) return;
+    if (!window.confirm('Restore this node? Its original content will become publicly visible again, including in discovery and search. Your rationale will be recorded.')) return;
     busy = true;
     error = '';
     notice = '';
