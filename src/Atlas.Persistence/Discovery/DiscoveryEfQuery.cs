@@ -110,7 +110,7 @@ internal static class DiscoveryEfQuery
             var matches = db.Database.SqlQueryRaw<SearchMatch>(
                 SqlDiscoveryReadQuery.ReadResource("DiscoverySearchContent.sql"),
                 new SqlParameter("@search", SqlDbType.NVarChar, 4000) { Value = search });
-            candidates = candidates.Where(node => !node.Hidden &&
+            candidates = candidates.Where(node => (includeHidden || !node.Hidden) &&
                 matches.Any(match => match.NodeId == node.NodeId));
         }
 
