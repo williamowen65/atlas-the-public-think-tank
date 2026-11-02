@@ -108,6 +108,8 @@
    * instructions.
    */
   let registered = $state(false);
+  /** Show a neutral confirmation-resend message without revealing account existence. */
+  let resendNotice = $state('');
   /**
    * Sequence number for refresh calls, not a login/logout count. Each refresh increments it
    * so older checks cannot overwrite a newer check’s result.
@@ -277,6 +279,22 @@
       busy = false;
     }
   }
+  /** Request another confirmation message; the API responds identically for unknown accounts. */
+  async function resendConfirmation() {
+    if (busy || !email.trim()) return;
+    busy = true;
+    error = '';
+    resendNotice = '';
+    try {
+      await apiRequest(sessionBase, 'auth/resend-confirmation', 'POST', { email },
+        AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]));
+      resendNotice = 'If this address has an account awaiting confirmation, confirmation instructions have been sent through the configured delivery workflow.';
+    } catch {
+      error = 'Could not process the confirmation request. Please try again.';
+    } finally {
+      busy = false;
+    }
+  }
   /**
    * Ask the server to clear its authentication cookie before clearing local identity.
    * Notify the parent and this tab’s other controls only after successful logout.
@@ -341,6 +359,8 @@
   <div role="status" class="registration-complete">
     <h2>Account created</h2>
     <p>Confirm your email address before signing in. In local development, use the development email confirmation workflow.</p>
+    <button type="button" disabled={busy} onclick={() => void resendConfirmation()}>Resend confirmation instructions</button>
+    {#if resendNotice}<p role="status">{resendNotice}</p>{/if}
   </div>
 {:else}
       <form
@@ -380,6 +400,10 @@
           disabled={busy}
         />
       </form>
+      {#if !registering}
+        <button type="button" class="switch-mode" disabled={busy || !email.trim()} onclick={() => void resendConfirmation()}>Resend confirmation instructions</button>
+        {#if resendNotice}<p role="status">{resendNotice}</p>{/if}
+      {/if}
       <button
         type="button"
         class="switch-mode"
