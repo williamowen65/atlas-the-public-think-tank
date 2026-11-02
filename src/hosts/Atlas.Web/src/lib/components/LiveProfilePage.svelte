@@ -68,6 +68,18 @@
    * Whether the session lookup has completed, including a signed-out result.
    */
   let sessionReady = $state(false);
+  let hiddenOwned = $state<Array<{ id: string; notice: string }>>([]);
+  let hiddenLoadError = $state('');
+  async function loadHiddenOwned(ownerId: string) {
+    hiddenOwned = []; hiddenLoadError = '';
+    try {
+      const page = await apiRequest<{ items: Array<{ nodeId: string; card?: { isHidden?: boolean } | null }>; hasNextPage: boolean }>('/atlas-session-api', 'nodes/mine?Page=1&PageSize=100');
+      if (sessionId !== ownerId || participantId !== ownerId) return;
+      hiddenOwned = page.items.filter(item => item.card?.isHidden || !item.card).map(item => ({ id: item.nodeId, notice: 'Hidden by moderator' }));
+      if (page.hasNextPage) hiddenLoadError = 'Only the first page of your nodes is shown here.';
+    } catch { if (sessionId === ownerId) hiddenLoadError = 'Could not load your hidden nodes.'; }
+  }
+
   /**
    * Whether the profile or community edit form is open.
    */
@@ -152,7 +164,7 @@
         'auth/session',
       );
       sessionId = session.participantId;
-      if (session.participantId === participantId) void loadHiddenOwned();
+      if (session.participantId === participantId) void loadHiddenOwned(participantId);
       else hiddenOwned = [];
     } catch {
       sessionId = null;
