@@ -21,6 +21,7 @@
   import LiveVotingDial from './LiveVotingDial.svelte';
   import LiveReactions from './LiveReactions.svelte';
   import NodePage from './NodePage.svelte';
+  import NodeReportControl from './NodeReportControl.svelte';
   import LiveNodeFeed from './LiveNodeFeed.svelte';
   import CommentsPanel from './CommentsPanel.svelte';
   import LiveNodeForm from './LiveNodeForm.svelte';
@@ -288,6 +289,7 @@
             nodeId={node.id}
             archived={node.status === 'Archived'}
           />{/if}{/snippet}
+      <NodeReportControl nodeId={node.id} />
       <!-- This child form is regular child markup for NodePage’s panel, not a named snippet. -->
       {#if createType !== null}<div class="child-form">
           <button onclick={() => void closeChildForm()}>Close child form</button
