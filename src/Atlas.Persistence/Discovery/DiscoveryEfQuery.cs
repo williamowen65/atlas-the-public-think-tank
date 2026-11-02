@@ -79,6 +79,8 @@ internal static class DiscoveryEfQuery
             AverageVote = db.VoteRows.Where(vote => vote.TargetType == "Node" && vote.TargetId == node.Id)
                 .Select(vote => (double?)vote.Value).Average()
         });
+        if (request.HiddenOnly)
+            candidates = candidates.Where(node => node.Hidden);
         if (!includeHidden)
         {
             candidates = candidates.Where(node => !node.Hidden);
