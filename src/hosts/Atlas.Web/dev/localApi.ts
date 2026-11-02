@@ -169,13 +169,29 @@ export function sessionApiProxy(): ProxyOptions {
     rewrite: path => path.replace(/^\/atlas-session-api/, '/api'),
     configure(proxy) {
       proxy.on('proxyReq', request => {
+        // Opt-in request trace at the upstream boundary; never inspect payloads or headers.
+        if (process.env.ATLAS_DEBUG_SESSION_ROUTING === '1'
+          && request.path?.split('?')[0].startsWith('/api/auth/')) {
+          console.info('[atlas-session-proxy] upstream request', {
+            method: request.method,
+            path: request.path.split('?')[0],
+          });
+        }
         request.removeHeader('authorization');
         // Forward only Atlas session/CSRF cookies, including chunked sessions.
         const cookies = String(request.getHeader('cookie') ?? '').split(';').map(cookie => cookie.trim())
           .filter(cookie => /^__Host-Atlas\.(?:Csrf|Session(?:C\d+)?)=/.test(cookie));
         if (cookies.length) request.setHeader('cookie', cookies.join('; ')); else request.removeHeader('cookie');
       });
-      proxy.on('proxyRes', response => {
+      proxy.on('proxyRes', (response, request) => {
+        if (process.env.ATLAS_DEBUG_SESSION_ROUTING === '1'
+          && request.url?.split('?')[0].startsWith('/atlas-session-api/auth/')) {
+          console.info('[atlas-session-proxy] upstream response', {
+            method: request.method,
+            path: request.url.split('?')[0],
+            status: response.statusCode,
+          });
+        }
         // Preserve Secure/HttpOnly/SameSite and __Host semantics; never weaken API cookies.
         const cookies = response.headers['set-cookie']?.filter(cookie => /^__Host-Atlas\.(?:Csrf|Session(?:C\d+)?)=/.test(cookie));
         if (cookies?.length) response.headers['set-cookie'] = cookies; else delete response.headers['set-cookie'];
