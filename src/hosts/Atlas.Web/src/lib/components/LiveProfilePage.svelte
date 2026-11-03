@@ -317,16 +317,17 @@
     {#if notice}<p role="status">{notice}</p>{/if}
     {#if !profile.deleted}
       {#if isOwner}
-        <section aria-label="My hidden nodes">
-          <h2>My hidden nodes</h2>
-          <p>These entries are private to your account. Open a node to revise it and request moderator review.</p>
+        <section aria-label="My hidden nodes" id="my-hidden-nodes" class="hidden-section">
+          <details class="hidden-disclosure">
+            <summary><span class="hidden-heading">My hidden nodes{#if hiddenOwned.length > 0} <span class="hidden-count">{hiddenOwned.length}{hiddenHasMore ? '+' : ''}</span>{/if}</span><span class="hidden-summary">{hiddenOwned.length > 0 ? 'Moderators have hidden contributions for you to review.' : hiddenLoading ? 'Checking your contributions…' : 'Review moderation status'}</span></summary>
+            <p>These entries are private to your account. Open a node to revise it and request moderator review.</p>
           {#if hiddenLoadError}<p role="status">{hiddenLoadError}</p>{/if}
           {#if hiddenOwned.length === 0 && !hiddenLoading}<p>No hidden nodes found.</p>{/if}
           <div class="hidden-feed">
             {#each hiddenOwned as hidden (hidden.id)}
               <article class="hidden-card">
                 <p class="hidden-label">Hidden by moderator <span class="hidden-reason">{hidden.notice}</span></p>
-                <NodeCard node={hidden.node} presentation="ribbon-corner" average={hidden.average} totalVotes={hidden.voteCount} onReadMore={(id) => onOpenNode?.(id)}>
+                <NodeCard node={hidden.node} presentation="ribbon-corner" editOpensDetail onNavigate={(id) => onOpenNode?.(id)} average={hidden.average} totalVotes={hidden.voteCount} onReadMore={(id) => onOpenNode?.(id)}>
                   {#snippet voting()}
                     <VotingDial label="Node importance (voting disabled while hidden)" average={hidden.average} totalVotes={hidden.voteCount} disabled />
                   {/snippet}
@@ -341,6 +342,7 @@
           </div>
           {#if hiddenHasMore}<button type="button" disabled={hiddenLoading} onclick={() => void loadHiddenOwned(participantId, hiddenPage + 1)}>Load more hidden nodes</button>{/if}
           {#if hiddenLoading}<p role="status">Loading hidden nodes…</p>{/if}
+          </details>
         </section>
       {/if}
       <h2>Published contributions</h2>
@@ -355,6 +357,14 @@
 </section>
 
 <style lang="scss">
+  .hidden-section { margin-top: 1.5rem; }
+  .hidden-disclosure { border: 1px solid color-mix(in srgb, #bd8336 40%, var(--atlas-border)); border-radius: 1rem; padding: 1rem 1.2rem; background: color-mix(in srgb, #bd8336 5%, var(--atlas-surface)); }
+  .hidden-disclosure summary { cursor: pointer; padding: .3rem; }
+  .hidden-disclosure summary::marker { color: var(--atlas-accent); }
+  .hidden-heading { font-size: 1.2rem; font-weight: 700; margin-left: .4rem; }
+  .hidden-count { display: inline-block; border-radius: 99px; padding: .1rem .55rem; background: color-mix(in srgb, #bd8336 22%, var(--atlas-surface)); font-size: .85rem; }
+  .hidden-summary { display: block; margin: .4rem 0 .2rem 1.5rem; color: var(--atlas-muted); font-size: .9rem; }
+  .hidden-disclosure[open] summary { margin-bottom: 1rem; }
   .hidden-feed { display: grid; gap: 1rem; margin-bottom: 1rem; }
   .hidden-card { border: 1px solid color-mix(in srgb, #bd8336 45%, var(--atlas-border)); border-radius: 1rem; background: color-mix(in srgb, #bd8336 7%, var(--atlas-surface)); padding: 1.4rem; }
   .hidden-card h3 { margin: .5rem 0; }
