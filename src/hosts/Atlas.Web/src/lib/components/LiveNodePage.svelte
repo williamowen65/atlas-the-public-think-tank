@@ -117,8 +117,19 @@
       moderatorBusy = false;
     }
   }
+  const hiddenRevisionChanged = $derived(!!hiddenDetail && (
+    hiddenTitle.trim() !== hiddenDetail.title.trim() ||
+    hiddenIntro.trim() !== hiddenDetail.shortDescription.trim() ||
+    hiddenMarkdown.trim() !== (hiddenBlocks.find(block =>
+      block.kind.toLowerCase() === 'markdowntext' || block.kind.toLowerCase() === 'markdown'
+    )?.content.markdown ?? '').trim()
+  ));
   async function saveHiddenRevision() {
     if (!hiddenDetail || !hiddenAuthor || hiddenBusy) return;
+    if (!hiddenRevisionChanged) {
+      hiddenMessage = 'Make a change to the title, introduction, or description before saving a revision.';
+      return;
+    }
     hiddenBusy = true; hiddenMessage = '';
     try {
       const id = encodeURIComponent(hiddenDetail.id);
@@ -134,7 +145,7 @@
     finally { hiddenBusy = false; }
   }
   async function requestHiddenReview() {
-    if (!hiddenDetail || !hiddenAuthor || hiddenBusy) return;
+    if (!hiddenDetail || !hiddenAuthor || hiddenBusy || !hiddenEdited || hiddenDetail.reviewRequested) return;
     hiddenBusy = true; hiddenMessage = '';
     try {
       await apiRequest('/atlas-session-api', `moderation/nodes/${encodeURIComponent(hiddenDetail.id)}/review`, 'POST');
@@ -408,7 +419,7 @@
           <label for="hidden-title">Title</label><input id="hidden-title" bind:value={hiddenTitle} maxlength="500" required />
           <label for="hidden-intro">Short description</label><textarea id="hidden-intro" bind:value={hiddenIntro} rows="3" required></textarea>
           <label for="hidden-description">Description (Markdown)</label><textarea id="hidden-description" bind:value={hiddenMarkdown} rows="8"></textarea>
-          <button type="submit" disabled={hiddenBusy}>Save revision</button>
+          <button type="submit" disabled={hiddenBusy || !hiddenRevisionChanged}>Save revision</button>
         </form>
         <button type="button" disabled={hiddenBusy || !!hiddenDetail.reviewRequested || !hiddenEdited} onclick={() => void requestHiddenReview()}>Request moderator review</button>
         <p>Save a revision that addresses the feedback before requesting review. Saving does not automatically make the contribution public.</p>
