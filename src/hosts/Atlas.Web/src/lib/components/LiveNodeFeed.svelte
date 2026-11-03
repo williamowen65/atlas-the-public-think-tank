@@ -29,6 +29,7 @@
 -->
 <script lang="ts">
   import LiveVotingDial from './LiveVotingDial.svelte';
+  import { moderatorVisibility } from '../state/moderatorVisibility.svelte';
   import LiveReactions from './LiveReactions.svelte';
   import { onMount } from 'svelte';
   import NodeFeed, { type FeedItem } from './NodeFeed.svelte';
@@ -110,16 +111,17 @@
     const current = controller;
     const timeout = setTimeout(() => current.abort(), 10000);
     try {
+      const moderatorRead = moderatorVisibility.canModerate && moderatorVisibility.includeHidden && apiBase === '/atlas-public-api';
       const page = await readDiscovery(apiBase, nextPage, search, current.signal, undefined, {
         ...filters,
         parentId: parentId ?? filters.parentId,
         typeId: typeId ?? filters.typeId,
         authorId: authorId ?? filters.authorId,
-      });
+      }, false, moderatorRead);
       if (page.page !== nextPage) throw new Error('Unexpected page');
       const additions: FeedItem[] = [];
       for (const entry of page.items) {
-        const node = discoveryCard(entry);
+        const node = discoveryCard(entry, moderatorRead);
         if (
           !node ||
           items.some((item) => item.node.id === node.id) ||
@@ -134,24 +136,35 @@
         });
       }
       // Publish cards promptly; optional reaction summaries never block pagination.
-      if (disposed) return;
+      if (disposed || current !== controller) return;
       items = [...items, ...additions];
       hasMore = page.hasNextPage;
       nextPage = page.page + 1;
     } catch {
-      if (!disposed) error = 'Could not load more nodes. Please retry.';
+      if (!disposed && current === controller) error = 'Could not load more nodes. Please retry.';
     } finally {
       clearTimeout(timeout);
-      if (!disposed) loading = false;
+      if (!disposed && current === controller) loading = false;
     }
   }
   // Parent views key the feed when their filters change. Avoid an effect that
   // reads and writes loading/items, which can repeatedly restart requests.
   onMount(() => {
     void load();
+    const refresh = () => {
+      controller?.abort();
+      controller = undefined;
+      loading = false;
+      items = [];
+      hasMore = true;
+      nextPage = 1;
+      void load();
+    };
+    window.addEventListener('atlas-moderator-visibility-changed', refresh);
     return () => {
       disposed = true;
       controller?.abort();
+      window.removeEventListener('atlas-moderator-visibility-changed', refresh);
     };
   });
 </script>
