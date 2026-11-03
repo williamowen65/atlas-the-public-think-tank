@@ -199,7 +199,7 @@ public sealed class SqlDiscoveryReadQuery(
             // 8. Load only missing cards. ReadCards uses one EF metadata batch and one
             // SQL summary batch plus up to three bounded EF breadcrumb hops.
             // An empty missing list returns without any card query.
-            var loaded = ReadCards(db, missing.ToArray());
+            var loaded = ReadCards(db, missing.ToArray(), query.IncludeHidden && includeHidden);
             foreach (var card in loaded.Values)
             {
                 cards[card.NodeId] = card;
@@ -245,7 +245,7 @@ public sealed class SqlDiscoveryReadQuery(
     }
 
     /// <summary>Loads missing display cards using fixed EF metadata and SQL summary batches.</summary>
-    internal static Dictionary<Guid, DiscoveryCard> ReadCards(AtlasDataContext db, Guid[] ids)
+    internal static Dictionary<Guid, DiscoveryCard> ReadCards(AtlasDataContext db, Guid[] ids, bool showHidden = false)
     {
         if (ids.Length == 0)
         {
@@ -277,7 +277,8 @@ public sealed class SqlDiscoveryReadQuery(
         var sql = ReadResource("DiscoveryCards.sql");
         var rows = db.Database.SqlQueryRaw<CardRow>(
             sql,
-            new SqlParameter("@ids", JsonSerializer.Serialize(ids)))
+            new SqlParameter("@ids", JsonSerializer.Serialize(ids)),
+            new SqlParameter("@showHidden", SqlDbType.Bit) { Value = showHidden })
             .ToList();
         var breadcrumbs = DiscoveryBreadcrumbReader.ReadFirstPages(db, ids);
         return rows.ToDictionary(
@@ -297,9 +298,9 @@ public sealed class SqlDiscoveryReadQuery(
                 metadata[row.NodeId].CommentCount,
                 row.IsHidden)
             {
-                AuthorId = row.IsHidden ? null : metadata[row.NodeId].AuthorId,
-                ShortDescription = row.IsHidden ? row.Description : metadata[row.NodeId].ShortDescription,
-                ChildTypes = row.IsHidden ? Array.Empty<DiscoveryChildType>() : ReadChildTypes(row.SubNodes),
+                AuthorId = row.IsHidden && !showHidden ? null : metadata[row.NodeId].AuthorId,
+                ShortDescription = row.IsHidden && !showHidden ? row.Description : metadata[row.NodeId].ShortDescription,
+                ChildTypes = row.IsHidden && !showHidden ? Array.Empty<DiscoveryChildType>() : ReadChildTypes(row.SubNodes),
                 BreadcrumbSegment = breadcrumbs[row.NodeId]
             });
     }
