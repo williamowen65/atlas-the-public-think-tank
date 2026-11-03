@@ -19,6 +19,7 @@ internal static partial class DemoData
         SeedCommunityNode(database);
         SeedComment(database);
         SeedModerationCase(database);
+        SeedModeratedNodeEngagement(database);
         SeedBreadcrumbDemo(database);
         SeedPublicThinkTank(database);
         SeedPublicThinkTankCommunities(database);
