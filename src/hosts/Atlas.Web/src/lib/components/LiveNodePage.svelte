@@ -482,7 +482,7 @@
                     {#if report.restorationReason}<p>Rationale: {report.restorationReason}</p>{/if}
                   {/if}
                 </li>
-              {/each>
+              {/each}
             </ul>
           {/if}
           {#if hiddenDetail.reviewRequested}
