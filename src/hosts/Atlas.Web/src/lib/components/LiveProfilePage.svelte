@@ -357,7 +357,7 @@
 </section>
 
 <style lang="scss">
-  .hidden-section { margin-top: 1.5rem; }
+  .hidden-section { margin: 1.5rem auto 0; width: 100%; max-width: 52rem; min-width: 0; }
   .hidden-disclosure { border: 1px solid color-mix(in srgb, #bd8336 40%, var(--atlas-border)); border-radius: 1rem; padding: 1rem 1.2rem; background: color-mix(in srgb, #bd8336 5%, var(--atlas-surface)); }
   .hidden-disclosure summary { cursor: pointer; padding: .3rem; }
   .hidden-disclosure summary::marker { color: var(--atlas-accent); }
@@ -365,8 +365,8 @@
   .hidden-count { display: inline-block; border-radius: 99px; padding: .1rem .55rem; background: color-mix(in srgb, #bd8336 22%, var(--atlas-surface)); font-size: .85rem; }
   .hidden-summary { display: block; margin: .4rem 0 .2rem 1.5rem; color: var(--atlas-muted); font-size: .9rem; }
   .hidden-disclosure[open] summary { margin-bottom: 1rem; }
-  .hidden-feed { display: grid; gap: 1rem; margin-bottom: 1rem; }
-  .hidden-card { border: 1px solid color-mix(in srgb, #bd8336 45%, var(--atlas-border)); border-radius: 1rem; background: color-mix(in srgb, #bd8336 7%, var(--atlas-surface)); padding: 1.4rem; }
+  .hidden-feed { display: grid; gap: 1rem; margin-bottom: 1rem; min-width: 0; }
+  .hidden-card { min-width: 0; border: 1px solid color-mix(in srgb, #bd8336 45%, var(--atlas-border)); border-radius: 1rem; background: color-mix(in srgb, #bd8336 7%, var(--atlas-surface)); padding: 1.4rem; }
   .hidden-card h3 { margin: .5rem 0; }
   .hidden-label { font-weight: 700; margin: 0 0 1rem; display: flex; align-items: center; flex-wrap: wrap; gap: .65rem; }
   .hidden-reason { display: inline-block; border-radius: 999px; padding: .3rem .7rem; background: color-mix(in srgb, #bd8336 17%, var(--atlas-surface)); font-size: .85rem; }
