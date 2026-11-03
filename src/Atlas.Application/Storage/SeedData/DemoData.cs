@@ -36,11 +36,11 @@ internal static partial class DemoData
         {
             var reportedNode = database.NodeRows.Single(row => row.Id == report.NodeId);
             var content = (from link in database.Set<DocumentBlockRow>()
-                           join block in database.BlockRows on link.BlockId equals block.Id
+                           join reportedBlock in database.BlockRows on link.BlockId equals reportedBlock.Id
                            where link.DocumentId == reportedNode.DescriptionId
                            orderby link.Position
-                           select new { link.Position, block.Kind, block.Markdown, block.AltText,
-                               block.Caption, block.Url, block.Title, block.Description, block.ReferenceId }).ToArray();
+                           select new { link.Position, reportedBlock.Kind, reportedBlock.Markdown, reportedBlock.AltText,
+                               reportedBlock.Caption, reportedBlock.Url, reportedBlock.Title, reportedBlock.Description, reportedBlock.ReferenceId }).ToArray();
             database.ModerationReportedSnapshotRows.Add(new ModerationReportedSnapshotRow
             {
                 ModerationCaseId = report.Id,
