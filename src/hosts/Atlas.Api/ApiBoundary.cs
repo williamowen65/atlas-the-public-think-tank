@@ -45,8 +45,8 @@ public sealed class ApiErrors(IProblemDetailsService problems, ILogger<ApiErrors
             string.Equals(Environment.GetEnvironmentVariable("ATLAS_DIAGNOSTIC_SQL"), "true", StringComparison.OrdinalIgnoreCase))
         {
             logger.LogError(error,
-                "Local SQL diagnostic: {Method} {Path} failed with {ExceptionType}; trace {TraceId}",
-                context.Request.Method, context.Request.Path, error.GetType().FullName, context.TraceIdentifier);
+                "Local SQL diagnostic: request failed with {ExceptionType}; trace {TraceId}",
+                error.GetType().FullName, context.TraceIdentifier);
         }
         if (error is SearchUnavailableException)
             logger.LogError(error, "Atlas text search is unavailable. Check SQL Server connectivity, full-text services and indexes.");
