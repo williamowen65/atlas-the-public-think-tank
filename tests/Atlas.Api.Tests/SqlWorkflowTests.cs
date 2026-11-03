@@ -54,7 +54,8 @@ public sealed class SqlWorkflowTests
             await RejectAuthenticatedWritesWithoutMatchingCsrf(client, node);
             await RejectOtherMemberEditsAndModeratorReads(factory, client, node);
             await ExerciseVotesCommentsAndCommunityQuota(client, node);
-            await ExerciseProfileContentCatalogAndReporting(client, node);
+            await ExerciseProfileContentAndCatalog(client, node);
+            await VerifyReportSnapshotsAndRollback(database, client, node);
 
             await GrantGlobalModeratorRole(factory);
             await HideVerifyAndRestoreNode(factory, client, node);
@@ -329,9 +330,8 @@ public sealed class SqlWorkflowTests
     /// <summary>
     /// Given an ordinary Member session, expect profile/content/catalog operations to succeed, but
     /// moderator reads to fail.
-    /// Submit a report that the following moderator scenario can review.
     /// </summary>
-    private static async Task ExerciseProfileContentCatalogAndReporting(HttpClient client, Guid node)
+    private static async Task ExerciseProfileContentAndCatalog(HttpClient client, Guid node)
     {
         await Success(await client.PutAsJsonAsync(
             "/api/participants/me",
@@ -383,14 +383,63 @@ public sealed class SqlWorkflowTests
                 .Single(type => type.GetProperty("name").GetString() == "HTTP evidence");
             Assert.AreEqual("HTTP evidence", evidenceType.GetProperty("pluralName").GetString());
         }
+    }
+
+    private static async Task VerifyReportSnapshotsAndRollback(AtlasDataContext database, HttpClient client, Guid node)
+    {
+        var reports = $"/api/moderation/nodes/{node}/reports";
+        var request = new { reason = "Spam", explanation = "Review this test node" };
+        var quotaBefore = await database.ReportSubmissionQuotaRows.CountAsync();
+
+        // The isolated database rejects every snapshot insert until the constraint is removed.
+        await database.Database.ExecuteSqlRawAsync(
+            "ALTER TABLE ModerationReportedSnapshotRows ADD CONSTRAINT CK_TestRejectSnapshot CHECK (1 = 0)");
+        try
+        {
+            using var failed = await client.PostAsJsonAsync(reports, request);
+            Assert.IsFalse(failed.IsSuccessStatusCode);
+        }
+        finally
+        {
+            await database.Database.ExecuteSqlRawAsync(
+                "ALTER TABLE ModerationReportedSnapshotRows DROP CONSTRAINT CK_TestRejectSnapshot");
+        }
+
+        Assert.AreEqual(0, await database.ModerationCaseRows.CountAsync(row => row.NodeId == node));
+        Assert.AreEqual(0, await database.ModerationReportedSnapshotRows.CountAsync(row => row.NodeId == node));
+        Assert.AreEqual(0, await database.ModerationAuditEventRows.CountAsync(row => row.NodeId == node));
+        Assert.AreEqual(quotaBefore, await database.ReportSubmissionQuotaRows.CountAsync());
+
+        var firstId = await SubmitReport();
+        await Success(await client.PutAsJsonAsync($"/api/nodes/{node}/title", new { text = "Second report title" }));
         await Success(await client.PostAsJsonAsync(
-            $"/api/moderation/nodes/{node}/reports",
-            new
-            {
-                reason = "Spam",
-                explanation = "Review this test node"
-            }
-        ));
+            $"/api/nodes/{node}/description/blocks", new { kind = "markdown", text = "Second report block" }));
+        var secondId = await SubmitReport();
+
+        Assert.AreEqual(2, await database.ModerationCaseRows.CountAsync(row => row.NodeId == node));
+        Assert.AreEqual(2, await database.ModerationReportedSnapshotRows.CountAsync(row => row.NodeId == node));
+        Assert.AreEqual(2, await database.ModerationAuditEventRows.CountAsync(row => row.NodeId == node));
+        Assert.AreEqual(quotaBefore + 2, await database.ReportSubmissionQuotaRows.CountAsync());
+        await AssertSnapshot(firstId, "HTTP idea", new[] { "Description", "Another block" });
+        await AssertSnapshot(secondId, "Second report title", new[] { "Description", "Another block", "Second report block" });
+
+        async Task<Guid> SubmitReport()
+        {
+            using var response = await client.PostAsJsonAsync(reports, request);
+            await Success(response);
+            var result = await response.Content.ReadFromJsonAsync<JsonElement>();
+            return result.GetProperty("id").GetGuid();
+        }
+
+        async Task AssertSnapshot(Guid caseId, string title, string[] expectedMarkdown)
+        {
+            var snapshot = await database.ModerationReportedSnapshotRows.AsNoTracking()
+                .SingleAsync(row => row.ModerationCaseId == caseId);
+            Assert.AreEqual(title, snapshot.Title);
+            using var content = JsonDocument.Parse(snapshot.ContentJson);
+            CollectionAssert.AreEqual(expectedMarkdown, content.RootElement.EnumerateArray()
+                .Select(block => block.GetProperty("Markdown").GetString()).ToArray());
+        }
     }
 
     /// <summary>
@@ -444,6 +493,10 @@ public sealed class SqlWorkflowTests
         {
             text = "Revised after moderation"
         }));
+        var comparison = await client.GetFromJsonAsync<JsonElement>($"/api/moderation/nodes/{node}/revisions");
+        Assert.AreEqual("HTTP idea", comparison.GetProperty("reported").GetProperty("title").GetString());
+        Assert.AreEqual("Revised after moderation", comparison.GetProperty("revised").GetProperty("title").GetString());
+
         await Success(await client.PostAsync($"/api/moderation/nodes/{node}/review", null));
         await Success(await client.PostAsJsonAsync($"/api/moderation/nodes/{node}/restore", new
         {
