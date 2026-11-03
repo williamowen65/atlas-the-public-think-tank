@@ -155,6 +155,7 @@
   /** Append the next API page; failures keep existing results and the same retry cursor. */
   async function loadMore() {
     if (loading || !hasMore) return;
+    const moderatorRead = canModerate && moderatorVisibility.includeHidden && filters.scope !== 'comments';
     const current = controller;
     loading = true;
     error = '';
