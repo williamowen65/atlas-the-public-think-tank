@@ -74,7 +74,7 @@ public sealed class SqlPublicSearch(Func<AtlasDataContext> open) : IPublicSearch
                 new SqlParameter("@search", SqlDbType.NVarChar, 4000) { Value = query.SearchText });
         // The shared index contains exactly one document per node or comment.
         var matched = matches;
-        var nodeScope = DiscoveryEfQuery.Build(db, query with { SearchText = null }, null, false);
+        var nodeScope = DiscoveryEfQuery.Build(db, query with { SearchText = null }, null, includeHidden);
         var nodeHits = from match in matched
                        join node in nodeScope on match.NodeId equals node.NodeId
                        where match.Kind == 0 && scope != "comments"
