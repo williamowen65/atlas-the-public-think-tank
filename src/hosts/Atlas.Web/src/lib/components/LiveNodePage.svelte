@@ -86,7 +86,7 @@
   type ModerationFeedback = { reasons: { publicReason: string; rationale: string; decidedAt: string | null; reviewRequested: boolean }[] };
   let hiddenFeedback = $state<ModerationFeedback | null>(null);
   let hiddenFeedbackError = $state(false);
-  type ReportHistory = { id: string; reason: string; explanation: string | null; createdAt: string; status: string };
+  type ReportHistory = { id: string; reason: string; explanation: string | null; createdAt: string; status: string; reporter: string; reviewer: string | null; decisionReason: string | null; decidedAt: string | null; publicReason: string; reviewRequestedAt: string | null; visibilityRestoredAt: string | null; restoredBy: string | null; restorationReason: string | null };
   let hiddenModerator = $state(false);
   let hiddenHistory = $state<ReportHistory[]>([]);
   let hiddenPreview = $state<NodeCardData | null>(null);
@@ -461,10 +461,28 @@
           {:else}
             <ul>
               {#each hiddenHistory as report (report.id)}
-                <li><strong>{report.reason}</strong> · {report.status}
+                <li>
+                  <strong>Report submitted</strong> · {new Date(report.createdAt).toLocaleString()}
+                  <p>Reported by {report.reporter} · {report.reason}</p>
                   {#if report.explanation}<p>{report.explanation}</p>{/if}
+                  {#if report.decidedAt}
+                    <p><strong>Moderator decision: {report.status === 'Actioned' ? 'Hidden' : report.status}</strong>
+                      · {new Date(report.decidedAt).toLocaleString()}</p>
+                    <p>Decided by {report.reviewer ?? 'Unknown moderator'} · {report.publicReason}</p>
+                    {#if report.decisionReason}<p>Rationale: {report.decisionReason}</p>{/if}
+                  {:else}
+                    <p>Awaiting moderator decision</p>
+                  {/if}
+                  {#if report.reviewRequestedAt}
+                    <p><strong>Author requested review</strong> · {new Date(report.reviewRequestedAt).toLocaleString()}</p>
+                  {/if}
+                  {#if report.visibilityRestoredAt}
+                    <p><strong>Visibility restored</strong> · {new Date(report.visibilityRestoredAt).toLocaleString()}</p>
+                    <p>Restored by {report.restoredBy ?? 'Unknown moderator'}</p>
+                    {#if report.restorationReason}<p>Rationale: {report.restorationReason}</p>{/if}
+                  {/if}
                 </li>
-              {/each}
+              {/each>
             </ul>
           {/if}
           {#if hiddenDetail.reviewRequested}
