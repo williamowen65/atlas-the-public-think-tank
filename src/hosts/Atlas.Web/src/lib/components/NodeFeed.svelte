@@ -173,6 +173,7 @@
       {#snippet voting()}{#if renderVoting}{@render renderVoting(item)}{/if}{/snippet}
       {#snippet reactions()}{#if renderReactions}{@render renderReactions(item)}{/if}{/snippet}
       <li>
+        {#if item.node.isHidden}<p class="moderation-indicator">Hidden by moderator</p>{/if}
         <NodeCard
           reactionControls={renderReactions ? reactions : undefined}
           voting={renderVoting ? voting : undefined}
@@ -230,6 +231,7 @@
 </section>
 
 <style lang="scss">
+  .moderation-indicator { font-weight: 700; margin: 0.5rem 0; }
   .node-feed {
     max-width: 48rem;
     margin-inline: auto;
