@@ -34,8 +34,8 @@ WITH Selected AS (
 )
 -- Assemble one card per selected ID. Empty summaries receive Console-friendly defaults.
 SELECT n.Id AS NodeId,
-       CASE WHEN n.IsHidden = 1 THEN n.Notice ELSE n.Title END AS Title,
-       CASE WHEN n.IsHidden = 1 THEN n.Notice WHEN n.DescriptionId IS NULL THEN N'Description document not found.'
+       CASE WHEN n.IsHidden = 1 AND @showHidden = 0 THEN n.Notice ELSE n.Title END AS Title,
+       CASE WHEN n.IsHidden = 1 AND @showHidden = 0 THEN n.Notice WHEN n.DescriptionId IS NULL THEN N'Description document not found.'
             ELSE COALESCE(description.Text, N'No description has been provided.') END AS Description,
        COALESCE(children.Text, N'None') AS SubNodes,
        CASE
@@ -61,7 +61,7 @@ OUTER APPLY (
         WHEN N'chart-reference' THEN CONCAT(N'Chart: ', b.Title) ELSE b.Kind COLLATE Latin1_General_100_CI_AI_SC END), NCHAR(10) + NCHAR(10))
         WITHIN GROUP (ORDER BY link.Position) AS Text
     FROM DocumentBlocks link
-    JOIN BlockRows b ON b.Id = link.BlockId WHERE link.DocumentId = n.DescriptionId AND n.IsHidden = 0
+    JOIN BlockRows b ON b.Id = link.BlockId WHERE link.DocumentId = n.DescriptionId AND (n.IsHidden = 0 OR @showHidden = 1)
 ) description
 -- Include requested child types even when their count is zero.
 -- Return JSON so C# can apply the shared count-aware pluralization rules.
