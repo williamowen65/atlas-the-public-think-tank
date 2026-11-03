@@ -27,17 +27,19 @@ public sealed class ModerationController(
 {
     private void RecordAudit(Guid nodeId, string eventKind, string? detail = null)
     {
-        var caseIds = database.ModerationCaseRows.AsNoTracking()
+        using var lease = SqlOperationBoundary.Open(SqlStorage.Open);
+        var auditDb = lease.Context;
+        var caseIds = auditDb.ModerationCaseRows.AsNoTracking()
             .Where(row => row.NodeId == nodeId)
             .Select(row => row.Id).ToArray();
         foreach (var caseId in caseIds)
-            database.ModerationAuditEventRows.Add(new ModerationAuditEventRow
+            auditDb.ModerationAuditEventRows.Add(new ModerationAuditEventRow
             {
                 Id = Guid.NewGuid(), ModerationCaseId = caseId, NodeId = nodeId,
                 ActorParticipantId = actor.ParticipantId, EventKind = eventKind,
                 OccurredAt = DateTimeOffset.UtcNow, Detail = detail
             });
-        database.SaveChanges();
+        auditDb.SaveChanges();
     }
 
     /// <summary>Load the current node title and submit the participant’s report.</summary>
@@ -91,11 +93,15 @@ public sealed class ModerationController(
     [HttpPost("nodes/{id:guid}/review")]
     public IActionResult Review(Guid id)
     {
+        SqlOperationBoundary.Execute(SqlStorage.Open, () =>
+        {
         workflow.RequestReview(
             nodes.GetById(new NodeId(id)) ?? throw new KeyNotFoundException(),
             actor.ParticipantId
         );
         RecordAudit(id, "ReviewRequested");
+            return true;
+        });
         return NoContent();
     }
 
@@ -230,6 +236,8 @@ public sealed class ModerationController(
     [Authorize(Policy = AtlasPolicies.GlobalModerator), HttpPost("nodes/{id:guid}/decision")]
     public IActionResult Decide(Guid id, DecisionRequest request)
     {
+        SqlOperationBoundary.Execute(SqlStorage.Open, () =>
+        {
         workflow.Decide(
             id,
             actor.ParticipantId,
@@ -238,6 +246,8 @@ public sealed class ModerationController(
             request.Reason
         );
         RecordAudit(id, "Decision", request.Rationale);
+            return true;
+        });
         return NoContent();
     }
 
@@ -245,8 +255,12 @@ public sealed class ModerationController(
     [Authorize(Policy = AtlasPolicies.GlobalModerator), HttpPost("nodes/{id:guid}/restore")]
     public IActionResult Restore(Guid id, TextRequest request)
     {
+        SqlOperationBoundary.Execute(SqlStorage.Open, () =>
+        {
         workflow.Restore(id, actor.ParticipantId, request.Text);
         RecordAudit(id, "Restored", request.Text);
+            return true;
+        });
         return NoContent();
     }
 }
