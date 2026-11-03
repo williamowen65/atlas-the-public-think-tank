@@ -43,6 +43,11 @@ public sealed class DiscoveryCacheTests
             "A public-style authored read must not reuse moderator-only card data.");
         Assert.AreEqual(candidate.Title, query.DiscoverModeratorPage(
             new DiscoveryQuery(IncludeHidden: true)).Items.Single().Card!.Title);
+        var authorPage = query.DiscoverAuthorPage(
+            new DiscoveryQuery(HiddenOnly: true, IncludeHidden: true), candidate.AuthorParticipantId);
+        Assert.AreEqual(candidate.Title, authorPage.Items.Single().Card!.Title);
+        Assert.IsEmpty(query.DiscoverAuthorPage(
+            new DiscoveryQuery(HiddenOnly: true, IncludeHidden: true), Guid.NewGuid()).Items);
     }
 
     [TestMethod]
