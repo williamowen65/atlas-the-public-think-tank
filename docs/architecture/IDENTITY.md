@@ -2,6 +2,13 @@
 
 [PTT-94](https://thepublicthinktank.atlassian.net/browse/PTT-94) introduces infrastructure for authenticated Atlas hosts. [ADR-0006](decisions/ADR-0006-identity-participant-mapping.md) records the key decisions. [Setup](../PTT-94-Identity.md) covers the developer-generated migration.
 
+## At a glance
+
+- **Participants** owns public profiles and contributions.
+- **ASP.NET Core Identity** owns accounts, credentials, and global roles.
+- **Atlas.Identity** connects authenticated accounts to Participants.
+- **Atlas.Persistence** stores both models in SQL Server.
+
 ## Ownership and identity mapping
 
 | Concern | Owner | Implementation |
@@ -31,6 +38,8 @@ The caller cannot select an account ID, existing profile, or privileged role. Ex
 
 ## Framework account management
 
+**Use Identity's sign-in workflow, not just a password-hash check.** Account confirmation, lockout, profile eligibility, and 2FA status all matter.
+
 `AddAtlasIdentity(connectionString)` registers `UserManager<AtlasIdentityUser>`, `RoleManager<IdentityRole<Guid>>`, a custom `SignInManager<AtlasIdentityUser>`, EF stores, cookies, Data Protection token providers, the account coordinator, policies, and the moderation adapter.
 
 Use framework methods for password changes, email confirmation, password resets, 2FA, and sign-in/sign-out. Password rules require at least 12 characters and retain Identity's digit/uppercase/lowercase/non-alphanumeric defaults. New accounts require confirmed email. Five failed password attempts lock the account for 15 minutes when sign-in uses `lockoutOnFailure: true`. `AtlasSignInManager.CanSignInAsync` also requires an active linked profile. Do not authenticate by calling `CheckPasswordAsync` alone: that verifies a hash but does not execute the sign-in eligibility, lockout, or 2FA flow.
@@ -52,6 +61,8 @@ The policy handler reads current database role memberships instead of trusting r
 `IdentityModeratorAuthorization` implements the existing `IModeratorAuthorization` port using stored global GlobalModerator/Administrator membership and active-account eligibility. The host must derive its actor ID from authenticated identity before invoking domain services. This adapter does not turn arbitrary caller-supplied GUIDs into authenticated actors. Moderation continues to own reports, decisions, hide/restore behavior, and audit history.
 
 ## HTTP host integration contract
+
+**Boundary rule:** The host identifies the actor from the authenticated principal. A request body cannot choose who is acting.
 
 A future host registers `builder.Services.AddAtlasIdentity(connectionString)` and enables authentication/authorization middleware. Protected endpoints use `AtlasPolicies` and resolve the actor via `AtlasAccounts`; request bodies must not choose the actor ID. Registration uses the account coordinator rather than directly calling `UserManager.CreateAsync`, including if using framework API endpoints: an unadapted stock registration endpoint would bypass profile creation and violate the foreign key.
 
