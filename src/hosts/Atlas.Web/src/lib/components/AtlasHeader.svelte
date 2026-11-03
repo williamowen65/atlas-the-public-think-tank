@@ -952,4 +952,13 @@
   .atlas-header .explore-sidebar .sidebar-copyright {
     text-align: center;
   }
+  .moderator-visibility {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.8rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+  .moderator-visibility input { accent-color: var(--atlas-accent); }
 </style>
