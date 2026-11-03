@@ -69,3 +69,30 @@ dotnet test tests/Atlas.Console.Tests/Atlas.Console.Tests.csproj
 ```
 
 The SQL tests require the documented test connection configuration. Migration-dependent checks remain pending until the generated migration, designer, and snapshot are committed. To see the new authored demo introductions, follow the local reset/reseed script above after generating the migration. A reset is optional and destructive; a normal database update preserves existing data and leaves its new descriptions empty for later editing.
+
+## Temporal content history for moderator revision comparison (pending migration)
+
+SQL Server system-versioned history is configured for `NodeRows`, `DocumentRows`,
+`BlockRows`, and `DocumentBlocks` (the ordered document/block join). The main tables
+remain the source of current state; history tables preserve previous database row versions.
+Moderation cases, votes, reactions and comments are intentionally not temporal.
+This change does **not** yet provide a revision-comparison API, UI, or retention cleanup.
+
+From the solution root, on the feature branch, generate and review the EF migration:
+
+```powershell
+dotnet tool restore
+dotnet ef migrations add AddTemporalNodeContentHistory --project src/Atlas.Persistence
+dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence
+# Review generated Up/Down SQL, designer and model snapshot before applying.
+dotnet ef migrations script --project src/Atlas.Persistence --output temporal-content-migration.sql
+# Inspect the configured connection and verify it is your local development database.
+dotnet ef dbcontext info --project src/Atlas.Persistence
+dotnet ef database update --project src/Atlas.Persistence
+```
+
+Do not reset or drop the database to apply this migration. Commit the migration,
+designer and model snapshot. Verify the generated migration preserves current rows,
+indexes, constraints and SQL Server full-text infrastructure. SQL Server temporal
+periods record transaction times in UTC; they do not encode moderation decisions.
+Do not purge history while an active moderation review needs its original snapshot.
