@@ -54,6 +54,36 @@ internal static partial class DemoData
             },
             new()
             {
+                // Extra hidden contribution by Demo User 04 for profile layout testing.
+                Id = Guid.Parse("c4000000-0000-4000-8000-000000000005"),
+                NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000013"),
+                ReporterId = DemoParticipants.User02Id,
+                Reason = "Demo: verify claims and supporting evidence",
+                ReportedTitle = "Make internet access free and available everywhere",
+                CreatedAt = reportedAt,
+                Status = 2,
+                ReviewerId = DemoParticipants.User05Id,
+                DecisionReason = "Demo moderation: claims need more supporting evidence before publication.",
+                DecidedAt = reportedAt.AddHours(1),
+                PublicReason = 4
+            },
+            new()
+            {
+                // Another hidden contribution by Demo User 04, with a different reason.
+                Id = Guid.Parse("c4000000-0000-4000-8000-000000000006"),
+                NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000016"),
+                ReporterId = DemoParticipants.User01Id,
+                Reason = "Demo: review discussion quality",
+                ReportedTitle = "Public funding could leave some communities with inadequate service",
+                CreatedAt = reportedAt,
+                Status = 2,
+                ReviewerId = DemoParticipants.User05Id,
+                DecisionReason = "Demo moderation: revise the framing to encourage constructive discussion.",
+                DecidedAt = reportedAt.AddHours(1),
+                PublicReason = 1
+            },
+            new()
+            {
                 // A hidden grandchild with a real two-step breadcrumb:
                 // What ideas could help make the world better? > Use ranked voting...
                 NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000008"),
