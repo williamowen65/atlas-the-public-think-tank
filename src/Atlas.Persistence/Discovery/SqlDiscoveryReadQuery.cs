@@ -184,9 +184,10 @@ public sealed class SqlDiscoveryReadQuery(
             // A page hit does not imply a card hit: the two layers have separate revisions.
             // Collect missing IDs before ReadCards' fixed metadata/summary batches,
             // avoiding a query per node. With no cache, every selected ID is missing here.
+            var moderatorVisible = query.IncludeHidden && includeHidden;
             foreach (var item in page.Items)
             {
-                if (!(query.IncludeHidden && includeHidden) && cache is not null && cache.TryDetail(revision.DetailVersion, item.NodeId, out var card))
+                if (cache is not null && cache.TryDetail(revision.DetailVersion, item.NodeId, moderatorVisible, out var card))
                 {
                     cards.Add(item.NodeId, card);
                 }
@@ -199,7 +200,7 @@ public sealed class SqlDiscoveryReadQuery(
             // 8. Load only missing cards. ReadCards uses one EF metadata batch and one
             // SQL summary batch plus up to three bounded EF breadcrumb hops.
             // An empty missing list returns without any card query.
-            var loaded = ReadCards(db, missing.ToArray(), query.IncludeHidden && includeHidden);
+            var loaded = ReadCards(db, missing.ToArray(), moderatorVisible);
             foreach (var card in loaded.Values)
             {
                 cards[card.NodeId] = card;
@@ -217,8 +218,7 @@ public sealed class SqlDiscoveryReadQuery(
             }
             foreach (var card in loaded.Values)
             {
-                if (!(query.IncludeHidden && includeHidden))
-                    cache?.PutDetail(revision.DetailVersion, card);
+                cache?.PutDetail(revision.DetailVersion, card, moderatorVisible);
             }
 
             // 10. Return a copy with its public cards attached. Cached ranked pages remain
