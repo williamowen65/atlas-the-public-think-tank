@@ -65,6 +65,7 @@ app.MapPost("/run", (SearchRequest request) =>
                     .Select(b => new TextSource($"Block {b.Position + 1} ({b.Kind})", b.Text ?? "", b.Id))).ToArray();
         }
         return Results.Ok(new { policy = request.Query.VotingWeight.HasValue ? SqlPublicSearch.WeightedRankingPolicyVersion : SqlPublicSearch.RankingPolicyVersion, explained.Page,
+            explained.BestTextRank, explained.MinimumTextRank,
             collectedAt = DateTimeOffset.UtcNow,
             stoplist = stoplist is null ? "Unknown" : stoplist.Id is null ? "Off" : stoplist.Id == 0 ? "System (English)" : "Custom (English)",
             stopWords,

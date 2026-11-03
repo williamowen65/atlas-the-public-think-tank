@@ -5,6 +5,7 @@ import type { NodeCardData } from '../components/node-card-versions/types';
 export interface DiscoveryFilters {
   /** Relative voting influence in text search, from 0 through 100 percent. */
   votingWeight?: number;
+  matchStrictness?: number;
   /**
    * Restrict discovery to children of this parent node ID; omitted leaves parent scope
    * unset.
@@ -203,6 +204,7 @@ export async function readDiscovery(
   if (filters?.through) query.set('CreatedThrough', filters.through);
   if (filters?.archived) query.set('IncludeArchived', 'true');
   if (mixedSearch && filters?.votingWeight !== undefined) query.set('VotingWeight', String(filters.votingWeight));
+  if (mixedSearch && filters?.matchStrictness !== undefined) query.set('MatchStrictness', String(filters.matchStrictness));
   if (mixedSearch && filters?.scope) query.set('scope', filters.scope);
   if (search.trim()) query.set('SearchText', search.trim());
   const response = await fetch(`${base}/${mixedSearch ? 'search' : 'nodes'}?${query}`, {

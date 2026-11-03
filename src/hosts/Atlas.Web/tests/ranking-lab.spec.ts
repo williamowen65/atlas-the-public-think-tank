@@ -4,6 +4,8 @@ const story =
 function report() {
   return {
     policy: 'support-v2',
+    bestTextRank: 100,
+    minimumTextRank: 15,
     stoplist: 'System (English)',
     stopWords: ['and', 'the'],
     page: { totalCount: 4, page: 1, hasNextPage: false },
@@ -18,6 +20,8 @@ function report() {
           nodeId: 'node-id',
           kind: 'node',
           textRank: 100,
+          phraseMatch: true,
+          textSignal: 0.65,
           support: 5,
           multiplier: 1.0833333333,
           finalScore: 108.33333333,
@@ -46,7 +50,7 @@ test('searches local data, displays diagnostics and pages the same query', async
   await expect(page.getByRole('table').first()).toContainText('108.3333');
   await expect(page.getByRole('table').first()).toContainText('Local node');
   expect(submitted[0]).toEqual({
-    query: { searchText: 'testing', page: 1, votingWeight: 40 },
+    query: { searchText: 'testing', page: 1, votingWeight: 40, matchStrictness: 15 },
     scope: 'all',
   });
   await page.getByRole('heading', { name: 'Indexed text and tie-breaks' }).scrollIntoViewIfNeeded();
@@ -54,7 +58,7 @@ test('searches local data, displays diagnostics and pages the same query', async
   await expect(page.getByRole('table').first()).toContainText('Local node 1');
   await expect(page.getByRole('table').first()).toContainText('Local node 2');
   expect(submitted[1]).toEqual({
-    query: { searchText: 'testing', page: 2, votingWeight: 40 },
+    query: { searchText: 'testing', page: 2, votingWeight: 40, matchStrictness: 15 },
     scope: 'all',
   });
 });
@@ -138,4 +142,24 @@ test('diagnostics distinguish ignored SQL stopwords from meaningful literal matc
   expect(
     (await page.locator('mark').allTextContents()).every((text) => text.toLowerCase() === 'local'),
   ).toBe(true);
+});
+
+test('strictness is sent to the backend and its cutoff and passage evidence are visible', async ({
+  page,
+}) => {
+  const submitted: unknown[] = [];
+  await page.route('**/atlas-ranking-lab/run', (route) => {
+    const payload = route.request().postDataJSON();
+    submitted.push(payload);
+    const result = report();
+    result.minimumTextRank = payload.query.matchStrictness;
+    return route.fulfill({ json: result });
+  });
+  await page.goto(story);
+  await page.getByLabel('Search terms').fill('local indexed');
+  await page.getByLabel('Match strictness (%)').fill('50');
+  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(page.getByText(/Minimum accepted: 50/)).toBeVisible();
+  await expect(page.getByRole('table').first()).toContainText('Yes');
+  expect(submitted[0]).toMatchObject({ query: { matchStrictness: 50 } });
 });
