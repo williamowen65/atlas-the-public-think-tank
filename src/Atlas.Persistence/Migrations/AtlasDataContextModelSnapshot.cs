@@ -51,6 +51,16 @@ namespace Atlas.Persistence.Migrations
                         .HasColumnType("nvarchar(max)")
                         .UseCollation("Latin1_General_100_CI_AI_SC");
 
+                    b.Property<DateTime>("PeriodEnd")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodEnd");
+
+                    b.Property<DateTime>("PeriodStart")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodStart");
+
                     b.Property<Guid?>("ReferenceId")
                         .HasColumnType("uniqueidentifier");
 
@@ -73,6 +83,19 @@ namespace Atlas.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("BlockRows", (string)null);
+
+                    b
+                        .ToTable(tb => tb.IsTemporal(ttb =>
+                            {
+                                ttb.UseHistoryTable("BlockRowsHistory");
+                                ttb
+                                    .HasPeriodStart("PeriodStart")
+                                    .HasColumnName("PeriodStart");
+                                ttb
+                                    .HasPeriodEnd("PeriodEnd")
+                                    .HasColumnName("PeriodEnd");
+                            }))
+                        .HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
             modelBuilder.Entity("Atlas.Persistence.CommentRow", b =>
@@ -124,6 +147,8 @@ namespace Atlas.Persistence.Migrations
                         .HasDatabaseName("IX_CommentRows_SiblingPage");
 
                     b.ToTable("CommentRows", (string)null);
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
             modelBuilder.Entity("Atlas.Persistence.CommunityCreationQuotaRow", b =>
@@ -291,12 +316,35 @@ namespace Atlas.Persistence.Migrations
                     b.Property<Guid>("BlockId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime>("PeriodEnd")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodEnd");
+
+                    b.Property<DateTime>("PeriodStart")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodStart");
+
                     b.HasKey("DocumentId", "Position");
 
                     b.HasIndex("BlockId")
                         .HasDatabaseName("IX_DocumentBlocks_BlockId");
 
                     b.ToTable("DocumentBlocks", (string)null);
+
+                    b
+                        .ToTable(tb => tb.IsTemporal(ttb =>
+                            {
+                                ttb.UseHistoryTable("DocumentBlocksHistory");
+                                ttb
+                                    .HasPeriodStart("PeriodStart")
+                                    .HasColumnName("PeriodStart");
+                                ttb
+                                    .HasPeriodEnd("PeriodEnd")
+                                    .HasColumnName("PeriodEnd");
+                            }))
+                        .HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
             modelBuilder.Entity("Atlas.Persistence.DocumentRow", b =>
@@ -307,12 +355,33 @@ namespace Atlas.Persistence.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<DateTime>("PeriodEnd")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodEnd");
+
+                    b.Property<DateTime>("PeriodStart")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodStart");
+
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("datetimeoffset");
 
                     b.HasKey("Id");
 
                     b.ToTable("DocumentRows", (string)null);
+
+                    b.ToTable(tb => tb.IsTemporal(ttb =>
+                            {
+                                ttb.UseHistoryTable("DocumentRowsHistory");
+                                ttb
+                                    .HasPeriodStart("PeriodStart")
+                                    .HasColumnName("PeriodStart");
+                                ttb
+                                    .HasPeriodEnd("PeriodEnd")
+                                    .HasColumnName("PeriodEnd");
+                            }));
                 });
 
             modelBuilder.Entity("Atlas.Persistence.Identity.AtlasIdentityUser", b =>
@@ -570,6 +639,16 @@ namespace Atlas.Persistence.Migrations
                     b.Property<Guid?>("DescriptionId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime>("PeriodEnd")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodEnd");
+
+                    b.Property<DateTime>("PeriodStart")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodStart");
+
                     b.Property<string>("ShortDescription")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -606,6 +685,19 @@ namespace Atlas.Persistence.Migrations
                         .HasDatabaseName("IX_NodeRows_TypeId");
 
                     b.ToTable("NodeRows", (string)null);
+
+                    b
+                        .ToTable(tb => tb.IsTemporal(ttb =>
+                            {
+                                ttb.UseHistoryTable("NodeRowsHistory");
+                                ttb
+                                    .HasPeriodStart("PeriodStart")
+                                    .HasColumnName("PeriodStart");
+                                ttb
+                                    .HasPeriodEnd("PeriodEnd")
+                                    .HasColumnName("PeriodEnd");
+                            }))
+                        .HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
             modelBuilder.Entity("Atlas.Persistence.NodeTypeRow", b =>
