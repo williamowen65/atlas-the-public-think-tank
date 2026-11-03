@@ -3,7 +3,7 @@
   content, reporter details, or private moderator decision rationale.
 -->
 <script lang="ts">
-  let { reason = 'Other' }: { reason?: string | null } = $props();
+  let { reason = 'Other', author = false }: { reason?: string | null; author?: boolean } = $props();
 
   const reasons: Record<string, { label: string; explanation: string }> = {
     Spam: {
@@ -34,7 +34,7 @@
   <div class="notice-heading">
     <span class="eyebrow">Content moderation</span>
     <h1 id="hidden-heading">This contribution is hidden</h1>
-    <p>A moderator has temporarily removed this contribution from public view. The original content is not displayed here, but its author may revise it and request another review.</p>
+    <p>A moderator has temporarily removed this contribution from public view. The original content is not displayed publicly, but its author may revise it and request another review.</p>
   </div>
 
   <div class="reason" aria-label="Public moderation reason">
@@ -64,7 +64,7 @@
       <li><strong>The author can revise the contribution</strong> to address the concern, such as removing personal attacks or clarifying how it relates to the discussion.</li>
       <li><strong>After saving a revision, the author can request moderator review.</strong> The contribution remains hidden until a moderator approves its restoration.</li>
     </ol>
-    <p>Visitors cannot edit or request review on the author's behalf. If you are the author, sign in with the account that created this contribution, then return to this page.</p>
+    {#if author}<p><strong>You're viewing this as the author.</strong> Your private moderation feedback and revision controls appear below. They are not visible to other visitors.</p>{:else}<p>Visitors cannot edit or request review on the author's behalf. If you are the author, sign in with the account that created this contribution, then return to this page.</p>{/if}
   </div>
 </section>
 
