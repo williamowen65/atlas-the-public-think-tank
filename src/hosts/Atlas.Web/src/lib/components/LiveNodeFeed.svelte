@@ -99,6 +99,12 @@
    * Whether discovery reports another page to load.
    */
   let hasMore = $state(true);
+  // Moderator inspection uses authenticated navigation only while hidden cards are enabled.
+  const breadcrumbBase = $derived(
+    moderatorVisibility.canModerate && moderatorVisibility.includeHidden && apiBase === '/atlas-public-api'
+      ? '/atlas-session-api'
+      : apiBase,
+  );
   let nextPage = 1;
   let controller: AbortController | undefined;
   let disposed = false;
@@ -175,7 +181,7 @@
 -->
 
 <NodeFeed
-  {apiBase}
+  apiBase={breadcrumbBase}
   {onOpenProfile}
   onComments={(id) =>
     onOpenNode
@@ -199,16 +205,16 @@
   onLoadMore={() => void load()}
   loadOlderAncestors={(id) =>
     id
-      ? readOlderAncestors(id, AbortSignal.timeout(10000), apiBase)
+      ? readOlderAncestors(id, AbortSignal.timeout(10000), breadcrumbBase)
       : Promise.resolve({ items: [], hasMore: false })}
   >{#snippet renderVoting(item)}<LiveVotingDial
       mobileCompact={presentation === 'mobile-experiment'}
       nodeId={item.node.id}
       initialAverage={item.average}
       initialTotalVotes={item.totalVotes}
-      archived={item.node.status === 'Archived'}
+      archived={item.node.status === 'Archived' || item.node.isHidden === true}
     />{/snippet}{#snippet renderReactions(item)}<LiveReactions
       nodeId={item.node.id}
-      archived={item.node.status === 'Archived'}
+      archived={item.node.status === 'Archived' || item.node.isHidden === true}
     />{/snippet}</NodeFeed
 >

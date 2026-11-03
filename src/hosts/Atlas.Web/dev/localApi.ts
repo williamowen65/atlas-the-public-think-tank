@@ -111,7 +111,7 @@ export const sessionApiGuard: Plugin = {
       ].includes(path)
         || (path.startsWith('/atlas-session-api/moderation/nodes/') && path.endsWith('/notice') && new RegExp('^/atlas-session-api/moderation/nodes/' + guid + '/notice').test(path));
       const readable = privilegedDiscoveryReads || ['/atlas-session-api/communities/mine', '/atlas-session-api/communities/creation-allowance', '/atlas-session-api/nodes/mine'].includes(path)
-        || new RegExp(`^/atlas-session-api/nodes/${guid}(?:/description)?$`, 'i').test(path)
+        || new RegExp(`^/atlas-session-api/nodes/${guid}(?:/description|/parents|/ancestors)?$`, 'i').test(path)
         || new RegExp(`^/atlas-session-api/nodes/${guid}/(?:votes|reactions)$`, 'i').test(path)
         || new RegExp(`^/atlas-session-api/comments/${guid}/votes$`, 'i').test(path)
         || /^\/atlas-session-api\/auth\/(csrf|session)$/.test(path)

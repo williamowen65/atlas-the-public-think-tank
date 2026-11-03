@@ -286,7 +286,7 @@ export async function readOlderAncestors(
   base = '/atlas-public-api',
 ): Promise<BreadcrumbPage> {
   const response = await fetch(`${base}/nodes/${encodeURIComponent(id)}/ancestors`, {
-    credentials: 'omit',
+    credentials: base === '/atlas-session-api' ? 'same-origin' : 'omit',
     signal,
   });
   if (!response.ok) throw new Error(`Could not load older ancestors (HTTP ${response.status}).`);
