@@ -4,6 +4,8 @@ PTT-94 adds account infrastructure for the future HTTP host. Participants remain
 
 ## Migration status
 
+**Quick distinction:** The persistence project owns migration files; the console project provides the startup configuration EF needs.
+
 Identity migrations use `Atlas.Persistence` as the migration project and `Atlas.Console` as the startup project. These flags have separate jobs:
 
 - `--project src/Atlas.Persistence` selects the project that owns `AtlasDataContext`, the EF model snapshot, and generated migration files.
@@ -16,6 +18,8 @@ When using `Atlas.Console` as the startup project, it must reference `Microsoft.
 The developer-generated `20260930213148_AddIdentityAccounts` migration, designer, and updated snapshot are checked in. The console registration/sign-in follow-up changes no EF mappings and needs no additional migration. Keep generating future migrations yourself through `dotnet ef migrations add <Name> --project src/Atlas.Persistence --startup-project src/hosts/Atlas.Console` when the model changes.
 
 ## Apply to your existing local SQL database
+
+**This updates the schema; it does not reset the database.**
 
 After migration review, run:
 
@@ -38,6 +42,8 @@ Without the test connection, only the model, domain-dependency, and service-wiri
 
 ## Use registration and sign-in
 
+**Basic flow:** Register an account, confirm its email using the trusted local utility, then sign in.
+
 ```powershell
 dotnet run --project src/hosts/Atlas.Console
 ```
@@ -59,6 +65,8 @@ Console sessions use fresh SQL scopes, check account/profile/Member-policy eligi
 Real confirmation/reset email delivery, account-management HTTP endpoints, browser security controls, and persistent/shared Data Protection keys remain HTTP-host work.
 
 ## Provision a Global Moderator (PTT-159)
+
+**Who can do this?** A trusted operator with terminal and database access. Public registration cannot grant this role.
 
 From a trusted interactive terminal with the intended SQL connection configured, register the account normally and confirm its email first. Then run:
 
