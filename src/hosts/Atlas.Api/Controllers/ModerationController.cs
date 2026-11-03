@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.ComponentModel.DataAnnotations;
 using Atlas.Application;
+using Atlas.Application.Storage;
 using Atlas.Graph.Nodes;
 using Atlas.Identity;
 using Atlas.Moderation;
@@ -43,6 +44,10 @@ public sealed class ModerationController(
     [HttpPost("nodes/{id:guid}/reports")]
     public object Report(Guid id, ReportRequest request)
     {
+        return SqlOperationBoundary.Execute(SqlStorage.Open, () =>
+        {
+        using var lease = SqlOperationBoundary.Open(SqlStorage.Open);
+        var transactionDb = lease.Context;
         // Capture the current title from storage rather than trusting a submitted title.
         var node = nodes.GetById(new NodeId(id)) ?? throw new KeyNotFoundException();
 
@@ -55,14 +60,14 @@ public sealed class ModerationController(
             request.Explanation,
             DateTimeOffset.UtcNow
         );
-        var current = database.NodeRows.AsNoTracking().Single(row => row.Id == id);
-        var content = (from link in database.Set<DocumentBlockRow>().AsNoTracking()
-                       join block in database.BlockRows.AsNoTracking() on link.BlockId equals block.Id
+        var current = transactionDb.NodeRows.AsNoTracking().Single(row => row.Id == id);
+        var content = (from link in transactionDb.Set<DocumentBlockRow>().AsNoTracking()
+                       join block in transactionDb.BlockRows.AsNoTracking() on link.BlockId equals block.Id
                        where link.DocumentId == current.DescriptionId
                        orderby link.Position
                        select new { link.Position, block.Kind, block.Markdown, block.AltText,
                            block.Caption, block.Url, block.Title, block.Description, block.ReferenceId }).ToArray();
-        database.ModerationReportedSnapshotRows.Add(new ModerationReportedSnapshotRow
+        transactionDb.ModerationReportedSnapshotRows.Add(new ModerationReportedSnapshotRow
         {
             ModerationCaseId = report.Id,
             NodeId = id,
@@ -71,17 +76,15 @@ public sealed class ModerationController(
             ShortDescription = current.ShortDescription,
             ContentJson = JsonSerializer.Serialize(content)
         });
-        database.ModerationAuditEventRows.Add(new ModerationAuditEventRow
+        transactionDb.ModerationAuditEventRows.Add(new ModerationAuditEventRow
         {
             Id = Guid.NewGuid(), ModerationCaseId = report.Id, NodeId = id,
             ActorParticipantId = actor.ParticipantId, EventKind = "ReportSubmitted",
             OccurredAt = report.CreatedAt, Detail = request.Reason
         });
-        database.SaveChanges();
-        return new
-        {
-            report.Id
-        };
+        transactionDb.SaveChanges();
+        return (object)new { report.Id };
+        });
     }
 
     /// <summary>Request review of an existing node through the author-checked workflow.</summary>
