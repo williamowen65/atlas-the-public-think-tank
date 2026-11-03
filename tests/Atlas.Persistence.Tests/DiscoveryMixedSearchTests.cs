@@ -13,7 +13,7 @@ public sealed class DiscoveryMixedSearchTests
         using var db = new AtlasDataContext(new DbContextOptionsBuilder<AtlasDataContext>()
             .UseSqlServer("Server=localhost;Database=TranslationOnly;User Id=sa;Password=unused;").Options);
         var build = typeof(SqlPublicSearch).GetMethod("BuildHits", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
-        var query = (IQueryable)build.Invoke(null, [db, new DiscoveryQuery(SearchText: "salmon", MinimumVoteCount: 1), "all"])!;
+        var query = (IQueryable)build.Invoke(null, [db, new DiscoveryQuery(SearchText: "salmon", MinimumVoteCount: 1), "all", false])!;
         var sql = query.ToQueryString();
         StringAssert.Contains(sql, "FREETEXTTABLE(dbo.SearchDocuments");
         Assert.IsFalse(sql.Contains("FREETEXTTABLE(dbo.CommentRows", StringComparison.Ordinal));
@@ -22,7 +22,7 @@ public sealed class DiscoveryMixedSearchTests
         StringAssert.Contains(sql, "ABS(");
         StringAssert.Contains(sql, "VoteRows");
         StringAssert.Contains(sql, "CommentRows");
-        var withoutText = (IQueryable)build.Invoke(null, [db, new DiscoveryQuery(), "comments"])!;
+        var withoutText = (IQueryable)build.Invoke(null, [db, new DiscoveryQuery(), "comments", false])!;
         Assert.IsFalse(withoutText.ToQueryString().Contains("FREETEXTTABLE", StringComparison.Ordinal));
     }
 
