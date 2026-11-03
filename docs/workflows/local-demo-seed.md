@@ -1,85 +1,151 @@
 # Local public think tank demo
 
-The opt-in demo seed uses the five existing demo accounts. It adds 61 editorial nodes spanning environmental restoration, housing, civic trust, education, neighborhood design, public health and smaller practical questions. Some branches have multiple levels of children; no new multiple-parent examples are introduced. Importance ratings, reaction votes and threaded comments intentionally have uneven participation. Existing breadcrumb and moderation fixtures remain separate.
+The **opt-in seed** creates a representative Atlas dataset for development and UI review. It is intended for an **empty, disposable database**, not production.
 
-## What the demo includes
+## At a glance
 
-- Five demo accounts and 61 editorial nodes.
-- Topic-specific contribution types and varied descriptions.
-- Uneven votes, reactions, and threaded comments.
-- Moderation fixtures and a child-feed pagination walkthrough.
+| Fixture | What it exercises |
+|---|---|
+| Five demo accounts | Sign-in and participant data |
+| 61 editorial nodes | Environmental, housing, civic, education, public-health, and neighborhood topics |
+| Varied contribution types | Populated and zero-count child categories |
+| Uneven votes, reactions, comments | Realistic feed participation |
+| Moderation cases | Pending, hidden, and review-requested states |
+| Orca Solutions child feed | Five pages of three nodes |
 
-## Editorial variety for UI review
+Some topics have multiple child levels; this seed adds no new multiple-parent examples. Existing breadcrumb and moderation fixtures remain separate.
 
-The 46 editorial nodes previously all requested Question, Idea and Issue. They now request topic-specific combinations of the existing catalog types, including Solution, Evidence, Location, Goal and Vision. For example, salmon restoration invites locations and goals, classroom AI invites visions and evidence, and broadband planning invites locations, solutions and questions. Existing child types remain included in their parents' requested lists.
+## Editorial content
 
-Practical intervention nodes use Solution where appropriate; the safe-school-route priority uses Goal. This lets the feed show populated contribution categories as well as zero-count requests. No new catalog types or migrations are needed.
+Previously, 46 editorial nodes all requested Question, Idea, and Issue. They now use more suitable existing types such as **Solution, Evidence, Location, Goal, and Vision**.
 
-Short descriptions now vary in length, with fuller introductions up to the backend's 280-character maximum. Full Markdown descriptions remain in their existing blocks. Counts and relationships are still based on seeded data, not fabricated by the UI.
+For example:
 
-These edits only affect a newly seeded empty database. The normal seed command does not overwrite an existing database or user content. Use the disposable-database procedure below only after preserving anything you need; pulling the branch alone will not change existing rows.
+- **Salmon restoration:** locations and goals
+- **Classroom AI:** visions and evidence
+- **Broadband planning:** locations, solutions, and questions
+- **Practical interventions:** Solution where appropriate
+- **Safe-school-route priority:** Goal
 
-The implementation is in `src/Atlas.Application/Storage/SeedData/SeedPublicThinkTank.cs` and `SeedPublicThinkTankCommunities.cs`. Both are called from `DemoData.Seed`.
+Parents continue to request the types their existing children use. Descriptions vary in length, up to the backend's **280-character** short-description limit. Full Markdown descriptions remain in their content blocks. Counts and relationships are calculated from seeded records rather than fabricated in the UI.
 
-## Rebuild a disposable local database
+The implementation lives in `src/Atlas.Application/Storage/SeedData/SeedPublicThinkTank.cs` and `SeedPublicThinkTankCommunities.cs`, called from `DemoData.Seed`.
 
-**Only use these steps for a database you are willing to erase.** The seed command does not overwrite existing content.
+**Existing data is untouched:** Changes appear only when an empty database is seeded. Pulling this branch does not overwrite local records or require a new catalog migration.
 
-**Warning:** Dropping the database permanently destroys *all* its data, including any nodes, accounts or comments created locally. Back up anything you want to retain, and verify `ATLAS_SQL_CONNECTION_STRING` points to your disposable development database. Stop the API and console first.
+## Reset and seed a disposable database
+
+> **Destructive operation.** Dropping the configured database permanently removes *all* its accounts, nodes, comments, and other content. Back up anything you need. Check `ATLAS_SQL_CONNECTION_STRING` points to a disposable development database; never use an unknown or production connection. Stop API and Console before starting.
 
 From the repository root, with the .NET SDK and `dotnet-ef` installed:
+
+### 1. Drop the disposable database
 
 ```powershell
 dotnet ef database drop --project src/Atlas.Persistence --force
 ```
 
-The design-time factory reads `ATLAS_SQL_CONNECTION_STRING` from the environment or shared user secrets. Run the explicit database setup command first. It applies EF migrations and creates the SQL Server full-text indexes needed for search. Then seed the empty database:
+### 2. Apply migrations and set up search
+
+The design-time factory reads `ATLAS_SQL_CONNECTION_STRING` from environment variables or shared user secrets. The explicit setup applies EF migrations and creates SQL Server full-text indexes:
 
 ```powershell
 dotnet run --project src/hosts/Atlas.Console -- --setup-database
+```
+
+### 3. Seed and reopen the UI
+
+```powershell
 dotnet run --project src/hosts/Atlas.Console -- --seed-demo
 ```
 
-Restart the API and Storybook afterward. Demo sign-in accounts are `demo01@example.test` through `demo05@example.test`; the demo password is printed by the seed command. **Never use these credentials or this dataset in production.**
+Restart the API and Storybook after seeding.
 
-If `dotnet ef` cannot load the design-time factory, first verify the .NET EF tooling and your SQL connection configuration. Do not run the drop command against an unknown connection string.
+| Demo setting | Value |
+|---|---|
+| Accounts | `demo01@example.test` to `demo05@example.test` |
+| Password | Printed by the seed command |
+| Use | Local development only; never production |
 
-## Moderation workflow fixtures
+If EF cannot load the design-time factory, check your installed EF tooling and SQL connection configuration **before** any drop command.
 
-**Purpose:** These cases let you check pending, hidden, and review-requested states without submitting real reports.
+## Moderation fixtures
 
-The disposable demo seed now includes four cases in `ModerationCaseRows`:
+These synthetic cases let you review queue, hidden-content, and restoration states **without submitting real reports**.
 
-- **Pending report:** `Homelessness` (demo user 02 authored) appears in the moderation queue.
-- **Hidden, no review requested:** `Make essential services accessible to everyone` (demo user 03 authored) is hidden, allowing author editing and a subsequent review request to be tested.
-- **Hidden, review requested:** `Learn from solutions that already work` (demo user 04 authored) is already awaiting moderator restoration review.
-- **Hidden grandchild, no review requested:** `Would ranked voting encourage more people to run for office?` is nested under `Use ranked voting in major U.S. elections`, which is itself under `What ideas could help make the world better?`. This verifies the moderator's real breadcrumb on a hidden card.
+The seed creates four `ModerationCaseRows`:
 
-The three hidden fixtures have historical node-importance votes and voted curated reactions, all created before the moderation decision:
+| Node | State | Intended check |
+|---|---|---|
+| **Homelessness** (Demo User 02) | Pending report | Appears in moderator queue |
+| **Make essential services accessible to everyone** (Demo User 03) | Hidden, no review request | Author can edit and later request review |
+| **Learn from solutions that already work** (Demo User 04) | Hidden, review requested | Ready for restoration review |
+| **Would ranked voting encourage more people to run for office?** | Hidden grandchild, no review request | Shows true ancestor breadcrumb |
 
-| Hidden node | Ratings | Expected average | Reaction scores |
-| --- | --- | --- | --- |
+The ranked-voting grandchild is under **Use ranked voting in major U.S. elections**, itself under **What ideas could help make the world better?**
+
+### Historical engagement
+
+The three hidden nodes have **pre-decision** importance ratings and curated-reaction votes:
+
+| Hidden node | Ratings | Average | Reaction scores |
+|---|---|---|---|
 | Make essential services accessible to everyone | 8, 10 | 9.0 (2 votes) | Promising +1; Practical +1 |
 | Learn from solutions that already work | 5, 7, 9 | 7.0 (3 votes) | Innovative +1; Hopeful +1 |
 | Would ranked voting encourage more people to run for office? | 6, 8 | 7.0 (2 votes) | Uncertain +1 |
 
-Log in as a global moderator, enable **Include hidden nodes**, and inspect all three cards in Discovery. Their existing votes and reactions should display, but their vote/reaction controls should remain disabled. The grandchild should show its two real ancestors. Log out or disable hidden inclusion to verify normal public redaction. These are seed-only historical engagement records; hidden nodes still reject new votes.
+### Review the fixtures
 
+1. Sign in with a **global moderator** account and enable **Include hidden nodes**.
+2. Inspect the three hidden cards in Discovery. Existing votes/reactions should display, but their controls stay disabled.
+3. Verify the hidden grandchild displays its two actual ancestors.
+4. Sign out or disable hidden inclusion. Confirm normal public redaction.
+5. Try a new vote on a hidden Node; the backend must reject it.
 
-These fixtures intentionally use existing node IDs and participant IDs; they are not real reports. A seeded review request represents the persisted state for UI testing, not evidence that a demo author made an edit in this seed. The moderator role is **not** assigned by this fixture; provision a trusted test account using the operator command documented in [Identity setup](../PTT-94-Identity.md).
+**Important boundaries:**
 
-**Important:** The seed changes only a fresh disposable database. Do not drop an existing database unless you have backed up anything you want to retain. The author-facing web workflow and privacy checks must be tested separately; seeded rows alone do not implement that UI.
+- These fixtures reuse existing Node and Participant IDs; they are **not real submitted reports**.
+- A seeded review-request status does not prove a demo author edited that Node.
+- The seed does **not** give a demo account moderator permissions. Use [trusted moderator provisioning](../PTT-94-Identity.md#trusted-moderator-provisioning-ptt-159).
+- These are seed-only historical engagement records. Author-facing web behavior and privacy still need separate testing.
+- Never drop existing data without preserving it first.
 
 ## Child-feed pagination walkthrough
 
-**Expected result:** Fifteen child nodes appear in five pages of three, without mixing results from other contribution tabs.
+**Goal:** Confirm the Orca Solutions tab shows 15 nodes as **five pages of three**, without mixing other contribution types.
 
-Open **Can we save the Southern Resident orcas?** (node b1000000-0000-4000-8000-000000000201), then select **15 Solutions**. Fifteen proposed interventions (IDs ending 401–415) are direct children of this parent, all of type Solution. They have descriptions and full Markdown content, but do not imply actual completed projects or measured results.
+### 1. Open the feed
 
-Discovery's page size is three. Expect five responses with three items each; the UI appends cards, so the visible totals progress 3, 6, 9, 12, 15. Scroll to the tail to request more, or use Load more nodes when IntersectionObserver is unavailable. After the fifth page, the feed should say you are caught up and stop requesting pages.
+Navigate to **Can we save the Southern Resident orcas?** (Node `b1000000-0000-4000-8000-000000000201`) and select **15 Solutions**.
 
-In browser Network tools, each child-feed nodes request must keep ParentNodeId=b1000000-0000-4000-8000-000000000201 and NodeTypeId=60d8ba45-8b78-4593-838b-ffd15af69746, with Page increasing from 1 to 5. Confirm response pageSize=3, totalCount=15, and hasNextPage=false on page 5. Other public/session requests for individual cards are expected.
+- The 15 direct children have IDs ending **401–415** and type **Solution**.
+- They contain descriptions and full Markdown, but do not claim completed interventions or measured results.
 
-Switch to another contribution type and back: each tab starts its own scoped feed, without mixing children or carrying forward another tab's page number. A tall viewport can automatically fetch extra pages to fill available space; the network response size remains three.
+### 2. Check paging
 
-The browser regression test uses intercepted API responses to check parent/type scoping and paging independently of SQL. This seed walkthrough is the separate real-database smoke check; it still needs to be run locally after refreshing disposable seed data.
+Discovery requests three nodes per page. Expected visible totals after each appended page:
+
+`3 → 6 → 9 → 12 → 15`
+
+The UI requests further pages near the scroll tail or through **Load more nodes** when `IntersectionObserver` is unavailable. After page five, it should indicate the feed is caught up and stop requesting pages.
+
+### 3. Inspect browser Network requests
+
+Every child-feed request must keep:
+
+| Parameter | Expected value |
+|---|---|
+| `ParentNodeId` | `b1000000-0000-4000-8000-000000000201` |
+| `NodeTypeId` | `60d8ba45-8b78-4593-838b-ffd15af69746` |
+| `Page` | Increases from 1 through 5 |
+| Response `pageSize` | 3 |
+| Response `totalCount` | 15 |
+| Response `hasNextPage` | `false` on page 5 |
+
+Other card-specific public/session requests are expected.
+
+### 4. Switch contribution tabs
+
+Switch to another type and back. Each tab starts its own scoped feed; children and page numbers must not leak across tabs. A tall viewport may fetch additional pages automatically, but each response still contains at most three items.
+
+**Test coverage:** The browser regression intercepts API responses to verify paging independently of SQL. This real-database seed walkthrough is a separate smoke check and still needs a local run after reseeding.
