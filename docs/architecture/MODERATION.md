@@ -1,39 +1,84 @@
 # Moderation boundary — PTT-101
 
-Visual companion: [Moderation Domain blackboard](../blackboards/workflows/Moderation/ModerationDomain.excalidraw)
-([editable Excalidraw source](../blackboards/workflows/Moderation/ModerationDomain.excalidraw)).
+Moderation handles reports about inappropriate or unlawful content while preserving room for disagreement. **Disagreeing with an idea is not, by itself, a policy violation.**
 
-Moderation owns reports, case status, public reason categories, human decisions, and decision rationales. It references a Node and Participant by ID; Graph and Participants retain ownership of those entities. The Console host applies hidden Node visibility to Discovery and Node views. This works for Nodes without Community membership. Disagreement with an idea alone is not a policy violation.
+Visual reference: [Moderation Domain blackboard](../blackboards/workflows/Moderation/ModerationDomain.excalidraw) (editable Excalidraw source).
 
-## First runnable workflow
+## At a glance
 
-**In short:** A member reports a node, a global moderator reviews it, and the node may be hidden or restored. A hidden node remains available to its author for editing.
+| Responsibility | Owner |
+|---|---|
+| Reports, case status, public reason categories, decisions, rationale | Moderation |
+| Node content, lifecycle, and authorship | Graph |
+| Public profiles | Participants |
+| Applying hidden-content display rules to Console/Discovery | Host and read workflows |
+| Global moderator eligibility | Identity authorization port |
 
-1. In **Discover nodes**, enter `P` followed by the displayed number (for example `P2`). Supply a short reason and optional explanation. A report stores the reporter ID, Node ID, reported title, time, and a pending status.
-2. Sign in with a confirmed, active account assigned the global GlobalModerator or Administrator Identity role. The main menu shows **Review Node reports** for an authorized account; queue and decision operations check current stored role membership again. See [Identity setup](../PTT-94-Identity.md). Public registration grants Member only; assigning a global role is controlled operator work.
-3. The queue groups pending reports by Node ID. A moderator opens a group to review all reports for that Node, including previous decisions, and can open the Node to investigate. One reasoned decision dismisses or hides the Node and closes every pending report in that group together. Hiding also requires a public category; the private rationale is stored separately. Each individual report and reviewer ID remains in `ModerationCaseRows`; final decisions cannot be overwritten.
-4. Discovery omits hidden Nodes. Console node tables and detail views display `[Hidden by moderator: <public category>]` in place of their title and description while keeping author, votes, reactions, type, and navigation to visible children. The public category is selected independently of the internal decision rationale. A dismissed report has no effect.
-5. The author can view the original title and description, edit them, and request review after an edit. An Atlas moderator can open the hidden Node from the review queue and view its current original title and description in a read-only view before deciding whether to restore it. The Node stays hidden until a moderator restores visibility from the review queue. Reports and decisions remain stored for history.
-6. A hidden Node cannot receive another report. The Console shows the report action as disabled, and Moderation rejects direct submissions until visibility is restored.
+Moderation references Nodes and Participants by ID. It works even for Nodes with no Community membership.
 
-## Web dashboard (PTT-158)
+## Report-to-review workflow
 
-The SvelteKit `/moderation` route is the global moderator dashboard. The shared layout shows its navigation only after the existing protected `GET /api/moderation/queue` policy check succeeds. Direct navigation is also guarded by the backend policy; hiding a link is not authorization.
+1. **Report a node.** In Console's **Discover nodes**, enter `P` and the displayed number (for example, `P2`). Supply a short reason and optional explanation. The case records reporter ID, Node ID, reported title, submission time, and pending status.
+2. **Open the moderator queue.** Sign in with a confirmed, active account carrying the stored GlobalModerator or Administrator role. The **Review Node reports** menu appears for an authorized account; reads and decisions check current role membership again. [Moderator provisioning](../PTT-94-Identity.md#trusted-moderator-provisioning-ptt-159) is operator-only.
+3. **Investigate reports as a group.** Pending reports are grouped by Node ID. A moderator can see all reports and previous decisions, then open the Node.
+4. **Decide.** One reasoned decision **dismisses** or **hides** the Node and closes all pending reports in the group. Hide also needs a *public reason category*; the *private rationale* is stored separately. Each report and reviewer stays recorded in `ModerationCaseRows`. Final decisions cannot be overwritten.
+5. **Show hidden content safely.** Discovery omits hidden Nodes. Console lists/details replace title and description with `[Hidden by moderator: <public category>]`, while retaining author, type, votes, reactions, and navigation to visible children. A dismissed report does not affect visibility.
+6. **Request a second review.** The author can still see the original title/description, edit, and request review after an edit. A moderator can inspect the current original content read-only before restoring visibility. Until restoration, the Node stays hidden. Reports and decisions remain in history.
 
-The dashboard groups reports by node, shows case history, and supports dismissing pending reports, hiding a node with a public reason and private rationale, and restoring a node after the author has edited it and requested review. The existing `apiRequest` transport supplies same-origin cookies and CSRF tokens for decisions. Loading, empty, forbidden, error and success states are displayed. Investigation links open the normal node page; they do not grant edit permission.
+**While hidden:** Console disables new reporting and Moderation also rejects direct report submissions. Existing votes/reactions can remain visible under the host's display rules, without allowing new hidden-content interactions.
 
-This first dashboard slice covers **node reports**, not comment reports. The existing moderation API has no comment-report queue/decision endpoints yet. Community-specific moderator roles remain a separate future capability. Provisioning is documented in [Identity setup](../PTT-94-Identity.md#provision-a-global-moderator-ptt-159).
+## Web moderation dashboard (PTT-158)
 
-## Ownership and limits
+The SvelteKit `/moderation` page provides the global node-report workflow.
 
-**Moderation controls visibility, not authorship.** Hiding a node does not archive it or transfer ownership.
+### Access control
 
-The hide action is Moderation-owned visibility, not a Graph archive or a change to the author's Node. The console host applies it to Discovery and its Node read views. Grouping by target ID lets future report types use the same queue pattern. Moderation cases are stored in SQL Server through `SqlModerationCaseRepository`. Grouped decisions, review requests and restoration save individual cases inside one shared operation transaction. Failure rolls back the whole group rather than leaving a partial decision. Competing decisions are covered by [SQL operation tests](../security/validation/IMPLEMENTATION.md#workflows-and-evidence). Moderation does not request the graph application lock; normal SQL locking and constraints still apply. The Console establishes the actor through Identity sign-in and disables arbitrary participant switching. Global role membership is supplied through the Moderation authorization port; moderation decisions remain domain-owned.
+- Navigation appears only after a successful protected `GET /api/moderation/queue` policy check.
+- Direct requests are also guarded by backend authorization. **A hidden navigation link is not a security boundary.**
+- Existing `apiRequest` transport handles same-origin cookies and CSRF tokens for decisions.
 
-This slice has a final decision record but does not yet have an append-only event ledger, evidence snapshots beyond the reported title, reporter/author notifications, appeals, account sanctions, or a complete policy taxonomy. Those require follow-up tasks. Community ownership and community moderators remain distinct from Atlas-wide report review. Operational system administrators handle deployments and repair, not routine moderation decisions.
+### Moderator actions
+
+- Review grouped reports and case history
+- Dismiss pending reports
+- Hide a Node with a public category and separate private rationale
+- Restore a Node after the author has edited and requested review
+- Open the normal Node page to investigate, without gaining edit ownership
+
+The dashboard distinguishes loading, empty, forbidden, error, and success states.
+
+**Current scope:** Node reports only. Comment-report queue and decision API endpoints are not present. Community moderator roles are a separate future feature.
+
+## Persistence and transaction rules
+
+**Moderation changes visibility, not authorship.** Hiding is not Graph archival and does not transfer Node ownership.
+
+`SqlModerationCaseRepository` stores individual cases in SQL Server. Decisions on grouped reports, review requests, and restoration use a shared operation transaction:
+
+- Either every affected case saves, or the whole operation rolls back.
+- Normal SQL locking and constraints handle competing decisions; Moderation does not take the Graph application lock.
+- [SQL operation tests](../security/validation/IMPLEMENTATION.md#workflows-and-evidence) cover competing decision paths.
+- The Console gets its actor through Identity sign-in, not arbitrary Participant switching.
+- Global roles come through the Moderation authorization port; the domain owns the final decision.
+
+Grouping by target ID leaves room for future report types.
+
+## What is not yet implemented?
+
+This slice has final decisions and stored case history. It does **not** yet have:
+
+- A complete append-only audit event ledger
+- Full report-time evidence snapshots beyond the reported title
+- Reporter/author notifications or appeals
+- Account sanctions or a full moderation policy taxonomy
+- Comment-report moderation workflow or community moderation roles
+
+See [proposed snapshot and audit migration](../Architecture/moderation-snapshots-migration.md). That document is a **future migration plan**, not a description of deployed storage.
+
+Operational system administrators handle deployments and repair, rather than ordinary content decisions.
 
 ## Future automated signals
 
-**Human review remains authoritative.** Automated checks may help triage reports, but they do not decide or enforce.
+**Human review stays authoritative.** Automated tools may help triage reports; they must not hide content or make final decisions.
 
-A future provider-neutral checker can return a provider and model/version, a category/severity, confidence, and timestamp for triage. It does not decide or enforce. Human moderators can reject false positives and continue reviewing when the provider fails. There is no automated provider in this slice.
+A future provider-neutral checker could report provider/model version, category, severity, confidence, and timestamp. Reviewers must be able to reject false positives and continue working when an external provider is unavailable. No automated checking provider exists in this slice.
