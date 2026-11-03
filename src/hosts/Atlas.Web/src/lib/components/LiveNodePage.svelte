@@ -443,7 +443,7 @@
             onNavigate={openNode}
             onTabChange={() => {}}
             onAddChild={() => {}}
-          ></NodePage>
+          >{#snippet children()}<p>Read-only moderation preview.</p>{/snippet}</NodePage>
           </div>
         {:else if hiddenPreviewError}
           <p role="alert">The full node preview could not be loaded. Try reloading this page.</p>
