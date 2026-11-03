@@ -91,7 +91,7 @@ public sealed class ModerationController(
         var totalCount = ordered.Count();
         return new
         {
-            items = ordered.Skip((int)Math.Min((long)(page - 1) * pageSize, int.MaxValue)).Take(pageSize).Select(x => new
+            items = ordered.Skip((int)Math.Min(((long)page - 1) * pageSize, int.MaxValue)).Take(pageSize).Select(x => new
             {
                 x.NodeId, x.ReportedTitle, count = x.PendingReports.Count, x.ReviewRequested
             }).ToArray(),
