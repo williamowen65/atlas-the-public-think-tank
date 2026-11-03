@@ -7,6 +7,8 @@ Moderation owns reports, case status, public reason categories, human decisions,
 
 ## First runnable workflow
 
+**In short:** A member reports a node, a global moderator reviews it, and the node may be hidden or restored. A hidden node remains available to its author for editing.
+
 1. In **Discover nodes**, enter `P` followed by the displayed number (for example `P2`). Supply a short reason and optional explanation. A report stores the reporter ID, Node ID, reported title, time, and a pending status.
 2. Sign in with a confirmed, active account assigned the global GlobalModerator or Administrator Identity role. The main menu shows **Review Node reports** for an authorized account; queue and decision operations check current stored role membership again. See [Identity setup](../PTT-94-Identity.md). Public registration grants Member only; assigning a global role is controlled operator work.
 3. The queue groups pending reports by Node ID. A moderator opens a group to review all reports for that Node, including previous decisions, and can open the Node to investigate. One reasoned decision dismisses or hides the Node and closes every pending report in that group together. Hiding also requires a public category; the private rationale is stored separately. Each individual report and reviewer ID remains in `ModerationCaseRows`; final decisions cannot be overwritten.
@@ -24,10 +26,14 @@ This first dashboard slice covers **node reports**, not comment reports. The exi
 
 ## Ownership and limits
 
+**Moderation controls visibility, not authorship.** Hiding a node does not archive it or transfer ownership.
+
 The hide action is Moderation-owned visibility, not a Graph archive or a change to the author's Node. The console host applies it to Discovery and its Node read views. Grouping by target ID lets future report types use the same queue pattern. Moderation cases are stored in SQL Server through `SqlModerationCaseRepository`. Grouped decisions, review requests and restoration save individual cases inside one shared operation transaction. Failure rolls back the whole group rather than leaving a partial decision. Competing decisions are covered by [SQL operation tests](../security/validation/IMPLEMENTATION.md#workflows-and-evidence). Moderation does not request the graph application lock; normal SQL locking and constraints still apply. The Console establishes the actor through Identity sign-in and disables arbitrary participant switching. Global role membership is supplied through the Moderation authorization port; moderation decisions remain domain-owned.
 
 This slice has a final decision record but does not yet have an append-only event ledger, evidence snapshots beyond the reported title, reporter/author notifications, appeals, account sanctions, or a complete policy taxonomy. Those require follow-up tasks. Community ownership and community moderators remain distinct from Atlas-wide report review. Operational system administrators handle deployments and repair, not routine moderation decisions.
 
 ## Future automated signals
+
+**Human review remains authoritative.** Automated checks may help triage reports, but they do not decide or enforce.
 
 A future provider-neutral checker can return a provider and model/version, a category/severity, confidence, and timestamp for triage. It does not decide or enforce. Human moderators can reject false positives and continue reviewing when the provider fails. There is no automated provider in this slice.
