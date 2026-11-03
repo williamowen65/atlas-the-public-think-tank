@@ -98,7 +98,115 @@ export const sessionApiGuard: Plugin = {
       const path = request.url.split('?')[0];
       const guid = '[0-9a-f-]{36}';
       const method = request.method ?? 'GET';
-      const readable = ['/atlas-session-api/communities/mine', '/atlas-session-api/communities/creation-allowance', '/atlas-session-api/nodes/mine'].includes(path)
+      // Authorized moderator/author reads must pass the development bridge. The API
+      // enforces GlobalModerator or author ownership; this guard only limits routes.
+      const privilegedDiscoveryReads = [
+        '/atlas-session-api/nodes/moderator',
+        '/atlas-session-api/search/moderator',
+        '/atlas-session-api/nodes/mine/hidden',
+      ].includes(path)
+        || new RegExp(`^/atlas-session-api/moderation/nodes/${guid}/noticeimport type { Plugin, ProxyOptions } from 'vite';
+import { lanOrigin } from './lanHttps';
+
+// Shared by the app's Vite server and Storybook's Vite server during development.
+// Guards decide whether requests may continue; ProxyOptions configure forwarding.
+// Neither supplies production routing. Atlas.Api still enforces auth and CSRF.
+
+/** Development-only public reader; never forwards Atlas sessions or accepts writes. */
+export const publicApiGuard: Plugin = {
+  name: 'atlas-public-api-guard',
+  configureServer(server) {
+    server.middlewares.use((request, response, next) => {
+      // Not our path: let the session guard or another middleware handle it.
+      if (!request.url?.startsWith('/atlas-public-api')) return next();
+      if (request.method !== 'GET') {
+        response.statusCode = 405;
+        response.setHeader('Allow', 'GET');
+        response.end('The public API only supports anonymous reads.');
+        return;
+      }
+      if (!/^\/atlas-public-api\/communities\/node\/[0-9a-f-]{36}(?:\?|$)/i.test(request.url)
+        && !/^\/atlas-public-api\/communities(?:\/([0-9a-f-]{36})(?:\/nodes)?|\/participant\/[0-9a-f-]{36})?(?:\?|$)/i.test(request.url)
+        && !/^\/atlas-public-api\/participants(?:\?(?:[^#]*)|\/([0-9a-f-]{36})(?:\?.*)?|$)/i.test(request.url)
+        && !/^\/atlas-public-api\/(?:nodes|search)(?:\?|$)/.test(request.url)
+       
+        && !/^\/atlas-public-api\/catalog\/node-types(?:\?|$)/.test(request.url)
+       
+        && !/^\/atlas-public-api\/nodes\/[0-9a-f-]{36}\/comments\/[0-9a-f-]{36}\/path(?:\?|$)/i.test(request.url)
+        && !/^\/atlas-public-api\/nodes\/[0-9a-f-]{36}(?:\/(?:ancestors|parents|reactions|description|comments))?(?:\?|$)/i.test(request.url)) {
+        response.statusCode = 404;
+        response.end('Only allowlisted public reads are available through this API.');
+        return;
+      }
+      // Allowed: continue through middleware to Vite’s matching proxy.
+      next();
+    });
+  },
+};
+
+// Called at startup: returns forwarding settings, rather than sending a request.
+export function publicApiProxy(): ProxyOptions {
+  const target = process.env.ATLAS_STORYBOOK_API_URL ?? 'https://localhost:7240';
+  const url = new URL(target);
+  if (!['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) || !['http:', 'https:'].includes(url.protocol)) {
+    throw new Error('ATLAS_STORYBOOK_API_URL must be a local HTTP(S) origin.');
+  }
+  if (url.username || url.password || url.pathname !== '/' || url.search || url.hash) {
+    throw new Error('ATLAS_STORYBOOK_API_URL must contain only the local origin.');
+  }
+  return {
+    target: url.origin,
+    changeOrigin: true,
+    // Accept the local ASP.NET development certificate; this proxy is dev-only.
+    secure: false,
+    // The browser calls this dev server; Vite forwards to the API’s /api path.
+    rewrite: path => path.replace(/^\/atlas-public-api/, '/api'),
+    configure(proxy) {
+      proxy.on('proxyReq', request => {
+        request.removeHeader('cookie');
+        request.removeHeader('authorization');
+      });
+      proxy.on('proxyRes', response => { delete response.headers['set-cookie']; });
+    },
+  };
+}
+
+/** Development-only session bridge for authentication and allowlisted reads and writes. */
+export const sessionApiGuard: Plugin = {
+  name: 'atlas-session-api-guard',
+  configureServer(server) {
+    // Capture startup configuration. Vite owns TLS termination; middleware socket
+    // wrappers need not expose TLSSocket.encrypted consistently.
+    const lan = lanOrigin();
+    const httpsEnabled = !!server.config.server.https;
+    server.middlewares.use((request, response, next) => {
+      // Ignore unrelated paths; an unmatched path is not a failed rule check.
+      if (!request.url?.startsWith('/atlas-session-api')) return next();
+      // 1. Restrict this session-aware development bridge to loopback hosts.
+      // HTTP/2 uses :authority in place of the HTTP/1.1 Host header.
+      // Reuse the resolved authority below for exact-host and same-origin checks.
+      const authority = request.headers.host ?? request.headers[':authority'];
+      const host = typeof authority === 'string' ? authority : '';
+      const hostname = host.replace(/:\d+$/, '');
+      const lanRequest = !!lan && host === lan.host && httpsEnabled;
+      if (!['localhost', '127.0.0.1', '[::1]'].includes(hostname) && !lanRequest) {
+        response.statusCode = 403;
+        response.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        response.end([
+          'The session API requires a loopback host or the configured LAN HTTPS origin.',
+          `Received Host: ${host || '(missing)'}`,
+          `Configured LAN Host: ${lan?.host ?? '(LAN mode disabled)'}`,
+          `Vite HTTPS enabled: ${httpsEnabled}`,
+          `Request authority: ${request.headers[':authority'] ?? '(not supplied)'}`,
+        ].join('\n'));
+        return;
+      }
+      // 2. Match only the explicitly supported paths and HTTP methods below.
+      const path = request.url.split('?')[0];
+      const guid = '[0-9a-f-]{36}';
+      const method = request.method ?? 'GET';
+, 'i').test(path);
+      const readable = privilegedDiscoveryReads || ['/atlas-session-api/communities/mine', '/atlas-session-api/communities/creation-allowance', '/atlas-session-api/nodes/mine'].includes(path)
         || new RegExp(`^/atlas-session-api/nodes/${guid}(?:/description)?$`, 'i').test(path)
         || new RegExp(`^/atlas-session-api/nodes/${guid}/(?:votes|reactions)$`, 'i').test(path)
         || new RegExp(`^/atlas-session-api/comments/${guid}/votes$`, 'i').test(path)
