@@ -83,6 +83,8 @@
    * User-facing failure message; empty text hides the error and retry controls.
    */
   let error = $state('');
+  /** Only failed session checks should offer a session-connection retry. */
+  let sessionCheckFailed = $state(false);
   /**
    * Email entered in the login or registration form; retained when switching modes.
    */
@@ -106,6 +108,8 @@
    * instructions.
    */
   let registered = $state(false);
+  /** Show a neutral confirmation-resend message without revealing account existence. */
+  let resendNotice = $state('');
   /**
    * Sequence number for refresh calls, not a login/logout count. Each refresh increments it
    * so older checks cannot overwrite a newer check’s result.
@@ -130,6 +134,7 @@
    */
   async function refresh() {
     error = '';
+    sessionCheckFailed = false;
     // Capture this check’s number. A later refresh changes refreshSequence, making this one stale.
     const current = ++refreshSequence;
     try {
@@ -154,8 +159,10 @@
         participantId = null;
         onSession?.(null);
         // Connection failures, timeouts and other HTTP errors need a visible retry message.
-        if (!(cause instanceof ApiRequestError) || cause.status !== 401)
-          error = 'Sign-in is unavailable. Start the local API and retry.';
+        if (!(cause instanceof ApiRequestError) || cause.status !== 401) {
+          sessionCheckFailed = true;
+          error = 'Unable to check your session. Verify the local API is running, then retry.';
+        }
       }
     } finally {
       // An older request must not dismiss the initial loading message for a newer check.
@@ -203,6 +210,7 @@
     if (busy) return;
     busy = true;
     error = '';
+    sessionCheckFailed = false;
     try {
       await apiRequest(
         sessionBase,
@@ -251,18 +259,39 @@
         { email, password, displayName },
         AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]),
       );
-      // Show confirmation instructions rather than treating registration as a login.
+      // Replace the registration form with next-step instructions for this page visit.
+      // This state is intentionally not persisted; refreshing restores the form.
       registered = true;
-      registering = false;
     } catch (cause) {
-      // Mail delivery being unavailable needs different guidance from rejected form data.
-      error =
-        cause instanceof ApiRequestError && cause.status === 503
+      // Keep errors generic for account privacy; distinguish HTTP failures from connectivity.
+      if (cause instanceof ApiRequestError) {
+        error = cause.status === 503
           ? 'Registration requires local email delivery to be configured.'
-          : 'Registration was not completed. Check your information and try again.';
+          : cause.status === 400
+            ? 'Registration was rejected (HTTP 400). Check your information; if it persists, inspect the API response.'
+            : `Registration failed (HTTP ${cause.status}). Please try again.`;
+      } else {
+        error = 'Unable to reach the registration service. Check the connection and try again.';
+      }
     } finally {
       // Discard the secret on both success and failure; allow another submission.
       password = '';
+      busy = false;
+    }
+  }
+  /** Request another confirmation message; the API responds identically for unknown accounts. */
+  async function resendConfirmation() {
+    if (busy || !email.trim()) return;
+    busy = true;
+    error = '';
+    resendNotice = '';
+    try {
+      await apiRequest(sessionBase, 'auth/resend-confirmation', 'POST', { email },
+        AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]));
+      resendNotice = 'If this address has an account awaiting confirmation, confirmation instructions have been sent through the configured delivery workflow.';
+    } catch {
+      error = 'Could not process the confirmation request. Please try again.';
+    } finally {
       busy = false;
     }
   }
@@ -322,13 +351,18 @@
     </div>
   {/if}
   {#if error}<p role="alert">{error}</p>
-    <button onclick={() => void refresh()} disabled={busy}>Retry sign-in connection</button>{/if}
+    {#if sessionCheckFailed}<button onclick={() => void refresh()} disabled={busy}>Retry session check</button>{/if}{/if}
 </div>
 
 {#snippet signInForm()}
-{#if registered}<p role="status">
-          Account created. Confirm your email through the development email workflow, then sign in.
-        </p>{/if}
+{#if registered}
+  <div role="status" class="registration-complete">
+    <h2>Account created</h2>
+    <p>Confirm your email address before signing in. In local development, use the development email confirmation workflow.</p>
+    <button type="button" disabled={busy} onclick={() => void resendConfirmation()}>Resend confirmation instructions</button>
+    {#if resendNotice}<p role="status">{resendNotice}</p>{/if}
+  </div>
+{:else}
       <form
         aria-label={registering ? 'Create an Atlas account' : 'Sign in to Atlas'}
         onsubmit={(event) => {
@@ -366,6 +400,10 @@
           disabled={busy}
         />
       </form>
+      {#if !registering}
+        <button type="button" class="switch-mode" disabled={busy || !email.trim()} onclick={() => void resendConfirmation()}>Resend confirmation instructions</button>
+        {#if resendNotice}<p role="status">{resendNotice}</p>{/if}
+      {/if}
       <button
         type="button"
         class="switch-mode"
@@ -377,7 +415,7 @@
           ? 'Already have an account? Sign in'
           : 'New to Atlas? Create an account'}</button
       >
-
+{/if}
 {/snippet}
 
 <style lang="scss">

@@ -13,7 +13,7 @@ public sealed class DiscoveryMixedSearchTests
         using var db = new AtlasDataContext(new DbContextOptionsBuilder<AtlasDataContext>()
             .UseSqlServer("Server=localhost;Database=TranslationOnly;User Id=sa;Password=unused;").Options);
         var build = typeof(SqlPublicSearch).GetMethod("BuildHits", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
-        var query = (IQueryable)build.Invoke(null, [db, new DiscoveryQuery(SearchText: "salmon", MinimumVoteCount: 1), "all"])!;
+        var query = (IQueryable)build.Invoke(null, [db, new DiscoveryQuery(SearchText: "salmon", MinimumVoteCount: 1), "all", false])!;
         var sql = query.ToQueryString();
         StringAssert.Contains(sql, "FREETEXTTABLE(dbo.SearchDocuments");
         Assert.IsFalse(sql.Contains("FREETEXTTABLE(dbo.CommentRows", StringComparison.Ordinal));
@@ -22,7 +22,7 @@ public sealed class DiscoveryMixedSearchTests
         StringAssert.Contains(sql, "ABS(");
         StringAssert.Contains(sql, "VoteRows");
         StringAssert.Contains(sql, "CommentRows");
-        var withoutText = (IQueryable)build.Invoke(null, [db, new DiscoveryQuery(), "comments"])!;
+        var withoutText = (IQueryable)build.Invoke(null, [db, new DiscoveryQuery(), "comments", false])!;
         Assert.IsFalse(withoutText.ToQueryString().Contains("FREETEXTTABLE", StringComparison.Ordinal));
     }
 
@@ -36,7 +36,7 @@ public sealed class DiscoveryMixedSearchTests
         var build = typeof(SqlPublicSearch).GetMethod("BuildHits", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
         foreach (var weight in new[] { 0, 40, 100 })
         {
-            var query = (IQueryable)build.Invoke(null, [db, new DiscoveryQuery(SearchText: "testing", VotingWeight: weight), "all"])!;
+            var query = (IQueryable)build.Invoke(null, [db, new DiscoveryQuery(SearchText: "testing", VotingWeight: weight), "all", false])!;
             var sql = query.ToQueryString();
             StringAssert.Contains(sql, "LOG(");
             StringAssert.Contains(sql, "ORDER BY");
@@ -106,6 +106,15 @@ public sealed class DiscoveryMixedSearchTests
         var first = search.Search(new(SearchText: "salmon"));
         var second = search.Search(new(SearchText: "salmon", Page: 2));
         var third = search.Search(new(SearchText: "salmon", Page: 3));
+        // Moderator search uses the same mixed ranking, but includes the hidden node and
+        // its comments; the public search must remain redacted.
+        var moderator = search.SearchModerator(new(SearchText: "salmon"), "all");
+        Assert.IsTrue(moderator.TotalCount > first.TotalCount);
+        Assert.IsTrue(moderator.Items.Concat(search.SearchModerator(new(SearchText: "salmon", Page: 2)).Items)
+            .Concat(search.SearchModerator(new(SearchText: "salmon", Page: 3)).Items)
+            .Concat(search.SearchModerator(new(SearchText: "salmon", Page: 4)).Items)
+            .Any(item => item.NodeId == hidden.NodeId && item.Card?.IsHidden == true
+                && item.Card.Title == hidden.Title));
         Assert.AreEqual(8, first.TotalCount);
         Assert.AreEqual(3, first.Items.Count);
         Assert.IsTrue(first.HasNextPage); Assert.IsFalse(third.HasNextPage);

@@ -19,13 +19,14 @@ public sealed class SqlDiscoveryReadQuery(
     DiscoveryCache? cache = null)
     : IDiscoveryReadQuery, IDiscoveryAuthorListing, IDiscoveryPersonalVotes
 {
+    public DiscoveryPage DiscoverModeratorPage(DiscoveryQuery query) => Read(query, null, true, true);
     /// <summary>Returns a public page, excluding nodes hidden by moderation.</summary>
     public DiscoveryPage DiscoverPage(DiscoveryQuery query) => Read(query, null, true);
     /// <summary>Returns a page restricted to supplied authored IDs, including hidden placeholders.</summary>
     public DiscoveryPage DiscoverAuthoredPage(DiscoveryQuery query, IReadOnlyCollection<Guid> authoredNodeIds)
     {
         ArgumentNullException.ThrowIfNull(authoredNodeIds);
-        return Read(query, authoredNodeIds, true, true);
+        return Read(query, authoredNodeIds, true, true, authorListing: true);
     }
     /// <summary>Returns all matching public results for the unpaged contract; Console uses pages.</summary>
     public IReadOnlyList<RankedDiscoveryItem> Discover(DiscoveryQuery query) => Read(query, null, false).Items;
@@ -33,7 +34,7 @@ public sealed class SqlDiscoveryReadQuery(
     public IReadOnlyList<RankedDiscoveryItem> DiscoverAuthored(DiscoveryQuery query, IReadOnlyCollection<Guid> authoredNodeIds)
     {
         ArgumentNullException.ThrowIfNull(authoredNodeIds);
-        return Read(query, authoredNodeIds, false, true).Items;
+        return Read(query, authoredNodeIds, false, true, authorListing: true).Items;
     }
 
     /// <summary>Filters an authored page in SQL without first loading all of the author’s nodes.</summary>
@@ -46,8 +47,8 @@ public sealed class SqlDiscoveryReadQuery(
         }
         // Intersect a requested author filter rather than silently replacing it.
         if (query.AuthorParticipantId is { } requested && requested != authorParticipantId)
-            return Read(query, [], true, true);
-        return Read(query with { AuthorParticipantId = authorParticipantId }, null, true, true);
+            return Read(query, [], true, true, authorListing: true);
+        return Read(query with { AuthorParticipantId = authorParticipantId }, null, true, true, authorListing: true);
     }
 
     // This is a lock object, not a cache. Without an injected cache, this instance
@@ -55,11 +56,11 @@ public sealed class SqlDiscoveryReadQuery(
     private readonly object _uncachedGate = new();
 
     /// <summary>Resolves ranked results and public cards against one committed database view.</summary>
-    private DiscoveryPage Read(DiscoveryQuery query, IReadOnlyCollection<Guid>? authoredIds, bool paged, bool includeHidden = false)
+    private DiscoveryPage Read(DiscoveryQuery query, IReadOnlyCollection<Guid>? authoredIds, bool paged, bool includeHidden = false, bool authorListing = false)
     {
         try
         {
-            return ReadCore(query, authoredIds, paged, includeHidden);
+            return ReadCore(query, authoredIds, paged, includeHidden, authorListing);
         }
         catch (SqlException error) when (!string.IsNullOrWhiteSpace(query?.SearchText))
         {
@@ -69,7 +70,7 @@ public sealed class SqlDiscoveryReadQuery(
         }
     }
 
-    private DiscoveryPage ReadCore(DiscoveryQuery query, IReadOnlyCollection<Guid>? authoredIds, bool paged, bool includeHidden)
+    private DiscoveryPage ReadCore(DiscoveryQuery query, IReadOnlyCollection<Guid>? authoredIds, bool paged, bool includeHidden, bool authorListing)
     {
         // 1. Validate and normalize the request before touching the database/cache.
         ArgumentNullException.ThrowIfNull(query);
@@ -132,7 +133,8 @@ public sealed class SqlDiscoveryReadQuery(
                 // 6. Build deferred EF query expressions, then execute count and page.
                 // Count and page use the same filter predicates. The count includes all
                 // matches; OFFSET/FETCH limits only the ranked rows returned to the host.
-                var filtered = DiscoveryEfQuery.Build(db, query, authoredIds, includeHidden);
+                var filtered = DiscoveryEfQuery.Build(db, query, authoredIds,
+                    includeHidden && !(authorListing && query.SearchText is not null));
                 // Build returns IQueryable: no candidates have been enumerated yet.
                 // TagWith adds a SQL comment for identifying this statement in plans/logs.
                 // Count executes a database aggregate, not an in-memory list count.
@@ -183,9 +185,10 @@ public sealed class SqlDiscoveryReadQuery(
             // A page hit does not imply a card hit: the two layers have separate revisions.
             // Collect missing IDs before ReadCards' fixed metadata/summary batches,
             // avoiding a query per node. With no cache, every selected ID is missing here.
+            var moderatorVisible = query.IncludeHidden && includeHidden;
             foreach (var item in page.Items)
             {
-                if (cache is not null && cache.TryDetail(revision.DetailVersion, item.NodeId, out var card))
+                if (cache is not null && cache.TryDetail(revision.DetailVersion, item.NodeId, moderatorVisible, out var card))
                 {
                     cards.Add(item.NodeId, card);
                 }
@@ -198,7 +201,7 @@ public sealed class SqlDiscoveryReadQuery(
             // 8. Load only missing cards. ReadCards uses one EF metadata batch and one
             // SQL summary batch plus up to three bounded EF breadcrumb hops.
             // An empty missing list returns without any card query.
-            var loaded = ReadCards(db, missing.ToArray());
+            var loaded = ReadCards(db, missing.ToArray(), moderatorVisible);
             foreach (var card in loaded.Values)
             {
                 cards[card.NodeId] = card;
@@ -216,7 +219,7 @@ public sealed class SqlDiscoveryReadQuery(
             }
             foreach (var card in loaded.Values)
             {
-                cache?.PutDetail(revision.DetailVersion, card);
+                cache?.PutDetail(revision.DetailVersion, card, moderatorVisible);
             }
 
             // 10. Return a copy with its public cards attached. Cached ranked pages remain
@@ -244,7 +247,7 @@ public sealed class SqlDiscoveryReadQuery(
     }
 
     /// <summary>Loads missing display cards using fixed EF metadata and SQL summary batches.</summary>
-    internal static Dictionary<Guid, DiscoveryCard> ReadCards(AtlasDataContext db, Guid[] ids)
+    internal static Dictionary<Guid, DiscoveryCard> ReadCards(AtlasDataContext db, Guid[] ids, bool showHidden = false)
     {
         if (ids.Length == 0)
         {
@@ -276,7 +279,8 @@ public sealed class SqlDiscoveryReadQuery(
         var sql = ReadResource("DiscoveryCards.sql");
         var rows = db.Database.SqlQueryRaw<CardRow>(
             sql,
-            new SqlParameter("@ids", JsonSerializer.Serialize(ids)))
+            new SqlParameter("@ids", JsonSerializer.Serialize(ids)),
+            new SqlParameter("@showHidden", SqlDbType.Bit) { Value = showHidden })
             .ToList();
         var breadcrumbs = DiscoveryBreadcrumbReader.ReadFirstPages(db, ids);
         return rows.ToDictionary(
@@ -296,9 +300,9 @@ public sealed class SqlDiscoveryReadQuery(
                 metadata[row.NodeId].CommentCount,
                 row.IsHidden)
             {
-                AuthorId = row.IsHidden ? null : metadata[row.NodeId].AuthorId,
-                ShortDescription = row.IsHidden ? row.Description : metadata[row.NodeId].ShortDescription,
-                ChildTypes = row.IsHidden ? Array.Empty<DiscoveryChildType>() : ReadChildTypes(row.SubNodes),
+                AuthorId = row.IsHidden && !showHidden ? null : metadata[row.NodeId].AuthorId,
+                ShortDescription = row.IsHidden && !showHidden ? row.Description : metadata[row.NodeId].ShortDescription,
+                ChildTypes = row.IsHidden && !showHidden ? Array.Empty<DiscoveryChildType>() : ReadChildTypes(row.SubNodes),
                 BreadcrumbSegment = breadcrumbs[row.NodeId]
             });
     }

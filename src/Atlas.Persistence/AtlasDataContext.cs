@@ -30,6 +30,8 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
     public DbSet<CommunityNodeRow> CommunityNodeRows => Set<CommunityNodeRow>();
     public DbSet<CommentRow> CommentRows => Set<CommentRow>();
     public DbSet<ModerationCaseRow> ModerationCaseRows => Set<ModerationCaseRow>();
+    public DbSet<ModerationReportedSnapshotRow> ModerationReportedSnapshotRows => Set<ModerationReportedSnapshotRow>();
+    public DbSet<ModerationAuditEventRow> ModerationAuditEventRows => Set<ModerationAuditEventRow>();
     public DbSet<NotificationRow> NotificationRows => Set<NotificationRow>();
     public DbSet<NotificationPreferencesRow> NotificationPreferencesRows => Set<NotificationPreferencesRow>();
 
@@ -578,6 +580,27 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
                 .IsRequired();
             entity.Property<DateTimeOffset?>("RemovedAt")
                 .HasColumnType("datetimeoffset");
+        });
+        model.Entity<ModerationReportedSnapshotRow>(entity =>
+        {
+            entity.ToTable("ModerationReportedSnapshotRows");
+            entity.HasKey(row => row.ModerationCaseId);
+            entity.Property(row => row.Title).HasMaxLength(500);
+            entity.Property(row => row.ContentJson).HasColumnType("nvarchar(max)");
+            entity.HasIndex(row => row.NodeId);
+            entity.HasOne<ModerationCaseRow>().WithOne()
+                .HasForeignKey<ModerationReportedSnapshotRow>(row => row.ModerationCaseId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+        model.Entity<ModerationAuditEventRow>(entity =>
+        {
+            entity.ToTable("ModerationAuditEventRows");
+            entity.HasKey(row => row.Id);
+            entity.Property(row => row.EventKind).HasMaxLength(80);
+            entity.HasIndex(row => new { row.NodeId, row.OccurredAt });
+            entity.HasOne<ModerationCaseRow>().WithMany()
+                .HasForeignKey(row => row.ModerationCaseId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
         model.Entity<ModerationCaseRow>(entity =>
         {

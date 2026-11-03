@@ -181,6 +181,7 @@ export async function readDiscovery(
   nodeId?: string,
   filters?: DiscoveryFilters,
   mixedSearch = false,
+  includeModeratorHidden = false,
 ): Promise<DiscoveryPage> {
   // Map the UI filter names to the backend contract. Omitted bounds are not sent.
   const query = new URLSearchParams({ Page: String(page) });
@@ -205,9 +206,14 @@ export async function readDiscovery(
   if (mixedSearch && filters?.votingWeight !== undefined) query.set('VotingWeight', String(filters.votingWeight));
   if (mixedSearch && filters?.scope) query.set('scope', filters.scope);
   if (search.trim()) query.set('SearchText', search.trim());
-  const response = await fetch(`${base}/${mixedSearch ? 'search' : 'nodes'}?${query}`, {
+  if (includeModeratorHidden) query.set('IncludeHidden', 'true');
+  const endpoint = includeModeratorHidden
+    ? (mixedSearch ? 'search/moderator' : 'nodes/moderator')
+    : mixedSearch ? 'search' : 'nodes';
+  const requestBase = includeModeratorHidden ? '/atlas-session-api' : base;
+  const response = await fetch(`${requestBase}/${endpoint}?${query}`, {
     method: 'GET',
-    credentials: 'omit',
+    credentials: includeModeratorHidden ? 'include' : 'omit',
     signal,
   });
   if (!response.ok) {
@@ -234,13 +240,14 @@ export async function readDiscovery(
  * Discovery strings remain display text; do not invent structured links or reaction counts.
 
  */
-export function discoveryCard(item: DiscoveryItem): NodeCardData | null {
+export function discoveryCard(item: DiscoveryItem, allowHidden = false): NodeCardData | null {
   const card = item.card;
-  if (!card || card.isHidden) return null;
+  if (!card || (card.isHidden && !allowHidden)) return null;
   // Reverse nearest-first ancestors for oldest-first display. Formatted summaries
   // remain text; structured links/counts come only from structured API fields.
   return {
     id: item.nodeId,
+    isHidden: card.isHidden,
     title: card.title,
     typeName: card.typeName,
     authorName: card.authorName,
@@ -279,7 +286,7 @@ export async function readOlderAncestors(
   base = '/atlas-public-api',
 ): Promise<BreadcrumbPage> {
   const response = await fetch(`${base}/nodes/${encodeURIComponent(id)}/ancestors`, {
-    credentials: 'omit',
+    credentials: base === '/atlas-session-api' ? 'same-origin' : 'omit',
     signal,
   });
   if (!response.ok) throw new Error(`Could not load older ancestors (HTTP ${response.status}).`);

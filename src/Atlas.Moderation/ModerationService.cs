@@ -140,6 +140,15 @@ public sealed class ModerationService
             );
     }
 
+    /// <summary>Private decision details for the author and authorized moderators only.</summary>
+    public IReadOnlyList<ModerationCase> HiddenDecisionDetails(Guid actorId, Guid authorId, Guid nodeId)
+    {
+        if (!CanViewHiddenOriginal(actorId, authorId, nodeId))
+            throw new UnauthorizedAccessException("Hidden moderation details are private.");
+        return _cases.GetAll().Where(report => report.NodeId == nodeId && report.IsHidden)
+            .OrderByDescending(report => report.DecidedAt).ToList();
+    }
+
     public bool CanViewHiddenOriginal(
         Guid actorId,
         Guid authorId,

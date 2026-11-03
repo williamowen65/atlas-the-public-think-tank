@@ -26,6 +26,12 @@ public sealed class DiscoveryService : IDiscoveryService, IDiscoveryAuthorListin
     public IReadOnlyDictionary<Guid, int> ReadParticipantVotes(Guid participantId, IReadOnlyCollection<Guid> nodeIds) =>
         _query is IDiscoveryPersonalVotes votes ? votes.ReadParticipantVotes(participantId, nodeIds) : new Dictionary<Guid, int>();
 
+    public DiscoveryPage DiscoverModeratorPage(DiscoveryQuery query)
+    {
+        Validate(query);
+        return _query.DiscoverModeratorPage(query);
+    }
+
     /// <summary>Validates and requests one public result page.</summary>
     public DiscoveryPage DiscoverPage(DiscoveryQuery query)
     {

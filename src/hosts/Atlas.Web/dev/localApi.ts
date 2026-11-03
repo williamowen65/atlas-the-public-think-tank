@@ -98,14 +98,30 @@ export const sessionApiGuard: Plugin = {
       const path = request.url.split('?')[0];
       const guid = '[0-9a-f-]{36}';
       const method = request.method ?? 'GET';
-      const readable = ['/atlas-session-api/communities/mine', '/atlas-session-api/communities/creation-allowance'].includes(path)
+      // MAINTENANCE: Keep this allowlist syntactically complete when adding routes.
+      // A malformed template literal or truncated expression here prevents Vite from
+      // starting, often with a misleading parse error earlier in this file.
+      // After editing, run: npx esbuild dev/localApi.ts --bundle --platform=node --packages=external --outfile=localApi-check.js
+      // Then run: npm run check (and delete the temporary output).
+      // The proxy only forwards these reads; ASP.NET Core still authorizes them.
+      const privilegedDiscoveryReads = [
+        '/atlas-session-api/nodes/moderator',
+        '/atlas-session-api/search/moderator',
+        '/atlas-session-api/nodes/mine/hidden',
+      ].includes(path)
+        || (path.startsWith('/atlas-session-api/moderation/nodes/') && path.endsWith('/notice') && new RegExp('^/atlas-session-api/moderation/nodes/' + guid + '/notice').test(path));
+      const readable = privilegedDiscoveryReads || ['/atlas-session-api/communities/mine', '/atlas-session-api/communities/creation-allowance', '/atlas-session-api/nodes/mine'].includes(path)
+        || new RegExp(`^/atlas-session-api/nodes/${guid}(?:/description|/parents|/ancestors)?$`, 'i').test(path)
         || new RegExp(`^/atlas-session-api/nodes/${guid}/(?:votes|reactions)$`, 'i').test(path)
         || new RegExp(`^/atlas-session-api/comments/${guid}/votes$`, 'i').test(path)
         || /^\/atlas-session-api\/auth\/(csrf|session)$/.test(path)
+        || path === '/atlas-session-api/moderation/queue'
+        || new RegExp(`^/atlas-session-api/moderation/nodes/${guid}/(?:history|revisions)$`, 'i').test(path)
         || new RegExp(`^/atlas-session-api/participants/${guid}$`, 'i').test(path);
 
       // Permitted writes, grouped by feature. Login/register can be anonymous.
       const nodeEdit = method === 'PUT' && new RegExp(`^/atlas-session-api/nodes/${guid}/(?:title|short-description)$`, 'i').test(path);
+      const blockAdd = method === 'POST' && new RegExp(`^/atlas-session-api/nodes/${guid}/description/blocks$`, 'i').test(path);
       const blockEdit = method === 'PUT' && new RegExp(`^/atlas-session-api/nodes/${guid}/description/blocks/${guid}$`, 'i').test(path);
       const profileEdit = method === 'PUT' && path === '/atlas-session-api/participants/me';
       const commentVote = ['PUT', 'DELETE'].includes(method) && new RegExp(`^/atlas-session-api/comments/${guid}/vote$`, 'i').test(path);
@@ -116,9 +132,12 @@ export const sessionApiGuard: Plugin = {
         || (method === 'PUT' && new RegExp(`^/atlas-session-api/communities/${guid}/(?:membership|name|description|nodes/${guid})$`, 'i').test(path))
         || (method === 'DELETE' && new RegExp(`^/atlas-session-api/communities/${guid}/(?:membership|nodes/${guid})$`, 'i').test(path));
 
-      // Combine feature writes with creation, authentication and comment operations.
-      const writable = nodeEdit || blockEdit || communityWrite || profileEdit || commentVote || nodeVote || reactionVote || undoReaction
-        || method === 'POST' && (['/atlas-session-api/nodes', '/atlas-session-api/catalog/node-types', '/atlas-session-api/auth/register'].includes(path) || /^\/atlas-session-api\/auth\/(login|logout)$/.test(path)
+      // Explicitly forward moderation writes; authorization and CSRF remain in the API.
+      const moderationWrite = method === 'POST'
+        && new RegExp(`^/atlas-session-api/moderation/nodes/${guid}/(?:reports|review|decision|restore)$`, 'i').test(path);
+
+      const writable = nodeEdit || blockAdd || blockEdit || moderationWrite || communityWrite || profileEdit || commentVote || nodeVote || reactionVote || undoReaction
+        || method === 'POST' && (['/atlas-session-api/nodes', '/atlas-session-api/catalog/node-types', '/atlas-session-api/auth/register'].includes(path) || /^\/atlas-session-api\/auth\/(login|logout|resend-confirmation)$/.test(path)
         || new RegExp(`^/atlas-session-api/nodes/${guid}/comments$`, 'i').test(path)
         || new RegExp(`^/atlas-session-api/comments/${guid}/replies$`, 'i').test(path))
         || ['PUT', 'DELETE'].includes(method) && new RegExp(`^/atlas-session-api/comments/${guid}$`, 'i').test(path);

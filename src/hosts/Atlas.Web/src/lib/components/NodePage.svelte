@@ -59,6 +59,7 @@
     voting,
     reactions,
     scrollToDiscussionTabs = false,
+    inspectionOnly = false,
     node,
     blocks,
     types,
@@ -89,6 +90,8 @@
      * viewport top where the natural page height allows; never adds space just to reach the target.
      */
     scrollToDiscussionTabs?: boolean;
+    /** Render the normal node presentation without editing, voting, or discussion controls. */
+    inspectionOnly?: boolean;
     /**
      * Display model for the node header, breadcrumb, status, community and contribution summaries.
      * NodeCardData describes its fields; fetching belongs to the parent.
@@ -267,7 +270,7 @@
 -->
 
 <article class="node-page atlas-panel">
-    <NodeEditControl
+    {#if !inspectionOnly}<NodeEditControl
       corner
       nodeId={node.id}
       authorId={node.authorId}
@@ -276,7 +279,7 @@
         node = { ...node, title: update.title, description: update.shortDescription };
         blocks = update.blocks;
       }}
-    />
+    />{/if}
   {#if node.breadcrumb.length}<div class="ribbon-context">
       <Breadcrumb
         items={node.breadcrumb}
@@ -322,7 +325,7 @@
   -->
   <div class="post-body">
     <div class="introduction">
-    <aside class="dial" aria-label="Importance rating">
+    {#if !inspectionOnly}<aside class="dial" aria-label="Importance rating">
       <!-- A supplied voting snippet owns its behavior (LiveNodePage supplies LiveVotingDial).
            Without one, show totals with an always-disabled VotingDial: there is no save handler.
            The bare disabled attribute below means disabled={true}, regardless of archive status. -->
@@ -332,11 +335,12 @@
           {totalVotes}
           disabled
         />{/if}
-    </aside>
+    </aside>{/if}
     <p class="description">{node.description}</p>
     </div>
     <ContentBlocks {blocks} />
   </div>
+  {#if !inspectionOnly}
   {#if reactions}<div class="reaction-controls">{@render reactions()}</div>{:else if node.reactions.length}<div
       class="reactions"
       role="group"
@@ -347,7 +351,8 @@
         >{/each}
     </div>{/if}
   <!-- Keeps the Add action with the discussion tab strip, above the selected panel. -->
-  <div class="discussion-toolbar">
+  {/if}
+  {#if !inspectionOnly}<div class="discussion-toolbar">
     <div class="add">
       <button
         onclick={() => onAddChild(active === 'comments' ? undefined : active)}
@@ -386,6 +391,7 @@
   >
     {@render children()}
   </div>
+{/if}
 </article>
 
 <style lang="scss">

@@ -73,6 +73,8 @@ namespace Atlas.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("BlockRows", (string)null);
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
             modelBuilder.Entity("Atlas.Persistence.CommentRow", b =>
@@ -124,6 +126,8 @@ namespace Atlas.Persistence.Migrations
                         .HasDatabaseName("IX_CommentRows_SiblingPage");
 
                     b.ToTable("CommentRows", (string)null);
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
             modelBuilder.Entity("Atlas.Persistence.CommunityCreationQuotaRow", b =>
@@ -297,6 +301,8 @@ namespace Atlas.Persistence.Migrations
                         .HasDatabaseName("IX_DocumentBlocks_BlockId");
 
                     b.ToTable("DocumentBlocks", (string)null);
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
             modelBuilder.Entity("Atlas.Persistence.DocumentRow", b =>
@@ -382,6 +388,40 @@ namespace Atlas.Persistence.Migrations
                     b.ToTable("Users", "identity");
                 });
 
+            modelBuilder.Entity("Atlas.Persistence.ModerationAuditEventRow", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ActorParticipantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Detail")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EventKind")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<Guid>("ModerationCaseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("NodeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ModerationCaseId");
+
+                    b.HasIndex("NodeId", "OccurredAt");
+
+                    b.ToTable("ModerationAuditEventRows", (string)null);
+                });
+
             modelBuilder.Entity("Atlas.Persistence.ModerationCaseRow", b =>
                 {
                     b.Property<Guid>("Id")
@@ -453,6 +493,37 @@ namespace Atlas.Persistence.Migrations
                     SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("NodeId", "Status", "VisibilityRestoredAt"), new[] { "PublicReason", "DecidedAt" });
 
                     b.ToTable("ModerationCaseRows", (string)null);
+                });
+
+            modelBuilder.Entity("Atlas.Persistence.ModerationReportedSnapshotRow", b =>
+                {
+                    b.Property<Guid>("ModerationCaseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CapturedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ContentJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("NodeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ShortDescription")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("ModerationCaseId");
+
+                    b.HasIndex("NodeId");
+
+                    b.ToTable("ModerationReportedSnapshotRows", (string)null);
                 });
 
             modelBuilder.Entity("Atlas.Persistence.NodeCreationQuotaRow", b =>
@@ -606,6 +677,8 @@ namespace Atlas.Persistence.Migrations
                         .HasDatabaseName("IX_NodeRows_TypeId");
 
                     b.ToTable("NodeRows", (string)null);
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
             modelBuilder.Entity("Atlas.Persistence.NodeTypeRow", b =>
@@ -1252,6 +1325,15 @@ namespace Atlas.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Atlas.Persistence.ModerationAuditEventRow", b =>
+                {
+                    b.HasOne("Atlas.Persistence.ModerationCaseRow", null)
+                        .WithMany()
+                        .HasForeignKey("ModerationCaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Atlas.Persistence.ModerationCaseRow", b =>
                 {
                     b.HasOne("Atlas.Persistence.NodeRow", null)
@@ -1279,6 +1361,15 @@ namespace Atlas.Persistence.Migrations
                         .HasForeignKey("ReviewerId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .HasConstraintName("FK_ModerationCaseRows_ParticipantRows_ReviewerId");
+                });
+
+            modelBuilder.Entity("Atlas.Persistence.ModerationReportedSnapshotRow", b =>
+                {
+                    b.HasOne("Atlas.Persistence.ModerationCaseRow", null)
+                        .WithOne()
+                        .HasForeignKey("Atlas.Persistence.ModerationReportedSnapshotRow", "ModerationCaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Atlas.Persistence.NodeParentRow", b =>

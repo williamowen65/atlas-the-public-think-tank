@@ -2,6 +2,14 @@
 
 EF Core row models, SQL Server mappings and migrations for Atlas. Domain behavior remains in the owning domain projects; SQL repositories in Atlas.Application map domain objects to these rows.
 
+## Common database tasks
+
+| Goal | Recommended action |
+|---|---|
+| Apply committed schema changes | Run `dotnet ef database update` |
+| Generate a new schema change | Run `dotnet ef migrations add` and review the output |
+| Replace disposable local data | Follow the reset steps below; this deletes data |
+
 ## Reset the local database to demo seed data (PowerShell)
 
 This deletes the configured application database, including local accounts and content, and recreates it from all committed migrations. Stop the Console app first. Run from the solution folder with your usual local connection configuration (`ATLAS_SQL_CONNECTION_STRING`). Environment variables override user secrets. Confirm that EF targets the intended local database, not a shared or production database.
@@ -39,6 +47,8 @@ After a successful reset, demo data should be visible and users should have **3 
 
 ## Generate a migration locally
 
+**A migration has three reviewable pieces:** the migration code, its designer, and the EF model snapshot. Commit them together.
+
 For the PTT-133 quota model, before applying/resetting the database:
 
 ```powershell
@@ -69,3 +79,36 @@ dotnet test tests/Atlas.Console.Tests/Atlas.Console.Tests.csproj
 ```
 
 The SQL tests require the documented test connection configuration. Migration-dependent checks remain pending until the generated migration, designer, and snapshot are committed. To see the new authored demo introductions, follow the local reset/reseed script above after generating the migration. A reset is optional and destructive; a normal database update preserves existing data and leaves its new descriptions empty for later editing.
+
+## Historical note: temporal content history (superseded)
+
+**Current direction:** Moderation uses immutable, case-linked reported snapshots and append-only audit events instead of relying on SQL Server temporal content history. See [moderation snapshot migration](../../docs/Architecture/moderation-snapshots-migration.md).
+
+The instructions below describe the earlier temporal-history approach and are retained for historical context; do not generate a new temporal-history migration from them.
+
+### Earlier temporal migration instructions
+
+SQL Server system-versioned history is configured for `NodeRows`, `DocumentRows`,
+`BlockRows`, and `DocumentBlocks` (the ordered document/block join). The main tables
+remain the source of current state; history tables preserve previous database row versions.
+Moderation cases, votes, reactions and comments are intentionally not temporal.
+This change does **not** yet provide a revision-comparison API, UI, or retention cleanup.
+
+From the solution root, on the feature branch, generate and review the EF migration:
+
+```powershell
+dotnet tool restore
+dotnet ef migrations add AddTemporalNodeContentHistory --project src/Atlas.Persistence
+dotnet ef migrations has-pending-model-changes --project src/Atlas.Persistence
+# Review generated Up/Down SQL, designer and model snapshot before applying.
+dotnet ef migrations script --project src/Atlas.Persistence --output temporal-content-migration.sql
+# Inspect the configured connection and verify it is your local development database.
+dotnet ef dbcontext info --project src/Atlas.Persistence
+dotnet ef database update --project src/Atlas.Persistence
+```
+
+Do not reset or drop the database to apply this migration. Commit the migration,
+designer and model snapshot. Verify the generated migration preserves current rows,
+indexes, constraints and SQL Server full-text infrastructure. SQL Server temporal
+periods record transaction times in UTC; they do not encode moderation decisions.
+Do not purge history while an active moderation review needs its original snapshot.

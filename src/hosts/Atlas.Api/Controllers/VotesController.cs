@@ -1,5 +1,7 @@
 using Atlas.Application;
 using Atlas.Graph.Nodes;
+using Atlas.Graph.Reactions;
+using Atlas.Moderation;
 using Atlas.Identity;
 using Atlas.Voting;
 using Atlas.Voting.Data;
@@ -20,6 +22,8 @@ public sealed class VotesController(
     UndoVote undo,
     ReactionVotingService reactions,
     INodeRepository nodes,
+    INodeReactionRepository nodeReactions,
+    ModerationService moderation,
     RequestActor actor
 ) : ControllerBase
 {
@@ -27,6 +31,7 @@ public sealed class VotesController(
     [HttpPut("nodes/{node:guid}/vote")]
     public IActionResult Vote(Guid node, VoteInput input)
     {
+        RequireVisibleForVoting(node);
         cast.Execute(
             new NodeVoteTarget(node),
             new Voter(actor.ParticipantId),
@@ -39,6 +44,7 @@ public sealed class VotesController(
     [HttpDelete("nodes/{node:guid}/vote")]
     public IActionResult Undo(Guid node)
     {
+        RequireVisibleForVoting(node);
         undo.Execute(
             new NodeVoteTarget(node),
             new Voter(actor.ParticipantId)
@@ -65,6 +71,7 @@ public sealed class VotesController(
     [HttpPut("nodes/{node:guid}/reactions/vote")]
     public IActionResult Reaction(Guid node, ReactionVoteInput input)
     {
+        RequireVisibleForVoting(node);
         reactions.Vote(
             nodes.GetById(new NodeId(node)) ?? throw new KeyNotFoundException(),
             input.Text,
@@ -78,11 +85,19 @@ public sealed class VotesController(
     [HttpDelete("reactions/{association:guid}/vote")]
     public IActionResult UndoReaction(Guid association)
     {
+        var nodeReaction = nodeReactions.GetById(new NodeReactionId(association)) ?? throw new KeyNotFoundException();
+        RequireVisibleForVoting(nodeReaction.NodeId.Value);
         undo.Execute(
             new NodeReactionVoteTarget(association),
             new Voter(actor.ParticipantId)
         );
         return NoContent();
+    }
+    // Suppressed content remains inspectable by authorized moderators, but never votable.
+    private void RequireVisibleForVoting(Guid node)
+    {
+        if (nodes.GetById(new NodeId(node)) is null || moderation.Visibility(node).IsHidden)
+            throw new KeyNotFoundException();
     }
 }
 

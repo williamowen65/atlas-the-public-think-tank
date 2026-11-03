@@ -14,6 +14,7 @@
 <script lang="ts">
   import { myCommunities, type Community } from '../api/communities';
   import DiscoverySearch from './DiscoverySearch.svelte';
+  import { moderatorVisibility, setModeratorVisibility, setIncludeHidden } from '../state/moderatorVisibility.svelte';
   import { restoreDiscoveryQuery } from '../state/discoveryQuery.svelte';
   import { onMount, tick } from 'svelte';
   import { apiRequest } from '../api/apiRequest';
@@ -22,6 +23,8 @@
     active = null,
     authenticated = false,
     displayName = 'Atlas User',
+    canModerate = false,
+    pendingModerationCount = 0,
   }: {
     /** Highlighted navigation item; null leaves all items unselected. */
     /** Enable experimental mobile search and bottom navigation layout. */
@@ -34,7 +37,12 @@
     authenticated?: boolean;
     /** Name used to derive the account-avatar initial. */
     displayName?: string;
+    /** Server-authorized moderator queue access; display only, not an authorization check. */
+    canModerate?: boolean;
+    /** Number of node groups needing moderator attention. */
+    pendingModerationCount?: number;
   } = $props();
+  $effect(() => setModeratorVisibility(authenticated && canModerate));
   /** Whether the desktop header search is expanded inline. */
   let searchOpen = $state(false);
   /** Keep the real search input mounted on phones instead of a second lookalike. */
@@ -325,6 +333,7 @@
   {#if searchOpen || (mobileExperiment && phone)}
     <div class="search-panel" id={searchPanelId} bind:this={searchPanel}>
       <DiscoverySearch
+        canModerate={authenticated && canModerate}
         active={searchOpen}
         onActivate={() => { searchOpen = true; headerVisible = true; }}
         placeholder={mobileExperiment ? 'Atlas: The Public Think Tank' : undefined}
@@ -363,6 +372,10 @@
             <a href="/profiles/me" onclick={closeOnNavigation}>My profile</a>
             <a href="/my-drafts" onclick={closeOnNavigation}>My drafts</a>
             <a href="/my-settings" onclick={closeOnNavigation}>Settings</a>
+            {#if canModerate}
+              <a href="/moderation" onclick={closeOnNavigation}>Moderation{#if pendingModerationCount > 0} ({pendingModerationCount}){/if}</a>
+              <label class="moderator-visibility"><input type="checkbox" checked={moderatorVisibility.includeHidden} onchange={(event) => setIncludeHidden(event.currentTarget.checked)} /> Include hidden nodes</label>
+            {/if}
             <hr />
             <a href="/about" onclick={closeOnNavigation}>About Atlas</a>
             <a href="/feedback" onclick={closeOnNavigation}>Give feedback</a>
@@ -408,6 +421,10 @@
             <a href="/profiles/me" onclick={closeOnNavigation}>My profile</a>
             <a href="/my-drafts" onclick={closeOnNavigation}>My drafts</a>
             <a href="/my-settings" onclick={closeOnNavigation}>Settings</a>
+            {#if canModerate}
+              <a href="/moderation" onclick={closeOnNavigation}>Moderation{#if pendingModerationCount > 0} ({pendingModerationCount}){/if}</a>
+              <label class="moderator-visibility"><input type="checkbox" checked={moderatorVisibility.includeHidden} onchange={(event) => setIncludeHidden(event.currentTarget.checked)} /> Include hidden nodes</label>
+            {/if}
             <hr />
             <a href="/about" onclick={closeOnNavigation}>About Atlas</a>
             <a href="/feedback" onclick={closeOnNavigation}>Give feedback</a>
@@ -935,4 +952,13 @@
   .atlas-header .explore-sidebar .sidebar-copyright {
     text-align: center;
   }
+  .moderator-visibility {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.8rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+  .moderator-visibility input { accent-color: var(--atlas-accent); }
 </style>

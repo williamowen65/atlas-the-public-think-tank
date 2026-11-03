@@ -9,6 +9,52 @@ public sealed class DiscoveryCacheTests
 {
     private static DiscoveryCandidate Candidate(Guid id, double average, int votes = 1) => new(id, "Café " + id, "evidence", Guid.NewGuid(), Guid.NewGuid(), false, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, votes, average, [], []);
 
+
+    [TestMethod]
+    public void Moderator_full_hidden_cards_never_poison_public_detail_cache()
+    {
+        using var fixture = SqlTestDatabase.Create(useCurrentModel: true);
+        var candidate = Candidate(Guid.NewGuid(), 8);
+        DiscoverySqlFixture.Seed(fixture, candidate);
+        using (var db = fixture.Open())
+        {
+            db.ModerationCaseRows.Add(new ModerationCaseRow
+            {
+                Id = Guid.NewGuid(), NodeId = candidate.NodeId,
+                ReporterId = candidate.AuthorParticipantId,
+                ReportedTitle = candidate.Title, Reason = "Spam",
+                Status = 2, PublicReason = 1, CreatedAt = DateTimeOffset.UtcNow
+            });
+            db.SaveChanges();
+        }
+
+        using var cache = new DiscoveryCache();
+        var query = new SqlDiscoveryReadQuery(fixture.OpenForDiscovery, cache);
+        var moderatorPage = query.DiscoverModeratorPage(new DiscoveryQuery(IncludeHidden: true));
+        var privateCard = moderatorPage.Items.Single().Card!;
+        Assert.IsTrue(privateCard.IsHidden);
+        Assert.AreEqual(candidate.Title, privateCard.Title);
+        Assert.IsEmpty(query.DiscoverPage(new DiscoveryQuery(IncludeHidden: true)).Items,
+            "Public callers cannot request hidden content through query parameters.");
+        var authoredPlaceholder = query.DiscoverAuthoredPage(
+            new DiscoveryQuery(HiddenOnly: true), [candidate.NodeId]).Items.Single().Card!;
+        Assert.IsTrue(authoredPlaceholder.IsHidden);
+        Assert.AreNotEqual(candidate.Title, authoredPlaceholder.Title,
+            "A public-style authored read must not reuse moderator-only card data.");
+        var detailHitsBeforeModeratorRepeat = cache.DetailHits;
+        Assert.AreEqual(candidate.Title, query.DiscoverModeratorPage(
+            new DiscoveryQuery(IncludeHidden: true)).Items.Single().Card!.Title);
+        Assert.AreEqual(detailHitsBeforeModeratorRepeat + 1, cache.DetailHits,
+            "Repeated moderator reads should reuse the authorized full-detail projection.");
+        Assert.AreEqual(candidate.Title, query.DiscoverModeratorPage(
+            new DiscoveryQuery(IncludeHidden: true)).Items.Single().Card!.Title);
+        var authorPage = query.DiscoverAuthorPage(
+            new DiscoveryQuery(HiddenOnly: true, IncludeHidden: true), candidate.AuthorParticipantId);
+        Assert.AreEqual(candidate.Title, authorPage.Items.Single().Card!.Title);
+        Assert.IsEmpty(query.DiscoverAuthorPage(
+            new DiscoveryQuery(HiddenOnly: true, IncludeHidden: true), Guid.NewGuid()).Items);
+    }
+
     [TestMethod]
     public void Node_id_lookup_is_exact_cached_and_still_obeys_visibility_and_filters()
     {

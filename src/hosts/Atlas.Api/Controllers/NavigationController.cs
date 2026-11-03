@@ -37,7 +37,7 @@ public sealed class NavigationController(
             x => new
             {
                 id = x.Id.Value,
-                title = moderation.Visibility(x.Id.Value).IsHidden ? moderation.Visibility(x.Id.Value).Notice : x.Title.Value
+                title = VisibleTitle(x)
             }
         );
     }
@@ -59,7 +59,7 @@ public sealed class NavigationController(
                 x => new
                 {
                     id = x.Id.Value,
-                    title = moderation.Visibility(x.Id.Value).IsHidden ? moderation.Visibility(x.Id.Value).Notice : x.Title.Value,
+                    title = VisibleTitle(x),
                     parentIds = x.ParentNodeIds.Select(parent => parent.Value)
                 }
             ),
@@ -78,11 +78,10 @@ public sealed class NavigationController(
         {
             var parent = nodes.GetById(id);
             if (parent is null) return new { id = id.Value, title = "Unavailable parent" };
-            var visibility = moderation.Visibility(id.Value);
             return new
             {
                 id = id.Value,
-                title = visibility.IsHidden ? visibility.Notice : parent.Title.Value
+                title = VisibleTitle(parent)
             };
         }).ToArray();
     }
@@ -120,11 +119,20 @@ public sealed class NavigationController(
         }
     );
 
+    // Hidden originals are available only to their author or a global moderator.
+    // Anonymous/public API reads continue to receive a not-found response.
+    private bool CanSeeOriginal(Node node) =>
+        !moderation.Visibility(node.Id.Value).IsHidden ||
+        (actor.Id is { } id && moderation.CanViewHiddenOriginal(id, node.AuthorId.Value, node.Id.Value));
+
+    private string VisibleTitle(Node node) => CanSeeOriginal(node)
+        ? node.Title.Value
+        : moderation.Visibility(node.Id.Value).Notice;
+
     private Node Read(Guid id)
     {
         var node = nodes.GetById(new NodeId(id)) ?? throw new KeyNotFoundException();
-        if (moderation.Visibility(id).IsHidden)
-            throw new KeyNotFoundException();
+        if (!CanSeeOriginal(node)) throw new KeyNotFoundException();
         return node;
     }
 }

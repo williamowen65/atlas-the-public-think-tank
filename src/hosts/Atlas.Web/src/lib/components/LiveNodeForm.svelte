@@ -153,7 +153,7 @@
   async function resolveParentPath(id: string) {
     try {
       const page = await readDiscovery(apiBase, 1, '', AbortSignal.timeout(10000), id);
-      const parent = page.items.map(discoveryCard).find((item) => item?.id === id);
+      const parent = page.items.map((item) => discoveryCard(item)).find((item) => item?.id === id);
       if (parent) return { breadcrumb: parent.breadcrumb, parentTitle: parent.title };
     } catch {
       /* Keep the draft usable if the ancestor is unavailable. */

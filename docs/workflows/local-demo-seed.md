@@ -2,6 +2,13 @@
 
 The opt-in demo seed uses the five existing demo accounts. It adds 61 editorial nodes spanning environmental restoration, housing, civic trust, education, neighborhood design, public health and smaller practical questions. Some branches have multiple levels of children; no new multiple-parent examples are introduced. Importance ratings, reaction votes and threaded comments intentionally have uneven participation. Existing breadcrumb and moderation fixtures remain separate.
 
+## What the demo includes
+
+- Five demo accounts and 61 editorial nodes.
+- Topic-specific contribution types and varied descriptions.
+- Uneven votes, reactions, and threaded comments.
+- Moderation fixtures and a child-feed pagination walkthrough.
+
 ## Editorial variety for UI review
 
 The 46 editorial nodes previously all requested Question, Idea and Issue. They now request topic-specific combinations of the existing catalog types, including Solution, Evidence, Location, Goal and Vision. For example, salmon restoration invites locations and goals, classroom AI invites visions and evidence, and broadband planning invites locations, solutions and questions. Existing child types remain included in their parents' requested lists.
@@ -16,6 +23,8 @@ The implementation is in `src/Atlas.Application/Storage/SeedData/SeedPublicThink
 
 ## Rebuild a disposable local database
 
+**Only use these steps for a database you are willing to erase.** The seed command does not overwrite existing content.
+
 **Warning:** Dropping the database permanently destroys *all* its data, including any nodes, accounts or comments created locally. Back up anything you want to retain, and verify `ATLAS_SQL_CONNECTION_STRING` points to your disposable development database. Stop the API and console first.
 
 From the repository root, with the .NET SDK and `dotnet-ef` installed:
@@ -24,9 +33,10 @@ From the repository root, with the .NET SDK and `dotnet-ef` installed:
 dotnet ef database drop --project src/Atlas.Persistence --force
 ```
 
-The design-time factory reads `ATLAS_SQL_CONNECTION_STRING` from the environment or shared user secrets. The console automatically runs EF migrations on startup, then seeds only an empty database:
+The design-time factory reads `ATLAS_SQL_CONNECTION_STRING` from the environment or shared user secrets. Run the explicit database setup command first. It applies EF migrations and creates the SQL Server full-text indexes needed for search. Then seed the empty database:
 
 ```powershell
+dotnet run --project src/hosts/Atlas.Console -- --setup-database
 dotnet run --project src/hosts/Atlas.Console -- --seed-demo
 ```
 
@@ -34,7 +44,35 @@ Restart the API and Storybook afterward. Demo sign-in accounts are `demo01@examp
 
 If `dotnet ef` cannot load the design-time factory, first verify the .NET EF tooling and your SQL connection configuration. Do not run the drop command against an unknown connection string.
 
+## Moderation workflow fixtures
+
+**Purpose:** These cases let you check pending, hidden, and review-requested states without submitting real reports.
+
+The disposable demo seed now includes four cases in `ModerationCaseRows`:
+
+- **Pending report:** `Homelessness` (demo user 02 authored) appears in the moderation queue.
+- **Hidden, no review requested:** `Make essential services accessible to everyone` (demo user 03 authored) is hidden, allowing author editing and a subsequent review request to be tested.
+- **Hidden, review requested:** `Learn from solutions that already work` (demo user 04 authored) is already awaiting moderator restoration review.
+- **Hidden grandchild, no review requested:** `Would ranked voting encourage more people to run for office?` is nested under `Use ranked voting in major U.S. elections`, which is itself under `What ideas could help make the world better?`. This verifies the moderator's real breadcrumb on a hidden card.
+
+The three hidden fixtures have historical node-importance votes and voted curated reactions, all created before the moderation decision:
+
+| Hidden node | Ratings | Expected average | Reaction scores |
+| --- | --- | --- | --- |
+| Make essential services accessible to everyone | 8, 10 | 9.0 (2 votes) | Promising +1; Practical +1 |
+| Learn from solutions that already work | 5, 7, 9 | 7.0 (3 votes) | Innovative +1; Hopeful +1 |
+| Would ranked voting encourage more people to run for office? | 6, 8 | 7.0 (2 votes) | Uncertain +1 |
+
+Log in as a global moderator, enable **Include hidden nodes**, and inspect all three cards in Discovery. Their existing votes and reactions should display, but their vote/reaction controls should remain disabled. The grandchild should show its two real ancestors. Log out or disable hidden inclusion to verify normal public redaction. These are seed-only historical engagement records; hidden nodes still reject new votes.
+
+
+These fixtures intentionally use existing node IDs and participant IDs; they are not real reports. A seeded review request represents the persisted state for UI testing, not evidence that a demo author made an edit in this seed. The moderator role is **not** assigned by this fixture; provision a trusted test account using the operator command documented in [Identity setup](../PTT-94-Identity.md).
+
+**Important:** The seed changes only a fresh disposable database. Do not drop an existing database unless you have backed up anything you want to retain. The author-facing web workflow and privacy checks must be tested separately; seeded rows alone do not implement that UI.
+
 ## Child-feed pagination walkthrough
+
+**Expected result:** Fifteen child nodes appear in five pages of three, without mixing results from other contribution tabs.
 
 Open **Can we save the Southern Resident orcas?** (node b1000000-0000-4000-8000-000000000201), then select **15 Solutions**. Fifteen proposed interventions (IDs ending 401–415) are direct children of this parent, all of type Solution. They have descriptions and full Markdown content, but do not imply actual completed projects or measured results.
 

@@ -30,7 +30,7 @@ public sealed class NodesController(
     [HttpGet]
     public object Discover([FromQuery] DiscoveryQuery query)
     {
-        var page = discovery.DiscoverPage(query);
+        var page = discovery.DiscoverPage(query with { IncludeHidden = false, HiddenOnly = false });
         return new
         {
             page.Items,
@@ -41,12 +41,25 @@ public sealed class NodesController(
         };
     }
 
+    /// <summary>Moderator discovery, ranked and paged by SQL with hidden content included on request.</summary>
+    [Authorize(Policy = AtlasPolicies.GlobalModerator), HttpGet("moderator")]
+    public object ModeratorDiscover([FromQuery] DiscoveryQuery query) =>
+        query.IncludeHidden
+            ? discovery.DiscoverModeratorPage(query with { HiddenOnly = false })
+            : discovery.DiscoverPage(query with { HiddenOnly = false });
+
     /// <summary>Read the current author’s Discovery page, including hidden placeholders.</summary>
     [Authorize(Policy = AtlasPolicies.Member), HttpGet("mine")]
     public object Mine([FromQuery] DiscoveryQuery query) => discovery.DiscoverAuthoredPage(
         query,
         nodes.GetByAuthor(new NodeAuthorId(actor.ParticipantId)).Select(node => node.Id.Value).ToArray()
     );
+
+    /// <summary>Page only the signed-in author's hidden nodes, never another user's.</summary>
+    [Authorize(Policy = AtlasPolicies.Member), HttpGet("mine/hidden")]
+    public object MineHidden([FromQuery] DiscoveryQuery query) =>
+        ((IDiscoveryAuthorListing)discovery).DiscoverAuthorPage(
+            query with { HiddenOnly = true, IncludeHidden = true }, actor.ParticipantId);
 
     /// <summary>List the node types available for a client to select.</summary>
     [HttpGet("types")]
@@ -187,11 +200,16 @@ public sealed class NodesController(
             {
                 id = node.Id.Value,
                 hidden = true,
+                publicReason = visibility.PublicReason.ToString(),
                 notice = visibility.Notice
             };
         return new
         {
             id = node.Id.Value,
+            hidden = visibility.IsHidden,
+            moderationNotice = visibility.IsHidden ? visibility.Notice : null,
+            publicReason = visibility.IsHidden ? visibility.PublicReason.ToString() : null,
+            reviewRequested = visibility.IsHidden && visibility.ReviewRequested,
             title = node.Title.Value,
             node.ShortDescription,
             typeId = node.TypeId.Value,

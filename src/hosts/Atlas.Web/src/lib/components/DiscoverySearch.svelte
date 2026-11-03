@@ -11,6 +11,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import VotingWeightControl from './VotingWeightControl.svelte';
+  import { moderatorVisibility, setIncludeHidden } from '../state/moderatorVisibility.svelte';
   import { searchPreferences, watchSearchPreferences } from '../state/searchPreferences.svelte';
   import {
     discoveryQuery,
@@ -22,6 +23,7 @@
   import SearchResults from './SearchResults.svelte';
   let {
     active = true,
+    canModerate = false,
     onActivate,
     placeholder = 'Search nodes and comments, or try type:Idea',
     onExpandedChange,
@@ -29,6 +31,7 @@
   }: {
     /** Whether global result overlays should be shown for the current header interaction. */
     active?: boolean;
+    canModerate?: boolean;
     /** Notify the header when its real search field receives focus. */
     onActivate?: () => void;
     /** Placeholder supplied by the containing header; search behavior stays shared. */
@@ -227,6 +230,7 @@
       previous query.
     -->
     <div class="toolbox">
+      {#if canModerate}<label class="moderator-visibility"><input type="checkbox" checked={moderatorVisibility.includeHidden} onchange={(event) => setIncludeHidden(event.currentTarget.checked)} /> Include hidden nodes</label>{/if}
       <VotingWeightControl />
       <label
         >Search in<select
@@ -367,6 +371,7 @@
       {#if !typesReady}<p role="status">Preparing search…</p>
       {:else if accepted.errors.length}<p role="alert">{accepted.errors.join(' · ')}</p>
       {:else}<SearchResults
+          canModerate={canModerate}
           search={accepted.text}
           filters={{ ...accepted.filters, votingWeight: searchPreferences.votingWeight }}
           onSelect={onResultSelected}

@@ -15,14 +15,17 @@
     discoveryCard,
     type DiscoveryFilters,
   } from '../api/discovery';
+  import { moderatorVisibility } from '../state/moderatorVisibility.svelte';
   import type { NodeCardData } from './node-card-versions/types';
   let {
     search,
     filters,
+    canModerate = false,
     onSelect,
   }: {
     /** Accepted free-text query; pending typing does not trigger requests. */
     search: string;
+    canModerate?: boolean;
     /** Parsed filter constraints supplied by the shared query parser. */
     filters: DiscoveryFilters;
     /** Notify the containing search disclosure when a result is opened normally. */
@@ -67,7 +70,7 @@
         average: null,
         totalVotes: 0,
       };
-    const card = discoveryCard(item);
+    const card = discoveryCard(item, canModerate && moderatorVisibility.includeHidden);
     return card ? { ...card, average: item.averageVote, totalVotes: item.voteCount } : null;
   }
   /** Compact display models accumulated from successful result pages. */
@@ -109,6 +112,7 @@
   $effect(() => {
     const query = search;
     const constraints = filters;
+    const moderatorRead = canModerate && moderatorVisibility.includeHidden && filters.scope !== 'comments';
     retry;
     const current = new AbortController();
     controller = current;
@@ -126,6 +130,7 @@
       undefined,
       constraints,
       true,
+      moderatorRead,
     )
       .then((page) => {
         if (current.signal.aborted) return;
@@ -150,6 +155,7 @@
   /** Append the next API page; failures keep existing results and the same retry cursor. */
   async function loadMore() {
     if (loading || !hasMore) return;
+    const moderatorRead = canModerate && moderatorVisibility.includeHidden && filters.scope !== 'comments';
     const current = controller;
     loading = true;
     error = '';
@@ -162,6 +168,7 @@
         undefined,
         filters,
         true,
+        moderatorRead,
       );
       if (current.signal.aborted) return;
       const added = page.items
@@ -194,6 +201,7 @@
   bind:this={resultsElement}
 >
   <h2>Search results</h2>
+
   {#if items.length}<p class="summary">{items.length} shown · {total} matches</p>{/if}
   <ul>
     {#each items as node (node.id)}
@@ -242,6 +250,7 @@
             >
           </div>
           <div class="result-content">
+            {#if node.isHidden}<strong class="moderation-indicator">Hidden by moderator</strong>{/if}
             <a
               class="result-title"
               href={`/nodes?id=${encodeURIComponent(node.id)}`}

@@ -16,6 +16,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import LiveNodeFeed from './LiveNodeFeed.svelte';
+  import NodeCard from './NodeCard.svelte';
+  import VotingDial from './VotingDial.svelte';
+  import { discoveryCard, type DiscoveryPage } from '../api/discovery';
+  import type { NodeCardData } from './node-card-versions/types';
   import { apiRequest } from '../api/apiRequest';
   import type { Community } from '../api/communities';
   let {
@@ -68,6 +72,49 @@
    * Whether the session lookup has completed, including a signed-out result.
    */
   let sessionReady = $state(false);
+  type HiddenNode = { id: string; node: NodeCardData; notice: string; rationale: string; decidedAt: string; average: number | null; voteCount: number };
+  let hiddenOwned = $state<HiddenNode[]>([]);
+  let hiddenLoadError = $state('');
+  let hiddenLoading = $state(false);
+  let hiddenPage = $state(1);
+  let hiddenHasMore = $state(false);
+  async function loadHiddenOwned(ownerId: string, pageNumber = 1) {
+    if (hiddenLoading) return;
+    hiddenLoading = true;
+    hiddenLoadError = '';
+    try {
+      // The server filters hidden nodes before applying Discovery's fixed-size pagination.
+      const page = await apiRequest<DiscoveryPage>('/atlas-session-api', `nodes/mine/hidden?Page=${pageNumber}`);
+      if (sessionId !== ownerId || participantId !== ownerId) return;
+      const details = await Promise.all(page.items.map(async (item): Promise<HiddenNode> => {
+        const detail = await apiRequest<{
+          reasons: Array<{ publicReason: string; rationale: string | null; decidedAt: string }>;
+        }>('/atlas-session-api', `moderation/nodes/${encodeURIComponent(item.nodeId)}/notice`);
+        const decision = detail.reasons[0];
+        const node = discoveryCard(item, true);
+        if (!node) throw new Error('Missing private node card');
+        return {
+          id: item.nodeId,
+          node,
+          notice: decision?.publicReason ?? 'Hidden by moderator',
+          rationale: decision?.rationale ?? '',
+          decidedAt: decision?.decidedAt ?? '',
+          average: item.averageVote,
+          voteCount: item.voteCount,
+        };
+      }));
+      if (sessionId !== ownerId || participantId !== ownerId) return;
+      hiddenOwned = pageNumber === 1 ? details : [...hiddenOwned, ...details];
+      hiddenPage = pageNumber;
+      hiddenHasMore = page.hasNextPage;
+    } catch {
+      if (sessionId === ownerId && participantId === ownerId)
+        hiddenLoadError = 'Could not load your hidden nodes.';
+    } finally {
+      hiddenLoading = false;
+    }
+  }
+
   /**
    * Whether the profile or community edit form is open.
    */
@@ -152,6 +199,12 @@
         'auth/session',
       );
       sessionId = session.participantId;
+      if (session.participantId === participantId) {
+        hiddenOwned = [];
+        hiddenPage = 1;
+        void loadHiddenOwned(participantId);
+      }
+      else hiddenOwned = [];
     } catch {
       sessionId = null;
     } finally {
@@ -263,6 +316,35 @@
       </form>{/if}
     {#if notice}<p role="status">{notice}</p>{/if}
     {#if !profile.deleted}
+      {#if isOwner}
+        <section aria-label="My hidden nodes" id="my-hidden-nodes" class="hidden-section">
+          <details class="hidden-disclosure">
+            <summary><span class="hidden-heading">My hidden nodes{#if hiddenOwned.length > 0} <span class="hidden-count">{hiddenOwned.length}{hiddenHasMore ? '+' : ''}</span>{/if}</span><span class="hidden-summary">{hiddenOwned.length > 0 ? 'Moderators have hidden contributions for you to review.' : hiddenLoading ? 'Checking your contributions…' : 'Review moderation status'}</span></summary>
+            <p>These entries are private to your account. Open a node to revise it and request moderator review.</p>
+          {#if hiddenLoadError}<p role="status">{hiddenLoadError}</p>{/if}
+          {#if hiddenOwned.length === 0 && !hiddenLoading}<p>No hidden nodes found.</p>{/if}
+          <div class="hidden-feed">
+            {#each hiddenOwned as hidden (hidden.id)}
+              <article class="hidden-card">
+                <p class="hidden-label">Hidden by moderator <span class="hidden-reason">{hidden.notice}</span></p>
+                <NodeCard node={hidden.node} presentation="ribbon-corner" editOpensDetail onNavigate={(id) => onOpenNode?.(id)} average={hidden.average} totalVotes={hidden.voteCount} onReadMore={(id) => onOpenNode?.(id)}>
+                  {#snippet voting()}
+                    <VotingDial label="Node importance (voting disabled while hidden)" average={hidden.average} totalVotes={hidden.voteCount} disabled />
+                  {/snippet}
+                </NodeCard>
+                <div class="moderation-feedback">
+                  <p class="decision-date"><strong>Moderation decision</strong>{#if hidden.decidedAt} <time datetime={hidden.decidedAt}>{new Date(hidden.decidedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</time>{/if}</p>
+                  <p><strong>Moderator explanation</strong></p>
+                  <p>{hidden.rationale || 'No explanation was provided.'}</p>
+                </div>
+              </article>
+            {/each}
+          </div>
+          {#if hiddenHasMore}<button type="button" disabled={hiddenLoading} onclick={() => void loadHiddenOwned(participantId, hiddenPage + 1)}>Load more hidden nodes</button>{/if}
+          {#if hiddenLoading}<p role="status">Loading hidden nodes…</p>{/if}
+          </details>
+        </section>
+      {/if}
       <h2>Published contributions</h2>
       {#key profile.id}<LiveNodeFeed
           authorId={profile.id}
@@ -275,6 +357,25 @@
 </section>
 
 <style lang="scss">
+  .hidden-section { margin: 1.5rem auto 0; width: 100%; max-width: 52rem; min-width: 0; }
+  .hidden-disclosure { border: 1px solid color-mix(in srgb, #bd8336 40%, var(--atlas-border)); border-radius: 1rem; padding: 1rem 1.2rem; background: color-mix(in srgb, #bd8336 5%, var(--atlas-surface)); }
+  .hidden-disclosure summary { cursor: pointer; padding: .3rem; }
+  .hidden-disclosure summary::marker { color: var(--atlas-accent); }
+  .hidden-heading { font-size: 1.2rem; font-weight: 700; margin-left: .4rem; }
+  .hidden-count { display: inline-block; border-radius: 99px; padding: .1rem .55rem; background: color-mix(in srgb, #bd8336 22%, var(--atlas-surface)); font-size: .85rem; }
+  .hidden-summary { display: block; margin: .4rem 0 .2rem 1.5rem; color: var(--atlas-muted); font-size: .9rem; }
+  .hidden-disclosure[open] summary { margin-bottom: 1rem; }
+  .hidden-feed { display: grid; gap: 1rem; margin-bottom: 1rem; min-width: 0; }
+  .hidden-card { min-width: 0; border: 1px solid color-mix(in srgb, #bd8336 45%, var(--atlas-border)); border-radius: 1rem; background: color-mix(in srgb, #bd8336 7%, var(--atlas-surface)); padding: 1.4rem; }
+  .hidden-card h3 { margin: .5rem 0; }
+  .hidden-label { font-weight: 700; margin: 0 0 1rem; display: flex; align-items: center; flex-wrap: wrap; gap: .65rem; }
+  .hidden-reason { display: inline-block; border-radius: 999px; padding: .3rem .7rem; background: color-mix(in srgb, #bd8336 17%, var(--atlas-surface)); font-size: .85rem; }
+  .hidden-card p { overflow-wrap: anywhere; }
+  .moderation-feedback { margin-top: 1.1rem; padding: 1rem 1.15rem; background: var(--atlas-surface); border-radius: .7rem; border-left: 3px solid #bd8336; }
+  .moderation-feedback p { margin: .4rem 0; }
+  .decision-date { display: flex; flex-wrap: wrap; gap: .4rem 1rem; justify-content: space-between; }
+  .decision-date time { font-size: .9rem; color: var(--atlas-muted); }
+  @media (max-width: 480px) { .hidden-card { padding: .85rem; } }
   .profile-page {
     padding-block-start: var(--atlas-space);
     max-width: 70rem;

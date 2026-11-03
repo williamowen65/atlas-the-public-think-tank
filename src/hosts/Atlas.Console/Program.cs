@@ -136,6 +136,11 @@ if (args.Contains(
     await ConsoleAccountCommands.ConfirmEmailAsync(accountScopes);
     return;
 }
+if (args.Contains("--grant-global-moderator", StringComparer.OrdinalIgnoreCase))
+{
+    await GlobalModeratorProvisioning.RunAsync(accountScopes);
+    return;
+}
 var session = new ConsoleIdentitySession(accountScopes);
 IModeratorAuthorization moderatorAuthorization = session;
 var moderation = new ModerationService(

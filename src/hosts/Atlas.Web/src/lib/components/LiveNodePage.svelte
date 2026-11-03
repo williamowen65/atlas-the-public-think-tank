@@ -18,9 +18,12 @@
 -->
 <script lang="ts">
   import LoadingPlaceholder from './LoadingPlaceholder.svelte';
+  import HiddenNodePublicNotice from './HiddenNodePublicNotice.svelte';
+  import { apiRequest, ApiRequestError } from '../api/apiRequest';
   import LiveVotingDial from './LiveVotingDial.svelte';
   import LiveReactions from './LiveReactions.svelte';
   import NodePage from './NodePage.svelte';
+  import NodeReportControl from './NodeReportControl.svelte';
   import LiveNodeFeed from './LiveNodeFeed.svelte';
   import CommentsPanel from './CommentsPanel.svelte';
   import LiveNodeForm from './LiveNodeForm.svelte';
@@ -70,6 +73,88 @@
    * Loaded public node-card model, or null before usable node data is available.
    */
   let node = $state<NodeCardData | null>(null);
+  type HiddenDetail = NodeDetail & { moderationNotice?: string | null; reviewRequested?: boolean; notice?: string; publicReason?: string | null };
+  let hiddenDetail = $state<HiddenDetail | null>(null);
+  let hiddenTitle = $state('');
+  let hiddenIntro = $state('');
+  let hiddenMarkdown = $state('');
+  let hiddenBlocks = $state<ContentBlock[]>([]);
+  let hiddenBusy = $state(false);
+  let hiddenMessage = $state('');
+  let hiddenEdited = $state(false);
+  let hiddenAuthor = $state(false);
+  type ModerationFeedback = { reasons: { publicReason: string; rationale: string; decidedAt: string | null; reviewRequested: boolean }[] };
+  let hiddenFeedback = $state<ModerationFeedback | null>(null);
+  let hiddenFeedbackError = $state(false);
+  type ReportHistory = { id: string; reason: string; explanation: string | null; createdAt: string; status: string; reporter: string; reviewer: string | null; decisionReason: string | null; decidedAt: string | null; publicReason: string; reviewRequestedAt: string | null; visibilityRestoredAt: string | null; restoredBy: string | null; restorationReason: string | null };
+  let hiddenModerator = $state(false);
+  let hiddenHistory = $state<ReportHistory[]>([]);
+  let hiddenPreview = $state<NodeCardData | null>(null);
+  let hiddenPreviewError = $state(false);
+  type TextRevision = { title: string; shortDescription: string; markdown: string };
+  let hiddenRevisions = $state<{ reported: TextRevision | null; revised: TextRevision } | null>(null);
+  let revisionTab = $state<'reported' | 'revised'>('reported');
+  let revisionError = $state('');
+  let moderatorRationale = $state('');
+  let moderatorBusy = $state(false);
+  let moderatorConfirm = $state(false);
+  let moderatorMessage = $state('');
+  async function restoreHiddenNode() {
+    if (!hiddenDetail || !hiddenModerator || !hiddenDetail.reviewRequested || !moderatorRationale.trim() || moderatorBusy) return;
+    moderatorBusy = true;
+    moderatorMessage = '';
+    try {
+      await apiRequest('/atlas-session-api',
+        `moderation/nodes/${encodeURIComponent(hiddenDetail.id)}/restore`,
+        'POST', { text: moderatorRationale.trim() });
+      moderatorMessage = 'Node restored to public view.';
+      moderatorRationale = '';
+      moderatorConfirm = false;
+      retry++;
+    } catch (cause) {
+      moderatorMessage = cause instanceof Error ? cause.message : 'Could not restore this node.';
+    } finally {
+      moderatorBusy = false;
+    }
+  }
+  const hiddenRevisionChanged = $derived(!!hiddenDetail && (
+    hiddenTitle.trim() !== hiddenDetail.title.trim() ||
+    hiddenIntro.trim() !== hiddenDetail.shortDescription.trim() ||
+    hiddenMarkdown.trim() !== (hiddenBlocks.find(block =>
+      block.kind.toLowerCase() === 'markdowntext' || block.kind.toLowerCase() === 'markdown'
+    )?.content.markdown ?? '').trim()
+  ));
+  async function saveHiddenRevision() {
+    if (!hiddenDetail || !hiddenAuthor || hiddenBusy) return;
+    if (!hiddenRevisionChanged) {
+      hiddenMessage = 'Make a change to the title, introduction, or description before saving a revision.';
+      return;
+    }
+    hiddenBusy = true; hiddenMessage = '';
+    try {
+      const id = encodeURIComponent(hiddenDetail.id);
+      if (hiddenTitle.trim() !== hiddenDetail.title) await apiRequest('/atlas-session-api', `nodes/${id}/title`, 'PUT', { text: hiddenTitle.trim() });
+      if (hiddenIntro.trim() !== hiddenDetail.shortDescription) await apiRequest('/atlas-session-api', `nodes/${id}/short-description`, 'PUT', { text: hiddenIntro.trim() });
+      const original = hiddenBlocks.find(block => block.kind.toLowerCase() === 'markdowntext' || block.kind.toLowerCase() === 'markdown');
+      if (original && hiddenMarkdown !== (original.content.markdown ?? '')) await apiRequest('/atlas-session-api', `nodes/${id}/description/blocks/${encodeURIComponent(original.id)}`, 'PUT', { kind: 'markdown', text: hiddenMarkdown });
+      if (!original && hiddenMarkdown.trim()) await apiRequest('/atlas-session-api', `nodes/${id}/description/blocks`, 'POST', { kind: 'markdown', text: hiddenMarkdown });
+      hiddenEdited = true;
+      hiddenMessage = 'Changes saved. You can now request moderator review.';
+      retry++;
+    } catch (cause) { hiddenMessage = cause instanceof Error ? cause.message : 'Could not save revision.'; }
+    finally { hiddenBusy = false; }
+  }
+  async function requestHiddenReview() {
+    if (!hiddenDetail || !hiddenAuthor || hiddenBusy || !hiddenEdited || hiddenDetail.reviewRequested) return;
+    hiddenBusy = true; hiddenMessage = '';
+    try {
+      await apiRequest('/atlas-session-api', `moderation/nodes/${encodeURIComponent(hiddenDetail.id)}/review`, 'POST');
+      hiddenMessage = 'Review requested. The node stays hidden until a moderator restores it.';
+      hiddenEdited = false;
+      retry++;
+    } catch (cause) { hiddenMessage = cause instanceof Error ? cause.message : 'Could not request review.'; }
+    finally { hiddenBusy = false; }
+  }
   /**
    * Ordered full-content blocks loaded for this node.
    */
@@ -186,12 +271,82 @@
     loading = true;
     error = '';
     node = null;
+    hiddenDetail = null;
+    hiddenAuthor = false;
+    hiddenFeedback = null;
+    hiddenFeedbackError = false;
+    hiddenModerator = false;
+    hiddenHistory = [];
+    hiddenPreview = null;
+    hiddenPreviewError = false;
+    hiddenRevisions = null;
+    revisionTab = 'reported';
+    revisionError = '';
+    moderatorRationale = '';
+    moderatorConfirm = false;
+    moderatorMessage = '';
     createType = null;
     editingDraft = null;
     saveChildDraft = null;
     active = 'comments';
     void (async () => {
       try {
+        if (id) {
+          // The authenticated node-detail endpoint, not public discovery, determines access
+          // to hidden originals. A public placeholder never contains editable content.
+          const detail = await apiRequest<HiddenDetail>('/atlas-session-api', `nodes/${encodeURIComponent(id)}`, 'GET', undefined, signal);
+          if (detail.hidden) {
+            hiddenDetail = detail;
+            if (detail.authorId && detail.title) {
+              const session = await apiRequest<{ participantId: string | null }>('/atlas-session-api', 'auth/session', 'GET', undefined, signal);
+              hiddenAuthor = session.participantId === detail.authorId;
+              if (hiddenAuthor) {
+                try {
+                  hiddenFeedback = await apiRequest<ModerationFeedback>(
+                    '/atlas-session-api', `moderation/nodes/${encodeURIComponent(id)}/notice`, 'GET', undefined, signal,
+                  );
+                } catch {
+                  if (!signal.aborted) hiddenFeedbackError = true;
+                }
+              }
+              // The protected history endpoint verifies global-moderator authorization.
+              // A signed-in author must not receive moderator controls merely for owning a node.
+              try {
+                hiddenHistory = await apiRequest<ReportHistory[]>(
+                  '/atlas-session-api', `moderation/nodes/${encodeURIComponent(id)}/history`, 'GET', undefined, signal);
+                hiddenModerator = true;
+                try {
+                  hiddenRevisions = await apiRequest<{ reported: TextRevision | null; revised: TextRevision }>(
+                    '/atlas-session-api', `moderation/nodes/${encodeURIComponent(id)}/revisions`, 'GET', undefined, signal);
+                } catch (cause) {
+                  if (!signal.aborted) revisionError = cause instanceof Error
+                    ? `Revision history could not be loaded: ${cause.message}`
+                    : 'Revision history could not be loaded.';
+                }
+                try {
+                  const [previewPage, originalBlocks] = await Promise.all([
+                    readDiscovery(apiBase, 1, '', signal, id, undefined, false, true),
+                    apiRequest<ContentBlock[]>('/atlas-session-api', `nodes/${encodeURIComponent(id)}/description`, 'GET', undefined, signal),
+                  ]);
+                  const previewEntry = previewPage.items.find(item => item.nodeId === id);
+                  hiddenPreview = previewEntry ? discoveryCard(previewEntry, true) : null;
+                  hiddenBlocks = originalBlocks;
+                  if (!hiddenPreview) hiddenPreviewError = true;
+                } catch {
+                  if (!signal.aborted) hiddenPreviewError = true;
+                }
+              } catch (cause) {
+                if (!(cause instanceof ApiRequestError && [401, 403].includes(cause.status)) && !signal.aborted)
+                  moderatorMessage = 'Moderation tools could not be loaded.';
+              }
+              hiddenTitle = detail.title;
+              hiddenIntro = detail.shortDescription ?? '';
+              hiddenBlocks = await apiRequest<ContentBlock[]>('/atlas-session-api', `nodes/${encodeURIComponent(id)}/description`, 'GET', undefined, signal);
+              hiddenMarkdown = hiddenBlocks.filter(b => ['markdown', 'markdowntext'].includes(b.kind.toLowerCase())).map(b => b.content.markdown ?? '').join('\n\n');
+            }
+            return;
+          }
+        }
         const page = await readDiscovery(apiBase, 1, '', signal, id || undefined);
         const entry = page.items.find((item) => discoveryCard(item));
         const display = entry && discoveryCard(entry);
@@ -236,7 +391,128 @@
   child markup supplies the selected discussion panel.
 -->
 
-{#if loading}<LoadingPlaceholder kind="node" label="Loading node…" />{:else if error}<p
+{#if loading}<LoadingPlaceholder kind="node" label="Loading node…" />{:else if hiddenDetail}
+  <HiddenNodePublicNotice reason={hiddenDetail.publicReason} author={hiddenAuthor} />
+  {#if hiddenDetail.title}
+    <section class="hidden-node" aria-label="Private hidden contribution">
+      {#if hiddenAuthor}
+        <h2>Your hidden contribution</h2>
+        <p>Only you and authorized moderators can see the original content below. The public sees the explanation above, not this content.</p>
+        <h3>Moderator feedback</h3>
+        {#if hiddenFeedback?.reasons?.length}
+          {#each hiddenFeedback.reasons as decision, index (index)}
+            <div class="feedback">
+              <p><strong>Public category:</strong> {decision.publicReason}</p>
+              <p><strong>Moderator explanation:</strong> {decision.rationale}</p>
+            </div>
+          {/each}
+        {:else if hiddenFeedbackError}
+          <p role="alert">Moderator feedback could not be loaded. You can still revise your contribution.</p>
+        {:else}
+          <p>No additional written moderator explanation is available.</p>
+        {/if}
+        <h3>Revise your contribution</h3>
+        {#if hiddenDetail.reviewRequested}
+          <p role="status">Your review request is pending. The contribution remains hidden until a moderator restores it.</p>
+        {/if}
+        <form onsubmit={(event) => { event.preventDefault(); void saveHiddenRevision(); }}>
+          <label for="hidden-title">Title</label><input id="hidden-title" bind:value={hiddenTitle} maxlength="500" required />
+          <label for="hidden-intro">Short description</label><textarea id="hidden-intro" bind:value={hiddenIntro} rows="3" required></textarea>
+          <label for="hidden-description">Description (Markdown)</label><textarea id="hidden-description" bind:value={hiddenMarkdown} rows="8"></textarea>
+          <button type="submit" disabled={hiddenBusy || !hiddenRevisionChanged}>Save revision</button>
+        </form>
+        <button type="button" disabled={hiddenBusy || !!hiddenDetail.reviewRequested || !hiddenEdited} onclick={() => void requestHiddenReview()}>Request moderator review</button>
+        <p>Save a revision that addresses the feedback before requesting review. Saving does not automatically make the contribution public.</p>
+      {:else}
+        <h2>Moderator inspection</h2>
+        <p>This is a read-only rendering of the original contribution using the standard node-page layout. Only the author can revise it and request review.</p>
+        {#if hiddenPreview}
+          <div class="revision-tabs" role="tablist" aria-label="Compare node revisions">
+            <button type="button" role="tab" id="reported-revision-tab" aria-controls="moderator-node-revision" aria-selected={revisionTab === 'reported'} class:chosen={revisionTab === 'reported'} disabled={!hiddenRevisions?.reported} onclick={() => revisionTab = 'reported'}>Reported version</button>
+            <button type="button" role="tab" id="revised-revision-tab" aria-controls="moderator-node-revision" aria-selected={revisionTab === 'revised'} class:chosen={revisionTab === 'revised'} onclick={() => revisionTab = 'revised'}>Revised version</button>
+          </div>
+          {#if revisionError}<p role="alert">{revisionError}</p>{/if}
+          {#if !revisionError && !hiddenRevisions?.reported}
+            <p role="status">No earlier revision was found. Confirm that the temporal migration was applied and the demo database was reseeded after that migration.</p>
+          {/if}
+          <div id="moderator-node-revision" role="tabpanel" aria-labelledby={revisionTab === 'reported' ? 'reported-revision-tab' : 'revised-revision-tab'}>
+
+          <NodePage
+            node={hiddenRevisions?.reported && revisionTab === 'reported'
+              ? { ...hiddenPreview, title: hiddenRevisions.reported.title, description: hiddenRevisions.reported.shortDescription }
+              : hiddenPreview}
+            blocks={hiddenRevisions?.reported && revisionTab === 'reported'
+              ? hiddenBlocks.map(block => ['markdown', 'markdowntext'].includes(block.kind.toLowerCase())
+                ? { ...block, content: { ...block.content, markdown: hiddenRevisions!.reported!.markdown } }
+                : block)
+              : hiddenBlocks}
+            types={[]}
+            active="comments"
+            inspectionOnly
+            {apiBase}
+            {onOpenProfile}
+            onNavigate={openNode}
+            onTabChange={() => {}}
+            onAddChild={() => {}}
+          >{#snippet children()}<p>Read-only moderation preview.</p>{/snippet}</NodePage>
+          </div>
+        {:else if hiddenPreviewError}
+          <p role="alert">The full node preview could not be loaded. Try reloading this page.</p>
+        {:else}
+          <p role="status">Loading original node preview…</p>
+        {/if}
+      {/if}
+      {#if hiddenModerator}
+        <section class="moderator-tools" aria-label="Moderator actions">
+          <h2>Global moderator controls</h2>
+          <p>This contribution is hidden. Moderation actions are checked by the server and recorded with the moderator's identity.</p>
+          <h3>Report history</h3>
+          {#if hiddenHistory.length === 0}
+            <p>No report history is available.</p>
+          {:else}
+            <ol class="history-list">
+              {#each hiddenHistory as report (report.id)}
+                <li>
+                  <div class="history-event"><strong>Report submitted</strong><time datetime={report.createdAt}>{new Date(report.createdAt).toLocaleString()}</time></div>
+                  <p>Reported by {report.reporter} · {report.reason}</p>
+                  {#if report.explanation}<p>{report.explanation}</p>{/if}
+                  {#if report.decidedAt}
+                    <div class="history-event"><strong>Moderator decision: {report.status === 'Actioned' ? 'Hidden' : report.status}</strong><time datetime={report.decidedAt}>{new Date(report.decidedAt).toLocaleString()}</time></div>
+                    <p>Decided by {report.reviewer ?? 'Unknown moderator'} · {report.publicReason}</p>
+                    {#if report.decisionReason}<p>Rationale: {report.decisionReason}</p>{/if}
+                  {:else}<p>Awaiting moderator decision</p>{/if}
+                  {#if report.reviewRequestedAt}
+                    <div class="history-event"><strong>Author requested review</strong><time datetime={report.reviewRequestedAt}>{new Date(report.reviewRequestedAt).toLocaleString()}</time></div>
+                  {/if}
+                  {#if report.visibilityRestoredAt}
+                    <div class="history-event"><strong>Visibility restored by {report.restoredBy ?? 'Unknown moderator'}</strong><time datetime={report.visibilityRestoredAt}>{new Date(report.visibilityRestoredAt).toLocaleString()}</time></div>
+                    {#if report.restorationReason}<p>Rationale: {report.restorationReason}</p>{/if}
+                  {/if}
+                </li>
+              {/each}
+            </ol>          {/if}
+          {#if hiddenDetail.reviewRequested}
+            <p>The author has requested review. Review their revised content before restoring visibility.</p>
+            <label for="moderator-restore-rationale">Restoration rationale (required)</label>
+            <textarea id="moderator-restore-rationale" bind:value={moderatorRationale} maxlength="2000" rows="3"></textarea>
+            {#if moderatorConfirm}
+              <p role="alert">Restore this contribution to public Discovery and search?</p>
+              <button type="button" disabled={moderatorBusy} onclick={() => moderatorConfirm = false}>Cancel</button>
+              <button type="button" disabled={moderatorBusy || !moderatorRationale.trim()} onclick={() => void restoreHiddenNode()}>Confirm restoration</button>
+            {:else}
+              <button type="button" disabled={moderatorBusy || !moderatorRationale.trim()} onclick={() => moderatorConfirm = true}>Restore visibility</button>
+            {/if}
+          {:else}
+            <p>Restoration is available after the author revises the contribution and requests review.</p>
+          {/if}
+          <p><a href="/moderation">Open moderation dashboard</a></p>
+          {#if moderatorMessage}<p role="status">{moderatorMessage}</p>{/if}
+        </section>
+      {/if}
+      {#if hiddenMessage}<p role="status">{hiddenMessage}</p>{/if}
+    </section>
+  {/if}
+{:else if error}<p
     role="alert"
   >
     {error}
@@ -288,6 +564,7 @@
             nodeId={node.id}
             archived={node.status === 'Archived'}
           />{/if}{/snippet}
+      <NodeReportControl nodeId={node.id} />
       <!-- This child form is regular child markup for NodePage’s panel, not a named snippet. -->
       {#if createType !== null}<div class="child-form">
           <button onclick={() => void closeChildForm()}>Close child form</button
@@ -341,6 +618,32 @@
 {/if}
 
 <style>
+  .hidden-node { max-width: 48rem; margin: 1rem auto; padding: 1.5rem; border: 1px solid color-mix(in srgb, #bd8336 45%, var(--atlas-border)); border-radius: 1rem; background: color-mix(in srgb, #bd8336 7%, var(--atlas-surface)); }
+  .hidden-node > h2 { margin-top: 0; }
+  .feedback { padding: .8rem 1rem; margin: .75rem 0; border-left: 3px solid #bd8336; border-radius: .5rem; background: var(--atlas-surface); }
+  .feedback p { margin: .4rem 0; }
+  .revision-tabs { display: flex; gap: .5rem; margin: 1rem 0; }
+  .revision-tabs button { border: 1px solid var(--atlas-border); border-radius: .5rem; padding: .6rem 1rem; }
+  .revision-tabs button:disabled { opacity: .5; cursor: not-allowed; }
+  .revision-tabs button.chosen { font-weight: 700; border-color: currentColor; }
+  .moderator-tools { margin-top: 2rem; padding: 1.4rem; border: 1px solid var(--atlas-border); border-radius: 1rem; background: var(--atlas-surface); box-shadow: 0 .3rem 1.2rem rgb(0 0 0 / .035); }
+  .moderator-tools h2 { margin-top: 0; }
+  .moderator-tools h3 { margin: 1.5rem 0 .85rem; }
+  .history-list { list-style: none; padding: 0; margin: 0; }
+  .history-list > li { padding: 1rem 1.1rem; margin: .7rem 0; background: var(--atlas-bg); border-radius: .7rem; border-left: 3px solid var(--atlas-accent); }
+  .history-list p { margin: .45rem 0; overflow-wrap: anywhere; }
+  .history-event { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .3rem 1rem; margin-top: .85rem; }
+  .history-event:first-child { margin-top: 0; }
+  .history-event time { color: var(--atlas-muted); font-size: .85rem; }
+  .moderator-tools textarea { display: block; width: 100%; padding: .7rem; border: 1px solid var(--atlas-border); border-radius: .55rem; background: var(--atlas-surface); color: var(--atlas-text); }
+  .moderator-tools button { border: 1px solid var(--atlas-border); border-radius: .55rem; background: var(--atlas-surface); color: var(--atlas-text); font: inherit; }
+  .moderator-tools button:hover:not(:disabled) { border-color: var(--atlas-accent); }
+  .moderator-tools button:disabled { opacity: .55; cursor: not-allowed; }
+  .moderator-tools label { display: block; margin: .75rem 0 .35rem; }
+
+  .hidden-node form { display: grid; gap: .6rem; margin: 1rem 0; }
+  .hidden-node input, .hidden-node textarea { width: 100%; padding: .65rem; background: var(--atlas-surface); color: var(--atlas-text); border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); }
+  .hidden-node button { padding: .6rem 1rem; margin: .5rem .5rem .5rem 0; }
   .child-form {
     max-width: 48rem;
     margin: 1rem auto;

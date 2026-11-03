@@ -117,7 +117,7 @@
     try {
       const response = await fetch(
         `${apiBase}/nodes/${encodeURIComponent(child)}/ancestors?firstParent=${encodeURIComponent(parentId)}`,
-        { credentials: 'omit' },
+        { credentials: apiBase === '/atlas-session-api' ? 'same-origin' : 'omit' },
       );
       if (!response.ok) throw new Error('Could not load the selected parent route.');
       const page = (await response.json()) as {
@@ -146,7 +146,7 @@
       for (const item of newAncestors) {
         if (liveChoices[item.id] || !item.id) continue;
         void fetch(`${apiBase}/nodes/${encodeURIComponent(item.id)}/parents`, {
-          credentials: 'omit',
+          credentials: apiBase === '/atlas-session-api' ? 'same-origin' : 'omit',
         })
           .then((res) => (res.ok ? res.json() : []))
           .then((parents) => {
@@ -200,7 +200,7 @@
         try {
           const response = await fetch(`${apiBase}/nodes/${encodeURIComponent(id)}/parents`, {
             signal: controller.signal,
-            credentials: 'omit',
+            credentials: apiBase === '/atlas-session-api' ? 'same-origin' : 'omit',
           });
           if (!response.ok) return;
           const parents = (await response.json()) as { id: string; title: string }[];

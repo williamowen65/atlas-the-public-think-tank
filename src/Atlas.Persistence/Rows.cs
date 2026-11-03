@@ -176,6 +176,30 @@ public sealed class CommentRow
     public DateTimeOffset? RemovedAt { get; set; }
 }
 
+/// <summary>Immutable evidence of the content submitted for a moderation report.</summary>
+public sealed class ModerationReportedSnapshotRow
+{
+    public Guid ModerationCaseId { get; set; }
+    public Guid NodeId { get; set; }
+    public DateTimeOffset CapturedAt { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string ShortDescription { get; set; } = string.Empty;
+    /// <summary>Versioned JSON containing the ordered reported content blocks.</summary>
+    public string ContentJson { get; set; } = string.Empty;
+}
+
+/// <summary>Append-only record of significant moderation workflow actions.</summary>
+public sealed class ModerationAuditEventRow
+{
+    public Guid Id { get; set; }
+    public Guid ModerationCaseId { get; set; }
+    public Guid NodeId { get; set; }
+    public Guid ActorParticipantId { get; set; }
+    public string EventKind { get; set; } = string.Empty;
+    public DateTimeOffset OccurredAt { get; set; }
+    public string? Detail { get; set; }
+}
+
 public sealed class ModerationCaseRow
 {
     public Guid Id { get; set; }

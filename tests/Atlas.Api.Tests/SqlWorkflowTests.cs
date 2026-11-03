@@ -267,6 +267,10 @@ public sealed class SqlWorkflowTests
                 HttpStatusCode.Forbidden,
                 (await otherClient.GetAsync("/api/moderation/queue")).StatusCode
             );
+            Assert.AreEqual(HttpStatusCode.Forbidden,
+                (await otherClient.GetAsync("/api/nodes/moderator?IncludeHidden=true")).StatusCode);
+            Assert.AreEqual(HttpStatusCode.Forbidden,
+                (await otherClient.GetAsync("/api/search/moderator?IncludeHidden=true")).StatusCode);
         }
         var unchanged = await client.GetFromJsonAsync<JsonElement>($"/api/nodes/{node}");
         Assert.AreEqual("HTTP idea", unchanged.GetProperty("title").GetString());

@@ -32,6 +32,8 @@ public sealed class HttpAbuseTests
     [DataRow("DELETE", "/api/comments/11111111-1111-4111-8111-111111111111/vote")]
     [DataRow("POST", "/api/nodes/11111111-1111-4111-8111-111111111111/comments")]
     [DataRow("GET", "/api/moderation/queue")]
+    [DataRow("GET", "/api/nodes/moderator?IncludeHidden=true")]
+    [DataRow("GET", "/api/search/moderator?IncludeHidden=true")]
     [DataRow("POST", "/api/auth/delete-account")]
     public async Task Anonymous_protected_routes_reject_before_database_work(string method, string path)
     {

@@ -11,6 +11,7 @@ namespace Atlas.Discovery;
 public interface IDiscoveryReadQuery
 {
     DiscoveryPage DiscoverPage(DiscoveryQuery query);
+    DiscoveryPage DiscoverModeratorPage(DiscoveryQuery query) => throw new NotSupportedException("Moderator discovery is unavailable.");
     DiscoveryPage DiscoverAuthoredPage(DiscoveryQuery query, IReadOnlyCollection<Guid> authoredNodeIds);
     IReadOnlyList<RankedDiscoveryItem> Discover(DiscoveryQuery query);
     IReadOnlyList<RankedDiscoveryItem> DiscoverAuthored(DiscoveryQuery query, IReadOnlyCollection<Guid> authoredNodeIds);

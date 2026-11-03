@@ -95,6 +95,7 @@ public sealed class DiscoveryCache : IDisposable
             query.CreatedFrom,
             query.CreatedThrough,
             query.IncludeArchived,
+            query.HiddenOnly,
             query.Page,
             PageSize = IDiscoveryService.PageSize,
             IncludeHidden = includeHidden,
@@ -144,10 +145,10 @@ public sealed class DiscoveryCache : IDisposable
         });
     }
 
-    /// <summary>Reuses a public card across filters/pages within the same detail revision.</summary>
-    internal bool TryDetail(long version, Guid id, out DiscoveryCard card)
+    /// <summary>Reuses a display card within its revision and authorized visibility namespace.</summary>
+    internal bool TryDetail(long version, Guid id, bool moderatorVisible, out DiscoveryCard card)
     {
-        if (_details.TryGetValue((version, id), out DiscoveryCard? value))
+        if (_details.TryGetValue((version, id, moderatorVisible), out DiscoveryCard? value))
         {
             DetailHits++;
             Telemetry.CacheLookup(detail: true, hit: true);
@@ -161,8 +162,8 @@ public sealed class DiscoveryCache : IDisposable
         return false;
     }
 
-    /// <summary>Stores public display text without any participant-specific ratings.</summary>
-    internal void PutDetail(long version, DiscoveryCard card)
+    /// <summary>Stores display text scoped to public or moderator visibility, without personal ratings.</summary>
+    internal void PutDetail(long version, DiscoveryCard card, bool moderatorVisible)
     {
         // Strings use approximately two bytes per character. Include object/key overhead;
         // oversized content still reaches the caller, but does not occupy the cache.
@@ -184,7 +185,7 @@ public sealed class DiscoveryCache : IDisposable
             return;
         }
 
-        _details.Set((version, card.NodeId), card, new MemoryCacheEntryOptions
+        _details.Set((version, card.NodeId, moderatorVisible), card, new MemoryCacheEntryOptions
         {
             AbsoluteExpirationRelativeToNow = _expiration,
             Size = size

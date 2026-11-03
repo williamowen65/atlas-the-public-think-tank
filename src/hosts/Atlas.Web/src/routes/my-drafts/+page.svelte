@@ -53,7 +53,7 @@
       resolvedPaths[entry.id] = entry.breadcrumb ?? [];
       void readDiscovery('/atlas-public-api', 1, '', AbortSignal.timeout(10000), parentId)
         .then((page) => {
-          const parent = page.items.map(discoveryCard).find((item) => item?.id === parentId);
+          const parent = page.items.map((item) => discoveryCard(item)).find((item) => item?.id === parentId);
           if (parent) {
             resolvedPaths[entry.id] = [...parent.breadcrumb, { id: parentId, title: parent.title }];
             moreAncestors[entry.id] = !!page.items.find((item) => item.nodeId === parentId)?.card
