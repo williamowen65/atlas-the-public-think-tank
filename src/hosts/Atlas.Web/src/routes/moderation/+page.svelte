@@ -9,6 +9,9 @@
   const base = '/atlas-session-api';
   const publicReasons = ['Other', 'Spam', 'Harassment', 'UnsafeContent', 'OffTopic'];
   let queue = $state<QueueItem[]>([]);
+  let queuePage = $state(1);
+  let queueTotal = $state(0);
+  let queueHasMore = $state(false);
   let selected = $state<string | null>(null);
   let history = $state<Case[]>([]);
   let loading = $state(true);
@@ -25,7 +28,7 @@
   let reviewOnly = $state(false);
   let sort = $state<'reports' | 'title'>('reports');
 
-  async function refresh() {
+  async function refresh(page = queuePage) {
     loading = true;
     error = '';
     try {
@@ -37,10 +40,17 @@
         return;
       }
       // The API remains the authority; never expose queue content on a denied response.
-      queue = await apiRequest<QueueItem[]>(base, 'moderation/queue');
+      const params = new URLSearchParams({ page: String(page), search, reviewOnly: String(reviewOnly), sort });
+      const result = await apiRequest<{ items: QueueItem[]; totalCount: number; hasNextPage: boolean }>(base, 'moderation/queue?' + params);
+      queue = result.items;
+      queuePage = page;
+      queueTotal = result.totalCount;
+      queueHasMore = result.hasNextPage;
       access = 'allowed';
     } catch (e) {
       queue = [];
+      queueTotal = 0;
+      queueHasMore = false;
       selected = null;
       history = [];
       if (e instanceof ApiRequestError && e.status === 401) {
@@ -77,7 +87,7 @@
       notice = decision === 0 ? 'Reports dismissed.' : 'Node hidden with public reason.';
       rationale = '';
       selected = null;
-      await refresh();
+      await refresh(1);
     } catch (e) {
       error = e instanceof Error ? e.message : 'Could not save decision.';
     } finally {
@@ -111,12 +121,7 @@
   onMount(() => { void refresh(); });
   const current = $derived(queue.find((item) => item.nodeId === selected));
   // Filters only affect visibility/order; decisions always target the selected node ID.
-  const visibleQueue = $derived(queue.filter((item) =>
-    item.reportedTitle.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()) &&
-    (!reviewOnly || item.reviewRequested)
-  ).sort((a, b) => sort === 'reports'
-    ? b.count - a.count || a.reportedTitle.localeCompare(b.reportedTitle)
-    : a.reportedTitle.localeCompare(b.reportedTitle)));
+  const visibleQueue = $derived(queue);
 </script>
 
 <svelte:head><title>Moderation · Atlas</title></svelte:head>
@@ -129,9 +134,8 @@
     <h1>Moderation</h1>
     {#if error}<p role="alert">{error}</p>{/if}
     {#if notice}<p role="status">{notice}</p>{/if}
-    {#if queue.length === 0}<p>No pending reports or review requests.</p>{/if}
-    {#if queue.length > 0}
-      <div class="filters" role="search" aria-label="Filter moderation queue">
+    {#if queueTotal === 0}<p>No pending reports or review requests matching these filters.</p>{/if}
+    <div class="filters" role="search" aria-label="Filter moderation queue">
         <label for="moderation-search">Search node titles</label>
         <input id="moderation-search" type="search" bind:value={search} placeholder="Find a reported node…" />
         <label class="checkbox"><input type="checkbox" bind:checked={reviewOnly} /> Author review requests only</label>
@@ -140,10 +144,10 @@
           <option value="reports">Most reports first</option>
           <option value="title">Node title A–Z</option>
         </select>
-        <p role="status">Showing {visibleQueue.length} of {queue.length} nodes</p>
+        <button type="button" disabled={loading} onclick={() => void refresh(1)}>Apply filters</button>
+        <p role="status">Showing {visibleQueue.length} of {queueTotal} nodes · Page {queuePage}</p>
       </div>
-      {#if visibleQueue.length === 0}<p>No nodes match these filters.</p>{/if}
-    {/if}
+      {#if visibleQueue.length === 0 && queueTotal > 0}<p>No nodes on this page.</p>{/if}
     <ul>
       {#each visibleQueue as item (item.nodeId)}
         <li>
@@ -154,6 +158,7 @@
         </li>
       {/each}
     </ul>
+    {#if queuePage > 1 || queueHasMore}<div class="actions"><button type="button" disabled={loading || queuePage === 1} onclick={() => void refresh(queuePage - 1)}>Previous</button><button type="button" disabled={loading || !queueHasMore} onclick={() => void refresh(queuePage + 1)}>Next</button></div>{/if}
     {#if current}
       <section aria-label="Selected moderation case">
         <h2>{current.reportedTitle}</h2>
