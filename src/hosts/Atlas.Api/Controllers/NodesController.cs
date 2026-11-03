@@ -200,6 +200,7 @@ public sealed class NodesController(
             {
                 id = node.Id.Value,
                 hidden = true,
+                publicReason = visibility.PublicReason.ToString(),
                 notice = visibility.Notice
             };
         return new
@@ -207,6 +208,7 @@ public sealed class NodesController(
             id = node.Id.Value,
             hidden = visibility.IsHidden,
             moderationNotice = visibility.IsHidden ? visibility.Notice : null,
+            publicReason = visibility.IsHidden ? visibility.PublicReason.ToString() : null,
             reviewRequested = visibility.IsHidden && visibility.ReviewRequested,
             title = node.Title.Value,
             node.ShortDescription,
