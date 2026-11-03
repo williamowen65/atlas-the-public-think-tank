@@ -774,7 +774,7 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
         // Supplemental search triggers require EF's trigger-compatible write path.
         model.Entity<NodeRow>(entity =>
         {
-            entity.ToTable("NodeRows", table => table.UseSqlOutputClause(false));
+            entity.ToTable("NodeRows", table => { table.UseSqlOutputClause(false); table.IsTemporal(); });
             entity.HasKey(row => row.Id);
             entity.Property(row => row.Title)
                 .HasMaxLength(450);
@@ -803,7 +803,7 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
         });
         model.Entity<DocumentRow>(entity =>
         {
-            entity.ToTable("DocumentRows");
+            entity.ToTable("DocumentRows", table => table.IsTemporal());
             entity.HasKey(row => row.Id);
             entity.Ignore(row => row.BlockIds);
             entity.HasMany(row => row.Blocks)
@@ -813,7 +813,7 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
         });
         model.Entity<BlockRow>(entity =>
         {
-            entity.ToTable("BlockRows", table => table.UseSqlOutputClause(false));
+            entity.ToTable("BlockRows", table => { table.UseSqlOutputClause(false); table.IsTemporal(); });
             entity.HasKey(row => row.Id);
             entity.Property(row => row.Kind)
                 .HasMaxLength(450);
@@ -935,7 +935,7 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
         });
         model.Entity<DocumentBlockRow>(entity =>
         {
-            entity.ToTable("DocumentBlocks", table => table.UseSqlOutputClause(false));
+            entity.ToTable("DocumentBlocks", table => { table.UseSqlOutputClause(false); table.IsTemporal(); });
             entity.HasKey(row => new { row.DocumentId, row.Position });
         });
         model.Entity<ReactionAuditRow>(entity =>
