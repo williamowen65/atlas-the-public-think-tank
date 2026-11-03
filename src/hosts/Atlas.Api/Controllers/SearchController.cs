@@ -1,4 +1,6 @@
 using Atlas.Discovery;
+using Atlas.Identity;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Atlas.Api.Controllers;
@@ -8,6 +10,12 @@ namespace Atlas.Api.Controllers;
 [ApiController, Route("api/search")]
 public sealed class SearchController(IPublicSearch search) : ControllerBase
 {
+    [Authorize(Policy = AtlasPolicies.GlobalModerator), HttpGet("moderator")]
+    public PublicSearchPage ModeratorSearch([FromQuery] DiscoveryQuery query, [FromQuery] string scope = "all") =>
+        search is IModeratorSearch moderator
+            ? moderator.SearchModerator(query, scope)
+            : throw new NotSupportedException("Moderator search is unavailable.");
+
     [HttpGet]
     public PublicSearchPage Search([FromQuery] DiscoveryQuery query, [FromQuery] string scope = "all") => search.Search(query, scope);
 
