@@ -129,9 +129,10 @@ public sealed class ModerationController(
             .Select(row => new { row.Title, row.ShortDescription })
             .FirstOrDefault();
         // Content is independently versioned: a block edit need not modify its node row.
-        var blockId = database.DocumentRows.AsNoTracking()
-            .Where(row => row.Id == current.DescriptionId)
-            .SelectMany(row => row.Blocks.OrderBy(link => link.Position).Select(link => link.BlockId))
+        var blockId = database.Set<DocumentBlockRow>().AsNoTracking()
+            .Where(row => row.DocumentId == current.DescriptionId)
+            .OrderBy(row => row.Position)
+            .Select(row => row.BlockId)
             .FirstOrDefault();
         var block = blockId == Guid.Empty ? null : database.BlockRows.AsNoTracking().SingleOrDefault(row => row.Id == blockId);
         var oldBlock = blockId == Guid.Empty ? null : database.BlockRows.TemporalAll().AsNoTracking()
