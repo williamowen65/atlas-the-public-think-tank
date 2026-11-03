@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.ComponentModel.DataAnnotations;
 using Atlas.Application;
 using Atlas.Graph.Nodes;
@@ -39,6 +40,23 @@ public sealed class ModerationController(
             request.Explanation,
             DateTimeOffset.UtcNow
         );
+        var current = database.NodeRows.AsNoTracking().Single(row => row.Id == id);
+        var content = (from link in database.Set<DocumentBlockRow>().AsNoTracking()
+                       join block in database.BlockRows.AsNoTracking() on link.BlockId equals block.Id
+                       where link.DocumentId == current.DescriptionId
+                       orderby link.Position
+                       select new { link.Position, block.Kind, block.Markdown, block.AltText,
+                           block.Caption, block.Url, block.Title, block.Description, block.ReferenceId }).ToArray();
+        database.ModerationReportedSnapshotRows.Add(new ModerationReportedSnapshotRow
+        {
+            ModerationCaseId = report.Id,
+            NodeId = id,
+            CapturedAt = report.CreatedAt,
+            Title = current.Title,
+            ShortDescription = current.ShortDescription,
+            ContentJson = JsonSerializer.Serialize(content)
+        });
+        database.SaveChanges();
         return new
         {
             report.Id
