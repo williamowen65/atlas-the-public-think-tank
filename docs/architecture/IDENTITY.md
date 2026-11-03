@@ -1,73 +1,128 @@
 # Identity and Participants
 
-[PTT-94](https://thepublicthinktank.atlassian.net/browse/PTT-94) introduces infrastructure for authenticated Atlas hosts. [ADR-0006](decisions/ADR-0006-identity-participant-mapping.md) records the key decisions. [Setup](../PTT-94-Identity.md) covers the developer-generated migration.
+Atlas keeps **public identities** (Participants) separate from **login accounts** (ASP.NET Core Identity). [PTT-94](https://thepublicthinktank.atlassian.net/browse/PTT-94) introduced the infrastructure; [ADR-0006](decisions/ADR-0006-identity-participant-mapping.md) explains the design decision. See [developer setup](../PTT-94-Identity.md) for migrations and operator commands.
 
-## At a glance
-
-- **Participants** owns public profiles and contributions.
-- **ASP.NET Core Identity** owns accounts, credentials, and global roles.
-- **Atlas.Identity** connects authenticated accounts to Participants.
-- **Atlas.Persistence** stores both models in SQL Server.
-
-## Ownership and identity mapping
+## Who owns what?
 
 | Concern | Owner | Implementation |
 |---|---|---|
-| Public display name, bio, active state, timestamps | Participants | `Participant`, `ParticipantId`, existing `ParticipantRows` |
-| Password hashes, email confirmation, lockout, tokens, roles | ASP.NET Core Identity | `AtlasIdentityUser : IdentityUser<Guid>` and framework managers |
-| SQL mapping and migration history | Atlas.Persistence | `AtlasDataContext` and `IdentityModel` |
-| Account/profile registration and host authorization seam | Atlas.Identity | `AtlasAccounts`, `AtlasSignInManager`, policies and adapters |
-| Ownership, node lifecycle, community membership, moderation cases | Atlas domain/application workflows | Existing domain rules still run after authentication |
+| Public names, bios, active state, and contributions | Participants | `Participant`, `ParticipantId`, `ParticipantRows` |
+| Credentials, confirmation, lockout, tokens, global roles | ASP.NET Core Identity | `AtlasIdentityUser : IdentityUser<Guid>`, framework managers |
+| Account/profile coordination and authorization | Atlas.Identity | `AtlasAccounts`, `AtlasSignInManager`, policies, adapters |
+| Database mappings and migrations | Atlas.Persistence | `AtlasDataContext`, `IdentityModel` |
+| Nodes, communities, ownership, moderation cases | Their domain/application workflows | Domain rules still apply after authentication |
 
-An Identity user's Id equals its ParticipantId. A one-to-one SQL foreign key from `identity.Users.Id` to `ParticipantRows.Id` prevents an account without a profile. A profile may exist without an account, preserving all existing demo profiles. A profile cannot be physically deleted while its account exists; there is no cascading deletion of public contributions. Identity has no domain navigation property, and Participants references neither EF nor Identity.
+### Account-to-profile mapping
 
-The existing shared physical database/context is retained. Domain tables stay at their existing names/schema; the seven account tables use the `identity` schema. Identity's built-in model is configured first; Atlas's supplied-key rule applies only to Atlas row types. Identity claim IDs remain database-generated integers. Normalized usernames and non-null normalized emails have unique SQL indexes. Migration-owned role seed metadata uses fixed GUIDs and concurrency stamps, not generated values that cause pending changes on every build.
+An Identity account's `Id` is its `ParticipantId`.
 
-## Registration transaction
+- A one-to-one foreign key links `identity.Users.Id` to `ParticipantRows.Id`, so an account requires a Participant.
+- A Participant **can exist without a login account**, preserving existing demo profiles.
+- An associated profile cannot be physically deleted while its account exists. Public contributions are not cascade-deleted.
+- Identity has no domain navigation property; Participants does not depend on EF or Identity.
 
-`AtlasAccounts.RegisterAsync(email, password, displayName)` creates a validated Participant and uses its new GUID for the account. It uses a serializable transaction on the same scoped context as UserManager:
+### SQL configuration
 
-1. Check the display name is unused under SQL collation and insert the profile.
-2. Let `UserManager.CreateAsync` validate the account/password and hash/store the password.
-3. Assign only Member via `UserManager.AddToRoleAsync`.
+Atlas retains one physical database and context. Domain tables keep their existing names/schema; seven account tables live under `identity`.
+
+- Configure Identity's framework model first. Atlas's supplied-key rule applies only to Atlas rows; framework claim IDs stay database-generated integers.
+- Normalize usernames and non-null emails, with unique SQL indexes.
+- Seed roles with stable GUIDs and concurrency stamps so migrations do not show model changes on every build.
+
+## Registration: one transaction
+
+`AtlasAccounts.RegisterAsync(email, password, displayName)` creates a validated Participant, then an account with the same GUID. The shared scoped context uses a **serializable transaction**.
+
+1. Check that the display name is unused under SQL collation; insert the profile.
+2. Use `UserManager.CreateAsync` for account/password validation, hashing, and storage.
+3. Assign **Member only** through `UserManager.AddToRoleAsync`.
 4. Commit profile, account, and membership together.
 
-Validation failures return IdentityResult errors; transaction disposal rolls back the profile as well as credentials/membership. Unexpected database/configuration failures propagate after rollback. The tracker is cleared so rolled-back state cannot later be saved accidentally. Use a dedicated request scope; do not share the DbContext concurrently or mix unrelated pending changes into registration. SQL deadlocks/concurrent unique-index conflicts may surface as infrastructure failures; retry a whole registration in a fresh scope if the host chooses to retry. No process-local lock replaces SQL constraints.
+**On failure:** Validation returns `IdentityResult` errors; transaction disposal rolls back profile and account changes. Unexpected database/configuration failures propagate after rollback. Clear the change tracker so rolled-back objects are not later saved.
 
-The caller cannot select an account ID, existing profile, or privileged role. Existing demo profiles are not claimable by email or display-name matching.
+**Concurrency rules:**
 
-## Framework account management
+- Give registration a dedicated request scope; do not share its `DbContext` concurrently or mix unrelated pending changes into it.
+- SQL deadlocks and unique-index races can surface as infrastructure failures. If retrying, retry the **whole registration** in a fresh scope.
+- SQL constraints remain authoritative; no process-local lock substitutes for them.
 
-**Use Identity's sign-in workflow, not just a password-hash check.** Account confirmation, lockout, profile eligibility, and 2FA status all matter.
+The caller cannot pick an account ID, attach an existing profile, or request a privileged role. Demo profiles are not claimable by email or display-name matching.
 
-`AddAtlasIdentity(connectionString)` registers `UserManager<AtlasIdentityUser>`, `RoleManager<IdentityRole<Guid>>`, a custom `SignInManager<AtlasIdentityUser>`, EF stores, cookies, Data Protection token providers, the account coordinator, policies, and the moderation adapter.
+## Sign-in and account security
 
-Use framework methods for password changes, email confirmation, password resets, 2FA, and sign-in/sign-out. Password rules require at least 12 characters and retain Identity's digit/uppercase/lowercase/non-alphanumeric defaults. New accounts require confirmed email. Five failed password attempts lock the account for 15 minutes when sign-in uses `lockoutOnFailure: true`. `AtlasSignInManager.CanSignInAsync` also requires an active linked profile. Do not authenticate by calling `CheckPasswordAsync` alone: that verifies a hash but does not execute the sign-in eligibility, lockout, or 2FA flow.
+**Password verification alone is not authentication.** The complete framework sign-in flow checks account confirmation, lockout, linked-profile eligibility, and 2FA status.
 
-Tests use `CheckPasswordSignInAsync` to exercise password/eligibility/lockout behavior without issuing browser cookies. A future HTTP host should use the framework sign-in methods and handle their 2FA results rather than issuing a cookie after a password check itself. The tests confirm account email through framework-generated tokens; no production confirmation email transport exists yet.
+`AddAtlasIdentity(connectionString)` registers `UserManager<AtlasIdentityUser>`, `RoleManager<IdentityRole<Guid>>`, custom `SignInManager<AtlasIdentityUser>`, EF stores, cookies, Data Protection token providers, the account coordinator, policies, and the moderation adapter.
 
-## Policies and current actor
+| Rule | Current behavior |
+|---|---|
+| Password | At least 12 characters; Identity's digit, uppercase, lowercase, and special-character requirements remain |
+| Email | Confirmation required for new accounts |
+| Lockout | Five failed attempts trigger 15 minutes when sign-in uses `lockoutOnFailure: true` |
+| Profile | `AtlasSignInManager.CanSignInAsync` requires an active linked Participant |
+| 2FA | Must be handled as part of framework sign-in; Console cannot complete 2FA |
 
-| Policy | Allowed stored roles |
+Use framework methods for password changes, confirmation, resets, 2FA, and sign-in/sign-out. **Do not use `CheckPasswordAsync` as the login flow**: it checks a hash, not whether sign-in is permitted.
+
+Tests use `CheckPasswordSignInAsync` to exercise eligibility and lockout without issuing cookies. Test email confirmation uses framework-generated tokens; production confirmation email transport is not implemented yet.
+
+## Authorization policies
+
+| Policy | Stored roles allowed |
 |---|---|
 | `Atlas.Member` | Member, GlobalModerator, Administrator |
 | `Atlas.GlobalModerator` | GlobalModerator, Administrator |
 | `Atlas.Administrator` | Administrator |
 
-All policies require an authenticated principal and a persisted, confirmed, unlocked account with an active Participant. `AtlasAccounts.ResolveParticipantAsync` maps the framework user-ID claim to this verified ID. Missing, malformed, empty, unknown, anonymous, locked, unconfirmed, or inactive identities cannot resolve.
+Every policy also requires an authenticated principal with a **persisted, confirmed, unlocked account and active Participant**.
 
-The policy handler reads current database role memberships instead of trusting role claims copied into an older cookie. Removing a role takes effect on the next policy check. Cookie validation retains the framework security-stamp validator and rechecks profile eligibility on every cookie request; password-change stamp invalidation retains the framework's validation interval. Role possession does not grant ownership of someone else's profile/node or community moderator status.
+### Resolving the current actor
 
-`IdentityModeratorAuthorization` implements the existing `IModeratorAuthorization` port using stored global GlobalModerator/Administrator membership and active-account eligibility. The host must derive its actor ID from authenticated identity before invoking domain services. This adapter does not turn arbitrary caller-supplied GUIDs into authenticated actors. Moderation continues to own reports, decisions, hide/restore behavior, and audit history.
+`AtlasAccounts.ResolveParticipantAsync` resolves the framework user-ID claim against validated account/profile state. It rejects anonymous, missing, malformed, empty, unknown, locked, unconfirmed, and inactive identities.
 
-## HTTP host integration contract
+- Policy checks read **current database roles**, not old role claims embedded in a cookie. Removal takes effect at the next policy check.
+- Cookies retain Identity's security-stamp validation; profile eligibility is rechecked on each cookie request. Password-change stamp invalidation retains the framework validation interval.
+- A global role does **not** grant ownership of another member's profile/node or community moderator authority.
 
-**Boundary rule:** The host identifies the actor from the authenticated principal. A request body cannot choose who is acting.
+### Moderation authorization
 
-A future host registers `builder.Services.AddAtlasIdentity(connectionString)` and enables authentication/authorization middleware. Protected endpoints use `AtlasPolicies` and resolve the actor via `AtlasAccounts`; request bodies must not choose the actor ID. Registration uses the account coordinator rather than directly calling `UserManager.CreateAsync`, including if using framework API endpoints: an unadapted stock registration endpoint would bypass profile creation and violate the foreign key.
+`IdentityModeratorAuthorization` implements `IModeratorAuthorization` using persisted GlobalModerator/Administrator membership and active-account eligibility.
 
-The host owns actual endpoints/UI, confirmation and reset email delivery, rate limits, cookie/CSRF behavior, HTTPS, and persistent/shared Data Protection keys. The cookie is HttpOnly and Secure. Framework managers/token providers are infrastructure readiness, not evidence that a complete account-management HTTP API is deployed. GlobalModerator provisioning is available through the trusted Console `--grant-global-moderator` operator workflow (PTT-159); Administrator provisioning remains separate. Public registration never assigns privileged roles; the first user is not automatically an administrator.
+The host derives the actor from authenticated identity. A caller-supplied GUID cannot impersonate another Participant. Moderation still owns reports, decisions, hide/restore behavior, and case history.
 
-The Console now uses `ConsoleAccountCommands` for registration/sign-in and `ConsoleIdentitySession` for the authenticated actor. Participant switching and direct profile-only creation have been removed from its interactive menus. The session checks the Member policy and security stamp using fresh SQL state before every main menu; sign-out discards it. Profile browsing never changes the actor. Global moderation uses the Identity authorization port instead of configured GUIDs. The console explicitly refuses accounts with 2FA enabled rather than treating password verification as completed authentication.
+## Host responsibilities
 
-The local `--grant-global-moderator` utility grants the seeded role only to existing confirmed, active, unlocked accounts, with explicit terminal confirmation and idempotent assignment. It is not exposed through HTTP or public registration. The local `--confirm-email` operator utility uses framework confirmation tokens until email delivery exists. It is explicitly trusted development tooling, not proof of email ownership. See [console setup](../PTT-94-Identity.md#use-registration-and-sign-in). No new migration is needed for this console follow-up.
+### HTTP/API host
+
+The HTTP host configures `AddAtlasIdentity(connectionString)` and authentication/authorization middleware. Protected routes use `AtlasPolicies` and resolve the actor through `AtlasAccounts`—**never from a request body's claimed actor ID**.
+
+Registration must go through the account coordinator. Calling `UserManager.CreateAsync` directly from a stock registration endpoint would skip Participant creation and violate the foreign key.
+
+The host handles:
+
+- Actual account-management endpoints and UI
+- Confirmation/reset email delivery
+- Rate limiting, HTTPS, cookie/CSRF behavior, and persistent/shared Data Protection keys
+
+The cookie is HttpOnly and Secure. Framework managers/token providers alone do not mean a complete account-management HTTP API is available.
+
+### Console host
+
+Console uses `ConsoleAccountCommands` for register/sign-in and `ConsoleIdentitySession` for the authenticated actor.
+
+- Interactive participant switching and direct profile-only creation were removed.
+- Each main menu refreshes SQL account/Member-policy/security-stamp eligibility; sign-out discards the session.
+- Browsing a profile does not change the actor.
+- Global moderation checks the Identity authorization port, not configured moderator GUIDs.
+- Console rejects 2FA-enabled accounts rather than treating a password check as complete login.
+
+### Trusted operator utilities
+
+| Command | Purpose | Boundary |
+|---|---|---|
+| `--confirm-email` | Locally confirm an account with framework tokens | Trusted development tooling; not proof of email ownership |
+| `--grant-global-moderator` | Grant the seeded role to a confirmed, active, unlocked existing account | Terminal-only with explicit confirmation; idempotent; not a public endpoint |
+
+See [registration and sign-in](../PTT-94-Identity.md#local-account-workflow) and [moderator provisioning](../PTT-94-Identity.md#trusted-moderator-provisioning-ptt-159).
+
+Administrator provisioning is separate. Public registration never grants a privileged role, and the first registrant is **not** automatically an administrator. Neither Console utility requires an additional migration.
