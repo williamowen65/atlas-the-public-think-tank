@@ -207,7 +207,9 @@ export async function readDiscovery(
   if (mixedSearch && filters?.scope) query.set('scope', filters.scope);
   if (search.trim()) query.set('SearchText', search.trim());
   if (includeModeratorHidden) query.set('IncludeHidden', 'true');
-  const endpoint = includeModeratorHidden ? 'nodes/moderator' : mixedSearch ? 'search' : 'nodes';
+  const endpoint = includeModeratorHidden
+    ? (mixedSearch ? 'search/moderator' : 'nodes/moderator')
+    : mixedSearch ? 'search' : 'nodes';
   const requestBase = includeModeratorHidden ? '/atlas-session-api' : base;
   const response = await fetch(`${requestBase}/${endpoint}?${query}`, {
     method: 'GET',
