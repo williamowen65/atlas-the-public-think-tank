@@ -106,6 +106,15 @@ public sealed class DiscoveryMixedSearchTests
         var first = search.Search(new(SearchText: "salmon"));
         var second = search.Search(new(SearchText: "salmon", Page: 2));
         var third = search.Search(new(SearchText: "salmon", Page: 3));
+        // Moderator search uses the same mixed ranking, but includes the hidden node and
+        // its comments; the public search must remain redacted.
+        var moderator = search.SearchModerator(new(SearchText: "salmon"), "all");
+        Assert.IsTrue(moderator.TotalCount > first.TotalCount);
+        Assert.IsTrue(moderator.Items.Concat(search.SearchModerator(new(SearchText: "salmon", Page: 2)).Items)
+            .Concat(search.SearchModerator(new(SearchText: "salmon", Page: 3)).Items)
+            .Concat(search.SearchModerator(new(SearchText: "salmon", Page: 4)).Items)
+            .Any(item => item.NodeId == hidden.NodeId && item.Card?.IsHidden == true
+                && item.Card.Title == hidden.Title));
         Assert.AreEqual(8, first.TotalCount);
         Assert.AreEqual(3, first.Items.Count);
         Assert.IsTrue(first.HasNextPage); Assert.IsFalse(third.HasNextPage);
