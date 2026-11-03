@@ -16,6 +16,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import LiveNodeFeed from './LiveNodeFeed.svelte';
+  import NodeCard from './NodeCard.svelte';
+  import { discoveryCard, type DiscoveryPage } from '../api/discovery';
+  import type { NodeCardData } from './node-card-versions/types';
   import { apiRequest } from '../api/apiRequest';
   import type { Community } from '../api/communities';
   let {
@@ -68,7 +71,7 @@
    * Whether the session lookup has completed, including a signed-out result.
    */
   let sessionReady = $state(false);
-  type HiddenNode = { id: string; title: string; typeName: string; notice: string; rationale: string; decidedAt: string };
+  type HiddenNode = { id: string; node: NodeCardData; notice: string; rationale: string; decidedAt: string; average: number | null; voteCount: number };
   let hiddenOwned = $state<HiddenNode[]>([]);
   let hiddenLoadError = $state('');
   let hiddenLoading = $state(false);
@@ -80,23 +83,23 @@
     hiddenLoadError = '';
     try {
       // The server filters hidden nodes before applying Discovery's fixed-size pagination.
-      const page = await apiRequest<{
-        items: Array<{ nodeId: string; card?: { title?: string; typeName?: string; isHidden?: boolean } | null }>;
-        hasNextPage: boolean;
-      }>('/atlas-session-api', `nodes/mine/hidden?Page=${pageNumber}`);
+      const page = await apiRequest<DiscoveryPage>('/atlas-session-api', `nodes/mine/hidden?Page=${pageNumber}`);
       if (sessionId !== ownerId || participantId !== ownerId) return;
       const details = await Promise.all(page.items.map(async (item): Promise<HiddenNode> => {
         const detail = await apiRequest<{
           reasons: Array<{ publicReason: string; rationale: string | null; decidedAt: string }>;
         }>('/atlas-session-api', `moderation/nodes/${encodeURIComponent(item.nodeId)}/notice`);
         const decision = detail.reasons[0];
+        const node = discoveryCard(item, true);
+        if (!node) throw new Error('Missing private node card');
         return {
           id: item.nodeId,
-          title: item.card?.title ?? 'Hidden node',
-          typeName: item.card?.typeName ?? 'Node',
+          node,
           notice: decision?.publicReason ?? 'Hidden by moderator',
           rationale: decision?.rationale ?? '',
           decidedAt: decision?.decidedAt ?? '',
+          average: item.averageVote,
+          voteCount: item.voteCount,
         };
       }));
       if (sessionId !== ownerId || participantId !== ownerId) return;
@@ -322,10 +325,9 @@
             {#each hiddenOwned as hidden (hidden.id)}
               <article class="hidden-card">
                 <p class="hidden-label">Hidden by moderator · {hidden.notice}</p>
-                <h3>{hidden.title}</h3>
-                <p class="muted">{hidden.typeName}{hidden.decidedAt ? ' · ' + new Date(hidden.decidedAt).toLocaleDateString() : ''}</p>
+                <NodeCard node={hidden.node} average={hidden.average} totalVotes={hidden.voteCount} onReadMore={(id) => onOpenNode?.(id)} />
+                <p class="muted">{hidden.decidedAt ? new Date(hidden.decidedAt).toLocaleDateString() : ''}</p>
                 <p><strong>Moderator explanation:</strong> {hidden.rationale || 'No explanation was provided.'}</p>
-                <button type="button" onclick={() => onOpenNode?.(hidden.id)}>Open node to revise and request review</button>
               </article>
             {/each}
           </div>
