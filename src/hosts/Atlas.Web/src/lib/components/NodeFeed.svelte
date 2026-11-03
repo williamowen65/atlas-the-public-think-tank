@@ -172,8 +172,8 @@
       -->
       {#snippet voting()}{#if renderVoting}{@render renderVoting(item)}{/if}{/snippet}
       {#snippet reactions()}{#if renderReactions}{@render renderReactions(item)}{/if}{/snippet}
-      <li>
-        {#if item.node.isHidden}<p class="moderation-indicator">Hidden by moderator</p>{/if}
+      <li class:moderated-card={item.node.isHidden === true}>
+        {#if item.node.isHidden}<p class="moderation-indicator">Hidden by moderator · Private contribution</p>{/if}
         <NodeCard
           reactionControls={renderReactions ? reactions : undefined}
           voting={renderVoting ? voting : undefined}
@@ -231,7 +231,9 @@
 </section>
 
 <style lang="scss">
-  .moderation-indicator { font-weight: 700; margin: 0.5rem 0; }
+  .moderation-indicator { font-weight: 700; margin: 0 0 .9rem; color: var(--atlas-text); }
+  .moderated-card { padding: 1.2rem; border: 1px solid color-mix(in srgb, #bd8336 45%, var(--atlas-border)); border-radius: 1rem; background: color-mix(in srgb, #bd8336 7%, var(--atlas-surface)); }
+  .moderated-card :global(.read-more) { margin-left: auto; }
   .node-feed {
     max-width: 48rem;
     margin-inline: auto;
