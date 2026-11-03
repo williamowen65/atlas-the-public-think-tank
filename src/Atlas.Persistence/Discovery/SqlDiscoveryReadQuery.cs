@@ -186,7 +186,7 @@ public sealed class SqlDiscoveryReadQuery(
             // avoiding a query per node. With no cache, every selected ID is missing here.
             foreach (var item in page.Items)
             {
-                if (cache is not null && cache.TryDetail(revision.DetailVersion, item.NodeId, out var card))
+                if (!(query.IncludeHidden && includeHidden) && cache is not null && cache.TryDetail(revision.DetailVersion, item.NodeId, out var card))
                 {
                     cards.Add(item.NodeId, card);
                 }
@@ -217,7 +217,8 @@ public sealed class SqlDiscoveryReadQuery(
             }
             foreach (var card in loaded.Values)
             {
-                cache?.PutDetail(revision.DetailVersion, card);
+                if (!(query.IncludeHidden && includeHidden))
+                    cache?.PutDetail(revision.DetailVersion, card);
             }
 
             // 10. Return a copy with its public cards attached. Cached ranked pages remain
