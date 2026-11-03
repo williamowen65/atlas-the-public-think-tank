@@ -58,6 +58,7 @@
     onVote,
     onNavigate,
     onReadMore,
+    editOpensDetail = false,
     onChildType,
     onComments,
     hasMoreAncestors = false,
@@ -87,15 +88,19 @@
 -->
 
 <article class="node-card" class:mobile-layout={mobileLayout} data-presentation="ribbon-corner" aria-labelledby={`${instance}-title`}>
-    <NodeEditControl
-      corner
-      nodeId={node.id}
-      authorId={node.authorId}
-      {apiBase}
-      onSaved={(update) => {
-        node = { ...node, title: update.title, description: update.shortDescription };
-      }}
-    />
+    {#if editOpensDetail}
+      <button class="hidden-edit-link" type="button" aria-label="Open hidden node to edit and request review" title="Open node to revise" onclick={() => onReadMore?.(node.id)}>✎ Edit</button>
+    {:else}
+      <NodeEditControl
+        corner
+        nodeId={node.id}
+        authorId={node.authorId}
+        {apiBase}
+        onSaved={(update) => {
+          node = { ...node, title: update.title, description: update.shortDescription };
+        }}
+      />
+    {/if}
   {#if node.breadcrumb.length}
     <div class="ribbon-context">
       <Breadcrumb
@@ -208,6 +213,8 @@
 {/snippet}
 
 <style lang="scss">
+  .hidden-edit-link { position: absolute; z-index: 2; top: 0; right: 0; border: 1px solid var(--atlas-border); border-top: 0; border-right: 0; border-radius: 0 var(--atlas-radius) 0 var(--atlas-radius); padding: .55rem .8rem; background: var(--atlas-surface); color: var(--atlas-text); font: inherit; cursor: pointer; }
+  .hidden-edit-link:hover { color: var(--atlas-accent); }
   .mobile-type { display: none; }
 
 
