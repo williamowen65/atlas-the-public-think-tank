@@ -13,7 +13,7 @@
     "build-storybook": "storybook build --disable-telemetry",
     "test": "playwright test",
     "test:ci": "npm run build && npm run build-storybook && npm test",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check": "npm run check:dev-proxy && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "prepare": "svelte-kit sync",
     "storybook:api": "concurrently --kill-others --names API,Storybook \"dotnet run --project ../Atlas.Api --launch-profile https\" \"npm run storybook\"",
     "format": "prettier --write \"src/**/*.svelte\" \"storybook/**/*.svelte\" \"src/routes/+layout.ts\" \"src/styles.scss\"",
@@ -21,7 +21,8 @@
     "dev:api": "concurrently --kill-others --names API,Web \"dotnet run --project ../Atlas.Api --launch-profile https\" \"npm run dev\"",
     "storybook:ranking": "concurrently --kill-others --names RankingLab,Storybook \"dotnet run --project ../Atlas.RankingLab\" \"npm run storybook\"",
     "dev:lan:api": "node dev/startLan.mjs",
-    "test:lan-config": "node --test dev/lanEnvironment.test.mjs"
+    "test:lan-config": "node --test dev/lanEnvironment.test.mjs",
+    "check:dev-proxy": "node dev/checkLocalApi.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
