@@ -22,12 +22,13 @@ public sealed class ModerationController(
     ModerationWorkflowService workflow,
     INodeRepository nodes,
     AtlasDataContext database,
-    RequestActor actor
+    RequestActor actor,
+    Func<AtlasDataContext> openDatabase
 ) : ControllerBase
 {
     private void RecordAudit(Guid nodeId, string eventKind, string? detail = null)
     {
-        using var lease = SqlOperationBoundary.Open(SqlStorage.Open);
+        using var lease = SqlOperationBoundary.Open(openDatabase);
         var auditDb = lease.Context;
         var caseIds = auditDb.ModerationCaseRows.AsNoTracking()
             .Where(row => row.NodeId == nodeId)
@@ -46,9 +47,9 @@ public sealed class ModerationController(
     [HttpPost("nodes/{id:guid}/reports")]
     public object Report(Guid id, ReportRequest request)
     {
-        return SqlOperationBoundary.Execute(SqlStorage.Open, () =>
+        return SqlOperationBoundary.Execute(openDatabase, () =>
         {
-        using var lease = SqlOperationBoundary.Open(SqlStorage.Open);
+        using var lease = SqlOperationBoundary.Open(openDatabase);
         var transactionDb = lease.Context;
         // Capture the current title from storage rather than trusting a submitted title.
         var node = nodes.GetById(new NodeId(id)) ?? throw new KeyNotFoundException();
@@ -93,7 +94,7 @@ public sealed class ModerationController(
     [HttpPost("nodes/{id:guid}/review")]
     public IActionResult Review(Guid id)
     {
-        SqlOperationBoundary.Execute(SqlStorage.Open, () =>
+        SqlOperationBoundary.Execute(openDatabase, () =>
         {
         workflow.RequestReview(
             nodes.GetById(new NodeId(id)) ?? throw new KeyNotFoundException(),
@@ -236,7 +237,7 @@ public sealed class ModerationController(
     [Authorize(Policy = AtlasPolicies.GlobalModerator), HttpPost("nodes/{id:guid}/decision")]
     public IActionResult Decide(Guid id, DecisionRequest request)
     {
-        SqlOperationBoundary.Execute(SqlStorage.Open, () =>
+        SqlOperationBoundary.Execute(openDatabase, () =>
         {
         workflow.Decide(
             id,
@@ -255,7 +256,7 @@ public sealed class ModerationController(
     [Authorize(Policy = AtlasPolicies.GlobalModerator), HttpPost("nodes/{id:guid}/restore")]
     public IActionResult Restore(Guid id, TextRequest request)
     {
-        SqlOperationBoundary.Execute(SqlStorage.Open, () =>
+        SqlOperationBoundary.Execute(openDatabase, () =>
         {
         workflow.Restore(id, actor.ParticipantId, request.Text);
         RecordAudit(id, "Restored", request.Text);
