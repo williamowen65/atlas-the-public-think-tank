@@ -51,6 +51,22 @@ internal static partial class DemoData
                 DecidedAt = reportedAt.AddHours(1),
                 PublicReason = 1,
                 ReviewRequestedAt = reportedAt.AddHours(2)
+            },
+            new()
+            {
+                // A hidden grandchild with a real two-step breadcrumb:
+                // What ideas could help make the world better? > Use ranked voting...
+                NodeId = Guid.Parse("b1000000-0000-4000-8000-000000000008"),
+                Id = Guid.Parse("c4000000-0000-4000-8000-000000000004"),
+                ReporterId = DemoParticipants.User03Id,
+                Reason = "Demo: hidden descendant for breadcrumb verification",
+                ReportedTitle = "Would ranked voting encourage more people to run for office?",
+                CreatedAt = reportedAt,
+                Status = 2,
+                ReviewerId = DemoParticipants.User05Id,
+                DecisionReason = "Demo-only hidden descendant for inspecting authorized breadcrumbs.",
+                DecidedAt = reportedAt.AddHours(1),
+                PublicReason = 4
             }
         });
     }
