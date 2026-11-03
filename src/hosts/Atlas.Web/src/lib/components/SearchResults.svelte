@@ -129,7 +129,7 @@
       AbortSignal.any([current.signal, AbortSignal.timeout(10000)]),
       undefined,
       constraints,
-      !moderatorRead,
+      true,
       moderatorRead,
     )
       .then((page) => {
@@ -166,7 +166,7 @@
         AbortSignal.any([current.signal, AbortSignal.timeout(10000)]),
         undefined,
         filters,
-        !moderatorRead,
+        true,
         moderatorRead,
       );
       if (current.signal.aborted) return;
@@ -200,7 +200,7 @@
   bind:this={resultsElement}
 >
   <h2>Search results</h2>
-  {#if canModerate && moderatorVisibility.includeHidden && filters.scope !== 'comments'}<p class="summary">Showing nodes, including hidden nodes. Comment results are not included in this moderator view.</p>{/if}
+
   {#if items.length}<p class="summary">{items.length} shown · {total} matches</p>{/if}
   <ul>
     {#each items as node (node.id)}
