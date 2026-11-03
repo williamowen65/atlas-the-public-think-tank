@@ -18,6 +18,7 @@
 -->
 <script lang="ts">
   import LoadingPlaceholder from './LoadingPlaceholder.svelte';
+  import HiddenNodePublicNotice from './HiddenNodePublicNotice.svelte';
   import { apiRequest } from '../api/apiRequest';
   import LiveVotingDial from './LiveVotingDial.svelte';
   import LiveReactions from './LiveReactions.svelte';
@@ -72,7 +73,7 @@
    * Loaded public node-card model, or null before usable node data is available.
    */
   let node = $state<NodeCardData | null>(null);
-  type HiddenDetail = NodeDetail & { moderationNotice?: string | null; reviewRequested?: boolean; notice?: string };
+  type HiddenDetail = NodeDetail & { moderationNotice?: string | null; reviewRequested?: boolean; notice?: string; publicReason?: string | null };
   let hiddenDetail = $state<HiddenDetail | null>(null);
   let hiddenTitle = $state('');
   let hiddenIntro = $state('');
@@ -294,7 +295,9 @@
   child markup supplies the selected discussion panel.
 -->
 
-{#if loading}<LoadingPlaceholder kind="node" label="Loading node…" />{:else if hiddenDetail}
+{#if loading}<LoadingPlaceholder kind="node" label="Loading node…" />{:else if hiddenDetail && !hiddenDetail.title}
+  <HiddenNodePublicNotice reason={hiddenDetail.publicReason} />
+{:else if hiddenDetail}
   <section class="hidden-node" aria-label="Hidden node moderation">
     <h1>{hiddenDetail.title ?? 'Hidden by moderator'}</h1>
     <p role="status"><strong>Hidden by moderator.</strong> {hiddenDetail.moderationNotice ?? hiddenDetail.notice ?? ''}</p>
