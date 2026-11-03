@@ -91,6 +91,9 @@
   let hiddenHistory = $state<ReportHistory[]>([]);
   let hiddenPreview = $state<NodeCardData | null>(null);
   let hiddenPreviewError = $state(false);
+  type TextRevision = { title: string; shortDescription: string; markdown: string };
+  let hiddenRevisions = $state<{ reported: TextRevision | null; revised: TextRevision } | null>(null);
+  let revisionTab = $state<'reported' | 'revised'>('revised');
   let moderatorRationale = $state('');
   let moderatorBusy = $state(false);
   let moderatorConfirm = $state(false);
@@ -264,6 +267,8 @@
     hiddenHistory = [];
     hiddenPreview = null;
     hiddenPreviewError = false;
+    hiddenRevisions = null;
+    revisionTab = 'revised';
     moderatorRationale = '';
     moderatorConfirm = false;
     moderatorMessage = '';
@@ -297,6 +302,12 @@
                 hiddenHistory = await apiRequest<ReportHistory[]>(
                   '/atlas-session-api', `moderation/nodes/${encodeURIComponent(id)}/history`, 'GET', undefined, signal);
                 hiddenModerator = true;
+                try {
+                  hiddenRevisions = await apiRequest<{ reported: TextRevision | null; revised: TextRevision }>(
+                    '/atlas-session-api', `moderation/nodes/${encodeURIComponent(id)}/revisions`, 'GET', undefined, signal);
+                } catch {
+                  // Temporal history is optional for existing nodes that predate the migration.
+                }
                 try {
                   const [previewPage, originalBlocks] = await Promise.all([
                     readDiscovery(apiBase, 1, '', signal, id, undefined, false, true),
@@ -401,9 +412,21 @@
         <h2>Moderator inspection</h2>
         <p>This is a read-only rendering of the original contribution using the standard node-page layout. Only the author can revise it and request review.</p>
         {#if hiddenPreview}
+          {#if hiddenRevisions?.reported}
+            <div class="revision-tabs" role="group" aria-label="Compare node revisions">
+              <button type="button" class:chosen={revisionTab === 'reported'} aria-pressed={revisionTab === 'reported'} onclick={() => revisionTab = 'reported'}>Reported version</button>
+              <button type="button" class:chosen={revisionTab === 'revised'} aria-pressed={revisionTab === 'revised'} onclick={() => revisionTab = 'revised'}>Revised version</button>
+            </div>
+          {/if}
           <NodePage
-            node={hiddenPreview}
-            blocks={hiddenBlocks}
+            node={hiddenRevisions?.reported && revisionTab === 'reported'
+              ? { ...hiddenPreview, title: hiddenRevisions.reported.title, description: hiddenRevisions.reported.shortDescription }
+              : hiddenPreview}
+            blocks={hiddenRevisions?.reported && revisionTab === 'reported'
+              ? hiddenBlocks.map(block => ['markdown', 'markdowntext'].includes(block.kind.toLowerCase())
+                ? { ...block, content: { ...block.content, markdown: hiddenRevisions!.reported!.markdown } }
+                : block)
+              : hiddenBlocks}
             types={[]}
             active="comments"
             inspectionOnly
@@ -563,6 +586,9 @@
 
 <style>
   .hidden-node { max-width: 48rem; margin: 1rem auto; padding: 1rem; border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); }
+  .revision-tabs { display: flex; gap: .5rem; margin: 1rem 0; }
+  .revision-tabs button { border: 1px solid var(--atlas-border); border-radius: .5rem; padding: .6rem 1rem; }
+  .revision-tabs button.chosen { font-weight: 700; border-color: currentColor; }
   .moderator-tools { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--atlas-border); }
   .moderator-tools label { display: block; margin: .75rem 0 .35rem; }
   .moderator-tools ul { padding-left: 1.5rem; }

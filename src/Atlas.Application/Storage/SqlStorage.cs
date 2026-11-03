@@ -131,6 +131,8 @@ public static class SqlStorage
         using var seedDatabase = Open();
         DemoData.Seed(seedDatabase);
         seedDatabase.SaveChanges();
+        // A separate committed update is required to populate temporal history.
+        DemoData.SeedModerationRevision(seedDatabase);
     }
 
     private static bool CollectionHasRows(

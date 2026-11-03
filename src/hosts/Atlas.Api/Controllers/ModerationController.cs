@@ -3,6 +3,8 @@ using Atlas.Application;
 using Atlas.Graph.Nodes;
 using Atlas.Identity;
 using Atlas.Moderation;
+using Atlas.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,6 +19,7 @@ public sealed class ModerationController(
     ModerationService moderation,
     ModerationWorkflowService workflow,
     INodeRepository nodes,
+    AtlasDataContext database,
     RequestActor actor
 ) : ControllerBase
 {
@@ -111,6 +114,45 @@ public sealed class ModerationController(
             status = x.Status.ToString()
         }
     );
+
+    /// <summary>Read the prior persisted text revision for a hidden node. Moderator-only.</summary>
+    [Authorize(Policy = AtlasPolicies.GlobalModerator), HttpGet("nodes/{id:guid}/revisions")]
+    public IActionResult Revisions(Guid id)
+    {
+        // Do not expose history for ordinary public nodes through this moderation surface.
+        if (!moderation.Visibility(id).IsHidden) return NotFound();
+        var current = database.NodeRows.AsNoTracking().SingleOrDefault(row => row.Id == id);
+        if (current is null) return NotFound();
+        var previous = database.NodeRows.TemporalAll().AsNoTracking()
+            .Where(row => row.Id == id && EF.Property<DateTime>(row, "PeriodEnd") < DateTime.MaxValue)
+            .OrderByDescending(row => EF.Property<DateTime>(row, "PeriodEnd"))
+            .Select(row => new { row.Title, row.ShortDescription })
+            .FirstOrDefault();
+        // Content is independently versioned: a block edit need not modify its node row.
+        var blockId = database.Set<DocumentBlockRow>().AsNoTracking()
+            .Where(row => row.DocumentId == current.DescriptionId)
+            .OrderBy(row => row.Position)
+            .Select(row => row.BlockId)
+            .FirstOrDefault();
+        var block = blockId == Guid.Empty ? null : database.BlockRows.AsNoTracking().SingleOrDefault(row => row.Id == blockId);
+        var oldBlock = blockId == Guid.Empty ? null : database.BlockRows.TemporalAll().AsNoTracking()
+            .Where(row => row.Id == blockId && EF.Property<DateTime>(row, "PeriodEnd") < DateTime.MaxValue)
+            .OrderByDescending(row => EF.Property<DateTime>(row, "PeriodEnd"))
+            .Select(row => new { row.Markdown }).FirstOrDefault();
+        return Ok(new
+        {
+            reported = previous is null && oldBlock is null ? null : new {
+                title = previous?.Title ?? current.Title,
+                shortDescription = previous?.ShortDescription ?? current.ShortDescription,
+                markdown = oldBlock?.Markdown ?? block?.Markdown ?? ""
+            },
+            revised = new {
+                current.Title,
+                current.ShortDescription,
+                markdown = block?.Markdown ?? ""
+            }
+        });
+    }
 
     /// <summary>Apply a moderator decision through the shared moderation workflow.</summary>
     [Authorize(Policy = AtlasPolicies.GlobalModerator), HttpPost("nodes/{id:guid}/decision")]
