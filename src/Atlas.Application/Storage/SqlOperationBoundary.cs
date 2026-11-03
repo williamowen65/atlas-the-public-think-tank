@@ -99,7 +99,7 @@ public static class SqlOperationBoundary
     /// <remarks>
     /// A temporary candidate checks connection configuration and is disposed before borrowing the shared context.
     /// </remarks>
-    internal static ContextLease Open(Func<AtlasDataContext> open)
+    public static ContextLease Open(Func<AtlasDataContext> open)
     {
         var candidate = open();
         if (Current.Value is null) return new ContextLease(
@@ -140,7 +140,7 @@ public static class SqlOperationBoundary
         exception.InnerException is not null && IsConflict(exception.InnerException);
 
     /// <summary>Tracks whether this caller owns its context or only borrows the outer operation context.</summary>
-    internal sealed class ContextLease(
+    public sealed class ContextLease(
         AtlasDataContext context,
         bool owns
     ) : IDisposable
