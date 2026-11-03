@@ -91,7 +91,7 @@ test('anonymous visitors are redirected to sign-in before loading the queue', as
     return route.fulfill({ status: 403 });
   });
   await page.goto('http://127.0.0.1:4173/moderation');
-  await expect(page).toHaveURL(/\\/login(?:[?#]|$)/);
+  await expect(page).toHaveURL(/\/login(?:[?#]|$)/);
   expect(queueRequests).toBe(0);
   await expect(page.getByRole('heading', { name: 'Moderation', exact: true })).toHaveCount(0);
 });
