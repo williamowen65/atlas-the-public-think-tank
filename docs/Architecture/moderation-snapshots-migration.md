@@ -1,44 +1,73 @@
-# Moderation snapshots and audit events — replacement for temporal history
+# Moderation snapshots and audit events
 
-## Scope
-Replace the moderation dependency on SQL Server system-versioned temporal tables with a bounded, case-linked reported-content snapshot and a separate append-only audit event log. Preserve the existing moderation UI and `GET /api/moderation/nodes/{id}/revisions` response shape.
+> **Proposed migration — not yet implemented.** This plan would replace moderation's dependence on SQL Server temporal history with immutable, report-specific content snapshots and append-only audit events. It is not an instruction to drop existing history tables today.
 
-## What must stay true
+## Why change the storage model?
 
-**At report time:** Capture the reported title, short description, and ordered content blocks. The snapshot belongs to one report and never changes.
+A moderator needs to compare **what was reported** with **what the author has written now**. Historical row versions alone do not reliably identify the exact content visible when a report was submitted.
 
-**After the report:** Compare that frozen snapshot with the node's current content. Ordinary author edits do not create new snapshots.
+The proposed design keeps two different kinds of records:
 
-**For reviewers:** Keep reporter identities private from author-facing APIs, and retain an append-only record of moderation actions.
+| Record | Purpose | When it changes |
+|---|---|---|
+| Reported-content snapshot | Preserves the node as it appeared when a specific report was submitted | Never; each report gets its own snapshot |
+| Audit event | Records who performed a moderation action, what happened, and when | Never; new actions append new events |
+| Current node and document | Shows the author's latest content for comparison | Changes with normal author edits |
 
-## Invariants
-- A report captures **the content at report submission**, not the content at moderator decision or the last edit. Store title, short description, and the complete ordered content-block payload needed to reconstruct the report. Do not reconstruct from a node's current document or temporal periods.
-- The reported snapshot is immutable and associated with its report/case ID. A later report on the same node must not overwrite earlier evidence.
-- The revised side of the comparison is the **current** node/document content. Routine author saves do not create moderation snapshots or audit events.
-- Report submission and snapshot persistence are atomic. If capture fails, the report must not be accepted without evidence.
-- Moderator-only comparison and history endpoints must not expose reporter identities through author-facing APIs.
-- Audit events are append-only, recording actor, action, time, case/node reference, rationale when relevant. Capture report, decision, review request, and restoration events, including repeated review requests. Never rewrite prior events.
-- Use a storage limit for snapshot payloads and existing report submission quotas; do not store a new snapshot for each author edit.
-- Avoid synthesizing evidence for historical cases whose exact reported content is unavailable.
+The existing moderation UI and `GET /api/moderation/nodes/{id}/revisions` response shape must remain compatible.
 
-## Data model and migration
-1. Add `ModerationReportedSnapshotRows` with unique `ModerationCaseId`, `NodeId`, `CapturedAt`, `Title`, `ShortDescription`, and a versioned JSON payload of ordered content blocks. Foreign-key to the case and node.
-2. Add `ModerationAuditEventRows` with immutable event ID, case/node ID, actor participant ID, event kind, occurred-at, and optional reason/detail; index by node and occurrence.
-3. Remove `IsTemporal()` from `NodeRows`, `DocumentRows`, `BlockRows`, and `DocumentBlocks` **only after checking all remaining usages**. EF migration must disable SQL Server system versioning safely, remove generated period columns/history tables where appropriate, and preserve current rows. Update the EF model snapshot.
-4. Migrate existing cases conservatively: retain case metadata, mark any missing reported snapshot as unavailable; never use the latest prior revision as purported evidence. Disposable demo data can be reseeded.
+## Rules that must remain true
 
-## How the workflow uses the data
-- Report endpoint: capture the full content and create the report and snapshot within the same database transaction / operation boundary; preserve report quota enforcement.
-- Revisions endpoint: resolve the relevant hidden case's snapshot and current content. If multiple cases exist, select the case being investigated explicitly or deterministically expose the relevant cases; never silently merge their reported versions.
-- Existing author revision and request-review behavior remains unchanged.
-- Seed both review-request fixtures with snapshots, plus Demo User 04's other hidden cases. No temporal seeding edits are needed after migration.
+### Report-time evidence
 
-## How to verify it
-- Report snapshot matches submission-time content, including ordered blocks, after multiple author saves.
-- Two reports on one node retain independent snapshots.
-- Failed snapshot persistence rolls back the report.
-- Moderator revisions endpoint returns immutable reported content + current content, with missing-snapshot behavior explicit.
-- Author/nonmoderator cannot read moderator-only snapshots or reporter identities.
-- Repeated author edits do not grow snapshot count; review requests and restoration produce audit events.
-- Existing queue, hidden visibility, authored listing, and search security tests remain passing.
-- Migration upgrades a populated database without losing current node/document data; fresh database seed succeeds.
+- Capture the title, short description, and **all ordered content blocks at report submission**—not at the moderator's decision or the most recent edit.
+- Associate the immutable snapshot with its own report/case ID. Two reports about one node retain separate evidence.
+- Save the report and snapshot atomically. If evidence capture fails, reject and roll back the report.
+- Enforce a snapshot-payload size limit and existing report-submission quotas.
+
+### Comparisons and privacy
+
+- Compare the frozen reported snapshot with the **current** node/document.
+- Normal author edits do not create additional moderation snapshots or audit events.
+- Do not expose reporter identities through author-facing APIs. Snapshot and comparison endpoints intended for moderators remain restricted.
+- If a historical case lacks its actual submission-time content, mark its snapshot **unavailable**. Never present an inferred earlier revision as exact evidence.
+
+### Audit trail
+
+Append events for report submission, decisions, author review requests (including repeated requests), and restoration. Each event records:
+
+- Event ID, action type, and occurrence time
+- Actor's Participant ID and case/node reference
+- Rationale or other details when relevant
+
+Prior events must never be rewritten.
+
+## Proposed SQL model
+
+| Table | Required data | Constraints |
+|---|---|---|
+| `ModerationReportedSnapshotRows` | `ModerationCaseId`, `NodeId`, `CapturedAt`, `Title`, `ShortDescription`, versioned JSON of ordered content blocks | Unique case ID; foreign keys to case and node |
+| `ModerationAuditEventRows` | Immutable event ID, case/node reference, actor Participant ID, event kind, occurred-at, optional reason/detail | Index by node and occurrence |
+
+## Migration sequence
+
+1. **Add the new tables.** Generate and review the EF migration and updated model snapshot.
+2. **Wire report submission.** Capture all reported content and save it with the case in the same transaction/operation boundary.
+3. **Update comparisons.** Resolve the relevant hidden case's snapshot alongside current content. For multiple cases, select the case explicitly or present the relevant cases deterministically; never merge their reported versions silently.
+4. **Handle existing cases.** Preserve case metadata. Flag unavailable snapshots rather than manufacturing evidence. Disposable demo data may be reseeded.
+5. **Remove temporal history only after a usage audit.** Check every remaining dependency on `IsTemporal()` for `NodeRows`, `DocumentRows`, `BlockRows`, and `DocumentBlocks`. Safely disable SQL Server versioning and remove period columns/history tables where appropriate **without losing current rows**.
+6. **Refresh seed fixtures.** Supply snapshots for both review-request fixtures and Demo User 04's other hidden cases. Temporal seeding edits will no longer be needed after migration.
+
+Keep existing author-edit and request-review behavior intact throughout the change.
+
+## Verification checklist
+
+- [ ] Submission-time title, short description, and ordered blocks remain unchanged after several author edits.
+- [ ] Two reports about one node retain separate snapshots.
+- [ ] A failed snapshot write rolls back report submission.
+- [ ] The revisions endpoint returns reported and current content, with a clear unavailable-snapshot response where needed.
+- [ ] Authors and nonmoderators cannot read restricted snapshots or reporter identities.
+- [ ] Author saves do not increase snapshot counts; review requests and restorations append audit events.
+- [ ] Queue, hidden-content visibility, authored listings, and search-security tests still pass.
+- [ ] Migration preserves current data in an existing populated database.
+- [ ] Fresh setup and demo seeding succeed.
