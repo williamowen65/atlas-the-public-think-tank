@@ -83,6 +83,9 @@
   let hiddenMessage = $state('');
   let hiddenEdited = $state(false);
   let hiddenAuthor = $state(false);
+  type ModerationFeedback = { reasons: { publicReason: string; rationale: string; decidedAt: string | null; reviewRequested: boolean }[] };
+  let hiddenFeedback = $state<ModerationFeedback | null>(null);
+  let hiddenFeedbackError = $state(false);
   async function saveHiddenRevision() {
     if (!hiddenDetail || !hiddenAuthor || hiddenBusy) return;
     hiddenBusy = true; hiddenMessage = '';
@@ -228,6 +231,8 @@
     node = null;
     hiddenDetail = null;
     hiddenAuthor = false;
+    hiddenFeedback = null;
+    hiddenFeedbackError = false;
     createType = null;
     editingDraft = null;
     saveChildDraft = null;
@@ -243,6 +248,15 @@
             if (detail.authorId && detail.title) {
               const session = await apiRequest<{ participantId: string | null }>('/atlas-session-api', 'auth/session', 'GET', undefined, signal);
               hiddenAuthor = session.participantId === detail.authorId;
+              if (hiddenAuthor) {
+                try {
+                  hiddenFeedback = await apiRequest<ModerationFeedback>(
+                    '/atlas-session-api', `moderation/nodes/${encodeURIComponent(id)}/notice`, 'GET', undefined, signal,
+                  );
+                } catch {
+                  if (!signal.aborted) hiddenFeedbackError = true;
+                }
+              }
               hiddenTitle = detail.title;
               hiddenIntro = detail.shortDescription ?? '';
               hiddenBlocks = await apiRequest<ContentBlock[]>('/atlas-session-api', `nodes/${encodeURIComponent(id)}/description`, 'GET', undefined, signal);
@@ -295,31 +309,50 @@
   child markup supplies the selected discussion panel.
 -->
 
-{#if loading}<LoadingPlaceholder kind="node" label="Loading node…" />{:else if hiddenDetail && !hiddenDetail.title}
-  <HiddenNodePublicNotice reason={hiddenDetail.publicReason} />
-{:else if hiddenDetail}
-  <section class="hidden-node" aria-label="Hidden node moderation">
-    <h1>{hiddenDetail.title ?? 'Hidden by moderator'}</h1>
-    <p role="status"><strong>Hidden by moderator.</strong> {hiddenDetail.moderationNotice ?? hiddenDetail.notice ?? ''}</p>
-    {#if hiddenDetail.title}
-      <p>This node is not visible in public discovery or search. Only its author and authorized moderators can inspect the original content.</p>
-      {#if hiddenDetail.reviewRequested}<p role="status">A moderator review has already been requested.</p>{/if}
+{#if loading}<LoadingPlaceholder kind="node" label="Loading node…" />{:else if hiddenDetail}
+  <HiddenNodePublicNotice reason={hiddenDetail.publicReason} author={hiddenAuthor} />
+  {#if hiddenDetail.title}
+    <section class="hidden-node" aria-label="Private hidden contribution">
       {#if hiddenAuthor}
+        <h2>Your hidden contribution</h2>
+        <p>Only you and authorized moderators can see the original content below. The public sees the explanation above, not this content.</p>
+        <h3>Moderator feedback</h3>
+        {#if hiddenFeedback?.reasons?.length}
+          {#each hiddenFeedback.reasons as decision, index (index)}
+            <div class="feedback">
+              <p><strong>Public category:</strong> {decision.publicReason}</p>
+              <p><strong>Moderator explanation:</strong> {decision.rationale}</p>
+            </div>
+          {/each}
+        {:else if hiddenFeedbackError}
+          <p role="alert">Moderator feedback could not be loaded. You can still revise your contribution.</p>
+        {:else}
+          <p>No additional written moderator explanation is available.</p>
+        {/if}
+        <h3>Revise your contribution</h3>
+        {#if hiddenDetail.reviewRequested}
+          <p role="status">Your review request is pending. The contribution remains hidden until a moderator restores it.</p>
+        {/if}
         <form onsubmit={(event) => { event.preventDefault(); void saveHiddenRevision(); }}>
           <label for="hidden-title">Title</label><input id="hidden-title" bind:value={hiddenTitle} maxlength="500" required />
           <label for="hidden-intro">Short description</label><textarea id="hidden-intro" bind:value={hiddenIntro} rows="3" required></textarea>
           <label for="hidden-description">Description (Markdown)</label><textarea id="hidden-description" bind:value={hiddenMarkdown} rows="8"></textarea>
           <button type="submit" disabled={hiddenBusy}>Save revision</button>
         </form>
-        <button type="button" disabled={hiddenBusy || !!hiddenDetail.reviewRequested} onclick={() => void requestHiddenReview()}>Request moderator review</button>
-        <p>Save an actual revision after the moderation decision before requesting review. Editing does not automatically restore visibility.</p>
+        <button type="button" disabled={hiddenBusy || !!hiddenDetail.reviewRequested || !hiddenEdited} onclick={() => void requestHiddenReview()}>Request moderator review</button>
+        <p>Save a revision that addresses the feedback before requesting review. Saving does not automatically make the contribution public.</p>
       {:else}
+        <h2>Moderator inspection</h2>
+        <p>The original contribution is visible to authorized moderators. Only the author can revise it and request review.</p>
+        <h3>{hiddenDetail.title}</h3>
         <p><strong>Short description:</strong> {hiddenDetail.shortDescription}</p>
-        {#each hiddenBlocks as block (block.id)}{#if block.content.markdown}<p>{block.content.markdown}</p>{/if}{/each}
+        {#each hiddenBlocks as block (block.id)}
+          {#if block.content.markdown}<p>{block.content.markdown}</p>{/if}
+        {/each}
       {/if}
       {#if hiddenMessage}<p role="status">{hiddenMessage}</p>{/if}
-    {/if}
-  </section>
+    </section>
+  {/if}
 {:else if error}<p
     role="alert"
   >
