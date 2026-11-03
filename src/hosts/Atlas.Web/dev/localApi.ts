@@ -205,6 +205,95 @@ export const sessionApiGuard: Plugin = {
       const path = request.url.split('?')[0];
       const guid = '[0-9a-f-]{36}';
       const method = request.method ?? 'GET';
+      // MAINTENANCE: Keep this allowlist syntactically complete when adding routes.
+      // A malformed template literal or truncated expression here prevents Vite from
+      // starting, often with a misleading parse error earlier in this file.
+      // After editing, run: npx esbuild dev/localApi.ts --bundle --platform=node --packages=external --outfile=localApi-check.js
+      // Then run: npm run check (and delete the temporary output).
+      // The proxy only forwards these reads; ASP.NET Core still authorizes them.
+      const privilegedDiscoveryReads = [
+        '/atlas-session-api/nodes/moderator',
+        '/atlas-session-api/search/moderator',
+        '/atlas-session-api/nodes/mine/hidden',
+      ].includes(path)
+        || new RegExp('^/atlas-session-api/moderation/nodes/' + guid + '/notice
+      const readable = privilegedDiscoveryReads || ['/atlas-session-api/communities/mine', '/atlas-session-api/communities/creation-allowance', '/atlas-session-api/nodes/mine'].includes(path)
+        || new RegExp(`^/atlas-session-api/nodes/${guid}(?:/description)?$`, 'i').test(path)
+        || new RegExp(`^/atlas-session-api/nodes/${guid}/(?:votes|reactions)$`, 'i').test(path)
+        || new RegExp(`^/atlas-session-api/comments/${guid}/votes$`, 'i').test(path)
+        || /^\/atlas-session-api\/auth\/(csrf|session)$/.test(path)
+        || path === '/atlas-session-api/moderation/queue'
+        || new RegExp(`^/atlas-session-api/moderation/nodes/${guid}/history$`, 'i').test(path)
+        || new RegExp(`^/atlas-session-api/participants/${guid}$`, 'i').test(path);
+
+      // Permitted writes, grouped by feature. Login/register can be anonymous.
+      const nodeEdit = method === 'PUT' && new RegExp(`^/atlas-session-api/nodes/${guid}/(?:title|short-description)$`, 'i').test(path);
+      const blockAdd = method === 'POST' && new RegExp(`^/atlas-session-api/nodes/${guid}/description/blocks$`, 'i').test(path);
+      const blockEdit = method === 'PUT' && new RegExp(`^/atlas-session-api/nodes/${guid}/description/blocks/${guid}$`, 'i').test(path);
+      const profileEdit = method === 'PUT' && path === '/atlas-session-api/participants/me';
+      const commentVote = ['PUT', 'DELETE'].includes(method) && new RegExp(`^/atlas-session-api/comments/${guid}/vote$`, 'i').test(path);
+      const nodeVote = ['PUT', 'DELETE'].includes(method) && new RegExp(`^/atlas-session-api/nodes/${guid}/vote$`, 'i').test(path);
+      const reactionVote = method === 'PUT' && new RegExp(`^/atlas-session-api/nodes/${guid}/reactions/vote$`, 'i').test(path);
+      const undoReaction = method === 'DELETE' && new RegExp(`^/atlas-session-api/reactions/${guid}/vote$`, 'i').test(path);
+      const communityWrite = (method === 'POST' && (path === '/atlas-session-api/communities' || new RegExp(`^/atlas-session-api/communities/${guid}/(?:archive|restore)$`, 'i').test(path)))
+        || (method === 'PUT' && new RegExp(`^/atlas-session-api/communities/${guid}/(?:membership|name|description|nodes/${guid})$`, 'i').test(path))
+        || (method === 'DELETE' && new RegExp(`^/atlas-session-api/communities/${guid}/(?:membership|nodes/${guid})$`, 'i').test(path));
+
+      // Explicitly forward moderation writes; authorization and CSRF remain in the API.
+      const moderationWrite = method === 'POST'
+        && new RegExp(`^/atlas-session-api/moderation/nodes/${guid}/(?:reports|review|decision|restore)$`, 'i').test(path);
+
+      const writable = nodeEdit || blockAdd || blockEdit || moderationWrite || communityWrite || profileEdit || commentVote || nodeVote || reactionVote || undoReaction
+        || method === 'POST' && (['/atlas-session-api/nodes', '/atlas-session-api/catalog/node-types', '/atlas-session-api/auth/register'].includes(path) || /^\/atlas-session-api\/auth\/(login|logout|resend-confirmation)$/.test(path)
+        || new RegExp(`^/atlas-session-api/nodes/${guid}/comments$`, 'i').test(path)
+        || new RegExp(`^/atlas-session-api/comments/${guid}/replies$`, 'i').test(path))
+        || ['PUT', 'DELETE'].includes(method) && new RegExp(`^/atlas-session-api/comments/${guid}$`, 'i').test(path);
+
+      // A request in our scope must match either an allowed GET or a write.
+      if (!(method === 'GET' && readable) && !writable) {
+        response.statusCode = 405;
+        response.end('Unsupported session API operation.');
+        return;
+      }
+      // 3. Reject cross-site writes before forwarding cookies. Backend CSRF remains mandatory.
+      if (writable) {
+        const origin = request.headers.origin;
+        if (!origin || ![`http://${host}`, `https://${host}`].includes(origin)
+          || request.headers['sec-fetch-site'] === 'cross-site') {
+          response.statusCode = 403;
+        response.end('Same-origin requests are required.');
+        return;
+        }
+      }
+      // Allowed: next() continues the chain; Vite already has the proxy settings.
+      next();
+    });
+  },
+};
+
+export function sessionApiProxy(): ProxyOptions {
+  // Reuse local-target validation, but replace the public proxy’s cookie handling.
+  const options = publicApiProxy();
+  return {
+    ...options,
+    rewrite: path => path.replace(/^\/atlas-session-api/, '/api'),
+    configure(proxy) {
+      proxy.on('proxyReq', request => {
+        request.removeHeader('authorization');
+        // Forward only Atlas session/CSRF cookies, including chunked sessions.
+        const cookies = String(request.getHeader('cookie') ?? '').split(';').map(cookie => cookie.trim())
+          .filter(cookie => /^__Host-Atlas\.(?:Csrf|Session(?:C\d+)?)=/.test(cookie));
+        if (cookies.length) request.setHeader('cookie', cookies.join('; ')); else request.removeHeader('cookie');
+      });
+      proxy.on('proxyRes', response => {
+        // Preserve Secure/HttpOnly/SameSite and __Host semantics; never weaken API cookies.
+        const cookies = response.headers['set-cookie']?.filter(cookie => /^__Host-Atlas\.(?:Csrf|Session(?:C\d+)?)=/.test(cookie));
+        if (cookies?.length) response.headers['set-cookie'] = cookies; else delete response.headers['set-cookie'];
+        response.headers['cache-control'] = 'no-store';
+      });
+    },
+  };
+}
 , 'i').test(path);
       const readable = privilegedDiscoveryReads || ['/atlas-session-api/communities/mine', '/atlas-session-api/communities/creation-allowance', '/atlas-session-api/nodes/mine'].includes(path)
         || new RegExp(`^/atlas-session-api/nodes/${guid}(?:/description)?$`, 'i').test(path)
