@@ -8,16 +8,19 @@ using Microsoft.EntityFrameworkCore;
 namespace Atlas.Persistence.Discovery;
 
 /// <summary>Filters and pages heterogeneous search hits in SQL, materializing only the selected page.</summary>
-public sealed class SqlPublicSearch(Func<AtlasDataContext> open) : IPublicSearch
+public sealed class SqlPublicSearch(Func<AtlasDataContext> open) : IPublicSearch, IModeratorSearch
 {
     public const string RankingPolicyVersion = "support-v2";
     public PublicSearchPage Search(DiscoveryQuery query, string scope = "all")
-        => Read(query, scope).Page;
+        => Read(query, scope, false).Page;
+
+    public PublicSearchPage SearchModerator(DiscoveryQuery query, string scope = "all")
+        => Read(query with { IncludeHidden = true }, scope, true).Page;
 
     /// <summary>Same query and pagination as Search, with SQL-calculated ranking evidence for development tools.</summary>
     public ExplainedSearchPage Explain(DiscoveryQuery query, string scope = "all") => Read(query, scope);
 
-    private ExplainedSearchPage Read(DiscoveryQuery query, string scope)
+    private ExplainedSearchPage Read(DiscoveryQuery query, string scope, bool includeHidden = false)
     {
         DiscoveryQueryValidation.Validate(query);
         scope = scope?.Trim().ToLowerInvariant() ?? "all";
@@ -29,18 +32,19 @@ public sealed class SqlPublicSearch(Func<AtlasDataContext> open) : IPublicSearch
             // Filter-only searches keep their established node-only behavior.
             if (query.SearchText is null && scope != "comments")
             {
-                var nodes = new SqlDiscoveryReadQuery(open).DiscoverPage(query);
+                var reader = new SqlDiscoveryReadQuery(open);
+                var nodes = includeHidden ? reader.DiscoverModeratorPage(query) : reader.DiscoverPage(query);
                 return new(new(nodes.Items.Select(n => new PublicSearchItem(n.NodeId, n.VoteCount, n.AverageVote, n.Card, null)).ToArray(), nodes.TotalCount, nodes.Page, nodes.PageSize), []);
             }
             if (query.SearchText is not null) DiscoveryFullTextSchema.EnsureAvailable(db, includeComments: true);
             using var transaction = db.Database.BeginTransaction(IsolationLevel.Snapshot);
-            var hits = BuildHits(db, query, scope);
+            var hits = BuildHits(db, query, scope, includeHidden);
             var total = hits.Count();
             var offset = ((long)query.Page - 1) * IDiscoveryService.PageSize;
             var selected = offset >= total ? [] : hits.Skip((int)offset).Take(IDiscoveryService.PageSize).ToArray();
             var nodeIds = selected.Where(h => h.Kind == 0).Select(h => h.NodeId).ToArray();
-            var cards = SqlDiscoveryReadQuery.ReadCards(db, nodeIds);
-            var nodeScope = DiscoveryEfQuery.Build(db, query with { SearchText = null }, null, false);
+            var cards = SqlDiscoveryReadQuery.ReadCards(db, nodeIds, includeHidden);
+            var nodeScope = DiscoveryEfQuery.Build(db, query with { SearchText = null }, null, includeHidden);
             var aggregates = nodeScope.Where(n => nodeIds.Contains(n.NodeId)).ToDictionary(n => n.NodeId);
             var commentIds = selected.Where(h => h.Kind == 1).Select(h => h.Id).ToArray();
             var details = (from c in db.CommentRows.AsNoTracking()
@@ -62,7 +66,7 @@ public sealed class SqlPublicSearch(Func<AtlasDataContext> open) : IPublicSearch
 
     public const string WeightedRankingPolicyVersion = "weighted-v1";
 
-    private static IQueryable<Hit> BuildHits(AtlasDataContext db, DiscoveryQuery query, string scope)
+    private static IQueryable<Hit> BuildHits(AtlasDataContext db, DiscoveryQuery query, string scope, bool includeHidden)
     {
         IQueryable<Match> matches = query.SearchText is null
             ? db.CommentRows.Select(c => new Match { ResultId = c.Id, NodeId = c.TargetId, Kind = 1, Score = 0 })
@@ -76,7 +80,7 @@ public sealed class SqlPublicSearch(Func<AtlasDataContext> open) : IPublicSearch
                        where match.Kind == 0 && scope != "comments"
                        select new Hit { Id = match.ResultId, NodeId = node.NodeId, Kind = 0, Score = match.Score, CommentScore = 0, Support = (node.AverageVote ?? 0) * node.VoteCount / (node.VoteCount + 1.0), At = node.UpdatedAt };
         // Structural/voting filters concern the containing node; author/date concern the comment.
-        var commentNodes = DiscoveryEfQuery.Build(db, query with { SearchText = null, AuthorParticipantId = null, CreatedFrom = null, CreatedThrough = null }, null, false);
+        var commentNodes = DiscoveryEfQuery.Build(db, query with { SearchText = null, AuthorParticipantId = null, CreatedFrom = null, CreatedThrough = null }, null, includeHidden);
         var comments = db.CommentRows.AsNoTracking().Where(c => c.TargetKind == "Node" && c.Status == "Active" && c.RemovedAt == null);
         if (query.AuthorParticipantId is { } author) comments = comments.Where(c => c.AuthorParticipantId == author);
         if (query.CreatedFrom is { } from) { var date = from.ToDateTime(TimeOnly.MinValue); comments = comments.Where(c => c.CreatedAt.Date >= date); }
