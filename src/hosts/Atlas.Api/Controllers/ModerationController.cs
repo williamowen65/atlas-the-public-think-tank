@@ -77,15 +77,27 @@ public sealed class ModerationController(
 
     /// <summary>Project the pending moderation queue for a global moderator.</summary>
     [Authorize(Policy = AtlasPolicies.GlobalModerator), HttpGet("queue")]
-    public object Queue() => moderation.NodeQueue(actor.ParticipantId).Select(
-        x => new
+    public object Queue([FromQuery, Range(1, int.MaxValue)] int page = 1,
+        [FromQuery] string? search = null, [FromQuery] bool reviewOnly = false,
+        [FromQuery] string sort = "reports")
+    {
+        const int pageSize = 20;
+        var candidates = moderation.NodeQueue(actor.ParticipantId)
+            .Where(x => (!reviewOnly || x.ReviewRequested) &&
+                (string.IsNullOrWhiteSpace(search) || x.ReportedTitle.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase)));
+        var ordered = sort == "title"
+            ? candidates.OrderBy(x => x.ReportedTitle).ThenBy(x => x.NodeId)
+            : candidates.OrderByDescending(x => x.PendingReports.Count).ThenBy(x => x.ReportedTitle).ThenBy(x => x.NodeId);
+        var totalCount = ordered.Count();
+        return new
         {
-            x.NodeId,
-            x.ReportedTitle,
-            count = x.PendingReports.Count,
-            x.ReviewRequested
-        }
-    );
+            items = ordered.Skip((int)Math.Min((long)(page - 1) * pageSize, int.MaxValue)).Take(pageSize).Select(x => new
+            {
+                x.NodeId, x.ReportedTitle, count = x.PendingReports.Count, x.ReviewRequested
+            }).ToArray(),
+            page, pageSize, totalCount, hasNextPage = (long)page * pageSize < totalCount
+        };
+    }
 
     /// <summary>Project a node’s moderation decisions for a global moderator.</summary>
     [Authorize(Policy = AtlasPolicies.GlobalModerator), HttpGet("nodes/{id:guid}/history")]
