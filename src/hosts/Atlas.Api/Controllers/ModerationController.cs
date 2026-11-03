@@ -104,16 +104,37 @@ public sealed class ModerationController(
 
     /// <summary>Project a node’s moderation decisions for a global moderator.</summary>
     [Authorize(Policy = AtlasPolicies.GlobalModerator), HttpGet("nodes/{id:guid}/history")]
-    public object History(Guid id) => moderation.NodeHistory(actor.ParticipantId, id).Select(
-        x => new
+    public object History(Guid id)
+    {
+        // Resolve display names only after the global-moderator authorization check.
+        // Never include reporter identity in the author-facing notice endpoint.
+        var cases = moderation.NodeHistory(actor.ParticipantId, id);
+        var ids = cases.SelectMany(x => new Guid?[] { x.ReporterId, x.ReviewerId, x.RestoredBy })
+            .Where(x => x.HasValue).Select(x => x!.Value).Distinct().ToArray();
+        var names = database.ParticipantRows.AsNoTracking()
+            .Where(x => ids.Contains(x.Id))
+            .ToDictionary(x => x.Id, x => x.DisplayName);
+        string Name(Guid? participantId) =>
+            participantId is null ? "Unknown participant"
+            : names.GetValueOrDefault(participantId.Value, "Unknown participant");
+        return cases.Select(x => new
         {
             x.Id,
             x.Reason,
             x.Explanation,
             x.CreatedAt,
-            status = x.Status.ToString()
-        }
-    );
+            status = x.Status.ToString(),
+            reporter = Name(x.ReporterId),
+            reviewer = x.ReviewerId is null ? null : Name(x.ReviewerId),
+            x.DecisionReason,
+            x.DecidedAt,
+            publicReason = x.PublicReason.ToString(),
+            x.ReviewRequestedAt,
+            x.VisibilityRestoredAt,
+            restoredBy = x.RestoredBy is null ? null : Name(x.RestoredBy),
+            x.RestorationReason
+        }).ToArray();
+    }
 
     /// <summary>Read the prior persisted text revision for a hidden node. Moderator-only.</summary>
     [Authorize(Policy = AtlasPolicies.GlobalModerator), HttpGet("nodes/{id:guid}/revisions")]
