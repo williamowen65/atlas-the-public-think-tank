@@ -126,6 +126,8 @@ export interface NodeCardProps {
   onOpenProfile?: (id: string) => void;
   /** Callback: Receives the node ID when Read more is activated; absence disables that action. */
   onReadMore?: (id: string) => void;
+  /** For hidden owner cards, the edit affordance opens the moderation detail instead of the public editor. */
+  editOpensDetail?: boolean;
   /**
    * Callback: Receives node ID and contribution type ID when a contribution-summary button is
    * activated.
