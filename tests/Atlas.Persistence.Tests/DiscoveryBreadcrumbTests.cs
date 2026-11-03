@@ -56,6 +56,25 @@ public sealed class DiscoveryBreadcrumbTests
     }
 
     [TestMethod]
+    public void Hidden_child_still_has_its_ancestor_path()
+    {
+        using var fixture = SqlTestDatabase.Create(useCurrentModel: true);
+        var now = DateTimeOffset.UtcNow;
+        var root = new DiscoveryCandidate(Guid.NewGuid(), "Visible root", "", Guid.NewGuid(), Guid.NewGuid(), false, now, now, 0, null, [], []);
+        var child = root with { NodeId = Guid.NewGuid(), Title = "Hidden child", IsModerationExcluded = true };
+        DiscoverySqlFixture.Seed(fixture, root, child);
+        using var db = fixture.Open();
+        db.Set<NodeParentRow>().Add(new NodeParentRow { NodeId = child.NodeId, ParentNodeId = root.NodeId, Position = 0 });
+        db.SaveChanges();
+        // A hidden child still belongs to its actual parent. Authorized projections must
+        // retain that ancestry while normal visibility restrictions remain in place.
+        var page = DiscoveryBreadcrumbReader.ReadPage(db, child.NodeId);
+        Assert.HasCount(1, page.Items);
+        Assert.AreEqual(root.NodeId, page.Items[0].NodeId);
+        StringAssert.Contains(page.DisplayText, "Visible root");
+    }
+
+    [TestMethod]
     public void Cycle_stops_and_continuation_respects_already_visited_nodes()
     {
         using var fixture = SqlTestDatabase.Create(useCurrentModel: true);
