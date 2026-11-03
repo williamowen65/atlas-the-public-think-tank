@@ -5,6 +5,9 @@ export interface NodeCardData {
   /** Stable node ID used for navigation and API lookups. */
   id: string;
 
+  /** Authorized moderation visibility indicator, not an access-control decision. */
+  isHidden?: boolean;
+
   /** Visible node title. */
   title: string;
 
