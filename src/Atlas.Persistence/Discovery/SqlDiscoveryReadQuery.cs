@@ -26,7 +26,7 @@ public sealed class SqlDiscoveryReadQuery(
     public DiscoveryPage DiscoverAuthoredPage(DiscoveryQuery query, IReadOnlyCollection<Guid> authoredNodeIds)
     {
         ArgumentNullException.ThrowIfNull(authoredNodeIds);
-        return Read(query, authoredNodeIds, true, true);
+        return Read(query, authoredNodeIds, true, true, authorListing: true);
     }
     /// <summary>Returns all matching public results for the unpaged contract; Console uses pages.</summary>
     public IReadOnlyList<RankedDiscoveryItem> Discover(DiscoveryQuery query) => Read(query, null, false).Items;
@@ -34,7 +34,7 @@ public sealed class SqlDiscoveryReadQuery(
     public IReadOnlyList<RankedDiscoveryItem> DiscoverAuthored(DiscoveryQuery query, IReadOnlyCollection<Guid> authoredNodeIds)
     {
         ArgumentNullException.ThrowIfNull(authoredNodeIds);
-        return Read(query, authoredNodeIds, false, true).Items;
+        return Read(query, authoredNodeIds, false, true, authorListing: true).Items;
     }
 
     /// <summary>Filters an authored page in SQL without first loading all of the author’s nodes.</summary>
@@ -47,8 +47,8 @@ public sealed class SqlDiscoveryReadQuery(
         }
         // Intersect a requested author filter rather than silently replacing it.
         if (query.AuthorParticipantId is { } requested && requested != authorParticipantId)
-            return Read(query, [], true, true);
-        return Read(query with { AuthorParticipantId = authorParticipantId }, null, true, true);
+            return Read(query, [], true, true, authorListing: true);
+        return Read(query with { AuthorParticipantId = authorParticipantId }, null, true, true, authorListing: true);
     }
 
     // This is a lock object, not a cache. Without an injected cache, this instance
@@ -56,11 +56,11 @@ public sealed class SqlDiscoveryReadQuery(
     private readonly object _uncachedGate = new();
 
     /// <summary>Resolves ranked results and public cards against one committed database view.</summary>
-    private DiscoveryPage Read(DiscoveryQuery query, IReadOnlyCollection<Guid>? authoredIds, bool paged, bool includeHidden = false)
+    private DiscoveryPage Read(DiscoveryQuery query, IReadOnlyCollection<Guid>? authoredIds, bool paged, bool includeHidden = false, bool authorListing = false)
     {
         try
         {
-            return ReadCore(query, authoredIds, paged, includeHidden);
+            return ReadCore(query, authoredIds, paged, includeHidden, authorListing);
         }
         catch (SqlException error) when (!string.IsNullOrWhiteSpace(query?.SearchText))
         {
@@ -70,7 +70,7 @@ public sealed class SqlDiscoveryReadQuery(
         }
     }
 
-    private DiscoveryPage ReadCore(DiscoveryQuery query, IReadOnlyCollection<Guid>? authoredIds, bool paged, bool includeHidden)
+    private DiscoveryPage ReadCore(DiscoveryQuery query, IReadOnlyCollection<Guid>? authoredIds, bool paged, bool includeHidden, bool authorListing)
     {
         // 1. Validate and normalize the request before touching the database/cache.
         ArgumentNullException.ThrowIfNull(query);
@@ -133,7 +133,8 @@ public sealed class SqlDiscoveryReadQuery(
                 // 6. Build deferred EF query expressions, then execute count and page.
                 // Count and page use the same filter predicates. The count includes all
                 // matches; OFFSET/FETCH limits only the ranked rows returned to the host.
-                var filtered = DiscoveryEfQuery.Build(db, query, authoredIds, includeHidden);
+                var filtered = DiscoveryEfQuery.Build(db, query, authoredIds,
+                    includeHidden && !(authorListing && query.SearchText is not null));
                 // Build returns IQueryable: no candidates have been enumerated yet.
                 // TagWith adds a SQL comment for identifying this statement in plans/logs.
                 // Count executes a database aggregate, not an in-memory list count.
