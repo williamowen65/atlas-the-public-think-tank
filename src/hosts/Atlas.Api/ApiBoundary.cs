@@ -40,6 +40,14 @@ public sealed class ApiErrors(IProblemDetailsService problems, ILogger<ApiErrors
     public async ValueTask<bool> TryHandleAsync(HttpContext context, Exception error, CancellationToken cancellationToken)
     {
         if (error is OperationCanceledException && context.RequestAborted.IsCancellationRequested) return false;
+        // Opt-in local diagnostics only. Never include exception details in HTTP responses.
+        if (context.RequestServices.GetRequiredService<IHostEnvironment>().IsDevelopment() &&
+            string.Equals(Environment.GetEnvironmentVariable("ATLAS_DIAGNOSTIC_SQL"), "true", StringComparison.OrdinalIgnoreCase))
+        {
+            logger.LogError(error,
+                "Local SQL diagnostic: {Method} {Path} failed with {ExceptionType}; trace {TraceId}",
+                context.Request.Method, context.Request.Path, error.GetType().FullName, context.TraceIdentifier);
+        }
         if (error is SearchUnavailableException)
             logger.LogError(error, "Atlas text search is unavailable. Check SQL Server connectivity, full-text services and indexes.");
         // Only these known quota exceptions may contribute their user-facing message.
