@@ -30,6 +30,8 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
     public DbSet<CommunityNodeRow> CommunityNodeRows => Set<CommunityNodeRow>();
     public DbSet<CommentRow> CommentRows => Set<CommentRow>();
     public DbSet<ModerationCaseRow> ModerationCaseRows => Set<ModerationCaseRow>();
+    public DbSet<ModerationReportedSnapshotRow> ModerationReportedSnapshotRows => Set<ModerationReportedSnapshotRow>();
+    public DbSet<ModerationAuditEventRow> ModerationAuditEventRows => Set<ModerationAuditEventRow>();
     public DbSet<NotificationRow> NotificationRows => Set<NotificationRow>();
     public DbSet<NotificationPreferencesRow> NotificationPreferencesRows => Set<NotificationPreferencesRow>();
 
@@ -579,6 +581,27 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
             entity.Property<DateTimeOffset?>("RemovedAt")
                 .HasColumnType("datetimeoffset");
         });
+        model.Entity<ModerationReportedSnapshotRow>(entity =>
+        {
+            entity.ToTable("ModerationReportedSnapshotRows");
+            entity.HasKey(row => row.ModerationCaseId);
+            entity.Property(row => row.Title).HasMaxLength(500);
+            entity.Property(row => row.ContentJson).HasColumnType("nvarchar(max)");
+            entity.HasIndex(row => row.NodeId);
+            entity.HasOne<ModerationCaseRow>().WithOne()
+                .HasForeignKey<ModerationReportedSnapshotRow>(row => row.ModerationCaseId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+        model.Entity<ModerationAuditEventRow>(entity =>
+        {
+            entity.ToTable("ModerationAuditEventRows");
+            entity.HasKey(row => row.Id);
+            entity.Property(row => row.EventKind).HasMaxLength(80);
+            entity.HasIndex(row => new { row.NodeId, row.OccurredAt });
+            entity.HasOne<ModerationCaseRow>().WithMany()
+                .HasForeignKey(row => row.ModerationCaseId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
         model.Entity<ModerationCaseRow>(entity =>
         {
             entity.Property<Guid>("Id")
@@ -774,7 +797,7 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
         // Supplemental search triggers require EF's trigger-compatible write path.
         model.Entity<NodeRow>(entity =>
         {
-            entity.ToTable("NodeRows", table => { table.UseSqlOutputClause(false); table.IsTemporal(); });
+            entity.ToTable("NodeRows", table => table.UseSqlOutputClause(false));
             entity.HasKey(row => row.Id);
             entity.Property(row => row.Title)
                 .HasMaxLength(450);
@@ -803,7 +826,7 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
         });
         model.Entity<DocumentRow>(entity =>
         {
-            entity.ToTable("DocumentRows", table => table.IsTemporal());
+            entity.ToTable("DocumentRows");
             entity.HasKey(row => row.Id);
             entity.Ignore(row => row.BlockIds);
             entity.HasMany(row => row.Blocks)
@@ -813,7 +836,7 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
         });
         model.Entity<BlockRow>(entity =>
         {
-            entity.ToTable("BlockRows", table => { table.UseSqlOutputClause(false); table.IsTemporal(); });
+            entity.ToTable("BlockRows", table => table.UseSqlOutputClause(false));
             entity.HasKey(row => row.Id);
             entity.Property(row => row.Kind)
                 .HasMaxLength(450);
@@ -935,7 +958,7 @@ public sealed class AtlasDataContext(DbContextOptions<AtlasDataContext> options)
         });
         model.Entity<DocumentBlockRow>(entity =>
         {
-            entity.ToTable("DocumentBlocks", table => { table.UseSqlOutputClause(false); table.IsTemporal(); });
+            entity.ToTable("DocumentBlocks", table => table.UseSqlOutputClause(false));
             entity.HasKey(row => new { row.DocumentId, row.Position });
         });
         model.Entity<ReactionAuditRow>(entity =>
