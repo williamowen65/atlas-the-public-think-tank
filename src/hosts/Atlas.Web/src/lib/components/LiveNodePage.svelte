@@ -459,32 +459,27 @@
           {#if hiddenHistory.length === 0}
             <p>No report history is available.</p>
           {:else}
-            <ul>
+            <ol class="history-list">
               {#each hiddenHistory as report (report.id)}
                 <li>
-                  <strong>Report submitted</strong> · {new Date(report.createdAt).toLocaleString()}
+                  <div class="history-event"><strong>Report submitted</strong><time datetime={report.createdAt}>{new Date(report.createdAt).toLocaleString()}</time></div>
                   <p>Reported by {report.reporter} · {report.reason}</p>
                   {#if report.explanation}<p>{report.explanation}</p>{/if}
                   {#if report.decidedAt}
-                    <p><strong>Moderator decision: {report.status === 'Actioned' ? 'Hidden' : report.status}</strong>
-                      · {new Date(report.decidedAt).toLocaleString()}</p>
+                    <div class="history-event"><strong>Moderator decision: {report.status === 'Actioned' ? 'Hidden' : report.status}</strong><time datetime={report.decidedAt}>{new Date(report.decidedAt).toLocaleString()}</time></div>
                     <p>Decided by {report.reviewer ?? 'Unknown moderator'} · {report.publicReason}</p>
                     {#if report.decisionReason}<p>Rationale: {report.decisionReason}</p>{/if}
-                  {:else}
-                    <p>Awaiting moderator decision</p>
-                  {/if}
+                  {:else}<p>Awaiting moderator decision</p>{/if}
                   {#if report.reviewRequestedAt}
-                    <p><strong>Author requested review</strong> · {new Date(report.reviewRequestedAt).toLocaleString()}</p>
+                    <div class="history-event"><strong>Author requested review</strong><time datetime={report.reviewRequestedAt}>{new Date(report.reviewRequestedAt).toLocaleString()}</time></div>
                   {/if}
                   {#if report.visibilityRestoredAt}
-                    <p><strong>Visibility restored</strong> · {new Date(report.visibilityRestoredAt).toLocaleString()}</p>
-                    <p>Restored by {report.restoredBy ?? 'Unknown moderator'}</p>
+                    <div class="history-event"><strong>Visibility restored by {report.restoredBy ?? 'Unknown moderator'}</strong><time datetime={report.visibilityRestoredAt}>{new Date(report.visibilityRestoredAt).toLocaleString()}</time></div>
                     {#if report.restorationReason}<p>Rationale: {report.restorationReason}</p>{/if}
                   {/if}
                 </li>
               {/each}
-            </ul>
-          {/if}
+            </ol>          {/if}
           {#if hiddenDetail.reviewRequested}
             <p>The author has requested review. Review their revised content before restoring visibility.</p>
             <label for="moderator-restore-rationale">Restoration rationale (required)</label>
@@ -612,14 +607,29 @@
 {/if}
 
 <style>
-  .hidden-node { max-width: 48rem; margin: 1rem auto; padding: 1rem; border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); }
+  .hidden-node { max-width: 48rem; margin: 1rem auto; padding: 1.5rem; border: 1px solid color-mix(in srgb, #bd8336 45%, var(--atlas-border)); border-radius: 1rem; background: color-mix(in srgb, #bd8336 7%, var(--atlas-surface)); }
+  .hidden-node > h2 { margin-top: 0; }
+  .feedback { padding: .8rem 1rem; margin: .75rem 0; border-left: 3px solid #bd8336; border-radius: .5rem; background: var(--atlas-surface); }
+  .feedback p { margin: .4rem 0; }
   .revision-tabs { display: flex; gap: .5rem; margin: 1rem 0; }
   .revision-tabs button { border: 1px solid var(--atlas-border); border-radius: .5rem; padding: .6rem 1rem; }
   .revision-tabs button:disabled { opacity: .5; cursor: not-allowed; }
   .revision-tabs button.chosen { font-weight: 700; border-color: currentColor; }
-  .moderator-tools { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--atlas-border); }
+  .moderator-tools { margin-top: 2rem; padding: 1.4rem; border: 1px solid var(--atlas-border); border-radius: 1rem; background: var(--atlas-surface); box-shadow: 0 .3rem 1.2rem rgb(0 0 0 / .035); }
+  .moderator-tools h2 { margin-top: 0; }
+  .moderator-tools h3 { margin: 1.5rem 0 .85rem; }
+  .history-list { list-style: none; padding: 0; margin: 0; }
+  .history-list > li { padding: 1rem 1.1rem; margin: .7rem 0; background: var(--atlas-bg); border-radius: .7rem; border-left: 3px solid var(--atlas-accent); }
+  .history-list p { margin: .45rem 0; overflow-wrap: anywhere; }
+  .history-event { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .3rem 1rem; margin-top: .85rem; }
+  .history-event:first-child { margin-top: 0; }
+  .history-event time { color: var(--atlas-muted); font-size: .85rem; }
+  .moderator-tools textarea { display: block; width: 100%; padding: .7rem; border: 1px solid var(--atlas-border); border-radius: .55rem; background: var(--atlas-surface); color: var(--atlas-text); }
+  .moderator-tools button { border: 1px solid var(--atlas-border); border-radius: .55rem; background: var(--atlas-surface); color: var(--atlas-text); font: inherit; }
+  .moderator-tools button:hover:not(:disabled) { border-color: var(--atlas-accent); }
+  .moderator-tools button:disabled { opacity: .55; cursor: not-allowed; }
   .moderator-tools label { display: block; margin: .75rem 0 .35rem; }
-  .moderator-tools ul { padding-left: 1.5rem; }
+
   .hidden-node form { display: grid; gap: .6rem; margin: 1rem 0; }
   .hidden-node input, .hidden-node textarea { width: 100%; padding: .65rem; background: var(--atlas-surface); color: var(--atlas-text); border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); }
   .hidden-node button { padding: .6rem 1rem; margin: .5rem .5rem .5rem 0; }
