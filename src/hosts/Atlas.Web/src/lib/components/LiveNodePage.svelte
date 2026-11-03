@@ -89,6 +89,8 @@
   type ReportHistory = { id: string; reason: string; explanation: string | null; createdAt: string; status: string };
   let hiddenModerator = $state(false);
   let hiddenHistory = $state<ReportHistory[]>([]);
+  let hiddenPreview = $state<NodeCardData | null>(null);
+  let hiddenPreviewError = $state(false);
   let moderatorRationale = $state('');
   let moderatorBusy = $state(false);
   let moderatorConfirm = $state(false);
@@ -260,6 +262,8 @@
     hiddenFeedbackError = false;
     hiddenModerator = false;
     hiddenHistory = [];
+    hiddenPreview = null;
+    hiddenPreviewError = false;
     moderatorRationale = '';
     moderatorConfirm = false;
     moderatorMessage = '';
@@ -293,6 +297,18 @@
                 hiddenHistory = await apiRequest<ReportHistory[]>(
                   '/atlas-session-api', `moderation/nodes/${encodeURIComponent(id)}/history`, 'GET', undefined, signal);
                 hiddenModerator = true;
+                try {
+                  const [previewPage, originalBlocks] = await Promise.all([
+                    readDiscovery(apiBase, 1, '', signal, id, undefined, false, true),
+                    apiRequest<ContentBlock[]>('/atlas-session-api', `nodes/${encodeURIComponent(id)}/description`, 'GET', undefined, signal),
+                  ]);
+                  const previewEntry = previewPage.items.find(item => item.nodeId === id);
+                  hiddenPreview = previewEntry ? discoveryCard(previewEntry, true) : null;
+                  hiddenBlocks = originalBlocks;
+                  if (!hiddenPreview) hiddenPreviewError = true;
+                } catch {
+                  if (!signal.aborted) hiddenPreviewError = true;
+                }
               } catch (cause) {
                 if (!(cause instanceof ApiRequestError && [401, 403].includes(cause.status)) && !signal.aborted)
                   moderatorMessage = 'Moderation tools could not be loaded.';
@@ -383,12 +399,25 @@
         <p>Save a revision that addresses the feedback before requesting review. Saving does not automatically make the contribution public.</p>
       {:else}
         <h2>Moderator inspection</h2>
-        <p>The original contribution is visible to authorized moderators. Only the author can revise it and request review.</p>
-        <h3>{hiddenDetail.title}</h3>
-        <p><strong>Short description:</strong> {hiddenDetail.shortDescription}</p>
-        {#each hiddenBlocks as block (block.id)}
-          {#if block.content.markdown}<p>{block.content.markdown}</p>{/if}
-        {/each}
+        <p>This is a read-only rendering of the original contribution using the standard node-page layout. Only the author can revise it and request review.</p>
+        {#if hiddenPreview}
+          <NodePage
+            node={hiddenPreview}
+            blocks={hiddenBlocks}
+            types={[]}
+            active="comments"
+            inspectionOnly
+            {apiBase}
+            {onOpenProfile}
+            onNavigate={openNode}
+            onTabChange={() => {}}
+            onAddChild={() => {}}
+          ></NodePage>
+        {:else if hiddenPreviewError}
+          <p role="alert">The full node preview could not be loaded. Try reloading this page.</p>
+        {:else}
+          <p role="status">Loading original node preview…</p>
+        {/if}
       {/if}
       {#if hiddenModerator}
         <section class="moderator-tools" aria-label="Moderator actions">
