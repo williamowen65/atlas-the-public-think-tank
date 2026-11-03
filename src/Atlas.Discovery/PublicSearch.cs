@@ -7,6 +7,12 @@ public interface IPublicSearch
     IReadOnlyList<CommentPathItem> CommentPath(Guid nodeId, Guid commentId);
 }
 
+/** Authorized global-moderator mixed search; callers must enforce the role before invoking. */
+public interface IModeratorSearch
+{
+    PublicSearchPage SearchModerator(DiscoveryQuery query, string scope = "all");
+}
+
 public sealed record PublicSearchPage(IReadOnlyList<PublicSearchItem> Items, int TotalCount, int Page, int PageSize)
 {
     public bool HasNextPage => (long)Page * PageSize < TotalCount;
