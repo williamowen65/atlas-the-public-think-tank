@@ -14,6 +14,7 @@
 <script lang="ts">
   import { myCommunities, type Community } from '../api/communities';
   import DiscoverySearch from './DiscoverySearch.svelte';
+  import { moderatorVisibility, setModeratorVisibility, setIncludeHidden } from '../state/moderatorVisibility.svelte';
   import { restoreDiscoveryQuery } from '../state/discoveryQuery.svelte';
   import { onMount, tick } from 'svelte';
   import { apiRequest } from '../api/apiRequest';
@@ -41,6 +42,7 @@
     /** Number of node groups needing moderator attention. */
     pendingModerationCount?: number;
   } = $props();
+  $effect(() => setModeratorVisibility(authenticated && canModerate));
   /** Whether the desktop header search is expanded inline. */
   let searchOpen = $state(false);
   /** Keep the real search input mounted on phones instead of a second lookalike. */
@@ -331,6 +333,7 @@
   {#if searchOpen || (mobileExperiment && phone)}
     <div class="search-panel" id={searchPanelId} bind:this={searchPanel}>
       <DiscoverySearch
+        canModerate={authenticated && canModerate}
         active={searchOpen}
         onActivate={() => { searchOpen = true; headerVisible = true; }}
         placeholder={mobileExperiment ? 'Atlas: The Public Think Tank' : undefined}
@@ -369,7 +372,10 @@
             <a href="/profiles/me" onclick={closeOnNavigation}>My profile</a>
             <a href="/my-drafts" onclick={closeOnNavigation}>My drafts</a>
             <a href="/my-settings" onclick={closeOnNavigation}>Settings</a>
-            {#if canModerate}<a href="/moderation" onclick={closeOnNavigation}>Moderation{#if pendingModerationCount > 0} ({pendingModerationCount}){/if}</a>{/if}
+            {#if canModerate}
+              <a href="/moderation" onclick={closeOnNavigation}>Moderation{#if pendingModerationCount > 0} ({pendingModerationCount}){/if}</a>
+              <label class="moderator-visibility"><input type="checkbox" checked={moderatorVisibility.includeHidden} onchange={(event) => setIncludeHidden(event.currentTarget.checked)} /> Include hidden nodes</label>
+            {/if}
             <hr />
             <a href="/about" onclick={closeOnNavigation}>About Atlas</a>
             <a href="/feedback" onclick={closeOnNavigation}>Give feedback</a>
@@ -415,7 +421,10 @@
             <a href="/profiles/me" onclick={closeOnNavigation}>My profile</a>
             <a href="/my-drafts" onclick={closeOnNavigation}>My drafts</a>
             <a href="/my-settings" onclick={closeOnNavigation}>Settings</a>
-            {#if canModerate}<a href="/moderation" onclick={closeOnNavigation}>Moderation{#if pendingModerationCount > 0} ({pendingModerationCount}){/if}</a>{/if}
+            {#if canModerate}
+              <a href="/moderation" onclick={closeOnNavigation}>Moderation{#if pendingModerationCount > 0} ({pendingModerationCount}){/if}</a>
+              <label class="moderator-visibility"><input type="checkbox" checked={moderatorVisibility.includeHidden} onchange={(event) => setIncludeHidden(event.currentTarget.checked)} /> Include hidden nodes</label>
+            {/if}
             <hr />
             <a href="/about" onclick={closeOnNavigation}>About Atlas</a>
             <a href="/feedback" onclick={closeOnNavigation}>Give feedback</a>
