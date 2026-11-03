@@ -19,7 +19,7 @@
 <script lang="ts">
   import LoadingPlaceholder from './LoadingPlaceholder.svelte';
   import HiddenNodePublicNotice from './HiddenNodePublicNotice.svelte';
-  import { apiRequest } from '../api/apiRequest';
+  import { apiRequest, ApiRequestError } from '../api/apiRequest';
   import LiveVotingDial from './LiveVotingDial.svelte';
   import LiveReactions from './LiveReactions.svelte';
   import NodePage from './NodePage.svelte';
@@ -86,6 +86,31 @@
   type ModerationFeedback = { reasons: { publicReason: string; rationale: string; decidedAt: string | null; reviewRequested: boolean }[] };
   let hiddenFeedback = $state<ModerationFeedback | null>(null);
   let hiddenFeedbackError = $state(false);
+  type ReportHistory = { id: string; reason: string; explanation: string | null; createdAt: string; status: string };
+  let hiddenModerator = $state(false);
+  let hiddenHistory = $state<ReportHistory[]>([]);
+  let moderatorRationale = $state('');
+  let moderatorBusy = $state(false);
+  let moderatorConfirm = $state(false);
+  let moderatorMessage = $state('');
+  async function restoreHiddenNode() {
+    if (!hiddenDetail || !hiddenModerator || !hiddenDetail.reviewRequested || !moderatorRationale.trim() || moderatorBusy) return;
+    moderatorBusy = true;
+    moderatorMessage = '';
+    try {
+      await apiRequest('/atlas-session-api',
+        `moderation/nodes/${encodeURIComponent(hiddenDetail.id)}/restore`,
+        'POST', { text: moderatorRationale.trim() });
+      moderatorMessage = 'Node restored to public view.';
+      moderatorRationale = '';
+      moderatorConfirm = false;
+      retry++;
+    } catch (cause) {
+      moderatorMessage = cause instanceof Error ? cause.message : 'Could not restore this node.';
+    } finally {
+      moderatorBusy = false;
+    }
+  }
   async function saveHiddenRevision() {
     if (!hiddenDetail || !hiddenAuthor || hiddenBusy) return;
     hiddenBusy = true; hiddenMessage = '';
@@ -233,6 +258,11 @@
     hiddenAuthor = false;
     hiddenFeedback = null;
     hiddenFeedbackError = false;
+    hiddenModerator = false;
+    hiddenHistory = [];
+    moderatorRationale = '';
+    moderatorConfirm = false;
+    moderatorMessage = '';
     createType = null;
     editingDraft = null;
     saveChildDraft = null;
@@ -256,6 +286,16 @@
                 } catch {
                   if (!signal.aborted) hiddenFeedbackError = true;
                 }
+              }
+              // The protected history endpoint verifies global-moderator authorization.
+              // A signed-in author must not receive moderator controls merely for owning a node.
+              try {
+                hiddenHistory = await apiRequest<ReportHistory[]>(
+                  '/atlas-session-api', `moderation/nodes/${encodeURIComponent(id)}/history`, 'GET', undefined, signal);
+                hiddenModerator = true;
+              } catch (cause) {
+                if (!(cause instanceof ApiRequestError && [401, 403].includes(cause.status)) && !signal.aborted)
+                  moderatorMessage = 'Moderation tools could not be loaded.';
               }
               hiddenTitle = detail.title;
               hiddenIntro = detail.shortDescription ?? '';
@@ -349,6 +389,40 @@
         {#each hiddenBlocks as block (block.id)}
           {#if block.content.markdown}<p>{block.content.markdown}</p>{/if}
         {/each}
+      {/if}
+      {#if hiddenModerator}
+        <section class="moderator-tools" aria-label="Moderator actions">
+          <h2>Global moderator controls</h2>
+          <p>This contribution is hidden. Moderation actions are checked by the server and recorded with the moderator's identity.</p>
+          <h3>Report history</h3>
+          {#if hiddenHistory.length === 0}
+            <p>No report history is available.</p>
+          {:else}
+            <ul>
+              {#each hiddenHistory as report (report.id)}
+                <li><strong>{report.reason}</strong> · {report.status}
+                  {#if report.explanation}<p>{report.explanation}</p>{/if}
+                </li>
+              {/each}
+            </ul>
+          {/if}
+          {#if hiddenDetail.reviewRequested}
+            <p>The author has requested review. Review their revised content before restoring visibility.</p>
+            <label for="moderator-restore-rationale">Restoration rationale (required)</label>
+            <textarea id="moderator-restore-rationale" bind:value={moderatorRationale} maxlength="2000" rows="3"></textarea>
+            {#if moderatorConfirm}
+              <p role="alert">Restore this contribution to public Discovery and search?</p>
+              <button type="button" disabled={moderatorBusy} onclick={() => moderatorConfirm = false}>Cancel</button>
+              <button type="button" disabled={moderatorBusy || !moderatorRationale.trim()} onclick={() => void restoreHiddenNode()}>Confirm restoration</button>
+            {:else}
+              <button type="button" disabled={moderatorBusy || !moderatorRationale.trim()} onclick={() => moderatorConfirm = true}>Restore visibility</button>
+            {/if}
+          {:else}
+            <p>Restoration is available after the author revises the contribution and requests review.</p>
+          {/if}
+          <p><a href="/moderation">Open moderation dashboard</a></p>
+          {#if moderatorMessage}<p role="status">{moderatorMessage}</p>{/if}
+        </section>
       {/if}
       {#if hiddenMessage}<p role="status">{hiddenMessage}</p>{/if}
     </section>
@@ -460,6 +534,9 @@
 
 <style>
   .hidden-node { max-width: 48rem; margin: 1rem auto; padding: 1rem; border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); }
+  .moderator-tools { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--atlas-border); }
+  .moderator-tools label { display: block; margin: .75rem 0 .35rem; }
+  .moderator-tools ul { padding-left: 1.5rem; }
   .hidden-node form { display: grid; gap: .6rem; margin: 1rem 0; }
   .hidden-node input, .hidden-node textarea { width: 100%; padding: .65rem; background: var(--atlas-surface); color: var(--atlas-text); border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); }
   .hidden-node button { padding: .6rem 1rem; margin: .5rem .5rem .5rem 0; }
