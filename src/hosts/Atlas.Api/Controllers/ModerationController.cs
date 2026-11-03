@@ -24,6 +24,21 @@ public sealed class ModerationController(
     RequestActor actor
 ) : ControllerBase
 {
+    private void RecordAudit(Guid nodeId, string eventKind, string? detail = null)
+    {
+        var caseIds = database.ModerationCaseRows.AsNoTracking()
+            .Where(row => row.NodeId == nodeId)
+            .Select(row => row.Id).ToArray();
+        foreach (var caseId in caseIds)
+            database.ModerationAuditEventRows.Add(new ModerationAuditEventRow
+            {
+                Id = Guid.NewGuid(), ModerationCaseId = caseId, NodeId = nodeId,
+                ActorParticipantId = actor.ParticipantId, EventKind = eventKind,
+                OccurredAt = DateTimeOffset.UtcNow, Detail = detail
+            });
+        database.SaveChanges();
+    }
+
     /// <summary>Load the current node title and submit the participant’s report.</summary>
     [HttpPost("nodes/{id:guid}/reports")]
     public object Report(Guid id, ReportRequest request)
@@ -56,6 +71,12 @@ public sealed class ModerationController(
             ShortDescription = current.ShortDescription,
             ContentJson = JsonSerializer.Serialize(content)
         });
+        database.ModerationAuditEventRows.Add(new ModerationAuditEventRow
+        {
+            Id = Guid.NewGuid(), ModerationCaseId = report.Id, NodeId = id,
+            ActorParticipantId = actor.ParticipantId, EventKind = "ReportSubmitted",
+            OccurredAt = report.CreatedAt, Detail = request.Reason
+        });
         database.SaveChanges();
         return new
         {
@@ -71,6 +92,7 @@ public sealed class ModerationController(
             nodes.GetById(new NodeId(id)) ?? throw new KeyNotFoundException(),
             actor.ParticipantId
         );
+        RecordAudit(id, "ReviewRequested");
         return NoContent();
     }
 
@@ -212,6 +234,7 @@ public sealed class ModerationController(
             request.Rationale,
             request.Reason
         );
+        RecordAudit(id, "Decision", request.Rationale);
         return NoContent();
     }
 
@@ -220,6 +243,7 @@ public sealed class ModerationController(
     public IActionResult Restore(Guid id, TextRequest request)
     {
         workflow.Restore(id, actor.ParticipantId, request.Text);
+        RecordAudit(id, "Restored", request.Text);
         return NoContent();
     }
 }
