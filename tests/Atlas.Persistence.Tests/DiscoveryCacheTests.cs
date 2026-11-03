@@ -41,6 +41,11 @@ public sealed class DiscoveryCacheTests
         Assert.IsTrue(authoredPlaceholder.IsHidden);
         Assert.AreNotEqual(candidate.Title, authoredPlaceholder.Title,
             "A public-style authored read must not reuse moderator-only card data.");
+        var detailHitsBeforeModeratorRepeat = cache.DetailHits;
+        Assert.AreEqual(candidate.Title, query.DiscoverModeratorPage(
+            new DiscoveryQuery(IncludeHidden: true)).Items.Single().Card!.Title);
+        Assert.AreEqual(detailHitsBeforeModeratorRepeat + 1, cache.DetailHits,
+            "Repeated moderator reads should reuse the authorized full-detail projection.");
         Assert.AreEqual(candidate.Title, query.DiscoverModeratorPage(
             new DiscoveryQuery(IncludeHidden: true)).Items.Single().Card!.Title);
         var authorPage = query.DiscoverAuthorPage(
