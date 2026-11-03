@@ -162,53 +162,36 @@ public sealed class ModerationController(
         if (!moderation.Visibility(id).IsHidden) return NotFound();
         var current = database.NodeRows.AsNoTracking().SingleOrDefault(row => row.Id == id);
         if (current is null) return NotFound();
-        // Anchor the comparison to the earliest report, not the last author edit.
-        // SQL temporal timestamps are database-generated UTC values. Demo reports
-        // have synthetic dates, so fall back to the earliest retained revision.
-        var reportedAt = database.ModerationCaseRows.AsNoTracking()
+        var snapshot = database.ModerationReportedSnapshotRows.AsNoTracking()
             .Where(row => row.NodeId == id)
-            .OrderBy(row => row.CreatedAt)
-            .Select(row => (DateTimeOffset?)row.CreatedAt)
+            .OrderBy(row => row.CapturedAt)
             .FirstOrDefault();
-        var reportTime = reportedAt?.UtcDateTime;
-        var nodeVersions = database.NodeRows.TemporalAll().AsNoTracking()
-            .Where(row => row.Id == id);
-        var atReport = reportTime is null ? null : nodeVersions
-            .Where(row => EF.Property<DateTime>(row, "PeriodStart") <= reportTime.Value
-                && EF.Property<DateTime>(row, "PeriodEnd") > reportTime.Value)
-            .Select(row => new { row.Title, row.ShortDescription })
-            .FirstOrDefault();
-        var firstNode = nodeVersions
-            .OrderBy(row => EF.Property<DateTime>(row, "PeriodStart"))
-            .Select(row => new { row.Title, row.ShortDescription })
-            .FirstOrDefault();
-        // Blocks have independent temporal periods: resolve each at the same
-        // report timestamp rather than selecting the latest historical block.
         var blockId = database.Set<DocumentBlockRow>().AsNoTracking()
             .Where(row => row.DocumentId == current.DescriptionId)
             .OrderBy(row => row.Position)
             .Select(row => row.BlockId)
             .FirstOrDefault();
-        var block = blockId == Guid.Empty ? null : database.BlockRows.AsNoTracking().SingleOrDefault(row => row.Id == blockId);
-        var blockVersions = database.BlockRows.TemporalAll().AsNoTracking()
-            .Where(row => row.Id == blockId);
-        var atReportBlock = reportTime is null ? null : blockVersions
-            .Where(row => EF.Property<DateTime>(row, "PeriodStart") <= reportTime.Value
-                && EF.Property<DateTime>(row, "PeriodEnd") > reportTime.Value)
-            .Select(row => new { row.Markdown })
-            .FirstOrDefault();
-        var firstBlock = blockVersions
-            .OrderBy(row => EF.Property<DateTime>(row, "PeriodStart"))
-            .Select(row => new { row.Markdown })
-            .FirstOrDefault();
-        var reportedNode = atReport ?? firstNode;
-        var reportedBlock = atReportBlock ?? firstBlock;
+        var block = blockId == Guid.Empty ? null : database.BlockRows.AsNoTracking()
+            .SingleOrDefault(row => row.Id == blockId);
+        string reportedMarkdown = "";
+        if (snapshot is not null)
+        {
+            using var document = JsonDocument.Parse(snapshot.ContentJson);
+            foreach (var entry in document.RootElement.EnumerateArray())
+            {
+                var kind = entry.GetProperty("Kind").GetString();
+                if (!string.Equals(kind, "markdown", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(kind, "markdowntext", StringComparison.OrdinalIgnoreCase)) continue;
+                reportedMarkdown = entry.GetProperty("Markdown").GetString() ?? "";
+                break;
+            }
+        }
         return Ok(new
         {
-            reported = reportedNode is null && reportedBlock is null ? null : new {
-                title = reportedNode?.Title ?? current.Title,
-                shortDescription = reportedNode?.ShortDescription ?? current.ShortDescription,
-                markdown = reportedBlock?.Markdown ?? block?.Markdown ?? ""
+            reported = snapshot is null ? null : new {
+                title = snapshot.Title,
+                shortDescription = snapshot.ShortDescription,
+                markdown = reportedMarkdown
             },
             revised = new {
                 current.Title,
