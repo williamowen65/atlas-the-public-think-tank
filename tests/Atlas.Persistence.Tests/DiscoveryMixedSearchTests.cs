@@ -36,7 +36,7 @@ public sealed class DiscoveryMixedSearchTests
         var build = typeof(SqlPublicSearch).GetMethod("BuildHits", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
         foreach (var weight in new[] { 0, 40, 100 })
         {
-            var query = (IQueryable)build.Invoke(null, [db, new DiscoveryQuery(SearchText: "testing", VotingWeight: weight), "all"])!;
+            var query = (IQueryable)build.Invoke(null, [db, new DiscoveryQuery(SearchText: "testing", VotingWeight: weight), "all", false])!;
             var sql = query.ToQueryString();
             StringAssert.Contains(sql, "LOG(");
             StringAssert.Contains(sql, "ORDER BY");
