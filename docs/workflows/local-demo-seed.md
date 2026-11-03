@@ -37,11 +37,23 @@ If `dotnet ef` cannot load the design-time factory, first verify the .NET EF too
 
 ## Moderation workflow fixtures
 
-The disposable demo seed now includes three cases in `ModerationCaseRows`:
+The disposable demo seed now includes four cases in `ModerationCaseRows`:
 
 - **Pending report:** `Homelessness` (demo user 02 authored) appears in the moderation queue.
 - **Hidden, no review requested:** `Make essential services accessible to everyone` (demo user 03 authored) is hidden, allowing author editing and a subsequent review request to be tested.
 - **Hidden, review requested:** `Learn from solutions that already work` (demo user 04 authored) is already awaiting moderator restoration review.
+- **Hidden grandchild, no review requested:** `Would ranked voting encourage more people to run for office?` is nested under `Use ranked voting in major U.S. elections`, which is itself under `What ideas could help make the world better?`. This verifies the moderator's real breadcrumb on a hidden card.
+
+The three hidden fixtures have historical node-importance votes and voted curated reactions, all created before the moderation decision:
+
+| Hidden node | Ratings | Expected average | Reaction scores |
+| --- | --- | --- | --- |
+| Make essential services accessible to everyone | 8, 10 | 9.0 (2 votes) | Promising +1; Practical +1 |
+| Learn from solutions that already work | 5, 7, 9 | 7.0 (3 votes) | Innovative +1; Hopeful +1 |
+| Would ranked voting encourage more people to run for office? | 6, 8 | 7.0 (2 votes) | Uncertain +1 |
+
+Log in as a global moderator, enable **Include hidden nodes**, and inspect all three cards in Discovery. Their existing votes and reactions should display, but their vote/reaction controls should remain disabled. The grandchild should show its two real ancestors. Log out or disable hidden inclusion to verify normal public redaction. These are seed-only historical engagement records; hidden nodes still reject new votes.
+
 
 These fixtures intentionally use existing node IDs and participant IDs; they are not real reports. A seeded review request represents the persisted state for UI testing, not evidence that a demo author made an edit in this seed. The moderator role is **not** assigned by this fixture; provision a trusted test account using the operator command documented in [Identity setup](../PTT-94-Identity.md).
 
