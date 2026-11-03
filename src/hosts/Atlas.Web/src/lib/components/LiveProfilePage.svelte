@@ -17,6 +17,7 @@
   import { onMount } from 'svelte';
   import LiveNodeFeed from './LiveNodeFeed.svelte';
   import NodeCard from './NodeCard.svelte';
+  import VotingDial from './VotingDial.svelte';
   import { discoveryCard, type DiscoveryPage } from '../api/discovery';
   import type { NodeCardData } from './node-card-versions/types';
   import { apiRequest } from '../api/apiRequest';
@@ -324,10 +325,17 @@
           <div class="hidden-feed">
             {#each hiddenOwned as hidden (hidden.id)}
               <article class="hidden-card">
-                <p class="hidden-label">Hidden by moderator · {hidden.notice}</p>
-                <NodeCard node={hidden.node} average={hidden.average} totalVotes={hidden.voteCount} onReadMore={(id) => onOpenNode?.(id)} />
-                <p class="muted">{hidden.decidedAt ? new Date(hidden.decidedAt).toLocaleDateString() : ''}</p>
-                <p><strong>Moderator explanation:</strong> {hidden.rationale || 'No explanation was provided.'}</p>
+                <p class="hidden-label">Hidden by moderator <span class="hidden-reason">{hidden.notice}</span></p>
+                <NodeCard node={hidden.node} presentation="ribbon-corner" average={hidden.average} totalVotes={hidden.voteCount} onReadMore={(id) => onOpenNode?.(id)}>
+                  {#snippet voting()}
+                    <VotingDial label="Node importance (voting disabled while hidden)" average={hidden.average} totalVotes={hidden.voteCount} disabled />
+                  {/snippet}
+                </NodeCard>
+                <div class="moderation-feedback">
+                  <p class="decision-date"><strong>Moderation decision</strong>{#if hidden.decidedAt} <time datetime={hidden.decidedAt}>{new Date(hidden.decidedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</time>{/if}</p>
+                  <p><strong>Moderator explanation</strong></p>
+                  <p>{hidden.rationale || 'No explanation was provided.'}</p>
+                </div>
               </article>
             {/each}
           </div>
@@ -348,10 +356,16 @@
 
 <style lang="scss">
   .hidden-feed { display: grid; gap: 1rem; margin-bottom: 1rem; }
-  .hidden-card { border: 1px solid var(--atlas-border); border-radius: var(--atlas-radius); background: var(--atlas-surface); padding: 1.25rem; }
+  .hidden-card { border: 1px solid color-mix(in srgb, #bd8336 45%, var(--atlas-border)); border-radius: 1rem; background: color-mix(in srgb, #bd8336 7%, var(--atlas-surface)); padding: 1.4rem; }
   .hidden-card h3 { margin: .5rem 0; }
-  .hidden-label { font-weight: 700; }
+  .hidden-label { font-weight: 700; margin: 0 0 1rem; display: flex; align-items: center; flex-wrap: wrap; gap: .65rem; }
+  .hidden-reason { display: inline-block; border-radius: 999px; padding: .3rem .7rem; background: color-mix(in srgb, #bd8336 17%, var(--atlas-surface)); font-size: .85rem; }
   .hidden-card p { overflow-wrap: anywhere; }
+  .moderation-feedback { margin-top: 1.1rem; padding: 1rem 1.15rem; background: var(--atlas-surface); border-radius: .7rem; border-left: 3px solid #bd8336; }
+  .moderation-feedback p { margin: .4rem 0; }
+  .decision-date { display: flex; flex-wrap: wrap; gap: .4rem 1rem; justify-content: space-between; }
+  .decision-date time { font-size: .9rem; color: var(--atlas-muted); }
+  @media (max-width: 480px) { .hidden-card { padding: .85rem; } }
   .profile-page {
     padding-block-start: var(--atlas-space);
     max-width: 70rem;
