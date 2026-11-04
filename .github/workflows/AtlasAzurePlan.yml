@@ -1,0 +1,90 @@
+name: Atlas Azure Terraform plan (manual, no apply)
+
+# A live preview against the intended Azure subscription and the PRIVATE
+# remote state. This workflow NEVER applies infrastructure or uploads a plan
+# file. Do not run on PRs: Azure credentials/state access stay environment-gated.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  azure-plan:
+    name: Read-only Azure infrastructure preview
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: atlas-infra-review
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: infrastructure/terraform
+        shell: bash
+    env:
+      ARM_USE_OIDC: "true"
+      ARM_USE_AZUREAD: "true"
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+      TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      TF_VAR_name_prefix: ${{ vars.ATLAS_NAME_PREFIX }}
+      TF_VAR_location: ${{ vars.AZURE_LOCATION }}
+      TF_VAR_sql_entra_admin_login: ${{ vars.AZURE_SQL_ENTRA_ADMIN_LOGIN }}
+      TF_VAR_sql_entra_admin_object_id: ${{ vars.AZURE_SQL_ENTRA_ADMIN_OBJECT_ID }}
+      TF_VAR_sql_admin_password: ${{ secrets.TF_SQL_ADMIN_PASSWORD }}
+      TF_VAR_demo_seed_password: ${{ secrets.ATLAS_DEMO_PASSWORD }}
+      TF_VAR_app_service_sku: "B1"
+      TF_VAR_enable_demo: "true"
+      # Review only, never activate a temporary privileged SQL bootstrap here.
+      TF_VAR_enable_sql_bootstrap: "false"
+      TF_BACKEND_RG: ${{ vars.AZURE_TFSTATE_RESOURCE_GROUP }}
+      TF_BACKEND_STORAGE: ${{ vars.AZURE_TFSTATE_STORAGE_ACCOUNT }}
+      TF_BACKEND_CONTAINER: ${{ vars.AZURE_TFSTATE_CONTAINER }}
+      TF_BACKEND_KEY: ${{ vars.AZURE_TFSTATE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.13.5'
+      - name: Require the configured subscription and private remote state
+        run: |
+          set -euo pipefail
+          for key in ARM_CLIENT_ID ARM_TENANT_ID ARM_SUBSCRIPTION_ID TF_VAR_name_prefix TF_VAR_location \
+            TF_VAR_sql_entra_admin_login TF_VAR_sql_entra_admin_object_id TF_VAR_sql_admin_password \
+            TF_BACKEND_RG TF_BACKEND_STORAGE TF_BACKEND_CONTAINER TF_BACKEND_KEY; do
+            [[ -n "${!key:-}" ]] || { echo "::error::Missing required GitHub Environment configuration: $key"; exit 1; }
+          done
+          echo "Azure plan prerequisites supplied; no credentials printed."
+      - name: Check Terraform formatting
+        run: terraform fmt -check -recursive
+      - name: Initialize against private Azure Blob Terraform state
+        run: |
+          terraform init -no-color -input=false \
+            -backend-config="resource_group_name=$TF_BACKEND_RG" \
+            -backend-config="storage_account_name=$TF_BACKEND_STORAGE" \
+            -backend-config="container_name=$TF_BACKEND_CONTAINER" \
+            -backend-config="key=$TF_BACKEND_KEY" \
+            -backend-config="use_oidc=true" \
+            -backend-config="use_azuread_auth=true"
+      - name: Validate Terraform configuration
+        run: terraform validate -no-color
+      - name: Review proposed Azure changes — NEVER apply
+        run: |
+          set -uo pipefail
+          # No -out option: do not persist a sensitive Terraform plan artifact.
+          terraform plan -no-color -input=false -lock-timeout=2m -detailed-exitcode
+          exit_code=$?
+          if [[ "$exit_code" -eq 0 ]]; then
+            echo "No infrastructure changes proposed."
+            exit 0
+          fi
+          if [[ "$exit_code" -eq 2 ]]; then
+            echo "::notice::Terraform proposed infrastructure changes. Review this workflow log before running any separate manual apply."
+            exit 0
+          fi
+          echo "::error::Azure-connected Terraform planning failed."
+          exit "$exit_code"
