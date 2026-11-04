@@ -10,12 +10,12 @@ Status: **configuration committed, not deployed**. The authoritative definitions
 | `azurerm_service_plan.atlas` | Linux App Service plan | 1 shared | Provides compute for the .NET API and bundled SvelteKit SPA |
 | `module.sites[*].azurerm_linux_web_app.atlas` | Linux Web App | 1, or 2 with demo | Serves Atlas.Api and static frontend together at one HTTPS origin; `live` always exists |
 | `module.sql.azurerm_mssql_server.atlas` | Azure SQL logical server | 1 | Hosts persistent Atlas + Identity databases |
-| `module.sql.azurerm_mssql_database.variant[*]` | Azure SQL database | 1, or 2 with demo | Keeps live data and optional curated demo seed data separate |
+| `module.sql.azapi_resource.variant[*]` | Azure SQL free-offer database (AzAPI ARM resource) | 1, or 2 with demo | Keeps live data and optional curated demo seed data separate without silently selecting paid Basic |
 | `module.sql.azurerm_mssql_firewall_rule.approved[*]` | Named SQL firewall rule | 0 initially; 1 per allowed IP entry | Explicitly limits which client IP addresses can reach SQL |
 | `module.observability.azurerm_log_analytics_workspace.atlas` | Log Analytics workspace | 1 | Stores and queries selected operational telemetry; configured at 30 days retention |
-| `module.observability.azurerm_application_insights.atlas` | Application Insights | 1 shared | Observes app request health/performance when production telemetry ingestion is verified |
+| `module.observability.azurerm_application_insights.atlas` | Application Insights | 1 shared | Azure Monitor OpenTelemetry is configured in Atlas.Api, while real cloud ingestion must still be verified |
 
-**Default:** `enable_demo = false`, so there is one app and one SQL database. Setting `enable_demo = true` creates a second web app and database on the same App Service plan. There is *no automatic A/B traffic assignment*, and demo must be seeded and secured independently. The demo database incurs its own cost.
+**Default:** `enable_demo = false`, so there is one app and one SQL database. Setting `enable_demo = true` creates a second web app and database on the same App Service plan. There is *no automatic A/B traffic assignment*, and demo must be seeded and secured independently. The free SQL offer has monthly limits; it is not an unrestricted no-charge production SLA.
 
 Each Web App also receives an Azure **system-assigned managed identity**. Terraform currently does **not** grant it access to SQL, Key Vault, or other resources: assigning an identity is not the same as using it for authentication.
 
@@ -55,7 +55,7 @@ These settings alone do not prove production security: validate authentication/C
 | --- | --- |
 | Terraform backend Storage Account and private state container | One-time Azure CLI bootstrap from the [deployment runbook](DEPLOYMENT.md) |
 | GitHub Actions OIDC federation, environment protection and deployment RBAC | Configure manually in Entra ID/GitHub before the manual deploy workflow can authenticate |
-| Database users, migrations, SQL Full-Text indexes or seed content | Explicit controlled database/application setup after provisioning |
+| Database users, migrations, SQL Full-Text indexes or seed content | Migrations/FTS and demo seed are executed through [a version-controlled PowerShell initializer](scripts/Initialize-AtlasDatabase.ps1); runtime SQL principal creation still requires an automated least-privilege credential/identity bootstrap |
 | Runtime secret vault, managed-identity SQL sign-in or automated credential rotation | Not yet implemented; initial runtime connection strings are injected as sensitive Terraform inputs |
 | Azure Blob Storage for user-uploaded images | Deferred until the image-storage design (PTT-167) |
 | VNet/private endpoints, custom domain/DNS, automated backups beyond Azure service defaults, alert policies or cost budgets | Evaluate and add explicitly if needed for rubric, security or budget |
@@ -67,6 +67,12 @@ These settings alone do not prove production security: validate authentication/C
 
 **Deployment**: [`AtlasDeploy.yml`](../.github/workflows/AtlasDeploy.yml) is **manually triggered**, packages .NET + SvelteKit and deploys a chosen live/demo Web App via configured OIDC. It does not run `terraform apply`; Terraform provisioning is a separate manually approved step.
 
-Defaults `app_service_sku = "B1"` and `sql_database_sku = "Basic"` are **billable**. SQL databases, compute, Log Analytics ingestion and other Azure operations can incur charges. Compare current region-specific prices, Azure student credits and free offers before applying anything. Terraform defines resources and can estimate *what* is created, but it does not enforce a spending cap.
+Defaults now select **F1** App Service and an explicitly flagged **Azure SQL General Purpose serverless free offer** using AzAPI. If your subscription or region is ineligible, provisioning should fail rather than silently upgrade to a paid SQL tier. The free SQL allowance has monthly compute, data and backup limits; F1 has limited daily CPU and memory, no SLA, and is not suitable for unrestricted production traffic. Terraform state storage, additional Log Analytics ingestion and other Azure services can still incur charges. Terraform defines resources and can estimate *what* is created, but it does not enforce a spending cap.
 
 For reproducible school-report evidence, capture an approved Terraform plan (with secrets removed), resource inventory, successful cloud deployment run, HTTPS/SQL/CSRF smoke tests, telemetry screenshots and a documented rollback or recovery procedure.
+
+## Code-driven data initialization
+
+The application already implements `--setup-database` (checked-in migrations and SQL Full-Text indexes) and `--seed-demo` (Identity accounts and seed content). Run these with [`scripts/Initialize-AtlasDatabase.ps1`](scripts/Initialize-AtlasDatabase.ps1) against the **explicitly verified database name and variant**. Demo seeding requires a unique `ATLAS_DEMO_PASSWORD` environment secret; the script refuses to seed `live` and refuses silently targeting a different database. Database setup is repeatable; the demo seed is intentionally one-time and refuses a populated database.
+
+See [production telemetry](TELEMETRY.md) for what is exported to Application Insights and which durable cloud-audit pieces are still outstanding.
