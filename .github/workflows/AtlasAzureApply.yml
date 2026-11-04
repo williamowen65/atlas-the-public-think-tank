@@ -55,6 +55,7 @@ jobs:
       TF_BACKEND_KEY: ${{ vars.AZURE_TFSTATE_KEY }}
     steps:
       - name: Require a fresh run from main
+        working-directory: .
         run: |
           [[ "$GITHUB_REF" == refs/heads/main && "$GITHUB_RUN_ATTEMPT" == 1 ]] || {
             echo "::error::Start a new manual run from main."
