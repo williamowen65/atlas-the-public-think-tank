@@ -33,6 +33,13 @@ variable "sql_admin_password" {
   type        = string
   sensitive   = true
 }
+variable "demo_seed_password" {
+  description = "Unique high-entropy password for seeded demo-only Identity accounts; never print or commit."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
 variable "enable_sql_bootstrap" {
   description = "Temporary: expose SQL admin credentials only to private administrative WebJobs for the initial contained-user bootstrap. Turn back off and apply immediately afterward."
   type        = bool
