@@ -1,5 +1,8 @@
 """Blocking, offline policy checks for Atlas's Terraform security baseline.
 
+SQL public access is forbidden. App Service must use VNet integration and SQL
+must be reached by a Private Endpoint with a linked private DNS zone.
+
 These tests parse HCL, not Terraform state or Azure. They protect a few
 deliberate project decisions; Trivy supplies the broader advisory analysis.
 Run from any directory: python -m unittest discover -s infrastructure/tests
@@ -48,21 +51,47 @@ class TerraformSecurityBaselineTests(unittest.TestCase):
         web = resource("modules/webapp/main.tf", "azurerm_linux_web_app", "atlas")
         self.assertEqual(web["identity"][0]["type"], "SystemAssigned")
 
-    def test_sql_network_access_is_allowlist_only(self) -> None:
+    def test_sql_has_no_public_endpoint_or_public_firewall_rules(self) -> None:
         sql_path = "modules/sql/main.tf"
         server = resource(sql_path, "azurerm_mssql_server", "atlas")
         self.assertGreaterEqual(float(server["minimum_tls_version"]), 1.2)
-        # SQL public endpoint is intentional while the F1 plan has no private-link
-        # integration. Reachability must be denied until *specific* IPs are added.
-        self.assertIs(server["public_network_access_enabled"], True)
-        rule = resource(sql_path, "azurerm_mssql_firewall_rule", "approved")
-        self.assertIn("var.allowed_ipv4", rule["for_each"])
-        self.assertIn("each.value", rule["start_ip_address"])
-        self.assertIn("each.value", rule["end_ip_address"])
-        allowed = variable("sql_allowed_ipv4")
-        self.assertEqual(allowed["default"], {})
-        condition = allowed["validation"][0]["condition"]
-        self.assertIn('ip != "0.0.0.0"', condition)
+        self.assertIs(server["public_network_access_enabled"], False)
+        resources = read_hcl(sql_path).get("resource", [])
+        self.assertFalse(any("azurerm_mssql_firewall_rule" in block for block in resources))
+
+    def test_sql_is_reached_only_through_private_link_and_dns(self) -> None:
+        path = "modules/network/main.tf"
+        pe = resource(path, "azurerm_private_endpoint", "sql")
+        self.assertIn("azurerm_subnet.private_endpoints.id", pe["subnet_id"])
+        self.assertIn("var.sql_server_id", pe["private_service_connection"][0]["private_connection_resource_id"])
+        self.assertIn("sqlServer", pe["private_service_connection"][0]["subresource_names"])
+        private_dns = resource(path, "azurerm_private_dns_zone", "sql")
+        self.assertEqual(private_dns["name"], "privatelink.database.windows.net")
+        link = resource(path, "azurerm_private_dns_zone_virtual_network_link", "sql")
+        self.assertIn("azurerm_virtual_network.atlas.id", link["virtual_network_id"])
+
+    def test_network_subnets_and_sql_firewall_are_restrictive(self) -> None:
+        path = "modules/network/main.tf"
+        app = resource(path, "azurerm_subnet", "app")
+        self.assertIn("Microsoft.Web/serverFarms", app["delegation"][0]["service_delegation"][0]["name"])
+        endpoint = resource(path, "azurerm_subnet", "private_endpoints")
+        self.assertEqual(endpoint["private_endpoint_network_policies"], "NetworkSecurityGroupEnabled")
+        security = resource(path, "azurerm_network_security_group", "sql")
+        rules = {rule["name"]: rule for rule in security["security_rule"]}
+        allow = rules["AllowAppToSql"]
+        self.assertEqual(allow["access"], "Allow")
+        self.assertEqual(allow["source_address_prefix"], "10.42.1.0/26")
+        self.assertEqual(allow["destination_port_range"], "1433")
+        deny = rules["DenyOtherVNetToSql"]
+        self.assertEqual(deny["access"], "Deny")
+        self.assertEqual(deny["source_address_prefix"], "VirtualNetwork")
+        association = resource(path, "azurerm_subnet_network_security_group_association", "sql")
+        self.assertIn("azurerm_subnet.private_endpoints.id", association["subnet_id"])
+
+    def test_webapps_are_integrated_into_private_app_subnet(self) -> None:
+        web = resource("modules/webapp/main.tf", "azurerm_linux_web_app", "atlas")
+        self.assertIn("var.app_subnet_id", web["virtual_network_subnet_id"])
+        self.assertIn("B1", variable("app_service_sku")["default"])
 
     def test_sql_free_offer_is_explicit_and_databases_protected(self) -> None:
         database = resource("modules/sql/main.tf", "azapi_resource", "variant")
@@ -72,7 +101,7 @@ class TerraformSecurityBaselineTests(unittest.TestCase):
         self.assertIs(database["lifecycle"][0]["prevent_destroy"], True)
 
     def test_free_student_defaults_and_isolated_demo(self) -> None:
-        self.assertEqual(variable("app_service_sku")["default"], "F1")
+        self.assertEqual(variable("app_service_sku")["default"], "B1")
         self.assertIs(variable("enable_demo")["default"], True)
 
     def test_sql_admin_password_not_hardcoded(self) -> None:
