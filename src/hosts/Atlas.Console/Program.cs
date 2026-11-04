@@ -76,8 +76,13 @@ using var identityServices = new ServiceCollection().AddAtlasIdentity(connection
         ValidateScopes = true
     });
 var accountScopes = identityServices.GetRequiredService<IServiceScopeFactory>();
-using var telemetry = new LocalDevelopmentTelemetry(configuration, SqlStorage.Open, System.Console.Error.WriteLine);
-System.Console.WriteLine($"Local telemetry: {telemetry.DirectoryPath}");
+// Local file telemetry must never be installed in cloud management jobs.
+var localTelemetry = !string.Equals(configuration["DOTNET_ENVIRONMENT"], "Production", StringComparison.OrdinalIgnoreCase)
+    ? new LocalDevelopmentTelemetry(configuration, SqlStorage.Open, System.Console.Error.WriteLine)
+    : null;
+using var telemetry = localTelemetry;
+if (telemetry is not null)
+    System.Console.WriteLine($"Local telemetry: {telemetry.DirectoryPath}");
 
 if (args.Contains(
     "--seed-demo",
