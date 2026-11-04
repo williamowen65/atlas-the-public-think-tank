@@ -100,6 +100,7 @@ module "admin_sites" {
   service_plan_id            = azurerm_service_plan.atlas.id
   app_subnet_id              = module.network.app_subnet_id
   identity_id                = azurerm_user_assigned_identity.operations[each.key].id
+  expected_database          = module.sql.database_names[each.key]
   runtime_identity_client_id = azurerm_user_assigned_identity.runtime[each.key].client_id
   admin_identity_client_id   = azurerm_user_assigned_identity.operations[each.key].client_id
   sql_connection = format(
