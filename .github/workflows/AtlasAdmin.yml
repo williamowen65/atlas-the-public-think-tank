@@ -35,8 +35,8 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-      - name: Build precompiled .NET maintenance executable
-        run: dotnet publish src/hosts/Atlas.Console/Atlas.Console.csproj --configuration Release --output "$RUNNER_TEMP/atlas-console-publish"
+      - name: Build dedicated Atlas.Admin .NET maintenance executable
+        run: dotnet publish src/hosts/Atlas.Admin/Atlas.Admin.csproj --configuration Release --output "$RUNNER_TEMP/atlas-admin-publish"
       - name: Package Linux triggered WebJobs without scheduled execution
         shell: bash
         run: |
@@ -45,13 +45,15 @@ jobs:
           for job in atlas-bootstrap atlas-schema atlas-seed-demo; do
             dir="$root/App_Data/jobs/triggered/$job"
             mkdir -p "$dir"
-            cp -a "$RUNNER_TEMP/atlas-console-publish/." "$dir/"
+            cp -a "$RUNNER_TEMP/atlas-admin-publish/." "$dir/"
             cp infrastructure/webjobs/run.sh "$dir/run.sh"
             chmod +x "$dir/run.sh"
           done
           cd "$root"
           zip -qr "$RUNNER_TEMP/atlas-admin-webjobs.zip" .
           unzip -l "$RUNNER_TEMP/atlas-admin-webjobs.zip" | grep 'App_Data/jobs/triggered/atlas-schema/run.sh'
+          unzip -l "$RUNNER_TEMP/atlas-admin-webjobs.zip" | grep 'App_Data/jobs/triggered/atlas-schema/Atlas.Admin.dll'
+          ! unzip -l "$RUNNER_TEMP/atlas-admin-webjobs.zip" | grep -q '/Atlas.Console.dll'
       - uses: actions/upload-artifact@v4
         with:
           name: atlas-admin-webjobs
