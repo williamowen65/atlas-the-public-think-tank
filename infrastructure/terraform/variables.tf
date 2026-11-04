@@ -33,12 +33,12 @@ variable "sql_admin_password" {
   type        = string
   sensitive   = true
 }
-variable "runtime_connection_strings" {
-  description = "Least-privilege SQL connections keyed by live/demo. Never use SQL admin for app access."
-  type        = map(string)
-  default     = {}
-  sensitive   = true
+variable "enable_sql_bootstrap" {
+  description = "Temporary: expose SQL admin credentials only to private administrative WebJobs for the initial contained-user bootstrap. Turn back off and apply immediately afterward."
+  type        = bool
+  default     = false
 }
+
 variable "tags" {
   type = map(string)
   default = {
