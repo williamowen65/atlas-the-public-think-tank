@@ -1,3 +1,8 @@
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Net.Sockets;
+using System.Security.Authentication;
+using System.Text.RegularExpressions;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 
@@ -46,8 +51,38 @@ internal static class CloudDatabaseBootstrap
         };
 
         await using var connection = new SqlConnection(admin.ConnectionString);
-        System.Console.WriteLine("Opening the Azure SQL bootstrap connection.");
-        await connection.OpenAsync();
+        // Limit target diagnostics to the expected Azure hostname and database name formats.
+        var server = Regex.Match(admin.DataSource, @"\A(?:tcp:)?([a-z0-9-]+\.database\.windows\.net)(?:,1433)?\z",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var database = Regex.IsMatch(expectedDatabase, @"\A[a-z0-9-]+\z") ? expectedDatabase : "(unrecognized)";
+        var hostname = server.Success ? server.Groups[1].Value : "(unrecognized)";
+        System.Console.WriteLine($"Opening the Azure SQL bootstrap connection. Host: {hostname}, database: {database}.");
+
+        var timer = Stopwatch.StartNew();
+        try
+        {
+            await connection.OpenAsync();
+        }
+        catch (SqlException error)
+        {
+            // Provider messages can include login details. Emit structured codes only.
+            for (var cause = error.InnerException; cause is not null; cause = cause.InnerException)
+            {
+                var code = cause switch
+                {
+                    SocketException socket => $"socket error={socket.SocketErrorCode}, native error={socket.NativeErrorCode}",
+                    AuthenticationException => $"TLS authentication HRESULT=0x{cause.HResult:X8}",
+                    Win32Exception native => $"native error={native.NativeErrorCode}",
+                    _ => $"HRESULT=0x{cause.HResult:X8}"
+                };
+                System.Console.Error.WriteLine($"SQL connection cause: {cause.GetType().Name}, {code}.");
+            }
+            throw;
+        }
+        finally
+        {
+            System.Console.WriteLine($"Azure SQL connection attempt took {timer.ElapsedMilliseconds} ms.");
+        }
         System.Console.WriteLine("Connected to Azure SQL. Configuring managed-identity database users.");
 
         // No passwords, SQL statement bodies or account identifiers are printed.
