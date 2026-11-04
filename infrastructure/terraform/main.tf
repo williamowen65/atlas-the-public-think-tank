@@ -20,17 +20,17 @@ module "observability" {
 }
 
 module "sql" {
-  source              = "./modules/sql"
-  name_prefix         = var.name_prefix
-  location            = azurerm_resource_group.atlas.location
-  resource_group_name = azurerm_resource_group.atlas.name
-  admin_username      = var.sql_admin_username
-  admin_password      = var.sql_admin_password
-  entra_admin_login    = var.sql_entra_admin_login
+  source                = "./modules/sql"
+  name_prefix           = var.name_prefix
+  location              = azurerm_resource_group.atlas.location
+  resource_group_name   = azurerm_resource_group.atlas.name
+  admin_username        = var.sql_admin_username
+  admin_password        = var.sql_admin_password
+  entra_admin_login     = var.sql_entra_admin_login
   entra_admin_object_id = var.sql_entra_admin_object_id
   entra_admin_tenant_id = data.azurerm_client_config.current.tenant_id
-  variants            = local.variants
-  tags                = local.tags
+  variants              = local.variants
+  tags                  = local.tags
 }
 
 module "network" {
@@ -83,13 +83,13 @@ module "sites" {
   app_service_sku     = var.app_service_sku
   insights_connection = module.observability.insights_connection
   identity_id         = azurerm_user_assigned_identity.runtime[each.key].id
-  connection_string   = format(
+  connection_string = format(
     "Server=tcp:%s,1433;Database=%s;Authentication=Active Directory Managed Identity;User Id=%s;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30",
     module.sql.server_fqdn,
     module.sql.database_names[each.key],
     azurerm_user_assigned_identity.runtime[each.key].client_id
   )
-  tags                = merge(local.tags, { variant = each.key })
+  tags = merge(local.tags, { variant = each.key })
 }
 
 # Management-only WebJob hosts share the existing B1 plan but do not share SQL
