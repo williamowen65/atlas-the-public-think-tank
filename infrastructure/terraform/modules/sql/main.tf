@@ -6,7 +6,6 @@ variable "admin_password" {
   type      = string
   sensitive = true
 }
-variable "database_sku" { type = string }
 variable "variants" { type = set(string) }
 variable "allowed_ipv4" { type = map(string) }
 variable "tags" { type = map(string) }
@@ -23,12 +22,32 @@ resource "azurerm_mssql_server" "atlas" {
   tags                          = var.tags
 }
 
-resource "azurerm_mssql_database" "variant" {
+# AzureRM does not currently expose the useFreeLimit database creation flag.
+# AzAPI manages the same ARM child resource with explicit free-offer settings.
+# The Azure SQL free tier automatically pauses after inactivity and when the
+# monthly allowance is exhausted. Never silently substitute a billable Basic DB.
+resource "azapi_resource" "variant" {
   for_each  = var.variants
+  type      = "Microsoft.Sql/servers/databases@2025-01-01"
   name      = format("%s-%s", var.name_prefix, each.key)
-  server_id = azurerm_mssql_server.atlas.id
-  sku_name  = var.database_sku
+  parent_id = azurerm_mssql_server.atlas.id
+  location  = var.location
   tags      = merge(var.tags, { variant = each.key })
+
+  body = {
+    sku = {
+      name     = "GP_S_Gen5_2"
+      tier     = "GeneralPurpose"
+      family   = "Gen5"
+      capacity = 2
+    }
+    properties = {
+      useFreeLimit                 = true
+      freeLimitExhaustionBehavior  = "AutoPause"
+      maxSizeBytes                 = 34359738368
+      requestedBackupStorageRedundancy = "Local"
+    }
+  }
 
   lifecycle {
     prevent_destroy = true
@@ -47,5 +66,5 @@ output "server_fqdn" {
   value = azurerm_mssql_server.atlas.fully_qualified_domain_name
 }
 output "database_names" {
-  value = { for variant, db in azurerm_mssql_database.variant : variant => db.name }
+  value = { for variant, db in azurerm_mssql_database.variant : variant => format("%s-%s", var.name_prefix, variant) }
 }
