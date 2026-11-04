@@ -1,4 +1,4 @@
-# Atlas database initialization is intentionally NOT an azurerm resource.
+# Local/private-network operator helper only. It does NOT connect to Azure\n# SQL Private Link from a standard developer workstation or GitHub runner.\n# For protected Azure operations, invoke the Atlas.Admin WebJob via GitHub.\n# Atlas database initialization is intentionally NOT an azurerm resource.
 # This is version-controlled operational code: migrations and Full-Text setup
 # must be managed by the application, not as Terraform one-off provisioners.
 [CmdletBinding()]
