@@ -74,7 +74,10 @@ if (args.Contains(
     await SqlStorage.SeedDemoDataAsync(accountScopes);
     System.Console.WriteLine("Demo accounts and data seeded in SQL Server through Identity registration.");
     System.Console.WriteLine("Demo sign-in: demo01@example.test through demo05@example.test");
-    System.Console.WriteLine("Demo password: Atlas_Demo_Only_94!Password");
+    if (string.IsNullOrWhiteSpace(configuration["ATLAS_DEMO_PASSWORD"]))
+        System.Console.WriteLine("Demo password: Atlas_Demo_Only_94!Password (local development only)");
+    else
+        System.Console.WriteLine("Demo password supplied by ATLAS_DEMO_PASSWORD; value is not printed.");
     return;
 }
 
