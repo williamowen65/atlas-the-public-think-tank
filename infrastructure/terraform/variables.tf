@@ -12,9 +12,9 @@ variable "name_prefix" {
   }
 }
 variable "enable_demo" {
-  description = "Create separate demo app and SQL database. This incurs additional DB cost."
+  description = "Create separate demo app and free-offer SQL database. Disable explicitly to provision only live."
   type        = bool
-  default     = false
+  default     = true
 }
 variable "app_service_sku" {
   type    = string
