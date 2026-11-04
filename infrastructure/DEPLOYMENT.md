@@ -44,6 +44,33 @@ Use Entra authentication and the Storage Blob Data Contributor role only where r
 
 ## 4. Terraform: initialize, plan and apply
 
+### Provision or update Azure from GitHub Actions
+
+Bootstrap the private Terraform state and Azure OIDC access first. Once this workflow is on `main`, open **Actions → Atlas Azure Terraform apply (manual)** and dispatch from `main`. Review **Plan Azure changes** in the run log, then approve the `atlas-infra-apply` job in that same run. It applies the exact plan reviewed above. If the plan reports no changes, the apply job is skipped.
+
+- Configure `atlas-infra-review` with the values in the table below.
+- Create `atlas-infra-apply`, restrict deployments to `main`, and configure **Required reviewers**. Disable administrator bypass. If you will start and approve your own runs, leave **Prevent self-review** off. The apply job requires a recorded approval and exits if none exists. If your GitHub plan does not offer required reviewers for this repository, use the local procedure below.
+- Give the apply environment a separate Azure OIDC identity with the permissions to provision the declared resources and access the state blob. Use federated subject `repo:williamowen65/atlas-the-public-think-tank:environment:atlas-infra-apply`. The apply environment needs its own `AZURE_CLIENT_ID`, the same tenant and subscription, and the same four state backend variables as review.
+- Set the same strong randomly generated `ATLAS_TF_PLAN_PASSPHRASE` secret in both environments. The workflow transfers an encrypted plan with one-day retention. Start a new run if the artifact expires or an operation fails.
+- Leave **enable_sql_bootstrap** off for normal runs. For initial database setup, explicitly enable it in a run, complete both SQL identity bootstrap WebJobs, and run Terraform again with it off before applying database schema.
+
+### Find your SQL Entra administrator values
+
+Microsoft Entra ID is the directory behind your Azure sign-in. If you want your own Azure account to be the SQL Entra administrator, open **Azure Portal → Microsoft Entra ID → Users → your user** in the subscription's directory. Alternatively, run this in Azure Cloud Shell while signed in to the correct directory:
+
+```bash
+az ad signed-in-user show --query '{login:userPrincipalName, objectId:id}' -o table
+```
+
+| GitHub Environment variable | Value |
+| --- | --- |
+| `AZURE_SQL_ENTRA_ADMIN_LOGIN` | Your **User principal name** (CLI `login`). For an Entra group, use the group's display name. |
+| `AZURE_SQL_ENTRA_ADMIN_OBJECT_ID` | The same user or group's **Object ID** (CLI `objectId`). |
+
+These identify the Azure SQL administrator. The Terraform workflow signs in using its separate OIDC client ID.
+
+### Local Terraform procedure
+
 From `infrastructure/terraform`:
 
 ```powershell
@@ -89,7 +116,7 @@ Create a protected GitHub Environment named `atlas-infra-review` with a matching
 | Variable | `AZURE_SQL_ENTRA_ADMIN_LOGIN`, `AZURE_SQL_ENTRA_ADMIN_OBJECT_ID` | Intended Azure SQL Entra group/user for SQL server administration |
 | Variable | `AZURE_TFSTATE_RESOURCE_GROUP`, `AZURE_TFSTATE_STORAGE_ACCOUNT`, `AZURE_TFSTATE_CONTAINER`, `AZURE_TFSTATE_KEY` | Existing private state backend parameters created during bootstrap |
 
-This workflow deliberately assumes **B1**, both `live` and `demo`, and `enable_sql_bootstrap=false` (the normal safe setting). If you change those choices in your actual infrastructure, synchronize the workflow before relying on the plan. The workflow must exist on the repository's default branch before GitHub displays it as a normal manually runnable workflow. For the *first* deployment, you can execute `terraform plan` locally as documented above. An Azure-connected plan reads Azure metadata and state, but it does not guarantee quota availability, a successful apply, private DNS function, SQL connectivity or running WebJobs. These still need deployment verification.
+This workflow deliberately assumes **B1**, both `live` and `demo`, and `enable_sql_bootstrap=false` (the normal safe setting). If you change those choices in your actual infrastructure, synchronize the workflow before relying on the plan. The workflow must exist on the repository's default branch before GitHub displays it as a normal manually runnable workflow. You can also use the local procedure above. An Azure-connected plan reads Azure metadata and state, but it does not guarantee quota availability, a successful apply, private DNS function, SQL connectivity or running WebJobs. These still need deployment verification.
 
 ## 5. SQL reachability, credentials and migrations
 
@@ -103,7 +130,12 @@ Atlas.Api expects `ATLAS_SQL_CONNECTION_STRING`. Use **distinct least-privilege 
 
 Migrations, Identity schema creation, SQL Full-Text indexes and seed setup run through explicit [Atlas.Admin operations](../src/hosts/Atlas.Admin/README.md). They are automated **on operator invocation** using dedicated non-interactive `Atlas.Admin` commands in Azure; the separate interactive Console remains a local development tool. Live must not be seeded; demo requires a unique `ATLAS_DEMO_PASSWORD` from a secure environment variable. An explicit SQL contained-user bootstrap command is implemented but must be run and verified in Azure before passwordless access will work. Follow [SQL instructions](../docs/PTT-87-SQL-Server.md) and [seed guide](../docs/workflows/local-demo-seed.md), verifying commands against the target database. Never seed the live database using demo-only credentials.
 
-### Database initialization from versioned code\n\n**Azure:** Use the manually triggered `AtlasAdmin.yml` workflow with GitHub Environments `atlas-ops-live` and `atlas-ops-demo` after Terraform provisioning and OIDC authorization. The operation options are `bootstrap`, `schema`, and (demo only) `seed-demo`; each requires the exact target's Azure admin App Service name and resource group. On a first deployment, temporarily set `enable_sql_bootstrap=true`, run a separate confirmed bootstrap for each environment, then set it back to false and apply Terraform to remove those credentials. Run `schema` before `seed-demo`. The CLI invocation happens inside App Service via the packaged `run.sh` (source: [`run-webjob.sh`](webjobs/run-webjob.sh)) and the non-interactive `Atlas.Admin` executable. None of these steps is a public UI or public SQL endpoint.\n\n**Local:** The PowerShell commands below use the existing interactive Console's explicit maintenance operations for development or a trusted machine with SQL access. They do not reach Azure SQL Private Link from a normal developer workstation.\n
+### Database initialization from versioned code
+
+**Azure:** Use the manually triggered `AtlasAdmin.yml` workflow with GitHub Environments `atlas-ops-live` and `atlas-ops-demo` after Terraform provisioning and OIDC authorization. The operation options are `bootstrap`, `schema`, and (demo only) `seed-demo`; each requires the exact target's Azure admin App Service name and resource group. On a first deployment, temporarily set `enable_sql_bootstrap=true`, run a separate confirmed bootstrap for each environment, then set it back to false and apply Terraform to remove those credentials. Run `schema` before `seed-demo`. The CLI invocation happens inside App Service via the packaged `run.sh` (source: [`run-webjob.sh`](webjobs/run-webjob.sh)) and the non-interactive `Atlas.Admin` executable. None of these steps is a public UI or public SQL endpoint.
+
+**Local:** Run `dotnet run --project src/hosts/Atlas.Admin -- --initialize-local-database` from the repository root. Append `--seed-demo` for a fresh, disposable local database.
+
 
 Check Full-Text population readiness and Azure SQL free-tier serverless cold-resume/retry behavior before declaring the site healthy. Azure SQL administration runs inside the dedicated management-only triggered WebJob. The code and workflow are present; end-to-end Azure execution and authorization remain to be verified.
 
