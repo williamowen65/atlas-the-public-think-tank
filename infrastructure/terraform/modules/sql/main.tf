@@ -7,6 +7,9 @@ variable "admin_password" {
   sensitive = true
 }
 variable "variants" { type = set(string) }
+variable "entra_admin_login" { type = string }
+variable "entra_admin_object_id" { type = string }
+variable "entra_admin_tenant_id" { type = string }
 variable "tags" { type = map(string) }
 
 resource "azurerm_mssql_server" "atlas" {
@@ -18,6 +21,14 @@ resource "azurerm_mssql_server" "atlas" {
   administrator_login_password  = var.admin_password
   minimum_tls_version           = "1.2"
   public_network_access_enabled = false
+
+  azuread_administrator {
+    login_username              = var.entra_admin_login
+    object_id                   = var.entra_admin_object_id
+    tenant_id                   = var.entra_admin_tenant_id
+    azuread_authentication_only = false
+  }
+
   tags                          = var.tags
 }
 
