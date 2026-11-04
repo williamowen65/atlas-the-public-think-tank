@@ -46,6 +46,25 @@ resource "azurerm_service_plan" "atlas" {
   tags                = local.tags
 }
 
+
+# Each public web app and its management WebJob have DISTINCT Azure identities.
+# Each database will later contain only the matching pair of contained users.
+resource "azurerm_user_assigned_identity" "runtime" {
+  for_each            = local.variants
+  name                = format("%s-mi-%s-web", var.name_prefix, each.key)
+  location            = azurerm_resource_group.atlas.location
+  resource_group_name = azurerm_resource_group.atlas.name
+  tags                = merge(local.tags, { variant = each.key, role = "runtime" })
+}
+
+resource "azurerm_user_assigned_identity" "operations" {
+  for_each            = local.variants
+  name                = format("%s-mi-%s-ops", var.name_prefix, each.key)
+  location            = azurerm_resource_group.atlas.location
+  resource_group_name = azurerm_resource_group.atlas.name
+  tags                = merge(local.tags, { variant = each.key, role = "database-operations" })
+}
+
 module "sites" {
   for_each = local.variants
   source   = "./modules/webapp"
@@ -58,6 +77,39 @@ module "sites" {
   app_subnet_id       = module.network.app_subnet_id
   app_service_sku     = var.app_service_sku
   insights_connection = module.observability.insights_connection
-  connection_string   = lookup(var.runtime_connection_strings, each.key, null)
+  identity_id         = azurerm_user_assigned_identity.runtime[each.key].id
+  connection_string   = format(
+    "Server=tcp:%s,1433;Database=%s;Authentication=Active Directory Managed Identity;User Id=%s;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30",
+    module.sql.server_fqdn,
+    module.sql.database_names[each.key],
+    azurerm_user_assigned_identity.runtime[each.key].client_id
+  )
   tags                = merge(local.tags, { variant = each.key })
+}
+
+# Management-only WebJob hosts share the existing B1 plan but do not share SQL
+# identities or HTTP ingress with the public live/demo applications.
+module "admin_sites" {
+  for_each = local.variants
+  source   = "./modules/admin"
+
+  name                       = format("%s-%s-ops", var.name_prefix, each.key)
+  variant                    = each.key
+  location                   = azurerm_resource_group.atlas.location
+  resource_group_name        = azurerm_resource_group.atlas.name
+  service_plan_id            = azurerm_service_plan.atlas.id
+  app_subnet_id              = module.network.app_subnet_id
+  identity_id                = azurerm_user_assigned_identity.operations[each.key].id
+  runtime_identity_client_id = azurerm_user_assigned_identity.runtime[each.key].client_id
+  admin_identity_client_id   = azurerm_user_assigned_identity.operations[each.key].client_id
+  sql_connection = format(
+    "Server=tcp:%s,1433;Database=%s;Authentication=Active Directory Managed Identity;User Id=%s;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30",
+    module.sql.server_fqdn,
+    module.sql.database_names[each.key],
+    azurerm_user_assigned_identity.operations[each.key].client_id
+  )
+  enable_bootstrap   = var.enable_sql_bootstrap
+  bootstrap_username = var.sql_admin_username
+  bootstrap_password = var.sql_admin_password
+  tags               = merge(local.tags, { variant = each.key, role = "database-operations" })
 }
