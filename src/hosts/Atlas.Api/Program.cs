@@ -17,7 +17,8 @@ builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.W
 builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
 // Terraform supplies the Azure Monitor connection string. The .NET host wires
 // production exporters and keeps local development isolated from cloud costs.
-if (!builder.Environment.IsDevelopment())
+if (!builder.Environment.IsDevelopment() &&
+    builder.Configuration.GetValue<bool?>("Atlas:Telemetry:Enabled") != false)
 {
     if (string.IsNullOrWhiteSpace(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
         throw new InvalidOperationException("Production requires APPLICATIONINSIGHTS_CONNECTION_STRING.");
