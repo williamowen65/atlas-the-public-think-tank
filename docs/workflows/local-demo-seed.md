@@ -33,14 +33,13 @@ From the repository root, with the .NET SDK and `dotnet-ef` installed:
 dotnet ef database drop --project src/Atlas.Persistence --force
 ```
 
-The design-time factory reads `ATLAS_SQL_CONNECTION_STRING` from the environment or shared user secrets. Run the explicit database setup command first. It applies EF migrations and creates the SQL Server full-text indexes needed for search. Then seed the empty database:
+The design-time factory reads `ATLAS_SQL_CONNECTION_STRING` from the environment or shared user secrets. The dedicated `Atlas.Admin` local command loads the same User Secrets as the API, applies EF migrations, builds the SQL Server Full-Text indexes, and optionally seeds an empty database. No PowerShell script is required:
 
 ```powershell
-dotnet run --project src/hosts/Atlas.Console -- --setup-database
-dotnet run --project src/hosts/Atlas.Console -- --seed-demo
+dotnet run --project src/hosts/Atlas.Admin -- --initialize-local-database --seed-demo
 ```
 
-Restart the API and Storybook afterward. Demo sign-in accounts are `demo01@example.test` through `demo05@example.test`; the demo password is printed by the seed command. **Never use these credentials or this dataset in production.**
+To apply schema changes without seeding, omit `--seed-demo`. This local command refuses Azure SQL and does not drop any database. Restart the API and Storybook afterward. Demo sign-in accounts are `demo01@example.test` through `demo05@example.test`; the password is the value of `ATLAS_DEMO_PASSWORD` in the shared .NET User Secrets store, if set, or the documented local-only fixture password. **Never use these credentials or this dataset in production.**
 
 If `dotnet ef` cannot load the design-time factory, first verify the .NET EF tooling and your SQL connection configuration. Do not run the drop command against an unknown connection string.
 
