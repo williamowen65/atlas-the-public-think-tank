@@ -28,3 +28,17 @@ output "sql_private_endpoint_id" {
 output "sql_private_dns_zone" {
   value = module.network.sql_private_dns_zone
 }
+
+output "admin_site_names" {
+  value = { for variant, app in module.admin_sites : variant => app.name }
+}
+
+output "sql_identity_client_ids" {
+  description = "Use to verify the database contained users provisioned by the bootstrap job."
+  value = {
+    for variant in local.variants : variant => {
+      runtime    = azurerm_user_assigned_identity.runtime[variant].client_id
+      operations = azurerm_user_assigned_identity.operations[variant].client_id
+    }
+  }
+}
