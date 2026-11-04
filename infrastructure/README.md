@@ -6,4 +6,6 @@ Start with the [Azure resource inventory](PROVISIONED-RESOURCES.md) for a detail
 
 Terraform is organized under [terraform](terraform/) with reusable SQL, App Service and observability modules. The original configuration is under [legacy](../legacy/www.thepublicthinktank.com/terraform/testing/main.tf) for reference.
 
+The architecture and security policy tests are under [root tests/Atlas.Infrastructure.Tests](../tests/Atlas.Infrastructure.Tests/README.md), alongside Atlas's other test suites. They remain Python `unittest` checks rather than a .NET test project because they parse HCL declarations directly.
+
 GitHub workflows validate infrastructure and deploy the API bundled with the frontend. Azure resource provisioning and cloud deployment are separately operator-triggered; neither runs automatically after a commit.
