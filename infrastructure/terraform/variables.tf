@@ -18,11 +18,7 @@ variable "enable_demo" {
 }
 variable "app_service_sku" {
   type    = string
-  default = "B1"
-}
-variable "sql_database_sku" {
-  type    = string
-  default = "Basic"
+  default = "F1"
 }
 variable "sql_admin_username" {
   type    = string
