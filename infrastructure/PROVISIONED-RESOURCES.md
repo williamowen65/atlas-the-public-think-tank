@@ -63,7 +63,7 @@ These settings alone do not prove production security: validate authentication/C
 | --- | --- |
 | Terraform backend Storage Account and private state container | One-time Azure CLI bootstrap from the [deployment runbook](DEPLOYMENT.md) |
 | GitHub Actions OIDC federation, environment protection and deployment RBAC | Configure manually in Entra ID/GitHub before the manual deploy workflow can authenticate |
-| Database users, migrations, SQL Full-Text indexes or seed content | Migrations/FTS and demo seed are executed through [a version-controlled PowerShell initializer](scripts/Initialize-AtlasDatabase.ps1); runtime SQL principal creation still requires an automated least-privilege credential/identity bootstrap |
+| Database users, migrations, SQL Full-Text indexes or seed content | The [Atlas.Admin workflow](../.github/workflows/AtlasAdmin.yml) triggers WebJobs for SQL identity bootstrap, migrations/Full-Text setup and demo seeding |
 | Runtime secret vault, managed-identity SQL sign-in or automated credential rotation | Not yet implemented; initial runtime connection strings are injected as sensitive Terraform inputs |
 | Azure Blob Storage for user-uploaded images | Deferred until the image-storage design (PTT-167) |
 | Custom public domain/DNS, automated backups beyond Azure service defaults, alert policies or cost budgets | Evaluate and add explicitly if needed for rubric, security or budget |
@@ -81,6 +81,6 @@ For reproducible school-report evidence, capture an approved Terraform plan (wit
 
 ## Code-driven data initialization
 
-For private SQL, these setup commands **must run from an authorized VNet-connected execution host**, not directly from a home computer or ordinary GitHub-hosted runner. See [private network operations](PRIVATE-NETWORK-OPERATIONS.md) for the on-demand management WebJob design. The application already implements `--setup-database` (checked-in migrations and SQL Full-Text indexes) and `--seed-demo` (Identity accounts and seed content). Run these with [`scripts/Initialize-AtlasDatabase.ps1`](scripts/Initialize-AtlasDatabase.ps1) against the **explicitly verified database name and variant**. Demo seeding requires a unique `ATLAS_DEMO_PASSWORD` environment secret; the script refuses to seed `live` and refuses silently targeting a different database. Database setup is repeatable; the demo seed is intentionally one-time and refuses a populated database.
+Run `bootstrap` and then `schema` for each Azure database through the [Atlas.Admin workflow](../.github/workflows/AtlasAdmin.yml). The workflow invokes a WebJob inside the VNet and checks the database name and environment. Run `seed-demo` only for the demo database after schema setup. It requires a unique `ATLAS_DEMO_PASSWORD` secret and refuses a populated database. See the [deployment runbook](DEPLOYMENT.md) for the provisioning and authorization sequence.
 
 See [production telemetry](TELEMETRY.md) for what is exported to Application Insights and which durable cloud-audit pieces are still outstanding.
