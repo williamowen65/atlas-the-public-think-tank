@@ -8,7 +8,9 @@
 | --- | --- | --- | --- |
 | Web HTTPS-only | `terraform/modules/webapp/main.tf` | `https_only = true` and minimum TLS 1.2 | Application authorization and session/CSRF checks must also pass |
 | Legacy publishing closed | Web App module | Disables FTP/FTPS and FTP basic authentication | GitHub deployment OIDC/RBAC still requires Entra and GitHub setup |
-| Restricted SQL connectivity | `terraform/modules/sql/main.tf` + `sql_allowed_ipv4` input | The Azure SQL public endpoint has **zero** allowed IPs initially. Named rules admit exact individual IPv4 addresses, excluding the special Azure-wide `0.0.0.0` rule | Azure App Service outbound IPs can be shared with other tenants. Firewall reachability is not authentication |
+| Private SQL only | `terraform/modules/sql/main.tf` | `public_network_access_enabled = false`; no public SQL firewall rules | The application still needs database authentication and authorization |
+| Virtual network + Private Link | `terraform/modules/network/main.tf` | VNet with delegated app subnet, private SQL endpoint, private DNS zone and linked VNet | Private endpoint and DNS incur charges; VNet integration requires B1 or higher |
+| Subnet firewall (NSG) | Network module | Permit TCP port 1433 from app subnet to SQL private endpoint subnet; deny other VNet sources | NSG rules are additional protection, not a replacement for SQL identity |
 | Encrypted SQL transport | SQL module | Sets minimum SQL TLS 1.2 | Connection strings must also require encryption and validate server certificates |
 | Data isolation | Terraform `live`/`demo` variants | Separate Azure SQL databases and Web Apps; one shared App Service plan | Runtime logins must have per-database access only; the UI must label and constrain demo behavior |
 | Accidental data loss guard | SQL module | `prevent_destroy = true` protects each DB in ordinary Terraform changes | Does not protect against deletion outside Terraform, privileged SQL writes, or missing backups |
@@ -17,9 +19,9 @@
 | Deployment access | `.github/workflows/AtlasDeploy.yml` | Manual workflow, with environment-specific short-lived GitHub OIDC credentials intended for Azure | Federated credentials, narrow Azure role grants and environment approval policy need to be provisioned before use |
 | Safe telemetry | `Atlas.Api` and Azure observability module | Category-based app diagnostics and metrics via Azure Monitor; no raw SQL auto-instrumentation | Validate cloud ingestion, privacy and cost; durable audit outbox export remains incomplete |
 
-**Public vs private:** The Atlas *website* needs a public HTTPS endpoint for users. The *database* does not need broad public access; SQL presently uses a public endpoint **with a restrictive firewall** to remain compatible with low-cost App Service. If future hosting/network tiers support it economically, use VNet integration and a SQL private endpoint for stronger network isolation.
+**Public vs private:** The Atlas *website* needs a public HTTPS endpoint for visitors. The SQL *database* now has **no public network endpoint**. The .NET host connects through the Azure VNet and SQL Private Link over an internal IP address. Ordinary GitHub-hosted runners and home machines cannot reach this private SQL endpoint: authorized database migration/administration jobs must run in the VNet. See [PRIVATE-NETWORK-OPERATIONS.md](PRIVATE-NETWORK-OPERATIONS.md).
 
-**Important:** Allowlisting the App Service's possible outbound IPs is a practical first step, but those addresses may be shared. Only an authenticated, least-privilege SQL identity grants database access. SQL initialization and production SQL accounts must be designed so the web application is never running as the database administrator.
+**Important:** The NSG restricts network flows to SQL, but an authenticated and least-privilege SQL identity still grants actual database access. Database migrations and production runtime must use **separate privileges**, with no schema-admin credential on the public web app.
 
 ## Terraform CI security checks
 
@@ -28,7 +30,7 @@
 | Check | Enforcement | Purpose |
 | --- | --- | --- |
 | `terraform fmt` / `init -backend=false` / `validate` | Blocking | Formatting and configuration validity |
-| `infrastructure/tests/test_security_baseline.py` | **Blocking** | Parse Terraform HCL and verify HTTPS, FTP disabled, TLS minimum, system-assigned identity, exact-IP SQL allowlist, no wildcard Azure rule, SQL free-offer safety defaults, and DB deletion protection |
+| `infrastructure/tests/test_security_baseline.py` | **Blocking** | Parse Terraform HCL and verify HTTPS, FTP disabled, TLS minimum, system-assigned identity, SQL public access disabled, VNet integration, SQL Private Endpoint/private DNS/NSG rules, SQL free-offer safety defaults, and DB deletion protection |
 | Trivy Terraform misconfiguration scan | **Advisory initially** | Report high/critical broader best-practice issues without making existing intentional tradeoffs silently disappear |
 | Trivy infrastructure secret scan | **Blocking** | Detect high/critical exposed secrets accidentally committed to the Terraform directory |
 
@@ -39,9 +41,9 @@ The baseline tests use `python-hcl2==8.1.4` and do not access Azure. Trivy uses 
 1. Review Trivy's first findings. Confirm actual risks and Azure/free-tier constraints, and resolve them; then make the relevant HIGH/CRITICAL checks blocking. Never suppress a finding without a documented reason.
 2. Add an authenticated **manual `terraform plan`** against remote state, with protected identity and no secrets or state stored in GitHub artifacts. Review it before any manually approved apply.
 3. Verify **deployed configuration and drift** once Azure is running; static CI cannot see Portal-side changes or runtime permissions.
-4. Provision and verify least-privilege per-variant SQL identities and OIDC access. Prefer managed-identity database authentication over storing permanent SQL connection passwords in Terraform state.
+4. Provision and verify least-privilege per-variant SQL identities and OIDC access, plus a protected in-VNet administration executor. Prefer managed-identity database authentication over storing permanent SQL connection passwords in Terraform state.
 5. Add runtime security checks after deployment: HTTPS redirect, authentication/session/CSRF, API authorization, direct-link routing, audit-outbox delivery, SQL FTS readiness, and zero cross-database access.
-6. Check backup/restore, telemetry retention/budget, and alerts. Revisit private SQL networking once its cost and F1 compatibility are known.
+6. Check backup/restore, telemetry retention/budget, and alerts. Monitor B1 hosting, private endpoint, private DNS and telemetry costs; do not silently replace the private network with public SQL access to save money.
 
 ## How to review locally
 
