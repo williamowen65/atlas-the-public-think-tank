@@ -7,16 +7,36 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-// Dedicated, non-interactive cloud administration entry point. These are the
-// only three currently exposed commands; no user-facing Atlas.Console menu
-// or web endpoints are included in this deployed executable.
+// Atlas.Admin is deliberately non-interactive: local development commands
+// use the existing .NET User Secrets store, whereas Azure WebJobs use only
+// protected environment configuration and separate managed identities.
+if (args is ["--initialize-local-database"] or ["--initialize-local-database", "--seed-demo"])
+{
+    try
+    {
+        var localConfiguration = new ConfigurationBuilder()
+            .AddUserSecrets<Program>(optional: true)
+            .AddEnvironmentVariables()
+            .Build();
+        await LocalDatabaseCommands.InitializeAsync(localConfiguration, seedDemo: args.Length == 2);
+        return 0;
+    }
+    catch (Exception error)
+    {
+        Console.Error.WriteLine("Local database initialization failed: " + error.Message);
+        return 1;
+    }
+}
+
 if (args.Length != 1 ||
     args[0] is not ("--bootstrap-cloud-identities" or "--setup-database" or "--seed-demo"))
 {
-    Console.Error.WriteLine("Expected exactly one supported Atlas.Admin maintenance command.");
+    Console.Error.WriteLine("Usage: Atlas.Admin --initialize-local-database [--seed-demo] (local only)");
+    Console.Error.WriteLine("Azure WebJobs: --bootstrap-cloud-identities | --setup-database | --seed-demo");
     return 2;
 }
 
+// Cloud operations intentionally do NOT load development User Secrets.
 var configuration = new ConfigurationBuilder().AddEnvironmentVariables().Build();
 
 try
